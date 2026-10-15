@@ -28,8 +28,9 @@ The base is placed on real terrain: NASA's Lunar Orbiter Laser Altimeter DEM of 
 Shackleton and de Gerlache craters at 5 m per post (PGDA Site01, 16 × 16 km; median vertical error 0.3–0.5 m,
 Measured). The nine sites sit on cells whose pad-scale slope (the tilt of the mean surface over a 100 m disk) is
 at most 5°, the science site at most 8°, and the "PSR" site is in cast shadow at all four reference sun azimuths.
-Landing pads are placed at 0.5, 1, 2, 3 and 5 km from the base on the best-lit flat ground; at 0.5 and 1 km the
-pad has a clear line of sight to the base, beyond that the terrain blocks it, which matters for plume ejecta.
+Landing pads are placed at 0.5, 1, 2, 3 and 5 km from the base on the best-lit flat ground; at 0.5 and 1 km one of
+the two pads (PAD A) has a clear line of sight to the base; the other pad and every pad from 2 km on are hidden by
+the terrain, which matters for plume ejecta.
 Shadows and lines of sight are computed with the Moon's curvature and a sun 1.5° above the horizon.
 
 ## The learned lander (Phase 3)
