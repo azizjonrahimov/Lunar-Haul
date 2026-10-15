@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@observablehq/plot": "0.6.17",
     "detect-gpu": "5.0.70",
     "three": "0.186.1"
   },

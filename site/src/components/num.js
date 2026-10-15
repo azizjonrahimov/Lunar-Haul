@@ -11,6 +11,7 @@ export const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<':
 
 export function fmt(value, digits = 1) {
   if (value === null || value === undefined || !Number.isFinite(+value)) return '–';
+  if (Math.abs(+value) < 0.5 * 10 ** -digits) value = 0;   // no "-0.00"
   return (+value).toLocaleString('en-GB', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 

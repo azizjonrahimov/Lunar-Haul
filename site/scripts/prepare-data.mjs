@@ -3,7 +3,7 @@
 //   world/          site_graph.json (the DES site graph) and samples/*.json (bundled traces)
 //   detect-gpu/     detect-gpu's benchmark tables, self-hosted so tiering makes no third-party request
 // Terrain source: data/terrain/connecting_ridge/ (LEAD, B-9); fallback site/.terrain-dev/ (scripts/make_dev_terrain.py).
-import { existsSync, mkdirSync, copyFileSync, readFileSync, readdirSync, cpSync } from 'node:fs';
+import { existsSync, mkdirSync, copyFileSync, readFileSync, readdirSync, cpSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -35,4 +35,14 @@ const v2 = join(ROOT, 'tests', 'fixtures', 'trace_v2_sample.json');
 if (existsSync(v2)) copyFileSync(v2, join(world, 'v2_fixture.json'));
 
 cpSync(join(SITE, 'node_modules', 'detect-gpu', 'dist', 'benchmarks'), join(PUB, 'detect-gpu', 'benchmarks'), { recursive: true });
+
+// lander lab: policy cards (+ .check.json) and landing-outcome tables, plus an index the page reads first
+const pol = join(ROOT, 'data', 'policies'), labOut = join(PUB, 'lab', 'policies');
+mkdirSync(labOut, { recursive: true });
+const polFiles = existsSync(pol) ? readdirSync(pol).filter(f => f.endsWith('.json')) : [];
+for (const f of polFiles) copyFileSync(join(pol, f), join(labOut, f));
+const index = { policies: polFiles.filter(f => /^lander_.*\.json$/.test(f) && !f.endsWith('.check.json')).map(f => f.replace(/\.json$/, '')),
+  outcomes: polFiles.filter(f => /^outcomes_.*\.json$/.test(f)).map(f => f.replace(/^outcomes_|\.json$/g, '')) };
+writeFileSync(join(labOut, 'index.json'), JSON.stringify(index, null, 1));
+console.log(`prepare-data: lab policies ${index.policies.join(', ') || 'none'}; outcome tables ${index.outcomes.join(', ') || 'none'}`);
 console.log('prepare-data: world samples, site graph and detect-gpu benchmarks staged');

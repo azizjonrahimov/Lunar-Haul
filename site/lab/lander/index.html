@@ -4,21 +4,77 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lander lab · LunarSim</title>
-<meta name="description" content="The landing environment in the browser with the trained policy, live telemetry and reward shaping.">
+<meta name="description" content="The lunar terminal-descent environment in the browser with the trained policy and the classical guidance law: live telemetry, reward shaping and Monte Carlo landing dispersion.">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="<!--@base-->favicon.svg" type="image/svg+xml">
 <script>try { var t = localStorage.getItem('lunarsim.theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <script type="module" src="/src/main.js"></script>
+<script type="module" src="/src/lander/lab.js"></script>
 </head>
 <body>
 <!--@header-->
 <main id="main"><div class="wrap">
   <header class="page-head">
-    <h1>Lander lab</h1>
-    <p>The terminal-descent environment running in your browser with the trained policy: altitude, speeds, throttle and propellant live, a reward-shaping panel, and the Monte Carlo dispersion results.</p>
+    <h1>Lander lab: the last 500 metres</h1>
+    <p>A lander's terminal descent from the SPLICE braking gate to touchdown, simulated in your browser by the same equations as the Python environment. Fly it with the trained neural-network policy or the classical guidance law, watch the score it was trained on, change the reward rules, and compare both controllers over 500 dispersed landings.</p>
   </header>
-  <section class="prose">
-    <p class="stub">This page is being built (task F-7).</p>
+
+  <div class="toolbar l-controls" role="group" aria-label="Episode">
+    <label class="lbl" for="l-class">Lander class</label>
+    <select id="l-class"><option value="CLPS" selected>CLPS (2 t, SPLICE reference)</option><option value="MK1">MK1 class (9 t at the gate)</option><option value="LARGE">Large cargo (60 t)</option></select>
+    <label class="lbl" for="l-ctrl">Controller</label>
+    <select id="l-ctrl"></select>
+    <label class="lbl" for="l-seed">Episode</label>
+    <input id="l-seed" type="number" min="0" step="1" value="0" style="width:6rem">
+    <button class="btn" type="button" id="l-random">Random episode</button>
+    <button class="btn primary" type="button" id="l-run">Run</button>
+  </div>
+  <div class="toolbar l-controls" role="group" aria-label="Options">
+    <label class="chk"><input type="checkbox" id="l-rand" checked> dispersion and randomised hardware</label>
+    <label class="chk"><input type="checkbox" id="l-sensor" checked> sensor noise and altimeter dropouts</label>
+    <label class="lbl" for="l-speed">Playback</label>
+    <select id="l-speed"><option value="1" selected>real time</option><option value="2">2×</option><option value="5">5×</option><option value="0">instant</option></select>
+    <button class="btn" type="button" id="l-play" aria-pressed="false">Replay</button>
+  </div>
+  <p class="small muted" id="l-ctrl-note"></p>
+  <p class="status-line" id="l-status" role="status" aria-live="polite">Loading the policy…</p>
+
+  <div class="l-grid">
+    <div>
+      <canvas id="l-side" class="l-side" role="img" aria-label="Side view of the descent: altitude against distance along the approach, over the terrain profile. The telemetry table gives the same values as text."></canvas>
+      <p class="small muted">Side view along the approach direction. Solid line: this run; dashed: the other controller on the same episode. The ground profile is the LOLA terrain through PAD A for context; the environment itself lands on a flat plane with a sampled site slope (0–5°). The lander is drawn far larger than scale.</p>
+    </div>
+    <aside class="l-rail" aria-labelledby="l-tele-title">
+      <div class="l-score-box"><span class="small muted">Score</span><output id="l-score" class="l-score" aria-live="off">0.0</output><span class="small" id="l-score-note"></span></div>
+      <h2 id="l-tele-title" class="h3">Telemetry</h2>
+      <table class="w-table"><tbody id="l-tele"></tbody></table>
+    </aside>
+  </div>
+
+  <section aria-labelledby="h-rw">
+    <h2 id="h-rw">Reward rules</h2>
+    <p class="prose">A reinforcement-learning policy learns whatever the reward pays for. Move the weights to re-score the episode you just watched; the table shows how much each term contributed. Presets are the variants the training code knows.</p>
+    <div class="toolbar"><label class="lbl" for="rw-preset">Preset</label><select id="rw-preset"></select>
+      <button class="btn" type="button" id="l-hover" disabled>Hover hack: load the hover-bonus policy</button></div>
+    <p class="small muted" id="l-hover-note"></p>
+    <div class="rw-grid"><div id="l-rw" class="rw-sliders"></div><div><div id="rw-out"></div><p class="rw-hover" id="rw-hover"></p></div></div>
+  </section>
+
+  <section aria-labelledby="h-mc">
+    <h2 id="h-mc">500 landings: trained policy against the classical law</h2>
+    <p class="prose">Each controller flew the same 500 dispersed episodes (same initial conditions, hardware spread and sensor noise), computed by <code>lunarsim.lander.evaluate</code> in Python. These tables are what the logistics simulation samples landing outcomes from.</p>
+    <div id="l-mc" class="l-mc"></div>
+  </section>
+
+  <section aria-labelledby="h-pol">
+    <h2 id="h-pol">The policies</h2>
+    <div id="l-cards" class="l-cards"></div>
+  </section>
+
+  <section aria-labelledby="h-const">
+    <h2 id="h-const">Constants for this class</h2>
+    <p class="prose small muted">Every number carries its flag; hover a flag for its source.</p>
+    <table class="w-table l-consts"><tbody id="l-consts"></tbody></table>
   </section>
 </div></main>
 <!--@footer-->

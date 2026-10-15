@@ -48,6 +48,7 @@ section + section { margin-top: var(--s-7); }
 }
 .btn:hover { background: var(--bg-2); }
 .btn.primary { background: var(--ink); color: var(--bg); border-color: transparent; }
+.btn[disabled] { opacity: 0.5; cursor: not-allowed; }
 .btn.primary:hover { opacity: 0.9; }
 .icon { width: 1.1em; height: 1.1em; flex: none; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
