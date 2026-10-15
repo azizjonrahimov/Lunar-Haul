@@ -37,6 +37,13 @@ def main():
     open(os.path.join(DIST, "ref.js"), "w", encoding="utf-8").write("window.PY_REF = " + json.dumps(ref) + ";\n")
     # also keep a copy next to the sources so the folder can be served directly during development
     shutil.copy(os.path.join(DIST, "ref.js"), os.path.join(HERE, "ref.js"))
+    # bundled sample traces for the Replay tab's "Sample years" select (fetched only when chosen)
+    samples = os.path.join(DIST, "samples")
+    os.makedirs(samples, exist_ok=True)
+    src = os.path.join(ROOT, "data", "sample_traces")
+    for f in sorted(os.listdir(src)) if os.path.isdir(src) else []:
+        if f.endswith(".json"):
+            shutil.copy(os.path.join(src, f), os.path.join(samples, f))
     open(os.path.join(DIST, ".nojekyll"), "w").close()
     print("built", DIST, "with reference" if ref else "without reference")
 

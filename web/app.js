@@ -204,13 +204,23 @@ function renderCompare(res, n) {
 // ---------- replay ----------
 function setupReplay(tr, source) { if (!tr) return; replay.tr = tr; replay.t = 0; replay.playing = false; $('play').textContent = 'Play'; $('tslider').max = Math.floor(tr.horizon); $('tslider').value = 0; const owners = [...new Set(tr.vehicles.map(v => v.owner))]; $('maplegend').innerHTML = owners.map((o, i) => `<span style="--c: var(--s${(i % 8) + 1})">${o}</span>`).join('') + `<span style="--c: var(--s2)">landing pad</span><span style="--c: var(--night)">night</span>`; replayHeader(tr, source); $('exportTrace').disabled = false; drawMap(); }
 function replayHeader(tr, source) { const m = tr.meta || {}, esc = x => String(x).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]); const val = x => x === null || x === undefined || x === '' ? '–' : esc(x);
-  $('replayhead').innerHTML = `<span>engine <b>${val(m.engine)}</b></span><span>scenario <b>${val(m.scenario)}</b></span><span>mechanism <b>${val(MECH_LABEL[m.mechanism] || m.mechanism)}</b></span><span>seed <b>${val(m.seed)}</b></span><span class="src">${source ? 'from file ' + esc(source) + (m.legacy ? ' (no format header; read as v1)' : '') : 'from the last run'}</span>`; }
+  $('replayhead').innerHTML = `<span>engine <b>${val(m.engine)}</b></span><span>scenario <b>${val(m.scenario)}</b></span><span>mechanism <b>${val(MECH_LABEL[m.mechanism] || m.mechanism)}</b></span><span>seed <b>${val(m.seed)}</b></span><span class="src">${source ? (source.startsWith('sample ') ? 'bundled ' : 'from file ') + esc(source) + (m.legacy ? ' (no format header; read as v1)' : '') : 'from the last run'}</span>`; }
 $('importTrace').addEventListener('change', e => {
   const f = e.target.files[0]; if (!f) return; const r = new FileReader();
   r.onload = () => { try { const tr = readTrace(String(r.result)); setupReplay(tr, f.name); $('rstatus').textContent = `Loaded ${f.name}: ${tr.vehicles.length} vehicles, ${tr.jobs.length} trips, ${tr.cargo.length} cargo items, ${tr.landings.length} landings, ${tr.nights.length} nights.`; }
     catch (err) { $('rstatus').textContent = `Could not read ${f.name}: ${err.message}. The previous replay is unchanged.`; } };
   r.onerror = () => { $('rstatus').textContent = `Could not read ${f.name}.`; };
   r.readAsText(f); e.target.value = '';
+});
+$('sampleTrace').addEventListener('change', async e => {  // bundled Python traces (build_web.py copies them to samples/); fetched on demand only
+  const file = e.target.value; if (!file) return; const label = e.target.selectedOptions[0].textContent; e.target.disabled = true; $('rstatus').textContent = `Loading ${label}…`;
+  try {
+    let res; try { res = await fetch('samples/' + file); } catch (err) { throw new Error('the sample could not be fetched (network error)'); }
+    if (!res.ok) throw new Error(`the sample is not available here (HTTP ${res.status}); run build_web.py and serve web/dist`);
+    const tr = readTrace(await res.text()); setupReplay(tr, 'sample ' + file);
+    $('rstatus').textContent = `Loaded ${label}: ${tr.vehicles.length} vehicles, ${tr.jobs.length} trips, ${tr.cargo.length} cargo items, ${tr.landings.length} landings, ${tr.nights.length} nights.`;
+  } catch (err) { $('rstatus').textContent = `Could not load ${label}: ${err.message}. The previous replay is unchanged.`; }
+  finally { e.target.disabled = false; e.target.value = ''; }
 });
 $('exportTrace').addEventListener('click', () => { if (!replay.tr) return; const m = replay.tr.meta || {}; const name = ['lunarsim-trace', m.scenario, m.mechanism, m.seed === null || m.seed === undefined ? null : 'seed' + m.seed].filter(x => x !== null && x !== undefined && x !== '').join('_').replace(/[^\w.-]+/g, '-') + '.json'; download(name, JSON.stringify(traceToJson(replay.tr)), 'application/json'); $('rstatus').textContent = `Exported ${name}.`; });
 $('tslider').addEventListener('input', e => { replay.t = +e.target.value; drawMap(); });

@@ -266,6 +266,12 @@ footer { max-width: 1480px; margin: 0 auto; padding: 0 20px 40px; font-size: 12p
       <h3>One simulated year on the base map</h3>
       <p class="sub">Replays the first seed of the last run, or any lunarsim-trace v1 file (the Python <code>lunarsim trace</code> output or a trace exported here). Vehicles move along the site graph; a ring around a site shows cargo waiting there; the shaded overlay is the lunar night. Filled markers are loaded vehicles; the label gives the load.</p>
       <div class="toolbar">
+        <select id="sampleTrace" aria-label="Load a sample year" style="width:auto">
+          <option value="" selected>Sample years…</option>
+          <option value="P1_marketplace_seed3.json">Phase 1 · marketplace · seed 3</option>
+          <option value="P2_marketplace_seed3.json">Phase 2 · marketplace · seed 3</option>
+          <option value="P3_marketplace_seed3.json">Phase 3 · marketplace · seed 3</option>
+        </select>
         <label class="btn ghost small" for="importTrace" style="margin:0">Load trace JSON…</label>
         <input id="importTrace" type="file" accept="application/json,.json" class="hidden">
         <button class="btn ghost small" id="exportTrace" type="button" disabled>Export this trace</button>
