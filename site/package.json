@@ -1,0 +1,22 @@
+{
+  "name": "lunarsim-site",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "LunarSim public site: landing, 3D world viewer, labs, and the existing simulator under /simulator/",
+  "scripts": {
+    "prepare-data": "node scripts/prepare-data.mjs",
+    "dev": "node scripts/prepare-data.mjs && vite",
+    "build": "node scripts/prepare-data.mjs && vite build && node scripts/copy-simulator.mjs",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "lucide-static": "1.57.0",
+    "marked": "18.1.1",
+    "source-sans": "3.52.0",
+    "vite": "8.3.4"
+  }
+}

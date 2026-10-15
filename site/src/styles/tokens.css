@@ -1,0 +1,83 @@
+/* LunarSim design tokens (PLAN 5.7). Measures follow Distill's d-article.css; colour sets are
+   Paul Tol "bright" (categorical) and Fabio Crameri "batlow" (elevation, 9 stops from cmcrameri 1.10). */
+
+@font-face {
+  /* Adobe's own WOFF2 build of Source Sans 3 (OFL 1.1, unmodified, so the Reserved Font Name stays) */
+  font-family: 'Source Sans 3';
+  font-weight: 200 900; font-style: normal; font-display: swap;
+  src: url('@fonts/WOFF2/VF/SourceSans3VF-Upright.ttf.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Source Sans 3';
+  font-weight: 200 900; font-style: italic; font-display: swap;
+  src: url('@fonts/WOFF2/VF/SourceSans3VF-Italic.ttf.woff2') format('woff2');
+}
+
+:root {
+  color-scheme: light;
+  /* type */
+  --font-sans: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;  /* telemetry: tabular */
+  --fs-body: 1rem;             /* 16 px; 1.06rem from 1024 px (base.css) */
+  --lh-body: 1.7;
+  --fs-small: 0.875rem;
+  --fs-code: 0.875rem;         /* 14 px */
+  --fs-h1: clamp(2rem, 1.4rem + 2.4vw, 3rem);
+  --fs-h2: clamp(1.5rem, 1.2rem + 1.2vw, 2.25rem);  /* 24-36 px */
+  --fs-h3: 1.25rem;
+  --measure: 42rem;            /* text column */
+  --wide: 72rem;               /* figures, hero */
+
+  /* spacing scale (4 px base) */
+  --s-1: 0.25rem; --s-2: 0.5rem; --s-3: 0.75rem; --s-4: 1rem; --s-5: 1.5rem; --s-6: 2rem; --s-7: 3rem; --s-8: 4.5rem;
+  --gutter: 16px;              /* phone side gutter */
+  --radius: 6px;
+
+  /* surfaces and ink (light) */
+  --bg: #ffffff;
+  --bg-2: #f6f6f4;
+  --ink: rgba(0, 0, 0, 0.8);
+  --ink-2: rgba(0, 0, 0, 0.6);   /* secondary text, blockquotes */
+  --ink-3: rgba(0, 0, 0, 0.45);
+  --hairline: rgba(0, 0, 0, 0.1);
+  --link: #33669a;               /* darkened Tol blue: 5.9:1 on white */
+  --focus: #4477AA;
+
+  /* Paul Tol bright: categorical series; pair with shape or direct labels */
+  --tol-blue: #4477AA; --tol-red: #EE6677; --tol-green: #228833; --tol-yellow: #CCBB44;
+  --tol-cyan: #66CCEE; --tol-purple: #AA3377; --tol-grey: #BBBBBB;
+
+  /* Crameri batlow, 9 even stops (elevation, slope) */
+  --batlow-0: #011959; --batlow-1: #114360; --batlow-2: #226061; --batlow-3: #4D734D; --batlow-4: #828231;
+  --batlow-5: #BE9035; --batlow-6: #F19D6B; --batlow-7: #FDB4B4; --batlow-8: #FACCFA;
+
+  /* provenance flags on numbers (Num, Figure) */
+  --flag-measured: #228833; --flag-spec: #4477AA; --flag-modelled: #AA3377; --flag-assumed: #8a7a1c;
+
+  /* motion: tiered, see base.css */
+  --dur-fast: 120ms; --dur: 220ms;
+}
+
+/* dark theme: explicit choice, or the system preference when no choice is stored */
+:root[data-theme="dark"] { color-scheme: dark; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #111214; --bg-2: #1a1c1f;
+    --ink: rgba(255, 255, 255, 0.87); --ink-2: rgba(255, 255, 255, 0.65); --ink-3: rgba(255, 255, 255, 0.5);
+    --hairline: rgba(255, 255, 255, 0.1);
+    --link: #8db3dc; --focus: #66CCEE;
+    --flag-measured: #4fbf5c; --flag-spec: #7aa6d6; --flag-modelled: #d47aac; --flag-assumed: #d8c75a;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111214; --bg-2: #1a1c1f;
+  --ink: rgba(255, 255, 255, 0.87); --ink-2: rgba(255, 255, 255, 0.65); --ink-3: rgba(255, 255, 255, 0.5);
+  --hairline: rgba(255, 255, 255, 0.1);
+  --link: #8db3dc; --focus: #66CCEE;
+  --flag-measured: #4fbf5c; --flag-spec: #7aa6d6; --flag-modelled: #d47aac; --flag-assumed: #d8c75a;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-fast: 0ms; --dur: 0ms; }
+}

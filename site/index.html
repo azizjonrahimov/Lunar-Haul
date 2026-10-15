@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LunarSim · cargo logistics at a lunar south-pole base</title>
+<meta name="description" content="A verified discrete-event simulator of cargo logistics at a lunar south-pole base, on NASA LOLA terrain: landers, rover fleets, the lunar night, Earth–Moon latency, and four dispatch rules.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="<!--@base-->favicon.svg" type="image/svg+xml">
+<script>try { var t = localStorage.getItem('lunarsim.theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<script type="module" src="/src/main.js"></script>
+</head>
+<body>
+<!--@header-->
+<main id="main">
+  <section class="hero" data-hero data-terrain="<!--@base-->terrain/hero/" aria-labelledby="hero-title">
+    <div class="hero-stage">
+      <canvas role="img" aria-labelledby="hero-title" aria-describedby="hero-desc"></canvas>
+      <div class="hero-fallback"><p data-hero-status>Loading the terrain…</p></div>
+      <div class="hero-controls">
+        <span class="hero-sun" data-hero-sun aria-live="off"></span>
+        <label class="visually-hidden" for="hero-az">Sun azimuth (degrees)</label>
+        <input id="hero-az" data-hero-az type="range" min="0" max="359" step="1" value="135" style="width:7rem">
+        <button class="btn" type="button" data-hero-pause aria-pressed="false"><span class="i-pause"><!--@icon:pause--></span><span class="i-play"><!--@icon:play--></span><span data-label>Pause sun</span></button>
+      </div>
+      <div class="hero-copy"><div class="wrap">
+        <h1 id="hero-title">Cargo logistics at a lunar south-pole base, on real terrain</h1>
+        <p>A discrete-event simulator of how landed cargo gets from the pads to where it is needed: landers, rover fleets from several owners, the lunar night and Earth–Moon latency.</p>
+      </div></div>
+    </div>
+    <div class="wrap"><p id="hero-desc" class="hero-caption">
+      Terrain near the lunar south pole from NASA's Lunar Orbiter Laser Altimeter, lit by a sun that stays within 1.5° of the horizon and circles once per lunar day; long shadows cross the ridges and low ground the sun cannot reach stays black. Shadows are cast only by terrain inside this tile.
+      <span data-hero-terrain></span>
+    </p></div>
+  </section>
+
+  <div class="wrap">
+    <section aria-labelledby="h-numbers">
+      <h2 id="h-numbers">Three numbers from the current results</h2>
+      <p class="prose">Phase-2 base (2029–32 demand, six vehicles owned by four organisations). Each is the mean over 30 simulated years with its 95% confidence half-width, from the paper's main table.</p>
+      <!--@headline-->
+      <!--@figure:delay-by-rule-->
+    </section>
+
+    <section class="cards" aria-label="About this project">
+      <div>
+        <h2>What it is</h2>
+        <p>A simulator of surface cargo movement at a south-pole base: lander manifests, multi-owner rover fleets, the lunar night, Earth–Moon control latency, and four ways of dispatching the vehicles, from each owner using its own rovers to a pooled marketplace. A Python reference engine and a browser port agree within confidence intervals; thirteen verification checks run on both.</p>
+        <p><a href="<!--@base-->method/">How it works</a></p>
+      </div>
+      <div>
+        <h2>What is new</h2>
+        <p>Version 3 puts the base on real LOLA terrain and adds learned models as inputs to the simulation: a landing-dispersion model for the landers and a driving model for the rovers. The aim is a measured relation between landing accuracy, pad distance, plume keep-out radius and the cost of surface delivery.</p>
+        <p><a href="<!--@base-->changelog/">What changed</a></p>
+      </div>
+      <div>
+        <h2>Try it</h2>
+        <p>Run the simulator in your browser, replay a simulated year on the base map, and compare the dispatch rules on your own seeds. Nothing needs an account.</p>
+        <p><a class="btn primary" href="<!--@base-->simulator/">Open the simulator</a></p>
+      </div>
+    </section>
+
+    <section aria-labelledby="h-credits">
+      <h2 id="h-credits">Credits</h2>
+      <p class="prose small muted">Terrain: LOLA 5 m digital elevation model, PGDA product 90 (Barker et al. 2021), NASA Goddard Space Flight Center; averaged here to 16–20 m posts for the web. Polar lighting geometry after NASA Scientific Visualization Studio item 4893. Vehicles and landers in the 3D views are parametric, representative models. Typeface: Source Sans 3 (Adobe, SIL Open Font License). Icons: Lucide (ISC). 3D: three.js (MIT).</p>
+    </section>
+  </div>
+</main>
+<!--@footer-->
+</body>
+</html>

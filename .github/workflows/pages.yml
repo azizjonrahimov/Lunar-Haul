@@ -3,7 +3,7 @@ name: deploy simulator
 on:
   push:
     branches: [main]
-    paths: ["web/**", "data/sample_traces/**", "results/E1_phases.csv", ".github/workflows/pages.yml"]
+    paths: ["web/**", "site/**", "data/sample_traces/**", "data/terrain/connecting_ridge/**", "results/E1_phases.csv", "results/table_main.csv", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:
@@ -21,13 +21,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+        with: { python-version: "3.12" }
       - run: pip install numpy pandas
-      - run: python web/build_web.py
+      - uses: actions/setup-node@v4
+        with: { node-version: "24", cache: npm, cache-dependency-path: site/package-lock.json }
+      - run: npm ci
+        working-directory: site
+      - run: npm run build
+        working-directory: site
+        env: { SITE_BASE: /lunar-logistics-research/, PYTHON: python }
       - uses: actions/upload-pages-artifact@v3
-        with:
-          path: web/dist
+        with: { path: site/dist }
   deploy:
     needs: build
     runs-on: ubuntu-latest
