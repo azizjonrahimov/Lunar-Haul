@@ -99,6 +99,14 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); border-radius:
 .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 0 10px; }
 .toolbar .spacer { flex: 1; }
 canvas#map { width: 100%; height: auto; display: block; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); }
+.engine-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; max-width: 520px; }
+.engine-state { display: flex; gap: 8px; align-items: baseline; }
+.engine-state .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); transform: translateY(-1px); }
+.engine-state.on .dot { background: var(--good); }
+.engine-state.err .dot { background: var(--bad); }
+.xsrc { display: flex; gap: 6px; align-items: center; font-size: 12.5px; color: var(--ink2); margin: 0; }
+.xsrc:has(input:disabled) { opacity: 0.6; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .scnote { border-left: 3px solid var(--s2); padding: 6px 10px; margin-top: 4px; background: var(--panel-2); border-radius: 4px; overflow-wrap: anywhere; }
 .scnote ul { margin: 4px 0 0; padding-left: 18px; }
 .replayhead { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12px; color: var(--ink2); font-family: var(--mono); margin: 0 0 6px; min-height: 18px; }
@@ -218,6 +226,7 @@ footer { max-width: 1480px; margin: 0 auto; padding: 0 20px 40px; font-size: 12p
   <section class="card">
     <button class="btn" id="run" type="button" style="width:100%">Run simulation</button>
     <button class="btn secondary" id="runprec" type="button" style="width:100%; margin-top:8px">Run until the 99% CI is within 2%</button>
+    <button class="btn secondary hidden" id="runpy" type="button" style="width:100%; margin-top:8px" title="Runs this scenario on the local Python engine (lunarsim serve), at most 100 seeds">Run in Python</button>
     <progress id="prog" value="0" max="1" class="hidden" style="margin-top:10px"></progress>
     <div class="status" id="status">Ready. One simulated year takes about 0.1–0.5 s per seed in a background worker.</div>
   </section>
@@ -276,7 +285,17 @@ footer { max-width: 1480px; margin: 0 auto; padding: 0 20px 40px; font-size: 12p
   </section>
 
   <section id="tab-verify" class="tabpane hidden">
-    <div class="card">
+    <div class="card" id="enginecard">
+      <h3>Engine</h3>
+      <p class="sub">Optional. Start the reference engine locally with <code>lunarsim serve</code> (port 8765) and connect: the cross-implementation check can then run the Python side live on the same seeds, and the Run tab gets a <b>Run in Python</b> button. Without a server the page works exactly as before.</p>
+      <div class="engine-row">
+        <label for="apibase" class="visually-hidden">Python API base URL</label>
+        <input id="apibase" type="text" spellcheck="false" autocomplete="off" value="http://127.0.0.1:8765" aria-label="Python API base URL">
+        <button class="btn secondary" id="apiconnect" type="button">Connect</button>
+      </div>
+      <div class="status engine-state" id="apistate" role="status" aria-live="polite"><span class="dot"></span><span id="apistatetext">Not connected. Using the browser engine and the embedded Python reference.</span></div>
+    </div>
+    <div class="card" style="margin-top:14px">
       <h3>Verification checks</h3>
       <p class="sub">Each check compares the simulator with an independent reference: an analytic formula, a published measurement or a conservation identity. The same checks run in the Python test-suite of the research repository.</p>
       <div class="toolbar"><button class="btn" id="verify" type="button">Run checks</button><span class="status" id="vstatus" style="margin:0"></span></div>
@@ -285,6 +304,7 @@ footer { max-width: 1480px; margin: 0 auto; padding: 0 20px 40px; font-size: 12p
     <div class="card" style="margin-top:14px">
       <h3>Cross-implementation check</h3>
       <p class="sub">Python reference results for the Phase-2 default fleet (30 seeds, from the paper's E1 suite) against this browser implementation on its own seeds. The two use different random-number generators, so agreement is statistical: means should lie within each other's 95% confidence intervals.</p>
+      <div class="toolbar"><label class="xsrc"><input type="checkbox" id="xlive" disabled> Python side from the live engine (seeds 0–29), not the embedded reference</label></div>
       <div class="toolbar"><button class="btn secondary" id="xcheck" type="button">Run the Phase-2 default cells (30 seeds × 4 rules)</button><span class="status" id="xstatus" style="margin:0"></span></div>
       <div class="scroll" style="margin-top:10px; max-height:none"><table id="xtable"></table></div>
     </div>
@@ -309,6 +329,7 @@ footer { max-width: 1480px; margin: 0 auto; padding: 0 20px 40px; font-size: 12p
 <script src="ref.js"></script>
 <script src="sim.js"></script>
 <script src="formats.js"></script>
+<script src="api.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

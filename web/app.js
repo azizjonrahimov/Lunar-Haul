@@ -142,7 +142,7 @@ $('runprec').addEventListener('click', async () => {
   }
   lastRuns = runs; lastTrace = trace0; lastScenario = sc; setupReplay(trace0); setBusy(false, $('status').textContent + ` — stopped after ${n} seeds in ${((performance.now() - t0) / 1000).toFixed(0)} s.`);
 });
-function setBusy(b, msg) { $('run').disabled = b; $('runprec').disabled = b; $('compare').disabled = b; $('prog').classList.toggle('hidden', !b); if (b) $('prog').value = 0; if (msg) $('status').textContent = msg; }
+function setBusy(b, msg) { $('run').disabled = b; $('runprec').disabled = b; $('runpy').disabled = b; $('compare').disabled = b; $('prog').classList.toggle('hidden', !b); if (b) $('prog').value = 0; if (msg) $('status').textContent = msg; }
 
 function renderRun(runs, trace) {
   $('kpis').innerHTML = kpi('Urgent cargo · 90th-percentile delay (h)', runs, 'delay_prio1_p90_h', 1, 1, true) + kpi('Urgent cargo delivered within 24 h', runs, 'sl24_prio1', 3) + kpi('Landed cargo mass immovable (%)', runs, 'immovable_share', 1, 100)
@@ -243,14 +243,65 @@ $('verify').addEventListener('click', async () => {
   $('vstatus').textContent = `${np} of ${checks.length} checks passed.`; $('vbadge').textContent = `${np}/${checks.length} checks pass`; $('vbadge').classList.toggle('pending', np !== checks.length);
   $('vtable').innerHTML = '<tr><th>Check</th><th class="num">Reference</th><th class="num">Simulated</th><th class="num">Error</th><th class="num">Tolerance</th><th>Basis</th><th>Result</th></tr>' + checks.map(c => `<tr><td>${c.name}</td><td class="num">${fmtN(c.ref, 4)} ${c.unit}</td><td class="num">${fmtN(c.sim, 4)} ${c.unit}</td><td class="num">${(100 * c.err).toFixed(3)}%</td><td class="num">${(100 * c.tol).toFixed(1)}%</td><td class="note">${c.basis}</td><td><span class="pill ${c.passed ? 'pass' : 'fail'}">${c.passed ? 'PASS' : 'FAIL'}</span></td></tr>`).join('');
 });
+const XCHECK_KEYS = [['delay_prio1_mean_h', 'Urgent mean delay (h)'], ['delay_prio1_p90_h', 'Urgent p90 delay (h)'], ['sl24_prio1', 'Urgent within 24 h'], ['jobs', 'Trips per year'], ['night_strandings', 'Night strandings'], ['delivered_share', 'Delivered share']];
 $('xcheck').addEventListener('click', async () => {
-  if (!PY_REF) { $('xstatus').textContent = 'No Python reference embedded in this build.'; return; } $('xcheck').disabled = true;
+  const live = $('xlive').checked && PY_API.connected;
+  if (!live && !PY_REF) { $('xstatus').textContent = 'No Python reference embedded in this build. Connect a local engine in the Engine card to run it live.'; return; }
+  $('xcheck').disabled = true;
   const sc = makeScenario({ phase: 'P2', bulkT: 500, fleet: PRESETS[6], night: 0.15, rtt: 5, nOps: 3, duty: 0.3, mtbf: 1, std: 1 }); const seeds = Array.from({ length: 30 }, (_, i) => i); const rows = [];
-  for (const mn of Object.keys(MECHS)) { $('xstatus').textContent = `running ${MECH_LABEL[mn]}…`; const [runs] = await runSeeds(sc, mn, seeds, {}, null);
-    for (const [key, lab] of [['delay_prio1_mean_h', 'Urgent mean delay (h)'], ['delay_prio1_p90_h', 'Urgent p90 delay (h)'], ['sl24_prio1', 'Urgent within 24 h'], ['jobs', 'Trips per year'], ['night_strandings', 'Night strandings'], ['delivered_share', 'Delivered share']]) { const js = runs.map(r => r[key]); const ref = PY_REF[mn] && PY_REF[mn][key]; if (!ref) continue; const mj = mean(js), cj = ci95(js); rows.push({ mn, lab, mj, cj, ref, overlap: Math.abs(mj - ref.mean) <= (cj + ref.ci) }); } }
-  $('xcheck').disabled = false; $('xstatus').textContent = `${rows.filter(r => r.overlap).length} of ${rows.length} metric cells agree within combined 95% CIs.`;
+  // live: the Python engine runs P2-default (the same scenario) on the same seeds, concurrently with the browser runs
+  const pyJob = live ? PY_API.compare('P2-default', seeds, {}) : null; if (pyJob) pyJob.catch(() => {});  // awaited below; this only stops an early failure being reported as unhandled
+  const jsRuns = {}; for (const mn of Object.keys(MECHS)) { $('xstatus').textContent = `browser: running ${MECH_LABEL[mn]}…${live ? ' (Python engine running in parallel)' : ''}`; [jsRuns[mn]] = await runSeeds(sc, mn, seeds, {}, null); }
+  let ref = PY_REF, src = 'embedded reference (paper E1 suite)';
+  if (live) { $('xstatus').textContent = 'waiting for the Python engine…';
+    try { const res = await pyJob; ref = {}; for (const mn of Object.keys(MECHS)) { const pr = (res.runs[mn] || []).map(pyRowToPage); ref[mn] = {}; for (const [key] of XCHECK_KEYS) { const v = pr.map(r => r[key]); ref[mn][key] = { mean: mean(v), ci: ci95(v), n: v.length }; } } src = `live Python engine at ${PY_API.base}, same seeds 0–29, ${(res.ms / 1000).toFixed(1)} s`; }
+    catch (err) { engineFailed(err); $('xcheck').disabled = false; $('xstatus').textContent = `Python engine failed: ${err.message}. Untick the live option to use the embedded reference.`; return; } }
+  for (const mn of Object.keys(MECHS)) for (const [key, lab] of XCHECK_KEYS) { const js = jsRuns[mn].map(r => r[key]); const r0 = ref[mn] && ref[mn][key]; if (!r0) continue; const mj = mean(js), cj = ci95(js); rows.push({ mn, lab, mj, cj, ref: r0, overlap: Math.abs(mj - r0.mean) <= (cj + r0.ci) }); }
+  $('xcheck').disabled = false; $('xstatus').textContent = `${rows.filter(r => r.overlap).length} of ${rows.length} metric cells agree within combined 95% CIs. Python side: ${src}.`;
   $('xtable').innerHTML = '<tr><th>Rule</th><th>Metric</th><th class="num">Browser (mean ± CI)</th><th class="num">Python (mean ± CI)</th><th>Agree</th></tr>' + rows.map(r => `<tr><td>${MECH_LABEL[r.mn]}</td><td>${r.lab}</td><td class="num">${fmtN(r.mj, 2)} ± ${fmtN(r.cj, 2)}</td><td class="num">${fmtN(r.ref.mean, 2)} ± ${fmtN(r.ref.ci, 2)}</td><td><span class="pill ${r.overlap ? 'pass' : 'fail'}">${r.overlap ? 'yes' : 'no'}</span></td></tr>`).join('');
 });
+
+// ---------- optional local Python engine (api.js) ----------
+const PY_CLASSES = ['consumables', 'science', 'equipment', 'infrastructure', 'element', 'bulk', 'return'];
+function pyRowToPage(r) {  // Python Metrics.summary() row -> the keys renderRun() reads (null -> NaN, shown as '–')
+  const n = x => (x === null || x === undefined) ? NaN : x; const o = {};
+  for (const k of Object.keys(r)) o[k] = n(r[k]);
+  o.delay_by_class = {}; for (const c of PY_CLASSES) o.delay_by_class[c] = n(r['delay_mean_' + c]);
+  // immovable_share has the same definition in both engines (stranded / landed). cost_per_landed_kg_usd is not derived:
+  // Python's bulk_kg is not the delivered-bulk mass the JS formula subtracts, so it stays '–' until Python reports it.
+  if (r.immovable_share === undefined) o.immovable_share = o.stranded_kg / Math.max(o.landed_kg, 1e-9);
+  if (r.cost_per_landed_kg_usd === undefined) o.cost_per_landed_kg_usd = NaN;
+  return o;
+}
+function setEngineState(kind, text) { const el = $('apistate'); el.classList.toggle('on', kind === 'on'); el.classList.toggle('err', kind === 'err'); $('apistatetext').textContent = text; }
+function renderEngine() {
+  const on = PY_API.connected; $('apiconnect').textContent = on ? 'Disconnect' : 'Connect'; $('apibase').disabled = on;
+  $('xlive').disabled = !on; if (!on) $('xlive').checked = false; $('runpy').classList.toggle('hidden', !on);
+}
+function engineFailed(err) { if (err && err.status === 0) { PY_API.disconnect(); renderEngine(); setEngineState('err', `Lost the connection: ${err.message}. Back to the browser engine and the embedded reference.`); } }
+try { $('apibase').value = localStorage.getItem('lunarsim.apibase') || PY_API.defaultBase(); } catch (e) { $('apibase').value = PY_API.defaultBase(); }
+$('apibase').addEventListener('keydown', e => { if (e.key === 'Enter') $('apiconnect').click(); });
+$('apiconnect').addEventListener('click', async () => {
+  if (PY_API.connected) { PY_API.disconnect(); renderEngine(); setEngineState('off', 'Disconnected. Using the browser engine and the embedded Python reference.'); return; }
+  $('apiconnect').disabled = true; setEngineState('off', 'Connecting…');
+  try { const h = await PY_API.connect($('apibase').value); try { localStorage.setItem('lunarsim.apibase', PY_API.base); } catch (e) {}
+    renderEngine(); $('xlive').checked = true; setEngineState('on', `Connected to ${PY_API.base}: ${h.engine || 'python'} engine ${h.version || ''}. "Run in Python" is in the rail; the cross-check below uses the live engine.`); }
+  catch (err) { PY_API.disconnect(); renderEngine(); setEngineState('err', `Not connected: ${err.message}.`); }
+  finally { $('apiconnect').disabled = false; }
+});
+$('runpy').addEventListener('click', async () => {
+  if (!PY_API.connected) return;
+  const mechName = $('mech').value, want = Math.max(1, Math.floor(+$('seeds').value) || 1), n = Math.min(PY_API.MAX_SEEDS, want), seeds = Array.from({ length: n }, (_, i) => i);
+  const opts = mechName === 'marketplace' ? marketOpts() : {}, scenario = uiToScenario(readUi()), capped = want > n ? ` (capped at ${PY_API.MAX_SEEDS} per request)` : '';
+  setBusy(true, `Python engine: running ${n} seed(s) of ${MECH_LABEL[mechName]}${capped}…`); $('prog').removeAttribute('value');  // indeterminate bar: the server reports no progress
+  try {
+    const [res, tr] = await Promise.all([PY_API.run(scenario, mechName, seeds, opts), PY_API.trace(scenario, mechName, seeds[0], opts).catch(() => null)]);
+    const runs = res.runs.map(pyRowToPage).sort((a, b) => a.seed - b.seed); let trace = null; try { trace = tr ? readTrace(tr) : null; } catch (e) { trace = null; }
+    lastRuns = runs; lastTrace = trace; lastScenario = null; renderRun(runs, trace); if (trace) setupReplay(trace);
+    setBusy(false, `${n} seed(s) of ${MECH_LABEL[mechName]} on the Python engine in ${(res.ms / 1000).toFixed(1)} s${capped}.${trace ? ' Replay shows its seed-0 trace.' : ''}`);
+  } catch (err) { engineFailed(err); setBusy(false, `Python engine: ${err.message}`); }
+});
+renderEngine();
 
 // ---------- open with a result ----------
 (async () => { const sc = readScenario(); const [runs, trace] = await runSeeds(sc, 'marketplace', [0, 1, 2], marketOpts(), null); lastRuns = runs; lastTrace = trace; lastScenario = sc; renderRun(runs, trace); setupReplay(trace); $('status').textContent = `Opened with a 3-seed marketplace run of the Phase-2 scenario on ${workers.length} worker(s). Change anything in the rail and run again.`; })();

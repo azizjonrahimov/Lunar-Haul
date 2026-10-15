@@ -169,7 +169,7 @@ function readFleet(fleet, notes, fail) {
 
 /* uiToScenario(ui) -> lunarsim-scenario v1, compact form. ui has every control set (the shape scenarioToUi returns). */
 function uiToScenario(ui) {
-  const market = {}; for (const k of MARKET_FLAGS) market[k] = !!(ui.market || {})[k];
+  const m = ui.market || {}, market = {}; for (const k of MARKET_FLAGS) market[k] = m[k] === undefined ? true : !!m[k];  // missing flag = page default (on)
   return { format: SCENARIO_FORMAT, version: SCENARIO_VERSION, form: 'compact', name: ui.name || 'lunarsim-live', phase: ui.phase, bulk_t_per_year: ui.bulk,
     fleet: ui.fleet.map(f => ({ owner: f.owner, cls: f.cls, autonomy: f.autonomy, std: f.std || 'A' })),
     night_fraction: ui.night, rtt_s: ui.rtt, n_operators: ui.nOps, other_duty_share: ui.duty, mtbf_mult: ui.mtbf, common_standard_share: ui.std, marketplace: market };
