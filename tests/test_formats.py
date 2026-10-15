@@ -70,11 +70,29 @@ def test_extra_appended_column_ok(trace):
 SAMPLES = sorted(glob.glob(os.path.join(ROOT, "data", "sample_traces", "*.json")))
 
 
+TRACE_HEADER = ("format", "version", "engine", "scenario", "mechanism", "seed", "cargo_columns")
+SCENARIO_HEADER = ("format", "version", "form")
+
+
+def _strip(d, keys):
+    """A pre-v1 (legacy) copy of a v1 document: the same content without the header keys."""
+    return {k: v for k, v in d.items() if k not in keys}
+
+
 @pytest.mark.parametrize("path", SAMPLES, ids=os.path.basename)
-def test_legacy_sample_traces_accepted(path):
+def test_sample_traces_are_v1(path):
     with open(path, encoding="utf-8") as f:
         d = json.load(f)
+    assert (d["format"], d["version"]) == ("lunarsim-trace", 1)
     assert validate_trace(d) == []
+
+
+@pytest.mark.parametrize("path", SAMPLES, ids=os.path.basename)
+def test_legacy_traces_accepted(path):
+    with open(path, encoding="utf-8") as f:
+        legacy = _strip(json.load(f), TRACE_HEADER)
+    assert "format" not in legacy and "cargo_columns" not in legacy
+    assert validate_trace(legacy) == []      # no header: read as v1 with the default cargo columns
 
 
 def test_trace_schema_is_valid_json_and_lists_required_keys():
@@ -257,7 +275,36 @@ def test_validate_cli_bundled_files(in_root, capsys):
     assert code == 0
     oks = [l for l in out.splitlines() if l.startswith("OK")]
     assert len(oks) == len(files) == 12
-    assert sum("trace v1 legacy" in l for l in oks) == 3 and sum("scenario v1 legacy" in l for l in oks) == 9
+    assert sum(l.endswith("trace v1") for l in oks) == 3 and sum(l.endswith("scenario v1") for l in oks) == 9
+    assert not any("legacy" in l for l in oks)
+
+
+def test_validate_cli_legacy_copies(in_root, tmp_path, capsys):
+    """The committed files with their v1 headers stripped still validate, reported as legacy."""
+    files = []
+    for src, keys in [(p, SCENARIO_HEADER) for p in SCENARIO_FILES] + [(p, TRACE_HEADER) for p in SAMPLES]:
+        with open(src, encoding="utf-8") as f:
+            legacy = _strip(json.load(f), keys)
+        assert "format" not in legacy
+        dst = tmp_path / os.path.basename(src)
+        dst.write_text(json.dumps(legacy), encoding="utf-8")
+        files.append(dst)
+    code, out = _validate_cli(capsys, *files)
+    assert code == 0
+    oks = [l for l in out.splitlines() if l.startswith("OK")]
+    assert len(oks) == 12
+    assert sum(l.endswith("trace v1 legacy") for l in oks) == 3
+    assert sum(l.endswith("scenario v1 legacy") for l in oks) == 9
+
+
+@pytest.mark.parametrize("path", SCENARIO_FILES, ids=os.path.basename)
+def test_legacy_scenarios_load_like_v1(path):
+    with open(path, encoding="utf-8") as f:
+        d = json.load(f)
+    assert (d["format"], d["version"], d["form"]) == ("lunarsim-scenario", 1, "full")
+    legacy = _strip(d, SCENARIO_HEADER)
+    assert validate_scenario(legacy) == []
+    assert scenario_from_dict(legacy) == scenario_from_dict(d)
 
 
 def test_validate_cli_reports_failures(in_root, tmp_path, capsys, trace):
