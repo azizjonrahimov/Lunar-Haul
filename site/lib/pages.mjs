@@ -31,7 +31,7 @@ export function header(base, path) {
   const items = NAV.map(([href, label]) => `<li><a href="${base}${href}"${here === href ? ' aria-current="page"' : ''}>${label}</a></li>`).join('');
   return `<a class="skip" href="#main">Skip to content</a>
 <header class="site-header"><div class="wrap bar">
-  <a class="brand" href="${base}"${here === '' ? ' aria-current="page"' : ''}>LunarSim <span>· lunar surface logistics</span></a>
+  <a class="brand" href="${base}"${here === '' ? ' aria-current="page"' : ''}>LunarHaul <span>· lunar surface logistics</span></a>
   <button class="theme-btn menu-btn" type="button" aria-expanded="false" aria-controls="site-nav" data-menu>${icon('menu')}<span class="visually-hidden">Menu</span></button>
   <nav aria-label="Main"><ul class="nav" id="site-nav">${items}</ul></nav>
   <button class="theme-btn" type="button" data-theme-toggle title="Switch light/dark theme">${icon('sun', 'icon i-light')}${icon('moon', 'icon i-dark')}<span class="visually-hidden">Switch light or dark theme</span></button>
@@ -101,7 +101,7 @@ export function headlineItems() {
 }
 
 // ---------- figures (static SVG at build time; site/src/components/figure.js adds the downloads) ----------
-const FLAG_TIP = { Modelled: 'Modelled: produced by the LunarSim simulation' };
+const FLAG_TIP = { Modelled: 'Modelled: produced by the LunarHaul simulation' };
 export function figure(id) {
   if (id !== 'delay-by-rule') throw new Error(`unknown figure ${id}`);
   const rows = csv(readFileSync(join(ROOT, MAIN), 'utf8')).filter(r => r.phase === 'P2').map(r => {

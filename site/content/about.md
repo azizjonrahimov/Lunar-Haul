@@ -1,6 +1,6 @@
 # About
 
-LunarSim is a research testbed for one practical question: once cargo has landed near a Moon base, how does it get
+LunarHaul (formerly LunarSim) is a research testbed for one practical question: once cargo has landed near a Moon base, how does it get
 from the pad to the place it is needed, and what does that cost? NASA's Moon Base plan lands a few tonnes a year
 before 2029, tens of tonnes a year in 2029–2032 and more after that, in items from 10 kg instruments to 15 t
 habitats, while the rovers under contract carry 0.8–1.6 t each. NASA's 2026 architecture guide names "a
@@ -9,7 +9,7 @@ that lets such questions be answered with numbers instead of adjectives.
 
 ## Who
 
-LunarSim is built by Azizjon Rahimov (Roatify Research). The simulation engine, the browser port, the experiments,
+LunarHaul is built by Azizjon Rahimov (Roatify Research). The simulation engine, the browser port, the experiments,
 the datasets and the paper are developed in the open on GitHub. The current phase adds two learned models, a
 landing-descent controller and a rover driving model, to the logistics engine, and this site to let anyone run
 the result.
@@ -31,8 +31,8 @@ Altimeter model of the Connecting Ridge near Shackleton crater at 5 m per post, 
 1.5° of the horizon. Vehicles are representative, parametric stand-ins built from public dimensions; no official
 model of an Artemis-era lander or rover is public. Every number on the site carries a flag: **Measured** (flight
 or laboratory data), **Spec** (a published design value or requirement), **Modelled** (produced by a model,
-including this simulation) or **Assumed** (our choice, swept in the sensitivity analysis). Hover or focus a number
-to see its source.
+including this simulation) or **Assumed** (our choice, swept in the sensitivity analysis). Hover a number's flag
+to see its source; screen readers read it out.
 
 ## Motion and accessibility
 

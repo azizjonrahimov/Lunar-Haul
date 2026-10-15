@@ -32,7 +32,7 @@ will be posted here with a DOI when the experiments are complete.
 ### Cite
 
 ```
-@misc{rahimov2026lunarsim,
+@misc{rahimov2026lunarhaul,
   title   = {Who Hauls the Habitat? A Verified Simulation Testbed, a Pooled Dispatch Marketplace
              and a Reference Design for Lunar Surface Logistics},
   author  = {Rahimov, Azizjon},

@@ -1,4 +1,4 @@
-# LunarSim site
+# LunarHaul site
 
 The public site: a Vite multi-page app (vanilla JS modules, three.js, Observable Plot) built to static files for
 GitHub Pages. The existing simulator (`web/`) is copied in under `/simulator/` at build time.

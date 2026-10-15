@@ -3,7 +3,7 @@
 export const FLAGS = {
   Measured: 'Measured: observed on flown hardware or in a published test',
   Spec: 'Spec: a published specification or requirement',
-  Modelled: 'Modelled: produced by the LunarSim simulation',
+  Modelled: 'Modelled: produced by the LunarHaul simulation',
   Assumed: 'Assumed: a modelling assumption, varied in sensitivity runs',
 };
 

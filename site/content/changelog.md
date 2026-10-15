@@ -28,7 +28,7 @@ The format follows Keep a Changelog. Versions are the engine's version in `pypro
 ## 2.0.0 — 2026-10-06
 
 ### Added
-- The verified lunar surface logistics testbed (nine-site base, multi-owner fleet, lunar night, Earth–Moon
+- The verified lunar surface logistics testbed (released under the name LunarHaul) (nine-site base, multi-owner fleet, lunar night, Earth–Moon
   latency, faults), four dispatch rules including the pooled marketplace, thirteen verification checks.
 - Experiments E1–E14, the datasets, the figures, the browser port with a cross-implementation check, and the
   44-page paper.
