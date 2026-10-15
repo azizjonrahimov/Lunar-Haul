@@ -56,6 +56,7 @@ async function runSeeds(sc, mechName, seeds, opts, onProgress) {
 // ---------- state ----------
 let fleet = JSON.parse(JSON.stringify(PRESETS[4]));
 let lastRuns = null, lastTrace = null, compareRuns = null, lastScenario = null;
+let replay = { tr: null, t: 0, playing: false, last: 0 };  // declared before the saved-tab restore below, which may draw the map
 
 function readScenario() { return Object.assign(makeScenario({ phase: $('phase').value, bulkT: +$('bulk').value, fleet: fleet.map(f => ({ ...f })), night: +$('night').value, rtt: +$('rtt').value, nOps: +$('ops').value, duty: +$('duty').value, mtbf: +$('mtbf').value, std: +$('std').value }), { name: `lunarsim-live-${$('phase').value}` }); }
 function marketOpts() { return { bundling: $('c_bundling').checked, consolidate: $('c_consolidate').checked, team_lift: $('c_team').checked, night_aware: $('c_night').checked, anticipate: $('c_anticipate').checked, backhaul: $('c_backhaul').checked, priority: $('c_priority').checked }; }
@@ -88,13 +89,30 @@ try { const t = localStorage.getItem('lunarsim.tab'); if (t) document.querySelec
 renderFleet();
 
 // ---------- scenario import / export ----------
-function uiScenarioJson() { return { name: 'lunarsim-live', phase: $('phase').value, bulk_t_per_year: +$('bulk').value, fleet: fleet, night_fraction: +$('night').value, rtt_s: +$('rtt').value, n_operators: +$('ops').value, other_duty_share: +$('duty').value, mtbf_mult: +$('mtbf').value, common_standard_share: +$('std').value, marketplace: marketOpts() }; }
-$('exportScenario').addEventListener('click', () => download('lunarsim-scenario.json', JSON.stringify(uiScenarioJson(), null, 2), 'application/json'));
+// The mapping between files and controls lives in formats.js (scenarioToUi / uiToScenario); this block only reads and sets the DOM.
+let scenarioName = 'lunarsim-live';
+const UI_SLIDER_IDS = { night: 'night', rtt: 'rtt', nOps: 'ops', duty: 'duty', mtbf: 'mtbf', std: 'std' };
+const UI_MARKET_IDS = { bundling: 'c_bundling', consolidate: 'c_consolidate', team_lift: 'c_team', night_aware: 'c_night', anticipate: 'c_anticipate', backhaul: 'c_backhaul', priority: 'c_priority' };
+function readUi() { const ui = { name: scenarioName, phase: $('phase').value, bulk: +$('bulk').value, fleet: fleet.map(f => ({ ...f })), market: marketOpts() }; for (const [k, id] of Object.entries(UI_SLIDER_IDS)) ui[k] = +$(id).value; return ui; }
+function applyUi(ui) {  // sets the controls the file provides; returns notes for values a control could not hold exactly
+  const notes = [];
+  if (ui.phase !== undefined) $('phase').value = ui.phase;  // no 'change' event: that would reset bulk and operators to the phase defaults
+  if (ui.bulk !== undefined) { $('bulk').value = ui.bulk; if (+$('bulk').value !== ui.bulk) notes.push(`bulk ${ui.bulk} t/yr shown as ${$('bulk').value}`); }
+  if (ui.fleet !== undefined) { fleet = ui.fleet.map(f => ({ ...f })); renderFleet(); }
+  for (const [k, id] of Object.entries(UI_SLIDER_IDS)) if (ui[k] !== undefined) { const el = $(id); el.value = ui[k]; el.dispatchEvent(new Event('input'));
+    if (Math.abs(+el.value - ui[k]) > 1e-9) notes.push(`${el.labels[0] ? el.labels[0].firstChild.textContent.trim() : id}: ${ui[k]} is outside the slider's range or step; set to ${el.value}`); }
+  if (ui.market) for (const [k, id] of Object.entries(UI_MARKET_IDS)) if (ui.market[k] !== undefined) $(id).checked = ui.market[k];
+  if (ui.name !== undefined) scenarioName = ui.name;
+  return notes;
+}
+function showScenarioNote(notes) { const el = $('scnote'); el.classList.toggle('hidden', !notes.length); el.innerHTML = notes.length ? '<b>Approximated on import:</b><ul>' + notes.map(n => `<li>${n.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c])}</li>`).join('') + '</ul>' : ''; }
+$('exportScenario').addEventListener('click', () => { const j = uiToScenario(readUi()); download(`${j.name.replace(/[^\w.-]+/g, '-')}.json`, JSON.stringify(j, null, 2), 'application/json'); });
 $('importScenario').addEventListener('change', e => {
   const f = e.target.files[0]; if (!f) return; const r = new FileReader();
-  r.onload = () => { try { const j = JSON.parse(r.result); if (j.phase) $('phase').value = j.phase; if (j.bulk_t_per_year !== undefined) $('bulk').value = j.bulk_t_per_year; if (Array.isArray(j.fleet)) { fleet = j.fleet.map(v => Array.isArray(v) ? { owner: v[0], cls: v[1], autonomy: v[2], std: v[3] || 'A' } : v); renderFleet(); }
-    for (const [k, id] of [['night_fraction', 'night'], ['rtt_s', 'rtt'], ['n_operators', 'ops'], ['other_duty_share', 'duty'], ['mtbf_mult', 'mtbf'], ['common_standard_share', 'std']]) if (j[k] !== undefined) { $(id).value = j[k]; $(id).dispatchEvent(new Event('input')); }
-    $('status').textContent = `Loaded scenario "${j.name || f.name}".`; } catch (err) { $('status').textContent = 'Could not read that file: ' + err.message; } };
+  r.onload = () => { try { const { form, ui, notes } = scenarioToUi(String(r.result)); if (ui.name === undefined) ui.name = f.name.replace(/\.json$/i, ''); const all = notes.concat(applyUi(ui)); showScenarioNote(all);
+      $('status').textContent = `Loaded scenario "${ui.name || f.name}" (${form} form${all.length ? `, ${all.length} approximation${all.length > 1 ? 's' : ''}: see the note` : ''}).`; }
+    catch (err) { $('status').textContent = `Could not read ${f.name}: ${err.message}. Controls unchanged.`; } };
+  r.onerror = () => { $('status').textContent = `Could not read ${f.name}.`; };
   r.readAsText(f); e.target.value = '';
 });
 function download(name, text, type) {
@@ -184,7 +202,6 @@ function renderCompare(res, n) {
 }
 
 // ---------- replay ----------
-let replay = { tr: null, t: 0, playing: false, last: 0 };
 function setupReplay(tr, source) { if (!tr) return; replay.tr = tr; replay.t = 0; replay.playing = false; $('play').textContent = 'Play'; $('tslider').max = Math.floor(tr.horizon); $('tslider').value = 0; const owners = [...new Set(tr.vehicles.map(v => v.owner))]; $('maplegend').innerHTML = owners.map((o, i) => `<span style="--c: var(--s${(i % 8) + 1})">${o}</span>`).join('') + `<span style="--c: var(--s2)">landing pad</span><span style="--c: var(--night)">night</span>`; replayHeader(tr, source); $('exportTrace').disabled = false; drawMap(); }
 function replayHeader(tr, source) { const m = tr.meta || {}, esc = x => String(x).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]); const val = x => x === null || x === undefined || x === '' ? '–' : esc(x);
   $('replayhead').innerHTML = `<span>engine <b>${val(m.engine)}</b></span><span>scenario <b>${val(m.scenario)}</b></span><span>mechanism <b>${val(MECH_LABEL[m.mechanism] || m.mechanism)}</b></span><span>seed <b>${val(m.seed)}</b></span><span class="src">${source ? 'from file ' + esc(source) + (m.legacy ? ' (no format header; read as v1)' : '') : 'from the last run'}</span>`; }
