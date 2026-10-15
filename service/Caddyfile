@@ -1,0 +1,45 @@
+# Caddy in front of the LunarSim API: automatic HTTPS (Let's Encrypt), HTTP/2, reverse proxy to uvicorn.
+#
+#   DOMAIN=example.org caddy run --config service/Caddyfile      (or the systemd unit Caddy installs)
+#
+# DNS: api.<domain> A/AAAA -> this VPS; app.<domain> CNAME -> <user>.github.io (the site). Both halves share the
+# registrable domain, so the API's HttpOnly; Secure; SameSite=Lax session cookie is same-site for fetch() calls
+# from the app. Set LUNARSIM_BASE_URL=https://api.<domain>, LUNARSIM_APP_URL=https://app.<domain>,
+# LUNARSIM_ALLOWED_ORIGINS=https://app.<domain> and LUNARSIM_TRUST_PROXY=1 in the API environment.
+
+api.{$DOMAIN} {
+	encode zstd gzip
+
+	# SSE: stream responses immediately, never buffer; long-lived connections
+	@sse path /v2/runs/*/events
+	reverse_proxy @sse 127.0.0.1:8800 {
+		flush_interval -1
+		transport http {
+			read_timeout 0
+			response_header_timeout 0
+		}
+	}
+
+	reverse_proxy 127.0.0.1:8800 {
+		# Caddy sets X-Forwarded-For / X-Forwarded-Proto; the app reads them with LUNARSIM_TRUST_PROXY=1
+		header_up X-Real-IP {remote_host}
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		-Server
+	}
+
+	request_body {
+		max_size 2MB
+	}
+
+	log {
+		output file /var/log/caddy/api.access.log {
+			roll_size 50MiB
+			roll_keep 5
+		}
+	}
+}

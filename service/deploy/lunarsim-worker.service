@@ -1,0 +1,31 @@
+# /etc/systemd/system/lunarsim-worker.service
+[Unit]
+Description=LunarSim service v2 worker (executes queued runs)
+After=network-online.target lunarsim-api.service
+
+[Service]
+Type=simple
+User=lunarsim
+Group=lunarsim
+WorkingDirectory=/srv/lunarsim/repo
+EnvironmentFile=/etc/lunarsim/env
+Environment=LUNARSIM_WORKER_ID=%H-worker1
+Environment=OMP_NUM_THREADS=1
+ExecStart=/srv/lunarsim/venv/bin/python -m service worker
+Restart=always
+RestartSec=3
+Nice=5
+# the CX23 has two vCPUs: keep the worker from starving the API
+CPUQuota=150%
+MemoryMax=1500M
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/lunarsim
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

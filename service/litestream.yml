@@ -1,0 +1,28 @@
+# Litestream: continuous replication of the SQLite file to an S3-compatible bucket (Hetzner Object Storage,
+# Backblaze B2, Cloudflare R2, AWS S3, MinIO). Point-in-time restore:
+#
+#   litestream restore -config service/litestream.yml -o /var/lib/lunarsim/lunarsim.db /var/lib/lunarsim/lunarsim.db
+#
+# Values come from the environment (Litestream expands ${VAR}); see service/deploy/env.example. The blobs folder
+# (traces, outputs) is NOT in the database: back it up separately (rclone sync to the same bucket, a cron job
+# is in the README) or move it to object storage later.
+#
+# The database runs in WAL mode with synchronous=NORMAL (what Litestream asks for). Do not point another backup
+# tool at the raw .db file while Litestream runs.
+
+dbs:
+  - path: ${LUNARSIM_DATA_DIR}/lunarsim.db
+    replicas:
+      - type: s3
+        bucket: ${LITESTREAM_BUCKET}
+        path: lunarsim/lunarsim.db
+        endpoint: ${LITESTREAM_ENDPOINT}          # e.g. https://fsn1.your-objectstorage.com (Hetzner) or https://s3.eu-central-003.backblazeb2.com
+        region: ${LITESTREAM_REGION}
+        access-key-id: ${LITESTREAM_ACCESS_KEY_ID}
+        secret-access-key: ${LITESTREAM_SECRET_ACCESS_KEY}
+        force-path-style: true
+        sync-interval: 1s
+        retention: 168h                           # one week of WAL history for point-in-time restore
+        retention-check-interval: 1h
+        snapshot-interval: 24h
+        validation-interval: 12h

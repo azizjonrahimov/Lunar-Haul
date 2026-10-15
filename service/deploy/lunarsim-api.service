@@ -1,0 +1,28 @@
+# /etc/systemd/system/lunarsim-api.service
+[Unit]
+Description=LunarSim service v2 API (uvicorn)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=lunarsim
+Group=lunarsim
+WorkingDirectory=/srv/lunarsim/repo
+EnvironmentFile=/etc/lunarsim/env
+ExecStart=/srv/lunarsim/venv/bin/python -m service serve --host 127.0.0.1 --port 8800
+Restart=always
+RestartSec=3
+# hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/lunarsim
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

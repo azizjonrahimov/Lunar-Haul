@@ -1,0 +1,18 @@
+# /etc/systemd/system/litestream.service  (the Litestream .deb installs a similar unit; this one reads our env file)
+[Unit]
+Description=Litestream replication of the LunarSim SQLite database
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=lunarsim
+Group=lunarsim
+EnvironmentFile=/etc/lunarsim/env
+ExecStart=/usr/bin/litestream replicate -config /srv/lunarsim/repo/service/litestream.yml
+Restart=always
+RestartSec=5
+ReadWritePaths=/var/lib/lunarsim
+
+[Install]
+WantedBy=multi-user.target
