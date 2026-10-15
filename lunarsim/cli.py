@@ -6,6 +6,8 @@
     lunarsim verify
     lunarsim scenarios list | export --dir data/scenarios
     lunarsim precise  --scenario P2-default --mechanism marketplace --target 0.01 --confidence 0.99
+    lunarsim serve    --port 8765
+    lunarsim validate data/scenarios/*.json data/sample_traces/*.json
 """
 from __future__ import annotations
 
@@ -141,6 +143,28 @@ def cmd_precise(a):
         df.to_csv(a.out, index=False)
 
 
+def cmd_serve(a):
+    from .server import serve
+    serve(a.port)
+
+
+def cmd_validate(a):
+    from .formats import validate_file
+    failed = 0
+    for path in a.files:
+        kind, legacy, errs = validate_file(path)
+        if errs:
+            failed += 1
+            print(f"FAIL {path}" + ("" if kind == "?" else f"  {kind} v1"))
+            for e in errs:
+                print(f"     {e}")
+        else:
+            print(f"OK   {path}  {kind} v1" + (" legacy" if legacy else ""))
+    if len(a.files) > 1:
+        print(f"{len(a.files) - failed} of {len(a.files)} files valid")
+    sys.exit(1 if failed else 0)
+
+
 def main(argv=None):
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     p = argparse.ArgumentParser(prog="lunarsim", description="LunarSim: discrete-event testbed for lunar surface logistics")
@@ -178,6 +202,12 @@ def main(argv=None):
     q.add_argument("--max", type=int, default=4000)
     q.add_argument("--out", default=None)
     q.set_defaults(func=cmd_precise)
+    w = sub.add_parser("serve", help="local JSON API on 127.0.0.1 (see lunarsim/server.py)")
+    w.add_argument("--port", type=int, default=8765)
+    w.set_defaults(func=cmd_serve)
+    x = sub.add_parser("validate", help="check lunarsim-trace / lunarsim-scenario JSON files")
+    x.add_argument("files", nargs="+", metavar="FILE")
+    x.set_defaults(func=cmd_validate)
     a = p.parse_args(argv)
     a.func(a)
 
