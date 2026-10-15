@@ -18,3 +18,4 @@ site/node_modules/
 site/dist/
 site/public/terrain/
 site/.terrain-dev/
+data/policies/*.csv
