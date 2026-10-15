@@ -32,10 +32,17 @@ export class MlpPolicy {
   }
 }
 
-/* check(policy, checkDoc) -> {n, maxErr, tolerance, ok}: the shared <id>.check.json vectors */
+/* check(policy, checkDoc) -> {n, maxErr, tolerance, ok, sb3?}: the shared <id>.check.json vectors.
+   Current files: `act` = float64 numpy-runtime actions (tolerance 1e-6) and `sb3_act` = Stable-Baselines3's float32
+   actions (tolerance 1e-4). Older files have only `act` (then SB3's float32 output) at their stated tolerance. */
+function maxDiff(policy, obs, want) {
+  let m = 0;
+  obs.forEach((o, k) => { const a = policy.act(o), w = want[k]; (Array.isArray(w) ? w : [w]).forEach((x, i) => { m = Math.max(m, Math.abs((Array.isArray(a) ? a[i] : a) - x)); }); });
+  return m;
+}
 export function checkPolicy(policy, chk) {
-  let maxErr = 0;
-  chk.obs.forEach((o, k) => { const a = policy.act(o), want = chk.act[k]; (Array.isArray(want) ? want : [want]).forEach((w, i) => { maxErr = Math.max(maxErr, Math.abs((Array.isArray(a) ? a[i] : a) - w)); }); });
-  const tolerance = chk.tolerance ?? 1e-6;
-  return { n: chk.obs.length, maxErr, tolerance, ok: maxErr <= tolerance };
+  const tolerance = chk.tolerance ?? 1e-6, maxErr = maxDiff(policy, chk.obs, chk.act);
+  const out = { n: chk.obs.length, maxErr, tolerance, ok: maxErr <= tolerance, against: chk.sb3_act ? 'numpy float64 runtime' : 'Stable-Baselines3 (float32)' };
+  if (chk.sb3_act) { const t = chk.sb3_tolerance ?? 1e-4, e = maxDiff(policy, chk.obs, chk.sb3_act); out.sb3 = { maxErr: e, tolerance: t, ok: e <= t }; out.ok = out.ok && out.sb3.ok; }
+  return out;
 }

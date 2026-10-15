@@ -6,17 +6,19 @@
 import * as P from './physics.js';
 import { CLASSES, G_MOON, GATE, TIPOVER_DEG, TOUCHDOWN } from './classes.js';
 
-export const ENV_ID = 'lunar/Descent-v0', ENV_VERSION = 1;
+export const ENV_ID = 'lunar/Descent-v0', ENV_VERSION = 2;   // v2 (B-10b): kappa 50, crash -5, tracking x(1 + 3 max(0, 1 - z/30))
 export const DT_S = 0.2, MAX_STEPS = 750, LOST_RANGE_M = 3000.0;
 export const DISP = { downrange_m: 25.0, crossrange_m: 25.0, altitude_m: 20.0, vh_mps: 2.0, vcross_mps: 1.0, vz_mps: 1.0, tilt0_deg: [10.0, 30.0] };
 export const DR = { dry_mass: [0.95, 1.05], prop: [0.90, 1.10], thrust: [0.95, 1.05], isp: [0.97, 1.03], sensor_noise: [0.5, 2.0] };
 export const SENSOR = { nav_bias_m: 1.5, nav_noise_m: 0.5, vel_noise_mps: 0.05, alt_noise_hi_m: 0.2, low_alt_m: 30.0, alt_bias_low_m: 1.0, alt_noise_low_m: 0.5, alt_dropout_p: 0.05 };
 export const K_VH_DEG_PER_MPS = 3.0, K_VZ_DEG_PER_MPS = 1.0, SITE_SLOPE_DEG = [0.0, 5.0];
-const BASE = { alpha: -0.05, beta: -0.05, delta: -0.05, zeta: -0.01, eta: 0.01, kappa: 10.0, lost: -10.0, crash: -1.0, low_time: 0.0, low_thrust: 0.0 };
-export const REWARD_VARIANTS = {
-  baseline: { ...BASE }, no_eta: { ...BASE, eta: 0.0, crash: 0.0 }, hover_bonus: { ...BASE, eta: 0.3 },
-  fuel_heavy: { ...BASE, beta: -0.5 }, plume_aware: { ...BASE, low_time: -0.02, low_thrust: -0.1 },
-};
+// reward tables by env version: a policy is scored with the rewards of the env_version it was trained on
+const variants = base => ({ baseline: { ...base }, no_eta: { ...base, eta: 0.0, crash: 0.0 }, hover_bonus: { ...base, eta: 0.3 },
+  fuel_heavy: { ...base, beta: -0.5 }, plume_aware: { ...base, low_time: -0.02, low_thrust: -0.1 } });
+const BASE_V1 = { alpha: -0.05, beta: -0.05, delta: -0.05, zeta: -0.01, eta: 0.01, kappa: 10.0, lost: -10.0, crash: -1.0, low_time: 0.0, low_thrust: 0.0, near_gain: 0.0 };
+const BASE_V2 = { ...BASE_V1, kappa: 50.0, crash: -5.0, near_gain: 3.0 };
+export const REWARDS_BY_VERSION = { 1: variants(BASE_V1), 2: variants(BASE_V2) };
+export const REWARD_VARIANTS = REWARDS_BY_VERSION[ENV_VERSION];
 export const VF = { v0_mps: 20.0, hover_alt_m: 15.0, tau_hi_s: 20.0, tau_lo_s: 100.0, vz_hi_mps: -2.0, vz_lo_mps: -1.0 };
 export const OBS_NAMES = ['x', 'y', 'h', 'vx', 'vy', 'vz', 'ex', 'ey', 'ez', 'tx', 'ty', 'wx', 'wy', 'prop_frac', 'tw_max'];
 export const ACT_NAMES = ['throttle', 'tilt_rate_x_cmd', 'tilt_rate_y_cmd'];
@@ -49,7 +51,8 @@ export function classify(td, slopeDeg, padRadiusM, sensorFault) {
 
 /* reward for one step from stored quantities (shared by step() and the re-scoring panel) */
 export function stepReward(rw, rec) {
-  let r = rw.alpha * rec.vErr + rw.beta * rec.tf + rw.eta;
+  const near = 1.0 + (rw.near_gain || 0) * Math.max(0.0, 1.0 - rec.z / SENSOR.low_alt_m);   // v2; 1 in v1
+  let r = rw.alpha * near * rec.vErr + rw.beta * rec.tf + rw.eta;
   if (rec.z < SENSOR.low_alt_m) {
     r += rw.delta * Math.max(0.0, rec.tiltDeg - TOUCHDOWN.tilt_max_deg) / 6.0;
     r += rw.zeta * rec.rateDps;
@@ -72,10 +75,11 @@ export function makeRng(seed) {
 }
 
 export class DescentEnv {
-  constructor({ cls = 'CLPS', variant = 'baseline', randomize = true, sensor = true, padRadiusM = TOUCHDOWN.delivery_radius_m, siteSlopeDeg = SITE_SLOPE_DEG, maxSteps = MAX_STEPS, dt = DT_S } = {}) {
+  constructor({ cls = 'CLPS', variant = 'baseline', envVersion = ENV_VERSION, randomize = true, sensor = true, padRadiusM = TOUCHDOWN.delivery_radius_m, siteSlopeDeg = SITE_SLOPE_DEG, maxSteps = MAX_STEPS, dt = DT_S } = {}) {
     if (!CLASSES[cls]) throw new Error(`unknown lander class ${cls}`);
-    if (!REWARD_VARIANTS[variant]) throw new Error(`unknown reward variant ${variant}`);
-    Object.assign(this, { clsName: cls, cls: CLASSES[cls], variant, rw: REWARD_VARIANTS[variant], randomize, sensorOn: sensor, padRadiusM, siteSlopeDeg, maxSteps, dt });
+    const table = REWARDS_BY_VERSION[envVersion]; if (!table) throw new Error(`unknown env version ${envVersion}`);
+    if (!table[variant]) throw new Error(`unknown reward variant ${variant}`);
+    Object.assign(this, { clsName: cls, cls: CLASSES[cls], variant, envVersion, rw: table[variant], randomize, sensorOn: sensor, padRadiusM, siteSlopeDeg, maxSteps, dt });
     this.scale = obsScale(this.cls); this.state = null;
   }
   reset(seed = 0) {

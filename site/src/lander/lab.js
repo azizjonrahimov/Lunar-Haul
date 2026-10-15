@@ -5,7 +5,8 @@ import './lab.css';
 import * as Plot from '@observablehq/plot';
 import * as P from './physics.js';
 import { CLASSES, GATE, TOUCHDOWN, TIPOVER_DEG, TIPOVER_SOURCE } from './classes.js';
-import { DescentEnv, REWARD_VARIANTS, DT_S, MAX_STEPS } from './env.js';
+import { DescentEnv, REWARDS_BY_VERSION, ENV_VERSION, DT_S, MAX_STEPS } from './env.js';
+const RV = v => REWARDS_BY_VERSION[v] || REWARDS_BY_VERSION[ENV_VERSION];   // reward table for an env version
 import { classicalAction } from './classical.js';
 import { MlpPolicy, checkPolicy } from '../policy.js';
 import { loadTerrain } from '../terrain.js';
@@ -47,19 +48,19 @@ function renderClassOptions() {
   sel.innerHTML = (pol ? `<option value="policy">Trained policy (${esc(pol.id)})</option>` : '') + '<option value="classical">Classical ZEM/ZEV law</option>';
   $('l-ctrl-note').textContent = pol ? '' : `No trained policy for ${cls} yet; the classical law flies it.`;
   const hp = hoverPolicy(); $('l-hover').disabled = !hp;
-  $('l-hover-note').textContent = hp ? `Loads ${hp.id}, trained with η = ${REWARD_VARIANTS.hover_bonus.eta} per step alive.` : 'Hover-bonus policy not trained yet (LEAD trains it); the button activates when its file is published.';
+  $('l-hover-note').textContent = hp ? `Loads ${hp.id}, trained with η = ${RV(hp.doc.env_version || 1).hover_bonus.eta} per step alive (env v${hp.doc.env_version || 1} rewards).` : 'Hover-bonus policy not trained yet (LEAD trains it); the button activates when its file is published.';
 }
 
 /* runEpisode -> {frames:[{state, thrust, tf, reward, cum, obs}], recs, outcome, env, seed, ctrl} */
-function runEpisode(cls, ctrl, seed, opts, policy, variant = 'baseline') {
-  const env = new DescentEnv({ cls, variant, randomize: opts.randomize, sensor: opts.sensor });
+function runEpisode(cls, ctrl, seed, opts, policy, variant = 'baseline', envVersion = ENV_VERSION) {
+  const env = new DescentEnv({ cls, variant, envVersion, randomize: opts.randomize, sensor: opts.sensor });
   let obs = env.reset(seed), cum = 0;
   const frames = [{ state: Float64Array.from(env.state), thrust: env.thrustN, tf: env.thrustN / (env.cls.t_max_n * env.thrustScale), reward: 0, cum: 0, action: [0, 0, 0] }], recs = [];
   for (let k = 0; k < MAX_STEPS + 1; k++) {
     const a = ctrl === 'classical' ? Array.from(classicalAction(env)) : policy.act(obs);
     const r = env.step(a); obs = r.obs; cum += r.reward; recs.push(r.rec);
     frames.push({ state: Float64Array.from(env.state), thrust: r.thrust, tf: r.rec.tf, reward: r.reward, cum, action: a });
-    if (r.terminated || r.truncated) return { frames, recs, outcome: r.outcome, env, seed, ctrl, cls, policyId: policy ? policy.id : null };
+    if (r.terminated || r.truncated) return { frames, recs, outcome: r.outcome, env, seed, ctrl, cls, policyId: policy ? policy.id : null, envVersion };
   }
   throw new Error('episode did not terminate');
 }
@@ -69,14 +70,16 @@ function run(policyOverride) {
   const opts = { randomize: $('l-rand').checked, sensor: $('l-sensor').checked };
   const pol = policyOverride || policyFor(cls);
   try {
-    st.ep = runEpisode(cls, ctrl, seed, opts, pol, policyOverride ? 'hover_bonus' : 'baseline');
+    const ver = ctrl === 'policy' && pol ? (pol.doc.env_version || 1) : ENV_VERSION;   // score a policy with the rewards it was trained on
+    st.ep = runEpisode(cls, ctrl, seed, opts, pol, policyOverride ? 'hover_bonus' : 'baseline', ver);
     const other = ctrl === 'policy' ? 'classical' : (pol ? 'policy' : null);
-    st.ghost = other ? runEpisode(cls, other, seed, opts, pol) : null;
+    st.ghost = other ? runEpisode(cls, other, seed, opts, pol, 'baseline', ver) : null;
   } catch (e) { status(`Episode failed: ${e.message}`); return; }
-  st.ep.variant = policyOverride ? 'hover_bonus' : 'baseline';   // into or out of the hover demo: show its reward; otherwise keep the user's sliders
-  if ($('rw-preset').value !== st.ep.variant && (policyOverride || $('rw-preset').value === 'hover_bonus')) { $('rw-preset').value = st.ep.variant; $('rw-preset').dispatchEvent(new Event('change')); }
+  st.ep.variant = policyOverride ? 'hover_bonus' : 'baseline';
+  const rwKey = `${st.ep.envVersion}|${st.ep.variant}`;   // reward version or variant changed: show its weights (else keep the user's sliders)
+  if (rwKey !== st.rwKey) { st.rwKey = rwKey; fillPresets(); $('rw-preset').value = st.ep.variant; $('rw-preset').dispatchEvent(new Event('change')); }
   const o = st.ep.outcome;
-  status(`${cls} · ${ctrl === 'policy' ? st.ep.policyId : 'classical law'} · episode ${seed}${opts.randomize ? '' : ' (no dispersion)'}${opts.sensor ? '' : ' (perfect sensors)'}: ${o.ok ? 'landed in the SPLICE box' : 'failed: ' + o.failure_kind}, miss ${fmt(Math.hypot(...o.miss_m), 1)} m, ${st.ep.frames.length - 1} steps.` +
+  status(`${cls} · ${ctrl === 'policy' ? st.ep.policyId : 'classical law'} · episode ${seed}${opts.randomize ? '' : ' (no dispersion)'}${opts.sensor ? '' : ' (perfect sensors)'}: ${o.ok ? 'landed in the SPLICE box' : 'failed: ' + o.failure_kind}, miss ${fmt(Math.hypot(...o.miss_m), 1)} m, ${st.ep.frames.length - 1} steps, scored with the env v${st.ep.envVersion} reward.` +
     (st.ghost ? ` Same seed with the ${st.ghost.ctrl === 'policy' ? 'policy' : 'classical law'}: ${st.ghost.outcome.ok ? 'in the box' : st.ghost.outcome.failure_kind}, miss ${fmt(Math.hypot(...st.ghost.outcome.miss_m), 1)} m.` : ''));
   st.frame = reduced.matches || $('l-speed').value === '0' ? st.ep.frames.length - 1 : 0;
   setPlaying(st.frame < st.ep.frames.length - 1); rescore(); draw();
@@ -140,7 +143,7 @@ function telemetry(ep, k) {
   const done = Math.floor(k) >= ep.frames.length - 1, ok = done && ep.outcome.ok, score = f.cum;
   const el = $('l-score'); el.textContent = (score >= 0 ? '+' : '−') + Math.abs(score).toFixed(1);
   el.classList.toggle('neg', score < 0 && !ok); el.classList.toggle('ok', ok);
-  $('l-score-note').textContent = done ? (ok ? `Touchdown inside the SPLICE box: miss ${fmt(Math.hypot(...ep.outcome.miss_m), 1)} m, ${fmt(Math.abs(ep.outcome.v_td[2]), 2)} m/s down.` : `Failed: ${ep.outcome.failure_kind}.`) + ` Score = sum of the ${ep.variant} reward.` : `Score = running sum of the ${ep.variant} reward${ep.variant === 'hover_bonus' ? ', which pays η = 0.3 for every step in the air' : ''} (the reward this policy was trained on).`;
+  $('l-score-note').textContent = done ? (ok ? `Touchdown inside the SPLICE box: miss ${fmt(Math.hypot(...ep.outcome.miss_m), 1)} m, ${fmt(Math.abs(ep.outcome.v_td[2]), 2)} m/s down.` : `Failed: ${ep.outcome.failure_kind}.`) + ` Score = sum of the ${ep.variant} reward (env v${ep.envVersion}).` : `Score = running sum of the ${ep.variant} reward of env v${ep.envVersion}${ep.variant === 'hover_bonus' ? ', which pays η = 0.3 for every step in the air' : ''} (the reward this policy was trained on).`;
 }
 let lastTele = 0;
 function draw() {   // canvas every frame; the DOM telemetry at most 10 times a second (and always when playback stops)
@@ -150,7 +153,7 @@ function draw() {   // canvas every frame; the DOM telemetry at most 10 times a 
 
 // ---------- reward rules: re-score the last episode with different weights ----------
 const TERMS = [
-  ['alpha', 'α · velocity-field error', -0.2, 0, 0.005, 'per step: |v − v_target| (m/s)'], ['beta', 'β · thrust', -1, 0, 0.01, 'per step: thrust / max thrust'],
+  ['alpha', 'α · velocity-field error', -0.2, 0, 0.005, 'per step: |v − v_target| (m/s)'], ['near_gain', 'near-ground tracking gain (v2)', 0, 6, 0.1, 'α is multiplied by 1 + gain · max(0, 1 − z / 30 m)'], ['beta', 'β · thrust', -1, 0, 0.01, 'per step: thrust / max thrust'],
   ['eta', 'η · staying alive', 0, 0.5, 0.005, 'per step: 1'], ['delta', 'δ · tilt below 30 m', -0.2, 0, 0.005, 'per step below 30 m: max(0, tilt − 6°) / 6'],
   ['zeta', 'ζ · attitude rate below 30 m', -0.05, 0, 0.001, 'per step below 30 m: rate (°/s)'], ['low_time', 'time below 30 m', -0.1, 0, 0.005, 'per step below 30 m: 1'],
   ['low_thrust', 'thrust² below 10 m (plume)', -0.5, 0, 0.01, 'per step below 10 m: (thrust / max)²'], ['kappa', 'κ · landing bonus', 0, 50, 0.5, 'once: 0.5 + 0.5·e^(−miss/10 m) if in the box'],
@@ -159,7 +162,7 @@ const TERMS = [
 function termSums(ep) {   // Σ of each term's multiplier over the episode; total reward = Σ_k weight_k · S_k
   const S = Object.fromEntries(TERMS.map(t => [t[0], 0]));
   for (const r of ep.recs) {
-    S.alpha += r.vErr; S.beta += r.tf; S.eta += 1;
+    S.alpha += r.vErr; S.near_gain += Math.max(0, 1 - r.z / 30) * r.vErr; S.beta += r.tf; S.eta += 1;
     if (r.z < 30) { S.delta += Math.max(0, r.tiltDeg - TOUCHDOWN.tilt_max_deg) / 6; S.zeta += r.rateDps; S.low_time += 1; if (r.z < 10) S.low_thrust += r.tf * r.tf; }
     if (r.terminal === 'touchdown') {
       if (r.out.touchdown_ok) S.kappa += 0.5 + 0.5 * Math.exp(-Math.hypot(...r.out.miss_m) / 10);
@@ -169,21 +172,23 @@ function termSums(ep) {   // Σ of each term's multiplier over the episode; tota
   return S;
 }
 function weights() { return Object.fromEntries(TERMS.map(t => [t[0], +$('rw-' + t[0]).value])); }
+function fillPresets() { const ver = st.ep ? st.ep.envVersion : ENV_VERSION, cur = $('rw-preset').value; $('rw-preset').innerHTML = Object.keys(RV(ver)).map(v => `<option value="${v}">${v} (env v${ver})</option>`).join(''); if (cur) $('rw-preset').value = cur; }
 function renderRewardPanel() {
   $('l-rw').innerHTML = TERMS.map(([k, lab, lo, hi, step, what]) => `<div class="rw-row"><label for="rw-${k}">${lab} <span class="muted small">${esc(what)}</span></label>
-    <input id="rw-${k}" type="range" min="${lo}" max="${hi}" step="${step}" value="${REWARD_VARIANTS.baseline[k]}"><output id="rw-${k}-v" class="mono"></output></div>`).join('');
+    <input id="rw-${k}" type="range" min="${lo}" max="${hi}" step="${step}" value="${RV(ENV_VERSION).baseline[k]}"><output id="rw-${k}-v" class="mono"></output></div>`).join('');
   for (const [k] of TERMS) $('rw-' + k).addEventListener('input', rescore);
-  $('rw-preset').innerHTML = Object.keys(REWARD_VARIANTS).map(v => `<option value="${v}">${v}</option>`).join('');
-  $('rw-preset').addEventListener('change', e => { const v = REWARD_VARIANTS[e.target.value]; for (const [k] of TERMS) $('rw-' + k).value = v[k]; rescore(); });
+  fillPresets();
+  $('rw-preset').addEventListener('change', e => { const v = RV(st.ep ? st.ep.envVersion : ENV_VERSION)[e.target.value]; for (const [k] of TERMS) $('rw-' + k).value = v[k]; rescore(); });
 }
 function rescore() {
-  if (!st.ep) return; const w = weights(), S = termSums(st.ep), base = REWARD_VARIANTS.baseline;
+  if (!st.ep) return; const w = weights(), S = termSums(st.ep), base = RV(st.ep.envVersion)[st.ep.variant];
+  const score = W => TERMS.reduce((acc, [k]) => acc + (k === 'near_gain' ? W.alpha * W.near_gain * S.near_gain : W[k] * S[k]), 0);   // alpha·(1 + g·f) splits into two linear parts
   for (const [k] of TERMS) $(`rw-${k}-v`).textContent = (+w[k]).toString();
-  const total = TERMS.reduce((s, [k]) => s + w[k] * S[k], 0), orig = TERMS.reduce((s, [k]) => s + base[k] * S[k], 0), logged = st.ep.frames[st.ep.frames.length - 1].cum;
+  const total = score(w), orig = score(base), logged = st.ep.frames[st.ep.frames.length - 1].cum;
   $('rw-out').innerHTML = `<table class="w-table"><tr><th>Term</th><th class="n">Σ multiplier</th><th class="n">× weight</th><th class="n">= contribution</th></tr>` +
-    TERMS.map(([k, lab]) => `<tr><td>${lab}</td><td class="n">${fmt(S[k], 2)}</td><td class="n">${w[k]}</td><td class="n">${fmt(w[k] * S[k], 2)}</td></tr>`).join('') +
+    TERMS.map(([k, lab]) => `<tr><td>${lab}</td><td class="n">${fmt(S[k], 2)}</td><td class="n">${k === 'near_gain' ? `${w[k]} × α` : w[k]}</td><td class="n">${fmt(k === 'near_gain' ? w.alpha * w.near_gain * S[k] : w[k] * S[k], 2)}</td></tr>`).join('') +
     `<tr><th>Episode score with these weights</th><td></td><td></td><td class="n"><b>${fmt(total, 2)}</b></td></tr></table>` +
-    `<p class="small muted">Baseline weights give ${fmt(orig, 2)} (logged during the run: ${fmt(logged, 2)}; the two agree because the score is linear in the weights).</p>`;
+    `<p class="small muted">The ${esc(st.ep.variant)} reward of env v${st.ep.envVersion} (the one this run was scored with) gives ${fmt(orig, 2)}; logged during the run: ${fmt(logged, 2)}. They agree because the score is a sum of these terms.</p>`;
   const hoverPay = w.eta * MAX_STEPS, landMax = w.kappa;
   $('rw-hover').textContent = `Staying airborne until the ${MAX_STEPS}-step cap earns η × ${MAX_STEPS} = ${fmt(hoverPay, 1)} from η alone; the best landing bonus is κ = ${fmt(landMax, 1)}. ` +
     (hoverPay > landMax ? 'With these weights hovering out the clock pays more than landing: a policy trained on them learns to hover (reward hacking).' : 'With these weights landing pays more than hovering.');
@@ -233,9 +238,9 @@ function renderPolicyCards() {
   const ids = Object.keys(st.policies);
   $('l-cards').innerHTML = ids.length ? ids.map(id => {
     const p = st.policies[id], t = p.doc.training || {}, fe = t.final_eval || {}, chk = st.checks[id], mc = st.index.outcomes.includes(id);
-    return `<div class="card-lite"><h3>${esc(id)}</h3><p class="small">${esc(t.algo || '')} · ${(t.steps || 0).toLocaleString('en-GB')} steps · reward <b>${esc(t.reward_variant || '?')}</b> · class ${esc(t.cls || '?')} · network ${p.layers.map(l => l.w.length).join('–')} (${p.obsDim} inputs) · training seed ${t.seed ?? '?'}</p>
+    return `<div class="card-lite"><h3>${esc(id)}</h3><p class="small">${esc(t.algo || '')} · ${(t.steps || 0).toLocaleString('en-GB')} steps · reward <b>${esc(t.reward_variant || '?')}</b> (env v${p.doc.env_version || 1}) · class ${esc(t.cls || '?')} · network ${p.layers.map(l => l.w.length).join('–')} (${p.obsDim} inputs) · training seed ${t.seed ?? '?'}</p>
       <p class="small">End-of-training check: ${fe.pass_rate !== undefined ? num({ value: 100 * fe.pass_rate, unit: `% in the box (${fe.episodes} episodes)`, flag: 'Modelled', digits: 0, source: `${id}.json training.final_eval` }) : '–'}${mc ? ' · Monte Carlo below' : ''}</p>
-      <p class="small ${chk && chk.ok ? 'pass' : 'fail'}">Browser runtime check: ${chk ? `${chk.n} vectors, max |Δaction| ${chk.maxErr.toExponential(1)} (tolerance ${chk.tolerance}) — ${chk.ok ? 'matches Python' : 'DOES NOT MATCH'}` : 'no check file'}</p></div>`;
+      <p class="small ${chk && chk.ok ? 'pass' : 'fail'}">Browser runtime check: ${chk ? `${chk.n} vectors against the ${chk.against}: max |Δaction| ${chk.maxErr.toExponential(1)} (tolerance ${chk.tolerance})${chk.sb3 ? `; against Stable-Baselines3 (float32): ${chk.sb3.maxErr.toExponential(1)} (tolerance ${chk.sb3.tolerance})` : ''} — ${chk.ok ? 'matches Python' : 'DOES NOT MATCH'}` : 'no check file'}</p></div>`;
   }).join('') : '<p class="muted">No trained policies published yet.</p>';
 }
 function renderConstants() {
