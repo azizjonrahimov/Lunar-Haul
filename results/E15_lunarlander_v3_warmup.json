@@ -1,0 +1,28 @@
+{
+ "env": "LunarLander-v3",
+ "algo": "PPO",
+ "hyperparams": {
+  "n_steps": 1024,
+  "batch_size": 64,
+  "n_epochs": 4,
+  "gamma": 0.999,
+  "gae_lambda": 0.98,
+  "ent_coef": 0.01
+ },
+ "n_envs": 16,
+ "steps": 1000000,
+ "seed": 0,
+ "train_wallclock_s": 1368.4,
+ "eval_mean": 246.85,
+ "eval_std": 21.18,
+ "eval_episodes": 20,
+ "versions": {
+  "sb3": "2.9.0",
+  "gymnasium": "1.4.0",
+  "torch": "2.14.1+cpu",
+  "python": "3.12.3"
+ },
+ "machine": "AMD64",
+ "device": "cpu",
+ "vec_env": "DummyVecEnv"
+}
