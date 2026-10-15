@@ -3,7 +3,7 @@ name: deploy simulator
 on:
   push:
     branches: [main]
-    paths: ["web/**", "results/E1_phases.csv", ".github/workflows/pages.yml"]
+    paths: ["web/**", "data/sample_traces/**", "results/E1_phases.csv", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:
