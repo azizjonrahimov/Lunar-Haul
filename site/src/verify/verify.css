@@ -1,0 +1,18 @@
+/* /verification */
+.v-head { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
+.v-badge { font-weight: 650; padding: 0.3em 0.8em; border-radius: 999px; font-size: var(--fs-small); border: 1px solid currentColor; }
+.v-badge.ok { color: var(--flag-measured); }
+.v-badge.bad { color: var(--tol-red); }
+.v-badge.idle { color: var(--ink-3); }
+.status-line { font-size: var(--fs-small); color: var(--ink-2); margin: var(--s-2) 0; min-height: 1.5em; }
+.v-group h2 { font-size: var(--fs-h3); margin-top: var(--s-6); }
+.v-count { font-size: var(--fs-small); color: var(--ink-2); font-weight: 500; margin-left: 0.4em; }
+.v-scroll { overflow-x: auto; }
+.w-table th { font-weight: 500; color: var(--ink-2); }
+.w-table td { vertical-align: top; }
+.w-table td:first-child { min-width: 14rem; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 650; white-space: nowrap; }
+.pill.pass { color: var(--flag-measured); border: 1px solid currentColor; }
+.pill.fail { color: var(--tol-red); border: 1px solid currentColor; }
+.pill.note { color: var(--ink-2); border: 1px dashed currentColor; }

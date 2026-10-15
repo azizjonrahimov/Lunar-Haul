@@ -28,3 +28,4 @@
 .r-thr-svg .val.faint { stroke: var(--tol-green); opacity: 0.4; }
 .r-thr-svg text { font-size: 9px; fill: var(--ink-2); }
 @media (prefers-reduced-motion: reduce) { .wheel { transition: none; } }
+.r-scroll { overflow-x: auto; }

@@ -171,7 +171,7 @@ function barChart(svg, labels, means, cis, colors, unit, yMax) {
 function timelineChart(svg, tr) {
   const W = 560, H = 250, pad = { l: 46, r: 12, t: 10, b: 34 }; const items = tr.cargo.filter(c => c.tDelivered !== null); const ymin = 0.5, ymax = Math.max(100, ...items.map(c => c.tDelivered - c.tReady)) * 1.3;
   const x = t => pad.l + (W - pad.l - pad.r) * t / tr.horizon; const y = v => pad.t + (H - pad.t - pad.b) * (1 - (Math.log10(Math.max(v, ymin)) - Math.log10(ymin)) / (Math.log10(ymax) - Math.log10(ymin)));
-  let s = ''; for (const [a, b] of tr.nights) s += `<rect x="${x(a)}" y="${pad.t}" width="${x(b) - x(a)}" height="${H - pad.t - pad.b}" fill="var(--night)"/>`;
+  let s = ''; for (const [a0, b0] of tr.nights) { const a = Math.max(0, a0), b = Math.min(tr.horizon, b0); if (b > a) s += `<rect x="${x(a)}" y="${pad.t}" width="${x(b) - x(a)}" height="${H - pad.t - pad.b}" fill="var(--night)"/>`; }   // a night may start after the horizon
   for (const v of [1, 10, 100, 1000]) if (v < ymax) s += `<line x1="${pad.l}" x2="${W - pad.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line-2)"/><text x="${pad.l - 5}" y="${y(v) + 4}" text-anchor="end" font-size="10" fill="var(--muted)">${v}</text>`;
   for (const [t, name] of tr.landings) s += `<line x1="${x(t)}" x2="${x(t)}" y1="${H - pad.b}" y2="${H - pad.b - 9}" stroke="var(--s2)" stroke-width="1.6" data-tip="${name} landing, day ${Math.floor(t / 24)}"/>`;
   const col = { 1: 'var(--s8)', 2: 'var(--s3)', 3: 'var(--muted)' };

@@ -51,7 +51,10 @@ export default defineConfig({
   build: {
     outDir: 'dist', emptyOutDir: true, target: 'es2022', assetsInlineLimit: 0, sourcemap: true,
     chunkSizeWarningLimit: 600,  // the hero chunk is three.js (~530 kB min, ~133 kB gz), loaded only where a 3D view is
-    rollupOptions: { input: Object.fromEntries(PAGES.map(p => [p.replace(/\/$/, '').replace(/\//g, '-') || 'index', join(SITE, p, 'index.html')])) },
+    rollupOptions: {
+      input: { ...Object.fromEntries(PAGES.map(p => [p.replace(/\/$/, '').replace(/\//g, '-') || 'index', join(SITE, p, 'index.html')])),
+        '404': join(SITE, '404.html') },   // GitHub Pages serves 404.html for unknown paths
+    },
   },
   server: { port: 5173 },
 });

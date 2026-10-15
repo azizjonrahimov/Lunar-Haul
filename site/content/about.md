@@ -34,6 +34,21 @@ or laboratory data), **Spec** (a published design value or requirement), **Model
 including this simulation) or **Assumed** (our choice, swept in the sensitivity analysis). Hover or focus a number
 to see its source.
 
+## Motion and accessibility
+
+The site follows your operating system's "reduce motion" setting (`prefers-reduced-motion`) and never starts
+motion you cannot stop:
+
+- **Landing page:** the sun sweeping round the horizon starts paused when reduced motion is on; the
+  *Pause sun* button stops it at any time, and it also stops when the view is off screen or the tab is hidden.
+- **World:** a replay never starts by itself; under reduced motion the camera presets jump instead of gliding.
+- **Lander lab:** under reduced motion an episode is shown at its final frame; *Replay* plays it on request.
+- **Rover lab:** under reduced motion the scripted driver's run is computed instantly; driving it yourself runs
+  in real time because you chose to.
+- Every 3D or canvas view has a text equivalent next to it: a telemetry table, a data table under each figure,
+  or the 2D plan view. Controls work with the keyboard (Space and the arrow keys on the World page and in the
+  rover lab's drive-it-yourself mode).
+
 ## Credits and licences
 
 - Terrain: LOLA 5 m/px south-polar DEMs, NASA Goddard Planetary Geodynamics Data Archive (Barker et al. 2021,

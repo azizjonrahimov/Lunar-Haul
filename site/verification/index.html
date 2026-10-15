@@ -4,22 +4,32 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Verification · LunarSim</title>
-<meta name="description" content="How the Python and browser engines are checked against each other and against independent references.">
+<meta name="description" content="Every check that ties LunarSim's browser code to its Python reference and to independent data, run live in your browser.">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="<!--@base-->favicon.svg" type="image/svg+xml">
 <script>try { var t = localStorage.getItem('lunarsim.theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <script type="module" src="/src/main.js"></script>
+<script type="module" src="/src/verify/main.js"></script>
 </head>
 <body>
 <!--@header-->
 <main id="main"><div class="wrap">
   <header class="page-head">
     <h1>Verification</h1>
-    <p>Every check that compares the browser engine with the Python reference engine and with independent references. Today the thirteen checks and the cross-implementation check run in the simulator.</p>
+    <p>The checks below run in your browser now. Each compares something this site computes with an independent reference: an analytic result, a published measurement, the Python reference code, or the project's data files. Nothing here is a screenshot of a past run.</p>
   </header>
-  <section class="prose">
-    <p class="stub">This page is being built (task F-10).</p>
-    <p><a class="btn" href="<!--@base-->simulator/">Run the checks in the simulator</a></p>
+  <div class="v-head">
+    <span id="v-badge" class="v-badge idle" role="status" aria-live="polite">not run yet</span>
+    <button class="btn" type="button" id="v-run">Run the checks again</button>
+    <button class="btn" type="button" id="v-cross">Run the cross-implementation check (≈ 15 s)</button>
+    <span class="small muted" id="v-cross-status"></span>
+  </div>
+  <p class="status-line" id="v-status"></p>
+  <div id="v-results"></div>
+  <section class="prose small muted">
+    <h2>How to read this</h2>
+    <p>“Reference” is the value the check is held to and where it comes from; “computed here” is what this browser just produced; the tolerance is fixed in the code, not tuned after the fact. Rows marked “documented” are known differences that are explained rather than scored.</p>
+    <p id="v-refs"></p>
   </section>
 </div></main>
 <!--@footer-->

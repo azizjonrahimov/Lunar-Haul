@@ -87,7 +87,8 @@ section + section { margin-top: var(--s-7); }
 .tagline { font-weight: 600; color: var(--ink); }
 
 /* Num: value + unit + provenance flag; source in the tooltip and in the accessible name */
-.num { white-space: nowrap; }
+.num { white-space: nowrap; position: relative; }
+.num .visually-hidden { left: 0; top: 0; }   /* keep the 1 px screen-reader text inside the number, not past the edge */
 .num .v { font-variant-numeric: tabular-nums; font-weight: 650; }
 .num .u { color: var(--ink-2); margin-left: 0.2em; }
 .flag {
@@ -150,6 +151,8 @@ section + section { margin-top: var(--s-7); }
 
 /* markdown pages */
 .md h2 { border-top: 1px solid var(--hairline); padding-top: var(--s-5); }
+.md table { display: block; overflow-x: auto; }   /* wide tables scroll in place on phones */
+select { max-width: 100%; }
 .stub { color: var(--ink-3); font-style: italic; }
 
 /* motion tiering: CSS transitions only; canvas motion is gated in JS (hero.js) */

@@ -1,0 +1,163 @@
+{
+ "generated": {
+  "tool": "site/scripts/make_verify_refs.py",
+  "time": "2026-10-15T14:28:50",
+  "commit": "4bf9a6e6c5eb65e5bcca9d95cbe0b3555d849d56"
+ },
+ "terrain": {
+  "site_id": "connecting_ridge",
+  "z5_min": -523.0,
+  "z5_max": 1959.5,
+  "meta_z_min": -523.1834106445312,
+  "meta_z_max": 1959.4962158203125,
+  "scale_m_per_unit": 0.5
+ },
+ "shadow": {
+  "0": {
+   "shadowed_cells": 411006,
+   "cells": 640000,
+   "fnv1a": 2148298591
+  },
+  "90": {
+   "shadowed_cells": 460916,
+   "cells": 640000,
+   "fnv1a": 1809701675
+  },
+  "180": {
+   "shadowed_cells": 321721,
+   "cells": 640000,
+   "fnv1a": 3183948928
+  },
+  "270": {
+   "shadowed_cells": 400458,
+   "cells": 640000,
+   "fnv1a": 1754835983
+  }
+ },
+ "rover": {
+  "flat_leg": {
+   "route": [
+    [
+     200.0,
+     1500.0
+    ],
+    [
+     2800.0,
+     1500.0
+    ]
+   ],
+   "meta": {
+    "format": "lunarsim-terrain",
+    "version": 1,
+    "site_id": "flat",
+    "name": "SiteTest",
+    "source": {
+     "product": "PGDA LOLA 5mpp SiteTest",
+     "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/SiteTest/SiteTest_final_adj_5mpp_surf.tif",
+     "citation": "Barker et al. 2021, PGDA LOLA 5 m/px polar DEMs, https://pgda.gsfc.nasa.gov/products/78 (Barker, M. K. et al., Planetary and Space Science 203, 105119, doi:10.1016/j.pss.2020.105119)",
+     "credit": "NASA/GSFC",
+     "flag": "Measured"
+    },
+    "crs": "Moon south polar stereographic (LOLA)",
+    "proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs=True",
+    "crs_wkt": "PROJCS[\"unknown\",GEOGCS[\"unknown\",DATUM[\"unknown\",SPHEROID[\"unknown\",1737400,0]],PRIMEM[\"Reference meridian\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]]],PROJECTION[\"Polar_Stereographic\"],PARAMETER[\"latitude_of_origin\",-90],PARAMETER[\"central_meridian\",0],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1],AXIS[\"Easting\",NORTH],AXIS[\"Northing\",NORTH]]",
+    "origin_xy_m": [
+     0.0,
+     0.0
+    ],
+    "size_m": [
+     3000.0,
+     3000.0
+    ],
+    "frame": "local x = X - origin_x, y = Y - origin_y (metres); PNG row 0 = max y; azimuth 0 = +y, 90 = +x (grid convention)",
+    "layers": {
+     "height_5m": {
+      "file": "height_5m.png",
+      "shape": [
+       600,
+       600
+      ],
+      "px_m": 5.0,
+      "kind": "height",
+      "dtype": "uint16"
+     },
+     "height_20m": {
+      "file": "height_20m.png",
+      "shape": [
+       150,
+       150
+      ],
+      "px_m": 20.0,
+      "kind": "height",
+      "dtype": "uint16",
+      "note": "4x4 block mean of the float 5 m grid"
+     },
+     "slope_20m": {
+      "file": "slope_20m.png",
+      "shape": [
+       150,
+       150
+      ],
+      "px_m": 20.0,
+      "kind": "slope_deg",
+      "dtype": "uint8",
+      "note": "slope on the float 5 m grid (central differences), 4x4 block mean, rounded"
+     },
+     "hillshade_20m": {
+      "file": "hillshade_20m.png",
+      "shape": [
+       150,
+       150
+      ],
+      "px_m": 20.0,
+      "kind": "hillshade",
+      "dtype": "uint8",
+      "sun_az_deg": 0.0,
+      "sun_el_deg": 1.5,
+      "hillshade_scale": 0.026176948307873153,
+      "note": "value = 255 * min(1, (n . s) / hillshade_scale); cast shadows set to 0; Moon curvature included"
+     }
+    },
+    "z_encoding": {
+     "offset_m": 100.0,
+     "scale_m_per_unit": 0.01
+    },
+    "stats": {
+     "z_min": 100.0,
+     "z_max": 100.0,
+     "slope_p50": 0.0,
+     "slope_p90": 0.0,
+     "nodata_filled": 0
+    },
+    "generated": {
+     "tool": "lunarsim terrain build",
+     "commit": "b704d1b3304144f8b74a974f9456e50124d21986",
+     "time": "2026-10-15T21:29:10+00:00"
+    }
+   },
+   "smg_kmh": {
+    "0": 3.243239221140647,
+    "4": 2.575940883977966,
+    "6": 2.0559041005290464,
+    "8": 1.768510525317641
+   }
+  },
+  "base_psr_sun90": {
+   "route_points": 187,
+   "length_m": 4283.330444827409,
+   "integrator_energy_wh": 590.5256972652448,
+   "integrator_t_move_s": 1927.590241634262,
+   "drive_autonomous": {
+    "time_s": 1887.0,
+    "energy_wh": 589.9291290148007,
+    "interventions": 0,
+    "distance_m": 4254.689014484426,
+    "stops": 0,
+    "reached": true,
+    "autonomy": "autonomous",
+    "rtt_s": 0.0,
+    "sun_az_deg": 90.0
+   }
+  }
+ }
+}

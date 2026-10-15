@@ -46,6 +46,10 @@ const index = { policies: polFiles.filter(f => /^lander_.*\.json$/.test(f) && !f
 writeFileSync(join(labOut, 'index.json'), JSON.stringify(index, null, 1));
 console.log(`prepare-data: lab policies ${index.policies.join(', ') || 'none'}; outcome tables ${index.outcomes.join(', ') || 'none'}`);
 
+// verification page: BACKEND's lander parity fixture (tests/fixtures/lander_parity.json)
+const fixture = join(ROOT, 'tests', 'fixtures', 'lander_parity.json');
+if (existsSync(fixture)) { mkdirSync(join(PUB, 'verify'), { recursive: true }); copyFileSync(fixture, join(PUB, 'verify', 'lander_parity.json')); }
+
 // rover lab: the 5 m layers, one small file per driving-table leg, and the four daylight shadow grids precomputed
 // with the page's own port of terrain.cast_shadow (bit-packed, row 0 = south), so the page does not spend ~5 s on them
 const roverOut = join(PUB, 'lab', 'rover');
