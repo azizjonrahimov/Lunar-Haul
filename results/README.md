@@ -36,3 +36,19 @@ Every row carries the metrics returned by `lunarsim.engine.Metrics.summary()`. T
 | `fleet_cost_musd`, `operator_cost_musd`, `cost_per_kg_usd`, `cost_per_tkm_usd` | system cost; cost per landed kg = 1e6 × (fleet + operator cost) / (delivered_kg − bulk_kg) |
 | `revenue_gini` | Gini coefficient of job revenue across vehicle owners |
 | `seed` | replication seed (demand stream = seed, operations stream = seed + 100,003) |
+
+## Phase-3 columns (present only when a Phase-3 scenario field is set: `terrain`, `landing_model`, `plume`, `autonomy_model`)
+
+| Column | Meaning |
+|---|---|
+| `plume_standdowns` | count of keep-out actions (jobs held at the boundary plus vehicles evacuated to a shelter) |
+| `standdown_vehicle_h` | vehicle-hours lost to keep-out holds and evacuation drives |
+| `landing_miss_m_mean` | mean horizontal miss of the sampled landings (m) |
+| `offpad_landings`, `failed_landings` | landings beyond the pad radius / with a failed touchdown |
+| `cargo_lost_kg` | cargo destroyed in failed landings (`failure_policy: lose`) |
+| `km_offpad_extra` | extra vehicle-km to fetch cargo from off-pad landers |
+| `interventions`, `intervention_h` | rover interventions drawn from the driving tables and their time cost (RTT + 300 s each) |
+| `prop_residual_kg_mean` | mean propellant left at touchdown (class gate propellant minus used) |
+
+Phase-3 suites: `E15_*` lander Monte Carlo summaries (and `E15_lunarlander_v3_warmup.json`, the tutorial reproduction),
+`E16` driving-table validation, `E17` dispersion × standoff, `E18` plume keep-out, `E19` autonomy × fleet, `E20` pad siting and the law fit.
