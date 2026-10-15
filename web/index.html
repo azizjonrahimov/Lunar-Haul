@@ -99,6 +99,9 @@ progress { width: 100%; height: 6px; accent-color: var(--accent); border-radius:
 .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 0 10px; }
 .toolbar .spacer { flex: 1; }
 canvas#map { width: 100%; height: auto; display: block; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); }
+.replayhead { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12px; color: var(--ink2); font-family: var(--mono); margin: 0 0 6px; min-height: 18px; }
+.replayhead b { color: var(--ink); font-weight: 600; }
+.replayhead .src { color: var(--muted); }
 .replay-controls { display: grid; grid-template-columns: auto 1fr auto auto; gap: 10px; align-items: center; margin-top: 10px; }
 @media (max-width: 600px) { .replay-controls { grid-template-columns: 1fr 1fr; } }
 .clock { font-family: var(--mono); font-size: 13px; color: var(--ink2); white-space: nowrap; }
@@ -249,7 +252,14 @@ footer { max-width: 1480px; margin: 0 auto; padding: 0 20px 40px; font-size: 12p
   <section id="tab-replay" class="tabpane hidden">
     <div class="card">
       <h3>One simulated year on the base map</h3>
-      <p class="sub">Replays the first seed of the last run. Vehicles move along the site graph; a ring around a site shows cargo waiting there; the shaded overlay is the lunar night. Filled markers are loaded vehicles; the label gives the load.</p>
+      <p class="sub">Replays the first seed of the last run, or any lunarsim-trace v1 file (the Python <code>lunarsim trace</code> output or a trace exported here). Vehicles move along the site graph; a ring around a site shows cargo waiting there; the shaded overlay is the lunar night. Filled markers are loaded vehicles; the label gives the load.</p>
+      <div class="toolbar">
+        <label class="btn ghost small" for="importTrace" style="margin:0">Load trace JSON…</label>
+        <input id="importTrace" type="file" accept="application/json,.json" class="hidden">
+        <button class="btn ghost small" id="exportTrace" type="button" disabled>Export this trace</button>
+        <span class="status" id="rstatus" style="margin:0" role="status" aria-live="polite"></span>
+      </div>
+      <div class="replayhead" id="replayhead"></div>
       <canvas id="map" width="1100" height="660"></canvas>
       <div class="replay-controls">
         <button class="btn secondary small" id="play" type="button">Play</button>
@@ -295,6 +305,7 @@ footer { max-width: 1480px; margin: 0 auto; padding: 0 20px 40px; font-size: 12p
 
 <script src="ref.js"></script>
 <script src="sim.js"></script>
+<script src="formats.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

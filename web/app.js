@@ -47,7 +47,7 @@ async function runSeeds(sc, mechName, seeds, opts, onProgress) {
   const results = await Promise.all(chunks.map((ch, k) => workerCall({ type: 'run', scenario: sc, mechanism: mechName, seeds: ch, opts, trace: k === 0 },
     (done, total) => { progress[k] = done / total; onProgress && onProgress(progress.reduce((a, b) => a + b, 0) / chunks.length); })));
   const runs = results.flatMap(r => r.runs).sort((a, b) => a.seed - b.seed);
-  return [runs, results[0].trace];
+  return [runs, results[0].trace ? readTrace(results[0].trace) : null];  // lunarsim-trace v1 -> replay model (formats.js)
 }
 
 // ---------- statistics ----------
@@ -57,7 +57,7 @@ async function runSeeds(sc, mechName, seeds, opts, onProgress) {
 let fleet = JSON.parse(JSON.stringify(PRESETS[4]));
 let lastRuns = null, lastTrace = null, compareRuns = null, lastScenario = null;
 
-function readScenario() { return makeScenario({ phase: $('phase').value, bulkT: +$('bulk').value, fleet: fleet.map(f => ({ ...f })), night: +$('night').value, rtt: +$('rtt').value, nOps: +$('ops').value, duty: +$('duty').value, mtbf: +$('mtbf').value, std: +$('std').value }); }
+function readScenario() { return Object.assign(makeScenario({ phase: $('phase').value, bulkT: +$('bulk').value, fleet: fleet.map(f => ({ ...f })), night: +$('night').value, rtt: +$('rtt').value, nOps: +$('ops').value, duty: +$('duty').value, mtbf: +$('mtbf').value, std: +$('std').value }), { name: `lunarsim-live-${$('phase').value}` }); }
 function marketOpts() { return { bundling: $('c_bundling').checked, consolidate: $('c_consolidate').checked, team_lift: $('c_team').checked, night_aware: $('c_night').checked, anticipate: $('c_anticipate').checked, backhaul: $('c_backhaul').checked, priority: $('c_priority').checked }; }
 function renderFleet() {
   const el = $('fleet'); el.innerHTML = '';
@@ -185,7 +185,17 @@ function renderCompare(res, n) {
 
 // ---------- replay ----------
 let replay = { tr: null, t: 0, playing: false, last: 0 };
-function setupReplay(tr) { if (!tr) return; replay.tr = tr; replay.t = 0; $('tslider').max = Math.floor(tr.horizon); $('tslider').value = 0; const owners = [...new Set(tr.vehicles.map(v => v.owner))]; $('maplegend').innerHTML = owners.map((o, i) => `<span style="--c: var(--s${(i % 8) + 1})">${o}</span>`).join('') + `<span style="--c: var(--s2)">landing pad</span><span style="--c: var(--night)">night</span>`; drawMap(); }
+function setupReplay(tr, source) { if (!tr) return; replay.tr = tr; replay.t = 0; replay.playing = false; $('play').textContent = 'Play'; $('tslider').max = Math.floor(tr.horizon); $('tslider').value = 0; const owners = [...new Set(tr.vehicles.map(v => v.owner))]; $('maplegend').innerHTML = owners.map((o, i) => `<span style="--c: var(--s${(i % 8) + 1})">${o}</span>`).join('') + `<span style="--c: var(--s2)">landing pad</span><span style="--c: var(--night)">night</span>`; replayHeader(tr, source); $('exportTrace').disabled = false; drawMap(); }
+function replayHeader(tr, source) { const m = tr.meta || {}, esc = x => String(x).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]); const val = x => x === null || x === undefined || x === '' ? '–' : esc(x);
+  $('replayhead').innerHTML = `<span>engine <b>${val(m.engine)}</b></span><span>scenario <b>${val(m.scenario)}</b></span><span>mechanism <b>${val(MECH_LABEL[m.mechanism] || m.mechanism)}</b></span><span>seed <b>${val(m.seed)}</b></span><span class="src">${source ? 'from file ' + esc(source) + (m.legacy ? ' (no format header; read as v1)' : '') : 'from the last run'}</span>`; }
+$('importTrace').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return; const r = new FileReader();
+  r.onload = () => { try { const tr = readTrace(String(r.result)); setupReplay(tr, f.name); $('rstatus').textContent = `Loaded ${f.name}: ${tr.vehicles.length} vehicles, ${tr.jobs.length} trips, ${tr.cargo.length} cargo items, ${tr.landings.length} landings, ${tr.nights.length} nights.`; }
+    catch (err) { $('rstatus').textContent = `Could not read ${f.name}: ${err.message}. The previous replay is unchanged.`; } };
+  r.onerror = () => { $('rstatus').textContent = `Could not read ${f.name}.`; };
+  r.readAsText(f); e.target.value = '';
+});
+$('exportTrace').addEventListener('click', () => { if (!replay.tr) return; const m = replay.tr.meta || {}; const name = ['lunarsim-trace', m.scenario, m.mechanism, m.seed === null || m.seed === undefined ? null : 'seed' + m.seed].filter(x => x !== null && x !== undefined && x !== '').join('_').replace(/[^\w.-]+/g, '-') + '.json'; download(name, JSON.stringify(traceToJson(replay.tr)), 'application/json'); $('rstatus').textContent = `Exported ${name}.`; });
 $('tslider').addEventListener('input', e => { replay.t = +e.target.value; drawMap(); });
 $('play').addEventListener('click', () => { replay.playing = !replay.playing; $('play').textContent = replay.playing ? 'Pause' : 'Play'; if (replay.playing) { replay.last = performance.now(); requestAnimationFrame(tick); } });
 function tick(now) { if (!replay.playing || !replay.tr) return; const dt = (now - replay.last) / 1000; replay.last = now; replay.t += dt * (+$('speed').value); if (replay.t >= replay.tr.horizon) { replay.t = replay.tr.horizon; replay.playing = false; $('play').textContent = 'Play'; } $('tslider').value = Math.floor(replay.t); drawMap(); if (replay.playing) requestAnimationFrame(tick); }

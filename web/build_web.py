@@ -1,4 +1,4 @@
-"""Build the deployable site in web/dist/: copies index.html, app.js, sim.js, worker.js and writes ref.js with
+"""Build the deployable site in web/dist/: copies index.html, app.js, sim.js, formats.js, worker.js and writes ref.js with
 Python reference results for the cross-implementation check (Phase-2 default fleet, from results/E1_phases.csv)."""
 import json, os, shutil
 import numpy as np
@@ -31,7 +31,7 @@ def reference():
 
 def main():
     os.makedirs(DIST, exist_ok=True)
-    for f in ("index.html", "app.js", "sim.js", "worker.js"):
+    for f in ("index.html", "app.js", "sim.js", "formats.js", "worker.js"):
         shutil.copy(os.path.join(HERE, f), os.path.join(DIST, f))
     ref = reference()
     open(os.path.join(DIST, "ref.js"), "w", encoding="utf-8").write("window.PY_REF = " + json.dumps(ref) + ";\n")

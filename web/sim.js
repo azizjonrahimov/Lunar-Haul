@@ -243,8 +243,14 @@ class Simulation {
       jobs: m.jobs, bundled_jobs: m.bundled, team_lifts: m.teamLifts, night_strandings: m.nightStr, faults: m.faults, utilisation: m.busy / Math.max(1e-9, H * this.vehicles.length), empty_km_share: m.kmEmpty / Math.max(m.km, 1e-9), km_total: m.km,
       operator_hours: m.opHours, fleet_cost_musd: m.fleetCost, operator_cost_musd: m.opCost, cost_per_kg_usd: 1e6 * totalCost / Math.max(m.delivered, 1e-9), cost_per_landed_kg_usd: 1e6 * totalCost / Math.max(m.delivered - m.bulk, 1e-9), revenue_gini: gini, repositions: this.repositions, backhaul_kg: m.backhaulKg, bulk_kg: m.bulk, unmet_operator_waits: m.unmetOps };
   }
-  exportTrace() { const nights = []; if (this.sc.night > 0) { let t = 0; while (t < this.sc.horizon) { const ns = this.nextNightStart(t), ne = ns + this.sc.night * CYCLE; nights.push([ns, Math.min(ne, this.sc.horizon)]); t = ne + 1e-6; } }
-    return { horizon: this.sc.horizon, nights, landings: this.landingSchedule.map(([t, lt, pad]) => [t, lt.name, pad]), vehicles: this.vehicles.map(v => ({ id: v.id, owner: v.owner, cls: v.cls.name, autonomy: v.autonomy, cap: v.cls.cap })), jobs: this.trace || [], cargo: this.allCargo.map(c => ({ id: c.id, mass: c.mass, origin: c.origin, dest: c.dest, tReady: c.tReady, tPicked: c.tPicked, tDelivered: c.tDelivered, prio: c.prio, cls: c.cls, stranded: c.stranded, tLanded: c.tLanded })) }; }
+  exportTrace(meta = {}) { const nights = []; if (this.sc.night > 0) { let t = 0; while (t < this.sc.horizon) { const ns = this.nextNightStart(t), ne = ns + this.sc.night * CYCLE; nights.push([ns, Math.min(ne, this.sc.horizon)]); t = ne + 1e-6; } }
+    // lunarsim-trace v1 (PLAN §4.1): same shape as Python's trace_export(); cargo as rows looked up by column name
+    const mechName = meta.mechanism || Object.keys(MECHS).find(k => MECHS[k] === this.mech) || null;
+    return { format: 'lunarsim-trace', version: 1, engine: 'js', scenario: meta.scenario || this.sc.name || null, mechanism: mechName, seed: meta.seed !== undefined ? meta.seed : null, horizon_h: this.sc.horizon,
+      nights, landings: this.landingSchedule.map(([t, lt, pad]) => [t, lt.name, pad]),
+      vehicles: this.vehicles.map(v => ({ id: v.id, owner: v.owner, cls: v.cls.name, autonomy: v.autonomy, capacity: v.cls.cap, night_ops: v.cls.nightOps })), jobs: this.trace || [],
+      cargo_columns: ['id', 'owner', 'mass_kg', 'origin', 'dest', 't_ready', 't_picked', 't_delivered', 'priority', 'cls', 'stranded', 't_landed'],
+      cargo: this.allCargo.map(c => [c.id, c.owner, c.mass, c.origin, c.dest, c.tReady, c.tPicked, c.tDelivered, c.prio, c.cls, c.stranded ? 1 : 0, c.tLanded === undefined ? null : c.tLanded]) }; }
 }
 
 // ---------- Dispatch mechanisms (port of dispatch.py) ----------
@@ -311,7 +317,7 @@ function verificationChecks() { const checks = []; const push = (name, ref, sim,
   return checks; }
 
 // ---------- Worker protocol ----------
-// {type:'run', scenario, mechanism, seeds:[...], opts, trace:boolean} -> progress + result
+// {type:'run', scenario, mechanism, seeds:[...], opts, trace:boolean} -> progress + result (trace: lunarsim-trace v1 of the first seed, or null)
 // {type:'verify'} -> checks
 if (typeof importScripts === 'function') {  // only inside a web worker
   self.onmessage = (e) => {
@@ -322,7 +328,7 @@ if (typeof importScripts === 'function') {  // only inside a web worker
         const o = Object.assign({}, msg.opts || {}, i === 0 && msg.trace ? { trace: true } : {});
         const [s, sim] = runOne(msg.scenario, msg.mechanism, seed, o);
         out.push(s);
-        if (i === 0 && msg.trace) firstTrace = sim.exportTrace();
+        if (i === 0 && msg.trace) firstTrace = sim.exportTrace({ scenario: msg.scenario.name, mechanism: msg.mechanism, seed });
         if ((i + 1) % 5 === 0 || i === msg.seeds.length - 1) self.postMessage({ type: 'progress', id: msg.id, done: i + 1, total: msg.seeds.length });
       });
       self.postMessage({ type: 'result', id: msg.id, runs: out, trace: firstTrace, ms: Date.now() - t0 });
