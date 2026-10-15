@@ -6,7 +6,7 @@
     lunarsim verify
     lunarsim scenarios list | export --dir data/scenarios
     lunarsim precise  --scenario P2-default --mechanism marketplace --target 0.01 --confidence 0.99
-    lunarsim serve    --port 8765
+    lunarsim serve    --port 8765 [--static web/dist]
     lunarsim validate data/scenarios/*.json data/sample_traces/*.json
 """
 from __future__ import annotations
@@ -145,7 +145,10 @@ def cmd_precise(a):
 
 def cmd_serve(a):
     from .server import serve
-    serve(a.port)
+    try:
+        serve(a.port, a.static)
+    except ValueError as e:
+        raise SystemExit(str(e))
 
 
 def cmd_validate(a):
@@ -204,6 +207,7 @@ def main(argv=None):
     q.set_defaults(func=cmd_precise)
     w = sub.add_parser("serve", help="local JSON API on 127.0.0.1 (see lunarsim/server.py)")
     w.add_argument("--port", type=int, default=8765)
+    w.add_argument("--static", default=None, metavar="DIR", help="also serve this folder at / (e.g. web/dist)")
     w.set_defaults(func=cmd_serve)
     x = sub.add_parser("validate", help="check lunarsim-trace / lunarsim-scenario JSON files")
     x.add_argument("files", nargs="+", metavar="FILE")

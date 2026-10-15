@@ -167,3 +167,102 @@ def test_bad_json(base):
     assert st == 400 and "not valid JSON" in d["error"]
     st, d = call(base, "POST", "/api/run", raw=b"[1, 2]")
     assert st == 400 and "JSON object" in d["error"]
+
+
+# ---------------------------------------------------------------------------
+# B-5: Private Network Access preflight, --static
+# ---------------------------------------------------------------------------
+import http.client
+
+
+def test_private_network_preflight(base):
+    req = urllib.request.Request(base + "/api/run", method="OPTIONS", headers={
+        "Origin": "https://azizjonrahimov.github.io", "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Headers": "content-type", "Access-Control-Request-Private-Network": "true"})
+    with urllib.request.urlopen(req, timeout=10) as r:
+        assert r.status == 204
+        assert r.headers["Access-Control-Allow-Private-Network"] == "true"
+        assert r.headers["Access-Control-Allow-Origin"] == "*"
+
+
+def test_no_private_network_header_unless_asked(base):
+    with urllib.request.urlopen(base + "/api/health", timeout=10) as r:
+        assert r.headers["Access-Control-Allow-Private-Network"] is None
+
+
+def test_root_is_404_without_static(base):
+    assert call(base, "GET", "/")[0] == 404
+    assert call(base, "GET", "/index.html")[0] == 404
+
+
+@pytest.fixture(scope="module")
+def static(tmp_path_factory):
+    top = tmp_path_factory.mktemp("static")
+    site = top / "site"
+    (site / "sub").mkdir(parents=True)
+    files = {"index.html": "<!doctype html><title>t</title>", "app.js": "console.log(1)",
+             "data.json": '{"a": 1}', "style.css": "body{}", "sub/index.html": "sub page", "blob.bin": "xx"}
+    for name, text in files.items():
+        (site / name).write_text(text, encoding="utf-8")
+    (top / "secret.txt").write_text("top secret", encoding="utf-8")
+    srv = make_server(0, static_dir=str(site))
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    host, port = srv.server_address[:2]
+    yield host, port, files
+    srv.shutdown()
+    srv.server_close()
+
+
+def raw_get(host, port, path, method="GET"):
+    """http.client sends the path exactly as given (urllib would not normalise it either, but be explicit)."""
+    c = http.client.HTTPConnection(host, port, timeout=10)
+    c.request(method, path)
+    r = c.getresponse()
+    body = r.read()
+    c.close()
+    return r.status, r.getheader("Content-Type"), body
+
+
+@pytest.mark.parametrize("path,name,ctype", [
+    ("/", "index.html", "text/html; charset=utf-8"),
+    ("/index.html", "index.html", "text/html; charset=utf-8"),
+    ("/app.js", "app.js", "text/javascript; charset=utf-8"),
+    ("/data.json", "data.json", "application/json"),
+    ("/style.css", "style.css", "text/css; charset=utf-8"),
+    ("/sub/", "sub/index.html", "text/html; charset=utf-8"),
+    ("/app.js?v=3", "app.js", "text/javascript; charset=utf-8"),
+    ("/blob.bin", "blob.bin", "application/octet-stream"),
+])
+def test_static_files(static, path, name, ctype):
+    host, port, files = static
+    st, ct, body = raw_get(host, port, path)
+    assert (st, ct, body.decode()) == (200, ctype, files[name])
+
+
+def test_static_keeps_api(static):
+    host, port, _ = static
+    st, ct, body = raw_get(host, port, "/api/health")
+    assert st == 200 and json.loads(body)["engine"] == "python"
+    assert raw_get(host, port, "/api/nothing")[0] == 404          # unknown API path is not a file lookup
+
+
+@pytest.mark.parametrize("path", [
+    "/../secret.txt", "/sub/../../secret.txt", "/%2e%2e/secret.txt", "/%2E%2E%2Fsecret.txt",
+    "/..%5Csecret.txt", "/sub/..%2F..%2Fsecret.txt", "/C:/Windows/win.ini", "/%00index.html",
+])
+def test_static_refuses_traversal(static, path):
+    host, port, _ = static
+    st, ct, body = raw_get(host, port, path)
+    assert st in (403, 404) and b"top secret" not in body
+    assert ct == "application/json" and "error" in json.loads(body)
+
+
+def test_static_missing_file_and_post(static):
+    host, port, _ = static
+    assert raw_get(host, port, "/nope.js")[0] == 404
+    assert raw_get(host, port, "/index.html", method="POST")[0] == 404   # GET only
+
+
+def test_static_dir_must_exist(tmp_path):
+    with pytest.raises(ValueError, match="no such folder"):
+        make_server(0, static_dir=str(tmp_path / "missing"))

@@ -14,6 +14,11 @@ static page can call it. Errors are HTTP 4xx/5xx with {"error": "message"}. NaN 
     POST /api/trace               {"scenario", "mechanism", "seed"} -> lunarsim-trace v1
     GET  /api/verify              {"checks": [...], "passed": n, "total": n}
 
+With --static DIR (e.g. web/dist) every other GET path serves that folder's files ("/" ->
+index.html), so the page and the API share one origin. Paths that resolve outside DIR are
+refused. Chrome's Private Network Access preflight (an https page such as the GitHub Pages
+site calling http://127.0.0.1) is answered with Access-Control-Allow-Private-Network: true.
+
 A scenario object may be either form (lunarsim.config); a compact form's `marketplace` flags
 are used for the marketplace mechanisms, and `opts` (same keys) override them. Scenario names
 are looked up in the named library only; file paths are not accepted over HTTP.
@@ -24,6 +29,8 @@ import argparse
 import json
 import logging
 import math
+import os
+import posixpath
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -36,6 +43,15 @@ HOST = "127.0.0.1"
 MAX_SEEDS = 100
 MAX_BODY = 1 << 20          # 1 MiB of JSON is far more than any scenario needs
 COMPARE_MECHANISMS = ("inhouse", "pooled_greedy", "central_assign", "marketplace")
+STATIC_TYPES = {
+    ".html": "text/html; charset=utf-8", ".htm": "text/html; charset=utf-8",
+    ".js": "text/javascript; charset=utf-8", ".mjs": "text/javascript; charset=utf-8",
+    ".json": "application/json", ".css": "text/css; charset=utf-8", ".csv": "text/csv; charset=utf-8",
+    ".txt": "text/plain; charset=utf-8", ".md": "text/markdown; charset=utf-8",
+    ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+    ".gif": "image/gif", ".ico": "image/x-icon", ".webp": "image/webp", ".pdf": "application/pdf",
+    ".wasm": "application/wasm", ".woff2": "font/woff2", ".woff": "font/woff", ".map": "application/json",
+}
 
 
 class ApiError(Exception):
@@ -230,17 +246,43 @@ class Handler(BaseHTTPRequestHandler):
 
     def _send(self, status: int, payload: Any = None) -> None:
         body = b"" if payload is None else json.dumps(clean(payload), allow_nan=False).encode("utf-8")
+        self._send_bytes(status, body, "application/json" if payload is not None else None)
+
+    def _send_bytes(self, status: int, body: bytes, content_type: Any = None, extra: Any = None) -> None:
         self.send_response(status)
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.send_header("Access-Control-Max-Age", "600")
-        if payload is not None:
-            self.send_header("Content-Type", "application/json")
+        if (self.headers.get("Access-Control-Request-Private-Network") or "").lower() == "true":
+            self.send_header("Access-Control-Allow-Private-Network", "true")   # Chrome PNA preflight
+        if content_type:
+            self.send_header("Content-Type", content_type)
+        for k, v in (extra or {}).items():
+            self.send_header(k, v)
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         if body:
             self.wfile.write(body)
+
+    def _static(self, path: str) -> None:
+        """Serve a file under server.static_dir, refusing anything that resolves outside it."""
+        root = self.server.static_dir
+        rel = unquote(path).replace("\\", "/")
+        parts = [p for p in rel.split("/") if p not in ("", ".")]
+        if ".." in parts or any(":" in p or "\x00" in p for p in parts):
+            raise ApiError(403, "path outside the static folder")
+        full = os.path.realpath(os.path.join(root, *parts))
+        if os.path.commonpath([root, full]) != root:
+            raise ApiError(403, "path outside the static folder")
+        if os.path.isdir(full):
+            full = os.path.join(full, "index.html")
+        if not os.path.isfile(full):
+            raise ApiError(404, f"no file {path}")
+        with open(full, "rb") as f:
+            body = f.read()
+        ctype = STATIC_TYPES.get(os.path.splitext(full)[1].lower(), "application/octet-stream")
+        self._send_bytes(200, body, ctype, {"Cache-Control": "no-cache"})
 
     def _dispatch(self, method: str) -> None:
         try:
@@ -252,6 +294,8 @@ class Handler(BaseHTTPRequestHandler):
                     return self._send(200, api_scenario(unquote(path[len("/api/scenarios/"):])))
                 if path in POST_ROUTES:
                     raise ApiError(405, f"{path} needs POST")
+                if self.server.static_dir and not (path + "/").startswith("/api/"):
+                    return self._static(urlsplit(self.path).path)
             else:
                 if path in POST_ROUTES:
                     return self._send(200, POST_ROUTES[path](self._body()))
@@ -290,17 +334,25 @@ class Handler(BaseHTTPRequestHandler):
         self._send(204)
 
 
-def make_server(port: int = 8765) -> ThreadingHTTPServer:
-    """A ThreadingHTTPServer on 127.0.0.1:port (port 0 picks a free one; see .server_address)."""
+def make_server(port: int = 8765, static_dir: Any = None) -> ThreadingHTTPServer:
+    """A ThreadingHTTPServer on 127.0.0.1:port (port 0 picks a free one; see .server_address).
+    With static_dir, non-API GET paths serve files from that folder."""
+    if static_dir is not None:
+        static_dir = os.path.realpath(static_dir)
+        if not os.path.isdir(static_dir):
+            raise ValueError(f"--static: no such folder {static_dir}")
     srv = ThreadingHTTPServer((HOST, port), Handler)
     srv.daemon_threads = True
+    srv.static_dir = static_dir
     return srv
 
 
-def serve(port: int = 8765) -> None:
-    srv = make_server(port)
+def serve(port: int = 8765, static_dir: Any = None) -> None:
+    srv = make_server(port, static_dir)
     host, port = srv.server_address[:2]
     print(f"lunarsim API on http://{host}:{port}/api/health  (Ctrl+C to stop)", flush=True)
+    if static_dir:
+        print(f"serving {srv.static_dir} at http://{host}:{port}/", flush=True)
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
@@ -313,7 +365,9 @@ def main(argv=None) -> None:
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     p = argparse.ArgumentParser(prog="lunarsim serve", description="local JSON API over the reference engine")
     p.add_argument("--port", type=int, default=8765)
-    serve(p.parse_args(argv).port)
+    p.add_argument("--static", default=None, metavar="DIR", help="also serve this folder at / (e.g. web/dist)")
+    a = p.parse_args(argv)
+    serve(a.port, a.static)
 
 
 if __name__ == "__main__":
