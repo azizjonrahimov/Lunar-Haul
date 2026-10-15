@@ -115,7 +115,10 @@ def train_descent(cls: str, variant: str, steps: int, seed: int, out_dir: str, r
     lr = kw.get("learning_rate")
     if isinstance(lr, str) and lr.startswith("linear:"):
         lr0 = float(lr.split(":", 1)[1])
-        kw["learning_rate"] = lambda progress_remaining: lr0 * progress_remaining
+        # SB3's progress_remaining = 1 - steps / total goes NEGATIVE in the last rollout when n_envs * n_steps does not
+        # divide the budget (e.g. 311,296 of 300,000): an unclamped linear schedule then makes the final update a
+        # gradient *ascent* step (B-10c: a 50 % checkpoint evaluated at 3 % after it). Clamp at 0.
+        kw["learning_rate"] = lambda progress_remaining: lr0 * max(progress_remaining, 0.0)
     try:
         import tensorboard  # noqa: F401
         tb = os.path.join(run_dir, "tb")
@@ -169,7 +172,9 @@ def train_descent(cls: str, variant: str, steps: int, seed: int, out_dir: str, r
                 "steps": int(model.num_timesteps), "seed": seed, "hyperparams": hp, "reward_variant": variant,
                 "cls": cls, "curriculum": curriculum, "wallclock_s": round(wall, 1), "s_per_100k_steps": round(wall / model.num_timesteps * 1e5, 1),
                 "git_sha": git_sha(), "python": platform.python_version(), "platform": platform.platform(),
-                "final_eval": {**final, "episodes": eval_n, "seed0": 10_000_000}, "curve": curve}
+                "end_of_training_eval": {**final, "episodes": eval_n, "seed0": 10_000_000,
+                                         "how": "SB3 model.predict on the training seed set (curve's last point)"},
+                "curve": curve}
     card = {"title": f"PPO terminal-descent policy, {cls}, reward variant '{variant}'",
             "intended_use": "stochastic generator of landing outcomes for the LunarSim DES; not flight software",
             "env": f"{ENV_ID} v{ENV_VERSION}: 3-DoF point mass, rate-limited thrust axis, SPLICE gate dispersion, "
@@ -180,7 +185,17 @@ def train_descent(cls: str, variant: str, steps: int, seed: int, out_dir: str, r
     doc = export.write(model, out_json, env_id=ENV_ID, env_version=ENV_VERSION, obs_names=OBS_NAMES,
                        obs_scale=obs_scale(CLASSES[cls]).tolist(), obs_offset=OBS_OFFSET.tolist(),
                        act_names=ACT_NAMES, training=training, card=card)
-    return {"policy": out_json, "run_dir": run_dir, "final": final, "wallclock_s": wall, "doc": doc}
+    # the card's final_eval is the quantity evaluate.py reports: the exported numpy policy, evaluate()'s default
+    # seeds, the same env construction (sensor on, dispersion on)
+    from .evaluate import evaluate as mc_evaluate, EVAL_SEED0
+    summ = mc_evaluate(out_json, cls, eval_n, seed0=EVAL_SEED0)
+    doc["training"]["final_eval"] = {"episodes": eval_n, "seed0": EVAL_SEED0, "pass_rate": summ["pass_rate"],
+                                     "box_rate": summ["touchdown_box_rate"], "failure_counts": summ["failure_counts"],
+                                     "how": "lunarsim.lander.evaluate on the exported JSON policy"}
+    with open(out_json, "w", encoding="utf-8") as f:
+        json.dump(doc, f)
+    return {"policy": out_json, "run_dir": run_dir, "final": final, "final_eval": doc["training"]["final_eval"],
+            "wallclock_s": wall, "doc": doc}
 
 
 def train_lunarlander(steps: int, seed: int, run_root: str, n_eval: int = 20, verbose: int = 0,
@@ -246,9 +261,10 @@ def main(argv=None):
                       eval_every=a.eval_every, eval_n=a.eval_n, n_envs=a.n_envs, verbose=a.verbose,
                       curriculum=a.curriculum, subproc=not a.no_subproc, hyper_set=a.hyper_set,
                       init_from_bc=a.init_from_bc)
-    f = r["final"]
-    print(f"done in {r['wallclock_s']:.0f} s ({r['doc']['training']['s_per_100k_steps']} s / 100k steps): return "
-          f"{f['mean_return']:.2f}, touchdown box {100 * f['box_rate']:.1f} %, pass {100 * f['pass_rate']:.1f} %")
+    f, fe = r["final"], r["final_eval"]
+    print(f"done in {r['wallclock_s']:.0f} s ({r['doc']['training']['s_per_100k_steps']} s / 100k steps): end-of-training "
+          f"return {f['mean_return']:.2f}, box {100 * f['box_rate']:.1f} %; card final_eval (evaluate.py, "
+          f"{fe['episodes']} episodes): box {100 * fe['box_rate']:.1f} %, pass {100 * fe['pass_rate']:.1f} %")
     print(f"wrote {r['policy']} and {r['run_dir']}")
 
 

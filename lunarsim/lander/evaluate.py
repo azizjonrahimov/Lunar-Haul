@@ -162,7 +162,10 @@ def _sha(path: str) -> str:
         return hashlib.sha256(f.read()).hexdigest()
 
 
-def evaluate(policy_path: Optional[str], cls: str, n: int, seed0: int = 100_000, sensor: bool = True,
+EVAL_SEED0 = 100_000           # first Monte Carlo episode seed (training uses other seeds)
+
+
+def evaluate(policy_path: Optional[str], cls: str, n: int, seed0: int = EVAL_SEED0, sensor: bool = True,
              out_dir: Optional[str] = None, name: Optional[str] = None) -> Dict[str, Any]:
     """Run the Monte Carlo; write the table if out_dir. Returns the summary (plus the path)."""
     from .env import DescentEnv, ENV_ID, ENV_VERSION
@@ -194,7 +197,7 @@ def main(argv=None):
     g.add_argument("--classical", action="store_true")
     p.add_argument("--cls", default="CLPS", choices=sorted(CLASSES))
     p.add_argument("--n", type=int, default=500)
-    p.add_argument("--seed0", type=int, default=100_000, help="first episode seed (training uses other seeds)")
+    p.add_argument("--seed0", type=int, default=EVAL_SEED0, help="first episode seed (training uses other seeds)")
     p.add_argument("--no-sensor", action="store_true")
     p.add_argument("--out-dir", default=os.path.join("data", "policies"))
     a = p.parse_args(argv)

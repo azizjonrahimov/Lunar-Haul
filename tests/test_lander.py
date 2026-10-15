@@ -300,3 +300,35 @@ def test_lander_parity_fixture_is_current():
             assert np.allclose(obs, st["obs"], atol=1e-6) and abs(r - st["reward"]) < 1e-9
             assert (te, tr) == (st["terminated"], st["truncated"])
         assert info["outcome"]["failure_kind"] == ep["outcome"]["failure_kind"]
+
+
+# ---------------------------------------------------------------------------
+# B-10c: the card's final evaluation is the evaluate.py quantity; the lr schedule never goes negative
+# ---------------------------------------------------------------------------
+def test_final_eval_matches_evaluate_and_reloaded_model(tmp_path):
+    sb3 = pytest.importorskip("stable_baselines3")
+    from lunarsim.lander import train as T
+    from lunarsim.lander.evaluate import evaluate as mc, run_episodes, EVAL_SEED0
+    hp = dict(T.HYPER_SETS["finetune"], n_envs=2, n_steps=1536, batch_size=256, n_epochs=2)   # 2 x 1536 x 2 > 5000
+    r = T.train_descent("CLPS", "baseline", 5000, 0, str(tmp_path / "pol"), str(tmp_path / "runs"),
+                        eval_every=10**9, eval_n=20, subproc=False, hyper=hp, curriculum=0.0)
+    card = r["doc"]["training"]["final_eval"]
+    again = mc(r["policy"], "CLPS", 20, seed0=EVAL_SEED0)
+    assert card["box_rate"] == again["touchdown_box_rate"] and card["failure_counts"] == again["failure_counts"]
+    model = sb3.PPO.load(os.path.join(r["run_dir"], "model.zip"), device="cpu")
+    recs = run_episodes(DescentEnv(cls="CLPS"), lambda o, e: model.predict(o, deterministic=True)[0], 20, EVAL_SEED0)
+    assert sum(x["touchdown_ok"] for x in recs) / 20 == pytest.approx(card["box_rate"], abs=0.05)   # float32 vs float64
+    stored = json.load(open(r["policy"], encoding="utf-8"))
+    assert stored["training"]["final_eval"] == card                                                # rewritten into the file
+
+
+def test_linear_schedule_is_clamped_at_zero():
+    pytest.importorskip("stable_baselines3")
+    from lunarsim.lander import train as T
+    hp = dict(T.HYPER_SETS["finetune"])
+    lr0 = float(hp["learning_rate"].split(":")[1])
+    # reproduce the schedule train_descent builds
+    kw_lr = (lambda progress_remaining: lr0 * max(progress_remaining, 0.0))
+    assert kw_lr(1.0) == lr0 and kw_lr(0.0) == 0.0 and kw_lr(-0.04) == 0.0
+    import inspect
+    assert "max(progress_remaining, 0.0)" in inspect.getsource(T.train_descent)
