@@ -31,6 +31,18 @@ HYPER_DESCENT: Dict[str, Any] = {"n_envs": 8, "n_steps": 1024, "batch_size": 256
                                  "vf_coef": 0.5, "max_grad_norm": 0.5,
                                  "policy_kwargs": {"net_arch": [64, 64], "log_std_init": -0.5},
                                  "normalize_reward": True}
+# named hyperparameter sets (--hyper-set); learning_rate "linear:<x>" decays linearly from x to 0
+HYPER_SETS: Dict[str, Dict[str, Any]] = {
+    "default": HYPER_DESCENT,
+    "b10b": {"n_envs": 8, "n_steps": 2048, "batch_size": 256, "n_epochs": 10, "gamma": 0.995, "gae_lambda": 0.98,
+             "learning_rate": "linear:1e-4", "clip_range": 0.2, "ent_coef": 0.0, "vf_coef": 0.5, "max_grad_norm": 0.5,
+             "policy_kwargs": {"net_arch": [128, 128], "log_std_init": -0.5}, "normalize_reward": True},
+    # fine-tuning a behaviour-cloned policy: small, decaying steps; no reward normalisation so the BC-fitted
+    # critic (raw discounted returns, gamma 0.995) stays valid
+    "finetune": {"n_envs": 8, "n_steps": 2048, "batch_size": 256, "n_epochs": 10, "gamma": 0.995, "gae_lambda": 0.98,
+                 "learning_rate": "linear:1e-4", "clip_range": 0.1, "ent_coef": 0.0, "vf_coef": 0.5, "max_grad_norm": 0.5,
+                 "policy_kwargs": {"net_arch": [128, 128], "log_std_init": -1.5}, "normalize_reward": False},
+}
 HYPER_LUNARLANDER: Dict[str, Any] = {"n_envs": 16, "n_steps": 1024, "batch_size": 64, "n_epochs": 4, "gamma": 0.999,
                                      "gae_lambda": 0.98, "ent_coef": 0.01}   # RL-Zoo ppo.yml, LunarLander-v3
 
@@ -71,7 +83,8 @@ def _make_eval_fn(cls: str, variant: str, n: int, seed0: int):
 def train_descent(cls: str, variant: str, steps: int, seed: int, out_dir: str, run_root: str,
                   eval_every: int = 50_000, eval_n: int = 100, n_envs: Optional[int] = None,
                   subproc: bool = True, verbose: int = 0, hyper: Optional[Dict[str, Any]] = None,
-                  curriculum: float = CURRICULUM) -> Dict[str, Any]:
+                  curriculum: float = CURRICULUM, hyper_set: str = "default",
+                  init_from_bc: Optional[str] = None) -> Dict[str, Any]:
     import stable_baselines3 as sb3
     import torch
     from stable_baselines3 import PPO
@@ -82,7 +95,11 @@ def train_descent(cls: str, variant: str, steps: int, seed: int, out_dir: str, r
     from .classes import CLASSES
     from .env import ACT_NAMES, ENV_ID, ENV_VERSION, OBS_NAMES, OBS_OFFSET, DescentEnv, obs_scale
 
-    hp = dict(HYPER_DESCENT if hyper is None else hyper)
+    if hyper is None:
+        if hyper_set not in HYPER_SETS:
+            raise ValueError(f"unknown hyper set {hyper_set!r}; known: {', '.join(HYPER_SETS)}")
+        hyper = HYPER_SETS[hyper_set]
+    hp = json.loads(json.dumps(hyper))       # deep copy; stays JSON for the training record
     if n_envs:
         hp["n_envs"] = n_envs
     pid = f"lander_{cls}_{variant}_s{seed}"
@@ -95,12 +112,25 @@ def train_descent(cls: str, variant: str, steps: int, seed: int, out_dir: str, r
     if hp.get("normalize_reward"):          # rewards only: the exported policy sees the env's own observations
         vec = VecNormalize(vec, norm_obs=False, norm_reward=True, gamma=hp["gamma"])
     kw = {k: v for k, v in hp.items() if k not in ("n_envs", "normalize_reward")}
+    lr = kw.get("learning_rate")
+    if isinstance(lr, str) and lr.startswith("linear:"):
+        lr0 = float(lr.split(":", 1)[1])
+        kw["learning_rate"] = lambda progress_remaining: lr0 * progress_remaining
     try:
         import tensorboard  # noqa: F401
         tb = os.path.join(run_dir, "tb")
     except ImportError:
         tb = None
     model = PPO("MlpPolicy", vec, seed=seed, verbose=verbose, device="cpu", tensorboard_log=tb, **kw)
+    init_rec = None
+    if init_from_bc:                       # copy the behaviour-cloned actor/critic (same architecture required)
+        bc = PPO.load(init_from_bc, device="cpu")
+        model.policy.load_state_dict(bc.policy.state_dict())
+        side = os.path.splitext(init_from_bc)[0] + ".json"
+        init_rec = {"kind": "bc", "path": init_from_bc}
+        if os.path.exists(side):
+            with open(side, encoding="utf-8") as f:
+                init_rec["bc"] = json.load(f)
     evaluate = _make_eval_fn(cls, variant, eval_n, seed0=10_000_000)
     curve = []
     t_start = time.time()
@@ -134,6 +164,8 @@ def train_descent(cls: str, variant: str, steps: int, seed: int, out_dir: str, r
         w.writeheader()
         w.writerows(curve)
     training = {"algo": "PPO", "sb3_version": sb3.__version__, "torch_version": torch.__version__,
+                "hyper_set": hyper_set if hyper is None or hyper is HYPER_SETS.get(hyper_set) else "custom",
+                "init": init_rec or {"kind": "random"},
                 "steps": int(model.num_timesteps), "seed": seed, "hyperparams": hp, "reward_variant": variant,
                 "cls": cls, "curriculum": curriculum, "wallclock_s": round(wall, 1), "s_per_100k_steps": round(wall / model.num_timesteps * 1e5, 1),
                 "git_sha": git_sha(), "python": platform.python_version(), "platform": platform.platform(),
@@ -195,6 +227,8 @@ def main(argv=None):
     p.add_argument("--eval-every", type=int, default=50_000)
     p.add_argument("--eval-n", type=int, default=100)
     p.add_argument("--curriculum", type=float, default=CURRICULUM)
+    p.add_argument("--hyper-set", default="default", choices=sorted(HYPER_SETS))
+    p.add_argument("--init-from-bc", default=None, help="SB3 zip from lunarsim.lander.bc_warmstart")
     p.add_argument("--no-subproc", action="store_true",
                    help="run all envs in this process (DummyVecEnv): slower, but no worker processes / far less memory")
     p.add_argument("--out-dir", default=os.path.join("data", "policies"))
@@ -210,7 +244,8 @@ def main(argv=None):
     print(f"training {a.cls} / {a.variant} / seed {a.seed} for {a.steps} steps", flush=True)
     r = train_descent(a.cls, a.variant, a.steps, a.seed, a.out_dir, os.path.join(a.run_root, "lander"),
                       eval_every=a.eval_every, eval_n=a.eval_n, n_envs=a.n_envs, verbose=a.verbose,
-                      curriculum=a.curriculum, subproc=not a.no_subproc)
+                      curriculum=a.curriculum, subproc=not a.no_subproc, hyper_set=a.hyper_set,
+                      init_from_bc=a.init_from_bc)
     f = r["final"]
     print(f"done in {r['wallclock_s']:.0f} s ({r['doc']['training']['s_per_100k_steps']} s / 100k steps): return "
           f"{f['mean_return']:.2f}, touchdown box {100 * f['box_rate']:.1f} %, pass {100 * f['pass_rate']:.1f} %")

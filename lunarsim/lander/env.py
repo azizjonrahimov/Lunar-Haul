@@ -31,7 +31,8 @@ except ImportError:  # physics/policy stay usable without the [ml] extra
     gym, spaces, _Base = None, None, object
 
 ENV_ID = "lunar/Descent-v0"
-ENV_VERSION = 1            # bump when dynamics, observation or outcome definitions change
+ENV_VERSION = 2            # bump when dynamics, observation, reward or outcome definitions change
+                           # v2 (B-10b): kappa 50, crash -5 per m/s outside the box, tracking weight x4 near the ground
 
 DT_S = 0.2                 # guidance step (Gaudet et al. 2018 update every 0.2 s), Modelled
 MAX_STEPS = 750            # 150 s episode cap, Assumed (gate-to-touchdown ~60-90 s nominal)
@@ -68,8 +69,11 @@ SITE_SLOPE_DEG = (0.0, 5.0)   # local slope under the lander, uniform, Assumed (
 # shaping (no eta, no crash cost) to show that pathology.
 # zeta: attitude-rate penalty per deg/s below 30 m (the 2 deg/s touchdown limit; a stochastic policy otherwise
 # arrives slewing). eta = 0.01 as Gaudet et al.: with a larger eta, hovering out the episode pays more than landing.
-_BASE = {"alpha": -0.05, "beta": -0.05, "delta": -0.05, "zeta": -0.01, "eta": 0.01, "kappa": 10.0, "lost": -10.0,
-         "crash": -1.0, "low_time": 0.0, "low_thrust": 0.0}
+# v2 (B-10b): with kappa 10 the effort and shaping savings of a fast, marginal landing outweighed the touchdown bonus
+# (PPO raised the return while the box rate fell); kappa 50, a steeper crash cost and stronger tracking near the
+# ground align the return with the touchdown box. near_gain: alpha x (1 + near_gain * max(0, 1 - z / 30 m)).
+_BASE = {"alpha": -0.05, "beta": -0.05, "delta": -0.05, "zeta": -0.01, "eta": 0.01, "kappa": 50.0, "lost": -10.0,
+         "crash": -5.0, "low_time": 0.0, "low_thrust": 0.0, "near_gain": 3.0}
 REWARD_VARIANTS: Dict[str, Dict[str, float]] = {
     "baseline":    dict(_BASE),
     "no_eta":      {**_BASE, "eta": 0.0, "crash": 0.0},
@@ -261,7 +265,8 @@ class DescentEnv(_Base):
 
         # shaping on the true state
         vt = target_velocity(new[P.X:P.Z + 1], new[P.VX:P.VZ + 1])
-        reward = rw["alpha"] * float(np.linalg.norm(new[P.VX:P.VZ + 1] - vt)) + rw["beta"] * tf + rw["eta"]
+        near = 1.0 + rw["near_gain"] * max(0.0, 1.0 - z / SENSOR["low_alt_m"])
+        reward = rw["alpha"] * near * float(np.linalg.norm(new[P.VX:P.VZ + 1] - vt)) + rw["beta"] * tf + rw["eta"]
         if z < SENSOR["low_alt_m"]:
             reward += rw["delta"] * max(0.0, P.tilt_deg(new[P.TX], new[P.TY]) - TOUCHDOWN["tilt_max_deg"]) / 6.0
             reward += rw["zeta"] * math.degrees(math.hypot(new[P.WX], new[P.WY]))

@@ -203,13 +203,14 @@ def cmd_validate(a):
     failed = 0
     for path in a.files:
         kind, legacy, errs = validate_file(path)
+        ver = getattr(validate_file, "last_version", None) or 1
         if errs:
             failed += 1
-            print(f"FAIL {path}" + ("" if kind == "?" else f"  {kind} v1"))
+            print(f"FAIL {path}" + ("" if kind == "?" else f"  {kind} v{ver}"))
             for e in errs:
                 print(f"     {e}")
         else:
-            print(f"OK   {path}  {kind} v1" + (" legacy" if legacy else ""))
+            print(f"OK   {path}  {kind} v{ver}" + (" legacy" if legacy else ""))
     if len(a.files) > 1:
         print(f"{len(a.files) - failed} of {len(a.files)} files valid")
     sys.exit(1 if failed else 0)

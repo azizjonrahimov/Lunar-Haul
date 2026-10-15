@@ -200,9 +200,9 @@ def test_policy_json_round_trip_equals_sb3(tmp_path):
     chk = json.load(open(tmp_path / "lander_test.check.json", encoding="utf-8"))
     pol = MlpPolicy.from_json(str(out))
     assert len(chk["obs"]) == 100 and doc["deterministic"] == "mean_clipped"
-    assert np.max(np.abs(pol.act(np.array(chk["obs"])) - np.array(chk["act"]))) < 1e-6
+    assert np.max(np.abs(pol.act(np.array(chk["obs"])) - np.array(chk["act"]))) < 1e-12   # reference vectors
     sb3_act, _ = model.predict(np.array(chk["obs"], np.float32), deterministic=True)
-    assert np.max(np.abs(pol.act(np.array(chk["obs"])) - sb3_act)) < 1e-6
+    assert np.max(np.abs(pol.act(np.array(chk["obs"])) - sb3_act)) < 1e-5               # float32 round-off
     # discrete action space -> argmax
     dmodel = sb3.PPO("MlpPolicy", "CartPole-v1", seed=0, device="cpu")
     ddoc = export.write(dmodel, str(tmp_path / "cartpole.json"), env_id="CartPole-v1", env_version=1,
@@ -234,3 +234,69 @@ def test_ppo_smoke_run_improves():
     q = len(rets) // 4
     assert q >= 20
     assert np.mean(rets[-q:]) > np.mean(rets[:q]) + 10, (np.mean(rets[:q]), np.mean(rets[-q:]))
+
+
+# ---------------------------------------------------------------------------
+# B-10b: behaviour-cloning warm start, hyper sets, the JS parity fixture
+# ---------------------------------------------------------------------------
+def test_bc_collect_and_fit_small(tmp_path):
+    pytest.importorskip("stable_baselines3")
+    from lunarsim.lander import bc_warmstart as BC
+    data = BC.collect("CLPS", 3, seed0=5)
+    assert data["obs"].shape[1] == len(OBS_NAMES) and data["act"].shape == (len(data["obs"]), 3)
+    assert np.all(np.abs(data["act"]) <= 1.0) and len(data["ret"]) == len(data["obs"])
+    from stable_baselines3 import PPO
+    model = PPO("MlpPolicy", DescentEnv(), seed=0, device="cpu", policy_kwargs={"net_arch": [16, 16]})
+    before = BC.fit(model, data, epochs=1, verbose=False)["actor_mse"]
+    after = BC.fit(model, data, epochs=10, verbose=False)["actor_mse"]
+    assert after < before
+    assert float(model.policy.log_std.mean()) == pytest.approx(-1.5)
+
+
+def test_hyper_sets_and_init_from_bc(tmp_path):
+    sb3 = pytest.importorskip("stable_baselines3")
+    from lunarsim.lander import train as T
+    assert {"default", "b10b", "finetune"} <= set(T.HYPER_SETS)
+    assert T.HYPER_SETS["finetune"]["clip_range"] == 0.1 and T.HYPER_SETS["finetune"]["normalize_reward"] is False
+    bc = sb3.PPO("MlpPolicy", DescentEnv(), seed=1, device="cpu", policy_kwargs={"net_arch": [128, 128]})
+    path = str(tmp_path / "bc.zip")
+    bc.save(path)
+    hp = dict(T.HYPER_SETS["finetune"], n_envs=1, n_steps=256, batch_size=128, n_epochs=1, learning_rate=0.0)
+    r = T.train_descent("CLPS", "baseline", 256, 0, str(tmp_path / "pol"), str(tmp_path / "runs"), eval_every=10**9,
+                        eval_n=1, subproc=False, hyper=hp, init_from_bc=path, curriculum=0.0)
+    tr = r["doc"]["training"]
+    assert tr["init"]["kind"] == "bc" and tr["hyper_set"] == "custom"
+    # learning rate 0: the exported actor equals the BC actor
+    w_bc = bc.policy.mlp_extractor.policy_net[0].weight.detach().double().numpy()
+    assert np.allclose(np.array(r["doc"]["layers"][0]["w"]), w_bc, atol=1e-12)
+
+
+def test_lander_parity_fixture_is_current():
+    path = os.path.join(ROOT, "tests", "fixtures", "lander_parity.json")
+    pol_path = os.path.join(ROOT, "data", "policies", "lander_CLPS_baseline_s0.json")
+    if not (os.path.exists(path) and os.path.exists(pol_path)):
+        pytest.skip("fixture or policy not present")
+    doc = json.load(open(path, encoding="utf-8"))
+    from lunarsim.lander.env import target_velocity, ENV_VERSION
+    assert doc["env_version"] == ENV_VERSION
+    for case in doc["physics"]:
+        c = CLASSES[case["cls"]]
+        s = np.array(case["state0"])
+        for a, want, thr in zip(case["actions"], case["states"], case["thrust"]):
+            s, t = P.step(s, a, c, case["dt"], case["thrust_scale"], case["isp_scale"], case["m_dry"])
+            assert np.max(np.abs(s - want)) < 1e-9 and abs(t - thr) < 1e-9
+        assert case["thrust"][-1] == 0.0
+    for tv in doc["target_velocity"]:
+        assert np.allclose(target_velocity(tv["pos"], tv["vel"]), tv["v_targ"], atol=1e-12)
+    pol = MlpPolicy.from_json(pol_path)
+    for ep in doc["episodes"]:
+        env = DescentEnv(cls=ep["cls"], variant="baseline", randomize=False, sensor=False)
+        obs, _ = env.reset(seed=0)
+        assert np.allclose(obs, ep["initial"]["obs"], atol=1e-7)
+        for st in ep["steps"]:
+            a = pol.act(obs)
+            assert np.allclose(a, st["action"], atol=1e-9)
+            obs, r, te, tr, info = env.step(np.asarray(st["action"], np.float32))
+            assert np.allclose(obs, st["obs"], atol=1e-6) and abs(r - st["reward"]) < 1e-9
+            assert (te, tr) == (st["terminated"], st["truncated"])
+        assert info["outcome"]["failure_kind"] == ep["outcome"]["failure_kind"]

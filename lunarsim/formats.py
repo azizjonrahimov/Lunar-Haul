@@ -354,7 +354,9 @@ def detect_kind(d: Any) -> str:
 
 
 def validate_file(path: str) -> Tuple[str, bool, List[str]]:
-    """(kind, legacy, errors) for a trace or scenario JSON file. kind is '?' if it cannot be read."""
+    """(kind, legacy, errors) for a trace or scenario JSON file. kind is '?' if it cannot be read.
+    The document's version is left in validate_file.last_version (1 for legacy files)."""
+    validate_file.last_version = None
     try:
         with open(path, encoding="utf-8") as f:
             d = json.load(f)
@@ -365,5 +367,6 @@ def validate_file(path: str) -> Tuple[str, bool, List[str]]:
     except ValueError as e:
         return "?", False, [str(e)]
     legacy = "format" not in d
+    validate_file.last_version = d.get("version", 1) if isinstance(d, dict) else None
     errs = validate_trace(d) if kind == "trace" else validate_scenario(d)
     return kind, legacy, errs

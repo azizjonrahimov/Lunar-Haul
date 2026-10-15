@@ -3,7 +3,9 @@
     python -m lunarsim.lander.export model.zip --out data/policies/lander_CLPS_baseline_s0.json
 
 Writes <id>.json (weights + obs/act spec + training record + card) and <id>.check.json: 100 random
-observations with SB3's own deterministic actions, the test vectors both runtimes must reproduce to 1e-6.
+observations with the float64 numpy runtime's actions (the reference both runtimes must reproduce to 1e-6),
+plus SB3's own float32 actions; the export fails if SB3 and the numpy runtime differ by more than 1e-4
+(float32 round-off grows with the network width).
 """
 from __future__ import annotations
 
@@ -70,25 +72,31 @@ def policy_doc(model, policy_id: str, env_id: str, env_version: Any, obs_names: 
     }
 
 
-def check_doc(model, policy_id: str, obs_dim: int, n: int = 100, seed: int = 0) -> Dict[str, Any]:
+SB3_TOLERANCE = 1e-4
+
+
+def check_doc(model, policy_id: str, obs_dim: int, n: int = 100, seed: int = 0, runtime=None) -> Dict[str, Any]:
     rng = np.random.default_rng(seed)
     obs = rng.uniform(-2.0, 2.0, size=(n, obs_dim)).astype(np.float32)
-    act, _ = model.predict(obs, deterministic=True)
+    sb3_act, _ = model.predict(obs, deterministic=True)
+    act = runtime.act(obs.astype(np.float64)) if runtime is not None else sb3_act
     return {"format": "lunarsim-policy-check", "version": 1, "policy": policy_id,
             "tolerance": 1e-6, "obs": obs.astype(float).tolist(), "act": np.asarray(act).astype(float).tolist(),
-            "note": "act = Stable-Baselines3 model.predict(obs, deterministic=True)"}
+            "sb3_act": np.asarray(sb3_act).astype(float).tolist(), "sb3_tolerance": SB3_TOLERANCE,
+            "note": "act = float64 numpy runtime (lunarsim.lander.policy) on obs; runtimes must match it to 1e-6. "
+                    "sb3_act = Stable-Baselines3 model.predict(obs, deterministic=True) in float32."}
 
 
 def write(model, out_json: str, **kw) -> Dict[str, Any]:
     """Write <id>.json and <id>.check.json next to it; verify the numpy runtime against SB3. Returns the doc."""
     policy_id = kw.pop("policy_id", None) or os.path.splitext(os.path.basename(out_json))[0]
     doc = policy_doc(model, policy_id, **kw)
-    chk = check_doc(model, policy_id, int(np.prod(model.observation_space.shape)))
     rt = MlpPolicy(doc)
-    got = np.asarray(rt.act(np.asarray(chk["obs"])), dtype=float)
-    err = float(np.max(np.abs(got - np.asarray(chk["act"], dtype=float)))) if got.size else 0.0
-    if err > chk["tolerance"]:
-        raise AssertionError(f"numpy runtime disagrees with SB3 by {err:g} (> {chk['tolerance']})")
+    chk = check_doc(model, policy_id, int(np.prod(model.observation_space.shape)), runtime=rt)
+    got = np.asarray(chk["act"], dtype=float)
+    err = float(np.max(np.abs(got - np.asarray(chk["sb3_act"], dtype=float)))) if got.size else 0.0
+    if err > SB3_TOLERANCE:
+        raise AssertionError(f"numpy runtime disagrees with SB3 by {err:g} (> {SB3_TOLERANCE})")
     doc["card"].setdefault("runtime_check_max_abs_err", err)
     os.makedirs(os.path.dirname(os.path.abspath(out_json)), exist_ok=True)
     with open(out_json, "w", encoding="utf-8") as f:
