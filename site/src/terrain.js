@@ -11,7 +11,11 @@ async function inflate(bytes) {
 }
 
 /* decodePng16(ArrayBuffer) -> {width, height, data: Uint16Array}. Greyscale (colour type 0), 16-bit, not interlaced. */
-export async function decodePng16(buffer) {
+export async function decodePng16(buffer) { return decodePngGray(buffer, 16); }
+
+/* decodePngGray(ArrayBuffer, depth 8|16) -> {width, height, data: Uint8Array|Uint16Array}: greyscale PNG layers
+   (16-bit heights; 8-bit slope_20m.png). Exact samples, unlike canvas decoding (colour management, premultiply). */
+export async function decodePngGray(buffer, wantDepth = 16) {
   const b = new Uint8Array(buffer), dv = new DataView(buffer);
   if (!PNG_SIG.every((v, i) => b[i] === v)) throw new Error('not a PNG file');
   let off = 8, width = 0, height = 0, depth = 0, ctype = 0, interlace = 0; const idat = [];
@@ -22,12 +26,12 @@ export async function decodePng16(buffer) {
     else if (type === 'IEND') break;
     off = body + len + 4;  // + CRC
   }
-  if (depth !== 16 || ctype !== 0) throw new Error(`heightmap must be 16-bit greyscale PNG (got depth ${depth}, colour type ${ctype})`);
+  if (depth !== wantDepth || ctype !== 0) throw new Error(`expected a ${wantDepth}-bit greyscale PNG (got depth ${depth}, colour type ${ctype})`);
   if (interlace) throw new Error('interlaced PNG heightmaps are not supported');
   const total = idat.reduce((s, x) => s + x.length, 0), z = new Uint8Array(total); let p = 0; for (const c of idat) { z.set(c, p); p += c.length; }
-  const raw = await inflate(z), bpp = 2, stride = width * bpp;
+  const raw = await inflate(z), bpp = wantDepth / 8, stride = width * bpp;
   if (raw.length < height * (stride + 1)) throw new Error('PNG data is truncated');
-  const out = new Uint16Array(width * height), prev = new Uint8Array(stride), cur = new Uint8Array(stride);
+  const out = wantDepth === 16 ? new Uint16Array(width * height) : new Uint8Array(width * height), prev = new Uint8Array(stride), cur = new Uint8Array(stride);
   for (let y = 0; y < height; y++) {
     const ft = raw[y * (stride + 1)], row = raw.subarray(y * (stride + 1) + 1, (y + 1) * (stride + 1));
     for (let i = 0; i < stride; i++) {
@@ -37,7 +41,8 @@ export async function decodePng16(buffer) {
       else if (ft !== 0) throw new Error(`bad PNG filter ${ft} on row ${y}`);
       cur[i] = v & 255;
     }
-    for (let x = 0; x < width; x++) out[y * width + x] = (cur[2 * x] << 8) | cur[2 * x + 1];  // big-endian samples
+    if (bpp === 2) for (let x = 0; x < width; x++) out[y * width + x] = (cur[2 * x] << 8) | cur[2 * x + 1];  // big-endian samples
+    else out.set(cur, y * width);
     prev.set(cur);
   }
   return { width, height, data: out };

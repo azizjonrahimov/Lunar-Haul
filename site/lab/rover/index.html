@@ -4,21 +4,93 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Rover lab · LunarSim</title>
-<meta name="description" content="Drive a real terrain leg: learned driver, scripted expert, or you with Earth–Moon latency.">
+<meta name="description" content="Drive a real leg of LOLA terrain near the lunar south pole: the scripted expert or you with Earth–Moon latency; slope, slip, lighting, energy and interventions.">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="<!--@base-->favicon.svg" type="image/svg+xml">
 <script>try { var t = localStorage.getItem('lunarsim.theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <script type="module" src="/src/main.js"></script>
+<script type="module" src="/src/rover/lab.js"></script>
 </head>
 <body>
 <!--@header-->
 <main id="main"><div class="wrap">
   <header class="page-head">
-    <h1>Rover lab</h1>
-    <p>Drive a real leg of LOLA terrain: the learned driver against the scripted expert and against you with Earth–Moon latency, with autonomy share, interventions per km and energy.</p>
+    <h1>Rover lab: drive a leg of the base</h1>
+    <p>Pick two sites on the LOLA terrain, an autonomy level and the lighting, and drive the leg in your browser with the same model the logistics simulation's driving tables come from: slope limits, wheel slip, up-sun glare and shadow, Earth–Moon latency, energy and interventions. Drive it yourself to feel what a four-second round trip does.</p>
   </header>
-  <section class="prose">
-    <p class="stub">This page is being built (task F-8).</p>
+
+  <div class="toolbar r-controls" role="group" aria-label="Leg">
+    <label class="lbl" for="r-from">From</label><select id="r-from"></select>
+    <label class="lbl" for="r-to">To</label><select id="r-to"></select>
+    <label class="lbl" for="r-standoff">Pad standoff</label><select id="r-standoff"></select>
+    <label class="lbl" for="r-light">Lighting</label>
+    <select id="r-light"><option value="0">sun at 0° (grid azimuth)</option><option value="90" selected>sun at 90°</option><option value="180">sun at 180°</option><option value="270">sun at 270°</option><option value="night">night (headlights)</option></select>
+  </div>
+  <div class="toolbar r-controls" role="group" aria-label="Driver">
+    <label class="lbl" for="r-level">Autonomy</label>
+    <select id="r-level"><option value="teleop:0">teleoperated, 0 s round trip</option><option value="teleop:4" selected>teleoperated, 4 s (Earth–Moon)</option><option value="teleop:6">teleoperated, 6 s</option><option value="teleop:8">teleoperated, 8 s</option><option value="supervised">supervised autonomy</option><option value="autonomous">full autonomy</option></select>
+    <label class="lbl" for="r-ctrl">Driver</label>
+    <select id="r-ctrl"><option value="expert" selected>Scripted expert (A* + pure pursuit)</option><option value="human">You (arrow keys)</option><option value="learned" disabled>Learned driver (after B-13)</option></select>
+    <label class="lbl" for="r-speed">Speed</label>
+    <select id="r-speed"><option value="1">real time</option><option value="10">10×</option><option value="60" selected>60×</option><option value="300">300×</option><option value="0">instant</option></select>
+    <button class="btn primary" type="button" id="r-drive" aria-pressed="false">Drive</button>
+    <button class="btn" type="button" id="r-reset">Back to start</button>
+  </div>
+  <div id="r-keys" class="r-keys" hidden>
+    <p class="small">Arrow keys: ← → steer, ↑ full throttle, ↓ stop. Your commands reach the rover one round trip later, and it halts to confirm every so often, exactly as in the model. Touch: <button class="btn" type="button" data-key="ArrowLeft" aria-label="Steer left">◀</button> <button class="btn" type="button" data-key="ArrowUp" aria-label="Throttle">▲</button> <button class="btn" type="button" data-key="ArrowDown" aria-label="Stop">▼</button> <button class="btn" type="button" data-key="ArrowRight" aria-label="Steer right">▶</button></p>
+  </div>
+  <p class="status-line" id="r-status" role="status" aria-live="polite">Loading…</p>
+
+  <div class="r-grid">
+    <div>
+      <canvas id="r-plan" class="r-plan" role="img" aria-label="Plan view of the leg on the LOLA hillshade: planned route (cyan), the path driven (yellow), the rover (red), cast shadows for the chosen sun and interventions (red crosses). The telemetry table gives the same state as text."></canvas>
+      <canvas id="r-prof" class="r-prof" role="img" aria-label="Elevation profile along the planned route with the rover's position."></canvas>
+      <p class="small muted">Grid azimuths: at the pole “north” is the map's +y direction. Shadows are cast by terrain inside the tile only, at a 1.5° sun.</p>
+    </div>
+    <aside class="r-rail" aria-labelledby="r-tele-title">
+      <h2 id="r-tele-title" class="h3">Telemetry</h2>
+      <table class="w-table"><tbody id="r-tele"></tbody></table>
+      <p class="small" id="r-events">—</p>
+    </aside>
+  </div>
+
+  <section aria-labelledby="h-sees">
+    <h2 id="h-sees">What the driver sees and does</h2>
+    <p class="prose">A driving policy gets a 32 × 32 grid around the rover, 5 m per cell, rotated with the rover (forward is up; the outlined cell is the rover), plus five numbers. It answers with two: a steering rate and a throttle. These are the exact inputs the learned driver will get.</p>
+    <div class="r-sees">
+      <div>
+        <label class="lbl" for="r-ch">Channel</label>
+        <select id="r-ch"><option value="0">height relative to the rover (÷ 10 m)</option><option value="1">slope (÷ 20°)</option><option value="2">roughness (÷ 1 m)</option></select>
+        <canvas id="r-patch" class="r-patch" role="img" aria-label="The 32 by 32 observation grid for the selected channel, with each cell's value."></canvas>
+        <p class="small mono" id="r-scalars"></p>
+      </div>
+      <div class="r-ctl">
+        <svg viewBox="-60 -60 120 120" class="r-wheel-svg" role="img" aria-label="Steering command: the solid wheel is what was sent, the faint wheel what the rover is executing now.">
+          <g id="r-wheel-applied" class="wheel faint"><circle r="44"/><line x1="-44" y1="0" x2="44" y2="0"/><line x1="0" y1="0" x2="0" y2="44"/></g>
+          <g id="r-wheel" class="wheel"><circle r="44"/><line x1="-44" y1="0" x2="44" y2="0"/><line x1="0" y1="0" x2="0" y2="44"/><circle r="6" class="hub"/></g>
+        </svg>
+        <svg viewBox="0 0 120 70" class="r-thr-svg" role="img" aria-label="Throttle: outer arc sent, inner arc applied.">
+          <path d="M10 60 A50 50 0 0 1 110 60" class="track" pathLength="100"/>
+          <path id="r-thr" d="M10 60 A50 50 0 0 1 110 60" class="val" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"/>
+          <path d="M22 60 A38 38 0 0 1 98 60" class="track" pathLength="100"/>
+          <path id="r-thr-applied" d="M22 60 A38 38 0 0 1 98 60" class="val faint" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"/>
+          <text x="60" y="66" text-anchor="middle">throttle</text>
+        </svg>
+        <p class="small mono" id="r-ctl-text"></p>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-cmp">
+    <h2 id="h-cmp">Against the driving table</h2>
+    <p class="prose">The logistics simulation does not drive rovers step by step; it samples leg times, energy and interventions from tables built with this model. Here is the same leg three ways.</p>
+    <div id="r-compare"></div>
+  </section>
+
+  <section aria-labelledby="h-rc">
+    <h2 id="h-rc">Constants</h2>
+    <p class="prose small muted">Every number carries its flag; hover a flag for its source.</p>
+    <table class="w-table"><tbody id="r-consts"></tbody></table>
   </section>
 </div></main>
 <!--@footer-->

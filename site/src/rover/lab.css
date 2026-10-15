@@ -1,0 +1,30 @@
+/* /lab/rover */
+.r-controls { margin-top: var(--s-2); }
+.r-controls select, #r-ch { font: inherit; font-size: var(--fs-small); padding: 0.35em 0.5em; border: 1px solid var(--hairline); border-radius: var(--radius); background: var(--bg); color: var(--ink); min-height: 2.25rem; }
+.lbl { font-size: var(--fs-small); color: var(--ink-2); }
+.toolbar { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; }
+.status-line { font-size: var(--fs-small); color: var(--ink-2); margin: var(--s-2) 0; min-height: 1.5em; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.r-keys .btn { min-width: 2.5rem; justify-content: center; }
+.r-grid { display: grid; grid-template-columns: minmax(0, 1fr) 21rem; gap: var(--s-5); align-items: start; margin-top: var(--s-3); }
+@media (max-width: 960px) { .r-grid { grid-template-columns: minmax(0, 1fr); } }
+.r-plan { width: 100%; height: min(60vh, 34rem); min-height: 18rem; border-radius: var(--radius); background: #060608; display: block; }
+.r-prof { width: 100%; height: 7.5rem; margin-top: var(--s-2); border-radius: var(--radius); display: block; }
+.h3 { font-size: var(--fs-h3); margin: 0 0 var(--s-2); }
+.w-table th { font-weight: 500; color: var(--ink-2); }
+.w-table td { font-size: var(--fs-small); }
+.r-sees { display: grid; grid-template-columns: minmax(0, 34rem) minmax(0, 1fr); gap: var(--s-5); align-items: start; }
+@media (max-width: 960px) { .r-sees { grid-template-columns: minmax(0, 1fr); } }
+.r-patch { width: 100%; aspect-ratio: 1; max-width: 34rem; display: block; margin-top: var(--s-2); border-radius: var(--radius); }
+.r-ctl { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-3); }
+.r-wheel-svg { width: 10rem; height: 10rem; }
+.r-thr-svg { width: 12rem; }
+.wheel { transition: transform 80ms linear; }
+.wheel circle, .wheel line { fill: none; stroke: var(--ink); stroke-width: 6; stroke-linecap: round; }
+.wheel .hub { fill: var(--ink); stroke: none; }
+.wheel.faint circle, .wheel.faint line { stroke: var(--ink-3); stroke-width: 10; opacity: 0.35; }
+.r-thr-svg .track { fill: none; stroke: var(--hairline); stroke-width: 8; }
+.r-thr-svg .val { fill: none; stroke: var(--tol-green); stroke-width: 8; }
+.r-thr-svg .val.faint { stroke: var(--tol-green); opacity: 0.4; }
+.r-thr-svg text { font-size: 9px; fill: var(--ink-2); }
+@media (prefers-reduced-motion: reduce) { .wheel { transition: none; } }

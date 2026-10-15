@@ -13,7 +13,7 @@ import { OWNER_COLOURS } from './colours.js';
 const $ = id => document.getElementById(id);
 const BASE = import.meta.env.BASE_URL;
 const SIM_KEY = 'lunarsim.worldTrace';
-const SAMPLES = { P1: 'P1_marketplace_seed3.json', P2: 'P2_marketplace_seed3.json', P3: 'P3_marketplace_seed3.json', V2: 'v2_fixture.json' };
+const SAMPLES = { P1: 'P1_marketplace_seed3.json', P2: 'P2_marketplace_seed3.json', P3: 'P3_marketplace_seed3.json', P2V2: 'P2_marketplace_seed3_v2.json', V2: 'v2_fixture.json' };
 const DESCENT_RATE_H = 10 / 3600;      // during a descent, play at most 10 sim-seconds per second
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 

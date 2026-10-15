@@ -3,7 +3,7 @@
 //   world/          site_graph.json (the DES site graph) and samples/*.json (bundled traces)
 //   detect-gpu/     detect-gpu's benchmark tables, self-hosted so tiering makes no third-party request
 // Terrain source: data/terrain/connecting_ridge/ (LEAD, B-9); fallback site/.terrain-dev/ (scripts/make_dev_terrain.py).
-import { existsSync, mkdirSync, copyFileSync, readFileSync, readdirSync, cpSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, copyFileSync, readFileSync, readdirSync, cpSync, writeFileSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -45,4 +45,33 @@ const index = { policies: polFiles.filter(f => /^lander_.*\.json$/.test(f) && !f
   outcomes: polFiles.filter(f => /^outcomes_.*\.json$/.test(f)).map(f => f.replace(/^outcomes_|\.json$/g, '')) };
 writeFileSync(join(labOut, 'index.json'), JSON.stringify(index, null, 1));
 console.log(`prepare-data: lab policies ${index.policies.join(', ') || 'none'}; outcome tables ${index.outcomes.join(', ') || 'none'}`);
+
+// rover lab: the 5 m layers, one small file per driving-table leg, and the four daylight shadow grids precomputed
+// with the page's own port of terrain.cast_shadow (bit-packed, row 0 = south), so the page does not spend ~5 s on them
+const roverOut = join(PUB, 'lab', 'rover');
+mkdirSync(join(roverOut, 'legs'), { recursive: true });
+for (const f of ['height_5m.png', 'slope_20m.png', 'hillshade_20m.png']) if (existsSync(join(src, f))) copyFileSync(join(src, f), join(out, f));
+const drivingPath = join(ROOT, 'data', 'driving', 'driving-v1.json');
+if (existsSync(drivingPath)) {
+  const d = JSON.parse(readFileSync(drivingPath, 'utf8')), file = k => k.replace('->', '__').replace(/@/g, '_at_').replace(/[^\w.-]/g, '_') + '.json';
+  for (const [k, leg] of Object.entries(d.legs)) writeFileSync(join(roverOut, 'legs', file(k)), JSON.stringify(leg));
+  const { legs, ...head } = d;
+  writeFileSync(join(roverOut, 'driving-index.json'), JSON.stringify({ ...head, legs: Object.fromEntries(Object.keys(legs).map(k => [k, file(k)])) }));
+  console.log(`prepare-data: driving table ${Object.keys(legs).length} legs sliced`);
+}
+if (existsSync(join(src, 'height_5m.png')) && !meta.dev_standin) {
+  const { RoverTerrain } = await import('../src/rover/terrain.js'), { decodePngGray } = await import('../src/terrain.js');
+  const ld = (f, dd) => { const b = readFileSync(join(src, f)); return decodePngGray(b.buffer.slice(b.byteOffset, b.byteOffset + b.length), dd); };
+  const stamp = join(roverOut, 'shadow.stamp'), key = `${statSync(join(src, 'height_20m.png')).mtimeMs}|${meta.site_id}`;
+  if (!existsSync(stamp) || readFileSync(stamp, 'utf8') !== key) {
+    const t0 = Date.now(), t = new RoverTerrain(meta, await ld('height_5m.png', 16), await ld('height_20m.png', 16), await ld('slope_20m.png', 8));
+    for (const az of [0, 90, 180, 270]) {
+      const g = t.shadowGrid(az), bits = new Uint8Array(Math.ceil(g.length / 8));
+      for (let i = 0; i < g.length; i++) if (g[i]) bits[i >> 3] |= 1 << (i & 7);
+      writeFileSync(join(roverOut, `shadow_${az}.bin`), bits);
+    }
+    writeFileSync(stamp, key);
+    console.log(`prepare-data: rover shadow grids computed in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+  }
+}
 console.log('prepare-data: world samples, site graph and detect-gpu benchmarks staged');

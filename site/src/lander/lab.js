@@ -40,7 +40,7 @@ async function boot() {
 }
 
 // ---------- controllers ----------
-function policyFor(cls) { return Object.values(st.policies).find(p => (p.doc.training || {}).cls === cls && (p.doc.training || {}).reward_variant !== 'hover_bonus') || null; }
+function policyFor(cls) { const ps = Object.values(st.policies).filter(p => (p.doc.training || {}).cls === cls); return ps.find(p => p.doc.training.reward_variant === 'baseline') || ps.find(p => p.doc.training.reward_variant !== 'hover_bonus') || null; }
 function hoverPolicy() { return Object.values(st.policies).find(p => (p.doc.training || {}).reward_variant === 'hover_bonus') || null; }
 function renderClassOptions() {
   const cls = $('l-class').value, pol = policyFor(cls), sel = $('l-ctrl');
