@@ -35,6 +35,30 @@ moved or $5,000 per landed kg, a few percent of the cost of landing it.
   page, open Verification → Engine → Connect, and the page can run the Python reference engine on your machine:
   "Run in Python" and a live cross-implementation check. `lunarsim serve --static web/dist` serves the page as well.
 
+## Phase 3 (in progress): learned landers and rovers on real terrain
+
+The current work puts the base on NASA's LOLA 5 m terrain of the Connecting Ridge and adds two learned models to the
+logistics engine, so that a question NASA's architecture papers leave open can be answered with numbers: how landing
+precision, pad-to-base distance, plume keep-out rules and rover autonomy change delivery delay and cost.
+
+- `lunarsim/terrain.py`: terrain packs from PGDA LOLA site tiles (`lunarsim terrain build|place|info`); the nine sites
+  and five landing-pad sets are in `data/terrain/connecting_ridge/sites.json`.
+- `lunarsim/lander/`: a Gymnasium terminal-descent environment (`lunar/Descent-v0`, 3-DoF, SPLICE gate and touchdown
+  box, altimeter dropouts), a classical ZEM/ZEV law, a PPO trainer and exporter (policies are plain JSON that run in
+  Python and in the browser), and Monte Carlo outcome tables in `data/policies/`.
+- `lunarsim/rover/`: a driving environment on the terrain (`lunar/Drive-v0`), slip-vs-slope in lunar gravity,
+  LRV-calibrated energy, a teleoperation model calibrated to NASA JSC latency trials, a scripted expert, and per-leg
+  driving tables in `data/driving/`.
+- `lunarsim/phase3.py`: the engine's opt-in Scenario fields (`terrain`, `pad_standoff_km`, `landing_model`, `plume`,
+  `autonomy_model`); with them unset, v2 results are reproduced byte for byte. Trace v2 records landing outcomes,
+  keep-out windows and shelters.
+- `site/`: the public site (Vite + three.js): landing page on the real terrain, the 3D world viewer, the lander lab,
+  the rover lab, method, paper, data and about pages. `npm ci && npm run build` in `site/`.
+- Experiments E15-E20 and the paper's third version follow; see `.team/PLAN.md` for the plan and
+  `reports/Lunar landing and rover autonomy logistics.md` for the research behind it.
+
+Every number in the new material carries a flag: Measured, Spec, Modelled or Assumed.
+
 ## File formats
 
 Python and the browser exchange two JSON formats, each versioned and described by a JSON Schema in `lunarsim/schemas/`:
