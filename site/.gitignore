@@ -2,3 +2,5 @@ node_modules/
 dist/
 public/terrain/
 .terrain-dev/
+public/world/
+public/detect-gpu/

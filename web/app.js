@@ -202,7 +202,7 @@ function renderCompare(res, n) {
 }
 
 // ---------- replay ----------
-function setupReplay(tr, source) { if (!tr) return; replay.tr = tr; replay.t = 0; replay.playing = false; $('play').textContent = 'Play'; $('tslider').max = Math.floor(tr.horizon); $('tslider').value = 0; const owners = [...new Set(tr.vehicles.map(v => v.owner))]; $('maplegend').innerHTML = owners.map((o, i) => `<span style="--c: var(--s${(i % 8) + 1})">${o}</span>`).join('') + `<span style="--c: var(--s2)">landing pad</span><span style="--c: var(--night)">night</span>`; replayHeader(tr, source); $('exportTrace').disabled = false; drawMap(); }
+function setupReplay(tr, source) { if (!tr) return; replay.tr = tr; replay.t = 0; replay.playing = false; $('play').textContent = 'Play'; $('tslider').max = Math.floor(tr.horizon); $('tslider').value = 0; const owners = [...new Set(tr.vehicles.map(v => v.owner))]; $('maplegend').innerHTML = owners.map((o, i) => `<span style="--c: var(--s${(i % 8) + 1})">${o}</span>`).join('') + `<span style="--c: var(--s2)">landing pad</span><span style="--c: var(--night)">night</span>`; replayHeader(tr, source); $('exportTrace').disabled = false; $('openWorld').disabled = false; drawMap(); }
 function replayHeader(tr, source) { const m = tr.meta || {}, esc = x => String(x).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]); const val = x => x === null || x === undefined || x === '' ? '–' : esc(x);
   $('replayhead').innerHTML = `<span>engine <b>${val(m.engine)}</b></span><span>scenario <b>${val(m.scenario)}</b></span><span>mechanism <b>${val(MECH_LABEL[m.mechanism] || m.mechanism)}</b></span><span>seed <b>${val(m.seed)}</b></span><span class="src">${source ? (source.startsWith('sample ') ? 'bundled ' : 'from file ') + esc(source) + (m.legacy ? ' (no format header; read as v1)' : '') : 'from the last run'}</span>`; }
 $('importTrace').addEventListener('change', e => {
@@ -221,6 +221,13 @@ $('sampleTrace').addEventListener('change', async e => {  // bundled Python trac
     $('rstatus').textContent = `Loaded ${label}: ${tr.vehicles.length} vehicles, ${tr.jobs.length} trips, ${tr.cargo.length} cargo items, ${tr.landings.length} landings, ${tr.nights.length} nights.`;
   } catch (err) { $('rstatus').textContent = `Could not load ${label}: ${err.message}. The previous replay is unchanged.`; }
   finally { e.target.disabled = false; e.target.value = ''; }
+});
+// hand the replayed trace to the site's 3D viewer (same origin when the simulator is served under /simulator/)
+$('openWorld').addEventListener('click', () => {
+  if (!replay.tr) return;
+  try { localStorage.setItem('lunarsim.worldTrace', JSON.stringify(traceToJson(replay.tr))); }
+  catch (e) { $('rstatus').textContent = 'This browser would not store the trace (storage full or blocked); use "Export this trace" and load the file in the 3D world instead.'; return; }
+  location.href = new URL('../world/?from=simulator', location.href).href;
 });
 $('exportTrace').addEventListener('click', () => { if (!replay.tr) return; const m = replay.tr.meta || {}; const name = ['lunarsim-trace', m.scenario, m.mechanism, m.seed === null || m.seed === undefined ? null : 'seed' + m.seed].filter(x => x !== null && x !== undefined && x !== '').join('_').replace(/[^\w.-]+/g, '-') + '.json'; download(name, JSON.stringify(traceToJson(replay.tr)), 'application/json'); $('rstatus').textContent = `Exported ${name}.`; });
 $('tslider').addEventListener('input', e => { replay.t = +e.target.value; drawMap(); });

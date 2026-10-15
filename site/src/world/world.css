@@ -1,0 +1,53 @@
+/* /world layout: viewport + controls on the left, telemetry rail (the DOM mirror of the canvas) on the right. */
+.w-pagehead { padding-bottom: var(--s-3); }
+.w-load select, .w-controls select { font: inherit; font-size: var(--fs-small); padding: 0.35em 0.5em; border: 1px solid var(--hairline); border-radius: var(--radius); background: var(--bg); color: var(--ink); min-height: 2.25rem; }
+.toolbar { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; }
+.status-line { font-size: var(--fs-small); color: var(--ink-2); margin: var(--s-2) 0; min-height: 1.5em; }
+.w-head { display: flex; flex-wrap: wrap; gap: 0 var(--s-4); font-family: var(--font-mono); font-size: 0.8125rem; color: var(--ink-2); margin: 0 0 var(--s-3); }
+.w-head b { color: var(--ink); font-weight: 600; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+.w-grid { display: grid; grid-template-columns: minmax(0, 1fr) 21rem; gap: var(--s-5); align-items: start; }
+@media (max-width: 980px) { .w-grid { grid-template-columns: minmax(0, 1fr); } }
+.w-stage { position: relative; height: min(68vh, 44rem); min-height: 20rem; background: #050506; border-radius: var(--radius); overflow: hidden; }
+.w-canvas, .w-plan, .w-labels { position: absolute; inset: 0; width: 100%; height: 100%; }
+.w-labels { pointer-events: none; }
+.w-plan { display: none; }
+.w-2d .w-plan { display: block; }
+.w-2d .w-canvas, .w-2d .w-labels, .w-2d .w-inset { display: none; }
+.w-inset { position: absolute; right: 10px; bottom: 10px; width: 210px; height: 160px; border: 1px solid rgba(255,255,255,.25); border-radius: var(--radius); opacity: 0.92; }
+@media (max-width: 600px) { .w-inset { display: none; } }
+.w-repr { position: absolute; left: 10px; bottom: 8px; font-size: 0.75rem; color: rgba(255,255,255,.7); background: rgba(5,5,6,.6); padding: 0.1em 0.5em; border-radius: var(--radius); }
+.w-2d .w-repr { color: var(--ink-2); background: transparent; }
+
+.w-label { font: 600 11px/1.2 var(--font-sans); color: #fff; text-shadow: 0 0 3px #000, 0 0 2px #000; white-space: nowrap; }
+.w-label.pad { color: #9fe3f7; }
+.w-label.veh { font-weight: 500; font-size: 10.5px; color: #e8e8e8; }
+.w-label.lander { color: #fff3c4; }
+.w-label.plume { color: #f0e27a; }
+
+.w-controls { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; margin-top: var(--s-3); }
+.w-controls input[type=range] { flex: 1 1 12rem; min-width: 8rem; accent-color: var(--tol-blue); }
+.w-clock { min-width: 9.5rem; font-size: var(--fs-small); }
+.chk { display: inline-flex; gap: 0.35em; align-items: center; font-size: var(--fs-small); color: var(--ink-2); }
+.w-controls .i-pause, .w-controls .i-play { display: inline-flex; }
+body:not(.w-playing) .w-controls .i-pause, body.w-playing .w-controls .i-play { display: none; }
+
+.w-legend { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-4); margin-top: var(--s-3); font-size: var(--fs-small); color: var(--ink-2); }
+.w-legend i { display: inline-block; width: 0.75em; height: 0.75em; border-radius: 50%; margin-right: 0.4em; vertical-align: -0.05em; }
+.w-legend i.sq { border-radius: 2px; }
+.w-legend i.ring { background: transparent; border: 2px solid var(--ink); }
+.w-legend i.ring.y { border-color: #CCBB44; }
+.w-notes p { margin: var(--s-2) 0 0; }
+
+.w-rail { border-left: 1px solid var(--hairline); padding-left: var(--s-5); }
+@media (max-width: 980px) { .w-rail { border-left: 0; padding-left: 0; border-top: 1px solid var(--hairline); padding-top: var(--s-4); } }
+.w-rail h2 { font-size: var(--fs-h3); margin-top: 0; }
+.w-rail h3 { font-size: 1rem; margin: var(--s-4) 0 var(--s-1); }
+.w-table th { font-weight: 500; color: var(--ink-2); width: 46%; }
+.w-table td { font-size: var(--fs-small); }
+.w-table .num .v { font-weight: 600; }
+.w-waiting { padding-left: 1.1em; margin: 0; }
+.w-steps { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--s-2); }
+.w-steps .btn { width: 100%; justify-content: space-between; }
+.btn[disabled] { opacity: 0.5; cursor: not-allowed; }

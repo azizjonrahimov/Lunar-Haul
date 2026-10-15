@@ -9,17 +9,79 @@
 <link rel="icon" href="<!--@base-->favicon.svg" type="image/svg+xml">
 <script>try { var t = localStorage.getItem('lunarsim.theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <script type="module" src="/src/main.js"></script>
+<script type="module" src="/src/world/main.js"></script>
 </head>
-<body>
+<body class="world">
 <!--@header-->
 <main id="main"><div class="wrap">
-  <header class="page-head">
-    <h1>World</h1>
-    <p>A 3D view of the base on real LOLA terrain that replays a simulated year: landers descending, rovers driving real legs, the lunar night and plume keep-out zones, with a telemetry table and a 2D plan view that mirror the 3D scene.</p>
+  <header class="page-head w-pagehead">
+    <h1>A simulated year on real terrain</h1>
+    <p>Replay of one LunarSim run on the LOLA terrain around the base: rovers driving the site graph's legs, landers arriving, the lunar night and cargo waiting at each site. The table beside the view gives the same state as numbers.</p>
   </header>
-  <section class="prose">
-    <p class="stub">This page is being built (task F-6).</p>
-  </section>
+
+  <div class="toolbar w-load" role="group" aria-label="Choose a run">
+    <label class="visually-hidden" for="w-sample">Load a run</label>
+    <select id="w-sample">
+      <option value="" selected>Load a run…</option>
+      <option value="P1">Sample: Phase 1 · marketplace · seed 3</option>
+      <option value="P2">Sample: Phase 2 · marketplace · seed 3</option>
+      <option value="P3">Sample: Phase 3 · marketplace · seed 3</option>
+      <option value="V2">Trace v2 test fixture: terrain legs, landing outcomes, plume keep-out (2,500 h)</option>
+      <option value="sim">The simulator's last run (this browser)</option>
+    </select>
+    <label class="btn" for="w-file">Load trace file…</label>
+    <input id="w-file" type="file" accept="application/json,.json" class="visually-hidden">
+    <span class="muted small" id="w-tier"></span>
+  </div>
+  <p class="status-line" id="w-status" role="status" aria-live="polite">Loading…</p>
+  <p class="w-head" id="w-head"></p>
+
+  <div class="w-grid">
+    <div class="w-viewcol">
+      <div class="w-stage" id="w-stage">
+        <canvas id="w-canvas" class="w-canvas" role="img" aria-label="3D view of the base on LOLA terrain. The table 'State at this moment' gives the same information as text."></canvas>
+        <div id="w-labels" class="w-labels" aria-hidden="true"></div>
+        <canvas id="w-plan" class="w-plan" role="img" aria-label="Plan view of the base: sites, legs, vehicles and waiting cargo. The table 'State at this moment' gives the same information as text."></canvas>
+        <canvas id="w-inset" class="w-inset" aria-hidden="true"></canvas>
+        <span class="w-repr">Representative models · not to scale</span>
+      </div>
+      <div class="w-controls" role="group" aria-label="Playback">
+        <button class="btn primary" type="button" id="w-play" aria-pressed="false"><span class="i-play"><!--@icon:play--></span><span class="i-pause"><!--@icon:pause--></span><span data-label>Play</span></button>
+        <label class="visually-hidden" for="w-scrub">Sim time (hours)</label>
+        <input id="w-scrub" type="range" min="0" max="8760" step="1" value="0">
+        <span class="mono w-clock" id="w-clock">day 0, 00:00</span>
+        <label class="visually-hidden" for="w-speed">Playback speed</label>
+        <select id="w-speed">
+          <option value="1">1 h / s</option><option value="6">6 h / s</option><option value="24" selected>1 day / s</option><option value="72">3 days / s</option><option value="240">10 days / s</option>
+        </select>
+      </div>
+      <div class="w-controls" role="group" aria-label="Camera and display">
+        <button class="btn" type="button" data-preset="overview">Overview</button>
+        <button class="btn" type="button" data-preset="base">Base</button>
+        <button class="btn" type="button" data-preset="pads">Pads</button>
+        <button class="btn" type="button" data-preset="tile">Whole tile</button>
+        <label class="visually-hidden" for="w-follow">Follow a vehicle</label>
+        <select id="w-follow"><option value="">Follow vehicle…</option></select>
+        <label class="chk"><input type="checkbox" id="w-labels-on" checked> labels</label>
+        <label class="chk"><input type="checkbox" id="w-slow" checked> slow down for landings</label>
+        <label class="chk"><input type="checkbox" id="w-view2d"> 2D plan view</label>
+      </div>
+      <div class="w-legend" id="w-legend"></div>
+      <div class="w-notes small muted" id="w-notes"></div>
+    </div>
+
+    <aside class="w-rail" aria-labelledby="w-rail-title">
+      <h2 id="w-rail-title">State at this moment</h2>
+      <table class="w-table"><tbody id="w-rail-body"></tbody></table>
+      <h3>Now</h3>
+      <p class="small" id="w-events">—</p>
+      <h3>Cargo waiting by site</h3>
+      <ul class="small w-waiting" id="w-waiting"></ul>
+      <h3>Steps</h3>
+      <ol class="w-steps" id="w-steps"></ol>
+      <p class="small muted">Keyboard: Space plays or pauses; ← and → move one day.</p>
+    </aside>
+  </div>
 </div></main>
 <!--@footer-->
 </body>
