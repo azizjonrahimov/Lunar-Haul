@@ -1,0 +1,319 @@
+{
+ "format": "lunarsim-sites",
+ "version": 1,
+ "terrain": "connecting_ridge",
+ "base_xy_m": [
+  7450.0,
+  7510.0
+ ],
+ "layout_rotation_deg": 0,
+ "rules": {
+  "pad_scale_slope": "mean plane over 100 m disk",
+  "psr": "cast shadow at sun az 0/90/180/270, el 1.5 deg",
+  "pads": "place_pads: best illumination, PAD_B >= 400 m from PAD_A",
+  "flag": "Assumed layout on Measured terrain"
+ },
+ "sites": [
+  {
+   "id": "BASE",
+   "xy_m": [
+    7450.0,
+    7510.0
+   ],
+   "kind": "base",
+   "z_m": 1957.6,
+   "slope_plane_deg": 0.38,
+   "illum_proxy": 0.0318,
+   "shadow_all_az": false
+  },
+  {
+   "id": "DEPOT",
+   "xy_m": [
+    7150.0,
+    7250.0
+   ],
+   "kind": "depot",
+   "z_m": 1937.5,
+   "slope_plane_deg": 4.24,
+   "illum_proxy": 0.0441,
+   "shadow_all_az": false,
+   "dist_base_km": 0.397,
+   "los_to_base": "blocked"
+  },
+  {
+   "id": "POWER",
+   "xy_m": [
+    7910.0,
+    8070.0
+   ],
+   "kind": "power",
+   "z_m": 1949.6,
+   "slope_plane_deg": 0.43,
+   "illum_proxy": 0.029,
+   "shadow_all_az": false,
+   "dist_base_km": 0.725,
+   "los_to_base": "blocked"
+  },
+  {
+   "id": "CONSTR",
+   "xy_m": [
+    7610.0,
+    7710.0
+   ],
+   "kind": "construction",
+   "z_m": 1953.2,
+   "slope_plane_deg": 0.32,
+   "illum_proxy": 0.019,
+   "shadow_all_az": false,
+   "dist_base_km": 0.256,
+   "los_to_base": "clear"
+  },
+  {
+   "id": "ISRU",
+   "xy_m": [
+    8610.0,
+    7510.0
+   ],
+   "kind": "isru",
+   "z_m": 1818.5,
+   "slope_plane_deg": 0.98,
+   "illum_proxy": 0.0003,
+   "shadow_all_az": false,
+   "dist_base_km": 1.16,
+   "los_to_base": "blocked"
+  },
+  {
+   "id": "SCI_1",
+   "xy_m": [
+    9270.0,
+    8630.0
+   ],
+   "kind": "science",
+   "z_m": 1843.4,
+   "slope_plane_deg": 1.08,
+   "illum_proxy": 0.0003,
+   "shadow_all_az": false,
+   "dist_base_km": 2.137,
+   "los_to_base": "blocked"
+  },
+  {
+   "id": "PSR",
+   "xy_m": [
+    11170.0,
+    8870.0
+   ],
+   "kind": "psr",
+   "z_m": 1657.8,
+   "slope_plane_deg": 0.18,
+   "illum_proxy": 0.0,
+   "shadow_all_az": true,
+   "dist_base_km": 3.961,
+   "los_to_base": "blocked",
+   "night_dark": true
+  }
+ ],
+ "pads": {
+  "0.5": {
+   "PAD_A": [
+    7590.0,
+    7970.0
+   ],
+   "PAD_B": [
+    7030.0,
+    7270.0
+   ]
+  },
+  "1": {
+   "PAD_A": [
+    8130.0,
+    8210.0
+   ],
+   "PAD_B": [
+    7610.0,
+    6490.0
+   ]
+  },
+  "2": {
+   "PAD_A": [
+    9210.0,
+    6370.0
+   ],
+   "PAD_B": [
+    5490.0,
+    6850.0
+   ]
+  },
+  "3": {
+   "PAD_A": [
+    5250.0,
+    5610.0
+   ],
+   "PAD_B": [
+    8430.0,
+    4630.0
+   ]
+  },
+  "5": {
+   "PAD_A": [
+    10230.0,
+    3430.0
+   ],
+   "PAD_B": [
+    8590.0,
+    2650.0
+   ]
+  }
+ },
+ "pad_details": {
+  "0.5": {
+   "PAD_A": {
+    "xy_m": [
+     7590.0,
+     7970.0
+    ],
+    "dist_km": 0.481,
+    "bearing_deg": 16.9,
+    "slope_plane_deg": 4.29,
+    "slope_max_deg": 10.0,
+    "illum": 0.0503,
+    "z_m": 1947.5,
+    "los_to_base": "clear",
+    "los_clearance_m": 1.0
+   },
+   "PAD_B": {
+    "xy_m": [
+     7030.0,
+     7270.0
+    ],
+    "dist_km": 0.484,
+    "bearing_deg": 240.3,
+    "slope_plane_deg": 4.89,
+    "slope_max_deg": 10.0,
+    "illum": 0.0472,
+    "z_m": 1932.2,
+    "los_to_base": "blocked",
+    "los_clearance_m": -0.2
+   }
+  },
+  "1": {
+   "PAD_A": {
+    "xy_m": [
+     8130.0,
+     8210.0
+    ],
+    "dist_km": 0.976,
+    "bearing_deg": 44.2,
+    "slope_plane_deg": 0.99,
+    "slope_max_deg": 10.0,
+    "illum": 0.0533,
+    "z_m": 1945.0,
+    "los_to_base": "clear",
+    "los_clearance_m": 0.4
+   },
+   "PAD_B": {
+    "xy_m": [
+     7610.0,
+     6490.0
+    ],
+    "dist_km": 1.032,
+    "bearing_deg": 171.1,
+    "slope_plane_deg": 4.78,
+    "slope_max_deg": 13.0,
+    "illum": 0.0472,
+    "z_m": 1879.9,
+    "los_to_base": "blocked",
+    "los_clearance_m": -5.8
+   }
+  },
+  "2": {
+   "PAD_A": {
+    "xy_m": [
+     9210.0,
+     6370.0
+    ],
+    "dist_km": 2.097,
+    "bearing_deg": 122.9,
+    "slope_plane_deg": 2.21,
+    "slope_max_deg": 10.0,
+    "illum": 0.0564,
+    "z_m": 1671.5,
+    "los_to_base": "blocked",
+    "los_clearance_m": -29.3
+   },
+   "PAD_B": {
+    "xy_m": [
+     5490.0,
+     6850.0
+    ],
+    "dist_km": 2.068,
+    "bearing_deg": 251.4,
+    "slope_plane_deg": 4.99,
+    "slope_max_deg": 13.0,
+    "illum": 0.0471,
+    "z_m": 1721.9,
+    "los_to_base": "blocked",
+    "los_clearance_m": -29.5
+   }
+  },
+  "3": {
+   "PAD_A": {
+    "xy_m": [
+     5250.0,
+     5610.0
+    ],
+    "dist_km": 2.907,
+    "bearing_deg": 229.2,
+    "slope_plane_deg": 4.92,
+    "slope_max_deg": 18.0,
+    "illum": 0.0889,
+    "z_m": 1636.2,
+    "los_to_base": "blocked",
+    "los_clearance_m": -24.6
+   },
+   "PAD_B": {
+    "xy_m": [
+     8430.0,
+     4630.0
+    ],
+    "dist_km": 3.042,
+    "bearing_deg": 161.2,
+    "slope_plane_deg": 4.58,
+    "slope_max_deg": 14.0,
+    "illum": 0.086,
+    "z_m": 1588.5,
+    "los_to_base": "blocked",
+    "los_clearance_m": -54.8
+   }
+  },
+  "5": {
+   "PAD_A": {
+    "xy_m": [
+     10230.0,
+     3430.0
+    ],
+    "dist_km": 4.937,
+    "bearing_deg": 145.7,
+    "slope_plane_deg": 4.98,
+    "slope_max_deg": 15.0,
+    "illum": 0.089,
+    "z_m": 1499.1,
+    "los_to_base": "blocked",
+    "los_clearance_m": -12.9
+   },
+   "PAD_B": {
+    "xy_m": [
+     8590.0,
+     2650.0
+    ],
+    "dist_km": 4.992,
+    "bearing_deg": 166.8,
+    "slope_plane_deg": 3.74,
+    "slope_max_deg": 15.0,
+    "illum": 0.0744,
+    "z_m": 1444.8,
+    "los_to_base": "blocked",
+    "los_clearance_m": -27.1
+   }
+  }
+ }
+}
