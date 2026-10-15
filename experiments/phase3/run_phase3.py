@@ -11,7 +11,8 @@ engine's per-year summary. Differences: the raw CSV is resumable (rows already p
 Suites
   e15  lander Monte Carlo summary from data/policies/outcomes_*.json (no simulation)   -> table_E15.csv
   e16  driving-table validation from data/driving/driving-v1.json (no simulation)       -> E16_driving_validation.csv, table_E16.csv
-  e17  landing dispersion x pad standoff x mechanism x fleet/phase                      -> E17_dispersion_standoff.csv, table_E17.csv
+  e17  landing miss level (flown-lander anchors) x pad radius x pad standoff x mechanism x fleet/phase
+                                                                                        -> E17_dispersion_standoff.csv, table_E17.csv
   e18  plume keep-out radius x stand-down x mechanism x night x fleet x standoff        -> E18_plume.csv, table_E18.csv
   e19  vehicle autonomy level (teleop at 4/6/8 s RTT, supervised, autonomous) x fleet   -> E19_autonomy_fleet.csv, table_E19.csv
   e20  the law fit and pad siting from E17/E18 (experiments/phase3/fit_law.py)         -> E20_fit.json, table_E20*.csv
@@ -30,12 +31,14 @@ import warnings
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, ROOT)
 warnings.filterwarnings("ignore")
+for _v in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):   # the engine is pure Python; one BLAS thread per
+    os.environ.setdefault(_v, "1")                                             # worker saves memory on the shared 8 GB machine
 from multiprocessing import Pool  # noqa: E402
 
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
-from lunarsim import run, dispatch  # noqa: E402
+from lunarsim import dispatch, Simulation  # noqa: E402
 from lunarsim.config import library, split_rtt  # noqa: E402
 from lunarsim.phases import PHASES, FLEETS  # noqa: E402
 from experiments.phase3 import fit_law  # noqa: E402
@@ -57,7 +60,18 @@ MECHS = {
 }
 LIB = library()                  # "P2-default", "P2-<n>-vehicles" (n_operators = max(2, n // 2)), "P3-default"
 
-SIGMAS = (0.25, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0)
+# E17 dispersion levels: the implied mean |miss| in metres, anchored to flown landers; sigma_scale = level / the
+# classical CLPS table's mean |miss| (fit_law.classical_mean_miss_m, 2.90 m), the same scale for every class in a cell.
+MISS_REF_M = fit_law.classical_mean_miss_m()
+CLASSICAL_LABEL = fit_law.CLASSICAL_LABEL
+MISS_LEVELS = ((CLASSICAL_LABEL, MISS_REF_M),              # the classical law as evaluated in the env (sigma_scale 1; 2.90 m)
+               ("SLIM pre-divert", 10.0),                   # Measured: SLIM 10 m-class before the obstacle-avoidance divert
+               ("ADD Rev C target", 50.0),                  # Spec: NASA ADD Rev C (Dec 2025, gap 1101) 50 m landing-accuracy target
+               ("NASA 50-100 m / HLS 100 m 3-sigma", 100.0),  # Spec: NASA 2023 white paper 50-100 m; HLS 100 m 3-sigma
+               ("Blue Ghost M1", 118.0),                    # Measured: Firefly Blue Ghost M1
+               ("IM-2", 300.0),                             # Measured: Intuitive Machines IM-2 (Athena)
+               ("IM-1", 1500.0))                            # Measured: Intuitive Machines IM-1 (Odysseus)
+PAD_RADII = (25.0, 50.0, 100.0)                      # off-pad threshold, m (the 200 vs 100 m pad-diameter debate)
 STANDOFFS = (0.5, 1.0, 2.0, 3.0, 5.0)
 E17_SCENARIOS = ("P2-default", "P2-4-vehicles", "P2-2-vehicles", "P3-default")
 E17_MECHS = ("inhouse", "marketplace")
@@ -85,11 +99,11 @@ def standoff_key(d) -> str:
     return f"{float(d):g}"
 
 
-def phase3(sc, standoff, sigma_scale=1.0, plume=None, landing="classical", autonomy=AUTONOMY):
+def phase3(sc, standoff, sigma_scale=1.0, plume=None, landing="classical", autonomy=AUTONOMY, pad_radius_m=PAD_RADIUS_M):
     """The Phase-3 fields exactly as cli._with_phase3 builds them."""
     kw = {"terrain": TERRAIN, "pad_standoff_km": standoff_key(standoff), "autonomy_model": autonomy}
     if landing:
-        kw["landing_model"] = {"policy": landing, "sigma_scale": float(sigma_scale), "pad_radius_m": PAD_RADIUS_M,
+        kw["landing_model"] = {"policy": landing, "sigma_scale": float(sigma_scale), "pad_radius_m": float(pad_radius_m),
                                "failure_policy": "lose"}
     if plume:
         r, t = plume
@@ -102,8 +116,12 @@ def cell_key(tag, mech_name) -> str:
 
 
 def _job(args):
+    """lunarsim.engine.run, plus the year's landing count (for offpad_landings / landings in the law fit)."""
     tag, sc, mech_name, mech, kw, seed = args
-    out = run(sc, mech, seed=seed, **kw)
+    sim = Simulation(sc, mech, seed=seed, mech_kwargs=dict(kw))
+    out = sim.run()
+    out["seed"] = seed
+    out["landings"] = len(sim.landing_schedule)
     out.update(tag)
     out["mechanism"] = mech_name
     out["cell"] = cell_key(tag, mech_name)
@@ -260,9 +278,43 @@ def e16_rows(path=DRIVING):
     return doc, pd.DataFrame(rows)
 
 
-def e16_table(doc, raw):
-    """The two validation checks. Fields missing from the table are reported, not guessed."""
+FLAT_LEG_M = 2000.0
+
+
+def e16_flat_rows(length_m=FLAT_LEG_M, n_runs=400):
+    """Speed made good on a synthetic flat 2 km leg through the table's own leg integrator (lunarsim.rover.tables.
+    drive_profile on a level, unshadowed, smooth profile; sun None), as tests/test_rover.py checks it against JSC."""
+    try:
+        from lunarsim.rover import tables as TB, physics as R
+    except ImportError as e:
+        return [{"check": "speed_made_good_vs_rtt_flat", "note": f"lunarsim.rover not importable: {e}"}]
+    n = int(round(length_m / 5.0))
+    prof = {"ds": np.full(n, 5.0), "grade": np.zeros(n), "heading": np.zeros(n), "slope": np.zeros(n),
+            "shadow": np.zeros(n, bool), "rough": np.zeros(n), "length_m": float(length_m)}
     rows = []
+    for aut in ("teleop", "supervised", "autonomous"):
+        base = None
+        for rtt in (0.0, 4.0, 6.0, 8.0):
+            r = TB.drive_profile(prof, aut, rtt, None, np.random.default_rng(0), n_runs)
+            every, stop_s = R.stop_plan(aut, rtt)
+            det = length_m / (r["t_move_s"] + r["stops"] * stop_s) * 3.6          # whole stops only, as the table does
+            runs = length_m / float(np.mean(r["time_s"])) * 3.6                   # mean over the lognormal speed draws
+            base = det if base is None else base
+            jsc = JSC_TELEOP_KMH.get(rtt) if aut == "teleop" else None
+            rows.append({"check": "speed_made_good_vs_rtt_flat", "leg": f"synthetic flat {length_m / 1000:g} km", "lighting": "none",
+                         "autonomy": aut, "rtt_s": rtt, "length_m": length_m, "max_slope_deg": 0.0, "sim_kmh": det,
+                         "sim_kmh_mean_runs": runs, "sim_ratio_to_rtt0": det / base, "ref_kmh": jsc,
+                         "ref_ratio_to_rtt0": (jsc / JSC_TELEOP_KMH[0.0]) if jsc else np.nan,
+                         "rel_err": (det / jsc - 1.0) if jsc else np.nan, "interventions_lambda": r["lambda"], "stops": r["stops"],
+                         "note": "flat ground as calibrated (Litaker/JSC teleop, Measured); same integrator as driving-v1; "
+                                 "sim_kmh is the deterministic made-good with whole stops, sim_kmh_mean_runs the mean over %d runs" % n_runs})
+    return rows
+
+
+def e16_table(doc, raw):
+    """The validation checks: flat-ground speed vs RTT (as calibrated), the flattest real leg (context), PSR energy.
+    Fields missing from the table are reported, not guessed."""
+    rows = e16_flat_rows()
     mass = doc.get("model", {}).get("mass_kg")
     day = raw[raw["lighting"] != "night"]
     # (a) flattest leg (smallest max slope over its daylight routes, at least MIN_FLAT_LEG_M long): teleop speed vs RTT
@@ -280,13 +332,14 @@ def e16_table(doc, raw):
         base[aut] = float(s0["speed_made_good_kmh"].iloc[0]) if len(s0) else np.nan
     for r in sub.sort_values(["autonomy", "rtt_s"]).itertuples():
         jsc = JSC_TELEOP_KMH.get(r.rtt_s) if r.autonomy == "teleop" else None
-        rows.append({"check": "speed_made_good_vs_rtt", "leg": flat, "lighting": light, "autonomy": r.autonomy, "rtt_s": r.rtt_s,
+        rows.append({"check": "speed_made_good_vs_rtt_real_leg", "leg": flat, "lighting": light, "autonomy": r.autonomy, "rtt_s": r.rtt_s,
                      "length_m": r.length_m, "max_slope_deg": r.max_slope_deg, "sim_kmh": r.speed_made_good_kmh,
                      "sim_ratio_to_rtt0": r.speed_made_good_kmh / base[r.autonomy] if base[r.autonomy] else np.nan,
                      "ref_kmh": jsc, "ref_ratio_to_rtt0": (jsc / JSC_TELEOP_KMH[0.0]) if jsc else np.nan,
                      "rel_err": (r.speed_made_good_kmh / jsc - 1.0) if jsc else np.nan,
                      "interventions_lambda": r.interventions_lambda,
-                     "note": "JSC/Litaker teleop course (Measured); table time excludes interventions; flattest leg >= %g m" % MIN_FLAT_LEG_M})
+                     "note": "context: flattest real leg >= %g m (max slope %.1f deg, so below the flat-ground reference); "
+                             "table time excludes interventions" % (MIN_FLAT_LEG_M, r.max_slope_deg)})
     # (b) BASE<->PSR round trip energy per autonomy level vs the Chen band scaled by rover mass
     out_leg, back_leg = "BASE->PSR", "PSR->BASE"
     have = set(raw["leg"])
@@ -327,13 +380,15 @@ def e17_cells():
     cells = []
     for name in E17_SCENARIOS:
         base = LIB[name]
-        for sig in SIGMAS:
-            for D in STANDOFFS:
-                sc = phase3(base, D, sigma_scale=sig)
-                for mn in E17_MECHS:
-                    tag = _tag("E17", name, sigma_scale=float(sig), pad_standoff_km=float(D), keepout_km=0.0, standdown_h=0.0,
-                               night_fraction=float(base.night_fraction))
-                    cells.append((tag, sc, mn, *MECHS[mn]))
+        for label, level in MISS_LEVELS:
+            sig = 1.0 if label == CLASSICAL_LABEL else float(level) / MISS_REF_M
+            for pr in PAD_RADII:
+                for D in STANDOFFS:
+                    sc = phase3(base, D, sigma_scale=sig, pad_radius_m=pr)
+                    for mn in E17_MECHS:
+                        tag = _tag("E17", name, miss_level_m=float(level), miss_label=label, sigma_scale=sig, pad_radius_m=float(pr),
+                                   pad_standoff_km=float(D), keepout_km=0.0, standdown_h=0.0, night_fraction=float(base.night_fraction))
+                        cells.append((tag, sc, mn, *MECHS[mn]))
     return cells
 
 
