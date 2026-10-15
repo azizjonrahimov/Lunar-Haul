@@ -12,3 +12,9 @@ dist/
 Thumbs.db
 results/E14_precision_*.csv
 paper/lunar_logistics_marketplace_paper.pdf
+data/terrain/_cache/
+runs/
+site/node_modules/
+site/dist/
+site/public/terrain/
+site/.terrain-dev/

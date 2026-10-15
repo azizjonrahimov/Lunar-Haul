@@ -14,6 +14,8 @@ dependencies = ["numpy>=1.24", "pandas>=2.0"]
 
 [project.optional-dependencies]
 full = ["scipy>=1.10", "matplotlib>=3.7", "pymupdf>=1.24", "pytest>=7"]
+terrain = ["rasterio>=1.4", "pillow>=10"]
+ml = ["stable-baselines3>=2.9", "gymnasium[box2d]>=1.4", "torch>=2.8", "tensorboard>=2.17"]  # torch: --index-url https://download.pytorch.org/whl/cpu for the lander MLP
 
 [project.scripts]
 lunarsim = "lunarsim.cli:main"

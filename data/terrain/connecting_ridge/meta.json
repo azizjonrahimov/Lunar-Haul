@@ -1,0 +1,89 @@
+{
+  "format": "lunarsim-terrain",
+  "version": 1,
+  "site_id": "connecting_ridge",
+  "name": "Connecting ridge",
+  "source": {
+    "product": "PGDA LOLA 5mpp Site01",
+    "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Site01_final_adj_5mpp_surf.tif",
+    "citation": "Barker et al. 2021, PGDA LOLA 5 m/px polar DEMs, https://pgda.gsfc.nasa.gov/products/78 (Barker, M. K. et al., Planetary and Space Science 203, 105119, doi:10.1016/j.pss.2020.105119)",
+    "credit": "NASA/GSFC",
+    "flag": "Measured"
+  },
+  "crs": "Moon south polar stereographic (LOLA)",
+  "proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs=True",
+  "crs_wkt": "PROJCS[\"unnamed\",GEOGCS[\"unnamed ellipse\",DATUM[\"unknown\",SPHEROID[\"unnamed\",1737400,0]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]]],PROJECTION[\"Polar_Stereographic\"],PARAMETER[\"latitude_of_origin\",-90],PARAMETER[\"central_meridian\",0],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1],AXIS[\"Easting\",NORTH],AXIS[\"Northing\",NORTH]]",
+  "origin_xy_m": [
+    -19000.0,
+    -20000.0
+  ],
+  "size_m": [
+    16000.0,
+    16000.0
+  ],
+  "frame": "local x = X - origin_x, y = Y - origin_y (metres); PNG row 0 = max y; azimuth 0 = +y, 90 = +x (grid convention)",
+  "layers": {
+    "height_5m": {
+      "file": "height_5m.png",
+      "shape": [
+        3200,
+        3200
+      ],
+      "px_m": 5.0,
+      "kind": "height",
+      "dtype": "uint16"
+    },
+    "height_20m": {
+      "file": "height_20m.png",
+      "shape": [
+        800,
+        800
+      ],
+      "px_m": 20.0,
+      "kind": "height",
+      "dtype": "uint16",
+      "note": "4x4 block mean of the float 5 m grid"
+    },
+    "slope_20m": {
+      "file": "slope_20m.png",
+      "shape": [
+        800,
+        800
+      ],
+      "px_m": 20.0,
+      "kind": "slope_deg",
+      "dtype": "uint8",
+      "note": "slope on the float 5 m grid (central differences), 4x4 block mean, rounded"
+    },
+    "hillshade_20m": {
+      "file": "hillshade_20m.png",
+      "shape": [
+        800,
+        800
+      ],
+      "px_m": 20.0,
+      "kind": "hillshade",
+      "dtype": "uint8",
+      "sun_az_deg": 0.0,
+      "sun_el_deg": 1.5,
+      "hillshade_scale": 0.4567052736356883,
+      "note": "value = 255 * min(1, (n . s) / hillshade_scale); cast shadows set to 0; Moon curvature included"
+    }
+  },
+  "z_encoding": {
+    "offset_m": -524.0,
+    "scale_m_per_unit": 0.5
+  },
+  "stats": {
+    "z_min": -523.1834106445312,
+    "z_max": 1959.4962158203125,
+    "slope_p50": 12.290028778607498,
+    "slope_p90": 20.635509042064538,
+    "nodata_filled": 0
+  },
+  "generated": {
+    "tool": "lunarsim terrain build",
+    "commit": "fb5fd89df5a2f03dba5b164c67e4b7646781b566",
+    "time": "2026-10-15T17:34:56+00:00"
+  }
+}
