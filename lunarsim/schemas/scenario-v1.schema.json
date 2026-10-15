@@ -64,7 +64,7 @@
     },
     "compact": {
       "type": "object", "required": ["phase"], "additionalProperties": false,
-      "description": "The web page's controls. Expanded from experiments.scenarios.PHASES[phase] exactly as web/sim.js makeScenario().",
+      "description": "The web page's controls. Expanded from lunarsim.phases.PHASES[phase] exactly as web/sim.js makeScenario().",
       "properties": {
         "format": true, "version": true, "form": {"const": "compact"},
         "name": {"type": "string"},

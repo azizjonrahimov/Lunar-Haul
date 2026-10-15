@@ -79,15 +79,7 @@ def e1():
 # ---------------------------------------------------------------------------
 # E2: fleet-size sweep at Phase-2 demand (minimum fleet for a service level)
 # ---------------------------------------------------------------------------
-FLEETS = {
-    2: [LTV("NASA"), LTV("CoA")],
-    3: [LTV("NASA"), LTV("CoA"), MICRO("CoB")],
-    4: [LTV("NASA"), LTV("CoA"), HAUL("CoA"), MICRO("CoB")],
-    5: [LTV("NASA"), LTV("NASA"), LTV("CoA"), HAUL("CoA"), MICRO("CoB")],
-    6: [LTV("NASA"), LTV("NASA"), LTV("CoA"), HAUL("CoA"), MICRO("CoB"), LTV("CoC", "teleop")],
-    8: [LTV("NASA"), LTV("NASA"), LTV("CoA"), HAUL("CoA"), MICRO("CoB"), LTV("CoC", "teleop"),
-        LTV("CoB", "autonomous"), HAUL("CoC", "autonomous")],
-}
+from lunarsim.phases import FLEETS  # noqa: E402  (Phase-2 fleet-size variants; shared with lunarsim.config.library)
 
 
 def e2():

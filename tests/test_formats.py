@@ -102,7 +102,7 @@ OWNERS = ["NASA", "NASA", "NASA", "NASA", "CoA", "CoA", "CoB", "CoC"]
 
 @pytest.fixture
 def in_root(monkeypatch):
-    monkeypatch.chdir(ROOT)          # compact form needs experiments.scenarios.PHASES
+    monkeypatch.chdir(ROOT)          # (historical: compact form used to need the repo root)
     monkeypatch.syspath_prepend(ROOT)
 
 
@@ -303,3 +303,39 @@ def test_validate_file_semantic_scenario_error(in_root, tmp_path):
                  encoding="utf-8")
     kind, legacy, errs = validate_file(str(p))
     assert (kind, legacy) == ("scenario", True) and errs and "does not load" in errs[0]
+
+
+# ---------------------------------------------------------------------------
+# B-6: phase table inside the package
+# ---------------------------------------------------------------------------
+import shutil, subprocess
+
+
+def test_phases_module_matches_experiments():
+    import experiments.scenarios as old
+    import experiments.run_all as ra
+    from lunarsim import phases
+    assert old.PHASES is phases.PHASES and old.OWNERS is phases.OWNERS
+    assert ra.FLEETS == phases.FLEETS          # run_all keeps its own copy of the fleet table
+
+
+def test_compact_outside_repo_checkout(tmp_path):
+    """Only the lunarsim package (no experiments/), run from an unrelated working directory."""
+    pkg = tmp_path / "site"
+    shutil.copytree(os.path.join(ROOT, "lunarsim"), pkg / "lunarsim", ignore=shutil.ignore_patterns("__pycache__"))
+    work = tmp_path / "work"
+    work.mkdir()
+    (work / "web.json").write_text(json.dumps(dict(COMPACT, phase="P1", bulk_t_per_year=0)), encoding="utf-8")
+    env = dict(os.environ, PYTHONPATH=str(pkg), PYTHONWARNINGS="ignore")
+    def lunarsim(*args):
+        return subprocess.run([sys.executable, "-m", "lunarsim", *args], cwd=work, env=env,
+                              capture_output=True, text=True, timeout=300)
+    r = subprocess.run([sys.executable, "-c", "import experiments"], cwd=work, env=env, capture_output=True, text=True)
+    assert r.returncode != 0                     # really no repository on the path
+    r = lunarsim("validate", "web.json")
+    assert r.returncode == 0 and "OK   web.json  scenario v1" in r.stdout, r.stdout + r.stderr
+    r = lunarsim("run", "--scenario", "web.json", "--seeds", "2", "--out", "runs.csv")
+    assert r.returncode == 0, r.stderr
+    assert "marketplace on lunarsim-live: 2 seeds" in r.stdout
+    r = lunarsim("scenarios", "list")
+    assert r.returncode == 0 and "P2-8-vehicles" in r.stdout

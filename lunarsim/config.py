@@ -115,11 +115,8 @@ def scenario_from_dict_ex(d: Dict[str, Any]) -> Tuple[Scenario, Dict[str, Any]]:
 
 
 def _phases() -> Dict[str, Scenario]:
-    import importlib
-    try:
-        return importlib.import_module("experiments.scenarios").PHASES
-    except ImportError as e:  # the phase table lives in the repository, not the installed package
-        raise ValueError("compact scenarios need experiments/scenarios.py (run from the repository root)") from e
+    from .phases import PHASES
+    return PHASES
 
 
 def split_rtt(rtt_s: float, ground_delay_s: float = 2.4) -> Tuple[float, float]:
@@ -162,7 +159,7 @@ def marketplace_kwargs(flags: Dict[str, Any]) -> Dict[str, Any]:
 def _from_compact(d: Dict[str, Any]) -> Tuple[Scenario, Dict[str, Any]]:
     """Expand the page's compact form exactly as web/sim.js makeScenario() does:
 
-    - start from experiments.scenarios.PHASES[phase] (landings, cargo owners, bulk routes,
+    - start from lunarsim.phases.PHASES[phase] (landings, cargo owners, bulk routes,
       fleet, n_operators); missing controls keep the phase value;
     - bulk_t_per_year B: every phase flow gets tonnes_per_year * (B / max(1e-9, sum of phase
       tonnes)), owner NASA, the phase lot size and priority; B == 0 means no bulk flows;
@@ -217,12 +214,10 @@ def load_scenario_ex(path: str) -> Tuple[Scenario, Dict[str, Any]]:
 
 def library() -> Dict[str, Scenario]:
     """Named scenarios used in the paper (phases and the fleet-size variants)."""
-    import importlib
-    scen = importlib.import_module("experiments.scenarios")
-    run_all = importlib.import_module("experiments.run_all")
+    from .phases import PHASES, FLEETS
     out: Dict[str, Scenario] = {}
-    for ph, sc in scen.PHASES.items():
+    for ph, sc in PHASES.items():
         out[f"{ph}-default"] = sc
-    for n, fleet in run_all.FLEETS.items():
-        out[f"P2-{n}-vehicles"] = scen.PHASES["P2"].with_(name=f"P2-{n}-vehicles", fleet=fleet, n_operators=max(2, n // 2))
+    for n, fleet in FLEETS.items():
+        out[f"P2-{n}-vehicles"] = PHASES["P2"].with_(name=f"P2-{n}-vehicles", fleet=fleet, n_operators=max(2, n // 2))
     return out
