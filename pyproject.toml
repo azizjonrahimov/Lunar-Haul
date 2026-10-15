@@ -21,6 +21,9 @@ lunarsim = "lunarsim.cli:main"
 [tool.setuptools]
 packages = ["lunarsim"]
 
+[tool.setuptools.package-data]
+lunarsim = ["schemas/*.json"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 

@@ -170,6 +170,7 @@ class Simulation:
         self.sc = sc
         self.world = world or build_default_world()
         s = sc.seed if seed is None else seed
+        self.seed = s                                   # recorded for trace_export(); not used by the engine
         self.rng = np.random.default_rng(s)            # demand stream (common random numbers)
         self.rng_ops = np.random.default_rng(s + 100_003)  # operations stream (faults)
         self.mechanism = mechanism
@@ -679,8 +680,12 @@ class Simulation:
         m.km_reposition = self.km_reposition
 
     # ------------------------------------------------------------- export
-    def trace_export(self) -> dict:
-        """Everything the live viewer needs to replay this run."""
+    def trace_export(self, mechanism: Optional[str] = None) -> dict:
+        """Everything the live viewer needs to replay this run, as lunarsim-trace v1.
+
+        See lunarsim/schemas/trace-v1.schema.json. `mechanism` overrides the name
+        recorded in the header (default: the dispatch function's __name__).
+        """
         nights = []
         t = 0.0
         while self.sc.night_fraction > 0 and t < self.sc.horizon_h:
@@ -691,7 +696,15 @@ class Simulation:
         clean = {}
         for k, v in self.metrics.summary().items():
             clean[k] = None if (isinstance(v, float) and np.isnan(v)) else (float(v) if isinstance(v, (np.floating, float)) else int(v) if isinstance(v, (np.integer,)) else v)
+        if mechanism is None:
+            mechanism = getattr(self.mechanism, "__name__", str(self.mechanism))
         return {
+            "format": "lunarsim-trace",
+            "version": 1,
+            "engine": "python",
+            "scenario": self.sc.name,
+            "mechanism": mechanism,
+            "seed": int(self.seed),
             "world": self.world.to_dict(),
             "horizon_h": self.sc.horizon_h,
             "nights": nights,
@@ -699,6 +712,8 @@ class Simulation:
             "vehicles": [{"id": v.id, "owner": v.owner, "cls": v.cls.name, "autonomy": v.autonomy,
                           "capacity": v.cls.capacity_kg, "night_ops": v.cls.night_ops} for v in self.vehicles],
             "jobs": self.trace,
+            "cargo_columns": ["id", "owner", "mass_kg", "origin", "dest", "t_ready", "t_picked",
+                              "t_delivered", "priority", "cls", "stranded"],
             "cargo": [[c.id, c.owner, round(c.mass_kg, 1), c.origin, c.dest, round(c.t_ready, 2),
                        None if c.t_picked is None else round(c.t_picked, 2),
                        None if c.t_delivered is None else round(c.t_delivered, 2), c.priority, c.cls, int(c.stranded)]

@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://azizjonrahimov.github.io/lunar-logistics-research/schemas/scenario-v1.schema.json",
+  "title": "lunarsim-scenario v1",
+  "description": "Simulation inputs. Two forms, told apart by 'form' (missing: a document with 'phase' is compact, else full). Header keys are optional on input (pre-v1 files have none). Mapping between the forms: lunarsim/config.py (_from_compact, split_rtt).",
+  "type": "object",
+  "properties": {
+    "format": {"const": "lunarsim-scenario"},
+    "version": {"const": 1},
+    "form": {"enum": ["full", "compact"]}
+  },
+  "if": {"anyOf": [
+    {"properties": {"form": {"const": "compact"}}, "required": ["form"]},
+    {"not": {"required": ["form"]}, "required": ["phase"]}
+  ]},
+  "then": {"$ref": "#/$defs/compact"},
+  "else": {"$ref": "#/$defs/full"},
+  "$defs": {
+    "fleetEntry": {
+      "description": "[owner, class, autonomy, standards]; standards may be 'A' or e.g. 'A|B'",
+      "oneOf": [
+        {"type": "array", "prefixItems": [{"type": "string"}, {"enum": ["LTV", "HAUL", "MICRO"]}, {"enum": ["teleop", "supervised", "autonomous"]}, {"type": "string"}], "minItems": 3, "maxItems": 4},
+        {"type": "object", "required": ["owner", "cls"], "additionalProperties": false, "properties": {
+          "owner": {"type": "string"}, "cls": {"enum": ["LTV", "HAUL", "MICRO"]},
+          "autonomy": {"enum": ["teleop", "supervised", "autonomous"]}, "std": {"type": "string"}}}
+      ]
+    },
+    "bulkFlow": {
+      "type": "object", "required": ["origin", "dest", "tonnes_per_year"], "additionalProperties": false,
+      "properties": {
+        "origin": {"type": "string"}, "dest": {"type": "string"},
+        "tonnes_per_year": {"type": "number", "minimum": 0}, "lot_kg": {"type": "number", "exclusiveMinimum": 0},
+        "owner": {"type": "string"}, "priority": {"type": "integer", "minimum": 1, "maximum": 3},
+        "start_h": {"type": "number"}}
+    },
+    "full": {
+      "type": "object", "additionalProperties": false,
+      "description": "Every field of lunarsim.scenario.Scenario; missing fields take the Scenario defaults.",
+      "properties": {
+        "format": true, "version": true, "form": {"const": "full"},
+        "name": {"type": "string"},
+        "horizon_h": {"type": "number", "exclusiveMinimum": 0},
+        "landings_per_year": {"type": "object", "additionalProperties": {"type": "number", "minimum": 0}},
+        "cargo_owners": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+        "bulk_flows": {"type": "array", "items": {"$ref": "#/$defs/bulkFlow"}},
+        "fleet": {"type": "array", "items": {"$ref": "#/$defs/fleetEntry"}},
+        "night_fraction": {"type": "number", "minimum": 0, "maximum": 1},
+        "night_speed_mult": {"type": "number", "minimum": 0},
+        "one_way_latency_s": {"type": "number", "minimum": 0},
+        "ground_delay_s": {"type": "number", "minimum": 0},
+        "n_operators": {"type": "integer", "minimum": 0},
+        "supervised_fanout": {"type": "integer", "minimum": 1},
+        "failures": {"type": "boolean"},
+        "mtbf_mult": {"type": "number", "exclusiveMinimum": 0},
+        "other_duty_share": {"type": "number", "minimum": 0, "maximum": 1},
+        "other_duty_block_h": {"type": "number", "exclusiveMinimum": 0},
+        "common_standard_share": {"type": "number", "minimum": 0, "maximum": 1},
+        "operator_cost_per_h": {"type": "number"},
+        "urgency_usd_per_h": {"type": "number"},
+        "vot_usd_per_h": {"type": "object", "propertyNames": {"pattern": "^[0-9]+$"}, "additionalProperties": {"type": "number"}},
+        "delivered_value_per_kg": {"type": "number"},
+        "seed": {"type": "integer"}
+      }
+    },
+    "compact": {
+      "type": "object", "required": ["phase"], "additionalProperties": false,
+      "description": "The web page's controls. Expanded from experiments.scenarios.PHASES[phase] exactly as web/sim.js makeScenario().",
+      "properties": {
+        "format": true, "version": true, "form": {"const": "compact"},
+        "name": {"type": "string"},
+        "phase": {"enum": ["P1", "P2", "P3"]},
+        "bulk_t_per_year": {"type": "number", "minimum": 0, "description": "Phase bulk flows scaled to this total; 0 = none."},
+        "fleet": {"type": "array", "items": {"$ref": "#/$defs/fleetEntry"}},
+        "night_fraction": {"type": "number", "minimum": 0, "maximum": 1},
+        "rtt_s": {"type": "number", "minimum": 0, "description": "Round trip = 2 * one_way_latency_s + ground_delay_s (ground delay kept at 2.4 s)."},
+        "n_operators": {"type": "integer", "minimum": 0},
+        "other_duty_share": {"type": "number", "minimum": 0, "maximum": 1},
+        "mtbf_mult": {"type": "number", "exclusiveMinimum": 0},
+        "common_standard_share": {"type": "number", "minimum": 0, "maximum": 1},
+        "marketplace": {
+          "type": "object", "description": "Marketplace mechanism options (not Scenario fields). Short names team/night are aliases of team_lift/night_aware.",
+          "additionalProperties": false,
+          "properties": {
+            "bundling": {"type": "boolean"}, "consolidate": {"type": "boolean"}, "anticipate": {"type": "boolean"},
+            "backhaul": {"type": "boolean"}, "priority": {"type": "boolean"},
+            "team_lift": {"type": "boolean"}, "team": {"type": "boolean"},
+            "night_aware": {"type": "boolean"}, "night": {"type": "boolean"}}
+        }
+      }
+    }
+  }
+}

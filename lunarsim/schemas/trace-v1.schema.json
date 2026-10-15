@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://azizjonrahimov.github.io/lunar-logistics-research/schemas/trace-v1.schema.json",
+  "title": "lunarsim-trace v1",
+  "description": "One replayable simulated run (Python Simulation.trace_export() or JS Simulation.exportTrace()). Times are hours from t=0. A file without a 'format' key is a legacy Python trace and is read as v1. Readers look cargo columns up by name in 'cargo_columns', never by index.",
+  "type": "object",
+  "required": ["horizon_h", "nights", "landings", "vehicles", "jobs", "cargo"],
+  "properties": {
+    "format": {"const": "lunarsim-trace"},
+    "version": {"const": 1},
+    "engine": {"enum": ["python", "js"]},
+    "scenario": {"type": "string"},
+    "mechanism": {"type": "string"},
+    "seed": {"type": "integer"},
+    "horizon_h": {"type": "number", "exclusiveMinimum": 0},
+    "world": {
+      "type": "object",
+      "description": "Optional in JS output; the viewer uses its built-in map if absent.",
+      "required": ["sites", "edges"],
+      "properties": {
+        "sites": {"type": "array", "items": {
+          "type": "object", "required": ["name", "x", "y"],
+          "properties": {"name": {"type": "string"}, "x": {"type": "number"}, "y": {"type": "number"}, "kind": {"type": "string"}}}},
+        "edges": {"type": "array", "items": {
+          "type": "object", "required": ["a", "b", "dist"],
+          "properties": {"a": {"type": "string"}, "b": {"type": "string"}, "dist": {"type": "number"}, "slope": {"type": "string"}}}}
+      }
+    },
+    "nights": {"type": "array", "items": {
+      "type": "array", "prefixItems": [{"type": "number"}, {"type": "number"}], "minItems": 2, "maxItems": 2}},
+    "landings": {"type": "array", "items": {
+      "type": "array", "prefixItems": [{"type": "number"}, {"type": "string"}, {"type": "string"}], "minItems": 3, "maxItems": 3}},
+    "vehicles": {"type": "array", "items": {
+      "type": "object", "required": ["id", "owner", "cls", "capacity"],
+      "properties": {
+        "id": {"type": "integer"}, "owner": {"type": "string"}, "cls": {"type": "string"},
+        "autonomy": {"type": "string"}, "capacity": {"type": "number"}, "night_ops": {"type": "boolean"}}}},
+    "jobs": {"type": "array", "items": {"$ref": "#/$defs/job"}},
+    "cargo_columns": {
+      "type": "array", "items": {"type": "string"}, "uniqueItems": true,
+      "description": "Defaults to the 11 v1 columns when absent (legacy files). Extra columns (e.g. t_landed) may only be appended."
+    },
+    "cargo": {"type": "array", "items": {"type": "array"}},
+    "summary": {
+      "type": "object", "description": "Metrics.summary(); NaN written as null. Optional in JS output.",
+      "additionalProperties": {"type": ["number", "null"]}
+    }
+  },
+  "$defs": {
+    "job": {
+      "type": "object", "required": ["kind", "veh", "t0", "t1", "segments"],
+      "properties": {
+        "kind": {"type": "string"},
+        "veh": {"type": "integer"},
+        "team": {"type": "array", "items": {"type": "integer"}},
+        "t0": {"type": "number"}, "t1": {"type": "number"},
+        "segments": {"type": "array", "items": {
+          "type": "array", "description": "[from, to, t_start, t_end, load_kg]",
+          "prefixItems": [{"type": "string"}, {"type": "string"}, {"type": "number"}, {"type": "number"}, {"type": "number"}],
+          "minItems": 5, "maxItems": 5}},
+        "items": {"type": "array", "items": {
+          "type": "array", "description": "[cargo_id, mass_kg, priority, cls, dest]",
+          "prefixItems": [{"type": "integer"}, {"type": "number"}, {"type": "integer"}, {"type": "string"}, {"type": "string"}],
+          "minItems": 5, "maxItems": 5}}
+      }
+    }
+  }
+}

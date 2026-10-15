@@ -19,14 +19,27 @@ import time
 log = logging.getLogger("lunarsim")
 
 
-def _scenario(arg: str):
-    from .config import library, load_scenario
+def _scenario_ex(arg: str):
+    """(Scenario, marketplace kwargs from a compact-form file, else {})."""
+    from .config import library, load_scenario_ex
     if os.path.exists(arg):
-        return load_scenario(arg)
+        try:
+            return load_scenario_ex(arg)
+        except ValueError as e:
+            raise SystemExit(f"{arg}: {e}")
     lib = library()
     if arg in lib:
-        return lib[arg]
+        return lib[arg], {}
     raise SystemExit(f"unknown scenario '{arg}'. Known: {', '.join(sorted(lib))} or a path to a JSON file")
+
+
+def _scenario(arg: str):
+    return _scenario_ex(arg)[0]
+
+
+def _with_file_opts(name: str, kw: dict, file_kw: dict) -> dict:
+    """Scenario-file marketplace flags apply to the marketplace family only (as on the web page)."""
+    return dict(kw, **file_kw) if name.startswith("marketplace") else kw
 
 
 def _mechanism(name: str):
@@ -41,8 +54,9 @@ def _mechanism(name: str):
 def cmd_run(a):
     import pandas as pd
     from .engine import run
-    sc = _scenario(a.scenario)
+    sc, file_kw = _scenario_ex(a.scenario)
     fn, kw = _mechanism(a.mechanism)
+    kw = _with_file_opts(a.mechanism, kw, file_kw)
     t0 = time.time()
     rows = [run(sc, fn, seed=s, **kw) for s in range(a.seeds)]
     df = pd.DataFrame(rows)
@@ -61,10 +75,11 @@ def cmd_compare(a):
     import pandas as pd
     from .engine import run
     from . import dispatch
-    sc = _scenario(a.scenario)
+    sc, file_kw = _scenario_ex(a.scenario)
     rows = []
     for name in ("inhouse", "pooled_greedy", "central_assign", "marketplace"):
         fn, kw = _mechanism(name)
+        kw = _with_file_opts(name, kw, file_kw)
         for s in range(a.seeds):
             r = run(sc, fn, seed=s, **kw)
             r["mechanism"] = name
@@ -78,13 +93,13 @@ def cmd_compare(a):
 
 def cmd_trace(a):
     from .engine import Simulation
-    sc = _scenario(a.scenario)
+    sc, file_kw = _scenario_ex(a.scenario)
     fn, kw = _mechanism(a.mechanism)
-    kw = dict(kw, trace=True)
+    kw = dict(_with_file_opts(a.mechanism, kw, file_kw), trace=True)
     sim = Simulation(sc, fn, seed=a.seed, mech_kwargs=kw)
     sim.run()
     with open(a.out, "w", encoding="utf-8") as f:
-        json.dump(sim.trace_export(), f)
+        json.dump(sim.trace_export(mechanism=a.mechanism), f)
     print(f"wrote {a.out}: {len(sim.trace)} jobs, {len(sim.all_cargo)} items")
 
 
@@ -115,8 +130,9 @@ def cmd_scenarios(a):
 
 def cmd_precise(a):
     from .precision import run_until_precise
-    sc = _scenario(a.scenario)
+    sc, file_kw = _scenario_ex(a.scenario)
     fn, kw = _mechanism(a.mechanism)
+    kw = _with_file_opts(a.mechanism, kw, file_kw)
     res, df = run_until_precise(sc, fn, {a.metric: a.target}, confidence=a.confidence, block=a.block,
                                 n_min=30, n_max=a.max, mech_kwargs=kw, verbose=True)
     r = res[a.metric]
