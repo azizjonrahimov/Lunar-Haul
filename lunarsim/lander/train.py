@@ -151,18 +151,20 @@ def train_descent(cls: str, variant: str, steps: int, seed: int, out_dir: str, r
     return {"policy": out_json, "run_dir": run_dir, "final": final, "wallclock_s": wall, "doc": doc}
 
 
-def train_lunarlander(steps: int, seed: int, run_root: str, n_eval: int = 20, verbose: int = 0) -> Dict[str, Any]:
+def train_lunarlander(steps: int, seed: int, run_root: str, n_eval: int = 20, verbose: int = 0,
+                      subproc: bool = True) -> Dict[str, Any]:
     import gymnasium as gym
     from stable_baselines3 import PPO
     from stable_baselines3.common.env_util import make_vec_env
-    from stable_baselines3.common.vec_env import SubprocVecEnv
+    from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
     from stable_baselines3.common.evaluation import evaluate_policy
     import torch
     torch.set_num_threads(1)
     hp = dict(HYPER_LUNARLANDER)
     run_dir = os.path.join(run_root, f"lunarlander_s{seed}")
     os.makedirs(run_dir, exist_ok=True)
-    vec = make_vec_env("LunarLander-v3", n_envs=hp.pop("n_envs"), seed=seed, vec_env_cls=SubprocVecEnv)
+    vec = make_vec_env("LunarLander-v3", n_envs=hp.pop("n_envs"), seed=seed,
+                       vec_env_cls=SubprocVecEnv if subproc else DummyVecEnv)
     model = PPO("MlpPolicy", vec, seed=seed, verbose=verbose, device="cpu", **hp)
     t0 = time.time()
     model.learn(total_timesteps=steps)
@@ -173,7 +175,8 @@ def train_lunarlander(steps: int, seed: int, run_root: str, n_eval: int = 20, ve
     mean, std = evaluate_policy(model, eval_env, n_eval_episodes=n_eval, deterministic=True)
     model.save(os.path.join(run_dir, "model.zip"))
     res = {"env": "LunarLander-v3", "steps": steps, "seed": seed, "mean_reward": float(mean), "std_reward": float(std),
-           "n_eval": n_eval, "wallclock_s": round(wall, 1), "solved": bool(mean >= 200), "hyperparams": HYPER_LUNARLANDER}
+           "n_eval": n_eval, "wallclock_s": round(wall, 1), "solved": bool(mean >= 200), "hyperparams": HYPER_LUNARLANDER,
+           "subproc": subproc}
     with open(os.path.join(run_dir, "result.json"), "w", encoding="utf-8") as f:
         json.dump(res, f, indent=2)
     return res
@@ -192,19 +195,22 @@ def main(argv=None):
     p.add_argument("--eval-every", type=int, default=50_000)
     p.add_argument("--eval-n", type=int, default=100)
     p.add_argument("--curriculum", type=float, default=CURRICULUM)
+    p.add_argument("--no-subproc", action="store_true",
+                   help="run all envs in this process (DummyVecEnv): slower, but no worker processes / far less memory")
     p.add_argument("--out-dir", default=os.path.join("data", "policies"))
     p.add_argument("--run-root", default="runs")
     p.add_argument("--verbose", type=int, default=0)
     a = p.parse_args(argv)
     if a.env == "LunarLander-v3":
-        r = train_lunarlander(a.steps, a.seed, os.path.join(a.run_root, "lunarlander"), verbose=a.verbose)
+        r = train_lunarlander(a.steps, a.seed, os.path.join(a.run_root, "lunarlander"), verbose=a.verbose,
+                              subproc=not a.no_subproc)
         print(f"LunarLander-v3: {a.steps} steps in {r['wallclock_s']:.0f} s; deterministic mean over {r['n_eval']} "
               f"episodes {r['mean_reward']:.1f} +- {r['std_reward']:.1f} ({'solved' if r['solved'] else 'NOT solved'})")
         return
     print(f"training {a.cls} / {a.variant} / seed {a.seed} for {a.steps} steps", flush=True)
     r = train_descent(a.cls, a.variant, a.steps, a.seed, a.out_dir, os.path.join(a.run_root, "lander"),
                       eval_every=a.eval_every, eval_n=a.eval_n, n_envs=a.n_envs, verbose=a.verbose,
-                      curriculum=a.curriculum)
+                      curriculum=a.curriculum, subproc=not a.no_subproc)
     f = r["final"]
     print(f"done in {r['wallclock_s']:.0f} s ({r['doc']['training']['s_per_100k_steps']} s / 100k steps): return "
           f"{f['mean_return']:.2f}, touchdown box {100 * f['box_rate']:.1f} %, pass {100 * f['pass_rate']:.1f} %")

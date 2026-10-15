@@ -205,7 +205,8 @@ def _anticipate(sim: Simulation, free: List[Vehicle], used: set, pool: List[Carg
     auction left idle are used, and only outside the night for vehicles that
     cannot work in the dark."""
     for t_land, lt, pad in sim.upcoming_landings(ANTICIPATE_WINDOW_H):
-        staged = any((v.location == pad and v.busy_until <= sim.t) or v.repos_target == pad for v in sim.vehicles)
+        staged = any((v.location == pad and v.busy_until <= sim.t) or v.repos_target == pad
+                     or getattr(v, "staged_for", None) == pad for v in sim.vehicles)   # staged_for: Phase-3 shelter staging
         if staged:
             continue
         t_first = t_land + lt.offload_h[0]

@@ -13,7 +13,9 @@ Fast leg integrator (same physics functions as env.py, along the route at 5 m re
     ground = v * (1 - slip(grade));  t_move = sum(ds / ground);  E = sum(energy_wh(ds, grade, slip))
     stops  = floor(length / L) * t_stop  (teleop cadence / supervised approvals)
     interventions ~ Poisson(sum over segments of hazard * ds), each costing RTT + recovery
-u_leg ~ lognormal(0, SPEED_SIGMA) per run is the run-to-run variability. Interventions use an Assumed hazard
+u_leg ~ lognormal(0, SPEED_SIGMA) per run is the run-to-run variability. time_h and energy_kwh EXCLUDE
+interventions (the DES draws k ~ Poisson(lambda) and adds k * (RTT + recovery) itself, PLAN §5.4 / B-12).
+Interventions use an Assumed hazard
 (no interventions-per-km data exists for lunar rovers; B-13 replaces it with the learned driver's measured
 rate). tests/test_rover.py checks the integrator against the step-by-step env on a flat leg.
 """
@@ -85,8 +87,9 @@ def drive_profile(prof: Dict[str, np.ndarray], autonomy: str, rtt_s: float, sun_
     lam = float(np.sum(haz * km)) + float(np.sum(blocked))
     u = np.exp(rng.normal(0.0, SPEED_SIGMA, n))
     k = rng.poisson(lam, n)
-    time_s = t_det / u + stops * stop_s + k * R.intervention_cost_s(rtt_s)
-    energy = e * (1.0 + 0.05 * k)                         # Assumed: each intervention adds 5 % of the leg energy
+    # time and energy EXCLUDE interventions: the DES draws them from `lambda` and adds RTT + recovery itself
+    time_s = t_det / u + stops * stop_s
+    energy = np.full(n, e)                                # traction energy does not depend on the speed factor
     return {"time_s": time_s, "energy_wh": energy, "interventions": k.astype(float), "lambda": lam,
             "stops": stops, "t_move_s": t_det}
 

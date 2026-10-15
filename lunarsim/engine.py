@@ -49,6 +49,10 @@ TELEOP_HANDLING_K = 0.25
 WEAR_SHARE = 0.5         # share of a vehicle's life consumption that is usage-driven (assumption)
 TEAM_SPEED_MULT = 0.5    # a coupled team drives at half speed
 TEAM_SETUP_H = 1.0       # hours to rendezvous and couple a team lift
+# Phase 3 (used only when the opt-in Scenario fields are set; see lunarsim/phase3.py)
+OFFPAD_SPEED_FACTOR = 0.5        # Assumed: rough unprepared ground between an off-pad lander and its pad
+OFFPAD_ENERGY_FACTOR = 2.0       # Assumed
+INTERVENTION_RECOVERY_S = 300.0  # Assumed, as lunarsim.rover.physics.INTERVENTION["recovery_s"]
 
 
 @dataclass
@@ -94,6 +98,18 @@ class Metrics:
     unmet_operator_waits: int = 0
     repositions: int = 0
     km_reposition: float = 0.0
+    # Phase 3 (reported only when a Phase-3 Scenario field is set, so v2 summaries keep their keys)
+    phase3: bool = False
+    plume_standdowns: int = 0
+    standdown_vehicle_h: float = 0.0
+    landing_misses_m: List[float] = field(default_factory=list)
+    offpad_landings: int = 0
+    failed_landings: int = 0
+    cargo_lost_kg: float = 0.0
+    km_offpad_extra: float = 0.0
+    interventions: int = 0
+    intervention_h: float = 0.0
+    prop_residual_kg: List[float] = field(default_factory=list)
 
     def summary(self) -> Dict[str, float]:
         d = np.array(self.delays_h) if self.delays_h else np.array([np.nan])
@@ -152,6 +168,19 @@ class Metrics:
             "repositions": self.repositions,
             "km_reposition": self.km_reposition,
         })
+        if self.phase3:
+            out.update({
+                "plume_standdowns": self.plume_standdowns,
+                "standdown_vehicle_h": self.standdown_vehicle_h,
+                "landing_miss_m_mean": float(np.mean(self.landing_misses_m)) if self.landing_misses_m else np.nan,
+                "offpad_landings": self.offpad_landings,
+                "failed_landings": self.failed_landings,
+                "cargo_lost_kg": self.cargo_lost_kg,
+                "km_offpad_extra": self.km_offpad_extra,
+                "interventions": self.interventions,
+                "intervention_h": self.intervention_h,
+                "prop_residual_kg_mean": float(np.mean(self.prop_residual_kg)) if self.prop_residual_kg else np.nan,
+            })
         return out
 
 
@@ -193,6 +222,13 @@ class Simulation:
         self.repositions = 0
         self.km_reposition = 0.0
         self._last_segments: Dict[int, list] = {}
+        self.p3 = any(getattr(sc, k, None) is not None
+                      for k in ("terrain", "pad_standoff_km", "landing_model", "plume", "autonomy_model"))
+        self.sites = self.drive = self.landing = self.plume = None
+        self.p3_landings: List[dict] = []
+        self._last_interventions = 0
+        if self.p3:
+            self._init_phase3()
         self._build_fleet()
         self._schedule_demand()
         self.batch_h = self.mech_kwargs.get("batch_h", 0.0)
@@ -200,6 +236,20 @@ class Simulation:
             self._push(self.batch_h, "TICK", None)
 
     # ------------------------------------------------------------------ setup
+    def _init_phase3(self):
+        """Opt-in Phase-3 models (lunarsim/phase3.py). Never called when every Phase-3 field is None."""
+        from . import phase3 as P3
+        sc = self.sc
+        self.metrics.phase3 = True
+        standoff = str(sc.pad_standoff_km) if sc.pad_standoff_km is not None else "1"
+        self.sites = P3.SiteMap(self.world, sc.terrain, standoff)
+        if sc.autonomy_model is not None:
+            self.drive = P3.DrivingModel(sc.autonomy_model, standoff, VEHICLE_CLASSES)
+        if sc.landing_model is not None:
+            self.landing = P3.LandingModel(sc.landing_model)
+        if sc.plume is not None:
+            self.plume = P3.PlumeModel(sc.plume, self.sites, self.world)
+
     def _build_fleet(self):
         owners_with_fleet = []
         for i, (owner, cls, autonomy, stds) in enumerate(self.sc.fleet):
@@ -223,6 +273,9 @@ class Simulation:
         self.landing_schedule = sample_landings(self.rng, self.sc, self.world.pads)
         for t_land, lt, pad in self.landing_schedule:
             self._push(t_land, "LANDING", (lt, pad))
+            if self.plume is not None:
+                self.plume.add(t_land, pad)
+                self._push(max(0.0, t_land - self.plume.T), "PLUME", pad)
             # a wake-up before each landing lets anticipatory mechanisms stage a vehicle
             self._push(max(0.0, t_land - 48.0), "WAKE", None)
             self._push(max(0.0, t_land - 12.0), "WAKE", None)
@@ -302,6 +355,10 @@ class Simulation:
 
     # ------------------------------------------------------------- job maths
     def travel_h(self, v: Vehicle, a: str, b: str, loaded: bool, team: bool, t: float) -> float:
+        if self.drive is not None:
+            leg = self._p3_leg(v, a, b, loaded, team, t, False)
+            if leg is not None:
+                return leg[0]
         eq = self.world.equiv_flat_km(a, b)
         speed = v.cls.speed_kmh * (1.0 if loaded else v.cls.empty_speed_mult)
         speed *= self.autonomy_speed_mult(v)
@@ -311,10 +368,125 @@ class Simulation:
             speed *= self.sc.night_speed_mult
         return eq / max(speed, 1e-6)
 
-    def job_plan(self, job: Job, t_start: float) -> Tuple[float, float, float, float, bool]:
+    def _p3_leg(self, v: Vehicle, a: str, b: str, loaded: bool, team: bool, t: float, realize: bool):
+        """(hours, energy_wh, km, interventions) of one leg from the driving tables, or None if the table lacks
+        the leg (the caller then uses the v2 model). Planning (realize=False) uses the lognormal means and no
+        interventions; a committed job (realize=True) draws time, energy and interventions from the ops stream."""
+        if a == b:
+            return 0.0, 0.0, 0.0, 0
+        light = self.drive.light_bin(t, self.sc.night_fraction > 0 and self.is_night(t))
+        e = self.drive.entry(a, b, self.world.pads, v.autonomy, self.drive.rtt_bin(self.rtt_s), light)
+        if e is None:
+            return None
+        f = self.drive.ref_speed / v.cls.speed_kmh
+        if not loaded:
+            f /= v.cls.empty_speed_mult
+        if team:
+            f /= TEAM_SPEED_MULT
+        we = v.cls.energy_wh_per_km / self.drive.table_wh_per_km
+        if not realize:
+            return e["mean_h"] * f, e["mean_kwh"] * 1000.0 * we, e["km"], 0
+        h = float(self.rng_ops.lognormal(e["mu_t"], e["s_t"])) * f
+        k = int(self.rng_ops.poisson(e["lam"]))
+        h += k * (self.rtt_s + INTERVENTION_RECOVERY_S) / 3600.0
+        return h, float(self.rng_ops.lognormal(e["mu_e"], e["s_e"])) * 1000.0 * we, e["km"], k
+
+    def _offpad_km(self, job: Job) -> float:
+        return max((getattr(c, "offpad_km", 0.0) for c in job.items), default=0.0)
+
+    def _job_plan_p3(self, job: Job, t_start: float, realize: bool) -> Tuple[float, float, float, float, bool]:
+        """job_plan with terrain legs from the driving tables (same structure and load factors as v2)."""
+        team = len(job.vehicles) > 1
+        pad = job.items[0].origin if job.items else job.backhaul[0].origin
+        dur_max = 0.0
+        km_sum = km_empty_sum = e_sum = 0.0
+        self._last_segments = {}
+        self._last_interventions = 0
+        off = self._offpad_km(job) if self.landing is not None else 0.0
+
+        def leg(v, a, b, loaded, tm, t):
+            r = self._p3_leg(v, a, b, loaded, tm, t, realize)
+            if r is None:                                   # leg missing from the table: v2 model
+                h = self.travel_h(v, a, b, loaded, tm, t) if self.drive is None else self._v2_travel_h(v, a, b, loaded, tm, t)
+                return h, self.world.energy_km(a, b) * v.cls.energy_wh_per_km, self.world.distance_km(a, b), 0
+            return r
+
+        for v in job.vehicles:
+            t = t_start
+            segs = []
+            h, e, d0, k = leg(v, v.location, pad, False, False, t)
+            self._last_interventions += k
+            segs.append([v.location, pad, t, t + h, 0.0])
+            t += h
+            if off > 0:
+                h_off = 2.0 * off / max(v.cls.speed_kmh * self.autonomy_speed_mult(v) * OFFPAD_SPEED_FACTOR, 1e-6)
+                segs.append([pad, pad, t, t + h_off, 0.0])
+                t += h_off
+                e += 2.0 * off * v.cls.energy_wh_per_km * OFFPAD_ENERGY_FACTOR
+                d0 += 2.0 * off
+            if team:
+                t += TEAM_SETUP_H
+            hm = self.handling_mult(v)
+            t_load = v.cls.load_h * hm * max(1, len(job.items))
+            segs.append([pad, pad, t, t + t_load, 0.0])
+            t += t_load
+            prev = pad
+            km = d0
+            load_kg = sum(c.mass_kg for c in job.items) / len(job.vehicles)
+            onboard = load_kg
+            for stop in job.route:
+                h, el, dk, k = leg(v, prev, stop, True, team, t)
+                self._last_interventions += k
+                segs.append([prev, stop, t, t + h, onboard])
+                t += h
+                e += el * (1.0 + 0.6 * load_kg / max(v.cls.capacity_kg, 1))
+                t_un = v.cls.unload_h * hm * sum(1 for c in job.items if c.dest == stop)
+                segs.append([stop, stop, t, t + t_un, onboard])
+                t += t_un
+                onboard -= sum(c.mass_kg for c in job.items if c.dest == stop) / len(job.vehicles)
+                km += dk
+                prev = stop
+            if job.backhaul:
+                t_l = v.cls.load_h * hm * len(job.backhaul)
+                segs.append([prev, prev, t, t + t_l, 0.0])
+                t += t_l
+                dest = job.backhaul[0].dest
+                h, el, dk, k = leg(v, prev, dest, True, False, t)
+                self._last_interventions += k
+                bh_kg = sum(c.mass_kg for c in job.backhaul)
+                segs.append([prev, dest, t, t + h, bh_kg])
+                t += h
+                e += el * 1.3
+                t_un = v.cls.unload_h * hm * len(job.backhaul)
+                segs.append([dest, dest, t, t + t_un, bh_kg])
+                t += t_un
+                km += dk
+                prev = dest
+            dur_max = max(dur_max, t - t_start)
+            km_sum += km
+            km_empty_sum += d0
+            e_sum += e
+            self._last_segments[v.id] = segs
+        return dur_max, km_sum, km_empty_sum, e_sum, False
+
+    def _v2_travel_h(self, v, a, b, loaded, team, t):
+        eq = self.world.equiv_flat_km(a, b)
+        speed = v.cls.speed_kmh * (1.0 if loaded else v.cls.empty_speed_mult)
+        speed *= self.autonomy_speed_mult(v)
+        if team:
+            speed *= TEAM_SPEED_MULT
+        if self.is_night(t) and v.cls.night_ops:
+            speed *= self.sc.night_speed_mult
+        return eq / max(speed, 1e-6)
+
+    def job_plan(self, job: Job, t_start: float, realize: bool = False) -> Tuple[float, float, float, float, bool]:
         """Return (duration_h, km, km_empty, energy_wh, needs_night) for the job
         if it starts at t_start. Duration is the slowest vehicle's duration.
-        Does not include operator waits, faults, or night hibernation."""
+        Does not include operator waits, faults, or night hibernation.
+        realize=True (committed jobs, Phase-3 driving tables only) draws the random leg outcomes."""
+        if self.drive is not None:
+            return self._job_plan_p3(job, t_start, realize)
+        off = self._offpad_km(job) if self.landing is not None else 0.0
         team = len(job.vehicles) > 1
         pad = job.items[0].origin if job.items else job.backhaul[0].origin
         dur_max = 0.0
@@ -329,6 +501,12 @@ class Simulation:
             e = self.world.energy_km(v.location, pad) * v.cls.energy_wh_per_km
             segs.append([v.location, pad, t, t + h, 0.0])
             t += h
+            if off > 0:                     # Phase 3: fetch cargo from an off-pad lander (not reached in v2)
+                h_off = 2.0 * off / max(v.cls.speed_kmh * self.autonomy_speed_mult(v) * OFFPAD_SPEED_FACTOR, 1e-6)
+                segs.append([pad, pad, t, t + h_off, 0.0])
+                t += h_off
+                e += 2.0 * off * v.cls.energy_wh_per_km * OFFPAD_ENERGY_FACTOR
+                d0 += 2.0 * off
             if team:
                 t += TEAM_SETUP_H
             # loading
@@ -444,6 +622,8 @@ class Simulation:
                     started = self._reposition(v, pad)
                 if not started:
                     continue
+            elif kind == "PLUME":
+                self._plume_start(payload)
             elif kind == "DUTY":
                 v: Vehicle = payload
                 if v.busy_until <= self.t:          # idle: the duty block starts now
@@ -481,12 +661,86 @@ class Simulation:
         items, self._cid = sample_cargo_manifest(self.rng, lt, self.sc.cargo_owners,
                                                  self.world.pads, self.t,
                                                  self.sc.common_standard_share, self._cid, pad=pad)
+        if self.p3:
+            self._landing_p3(lt, pad, items)
+            return
         for c in items:
             self.all_cargo.append(c)
             self.pending.append(c)
             self.metrics.landed_kg += c.mass_kg
             self._push(c.t_ready, "READY", c)
         self._mark_stranded(items)
+
+    def _landing_p3(self, lt, pad, items: List[Cargo]):
+        """Landing with the Phase-3 outcome model: miss offset, off-pad fetch distance, failed landings."""
+        m = self.metrics
+        rec = self.landing.sample(lt.name, self.rng_ops) if self.landing is not None else None
+        px, py = self.sites.xy_km[pad]
+        miss = rec["miss_m"] if rec else [0.0, 0.0]
+        out = {"t": self.t, "type": lt.name, "pad": pad, "xy_m": [1000.0 * px + miss[0], 1000.0 * py + miss[1]],
+               "miss_m": [round(miss[0], 3), round(miss[1], 3)], "tilt_deg": rec["tilt_deg"] if rec else None,
+               "ok": rec["ok"] if rec else True, "failure_kind": rec["failure_kind"] if rec else None,
+               "cargo_kg": round(sum(c.mass_kg for c in items), 1)}
+        self.p3_landings.append(out)
+        lost = False
+        if rec is not None:
+            m.landing_misses_m.append(rec["miss_r_m"])
+            from .lander.classes import CLASSES as LC
+            if rec.get("prop_used_kg") is not None and lt.name in LC:
+                m.prop_residual_kg.append(LC[lt.name].prop_gate_kg - rec["prop_used_kg"])
+            if rec["failed"]:
+                m.failed_landings += 1
+                lost = self.landing.failure_policy == "lose"
+            elif rec["offpad"]:
+                m.offpad_landings += 1
+        for c in items:
+            self.all_cargo.append(c)
+            m.landed_kg += c.mass_kg
+            if lost:
+                c.lost = True
+                m.cargo_lost_kg += c.mass_kg
+                continue
+            if rec is not None and rec["failed"]:
+                c.t_ready += float(self.landing.failure_policy["recover_h"])
+            if rec is not None and rec["offpad"]:
+                c.offpad_km = rec["miss_r_m"] / 1000.0
+            self.pending.append(c)
+            self._push(c.t_ready, "READY", c)
+        self._mark_stranded([c for c in items if not getattr(c, "lost", False)])
+
+    # ---- plume keep-out (Phase 3) ----
+    def pad_blocked(self, site: str, t: Optional[float] = None) -> bool:
+        """True if site is a pad inside an active keep-out window at time t (default now)."""
+        return (self.plume is not None and site in self.world.pads
+                and self.plume.active(site, self.t if t is None else t) is not None)
+
+    def _plume_start(self, pad: str):
+        """Window opens: idle vehicles within the keep-out radius drive to the pad's shelter."""
+        shelter = self.plume.shelter(pad)
+        if shelter is None:
+            return
+        for v in self.vehicles:
+            if (not v.alive or v.busy_until > self.t + 1e-9 or v.location == shelter
+                    or not self.plume.inside(v.location, pad)):
+                continue
+            if self.is_night(self.t) and not v.cls.night_ops:
+                continue
+            h = self.travel_h(v, v.location, shelter, False, False, self.t)
+            if self._reposition(v, shelter):
+                self.metrics.plume_standdowns += 1
+                self.metrics.standdown_vehicle_h += h
+
+    def _plume_hold(self, job: Job) -> float:
+        """Hours the job must wait so that no vehicle starts or ends work at a pad inside a keep-out window."""
+        wait = 0.0
+        for segs in self._last_segments.values():
+            for a, b, t0, t1, _ in segs:
+                for site, tt in ((a, t0), (b, t1)):
+                    if site in self.world.pads:
+                        w = self.plume.overlapping(site, tt - 1e-9, tt + 1e-9)
+                        if w is not None:
+                            wait = max(wait, w[1] - tt)
+        return wait
 
     def _mark_stranded(self, items: List[Cargo]):
         """Items no vehicle or team in the whole fleet could ever move."""
@@ -508,6 +762,12 @@ class Simulation:
         """Ask a free vehicle to drive empty to a pad at depart_t (anticipatory staging)."""
         if v.repos_target is not None:
             return
+        if self.plume is not None and self.plume.upcoming(pad, depart_t, 48.0):
+            shelter = self.plume.shelter(pad)          # Phase 3: stage at the keep-out shelter, not the pad
+            v.staged_for = pad
+            if shelter is None or shelter == v.location:
+                return
+            pad = shelter
         v.repos_target = pad
         self._push(max(self.t, depart_t), "REPOS", (v, pad))
 
@@ -536,6 +796,8 @@ class Simulation:
 
     def _dispatch(self):
         candidates = [c for c in self.waiting if not c.stranded]
+        if self.plume is not None:      # Phase 3: no pickup at, or delivery to, a pad inside a keep-out window
+            candidates = [c for c in candidates if not (self.pad_blocked(c.origin) or self.pad_blocked(c.dest))]
         free = self.free_vehicles()
         if not free:
             return
@@ -558,7 +820,30 @@ class Simulation:
                 self._push(t_free, "FREE", None)
                 self.metrics.unmet_operator_waits += 1
             return
-        dur, km, km_empty, e_wh, _ = self.job_plan(job, self.t)
+        if not self.p3:
+            dur, km, km_empty, e_wh, _ = self.job_plan(job, self.t)
+        else:
+            dur, km, km_empty, e_wh, _ = self.job_plan(job, self.t, realize=True)
+            hold = 0.0
+            if self.plume is not None:
+                for _ in range(5):                   # hold at the boundary until no pad visit falls in a window
+                    w = self._plume_hold(job)
+                    if w <= 1e-9:
+                        break
+                    hold += w
+                    dur, km, km_empty, e_wh, _ = self.job_plan(job, self.t + hold, realize=True)
+                if hold > 0:
+                    for vid, segs in self._last_segments.items():
+                        loc = segs[0][0] if segs else job.vehicles[0].location
+                        self._last_segments[vid] = [[loc, loc, self.t, self.t + hold, 0.0]] + segs
+                    dur += hold
+                    self.metrics.plume_standdowns += 1
+                    self.metrics.standdown_vehicle_h += hold * len(job.vehicles)
+            off = self._offpad_km(job) if self.landing is not None else 0.0
+            self.metrics.km_offpad_extra += 2.0 * off * len(job.vehicles)
+            self.metrics.interventions += self._last_interventions
+            self.metrics.intervention_h += self._last_interventions * (self.rtt_s + INTERVENTION_RECOVERY_S) / 3600.0
+            job_interventions = self._last_interventions
         # battery: if the trip needs more than is in the pack, charge first
         for v in job.vehicles:
             need = e_wh / len(job.vehicles)
@@ -592,12 +877,18 @@ class Simulation:
             extra = t_end - plan_end
             if extra > 1e-9:  # fault recovery or night hibernation at the last stop
                 segs = segs + [[last_stop, last_stop, plan_end, t_end, 0.0]]
-            self.trace.append({"kind": "team" if len(job.vehicles) > 1 else (job.note or "job"),
-                               "veh": job.vehicles[0].id, "team": [u.id for u in job.vehicles],
-                               "t0": self.t, "t1": t_end, "segments": segs,
-                               "items": [[c.id, round(c.mass_kg, 1), c.priority, c.cls, c.dest] for c in job.items + job.backhaul]})
+            rec = {"kind": "team" if len(job.vehicles) > 1 else (job.note or "job"),
+                   "veh": job.vehicles[0].id, "team": [u.id for u in job.vehicles],
+                   "t0": self.t, "t1": t_end, "segments": segs,
+                   "items": [[c.id, round(c.mass_kg, 1), c.priority, c.cls, c.dest] for c in job.items + job.backhaul]}
+            if self.p3:
+                rec["interventions"] = job_interventions
+                rec["energy_kwh"] = round(e_wh / 1000.0, 4)
+            self.trace.append(rec)
         for v in job.vehicles:
             v.repos_target = None
+            if self.p3:
+                v.staged_for = None
             v.busy_until = t_end
             v.location = last_stop
             v.km_total += km / len(job.vehicles)
@@ -680,6 +971,9 @@ class Simulation:
         m.km_reposition = self.km_reposition
 
     # ------------------------------------------------------------- export
+    def _trace_v2(self, nights, clean, mechanism):
+        return _trace_v2_body(self, nights, clean, mechanism)
+
     def trace_export(self, mechanism: Optional[str] = None) -> dict:
         """Everything the live viewer needs to replay this run, as lunarsim-trace v1.
 
@@ -698,6 +992,8 @@ class Simulation:
             clean[k] = None if (isinstance(v, float) and np.isnan(v)) else (float(v) if isinstance(v, (np.floating, float)) else int(v) if isinstance(v, (np.integer,)) else v)
         if mechanism is None:
             mechanism = getattr(self.mechanism, "__name__", str(self.mechanism))
+        if self.p3:
+            return self._trace_v2(nights, clean, mechanism)
         return {
             "format": "lunarsim-trace",
             "version": 1,
@@ -720,6 +1016,39 @@ class Simulation:
                       for c in self.all_cargo],
             "summary": clean,
         }
+
+
+def _trace_v2_body(sim: "Simulation", nights, clean, mechanism) -> dict:
+    """lunarsim-trace v2 (PLAN §5.5): v1 plus landing outcomes, keep-out windows, shelters, terrain."""
+    plume = sim.plume
+    shelters = []
+    if plume is not None:
+        for pad in sim.world.pads:
+            s = plume.shelter(pad)
+            shelters.append({"pad": pad, "site": s,
+                             "los_blocked": None if s is None else sim.sites.line_of_sight_blocked(pad, s)})
+    return {
+        "format": "lunarsim-trace", "version": 2, "engine": "python", "scenario": sim.sc.name,
+        "mechanism": mechanism, "seed": int(sim.seed), "terrain": sim.sc.terrain,
+        "pad_standoff_km": sim.sites.standoff if sim.sc.terrain else None,
+        "world": sim.world.to_dict(),
+        "site_xy_m": {k: [round(1000.0 * x, 1), round(1000.0 * y, 1)] for k, (x, y) in sim.sites.xy_km.items()},
+        "horizon_h": sim.sc.horizon_h, "nights": nights,
+        "landings": sim.p3_landings,
+        "plume_windows": [[t0, t1, pad, plume.R] for (t0, t1, pad) in plume.windows] if plume else [],
+        "shelters": shelters,
+        "vehicles": [{"id": v.id, "owner": v.owner, "cls": v.cls.name, "autonomy": v.autonomy,
+                      "autonomy_level": v.autonomy, "capacity": v.cls.capacity_kg, "night_ops": v.cls.night_ops}
+                     for v in sim.vehicles],
+        "jobs": sim.trace,
+        "cargo_columns": ["id", "owner", "mass_kg", "origin", "dest", "t_ready", "t_picked", "t_delivered",
+                          "priority", "cls", "stranded", "lost"],
+        "cargo": [[c.id, c.owner, round(c.mass_kg, 1), c.origin, c.dest, round(c.t_ready, 2),
+                   None if c.t_picked is None else round(c.t_picked, 2),
+                   None if c.t_delivered is None else round(c.t_delivered, 2), c.priority, c.cls, int(c.stranded),
+                   int(getattr(c, "lost", False))] for c in sim.all_cargo],
+        "summary": clean,
+    }
 
 
 def run(sc: Scenario, mechanism: Callable, seed: int, **mech_kwargs) -> Dict[str, float]:

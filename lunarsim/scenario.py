@@ -97,6 +97,12 @@ class Scenario:
     vot_usd_per_h: Dict[int, float] = field(default_factory=lambda: {1: 5000.0, 2: 1000.0, 3: 100.0})
     delivered_value_per_kg: float = 1.0e6  # replacement cost of landed cargo (CLPS-era)
     seed: int = 0
+    # Phase 3, all opt-in (None = v2 behaviour, byte-identical results); see lunarsim/phase3.py and PLAN §5.3-§5.5
+    terrain: Optional[str] = None            # terrain pack id, e.g. "connecting_ridge" (site positions, LOS)
+    pad_standoff_km: Optional[str] = None    # key into sites.json "pads" (default "1" when terrain is set)
+    landing_model: Optional[dict] = None     # {policy, sigma_scale, pad_radius_m, failure_policy, dir}
+    plume: Optional[dict] = None             # {keepout_km, standdown_h, shelter: "auto"}
+    autonomy_model: Optional[str] = None     # "driving-v1" or a path to a lunarsim-driving table
 
     def with_(self, **kw) -> "Scenario":
         return replace(self, **kw)

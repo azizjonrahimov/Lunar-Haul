@@ -17,13 +17,14 @@ SCHEMA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "schemas")
 
 TRACE_FORMAT = "lunarsim-trace"
 TRACE_VERSION = 1
+TRACE_VERSIONS = (1, 2)       # v2 (Phase 3): landings as objects, plume_windows, shelters, terrain
 TRACE_CARGO_COLUMNS = ["id", "owner", "mass_kg", "origin", "dest", "t_ready", "t_picked",
                        "t_delivered", "priority", "cls", "stranded"]
 
 # expected type per known cargo column: "int", "num", "str", "num?" (number or null), "flag" (0/1)
 _CARGO_TYPES = {"id": "int", "owner": "str", "mass_kg": "num", "origin": "str", "dest": "str",
                 "t_ready": "num", "t_picked": "num?", "t_delivered": "num?", "priority": "int",
-                "cls": "str", "stranded": "flag", "t_landed": "num?"}
+                "cls": "str", "stranded": "flag", "t_landed": "num?", "lost": "flag"}
 
 
 def load_schema(name: str) -> Dict[str, Any]:
@@ -63,6 +64,43 @@ def _tuple(errs: List[str], where: str, row, kinds: List[str]) -> None:
             errs.append(f"{where}[{i}]: expected {k}, got {x!r}"[:200])
 
 
+def _landings_v2(errs: List[str], rows) -> None:
+    for i, r in enumerate(rows):
+        w = f"landings[{i}]"
+        if not isinstance(r, dict):
+            errs.append(f"{w}: expected an object in trace v2")
+            continue
+        for k, kind in (("t", "num"), ("type", "str"), ("pad", "str")):
+            if not _check(kind, r.get(k)):
+                errs.append(f"{w}.{k}: expected {kind}, got {r.get(k)!r}")
+        for k, n in (("xy_m", 2), ("miss_m", 2)):
+            v = r.get(k)
+            if not (isinstance(v, list) and len(v) == n and all(_is_num(x) for x in v)):
+                errs.append(f"{w}.{k}: expected [number, number]")
+        if not isinstance(r.get("ok"), bool):
+            errs.append(f"{w}.ok: expected boolean")
+        if r.get("failure_kind") not in (None, "velocity", "tilt", "offpad", "sensor", "timeout", "lost"):
+            errs.append(f"{w}.failure_kind: unexpected {r.get('failure_kind')!r}")
+        if "tilt_deg" in r and not (r["tilt_deg"] is None or _is_num(r["tilt_deg"])):
+            errs.append(f"{w}.tilt_deg: expected number or null")
+
+
+def _trace_v2_extras(errs: List[str], d: Dict[str, Any]) -> None:
+    for i, wnd in enumerate(d.get("plume_windows", [])):
+        _tuple(errs, f"plume_windows[{i}]", wnd, ["num", "num", "str", "num"])
+    for i, sh in enumerate(d.get("shelters", [])):
+        if not (isinstance(sh, dict) and isinstance(sh.get("pad"), str)):
+            errs.append(f"shelters[{i}]: expected {{pad, site, los_blocked}}")
+    if "terrain" in d and not (d["terrain"] is None or isinstance(d["terrain"], str)):
+        errs.append("terrain: expected string or null")
+    for i, j in enumerate(d.get("jobs", [])):
+        if isinstance(j, dict):
+            if "interventions" in j and not _is_int(j["interventions"]):
+                errs.append(f"jobs[{i}].interventions: expected integer")
+            if "energy_kwh" in j and not _is_num(j["energy_kwh"]):
+                errs.append(f"jobs[{i}].energy_kwh: expected number")
+
+
 def validate_trace(d: Any, max_errors: int = 50) -> List[str]:
     """Structural check of a lunarsim-trace v1 document. Returns a list of problems.
 
@@ -73,8 +111,9 @@ def validate_trace(d: Any, max_errors: int = 50) -> List[str]:
         return ["trace: expected a JSON object"]
     if "format" in d and d["format"] != TRACE_FORMAT:
         errs.append(f"format: expected '{TRACE_FORMAT}', got {d['format']!r}")
-    if "version" in d and d["version"] != TRACE_VERSION:
-        errs.append(f"version: unsupported version {d['version']!r} (this reader knows {TRACE_VERSION})")
+    version = d.get("version", 1)
+    if version not in TRACE_VERSIONS:
+        errs.append(f"version: unsupported version {version!r} (this reader knows {list(TRACE_VERSIONS)})")
     if "engine" in d and d["engine"] not in ("python", "js"):
         errs.append(f"engine: expected 'python' or 'js', got {d['engine']!r}")
     for k in ("scenario", "mechanism"):
@@ -106,8 +145,13 @@ def validate_trace(d: Any, max_errors: int = 50) -> List[str]:
         if not isinstance(d[name], list):
             errs.append(f"{name}: expected a list")
             continue
+        if name == "landings" and version == 2:
+            _landings_v2(errs, d[name])
+            continue
         for i, row in enumerate(d[name]):
             _tuple(errs, f"{name}[{i}]", row, kinds)
+    if version == 2:
+        _trace_v2_extras(errs, d)
 
     if not isinstance(d["vehicles"], list):
         errs.append("vehicles: expected a list")

@@ -40,6 +40,48 @@ def _scenario(arg: str):
     return _scenario_ex(arg)[0]
 
 
+def _add_phase3_args(p):
+    g = p.add_argument_group("Phase 3 (all optional; none set = v2 behaviour)")
+    g.add_argument("--terrain", default=None, help="terrain pack id, e.g. connecting_ridge")
+    g.add_argument("--pad-standoff", default=None, help="key into sites.json pads (km), e.g. 2")
+    g.add_argument("--landing-model", default=None,
+                   help="'classical', a policy id (may contain {cls}), sampled from data/policies/outcomes_<id>.json")
+    g.add_argument("--sigma-scale", type=float, default=1.0, help="scale of the sampled landing miss vector")
+    g.add_argument("--pad-radius", type=float, default=50.0, help="off-pad threshold (m)")
+    g.add_argument("--failure-policy", default="lose", help="'lose' or 'recover:<hours>' for failed landings")
+    g.add_argument("--policy-dir", default=None, help="directory of the outcome tables (default data/policies)")
+    g.add_argument("--plume", default=None, metavar="R,T", help="keep-out radius km and stand-down hours, e.g. 1,0.5")
+    g.add_argument("--autonomy", default=None, help="'driving-v1' or a path to a lunarsim-driving table")
+
+
+def _with_phase3(sc, a):
+    """Apply the Phase-3 CLI options to a Scenario (only the ones given)."""
+    kw = {}
+    if a.terrain:
+        kw["terrain"] = a.terrain
+    if a.pad_standoff is not None:
+        kw["pad_standoff_km"] = str(a.pad_standoff).rstrip("0").rstrip(".") if "." in str(a.pad_standoff) else str(a.pad_standoff)
+    if a.landing_model:
+        fp = a.failure_policy
+        if fp != "lose":
+            if not fp.startswith("recover:"):
+                raise SystemExit("--failure-policy must be 'lose' or 'recover:<hours>'")
+            fp = {"recover_h": float(fp.split(":", 1)[1])}
+        lm = {"policy": a.landing_model, "sigma_scale": a.sigma_scale, "pad_radius_m": a.pad_radius, "failure_policy": fp}
+        if a.policy_dir:
+            lm["dir"] = a.policy_dir
+        kw["landing_model"] = lm
+    if a.plume:
+        try:
+            r, t = (float(x) for x in a.plume.split(","))
+        except ValueError:
+            raise SystemExit("--plume must be R,T, e.g. 1,0.5 (km, hours)")
+        kw["plume"] = {"keepout_km": r, "standdown_h": t, "shelter": "auto"}
+    if a.autonomy:
+        kw["autonomy_model"] = a.autonomy
+    return sc.with_(**kw) if kw else sc
+
+
 def _with_file_opts(name: str, kw: dict, file_kw: dict) -> dict:
     """Scenario-file marketplace flags apply to the marketplace family only (as on the web page)."""
     return dict(kw, **file_kw) if name.startswith("marketplace") else kw
@@ -58,6 +100,7 @@ def cmd_run(a):
     import pandas as pd
     from .engine import run
     sc, file_kw = _scenario_ex(a.scenario)
+    sc = _with_phase3(sc, a)
     fn, kw = _mechanism(a.mechanism)
     kw = _with_file_opts(a.mechanism, kw, file_kw)
     t0 = time.time()
@@ -79,6 +122,7 @@ def cmd_compare(a):
     from .engine import run
     from . import dispatch
     sc, file_kw = _scenario_ex(a.scenario)
+    sc = _with_phase3(sc, a)
     rows = []
     for name in ("inhouse", "pooled_greedy", "central_assign", "marketplace"):
         fn, kw = _mechanism(name)
@@ -97,6 +141,7 @@ def cmd_compare(a):
 def cmd_trace(a):
     from .engine import Simulation
     sc, file_kw = _scenario_ex(a.scenario)
+    sc = _with_phase3(sc, a)
     fn, kw = _mechanism(a.mechanism)
     kw = dict(_with_file_opts(a.mechanism, kw, file_kw), trace=True)
     sim = Simulation(sc, fn, seed=a.seed, mech_kwargs=kw)
@@ -134,6 +179,7 @@ def cmd_scenarios(a):
 def cmd_precise(a):
     from .precision import run_until_precise
     sc, file_kw = _scenario_ex(a.scenario)
+    sc = _with_phase3(sc, a)
     fn, kw = _mechanism(a.mechanism)
     kw = _with_file_opts(a.mechanism, kw, file_kw)
     res, df = run_until_precise(sc, fn, {a.metric: a.target}, confidence=a.confidence, block=a.block,
@@ -234,17 +280,20 @@ def main(argv=None):
     r.add_argument("--mechanism", default="marketplace")
     r.add_argument("--seeds", type=int, default=30)
     r.add_argument("--out", default=None)
+    _add_phase3_args(r)
     r.set_defaults(func=cmd_run)
     c = sub.add_parser("compare", help="run all four mechanisms on one scenario")
     c.add_argument("--scenario", default="P2-default")
     c.add_argument("--seeds", type=int, default=30)
     c.add_argument("--out", default=None)
+    _add_phase3_args(c)
     c.set_defaults(func=cmd_compare)
     t = sub.add_parser("trace", help="export one replayable year as JSON")
     t.add_argument("--scenario", default="P2-4-vehicles")
     t.add_argument("--mechanism", default="marketplace")
     t.add_argument("--seed", type=int, default=3)
     t.add_argument("--out", default="trace.json")
+    _add_phase3_args(t)
     t.set_defaults(func=cmd_trace)
     v = sub.add_parser("verify", help="run the verification checks")
     v.set_defaults(func=cmd_verify)
@@ -261,6 +310,7 @@ def main(argv=None):
     q.add_argument("--block", type=int, default=100)
     q.add_argument("--max", type=int, default=4000)
     q.add_argument("--out", default=None)
+    _add_phase3_args(q)
     q.set_defaults(func=cmd_precise)
     w = sub.add_parser("serve", help="local JSON API on 127.0.0.1 (see lunarsim/server.py)")
     w.add_argument("--port", type=int, default=8765)

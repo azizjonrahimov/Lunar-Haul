@@ -43,6 +43,7 @@ from .scenario import Scenario, BulkFlow
 SCENARIO_FORMAT = "lunarsim-scenario"
 SCENARIO_VERSION = 1
 HEADER_KEYS = ("format", "version", "form")
+PHASE3_FIELDS = ("terrain", "pad_standoff_km", "landing_model", "plume", "autonomy_model")
 
 COMPACT_KEYS = {"format", "version", "form", "name", "phase", "bulk_t_per_year", "fleet", "night_fraction",
                 "rtt_s", "n_operators", "other_duty_share", "mtbf_mult", "common_standard_share", "marketplace"}
@@ -64,6 +65,9 @@ def scenario_to_dict(sc: Scenario) -> Dict[str, Any]:
     d["bulk_flows"] = [dataclasses.asdict(b) for b in sc.bulk_flows]
     d["fleet"] = [list(v) for v in sc.fleet]
     d["vot_usd_per_h"] = {str(k): v for k, v in sc.vot_usd_per_h.items()}
+    for k in PHASE3_FIELDS:                 # opt-in fields are written only when set (v2 files stay unchanged)
+        if d.get(k) is None:
+            d.pop(k, None)
     return d
 
 

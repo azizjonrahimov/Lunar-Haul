@@ -1,0 +1,414 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://azizjonrahimov.github.io/lunar-logistics-research/schemas/trace-v2.schema.json",
+  "title": "lunarsim-trace v2",
+  "description": "Phase-3 trace (PLAN \u00a75.5): v1 plus landing outcomes as objects, plume keep-out windows, shelters, terrain id, site positions, per-job interventions and energy. Readers accept v1 and v2. Written by the Python engine when any Phase-3 Scenario field is set.",
+  "type": "object",
+  "required": [
+    "horizon_h",
+    "nights",
+    "landings",
+    "vehicles",
+    "jobs",
+    "cargo"
+  ],
+  "properties": {
+    "format": {
+      "const": "lunarsim-trace"
+    },
+    "version": {
+      "const": 2
+    },
+    "engine": {
+      "enum": [
+        "python",
+        "js"
+      ]
+    },
+    "scenario": {
+      "type": "string"
+    },
+    "mechanism": {
+      "type": "string"
+    },
+    "seed": {
+      "type": "integer"
+    },
+    "horizon_h": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "world": {
+      "type": "object",
+      "description": "Optional in JS output; the viewer uses its built-in map if absent.",
+      "required": [
+        "sites",
+        "edges"
+      ],
+      "properties": {
+        "sites": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "x",
+              "y"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "kind": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "a",
+              "b",
+              "dist"
+            ],
+            "properties": {
+              "a": {
+                "type": "string"
+              },
+              "b": {
+                "type": "string"
+              },
+              "dist": {
+                "type": "number"
+              },
+              "slope": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "nights": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "prefixItems": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "number"
+          }
+        ],
+        "minItems": 2,
+        "maxItems": 2
+      }
+    },
+    "landings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "t",
+          "type",
+          "pad",
+          "xy_m",
+          "miss_m",
+          "ok"
+        ],
+        "properties": {
+          "t": {
+            "type": "number"
+          },
+          "type": {
+            "type": "string"
+          },
+          "pad": {
+            "type": "string"
+          },
+          "xy_m": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "miss_m": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "tilt_deg": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "failure_kind": {
+            "enum": [
+              null,
+              "velocity",
+              "tilt",
+              "offpad",
+              "sensor",
+              "timeout",
+              "lost"
+            ]
+          },
+          "cargo_kg": {
+            "type": "number"
+          },
+          "descent": {
+            "type": "array",
+            "description": "optional 1 Hz [t,x,y,z,vx,vy,vz,throttle] (not written yet)"
+          }
+        }
+      }
+    },
+    "vehicles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "owner",
+          "cls",
+          "capacity"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "cls": {
+            "type": "string"
+          },
+          "autonomy": {
+            "type": "string"
+          },
+          "capacity": {
+            "type": "number"
+          },
+          "night_ops": {
+            "type": "boolean"
+          },
+          "autonomy_level": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "jobs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/job"
+      }
+    },
+    "cargo_columns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true,
+      "description": "Defaults to the 11 v1 columns when absent (legacy files). Extra columns (e.g. t_landed) may only be appended."
+    },
+    "cargo": {
+      "type": "array",
+      "items": {
+        "type": "array"
+      }
+    },
+    "summary": {
+      "type": "object",
+      "description": "Metrics.summary(); NaN written as null. Optional in JS output.",
+      "additionalProperties": {
+        "type": [
+          "number",
+          "null"
+        ]
+      }
+    },
+    "plume_windows": {
+      "type": "array",
+      "description": "[t_start_h, t_end_h, pad, keepout_km]",
+      "items": {
+        "type": "array",
+        "prefixItems": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          }
+        ],
+        "minItems": 4,
+        "maxItems": 4
+      }
+    },
+    "shelters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "pad"
+        ],
+        "properties": {
+          "pad": {
+            "type": "string"
+          },
+          "site": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "los_blocked": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "terrain": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "pad_standoff_km": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "site_xy_m": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "number"
+        },
+        "minItems": 2,
+        "maxItems": 2
+      },
+      "description": "world site -> local terrain metres (terrain pack frame) or v2 world km x 1000 without terrain"
+    }
+  },
+  "$defs": {
+    "job": {
+      "type": "object",
+      "required": [
+        "kind",
+        "veh",
+        "t0",
+        "t1",
+        "segments"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "veh": {
+          "type": "integer"
+        },
+        "team": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "t0": {
+          "type": "number"
+        },
+        "t1": {
+          "type": "number"
+        },
+        "segments": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "description": "[from, to, t_start, t_end, load_kg]",
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "minItems": 5,
+            "maxItems": 5
+          }
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "description": "[cargo_id, mass_kg, priority, cls, dest]",
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "minItems": 5,
+            "maxItems": 5
+          }
+        },
+        "interventions": {
+          "type": "integer"
+        },
+        "energy_kwh": {
+          "type": "number"
+        }
+      }
+    }
+  }
+}
