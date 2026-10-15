@@ -16,3 +16,4 @@ jobs:
       - run: pip install -e ".[full]"
       - run: python -m pytest tests -q
       - run: python -m lunarsim verify
+      - run: python -m lunarsim validate data/scenarios/*.json data/sample_traces/*.json

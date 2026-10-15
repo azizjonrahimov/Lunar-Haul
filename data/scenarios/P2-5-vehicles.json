@@ -1,4 +1,7 @@
 {
+  "format": "lunarsim-scenario",
+  "version": 1,
+  "form": "full",
   "name": "P2-5-vehicles",
   "horizon_h": 8760.0,
   "landings_per_year": {

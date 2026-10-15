@@ -1,4 +1,7 @@
 {
+  "format": "lunarsim-scenario",
+  "version": 1,
+  "form": "full",
   "name": "P1-default",
   "horizon_h": 8760.0,
   "landings_per_year": {
