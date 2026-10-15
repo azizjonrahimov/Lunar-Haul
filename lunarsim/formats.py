@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 SCHEMA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "schemas")
 
@@ -292,3 +292,34 @@ def validate_scenario(d: Any) -> List[str]:
         except Exception as e:  # anything the loader refuses
             errs.append(f"does not load: {type(e).__name__}: {e}")
     return errs
+
+
+# ---------------------------------------------------------------------------
+# files of either kind (lunarsim validate)
+# ---------------------------------------------------------------------------
+def detect_kind(d: Any) -> str:
+    """'trace' or 'scenario': by the `format` key, else a legacy file with `jobs` and `cargo` is a trace."""
+    from .config import SCENARIO_FORMAT
+    if isinstance(d, dict) and "format" in d:
+        if d["format"] == TRACE_FORMAT:
+            return "trace"
+        if d["format"] == SCENARIO_FORMAT:
+            return "scenario"
+        raise ValueError(f"unknown format {d['format']!r} (expected '{TRACE_FORMAT}' or '{SCENARIO_FORMAT}')")
+    return "trace" if isinstance(d, dict) and "jobs" in d and "cargo" in d else "scenario"
+
+
+def validate_file(path: str) -> Tuple[str, bool, List[str]]:
+    """(kind, legacy, errors) for a trace or scenario JSON file. kind is '?' if it cannot be read."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            d = json.load(f)
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as e:
+        return "?", False, [f"cannot read JSON: {e}"]
+    try:
+        kind = detect_kind(d)
+    except ValueError as e:
+        return "?", False, [str(e)]
+    legacy = "format" not in d
+    errs = validate_trace(d) if kind == "trace" else validate_scenario(d)
+    return kind, legacy, errs

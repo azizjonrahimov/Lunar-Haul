@@ -236,3 +236,70 @@ def test_scenario_schema_if_jsonschema_installed(in_root):
     v.validate(COMPACT)
     v.validate(scenario_to_dict(scenario_from_dict(COMPACT)))
     assert list(v.iter_errors(dict(COMPACT, horizon_days=1)))
+
+
+# ---------------------------------------------------------------------------
+# lunarsim validate
+# ---------------------------------------------------------------------------
+from lunarsim.formats import detect_kind, validate_file
+
+
+def _validate_cli(capsys, *files):
+    from lunarsim.cli import main
+    with pytest.raises(SystemExit) as e:
+        main(["validate", *map(str, files)])
+    return e.value.code, capsys.readouterr().out
+
+
+def test_validate_cli_bundled_files(in_root, capsys):
+    files = SCENARIO_FILES + SAMPLES
+    code, out = _validate_cli(capsys, *files)
+    assert code == 0
+    oks = [l for l in out.splitlines() if l.startswith("OK")]
+    assert len(oks) == len(files) == 12
+    assert sum("trace v1 legacy" in l for l in oks) == 3 and sum("scenario v1 legacy" in l for l in oks) == 9
+
+
+def test_validate_cli_reports_failures(in_root, tmp_path, capsys, trace):
+    good = tmp_path / "trace.json"
+    good.write_text(json.dumps(trace), encoding="utf-8")
+    broken = copy.deepcopy(trace)
+    broken["cargo"][0].pop()
+    bad_trace = tmp_path / "bad_trace.json"
+    bad_trace.write_text(json.dumps(broken), encoding="utf-8")
+    bad_phase = tmp_path / "bad_phase.json"
+    bad_phase.write_text(json.dumps(dict(COMPACT, phase="P9")), encoding="utf-8")
+    bad_field = tmp_path / "bad_field.json"
+    bad_field.write_text(json.dumps({"name": "x", "nigth_fraction": 0.1}), encoding="utf-8")
+    not_json = tmp_path / "not.json"
+    not_json.write_text("{oops", encoding="utf-8")
+    other = tmp_path / "other.json"
+    other.write_text(json.dumps({"format": "something-else"}), encoding="utf-8")
+    code, out = _validate_cli(capsys, good, bad_trace, bad_phase, bad_field, not_json, other)
+    assert code == 1
+    assert f"OK   {good}  trace v1" in out and "legacy" not in out.splitlines()[0]
+    for p in (bad_trace, bad_phase, bad_field, not_json, other):
+        assert f"FAIL {p}" in out
+    assert "cargo[0]: expected a list of 11" in out
+    assert "phase: expected P1, P2 or P3" in out
+    assert "unknown scenario fields: ['nigth_fraction']" in out
+    assert "cannot read JSON" in out and "unknown format 'something-else'" in out
+    assert "1 of 6 files valid" in out
+
+
+def test_detect_kind():
+    assert detect_kind({"format": "lunarsim-trace"}) == "trace"
+    assert detect_kind({"format": "lunarsim-scenario", "phase": "P2"}) == "scenario"
+    assert detect_kind({"jobs": [], "cargo": []}) == "trace"
+    assert detect_kind({"name": "x"}) == "scenario"
+    with pytest.raises(ValueError):
+        detect_kind({"format": "csv"})
+
+
+def test_validate_file_semantic_scenario_error(in_root, tmp_path):
+    # structurally fine, but the loader refuses it: the bulk flow names a field BulkFlow lacks
+    p = tmp_path / "s.json"
+    p.write_text(json.dumps({"name": "x", "bulk_flows": [{"origin": "A", "dest": "B", "tonnes_per_year": 1, "colour": "red"}]}),
+                 encoding="utf-8")
+    kind, legacy, errs = validate_file(str(p))
+    assert (kind, legacy) == ("scenario", True) and errs and "does not load" in errs[0]
