@@ -1,4 +1,7 @@
-# LunarSim: lunar surface logistics testbed, marketplace mechanism, datasets and paper
+# LunarHaul: lunar surface logistics testbed, marketplace mechanism, datasets and paper
+
+LunarHaul was called LunarSim until 15 October 2026; the name changed because three unrelated projects use it. The Python package, the
+command (`lunarsim`), the file formats (`lunarsim-*`) and the repository URL keep the old identifier until the next release.
 
 [![tests](https://github.com/azizjonrahimov/lunar-logistics-research/actions/workflows/ci.yml/badge.svg)](https://github.com/azizjonrahimov/lunar-logistics-research/actions/workflows/ci.yml)
 [![simulator](https://github.com/azizjonrahimov/lunar-logistics-research/actions/workflows/pages.yml/badge.svg)](https://azizjonrahimov.github.io/lunar-logistics-research/)
@@ -11,7 +14,7 @@
 NASA's Moon Base plan lands about 4 t of cargo at the lunar south pole before 2029, 60 t in 2029-2032 and 150 t
 after that, in items from 10 kg instruments to 15 t habitats, while the rovers under contract carry 0.8-1.6 t.
 NASA's 2026 architecture guide names "a marketplace for lunar logistics" as a goal without saying what one would do.
-LunarSim is a discrete-event model of cargo movement at a nine-site south-pole base (lander manifests, a fleet owned
+LunarHaul is a discrete-event model of cargo movement at a nine-site south-pole base (lander manifests, a fleet owned
 by several companies, the lunar night, Earth-Moon control latency, faults, other duties, regolith and return flows)
 with four dispatch rules: today's bilateral in-house contracting, pooled greedy dispatch, batched assignment, and a
 pooled marketplace (sequential auction with bundling, consolidation, team lifts, night awareness and anticipatory
