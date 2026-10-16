@@ -276,3 +276,30 @@ def test_cost_per_landed_kg():
     assert s["cost_per_landed_kg_usd"] > s["cost_per_kg_usd"]
     keys = list(s)
     assert keys.index("cost_per_landed_kg_usd") == keys.index("km_reposition") + 2     # appended after the v2 keys
+
+
+def test_small_keepout_stages_at_boundary_and_metric_split():
+    """B-12e: with R < standoff the marketplace stages at the nearest site outside R (not a distant shelter), so the
+    paired urgent delay vs no plume stays within noise; standdown_vehicle_h = hold + drive."""
+    import numpy as np
+    from lunarsim.phase3 import PlumeModel, SiteMap
+    from lunarsim.world import build_default_world
+    w = build_default_world()
+    pm = PlumeModel({"keepout_km": 0.2, "standdown_h": 6.0}, SiteMap(w, "connecting_ridge", "1"), w)
+    for pad in w.pads:
+        st = pm.staging_site(pad)
+        assert not pm.inside(st, pad)
+        assert all(pm.sites.dist_km(st, pad) <= pm.sites.dist_km(s, pad) for s in w.names if s != pad and not pm.inside(s, pad))
+    base = library()["P2-4-vehicles"].with_(night_fraction=0.15, terrain="connecting_ridge", pad_standoff_km="1")
+    plume = base.with_(plume={"keepout_km": 0.2, "standdown_h": 6.0})
+    d, rows = [], []
+    for seed in range(10):
+        a = run(base, dispatch.marketplace, seed=seed)
+        b = run(plume, dispatch.marketplace, seed=seed)
+        d.append(b["delay_prio1_mean_h"] - a["delay_prio1_mean_h"])
+        rows.append(b)
+    d = np.array(d)
+    bs = np.random.default_rng(0).choice(d, (2000, len(d))).mean(1)
+    assert np.percentile(bs, 2.5) <= 0.0 <= np.percentile(bs, 97.5), d     # no keep-out artefact
+    for r in rows:
+        assert r["standdown_vehicle_h"] == pytest.approx(r["standdown_hold_h"] + r["standdown_drive_h"])

@@ -230,6 +230,7 @@ class PlumeModel:
         self.windows: List[Tuple[float, float, str]] = []
         self.sites, self.world = sites, world
         self._shelter: Dict[str, str] = {}
+        self._staging: Dict[str, Optional[str]] = {}
 
     def add(self, t_land: float, pad: str):
         self.windows.append((t_land - self.T, t_land + self.T, pad))
@@ -253,6 +254,16 @@ class PlumeModel:
 
     def inside(self, site: str, pad: str) -> bool:
         return self.sites.dist_km(site, pad) < self.R
+
+    def staging_site(self, pad: str) -> Optional[str]:
+        """Where marketplace anticipatory staging waits for a landing at a pad with an upcoming window (B-12e): the
+        nearest site outside the keep-out radius R, i.e. the keep-out boundary. The shelter is itself outside R, so
+        it is used only when it is the nearest such site. (Staging at the shelter regardless, as before, sent the
+        staged vehicle far away when R was small and added ~0.9 h of urgent delay at R 0.2-0.5 km, T 6 h.)"""
+        if pad not in self._staging:
+            outside = [s for s in self.world.names if s != pad and not self.inside(s, pad)]
+            self._staging[pad] = min(outside, key=lambda s: self.sites.dist_km(s, pad)) if outside else None
+        return self._staging[pad]
 
     def shelter(self, pad: str) -> Optional[str]:
         """Nearest site outside R whose line of sight to the pad is blocked by terrain; else the nearest outside R."""

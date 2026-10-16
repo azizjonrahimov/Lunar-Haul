@@ -102,7 +102,9 @@ class Metrics:
     # Phase 3 (reported only when a Phase-3 Scenario field is set, so v2 summaries keep their keys)
     phase3: bool = False
     plume_standdowns: int = 0
-    standdown_vehicle_h: float = 0.0
+    standdown_vehicle_h: float = 0.0       # = standdown_hold_h + standdown_drive_h
+    standdown_hold_h: float = 0.0          # B-12e: jobs held at the boundary (vehicle-hours)
+    standdown_drive_h: float = 0.0         # B-12e: evacuation and return drives (vehicle-hours)
     landing_misses_m: List[float] = field(default_factory=list)
     offpad_landings: int = 0
     failed_landings: int = 0
@@ -177,6 +179,8 @@ class Metrics:
             out.update({
                 "plume_standdowns": self.plume_standdowns,
                 "standdown_vehicle_h": self.standdown_vehicle_h,
+                "standdown_hold_h": self.standdown_hold_h,
+                "standdown_drive_h": self.standdown_drive_h,
                 "landing_miss_m_mean": float(np.mean(self.landing_misses_m)) if self.landing_misses_m else np.nan,
                 "offpad_landings": self.offpad_landings,
                 "failed_landings": self.failed_landings,
@@ -739,6 +743,7 @@ class Simulation:
             if self._reposition(v, shelter):
                 self.metrics.plume_standdowns += 1
                 self.metrics.standdown_vehicle_h += h
+                self.metrics.standdown_drive_h += h
                 self.plume.evacuated.setdefault(pad, []).append((v.id, origin))
 
     def _plume_end(self, pad: str):
@@ -753,6 +758,7 @@ class Simulation:
             h = self.travel_h(v, v.location, origin, False, False, self.t)
             if self._reposition(v, origin):
                 self.metrics.standdown_vehicle_h += h
+                self.metrics.standdown_drive_h += h
 
     def _plume_hold(self, job: Job) -> float:
         """Hours the job must wait so that no vehicle starts or ends work at a pad inside a keep-out window."""
@@ -787,11 +793,11 @@ class Simulation:
         if v.repos_target is not None:
             return
         if self.plume is not None and self.plume.upcoming(pad, depart_t, 48.0):
-            shelter = self.plume.shelter(pad)          # Phase 3: stage at the keep-out shelter, not the pad
+            site = self.plume.staging_site(pad)        # Phase 3: stage at the keep-out boundary (nearest site outside R)
             v.staged_for = pad
-            if shelter is None or shelter == v.location:
+            if site is None or site == v.location:
                 return
-            pad = shelter
+            pad = site
         v.repos_target = pad
         self._push(max(self.t, depart_t), "REPOS", (v, pad))
 
@@ -863,6 +869,7 @@ class Simulation:
                     dur += hold
                     self.metrics.plume_standdowns += 1
                     self.metrics.standdown_vehicle_h += hold * len(job.vehicles)
+                    self.metrics.standdown_hold_h += hold * len(job.vehicles)
             off = self._offpad_km(job) if self.landing is not None else 0.0
             self.metrics.km_offpad_extra += 2.0 * off * len(job.vehicles)
             self.metrics.interventions += self._last_interventions
