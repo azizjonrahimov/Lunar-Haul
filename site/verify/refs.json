@@ -1,8 +1,8 @@
 {
  "generated": {
   "tool": "site/scripts/make_verify_refs.py",
-  "time": "2026-10-15T14:28:50",
-  "commit": "4bf9a6e6c5eb65e5bcca9d95cbe0b3555d849d56"
+  "time": "2026-10-15T17:41:03",
+  "commit": "443f8d76747ce7a58d81f1d427364c21cf45b73f"
  },
  "terrain": {
   "site_id": "connecting_ridge",
@@ -131,27 +131,27 @@
     },
     "generated": {
      "tool": "lunarsim terrain build",
-     "commit": "b704d1b3304144f8b74a974f9456e50124d21986",
-     "time": "2026-10-15T21:29:10+00:00"
+     "commit": "443f8d76747ce7a58d81f1d427364c21cf45b73f",
+     "time": "2026-10-16T00:41:16+00:00"
     }
    },
    "smg_kmh": {
-    "0": 3.243239221140647,
-    "4": 2.575940883977966,
-    "6": 2.0559041005290464,
-    "8": 1.768510525317641
+    "0": 3.2754373406049937,
+    "4": 2.5978363183665416,
+    "6": 2.0512962552633556,
+    "8": 1.7794388526586113
    }
   },
   "base_psr_sun90": {
    "route_points": 187,
    "length_m": 4283.330444827409,
-   "integrator_energy_wh": 590.5256972652448,
-   "integrator_t_move_s": 1927.590241634262,
+   "integrator_energy_wh": 584.9598147876104,
+   "integrator_t_move_s": 2032.5468986653577,
    "drive_autonomous": {
-    "time_s": 1887.0,
-    "energy_wh": 589.9291290148007,
+    "time_s": 1866.0,
+    "energy_wh": 585.7202374766086,
     "interventions": 0,
-    "distance_m": 4254.689014484426,
+    "distance_m": 4254.814329991437,
     "stops": 0,
     "reached": true,
     "autonomy": "autonomous",
