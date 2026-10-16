@@ -397,3 +397,16 @@ def test_obs_v3_extends_v2_without_changing_it():
     assert obs_version_of(OBS_NAMES) == 2 and obs_version_of(OBS_NAMES_V3) == 3
     with pytest.raises(ValueError):
         DescentEnv(obs_version=4)
+
+
+def test_export_card_from_bc_record():
+    from lunarsim.lander.export import training_from_bc_record
+    rec = {"cls": "MK1", "expert": "memoryless", "episodes": 10, "epochs": 2, "net": [16, 16], "seed": 0,
+           "classical_box_rate": 0.9, "env_version": 3, "git_sha": "abc", "wallclock_s": 1.0, "obs_version": 3,
+           "dagger_rounds": [{"round": 0, "samples": 100, "box_rate": 0.5, "label_inconsistency": 0.3},
+                             {"round": 1, "samples": 150, "box_rate": 0.6, "label_inconsistency": 0.2}]}
+    t = training_from_bc_record(rec)
+    assert t["algo"] == "BC+DAgger" and t["expert"] == "memoryless" and t["cls"] == "MK1"
+    assert t["reward_variant"] == "baseline" and t["obs_version"] == 3 and t["git_sha"] == "abc"
+    assert [r["box_rate"] for r in t["rounds"]] == [0.5, 0.6] and t["rounds"][1]["samples"] == 150
+    assert training_from_bc_record({**rec, "dagger_rounds": rec["dagger_rounds"][:1]})["algo"] == "BC"
