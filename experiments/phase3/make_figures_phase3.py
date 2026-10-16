@@ -69,7 +69,10 @@ INK, INK2, MUTED, GRID = "#0b0b0b", "#52514e", "#898781", "#e1e0d9"
 DIVERGING = "RdBu_r"
 
 plt.rcParams.update({
-    "font.family": "Times New Roman", "mathtext.fontset": "stix", "font.size": 10, "axes.titlesize": 10.5, "axes.labelsize": 10,
+    # a serif family with a bundled fallback: Times New Roman where installed (Windows), else matplotlib's STIXGeneral
+    # (a Times-metric clone), so the tight bounding boxes have the same width on every platform (the CI runner has no
+    # Times and fell back to DejaVu Sans, 7 % wider, which pushed fig26/fig27 past the 7 in page limit)
+    "font.family": "serif", "font.serif": ["Times New Roman", "STIXGeneral", "DejaVu Serif"], "mathtext.fontset": "stix", "font.size": 10, "axes.titlesize": 10.5, "axes.labelsize": 10,
     "axes.edgecolor": "#c3c2b7", "axes.labelcolor": INK2, "xtick.color": INK2, "ytick.color": INK2,
     "axes.spines.top": False, "axes.spines.right": False, "axes.grid": True, "grid.color": GRID,
     "grid.linewidth": 0.6, "axes.axisbelow": True, "legend.frameon": False, "legend.fontsize": 8,
