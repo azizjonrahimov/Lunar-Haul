@@ -33,7 +33,7 @@ def _metrics(rng, base_delay, offpad=0.0, keepout=0.0, standdown=0.0, standoff=1
             "utilisation": 0.05 + rng.normal(0, 0.002), "jobs": 200.0, "repositions": 5.0 + keepout, "km_reposition": 10.0,
             "operator_hours": 300 + 1500 * teleop + rng.normal(0, 20), "plume_standdowns": 10 * keepout, "standdown_vehicle_h": 8 * keepout * (1 + standdown),
             "landing_miss_m_mean": 3.0, "offpad_landings": offpad, "failed_landings": 0.0, "cargo_lost_kg": 0.0, "km_offpad_extra": 2 * offpad,
-            "interventions": 150.0, "intervention_h": 12.0, "delivered_kg": 5e5, "operator_cost_musd": 0.3 + 0.01 * standoff,
+            "interventions": 150.0, "intervention_h": 12.0, "delivered_kg": 5e5, "delivered_items": 400.0, "operator_cost_musd": 0.3 + 0.01 * standoff,
             "fleet_cost_musd": 90.0, "unmet_operator_waits": 0.0}
 
 
@@ -134,10 +134,13 @@ def synth(tmp_path_factory):
     fit, table = fl.fit_law(both, B=10)
     fit["inputs"] = {"E17": str(res / "E17_dispersion_standoff.csv"), "E18": str(res / "E18_plume.csv"), "rows": int(len(both)), "seeds": 3}
     sit = fl.siting_table(e17, sites_path=str(root / "no_sites.json"), landings_per_year={"P2-default": 8.0, "P2-2-vehicles": 8.0})
-    sit.to_csv(res / "table_E20_siting.csv", index=False)
+    sit.to_csv(res / "table_E20_siting.csv.gz", index=False, float_format="%.6g")      # as fit_law.main writes it
     mins = fl.siting_minimum(sit)
-    mins.to_csv(res / "table_E20_siting_min.csv", index=False)
-    fit["siting"] = {"share_of_minima_by_standoff": fl.siting_summary(mins).to_dict("records")}
+    mins.to_csv(res / "table_E20_siting_min.csv", index=False, float_format="%.6g")
+    summ = fl.siting_summary(mins, standoffs=sit["pad_standoff_km"].unique())
+    summ.to_csv(res / "table_E20_siting_shares.csv", index=False)
+    fit["siting"] = {"flags": getattr(fl, "SITING_FLAGS", "hauling Modelled; energy price Assumed; pad cost Spec; damage Assumed"),
+                     "share_of_minima_by_standoff": summ.to_dict("records")}
     table.to_csv(res / "table_E20.csv", index=False)
     with open(res / "E20_fit.json", "w", encoding="utf-8") as f:
         json.dump(fit, f)

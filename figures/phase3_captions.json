@@ -1,0 +1,104 @@
+{
+ "fig20_lander_mc": {
+  "caption": "Terminal-descent Monte Carlo per lander class: the classical ZEM/ZEV law against the learned policies. Top: horizontal miss at touchdown in plan view (symlog axes, linear within ±5 m), passed episodes as filled points and failed ones as crosses; dashed circle = the 50 m pad radius. Bottom: pass rate (dot) with its Wilson 95 % CI (whisker) over the stacked outcome mix. Episodes: CLPS classical law n = 500, CLPS learned: bc v3 n = 500, CLPS learned: bcml n = 500, CLPS learned: baseline n = 500, CLPS learned: bc n = 500, CLPS learned: hover bonus n = 500, CLPS learned: hover bonus v1 n = 300, CLPS learned: no eta n = 500, MK1 classical law n = 500, LARGE classical law n = 500; sensor noise on. Flags: environment Modelled (3-DoF descent parameterised from flown landers, Spec); failure limits Spec; learned policies trained in-house (Modelled).",
+  "n": "CLPS classical law n = 500, CLPS learned: bc v3 n = 500, CLPS learned: bcml n = 500, CLPS learned: baseline n = 500, CLPS learned: bc n = 500, CLPS learned: hover bonus n = 500, CLPS learned: hover bonus v1 n = 300, CLPS learned: no eta n = 500, MK1 classical law n = 500, LARGE classical law n = 500",
+  "ci": "Wilson 95 % interval on the pass rate",
+  "flags": "Modelled / Spec",
+  "files": [
+   "fig20_lander_mc.png",
+   "fig20_lander_mc.pdf"
+  ],
+  "status": "produced"
+ },
+ "fig21_driving_validation": {
+  "caption": "Driving-table validation. Panel A: speed made good on the synthetic flat 2 km through the table's own leg integrator (deterministic made-good with whole stops; the stochastic mean over 400 integrator runs differs by < 1 %) per autonomy level against the JSC teleoperation points (Litaker et al., Measured; values printed). The dashed grey line is the flattest real leg of the table (CONSTR->DEPOT, max slope 5.8°), shown for context. Panel B: traction energy of the BASE→PSR and PSR→BASE legs at the 4 s latency bin, day and night, per autonomy level, against the Chen (2026) 0.4-4.4 kWh band for a 500 kg rover scaled linearly to the table's 1600 kg rover (Assumed). n = deterministic integrator means, no replication (the table has no seeds). Flags: JSC points Measured; Chen band Modelled; mass scaling Assumed; table legs Modelled on LOLA 5 m terrain (Measured).",
+  "n": "deterministic integrator means (no replication)",
+  "ci": "none (point checks)",
+  "flags": "Measured anchors, Modelled table, Assumed mass scaling",
+  "files": [
+   "fig21_driving_validation.png",
+   "fig21_driving_validation.pdf"
+  ],
+  "status": "produced"
+ },
+ "fig22_dispersion_standoff": {
+  "caption": "Landing dispersion acts through off-pad landings. Rows 1-2: paired difference in the mean urgent-item delay against the classical miss level (dCL) as a function of the implied mean |miss| (log axis; flown-lander and requirement anchors on top), one line per pad radius, pad standoff 1 km, small multiples by fleet (columns) and dispatch mechanism (rows). Bottom row: share of landings beyond the pad radius. n = 30 seeds per cell; differences are paired on common seeds and the whiskers are percentile seed-bootstrap 95 % CIs (1000 resamples, fit_law.paired); off-pad whiskers are 1.96 SE over seeds. Flags: miss levels Measured (SLIM, Blue Ghost M1, IM-1, IM-2) and Spec (ADD Rev C 50 m, NASA/HLS 100 m); the classical level Modelled (classical (as flown in the env)); terrain Measured (LOLA 5 m); logistics Modelled.",
+  "n": "n = 30 seeds per cell",
+  "ci": "paired seed-bootstrap 95 % percentile CI; 1.96 SE for shares",
+  "flags": "Measured anchors, Spec requirements, Modelled logistics",
+  "files": [
+   "fig22_dispersion_standoff.png",
+   "fig22_dispersion_standoff.pdf"
+  ],
+  "standoff_km": 1.0,
+  "n_common_cols": [
+   "n_common_x",
+   "n_common_y",
+   "n_common"
+  ],
+  "status": "produced"
+ },
+ "fig23_standoff": {
+  "caption": "Pad standoff from BASE. Top: cell means of urgent mean delay (h), fleet km per year, driving energy (kWh / yr) against standoff for each fleet (colour) and dispatch mechanism (line style), classical (as flown in the env), 50 m pad radius; whiskers are 95 % CIs (1.96 SE over seeds). Bottom: paired differences against the 1 km standoff (dD1) on common seeds, whiskers = percentile seed-bootstrap 95 % CIs (1000 resamples); the 1 km point is the reference (0). n = 30 seeds per cell. Flags: terrain Measured (LOLA 5 m, Connecting ridge); driving legs and landings Modelled; standoff set Assumed (swept).",
+  "n": "n = 30 seeds per cell",
+  "ci": "95 % CI = 1.96 SE over seeds (means); paired seed-bootstrap 95 % percentile CI (differences)",
+  "flags": "Measured terrain, Modelled logistics, Assumed sweep",
+  "files": [
+   "fig23_standoff.png",
+   "fig23_standoff.pdf"
+  ],
+  "status": "produced"
+ },
+ "fig24_plume": {
+  "caption": "Plume keep-out. Heatmaps of the paired difference in the mean urgent-item delay against the matching no-plume cell (dNP, hours, printed in each cell) over keep-out radius × stand-down time, pad standoff 1 km, small multiples by fleet and night share (rows) and dispatch mechanism (columns); cells whose percentile seed-bootstrap 95 % CI (1000 resamples) excludes 0 are outlined. Colour scale clipped at the 98th percentile of |dNP| (1.30 h). Bottom row: vehicle-hours lost to keep-out holds and evacuations per year against keep-out radius, one line per stand-down time (P2, 4 vehicles, night 15 %; whiskers 1.96 SE). n = 30 seeds per cell (P2, 4 vehicles: n = 30 seeds; P2, 6 vehicles: n = 30 seeds; P3, 9 vehicles: n = 30 seeds). Flags: keep-out radius and stand-down Assumed (swept, not predicted; NASA calls PSI predictions qualitative); impacts-vs-distance ordering Modelled (Wittal et al.); logistics Modelled.",
+  "n": "n = 30 seeds per cell",
+  "ci": "paired seed-bootstrap 95 % CI (outlined cells exclude 0); 1.96 SE for stand-down hours",
+  "flags": "Assumed sweep, Modelled logistics",
+  "files": [
+   "fig24_plume.png",
+   "fig24_plume.pdf"
+  ],
+  "status": "produced"
+ },
+ "fig25_autonomy_fleet": {
+  "caption": "Vehicle autonomy level and fleet size (P2 demand, every vehicle at the same level): urgent mean delay (h) and operator console hours / yr against fleet size for teleoperation at 4, 6 and 8 s round-trip latency, supervised autonomy and full autonomy (ordered colours), in-house fleets vs the marketplace (columns). Bands are 95 % CIs (±1.96 SE over seeds). n = 30 seeds per cell. Flags: speed-vs-latency and stop cadence Modelled on JSC teleoperation (Measured); intervention rates Assumed by autonomy level; operators per fleet = max(2, n/2) (Assumed); latencies Spec (Moon direct 4 s) and Assumed (6, 8 s relayed).",
+  "n": "n = 30 seeds per cell",
+  "ci": "95 % CI bands (±1.96 SE over seeds)",
+  "flags": "Modelled on Measured JSC curve; Assumed interventions",
+  "files": [
+   "fig25_autonomy_fleet.png",
+   "fig25_autonomy_fleet.pdf"
+  ],
+  "status": "produced"
+ },
+ "fig26_siting": {
+  "caption": "Pad siting. Top: total cost per year (operator cost of hauling + priced driving energy + amortised pad construction over 10 yr + expected plume damage = landings/yr × impacts per landing × line-of-sight shield × cost per impact + delay valuation (delivered items × mean delay × value of time)) against pad standoff for the reference cell (P2-default, marketplace, classical (as flown in the env), 50 m pad, delay valued at 100 $/item-h; cell means, n = 30 seeds per cell), one line per damage cost (colour) and pad-cost case (line style), small multiples by energy price; the filled marker is the minimum-cost standoff. Bottom: share of all cells and pad-cost cases whose minimum lies at each standoff, by energy price and damage cost (rows; 504 groups per row), small multiples by value of time (0, 100, 1000 $/item-h). Flags: hauling Modelled; energy price Assumed; pad cost Spec (Metzger & Autry 2022), independent of standoff; impacts/landing Modelled from Wittal et al. (OTPS 2022) anchors, shield 0.1 Assumed when PAD_A LOS to BASE is blocked; damage cost per impact Assumed; delay valuation Assumed (blended $/item-hour stand-in for the engine's per-priority vot_usd_per_h). The pad cost does not depend on standoff and shifts totals, not minima.",
+  "n": "n = 30 seeds per cell",
+  "ci": "none shown (cell means; the siting terms are deterministic given the means)",
+  "flags": "hauling Modelled; energy price Assumed; pad cost Spec (Metzger & Autry 2022), independent of standoff; impacts/landing Modelled from Wittal et al. (OTPS 2022) anchors, shield 0.1 Assumed when PAD_A LOS to BASE is blocked; damage cost per impact Assumed; delay valuation Assumed (blended $/item-hour stand-in for the engine's per-priority vot_usd_per_h)",
+  "files": [
+   "fig26_siting.png",
+   "fig26_siting.pdf"
+  ],
+  "source": "table_E20_siting.csv.gz",
+  "vot_reference": 100.0,
+  "status": "produced"
+ },
+ "fig27_law": {
+  "caption": "The dispersion / standoff / keep-out law: OLS of ln(mean urgent-item delay) on ln(mean |miss|), pad standoff, keep-out radius, stand-down time, the reference-cell utilisation, night share, off-pad share, pad radius, their interactions and mechanism dummies (in-house is the base), pooled over the E17 and E18 years (n = 62,300 simulated years from 30 seeds; pooled R² = 0.48). Coefficients are shown as the % change in mean urgent delay per the stated unit (100·(exp(b·unit) − 1)); whiskers are percentile seed-bootstrap 95 % CIs (1000 resamples, seeds drawn with replacement, every year of a drawn seed weighted by its multiplicity); filled markers exclude 0, open ones do not. Panel B repeats the fit within each mechanism (crosses: term constant in that subset). Flags: the fit is Modelled on simulated years; regressor levels Measured / Spec (miss anchors) and Assumed (standoff, keep-out, stand-down sweeps). Suites with fewer seeds enter fewer bootstrap resamples; a CI is only as good as the seeds behind the term.",
+  "n": "n = 62,300 simulated years from 30 seeds",
+  "ci": "percentile seed-bootstrap 95 % CI (fit_law.fit_ols)",
+  "flags": "Modelled fit; Measured/Spec/Assumed levels",
+  "files": [
+   "fig27_law.png",
+   "fig27_law.pdf"
+  ],
+  "inputs": {
+   "E17": "E17_dispersion_standoff.csv",
+   "E18": "E18_plume.csv",
+   "rows": 62300,
+   "seeds": 30
+  },
+  "status": "produced"
+ }
+}

@@ -269,15 +269,13 @@ def _load_outcomes(policy_dir):
 
 
 def _policy_label(row):
+    """'classical law' or 'learned: <id without lander_/class/seed>' (cards may share a reward variant, ids are unique)."""
     if row["kind"] == "classical":
         return "classical law"
-    v = row.get("variant")
-    if isinstance(v, str) and v:
-        return f"learned ({v.replace('_', ' ')})"
     pid = str(row["policy"])
     parts = pid.split("_")
-    short = "_".join(p for p in parts if p not in ("lander", str(row["cls"])) and not (p.startswith("s") and p[1:].isdigit()))
-    return f"learned ({short or pid})"
+    short = " ".join(p for p in parts if p not in ("lander", str(row["cls"])) and not (p.startswith("s") and p[1:].isdigit()))
+    return f"learned: {short or pid}"
 
 
 def _e15_summary_local(docs, policy_dir):
@@ -378,12 +376,14 @@ def fig20_lander_mc(res=RES, out=FIG, policies=POLICIES, **_):
     for xi, p in zip(x, summ["pass_rate"]):
         ax.text(xi + 0.36, p, f"{100 * p:.1f} %", fontsize=6.5, color=INK, va="center", ha="left")
     ax.set_xticks(x)
-    ax.set_xticklabels([f"{r['cls']}\n{r['label']}\nn = {int(r['n'])}" for _, r in summ.iterrows()], fontsize=6.5)
+    rot = n_pol > 7
+    ax.set_xticklabels([f"{r['cls']} {r['label']} (n = {int(r['n'])})" if rot else f"{r['cls']}\n{r['label']}\nn = {int(r['n'])}" for _, r in summ.iterrows()],
+                       fontsize=6.5, rotation=30 if rot else 0, ha="right" if rot else "center")
     ax.set_ylim(0, 1.0)
     ax.set_xlim(-0.6, n_pol - 0.2)
     ax.set_ylabel("share of episodes")
-    ax.set_title("Pass rate (dot, Wilson 95 % CI) over the outcome mix", fontsize=8.5)
-    ax.legend(fontsize=6.5, ncol=3, loc="upper left", bbox_to_anchor=(0.0, -0.42))
+    ax.set_title("Pass rate (dot, Wilson 95 % CI) over the outcome mix", fontsize=8.5, pad=16)
+    ax.legend(fontsize=6.5, ncol=6, loc="lower center", bbox_to_anchor=(0.5, 1.0), handlelength=1.2, columnspacing=1.0)
     paths = save(fig, "fig20_lander_mc", out)
     n_str = ", ".join(f"{r['cls']} {r['label']} n = {int(r['n'])}" for _, r in summ.iterrows())
     sensor = summ["sensor"].dropna().unique().tolist() if "sensor" in summ.columns else []
@@ -525,16 +525,16 @@ def fig22_dispersion_standoff(res=RES, out=FIG, standoff=1.0, metric="delay_prio
     has_offpad = "offpad_share" in sub.columns
     nrows = len(mechs) + (1 if has_offpad else 0)
     ncols = len(scens)
-    fig, axes = plt.subplots(nrows, ncols, figsize=(7.0, 1.85 * nrows + 0.7), sharex=True, squeeze=False)
-    fig.subplots_adjust(hspace=0.35, wspace=0.3, top=0.9)
+    fig, axes = plt.subplots(nrows, ncols, figsize=(7.0, 1.85 * nrows + 1.3), sharex=True, squeeze=False)
+    fig.subplots_adjust(hspace=0.35, wspace=0.3, top=0.86)
     labels = sub.drop_duplicates("miss_level_m").set_index("miss_level_m")["miss_label"] if "miss_label" in sub.columns else {}
+    anchors = sorted(x for x in labels.index if x > 0 and labels[x] != fl.CLASSICAL_LABEL) if len(labels) else []
     for r, m in enumerate(mechs):
         for c, (sc, nv) in enumerate(scens):
             ax = axes[r, c]
             cell = sub[(sub["mechanism"] == m) & (sub["scenario"] == sc)]
             ax.axhline(0, color=MUTED, lw=0.8)
-            items = []
-            for pr in radii:
+            for pr in radii:                                   # ascending radius, one fixed colour each (legend below)
                 g = cell[cell["pad_radius_m"] == pr].dropna(subset=[dcol]).sort_values("miss_level_m")
                 if g.empty:
                     continue
@@ -542,46 +542,44 @@ def fig22_dispersion_standoff(res=RES, out=FIG, standoff=1.0, metric="delay_prio
                 hi = g[f"{dcol}_hi"] if f"{dcol}_hi" in g.columns else g[dcol]
                 ax.errorbar(g["miss_level_m"], g[dcol], yerr=[g[dcol] - lo, hi - g[dcol]], fmt="-o", color=rcol[pr], ms=3, lw=1.3,
                             capsize=1.5, elinewidth=0.7)
-                items.append((float(g[dcol].iloc[-1]), f"{pr:g} m pad", rcol[pr]))
             ax.set_xscale("log")
             if r == 0:
-                ax.set_title(scen_label(sc, nv), fontsize=8.5, pad=30 if len(labels) else 4)
-                if len(labels):
-                    lv = sorted(x for x in labels.index if x > 0 and labels[x] != fl.CLASSICAL_LABEL)
+                ax.set_title(scen_label(sc, nv), fontsize=8.5, pad=6 + 7.5 * len(anchors))
+                if anchors:                                    # flown-lander / requirement anchors, one row each (no collisions)
                     tr = blended_transform_factory(ax.transData, ax.transAxes)
-                    for k, x in enumerate(lv):
-                        y = 1.03 + 0.09 * (k % 3)
+                    x0, x1 = ax.get_xlim()
+                    mid = math.sqrt(max(x0, 1e-9) * x1)
+                    for k, x in enumerate(anchors):
+                        y = 1.02 + 0.08 * k
+                        left = x < mid
                         ax.plot([x, x], [1.0, y], color=MUTED, lw=0.5, transform=tr, clip_on=False)
-                        ax.text(x, y + 0.01, MISS_SHORT.get(labels[x], str(labels[x])), transform=tr, fontsize=5.5, color=INK2,
-                                ha="center", va="bottom", clip_on=False)
+                        ax.annotate(MISS_SHORT.get(labels[x], str(labels[x])), (x, y), xycoords=tr, xytext=(3 if left else -3, 0),
+                                    textcoords="offset points", fontsize=5.5, color=INK2, ha="left" if left else "right", va="center",
+                                    annotation_clip=False)
             if c == 0:
                 ax.set_ylabel(f"{mech_label(m)}\nΔ urgent mean delay (h)", fontsize=8)
-            if c == ncols - 1:
-                end_labels(ax, items, x=float(cell["miss_level_m"].max()) if not cell.empty else 1.0, fontsize=6.5)
             ax.tick_params(labelsize=7)
     if has_offpad:
         for c, (sc, nv) in enumerate(scens):
             ax = axes[nrows - 1, c]
             cell = sub[(sub["scenario"] == sc) & (sub["mechanism"] == mechs[0])] if mechs else sub[sub["scenario"] == sc]
-            items = []
             for pr in radii:
                 g = cell[cell["pad_radius_m"] == pr].dropna(subset=["offpad_share"]).sort_values("miss_level_m")
                 if g.empty:
                     continue
                 err = 100 * g["offpad_share_ci95"].fillna(0) if "offpad_share_ci95" in g.columns else None
                 ax.errorbar(g["miss_level_m"], 100 * g["offpad_share"], yerr=err, fmt="-o", color=rcol[pr], ms=3, lw=1.3, capsize=1.5, elinewidth=0.7)
-                items.append((float(100 * g["offpad_share"].iloc[-1]), f"{pr:g} m pad", rcol[pr]))
             ax.set_xscale("log")
             ax.set_ylim(-3, 103)
             if c == 0:
                 ax.set_ylabel("off-pad landings (%)", fontsize=8)
-            if c == ncols - 1:
-                end_labels(ax, items, x=float(cell["miss_level_m"].max()) if not cell.empty else 1.0, fontsize=6.5)
             ax.set_xlabel("implied mean |miss| (m)", fontsize=8)
             ax.tick_params(labelsize=7)
     else:
         for c in range(ncols):
             axes[nrows - 1, c].set_xlabel("implied mean |miss| (m)", fontsize=8)
+    handles = [Line2D([0], [0], color=rcol[pr], marker="o", ms=3, lw=1.3, label=f"{pr:g} m pad radius") for pr in radii]
+    fig.legend(handles=handles, loc="lower center", ncol=len(handles), fontsize=7.5, bbox_to_anchor=(0.5, -0.01))
     paths = save(fig, "fig22_dispersion_standoff", out)
     ncom = [c for c in sub.columns if c.startswith("n_common")]
     ntxt = n_text(sub["n_seeds"])
@@ -864,12 +862,15 @@ def fig25_autonomy_fleet(res=RES, out=FIG, **_):
 # ---------------------------------------------------------------------------
 # fig26: pad siting
 # ---------------------------------------------------------------------------
-def fig26_siting(res=RES, out=FIG, scenario="P2-default", mechanism="marketplace", pad_radius=50.0, miss_label=fl.CLASSICAL_LABEL, **_):
-    sit = load_csv(res, "table_E20_siting.csv", required=["pad_standoff_km", "total_musd", "energy_price_usd_per_kwh",
-                                                           "pad_case_usd_per_kg_transport", "damage_musd_per_impact", "min_cost"])
+def fig26_siting(res=RES, out=FIG, scenario="P2-default", mechanism="marketplace", pad_radius=50.0, miss_label=fl.CLASSICAL_LABEL, vot=None, **_):
+    name = next((n for n in ("table_E20_siting.csv.gz", "table_E20_siting.csv") if os.path.exists(os.path.join(res, n))), "table_E20_siting.csv")
+    sit = load_csv(res, name, required=["pad_standoff_km", "total_musd", "energy_price_usd_per_kwh",
+                                        "pad_case_usd_per_kg_transport", "damage_musd_per_impact", "min_cost"])
     mpath = os.path.join(res, "table_E20_siting_min.csv")
     mins = pd.read_csv(mpath) if os.path.exists(mpath) else fl.siting_minimum(sit)
-    # reference cell
+    has_vot = "vot_usd_per_item_h" in sit.columns and "vot_usd_per_item_h" in mins.columns
+    vots = sorted(sit["vot_usd_per_item_h"].unique()) if has_vot else [None]
+    # reference cell for the cost curves
     ref = sit
     for col, want in (("miss_label", miss_label), ("scenario", scenario), ("mechanism", mechanism)):
         if col in ref.columns and (ref[col] == want).any():
@@ -881,6 +882,11 @@ def fig26_siting(res=RES, out=FIG, scenario="P2-default", mechanism="marketplace
     desc = ", ".join(str(ref[c].iloc[0]) for c in ("scenario", "mechanism", "miss_label") if c in ref.columns)
     if "pad_radius_m" in ref.columns:
         desc += f", {ref['pad_radius_m'].iloc[0]:g} m pad"
+    vot_ref = None
+    if has_vot:
+        vot_ref = vots[len(vots) // 2] if vot is None else nearest(vots, vot)
+        ref = ref[np.isclose(ref["vot_usd_per_item_h"], vot_ref)]
+        desc += f", delay valued at {vot_ref:g} $/item-h"
     prices = sorted(sit["energy_price_usd_per_kwh"].unique())
     cases = sit.drop_duplicates("pad_case_usd_per_kg_transport")
     if "pad_cost_musd" in cases.columns:
@@ -890,12 +896,15 @@ def fig26_siting(res=RES, out=FIG, scenario="P2-default", mechanism="marketplace
     dmg = sorted(sit["damage_musd_per_impact"].unique())
     dcol = dict(zip(dmg, ordered_colors(len(dmg))))
     standoffs = sorted(sit["pad_standoff_km"].unique())
-    fig, axes = plt.subplots(2, max(len(prices), 1), figsize=(7.0, 5.4), squeeze=False, gridspec_kw={"height_ratios": [1.0, 1.15]})
-    fig.subplots_adjust(hspace=0.5, wspace=0.08)
+    fig = plt.figure(figsize=(7.0, 5.9))
+    gs = fig.add_gridspec(2, 1, height_ratios=[1.0, 1.25], hspace=0.55)
+    gs0 = gs[0].subgridspec(1, max(len(prices), 1), wspace=0.08)
+    gs1 = gs[1].subgridspec(1, len(vots), wspace=0.08)
     ymin = max(float(ref["total_musd"].min()) * 0.7, 1e-3) if not ref.empty else 0.1
     ymax = float(ref["total_musd"].max()) * 1.5 if not ref.empty else 1.0
+    terms = "hauling + pad + damage" + (" + delay value" if has_vot else "")
     for j, p in enumerate(prices):
-        ax = axes[0, j]
+        ax = fig.add_subplot(gs0[0, j])
         g0 = ref[ref["energy_price_usd_per_kwh"] == p]
         for case in cases:
             for d in dmg:
@@ -913,53 +922,74 @@ def fig26_siting(res=RES, out=FIG, scenario="P2-default", mechanism="marketplace
         ax.set_xlabel("pad standoff (km)", fontsize=8)
         ax.tick_params(labelsize=7.5)
         if j == 0:
-            ax.set_ylabel("cost per year (M\\$, log)\nhauling + pad + plume damage", fontsize=8)
+            ax.set_ylabel(f"cost per year (M\\$, log)\n{terms}", fontsize=8)
         else:
             ax.tick_params(labelleft=False)
     handles = [Line2D([0], [0], color=dcol[d], lw=1.6, label=f"damage {d:g} M\\$/impact") for d in dmg]
     handles += [Line2D([0], [0], color=INK2, lw=1.3, ls=case_ls[c], label=f"pad at {c} \\$/kg transport") for c in cases]
     handles += [Line2D([0], [0], marker="o", color=INK2, ls="none", ms=4.5, label="minimum-cost standoff")]
     fig.legend(handles=handles, loc="upper center", ncol=min(len(handles), 4), fontsize=6.8, bbox_to_anchor=(0.5, 1.01))
-    # dot plot of the share of minima
-    gs = axes[1, 0].get_gridspec()
-    for ax in axes[1, :]:
-        ax.remove()
-    ax = fig.add_subplot(gs[1, :])
+    # dot plots of the share of minima, one panel per value of time
     summ = fl.siting_summary(mins, standoffs=standoffs)
     share_cols = [c for c in summ.columns if c.startswith("share_min_at_")]
     xs = [float(c[len("share_min_at_"):-2]) for c in share_cols]
-    summ = summ.sort_values(["energy_price_usd_per_kwh", "damage_musd_per_impact"]).reset_index(drop=True)
-    grp = [c for c in fl.SITING_CELL if c in mins.columns and c != "pad_standoff_km"] + ["pad_case_usd_per_kg_transport"]
-    n_groups = int(mins.groupby(grp).ngroups / max(summ.shape[0], 1) * summ.shape[0] / max(summ.shape[0], 1)) if len(mins) else 0
     n_per_row = int(len(mins) / max(len(summ), 1))
-    for i, r in summ.iterrows():
-        for x, c in zip(xs, share_cols):
-            s = float(r[c])
-            if s <= 0:
-                ax.plot(x, i, ".", color=GRID, ms=3)
-                continue
-            ax.scatter(x, i, s=25 + 170 * s, color=TOL["blue"], alpha=0.25 + 0.7 * s, edgecolor="none", zorder=3)
-            ax.text(x, i, f"{100 * s:.0f}", ha="center", va="center", fontsize=6, color="white" if s > 0.5 else INK, zorder=4)
-    ax.set_yticks(range(len(summ)))
-    ax.set_yticklabels([f"{r['energy_price_usd_per_kwh']:g} \\$/kWh, {r['damage_musd_per_impact']:g} M\\$/impact" for _, r in summ.iterrows()], fontsize=7)
-    ax.invert_yaxis()
-    ax.set_xticks(xs)
-    ax.set_xticklabels([f"{x:g}" for x in xs], fontsize=7.5)
-    ax.set_xlabel("minimum-cost pad standoff (km)", fontsize=8)
-    ax.set_title(f"Share of cell × pad-cost groups ({n_per_row} per row) whose cost minimum lies at each standoff (%)", fontsize=8)
-    ax.grid(axis="x")
+    top = None
+    for k, v in enumerate(vots):
+        ax = fig.add_subplot(gs1[0, k])
+        s = summ[np.isclose(summ["vot_usd_per_item_h"].astype(float), v)] if has_vot else summ
+        s = s.sort_values(["energy_price_usd_per_kwh", "damage_musd_per_impact"]).reset_index(drop=True)
+        for i, r in s.iterrows():
+            for x, c in zip(xs, share_cols):
+                sh = float(r[c])
+                if sh <= 0:
+                    ax.plot(x, i, ".", color=GRID, ms=3)
+                    continue
+                ax.scatter(x, i, s=25 + 170 * sh, color=TOL["blue"], alpha=0.25 + 0.7 * sh, edgecolor="none", zorder=3)
+                ax.text(x, i, f"{100 * sh:.0f}", ha="center", va="center", fontsize=6, color="white" if sh > 0.5 else INK, zorder=4)
+        ax.set_yticks(range(len(s)))
+        if k == 0:
+            ax.set_yticklabels([f"{r['energy_price_usd_per_kwh']:g} \\$/kWh, {r['damage_musd_per_impact']:g} M\\$/impact" for _, r in s.iterrows()], fontsize=6.5)
+        else:
+            ax.set_yticklabels([])
+        ax.set_ylim(len(s) - 0.5, -0.5)
+        ax.set_xticks(xs)
+        ax.set_xticklabels([f"{x:g}" for x in xs], fontsize=7)
+        ax.set_xlabel("minimum-cost standoff (km)", fontsize=8)
+        ax.set_title(f"delay valued at {v:g} \\$/item-h" if has_vot else "share of minima", fontsize=8)
+        ax.grid(axis="x")
+        top = ax.get_position().y1 if top is None else top
+    if top is not None:
+        fig.text(0.5, top + 0.045, f"Share of cell × pad-cost groups ({n_per_row} per row) whose cost minimum lies at each standoff (%)",
+                 ha="center", va="bottom", fontsize=8, color=INK)
     paths = save(fig, "fig26_siting", out)
     ntxt = n_text(ref["n_seeds"]) if "n_seeds" in ref.columns else n_text(sit["n_seeds"]) if "n_seeds" in sit.columns else "n unknown"
-    flag = str(sit["flag"].iloc[0]) if "flag" in sit.columns else ("hauling Modelled; energy price Assumed; pad cost Spec (Metzger & Autry 2022); "
-                                                                   "plume impacts Modelled (Wittal et al.); damage cost Assumed")
+    flag = None
+    jpath = os.path.join(res, "E20_fit.json")
+    if os.path.exists(jpath):
+        try:
+            with open(jpath, encoding="utf-8") as f:
+                flag = json.load(f).get("siting", {}).get("flags")
+        except (OSError, ValueError):
+            flag = None
+    if isinstance(flag, dict):
+        flag = "; ".join(f"{k} {v}" for k, v in flag.items())
+    elif isinstance(flag, (list, tuple)):
+        flag = "; ".join(map(str, flag))
+    if not flag:
+        flag = str(sit["flag"].iloc[0]) if "flag" in sit.columns else ("hauling Modelled; energy price Assumed; pad cost Spec (Metzger & Autry 2022); "
+                                                                       "plume impacts Modelled (Wittal et al.); damage cost Assumed" +
+                                                                       ("; value of time Assumed" if has_vot else ""))
+    delay_term = " + delay valuation (delivered items × mean delay × value of time)" if has_vot else ""
     caption = (f"Pad siting. Top: total cost per year (operator cost of hauling + priced driving energy + amortised pad construction over "
-               f"{fl.PAD_LIFE_YEARS:g} yr + expected plume damage = landings/yr × impacts per landing × line-of-sight shield × cost per impact) "
-               f"against pad standoff for the reference cell ({desc}; cell means, {ntxt}), one line per damage cost (colour) and pad-cost case "
-               f"(line style), small multiples by energy price; the filled marker is the minimum-cost standoff. Bottom: share of all cells and "
-               f"pad-cost cases whose minimum lies at each standoff, by energy price and damage cost ({n_per_row} groups per row). "
-               f"Flags: {flag}. The pad cost does not depend on standoff and shifts totals, not minima.")
+               f"{fl.PAD_LIFE_YEARS:g} yr + expected plume damage = landings/yr × impacts per landing × line-of-sight shield × cost per impact"
+               f"{delay_term}) against pad standoff for the reference cell ({desc}; cell means, {ntxt}), one line per damage cost (colour) and "
+               f"pad-cost case (line style), small multiples by energy price; the filled marker is the minimum-cost standoff. Bottom: share of "
+               f"all cells and pad-cost cases whose minimum lies at each standoff, by energy price and damage cost (rows; {n_per_row} groups per row)"
+               + (f", small multiples by value of time ({', '.join(f'{v:g}' for v in vots)} $/item-h)" if has_vot else "") +
+               f". Flags: {flag}. The pad cost does not depend on standoff and shifts totals, not minima.")
     return {"caption": caption, "n": ntxt, "ci": "none shown (cell means; the siting terms are deterministic given the means)", "flags": flag,
-            "files": paths}
+            "files": paths, "source": name, "vot_reference": None if vot_ref is None else float(vot_ref)}
 
 
 # ---------------------------------------------------------------------------
@@ -1022,6 +1052,14 @@ def _pct(c, scale):
     return 100.0 * (math.exp(scale * c) - 1.0)
 
 
+def _ci_dot(ax, y, pc, plo, phi, color, sig, ms=4.5, lw=1.1):
+    """A point estimate with its CI drawn as a line from lo to hi (a percentile bootstrap CI need not bracket the estimate)."""
+    lo, hi = min(plo, phi, pc), max(plo, phi, pc)
+    ax.hlines(y, lo, hi, color=color, lw=lw)
+    ax.vlines([plo, phi], y - 0.12, y + 0.12, color=color, lw=lw * 0.8)
+    ax.plot(pc, y, "o", color=color, ms=ms, mfc=color if sig else "white", mew=lw, zorder=4)
+
+
 def fig27_law(res=RES, out=FIG, response="log_delay_prio1_mean_h", **_):
     fits, meta = _load_fit(res, response)
     pooled = fits["pooled"]
@@ -1042,9 +1080,8 @@ def fig27_law(res=RES, out=FIG, response="log_delay_prio1_mean_h", **_):
         pc, plo, phi = _pct(c, s), _pct(lo, s), _pct(hi, s)
         xa += [plo, phi]
         sig = plo > 0 or phi < 0
-        ax.errorbar(pc, i, xerr=[[pc - plo], [phi - pc]], fmt="o", color=TOL["blue"], ms=4.5, mfc=TOL["blue"] if sig else "white", mew=1.1,
-                    lw=1.1, capsize=2)
-        ax.text(phi, i, f"  {pc:+.1f} % [{plo:+.1f}, {phi:+.1f}]", fontsize=5.8, color=INK2, va="center", ha="left")
+        _ci_dot(ax, i, pc, plo, phi, TOL["blue"], sig)
+        ax.text(max(phi, pc), i, f"  {pc:+.1f} % [{plo:+.1f}, {phi:+.1f}]", fontsize=5.8, color=INK2, va="center", ha="left")
     ax.axvline(0, color=MUTED, lw=0.8)
     ax.set_yticks(ya)
     ax.set_yticklabels([lab for _, lab, _ in terms_a], fontsize=7)
@@ -1073,8 +1110,7 @@ def fig27_law(res=RES, out=FIG, response="log_delay_prio1_mean_h", **_):
             pc, plo, phi = _pct(c, s), _pct(lo, s), _pct(hi, s)
             xb += [plo, phi]
             sig = plo > 0 or phi < 0
-            ax.errorbar(pc, i + off, xerr=[[pc - plo], [phi - pc]], fmt="o", color=mech_color(m, j), ms=3.3, mfc=mech_color(m, j) if sig else "white",
-                        mew=0.9, lw=0.9, capsize=1.5)
+            _ci_dot(ax, i + off, pc, plo, phi, mech_color(m, j), sig, ms=3.3, lw=0.9)
     ax.axvline(0, color=MUTED, lw=0.8)
     ax.set_yticks(yb)
     ax.set_yticklabels([])
@@ -1166,7 +1202,7 @@ def build(only=None, res=RES, out=FIG, policies=POLICIES, captions_name=CAPTIONS
             caps[fid] = {"status": "failed", "error": repr(e), "caption": f"Build failed: {e!r}"}
     caps = {fid: caps[fid] for fid in FIG_IDS if fid in caps} | {k: v for k, v in caps.items() if k not in FIG_IDS}
     with open(cpath, "w", encoding="utf-8") as f:
-        json.dump(caps, f, indent=1, ensure_ascii=False)
+        json.dump(caps, f, indent=1, ensure_ascii=False, default=lambda o: o.item() if hasattr(o, "item") else str(o))
     print(f"captions -> {cpath}")
     return caps
 
