@@ -189,6 +189,17 @@ def test_tables_document(flat):
     auto = doc["legs"]["BASE->DEPOT"]["autonomy"]["autonomous"]["rtt_s"]["4"]["lighting"]["90"]
     assert auto["time_h"]["mean"] < e["time_h"]["mean"]
     json.dumps(doc)
+    # B-18: chunked builds (per-leg streams) merge to the same table whatever the chunk boundaries
+    kw = dict(seeds=5, lighting=(90.0,), rtts=(4.0,))
+    n = len(TB.legs_from_sites(sites))
+    whole = TB.build(flat, sites, legs_from=0, legs_to=n, **kw)
+    parts = TB.merge_docs([TB.build(flat, sites, legs_from=3, legs_to=n, **kw), TB.build(flat, sites, legs_from=0, legs_to=3, **kw)])
+    assert parts["legs"] == whole["legs"] and parts["skipped"] == whole["skipped"]
+    assert parts["generated"]["chunks"] == [[0, 3], [3, n]]
+    with pytest.raises(ValueError, match="cover"):
+        TB.merge_docs([TB.build(flat, sites, legs_from=0, legs_to=3, **kw)])
+    # the default (unchunked) build still uses one sequential stream: unchanged by the chunking option
+    assert TB.build(flat, sites, **kw)["legs"] == TB.build(flat, sites, **kw)["legs"]
 
 
 # ---------------------------------------------------------------------------

@@ -189,7 +189,13 @@ def legs_from_sites(sites: Dict[str, Any]) -> List[Tuple[str, Tuple[float, float
 def build(terrain, sites: Dict[str, Any], seeds: int = 20, seed: int = 0, lighting=LIGHTING, rtts=RTTS,
           autonomies=R.AUTONOMY_LEVELS, policy: str = "expert-astar-purepursuit", progress: bool = False,
           driver_card: Optional[str] = None, max_legs: Optional[int] = None,
-          phi_deg: Optional[float] = None) -> Dict[str, Any]:
+          phi_deg: Optional[float] = None, legs_from: Optional[int] = None,
+          legs_to: Optional[int] = None) -> Dict[str, Any]:
+    """legs_from / legs_to: build only legs [from, to) of the full list (0-based, the order of legs_from_sites),
+    for runs in chunks merged with merge_docs(). A chunked build draws every leg from its own stream
+    default_rng([seed, leg index]) so that the result does not depend on the chunk boundaries; the default
+    (unchunked) build keeps the single sequential stream default_rng(seed) of the published tables."""
+    chunked = legs_from is not None or legs_to is not None
     rng = np.random.default_rng(seed)
     driver = None
     if driver_card:
@@ -197,11 +203,16 @@ def build(terrain, sites: Dict[str, Any], seeds: int = 20, seed: int = 0, lighti
         driver = OnnxDriver(driver_card)
         policy = driver.id
     legs, skipped = {}, []
-    todo = legs_from_sites(sites)
+    todo = list(enumerate(legs_from_sites(sites)))
+    n_all = len(todo)
     if max_legs:
         todo = todo[:max_legs]
+    if chunked:
+        todo = todo[legs_from or 0:n_all if legs_to is None else legs_to]
     t0 = time.time()
-    for n, (name, a, b) in enumerate(todo, 1):
+    for n, (idx, (name, a, b)) in enumerate(todo, 1):
+        if chunked:
+            rng = np.random.default_rng([seed, idx])
         if math.hypot(a[0] - b[0], a[1] - b[1]) < 1.0:
             skipped.append({"leg": name, "reason": "coincident end points"})
             continue
@@ -234,9 +245,36 @@ def build(terrain, sites: Dict[str, Any], seeds: int = 20, seed: int = 0, lighti
                              "leg and lighting case (autonomous, RTT 4 s) in lunar/Drive-v0; teleop keeps the Assumed hazard"}},
         "skipped": skipped,
         "generated": {"tool": "lunarsim.rover.tables", "time": _dt.datetime.now(_dt.timezone.utc).replace(microsecond=0).isoformat(),
-                      "wallclock_s": round(time.time() - t0, 1)},
+                      "wallclock_s": round(time.time() - t0, 1),
+                      **({"rng": "per leg: default_rng([seed, leg index])", "legs_range": [todo[0][0] if todo else None,
+                          todo[-1][0] + 1 if todo else None], "legs_total": n_all} if chunked else {})},
         "legs": legs,
     }
+
+
+def merge_docs(docs: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Merge chunked builds (legs_from/legs_to) into one table. The chunks must share every header field and
+    together cover legs 0..legs_total-1 exactly once."""
+    if not docs:
+        raise ValueError("nothing to merge")
+    head = lambda d: {k: v for k, v in d.items() if k not in ("legs", "skipped", "generated")}
+    for d in docs[1:]:
+        if head(d) != head(docs[0]):
+            raise ValueError("chunks differ in their header (terrain, policy, seeds, model ...)")
+    ranges = sorted(tuple(d["generated"]["legs_range"]) for d in docs if "legs_range" in d["generated"])
+    if len(ranges) != len(docs):
+        raise ValueError("only chunked builds (legs_from/legs_to) can be merged")
+    total = docs[0]["generated"]["legs_total"]
+    if ranges[0][0] != 0 or ranges[-1][1] != total or any(a[1] != b[0] for a, b in zip(ranges, ranges[1:])):
+        raise ValueError(f"chunks {ranges} do not cover legs 0..{total} exactly once")
+    out = head(docs[0])
+    order = sorted(docs, key=lambda d: d["generated"]["legs_range"][0])
+    out["skipped"] = [s for d in order for s in d["skipped"]]
+    out["generated"] = {"tool": "lunarsim.rover.tables", "time": max(d["generated"]["time"] for d in docs),
+                        "wallclock_s": round(sum(d["generated"]["wallclock_s"] for d in docs), 1),
+                        "rng": docs[0]["generated"]["rng"], "legs_total": total, "chunks": [list(r) for r in ranges]}
+    out["legs"] = {k: v for d in order for k, v in d["legs"].items()}
+    return out
 
 
 def main(argv=None):
@@ -251,14 +289,28 @@ def main(argv=None):
     p.add_argument("--driver", default=None, help="learned driver card, e.g. data/policies/rover_bc_s0.json")
     p.add_argument("--max-legs", type=int, default=None, help="only the first N legs (smoke runs)")
     p.add_argument("--phi", type=float, default=None, help="fix the soil friction angle (deg; default: uniform 37.8-47.8 per run)")
+    p.add_argument("--legs-from", type=int, default=None, help="chunked build: first leg index (0-based)")
+    p.add_argument("--legs-to", type=int, default=None, help="chunked build: end leg index (exclusive)")
+    p.add_argument("--merge", nargs="+", default=None, metavar="CHUNK", help="merge chunk files into --out and stop")
     a = p.parse_args(argv)
+    if a.merge:
+        docs = []
+        for path in a.merge:
+            with open(path, encoding="utf-8") as f:
+                docs.append(json.load(f))
+        doc = merge_docs(docs)
+        with open(a.out, "w", encoding="utf-8") as f:
+            json.dump(doc, f)
+        print(f"merged {len(docs)} chunks into {a.out}: {len(doc['legs'])} legs ({len(doc['skipped'])} skipped)")
+        return
     t = Terrain(a.site, a.root)
     path = a.sites or os.path.join(t.path, "sites.json")
     if not os.path.exists(path):
         raise SystemExit(f"{path} not found: choose sites with `lunarsim terrain place` and write sites.json first")
     with open(path, encoding="utf-8") as f:
         sites = json.load(f)
-    doc = build(t, sites, a.seeds, a.seed, progress=True, driver_card=a.driver, max_legs=a.max_legs, phi_deg=a.phi)
+    doc = build(t, sites, a.seeds, a.seed, progress=True, driver_card=a.driver, max_legs=a.max_legs, phi_deg=a.phi,
+                legs_from=a.legs_from, legs_to=a.legs_to)
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     with open(a.out, "w", encoding="utf-8") as f:
         json.dump(doc, f)
