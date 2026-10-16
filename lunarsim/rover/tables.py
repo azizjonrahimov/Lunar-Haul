@@ -68,8 +68,10 @@ def leg_profile(terrain, route: np.ndarray, sun_az_deg) -> Dict[str, np.ndarray]
 
 
 def drive_profile(prof: Dict[str, np.ndarray], autonomy: str, rtt_s: float, sun_az_deg, rng: np.random.Generator,
-                  n: int) -> Dict[str, np.ndarray]:
-    """n stochastic runs of the leg. Returns arrays time_s, energy_wh, interventions (length n)."""
+                  n: int, lam_override: Optional[float] = None, time_ratio: float = 1.0) -> Dict[str, np.ndarray]:
+    """n stochastic runs of the leg. Returns arrays time_s, energy_wh, interventions (length n).
+    lam_override / time_ratio: a learned driver's measured interventions per traverse and its driving-time ratio
+    to this integrator (tables --driver)."""
     ds, grade, slope = prof["ds"], prof["grade"], prof["slope"]
     sl = R.slip(grade)
     f = R.slope_speed_factor(slope) * R.lighting_factor(prof["heading"], sun_az_deg, prof["shadow"])
@@ -85,6 +87,9 @@ def drive_profile(prof: Dict[str, np.ndarray], autonomy: str, rtt_s: float, sun_
            + HAZARD_ROUGH_PER_KM * (prof["rough"] > 0.5 * R.INTERVENTION["roughness_m"]))
     haz = haz * np.where(prof["shadow"], HAZARD_SHADOW_MULT, 1.0)
     lam = float(np.sum(haz * km)) + float(np.sum(blocked))
+    if lam_override is not None:
+        lam = lam_override
+    t_det *= time_ratio
     u = np.exp(rng.normal(0.0, SPEED_SIGMA, n))
     k = rng.poisson(lam, n)
     # time and energy EXCLUDE interventions: the DES draws them from `lambda` and adds RTT + recovery itself
@@ -100,9 +105,27 @@ def _lognormal(x: np.ndarray) -> Dict[str, Any]:
             "mean": float(x.mean()), "p90": float(np.percentile(x, 90))}
 
 
-def leg_table(terrain, a, b, autonomies, rtts, lighting, seeds: int, rng) -> Optional[Dict[str, Any]]:
+LEARNED_LEVELS = ("autonomous", "supervised")   # levels driven by the learned driver; teleop stays a human model
+
+
+def measure_driver(terrain, route, sun, driver, prof, rtt_s: float = 4.0, seed: int = 0) -> Dict[str, float]:
+    """Drive the learned driver once over the route (autonomous level) in the step-by-step env; return its
+    interventions per km and its driving time relative to the fast integrator (interventions excluded)."""
+    from .env import DriveEnv
+    from .bc import drive
+    env = DriveEnv(terrain)
+    _, leg = drive(env, route, sun, driver, None, 1, autonomy="autonomous", rtt_s=rtt_s, seed=seed, record=False)
+    km = max(leg["distance_m"], 1.0) / 1000.0
+    moving = leg["time_s"] - leg["interventions"] * R.intervention_cost_s(rtt_s)
+    ref = drive_profile(prof, "autonomous", rtt_s, sun, np.random.default_rng(0), 1)["t_move_s"]
+    return {"interventions_per_km": leg["interventions"] / km, "time_ratio": max(moving, 1.0) / max(ref, 1.0),
+            "reached": bool(leg.get("reached"))}
+
+
+def leg_table(terrain, a, b, autonomies, rtts, lighting, seeds: int, rng, driver=None) -> Optional[Dict[str, Any]]:
     out: Dict[str, Any] = {"autonomy": {}, "route": {}}
     profs = {}
+    measured = {}
     for sun in lighting:
         route = plan(terrain, a, b, sun)
         if route is None:
@@ -110,6 +133,8 @@ def leg_table(terrain, a, b, autonomies, rtts, lighting, seeds: int, rng) -> Opt
         key = "night" if sun == R.NIGHT else f"{sun:g}"
         profs[key] = (sun, leg_profile(terrain, route, sun))
         p = profs[key][1]
+        if driver is not None:
+            measured[key] = measure_driver(terrain, route, sun, driver, p)
         out["route"][key] = {"length_m": round(p["length_m"], 1),
                              "climb_m": round(float(np.sum(np.maximum(0, np.diff(terrain.height(*densify(route, 5.0).T))))), 1),
                              "max_slope_deg": round(float(p["slope"].max()), 1),
@@ -119,13 +144,20 @@ def leg_table(terrain, a, b, autonomies, rtts, lighting, seeds: int, rng) -> Opt
         for rtt in rtts:
             by_light = {}
             for key, (sun, p) in profs.items():
-                r = drive_profile(p, au, rtt, sun, rng, seeds)
+                m = measured.get(key) if au in LEARNED_LEVELS else None
+                if m is not None and not m["reached"]:
+                    m = None                     # the learned driver did not finish this leg: keep the expert model
+                r = drive_profile(p, au, rtt, sun, rng, seeds,
+                                  lam_override=None if m is None else m["interventions_per_km"] * p["length_m"] / 1000.0,
+                                  time_ratio=1.0 if m is None else m["time_ratio"])
                 by_light[key] = {"time_h": _lognormal(r["time_s"] / 3600.0),
                                  "energy_kwh": _lognormal(r["energy_wh"] / 1000.0),
                                  "interventions": {"lambda": float(r["interventions"].mean()), "dist": "poisson"},
                                  "stops": int(r["stops"])}
             by_rtt[f"{rtt:g}"] = {"lighting": by_light}
         out["autonomy"][au] = {"rtt_s": by_rtt}
+    if measured:
+        out["driver_measured"] = measured
     return out
 
 
@@ -144,16 +176,24 @@ def legs_from_sites(sites: Dict[str, Any]) -> List[Tuple[str, Tuple[float, float
 
 
 def build(terrain, sites: Dict[str, Any], seeds: int = 20, seed: int = 0, lighting=LIGHTING, rtts=RTTS,
-          autonomies=R.AUTONOMY_LEVELS, policy: str = "expert-astar-purepursuit", progress: bool = False) -> Dict[str, Any]:
+          autonomies=R.AUTONOMY_LEVELS, policy: str = "expert-astar-purepursuit", progress: bool = False,
+          driver_card: Optional[str] = None, max_legs: Optional[int] = None) -> Dict[str, Any]:
     rng = np.random.default_rng(seed)
+    driver = None
+    if driver_card:
+        from .onnx_driver import OnnxDriver
+        driver = OnnxDriver(driver_card)
+        policy = driver.id
     legs, skipped = {}, []
     todo = legs_from_sites(sites)
+    if max_legs:
+        todo = todo[:max_legs]
     t0 = time.time()
     for n, (name, a, b) in enumerate(todo, 1):
         if math.hypot(a[0] - b[0], a[1] - b[1]) < 1.0:
             skipped.append({"leg": name, "reason": "coincident end points"})
             continue
-        tab = leg_table(terrain, a, b, autonomies, rtts, lighting, seeds, rng)
+        tab = leg_table(terrain, a, b, autonomies, rtts, lighting, seeds, rng, driver=driver)
         if tab is None:
             skipped.append({"leg": name, "reason": "no route under the slope limit"})
         else:
@@ -171,7 +211,11 @@ def build(terrain, sites: Dict[str, Any], seeds: int = 20, seed: int = 0, lighti
                   "teleop_stop_s": {f"{r:g}": R.teleop_stop_s(r) for r in rtts}, "supervised_stop": R.SUPERVISED_STOP,
                   "c_rr_eff": R.C_RR_EFF, "drive_eff": R.DRIVE_EFF, "mass_kg": R.ROVER["mass_kg"],
                   "speed_sigma": SPEED_SIGMA, "hazard_per_km": HAZARD_PER_KM, "intervention": R.INTERVENTION,
-                  "flags": "see lunarsim/rover/physics.py; hazard model Assumed (no lunar interventions/km data)"},
+                  "flags": "see lunarsim/rover/physics.py; hazard model Assumed (no lunar interventions/km data)",
+                  "driver": None if driver is None else {
+                      "id": driver.id, "levels": list(LEARNED_LEVELS),
+                      "how": "interventions per km and driving-time ratio measured by driving the learned policy once per "
+                             "leg and lighting case (autonomous, RTT 4 s) in lunar/Drive-v0; teleop keeps the Assumed hazard"}},
         "skipped": skipped,
         "generated": {"tool": "lunarsim.rover.tables", "time": _dt.datetime.now(_dt.timezone.utc).replace(microsecond=0).isoformat(),
                       "wallclock_s": round(time.time() - t0, 1)},
@@ -188,6 +232,8 @@ def main(argv=None):
     p.add_argument("--seeds", type=int, default=20)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--out", default=os.path.join("data", "driving", "driving-v1.json"))
+    p.add_argument("--driver", default=None, help="learned driver card, e.g. data/policies/rover_bc_s0.json")
+    p.add_argument("--max-legs", type=int, default=None, help="only the first N legs (smoke runs)")
     a = p.parse_args(argv)
     t = Terrain(a.site, a.root)
     path = a.sites or os.path.join(t.path, "sites.json")
@@ -195,7 +241,7 @@ def main(argv=None):
         raise SystemExit(f"{path} not found: choose sites with `lunarsim terrain place` and write sites.json first")
     with open(path, encoding="utf-8") as f:
         sites = json.load(f)
-    doc = build(t, sites, a.seeds, a.seed, progress=True)
+    doc = build(t, sites, a.seeds, a.seed, progress=True, driver_card=a.driver, max_legs=a.max_legs)
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     with open(a.out, "w", encoding="utf-8") as f:
         json.dump(doc, f)

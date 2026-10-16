@@ -162,3 +162,61 @@ def test_tables_document(flat):
     auto = doc["legs"]["BASE->DEPOT"]["autonomy"]["autonomous"]["rtt_s"]["4"]["lighting"]["90"]
     assert auto["time_h"]["mean"] < e["time_h"]["mean"]
     json.dumps(doc)
+
+
+# ---------------------------------------------------------------------------
+# B-13: behaviour-cloned driver (dataset, training smoke, ONNX round trip, OnnxDriver)
+# ---------------------------------------------------------------------------
+torch = pytest.importorskip("torch")
+from lunarsim.rover import bc as BC  # noqa: E402
+
+
+@pytest.fixture(scope="module")
+def flat_data(flat):
+    legs = [("A->B", (300.0, 1500.0), (900.0, 1500.0))]
+    return BC.collect(flat, legs, lambda env, ex: ex, stride=5, lighting=(90.0,), seed=0)
+
+
+def test_bc_dataset_shapes(flat_data):
+    d = flat_data
+    n = len(d["act"])
+    assert n > 20
+    assert d["patch"].shape == (n, 3, 32, 32) and d["patch"].dtype == np.float16
+    assert d["scalars"].shape == (n, len(SCALAR_NAMES)) and d["act"].shape == (n, 2)
+    assert np.all(np.abs(d["act"]) <= 1.0) and d["legs"][0]["reached"]
+
+
+def test_bc_training_smoke_and_onnx_round_trip(flat, flat_data, tmp_path):
+    pytest.importorskip("onnxruntime")
+    model = BC.make_model()
+    with torch.no_grad():
+        before = float(torch.nn.functional.mse_loss(
+            model(torch.as_tensor(flat_data["patch"].astype(np.float32)), torch.as_tensor(flat_data["scalars"])),
+            torch.as_tensor(flat_data["act"])))
+    r = BC.train(model, flat_data, epochs=1000, batch=64, max_steps=200, device="cpu")
+    assert r["steps"] == 200 and r["mse"] < before
+    card = BC.write_card(model, "rover_test", str(tmp_path), {"algo": "test"}, {})
+    assert card["kind"] == "cnn" and card["opset"] == 17 and card["runtime"]["torch_onnx_max_abs_err"] <= 1e-5
+    chk = json.load(open(tmp_path / "rover_test.check.json", encoding="utf-8"))
+    from lunarsim.rover.onnx_driver import OnnxDriver
+    drv = OnnxDriver(str(tmp_path / "rover_test.json"))
+    got = drv.act_batch(np.array(chk["patch"], np.float32), np.array(chk["scalars"], np.float32))
+    assert np.max(np.abs(got - np.array(chk["action"]))) < 1e-6
+    with torch.no_grad():
+        ref = model(torch.as_tensor(np.array(chk["patch"], np.float32)), torch.as_tensor(np.array(chk["scalars"], np.float32))).numpy()
+    assert np.max(np.abs(got - ref)) < 1e-5
+    # the cloned driver drives a flat leg through the onnx runtime
+    env = DriveEnv(flat, autonomy="autonomous", sun_az_deg=90.0)
+    _, leg = BC.drive(env, [[300.0, 1500.0], [900.0, 1500.0]], 90.0, drv, None, 1, max_steps=600, record=False)
+    assert leg["distance_m"] > 100.0
+    bad = dict(card, onnx_sha256="0" * 64)
+    (tmp_path / "bad.json").write_text(json.dumps(bad), encoding="utf-8")
+    with pytest.raises(ValueError, match="sha256"):
+        OnnxDriver(str(tmp_path / "bad.json"))
+
+
+def test_expert_driver_interface_and_evaluation(flat):
+    legs = [("A->B", (300.0, 1500.0), (900.0, 1500.0))]
+    ev = BC.evaluate_driver(flat, legs, lambda env: BC.ExpertDriver(env), autonomies=("autonomous",), lighting=(90.0,))
+    a = ev["autonomous"]
+    assert a["reached"] == a["runs"] == 1 and a["interventions"] == 0 and a["autonomy_pct"] == pytest.approx(100.0)
