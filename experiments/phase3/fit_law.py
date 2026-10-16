@@ -239,7 +239,9 @@ DESIGN_NOTE = {
     "pad_radius_m": "landing_model.pad_radius_m (rows without it: 50)",
     "standoff": "pad_standoff_km", "keepout": "plume keepout_km (E17 and no-plume rows: 0)", "standdown": "plume standdown_h (0 likewise)",
     "util": "mean utilisation of the reference cell (sigma 1, standoff 1 km, 50 m pad, no keep-out) of the same scenario, mechanism and "
-            "night fraction: a group-level covariate for fleet load, not the row's own utilisation",
+            "night fraction: a group-level covariate for fleet load, not the row's own utilisation. It enters CENTRED at its mean over "
+            "the fitted rows (util_center in this file), so the main effects of log_miss, standoff, keepout and standdown are the "
+            "effects at the typical fleet load of the data, not at zero utilisation; the interaction terms give their change per unit of utilisation",
     "controls": "mechanism dummies (inhouse is the base) and night_fraction; the per-mechanism fits drop the dummies",
     "estimator": "ordinary least squares, numpy lstsq; columns constant in the data are dropped and listed",
     "ci": "percentile bootstrap over seeds, N_BOOT resamples: seeds drawn with replacement, every row of a drawn seed enters "
@@ -259,7 +261,12 @@ def _util_reference(df):
     return df.merge(u[["util"]].reset_index(), on=g, how="left")["util"].to_numpy(float)
 
 
-def design(df, mech_dummies=True, miss_ref_m=None):
+def util_center(df) -> float:
+    """Mean of the reference-cell utilisation over the rows of df: the load at which the main effects are read."""
+    return float(np.nanmean(_util_reference(df.copy())))
+
+
+def design(df, mech_dummies=True, miss_ref_m=None, util_center_value=None):
     """(X, names) for the law. df needs pad_standoff_km, scenario, mechanism, utilisation and either miss_level_m or
     sigma_scale; keepout_km, standdown_h, night_fraction, pad_radius_m, offpad_landings, landings are filled when absent."""
     d = df.copy()
@@ -277,12 +284,17 @@ def design(df, mech_dummies=True, miss_ref_m=None):
     R = d["keepout_km"].to_numpy(float)
     T = d["standdown_h"].to_numpy(float)
     u = _util_reference(d)
+    u = u - (float(np.nanmean(u)) if util_center_value is None else float(util_center_value))   # centred: main effects at the typical load
     nf = d["night_fraction"].to_numpy(float)
     offpad = d["offpad_landings"].to_numpy(float)
     nl = d["landings"].to_numpy(float)
     share = np.where(offpad == 0, 0.0, offpad / nl)          # NaN when off-pad landings exist but the count is unknown
     pr = d["pad_radius_m"].to_numpy(float)
-    cols = [np.ones(len(d)), lm, D, R, T, u, nf, share, pr, lm * D, R * T, R * u, T * u, D * u, lm * u]
+    def inter(a, b):
+        """a*b, or an all-zero column (dropped as constant and listed) when either factor is constant in this subset:
+        otherwise c*u is collinear with u and the bootstrap is unstable."""
+        return a * b if (np.nanstd(a) > 1e-12 and np.nanstd(b) > 1e-12) else np.zeros(len(d))
+    cols = [np.ones(len(d)), lm, D, R, T, u, nf, share, pr, inter(lm, D), inter(R, T), inter(R, u), inter(T, u), inter(D, u), inter(lm, u)]
     names = list(TERMS)
     if mech_dummies:
         for m in MECH_DUMMIES:
@@ -355,17 +367,22 @@ def fit_law(df, B=N_BOOT):
                            "coef": {t: {"coef": float(c), "ci95": [float(l), float(h)]} for t, c, l, h in zip(kept, f["coef"], f["lo"], f["hi"])}}
             for t, c, l, h in zip(kept, f["coef"], f["lo"], f["hi"]):
                 r = {"response": resp, "subset": subset, "term": t, "coef": float(c), "ci_lo": float(l), "ci_hi": float(h),
-                     "n": f["n"], "n_seeds": f["n_seeds"], "r2": f["r2"]}
+                     "n": f["n"], "n_seeds": f["n_seeds"], "r2": f["r2"], "util_center": util_center(sub_df)}
                 if resp.startswith("log_"):
                     r["pct_per_unit"] = 100.0 * (np.exp(c) - 1.0)
                 rows.append(r)
 
-    X, names = design(df, mech_dummies=True)
+    uc = util_center(df)
+    out["design"]["util_center"] = uc
+    X, names = design(df, mech_dummies=True, util_center_value=uc)
     record(out["pooled"], "pooled", X, names, df, seeds)
+    out["pooled"]["util_center"] = uc
     for m, sub in df.groupby("mechanism"):
-        Xm, nm = design(sub, mech_dummies=False)
+        ucm = util_center(sub)
+        Xm, nm = design(sub, mech_dummies=False, util_center_value=ucm)
         out["by_mechanism"][m] = {}
         record(out["by_mechanism"][m], m, Xm, nm, sub, sub["seed"].to_numpy(int))
+        out["by_mechanism"][m]["util_center"] = ucm
     return out, pd.DataFrame(rows)
 
 
