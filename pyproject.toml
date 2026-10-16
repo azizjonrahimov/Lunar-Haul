@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "lunarsim"
 version = "3.0.0"
-description = "LunarSim: a verified discrete-event testbed for lunar surface cargo logistics and dispatch marketplaces"
+description = "LunarHaul (formerly LunarSim): a verified discrete-event testbed for lunar surface cargo logistics, dispatch marketplaces, and learned landing and driving models on real terrain"
 readme = "README.md"
 license = { text = "MIT" }
 authors = [{ name = "Azizjon Rahimov" }]
