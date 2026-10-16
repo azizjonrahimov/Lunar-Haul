@@ -60,15 +60,18 @@ precision, pad-to-base distance, plume keep-out rules and rover autonomy change 
 - `experiments/phase3/`: the six experiment suites E15-E20 (`run_phase3.py`, resumable; `fit_law.py`;
   `make_figures_phase3.py`). Results are in `results/table_E15.csv` to `table_E20*.csv` and `results/E20_fit.json`,
   figures in `figures/fig20_*.png` to `fig27_*.png` with captions in `figures/phase3_captions.json`.
-- What the suites found (30 seeds per cell, 62,640 simulated years in the fit): each kilometre of pad standoff raises
-  the mean delay of urgent cargo by 40 % [37, 43]; each kilometre of plume keep-out radius by 12 % [10, 14]; each hour
-  of post-landing stand-down by 2.3 % [1.8, 2.8]. Landing dispersion has no smooth effect (+1.6 % per e-fold of mean
-  miss, interval including zero); it matters only through landings that miss the pad, which is why a 100 m pad
-  absorbs the current 50 m accuracy and a 25 m pad does not. Pooled dispatch stays 46-53 % below in-house fleets.
-  Two autonomous rovers do the work of six teleoperated ones at 8 s round-trip latency. The learned lander, an
-  imitation clone of the classical law with DAgger on the memory-augmented observation, lands inside the touchdown
-  box 89.0 % of the time against 93.8 % for the law it imitates and 63.2 % for PPO on the shaped reward, which
-  prefers a slow, fuel-costly descent the reward does not penalise.
+- What the suites found (30 seeds per cell, 62,640 simulated years in the fit, effects read at the typical fleet load
+  of the data, 4.6 % utilisation): each kilometre of pad standoff raises the mean delay of urgent cargo by 35 % [33, 38],
+  and the relation is concave (steeper below 1 km, flatter beyond 2 km). A plume keep-out radius and a post-landing
+  stand-down add no measurable delay at these loads (-0.5 % [-1.5, +0.8] per km and -0.8 % [-1.1, -0.3] per hour): fleets
+  at 2-8 % utilisation absorb the evacuations, and a cost appears only in the lightest-loaded night cells at 2-3 km
+  radii (+0.3 to +1.9 h per urgent item). Landing dispersion costs 8 % [6, 11] per e-fold of mean miss, entirely through
+  landings that miss the pad, which is why a 100 m pad absorbs the current 50 m accuracy and a 25 m pad does not.
+  Pooled dispatch stays 46-53 % below in-house fleets. Two autonomous rovers do the work of six teleoperated ones at
+  8 s round-trip latency. The learned lander, an imitation clone of the classical law with DAgger on the
+  memory-augmented observation, lands inside the touchdown box 89.0 % of the time against 93.8 % for the law it
+  imitates and 63.2 % for PPO on the shaped reward, which prefers a slow, fuel-costly descent the reward does not
+  penalise.
 - The third version of the paper, "Where the Lander Lands: Landing Precision, Pad Standoff, Plume Keep-Out and Rover
   Autonomy Priced in Lunar Surface Logistics", is being assembled in `paper/v3/`; the research behind it is in
   `reports/Lunar landing and rover autonomy logistics.md`.
