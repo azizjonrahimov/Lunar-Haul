@@ -38,9 +38,9 @@ moved or $5,000 per landed kg, a few percent of the cost of landing it.
   page, open Verification → Engine → Connect, and the page can run the Python reference engine on your machine:
   "Run in Python" and a live cross-implementation check. `lunarsim serve --static web/dist` serves the page as well.
 
-## Phase 3 (in progress): learned landers and rovers on real terrain
+## Phase 3 (version 3, October 2026): learned landers and rovers on real terrain
 
-The current work puts the base on NASA's LOLA 5 m terrain of the Connecting Ridge and adds two learned models to the
+Version 3 puts the base on NASA's LOLA 5 m terrain of the Connecting Ridge and adds two learned models to the
 logistics engine, so that a question NASA's architecture papers leave open can be answered with numbers: how landing
 precision, pad-to-base distance, plume keep-out rules and rover autonomy change delivery delay and cost.
 
@@ -57,8 +57,21 @@ precision, pad-to-base distance, plume keep-out rules and rover autonomy change 
   keep-out windows and shelters.
 - `site/`: the public site (Vite + three.js): landing page on the real terrain, the 3D world viewer, the lander lab,
   the rover lab, method, paper, data and about pages. `npm ci && npm run build` in `site/`.
-- Experiments E15-E20 and the paper's third version follow; see `.team/PLAN.md` for the plan and
-  `reports/Lunar landing and rover autonomy logistics.md` for the research behind it.
+- `experiments/phase3/`: the six experiment suites E15-E20 (`run_phase3.py`, resumable; `fit_law.py`;
+  `make_figures_phase3.py`). Results are in `results/table_E15.csv` to `table_E20*.csv` and `results/E20_fit.json`,
+  figures in `figures/fig20_*.png` to `fig27_*.png` with captions in `figures/phase3_captions.json`.
+- What the suites found (30 seeds per cell, 62,640 simulated years in the fit): each kilometre of pad standoff raises
+  the mean delay of urgent cargo by 40 % [37, 43]; each kilometre of plume keep-out radius by 12 % [10, 14]; each hour
+  of post-landing stand-down by 2.3 % [1.8, 2.8]. Landing dispersion has no smooth effect (+1.6 % per e-fold of mean
+  miss, interval including zero); it matters only through landings that miss the pad, which is why a 100 m pad
+  absorbs the current 50 m accuracy and a 25 m pad does not. Pooled dispatch stays 46-53 % below in-house fleets.
+  Two autonomous rovers do the work of six teleoperated ones at 8 s round-trip latency. The learned lander, an
+  imitation clone of the classical law with DAgger on the memory-augmented observation, lands inside the touchdown
+  box 89.0 % of the time against 93.8 % for the law it imitates and 63.2 % for PPO on the shaped reward, which
+  prefers a slow, fuel-costly descent the reward does not penalise.
+- The third version of the paper, "Where the Lander Lands: Landing Precision, Pad Standoff, Plume Keep-Out and Rover
+  Autonomy Priced in Lunar Surface Logistics", is being assembled in `paper/v3/`; the research behind it is in
+  `reports/Lunar landing and rover autonomy logistics.md`.
 
 Every number in the new material carries a flag: Measured, Spec, Modelled or Assumed.
 
