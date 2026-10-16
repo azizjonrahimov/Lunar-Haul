@@ -1,6 +1,6 @@
 cff-version: 1.2.0
-message: "If you use LunarSim or the results of this study, please cite the preprint."
-title: "Who Hauls the Habitat? A Verified Simulation Testbed, a Pooled Dispatch Marketplace and a Reference Design for Lunar Surface Logistics"
+message: "If you use LunarHaul (formerly LunarSim) or the results of this study, please cite the preprint; version 3 of the paper is in preparation."
+title: "LunarHaul (formerly LunarSim): a verified testbed for lunar surface logistics, with the paper 'Who Hauls the Habitat?'"
 authors:
   - family-names: Rahimov
     given-names: Azizjon
