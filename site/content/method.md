@@ -22,6 +22,8 @@ identities; all pass within 1 % (the M/G/1 queue check within 0.5 %). A line-by-
 browser and agrees with the Python engine on 24 metric cells within combined 95 % confidence intervals; the
 Verification page runs both checks live.
 
+<!--@pipeline-->
+
 ## Terrain
 
 The base is placed on real terrain: NASA's Lunar Orbiter Laser Altimeter DEM of the Connecting Ridge between

@@ -159,3 +159,20 @@ select { max-width: 100%; }
 @media (prefers-reduced-motion: no-preference) {
   .btn, .nav a, .theme-btn { transition: background-color var(--dur-fast), color var(--dur-fast); }
 }
+
+/* Pipeline diagram on /method (lib/pipeline.mjs): wide layout on desktops, three-lane tall layout on phones */
+.pipeline { margin: var(--s-5) 0; width: min(calc(100vw - 2 * var(--gutter) - 20px), 1080px); max-width: none; }   /* breaks out of the text column; 20 px for a desktop scrollbar */
+.pipeline-body svg { display: block; width: 100%; height: auto; overflow: visible; }
+.pipeline-tall { display: none !important; max-width: 480px; }
+@media (max-width: 860px) { .pipeline-wide { display: none !important; } .pipeline-tall { display: block !important; } }
+.pipeline .pn rect { fill: var(--bg); stroke: var(--ink-3); stroke-width: 1; }
+.pipeline .la rect { stroke: var(--tol-blue); fill: color-mix(in srgb, var(--tol-blue) 10%, var(--bg)); }
+.pipeline .lb rect { stroke: var(--tol-green); fill: color-mix(in srgb, var(--tol-green) 10%, var(--bg)); }
+.pipeline .lc rect { stroke: var(--tol-red); fill: color-mix(in srgb, var(--tol-red) 10%, var(--bg)); }
+.pipeline .dual rect, .pipeline .dual-key { stroke-dasharray: 5 3; stroke-width: 1.4; }
+.pipeline .dual-key { fill: none; stroke: var(--ink-2); }
+.pipeline .pt { font: 600 13px var(--font-sans); fill: var(--ink); }
+.pipeline .pd { font: 400 11.5px var(--font-sans); fill: var(--ink-2); }
+.pipeline .pe { fill: none; stroke: var(--ink-3); stroke-width: 1; }
+.pipeline .pa { fill: var(--ink-3); }
+.pipeline figcaption { font-size: var(--fs-small); color: var(--ink-2); margin-top: var(--s-2); max-width: var(--measure); }

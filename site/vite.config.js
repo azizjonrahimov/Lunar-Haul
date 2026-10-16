@@ -3,12 +3,13 @@ import { join, extname } from 'node:path';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { header, footer, markdown, headline, figure, icon, SITE, ROOT } from './lib/pages.mjs';
 import { results } from './lib/results.mjs';
+import { pipeline } from './lib/pipeline.mjs';
 
 // Public base: '/' locally; CI sets SITE_BASE=/lunar-logistics-research/ for GitHub Pages.
 const base = process.env.SITE_BASE || '/';
 const PAGES = ['', 'world/', 'results/', 'lab/lander/', 'lab/rover/', 'method/', 'paper/', 'data/', 'about/', 'account/', 'changelog/', 'verification/'];
 
-// <!--@header-->, <!--@footer-->, <!--@md:name-->, <!--@headline-->, <!--@results-->, <!--@icon:name-->, <!--@base--> in page HTML
+// <!--@header-->, <!--@footer-->, <!--@md:name-->, <!--@headline-->, <!--@results-->, <!--@pipeline--> (inside markdown), <!--@icon:name-->, <!--@base--> in page HTML
 function lunarsimPages() {
   return {
     name: 'lunarsim-pages',
@@ -21,6 +22,7 @@ function lunarsimPages() {
           .replace('<!--@headline-->', () => headline())
           .replace('<!--@results-->', () => results(base))
           .replace(/<!--@md:([\w-]+)-->/g, (_, n) => markdown(n))
+          .replace('<!--@pipeline-->', () => pipeline())
           .replace(/<!--@figure:([\w-]+)-->/g, (_, n) => figure(n))
           .replace(/<!--@icon:([\w-]+)-->/g, (_, n) => icon(n))
           .replace(/<!--@base-->/g, base);
