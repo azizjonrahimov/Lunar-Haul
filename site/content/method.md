@@ -46,25 +46,29 @@ since 2023 traces to the altitude-sensing chain. A landing succeeds inside the S
 lander classes are parameterised from flown or specified vehicles; where a value is unpublished (Blue Moon MK1's
 throttle floor and descent mass, for instance) it is flagged Assumed and swept.
 
-Two controllers fly it: a classical closed-loop law (gravity turn with ZEM/ZEV terminal guidance) and a policy
-trained by proximal policy optimisation with a velocity-field reward of the kind used in the published Mars
-landing work, plus deliberately broken variants (no survival term, a hover bonus) that reproduce the failure
-modes the reinforcement-learning tutorial warns about. Each controller is run through thousands of dispersed
-landings; the resulting distributions of miss distance, touchdown state, propellant and time near the ground are
-what the logistics engine samples at every landing.
+Three kinds of controller fly it. A classical closed-loop law (gravity turn with ZEM/ZEV terminal guidance) that
+filters the altimeter. Policies trained by proximal policy optimisation with a velocity-field reward of the kind
+used in the published Mars landing work, plus deliberately broken variants (no survival term, a hover bonus) that
+reproduce the failure modes the reinforcement-learning tutorial warns about. And networks that imitate the
+classical law and are refined with DAgger. A network that sees only the current reading cannot imitate a law that
+filters its sensor; given the altimeter's last valid reading, its age and the two previous readings, the clone
+lands <!--@r:lander_best--> of <!--@r:lander_n--> dispersed landings in the touchdown box, against <!--@r:lander_classical--> for the law, while the reinforcement-learning policies trade touchdown accuracy for
+reward. Each controller is run through <!--@r:lander_n--> dispersed landings with the altimeter model on; the
+resulting distributions of miss distance, touchdown state, propellant and time near the ground are what the
+logistics engine samples at every landing.
 
 ## The learned rover (Phase 3)
 
 A driving environment on the same terrain: a kinematic bicycle whose speed is capped by autonomy level (Earth
-teleoperation with 0–8 s round-trip delay, supervised autonomy, full autonomy), slip taken from a lunar-gravity
-slope–slip relation validated against NASA Glenn single-wheel tests (Modelled), energy calibrated to the Apollo
+teleoperation with 0–8 s round-trip delay, supervised autonomy, full autonomy), slip taken from lunar-gravity
+slope–slip curves for three soil friction angles, validated against NASA Glenn single-wheel tests (Modelled), energy calibrated to the Apollo
 Lunar Roving Vehicle's 57–60 Wh/km (Measured, scaled to a 1.6 t rover: Assumed), and lighting penalties from
 NASA's polar-lighting driving study. Teleoperation is modelled as command delay plus stop-to-confirm halts,
 calibrated so the speed made good reproduces the JSC measurements (3.24, 2.56, 2.03 and 1.76 km/h at 0, 4, 6 and
-8 s) within 1.3 %. A scripted expert (A* over a slope-and-lighting cost grid with pure-pursuit tracking) drives
-every leg between sites; a behavioural-cloning network trained on the expert's heightmap views replaces it, and
-its interventions are counted and charged at the round-trip delay plus recovery time rather than the 6 s of the
-original road-driving metric. The per-leg time, energy and intervention distributions by autonomy level,
+8 s) within <!--@r:teleop_err-->. A scripted expert (A* over a slope-and-lighting cost grid with pure-pursuit tracking) drives
+every leg between sites. A behavioural-cloning driver trained on the expert's heightmap views (with DAgger) is
+being trained; the rover lab will offer it next to the expert once it is published. Interventions are counted and
+charged at the round-trip delay plus recovery time rather than the 6 s of the original road-driving metric. The per-leg time, energy and intervention distributions by autonomy level,
 latency and lighting are what the logistics engine samples for every trip.
 
 ## Plume keep-out
@@ -80,7 +84,9 @@ Delay of urgent cargo (mean and 90th percentile), the share delivered within 24 
 vehicles, fleet utilisation, energy, operator hours and system cost per kilogram moved and per landed kilogram,
 over thirty or more seeded years per cell with confidence intervals, and precision runs to a 1–2 % half-width for
 the headline cells. The Phase 3 experiments sweep landing dispersion, pad standoff, keep-out radius and stand-down
-time, autonomy level and fleet size, and fit the relation between them and delivery cost.
+time, autonomy level and fleet size, and fit the relation between them and delivery cost: over <!--@r:fit_n--> simulated years, each kilometre of pad standoff adds <!--@r:standoff_pct--> to the mean delay of urgent
+cargo, each kilometre of keep-out radius <!--@r:keepout_pct--> and each hour of stand-down <!--@r:standdown_pct-->,
+with no smooth effect of the miss distance itself. The figures are on the [Results](../results/) page.
 
 ## What is not modelled
 

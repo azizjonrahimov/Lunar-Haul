@@ -23,11 +23,14 @@ per kilogram moved, a few percent of the cost of landing it.
 
 ### Version 3 (in preparation)
 
-The next version adds a learned landing controller and a learned rover driver to the testbed, puts the base on
-real LOLA terrain, and reports the first quantitative relation between landing dispersion, pad standoff, plume
-keep-out rules, rover autonomy and surface delivery cost, a relation NASA's architecture papers describe only
-qualitatively. Method and interim results are on the Method page and in the labs; the paper and its figures
-will be posted here with a DOI when the experiments are complete.
+**Where the Lander Lands: Landing Precision, Pad Standoff, Plume Keep-Out and Rover Autonomy Priced in Lunar
+Surface Logistics.** Azizjon Rahimov, Roatify Research. A draft exists; it is not yet posted.
+
+It puts the base on real LOLA terrain, adds learned landing controllers and a rover driving model to the testbed,
+and prices landing dispersion, pad standoff, plume keep-out and rover autonomy in the delay and cost of surface
+delivery, a relation NASA's architecture papers describe only qualitatively. Each kilometre of pad standoff adds <!--@r:standoff_pct--> to the delay of urgent cargo; landing dispersion matters only through landings off the
+pad. The figures and tables are on the [Results](../results/) page as they are produced, and the method is on the
+[Method](../method/) page. The paper will be posted here with a DOI when it is complete.
 
 ### Cite
 

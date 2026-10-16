@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import { join, extname } from 'node:path';
 import { existsSync, readFileSync, statSync } from 'node:fs';
-import { header, footer, markdown, headline, figure, icon, SITE, ROOT } from './lib/pages.mjs';
+import { header, footer, markdown, headline, figure, icon, resultText, SITE, ROOT } from './lib/pages.mjs';
 import { results } from './lib/results.mjs';
 import { pipeline } from './lib/pipeline.mjs';
 
@@ -9,7 +9,7 @@ import { pipeline } from './lib/pipeline.mjs';
 const base = process.env.SITE_BASE || '/';
 const PAGES = ['', 'world/', 'results/', 'lab/lander/', 'lab/rover/', 'method/', 'paper/', 'data/', 'about/', 'account/', 'changelog/', 'verification/'];
 
-// <!--@header-->, <!--@footer-->, <!--@md:name-->, <!--@headline-->, <!--@results-->, <!--@pipeline--> (inside markdown), <!--@icon:name-->, <!--@base--> in page HTML
+// <!--@header-->, <!--@footer-->, <!--@md:name-->, <!--@headline-->, <!--@results-->, <!--@pipeline--> and <!--@r:key--> (also inside markdown), <!--@icon:name-->, <!--@base--> in page HTML
 function lunarsimPages() {
   return {
     name: 'lunarsim-pages',
@@ -23,6 +23,7 @@ function lunarsimPages() {
           .replace('<!--@results-->', () => results(base))
           .replace(/<!--@md:([\w-]+)-->/g, (_, n) => markdown(n))
           .replace('<!--@pipeline-->', () => pipeline())
+          .replace(/<!--@r:(\w+)-->/g, (_, k) => resultText(k))
           .replace(/<!--@figure:([\w-]+)-->/g, (_, n) => figure(n))
           .replace(/<!--@icon:([\w-]+)-->/g, (_, n) => icon(n))
           .replace(/<!--@base-->/g, base);

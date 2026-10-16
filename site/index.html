@@ -25,7 +25,7 @@
       </div>
       <div class="hero-copy"><div class="wrap">
         <h1 id="hero-title">Cargo logistics at a lunar south-pole base, on real terrain</h1>
-        <p>A discrete-event simulator of how landed cargo gets from the pads to where it is needed: landers, rover fleets from several owners, the lunar night and Earth–Moon latency.</p>
+        <p>A discrete-event simulator of how landed cargo gets from the pads to where it is needed, with learned landing and driving models on NASA terrain of the Connecting Ridge.</p>
       </div></div>
     </div>
     <div class="wrap"><p id="hero-desc" class="hero-caption">
@@ -36,27 +36,30 @@
 
   <div class="wrap">
     <section aria-labelledby="h-numbers">
-      <h2 id="h-numbers">Three numbers from the current results</h2>
-      <p class="prose">Phase-2 base (2029–32 demand, six vehicles owned by four organisations). Each is the mean over 30 simulated years with its 95% confidence half-width, from the paper's main table.</p>
+      <h2 id="h-numbers">Three results</h2>
       <!--@headline-->
+      <p class="prose">Version 2's comparison of dispatch rules still holds: pooling the fleets of several owners cuts the delay of urgent cargo.</p>
       <!--@figure:delay-by-rule-->
     </section>
 
     <section class="cards" aria-label="About this project">
       <div>
         <h2>What it is</h2>
-        <p>A simulator of surface cargo movement at a south-pole base: lander manifests, multi-owner rover fleets, the lunar night, Earth–Moon control latency, and four ways of dispatching the vehicles, from each owner using its own rovers to a pooled marketplace. A Python reference engine and a browser port agree within confidence intervals; thirteen verification checks run on both.</p>
+        <p>A simulator of surface cargo movement at a south-pole base on real terrain: lander manifests and landing outcomes, rover fleets owned by several organisations, the lunar night, Earth–Moon control latency, and four ways of dispatching the vehicles, from each owner using its own rovers to a pooled marketplace. The landing and driving outcomes it samples come from controllers flown and driven in their own physics models, and the same physics runs in Python and in your browser.</p>
         <p><a href="<!--@base-->method/">How it works</a></p>
       </div>
       <div>
         <h2>What is new</h2>
-        <p>Version 3 puts the base on real LOLA terrain and adds learned models as inputs to the simulation: a landing-dispersion model for the landers and a driving model for the rovers. The aim is a measured relation between landing accuracy, pad distance, plume keep-out radius and the cost of surface delivery.</p>
-        <p><a href="<!--@base-->changelog/">What changed</a></p>
+        <p><b>Distance is what costs.</b> Each kilometre between pad and base adds <!--@r:standoff_pct--> to the delay of urgent cargo, a plume keep-out radius <!--@r:keepout_pct--> per kilometre and a stand-down <!--@r:standdown_pct--> per hour. Landing dispersion acts only through landings off the pad, and it costs hours of delay only when misses reach hundreds of metres.</p>
+        <p><b>A learned lander comes close when it sees what the guidance law sees.</b> Imitation of the classical law, given the altimeter's recent history, lands <!--@r:lander_best--> of <!--@r:lander_n--> dispersed landings in the touchdown box, against <!--@r:lander_classical--> for the law itself; reinforcement learning on the same rewards trades touchdown accuracy for reward.</p>
+        <p><b>Rover autonomy stands in for fleet size.</b> Two autonomous rovers deliver urgent cargo about as fast as six teleoperated ones.</p>
+        <p><a href="<!--@base-->results/">All results, with figures and data</a> · <a href="<!--@base-->changelog/">What changed</a></p>
       </div>
       <div>
         <h2>Try it</h2>
-        <p>Run the simulator in your browser, replay a simulated year on the base map, and compare the dispatch rules on your own seeds. Nothing needs an account.</p>
-        <p><a class="btn primary" href="<!--@base-->simulator/">Open the simulator</a></p>
+        <p>Replay a simulated year on the terrain in 3D, fly the lander and drive the rover yourself, read every figure with its data, and run the checks that compare the browser with Python. Nothing needs an account.</p>
+        <p><a class="btn primary" href="<!--@base-->world/">Open the 3D world</a></p>
+        <p><a href="<!--@base-->lab/lander/">Lander lab</a> · <a href="<!--@base-->lab/rover/">Rover lab</a> · <a href="<!--@base-->results/">Results</a> · <a href="<!--@base-->verification/">Verification</a> · <a href="<!--@base-->simulator/">Simulator</a></p>
       </div>
     </section>
 

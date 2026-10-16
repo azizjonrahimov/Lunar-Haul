@@ -128,9 +128,73 @@ export function figure(id) {
 <script type="application/json" data-rows>${JSON.stringify(rows)}</script></figure>`;
 }
 
+// ---------- Phase-3 results (read at build time; any missing file leaves its values null) ----------
+// E20: pooled OLS of ln(urgent mean delay) on standoff, keep-out, stand-down, dispersion and controls over every
+// simulated year of E17 + E18 (results/table_E20.csv); % per unit = 100 (e^b - 1), interval = the percentile bootstrap
+// over seeds mapped the same way. Lander: the outcome tables of the learned and classical CLPS controllers.
+const E20 = 'results/table_E20.csv', OUT = id => `data/policies/outcomes_${id}.json`;
+const BEST_LANDER = ['lander_CLPS_bc_v3_s0', 'lander_CLPS_bcml_s0'], CLASSICAL = 'classical_CLPS';
+function wilson(p, n, z = 1.96) { const d = 1 + z * z / n, c = p + z * z / (2 * n), h = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)); return [(c - h) / d, (c + h) / d]; }
+let _r3 = null;
+export function results3() {
+  if (_r3) return _r3;
+  const r = { fit: null, lander: null };
+  if (existsSync(join(ROOT, E20))) {
+    const rows = csv(readFileSync(join(ROOT, E20), 'utf8')).filter(x => x.response === 'log_delay_prio1_mean_h' && x.subset === 'pooled');
+    const term = t => { const x = rows.find(y => y.term === t); if (!x) return null; const pct = b => 100 * (Math.exp(+b) - 1);
+      return { pct: pct(x.coef), lo: pct(x.ci_lo), hi: pct(x.ci_hi), n: +x.n, seeds: +x.n_seeds, r2: +x.r2, source: `${E20}, pooled fit of ln(urgent mean delay), term ${t}: 100(e^b − 1) with a 95% bootstrap interval over seeds; n = ${(+x.n).toLocaleString('en-GB')} simulated years, ${x.n_seeds} seeds (experiment E20)` }; };
+    const f = { standoff: term('standoff'), keepout: term('keepout'), standdown: term('standdown') };
+    if (f.standoff && f.keepout && f.standdown) r.fit = f;
+  }
+  const outcome = id => { const p = join(ROOT, OUT(id)); if (!existsSync(p)) return null; const t = JSON.parse(readFileSync(p, 'utf8')), s = t.summary || {};
+    const n = s.n ?? t.n, pr = s.pass_rate; if (!n || pr === undefined) return null; const [lo, hi] = wilson(pr, n);
+    return { id, pct: 100 * pr, lo: 100 * lo, hi: 100 * hi, n, source: `${OUT(id)}: share of ${n} dispersed CLPS landings (altimeter model on, seeds from ${t.seed0}) inside the SPLICE touchdown box, Wilson 95% interval (experiment E15)` }; };
+  const best = BEST_LANDER.map(outcome).find(Boolean), classical = outcome(CLASSICAL);
+  if (best && classical) r.lander = { best, classical };
+  const e16 = join(ROOT, 'results', 'table_E16.csv');   // teleop calibration: largest |error| of the flat-ground speed made good vs JSC
+  if (existsSync(e16)) { const fl = csv(readFileSync(e16, 'utf8')).filter(x => x.check === 'speed_made_good_vs_rtt_flat' && x.rel_err !== ''); if (fl.length) r.teleopErr = 100 * Math.max(...fl.map(x => Math.abs(+x.rel_err))); }
+  return (_r3 = r);
+}
+const pct1 = v => v.toFixed(1), pctS = v => (v < 0 ? '−' : '') + Math.abs(v).toFixed(1);   // the copy says 'adds', so no plus sign
+/* <!--@r:key--> in page copy: the same build-time values as plain text (the headline above carries the flags) */
+export function resultText(key) {
+  const r = results3(), f = r.fit, l = r.lander;
+  const map = {
+    standoff_pct: f && `${pctS(f.standoff.pct)} %`, keepout_pct: f && `${pctS(f.keepout.pct)} %`, standdown_pct: f && `${pctS(f.standdown.pct)} %`,
+    fit_n: f && f.standoff.n.toLocaleString('en-GB'), lander_best: l && `${pct1(l.best.pct)} %`, lander_classical: l && `${pct1(l.classical.pct)} %`,
+    lander_n: l && String(l.best.n), teleop_err: r.teleopErr !== undefined && `${r.teleopErr.toFixed(1)} %`,
+  };
+  if (!(key in map)) throw new Error(`unknown result key ${key}`);
+  return map[key] ? esc(map[key]) : '<span class="stub">(pending)</span>';
+}
+
 export function headline() {
-  const { file, items } = headlineItems();
-  return `<ul class="headline">${items.map(it => `<li><span class="label">${esc(it.label)}</span>
-  <span class="big">${num(it)}</span><span class="ctx">${esc(it.context)}</span></li>`).join('')}</ul>
-<p class="small muted">Read at build time from <code>${esc(file)}</code>. Every number carries its flag; hover a flag for its source (screen readers read it out).</p>`;
+  const r = results3(), items = [], files = new Set();
+  const v2 = headlineItems();   // version-2 cells: the fallback while a Phase-3 source is missing
+  if (r.fit) {
+    const s = r.fit.standoff, k = r.fit.keepout, d = r.fit.standdown;
+    items.push({ label: 'Added delay of urgent cargo per kilometre of pad standoff', html: num({ value: s.pct, unit: '% per km', flag: 'Modelled', digits: 0, source: s.source }),
+      ctx: `95% interval ${pct1(s.lo)}–${pct1(s.hi)} %; pooled over ${s.n.toLocaleString('en-GB')} simulated years, every fleet and dispatch rule.` });
+    items.push({ label: 'A plume keep-out radius, and a stand-down after each landing', html: num({ value: k.pct, unit: '% per km', flag: 'Modelled', digits: 1, source: k.source }),
+      ctxHtml: `Stand-down: ${num({ value: d.pct, unit: '% per hour', flag: 'Modelled', digits: 1, source: d.source })}. Landing dispersion itself has no smooth effect; it acts only through landings off the pad.` });
+    files.add(E20);
+  } else {
+    for (const it of v2.items.slice(0, 2)) items.push({ label: it.label, html: num(it), ctx: it.context });
+    files.add(v2.file);
+  }
+  if (r.lander) {
+    const b = r.lander.best, c = r.lander.classical;
+    items.push({ label: 'Best learned lander inside the touchdown box', html: num({ value: b.pct, unit: '%', flag: 'Modelled', digits: 1, source: b.source }),
+      ctxHtml: `Classical guidance law: ${num({ value: c.pct, unit: '%', flag: 'Modelled', digits: 1, source: c.source })}; ${b.n} dispersed landings each. Imitation of the law, given the altimeter's recent history.` });
+    files.add(OUT(r.lander.best.id)); files.add(OUT(CLASSICAL));
+  } else {
+    const it = v2.items[2]; items.push({ label: it.label, html: num(it), ctx: it.context }); files.add(v2.file);
+  }
+  const intro = r.fit && r.lander
+    ? `From version 3, in preparation: a fit over every simulated year of the pad-standoff, landing-dispersion and plume keep-out experiments (${r.fit.standoff.n.toLocaleString('en-GB')} years, ${r.fit.standoff.seeds} seeds), and ${r.lander.best.n} dispersed landings per lander controller. Each number has its 95% interval and its source.`
+    : `Version 3's experiment tables are not in this build yet; ${r.lander ? 'the lander result is from version 3 and ' : ''}the other numbers are the version-2 Phase-2 base (2029–32 demand, six vehicles owned by four organisations), means over 30 simulated years with 95% confidence half-widths.`;
+  return `<p class="prose">${esc(intro)}</p>
+<ul class="headline">${items.map(it => `<li><span class="label">${esc(it.label)}</span>
+  <span class="big">${it.html}</span><span class="ctx">${it.ctxHtml || esc(it.ctx)}</span></li>`).join('')}</ul>
+<p class="small muted">Read at build time from ${[...files].map(f => `<code>${esc(f)}</code>`).join(', ')}. Every number carries its flag; hover a flag for its source (screen readers read it out).</p>`;
 }
