@@ -2,6 +2,7 @@
 
     python -m lunarsim.lander.evaluate --policy data/policies/lander_CLPS_baseline_s0.json --n 500
     python -m lunarsim.lander.evaluate --classical --cls CLPS --n 500
+    python -m lunarsim.lander.evaluate --memoryless --cls CLPS --n 500     (the B-10d memoryless law, the clones' expert)
 
 Writes <out-dir>/outcomes_<name>.json (format lunarsim-landing-outcomes v1: per-episode records + summary
 with mean/std/min/max of every touchdown component, propellant, time below 30 m, pass rate) and a CSV of the
@@ -206,8 +207,9 @@ EVAL_SEED0 = 100_000           # first Monte Carlo episode seed (training uses o
 
 
 def evaluate(policy_path: Optional[str], cls: str, n: int, seed0: int = EVAL_SEED0, sensor: bool = True,
-             out_dir: Optional[str] = None, name: Optional[str] = None) -> Dict[str, Any]:
-    """Run the Monte Carlo; write the table if out_dir. Returns the summary (plus the path)."""
+             out_dir: Optional[str] = None, name: Optional[str] = None, law: str = "classical") -> Dict[str, Any]:
+    """Run the Monte Carlo; write the table if out_dir. Returns the summary (plus the path).
+    Without a policy, law = "classical" (the filtered ZEM/ZEV law) or "memoryless" (memoryless_action)."""
     from .env import DescentEnv, ENV_ID, ENV_VERSION, obs_version_of
     from .policy import MlpPolicy
     pol = MlpPolicy.from_json(policy_path) if policy_path else None
@@ -217,10 +219,17 @@ def evaluate(policy_path: Optional[str], cls: str, n: int, seed0: int = EVAL_SEE
         controller = lambda obs, e: pol.act(obs)
         name = name or pol.id
         meta = {"policy": pol.id, "policy_sha256": _sha(policy_path), "controller": "policy"}
-    else:
+    elif law == "memoryless":
+        controller = lambda obs, e: memoryless_action(e)
+        name = name or f"memoryless_{cls}"
+        meta = {"policy": name, "policy_sha256": None, "variant": "memoryless", "k_rate": ML_RATE_GAIN,
+                "controller": "memoryless classical law: ZEM/ZEV + vertical terminal phase from the observation, no filter state"}
+    elif law == "classical":
         controller = lambda obs, e: classical_action(e)
         name = name or f"classical_{cls}"
         meta = {"policy": name, "policy_sha256": None, "controller": "classical ZEM/ZEV + vertical terminal phase"}
+    else:
+        raise ValueError(f"unknown law {law!r}")
     t0 = time.time()
     recs = run_episodes(env, controller, n, seed0)
     meta.update({"env": ENV_ID, "env_version": ENV_VERSION, "obs_version": obs_version, "cls": cls, "n": n,
@@ -237,13 +246,15 @@ def main(argv=None):
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--policy", help="lunarsim-policy v1 JSON")
     g.add_argument("--classical", action="store_true")
+    g.add_argument("--memoryless", action="store_true", help="the memoryless classical law (B-10d)")
     p.add_argument("--cls", default="CLPS", choices=sorted(CLASSES))
     p.add_argument("--n", type=int, default=500)
     p.add_argument("--seed0", type=int, default=EVAL_SEED0, help="first episode seed (training uses other seeds)")
     p.add_argument("--no-sensor", action="store_true")
     p.add_argument("--out-dir", default=os.path.join("data", "policies"))
     a = p.parse_args(argv)
-    s = evaluate(a.policy, a.cls, a.n, a.seed0, not a.no_sensor, a.out_dir)
+    s = evaluate(a.policy, a.cls, a.n, a.seed0, not a.no_sensor, a.out_dir,
+                 law="memoryless" if a.memoryless else "classical")
     c = s["components"]
     print(f"{a.n} episodes: pass {100 * s['pass_rate']:.1f} %, touchdown box {100 * s['touchdown_box_rate']:.1f} %, "
           f"failures {s['failure_counts']}")

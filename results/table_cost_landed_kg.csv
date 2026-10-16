@@ -1,0 +1,9 @@
+phase,fleet,mechanism,n,delivered_nonbulk_kg_mean,cost_musd_mean,cost_per_landed_kg_usd,ci_lo,ci_hi,v2_approx_usd,per_seed_ratio_mean
+P2,4 vehicles,inhouse,30,16201.8,162.3259,10019.0,8127.9,12903.6,9487.8,39218.8
+P2,4 vehicles,pooled_greedy,30,26621.9,162.4474,6102.0,4876.9,8048.6,5535.3,35208.4
+P2,4 vehicles,central_assign,30,26621.9,162.419,6101.0,4875.8,8047.2,5534.1,35206.6
+P2,4 vehicles,marketplace,30,29391.6,162.4022,5525.5,4435.9,7297.7,5072.3,34781.4
+P3,default,inhouse,30,58049.1,417.8936,7199.0,6122.3,8682.4,6390.6,12798.8
+P3,default,pooled_greedy,30,62288.7,417.7662,6706.9,5723.7,8097.1,5930.6,12145.2
+P3,default,central_assign,30,62288.7,417.7648,6706.9,5723.6,8097.0,5931.7,12145.4
+P3,default,marketplace,30,74255.7,418.0287,5629.6,4891.9,6673.0,5048.0,8184.9

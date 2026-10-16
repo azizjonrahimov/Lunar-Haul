@@ -204,7 +204,7 @@ def e15_rows(policy_dir=POLICIES):
             continue
         pol = doc.get("policy") or os.path.basename(path)[len("outcomes_"):-len(".json")]
         cls = doc.get("cls") or eps[0].get("cls")
-        learned = doc.get("controller") == "policy" or not str(pol).startswith("classical")
+        learned = doc.get("controller") == "policy" if doc.get("controller") else not str(pol).startswith("classical")
         card = os.path.join(policy_dir, f"{pol}.json")
         tr = {}
         if learned and os.path.exists(card):
@@ -222,7 +222,7 @@ def e15_rows(policy_dir=POLICIES):
         except ValueError:                       # another drive on Windows
             rel = os.path.basename(path)
         row = {"policy": pol, "cls": cls, "kind": "learned" if learned else "classical",
-               "variant": tr.get("reward_variant", "classical" if not learned else None),
+               "variant": tr.get("reward_variant", (doc.get("variant") or "classical") if not learned else None),
                "controller": doc.get("controller"), "n": len(eps), "pass_rate": float(ok.mean()),
                "touchdown_box_rate": float(td.mean())}
         for k in FAIL_KINDS:
@@ -238,7 +238,7 @@ def e15_rows(policy_dir=POLICIES):
     df = pd.DataFrame(rows)
     if df.empty:
         return df
-    classical = df[df["kind"] == "classical"].set_index("cls")
+    classical = df[(df["kind"] == "classical") & (df["variant"] == "classical")].set_index("cls")   # the reference law
     diff_cols = ("pass_rate", "miss_mean_m", "miss_p90_m", "prop_used_mean_kg", "t_below_30m_mean_s", "offpad_50m_share")
     for i, r in df.iterrows():
         if r["kind"] == "learned" and r["cls"] in classical.index:

@@ -291,8 +291,10 @@ def test_e15_table_from_committed_outcomes(tmp_path, monkeypatch):
     monkeypatch.setattr(rp, "RESULTS", str(tmp_path))
     t = rp.e15()
     assert os.path.exists(tmp_path / "table_E15.csv")
-    cl = t[t["kind"] == "classical"].set_index("cls")
-    assert {"CLPS", "MK1", "LARGE"} <= set(cl.index)
+    cl = t[(t["kind"] == "classical") & (t["variant"] == "classical")].set_index("cls")     # the reference law
+    assert {"CLPS", "MK1", "LARGE"} <= set(cl.index) and cl.index.is_unique
+    ml = t[t["variant"] == "memoryless"]                     # the B-10d memoryless law: classical kind, no comparison
+    assert (ml["kind"] == "classical").all() and ml["vs"].isna().all()
     assert math.isclose(cl.loc["CLPS", "miss_mean_m"], rp.MISS_REF_M, rel_tol=1e-6)      # the E17 miss reference is this table's mean
     assert ((t["pass_rate"] >= 0) & (t["pass_rate"] <= 1)).all() and (t["n"] > 0).all()
     fails = t[[f"fail_{k}" for k in rp.FAIL_KINDS]].sum(axis=1)
