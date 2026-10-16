@@ -11,6 +11,8 @@ dist/
 .DS_Store
 Thumbs.db
 results/E14_precision_*.csv
+results/E17_dispersion_standoff.csv
+results/E18_plume.csv
 paper/lunar_logistics_marketplace_paper.pdf
 data/terrain/_cache/
 runs/

@@ -454,13 +454,19 @@ def siting_summary(mins, standoffs=None):
 
 
 # ---------------------------------------------------------------------------
+def _raw_path(res: str, name: str) -> str:
+    """The per-run CSV, or its gzipped copy when only that is present (the large raw files are committed as .csv.gz)."""
+    p = os.path.join(res, name)
+    return p if os.path.exists(p) or not os.path.exists(p + ".gz") else p + ".gz"
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--results", default=RESULTS)
     p.add_argument("--boot", type=int, default=N_BOOT)
     a = p.parse_args(argv)
     res = a.results
-    e17p, e18p = os.path.join(res, "E17_dispersion_standoff.csv"), os.path.join(res, "E18_plume.csv")
+    e17p, e18p = _raw_path(res, "E17_dispersion_standoff.csv"), _raw_path(res, "E18_plume.csv")
     frames = []
     e17 = e18 = None
     if os.path.exists(e17p):
@@ -477,7 +483,8 @@ def main(argv=None):
         raise SystemExit(f"neither {e17p} nor {e18p} exists; run e17 / e18 first")
     both = pd.concat(frames, ignore_index=True, sort=False)
     fit, table = fit_law(both, B=a.boot)
-    fit["inputs"] = {"E17": e17p if e17 is not None else None, "E18": e18p if e18 is not None else None,
+    rel = lambda q: os.path.relpath(q, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))).replace(os.sep, "/")
+    fit["inputs"] = {"E17": rel(e17p) if e17 is not None else None, "E18": rel(e18p) if e18 is not None else None,
                      "rows": int(len(both)), "seeds": int(both["seed"].nunique())}
     if e17 is not None:
         sit = siting_table(e17)

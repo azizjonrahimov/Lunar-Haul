@@ -85,8 +85,8 @@
   "status": "produced"
  },
  "fig27_law": {
-  "caption": "The dispersion / standoff / keep-out law: OLS of ln(mean urgent-item delay) on ln(mean |miss|), pad standoff, keep-out radius, stand-down time, the reference-cell utilisation, night share, off-pad share, pad radius, their interactions and mechanism dummies (in-house is the base), pooled over the E17 and E18 years (n = 62,300 simulated years from 30 seeds; pooled R² = 0.48). Coefficients are shown as the % change in mean urgent delay per the stated unit (100·(exp(b·unit) − 1)); whiskers are percentile seed-bootstrap 95 % CIs (1000 resamples, seeds drawn with replacement, every year of a drawn seed weighted by its multiplicity); filled markers exclude 0, open ones do not. Panel B repeats the fit within each mechanism (crosses: term constant in that subset). Flags: the fit is Modelled on simulated years; regressor levels Measured / Spec (miss anchors) and Assumed (standoff, keep-out, stand-down sweeps). Suites with fewer seeds enter fewer bootstrap resamples; a CI is only as good as the seeds behind the term.",
-  "n": "n = 62,300 simulated years from 30 seeds",
+  "caption": "The dispersion / standoff / keep-out law: OLS of ln(mean urgent-item delay) on ln(mean |miss|), pad standoff, keep-out radius, stand-down time, the reference-cell utilisation, night share, off-pad share, pad radius, their interactions and mechanism dummies (in-house is the base), pooled over the E17 and E18 years (n = 62,640 simulated years from 30 seeds; pooled R² = 0.48). Coefficients are shown as the % change in mean urgent delay per the stated unit (100·(exp(b·unit) − 1)); whiskers are percentile seed-bootstrap 95 % CIs (1000 resamples, seeds drawn with replacement, every year of a drawn seed weighted by its multiplicity); filled markers exclude 0, open ones do not. Panel B repeats the fit within each mechanism (crosses: term constant in that subset). Flags: the fit is Modelled on simulated years; regressor levels Measured / Spec (miss anchors) and Assumed (standoff, keep-out, stand-down sweeps). Suites with fewer seeds enter fewer bootstrap resamples; a CI is only as good as the seeds behind the term.",
+  "n": "n = 62,640 simulated years from 30 seeds",
   "ci": "percentile seed-bootstrap 95 % CI (fit_law.fit_ols)",
   "flags": "Modelled fit; Measured/Spec/Assumed levels",
   "files": [
@@ -96,7 +96,7 @@
   "inputs": {
    "E17": "E17_dispersion_standoff.csv",
    "E18": "E18_plume.csv",
-   "rows": 62300,
+   "rows": 62640,
    "seeds": 30
   },
   "status": "produced"
