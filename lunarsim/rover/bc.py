@@ -11,6 +11,12 @@ Pipeline
    -> conv 3x3 (48) -> flatten, concatenated with the scalars -> 100 -> 50 -> 10 -> 2, tanh output in [-1, 1].
 3. Training: MSE on the expert actions (Adam). DAgger: roll out the current policy, label every recorded state with
    the expert's action for that state, aggregate, retrain (>= 3 rounds).
+   Memory bound (B-20): a rollout records every `stride`-th step like the base data, but a policy that does not
+   reach its goal drives until the env's step limit (up to 50,000 steps), so one round can record ten times the
+   base data. Each round therefore keeps at most `dagger_steps_cap` samples (reservoir sample over the round) and
+   stops early once more than half of its runs so far (after the first 5) did not reach the goal; the patches stay
+   float16 in RAM and training converts one mini-batch at a time to float32. Every round prints the dataset size
+   and the process memory (working set, its peak, private bytes).
 4. Export: ONNX (opset 17; inputs "patch" [N,3,32,32] and "scalars" [N,5], output "action" [N,2]) + a
    lunarsim-policy v1 card (kind "cnn") data/policies/<id>.json with the input spec, normalisation, training record
    and check vectors (<id>.check.json, onnxruntime outputs; torch agrees to 1e-5).
@@ -26,7 +32,7 @@ import json
 import os
 import platform
 import time
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 
@@ -115,9 +121,11 @@ def leg_list(terrain, n_legs: int, seed: int = 0) -> List[Tuple[str, Tuple[float
 
 
 def drive(env: DriveEnv, route, sun, driver, expert: Optional[ExpertDriver], stride: int, autonomy: str = "autonomous",
-          rtt_s: float = 4.0, seed: int = 0, record: bool = True, max_steps: Optional[int] = None):
+          rtt_s: float = 4.0, seed: int = 0, record: bool = True, max_steps: Optional[int] = None,
+          sink: Optional[Callable] = None):
     """Drive one leg with `driver`; when `expert` is given, record (obs, expert action) every `stride` steps.
-    Returns (records, leg info)."""
+    Returns (records, leg info). With `sink`, each record goes to sink(patch, scalars, action) instead and the
+    returned record lists are empty."""
     obs, _ = env.reset(seed=seed, options={"waypoints": route, "autonomy": autonomy, "rtt_s": rtt_s, "sun_az_deg": sun})
     driver.reset()
     if expert is not None and expert is not driver:
@@ -127,9 +135,12 @@ def drive(env: DriveEnv, route, sun, driver, expert: Optional[ExpertDriver], str
     info: Dict[str, Any] = {}
     while True:
         if record and expert is not None and k % stride == 0:
-            P.append(obs["patch"].astype(np.float16))
-            S.append(obs["scalars"])
-            A.append(expert.act(obs))
+            if sink is not None:
+                sink(obs["patch"].astype(np.float16), obs["scalars"], expert.act(obs))
+            else:
+                P.append(obs["patch"].astype(np.float16))
+                S.append(obs["scalars"])
+                A.append(expert.act(obs))
         a = driver.act(obs)
         obs, _, term, trunc, info = env.step(a)
         k += 1
@@ -140,13 +151,37 @@ def drive(env: DriveEnv, route, sun, driver, expert: Optional[ExpertDriver], str
     return (P, S, A), leg
 
 
+class Reservoir:
+    """Uniform sample of at most `cap` items from a stream of unknown length (Vitter's algorithm R)."""
+
+    def __init__(self, cap: int, rng: np.random.Generator):
+        self.cap, self.rng, self.items, self.seen = int(cap), rng, [], 0
+
+    def add(self, *item) -> None:
+        self.seen += 1
+        if len(self.items) < self.cap:
+            self.items.append(item)
+        else:
+            j = int(self.rng.integers(0, self.seen))
+            if j < self.cap:
+                self.items[j] = item
+
+
 def collect(terrain, legs, driver_factory, stride: int, lighting=LIGHTING, autonomy: str = "autonomous",
-            seed: int = 0, max_steps: Optional[int] = None, verbose: bool = False) -> Dict[str, np.ndarray]:
-    """Dataset over legs x lighting. driver_factory(env, expert) -> driver (the expert itself for round 0)."""
+            seed: int = 0, max_steps: Optional[int] = None, verbose: bool = False, cap: Optional[int] = None,
+            rng: Optional[np.random.Generator] = None, stop_fail_share: Optional[float] = None,
+            min_runs: int = 5) -> Dict[str, Any]:
+    """Dataset over legs x lighting. driver_factory(env, expert) -> driver (the expert itself for round 0).
+    cap: keep at most this many samples (reservoir over the whole call, drawn with `rng`); stop_fail_share: stop
+    after a run once more than this share of the runs so far (at least `min_runs`) did not reach the goal. With
+    neither, every recorded sample is kept in order. "rollout" in the result says what was seen, kept and skipped."""
     env = DriveEnv(terrain)
     expert = ExpertDriver(env)
     driver = driver_factory(env, expert)
     P, S, A, legs_info = [], [], [], []
+    res = Reservoir(cap, rng if rng is not None else np.random.default_rng(seed)) if cap else None
+    runs = failed = 0
+    stopped = False
     t0 = time.time()
     for li, (name, a, b) in enumerate(legs):
         for sun in lighting:
@@ -154,20 +189,87 @@ def collect(terrain, legs, driver_factory, stride: int, lighting=LIGHTING, auton
             if route is None:
                 continue
             (p, s, act), leg = drive(env, route, sun, driver, expert, stride, autonomy=autonomy,
-                                     seed=seed + li, max_steps=max_steps)
+                                     seed=seed + li, max_steps=max_steps, sink=res.add if res else None)
             P += p
             S += s
             A += act
             legs_info.append({"leg": name, "sun": "night" if sun == R.NIGHT else sun, **leg})
+            runs += 1
+            failed += not leg.get("reached")
+            if stop_fail_share is not None and runs >= min_runs and failed > stop_fail_share * runs:
+                stopped = True
+                break
         if verbose and (li + 1) % 5 == 0:
-            print(f"    {li + 1}/{len(legs)} legs, {len(A)} samples ({time.time() - t0:.0f} s)", flush=True)
+            print(f"    {li + 1}/{len(legs)} legs, {res.seen if res else len(A)} samples ({time.time() - t0:.0f} s)", flush=True)
+        if stopped:
+            break
+    recorded = res.seen if res else len(A)
+    if res is not None:
+        P, S, A = ([it[i] for it in res.items] for i in range(3))
+        res.items = []
     return {"patch": np.asarray(P, np.float16).reshape(-1, 3, PATCH, PATCH),
             "scalars": np.asarray(S, np.float32).reshape(-1, len(SCALAR_NAMES)),
-            "act": np.asarray(A, np.float32).reshape(-1, 2), "legs": legs_info}
+            "act": np.asarray(A, np.float32).reshape(-1, 2), "legs": legs_info,
+            "rollout": {"runs": runs, "planned_runs": len(legs) * len(lighting), "failed": failed,
+                        "stopped_early": stopped, "recorded": recorded, "kept": len(A)}}
 
 
 def merge(a, b):
     return {k: np.concatenate([a[k], b[k]]) for k in ("patch", "scalars", "act")} | {"legs": a.get("legs", []) + b.get("legs", [])}
+
+
+def dataset_mb(data) -> float:
+    return sum(data[k].nbytes for k in ("patch", "scalars", "act")) / 2 ** 20
+
+
+def process_memory_mb() -> Dict[str, Optional[float]]:
+    """Working set (RSS), its peak, and private bytes (commit) of this process in MiB; None where unknown."""
+    try:
+        import psutil
+        m = psutil.Process().memory_info()
+        return {"rss_mb": m.rss / 2 ** 20,
+                "peak_rss_mb": m.peak_wset / 2 ** 20 if hasattr(m, "peak_wset") else None,
+                "private_mb": m.private / 2 ** 20 if hasattr(m, "private") else None}
+    except ImportError:
+        pass
+    if os.name == "nt":
+        import ctypes
+        from ctypes import wintypes
+
+        class PMC(ctypes.Structure):
+            _fields_ = [("cb", wintypes.DWORD), ("PageFaultCount", wintypes.DWORD)] + [
+                (n, ctypes.c_size_t) for n in ("PeakWorkingSetSize", "WorkingSetSize", "QuotaPeakPagedPoolUsage",
+                                               "QuotaPagedPoolUsage", "QuotaPeakNonPagedPoolUsage",
+                                               "QuotaNonPagedPoolUsage", "PagefileUsage", "PeakPagefileUsage")]
+        c = PMC()
+        c.cb = ctypes.sizeof(PMC)
+        k32, psapi = ctypes.WinDLL("kernel32"), ctypes.WinDLL("psapi")
+        k32.GetCurrentProcess.restype = wintypes.HANDLE
+        psapi.GetProcessMemoryInfo.argtypes = [wintypes.HANDLE, ctypes.POINTER(PMC), wintypes.DWORD]
+        if psapi.GetProcessMemoryInfo(k32.GetCurrentProcess(), ctypes.byref(c), c.cb):
+            return {"rss_mb": c.WorkingSetSize / 2 ** 20, "peak_rss_mb": c.PeakWorkingSetSize / 2 ** 20,
+                    "private_mb": c.PagefileUsage / 2 ** 20}
+        return {"rss_mb": None, "peak_rss_mb": None, "private_mb": None}
+    try:
+        with open("/proc/self/statm") as f:
+            rss = int(f.read().split()[1]) * os.sysconf("SC_PAGE_SIZE") / 2 ** 20
+    except OSError:
+        rss = None
+    import resource
+    peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    peak = peak / 2 ** 20 if platform.system() == "Darwin" else peak / 2 ** 10
+    return {"rss_mb": rss, "peak_rss_mb": peak, "private_mb": None}
+
+
+def _round_mem() -> Dict[str, Optional[float]]:
+    return {k: (None if v is None else round(v, 1)) for k, v in process_memory_mb().items()}
+
+
+def _mem_line(data) -> str:
+    m = process_memory_mb()
+    f = lambda v: "?" if v is None else f"{v:.0f}"
+    return (f"dataset {len(data['act'])} samples, {dataset_mb(data):.0f} MB; process working set {f(m['rss_mb'])} MB "
+            f"(peak {f(m['peak_rss_mb'])} MB), private {f(m['private_mb'])} MB")
 
 
 def save_npz(path: str, data) -> None:
@@ -184,7 +286,7 @@ def train(model, data, epochs: int = 10, batch: int = 256, lr: float = 1e-3, see
     torch.manual_seed(seed)
     model.to(device).train()
     opt = torch.optim.Adam(model.parameters(), lr=lr)
-    P = torch.as_tensor(data["patch"].astype(np.float32))
+    P = torch.as_tensor(data["patch"])          # float16, shares the array; each mini-batch goes to float32 below
     S = torch.as_tensor(data["scalars"])
     A = torch.as_tensor(data["act"])
     n = len(A)
@@ -195,7 +297,7 @@ def train(model, data, epochs: int = 10, batch: int = 256, lr: float = 1e-3, see
         tot = 0.0
         for k in range(0, n, batch):
             idx = perm[k:k + batch]
-            out = model(P[idx].to(device), S[idx].to(device))
+            out = model(P[idx].to(device=device, dtype=torch.float32), S[idx].to(device))
             loss = torch.nn.functional.mse_loss(out, A[idx].to(device))
             opt.zero_grad()
             loss.backward()
@@ -314,7 +416,8 @@ def write_card(model, policy_id: str, out_dir: str, training: Dict[str, Any], ev
 def run(site: str, policy_id: str, n_legs: int = 20, stride: int = 5, dagger: int = 3, epochs: int = 10,
         dagger_epochs: int = 5, seed: int = 0, out_dir: str = os.path.join("data", "policies"),
         run_root: str = os.path.join("runs", "rover"), eval_legs: int = 6, max_steps: Optional[int] = None,
-        verbose: bool = True) -> Dict[str, Any]:
+        verbose: bool = True, dagger_steps_cap: Optional[int] = 20_000,
+        dagger_stop_fail: Optional[float] = 0.5) -> Dict[str, Any]:
     import torch
     from ..terrain import Terrain
     torch.set_num_threads(max(1, (os.cpu_count() or 2) // 2))
@@ -329,16 +432,25 @@ def run(site: str, policy_id: str, n_legs: int = 20, stride: int = 5, dagger: in
     data = collect(terrain, legs, lambda env, ex: ex, stride, seed=seed, max_steps=max_steps, verbose=verbose)
     model = make_model()
     hist = [{"round": 0, "samples": int(len(data["act"])), **train(model, data, epochs, seed=seed, device=dev, verbose=verbose)}]
+    hist[-1].update({"dataset_mb": round(dataset_mb(data), 1), **_round_mem()})
+    if verbose:
+        print(f"  round 0: {_mem_line(data)}", flush=True)
     for k in range(1, dagger + 1):
         new = collect(terrain, legs, lambda env, ex: TorchDriver(model, dev), stride, seed=seed + 1000 * k,
-                      max_steps=max_steps, verbose=False)
+                      max_steps=max_steps, verbose=False, cap=dagger_steps_cap,
+                      rng=np.random.default_rng(seed + 1000 * k), stop_fail_share=dagger_stop_fail)
+        ro = new["rollout"]
+        interventions = float(sum(l["interventions"] for l in new["legs"]))
         data = merge(data, new)
-        hist.append({"round": k, "samples": int(len(data["act"])),
-                     "rollout_interventions": float(sum(l["interventions"] for l in new["legs"])),
-                     **train(model, data, dagger_epochs, seed=seed + k, device=dev)})
+        del new
+        hist.append({"round": k, "samples": int(len(data["act"])), "rollout_interventions": interventions,
+                     "rollout": ro, **train(model, data, dagger_epochs, seed=seed + k, device=dev)})
+        hist[-1].update({"dataset_mb": round(dataset_mb(data), 1), **_round_mem()})
         if verbose:
-            print(f"  DAgger round {k}: {len(data['act'])} samples, rollout interventions "
-                  f"{hist[-1]['rollout_interventions']:.0f}, MSE {hist[-1]['mse']:.5f}", flush=True)
+            print(f"  DAgger round {k}: {ro['runs']}/{ro['planned_runs']} runs, {ro['failed']} did not reach the goal"
+                  f"{' (round stopped early)' if ro['stopped_early'] else ''}; recorded {ro['recorded']}, kept "
+                  f"{ro['kept']}; rollout interventions {interventions:.0f}, MSE {hist[-1]['mse']:.5f}", flush=True)
+            print(f"  round {k}: {_mem_line(data)}", flush=True)
     save_npz(os.path.join(run_dir, "dataset.npz"), data)
     torch.save(model.state_dict(), os.path.join(run_dir, "model.pt"))
     ev_legs = leg_list(terrain, eval_legs, seed + 77)
@@ -351,6 +463,7 @@ def run(site: str, policy_id: str, n_legs: int = 20, stride: int = 5, dagger: in
     }
     training = {"algo": "BC + DAgger (MSE on expert actions)", "terrain": site, "legs": len(legs), "stride": stride,
                 "dagger_rounds": dagger, "epochs": epochs, "dagger_epochs": dagger_epochs, "seed": seed, "device": dev,
+                "dagger_steps_cap": dagger_steps_cap, "dagger_stop_fail": dagger_stop_fail,
                 "torch_version": torch.__version__, "history": hist, "samples": int(len(data["act"])),
                 "dataset": os.path.join(run_dir, "dataset.npz"), "wallclock_s": round(time.time() - t_all, 1),
                 "python": platform.python_version(),
@@ -368,6 +481,10 @@ def main(argv=None):
     p.add_argument("--dagger", type=int, default=3)
     p.add_argument("--epochs", type=int, default=10)
     p.add_argument("--dagger-epochs", type=int, default=5)
+    p.add_argument("--dagger-steps-cap", type=int, default=20_000,
+                   help="per DAgger round: keep at most N recorded rollout samples (reservoir; 0 = no cap)")
+    p.add_argument("--dagger-stop-fail", type=float, default=0.5,
+                   help="stop a DAgger round once more than this share of its runs did not reach the goal (< 0: never)")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--eval-legs", type=int, default=6)
     p.add_argument("--max-steps", type=int, default=None, help="cap steps per drive (smoke runs)")
@@ -375,7 +492,8 @@ def main(argv=None):
     p.add_argument("--run-root", default=os.path.join("runs", "rover"))
     a = p.parse_args(argv)
     r = run(a.site, a.id, a.legs, a.stride, a.dagger, a.epochs, a.dagger_epochs, a.seed, a.out_dir, a.run_root,
-            a.eval_legs, a.max_steps)
+            a.eval_legs, a.max_steps, dagger_steps_cap=a.dagger_steps_cap or None,
+            dagger_stop_fail=None if a.dagger_stop_fail < 0 else a.dagger_stop_fail)
     ev = r["card"]["evaluation"]
     for who in ("learned", "expert"):
         for au, v in ev[who].items():
