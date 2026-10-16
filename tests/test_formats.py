@@ -405,3 +405,19 @@ def test_compact_outside_repo_checkout(tmp_path):
     assert "marketplace on lunarsim-live: 2 seeds" in r.stdout
     r = lunarsim("scenarios", "list")
     assert r.returncode == 0 and "P2-8-vehicles" in r.stdout
+
+
+def test_landing_order_does_not_depend_on_dict_key_order():
+    """B-12b: reversed landings_per_year keys give the same year, seed for seed."""
+    from lunarsim import run, dispatch
+    from lunarsim.config import library
+    sc = library()["P2-default"]
+    rev = sc.with_(landings_per_year=dict(reversed(list(sc.landings_per_year.items()))))
+    assert list(rev.landings_per_year) != list(sc.landings_per_year)
+    for seed in (0, 1):
+        a, b = run(sc, dispatch.marketplace, seed=seed), run(rev, dispatch.marketplace, seed=seed)
+        assert all((x == y) or (x != x and y != y) for x, y in zip(a.values(), b.values()))
+    d = scenario_to_dict(rev)
+    assert scenario_from_dict(json.loads(json.dumps(d))).landings_per_year == rev.landings_per_year
+    with pytest.raises(ValueError, match="unknown lander types"):
+        run(sc.with_(landings_per_year={"CLPS": 1, "XL": 1}), dispatch.marketplace, seed=0)

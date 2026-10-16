@@ -29,6 +29,9 @@ Compact form (what the web page exports) - a phase plus the page's controls:
     }
 
 The header keys are optional on input (files written before v1 have none).
+
+Key order never matters: in particular `landings_per_year` is drawn in the canonical lander order (CLPS, MK1,
+LARGE; lunarsim.scenario.sample_landings), so reordering its keys gives the same simulated year for the same seed.
 """
 from __future__ import annotations
 

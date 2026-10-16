@@ -166,10 +166,20 @@ def sample_landings(rng: np.random.Generator, sc: Scenario, pads: List[str]) -> 
     """Landing schedule: (time, lander type, pad). Each lander type arrives as a
     Poisson process with the given annual rate. The schedule is known to the
     dispatcher in advance (landings are published months ahead), which the
-    anticipatory component of the marketplace uses."""
+    anticipatory component of the marketplace uses.
+
+    Draw order is canonical: lander types are drawn in LANDER_TYPES declaration order (CLPS, MK1, LARGE), never in
+    the scenario dict's key order, so any key order in a scenario file gives the same year for the same seed. This
+    equals the phases' insertion order, so v2 results are unchanged."""
+    unknown = sorted(set(sc.landings_per_year) - set(LANDER_TYPES))
+    if unknown:
+        raise ValueError(f"unknown lander types in landings_per_year: {unknown}; known: {list(LANDER_TYPES)}")
     out = []
     years = sc.horizon_h / (365 * HOURS_PER_DAY)
-    for lt_name, rate in sc.landings_per_year.items():
+    for lt_name in LANDER_TYPES:
+        if lt_name not in sc.landings_per_year:
+            continue
+        rate = sc.landings_per_year[lt_name]
         n = rng.poisson(rate * years)
         times = np.sort(rng.uniform(0, sc.horizon_h, n))
         lt = LANDER_TYPES[lt_name]
