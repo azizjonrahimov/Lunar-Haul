@@ -5,7 +5,7 @@ import './lab.css';
 import * as R from './physics.js';
 import { RoverTerrain } from './terrain.js';
 import { plan } from './expert.js';
-import { DriveEnv, expertController, PATCH } from './env.js';
+import { DriveEnv, expertController, PATCH, ENV_ID, ENV_VERSION } from './env.js';
 import { legProfile, driveProfile, SPEED_SIGMA } from './tables.js';
 import { num, esc, fmt } from '../components/num.js';
 
@@ -26,6 +26,7 @@ async function boot() {
     st.index = await getJson(LAB + 'driving-index.json').catch(() => null);
 
   } catch (e) { status(`The rover lab needs the terrain pack's 5 m layer (${e.message}).`); return; }
+  $('r-tele-title').insertAdjacentHTML('beforeend', ` <span class="small muted">${ENV_ID}, env v${ENV_VERSION}</span>`);
   fillSelectors(); wire(); renderConstants(); await prepare();
 }
 
@@ -182,7 +183,7 @@ function profileView() {
 }
 function telemetry() {
   const e = st.env; if (!e) return; const r = st.rec || { grade: 0, slip: 0, gv: 0 }, lv = level(), cost = R.interventionCostS(lv.rtt);
-  const smg = e.timeS > 0 ? e.distM / e.timeS * 3.6 : 0, auto = e.timeS > 0 ? Math.max(0, 1 - e.interventions * cost / e.timeS) : 1, src = 'this drive (JS port of lunar/Drive-v0)', M = (v, u, d) => num({ value: v, unit: u, flag: 'Modelled', digits: d, source: src });
+  const smg = e.timeS > 0 ? e.distM / e.timeS * 3.6 : 0, auto = e.timeS > 0 ? Math.max(0, 1 - e.interventions * cost / e.timeS) : 1, src = `this drive (JS port of ${ENV_ID}, env v${ENV_VERSION})`, M = (v, u, d) => num({ value: v, unit: u, flag: 'Modelled', digits: d, source: src });
   const rows = [['Elapsed', `<span class="mono">${hms(e.timeS)}</span> <span class="muted small">incl. stops and interventions</span>`], ['Distance', M(e.distM / 1000, 'km', 2)],
     ['Speed made good', M(smg, 'km/h', 2)], ['Ground speed now', M(r.gv * 3.6, 'km/h', 2)], ['Grade ahead', M(r.grade, '°', 1)], ['Slip', M(100 * r.slip, '%', 0)], ['Soil friction angle', num({ value: e.phi, unit: '°', flag: R.FLAGS.phi[0], digits: 1, source: R.FLAGS.phi[1] + ($('r-soil').value === 'sampled' ? '; drawn for this drive' : '; chosen above') })],
     ['Energy used', M(e.energyWh, 'Wh', 0)], ['Stops to confirm', M(e.stops, '', 0)], ['Interventions', M(e.interventions, '', 0)],

@@ -5,7 +5,7 @@ import * as R from './physics.js';
 import { PurePursuit, densify } from './expert.js';
 import { pyMod } from './terrain.js';
 
-export const ENV_ID = 'lunar/Drive-v0', ENV_VERSION = 1, DT_S = 1.0, PATCH = 32, PATCH_RES_M = 5.0, PATCH_BEHIND = 8;
+export const ENV_ID = 'lunar/Drive-v0', ENV_VERSION = 2, HAZARD_CLEAR_M = 25.0, DT_S = 1.0, PATCH = 32, PATCH_RES_M = 5.0, PATCH_BEHIND = 8;
 export const SCALAR_NAMES = ['speed_frac', 'heading_err', 'dist_wp', 'sun_rel', 'shadow'];
 const f32 = Math.fround, clip = (v, lo, hi) => Math.max(lo, Math.min(hi, v)), TWO_PI = 2 * Math.PI;
 
@@ -52,9 +52,20 @@ export class DriveEnv {
     const scalars = Float32Array.from([s.v / cap, herr / Math.PI, Math.min(distWp / 100.0, 10.0), sunRel, this.inShadow(s.x, s.y) ? 1 : 0].map(v => clip(f32(v), -10, 10)));
     return { patch, scalars };
   }
+  /* a point the rover cannot stand on without an intervention: slope or roughness above the limits (env v2) */
+  hazard(x, y) { const [j, i] = this.t.cell(x, y); return this.t.slope(x, y) > R.INTERVENTION.slope_deg || this.rough[j * this.t.c20 + i] > R.INTERVENTION.roughness_m; }
+  /* lunarsim.rover.env._intervene, version 2: resume at the first route point past the closest one that is clear of the
+     limits and, when the rover stands on a hazard, more than HAZARD_CLEAR_M from that 20 m cell's centre; the skipped
+     route length is driven across by the operator. One hazard = one intervention (version 1 re-intervened every step). */
   intervene() {
     this.interventions += 1; this.timeS += R.interventionCostS(this.rtt);
-    const k = this.pp.closest(this.state.x, this.state.y), p = this.pp.path[k], q = this.pp.path[Math.min(this.pp.path.length - 1, k + 5)];
+    const x = this.state.x, y = this.state.y, last = this.pp.path.length - 1;
+    let k = this.pp.closest(x, y); const k0 = k;
+    let c = null;
+    if (this.hazard(x, y)) { const [j, i] = this.t.cell(x, y); c = [(Math.trunc(i) + 0.5) * this.t.px20, (Math.trunc(j) + 0.5) * this.t.px20]; }
+    while (k < last && (this.hazard(this.pp.path[k][0], this.pp.path[k][1]) || (c !== null && Math.hypot(this.pp.path[k][0] - c[0], this.pp.path[k][1] - c[1]) < HAZARD_CLEAR_M))) k += 1;
+    this.distM += this.pp.s[k] - this.pp.s[k0];
+    const p = this.pp.path[k], q = this.pp.path[Math.min(last, k + 5)];
     const psi = (q[0] !== p[0] || q[1] !== p[1]) ? pyMod(Math.atan2(q[0] - p[0], q[1] - p[1]), TWO_PI) : this.state.psi;
     Object.assign(this.state, { x: p[0], y: p[1], psi, v: 0.0, delta: 0.0 }); this.stallS = 0.0;
   }

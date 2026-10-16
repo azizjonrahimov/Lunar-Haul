@@ -123,6 +123,17 @@ async function rover(base, refs) {
     if (table) { const T90 = table.autonomy.autonomous.rtt_s['0'].lighting['90'].energy_kwh.mean * 1000;
       post({ group: G, name: 'BASE → PSR, autonomous: live drive energy vs the driving table', reference: `${T90.toFixed(1)} Wh (driving-v1 mean)`, computed: `${leg.energy_wh.toFixed(1)} Wh (${((leg.energy_wh / T90 - 1) * 100).toFixed(2)} %)`, tolerance: '5 %', pass: Math.abs(leg.energy_wh / T90 - 1) <= 0.05, basis: 'data/driving/driving-v1.json' }); }
   } catch (e) { fail(G, 'BASE → PSR', e); }
+  // env v2 (B-18): a night route through a rough cell costs one intervention, not one per step
+  if (R.hazard_leg) {
+    try {
+      const H = R.hazard_leg, sj = await getJson(base + 'terrain/hero/sites.json'), P2 = Object.fromEntries(sj.sites.map(s => [s.id, s.xy_m]));
+      const [from, toAt] = H.leg.split('->'), [to, km] = toAt.split('@'), route = plan(t, P2[from], sj.pads[km][to], H.lighting);
+      const env = new DriveEnv(t); let obs = env.reset({ waypoints: route, autonomy: H.autonomy, rttS: H.rtt_s, sunAz: H.lighting, phi: H.phi_deg }), leg = null; const ctl = expertController(env.route);
+      for (;;) { const r = env.step(ctl.act(obs, env)); obs = r.obs; if (r.terminated || r.truncated) { leg = r.leg; break; } }
+      const D = H.drive, ok = leg.interventions === D.interventions && leg.time_s === D.time_s && Math.abs(leg.distance_m / D.distance_m - 1) <= 1e-9 && Math.abs(leg.energy_wh / D.energy_wh - 1) <= 1e-9;
+      post({ group: G, name: `${from} → ${to} at ${km} km, ${H.lighting}, ${H.autonomy}: route through a rough cell (env v${H.env_version})`, reference: `${D.interventions} intervention, ${D.distance_m.toFixed(3)} m, ${D.time_s} s, ${D.energy_wh.toFixed(3)} Wh`, computed: `${leg.interventions} intervention${leg.interventions === 1 ? '' : 's'}, ${leg.distance_m.toFixed(3)} m, ${leg.time_s} s, ${leg.energy_wh.toFixed(3)} Wh`, tolerance: 'same count and time; 1e-9 relative', pass: ok, basis: 'site/verify/refs.json (env version 1 re-intervened on every step here)' });
+    } catch (e) { fail(G, 'hazard leg', e); }
+  }
   await driverParity(base, t, G);
   post({ group: G, name: 'Documented difference: BASE → PSR, autonomous, sun 90°, soil 37.8° / 44.9° / 47.8° (step drive)', reference: 'Python step drive', computed: 'states identical until a heading of exactly 45° (a diagonal of the A* grid) falls on the up-sun limit, where a one-ulp heading difference flips the up-sun speed factor; then 1,825–2,088 steps within 6 of Python; energy within 0.05–0.2 % (572.02 vs 571.87, 657.91 vs 657.56, 581.82 vs 583.01 Wh)', tolerance: 'not a pass/fail check', pass: null, basis: 'one-ulp differences in V8 vs CPython sin/cos/atan meeting the 45° up-sun boundary (F-13 report); at soil 42° the day and night step drives are identical (rows above, and night teleop 4 s: 9,128 steps, 622.486 Wh on both sides)' });
 }

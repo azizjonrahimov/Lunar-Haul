@@ -1,8 +1,8 @@
 {
  "generated": {
   "tool": "site/scripts/make_verify_refs.py",
-  "time": "2026-10-15T17:42:54",
-  "commit": "9d5eec4f573fdab7cf7b620d2727a399dbbd6153"
+  "time": "2026-10-16T10:01:19",
+  "commit": "7414903bdfc4ebda211669298f82025d197229b8"
  },
  "terrain": {
   "site_id": "connecting_ridge",
@@ -131,8 +131,8 @@
     },
     "generated": {
      "tool": "lunarsim terrain build",
-     "commit": "9d5eec4f573fdab7cf7b620d2727a399dbbd6153",
-     "time": "2026-10-16T00:43:13+00:00"
+     "commit": "7414903bdfc4ebda211669298f82025d197229b8",
+     "time": "2026-10-16T17:01:33+00:00"
     }
    },
    "smg_kmh": {
@@ -175,6 +175,26 @@
     "autonomy": "autonomous",
     "rtt_s": 0.0,
     "sun_az_deg": 90.0
+   }
+  },
+  "hazard_leg": {
+   "leg": "PSR->PAD_A@3",
+   "lighting": "night",
+   "autonomy": "autonomous",
+   "rtt_s": 4.0,
+   "phi_deg": 42.0,
+   "env_version": 2,
+   "route_points": 302,
+   "drive": {
+    "time_s": 7088.0,
+    "energy_wh": 1602.37997141488,
+    "interventions": 1,
+    "distance_m": 7282.879373936403,
+    "stops": 0,
+    "reached": true,
+    "autonomy": "autonomous",
+    "rtt_s": 4.0,
+    "sun_az_deg": "night"
    }
   }
  }

@@ -69,6 +69,16 @@ def main():
                        {"waypoints": rt.tolist(), "autonomy": "autonomous", "rtt_s": 0.0, "sun_az_deg": 90.0, "phi": 42.0})
     refs["rover"]["base_psr_sun90"] = {"route_points": len(rt), "length_m": prof["length_m"], "integrator_energy_wh": float(r["energy_wh"][0]),
                                        "integrator_t_move_s": r["t_move_s"], "integrator_by_phi": by_phi, "phi_deg": 42.0, "drive_autonomous": leg}
+    # env v2 (B-18): a leg whose night route crosses a rough cell. Version 1 re-intervened on every step there; version 2
+    # carries the rover past the hazard, one intervention per hazard. Expert, autonomous, rtt 4 s, soil 42, night.
+    sj = json.load(open(os.path.join(t.path, "sites.json"), encoding="utf-8"))
+    a3, b3 = sites["PSR"], sj["pads"]["3"]["PAD_A"]
+    rt3 = X.plan(t, a3, b3, "night")
+    leg3 = drive_expert(DriveEnv(t, autonomy="autonomous", rtt_s=4.0, sun_az_deg="night"),
+                        {"waypoints": rt3.tolist(), "autonomy": "autonomous", "rtt_s": 4.0, "sun_az_deg": "night", "phi": 42.0})
+    from lunarsim.rover import env as E
+    refs["rover"]["hazard_leg"] = {"leg": "PSR->PAD_A@3", "lighting": "night", "autonomy": "autonomous", "rtt_s": 4.0, "phi_deg": 42.0,
+                                   "env_version": E.ENV_VERSION, "route_points": len(rt3), "drive": leg3}
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     json.dump(refs, open(OUT, "w", newline="\n"), indent=1, default=float)
     print("wrote", OUT)
