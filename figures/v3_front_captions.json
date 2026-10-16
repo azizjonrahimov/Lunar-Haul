@@ -1,0 +1,107 @@
+{
+ "v3_fig01_terrain": {
+  "id": "v3_fig01_terrain",
+  "file": "figures/v3_fig01_terrain.png",
+  "caption": "The Connecting Ridge tile (LOLA 5 m, NASA/GSFC; Measured) with the nine sites and the five pad sets. Relief is shaded for a sun at azimuth 0° and 1.5° elevation with cast shadows; the permanently shadowed site lies in shadow at all four reference azimuths. Lines from each pad to the base are drawn solid where the terrain blocks the line of sight and dashed where it is clear. Expert routes between sites at the 1 km standoff are overlaid in grey.",
+  "status": "produced",
+  "files": [
+   "v3_fig01_terrain.png",
+   "v3_fig01_terrain.pdf"
+  ],
+  "notes": [
+   "sites.json lists 7 sites (BASE, DEPOT, POWER, CONSTR, ISRU, SCI_1, PSR) plus 2 pads per set; the caption's 'nine sites' holds only if the two pads of a set are counted as sites",
+   "routes planned with the sun at azimuth 0 deg (the relief's sun); 72 of 72 ordered pairs routed",
+   "PSR cast-shadow status computed with Terrain.shadowed (20 m ray-march, el 1.5 deg): PSR: {0: True, 90: True, 180: True, 270: True}",
+   "line-of-sight disagreements with sites.json pad_details: PAD_A@1 km: sites.json clear (clearance 0.4 m), Terrain.line_of_sight blocked (clearance -2.56 m); drawn as sites.json"
+  ],
+  "psr_shadow": {
+   "PSR": {
+    "0": true,
+    "90": true,
+    "180": true,
+    "270": true
+   }
+  },
+  "los_clear": {
+   "PAD_A@0.5": true,
+   "PAD_B@0.5": false,
+   "PAD_A@1": true,
+   "PAD_B@1": false,
+   "PAD_A@2": false,
+   "PAD_B@2": false,
+   "PAD_A@3": false,
+   "PAD_B@3": false,
+   "PAD_A@5": false,
+   "PAD_B@5": false
+  },
+  "seconds": 25.6
+ },
+ "v3_fig03_descent": {
+  "id": "v3_fig03_descent",
+  "file": "figures/v3_fig03_descent.png",
+  "caption": "The descent environment. A: altitude against downrange distance for the classical law (solid) and the DAgger policy (dashed) on the same dispersed CLPS episode, with the SPLICE gate, the 30 m sensor-degradation line and the 50 m delivery radius marked. B: the altimeter estimate against true altitude on the same episode, showing the bias, noise and held values below 30 m. C: miss-distance scatter for 500 episodes of each controller, with failures marked by kind. Numbers in the panels are Modelled; the gate and box are Spec.",
+  "status": "produced",
+  "files": [
+   "v3_fig03_descent.png",
+   "v3_fig03_descent.pdf"
+  ],
+  "notes": [
+   "episode seed 100001 = the first evaluation seed (from 100000) on which both controllers landed in the box",
+   "same seed: identical dispersed initial state, domain randomisation and per-episode sensor biases for both controllers; the per-step noise comes from the same stream and is identical while both are above 30 m, but the dropout (held-value) draws fall at different steps because the two trajectories enter the low-altitude regime at different times",
+   "the 'touchdown box' is a velocity/tilt box, not a region of the miss plane; it is drawn as panel D (touchdown velocities), which the caption does not mention",
+   "policy evaluated with obs v3, classical law with obs v2 (as in data/policies)",
+   "miss on this seed: classical 0.65 m (box; table 0.65 m, same); policy 3.03 m (box; table 3.03 m, same)"
+  ],
+  "seed": 100001,
+  "miss": {
+   "classical": {
+    "miss_m": 0.6542026023521048,
+    "ok": true,
+    "failure_kind": null,
+    "t_flight_s": 51.2,
+    "prop_used_kg": 73.6659555808169,
+    "same_as_table": true,
+    "table_miss_m": 0.654203
+   },
+   "policy": {
+    "miss_m": 3.0254716827626242,
+    "ok": true,
+    "failure_kind": null,
+    "t_flight_s": 46.400000000000006,
+    "prop_used_kg": 68.81227247053243,
+    "same_as_table": true,
+    "table_miss_m": 3.02547
+   }
+  },
+  "seconds": 2.1
+ },
+ "v3_fig04_rover": {
+  "id": "v3_fig04_rover",
+  "file": "figures/v3_fig04_rover.png",
+  "caption": "The driving environment. A: the expert's route from the base to the shadowed crater on the shaded relief for sun azimuth 90°, with the driven trail of a 4 s teleoperated drive and its intervention points. B: the 32 × 32 observation patch (relative height channel) at one step. C: speed made good against round-trip delay for the environment (line) and the JSC measurements (points; Measured), with the supervised and autonomous caps. D: slip against slope for the three friction-angle curves (Modelled) and the Yutu-2 in-situ points (Measured).",
+  "status": "produced",
+  "files": [
+   "v3_fig04_rover.png",
+   "v3_fig04_rover.pdf"
+  ],
+  "notes": [
+   "route BASE -> PSR: 4.28 km planned, 4.74 km driven, 2.18 h, 0.69 kWh, 0 interventions, 48 stops, reached = True (teleop 4 s, phi 42, seed 0, sun azimuth 90 deg)",
+   "NO intervention occurred on this drive (teleop 4 s, phi 42, seed 0), so the caption's 'intervention points' has nothing to show; the legend omits the entry",
+   "panel B shows the step whose relative-height channel has the largest spread (most relief in view); its position is the yellow square in A",
+   "panel C: the environment line is the flat-ground speed made good with stops, which reproduces the four JSC values by construction (the stop cadence is solved from them); caps drawn as speed made good incl. the supervised approval stops",
+   "panel D: the research note gives the Yutu-2 slip as a range (10.5-19.7 %) without slope values, so it is drawn as a band and the caption's 'Yutu-2 in-situ points' is not supported by the data at hand; source: Jilin Univ. paper / Nature Geoscience 2022 ESM / Remote Sensing 2023, via rover_autonomy_driving.md"
+  ],
+  "leg": {
+   "time_s": 7831.0,
+   "energy_wh": 688.3741950964218,
+   "interventions": 0.0,
+   "distance_m": 4742.632862947127,
+   "stops": 48.0,
+   "reached": 1.0,
+   "autonomy": "teleop",
+   "rtt_s": 4.0,
+   "sun_az_deg": 90.0
+  },
+  "seconds": 28.4
+ }
+}
