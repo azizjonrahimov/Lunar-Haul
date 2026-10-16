@@ -106,18 +106,51 @@ def write(model, out_json: str, **kw) -> Dict[str, Any]:
     return doc
 
 
+def training_from_bc_record(rec: Dict[str, Any]) -> Dict[str, Any]:
+    """The card's `training` block for an imitation policy, from lunarsim.lander.bc_warmstart's JSON record."""
+    rounds = rec.get("dagger_rounds") or []
+    return {
+        "algo": "BC+DAgger" if len(rounds) > 1 else "BC",
+        "expert": rec.get("expert", "classical"),
+        "cls": rec.get("cls"), "reward_variant": "baseline",
+        "reward_note": "imitation is not trained on a reward; returns in the card and the lab use the baseline reward",
+        "episodes": rec.get("episodes"), "epochs": rec.get("epochs"), "net": rec.get("net"), "seed": rec.get("seed"),
+        "obs_version": rec.get("obs_version", 2), "terminal_weight": rec.get("terminal_weight", 1.0),
+        "expert_box_rate": rec.get("classical_box_rate"),
+        "rounds": [{k: r.get(k) for k in ("round", "samples", "box_rate", "rollout_box_rate", "label_inconsistency",
+                                          "failures")} for r in rounds],
+        "env_version": rec.get("env_version"), "wallclock_s": rec.get("wallclock_s"), "git_sha": rec.get("git_sha"),
+        "record_note": rec.get("note"),
+    }
+
+
 def main(argv=None):
     from stable_baselines3 import PPO
-    from .env import ENV_ID, ENV_VERSION, OBS_NAMES, ACT_NAMES, OBS_OFFSET, obs_scale
+    from .env import ENV_ID, ENV_VERSION, OBS_VERSIONS, ACT_NAMES, obs_offset, obs_scale
     from .classes import CLASSES
     p = argparse.ArgumentParser(description="export an SB3 PPO lander model to lunarsim-policy v1 JSON")
     p.add_argument("model")
     p.add_argument("--out", required=True)
-    p.add_argument("--cls", default="CLPS", choices=sorted(CLASSES))
+    p.add_argument("--cls", default=None, choices=sorted(CLASSES), help="default: the BC record's class, else CLPS")
+    p.add_argument("--record", default=None, help="bc_warmstart JSON record (default: <model>.json next to the zip)")
     a = p.parse_args(argv)
     model = PPO.load(a.model, device="cpu")
-    doc = write(model, a.out, env_id=ENV_ID, env_version=ENV_VERSION, obs_names=OBS_NAMES,
-                obs_scale=obs_scale(CLASSES[a.cls]).tolist(), obs_offset=OBS_OFFSET.tolist(), act_names=ACT_NAMES)
+    n_obs = int(np.prod(model.observation_space.shape))
+    ver = next(v for v, names in OBS_VERSIONS.items() if len(names) == n_obs)     # 15 -> v2, 19 -> v3
+    rec_path = a.record or os.path.splitext(a.model)[0] + ".json"
+    training, card = {}, {}
+    if os.path.exists(rec_path):
+        with open(rec_path, encoding="utf-8") as f:
+            rec = json.load(f)
+        training = training_from_bc_record(rec)
+        card = {"title": f"Imitation ({training['algo']}) terminal-descent policy, {rec.get('cls')}, "
+                         f"{training['expert']} expert",
+                "intended_use": "stochastic generator of landing outcomes for the LunarSim DES; not flight software"}
+    cls = a.cls or training.get("cls") or "CLPS"
+    training.setdefault("cls", cls)
+    doc = write(model, a.out, env_id=ENV_ID, env_version=ENV_VERSION, obs_names=OBS_VERSIONS[ver],
+                obs_scale=obs_scale(CLASSES[cls], ver).tolist(), obs_offset=obs_offset(ver).tolist(),
+                act_names=ACT_NAMES, training=training, card=card)
     print(f"wrote {a.out} ({len(doc['layers'])} layers); runtime check max |err| {doc['card']['runtime_check_max_abs_err']:.2e}")
 
 

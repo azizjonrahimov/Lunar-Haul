@@ -61,11 +61,11 @@ def label_inconsistency(data: Dict[str, np.ndarray], n_query: int = 1000, k: int
 
 
 def collect(cls: str, episodes: int, seed0: int = 2_000_000, variant: str = "baseline",
-            gamma: float = 0.995, expert: str = "memoryless") -> Dict[str, np.ndarray]:
+            gamma: float = 0.995, expert: str = "memoryless", obs_version: int = 2) -> Dict[str, np.ndarray]:
     """(obs, act, ret, ok) arrays from expert episodes. ret = discounted return-to-go per step."""
     from .env import DescentEnv
     classical_action = expert_fn(expert)
-    env = DescentEnv(cls=cls, variant=variant)
+    env = DescentEnv(cls=cls, variant=variant, obs_version=obs_version)
     O, A, R = [], [], []
     ok = 0
     for i in range(episodes):
@@ -90,12 +90,12 @@ def collect(cls: str, episodes: int, seed0: int = 2_000_000, variant: str = "bas
 
 
 def dagger_round(model, cls: str, episodes: int, seed0: int, variant: str = "baseline", gamma: float = 0.995,
-                 beta: float = 0.0, expert: str = "memoryless") -> Dict[str, np.ndarray]:
+                 beta: float = 0.0, expert: str = "memoryless", obs_version: int = 2) -> Dict[str, np.ndarray]:
     """One DAgger round: roll out the current policy (with probability beta the expert acts instead), label every
     visited state with the classical law's action (its filters follow the same estimates) and return the data."""
     from .env import DescentEnv
     classical_action = expert_fn(expert)
-    env = DescentEnv(cls=cls, variant=variant)
+    env = DescentEnv(cls=cls, variant=variant, obs_version=obs_version)
     rng = np.random.default_rng(seed0)
     O, A, R = [], [], []
     ok = 0
@@ -124,9 +124,20 @@ def _merge(a: Dict[str, np.ndarray], b: Dict[str, np.ndarray]) -> Dict[str, np.n
     return {k: np.concatenate([a[k], b[k]]) for k in ("obs", "act", "ret")}
 
 
+TERMINAL_H_M = 30.0     # terminal phase for the loss weighting: estimated altitude below this (the altimeter regime)
+
+
+def sample_weights(obs: np.ndarray, terminal_weight: float = 1.0) -> np.ndarray:
+    """Per-sample loss weight: terminal_weight where the observed altitude (obs index 2 = h / 500 m) is below
+    TERMINAL_H_M, else 1; normalised to mean 1."""
+    w = np.where(obs[:, 2] * 500.0 < TERMINAL_H_M, float(terminal_weight), 1.0)
+    return (w / w.mean()).astype(np.float32)
+
+
 def fit(model, data: Dict[str, np.ndarray], epochs: int = 30, batch: int = 1024, lr: float = 1e-3,
-        seed: int = 0, init_log_std: float = -1.5, verbose: bool = True) -> Dict[str, float]:
-    """Supervised fit of the SB3 actor mean and critic. Returns final losses."""
+        seed: int = 0, init_log_std: float = -1.5, verbose: bool = True, terminal_weight: float = 1.0) -> Dict[str, float]:
+    """Supervised fit of the SB3 actor mean and critic. Returns final losses. terminal_weight > 1 weights the
+    actor loss of terminal-phase samples (h < 30 m) up (B-10e)."""
     import torch
     torch.manual_seed(seed)
     pol = model.policy
@@ -134,6 +145,7 @@ def fit(model, data: Dict[str, np.ndarray], epochs: int = 30, batch: int = 1024,
     obs = torch.as_tensor(data["obs"], device=dev)
     act = torch.as_tensor(data["act"], device=dev)
     ret = torch.as_tensor(data["ret"], device=dev).unsqueeze(1)
+    wts = torch.as_tensor(sample_weights(data["obs"], terminal_weight), device=dev).unsqueeze(1)
     actor = list(pol.mlp_extractor.policy_net.parameters()) + list(pol.action_net.parameters())
     critic = list(pol.mlp_extractor.value_net.parameters()) + list(pol.value_net.parameters())
     opt_a = torch.optim.Adam(actor, lr=lr)
@@ -148,7 +160,7 @@ def fit(model, data: Dict[str, np.ndarray], epochs: int = 30, batch: int = 1024,
             idx = perm[k:k + batch]
             feats = pol.extract_features(obs[idx])
             lat_pi, lat_vf = pol.mlp_extractor(feats)
-            loss_a = torch.nn.functional.mse_loss(pol.action_net(lat_pi), act[idx])
+            loss_a = (wts[idx] * (pol.action_net(lat_pi) - act[idx]) ** 2).mean()
             loss_c = torch.nn.functional.mse_loss(pol.value_net(lat_vf), ret[idx])
             opt_a.zero_grad()
             loss_a.backward(retain_graph=True)
@@ -166,9 +178,10 @@ def fit(model, data: Dict[str, np.ndarray], epochs: int = 30, batch: int = 1024,
     return {"actor_mse": la, "critic_mse": lc}
 
 
-def deterministic_box_rate(model, cls: str, n: int, seed0: int = 10_000_000) -> Tuple[float, Dict[str, int]]:
+def deterministic_box_rate(model, cls: str, n: int, seed0: int = 10_000_000,
+                           obs_version: int = 2) -> Tuple[float, Dict[str, int]]:
     from .env import DescentEnv
-    env = DescentEnv(cls=cls)
+    env = DescentEnv(cls=cls, obs_version=obs_version)
     ok, kinds = 0, {}
     for i in range(n):
         obs, _ = env.reset(seed=seed0 + i)
@@ -185,33 +198,38 @@ def deterministic_box_rate(model, cls: str, n: int, seed0: int = 10_000_000) -> 
 
 def build_bc(cls: str, episodes: int, out: str, net=(128, 128), epochs: int = 30, seed: int = 0,
              eval_n: int = 100, init_log_std: float = -1.5, verbose: bool = True, dagger: int = 0,
-             dagger_episodes: int = 500, dagger_epochs: int = 15, expert: str = "memoryless") -> Dict[str, Any]:
+             dagger_episodes: int = 500, dagger_epochs: int = 15, expert: str = "memoryless",
+             terminal_weight: float = 1.0, obs_version: int = 2) -> Dict[str, Any]:
     import torch
     from stable_baselines3 import PPO
-    from .env import DescentEnv
+    from .env import DescentEnv, ENV_VERSION
+    from .train import git_sha
     torch.set_num_threads(1)
     t0 = time.time()
-    data = collect(cls, episodes, expert=expert)
+    data = collect(cls, episodes, expert=expert, obs_version=obs_version)
     t_collect = time.time() - t0
     classical_box = data["box_rate"]              # kept: the DAgger merges below drop this key (B-10d KeyError)
     if verbose:
         print(f"collected {len(data['obs'])} steps from {episodes} {expert} expert episodes in {t_collect:.0f} s "
               f"(expert box rate {100 * data['box_rate']:.1f} %)", flush=True)
-    model = PPO("MlpPolicy", DescentEnv(cls=cls), seed=seed, device="cpu",
+    model = PPO("MlpPolicy", DescentEnv(cls=cls, obs_version=obs_version), seed=seed, device="cpu",
                 policy_kwargs={"net_arch": list(net), "log_std_init": init_log_std})
-    losses = fit(model, data, epochs=epochs, seed=seed, init_log_std=init_log_std, verbose=verbose)
+    losses = fit(model, data, epochs=epochs, seed=seed, init_log_std=init_log_std, verbose=verbose,
+                 terminal_weight=terminal_weight)
     rounds = []
     if eval_n:
-        box0, kinds0 = deterministic_box_rate(model, cls, eval_n)
+        box0, kinds0 = deterministic_box_rate(model, cls, eval_n, obs_version=obs_version)
         rounds.append({"round": 0, "samples": int(len(data["obs"])), "box_rate": box0, "failures": kinds0,
                        "label_inconsistency": label_inconsistency(data)["ratio_mean"]})
         if verbose:
             print(f"  round 0 (BC): box {100 * box0:.1f} % {kinds0}", flush=True)
     for k in range(1, dagger + 1):
-        new = dagger_round(model, cls, dagger_episodes, seed0=3_000_000 + 100_000 * k, expert=expert)
+        new = dagger_round(model, cls, dagger_episodes, seed0=3_000_000 + 100_000 * k, expert=expert,
+                           obs_version=obs_version)
         data = _merge(data, new)
-        losses = fit(model, data, epochs=dagger_epochs, seed=seed + k, init_log_std=init_log_std, verbose=False)
-        box_k, kinds_k = deterministic_box_rate(model, cls, eval_n) if eval_n else (None, {})
+        losses = fit(model, data, epochs=dagger_epochs, seed=seed + k, init_log_std=init_log_std, verbose=False,
+                     terminal_weight=terminal_weight)
+        box_k, kinds_k = deterministic_box_rate(model, cls, eval_n, obs_version=obs_version) if eval_n else (None, {})
         rounds.append({"round": k, "samples": int(len(data["obs"])), "rollout_box_rate": new["box_rate"],
                        "box_rate": box_k, "failures": kinds_k, "label_inconsistency": label_inconsistency(data)["ratio_mean"],
                        **losses})
@@ -220,9 +238,11 @@ def build_bc(cls: str, episodes: int, out: str, net=(128, 128), epochs: int = 30
     box, kinds = (rounds[-1]["box_rate"], rounds[-1]["failures"]) if rounds else (None, {})
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     model.save(out)
-    rec = {"cls": cls, "expert": expert, "episodes": episodes, "steps": int(len(data["obs"])), "net": list(net), "epochs": epochs,
+    rec = {"cls": cls, "expert": expert, "terminal_weight": terminal_weight, "obs_version": obs_version,
+           "episodes": episodes, "steps": int(len(data["obs"])), "net": list(net), "epochs": epochs,
            "seed": seed, "init_log_std": init_log_std, "classical_box_rate": classical_box, **losses,
            "bc_box_rate": box, "bc_failures": kinds, "dagger_rounds": rounds, "wallclock_s": round(time.time() - t0, 1),
+           "env_version": ENV_VERSION, "git_sha": git_sha(),
            "path": out}
     with open(os.path.splitext(out)[0] + ".json", "w", encoding="utf-8") as f:
         json.dump(rec, f, indent=2)
@@ -241,10 +261,13 @@ def main(argv=None):
     p.add_argument("--dagger", type=int, default=0, help="DAgger rounds after behaviour cloning")
     p.add_argument("--dagger-episodes", type=int, default=500)
     p.add_argument("--expert", default="memoryless", choices=EXPERTS)
+    p.add_argument("--terminal-weight", type=float, default=1.0, help="BC loss weight of samples below 30 m")
+    p.add_argument("--obs-version", type=int, default=2, choices=[2, 3])
     p.add_argument("--out", default=os.path.join("runs", "bc", "bc_CLPS.zip"))
     a = p.parse_args(argv)
     r = build_bc(a.cls, a.episodes, a.out, net=tuple(int(x) for x in a.net.split(",")), epochs=a.epochs,
-                 seed=a.seed, eval_n=a.eval_n, dagger=a.dagger, dagger_episodes=a.dagger_episodes, expert=a.expert)
+                 seed=a.seed, eval_n=a.eval_n, dagger=a.dagger, dagger_episodes=a.dagger_episodes, expert=a.expert,
+                 terminal_weight=a.terminal_weight, obs_version=a.obs_version)
     print(f"BC policy: deterministic box rate {r['bc_box_rate']} ({r['bc_failures']}); wrote {a.out}")
 
 

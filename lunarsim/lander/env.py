@@ -4,7 +4,8 @@ Physics in physics.py (3-DoF point mass, rate-limited thrust axis). This module 
 dispersion around the gate, domain randomisation, the navigation/altimeter sensor model, the observation
 vector, the touchdown classification and the reward variants. Constants below carry flags.
 
-Observation (15 floats): obs_i = (raw_i - OBS_OFFSET_i) / OBS_SCALE_i, clipped to [-10, 10]; raw features
+Observation (15 floats, v2; 19 with obs_version=3, see OBS_NAMES_V3): obs_i = (raw_i - offset_i) / scale_i,
+clipped to [-10, 10]; raw features
 are *estimates* (sensor model applied). Action (3 floats in [-1, 1]): throttle, tilt-rate commands (physics.py).
 
 Outcome record in `info["outcome"]` at the end of every episode (PLAN §5.3, plus a few diagnostic fields):
@@ -31,8 +32,10 @@ except ImportError:  # physics/policy stay usable without the [ml] extra
     gym, spaces, _Base = None, None, object
 
 ENV_ID = "lunar/Descent-v0"
-ENV_VERSION = 2            # bump when dynamics, observation, reward or outcome definitions change
+ENV_VERSION = 3            # bump when dynamics, observation, reward or outcome definitions change
                            # v2 (B-10b): kappa 50, crash -5 per m/s outside the box, tracking weight x4 near the ground
+                           # v3 (B-10e): optional observation v3 (obs_version=3, 19 values); obs_version=2 (default)
+                           #   is exactly the v2 observation, so v2 policy cards keep running
 
 DT_S = 0.2                 # guidance step (Gaudet et al. 2018 update every 0.2 s), Modelled
 MAX_STEPS = 750            # 150 s episode cap, Assumed (gate-to-touchdown ~60-90 s nominal)
@@ -85,15 +88,50 @@ REWARD_VARIANTS: Dict[str, Dict[str, float]] = {
 VF = {"v0_mps": 20.0, "hover_alt_m": 15.0, "tau_hi_s": 20.0, "tau_lo_s": 100.0, "vz_hi_mps": -2.0, "vz_lo_mps": -1.0}
 
 OBS_NAMES = ["x", "y", "h", "vx", "vy", "vz", "ex", "ey", "ez", "tx", "ty", "wx", "wy", "prop_frac", "tw_max"]
+# Observation v3 (B-10e, ENV_VERSION 3): the 15 v2 values plus the altimeter's recent history, so a memoryless policy
+# can tell a held (dropped-out) reading from a fresh one. h_last_valid = the last reading that was not a dropout hold;
+# h_valid_age_s = seconds since it; h_prev1, h_prev2 = the readings 1 and 2 steps ago (as observed, holds included;
+# equal to the current reading at reset). Scales: 30 m for the three altitudes (the terminal regime is O(1); values
+# above 300 m clip at 10), 2 s for the age. Offsets 0. No extra random draws: v2 observations are unchanged.
+OBS_NAMES_V3 = OBS_NAMES + ["h_last_valid", "h_valid_age_s", "h_prev1", "h_prev2"]
+OBS_VERSIONS = {2: OBS_NAMES, 3: OBS_NAMES_V3}
 ACT_NAMES = ["throttle", "tilt_rate_x_cmd", "tilt_rate_y_cmd"]
 
 
-def obs_scale(cls: LanderClass) -> np.ndarray:
+def obs_scale(cls: LanderClass, obs_version: int = 2) -> np.ndarray:
     tm, wm = math.radians(cls.tilt_max_deg), math.radians(cls.tilt_rate_max_dps)
-    return np.array([500, 500, 500, 30, 30, 15, 10, 10, 10, tm, tm, wm, wm, 1, 3], dtype=np.float64)
+    v2 = [500, 500, 500, 30, 30, 15, 10, 10, 10, tm, tm, wm, wm, 1, 3]
+    return np.array(v2 if obs_version == 2 else v2 + [30, 2, 30, 30], dtype=np.float64)
 
 
 OBS_OFFSET = np.zeros(len(OBS_NAMES))
+
+
+def obs_offset(obs_version: int = 2) -> np.ndarray:
+    return np.zeros(len(OBS_VERSIONS[obs_version]))
+
+
+def alt_history_step(hist, h: float, held: bool, t_now: float):
+    """Altimeter history for observation v3 (pure; ported to JS line by line).
+    hist = None at reset, else {"valid": h_last_valid, "valid_t": time of it, "prev1": reading 1 step ago,
+    "prev2": reading 2 steps ago}. Returns (new hist, [h_last_valid, h_valid_age_s, h_prev1, h_prev2]) where the
+    features describe the state BEFORE this reading enters prev1/prev2 (prev1/prev2 = the previous readings)."""
+    if hist is None:
+        hist = {"valid": h, "valid_t": t_now, "prev1": h, "prev2": h}
+    if not held:
+        valid, valid_t = h, t_now
+    else:
+        valid, valid_t = hist["valid"], hist["valid_t"]
+    feats = [valid, t_now - valid_t, hist["prev1"], hist["prev2"]]
+    return {"valid": valid, "valid_t": valid_t, "prev1": h, "prev2": hist["prev1"]}, feats
+
+
+def obs_version_of(names) -> int:
+    """Observation version from a policy card's obs names."""
+    for v, n in OBS_VERSIONS.items():
+        if list(names) == n:
+            return v
+    raise ValueError(f"unknown observation layout ({len(names)} names)")
 
 
 def target_velocity(pos, vel) -> np.ndarray:
@@ -152,7 +190,7 @@ class DescentEnv(_Base):
 
     def __init__(self, cls: str = "CLPS", variant: str = "baseline", randomize: bool = True, sensor: bool = True,
                  pad_radius_m: float = TOUCHDOWN["delivery_radius_m"], site_slope_deg=SITE_SLOPE_DEG,
-                 max_steps: int = MAX_STEPS, dt: float = DT_S, curriculum: float = 0.0):
+                 max_steps: int = MAX_STEPS, dt: float = DT_S, curriculum: float = 0.0, obs_version: int = 2):
         if spaces is None:
             raise ImportError("DescentEnv needs gymnasium (pip install the [ml] extra)")
         if cls not in CLASSES:
@@ -165,8 +203,12 @@ class DescentEnv(_Base):
         self.pad_radius_m, self.site_slope_deg = pad_radius_m, tuple(site_slope_deg)
         self.max_steps, self.dt = max_steps, dt
         self.curriculum = curriculum   # training only: share of resets that start in the terminal phase
-        self.scale = obs_scale(self.cls)
-        self.observation_space = spaces.Box(-10.0, 10.0, shape=(len(OBS_NAMES),), dtype=np.float32)
+        if obs_version not in OBS_VERSIONS:
+            raise ValueError(f"obs_version must be one of {sorted(OBS_VERSIONS)}")
+        self.obs_version = obs_version
+        self.scale = obs_scale(self.cls, obs_version)
+        self.offset = obs_offset(obs_version)
+        self.observation_space = spaces.Box(-10.0, 10.0, shape=(len(OBS_VERSIONS[obs_version]),), dtype=np.float32)
         self.action_space = spaces.Box(-1.0, 1.0, shape=(3,), dtype=np.float32)
         self.state = None
 
@@ -212,6 +254,7 @@ class DescentEnv(_Base):
         self.alt_hold = None
         self.dropouts_recent = 0
         self.last_alt_err = 0.0
+        self.h_hist, self.h_feats = None, None   # altimeter history (obs v3), see alt_history_step
         self.steps = 0
         self.t_below_30 = 0.0
         self.thrust_n = P.throttle_to_thrust(0.0, c, self.thrust_scale)
@@ -233,11 +276,15 @@ class DescentEnv(_Base):
             if self.alt_hold is not None and rng.random() < SENSOR["alt_dropout_p"]:
                 h = self.alt_hold                  # dropout: altimeter repeats its last value
                 self.dropouts_recent = 10          # remembered for 2 s (sensor attribution)
+                self._held = True
             else:
                 h = z + self.alt_bias + rng.normal(0, SENSOR["alt_noise_low_m"] * k)
                 self.alt_hold = h
         self.dropouts_recent = max(0, self.dropouts_recent - 1)
         self.last_alt_err = h - z
+        held = getattr(self, "_held", False)
+        self._held = False
+        self.h_hist, self.h_feats = alt_history_step(self.h_hist, h, held, self.steps * self.dt)
         return np.array([x, y, h]), np.asarray(v, float)
 
     def _obs(self):
@@ -246,10 +293,12 @@ class DescentEnv(_Base):
         s = self.state
         prop_frac = max(0.0, s[P.M] - self.m_dry) / max(self.cls.prop_gate_kg, 1e-9)
         tw = self.cls.t_max_n / (s[P.M] * G_MOON)
-        raw = np.array([pos[0], pos[1], pos[2], vel[0], vel[1], vel[2], e[0], e[1], e[2], s[P.TX], s[P.TY],
-                        s[P.WX], s[P.WY], prop_frac, tw])
+        raw = [pos[0], pos[1], pos[2], vel[0], vel[1], vel[2], e[0], e[1], e[2], s[P.TX], s[P.TY],
+               s[P.WX], s[P.WY], prop_frac, tw]
+        if self.obs_version == 3:
+            raw += list(self.h_feats)
         self.last_est = (pos, vel)
-        return np.clip((raw - OBS_OFFSET) / self.scale, -10, 10).astype(np.float32)
+        return np.clip((np.asarray(raw, dtype=np.float64) - self.offset) / self.scale, -10, 10).astype(np.float32)
 
     # -- dynamics ----------------------------------------------------------------
     def step(self, action):

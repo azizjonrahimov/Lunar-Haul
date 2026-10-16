@@ -302,6 +302,18 @@ def test_lander_parity_fixture_is_current():
             assert np.allclose(obs, st["obs"], atol=1e-6) and abs(r - st["reward"]) < 1e-9
             assert (te, tr) == (st["terminated"], st["truncated"])
         assert info["outcome"]["failure_kind"] == ep["outcome"]["failure_kind"]
+    from lunarsim.lander.env import alt_history_step
+    hist = None
+    for c in doc["alt_history"]:
+        hist, f = alt_history_step(hist, c["h"], c["held"], c["t"])
+        assert np.allclose(f, c["features"], atol=1e-12)
+    for ep in doc["episodes_v3"]:
+        env = DescentEnv(cls=ep["cls"], variant="baseline", randomize=False, sensor=False, obs_version=3)
+        obs, _ = env.reset(seed=0)
+        assert len(obs) == 19 and np.allclose(obs, ep["steps"][0]["obs"], atol=1e-7)
+        for st in ep["steps"][1:]:
+            obs, r, te, tr, _ = env.step(np.asarray(st["action"], np.float32))
+            assert np.allclose(obs, st["obs"], atol=1e-6) and abs(r - st["reward"]) < 1e-9
 
 
 # ---------------------------------------------------------------------------
@@ -368,3 +380,20 @@ def test_bc_record_survives_dagger_rounds(tmp_path):
                       dagger=1, dagger_episodes=2, dagger_epochs=1)
     assert rec["expert"] == "memoryless" and len(rec["dagger_rounds"]) == 2 and "classical_box_rate" in rec
     assert json.load(open(tmp_path / "bc.json", encoding="utf-8"))["dagger_rounds"][1]["round"] == 1
+
+
+def test_obs_v3_extends_v2_without_changing_it():
+    from lunarsim.lander.env import OBS_NAMES_V3, OBS_NAMES, obs_version_of
+    a, b = DescentEnv(), DescentEnv(obs_version=3)
+    oa, _ = a.reset(seed=11)
+    ob, _ = b.reset(seed=11)
+    assert len(oa) == 15 and len(ob) == 19 and np.array_equal(oa, ob[:15])
+    for _ in range(400):
+        act = np.array([0.1, 0.05, -0.02], np.float32)
+        ra, rb = a.step(act), b.step(act)
+        assert np.array_equal(ra[0], rb[0][:15]) and ra[1] == rb[1]
+        if ra[2] or ra[3]:
+            break
+    assert obs_version_of(OBS_NAMES) == 2 and obs_version_of(OBS_NAMES_V3) == 3
+    with pytest.raises(ValueError):
+        DescentEnv(obs_version=4)

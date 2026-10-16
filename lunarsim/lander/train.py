@@ -58,10 +58,10 @@ def git_sha() -> Optional[str]:
         return None
 
 
-def _make_eval_fn(cls: str, variant: str, n: int, seed0: int):
+def _make_eval_fn(cls: str, variant: str, n: int, seed0: int, obs_version: int = 2):
     """Deterministic evaluation on fixed seeds (not the training seeds)."""
     from .env import DescentEnv
-    env = DescentEnv(cls=cls, variant=variant)
+    env = DescentEnv(cls=cls, variant=variant, obs_version=obs_version)
 
     def run(model) -> Dict[str, float]:
         rets, box, ok = [], 0, 0
@@ -84,7 +84,7 @@ def train_descent(cls: str, variant: str, steps: int, seed: int, out_dir: str, r
                   eval_every: int = 50_000, eval_n: int = 100, n_envs: Optional[int] = None,
                   subproc: bool = True, verbose: int = 0, hyper: Optional[Dict[str, Any]] = None,
                   curriculum: float = CURRICULUM, hyper_set: str = "default",
-                  init_from_bc: Optional[str] = None) -> Dict[str, Any]:
+                  init_from_bc: Optional[str] = None, obs_version: int = 2) -> Dict[str, Any]:
     import stable_baselines3 as sb3
     import torch
     from stable_baselines3 import PPO
@@ -93,7 +93,7 @@ def train_descent(cls: str, variant: str, steps: int, seed: int, out_dir: str, r
     from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecNormalize
     from . import export
     from .classes import CLASSES
-    from .env import ACT_NAMES, ENV_ID, ENV_VERSION, OBS_NAMES, OBS_OFFSET, DescentEnv, obs_scale
+    from .env import ACT_NAMES, ENV_ID, ENV_VERSION, OBS_VERSIONS, DescentEnv, obs_offset, obs_scale
 
     if hyper is None:
         if hyper_set not in HYPER_SETS:
@@ -107,7 +107,7 @@ def train_descent(cls: str, variant: str, steps: int, seed: int, out_dir: str, r
     os.makedirs(run_dir, exist_ok=True)
     torch.set_num_threads(1)
     vec = make_vec_env(DescentEnv, n_envs=hp["n_envs"], seed=seed,
-                       env_kwargs={"cls": cls, "variant": variant, "curriculum": curriculum},
+                       env_kwargs={"cls": cls, "variant": variant, "curriculum": curriculum, "obs_version": obs_version},
                        vec_env_cls=SubprocVecEnv if subproc and hp["n_envs"] > 1 else DummyVecEnv)
     if hp.get("normalize_reward"):          # rewards only: the exported policy sees the env's own observations
         vec = VecNormalize(vec, norm_obs=False, norm_reward=True, gamma=hp["gamma"])
@@ -134,7 +134,7 @@ def train_descent(cls: str, variant: str, steps: int, seed: int, out_dir: str, r
         if os.path.exists(side):
             with open(side, encoding="utf-8") as f:
                 init_rec["bc"] = json.load(f)
-    evaluate = _make_eval_fn(cls, variant, eval_n, seed0=10_000_000)
+    evaluate = _make_eval_fn(cls, variant, eval_n, seed0=10_000_000, obs_version=obs_version)
     curve = []
     t_start = time.time()
 
@@ -182,9 +182,9 @@ def train_descent(cls: str, variant: str, steps: int, seed: int, out_dir: str, r
             "limitations": "3-DoF (no rotational dynamics beyond a slew-rate limit); flat ground plane with a sampled "
                            "local slope; sensor model Assumed; lander constants partly Assumed (see classes.py flags)"}
     out_json = os.path.join(out_dir, f"{pid}.json")
-    doc = export.write(model, out_json, env_id=ENV_ID, env_version=ENV_VERSION, obs_names=OBS_NAMES,
-                       obs_scale=obs_scale(CLASSES[cls]).tolist(), obs_offset=OBS_OFFSET.tolist(),
-                       act_names=ACT_NAMES, training=training, card=card)
+    doc = export.write(model, out_json, env_id=ENV_ID, env_version=ENV_VERSION, obs_names=OBS_VERSIONS[obs_version],
+                       obs_scale=obs_scale(CLASSES[cls], obs_version).tolist(),
+                       obs_offset=obs_offset(obs_version).tolist(), act_names=ACT_NAMES, training=training, card=card)
     # the card's final_eval is the quantity evaluate.py reports: the exported numpy policy, evaluate()'s default
     # seeds, the same env construction (sensor on, dispersion on)
     from .evaluate import evaluate as mc_evaluate, EVAL_SEED0
@@ -244,6 +244,7 @@ def main(argv=None):
     p.add_argument("--curriculum", type=float, default=CURRICULUM)
     p.add_argument("--hyper-set", default="default", choices=sorted(HYPER_SETS))
     p.add_argument("--init-from-bc", default=None, help="SB3 zip from lunarsim.lander.bc_warmstart")
+    p.add_argument("--obs-version", type=int, default=2, choices=[2, 3])
     p.add_argument("--no-subproc", action="store_true",
                    help="run all envs in this process (DummyVecEnv): slower, but no worker processes / far less memory")
     p.add_argument("--out-dir", default=os.path.join("data", "policies"))
@@ -260,7 +261,7 @@ def main(argv=None):
     r = train_descent(a.cls, a.variant, a.steps, a.seed, a.out_dir, os.path.join(a.run_root, "lander"),
                       eval_every=a.eval_every, eval_n=a.eval_n, n_envs=a.n_envs, verbose=a.verbose,
                       curriculum=a.curriculum, subproc=not a.no_subproc, hyper_set=a.hyper_set,
-                      init_from_bc=a.init_from_bc)
+                      init_from_bc=a.init_from_bc, obs_version=a.obs_version)
     f, fe = r["final"], r["final_eval"]
     print(f"done in {r['wallclock_s']:.0f} s ({r['doc']['training']['s_per_100k_steps']} s / 100k steps): end-of-training "
           f"return {f['mean_return']:.2f}, box {100 * f['box_rate']:.1f} %; card final_eval (evaluate.py, "

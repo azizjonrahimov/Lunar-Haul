@@ -20,7 +20,7 @@ import numpy as np
 
 from lunarsim.lander import physics as P
 from lunarsim.lander.classes import CLASSES
-from lunarsim.lander.env import DescentEnv, ENV_VERSION, target_velocity
+from lunarsim.lander.env import DescentEnv, ENV_VERSION, OBS_NAMES_V3, alt_history_step, obs_scale, target_velocity
 from lunarsim.lander.policy import MlpPolicy
 
 POLICY = os.path.join(ROOT, "data", "policies", "lander_CLPS_baseline_s0.json")
@@ -83,11 +83,41 @@ def episode(cls_name: str, pol: MlpPolicy):
             "note": "action = pol.act(obs) in float64 from the float32 obs, passed to env.step as float32"}
 
 
+def alt_history_cases():
+    """Readings with dropout holds for alt_history_step (obs v3): per step the reading, the held flag, the time
+    and the four features."""
+    seq = [(30.5, False), (29.8, False), (29.8, True), (29.8, True), (28.1, False), (27.4, False), (27.4, True),
+           (25.9, False), (25.2, False), (25.2, True), (25.2, True), (25.2, True), (22.0, False)]
+    hist, out = None, []
+    for k, (h, held) in enumerate(seq):
+        t = 0.2 * k
+        hist, f = alt_history_step(hist, h, held, t)
+        out.append({"h": h, "held": held, "t": t, "features": [float(x) for x in f]})
+    return out
+
+
+def episode_v3(cls_name: str):
+    """obs v3 composition: sensor off (no holds), fixed actions, until the end."""
+    env = DescentEnv(cls=cls_name, variant="baseline", randomize=False, sensor=False, obs_version=3)
+    obs, _ = env.reset(seed=0)
+    steps = [{"obs": [float(x) for x in obs]}]
+    a = [0.15, 0.0, 0.0]
+    done, info = False, {}
+    while not done:
+        obs, r, te, tr, info = env.step(np.asarray(a, np.float32))
+        steps.append({"action": a, "obs": [float(x) for x in obs], "reward": float(r), "terminated": bool(te),
+                      "truncated": bool(tr)})
+        done = te or tr
+    return {"cls": cls_name, "obs_version": 3, "obs_names": OBS_NAMES_V3,
+            "obs_scale": obs_scale(CLASSES[cls_name], 3).tolist(), "steps": steps, "outcome": info["outcome"]}
+
+
 def main():
     pol = MlpPolicy.from_json(POLICY)
     doc = {"format": "lunarsim-lander-parity", "version": 1, "env_version": ENV_VERSION, "policy": pol.id,
            "tolerance": 1e-6, "physics": [physics_case(c) for c in ("CLPS", "MK1", "LARGE")],
-           "target_velocity": target_cases(), "episodes": [episode(c, pol) for c in ("CLPS", "MK1", "LARGE")]}
+           "target_velocity": target_cases(), "episodes": [episode(c, pol) for c in ("CLPS", "MK1", "LARGE")],
+           "alt_history": alt_history_cases(), "episodes_v3": [episode_v3("CLPS")]}
     out = os.path.join(ROOT, "tests", "fixtures", "lander_parity.json")
     with open(out, "w", encoding="utf-8") as f:
         json.dump(doc, f, separators=(",", ":"))

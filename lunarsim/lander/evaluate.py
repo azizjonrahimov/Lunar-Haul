@@ -208,11 +208,12 @@ EVAL_SEED0 = 100_000           # first Monte Carlo episode seed (training uses o
 def evaluate(policy_path: Optional[str], cls: str, n: int, seed0: int = EVAL_SEED0, sensor: bool = True,
              out_dir: Optional[str] = None, name: Optional[str] = None) -> Dict[str, Any]:
     """Run the Monte Carlo; write the table if out_dir. Returns the summary (plus the path)."""
-    from .env import DescentEnv, ENV_ID, ENV_VERSION
+    from .env import DescentEnv, ENV_ID, ENV_VERSION, obs_version_of
     from .policy import MlpPolicy
-    env = DescentEnv(cls=cls, sensor=sensor)
+    pol = MlpPolicy.from_json(policy_path) if policy_path else None
+    obs_version = obs_version_of(pol.doc["obs"]["names"]) if pol is not None else 2   # v2 cards keep running
+    env = DescentEnv(cls=cls, sensor=sensor, obs_version=obs_version)
     if policy_path:
-        pol = MlpPolicy.from_json(policy_path)
         controller = lambda obs, e: pol.act(obs)
         name = name or pol.id
         meta = {"policy": pol.id, "policy_sha256": _sha(policy_path), "controller": "policy"}
@@ -222,7 +223,8 @@ def evaluate(policy_path: Optional[str], cls: str, n: int, seed0: int = EVAL_SEE
         meta = {"policy": name, "policy_sha256": None, "controller": "classical ZEM/ZEV + vertical terminal phase"}
     t0 = time.time()
     recs = run_episodes(env, controller, n, seed0)
-    meta.update({"env": ENV_ID, "env_version": ENV_VERSION, "cls": cls, "n": n, "seed0": seed0, "sensor": sensor,
+    meta.update({"env": ENV_ID, "env_version": ENV_VERSION, "obs_version": obs_version, "cls": cls, "n": n,
+                 "seed0": seed0, "sensor": sensor,
                  "wallclock_s": round(time.time() - t0, 2)})
     summ = summarise(recs)
     if out_dir:
