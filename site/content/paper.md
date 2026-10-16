@@ -34,7 +34,7 @@ Surface Logistics.** Azizjon Rahimov, Roatify Research. A draft exists; it is no
 
 It puts the base on real LOLA terrain, adds learned landing controllers and a rover driving model to the testbed,
 and prices landing dispersion, pad standoff, plume keep-out and rover autonomy in the delay and cost of surface
-delivery, a relation NASA's architecture papers describe only qualitatively. Each kilometre of pad standoff adds <!--@r:standoff_pct--> to the delay of urgent cargo; landing dispersion matters only through landings off the
+delivery, a relation NASA's architecture papers describe only qualitatively. At the typical fleet load, each kilometre of pad standoff adds <!--@r:standoff_pct--> to the delay of urgent cargo, most of it in the first kilometre; a plume keep-out radius and a stand-down add no measurable delay; landing dispersion adds <!--@r:dispersion_pct--> per e-fold of the mean miss, through landings off the
 pad. The figures and tables are on the [Results](../results/) page as they are produced, and the method is on the
 [Method](../method/) page. The paper will be posted here with a DOI when it is complete.
 

@@ -84,9 +84,9 @@ Delay of urgent cargo (mean and 90th percentile), the share delivered within 24 
 vehicles, fleet utilisation, energy, operator hours and system cost per kilogram moved and per landed kilogram,
 over thirty or more seeded years per cell with confidence intervals, and precision runs to a 1–2 % half-width for
 the headline cells. The Phase 3 experiments sweep landing dispersion, pad standoff, keep-out radius and stand-down
-time, autonomy level and fleet size, and fit the relation between them and delivery cost: over <!--@r:fit_n--> simulated years, each kilometre of pad standoff adds <!--@r:standoff_pct--> to the mean delay of urgent
-cargo, each kilometre of keep-out radius <!--@r:keepout_pct--> and each hour of stand-down <!--@r:standdown_pct-->,
-with no smooth effect of the miss distance itself. The figures are on the [Results](../results/) page.
+time, autonomy level and fleet size, and fit the relation between them and delivery cost. Over <!--@r:fit_n--> simulated years, read at the typical fleet load (<!--@r:util_center--> mean utilisation), each kilometre of pad standoff adds <!--@r:standoff_pct--> to the mean delay of urgent
+cargo (95% interval <!--@r:standoff_ci-->), and the relation is concave: most of the cost comes in the first kilometre. A keep-out radius (<!--@r:keepout_pct--> per km, interval <!--@r:keepout_ci-->) and a stand-down (<!--@r:standdown_pct--> per hour, interval <!--@r:standdown_ci-->) add no measurable delay at these loads; a cost appears only in the lightest-loaded night cells at 2–3 km radii. Landing dispersion adds <!--@r:dispersion_pct--> per e-fold of the mean miss (interval <!--@r:dispersion_ci-->), through landings that miss the pad.
+The figures are on the [Results](../results/) page.
 
 ## What is not modelled
 

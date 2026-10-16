@@ -143,8 +143,10 @@ export function results3() {
     const rows = csv(readFileSync(join(ROOT, E20), 'utf8')).filter(x => x.response === 'log_delay_prio1_mean_h' && x.subset === 'pooled');
     const term = t => { const x = rows.find(y => y.term === t); if (!x) return null; const pct = b => 100 * (Math.exp(+b) - 1);
       return { pct: pct(x.coef), lo: pct(x.ci_lo), hi: pct(x.ci_hi), n: +x.n, seeds: +x.n_seeds, r2: +x.r2, source: `${E20}, pooled fit of ln(urgent mean delay), term ${t}: 100(e^b − 1) with a 95% bootstrap interval over seeds; n = ${(+x.n).toLocaleString('en-GB')} simulated years, ${x.n_seeds} seeds (experiment E20)` }; };
-    const f = { standoff: term('standoff'), keepout: term('keepout'), standdown: term('standdown') };
-    if (f.standoff && f.keepout && f.standdown) r.fit = f;
+    // since 533589f the utilisation covariate is centred (util_center): main effects are read at the typical fleet load
+    const f = { standoff: term('standoff'), keepout: term('keepout'), standdown: term('standdown'), dispersion: term('log_miss'),
+      utilCenter: rows.length && rows[0].util_center !== undefined && rows[0].util_center !== '' ? +rows[0].util_center : null };
+    if (f.standoff && f.keepout && f.standdown && f.dispersion) r.fit = f;
   }
   const outcome = id => { const p = join(ROOT, OUT(id)); if (!existsSync(p)) return null; const t = JSON.parse(readFileSync(p, 'utf8')), s = t.summary || {};
     const n = s.n ?? t.n, pr = s.pass_rate; if (!n || pr === undefined) return null; const [lo, hi] = wilson(pr, n);
@@ -155,12 +157,15 @@ export function results3() {
   if (existsSync(e16)) { const fl = csv(readFileSync(e16, 'utf8')).filter(x => x.check === 'speed_made_good_vs_rtt_flat' && x.rel_err !== ''); if (fl.length) r.teleopErr = 100 * Math.max(...fl.map(x => Math.abs(+x.rel_err))); }
   return (_r3 = r);
 }
+const ci = t => `${pctS(t.lo)} to ${pctS(t.hi)} %`;   // 95% interval as text, with a real minus sign
 const pct1 = v => v.toFixed(1), pctS = v => (v < 0 ? '−' : '') + Math.abs(v).toFixed(1);   // the copy says 'adds', so no plus sign
 /* <!--@r:key--> in page copy: the same build-time values as plain text (the headline above carries the flags) */
 export function resultText(key) {
   const r = results3(), f = r.fit, l = r.lander;
   const map = {
     standoff_pct: f && `${pctS(f.standoff.pct)} %`, keepout_pct: f && `${pctS(f.keepout.pct)} %`, standdown_pct: f && `${pctS(f.standdown.pct)} %`,
+    dispersion_pct: f && `${pctS(f.dispersion.pct)} %`, util_center: f && f.utilCenter !== null && `${(100 * f.utilCenter).toFixed(1)} %`,
+    keepout_ci: f && ci(f.keepout), standdown_ci: f && ci(f.standdown), standoff_ci: f && ci(f.standoff), dispersion_ci: f && ci(f.dispersion),
     fit_n: f && f.standoff.n.toLocaleString('en-GB'), lander_best: l && `${pct1(l.best.pct)} %`, lander_classical: l && `${pct1(l.classical.pct)} %`,
     lander_n: l && String(l.best.n), teleop_err: r.teleopErr !== undefined && `${r.teleopErr.toFixed(1)} %`,
   };
@@ -172,26 +177,31 @@ export function headline() {
   const r = results3(), items = [], files = new Set();
   const v2 = headlineItems();   // version-2 cells: the fallback while a Phase-3 source is missing
   if (r.fit) {
-    const s = r.fit.standoff, k = r.fit.keepout, d = r.fit.standdown;
+    // copy for the law read at the typical fleet load (E20 after 533589f); the concave-slope figures are the paper's
+    // piecewise reading of the same data (writer's notes, LEAD 03:09), not a column of the table
+    const s = r.fit.standoff, k = r.fit.keepout, d = r.fit.standdown, m = r.fit.dispersion;
     items.push({ label: 'Added delay of urgent cargo per kilometre of pad standoff', html: num({ value: s.pct, unit: '% per km', flag: 'Modelled', digits: 1, source: s.source }),
-      ctx: `95% interval ${pct1(s.lo)}–${pct1(s.hi)} %; pooled over ${s.n.toLocaleString('en-GB')} simulated years, every fleet and dispatch rule.` });
-    items.push({ label: 'A plume keep-out radius, and a stand-down after each landing', html: num({ value: k.pct, unit: '% per km', flag: 'Modelled', digits: 1, source: k.source }),
-      ctxHtml: `Stand-down: ${num({ value: d.pct, unit: '% per hour', flag: 'Modelled', digits: 1, source: d.source })}. Landing dispersion itself has no smooth effect; it acts only through landings off the pad.` });
+      ctx: `95% interval ${ci(s)}, at the typical fleet load, every fleet and dispatch rule. The relation is concave: a log-delay slope of about 0.52 per km below 1 km and 0.10–0.19 per km beyond 2 km.` });
+    items.push({ label: 'A plume keep-out radius and a stand-down add no measurable delay at these loads', html: num({ value: k.pct, unit: '% per km', flag: 'Modelled', digits: 1, source: k.source }),
+      ctxHtml: `95% interval ${esc(ci(k))}; stand-down ${num({ value: d.pct, unit: '% per hour', flag: 'Modelled', digits: 1, source: d.source })}, interval ${esc(ci(d))}. The fleets, at 2–8 % utilisation, absorb the evacuations; a cost appears only in the lightest-loaded night cells at 2–3 km radii.` });
+    items.push({ label: 'Added delay per e-fold of the mean landing miss', html: num({ value: m.pct, unit: '%', flag: 'Modelled', digits: 1, source: m.source }),
+      ctx: `95% interval ${ci(m)}. It acts through landings off the pad: a 100 m pad absorbs today's 50 m accuracy, a 25 m pad does not.` });
     files.add(E20);
   } else {
     for (const it of v2.items.slice(0, 2)) items.push({ label: it.label, html: num(it), ctx: it.context });
     files.add(v2.file);
   }
-  if (r.lander) {
+  if (r.lander && !r.fit) {   // with the fitted law the trio is standoff, keep-out, dispersion; the lander result stays in the copy
     const b = r.lander.best, c = r.lander.classical;
     items.push({ label: 'Best learned lander inside the touchdown box', html: num({ value: b.pct, unit: '%', flag: 'Modelled', digits: 1, source: b.source }),
       ctxHtml: `Classical guidance law: ${num({ value: c.pct, unit: '%', flag: 'Modelled', digits: 1, source: c.source })}; ${b.n} dispersed landings each. Imitation of the law, given the altimeter's recent history.` });
     files.add(OUT(r.lander.best.id)); files.add(OUT(CLASSICAL));
   } else {
-    const it = v2.items[2]; items.push({ label: it.label, html: num(it), ctx: it.context }); files.add(v2.file);
+    if (!r.fit) { const it = v2.items[2]; items.push({ label: it.label, html: num(it), ctx: it.context }); files.add(v2.file); }
   }
-  const intro = r.fit && r.lander
-    ? `From version 3, in preparation: a fit over every simulated year of the pad-standoff, landing-dispersion and plume keep-out experiments (${r.fit.standoff.n.toLocaleString('en-GB')} years, ${r.fit.standoff.seeds} seeds), and ${r.lander.best.n} dispersed landings per lander controller. Each number has its 95% interval and its source.`
+  const load = r.fit && r.fit.utilCenter !== null ? ` (${(100 * r.fit.utilCenter).toFixed(1)} % mean utilisation)` : '';
+  const intro = r.fit
+    ? `From version 3: one fit over every simulated year of the pad-standoff, landing-dispersion and plume keep-out experiments (${r.fit.standoff.n.toLocaleString('en-GB')} years, ${r.fit.standoff.seeds} seeds), read at the typical fleet load${load}. Each number is the change in the mean delay of urgent cargo, with its 95% interval and its source.`
     : `Version 3's experiment tables are not in this build yet; ${r.lander ? 'the lander result is from version 3 and ' : ''}the other numbers are the version-2 Phase-2 base (2029–32 demand, six vehicles owned by four organisations), means over 30 simulated years with 95% confidence half-widths.`;
   return `<p class="prose">${esc(intro)}</p>
 <ul class="headline">${items.map(it => `<li><span class="label">${esc(it.label)}</span>
