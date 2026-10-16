@@ -17,6 +17,7 @@ G_MOON = 1.62          # m/s^2, Spec. NASA 2026 HLS touchdown paper uses 1.63:
 G0 = 9.80665           # m/s^2, Spec (standard gravity, defines Isp in seconds)
 
 SPLICE_URL = "https://ntrs.nasa.gov/api/citations/20200002415/downloads/20200002415.pdf"
+BE7_RELEASE_URL = "https://www.blueorigin.com/news/be7-engine-testing"
 BE7_URLS = ["https://en.wikipedia.org/wiki/Blue_Moon_(spacecraft)", "https://en.wikipedia.org/wiki/BE-7",
             "https://newspaceeconomy.ca/2025/11/15/what-is-the-be-7/"]
 APOLLO_DPS_URL = "https://www.lpi.usra.edu/lunar/documents/Bennett_NASA-TM-X-58040.pdf"
@@ -70,13 +71,15 @@ CLPS = LanderClass(
 MK1 = LanderClass(
     name="MK1", m_gate_kg=9000.0, prop_gate_kg=1000.0, t_max_n=44000.0, t_min_n=8900.0, isp_s=440.0,
     tilt_max_deg=45.0, tilt_rate_max_dps=8.0,
-    flags={"m_gate_kg": "Assumed", "prop_gate_kg": "Assumed", "t_max_n": "Spec", "t_min_n": "Spec (conflicting)",
+    flags={"m_gate_kg": "Assumed", "prop_gate_kg": "Assumed", "t_max_n": "Spec", "t_min_n": "Spec",
            "isp_s": "Assumed", "tilt_max_deg": "Assumed", "tilt_rate_max_dps": "Assumed"},
     sources={"m_gate_kg": "Blue Moon MK1 dry mass unpublished (21,350 kg fuelled, 3,000 kg payload); ~9,000 kg at "
-                          f"the gate is Assumed: {BE7_URLS[0]}",
+                          f"the gate is Assumed: {BE7_URLS[0]}; a derived bound puts MK1's landed mass at 5.1-11.5 t, "
+                          "which one BE-7 can hover in every case (verification_round_1.md item 3)",
              "t_max_n": f"BE-7 44 kN maximum, the one figure all sources agree on: {BE7_URLS[0]}; {BE7_URLS[1]}",
-             "t_min_n": "8.9 kN deep throttle per Blue Origin's BE-7 page as quoted by Wikipedia; CONFLICTS with "
-                        f"~2,000 lbf (8.9 kN, 20 %) in the BE-7 infobox and 1,000 lbf (4.4 kN) elsewhere: {', '.join(BE7_URLS)}",
+             "t_min_n": "BE-7 'throttling down to 2,000 lbf' (8.9 kN, 20 %): Blue Origin news release, 4 Dec 2020, "
+                        f"{BE7_RELEASE_URL} (agrees with the 20-100 % in the BE-7 infobox; the 1,000 lbf figure has no source "
+                        "and is dropped; research_notes/.../verification_round_1.md item 3)",
              "isp_s": f"BE-7 vacuum Isp 460 s is uncited and ~453 s is an estimate; 440 s Assumed: {BE7_URLS[1]}",
              "prop_gate_kg": "Assumed", "tilt_max_deg": "Assumed", "tilt_rate_max_dps": "Assumed"},
 )

@@ -67,36 +67,46 @@ def leg_profile(terrain, route: np.ndarray, sun_az_deg) -> Dict[str, np.ndarray]
             "length_m": float(ds.sum())}
 
 
+def _stretches(mask: np.ndarray) -> np.ndarray:
+    """Number of contiguous True runs along the last axis."""
+    m = mask.astype(np.int8)
+    starts = (m[..., 1:] == 1) & (m[..., :-1] == 0)
+    return m[..., 0] + starts.sum(axis=-1)
+
+
 def drive_profile(prof: Dict[str, np.ndarray], autonomy: str, rtt_s: float, sun_az_deg, rng: np.random.Generator,
-                  n: int, lam_override: Optional[float] = None, time_ratio: float = 1.0) -> Dict[str, np.ndarray]:
+                  n: int, lam_override: Optional[float] = None, time_ratio: float = 1.0,
+                  phi_deg: Optional[float] = None) -> Dict[str, np.ndarray]:
     """n stochastic runs of the leg. Returns arrays time_s, energy_wh, interventions (length n).
+    phi_deg: soil friction angle for the slip curve; None = drawn per run uniformly in physics.PHI_RANGE.
     lam_override / time_ratio: a learned driver's measured interventions per traverse and its driving-time ratio
-    to this integrator (tables --driver)."""
+    to this integrator (tables --driver). A dig-in stretch (slip >= 80 %, or beyond the slope limit) counts as one
+    intervention per contiguous stretch; its length is not driven."""
     ds, grade, slope = prof["ds"], prof["grade"], prof["slope"]
-    sl = R.slip(grade)
+    phis = rng.uniform(*R.PHI_RANGE, n) if phi_deg is None else np.full(n, float(phi_deg))
+    sl = R.slip(grade[None, :], phis[:, None])                                     # (n, segments)
     f = R.slope_speed_factor(slope) * R.lighting_factor(prof["heading"], sun_az_deg, prof["shadow"])
-    v = R.speed_cap_mps(autonomy, rtt_s) * f * (1.0 - sl)
+    v = R.speed_cap_mps(autonomy, rtt_s) * f[None, :] * (1.0 - sl)
     blocked = (v <= 0) | (sl >= R.DIG_IN_SLIP)
-    v = np.where(blocked, np.nan, v)
-    t_det = float(np.nansum(ds / v))                      # blocked segments are covered by interventions
+    with np.errstate(divide="ignore", invalid="ignore"):
+        t_det = np.where(blocked, 0.0, ds[None, :] / np.where(blocked, 1.0, v)).sum(axis=1)
     every, stop_s = R.stop_plan(autonomy, rtt_s)
     stops = math.floor(prof["length_m"] / every) if math.isfinite(every) else 0
-    e = float(np.sum(R.energy_wh(ds, grade, np.minimum(sl, 0.95))))
+    e = R.energy_wh(ds[None, :], grade[None, :], np.minimum(sl, 0.95)).sum(axis=1)
     km = ds / 1000.0
     haz = (HAZARD_PER_KM[autonomy] + HAZARD_SLOPE_PER_KM * (slope > R.ROVER["slope_nominal_deg"])
            + HAZARD_ROUGH_PER_KM * (prof["rough"] > 0.5 * R.INTERVENTION["roughness_m"]))
     haz = haz * np.where(prof["shadow"], HAZARD_SHADOW_MULT, 1.0)
-    lam = float(np.sum(haz * km)) + float(np.sum(blocked))
+    lam_runs = float(np.sum(haz * km)) + _stretches(blocked).astype(float)
     if lam_override is not None:
-        lam = lam_override
-    t_det *= time_ratio
+        lam_runs = np.full(n, float(lam_override))
+    t_det = t_det * time_ratio
     u = np.exp(rng.normal(0.0, SPEED_SIGMA, n))
-    k = rng.poisson(lam, n)
+    k = rng.poisson(lam_runs)
     # time and energy EXCLUDE interventions: the DES draws them from `lambda` and adds RTT + recovery itself
     time_s = t_det / u + stops * stop_s
-    energy = np.full(n, e)                                # traction energy does not depend on the speed factor
-    return {"time_s": time_s, "energy_wh": energy, "interventions": k.astype(float), "lambda": lam,
-            "stops": stops, "t_move_s": t_det}
+    return {"time_s": time_s, "energy_wh": e, "interventions": k.astype(float), "lambda": float(np.mean(lam_runs)),
+            "stops": stops, "t_move_s": float(np.mean(t_det)), "phi_deg": phis}
 
 
 def _lognormal(x: np.ndarray) -> Dict[str, Any]:
@@ -117,12 +127,13 @@ def measure_driver(terrain, route, sun, driver, prof, rtt_s: float = 4.0, seed: 
     _, leg = drive(env, route, sun, driver, None, 1, autonomy="autonomous", rtt_s=rtt_s, seed=seed, record=False)
     km = max(leg["distance_m"], 1.0) / 1000.0
     moving = leg["time_s"] - leg["interventions"] * R.intervention_cost_s(rtt_s)
-    ref = drive_profile(prof, "autonomous", rtt_s, sun, np.random.default_rng(0), 1)["t_move_s"]
+    ref = drive_profile(prof, "autonomous", rtt_s, sun, np.random.default_rng(0), 1, phi_deg=getattr(env, "phi", R.PHI_REF))["t_move_s"]
     return {"interventions_per_km": leg["interventions"] / km, "time_ratio": max(moving, 1.0) / max(ref, 1.0),
             "reached": bool(leg.get("reached"))}
 
 
-def leg_table(terrain, a, b, autonomies, rtts, lighting, seeds: int, rng, driver=None) -> Optional[Dict[str, Any]]:
+def leg_table(terrain, a, b, autonomies, rtts, lighting, seeds: int, rng, driver=None,
+              phi_deg: Optional[float] = None) -> Optional[Dict[str, Any]]:
     out: Dict[str, Any] = {"autonomy": {}, "route": {}}
     profs = {}
     measured = {}
@@ -149,7 +160,7 @@ def leg_table(terrain, a, b, autonomies, rtts, lighting, seeds: int, rng, driver
                     m = None                     # the learned driver did not finish this leg: keep the expert model
                 r = drive_profile(p, au, rtt, sun, rng, seeds,
                                   lam_override=None if m is None else m["interventions_per_km"] * p["length_m"] / 1000.0,
-                                  time_ratio=1.0 if m is None else m["time_ratio"])
+                                  time_ratio=1.0 if m is None else m["time_ratio"], phi_deg=phi_deg)
                 by_light[key] = {"time_h": _lognormal(r["time_s"] / 3600.0),
                                  "energy_kwh": _lognormal(r["energy_wh"] / 1000.0),
                                  "interventions": {"lambda": float(r["interventions"].mean()), "dist": "poisson"},
@@ -177,7 +188,8 @@ def legs_from_sites(sites: Dict[str, Any]) -> List[Tuple[str, Tuple[float, float
 
 def build(terrain, sites: Dict[str, Any], seeds: int = 20, seed: int = 0, lighting=LIGHTING, rtts=RTTS,
           autonomies=R.AUTONOMY_LEVELS, policy: str = "expert-astar-purepursuit", progress: bool = False,
-          driver_card: Optional[str] = None, max_legs: Optional[int] = None) -> Dict[str, Any]:
+          driver_card: Optional[str] = None, max_legs: Optional[int] = None,
+          phi_deg: Optional[float] = None) -> Dict[str, Any]:
     rng = np.random.default_rng(seed)
     driver = None
     if driver_card:
@@ -193,7 +205,7 @@ def build(terrain, sites: Dict[str, Any], seeds: int = 20, seed: int = 0, lighti
         if math.hypot(a[0] - b[0], a[1] - b[1]) < 1.0:
             skipped.append({"leg": name, "reason": "coincident end points"})
             continue
-        tab = leg_table(terrain, a, b, autonomies, rtts, lighting, seeds, rng, driver=driver)
+        tab = leg_table(terrain, a, b, autonomies, rtts, lighting, seeds, rng, driver=driver, phi_deg=phi_deg)
         if tab is None:
             skipped.append({"leg": name, "reason": "no route under the slope limit"})
         else:
@@ -210,6 +222,10 @@ def build(terrain, sites: Dict[str, Any], seeds: int = 20, seed: int = 0, lighti
                   "teleop_cadence_m": {f"{r:g}": round(R.teleop_cadence_m(r), 1) for r in rtts},
                   "teleop_stop_s": {f"{r:g}": R.teleop_stop_s(r) for r in rtts}, "supervised_stop": R.SUPERVISED_STOP,
                   "c_rr_eff": R.C_RR_EFF, "drive_eff": R.DRIVE_EFF, "mass_kg": R.ROVER["mass_kg"],
+                  "slip": {"source": "Hu et al. 2024 Figs 7/13, 440 kg in lunar gravity, GRC-3 (Modelled)",
+                           "phi_deg": "uniform per run in [37.8, 47.8]" if phi_deg is None else phi_deg,
+                           "curves": {f"{p:g}": c.tolist() for p, c in zip(R.SLIP_PHI_DEG, R.SLIP_CURVES)},
+                           "slope_deg": R.SLIP_TABLE_DEG.tolist(), "dig_in": R.DIG_IN_SLIP},
                   "speed_sigma": SPEED_SIGMA, "hazard_per_km": HAZARD_PER_KM, "intervention": R.INTERVENTION,
                   "flags": "see lunarsim/rover/physics.py; hazard model Assumed (no lunar interventions/km data)",
                   "driver": None if driver is None else {
@@ -234,6 +250,7 @@ def main(argv=None):
     p.add_argument("--out", default=os.path.join("data", "driving", "driving-v1.json"))
     p.add_argument("--driver", default=None, help="learned driver card, e.g. data/policies/rover_bc_s0.json")
     p.add_argument("--max-legs", type=int, default=None, help="only the first N legs (smoke runs)")
+    p.add_argument("--phi", type=float, default=None, help="fix the soil friction angle (deg; default: uniform 37.8-47.8 per run)")
     a = p.parse_args(argv)
     t = Terrain(a.site, a.root)
     path = a.sites or os.path.join(t.path, "sites.json")
@@ -241,7 +258,7 @@ def main(argv=None):
         raise SystemExit(f"{path} not found: choose sites with `lunarsim terrain place` and write sites.json first")
     with open(path, encoding="utf-8") as f:
         sites = json.load(f)
-    doc = build(t, sites, a.seeds, a.seed, progress=True, driver_card=a.driver, max_legs=a.max_legs)
+    doc = build(t, sites, a.seeds, a.seed, progress=True, driver_card=a.driver, max_legs=a.max_legs, phi_deg=a.phi)
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     with open(a.out, "w", encoding="utf-8") as f:
         json.dump(doc, f)

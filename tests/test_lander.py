@@ -76,8 +76,10 @@ def test_classes_flagged():
         assert c.t_min_n < c.t_max_n and c.prop_gate_kg < c.m_gate_kg
         assert c.hover_tw > 1.0                                   # all classes can hover at the gate
         for k in ("m_gate_kg", "t_max_n", "t_min_n", "isp_s"):
-            assert c.flags[k] in ("Measured", "Spec", "Modelled", "Assumed", "Spec (conflicting)")
-    assert CLASSES["MK1"].t_min_n == 8900.0 and "CONFLICTS" in CLASSES["MK1"].sources["t_min_n"]
+            assert c.flags[k] in ("Measured", "Spec", "Modelled", "Assumed")
+    mk1 = CLASSES["MK1"]
+    assert mk1.t_min_n == 8900.0 and mk1.flags["t_min_n"] == "Spec"
+    assert "2,000 lbf" in mk1.sources["t_min_n"] and "be7-engine-testing" in mk1.sources["t_min_n"]
     assert CLASSES["LARGE"].hover_tw == pytest.approx(1.5)
 
 

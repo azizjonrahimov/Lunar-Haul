@@ -86,6 +86,8 @@ class DriveEnv(_Base):
         if self.autonomy not in R.AUTONOMY_LEVELS:
             raise ValueError(f"unknown autonomy level {self.autonomy!r}")
         self.sun = o["sun_az_deg"]
+        # soil friction angle for the slip curve (Hu et al. 2024): fixed via options["phi"], else drawn per episode
+        self.phi = float(o["phi"]) if o.get("phi") is not None else float(self.np_random.uniform(*R.PHI_RANGE))
         wps = o.get("waypoints")
         self.route = np.asarray(wps, float) if wps is not None else self._random_route(self.np_random)
         self.pp = PurePursuit(self.route)
@@ -169,7 +171,7 @@ class DriveEnv(_Base):
         # along-track grade over the next metre of travel at the current heading
         z_b = float(self.t.height(s["x"] + math.sin(s["psi"]), s["y"] + math.cos(s["psi"])))
         grade = math.degrees(math.atan(z_b - z_a))
-        sl = float(R.slip(grade))
+        sl = float(R.slip(grade, self.phi))
         gv = s["v"] * (1.0 - sl)
         before = self.pp.s[self.pp.closest(s["x"], s["y"])]
         s = R.advance(s, gv, DT_S)

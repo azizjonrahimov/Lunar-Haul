@@ -11,19 +11,24 @@ from lunarsim.rover import physics as R
 # ---------------------------------------------------------------------------
 # physics (pure numpy)
 # ---------------------------------------------------------------------------
-def test_slip_table_monotone_and_dig_in():
+def test_slip_curves_hu2024():
     g = np.linspace(0, 30, 61)
-    s = R.slip(g)
-    assert np.all(np.diff(s) >= 0)
-    assert 0.05 <= R.slip(0.0) <= 0.10 and 0.05 <= R.slip(5.0) <= 0.10          # 5-10 % at 0-5 deg
-    assert 0.15 <= R.slip(12.0) <= 0.25                                         # ~20 % at 10-15 deg
-    assert R.slip(30.0) > R.DIG_IN_SLIP                                         # dig-in by 30 deg
-    assert R.slip(-10.0) == R.SLIP_DOWNHILL
+    for phi in (37.8, 40.0, 42.0, 45.0, 47.8):
+        assert np.all(np.diff(R.slip(g, phi)) >= 0)                                 # monotone in slope
+    for gg in (0, 5, 10, 15, 20, 25, 30):
+        assert R.slip(gg, 37.8) >= R.slip(gg, 42.0) >= R.slip(gg, 47.8)              # looser soil slips more
+    # the digitised points (Hu et al. 2024 Figs 7/13, 440 kg, lunar gravity)
+    assert [R.slip(x, 42.0) for x in (0, 5, 10, 15, 20, 25, 30)] == pytest.approx([0.04, 0.13, 0.30, 0.67, 0.86, 0.92, 0.96])
+    assert R.slip(15.0, 47.8) == pytest.approx(0.18) and R.slip(10.0, 37.8) == pytest.approx(0.74)
+    assert R.slip(10.0, 39.9) == pytest.approx(0.5 * (0.74 + 0.30), abs=1e-9)        # linear in phi
+    assert R.slip(30.0, 47.8) > R.DIG_IN_SLIP and R.slip(20.0, 42.0) > R.DIG_IN_SLIP  # dig-in
+    assert R.slip(-10.0, 42.0) == R.slip(0.0, 42.0) == R.FLAT_SLIP_REF                # downhill = flat value
+    assert R.slip(5.0, 30.0) == R.slip(5.0, 37.8)                                     # phi clipped to the data
 
 
 def test_energy_calibration():
     assert R.energy_wh(1000.0, 0.0, R.slip(0.0), mass_kg=700.0) == pytest.approx(58.5)   # LRV 57-60 Wh/km
-    assert R.C_RR_EFF == pytest.approx(0.176, abs=0.001)
+    assert R.C_RR_EFF == pytest.approx(0.178, abs=0.001)
     flat = R.energy_wh(1000.0, 0.0, R.slip(0.0))
     assert flat == pytest.approx(58.5 * R.ROVER["mass_kg"] / 700.0)
     assert R.energy_wh(1000.0, 10.0, R.slip(10.0)) > 2 * flat
@@ -92,7 +97,7 @@ def test_fast_integrator_flat_leg_matches_jsc(flat):
     route = np.array([[200.0, 1500.0], [2800.0, 1500.0]])
     prof = TB.leg_profile(flat, route, None)
     for rtt, smg in R.LITAKER_SMG_KMH.items():
-        r = TB.drive_profile(prof, "teleop", rtt, None, np.random.default_rng(0), 400)
+        r = TB.drive_profile(prof, "teleop", rtt, None, np.random.default_rng(0), 400, phi_deg=R.PHI_REF)
         det = prof["length_m"] / (r["t_move_s"] + r["stops"] * R.teleop_stop_s(rtt)) * 3.6
         assert det == pytest.approx(smg, rel=0.02), (rtt, det, smg)     # whole stops only: floor(length / L)
 
@@ -105,7 +110,7 @@ from lunarsim.rover.env import DriveEnv, drive_expert, SCALAR_NAMES  # noqa: E40
 def test_env_teleop_flat_leg_within_5_percent_of_jsc(flat, rtt):
     env = DriveEnv(flat, autonomy="teleop", rtt_s=rtt, sun_az_deg=None)
     leg = drive_expert(env, {"waypoints": [[200.0, 1500.0], [2800.0, 1500.0]], "autonomy": "teleop", "rtt_s": rtt,
-                             "sun_az_deg": None})
+                             "sun_az_deg": None, "phi": R.PHI_REF})
     assert leg["reached"] and leg["interventions"] == 0
     smg = leg["distance_m"] / leg["time_s"] * 3.6
     assert smg == pytest.approx(R.LITAKER_SMG_KMH[rtt], rel=0.05), (rtt, smg)
@@ -220,3 +225,13 @@ def test_expert_driver_interface_and_evaluation(flat):
     ev = BC.evaluate_driver(flat, legs, lambda env: BC.ExpertDriver(env), autonomies=("autonomous",), lighting=(90.0,))
     a = ev["autonomous"]
     assert a["reached"] == a["runs"] == 1 and a["interventions"] == 0 and a["autonomy_pct"] == pytest.approx(100.0)
+
+
+def test_phi_is_sampled_per_run_and_slows_loose_soil(ramp):
+    route = X.plan(ramp, (300.0, 1500.0), (2700.0, 1500.0), None)              # 8 deg uphill all the way
+    prof = TB.leg_profile(ramp, route, None)
+    loose = TB.drive_profile(prof, "autonomous", 4.0, None, np.random.default_rng(0), 5, phi_deg=37.8)
+    dense = TB.drive_profile(prof, "autonomous", 4.0, None, np.random.default_rng(0), 5, phi_deg=47.8)
+    assert loose["t_move_s"] > 1.5 * dense["t_move_s"]                       # slip 0.57 vs 0.06 at 8 deg
+    mixed = TB.drive_profile(prof, "autonomous", 4.0, None, np.random.default_rng(1), 200)
+    assert 37.8 <= mixed["phi_deg"].min() and mixed["phi_deg"].max() <= 47.8 and mixed["phi_deg"].std() > 2

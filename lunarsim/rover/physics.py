@@ -91,7 +91,7 @@ def speed_cap_mps(autonomy: str, rtt_s: float = 0.0) -> float:
         ground_kmh = SPEED_CAP_KMH[autonomy]
     else:
         raise ValueError(f"unknown autonomy level {autonomy!r}")
-    return ground_kmh * KMH / (1.0 - SLIP_TABLE[0])
+    return ground_kmh * KMH / (1.0 - FLAT_SLIP_REF)
 
 
 def stop_plan(autonomy: str, rtt_s: float = 0.0) -> Tuple[float, float]:
@@ -104,23 +104,44 @@ def stop_plan(autonomy: str, rtt_s: float = 0.0) -> Tuple[float, float]:
 
 
 # --- slope: speed factor and slip --------------------------------------------------------------------------
-# Slip vs slope along the heading (uphill positive) for a ~500 kg-class rover on highlands-like regolith in lunar
-# gravity, read from the anchors quoted from Hu et al. 2024 (Chrono CRM validated against NASA GRC SLOPE lab):
-# ~5-10 % at 0-5 deg, ~20 % at 10-15 deg, rising fast past 20 deg, 75-85 % (dig-in risk) by 30 deg. Modelled.
+# Slip vs slope along the heading (uphill positive): Hu et al. 2024 (Chrono CRM, validated against NASA GRC SLOPE-lab
+# tests), Figs 7 and 13, 440 kg VIPER-class rover in LUNAR gravity on GRC-3 simulant, digitised in
+# research_notes/.../verification_round_1.md section 5. One curve per soil friction angle phi (Modelled):
+#   phi 47.8 deg (dense, rho 1839): 0.01 0.03 0.08 0.18 0.35 0.76 0.88  at 0/5/10/15/20/25/30 deg
+#   phi 42.0 deg (medium, 1734):    0.04 0.13 0.30 0.67 0.86 0.92 0.96
+#   phi 37.8 deg (loose, 1627):     0.12 0.32 0.74 0.88 0.93 0.95 0.97
+# slip() interpolates linearly in slope and in phi (clipped to the digitised range). The driving tables sample phi
+# uniformly in [37.8, 47.8] per run (rover.tables), the env per episode; calibrations use the median curve phi 42.
+# (The light MGRU3 rover on Earth slips far less, e.g. 0.10 at 10 deg on phi 42: Earth tests are optimistic.)
+HU_URL = "https://arxiv.org/abs/2405.11001"
 SLIP_TABLE_DEG = np.array([0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0])
-SLIP_TABLE = np.array([0.05, 0.08, 0.15, 0.22, 0.35, 0.55, 0.85])
-SLIP_DOWNHILL = 0.05            # Assumed: downhill skid not modelled beyond the flat-ground value
+SLIP_PHI_DEG = np.array([37.8, 42.0, 47.8])
+SLIP_CURVES = np.array([[0.12, 0.32, 0.74, 0.88, 0.93, 0.95, 0.97],      # phi 37.8
+                        [0.04, 0.13, 0.30, 0.67, 0.86, 0.92, 0.96],      # phi 42.0
+                        [0.01, 0.03, 0.08, 0.18, 0.35, 0.76, 0.88]])     # phi 47.8
+PHI_RANGE = (37.8, 47.8)        # sampled uniformly (Assumed: no site-specific soil data for the south-pole sites)
+PHI_REF = 42.0                  # median curve, used by the flat-ground calibrations
+SLIP_TABLE = SLIP_CURVES[1]     # the phi-42 curve (kept for callers of the old name)
 DIG_IN_SLIP = 0.80              # Hu et al.: "slip values above 80% place the rover in a situation that increases
                                 # the propensity for dig-in"
 
 
-def slip(grade_deg):
-    """Longitudinal slip for the slope along the direction of travel (uphill > 0)."""
-    g = np.asarray(grade_deg, dtype=float)
-    up = np.interp(np.clip(g, 0.0, SLIP_TABLE_DEG[-1]), SLIP_TABLE_DEG, SLIP_TABLE)
-    out = np.where(g > 0, up, SLIP_DOWNHILL)
-    out = np.where(g > SLIP_TABLE_DEG[-1], 0.95, out)
-    return out if out.ndim else float(out)
+def slip(grade_deg, phi_deg=PHI_REF):
+    """Longitudinal slip for the slope along the direction of travel (uphill > 0) and soil friction angle phi.
+    Downhill (and flat) travel uses the curve's flat-ground value; beyond 30 deg the 30 deg value."""
+    g = np.clip(np.asarray(grade_deg, dtype=float), 0.0, SLIP_TABLE_DEG[-1])
+    phi = np.clip(np.asarray(phi_deg, dtype=float), SLIP_PHI_DEG[0], SLIP_PHI_DEG[-1])
+    s = [np.interp(g, SLIP_TABLE_DEG, c) for c in SLIP_CURVES]          # per phi curve
+    lo = np.where(phi <= SLIP_PHI_DEG[1], 0, 1)
+    p0, p1 = SLIP_PHI_DEG[lo], SLIP_PHI_DEG[lo + 1]
+    w = (phi - p0) / (p1 - p0)
+    a = np.where(lo == 0, s[0], s[1])
+    b = np.where(lo == 0, s[1], s[2])
+    out = (1.0 - w) * a + w * b
+    return out if np.ndim(out) else float(out)
+
+
+FLAT_SLIP_REF = slip(0.0, PHI_REF)     # 0.04
 
 
 def slope_speed_factor(slope_deg):
@@ -157,7 +178,7 @@ def lighting_factor(heading_deg, sun_az_deg, in_shadow):
 # slip, E = C_RR_EFF m g / (1 - slip) per metre = 58.5 Wh/km at 700 kg gives the implied effective rolling
 # coefficient (rolling resistance + drivetrain losses) below. Applying it to a 1.6 t cargo rover is Assumed.
 LRV_WH_PER_KM, LRV_MASS_KG = 58.5, 700.0
-C_RR_EFF = LRV_WH_PER_KM * 3.6 * (1.0 - SLIP_TABLE[0]) / (LRV_MASS_KG * G_MOON)     # ~0.176 (Modelled)
+C_RR_EFF = LRV_WH_PER_KM * 3.6 * (1.0 - FLAT_SLIP_REF) / (LRV_MASS_KG * G_MOON)     # ~0.178 (Modelled; phi 42 flat slip)
 DRIVE_EFF = 0.7                  # Assumed: motor + gear efficiency for the grade term
 HOTEL_W = 0.0                    # avionics/comms power while driving, not included (stated in the tables)
 
