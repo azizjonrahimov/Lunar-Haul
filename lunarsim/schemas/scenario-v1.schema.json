@@ -338,6 +338,10 @@
             },
             "shelter": {
               "const": "auto"
+            },
+            "return_after": {
+              "type": "boolean",
+              "description": "evacuated vehicles return to their pre-evacuation site after the window (default true)"
             }
           }
         },

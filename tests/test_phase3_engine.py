@@ -232,3 +232,23 @@ def test_cli_flags_build_the_scenario(tmp_path, lm_ok, capsys):
         main(["run", "--scenario", "P2-default", "--seeds", "1", "--plume", "1"])
     with pytest.raises(ValueError, match="pad_standoff_km"):
         summary(p2(terrain="connecting_ridge", pad_standoff_km="7"))
+
+
+def test_plume_return_after_window():
+    """B-12c: evacuated vehicles go back to their pre-evacuation site after the window (default), or stay."""
+    base = library()["P2-4-vehicles"].with_(terrain="connecting_ridge", pad_standoff_km="1")
+    ret = base.with_(plume={"keepout_km": 1.5, "standdown_h": 2.0})
+    stay = base.with_(plume={"keepout_km": 1.5, "standdown_h": 2.0, "return_after": False})
+    r_ret = run(ret, dispatch.inhouse, seed=2)
+    r_stay = run(stay, dispatch.inhouse, seed=2)
+    assert r_ret["plume_standdowns"] > 0
+    assert r_ret["repositions"] > r_stay["repositions"]               # the return drives
+    sim = Simulation(ret, dispatch.inhouse, seed=2, mech_kwargs={"trace": True})
+    sim.run()
+    tr = sim.trace_export()
+    reps = [j for j in tr["jobs"] if j["kind"] == "reposition"]
+    shelters = {s["site"] for s in tr["shelters"]}
+    back = [j for j in reps if j["segments"][0][0] in shelters]       # some trips leave a shelter after a window
+    assert back
+    d = scenario_to_dict(stay)
+    assert d["plume"]["return_after"] is False and validate_scenario(d) == []

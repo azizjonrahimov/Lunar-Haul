@@ -223,6 +223,10 @@ class PlumeModel:
     def __init__(self, spec: Dict[str, Any], sites: SiteMap, world):
         self.R = float(spec["keepout_km"])
         self.T = float(spec["standdown_h"])
+        # B-12c: after the window an evacuated vehicle that is still idle at the shelter drives back to where it
+        # was (default). With return_after False it stays at the shelter, which acts as unplanned staging.
+        self.return_after = bool(spec.get("return_after", True))
+        self.evacuated: Dict[str, List[Tuple[int, str]]] = {}      # pad -> [(vehicle id, pre-evacuation site)]
         self.windows: List[Tuple[float, float, str]] = []
         self.sites, self.world = sites, world
         self._shelter: Dict[str, str] = {}

@@ -276,6 +276,8 @@ class Simulation:
             if self.plume is not None:
                 self.plume.add(t_land, pad)
                 self._push(max(0.0, t_land - self.plume.T), "PLUME", pad)
+                if self.plume.return_after:
+                    self._push(t_land + self.plume.T, "PLUME_END", pad)
             # a wake-up before each landing lets anticipatory mechanisms stage a vehicle
             self._push(max(0.0, t_land - 48.0), "WAKE", None)
             self._push(max(0.0, t_land - 12.0), "WAKE", None)
@@ -624,6 +626,8 @@ class Simulation:
                     continue
             elif kind == "PLUME":
                 self._plume_start(payload)
+            elif kind == "PLUME_END":
+                self._plume_end(payload)
             elif kind == "DUTY":
                 v: Vehicle = payload
                 if v.busy_until <= self.t:          # idle: the duty block starts now
@@ -726,8 +730,23 @@ class Simulation:
             if self.is_night(self.t) and not v.cls.night_ops:
                 continue
             h = self.travel_h(v, v.location, shelter, False, False, self.t)
+            origin = v.location
             if self._reposition(v, shelter):
                 self.metrics.plume_standdowns += 1
+                self.metrics.standdown_vehicle_h += h
+                self.plume.evacuated.setdefault(pad, []).append((v.id, origin))
+
+    def _plume_end(self, pad: str):
+        """Window closes: evacuated vehicles still idle at the shelter return to their pre-evacuation site."""
+        shelter = self.plume.shelter(pad)
+        back = self.plume.evacuated.pop(pad, [])
+        for vid, origin in back:
+            v = self.vehicles[vid]
+            if (not v.alive or v.busy_until > self.t + 1e-9 or v.location != shelter or origin == shelter
+                    or (self.is_night(self.t) and not v.cls.night_ops)):
+                continue
+            h = self.travel_h(v, v.location, origin, False, False, self.t)
+            if self._reposition(v, origin):
                 self.metrics.standdown_vehicle_h += h
 
     def _plume_hold(self, job: Job) -> float:
