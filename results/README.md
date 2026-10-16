@@ -33,7 +33,7 @@ Every row carries the metrics returned by `lunarsim.engine.Metrics.summary()`. T
 | `jobs`, `bundled_jobs`, `team_lifts`, `repositions`, `backhaul_kg` | trips and their types |
 | `night_strandings`, `faults`, `unmet_operator_waits` | disruption counts |
 | `utilisation`, `empty_km_share`, `km_total`, `energy_kwh`, `operator_hours` | fleet usage |
-| `fleet_cost_musd`, `operator_cost_musd`, `cost_per_kg_usd`, `cost_per_tkm_usd` | system cost; `cost_per_kg_usd` = 1e6 × (fleet + operator cost) / `delivered_kg` (all mass moved, bulk included). The paper's cost per landed kilogram divides by delivered non-bulk mass, which `delivered_kg − bulk_kg` only approximates because `bulk_kg` counts bulk *released*; an exact column is planned. |
+| `fleet_cost_musd`, `operator_cost_musd`, `cost_per_kg_usd`, `cost_per_tkm_usd` | system cost; `cost_per_kg_usd` = 1e6 × (fleet + operator cost) / `delivered_kg` (all mass moved, bulk included). Exact columns (added Oct 2026): `delivered_nonbulk_kg` = delivered mass of landed cargo (bulk surface flows and return items excluded) and `cost_per_landed_kg_usd` = 1e6 × (fleet + operator cost) / `delivered_nonbulk_kg`. The earlier approximation `delivered_kg − bulk_kg` under-reads it by 15-20 % because it keeps return items. |
 | `revenue_gini` | Gini coefficient of job revenue across vehicle owners |
 | `seed` | replication seed (demand stream = seed, operations stream = seed + 100,003) |
 

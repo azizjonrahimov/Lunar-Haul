@@ -71,6 +71,7 @@ class Metrics:
     delivered_kg: float = 0.0
     delivered_items: int = 0
     delivered_tkm: float = 0.0
+    delivered_nonbulk_kg: float = 0.0     # B-16: delivered landed cargo (not bulk surface flows, not return items)
     bulk_kg: float = 0.0
     stranded_kg: float = 0.0
     stranded_items: int = 0
@@ -167,6 +168,10 @@ class Metrics:
             "unmet_operator_waits": self.unmet_operator_waits,
             "repositions": self.repositions,
             "km_reposition": self.km_reposition,
+            # B-16 (appended after the v2 columns): cost per kilogram of LANDED cargo delivered, i.e. bulk surface
+            # flows and return items excluded from the denominator
+            "delivered_nonbulk_kg": self.delivered_nonbulk_kg,
+            "cost_per_landed_kg_usd": 1e6 * total_cost / self.delivered_nonbulk_kg if self.delivered_nonbulk_kg > 0 else np.nan,
         })
         if self.phase3:
             out.update({
@@ -956,6 +961,8 @@ class Simulation:
     def _record_delivery(self, c: Cargo):
         m = self.metrics
         m.delivered_kg += c.mass_kg
+        if c.cls not in ("bulk", "return"):
+            m.delivered_nonbulk_kg += c.mass_kg
         m.delivered_tkm += c.mass_kg / 1000.0 * self.world.distance_km(c.origin, c.dest)
         m.delivered_items += 1
         m.delays_h.append(c.t_delivered - c.t_ready)

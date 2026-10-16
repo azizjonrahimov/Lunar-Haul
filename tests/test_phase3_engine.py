@@ -20,7 +20,18 @@ from lunarsim.phase3 import DrivingModel, SiteMap
 from lunarsim.world import build_default_world
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
-BASELINE_MD5 = "ebb9e0dea68005cddf4ab4d2bda1bfdd"          # lunarsim compare --scenario P2-default --seeds 3
+BASELINE_MD5 = "ebb9e0dea68005cddf4ab4d2bda1bfdd"          # lunarsim compare --scenario P2-default --seeds 3 (v2 file)
+# B-16 appended two columns, so the identity check compares the v2 columns in a canonical form:
+# pd.read_csv -> drop the columns added after v2 -> to_csv(index=False, lineterminator=LF). The v2 file above
+# (md5 ebb9e0de...) has exactly this canonical md5; values were checked equal with DataFrame.equals.
+BASELINE_V2_CANONICAL_MD5 = "e8d84022e4aa41ea389b9b1c15cadd22"
+POST_V2_COLUMNS = ["delivered_nonbulk_kg", "cost_per_landed_kg_usd"]
+
+
+def v2_canonical_md5(path):
+    import pandas as pd
+    df = pd.read_csv(path).drop(columns=[c for c in POST_V2_COLUMNS if c in pd.read_csv(path, nrows=0).columns])
+    return hashlib.md5(df.to_csv(index=False, lineterminator=chr(10)).encode()).hexdigest()
 
 
 @pytest.fixture(autouse=True)
@@ -96,7 +107,7 @@ def test_all_off_is_byte_identical_to_v2(tmp_path):
     from lunarsim.cli import main
     out = tmp_path / "c.csv"
     main(["compare", "--scenario", "P2-default", "--seeds", "3", "--out", str(out)])
-    assert hashlib.md5(out.read_bytes()).hexdigest() == BASELINE_MD5
+    assert v2_canonical_md5(out) == BASELINE_V2_CANONICAL_MD5
     sc = library()["P2-default"]
     assert all(getattr(sc, k) is None for k in ("terrain", "pad_standoff_km", "landing_model", "plume", "autonomy_model"))
     assert "terrain" not in scenario_to_dict(sc)                        # saved v2 scenarios unchanged
@@ -252,3 +263,16 @@ def test_plume_return_after_window():
     assert back
     d = scenario_to_dict(stay)
     assert d["plume"]["return_after"] is False and validate_scenario(d) == []
+
+
+def test_cost_per_landed_kg():
+    """B-16: delivered landed cargo excludes bulk surface flows and return items."""
+    sim = Simulation(library()["P2-default"], dispatch.marketplace, seed=1)
+    s = sim.run()
+    nonbulk = sum(c.mass_kg for c in sim.all_cargo if c.t_delivered is not None and c.cls not in ("bulk", "return"))
+    assert s["delivered_nonbulk_kg"] == pytest.approx(nonbulk) and 0 < s["delivered_nonbulk_kg"] < s["delivered_kg"]
+    cost = s["fleet_cost_musd"] + s["operator_cost_musd"]
+    assert s["cost_per_landed_kg_usd"] == pytest.approx(1e6 * cost / nonbulk)
+    assert s["cost_per_landed_kg_usd"] > s["cost_per_kg_usd"]
+    keys = list(s)
+    assert keys.index("cost_per_landed_kg_usd") == keys.index("km_reposition") + 2     # appended after the v2 keys
