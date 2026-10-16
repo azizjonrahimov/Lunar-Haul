@@ -1,0 +1,197 @@
+{
+ "format": "lunarsim-policy",
+ "version": 1,
+ "kind": "cnn",
+ "id": "rover_bc_s0",
+ "env": "lunar/Drive-v0",
+ "env_version": 1,
+ "onnx": "rover_bc_s0.onnx",
+ "onnx_sha256": "b9fe08aaeafee335d59d04d9cf1383885d7f5bd2bfa15b976c5a48d858aa4eca",
+ "opset": 17,
+ "input": {
+  "patch": {
+   "shape": [
+    3,
+    32,
+    32
+   ],
+   "dtype": "float32",
+   "channels": [
+    "height_rel_10m",
+    "slope_20deg",
+    "roughness_1m"
+   ],
+   "layout": "rows = forward (row 0 is 8 cells behind the rover), columns = left..right, 5 m cells",
+   "normalisation": "height - rover height / 10 m; slope / 20 deg; roughness / 1 m; clipped to +-10"
+  },
+  "scalars": {
+   "shape": [
+    5
+   ],
+   "names": [
+    "speed_frac",
+    "heading_err",
+    "dist_wp",
+    "sun_rel",
+    "shadow"
+   ],
+   "dtype": "float32",
+   "normalisation": "speed / v_cap; heading error / pi; distance to waypoint / 100 m (<= 10); sun azimuth relative / 180 deg (0 at night); shadow flag"
+  }
+ },
+ "output": {
+  "name": "action",
+  "names": [
+   "steer_rate_cmd",
+   "throttle"
+  ],
+  "low": [
+   -1.0,
+   -1.0
+  ],
+  "high": [
+   1.0,
+   1.0
+  ]
+ },
+ "runtime": {
+  "python": "onnxruntime",
+  "browser": "onnxruntime-web",
+  "torch_onnx_max_abs_err": 6.258487701416016e-07
+ },
+ "training": {
+  "algo": "BC + DAgger (MSE on expert actions)",
+  "terrain": "connecting_ridge",
+  "legs": 20,
+  "stride": 8,
+  "dagger_rounds": 2,
+  "epochs": 10,
+  "dagger_epochs": 5,
+  "seed": 0,
+  "device": "cpu",
+  "dagger_steps_cap": 20000,
+  "dagger_stop_fail": 0.5,
+  "torch_version": "2.14.1+cpu",
+  "history": [
+   {
+    "round": 0,
+    "samples": 52630,
+    "mse": 0.0024843039797186237,
+    "steps": 2060,
+    "dataset_mb": 309.8,
+    "rss_mb": 748.4,
+    "peak_rss_mb": 978.7,
+    "private_mb": 1517.8
+   },
+   {
+    "round": 1,
+    "samples": 72630,
+    "rollout_interventions": 224750.0,
+    "rollout": {
+     "runs": 100,
+     "planned_runs": 100,
+     "failed": 6,
+     "stopped_early": false,
+     "recorded": 74007,
+     "kept": 20000
+    },
+    "mse": 0.03388745138796338,
+    "steps": 1420,
+    "dataset_mb": 427.5,
+    "rss_mb": 921.0,
+    "peak_rss_mb": 1292.0,
+    "private_mb": 1704.1
+   },
+   {
+    "round": 2,
+    "samples": 92630,
+    "rollout_interventions": 215301.0,
+    "rollout": {
+     "runs": 100,
+     "planned_runs": 100,
+     "failed": 6,
+     "stopped_early": false,
+     "recorded": 100972,
+     "kept": 20000
+    },
+    "mse": 0.04285474682563996,
+    "steps": 1810,
+    "dataset_mb": 545.2,
+    "rss_mb": 663.5,
+    "peak_rss_mb": 1292.0,
+    "private_mb": 1831.0
+   }
+  ],
+  "samples": 92630,
+  "dataset": "runs\\rover\\rover_bc_s0\\dataset.npz",
+  "wallclock_s": 5674.4,
+  "python": "3.12.3",
+  "time": "2026-10-16T16:06:00+00:00"
+ },
+ "evaluation": {
+  "learned": {
+   "autonomous": {
+    "runs": 30,
+    "reached": 29,
+    "km": 174.64363046740468,
+    "interventions": 21427.0,
+    "interventions_per_km": 122.68984527322407,
+    "autonomy_pct": 3.1545574825270872,
+    "time_h": 1868.328611111111,
+    "rtt_s": 4.0
+   },
+   "supervised": {
+    "runs": 30,
+    "reached": 29,
+    "km": 114.23655126409646,
+    "interventions": 37646.0,
+    "interventions_per_km": 329.5442621772477,
+    "autonomy_pct": 2.05424150641752,
+    "time_h": 3245.6694444444443,
+    "rtt_s": 4.0
+   }
+  },
+  "expert": {
+   "autonomous": {
+    "runs": 30,
+    "reached": 29,
+    "km": 107.11479094150133,
+    "interventions": 46143.0,
+    "interventions_per_km": 430.78084356435994,
+    "autonomy_pct": 0.7038203710651336,
+    "time_h": 3924.1388888888887,
+    "rtt_s": 4.0
+   },
+   "supervised": {
+    "runs": 30,
+    "reached": 29,
+    "km": 104.86757875284219,
+    "interventions": 38428.0,
+    "interventions_per_km": 366.4430938237763,
+    "autonomy_pct": 1.7643977644340891,
+    "time_h": 3303.3147222222224,
+    "rtt_s": 4.0
+   }
+  },
+  "legs": [
+   "DEPOT->SCI_1",
+   "PAD_A@0.5->DEPOT",
+   "BASE->PAD_A@2",
+   "BASE->PAD_B@2",
+   "PSR->PAD_A@3",
+   "DEPOT->PAD_B@3"
+  ],
+  "lighting": [
+   0.0,
+   90.0,
+   180.0,
+   270.0,
+   "night"
+  ]
+ },
+ "card": {
+  "title": "Behaviour-cloned rover driver (PilotNet-style CNN, DAgger against the scripted expert)",
+  "intended_use": "stochastic generator of driving times / interventions for the LunarSim driving tables",
+  "limitations": "trained on one terrain pack; kinematic rover on 5 m LOLA heights (90 % interpolated); lighting is a speed/shadow model, not imagery; interventions are rule-based (env.py)"
+ }
+}
