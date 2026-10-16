@@ -125,7 +125,7 @@
 <p>One simulated year of the Phase-2 reference scenario takes 0.196 s with the models off and 0.326 s with all of them on (marketplace, caches warm), so the sweeps of Section 4 are affordable. The browser's logistics engine stays at version 2; the version-3 models run in Python, and the browser replays their traces and runs the two physics models themselves in the lander and rover labs.</p>
 
 <figure id="v3-fig-dataflow" class="mid">
-<img src="../../figures/v3_fig02_dataflow.png" alt="data flow">
+<img src="../../figures/v3_fig02_pipeline.png" alt="data flow">
 <figcaption><b>Figure 2.</b> Data flow of version 3. The LOLA tile becomes a terrain pack read by the trainer, the engine and the browser. The descent environment produces, through the classical law, the DAgger clone and PPO, per-landing outcome tables; the driving environment produces, through the expert, per-leg driving tables. The discrete-event engine samples both at every landing and every trip, applies the keep-out windows, and writes the metrics and the trace v2 that the experiments and the world viewer read. The browser runs the same lander and rover physics from the same files.</figcaption>
 </figure>
 
