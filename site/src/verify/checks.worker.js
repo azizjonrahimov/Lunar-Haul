@@ -4,7 +4,7 @@
 import { MlpPolicy, checkPolicy } from '../policy.js';
 import * as LP from '../lander/physics.js';
 import { CLASSES } from '../lander/classes.js';
-import { DescentEnv, targetVelocity } from '../lander/env.js';
+import { DescentEnv, targetVelocity, altHistoryStep, obsScale, OBS_NAMES_V3 } from '../lander/env.js';
 import { RoverTerrain } from '../rover/terrain.js';
 import { plan } from '../rover/expert.js';
 import { DriveEnv, expertController } from '../rover/env.js';
@@ -52,6 +52,31 @@ async function lander(base) {
       const same = k === e.steps.length && out && (out.failure_kind ?? null) === (e.outcome.failure_kind ?? null);
       post({ group: G, name: `Episode, ${e.cls}, ${e.policy}, no dispersion`, reference: `${e.steps.length} steps, ${e.outcome.failure_kind ?? 'ok'}`, computed: `${k} steps, ${out ? out.failure_kind ?? 'ok' : '–'}; max |Δstate| ${ws.toExponential(2)}, |Δreward| ${wr.toExponential(2)}, |Δobs| ${wo.toExponential(2)}`, tolerance: String(tol), pass: same && ws <= tol && wr <= tol && wo <= tol, basis: src });
     } catch (err) { fail(G, `episode ${e.cls}`, err); }
+  }
+  // observation v3 (B-10e): the altimeter-history function on its own, then a whole episode built with obs v3
+  if (F.alt_history) {
+    try {
+      let hist = null, w = 0;
+      for (const c of F.alt_history) { let f; [hist, f] = altHistoryStep(hist, c.h, c.held, c.t); w = Math.max(w, ...f.map((v, i) => Math.abs(v - c.features[i]))); }
+      const holds = F.alt_history.filter(c => c.held).length;
+      post({ group: G, name: `Observation v3: altimeter history over ${F.alt_history.length} readings (${holds} dropout holds)`, reference: 'Python alt_history_step features', computed: `max |Δ| ${w.toExponential(2)}`, tolerance: String(tol), pass: w <= tol, basis: src });
+    } catch (err) { fail(G, 'alt_history', err); }
+  }
+  for (const e of F.episodes_v3 || []) {
+    try {
+      const env = new DescentEnv({ cls: e.cls, variant: 'baseline', randomize: false, sensor: false, envVersion: F.env_version, obsVersion: e.obs_version });
+      const layout = e.obs_names.length === OBS_NAMES_V3.length && e.obs_names.every((n, i) => n === OBS_NAMES_V3[i]);
+      const sc = obsScale(CLASSES[e.cls], e.obs_version), ws = Math.max(...sc.map((v, i) => Math.abs(v - e.obs_scale[i])));
+      let obs = env.reset(0), wo = Math.max(...Array.from(obs, (v, i) => Math.abs(v - e.steps[0].obs[i]))), wr = 0, k = 1, out = null, flags = true;
+      for (; k < e.steps.length; k++) {
+        const ref = e.steps[k], r = env.step(ref.action.map(Math.fround)); obs = r.obs;
+        wo = Math.max(wo, ...Array.from(obs, (v, i) => Math.abs(v - ref.obs[i]))); wr = Math.max(wr, Math.abs(r.reward - ref.reward));
+        flags = flags && r.terminated === ref.terminated && r.truncated === ref.truncated;
+        if (r.terminated || r.truncated) { out = r.outcome; k++; break; }
+      }
+      const same = layout && ws === 0 && flags && k === e.steps.length && out && (out.failure_kind ?? null) === (e.outcome.failure_kind ?? null);
+      post({ group: G, name: `Observation v3 episode, ${e.cls}, fixed actions, no dispersion`, reference: `${e.steps.length - 1} steps, ${e.outcome.failure_kind ?? 'ok'}; ${e.obs_names.length} observation values`, computed: `${k - 1} steps, ${out ? out.failure_kind ?? 'ok' : '–'}; layout ${layout ? 'same' : 'DIFFERENT'}, scales ${ws === 0 ? 'identical' : 'max |Δ| ' + ws}; max |Δobs| ${wo.toExponential(2)}, |Δreward| ${wr.toExponential(2)}`, tolerance: String(tol), pass: same && wo <= tol && wr <= tol, basis: src });
+    } catch (err) { fail(G, `episode_v3 ${e.cls}`, err); }
   }
 }
 

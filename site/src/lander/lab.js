@@ -5,7 +5,7 @@ import './lab.css';
 import * as Plot from '@observablehq/plot';
 import * as P from './physics.js';
 import { CLASSES, GATE, TOUCHDOWN, TIPOVER_DEG, TIPOVER_SOURCE } from './classes.js';
-import { DescentEnv, REWARDS_BY_VERSION, ENV_VERSION, DT_S, MAX_STEPS } from './env.js';
+import { DescentEnv, REWARDS_BY_VERSION, ENV_VERSION, DT_S, MAX_STEPS, obsVersionOf } from './env.js';
 const RV = v => REWARDS_BY_VERSION[v] || REWARDS_BY_VERSION[ENV_VERSION];   // reward table for an env version
 import { classicalAction } from './classical.js';
 import { MlpPolicy, checkPolicy } from '../policy.js';
@@ -17,7 +17,7 @@ const $ = id => document.getElementById(id);
 const BASE = import.meta.env.BASE_URL, POL = BASE + 'lab/policies/';
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 const TOL = { policy: '#4477AA', classical: '#EE6677' };
-const TOL_TAG = { bcml: '#4477AA', bc: '#66CCEE', baseline: '#228833', hover_bonus: '#CCBB44', no_eta: '#AA3377', hover_bonus_v1: '#BBBBBB' };   // Tol bright, per policy tag
+const TOL_TAG = { bc_v3: '#AA3377', bcv3: '#AA3377', bcml: '#4477AA', bc: '#66CCEE', baseline: '#228833', hover_bonus: '#CCBB44', no_eta: '#BBBBBB', hover_bonus_v1: '#BBBBBB' };   // Tol bright, per policy tag
 const st = { index: null, policies: {}, checks: {}, terrain: null, pad: null, ep: null, ghost: null, frame: 0, playing: false, last: 0, raf: 0, outcomes: {} };
 
 async function getJson(url) { const r = await fetch(url); if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`); return r.json(); }
@@ -45,8 +45,8 @@ async function boot() {
 // Policy ids are lander_<CLASS>_<tag>_s<seed>. PPO cards carry a training block; the imitation-learned cards (bc, bcml)
 // do not, so class, reward variant and method fall back to the id. Order = how the lab offers them: the best learned
 // lander first (imitation + DAgger from the memoryless classical law), then the comparisons, then the failure demos.
-const TAG_ORDER = ['bcml', 'bc', 'baseline', 'hover_bonus', 'no_eta', 'hover_bonus_v1'];
-const TAG_LABEL = { bcml: 'imitation + DAgger, memoryless classical teacher', bc: 'imitation + DAgger', baseline: 'PPO', hover_bonus: 'PPO, hover bonus (env v2)', hover_bonus_v1: 'PPO, hover bonus (env v1)', no_eta: 'PPO, no survival term' };
+const TAG_ORDER = ['bc_v3', 'bcv3', 'bcml', 'bc', 'baseline', 'hover_bonus', 'no_eta', 'hover_bonus_v1'];   // an observation-v3 clone, once published, is the default
+const TAG_LABEL = { bc_v3: 'imitation + DAgger, observation v3 (altimeter history)', bcv3: 'imitation + DAgger, observation v3 (altimeter history)', bcml: 'imitation + DAgger, memoryless classical teacher', bc: 'imitation + DAgger', baseline: 'PPO', hover_bonus: 'PPO, hover bonus (env v2)', hover_bonus_v1: 'PPO, hover bonus (env v1)', no_eta: 'PPO, no survival term' };
 function meta(p) {
   const t = p.doc.training || {}, m = String(p.id).match(/^lander_([A-Za-z0-9]+)_(.+)_s(\d+)$/) || [], tag = m[2] || '';
   return { cls: t.cls || m[1], tag, seed: t.seed ?? (m[3] !== undefined ? +m[3] : undefined),
@@ -70,7 +70,8 @@ function renderClassOptions() {
 
 /* runEpisode -> {frames:[{state, thrust, tf, reward, cum, obs}], recs, outcome, env, seed, ctrl} */
 function runEpisode(cls, ctrl, seed, opts, policy, variant = 'baseline', envVersion = ENV_VERSION) {
-  const env = new DescentEnv({ cls, variant, envVersion, randomize: opts.randomize, sensor: opts.sensor });
+  const obsVersion = ctrl === 'policy' && policy && policy.obsNames ? obsVersionOf(policy.obsNames) : 2;   // a policy sees the observation its card was trained on
+  const env = new DescentEnv({ cls, variant, envVersion, randomize: opts.randomize, sensor: opts.sensor, obsVersion });
   let obs = env.reset(seed), cum = 0;
   const frames = [{ state: Float64Array.from(env.state), thrust: env.thrustN, tf: env.thrustN / (env.cls.t_max_n * env.thrustScale), reward: 0, cum: 0, action: [0, 0, 0] }], recs = [];
   for (let k = 0; k < MAX_STEPS + 1; k++) {
@@ -224,7 +225,7 @@ async function renderMonteCarlo() {
   const tagOf = t => (String(t.policy).match(/^lander_[A-Za-z0-9]+_(.+)_s\d+$/) || [])[1] || '';
   const label = t => t.policy.startsWith('classical') ? 'Classical law' : `${TAG_LABEL[tagOf(t)] || t.policy}`, colour = t => t.policy.startsWith('classical') ? TOL.classical : (TOL_TAG[tagOf(t)] || TOL.policy);
   // scatter: the classical law and the three learned landers the lab compares; the rest (failure demos) are in the pass-rate chart
-  const shown = t => t.policy.startsWith('classical') || ['bcml', 'bc', 'baseline'].includes(tagOf(t));
+  const shown = t => t.policy.startsWith('classical') || ['bc_v3', 'bcv3', 'bcml', 'bc', 'baseline'].includes(tagOf(t));
   tables.sort((a, b) => (a.policy.startsWith('classical') ? -1 : TAG_ORDER.indexOf(tagOf(a))) - (b.policy.startsWith('classical') ? -1 : TAG_ORDER.indexOf(tagOf(b))));
   const rows = tables.flatMap(t => t.episodes.map(e => ({ shown: shown(t), controller: label(t), seed: e.seed, miss_x_m: e.miss_m[0], miss_y_m: e.miss_m[1], miss_r_m: Math.hypot(...e.miss_m), ok: e.ok, failure_kind: e.failure_kind || 'none', vz_td: e.v_td[2] })));
   const R = 60, inside = rows.filter(r => r.shown && Math.abs(r.miss_x_m) <= R && Math.abs(r.miss_y_m) <= R), outN = rows.filter(r => r.shown).length - inside.length;
@@ -261,7 +262,7 @@ function renderPolicyCards() {
   const ids = Object.values(st.policies).sort((a, b) => rank(a) - rank(b) || (a.id < b.id ? -1 : 1)).map(p => p.id);
   $('l-cards').innerHTML = ids.length ? ids.map(id => {
     const p = st.policies[id], t = p.doc.training || {}, M = meta(p), fe = t.final_eval || {}, chk = st.checks[id], mc = st.index.outcomes.includes(id);
-    return `<div class="card-lite"><h3>${esc(id)}</h3><p class="small">${esc(M.label)}${t.steps ? ` · ${t.steps.toLocaleString('en-GB')} steps` : ''} · reward <b>${esc(M.variant)}</b> (env v${p.doc.env_version || 1}) · class ${esc(M.cls || '?')} · network ${p.layers.map(l => l.w.length).join('–')} (${p.obsDim} inputs) · training seed ${M.seed ?? '?'}</p>
+    return `<div class="card-lite"><h3>${esc(id)}</h3><p class="small">${esc(M.label)}${t.steps ? ` · ${t.steps.toLocaleString('en-GB')} steps` : ''} · reward <b>${esc(M.variant)}</b> (env v${p.doc.env_version || 1}) · class ${esc(M.cls || '?')} · network ${p.layers.map(l => l.w.length).join('–')} (${p.obsDim} inputs, observation v${p.obsNames ? obsVersionOf(p.obsNames) : 2}) · training seed ${M.seed ?? '?'}</p>
       <p class="small">End-of-training check: ${fe.pass_rate !== undefined ? num({ value: 100 * fe.pass_rate, unit: `% in the box (${fe.episodes} episodes)`, flag: 'Modelled', digits: 0, source: `${id}.json training.final_eval` }) : '–'}${mc ? ' · Monte Carlo below' : ''}</p>
       <p class="small ${chk && chk.ok ? 'pass' : 'fail'}">Browser runtime check: ${chk ? `${chk.n} vectors against the ${chk.against}: max |Δaction| ${chk.maxErr.toExponential(1)} (tolerance ${chk.tolerance})${chk.sb3 ? `; against Stable-Baselines3 (float32): ${chk.sb3.maxErr.toExponential(1)} (tolerance ${chk.sb3.tolerance})` : ''} — ${chk.ok ? 'matches Python' : 'DOES NOT MATCH'}` : 'no check file'}</p></div>`;
   }).join('') : '<p class="muted">No trained policies published yet.</p>';

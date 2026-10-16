@@ -15,8 +15,11 @@ export class MlpPolicy {
     });
     this.low = doc.act.low || []; this.high = doc.act.high || []; this.deterministic = doc.deterministic || 'mean_clipped';
     this.obsDim = this.layers[0].w[0].length;
+    this.obsNames = (doc.obs && doc.obs.names) || null;   // the env picks its observation version from these (obs v2: 15, v3: 19)
+    if (this.obsNames && this.obsNames.length !== this.obsDim) throw new Error(`obs.names has ${this.obsNames.length} entries but the network takes ${this.obsDim}`);
   }
   forward(obs) {
+    if (obs.length !== this.obsDim) throw new Error(`${this.id}: observation has ${obs.length} values, the network takes ${this.obsDim}`);
     let h = Float64Array.from(obs);
     for (const { w, b, act } of this.layers) {
       const out = new Float64Array(w.length);
