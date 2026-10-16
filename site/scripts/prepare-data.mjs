@@ -30,9 +30,6 @@ mkdirSync(world, { recursive: true });
 copyFileSync(join(ROOT, 'data', 'site_graph.json'), join(PUB, 'world', 'site_graph.json'));
 const traces = join(ROOT, 'data', 'sample_traces');
 for (const f of readdirSync(traces).filter(f => f.endsWith('.json'))) copyFileSync(join(traces, f), join(world, f));
-// trace v2 test fixture from B-12 (P2-4-vehicles, 2,500 h, all Phase-3 features on) until a v2 sample lands in data/sample_traces
-const v2 = join(ROOT, 'tests', 'fixtures', 'trace_v2_sample.json');
-if (existsSync(v2)) copyFileSync(v2, join(world, 'v2_fixture.json'));
 
 cpSync(join(SITE, 'node_modules', 'detect-gpu', 'dist', 'benchmarks'), join(PUB, 'detect-gpu', 'benchmarks'), { recursive: true });
 

@@ -13,7 +13,7 @@ import { OWNER_COLOURS } from './colours.js';
 const $ = id => document.getElementById(id);
 const BASE = import.meta.env.BASE_URL;
 const SIM_KEY = 'lunarsim.worldTrace';
-const SAMPLES = { P1: 'P1_marketplace_seed3.json', P2: 'P2_marketplace_seed3.json', P3: 'P3_marketplace_seed3.json', P2V2: 'P2_marketplace_seed3_v2.json', V2: 'v2_fixture.json' };
+const SAMPLES = { P1: 'P1_marketplace_seed3.json', P2: 'P2_marketplace_seed3.json', P3: 'P3_marketplace_seed3.json', P2V2: 'P2_marketplace_seed3_v2.json' };
 const DESCENT_RATE_H = 10 / 3600;      // during a descent, play at most 10 sim-seconds per second
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -33,7 +33,7 @@ async function boot() {
   st.mode = await pickMode();
   wireControls();
   const q = new URLSearchParams(location.search);
-  if (q.get('from') === 'simulator') loadFromSimulator(); else loadSample(q.get('sample') && SAMPLES[q.get('sample')] ? q.get('sample') : 'P2');
+  if (q.get('from') === 'simulator' || q.get('from') === 'service') loadFromSimulator(q.get('from') === 'service' ? `service run ${q.get('run') || ''}`.trim() : null); else loadSample(q.get('sample') && SAMPLES[q.get('sample')] ? q.get('sample') : 'P2');
 }
 
 // ---------- GPU tier: detect-gpu with self-hosted benchmarks; tier 0 or no WebGL2 -> 2D plan view ----------
@@ -55,10 +55,10 @@ async function loadSample(key) {
   try { setTrace(await (await fetch(BASE + 'world/samples/' + SAMPLES[key])).text(), `bundled sample ${SAMPLES[key]}`); }
   catch (err) { status(`Could not load the ${key} sample: ${err.message}.`); }
 }
-function loadFromSimulator() {
+function loadFromSimulator(label) {   // the simulator and the Account page hand a trace over through localStorage
   let raw = null; try { raw = localStorage.getItem(SIM_KEY); } catch (e) { /* blocked storage */ }
   if (!raw) { status('No run from the simulator was found in this browser. Run one there and press "Open in 3D world", or load a sample.'); loadSample('P2'); return; }
-  setTrace(raw, 'the simulator’s last run');
+  setTrace(raw, label || 'the simulator’s last run');
 }
 function setTrace(text, source) {
   let tr;

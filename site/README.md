@@ -33,7 +33,7 @@ into a Windows path.
 |---|---|---|
 | `/` hero | `data/terrain/connecting_ridge/{height_20m.png, meta.json}` (fallback: `site/.terrain-dev/` from `scripts/make_dev_terrain.py`) | `public/terrain/hero/` |
 | `/` numbers and figure | `results/table_main.csv` (read at build time by `lib/pages.mjs`) | inlined in the HTML |
-| `/world` | `data/sample_traces/*.json`, `tests/fixtures/trace_v2_sample.json`, `data/site_graph.json`, `data/terrain/connecting_ridge/sites.json`; the simulator's last run via `localStorage` | `public/world/`, `public/terrain/hero/` |
+| `/world` | `data/sample_traces/*.json` (incl. the full-year v2 sample), `data/site_graph.json`, `data/terrain/connecting_ridge/sites.json`; the simulator's last run via `localStorage` | `public/world/`, `public/terrain/hero/` |
 | `/lab/lander` | `data/policies/{lander_*.json, *.check.json, outcomes_*.json}` | `public/lab/policies/` (+ `index.json`) |
 | `/lab/rover` | `data/terrain/connecting_ridge/{height_5m.png, slope_20m.png}`, `data/driving/driving-v1.json` (split per leg); daylight shadow grids precomputed with `src/rover/terrain.js` | `public/lab/rover/`, `public/terrain/hero/` |
 | `/verification` | the simulator's worker, `tests/fixtures/lander_parity.json`, `site/verify/refs.json` (Python reference numbers from `scripts/make_verify_refs.py`) | `public/verify/` |

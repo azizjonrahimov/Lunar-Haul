@@ -4,21 +4,67 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Account · LunarHaul</title>
-<meta name="description" content="Sign in to save runs and replicate results. Nothing on the site needs an account.">
+<meta name="description" content="Sign in to run the reference engine on the LunarHaul service, keep your runs with their provenance, replicate them, and publish to the gallery. Nothing on the site needs an account.">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="<!--@base-->favicon.svg" type="image/svg+xml">
 <script>try { var t = localStorage.getItem('lunarsim.theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <script type="module" src="/src/main.js"></script>
+<script type="module" src="/src/account/main.js"></script>
 </head>
 <body>
 <!--@header-->
 <main id="main"><div class="wrap">
   <header class="page-head">
-    <h1>Account</h1>
-    <p>Sign-in with ORCID or GitHub to save runs, re-run them for a replication badge, and publish to the gallery. Everything else on the site stays open without an account.</p>
+    <h1>Account and runs</h1>
+    <p>Run the Python reference engine on the LunarHaul service, keep every run with the exact code, data and seeds that produced it, re-run it to check that it replicates, and publish it to the gallery. You can start runs without signing in; an account keeps them together and lets you publish. Nothing else on the site needs an account.</p>
   </header>
-  <section class="prose">
-    <p class="stub">This page is being built (task F-9).</p>
+
+  <div class="toolbar" role="group" aria-label="Service">
+    <label class="lbl" for="a-base">Service</label>
+    <input id="a-base" type="url" placeholder="https://api.example.org" spellcheck="false" autocomplete="off" style="max-width:22rem">
+    <button class="btn" type="button" id="a-connect">Connect</button>
+  </div>
+  <p class="status-line" id="a-status" role="status" aria-live="polite"></p>
+
+  <section id="a-signin" class="a-card" hidden aria-labelledby="h-signin">
+    <h2 id="h-signin" class="h3">Sign in</h2>
+    <div class="toolbar"><button class="btn" type="button" id="a-orcid">Sign in with ORCID</button><button class="btn" type="button" id="a-github">Sign in with GitHub</button><span class="small muted" id="a-provider-note"></span></div>
+    <form id="a-magic-form" class="toolbar"><label class="lbl" for="a-email">or e-mail me a sign-in link</label><input id="a-email" type="email" autocomplete="email" placeholder="you@example.org" style="max-width:18rem"><button class="btn" type="submit">Send link</button></form>
+  </section>
+  <section id="a-signed" class="a-card" hidden aria-label="Signed in"><p id="a-who" class="small"></p><button class="btn" type="button" id="a-logout">Sign out</button></section>
+
+  <section id="a-new" class="a-card" hidden aria-labelledby="h-new">
+    <h2 id="h-new" class="h3">Start a run on the reference engine</h2>
+    <form id="a-form">
+      <div class="toolbar">
+        <label class="lbl" for="a-scenario">Scenario</label><select id="a-scenario"></select>
+        <label class="lbl" for="a-mech">Dispatch rule</label><select id="a-mech"></select>
+        <label class="lbl" for="a-seeds">Seeds</label><input id="a-seeds" type="number" min="1" max="100" value="5" style="width:5rem">
+      </div>
+      <fieldset class="a-opts"><legend class="lbl">Phase-3 options (off = the v2 model)</legend>
+        <label class="chk"><input type="checkbox" id="a-terrain"> real terrain (connecting ridge)</label>
+        <label class="lbl" for="a-standoff">pad standoff</label><select id="a-standoff"><option value="0.5">0.5 km</option><option value="1" selected>1 km</option><option value="2">2 km</option><option value="3">3 km</option><option value="5">5 km</option></select>
+        <label class="lbl" for="a-landing">landing outcomes</label><select id="a-landing"><option value="">none</option><option value="classical">classical law tables</option><option value="lander_CLPS_bc_s0">learned (behaviour-cloned) CLPS</option></select>
+        <label class="chk"><input type="checkbox" id="a-plume"> plume keep-out</label>
+        <label class="lbl" for="a-keepout">radius</label><input id="a-keepout" type="number" min="0.1" max="5" step="0.1" value="1" style="width:5rem"><span class="small">km</span>
+        <label class="lbl" for="a-standdown">stand-down</label><input id="a-standdown" type="number" min="0" max="12" step="0.25" value="0.5" style="width:5rem"><span class="small">h</span>
+        <label class="chk"><input type="checkbox" id="a-autonomy"> rover driving tables (driving-v1)</label>
+      </fieldset>
+      <div class="toolbar"><label class="chk"><input type="checkbox" id="a-public"> publish to the gallery when done</label><span class="small muted" id="a-public-note"></span>
+        <button class="btn primary" type="submit" id="a-go">Run</button><progress id="a-prog" max="1" value="0" hidden></progress><span class="small mono" id="a-live" aria-live="polite"></span></div>
+    </form>
+  </section>
+
+  <section id="a-mine-sec" hidden aria-labelledby="h-mine"><h2 id="h-mine">Your runs</h2><div id="a-mine"></div></section>
+  <section id="a-gal-sec" hidden aria-labelledby="h-gal">
+    <h2 id="h-gal">Gallery and leaderboard</h2>
+    <div class="toolbar"><label class="lbl" for="a-metric">Sort by</label><select id="a-metric"></select><label class="chk"><input type="checkbox" id="a-ranked"> ranked runs only (clean tagged releases)</label></div>
+    <div id="a-gal"></div>
+  </section>
+
+  <section class="prose small muted" aria-labelledby="h-how">
+    <h2 id="h-how" class="h3">What a run record holds</h2>
+    <p>The engine version and git commit (and whether the code had uncommitted changes), the Python and platform, the scenario and its hash, the seeds, the hashes of every data file the engine read (landing-outcome tables, driving tables, terrain), and the hash of the output. Replicating re-runs the stored inputs and compares output hashes, so “replicated ✓” means the same bytes came out. Only runs of a clean, tagged release rank on the leaderboard.</p>
   </section>
 </div></main>
 <!--@footer-->
