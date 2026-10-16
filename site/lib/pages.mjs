@@ -7,6 +7,7 @@ import { num, esc } from '../src/components/num.js';
 
 export const SITE = join(import.meta.dirname, '..');
 export const ROOT = join(SITE, '..');
+export const REPO = 'https://github.com/azizjonrahimov/lunar-logistics-research';
 
 // ---------- icons (Lucide, ISC) ----------
 const iconCache = {};
@@ -21,7 +22,7 @@ export function icon(name, cls = 'icon') {
 
 // ---------- navigation ----------
 export const NAV = [
-  ['world/', 'World'], ['lab/lander/', 'Lander lab'], ['lab/rover/', 'Rover lab'], ['simulator/', 'Simulator'],
+  ['world/', 'World'], ['results/', 'Results'], ['lab/lander/', 'Lander lab'], ['lab/rover/', 'Rover lab'], ['simulator/', 'Simulator'],
   ['method/', 'Method'], ['paper/', 'Paper'], ['data/', 'Data'], ['about/', 'About'],
 ];
 export const FOOT = [['verification/', 'Verification'], ['changelog/', 'Changelog'], ['account/', 'Account'], ['simulator/', 'Simulator (v2)']];
@@ -47,7 +48,7 @@ export function footer(base) {
   </div>
   <div>
     <p>${links}</p>
-    <p><a href="https://github.com/azizjonrahimov/lunar-logistics-research">Source code</a> · MIT licence · <a href="${base}paper/">Cite</a></p>
+    <p><a href="${REPO}">Source code</a> · MIT licence · <a href="${base}paper/">Cite</a></p>
   </div>
 </div></footer>`;
 }
@@ -63,7 +64,7 @@ export function markdown(name) {
 // ---------- headline numbers ----------
 // results/table_main.csv is the paper's main table (experiments/make_figures.py): one row per phase x mechanism,
 // cells "mean ± 95% CI half-width" over the 30 E1 seeds. The landing page shows three Phase-2 cells.
-function csv(text) {
+export function csv(text) {
   const rows = []; let row = [], cell = '', q = false;
   for (let i = 0; i < text.length; i++) {
     const c = text[i];

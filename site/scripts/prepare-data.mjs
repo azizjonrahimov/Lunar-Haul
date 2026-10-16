@@ -75,4 +75,12 @@ if (existsSync(join(src, 'height_5m.png')) && !meta.dev_standin) {
     console.log(`prepare-data: rover shadow grids computed in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
   }
 }
+// /results: figure PNGs (PDFs link to the repository) and the small summary tables; whatever exists is staged
+const figs = join(ROOT, 'figures'), resOut = join(PUB, 'results');
+mkdirSync(join(resOut, 'figures'), { recursive: true }); mkdirSync(join(resOut, 'data'), { recursive: true });
+const pngs = existsSync(figs) ? readdirSync(figs).filter(f => /^fig\d+_[\w-]+\.png$/.test(f)) : [];
+for (const f of pngs) copyFileSync(join(figs, f), join(resOut, 'figures', f));
+const tables = ['table_E15.csv', 'table_E16.csv'].filter(f => existsSync(join(ROOT, 'results', f)));
+for (const f of tables) copyFileSync(join(ROOT, 'results', f), join(resOut, 'data', f));
+console.log(`prepare-data: results page: ${pngs.length} figures, tables ${tables.join(', ') || 'none'}`);
 console.log('prepare-data: world samples, site graph and detect-gpu benchmarks staged');

@@ -1,0 +1,18 @@
+/* /results */
+.r-fig { margin: var(--s-5) 0 var(--s-6); }
+.r-fig img { display: block; width: 100%; max-width: 960px; height: auto; background: #fff; border: 1px solid var(--hairline); border-radius: var(--radius); }
+.r-fig figcaption { font-size: var(--fs-small); color: var(--ink-2); margin-top: var(--s-2); max-width: var(--measure); }
+.r-fig figcaption p { margin: var(--s-1) 0 0; }
+.r-note { color: var(--ink); }
+.r-stale summary, .r-v2 > summary { cursor: pointer; font-size: var(--fs-small); color: var(--ink-2); }
+.r-v2 > summary { font-size: var(--fs-body); padding: var(--s-2) 0; }
+.r-scroll { overflow-x: auto; }
+.r-table { margin: var(--s-3) 0; }
+.r-table caption { text-align: left; font-size: var(--fs-small); color: var(--ink-2); padding-bottom: var(--s-1); caption-side: top; }
+.r-table th { font-weight: 500; color: var(--ink-2); text-align: left; vertical-align: top; }
+.r-table td { font-size: var(--fs-small); vertical-align: top; white-space: nowrap; }
+.r-table td.small { white-space: normal; }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 650; white-space: nowrap; }
+.pill.pass { color: var(--flag-measured); border: 1px solid currentColor; }
+.pill.fail { color: var(--tol-red); border: 1px solid currentColor; }
+.pill.note { color: var(--ink-2); border: 1px dashed currentColor; }
