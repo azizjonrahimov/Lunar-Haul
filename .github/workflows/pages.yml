@@ -3,7 +3,7 @@ name: deploy simulator
 on:
   push:
     branches: [main]
-    paths: ["web/**", "site/**", "data/sample_traces/**", "data/terrain/connecting_ridge/**", "results/E1_phases.csv", "results/table_main.csv", ".github/workflows/pages.yml"]
+    paths: ["web/**", "site/**", "data/sample_traces/**", "data/terrain/connecting_ridge/**", "data/policies/**", "data/driving/**", "results/E1_phases.csv", "results/table_main.csv", "results/table_E15.csv", "results/table_E16.csv", "results/table_E20.csv", "results/E20_fit.json", "figures/fig2*", "figures/phase3_captions.json", "figures/v3_fig02_pipeline.*", "tests/fixtures/lander_parity.json", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:
