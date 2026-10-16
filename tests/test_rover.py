@@ -116,6 +116,28 @@ def test_env_teleop_flat_leg_within_5_percent_of_jsc(flat, rtt):
     assert smg == pytest.approx(R.LITAKER_SMG_KMH[rtt], rel=0.05), (rtt, smg)
 
 
+@pytest.mark.parametrize("autonomy", ["autonomous", "supervised"])
+def test_env_one_intervention_per_hazard_on_the_route(flat, autonomy):
+    """B-18 / env version 2: a rough cell the route runs through costs one intervention and the rover resumes past it
+    (version 1 put it back inside the cell and re-intervened on every step until the step cap)."""
+    from lunarsim.rover.expert import PurePursuit
+    env = DriveEnv(flat)
+    env.reset(seed=0, options={"waypoints": [[300.0, 1500.0], [1500.0, 1500.0]], "autonomy": autonomy,
+                               "sun_az_deg": 90.0, "phi": R.PHI_REF})
+    env.rough = env.rough.copy()
+    j, i = flat.cell(900.0, 1500.0)
+    env.rough[j, i] = 2.0 * R.INTERVENTION["roughness_m"]
+    pp = PurePursuit(env.route)
+    while True:
+        cap = env._v_cap(env.state["x"], env.state["y"], env.state["psi"])
+        _, _, term, trunc, info = env.step(np.array(pp.action(env.state, cap), dtype=np.float32))
+        if term or trunc:
+            break
+    leg = info["leg"]
+    assert leg["reached"] and leg["interventions"] == 1
+    assert leg["distance_m"] == pytest.approx(1200.0, rel=0.02)
+
+
 def test_env_contract(flat):
     from gymnasium.utils.env_checker import check_env
     env = DriveEnv(flat, autonomy="supervised", sun_az_deg=90.0, random_leg_m=500.0)

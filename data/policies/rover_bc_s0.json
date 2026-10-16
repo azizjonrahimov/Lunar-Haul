@@ -132,45 +132,49 @@
   "learned": {
    "autonomous": {
     "runs": 30,
-    "reached": 29,
-    "km": 174.64363046740468,
-    "interventions": 21427.0,
-    "interventions_per_km": 122.68984527322407,
-    "autonomy_pct": 3.1545574825270872,
-    "time_h": 1868.328611111111,
-    "rtt_s": 4.0
+    "reached": 30,
+    "km": 169.6885990181757,
+    "interventions": 8.0,
+    "interventions_per_km": 0.047145182683387604,
+    "autonomy_pct": 98.75700208529256,
+    "time_h": 54.34888888888889,
+    "rtt_s": 4.0,
+    "route_km": 96.751
    },
    "supervised": {
     "runs": 30,
-    "reached": 29,
-    "km": 114.23655126409646,
-    "interventions": 37646.0,
-    "interventions_per_km": 329.5442621772477,
-    "autonomy_pct": 2.05424150641752,
-    "time_h": 3245.6694444444443,
-    "rtt_s": 4.0
+    "reached": 30,
+    "km": 106.15911170260412,
+    "interventions": 4.0,
+    "interventions_per_km": 0.03767929041461524,
+    "autonomy_pct": 99.42529822107113,
+    "time_h": 58.77444444444444,
+    "rtt_s": 4.0,
+    "route_km": 96.751
    }
   },
   "expert": {
    "autonomous": {
     "runs": 30,
-    "reached": 29,
-    "km": 107.11479094150133,
-    "interventions": 46143.0,
-    "interventions_per_km": 430.78084356435994,
-    "autonomy_pct": 0.7038203710651336,
-    "time_h": 3924.1388888888887,
-    "rtt_s": 4.0
+    "reached": 30,
+    "km": 96.04116858873438,
+    "interventions": 1.0,
+    "interventions_per_km": 0.010412201503734097,
+    "autonomy_pct": 99.45550938529875,
+    "time_h": 15.508888888888889,
+    "rtt_s": 4.0,
+    "route_km": 96.751
    },
    "supervised": {
     "runs": 30,
-    "reached": 29,
-    "km": 104.86757875284219,
-    "interventions": 38428.0,
-    "interventions_per_km": 366.4430938237763,
-    "autonomy_pct": 1.7643977644340891,
-    "time_h": 3303.3147222222224,
-    "rtt_s": 4.0
+    "reached": 30,
+    "km": 96.08103341293501,
+    "interventions": 2.0,
+    "interventions_per_km": 0.020815762788525,
+    "autonomy_pct": 99.65767307778928,
+    "time_h": 49.33555555555556,
+    "rtt_s": 4.0,
+    "route_km": 96.751
    }
   },
   "legs": [
@@ -187,11 +191,15 @@
    180.0,
    270.0,
    "night"
-  ]
+  ],
+  "max_steps": 50000,
+  "env_version": 2,
+  "driver": "saved rover_bc_s0.onnx through onnxruntime (OnnxDriver)"
  },
  "card": {
   "title": "Behaviour-cloned rover driver (PilotNet-style CNN, DAgger against the scripted expert)",
   "intended_use": "stochastic generator of driving times / interventions for the LunarSim driving tables",
   "limitations": "trained on one terrain pack; kinematic rover on 5 m LOLA heights (90 % interpolated); lighting is a speed/shadow model, not imagery; interventions are rule-based (env.py)"
- }
+ },
+ "evaluation_note": "Recomputed 2026-10-16 (B-18) from the saved ONNX, without retraining. The first evaluation (env version 1) counted an intervention loop: on PSR->PAD_A@3 at night the planned route crosses a 20 m cell above the 0.5 m roughness limit, and version 1 put the rover back on the route at or next to that cell after each intervention, so it intervened on (almost) every step until the 50,000-step cap: about 46,000 interventions and 3,900 h for one drive, i.e. hundreds per km overall. Env version 2 resumes past the hazard (one intervention per hazard, as in the driving tables). Every other drive had 0-1 interventions in both versions. Definitions: interventions/km = interventions / distance driven (km); route_km = planned route length; time_h = elapsed time incl. stops and intervention costs; autonomy % = 100 (1 - interventions x (RTT + 300 s recovery) / elapsed time); RTT 4 s for both levels (it sets the intervention cost; the autonomous level has no stops); 50,000-step limit per drive. The training record (env version 1, incl. its DAgger rollouts, which contained the same loop) is unchanged."
 }

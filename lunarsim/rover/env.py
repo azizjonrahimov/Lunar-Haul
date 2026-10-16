@@ -10,8 +10,11 @@ Action: Box(-1, 1, (2,)): steer-rate command, throttle (fraction of the speed ca
 Time step 1 s. Teleop: actions take effect after the round-trip time (command queue), and the rover halts
 for stop-to-confirm every L(rtt) metres (physics.stop_plan). Interventions (corridor exit, slope above the
 hard limit, stall, roughness above the collision proxy) cost RTT + recovery time and put the rover back on
-the route at the closest point, stopped. info["leg"] at the end: time_s, energy_wh, interventions,
-distance_m, stops, reached.
+the route, stopped, at the closest point, or (version 2) at the first route point past it that is clear of the
+roughness and slope limits and, when the rover stands on a hazard, more than HAZARD_CLEAR_M from that 20 m cell's
+centre: the operator takes the rover across a hazard the route runs through or cuts past, so one hazard is one
+intervention (as in the driving tables). Version 1 re-intervened on every step there (thousands per
+drive). info["leg"] at the end: time_s, energy_wh, interventions, distance_m, stops, reached.
 """
 from __future__ import annotations
 
@@ -32,7 +35,8 @@ except ImportError:
     gym, spaces, _Base = None, None, object
 
 ENV_ID = "lunar/Drive-v0"
-ENV_VERSION = 1
+ENV_VERSION = 2          # 2: an intervention carries the rover past a hazard on the route (B-18)
+HAZARD_CLEAR_M = 25.0    # resume at the first route point this far from the hazard's 20 m cell centre (> half diagonal)
 DT_S = 1.0
 PATCH = 32
 PATCH_RES_M = 5.0
@@ -149,12 +153,28 @@ class DriveEnv(_Base):
         return {"patch": patch, "scalars": np.clip(scal, -10, 10)}
 
     # -- dynamics -------------------------------------------------------------------------------------------
+    def _hazard(self, x, y) -> bool:
+        """A point the rover cannot stand on without an intervention: slope or roughness above the limits."""
+        j, i = self.t.cell(x, y)
+        return bool(self.t.slope(x, y) > R.INTERVENTION["slope_deg"] or self.rough[j, i] > R.INTERVENTION["roughness_m"])
+
     def _intervene(self):
         self.interventions += 1
         self.time_s += R.intervention_cost_s(self.rtt)
-        k = self.pp.closest(self.state["x"], self.state["y"])
+        x, y = self.state["x"], self.state["y"]
+        k = self.pp.closest(x, y)
+        k0, last = k, len(self.pp.path) - 1
+        # a hazard under the rover: resume past the 20 m cell it lies in (pursuit would cut back into it otherwise)
+        c = None
+        if self._hazard(x, y):
+            j, i = self.t.cell(x, y)
+            c = ((int(i) + 0.5) * self.t.px20, (int(j) + 0.5) * self.t.px20)
+        while k < last and (self._hazard(*self.pp.path[k]) or
+                            (c is not None and math.hypot(self.pp.path[k][0] - c[0], self.pp.path[k][1] - c[1]) < HAZARD_CLEAR_M)):
+            k += 1
+        self.dist_m += float(self.pp.s[k] - self.pp.s[k0])          # the operator drives it across
         p = self.pp.path[k]
-        q = self.pp.path[min(len(self.pp.path) - 1, k + 5)]
+        q = self.pp.path[min(last, k + 5)]
         psi = math.atan2(q[0] - p[0], q[1] - p[1]) % (2 * math.pi) if np.any(q != p) else self.state["psi"]
         self.state.update(x=float(p[0]), y=float(p[1]), psi=psi, v=0.0, delta=0.0)
         self.stall_s = 0.0
