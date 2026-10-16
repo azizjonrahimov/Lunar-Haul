@@ -214,10 +214,19 @@ def test_paired_and_energy_cost():
     e = fl.add_energy_cost(df)
     assert math.isclose(e.loc[0, "cost_per_kg_with_energy_usd_2000"], 100.0 + 2000 * 25.0 / 1000.0)
     assert (e["cost_per_kg_with_energy_usd_0"] == e["cost_per_kg_usd"]).all()
+    assert r.loc[3.0, "d_n_valid"] == 4 and r.loc[0.5, "d_n_valid"] == 5
     tab = fl.table_e17(df, B=50)
     assert len(tab) == 3 and {"dD1_delay_prio1_mean_h", "cost_per_kg_with_energy_usd_2000_ci95", "offpad_share"} <= set(tab.columns)
     assert tab["dD1_delay_prio1_mean_h"].isna().sum() == 1                         # NaN for the reference row
     assert "dCL_delay_prio1_mean_h" not in tab.columns                             # only the classical level present: nothing to pair
+    row3 = tab.set_index("pad_standoff_km").loc[3.0]
+    assert row3["n_seeds"] == 5 and row3["n_valid"] == 4 and row3["n_valid_min"] == 4 and math.isclose(row3["delay_prio1_mean_h"], 7.5)
+    # a cell with no finite delay at all stays NaN with n_valid 0 instead of raising
+    df2 = df.copy()
+    df2.loc[df2["pad_standoff_km"] == 0.5, "delay_prio1_mean_h"] = np.nan
+    t2 = fl.table_e17(df2, B=20).set_index("pad_standoff_km")
+    assert np.isnan(t2.loc[0.5, "delay_prio1_mean_h"]) and t2.loc[0.5, "n_valid"] == 0 and np.isnan(t2.loc[0.5, "dD1_delay_prio1_mean_h"])
+    assert t2.loc[0.5, "dD1_n_valid"] == 0 and math.isclose(t2.loc[0.5, "dD1_energy_kwh"], -25.0)
 
 
 # ---------------------------------------------------------------------------------------------- pad siting
@@ -243,27 +252,37 @@ def test_siting_table_minimum(tmp_path):
         for s in range(3):
             rows.append(dict(scenario="P2-default", phase="P2", n_vehicles=6, mechanism="marketplace", miss_level_m=2.9, miss_label=fl.CLASSICAL_LABEL,
                              sigma_scale=1.0, pad_radius_m=50.0, pad_standoff_km=D, seed=s, operator_cost_musd=0.05 + 0.01 * D, energy_kwh=400.0 * D,
-                             delivered_kg=30000.0, fleet_cost_musd=14.0, cargo_lost_kg=0.0, offpad_landings=0, km_total=700.0 * D, delay_prio1_mean_h=5.0 + D))
+                             delivered_kg=30000.0, delivered_items=600.0, delay_mean_h=5.0 + D, fleet_cost_musd=14.0, cargo_lost_kg=0.0,
+                             offpad_landings=0, km_total=700.0 * D, delay_prio1_mean_h=5.0 + D))
     df = pd.DataFrame(rows)
+    df.loc[(df["pad_standoff_km"] == 5.0) & (df["seed"] == 2), "delay_prio1_mean_h"] = np.nan      # a year without an urgent delivery
     sites = tmp_path / "sites.json"
     sites.write_text('{"pad_details": {"0.5": {"PAD_A": {"los_to_base": "clear"}}, "1": {"PAD_A": {"los_to_base": "clear"}}, '
                      '"2": {"PAD_A": {"los_to_base": "blocked"}}, "5": {"PAD_A": {"los_to_base": "blocked"}}}}', encoding="utf-8")
     sit = fl.siting_table(df, sites_path=str(sites), landings_per_year={"P2-default": 8.0})
-    assert len(sit) == 4 * len(fl.ENERGY_PRICES) * len(fl.PAD_COST_MUSD) * len(fl.DAMAGE_MUSD_PER_IMPACT)
-    r = sit[(sit["energy_price_usd_per_kwh"] == 2000) & (sit["pad_case_usd_per_kg_transport"] == "100K") & (sit["damage_musd_per_impact"] == 1.0)].set_index("pad_standoff_km")
+    n_sweep = len(fl.ENERGY_PRICES) * len(fl.PAD_COST_MUSD) * len(fl.DAMAGE_MUSD_PER_IMPACT) * len(fl.VOT_USD_PER_ITEM_H)
+    assert len(sit) == 4 * n_sweep
+    assert set(sit["vot_usd_per_item_h"]) == set(fl.VOT_USD_PER_ITEM_H)
+    sel = (sit["energy_price_usd_per_kwh"] == 2000) & (sit["pad_case_usd_per_kg_transport"] == "100K") & (sit["damage_musd_per_impact"] == 1.0)
+    r = sit[sel & (sit["vot_usd_per_item_h"] == 1000)].set_index("pad_standoff_km")
     assert math.isclose(r.loc[2.0, "hauling_musd"], 0.07 + 2000 * 800.0 / 1e6) and math.isclose(r.loc[2.0, "pad_musd_per_year"], 22.9)
     assert r.loc[2.0, "shield"] == 0.1 and r.loc[1.0, "shield"] == 1.0 and bool(r.loc[2.0, "pad_a_los_blocked"]) is True
     assert math.isclose(r.loc[1.0, "damage_musd"], 8.0 * 8.0 * 1.0 * 1.0) and math.isclose(r.loc[5.0, "damage_musd"], 8.0 * 0.37 * 0.1 * 1.0)
-    assert math.isclose(r.loc[2.0, "total_musd"], r.loc[2.0, "hauling_musd"] + 22.9 + r.loc[2.0, "damage_musd"])
+    assert math.isclose(r.loc[2.0, "delay_cost_musd"], 600.0 * 7.0 * 1000 / 1e6)                # items x mean delay x VoT
+    assert math.isclose(r.loc[2.0, "total_musd"], r.loc[2.0, "hauling_musd"] + 22.9 + r.loc[2.0, "damage_musd"] + r.loc[2.0, "delay_cost_musd"])
     assert r["min_cost"].sum() == 1
+    r0 = sit[sel & (sit["vot_usd_per_item_h"] == 0)].set_index("pad_standoff_km")
+    assert (r0["delay_cost_musd"] == 0).all() and r0.loc[5.0, "n_valid"] == 2 and r0.loc[2.0, "n_valid"] == 3
+    assert math.isclose(r0.loc[5.0, "delay_prio1_mean_h"], 10.0)                                 # nanmean over the two valid years
     mins = fl.siting_minimum(sit)
-    assert len(mins) == len(fl.ENERGY_PRICES) * len(fl.PAD_COST_MUSD) * len(fl.DAMAGE_MUSD_PER_IMPACT)
+    assert len(mins) == n_sweep and "delay_cost_musd" in mins.columns
     by_dc = mins.groupby("damage_musd_per_impact")["pad_standoff_km"].unique()
     assert set(by_dc[10.0]) == {5.0}                                                # heavy damage pushes the pad out
     no_damage = fl.siting_table(df, sites_path=str(sites), landings_per_year={"P2-default": 8.0}, damage_costs=(0.0,))
-    assert (fl.siting_minimum(no_damage)["pad_standoff_km"] == 0.5).all()           # without damage, hauling alone: nearest pad
-    summ = fl.siting_summary(mins)
-    assert {"energy_price_usd_per_kwh", "damage_musd_per_impact"} <= set(summ.columns) and np.allclose(summ.filter(like="share_min_at").sum(axis=1), 1.0)
+    assert (fl.siting_minimum(no_damage)["pad_standoff_km"] == 0.5).all()           # without damage, hauling and delay alone: nearest pad
+    summ = fl.siting_summary(mins, standoffs=(0.5, 1.0, 2.0, 3.0, 5.0))
+    assert set(fl.SUMMARY_KEYS) <= set(summ.columns) and "share_min_at_3km" in summ.columns
+    assert len(summ) == n_sweep // len(fl.PAD_COST_MUSD) and np.allclose(summ.filter(like="share_min_at").sum(axis=1), 1.0)
 
 
 # ---------------------------------------------------------------------------------------------- E15 / E16 from the committed files

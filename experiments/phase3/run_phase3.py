@@ -217,6 +217,10 @@ def e15_rows(policy_dir=POLICIES):
         prop = np.array([e.get("prop_used_kg") for e in eps], float)
         t30 = np.array([e.get("t_below_30m_s") for e in eps], float)
         vz = np.array([e["v_td"][2] for e in eps if e.get("v_td")], float)
+        try:
+            rel = os.path.relpath(path, ROOT).replace("\\", "/")
+        except ValueError:                       # another drive on Windows
+            rel = os.path.basename(path)
         row = {"policy": pol, "cls": cls, "kind": "learned" if learned else "classical",
                "variant": tr.get("reward_variant", "classical" if not learned else None),
                "controller": doc.get("controller"), "n": len(eps), "pass_rate": float(ok.mean()),
@@ -229,7 +233,7 @@ def e15_rows(policy_dir=POLICIES):
                     "prop_used_mean_kg": float(np.nanmean(prop)), "t_below_30m_mean_s": float(np.nanmean(t30)),
                     "vz_td_mean_mps": float(vz.mean()) if len(vz) else np.nan,
                     "sensor": doc.get("sensor"), "seed0": doc.get("seed0"), "training_steps": tr.get("steps"),
-                    "policy_sha256": doc.get("policy_sha256"), "file": os.path.relpath(path, ROOT).replace("\\", "/")})
+                    "policy_sha256": doc.get("policy_sha256"), "file": rel})
         rows.append(row)
     df = pd.DataFrame(rows)
     if df.empty:

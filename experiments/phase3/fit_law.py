@@ -25,6 +25,7 @@ import argparse
 import json
 import os
 import sys
+import warnings
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 import numpy as np
@@ -40,6 +41,11 @@ PAD_LIFE_YEARS = 10.0
 WITTAL_IMPACTS = {1.0: 8.0, 5.0: 0.37, 10.0: 0.10}   # expected impacts per landing vs distance km (Wittal et al., OTPS 2022; Modelled)
 DAMAGE_MUSD_PER_IMPACT = (0.1, 1.0, 10.0)            # Assumed (swept)
 SHIELD_LOS_BLOCKED = 0.1                             # Assumed: damage factor when terrain blocks the pad-BASE line of sight
+VOT_USD_PER_ITEM_H = (0, 100, 1000)                  # Assumed (swept): blended value of delivery time per item-hour; the engine prices
+                                                     # urgency per priority class (vot_usd_per_h 5000 / 1000 / 100), this is a stand-in
+SITING_FLAGS = ("hauling Modelled; energy price Assumed; pad cost Spec (Metzger & Autry 2022), independent of standoff; impacts/landing "
+                "Modelled from Wittal et al. (OTPS 2022) anchors, shield 0.1 Assumed when PAD_A LOS to BASE is blocked; damage cost per "
+                "impact Assumed; delay valuation Assumed (blended $/item-hour stand-in for the engine's per-priority vot_usd_per_h)")
 MISS_REF_CLS = "CLPS"
 MISS_REF_FALLBACK_M = 2.9
 CLASSICAL_LABEL = "classical (as flown in the env)"   # the E17 miss level that leaves the classical table unscaled
@@ -115,16 +121,22 @@ def ci95(x):
 
 
 def cell_means(df, factors, metrics):
-    """One row per cell: <m> (mean over seeds), <m>_ci95, n_seeds."""
+    """One row per cell: <m> (mean over the seeds with a finite value), <m>_ci95, n_seeds, n_valid (seeds with a finite
+    delay_prio1_mean_h; a year without an urgent delivery has NaN there) and n_valid_min (the smallest finite count over
+    the metrics)."""
     metrics = [m for m in metrics if m in df.columns]
     rows = []
     for key, sub in df.groupby(factors, sort=True):
         row = dict(zip(factors, key))
         row["n_seeds"] = int(sub["seed"].nunique())
+        row["n_valid"] = _n_valid(sub["delay_prio1_mean_h"]) if "delay_prio1_mean_h" in sub.columns else row["n_seeds"]
+        n_min = row["n_seeds"]
         for m in metrics:
             v = sub[m].to_numpy(float)
+            n_min = min(n_min, _n_valid(v))
             row[m] = float(np.nanmean(v)) if np.isfinite(v).any() else np.nan
             row[m + "_ci95"] = ci95(v)
+        row["n_valid_min"] = n_min
         rows.append(row)
     return pd.DataFrame(rows)
 
@@ -145,15 +157,19 @@ def paired(df, factors, metrics, ref, B=N_BOOT, seed=0, prefix="d"):
         common = a.index.intersection(b.index)
         if len(common) == 0:
             continue
-        D = a.loc[common].to_numpy(float) - b.loc[common].to_numpy(float)       # (n, m)
+        D = a.loc[common].to_numpy(float) - b.loc[common].to_numpy(float)       # (n, m); NaN where either year lacks the metric
         n = len(common)
         idx = rng.integers(0, n, (B, n))
-        boot = np.nanmean(D[idx], axis=1)                                      # (B, m)
-        lo, hi = np.nanpercentile(boot, [2.5, 97.5], axis=0)
+        with warnings.catch_warnings():                                        # all-NaN resamples are expected, not errors
+            warnings.simplefilter("ignore", RuntimeWarning)
+            boot = np.nanmean(D[idx], axis=1)                                  # (B, m)
+            lo, hi = np.nanpercentile(boot, [2.5, 97.5], axis=0)
         row = dict(zip(factors, key))
         row["n_common"] = n
+        row[f"{prefix}_n_valid"] = int(np.isfinite(D).all(axis=1).sum())       # seeds with every paired metric finite
         for j, m in enumerate(metrics):
-            row[f"{prefix}_{m}"] = float(np.nanmean(D[:, j]))
+            col = D[:, j]
+            row[f"{prefix}_{m}"] = float(np.nanmean(col)) if np.isfinite(col).any() else np.nan
             row[f"{prefix}_{m}_lo"] = float(lo[j])
             row[f"{prefix}_{m}_hi"] = float(hi[j])
         rows.append(row)
@@ -357,7 +373,11 @@ def fit_law(df, B=N_BOOT):
 # Pad siting: hauling cost + amortised pad cost against standoff
 # ---------------------------------------------------------------------------
 SITING_CELL = ["scenario", "phase", "n_vehicles", "mechanism", "miss_level_m", "miss_label", "sigma_scale", "pad_radius_m", "pad_standoff_km"]
-SITING_SWEEP = ["energy_price_usd_per_kwh", "pad_case_usd_per_kg_transport", "damage_musd_per_impact"]
+SITING_SWEEP = ["energy_price_usd_per_kwh", "pad_case_usd_per_kg_transport", "damage_musd_per_impact", "vot_usd_per_item_h"]
+
+
+def _n_valid(x):
+    return int(np.isfinite(np.asarray(x, float)).sum())
 
 
 def _landings_per_year():
@@ -366,13 +386,16 @@ def _landings_per_year():
 
 
 def siting_table(e17, prices=ENERGY_PRICES, pad_costs=PAD_COST_MUSD, life=PAD_LIFE_YEARS, damage_costs=DAMAGE_MUSD_PER_IMPACT,
-                 sites_path=SITES_JSON, landings_per_year=None):
-    """Per E17 cell (means over seeds) x energy price x pad case x damage cost: hauling cost per year (operator + priced
-    energy, M$), amortised pad cost (M$/yr), expected plume damage (landings/yr x I(D) x shield x cost), their total, the
-    fleet capital for context, and min_cost marking the minimum-cost standoff within each cost assumption."""
+                 vots=VOT_USD_PER_ITEM_H, sites_path=SITES_JSON, landings_per_year=None):
+    """Per E17 cell (means over seeds) x energy price x pad case x damage cost x value of time: hauling cost per year
+    (operator + priced energy, M$), amortised pad cost (M$/yr), expected plume damage (landings/yr x I(D) x shield x cost),
+    delay valuation (delivered items x mean delay h x VoT), their total, the fleet capital for context, and min_cost marking
+    the minimum-cost standoff within each cost assumption. Means skip NaN years; n_valid counts years with an urgent delay."""
     g = [c for c in SITING_CELL if c in e17.columns]
-    agg = e17.groupby(g).agg(n_seeds=("seed", "nunique"), operator_cost_musd=("operator_cost_musd", "mean"),
+    agg = e17.groupby(g).agg(n_seeds=("seed", "nunique"), n_valid=("delay_prio1_mean_h", _n_valid),
+                             operator_cost_musd=("operator_cost_musd", "mean"),
                              energy_kwh=("energy_kwh", "mean"), delivered_kg=("delivered_kg", "mean"),
+                             delivered_items=("delivered_items", "mean"), delay_mean_h=("delay_mean_h", "mean"),
                              fleet_cost_musd=("fleet_cost_musd", "mean"), cargo_lost_kg=("cargo_lost_kg", "mean"),
                              offpad_landings=("offpad_landings", "mean"), km_total=("km_total", "mean"),
                              delay_prio1_mean_h=("delay_prio1_mean_h", "mean")).reset_index()
@@ -387,39 +410,42 @@ def siting_table(e17, prices=ENERGY_PRICES, pad_costs=PAD_COST_MUSD, life=PAD_LI
     for p in prices:
         for case, pad in pad_costs.items():
             for dc in damage_costs:
-                t = agg.copy()
-                t["energy_price_usd_per_kwh"] = p
-                t["pad_case_usd_per_kg_transport"] = case
-                t["damage_musd_per_impact"] = dc
-                t["pad_cost_musd"] = pad
-                t["pad_musd_per_year"] = pad / life
-                t["energy_cost_musd"] = p * t["energy_kwh"] / 1e6
-                t["hauling_musd"] = t["operator_cost_musd"] + t["energy_cost_musd"]
-                t["damage_musd"] = t["landings_per_year"] * t["impacts_per_landing"] * t["shield"] * dc
-                t["total_musd"] = t["hauling_musd"] + t["pad_musd_per_year"] + t["damage_musd"]
-                t["total_usd_per_kg"] = 1e6 * t["total_musd"] / t["delivered_kg"].clip(lower=1e-9)
-                t["system_usd_per_kg"] = 1e6 * (t["total_musd"] + t["fleet_cost_musd"]) / t["delivered_kg"].clip(lower=1e-9)
-                rows.append(t)
+                for vot in vots:
+                    t = agg.copy()
+                    t["energy_price_usd_per_kwh"] = p
+                    t["pad_case_usd_per_kg_transport"] = case
+                    t["damage_musd_per_impact"] = dc
+                    t["vot_usd_per_item_h"] = vot
+                    t["pad_cost_musd"] = pad
+                    t["pad_musd_per_year"] = pad / life
+                    t["energy_cost_musd"] = p * t["energy_kwh"] / 1e6
+                    t["hauling_musd"] = t["operator_cost_musd"] + t["energy_cost_musd"]
+                    t["damage_musd"] = t["landings_per_year"] * t["impacts_per_landing"] * t["shield"] * dc
+                    t["delay_cost_musd"] = t["delivered_items"] * t["delay_mean_h"] * vot / 1e6
+                    t["total_musd"] = t["hauling_musd"] + t["pad_musd_per_year"] + t["damage_musd"] + t["delay_cost_musd"]
+                    t["total_usd_per_kg"] = 1e6 * t["total_musd"] / t["delivered_kg"].clip(lower=1e-9)
+                    t["system_usd_per_kg"] = 1e6 * (t["total_musd"] + t["fleet_cost_musd"]) / t["delivered_kg"].clip(lower=1e-9)
+                    rows.append(t)
     out = pd.concat(rows, ignore_index=True)
     grp = [c for c in g if c != "pad_standoff_km"] + SITING_SWEEP
     out["min_cost"] = out["total_musd"] == out.groupby(grp)["total_musd"].transform("min")
-    out["flag"] = ("hauling Modelled; energy price Assumed; pad cost Spec (Metzger & Autry 2022), independent of standoff; "
-                   "impacts/landing Modelled from Wittal et al. (OTPS 2022) anchors, shield 0.1 Assumed when PAD_A LOS to BASE blocked; "
-                   "damage cost per impact Assumed")
     return out.sort_values(grp + ["pad_standoff_km"]).reset_index(drop=True)
 
 
 def siting_minimum(sit):
     """The minimum-cost standoff per cell and cost assumption (one row per group; ties keep the smallest standoff)."""
     grp = [c for c in SITING_CELL if c in sit.columns and c != "pad_standoff_km"] + SITING_SWEEP
-    cols = grp + ["pad_standoff_km", "hauling_musd", "pad_musd_per_year", "damage_musd", "total_musd", "total_usd_per_kg"]
+    cols = grp + ["pad_standoff_km", "hauling_musd", "pad_musd_per_year", "damage_musd", "delay_cost_musd", "total_musd", "total_usd_per_kg"]
     m = sit[sit["min_cost"]].sort_values(grp + ["pad_standoff_km"])
     return m[cols].drop_duplicates(grp).reset_index(drop=True)
 
 
+SUMMARY_KEYS = ["energy_price_usd_per_kwh", "damage_musd_per_impact", "vot_usd_per_item_h"]
+
+
 def siting_summary(mins, standoffs=None):
-    """Share of (cell, pad case) groups whose minimum-cost standoff is each D, by energy price x damage cost."""
-    t = mins.groupby(["energy_price_usd_per_kwh", "damage_musd_per_impact", "pad_standoff_km"]).size().unstack("pad_standoff_km", fill_value=0)
+    """Share of (cell, pad case) groups whose minimum-cost standoff is each D, by energy price x damage cost x VoT."""
+    t = mins.groupby(SUMMARY_KEYS + ["pad_standoff_km"]).size().unstack("pad_standoff_km", fill_value=0)
     if standoffs is not None:
         t = t.reindex(columns=sorted(set(standoffs) | set(t.columns)), fill_value=0)
     t = t.div(t.sum(axis=1), axis=0)
@@ -455,21 +481,26 @@ def main(argv=None):
                      "rows": int(len(both)), "seeds": int(both["seed"].nunique())}
     if e17 is not None:
         sit = siting_table(e17)
-        sit.to_csv(os.path.join(res, "table_E20_siting.csv"), index=False)
+        sit.to_csv(os.path.join(res, "table_E20_siting.csv.gz"), index=False, float_format="%.6g")   # ~90k rows: gzipped like E14
         mins = siting_minimum(sit)
-        mins.to_csv(os.path.join(res, "table_E20_siting_min.csv"), index=False)
+        mins.to_csv(os.path.join(res, "table_E20_siting_min.csv"), index=False, float_format="%.6g")
         summ = siting_summary(mins, standoffs=sit["pad_standoff_km"].unique())
+        summ.to_csv(os.path.join(res, "table_E20_siting_shares.csv"), index=False)
         fit["siting"] = {"energy_prices_usd_per_kwh": list(ENERGY_PRICES), "pad_cost_musd": PAD_COST_MUSD,
                          "pad_life_years": PAD_LIFE_YEARS, "damage_musd_per_impact": list(DAMAGE_MUSD_PER_IMPACT),
+                         "vot_usd_per_item_h": list(VOT_USD_PER_ITEM_H),
                          "impacts_per_landing_anchors": {f"{k:g}": v for k, v in WITTAL_IMPACTS.items()},
                          "impacts_per_landing_at_standoffs": {f"{d:g}": float(impacts_per_landing(d)) for d in (0.5, 1, 2, 3, 5)},
                          "shield_los_blocked": SHIELD_LOS_BLOCKED,
                          "pad_a_los_blocked": {f"{d:g}": pad_los_blocked(d) for d in (0.5, 1, 2, 3, 5)},
+                         "flags": SITING_FLAGS,
                          "note": "total = hauling (operator + priced energy) + amortised pad cost (independent of standoff) + expected "
-                                 "plume damage (landings/yr x I(D) x shield x cost per impact); min_cost marks the argmin standoff per cell "
-                                 "and cost assumption; table_E20_siting_min.csv lists the minima",
+                                 "plume damage (landings/yr x I(D) x shield x cost per impact) + delay valuation (delivered items x mean "
+                                 "delay h x VoT, a blended stand-in for the engine's per-priority vot_usd_per_h 5000/1000/100); min_cost "
+                                 "marks the argmin standoff per cell and cost assumption; table_E20_siting_min.csv lists the minima, "
+                                 "table_E20_siting_shares.csv the share of minima at each standoff per (energy price, damage cost, VoT)",
                          "share_of_minima_by_standoff": summ.to_dict("records")}
-        print(f"[E20] table_E20_siting.csv: {len(sit)} rows, {len(mins)} minima")
+        print(f"[E20] table_E20_siting.csv.gz: {len(sit)} rows, {len(mins)} minima")
         print(summ.round(2).to_string(index=False))
     table.to_csv(os.path.join(res, "table_E20.csv"), index=False)
     with open(os.path.join(res, "E20_fit.json"), "w", encoding="utf-8") as f:
