@@ -5,8 +5,8 @@ environment identity (lock sha, python, platform), the input identity (scenario 
 options, seeds, policy-file shas) and the output identity (output sha). This module computes the
 code/environment part and the policy shas; the scenario and output hashes live in worker.py.
 
-Engine version string: ``2.0.0`` when HEAD carries the tag ``v2.0.0`` and the tree is clean, else the
-PEP 440 local form ``2.0.0+g<sha7>[.dirty]``. The leaderboard ranks only runs whose engine_version has
+Engine version string: ``3.0.0`` when HEAD carries the tag ``v3.0.0`` and the tree is clean, else the
+PEP 440 local form ``3.0.0+g<sha7>[.dirty]``. The leaderboard ranks only runs whose engine_version has
 no local part (that is PLAN's "git_dirty=false runs on tagged releases").
 
 The repository has no lockfile, so the "lock" is a generated text: pyproject.toml followed by every

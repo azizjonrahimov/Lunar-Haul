@@ -1,12 +1,12 @@
 cff-version: 1.2.0
-message: "If you use LunarHaul (formerly LunarSim) or the results of this study, please cite the preprint; version 3 of the paper is in preparation."
-title: "LunarHaul (formerly LunarSim): a verified testbed for lunar surface logistics, with the paper 'Who Hauls the Habitat?'"
+message: "If you use LunarHaul (formerly LunarSim) or the results of this study, please cite it; version 3 of the paper ('Where the Lander Lands') is being assembled in paper/v3 and will be posted with a DOI."
+title: "LunarHaul (formerly LunarSim): a verified testbed for lunar surface logistics, with the papers 'Who Hauls the Habitat?' (v2) and 'Where the Lander Lands' (v3)"
 authors:
   - family-names: Rahimov
     given-names: Azizjon
     affiliation: Roatify Research
-version: 2.0.0
-date-released: 2026-10-06
+version: 3.0.0
+date-released: 2026-10-16
 license: MIT
 repository-code: https://github.com/azizjonrahimov/lunar-logistics-research
 url: https://azizjonrahimov.github.io/lunar-logistics-research/
@@ -16,3 +16,7 @@ keywords:
   - auction mechanisms
   - discrete-event simulation
   - Artemis
+  - precision landing
+  - plume-surface interaction
+  - rover teleoperation
+  - imitation learning

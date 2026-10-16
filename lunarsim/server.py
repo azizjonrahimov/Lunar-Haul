@@ -5,7 +5,7 @@
 Binds 127.0.0.1 only. JSON in and out, CORS open (Access-Control-Allow-Origin: *) so the
 static page can call it. Errors are HTTP 4xx/5xx with {"error": "message"}. NaN is sent as null.
 
-    GET  /api/health              {"ok": true, "version": "2.0.0", "engine": "python"}
+    GET  /api/health              {"ok": true, "version": "3.0.0", "engine": "python"}
     GET  /api/scenarios           {"scenarios": [{"name", "fleet_size", "landings_per_year"}]}
     GET  /api/scenarios/{name}    lunarsim-scenario v1, full form
     POST /api/run                 {"scenario": name|{scenario v1}, "mechanism", "seeds": [..], "opts": {..}}
@@ -350,7 +350,8 @@ def make_server(port: int = 8765, static_dir: Any = None) -> ThreadingHTTPServer
 def serve(port: int = 8765, static_dir: Any = None) -> None:
     srv = make_server(port, static_dir)
     host, port = srv.server_address[:2]
-    print(f"lunarsim API on http://{host}:{port}/api/health  (Ctrl+C to stop)", flush=True)
+    from . import __version__
+    print(f"LunarHaul (lunarsim {__version__}) local API on http://{host}:{port}  (health: /api/health; Ctrl+C to stop)", flush=True)
     if static_dir:
         print(f"serving {srv.static_dir} at http://{host}:{port}/", flush=True)
     try:

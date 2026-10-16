@@ -266,3 +266,20 @@ def test_static_missing_file_and_post(static):
 def test_static_dir_must_exist(tmp_path):
     with pytest.raises(ValueError, match="no such folder"):
         make_server(0, static_dir=str(tmp_path / "missing"))
+
+
+def test_version_flag_and_serve_banner(capsys, monkeypatch):
+    from lunarsim import __version__, server
+    from lunarsim.cli import main as cli_main
+    with pytest.raises(SystemExit) as e:
+        cli_main(["--version"])
+    assert e.value.code == 0 and capsys.readouterr().out == f"lunarsim {__version__} (LunarHaul)\n"
+
+    class FakeServer:                    # serve() prints the banner, then serve_forever ends on Ctrl+C
+        server_address = ("127.0.0.1", 8765)
+        def serve_forever(self): raise KeyboardInterrupt
+        def server_close(self): pass
+    monkeypatch.setattr(server, "make_server", lambda port, static_dir=None: FakeServer())
+    server.serve(8765)
+    assert capsys.readouterr().out.splitlines()[0] == (
+        f"LunarHaul (lunarsim {__version__}) local API on http://127.0.0.1:8765  (health: /api/health; Ctrl+C to stop)")

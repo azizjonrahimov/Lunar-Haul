@@ -274,7 +274,9 @@ def cmd_terrain(a):
 
 def main(argv=None):
     logging.basicConfig(level=logging.INFO, format="%(message)s")
-    p = argparse.ArgumentParser(prog="lunarsim", description="LunarSim: discrete-event testbed for lunar surface logistics")
+    from . import __version__
+    p = argparse.ArgumentParser(prog="lunarsim", description="LunarHaul (lunarsim): discrete-event testbed for lunar surface logistics")
+    p.add_argument("--version", action="version", version=f"lunarsim {__version__} (LunarHaul)")
     sub = p.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run", help="run one mechanism on one scenario for N seeds")
     r.add_argument("--scenario", default="P2-default")
