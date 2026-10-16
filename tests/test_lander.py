@@ -334,3 +334,37 @@ def test_linear_schedule_is_clamped_at_zero():
     assert kw_lr(1.0) == lr0 and kw_lr(0.0) == 0.0 and kw_lr(-0.04) == 0.0
     import inspect
     assert "max(progress_remaining, 0.0)" in inspect.getsource(T.train_descent)
+
+
+# ---------------------------------------------------------------------------
+# B-10d: observation-consistent expert, label inconsistency, DAgger record
+# ---------------------------------------------------------------------------
+def test_memoryless_law_is_a_function_of_the_observation_and_lands():
+    env = DescentEnv(cls="CLPS")
+    env.reset(seed=3)
+    for _ in range(40):
+        env.step(E.memoryless_action(env))
+    a1 = E.memoryless_action(env)
+    a2 = E.memoryless_action(env)                     # no internal state: calling again changes nothing
+    assert np.array_equal(a1, a2)
+    s = E.summarise(E.run_episodes(DescentEnv(cls="CLPS"), lambda o, e: E.memoryless_action(e), 30, 100_000))
+    assert s["touchdown_box_rate"] >= 0.85
+
+
+def test_label_inconsistency_metric():
+    from lunarsim.lander.bc_warmstart import label_inconsistency
+    rng = np.random.default_rng(0)
+    obs = rng.normal(size=(3000, 4)).astype(np.float32)
+    det = {"obs": obs, "act": np.tanh(obs[:, :3])}                                  # a function of obs
+    rnd = {"obs": obs, "act": rng.uniform(-1, 1, (3000, 3)).astype(np.float32)}     # unrelated to obs
+    assert label_inconsistency(det, n_query=200)["ratio_mean"] < 0.1
+    assert label_inconsistency(rnd, n_query=200)["ratio_mean"] > 0.8
+
+
+def test_bc_record_survives_dagger_rounds(tmp_path):
+    pytest.importorskip("stable_baselines3")
+    from lunarsim.lander import bc_warmstart as BC
+    rec = BC.build_bc("CLPS", 3, str(tmp_path / "bc.zip"), net=(16, 16), epochs=1, eval_n=2, verbose=False,
+                      dagger=1, dagger_episodes=2, dagger_epochs=1)
+    assert rec["expert"] == "memoryless" and len(rec["dagger_rounds"]) == 2 and "classical_box_rate" in rec
+    assert json.load(open(tmp_path / "bc.json", encoding="utf-8"))["dagger_rounds"][1]["round"] == 1

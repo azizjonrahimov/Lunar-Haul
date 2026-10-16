@@ -48,6 +48,46 @@ CMD_ALPHA = 0.25    # first-order filter on the thrust-direction command in the 
 HOLD_ALT_M = 3.0    # below this the thrust direction is held (attitude-hold for touchdown)
 
 
+ML_RATE_GAIN = 0.25    # memoryless law: fraction of the angle error commanded as slew per step (Assumed)
+
+
+def memoryless_action(env, k_rate: float = ML_RATE_GAIN) -> np.ndarray:
+    """Observation-consistent version of the classical law (B-10d): the same ZEM/ZEV + vertical terminal phase, but
+    a function of what the policy observes only (estimated position and velocity, current thrust-axis angles,
+    mass) with no filter state. Smoothing comes from the plant instead: the tilt-rate command is k_rate times the
+    angle error per step (a first-order approach in the vehicle's own attitude), and zero below HOLD_ALT_M."""
+    (pos, vel), s, c = env.last_est, env.state, env.cls
+    m = s[P.M]
+    g = np.array([0.0, 0.0, -G_MOON])
+    h = pos[2]
+    if h > ZEM_AIM_ALT_M + 5.0:
+        rf = np.array([0.0, 0.0, ZEM_AIM_ALT_M])
+        vf = np.array([0.0, 0.0, ZEM_AIM_VZ])
+        tgo = max(3.0, 2.0 * (h - ZEM_AIM_ALT_M) / (max(-vel[2], 0.5) + abs(ZEM_AIM_VZ)))
+        zem = rf - (pos + vel * tgo + 0.5 * g * tgo * tgo)
+        zev = vf - (vel + g * tgo)
+        a = 6.0 * zem / (tgo * tgo) - 2.0 * zev / tgo
+    else:
+        a = np.array([-K_PH * pos[0] - K_VH * vel[0], -K_PH * pos[1] - K_VH * vel[1], G_MOON + K_VZ * (TERM_VZ - vel[2])])
+    F = m * a
+    F[2] = max(F[2], 1e-3 * m)
+    tmax = math.radians(c.tilt_max_deg)
+    fh = math.hypot(F[0], F[1])
+    if fh > F[2] * math.tan(tmax):
+        kk = F[2] * math.tan(tmax) / fh
+        F[0] *= kk
+        F[1] *= kk
+    T = float(np.linalg.norm(F))
+    tx, ty = P.angles_from_direction(*(F / T))
+    wmax = math.radians(c.tilt_rate_max_dps)
+    if h < HOLD_ALT_M:
+        rx = ry = 0.0
+    else:
+        rx = max(-1.0, min(1.0, k_rate * (tx - s[P.TX]) / (env.dt * wmax)))
+        ry = max(-1.0, min(1.0, k_rate * (ty - s[P.TY]) / (env.dt * wmax)))
+    return np.array([P.thrust_to_throttle(T, c), rx, ry], dtype=np.float32)
+
+
 def classical_action(env) -> np.ndarray:
     """ZEM/ZEV + vertical terminal phase, computed from the env's *estimated* state (same sensors as the policy).
     Keeps a little filter state on the env object (reset when env.steps == 0)."""

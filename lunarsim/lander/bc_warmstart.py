@@ -26,11 +26,45 @@ from typing import Any, Dict, Optional, Tuple
 import numpy as np
 
 
+EXPERTS = ("memoryless", "classical")
+
+
+def expert_fn(name: str):
+    """The labelling expert. "memoryless" (default since B-10d): the classical law as a function of the observation
+    only, so its labels are learnable; "classical": the filtered law (velocity smoothing, command low-pass, hold)."""
+    from .evaluate import classical_action, memoryless_action
+    if name not in EXPERTS:
+        raise ValueError(f"unknown expert {name!r}; known: {EXPERTS}")
+    return memoryless_action if name == "memoryless" else classical_action
+
+
+def label_inconsistency(data: Dict[str, np.ndarray], n_query: int = 1000, k: int = 10, seed: int = 0) -> Dict[str, float]:
+    """How far the expert's labels are from a function of the observation: mean variance of the action among the k
+    nearest neighbours (standardised observation space) divided by the total action variance, per action and
+    averaged. 0 = the label is determined by the observation; near 1 = unrelated to it."""
+    obs = data["obs"].astype(np.float64)
+    act = data["act"].astype(np.float64)
+    mu, sd = obs.mean(0), obs.std(0) + 1e-9
+    Z = (obs - mu) / sd
+    rng = np.random.default_rng(seed)
+    q = rng.choice(len(Z), size=min(n_query, len(Z)), replace=False)
+    nn_var = np.zeros(act.shape[1])
+    for i in q:
+        d = np.einsum("ij,ij->i", Z - Z[i], Z - Z[i])
+        idx = np.argpartition(d, k + 1)[:k + 1]                    # includes the query itself
+        nn_var += act[idx].var(axis=0)
+    nn_var /= len(q)
+    tot = act.var(axis=0) + 1e-12
+    ratio = nn_var / tot
+    return {"ratio_mean": float(ratio.mean()), "ratio_per_action": ratio.tolist(), "k": k, "n_query": int(len(q)),
+            "samples": int(len(Z))}
+
+
 def collect(cls: str, episodes: int, seed0: int = 2_000_000, variant: str = "baseline",
-            gamma: float = 0.995) -> Dict[str, np.ndarray]:
-    """(obs, act, ret, ok) arrays from classical-controller episodes. ret = discounted return-to-go per step."""
+            gamma: float = 0.995, expert: str = "memoryless") -> Dict[str, np.ndarray]:
+    """(obs, act, ret, ok) arrays from expert episodes. ret = discounted return-to-go per step."""
     from .env import DescentEnv
-    from .evaluate import classical_action
+    classical_action = expert_fn(expert)
     env = DescentEnv(cls=cls, variant=variant)
     O, A, R = [], [], []
     ok = 0
@@ -56,11 +90,11 @@ def collect(cls: str, episodes: int, seed0: int = 2_000_000, variant: str = "bas
 
 
 def dagger_round(model, cls: str, episodes: int, seed0: int, variant: str = "baseline", gamma: float = 0.995,
-                 beta: float = 0.0) -> Dict[str, np.ndarray]:
+                 beta: float = 0.0, expert: str = "memoryless") -> Dict[str, np.ndarray]:
     """One DAgger round: roll out the current policy (with probability beta the expert acts instead), label every
     visited state with the classical law's action (its filters follow the same estimates) and return the data."""
     from .env import DescentEnv
-    from .evaluate import classical_action
+    classical_action = expert_fn(expert)
     env = DescentEnv(cls=cls, variant=variant)
     rng = np.random.default_rng(seed0)
     O, A, R = [], [], []
@@ -151,40 +185,43 @@ def deterministic_box_rate(model, cls: str, n: int, seed0: int = 10_000_000) -> 
 
 def build_bc(cls: str, episodes: int, out: str, net=(128, 128), epochs: int = 30, seed: int = 0,
              eval_n: int = 100, init_log_std: float = -1.5, verbose: bool = True, dagger: int = 0,
-             dagger_episodes: int = 500, dagger_epochs: int = 15) -> Dict[str, Any]:
+             dagger_episodes: int = 500, dagger_epochs: int = 15, expert: str = "memoryless") -> Dict[str, Any]:
     import torch
     from stable_baselines3 import PPO
     from .env import DescentEnv
     torch.set_num_threads(1)
     t0 = time.time()
-    data = collect(cls, episodes)
+    data = collect(cls, episodes, expert=expert)
     t_collect = time.time() - t0
+    classical_box = data["box_rate"]              # kept: the DAgger merges below drop this key (B-10d KeyError)
     if verbose:
-        print(f"collected {len(data['obs'])} steps from {episodes} classical episodes in {t_collect:.0f} s "
-              f"(classical box rate {100 * data['box_rate']:.1f} %)", flush=True)
+        print(f"collected {len(data['obs'])} steps from {episodes} {expert} expert episodes in {t_collect:.0f} s "
+              f"(expert box rate {100 * data['box_rate']:.1f} %)", flush=True)
     model = PPO("MlpPolicy", DescentEnv(cls=cls), seed=seed, device="cpu",
                 policy_kwargs={"net_arch": list(net), "log_std_init": init_log_std})
     losses = fit(model, data, epochs=epochs, seed=seed, init_log_std=init_log_std, verbose=verbose)
     rounds = []
     if eval_n:
         box0, kinds0 = deterministic_box_rate(model, cls, eval_n)
-        rounds.append({"round": 0, "samples": int(len(data["obs"])), "box_rate": box0, "failures": kinds0})
+        rounds.append({"round": 0, "samples": int(len(data["obs"])), "box_rate": box0, "failures": kinds0,
+                       "label_inconsistency": label_inconsistency(data)["ratio_mean"]})
         if verbose:
             print(f"  round 0 (BC): box {100 * box0:.1f} % {kinds0}", flush=True)
     for k in range(1, dagger + 1):
-        new = dagger_round(model, cls, dagger_episodes, seed0=3_000_000 + 100_000 * k)
+        new = dagger_round(model, cls, dagger_episodes, seed0=3_000_000 + 100_000 * k, expert=expert)
         data = _merge(data, new)
         losses = fit(model, data, epochs=dagger_epochs, seed=seed + k, init_log_std=init_log_std, verbose=False)
         box_k, kinds_k = deterministic_box_rate(model, cls, eval_n) if eval_n else (None, {})
         rounds.append({"round": k, "samples": int(len(data["obs"])), "rollout_box_rate": new["box_rate"],
-                       "box_rate": box_k, "failures": kinds_k, **losses})
+                       "box_rate": box_k, "failures": kinds_k, "label_inconsistency": label_inconsistency(data)["ratio_mean"],
+                       **losses})
         if verbose:
             print(f"  round {k} (DAgger): {len(data['obs'])} samples, box {100 * (box_k or 0):.1f} % {kinds_k}", flush=True)
     box, kinds = (rounds[-1]["box_rate"], rounds[-1]["failures"]) if rounds else (None, {})
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     model.save(out)
-    rec = {"cls": cls, "episodes": episodes, "steps": int(len(data["obs"])), "net": list(net), "epochs": epochs,
-           "seed": seed, "init_log_std": init_log_std, "classical_box_rate": data["box_rate"], **losses,
+    rec = {"cls": cls, "expert": expert, "episodes": episodes, "steps": int(len(data["obs"])), "net": list(net), "epochs": epochs,
+           "seed": seed, "init_log_std": init_log_std, "classical_box_rate": classical_box, **losses,
            "bc_box_rate": box, "bc_failures": kinds, "dagger_rounds": rounds, "wallclock_s": round(time.time() - t0, 1),
            "path": out}
     with open(os.path.splitext(out)[0] + ".json", "w", encoding="utf-8") as f:
@@ -203,10 +240,11 @@ def main(argv=None):
     p.add_argument("--eval-n", type=int, default=100)
     p.add_argument("--dagger", type=int, default=0, help="DAgger rounds after behaviour cloning")
     p.add_argument("--dagger-episodes", type=int, default=500)
+    p.add_argument("--expert", default="memoryless", choices=EXPERTS)
     p.add_argument("--out", default=os.path.join("runs", "bc", "bc_CLPS.zip"))
     a = p.parse_args(argv)
     r = build_bc(a.cls, a.episodes, a.out, net=tuple(int(x) for x in a.net.split(",")), epochs=a.epochs,
-                 seed=a.seed, eval_n=a.eval_n, dagger=a.dagger, dagger_episodes=a.dagger_episodes)
+                 seed=a.seed, eval_n=a.eval_n, dagger=a.dagger, dagger_episodes=a.dagger_episodes, expert=a.expert)
     print(f"BC policy: deterministic box rate {r['bc_box_rate']} ({r['bc_failures']}); wrote {a.out}")
 
 
