@@ -25,6 +25,9 @@
     <label class="lbl" for="r-standoff">Pad standoff</label><select id="r-standoff"></select>
     <label class="lbl" for="r-light">Lighting</label>
     <select id="r-light"><option value="0">sun at 0° (grid azimuth)</option><option value="90" selected>sun at 90°</option><option value="180">sun at 180°</option><option value="270">sun at 270°</option><option value="night">night (headlights)</option></select>
+    <label class="lbl" for="r-soil">Soil</label>
+    <select id="r-soil"><option value="47.8">dense, friction angle 47.8°</option><option value="42" selected>medium, 42°</option><option value="37.8">loose, 37.8°</option><option value="sampled">sampled per drive, 37.8–47.8°</option></select>
+    <span class="small"><span class="flag" data-flag="Modelled" id="r-soil-flag">Modelled</span><span class="visually-hidden" id="r-soil-src"></span></span>
   </div>
   <div class="toolbar r-controls" role="group" aria-label="Driver">
     <label class="lbl" for="r-level">Autonomy</label>

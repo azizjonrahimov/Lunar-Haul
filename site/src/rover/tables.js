@@ -26,18 +26,20 @@ export function legProfile(t, route, sunAz) {
   return { p, z, ds, grade, heading, slope, shadow, rough, length_m: length };
 }
 
-/* deterministic leg result: t_move_s (before u_leg), stops, stop seconds, energy_wh, lambda */
-export function driveProfile(prof, autonomy, rtt, sunAz) {
-  const cap = R.speedCapMps(autonomy, rtt); let tDet = 0, e = 0, lam = 0, blockedN = 0;
+/* deterministic leg result for one soil friction angle phi: t_move_s (before u_leg), stops, stop seconds, energy_wh,
+   lambda. A dig-in stretch (slip >= 80 %, or beyond the slope limit) is one intervention per contiguous stretch. */
+export function driveProfile(prof, autonomy, rtt, sunAz, phi = R.PHI_REF) {
+  const cap = R.speedCapMps(autonomy, rtt); let tDet = 0, e = 0, lam = 0, blockedN = 0, prev = false;
   for (let k = 0; k < prof.ds.length; k++) {
-    const sl = R.slip(prof.grade[k]), f = R.slopeSpeedFactor(prof.slope[k]) * R.lightingFactor(prof.heading[k], sunAz, !!prof.shadow[k]);
+    const sl = R.slip(prof.grade[k], phi), f = R.slopeSpeedFactor(prof.slope[k]) * R.lightingFactor(prof.heading[k], sunAz, !!prof.shadow[k]);
     const v = cap * f * (1.0 - sl), blocked = v <= 0 || sl >= R.DIG_IN_SLIP;
-    if (blocked) blockedN++; else tDet += prof.ds[k] / v;
+    if (blocked) { if (!prev) blockedN++; } else tDet += prof.ds[k] / v;
+    prev = blocked;
     e += R.energyWh(prof.ds[k], prof.grade[k], Math.min(sl, 0.95));
     let haz = HAZARD_PER_KM[autonomy] + HAZARD_SLOPE_PER_KM * (prof.slope[k] > R.ROVER.slope_nominal_deg ? 1 : 0) + HAZARD_ROUGH_PER_KM * (prof.rough[k] > 0.5 * R.INTERVENTION.roughness_m ? 1 : 0);
     haz *= prof.shadow[k] ? HAZARD_SHADOW_MULT : 1.0; lam += haz * prof.ds[k] / 1000.0;
   }
   lam += blockedN;
   const [every, stopS] = R.stopPlan(autonomy, rtt), stops = Number.isFinite(every) ? Math.floor(prof.length_m / every) : 0;
-  return { t_move_s: tDet, stops, stop_s: stopS, time_s_nominal: tDet + stops * stopS, energy_wh: e, lambda: lam, length_m: prof.length_m };
+  return { t_move_s: tDet, stops, stop_s: stopS, time_s_nominal: tDet + stops * stopS, energy_wh: e, lambda: lam, dig_in_stretches: blockedN, length_m: prof.length_m, phi_deg: phi };
 }

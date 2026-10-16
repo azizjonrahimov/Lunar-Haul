@@ -44,6 +44,7 @@ function fillSelectors() {
 function tableKey(a, b) { const D = $('r-standoff').value, k = n => n.startsWith('PAD_') ? `${n}@${D}` : n; return `${k(a)}->${k(b)}`; }
 function level() { const v = $('r-level').value; return v.startsWith('teleop') ? { autonomy: 'teleop', rtt: +v.split(':')[1] } : { autonomy: v, rtt: 0 }; }
 function lighting() { const v = $('r-light').value; return v === 'night' ? R.NIGHT : +v; }
+function soil() { const v = $('r-soil').value; return v === 'sampled' ? null : +v; }   // null: the env draws phi per drive
 
 /* plan the route for the current leg + lighting (A* on the 20 m cost grid); cached per key */
 async function prepare() {
@@ -64,7 +65,7 @@ async function prepare() {
 function human() { return { name: 'You (keyboard, commands delayed by the round trip)', act: () => { const k = st.keys; const steer = (k.ArrowLeft ? -1 : 0) + (k.ArrowRight ? 1 : 0); if (k.ArrowUp) st.thr = 1; else if (k.ArrowDown) st.thr = 0; return [steer, st.thr ?? 0.5]; } }; }
 function reset() {
   const lv = level(); st.env = new DriveEnv(st.t);
-  st.obs = st.env.reset({ waypoints: st.route, autonomy: lv.autonomy, rttS: lv.rtt, sunAz: lighting() });
+  st.obs = st.env.reset({ waypoints: st.route, autonomy: lv.autonomy, rttS: lv.rtt, sunAz: lighting(), phi: soil() });
   st.ctl = $('r-ctrl').value === 'human' ? human() : expertController(st.env.route); st.thr = 0.5;
   st.trail = [[st.env.state.x, st.env.state.y]]; st.events = []; st.done = null; st.rec = null; st.sent = [0, 0]; st.acc = 0;
   drawAll(true);
@@ -152,7 +153,7 @@ function telemetry() {
   const e = st.env; if (!e) return; const r = st.rec || { grade: 0, slip: 0, gv: 0 }, lv = level(), cost = R.interventionCostS(lv.rtt);
   const smg = e.timeS > 0 ? e.distM / e.timeS * 3.6 : 0, auto = e.timeS > 0 ? Math.max(0, 1 - e.interventions * cost / e.timeS) : 1, src = 'this drive (JS port of lunar/Drive-v0)', M = (v, u, d) => num({ value: v, unit: u, flag: 'Modelled', digits: d, source: src });
   const rows = [['Elapsed', `<span class="mono">${hms(e.timeS)}</span> <span class="muted small">incl. stops and interventions</span>`], ['Distance', M(e.distM / 1000, 'km', 2)],
-    ['Speed made good', M(smg, 'km/h', 2)], ['Ground speed now', M(r.gv * 3.6, 'km/h', 2)], ['Grade ahead', M(r.grade, '°', 1)], ['Slip', M(100 * r.slip, '%', 0)],
+    ['Speed made good', M(smg, 'km/h', 2)], ['Ground speed now', M(r.gv * 3.6, 'km/h', 2)], ['Grade ahead', M(r.grade, '°', 1)], ['Slip', M(100 * r.slip, '%', 0)], ['Soil friction angle', num({ value: e.phi, unit: '°', flag: R.FLAGS.phi[0], digits: 1, source: R.FLAGS.phi[1] + ($('r-soil').value === 'sampled' ? '; drawn for this drive' : '; chosen above') })],
     ['Energy used', M(e.energyWh, 'Wh', 0)], ['Stops to confirm', M(e.stops, '', 0)], ['Interventions', M(e.interventions, '', 0)],
     ['Autonomy', `${M(100 * auto, '%', 1)} <span class="muted small">1 − interventions × (RTT + ${R.INTERVENTION.recovery_s} s) / elapsed</span>`]];
   $('r-tele').innerHTML = rows.map(([a, b]) => `<tr><th scope="row">${a}</th><td>${b}</td></tr>`).join('');
@@ -179,17 +180,17 @@ function controls() {
 
 // ---------- comparison with the driving table ----------
 function renderComparison() {
-  if (!st.prof) return; const lv = level(), sunKey = $('r-light').value, d = driveProfile(st.prof, lv.autonomy, lv.rtt, lighting());
+  if (!st.prof) return; const lv = level(), sunKey = $('r-light').value, phi = st.env ? st.env.phi : R.PHI_REF, d = driveProfile(st.prof, lv.autonomy, lv.rtt, lighting(), phi);
   const T = st.legTable && st.legTable.autonomy[lv.autonomy] && st.legTable.autonomy[lv.autonomy].rtt_s[String(lv.rtt)] && st.legTable.autonomy[lv.autonomy].rtt_s[String(lv.rtt)].lighting[sunKey];
   const live = st.done, cost = R.interventionCostS(lv.rtt), M = (v, u, dd, s) => num({ value: v, unit: u, flag: 'Modelled', digits: dd, source: s });
   const tsrc = `data/driving/driving-v1.json, leg ${tableKey($('r-from').value, $('r-to').value)}, ${lv.autonomy}${lv.autonomy === 'teleop' ? ' ' + lv.rtt + ' s' : ''}, lighting ${sunKey}, ${st.index ? st.index.seeds : '?'} runs`;
   const row = (lab, tab, integ, liv) => `<tr><th scope="row">${lab}</th><td class="n">${tab}</td><td class="n">${integ}</td><td class="n">${liv}</td></tr>`;
   $('r-compare').innerHTML = `<div class="r-scroll"><table class="w-table"><tr><th></th><th class="n">Driving table (mean · p90)</th><th class="n">Leg integrator, this route</th><th class="n">Live drive</th></tr>` +
-    row('Time, excl. interventions', T ? `${M(T.time_h.mean, 'h', 2, tsrc)} · ${fmt(T.time_h.p90, 2)} h` : '<span class="muted">not in the table</span>', M(d.time_s_nominal / 3600, 'h', 2, 'tables.drive_profile port, u_leg = 1'), live ? M((live.time_s - live.interventions * cost) / 3600, 'h', 2, 'this drive') : '–') +
+    row('Time, excl. interventions', T ? `${M(T.time_h.mean, 'h', 2, tsrc)} · ${fmt(T.time_h.p90, 2)} h` : '<span class="muted">not in the table</span>', M(d.time_s_nominal / 3600, 'h', 2, `tables.drive_profile port, u_leg = 1, phi ${fmt(phi, 1)}°`), live ? M((live.time_s - live.interventions * cost) / 3600, 'h', 2, 'this drive') : '–') +
     row('Energy (traction)', T ? M(T.energy_kwh.mean, 'kWh', 3, tsrc) : '–', M(d.energy_wh / 1000, 'kWh', 3, 'tables.drive_profile port'), live ? M(live.energy_wh / 1000, 'kWh', 3, 'this drive') : '–') +
-    row('Interventions', T ? `λ = ${fmt(T.interventions.lambda, 2)}` : '–', `λ = ${fmt(d.lambda, 2)}`, live ? String(live.interventions) : '–') +
+    row('Interventions', T ? `λ = ${fmt(T.interventions.lambda, 2)}` : '–', `λ = ${fmt(d.lambda, 2)}${d.dig_in_stretches ? ` <span class="muted">(${d.dig_in_stretches} dig-in)</span>` : ''}`, live ? String(live.interventions) : '–') +
     row('Stops to confirm', T ? String(T.stops) : '–', String(d.stops), live ? String(live.stops) : '–') + `</table></div>` +
-    `<p class="small muted">The table and the integrator use the same physics along the 5 m-densified route; the table adds run-to-run speed scatter (lognormal, σ = ${SPEED_SIGMA}) and draws interventions from an Assumed hazard (Poisson λ). The live drive integrates the expert's actual path second by second (heading changes, acceleration, the teleop command queue) and triggers interventions only from the env's rules, so its numbers differ by design; the energy usually agrees within a few per cent.</p>`;
+    `<p class="small muted">The table and the integrator use the same physics along the 5 m-densified route. The integrator column uses this drive's soil (friction angle ${fmt(phi, 1)}°); the table draws the friction angle per run across 37.8–47.8° and adds run-to-run speed scatter (lognormal, σ = ${SPEED_SIGMA}) and draws interventions from an Assumed hazard (Poisson λ). The live drive integrates the expert's actual path second by second (heading changes, acceleration, the teleop command queue) and triggers interventions only from the env's rules, so its numbers differ by design; the energy usually agrees within a few per cent.</p>`;
 }
 
 function renderConstants() {
@@ -198,12 +199,14 @@ function renderConstants() {
     ['Autonomous speed', R.SPEED_CAP_KMH.autonomous, 'km/h', 1, 'autonomous_kmh'], ['Supervised speed', R.SPEED_CAP_KMH.supervised, 'km/h', 1, 'supervised_kmh'],
     ['Teleop speed made good, 0 / 4 / 6 / 8 s', null, '', 0, 'teleop_smg'], ['Camera pan per stop', R.TELEOP_T_LOOK_S, 's', 0, 't_look_s'], ['Effective rolling coefficient', R.C_RR_EFF, '', 3, 'energy'], ['Dig-in slip', 100 * R.DIG_IN_SLIP, '%', 0, 'dig_in'], ['Shadow speed factor', R.SHADOW_SPEED_FACTOR, '×', 2, 'lighting'], ['Intervention recovery', R.INTERVENTION.recovery_s, 's + RTT', 0, 'intervention']];
   $('r-consts').innerHTML = rows.map(([lab, v, u, d, k]) => `<tr><th scope="row">${lab}</th><td>${v === null ? Object.values(R.LITAKER_SMG_KMH).map(x => num({ value: x, unit: '', flag: flag(k), digits: 2, source: src(k) })).join(' / ') + ' km/h' : num({ value: v, unit: u, flag: flag(k), digits: d, source: src(k) })}</td></tr>`).join('') +
-    `<tr><th scope="row">Slip vs uphill grade</th><td class="small">${R.SLIP_TABLE_DEG.map((g, i) => `${g}° → ${Math.round(100 * R.SLIP_TABLE[i])} %`).join(', ')} <span class="flag" data-flag="Modelled" title="${esc(src('slip_table'))}">Modelled</span></td></tr>`;
+    R.SLIP_PHI_DEG.map((phi, c) => `<tr><th scope="row">Slip vs uphill grade, friction angle ${phi}°</th><td class="small">${R.SLIP_TABLE_DEG.map((g, i) => `${g}° → ${Math.round(100 * R.SLIP_CURVES[c][i])} %`).join(', ')} <span class="flag" data-flag="Modelled" title="${esc(src('slip_table'))}">Modelled</span></td></tr>`).join('') +
+    `<tr><th scope="row">Soil friction angle</th><td class="small">37.8–47.8°, linear between the curves; downhill and flat use the flat value <span class="flag" data-flag="Assumed" title="${esc(src('phi'))}">Assumed</span></td></tr>`;
 }
 
 function wire() {
   for (const id of ['r-from', 'r-to', 'r-standoff', 'r-light']) $(id).addEventListener('change', () => { if (id === 'r-standoff') { const f = $('r-from').value, t = $('r-to').value; fillSelectors(); $('r-from').value = f; $('r-to').value = t; } prepare(); });
-  for (const id of ['r-level', 'r-ctrl']) $(id).addEventListener('change', () => { stop(); if (st.route) { reset(); renderComparison(); } $('r-keys').hidden = $('r-ctrl').value !== 'human'; if ($('r-ctrl').value === 'human') $('r-speed').value = '1'; });
+  $('r-soil-flag').title = `Modelled. Source: ${R.FLAGS.slip_table[1]}`; $('r-soil-src').textContent = ` (slip curves Modelled. Source: ${R.FLAGS.slip_table[1]})`;
+  for (const id of ['r-level', 'r-ctrl', 'r-soil']) $(id).addEventListener('change', () => { stop(); if (st.route) { reset(); renderComparison(); } $('r-keys').hidden = $('r-ctrl').value !== 'human'; if ($('r-ctrl').value === 'human') $('r-speed').value = '1'; });
   $('r-drive').addEventListener('click', () => { if (st.running) stop(); else drive(); });
   $('r-reset').addEventListener('click', () => { stop(); if (st.route) reset(); });
   $('r-ch').addEventListener('change', () => patchView());

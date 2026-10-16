@@ -64,7 +64,7 @@ async function rover(base, refs) {
     const v0 = Math.round((100 - fm.z_encoding.offset_m) / fm.z_encoding.scale_m_per_unit), h5 = mk(L.height_5m, Uint16Array), h20 = mk(L.height_20m, Uint16Array); h5.data.fill(v0); h20.data.fill(v0);
     const flat = new RoverTerrain(fm, h5, h20, mk(L.slope_20m, Uint8Array));
     for (const [rtt, jsc] of Object.entries(LITAKER_SMG_KMH)) {
-      const env = new DriveEnv(flat); let obs = env.reset({ waypoints: R.flat_leg.route, autonomy: 'teleop', rttS: +rtt, sunAz: null }); const ctl = expertController(env.route); let leg = null;
+      const env = new DriveEnv(flat); let obs = env.reset({ waypoints: R.flat_leg.route, autonomy: 'teleop', rttS: +rtt, sunAz: null, phi: 42 }); const ctl = expertController(env.route); let leg = null;
       for (;;) { const r = env.step(ctl.act(obs, env)); obs = r.obs; if (r.terminated || r.truncated) { leg = r.leg; break; } }
       const smg = leg.distance_m / leg.time_s * 3.6, py = R.flat_leg.smg_kmh[rtt];
       post({ group: G, name: `Flat 2.6 km leg, teleop at ${rtt} s round trip: speed made good`, reference: `${jsc} km/h (Litaker et al. 2025)`, computed: `${smg.toFixed(4)} km/h (${((smg / jsc - 1) * 100).toFixed(2)} %)`, tolerance: '2 %', pass: Math.abs(smg / jsc - 1) <= 0.02, basis: 'JSC teleoperation trials (Measured)' });
@@ -84,17 +84,21 @@ async function rover(base, refs) {
   }
   try {
     const sites = await getJson(base + 'terrain/hero/sites.json'), P = Object.fromEntries(sites.sites.map(s => [s.id, s.xy_m])), B = R.base_psr_sun90;
-    const route = plan(t, P.BASE, P.PSR, 90), prof = legProfile(t, route, 90), d = driveProfile(prof, 'autonomous', 0, 90);
+    const route = plan(t, P.BASE, P.PSR, 90), prof = legProfile(t, route, 90), d = driveProfile(prof, 'autonomous', 0, 90, 42);
     post({ group: G, name: 'BASE → PSR, sun 90°: A* route', reference: `${B.route_points} points, ${B.length_m.toFixed(3)} m`, computed: `${route.length} points, ${prof.length_m.toFixed(3)} m`, tolerance: '1e-9 m', pass: route.length === B.route_points && Math.abs(prof.length_m - B.length_m) <= 1e-9, basis: 'site/verify/refs.json' });
     post({ group: G, name: 'BASE → PSR: leg-integrator energy', reference: `${B.integrator_energy_wh.toFixed(6)} Wh`, computed: `${d.energy_wh.toFixed(6)} Wh`, tolerance: '1e-9 relative', pass: Math.abs(d.energy_wh / B.integrator_energy_wh - 1) <= 1e-9, basis: 'site/verify/refs.json' });
-    const env = new DriveEnv(t); let obs = env.reset({ waypoints: route, autonomy: 'autonomous', rttS: 0, sunAz: 90 }); const ctl = expertController(env.route); let leg = null;
+    for (const [phi, ref] of Object.entries(B.integrator_by_phi || {})) {
+      const q = driveProfile(prof, 'autonomous', 0, 90, +phi);
+      post({ group: G, name: `BASE → PSR, soil friction angle ${phi}°: leg-integrator energy and time`, reference: `${ref.energy_wh.toFixed(6)} Wh, ${ref.t_move_s.toFixed(3)} s`, computed: `${q.energy_wh.toFixed(6)} Wh, ${q.t_move_s.toFixed(3)} s`, tolerance: '1e-9 relative', pass: Math.abs(q.energy_wh / ref.energy_wh - 1) <= 1e-9 && Math.abs(q.t_move_s / ref.t_move_s - 1) <= 1e-9, basis: 'site/verify/refs.json (Hu et al. 2024 slip curve)' });
+    }
+    const env = new DriveEnv(t); let obs = env.reset({ waypoints: route, autonomy: 'autonomous', rttS: 0, sunAz: 90, phi: 42 }); const ctl = expertController(env.route); let leg = null;
     for (;;) { const r = env.step(ctl.act(obs, env)); obs = r.obs; if (r.terminated || r.truncated) { leg = r.leg; break; } }
-    post({ group: G, name: 'BASE → PSR, autonomous: step drive vs Python', reference: `${B.drive_autonomous.energy_wh.toFixed(6)} Wh, ${B.drive_autonomous.time_s} s`, computed: `${leg.energy_wh.toFixed(6)} Wh, ${leg.time_s} s`, tolerance: '1e-9 relative', pass: Math.abs(leg.energy_wh / B.drive_autonomous.energy_wh - 1) <= 1e-9 && leg.time_s === B.drive_autonomous.time_s, basis: 'site/verify/refs.json' });
+    post({ group: G, name: 'BASE → PSR, autonomous, soil 42°: step drive vs Python', reference: `${B.drive_autonomous.energy_wh.toFixed(6)} Wh, ${B.drive_autonomous.time_s} s`, computed: `${leg.energy_wh.toFixed(6)} Wh, ${leg.time_s} s`, tolerance: '1e-9 relative', pass: Math.abs(leg.energy_wh / B.drive_autonomous.energy_wh - 1) <= 1e-9 && leg.time_s === B.drive_autonomous.time_s, basis: 'site/verify/refs.json' });
     let table = null; try { const idx = await getJson(base + 'lab/rover/driving-index.json'); table = await getJson(`${base}lab/rover/legs/${idx.legs['BASE->PSR']}`); } catch (e) { /* table absent */ }
     if (table) { const T90 = table.autonomy.autonomous.rtt_s['0'].lighting['90'].energy_kwh.mean * 1000;
       post({ group: G, name: 'BASE → PSR, autonomous: live drive energy vs the driving table', reference: `${T90.toFixed(1)} Wh (driving-v1 mean)`, computed: `${leg.energy_wh.toFixed(1)} Wh (${((leg.energy_wh / T90 - 1) * 100).toFixed(2)} %)`, tolerance: '5 %', pass: Math.abs(leg.energy_wh / T90 - 1) <= 0.05, basis: 'data/driving/driving-v1.json' }); }
   } catch (e) { fail(G, 'BASE → PSR', e); }
-  post({ group: G, name: 'Documented difference: BASE → PSR, teleop 4 s, night (long step drive)', reference: 'Python step drive', computed: 'states identical to 1e-9 for 5,476 of 9,033 steps, then a chaotic drift up to 38 m mid-leg; same steps, time and interventions; energy 616.66 vs 616.62 Wh (0.006 %)', tolerance: 'not a pass/fail check', pass: null, basis: 'one-ulp differences in V8 vs CPython sin/cos/atan, amplified by the 4 s steering delay (F-8 report)' });
+  post({ group: G, name: 'Documented difference: BASE → PSR, autonomous, sun 90°, soil 37.8° / 44.9° / 47.8° (step drive)', reference: 'Python step drive', computed: 'states identical until a heading of exactly 45° (a diagonal of the A* grid) falls on the up-sun limit, where a one-ulp heading difference flips the up-sun speed factor; then 1,825–2,088 steps within 6 of Python; energy within 0.05–0.2 % (572.02 vs 571.87, 657.91 vs 657.56, 581.82 vs 583.01 Wh)', tolerance: 'not a pass/fail check', pass: null, basis: 'one-ulp differences in V8 vs CPython sin/cos/atan meeting the 45° up-sun boundary (F-13 report); at soil 42° the day and night step drives are identical (rows above, and night teleop 4 s: 9,128 steps, 622.486 Wh on both sides)' });
 }
 
 self.onmessage = async e => {

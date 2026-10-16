@@ -11,10 +11,12 @@ const f32 = Math.fround, clip = (v, lo, hi) => Math.max(lo, Math.min(hi, v)), TW
 
 export class DriveEnv {
   constructor(terrain) { this.t = terrain; }
-  /* reset({waypoints, autonomy, rttS, sunAz}) -> obs */
-  reset({ waypoints, autonomy = 'autonomous', rttS = 4.0, sunAz = 0.0 }) {
+  /* reset({waypoints, autonomy, rttS, sunAz, phi}) -> obs. phi: soil friction angle for the slip curve; omitted =
+     drawn uniformly in PHI_RANGE (Python draws from the env's np_random; the page uses Math.random) */
+  reset({ waypoints, autonomy = 'autonomous', rttS = 4.0, sunAz = 0.0, phi = null }) {
     if (!R.AUTONOMY_LEVELS.includes(autonomy)) throw new Error(`unknown autonomy level ${autonomy}`);
     this.autonomy = autonomy; this.rtt = +rttS; this.sun = sunAz;
+    this.phi = phi !== null && phi !== undefined ? +phi : R.PHI_RANGE[0] + Math.random() * (R.PHI_RANGE[1] - R.PHI_RANGE[0]);
     this.route = waypoints.map(p => [+p[0], +p[1]]);
     this.pp = new PurePursuit(this.route);
     const p0 = this.route[0], p1 = this.route[1];
@@ -64,7 +66,7 @@ export class DriveEnv {
     const cap = this.vCap(s.x, s.y, s.psi);
     s = R.step(s, a[0], a[1], cap, DT_S);
     const zA = this.t.height(s.x, s.y), zB = this.t.height(s.x + Math.sin(s.psi), s.y + Math.cos(s.psi));
-    const grade = Math.atan(zB - zA) * 180 / Math.PI, sl = R.slip(grade), gv = s.v * (1.0 - sl);
+    const grade = Math.atan(zB - zA) * 180 / Math.PI, sl = R.slip(grade, this.phi), gv = s.v * (1.0 - sl);
     const before = this.pp.s[this.pp.closest(s.x, s.y)];
     s = R.advance(s, gv, DT_S); this.state = s;
     const ds = gv * DT_S; this.distM += ds; this.sinceStop += ds;
@@ -79,7 +81,7 @@ export class DriveEnv {
     if (why) this.intervene();
     const progress = this.pp.s[this.pp.closest(this.state.x, this.state.y)] - before, reward = progress / 10.0 - 0.001;
     const reached = this.pp.done(this.state.x, this.state.y), truncated = !reached && this.steps >= this.maxSteps;
-    const leg = reached || truncated ? { time_s: this.timeS, energy_wh: this.energyWh, interventions: this.interventions, distance_m: this.distM, stops: this.stops, reached, autonomy: this.autonomy, rtt_s: this.rtt, sun_az_deg: this.sun } : null;
+    const leg = reached || truncated ? { time_s: this.timeS, energy_wh: this.energyWh, interventions: this.interventions, distance_m: this.distM, stops: this.stops, reached, autonomy: this.autonomy, rtt_s: this.rtt, sun_az_deg: this.sun, phi_deg: this.phi } : null;
     const rec = { action: a, cap, grade, slip: sl, gv, eStep, stopped, intervention: why, xte };
     return { obs: this.obs(), reward, terminated: reached, truncated, leg, rec };
   }

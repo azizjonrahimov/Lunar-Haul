@@ -52,20 +52,25 @@ def main():
     refs["rover"]["flat_leg"] = {"route": route, "meta": flat.meta, "smg_kmh": {}}
     for rtt in (0.0, 4.0, 6.0, 8.0):
         leg = drive_expert(DriveEnv(flat, autonomy="teleop", rtt_s=rtt, sun_az_deg=None),
-                           {"waypoints": route, "autonomy": "teleop", "rtt_s": rtt, "sun_az_deg": None})
+                           {"waypoints": route, "autonomy": "teleop", "rtt_s": rtt, "sun_az_deg": None, "phi": 42.0})
         refs["rover"]["flat_leg"]["smg_kmh"][f"{rtt:g}"] = leg["distance_m"] / leg["time_s"] * 3.6
 
-    # BASE -> PSR, sun 90 deg: route, integrator and the autonomous step drive
+    # BASE -> PSR, sun 90 deg: route, integrator (each slip curve) and the autonomous step drive (median soil, phi 42:
+    # at other phi the closed-loop drive meets 1-ulp trig differences on the 45-degree up-sun boundary, see F-13)
     sites = {s["id"]: s["xy_m"] for s in t.sites()["sites"]}
     rt = X.plan(t, sites["BASE"], sites["PSR"], 90.0)
     prof = TB.leg_profile(t, rt, 90.0)
-    r = TB.drive_profile(prof, "autonomous", 0.0, 90.0, np.random.default_rng(0), 4)
+    r = TB.drive_profile(prof, "autonomous", 0.0, 90.0, np.random.default_rng(0), 4, phi_deg=42.0)
+    by_phi = {}
+    for phi in (37.8, 42.0, 47.8):
+        q = TB.drive_profile(prof, "autonomous", 0.0, 90.0, np.random.default_rng(0), 1, phi_deg=phi)
+        by_phi[f"{phi:g}"] = {"energy_wh": float(q["energy_wh"][0]), "t_move_s": q["t_move_s"], "lambda": q["lambda"]}
     leg = drive_expert(DriveEnv(t, autonomy="autonomous", rtt_s=0.0, sun_az_deg=90.0),
-                       {"waypoints": rt.tolist(), "autonomy": "autonomous", "rtt_s": 0.0, "sun_az_deg": 90.0})
+                       {"waypoints": rt.tolist(), "autonomy": "autonomous", "rtt_s": 0.0, "sun_az_deg": 90.0, "phi": 42.0})
     refs["rover"]["base_psr_sun90"] = {"route_points": len(rt), "length_m": prof["length_m"], "integrator_energy_wh": float(r["energy_wh"][0]),
-                                       "integrator_t_move_s": r["t_move_s"], "drive_autonomous": leg}
+                                       "integrator_t_move_s": r["t_move_s"], "integrator_by_phi": by_phi, "phi_deg": 42.0, "drive_autonomous": leg}
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
-    json.dump(refs, open(OUT, "w"), indent=1, default=float)
+    json.dump(refs, open(OUT, "w", newline="\n"), indent=1, default=float)
     print("wrote", OUT)
 
 

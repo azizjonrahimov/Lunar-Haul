@@ -25,10 +25,16 @@ export function teleopCadenceM(rtt) {
   return TELEOP_CADENCE_M[xs[xs.length - 1]];
 }
 
-// slip vs slope along the heading (Hu et al. 2024 anchors), Modelled
+// slip vs slope along the heading (uphill > 0) by soil friction angle phi: Hu et al. 2024 Figs 7 and 13 (Chrono CRM
+// validated against NASA GRC SLOPE-lab tests), 440 kg VIPER-class rover in lunar gravity on GRC-3, digitised. Modelled.
 export const SLIP_TABLE_DEG = [0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0];
-export const SLIP_TABLE = [0.05, 0.08, 0.15, 0.22, 0.35, 0.55, 0.85];
-export const SLIP_DOWNHILL = 0.05, DIG_IN_SLIP = 0.80;
+export const SLIP_PHI_DEG = [37.8, 42.0, 47.8];
+export const SLIP_CURVES = [[0.12, 0.32, 0.74, 0.88, 0.93, 0.95, 0.97],      // phi 37.8 (loose, 1627 kg/m3)
+                            [0.04, 0.13, 0.30, 0.67, 0.86, 0.92, 0.96],      // phi 42.0 (medium, 1734)
+                            [0.01, 0.03, 0.08, 0.18, 0.35, 0.76, 0.88]];     // phi 47.8 (dense, 1839)
+export const PHI_RANGE = [37.8, 47.8], PHI_REF = 42.0;   // phi sampled uniformly per episode / run (Assumed); calibrations at 42
+export const SLIP_TABLE = SLIP_CURVES[1];
+export const DIG_IN_SLIP = 0.80;
 
 /* numpy.interp: linear, clamped to the end values */
 export function interp(x, xp, fp) {
@@ -44,18 +50,23 @@ export function speedCapMps(autonomy, rtt = 0.0) {
   if (autonomy === 'teleop') ground = teleopMoveKmh(rtt);
   else if (autonomy in SPEED_CAP_KMH) ground = SPEED_CAP_KMH[autonomy];
   else throw new Error(`unknown autonomy level ${autonomy}`);
-  return ground * KMH / (1.0 - SLIP_TABLE[0]);
+  return ground * KMH / (1.0 - FLAT_SLIP_REF);
 }
 export function stopPlan(autonomy, rtt = 0.0) {
   if (autonomy === 'teleop') return [teleopCadenceM(rtt), teleopStopS(rtt)];
   if (autonomy === 'supervised') return [SUPERVISED_STOP.every_m, SUPERVISED_STOP.stop_s];
   return [Infinity, 0.0];
 }
-export function slip(grade) {
-  if (grade > SLIP_TABLE_DEG[SLIP_TABLE_DEG.length - 1]) return 0.95;
-  if (grade > 0) return interp(Math.min(Math.max(grade, 0.0), SLIP_TABLE_DEG[SLIP_TABLE_DEG.length - 1]), SLIP_TABLE_DEG, SLIP_TABLE);
-  return SLIP_DOWNHILL;
+/* lunarsim.rover.physics.slip: linear in slope and in phi (both clipped to the digitised range); downhill and flat use
+   the curve's flat value, beyond 30 deg the 30 deg value. Same operation order as the numpy code. */
+export function slip(grade, phi = PHI_REF) {
+  const g = Math.min(Math.max(grade, 0.0), SLIP_TABLE_DEG[SLIP_TABLE_DEG.length - 1]);
+  const ph = Math.min(Math.max(phi, SLIP_PHI_DEG[0]), SLIP_PHI_DEG[SLIP_PHI_DEG.length - 1]);
+  const lo = ph <= SLIP_PHI_DEG[1] ? 0 : 1, p0 = SLIP_PHI_DEG[lo], p1 = SLIP_PHI_DEG[lo + 1], w = (ph - p0) / (p1 - p0);
+  const a = interp(g, SLIP_TABLE_DEG, SLIP_CURVES[lo]), b = interp(g, SLIP_TABLE_DEG, SLIP_CURVES[lo + 1]);
+  return (1.0 - w) * a + w * b;
 }
+export const FLAT_SLIP_REF = slip(0.0, PHI_REF);      // 0.04
 export const slopeSpeedFactor = s => interp(s, [0, 10, 15, 20, 20.001], [1.0, 1.0, 0.5, 0.25, 0.0]);
 
 // lighting (JSC lighting study; sun 1-2 deg)
@@ -71,7 +82,7 @@ export function lightingFactor(headingDeg, sunAzDeg, inShadow) {
 
 // energy (Apollo LRV calibration, Measured -> effective rolling coefficient, Modelled)
 export const LRV_WH_PER_KM = 58.5, LRV_MASS_KG = 700.0;
-export const C_RR_EFF = LRV_WH_PER_KM * 3.6 * (1.0 - SLIP_TABLE[0]) / (LRV_MASS_KG * G_MOON);
+export const C_RR_EFF = LRV_WH_PER_KM * 3.6 * (1.0 - FLAT_SLIP_REF) / (LRV_MASS_KG * G_MOON);   // ~0.178 (phi 42 flat slip)
 export const DRIVE_EFF = 0.7, HOTEL_W = 0.0;
 export function energyWh(ds, grade, slipRatio, massKg = ROVER.mass_kg) {
   const th = grade * RAD, fRoll = C_RR_EFF * massKg * G_MOON * Math.cos(th), fGrade = Math.max(0.0, massKg * G_MOON * Math.sin(th)) / DRIVE_EFF;
@@ -103,7 +114,7 @@ export const FLAGS = {
   slope_nominal_deg: ['Spec', 'designs converge on 15° nominal (VIPER, Intrepid)'], slope_hard_deg: ['Spec', 'LTV / RACER / Endurance 20° requirement'],
   autonomous_kmh: ['Measured', `Apollo LRV moving average 8.1–9.2 km/h (analogue): ${LRV_URLS[0]}`], supervised_kmh: ['Assumed', 'within the 0.5–3.6 km/h modelling range; no lunar demonstration'],
   teleop_smg: ['Measured', `Litaker et al. 2025, JSC simulator: ${LITAKER_URL}`], t_look_s: ['Assumed', '>95 % of navigation at 6–8 s used the 180° camera pan (Litaker)'],
-  slip_table: ['Modelled', `Hu et al. 2024 anchors (Chrono CRM validated against NASA GRC SLOPE lab): ${HU_URL}`], dig_in: ['Measured', `Hu et al. 2024: slip above 80 % raises dig-in risk: ${HU_URL}`],
+  slip_table: ['Modelled', `Hu et al. 2024 Figs 7 and 13, digitised: 440 kg rover in lunar gravity on GRC-3 simulant, Chrono CRM validated against NASA GRC SLOPE-lab tests: ${HU_URL}`], phi: ['Assumed', 'no site-specific soil data for the south-pole sites: friction angle drawn uniformly in 37.8–47.8° (the three Hu et al. 2024 curves)'], dig_in: ['Measured', `Hu et al. 2024: slip above 80 % raises dig-in risk: ${HU_URL}`],
   lighting: ['Assumed', 'JSC lighting study: drivers up-sun tacked ±20–30°; shadowed slopes "very difficult"'], energy: ['Modelled', `Apollo LRV 57–60 Wh/km (Measured) → effective rolling coefficient ${C_RR_EFF.toFixed(3)}: ${LRV_URLS.join(', ')}`],
   intervention: ['Assumed', 'corridor 25 m, slope > 20°, stall 30 s, roughness > 0.5 m; recovery 300 s + RTT'],
 };
