@@ -151,7 +151,9 @@ class Simulation {
   }
   scheduleDemand() {
     const sc = this.sc, years = sc.horizon / (365 * 24), out = [];
-    for (const name in sc.landings) { const n = this.rng.poisson(sc.landings[name] * years); const times = []; for (let i = 0; i < n; i++) times.push(this.rng.uniform(0, sc.horizon)); times.sort((a, b) => a - b); for (const t of times) out.push([t, LANDERS[name], this.rng.choice(this.world.pads)]); }
+    // fixed LANDERS order (CLPS, MK1, LARGE) like Python's LANDER_TYPES, so the draws do not depend on the scenario's key order
+    const unknown = Object.keys(sc.landings).filter(k => !(k in LANDERS)); if (unknown.length) throw new Error('unknown lander types ' + unknown.join(', '));
+    for (const name of Object.keys(LANDERS)) { if (!(name in sc.landings)) continue; const n = this.rng.poisson(sc.landings[name] * years); const times = []; for (let i = 0; i < n; i++) times.push(this.rng.uniform(0, sc.horizon)); times.sort((a, b) => a - b); for (const t of times) out.push([t, LANDERS[name], this.rng.choice(this.world.pads)]); }
     out.sort((a, b) => a[0] - b[0]); this.landingSchedule = out;
     for (const [t, lt, pad] of out) { this.events.push(t, 'LANDING', [lt, pad]); this.events.push(Math.max(0, t - 48), 'WAKE', null); this.events.push(Math.max(0, t - 12), 'WAKE', null); }
     if (sc.duty > 0) for (const v of this.vehicles) { const gap = sc.dutyBlock * (1 - sc.duty) / sc.duty; let t = this.rngOps.exponential(gap); while (t < sc.horizon) { this.events.push(t, 'DUTY', v); t += sc.dutyBlock + this.rngOps.exponential(gap); } }
