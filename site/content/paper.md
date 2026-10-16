@@ -21,6 +21,12 @@ at Phase-2 demand where in-house fleets do not with eight. 1.6 t rovers can move
 lifting together 55 %, a 10 t hauler 88 %, and only 15 t of capacity all of it. A surface move costs about $300
 per kilogram moved, a few percent of the cost of landing it.
 
+**Correction (October 2026).** Version 2's cost per landed kilogram came from an approximation that divided by
+delivered mass less the bulk released. With the exact metric (landed cargo delivered, bulk and return flows
+excluded; ratio of means over 30 years, seed-bootstrap 95 % interval) the pooled marketplace costs about $5,500 per
+landed kilogram rather than about $5,000: $5,525 [4,460, 7,281] at Phase 2 with four vehicles, against $10,019
+[8,067, 12,756] for in-house fleets. The cost per kilogram moved is unchanged.
+
 ### Version 3 (in preparation)
 
 **Where the Lander Lands: Landing Precision, Pad Standoff, Plume Keep-Out and Rover Autonomy Priced in Lunar
