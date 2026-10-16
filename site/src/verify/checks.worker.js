@@ -123,11 +123,47 @@ async function rover(base, refs) {
     if (table) { const T90 = table.autonomy.autonomous.rtt_s['0'].lighting['90'].energy_kwh.mean * 1000;
       post({ group: G, name: 'BASE → PSR, autonomous: live drive energy vs the driving table', reference: `${T90.toFixed(1)} Wh (driving-v1 mean)`, computed: `${leg.energy_wh.toFixed(1)} Wh (${((leg.energy_wh / T90 - 1) * 100).toFixed(2)} %)`, tolerance: '5 %', pass: Math.abs(leg.energy_wh / T90 - 1) <= 0.05, basis: 'data/driving/driving-v1.json' }); }
   } catch (e) { fail(G, 'BASE → PSR', e); }
+  await driverParity(base, t, G);
   post({ group: G, name: 'Documented difference: BASE → PSR, autonomous, sun 90°, soil 37.8° / 44.9° / 47.8° (step drive)', reference: 'Python step drive', computed: 'states identical until a heading of exactly 45° (a diagonal of the A* grid) falls on the up-sun limit, where a one-ulp heading difference flips the up-sun speed factor; then 1,825–2,088 steps within 6 of Python; energy within 0.05–0.2 % (572.02 vs 571.87, 657.91 vs 657.56, 581.82 vs 583.01 Wh)', tolerance: 'not a pass/fail check', pass: null, basis: 'one-ulp differences in V8 vs CPython sin/cos/atan meeting the 45° up-sun boundary (F-13 report); at soil 42° the day and night step drives are identical (rows above, and night teleop 4 s: 9,128 steps, 622.486 Wh on both sides)' });
+}
+
+// the learned rover driver (B-13 ONNX export) in onnxruntime-web, on the card's stored check vectors
+async function roverDriver(base) {
+  const G = 'Trained policies', id = 'rover_bc_s0';
+  let card; try { card = await getJson(`${base}lab/policies/${id}.json`); } catch (e) { return; }   // not published in this build
+  try {
+    const r = await fetch(`${base}lab/policies/${card.onnx}`); if (!r.ok) throw new Error(`${card.onnx}: HTTP ${r.status}`);
+    const { OnnxDriver } = await import('../rover/driver.js');
+    const drv = await OnnxDriver.load(card, await r.arrayBuffer()), c = await drv.check(await getJson(`${base}lab/policies/${id}.check.json`));
+    post({ group: G, name: `${id} (learned rover driver, ONNX in onnxruntime-web): ${c.n} check vectors, network sha256 verified`, reference: 'Python onnxruntime actions', computed: `max |Δ| ${c.maxErr.toExponential(2)}`, tolerance: String(c.tolerance), pass: c.ok, basis: `data/policies/${id}.check.json` });
+  } catch (e) { fail(G, id, e); }
+}
+
+// the learned driver on tests/fixtures/rover_driver_parity.json (B-18): actions on the stored observations are asserted
+// (1e-5); the closed-loop BASE -> DEPOT drive is reported against Python, as the fixture itself specifies
+async function driverParity(base, t, G) {
+  let F; try { F = await getJson(base + 'verify/rover_driver_parity.json'); } catch (e) { return; }   // fixture not in this build
+  try {
+    const card = await getJson(`${base}lab/policies/${F.policy}.json`), r = await fetch(`${base}lab/policies/${card.onnx}`);
+    if (!r.ok) throw new Error(`${card.onnx}: HTTP ${r.status}`);
+    const { OnnxDriver } = await import('../rover/driver.js'), drv = await OnnxDriver.load(card, await r.arrayBuffer());
+    let wa = 0;
+    for (const s of F.steps) { const a = await drv.actAsync({ patch: Float32Array.from(s.patch.flat(2)), scalars: Float32Array.from(s.scalars) }); wa = Math.max(wa, Math.abs(a[0] - s.action[0]), Math.abs(a[1] - s.action[1])); }
+    const tol = F.tolerance.action_given_stored_obs;
+    post({ group: G, name: `Learned driver, ${F.leg.from} → ${F.leg.to}: actions on ${F.steps.length} stored observations`, reference: 'Python onnxruntime actions', computed: `max |Δ| ${wa.toExponential(2)}`, tolerance: String(tol), pass: wa <= tol, basis: 'tests/fixtures/rover_driver_parity.json' });
+    const L = F.leg, env = new DriveEnv(t); let obs = env.reset({ waypoints: L.waypoints, autonomy: L.autonomy, rttS: L.rtt_s, sunAz: L.sun_az_deg, phi: L.phi_deg }), leg = null, k = 0, same = -1;
+    const at = new Map(F.steps.map(s => [s.k, s]));
+    for (; k < 5000 && !leg; k++) {
+      const s = at.get(k); if (s && same === k - 1) { const fp = s.patch.flat(2); if (Math.max(...Array.from(obs.patch, (v, i) => Math.abs(v - fp[i])), ...Array.from(obs.scalars, (v, i) => Math.abs(v - s.scalars[i]))) <= 1e-4) same = k; }
+      const r2 = env.step(await drv.actAsync(obs)); obs = r2.obs; if (r2.terminated || r2.truncated) leg = r2.leg;
+    }
+    const P = F.final;
+    post({ group: G, name: `Documented difference: learned driver, ${L.from} → ${L.to}, closed loop`, reference: `${P.steps} steps, ${P.path_m.toFixed(1)} m, ${P.energy_wh.toFixed(2)} Wh, ${P.interventions} interventions (Python)`, computed: `${k} steps, ${leg.distance_m.toFixed(1)} m, ${leg.energy_wh.toFixed(2)} Wh, ${leg.interventions} interventions; observations equal to the fixture's rounding through step ${same}`, tolerance: 'reported, not asserted (fixture)', pass: null, basis: 'float-level action differences grow until the rover crosses a 20 m roughness-cell boundary on a slightly different side; from there the closed loop takes another path (same class as the expert drives above)' });
+  } catch (e) { fail(G, 'learned driver parity', e); }
 }
 
 self.onmessage = async e => {
   const { base, refs } = e.data;
-  await policies(base); await lander(base); await rover(base, refs);
+  await policies(base); await roverDriver(base); await lander(base); await rover(base, refs);
   self.postMessage({ type: 'done' });
 };

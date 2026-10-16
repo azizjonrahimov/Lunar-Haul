@@ -33,7 +33,7 @@
     <label class="lbl" for="r-level">Autonomy</label>
     <select id="r-level"><option value="teleop:0">teleoperated, 0 s round trip</option><option value="teleop:4" selected>teleoperated, 4 s (Earth–Moon)</option><option value="teleop:6">teleoperated, 6 s</option><option value="teleop:8">teleoperated, 8 s</option><option value="supervised">supervised autonomy</option><option value="autonomous">full autonomy</option></select>
     <label class="lbl" for="r-ctrl">Driver</label>
-    <select id="r-ctrl"><option value="expert" selected>Scripted expert (A* + pure pursuit)</option><option value="human">You (arrow keys)</option><option value="learned" disabled>Learned driver (after B-13)</option></select>
+    <select id="r-ctrl"><option value="expert" selected>Scripted expert (A* + pure pursuit)</option><option value="human">You (arrow keys)</option><option value="learned">Learned driver (rover_bc_s0, loads on choice)</option></select>
     <label class="lbl" for="r-speed">Speed</label>
     <select id="r-speed"><option value="1">real time</option><option value="10">10×</option><option value="60" selected>60×</option><option value="300">300×</option><option value="0">instant</option></select>
     <button class="btn primary" type="button" id="r-drive" aria-pressed="false">Drive</button>
@@ -59,7 +59,7 @@
 
   <section aria-labelledby="h-sees">
     <h2 id="h-sees">What the driver sees and does</h2>
-    <p class="prose">A driving policy gets a 32 × 32 grid around the rover, 5 m per cell, rotated with the rover (forward is up; the outlined cell is the rover), plus five numbers. It answers with two: a steering rate and a throttle. These are the exact inputs the learned driver will get.</p>
+    <p class="prose">A driving policy gets a 32 × 32 grid around the rover, 5 m per cell, rotated with the rover (forward is up; the outlined cell is the rover), plus five numbers. It answers with two: a steering rate and a throttle. These are the exact inputs the learned driver gets; when it drives, the wheel and the throttle below show the network's outputs.</p>
     <div class="r-sees">
       <div>
         <label class="lbl" for="r-ch">Channel</label>
@@ -82,6 +82,11 @@
         <p class="small mono" id="r-ctl-text"></p>
       </div>
     </div>
+  </section>
+
+  <section aria-labelledby="h-learned" id="r-learned-sec">
+    <h2 id="h-learned">The learned driver</h2>
+    <div class="prose" id="r-learned"><p>A convolutional network that imitates the scripted expert from the grid and the five numbers above. It is fetched only when you choose it in the Driver menu (the network and the in-browser runtime are about 15 MB). The logistics experiments in the paper use the expert's driving tables, not this driver.</p></div>
   </section>
 
   <section aria-labelledby="h-cmp">

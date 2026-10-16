@@ -38,6 +38,11 @@ const pol = join(ROOT, 'data', 'policies'), labOut = join(PUB, 'lab', 'policies'
 mkdirSync(labOut, { recursive: true });
 const polFiles = existsSync(pol) ? readdirSync(pol).filter(f => f.endsWith('.json')) : [];
 for (const f of polFiles) copyFileSync(join(pol, f), join(labOut, f));
+// rover lab: the learned driver's network (its card and check file are among the .json above); the page fetches it,
+// and Vite's hashed onnxruntime-web .wasm asset, only when the learned driver is chosen
+const onnx = existsSync(pol) ? readdirSync(pol).filter(f => f.endsWith('.onnx')) : [];
+for (const f of onnx) copyFileSync(join(pol, f), join(labOut, f));
+console.log(`prepare-data: onnx ${onnx.join(', ') || 'none'}`);
 const index = { policies: polFiles.filter(f => /^lander_.*\.json$/.test(f) && !f.endsWith('.check.json')).map(f => f.replace(/\.json$/, '')),
   outcomes: polFiles.filter(f => /^outcomes_.*\.json$/.test(f)).map(f => f.replace(/^outcomes_|\.json$/g, '')) };
 writeFileSync(join(labOut, 'index.json'), JSON.stringify(index, null, 1));
@@ -46,6 +51,8 @@ console.log(`prepare-data: lab policies ${index.policies.join(', ') || 'none'}; 
 // verification page: BACKEND's lander parity fixture (tests/fixtures/lander_parity.json)
 const fixture = join(ROOT, 'tests', 'fixtures', 'lander_parity.json');
 if (existsSync(fixture)) { mkdirSync(join(PUB, 'verify'), { recursive: true }); copyFileSync(fixture, join(PUB, 'verify', 'lander_parity.json')); }
+const driverFixture = join(ROOT, 'tests', 'fixtures', 'rover_driver_parity.json');   // learned rover driver (B-18)
+if (existsSync(driverFixture)) { mkdirSync(join(PUB, 'verify'), { recursive: true }); copyFileSync(driverFixture, join(PUB, 'verify', 'rover_driver_parity.json')); }
 
 // rover lab: the 5 m layers, one small file per driving-table leg, and the four daylight shadow grids precomputed
 // with the page's own port of terrain.cast_shadow (bit-packed, row 0 = south), so the page does not spend ~5 s on them

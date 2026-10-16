@@ -63,32 +63,63 @@ async function prepare() {
 
 // ---------- controllers (B-13 hook: anything with {name, act(obs, env)}) ----------
 function human() { return { name: 'You (keyboard, commands delayed by the round trip)', act: () => { const k = st.keys; const steer = (k.ArrowLeft ? -1 : 0) + (k.ArrowRight ? 1 : 0); if (k.ArrowUp) st.thr = 1; else if (k.ArrowDown) st.thr = 0; return [steer, st.thr ?? 0.5]; } }; }
+// The learned driver (B-13 export): fetched and checked only when chosen; its act is async (onnxruntime-web)
+const POL = BASE + 'lab/policies/';
+let learnedPromise = null;
+function loadLearned() {
+  learnedPromise ||= (async () => {
+    const t0 = performance.now();
+    const [card, chk, bytes] = await Promise.all([getJson(POL + 'rover_bc_s0.json'), getJson(POL + 'rover_bc_s0.check.json').catch(() => null),
+      fetch(POL + 'rover_bc_s0.onnx').then(r => { if (!r.ok) throw new Error(`rover_bc_s0.onnx: HTTP ${r.status}`); return r.arrayBuffer(); })]);
+    const { OnnxDriver } = await import('./driver.js');
+    const drv = await OnnxDriver.load(card, bytes);
+    drv.loadMs = performance.now() - t0; drv.check = chk ? await drv.check(chk) : null;
+    renderLearned(drv); return drv;
+  })().catch(e => { learnedPromise = null; throw e; });
+  return learnedPromise;
+}
+function renderLearned(drv) {
+  const t = drv.card.training || {}, c = drv.check, cap = t.dagger_steps_cap;
+  $('r-learned').innerHTML = `<p>A convolutional network that imitates the scripted expert from the grid and the five numbers above: trained on ${t.legs ?? '?'} legs, then refined with ${t.dagger_rounds ?? '?'} DAgger round${t.dagger_rounds === 1 ? '' : 's'}${cap ? ` capped at ${Number(cap).toLocaleString('en-GB')} samples each` : ''}, exported to ONNX and run here by onnxruntime-web. The logistics experiments in the paper use the expert's driving tables, not this driver: it is a demonstration of the method and still needs far more help on the road than the expert.</p>
+<p class="small ${c && c.ok ? 'pass' : 'fail'}">Browser runtime check: ${c ? `${c.n} stored inputs against the Python onnxruntime outputs: max |Δaction| ${c.maxErr.toExponential(1)} (tolerance ${c.tolerance}) — ${c.ok ? 'matches Python' : 'DOES NOT MATCH'}` : 'no check file'}. Network sha256 checked against its card. Loaded in ${fmt(drv.loadMs / 1000, 1)} s.</p>`;
+}
 function reset() {
   const lv = level(); st.env = new DriveEnv(st.t);
   st.obs = st.env.reset({ waypoints: st.route, autonomy: lv.autonomy, rttS: lv.rtt, sunAz: lighting(), phi: soil() });
-  st.ctl = $('r-ctrl').value === 'human' ? human() : expertController(st.env.route); st.thr = 0.5;
-  st.trail = [[st.env.state.x, st.env.state.y]]; st.events = []; st.done = null; st.rec = null; st.sent = [0, 0]; st.acc = 0;
+  const c = $('r-ctrl').value;
+  st.ctl = c === 'human' ? human() : c === 'learned' && st.learned ? st.learned : expertController(st.env.route); st.thr = 0.5;
+  st.trail = [[st.env.state.x, st.env.state.y]]; st.events = []; st.done = null; st.rec = null; st.sent = [0, 0]; st.acc = 0; st.gen = (st.gen || 0) + 1;
   drawAll(true);
 }
-function stepOnce() {
-  const a = st.ctl.act(st.obs, st.env); st.sent = a;
+function applyStep(a) {
+  st.sent = a;
   const r = st.env.step(a); st.obs = r.obs; st.rec = r.rec;
   if (r.rec.intervention) st.events.push({ x: st.env.state.x, y: st.env.state.y, why: r.rec.intervention, t: st.env.timeS });
   if (st.env.steps % 5 === 0) st.trail.push([st.env.state.x, st.env.state.y]);
   if (r.terminated || r.truncated) { st.done = r.leg; return false; }
   return true;
 }
-function drive() {
-  if (!st.route) return; if (st.done || !st.env || st.env.steps === 0) reset();
+function stepOnce() { return applyStep(st.ctl.act(st.obs, st.env)); }
+/* one step for any controller; undefined if the episode was reset while the network was running */
+async function stepAsync() { const gen = st.gen, a = st.ctl.actAsync ? await st.ctl.actAsync(st.obs, st.env) : st.ctl.act(st.obs, st.env); return gen === st.gen ? applyStep(a) : undefined; }
+async function drive() {
+  if (!st.route || st.busy) return; if (st.done || !st.env || st.env.steps === 0) reset();
   const rate = +$('r-speed').value;
-  if (rate === 0 || reduced.matches && $('r-ctrl').value !== 'human') { const t0 = performance.now(); while (stepOnce()) { if (performance.now() - t0 > 4000) break; } drawAll(true); finish(); return; }
+  if (rate === 0 || reduced.matches && $('r-ctrl').value !== 'human') {
+    const t0 = performance.now(), gen = st.gen; st.busy = true; $('r-drive').disabled = true;
+    try { while (gen === st.gen && await stepAsync()) { if (performance.now() - t0 > (st.ctl.actAsync ? 20000 : 4000)) break; } } finally { st.busy = false; $('r-drive').disabled = false; }
+    drawAll(true); finish(); return;
+  }
   st.running = true; $('r-drive').textContent = 'Pause'; $('r-drive').setAttribute('aria-pressed', 'true'); st.last = 0; if (!st.raf) st.raf = requestAnimationFrame(tick);
 }
 function stop() { st.running = false; $('r-drive').textContent = 'Drive'; $('r-drive').setAttribute('aria-pressed', 'false'); }
-function tick(now) {
+async function tick(now) {
   st.raf = 0; if (!st.running) return;
   const dt = st.last ? Math.min(0.1, (now - st.last) / 1000) : 0; st.last = now; st.acc += dt * +$('r-speed').value;
-  let going = true; while (st.acc >= R_DT && going) { st.acc -= R_DT; going = stepOnce(); }
+  let going = true;
+  if (st.ctl.actAsync) { const gen = st.gen; while (st.acc >= R_DT && going && gen === st.gen) { st.acc -= R_DT; going = (await stepAsync()) !== false; } }
+  else while (st.acc >= R_DT && going) { st.acc -= R_DT; going = stepOnce(); }
+  if (!st.running) return;
   drawAll(false); if (!going) { stop(); finish(); return; }
   st.raf = requestAnimationFrame(tick);
 }
@@ -206,6 +237,13 @@ function renderConstants() {
 function wire() {
   for (const id of ['r-from', 'r-to', 'r-standoff', 'r-light']) $(id).addEventListener('change', () => { if (id === 'r-standoff') { const f = $('r-from').value, t = $('r-to').value; fillSelectors(); $('r-from').value = f; $('r-to').value = t; } prepare(); });
   $('r-soil-flag').title = `Modelled. Source: ${R.FLAGS.slip_table[1]}`; $('r-soil-src').textContent = ` (slip curves Modelled. Source: ${R.FLAGS.slip_table[1]})`;
+  $('r-ctrl').addEventListener('change', async () => {   // the learned driver is fetched the first time it is chosen
+    if ($('r-ctrl').value !== 'learned' || st.learned) return;
+    stop(); $('r-drive').disabled = true; status('Loading the learned driver (network and in-browser runtime, about 15 MB the first time)…');
+    try { st.learned = await loadLearned(); status(`Learned driver ready (${fmt(st.learned.loadMs / 1000, 1)} s). Press Drive.`); if (st.route && $('r-ctrl').value === 'learned') { reset(); renderComparison(); } }
+    catch (e) { status(`The learned driver could not be loaded (${e.message}); the scripted expert drives.`); $('r-ctrl').value = 'expert'; if (st.route) reset(); }
+    finally { $('r-drive').disabled = false; }
+  });
   for (const id of ['r-level', 'r-ctrl', 'r-soil']) $(id).addEventListener('change', () => { stop(); if (st.route) { reset(); renderComparison(); } $('r-keys').hidden = $('r-ctrl').value !== 'human'; if ($('r-ctrl').value === 'human') $('r-speed').value = '1'; });
   $('r-drive').addEventListener('click', () => { if (st.running) stop(); else drive(); });
   $('r-reset').addEventListener('click', () => { stop(); if (st.route) reset(); });

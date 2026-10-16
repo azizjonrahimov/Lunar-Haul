@@ -13,6 +13,7 @@
   "dependencies": {
     "@observablehq/plot": "0.6.17",
     "detect-gpu": "5.0.70",
+    "onnxruntime-web": "1.30.0",
     "three": "0.186.1"
   },
   "devDependencies": {
