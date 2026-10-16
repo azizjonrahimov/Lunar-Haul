@@ -60,6 +60,14 @@ ${note}${meta ? `<p class="small muted">${meta}</p>` : ''}${status === 'produced
 
 // ---------- E15: terminal-descent Monte Carlo ----------
 const pct = (v, d = 1) => (v === '' || v === undefined) ? '–' : `${fmt(100 * +v, d)} %`;
+// the CSV's variant column says "baseline" for every imitation policy too: name learned rows by the policy id's tag,
+// as the lander lab does (lander_<CLASS>_<tag>_s<seed>)
+const TAG_LABEL = { bc_v3: 'imitation + DAgger, observation v3', bcml: 'imitation + DAgger, memoryless teacher', bc: 'imitation + DAgger, filtered teacher',
+  baseline: 'PPO, reward v2', hover_bonus: 'PPO, hover bonus (env v2)', hover_bonus_v1: 'PPO, hover bonus (env v1)', no_eta: 'PPO, no survival term' };
+function controllerLabel(r) {
+  const tag = (String(r.policy).match(/^lander_[A-Za-z0-9]+_(.+)_s\d+$/) || [])[1];
+  return TAG_LABEL[tag] || `learned (${String(r.variant).replace(/_/g, ' ')})`;
+}
 function tableE15(base) {
   const p = join(RES, 'table_E15.csv'); if (!existsSync(p)) return '<p class="stub">results/table_E15.csv is not there yet.</p>';
   const rows = csv(readFileSync(p, 'utf8')), src = r => `results/table_E15.csv, ${r.policy}, n = ${r.n} episodes`;
@@ -67,7 +75,7 @@ function tableE15(base) {
   const body = rows.map(r => {
     const fails = ['velocity', 'tilt', 'sensor', 'timeout', 'lost'].map(k => [k, +r['fail_' + k]]).filter(([, v]) => v > 0).map(([k, v]) => `${k} ${v}`).join(', ') || 'none';
     const delta = r.vs ? `${M(r, 100 * +r.d_pass_rate, 'pp', 1)} <span class="muted small">± ${fmt(100 * +r.d_pass_rate_ci95, 1)}</span>` : '<span class="muted small">reference</span>';
-    return `<tr><th scope="row">${esc(r.cls)} · ${esc(r.kind === 'classical' ? 'classical law' : `learned (${r.variant.replace(/_/g, ' ')})`)}</th><td class="n">${esc(r.n)}</td>
+    return `<tr><th scope="row">${esc(r.cls)} · ${esc(r.kind === 'classical' ? 'classical law' : controllerLabel(r))}</th><td class="n">${esc(r.n)}</td>
 <td class="n">${M(r, 100 * +r.pass_rate, '%', 1)}</td><td class="n">${delta}</td><td class="n">${M(r, r.miss_p50_m, 'm', 1)}</td><td class="n">${M(r, r.miss_p90_m, 'm', 1)}</td>
 <td class="n">${M(r, 100 * +r.offpad_50m_share, '%', 1)}</td><td class="n">${M(r, r.prop_used_mean_kg, 'kg', 0)}</td><td class="small">${esc(fails)}</td></tr>`;
   }).join('');

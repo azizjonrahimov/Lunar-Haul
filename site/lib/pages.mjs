@@ -173,7 +173,7 @@ export function headline() {
   const v2 = headlineItems();   // version-2 cells: the fallback while a Phase-3 source is missing
   if (r.fit) {
     const s = r.fit.standoff, k = r.fit.keepout, d = r.fit.standdown;
-    items.push({ label: 'Added delay of urgent cargo per kilometre of pad standoff', html: num({ value: s.pct, unit: '% per km', flag: 'Modelled', digits: 0, source: s.source }),
+    items.push({ label: 'Added delay of urgent cargo per kilometre of pad standoff', html: num({ value: s.pct, unit: '% per km', flag: 'Modelled', digits: 1, source: s.source }),
       ctx: `95% interval ${pct1(s.lo)}–${pct1(s.hi)} %; pooled over ${s.n.toLocaleString('en-GB')} simulated years, every fleet and dispatch rule.` });
     items.push({ label: 'A plume keep-out radius, and a stand-down after each landing', html: num({ value: k.pct, unit: '% per km', flag: 'Modelled', digits: 1, source: k.source }),
       ctxHtml: `Stand-down: ${num({ value: d.pct, unit: '% per hour', flag: 'Modelled', digits: 1, source: d.source })}. Landing dispersion itself has no smooth effect; it acts only through landings off the pad.` });
