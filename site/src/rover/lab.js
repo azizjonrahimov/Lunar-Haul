@@ -24,6 +24,7 @@ async function boot() {
     st.sites = await getJson(TERR + 'sites.json');
     for (const az of [0, 90, 180, 270]) { try { const r = await fetch(`${LAB}shadow_${az}.bin`); if (r.ok) st.t.setShadowBits(az, new Uint8Array(await r.arrayBuffer())); } catch (e) { /* computed on demand */ } }
     st.index = await getJson(LAB + 'driving-index.json').catch(() => null);
+    st.lindex = await getJson(LAB + 'learned-index.json').catch(() => null);   // the learned driver's table (driving-v1-learned.json), when built
 
   } catch (e) { status(`The rover lab needs the terrain pack's 5 m layer (${e.message}).`); return; }
   $('r-tele-title').insertAdjacentHTML('beforeend', ` <span class="small muted">${ENV_ID}, env v${ENV_VERSION}</span>`);
@@ -58,6 +59,7 @@ async function prepare() {
     if (!st.route) { status(`No drivable route from ${a} to ${b} with this lighting (every path crosses ground steeper than ${R.ROVER.slope_hard_deg}°).`); return; }
     st.prof = legProfile(st.t, st.route, sun); st.planMs = performance.now() - t0;
     const file = st.index && st.index.legs[tableKey(a, b)]; st.legTable = file ? await getJson(LAB + 'legs/' + file).catch(() => null) : null;
+    const lfile = st.lindex && st.lindex.legs[tableKey(a, b)]; st.learnedTable = lfile ? await getJson(LAB + 'learned/' + lfile).catch(() => null) : null;
   }
   reset(); renderComparison(); status(`Route ${a} → ${b}: ${fmt(st.prof.length_m / 1000, 2)} km over ${st.route.length} cells, planned in ${fmt(st.planMs, 0)} ms. Press Drive.`);
 }
@@ -213,16 +215,25 @@ function controls() {
 // ---------- comparison with the driving table ----------
 function renderComparison() {
   if (!st.prof) return; const lv = level(), sunKey = $('r-light').value, phi = st.env ? st.env.phi : R.PHI_REF, d = driveProfile(st.prof, lv.autonomy, lv.rtt, lighting(), phi);
-  const T = st.legTable && st.legTable.autonomy[lv.autonomy] && st.legTable.autonomy[lv.autonomy].rtt_s[String(lv.rtt)] && st.legTable.autonomy[lv.autonomy].rtt_s[String(lv.rtt)].lighting[sunKey];
+  const cell = tab => tab && tab.autonomy[lv.autonomy] && tab.autonomy[lv.autonomy].rtt_s[String(lv.rtt)] && tab.autonomy[lv.autonomy].rtt_s[String(lv.rtt)].lighting[sunKey];
+  const T = cell(st.legTable);
+  // the learned driver's table replaces the Assumed hazard and the driving time only at the autonomous and supervised
+  // levels (teleop keeps the human model), so its column is shown there
+  const usesDriver = st.learnedTable && st.lindex && st.lindex.model && st.lindex.model.driver && (st.lindex.model.driver.levels || []).includes(lv.autonomy);
+  const TL = usesDriver ? cell(st.learnedTable) : null, DM = usesDriver && st.learnedTable.driver_measured ? st.learnedTable.driver_measured[sunKey] : null;
   const live = st.done, cost = R.interventionCostS(lv.rtt), M = (v, u, dd, s) => num({ value: v, unit: u, flag: 'Modelled', digits: dd, source: s });
-  const tsrc = `data/driving/driving-v1.json, leg ${tableKey($('r-from').value, $('r-to').value)}, ${lv.autonomy}${lv.autonomy === 'teleop' ? ' ' + lv.rtt + ' s' : ''}, lighting ${sunKey}, ${st.index ? st.index.seeds : '?'} runs`;
-  const row = (lab, tab, integ, liv) => `<tr><th scope="row">${lab}</th><td class="n">${tab}</td><td class="n">${integ}</td><td class="n">${liv}</td></tr>`;
-  $('r-compare').innerHTML = `<div class="r-scroll"><table class="w-table"><tr><th></th><th class="n">Driving table (mean · p90)</th><th class="n">Leg integrator, this route</th><th class="n">Live drive</th></tr>` +
-    row('Time, excl. interventions', T ? `${M(T.time_h.mean, 'h', 2, tsrc)} · ${fmt(T.time_h.p90, 2)} h` : '<span class="muted">not in the table</span>', M(d.time_s_nominal / 3600, 'h', 2, `tables.drive_profile port, u_leg = 1, phi ${fmt(phi, 1)}°`), live ? M((live.time_s - live.interventions * cost) / 3600, 'h', 2, 'this drive') : '–') +
-    row('Energy (traction)', T ? M(T.energy_kwh.mean, 'kWh', 3, tsrc) : '–', M(d.energy_wh / 1000, 'kWh', 3, 'tables.drive_profile port'), live ? M(live.energy_wh / 1000, 'kWh', 3, 'this drive') : '–') +
-    row('Interventions', T ? `λ = ${fmt(T.interventions.lambda, 2)}` : '–', `λ = ${fmt(d.lambda, 2)}${d.dig_in_stretches ? ` <span class="muted">(${d.dig_in_stretches} dig-in)</span>` : ''}`, live ? String(live.interventions) : '–') +
-    row('Stops to confirm', T ? String(T.stops) : '–', String(d.stops), live ? String(live.stops) : '–') + `</table></div>` +
-    `<p class="small muted">The table and the integrator use the same physics along the 5 m-densified route. The integrator column uses this drive's soil (friction angle ${fmt(phi, 1)}°); the table draws the friction angle per run across 37.8–47.8° and adds run-to-run speed scatter (lognormal, σ = ${SPEED_SIGMA}) and draws interventions from an Assumed hazard (Poisson λ). The live drive integrates the expert's actual path second by second (heading changes, acceleration, the teleop command queue) and triggers interventions only from the env's rules, so its numbers differ by design; the energy usually agrees within a few per cent.</p>`;
+  const legKey = tableKey($('r-from').value, $('r-to').value), lvl = `${lv.autonomy}${lv.autonomy === 'teleop' ? ' ' + lv.rtt + ' s' : ''}`;
+  const tsrc = `data/driving/driving-v1.json, leg ${legKey}, ${lvl}, lighting ${sunKey}, ${st.index ? st.index.seeds : '?'} runs`;
+  const lsrc = `data/driving/driving-v1-learned.json, leg ${legKey}, ${lvl}, lighting ${sunKey}, ${st.lindex ? st.lindex.seeds : '?'} runs; interventions and driving time measured with the learned driver`;
+  const lcol = !!TL;
+  const row = (lab, tab, ltab, integ, liv) => `<tr><th scope="row">${lab}</th><td class="n">${tab}</td>${lcol ? `<td class="n">${ltab}</td>` : ''}<td class="n">${integ}</td><td class="n">${liv}</td></tr>`;
+  $('r-compare').innerHTML = `<div class="r-scroll"><table class="w-table"><tr><th></th><th class="n">Driving table, expert (mean · p90)</th>${lcol ? '<th class="n">Driving table, learned driver (mean · p90)</th>' : ''}<th class="n">Leg integrator, this route</th><th class="n">Live drive</th></tr>` +
+    row('Time, excl. interventions', T ? `${M(T.time_h.mean, 'h', 2, tsrc)} · ${fmt(T.time_h.p90, 2)} h` : '<span class="muted">not in the table</span>', TL ? `${M(TL.time_h.mean, 'h', 2, lsrc)} · ${fmt(TL.time_h.p90, 2)} h` : '–', M(d.time_s_nominal / 3600, 'h', 2, `tables.drive_profile port, u_leg = 1, phi ${fmt(phi, 1)}°`), live ? M((live.time_s - live.interventions * cost) / 3600, 'h', 2, 'this drive') : '–') +
+    row('Energy (traction)', T ? M(T.energy_kwh.mean, 'kWh', 3, tsrc) : '–', TL ? M(TL.energy_kwh.mean, 'kWh', 3, lsrc) : '–', M(d.energy_wh / 1000, 'kWh', 3, 'tables.drive_profile port'), live ? M(live.energy_wh / 1000, 'kWh', 3, 'this drive') : '–') +
+    row('Interventions', T ? `λ = ${fmt(T.interventions.lambda, 2)}` : '–', TL ? `λ = ${fmt(TL.interventions.lambda, 2)}` : '–', `λ = ${fmt(d.lambda, 2)}${d.dig_in_stretches ? ` <span class="muted">(${d.dig_in_stretches} dig-in)</span>` : ''}`, live ? String(live.interventions) : '–') +
+    row('Stops to confirm', T ? String(T.stops) : '–', TL ? String(TL.stops) : '–', String(d.stops), live ? String(live.stops) : '–') + `</table></div>` +
+    (DM ? `<p class="small">Learned driver on this leg and lighting, measured once in the step-by-step model (autonomous, 4 s round trip): ${M(DM.interventions_per_km, 'interventions per km', 2, lsrc)}, driving time ${M(DM.time_ratio, "× the integrator’s time", 2, lsrc)}${DM.reached ? '' : ' (did not reach the goal, so the table keeps the expert model for this case)'}. The paper's experiments use the expert's table.</p>` : '') +
+    `<p class="small muted">The table and the integrator use the same physics along the 5 m-densified route. The integrator column uses this drive's soil (friction angle ${fmt(phi, 1)}°); the table draws the friction angle per run across 37.8–47.8° and adds run-to-run speed scatter (lognormal, σ = ${SPEED_SIGMA}) and draws interventions from an Assumed hazard (Poisson λ)${lcol ? ', which the learned-driver table replaces by the measured rate' : ''}. The live drive integrates the chosen driver's actual path second by second (heading changes, acceleration, the teleop command queue) and triggers interventions only from the env's rules, so its numbers differ by design; for the expert the energy usually agrees within a few per cent.</p>`;
 }
 
 function renderConstants() {

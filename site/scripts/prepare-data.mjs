@@ -59,14 +59,18 @@ if (existsSync(driverFixture)) { mkdirSync(join(PUB, 'verify'), { recursive: tru
 const roverOut = join(PUB, 'lab', 'rover');
 mkdirSync(join(roverOut, 'legs'), { recursive: true });
 for (const f of ['height_5m.png', 'slope_20m.png', 'hillshade_20m.png']) if (existsSync(join(src, f))) copyFileSync(join(src, f), join(out, f));
-const drivingPath = join(ROOT, 'data', 'driving', 'driving-v1.json');
-if (existsSync(drivingPath)) {
-  const d = JSON.parse(readFileSync(drivingPath, 'utf8')), file = k => k.replace('->', '__').replace(/@/g, '_at_').replace(/[^\w.-]/g, '_') + '.json';
-  for (const [k, leg] of Object.entries(d.legs)) writeFileSync(join(roverOut, 'legs', file(k)), JSON.stringify(leg));
+// one small file per leg plus an index: the expert's driving-v1.json and, when it exists, the learned driver's table
+function sliceTable(src, dir, indexName, label) {
+  if (!existsSync(src)) return;
+  const d = JSON.parse(readFileSync(src, 'utf8')), file = k => k.replace('->', '__').replace(/@/g, '_at_').replace(/[^\w.-]/g, '_') + '.json';
+  mkdirSync(join(roverOut, dir), { recursive: true });
+  for (const [k, leg] of Object.entries(d.legs)) writeFileSync(join(roverOut, dir, file(k)), JSON.stringify(leg));
   const { legs, ...head } = d;
-  writeFileSync(join(roverOut, 'driving-index.json'), JSON.stringify({ ...head, legs: Object.fromEntries(Object.keys(legs).map(k => [k, file(k)])) }));
-  console.log(`prepare-data: driving table ${Object.keys(legs).length} legs sliced`);
+  writeFileSync(join(roverOut, indexName), JSON.stringify({ ...head, legs: Object.fromEntries(Object.keys(legs).map(k => [k, file(k)])) }));
+  console.log(`prepare-data: ${label} ${Object.keys(legs).length} legs sliced`);
 }
+sliceTable(join(ROOT, 'data', 'driving', 'driving-v1.json'), 'legs', 'driving-index.json', 'driving table');
+sliceTable(join(ROOT, 'data', 'driving', 'driving-v1-learned.json'), 'learned', 'learned-index.json', 'learned-driver table');
 if (existsSync(join(src, 'height_5m.png')) && !meta.dev_standin) {
   const { RoverTerrain } = await import('../src/rover/terrain.js'), { decodePngGray } = await import('../src/terrain.js');
   const ld = (f, dd) => { const b = readFileSync(join(src, f)); return decodePngGray(b.buffer.slice(b.byteOffset, b.byteOffset + b.length), dd); };
