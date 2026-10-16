@@ -30,23 +30,26 @@ landed kilogram rather than about $5,000: $5,525 [4,460, 7,281] at Phase 2 with 
 ### Version 3 (in preparation)
 
 **Where the Lander Lands: Landing Precision, Pad Standoff, Plume Keep-Out and Rover Autonomy Priced in Lunar
-Surface Logistics.** Azizjon Rahimov, Roatify Research. A draft exists; it is not yet posted.
+Surface Logistics.** Azizjon Rahimov, Roatify Research ·
+[Version 3 (draft, October 2026, PDF, 75 pages)](https://github.com/azizjonrahimov/lunar-logistics-research/blob/main/paper/v3/where_the_lander_lands_v3.pdf) ·
+A draft; not yet posted with a DOI.
 
 It puts the base on real LOLA terrain, adds learned landing controllers and a rover driving model to the testbed,
 and prices landing dispersion, pad standoff, plume keep-out and rover autonomy in the delay and cost of surface
 delivery, a relation NASA's architecture papers describe only qualitatively. At the typical fleet load, each kilometre of pad standoff adds <!--@r:standoff_pct--> to the delay of urgent cargo, most of it in the first kilometre; a plume keep-out radius and a stand-down add no measurable delay; landing dispersion adds <!--@r:dispersion_pct--> per e-fold of the mean miss, through landings off the
 pad. The figures and tables are on the [Results](../results/) page as they are produced, and the method is on the
-[Method](../method/) page. The paper will be posted here with a DOI when it is complete.
+[Method](../method/) page. The final version will be posted here with a DOI.
 
 ### Cite
 
 ```
 @misc{rahimov2026lunarhaul,
-  title   = {Who Hauls the Habitat? A Verified Simulation Testbed, a Pooled Dispatch Marketplace
-             and a Reference Design for Lunar Surface Logistics},
+  title   = {Where the Lander Lands: Landing Precision, Pad Standoff, Plume Keep-Out and Rover
+             Autonomy Priced in Lunar Surface Logistics},
   author  = {Rahimov, Azizjon},
   year    = {2026},
-  version = {2.0.0},
+  version = {3.0.0},
+  note    = {Draft, October 2026},
   url     = {https://github.com/azizjonrahimov/lunar-logistics-research}
 }
 ```
