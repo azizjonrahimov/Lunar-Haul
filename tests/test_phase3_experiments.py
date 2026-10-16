@@ -53,7 +53,7 @@ def test_e17_cells():
 
 def test_e18_cells():
     cells = rp.e18_cells()
-    assert len(cells) == 3 * 2 * 2 * 4 * (1 + 5 * 4) == 1008
+    assert len(cells) == 3 * 2 * 2 * 4 * (1 + 5 * 4) == 1260
     assert len(set(_keys(cells))) == len(cells)
     tags = pd.DataFrame([t for (t, *_) in cells])
     assert (tags[["keepout_km", "standdown_h"]].eq(0.0).all(axis=1)).sum() == 48          # the no-plume cells
