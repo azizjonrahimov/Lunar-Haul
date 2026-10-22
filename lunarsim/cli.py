@@ -55,6 +55,9 @@ def _add_phase3_args(p):
     g.add_argument("--comms", default=None,
                    help="Phase 4 Earth-link rule: a mode (always | dte | dte+relay) or a JSON object with the "
                         "Scenario.comms keys, e.g. '{\"mode\": \"dte\", \"supervised_policy\": \"strategic\"}'")
+    g.add_argument("--illumination", default=None,
+                   help="Phase 4 real sun per site and leg: 'on' (defaults), a criterion (any_part | half | full) or a "
+                        "JSON object with the Scenario.illumination keys, e.g. '{\"leg_rule\": \"worst\"}'")
 
 
 def _with_phase3(sc, a):
@@ -85,6 +88,9 @@ def _with_phase3(sc, a):
     if getattr(a, "comms", None):
         c = a.comms.strip()
         kw["comms"] = json.loads(c) if c.startswith("{") else {"mode": c}
+    if getattr(a, "illumination", None):
+        c = a.illumination.strip()
+        kw["illumination"] = json.loads(c) if c.startswith("{") else ({} if c == "on" else {"criterion": c})
     return sc.with_(**kw) if kw else sc
 
 

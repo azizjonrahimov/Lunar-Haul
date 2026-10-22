@@ -154,7 +154,8 @@ def schema_targets(root: str = ROOT) -> List[Tuple[str, str]]:
     t = [(j("lunarsim", "catalog-v1.json"), "catalog-v1"),
          (j("data", "driving", "routes-v1.json"), "routes-v1"),
          (j("data", "policies", "trajectories-v1.json"), "trajectories-v1"),
-         (j("data", "comms", "connecting_ridge", "earth_link-v1.json"), "earth-link-v1")]
+         (j("data", "comms", "connecting_ridge", "earth_link-v1.json"), "earth-link-v1"),
+         (j("data", "illumination", "connecting_ridge", "sun_link-v1.json"), "sun-link-v1")]
     t += [(p, "scene-v1") for p in sorted(glob.glob(j("data", "scenes", "*", "scene.json")))]
     t += [(p, "scenario-v1") for p in sorted(glob.glob(j("data", "scenarios", "*.json")))]
     t += [(j("data", "scenes", "gallery.json"), "scene-gallery-v1")]
@@ -176,6 +177,9 @@ def _python_validator(schema: str):
         return validate
     if schema == "earth-link-v1":
         from lunarsim.comms import validate
+        return validate
+    if schema == "sun-link-v1":
+        from lunarsim.illumination import validate
         return validate
     if schema.startswith("trace-"):
         from lunarsim.formats import validate_trace

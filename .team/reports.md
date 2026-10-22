@@ -3082,3 +3082,114 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
   - LEAD/BACKEND: `tools/ci/budgets.json` world data list: the 3D view now also fetches `terrain/hero/v2/manifest.json`, `normal_20m.png`, `normal_5m_{BASE,PAD_A}.png` and one `horizon_20m_*.png` (≈ 2.6 MB more, after the first frame; LCP unaffected). As the sun turns, a full lunar day touches all 16 horizon files (22.5 MB, 3 kept decoded). If that is too much for /world/, BACKEND could add a 400 × 400 horizon map for the overview (~5.6 MB for all 16).
   - BACKEND: nothing blocking. The √thrust onset (MK1 44.5 m, LARGE 81 m) could go into trajectories-v1's `f33_onset_altitude_m` as Assumed if you agree.
 - **Questions for LEAD:** commit `site/design/shots/*.png` (1 MB, not in the build) or keep them out?
+
+## B-44 DONE 13:36 | Real sun at each site and leg (opt-in `illumination`) and the stage D cell set for H6
+- **Files:**
+  - new: `tools/illumination/sun_link.py` (data tool: stages ephem / dem / masks / link / avgvisib, `--max-seconds`);
+  - new: `lunarsim/illumination.py` (reader, `validate()`, the engine model);
+  - new: `lunarsim/schemas/sun-link-v1.schema.json`; `tests/test_illumination.py` (9 tests);
+  - changed: `lunarsim/engine.py`, `lunarsim/dispatch.py` (the night rule reads it when set), `lunarsim/scenario.py` (field `illumination`), `lunarsim/config.py` (PHASE3_FIELDS), `lunarsim/cli.py` (`--illumination on|any_part|half|full|{json}`);
+  - changed: `lunarsim/schemas/scenario-v1.schema.json` (the field), `experiments/phase4/run_phase4.py` (stage `e21d`), `tools/ci/budgets.py` (the schemas step covers the new file: 35 files, 0 problems).
+  - **Data for LEAD to commit:** `data/illumination/connecting_ridge/sun_link-v1.json` (0.56 MB, LF).
+- **Scenario field:**
+  - `illumination: {file?, criterion: half (default) | any_part | full, leg_rule: most (default) | worst, start_year?, start_h?}`. None = the v2 `night_fraction` rule.
+  - `start_year` defaults to the comms start year when comms is set (so Earth and Sun share one calendar), else 2028.
+
+**Method** (all in the tool's docstring)
+- **Sun:** SPICE `spkcpo` SUN from BASE, LT+S, MOON_ME, hourly 2028-01-01 to 2031-12-31 (35,064 h; kernels as tools/comms). Each point's local frame; solar radius 695,700 km (IAU 2015 nominal). Check: SPICE's own `azlcpo` agrees to 1e-13°. The Sun at BASE swings −2.1° to +2.1°.
+- **Horizon:** full circle every 0.5°, the 5 m tile to 8 km plus LOLA LDEM_80S_80MPP_ADJ (80 m, ±260 km window of the file already fetched for R-1) out to 250 km. Beyond that the curvature drops terrain more than 18 km below the local horizontal.
+  - **I did not use the B-34 horizon map.** It is tile-limited (it under-estimates distant ridges, as its own docstring says) and has 5.6° sectors against a 0.53° Sun.
+- **Visible disc fraction:** f = 1 − (acos x − x√(1−x²))/π, with x = (elevation − horizon) / radius.
+- **Points:** every site and pad (all standoffs) and every 100 m route sample of the 182 legs, at **2.5 m (Assumed: panel/mast height)**, plus BASE at 0, 2 and 10 m for the checks.
+- **Criteria:** lit = any_part (f > 0) / **half (f ≥ 0.5, the engine default, Assumed)** / full (f ≥ 0.999).
+- **Leg rules:** **worst** = every sample lit (the task's rule); **most** = ≥ 80 % of the samples lit (Assumed: a rover crosses short shadows on its battery).
+- **Run:** horizons 10 × ~53 s in two foreground chunks; link 22 s; peak memory one process, DEM window 161 MB.
+
+**Checks**
+- **PGDA average-illumination map** (Mazarico et al. 2011 method; mean visible solar-disc fraction at the surface, 60 m), compared our pipeline's way: surface level, the 5 m tile averaged to 60 m, at each map pixel's centre.
+  - Ours minus map: **mean −0.044, mean |d| 0.053, 11 of 17 points within 0.05.** The Earth map check in B-40 got 15/17 within 0.05.
+  - The largest miss is BASE: 0.44 vs 0.65, but the map's own 3×3 neighbourhood spans 0.43-0.76 there.
+- **Gläser et al.** (Connecting Ridge, best point: 92.27 % at 2 m, 95.65 % at 10 m, 3-5 days of darkness):
+  - our pack's best-lit point (a route sample 28 m from BASE): **89.3 % at 2.5 m**;
+  - BASE itself: 78.9 % at 2 m, 92.2 % at 10 m;
+  - longest dark spell at BASE (half): 13.7 d at 2.5 m, 4.1 d at 10 m.
+- **The answer depends strongly on height:** BASE at the surface on the 5 m tile is 25 %, because sub-metre relief within metres blocks a Sun under 2° high.
+- **Sunlit share of hours** (half, 2.5 m), against today's fixed 85 % everywhere (`night_fraction` 0.15):
+
+  | BASE | POWER | DEPOT | CONSTR | pads 1 km (A / B) | ISRU | SCI_1 | PSR |
+  |---|---|---|---|---|---|---|---|
+  | **85 %** | 81 % | 63 % | 62 % | 57 / 61 % | 27 % | 11 % | 0 |
+
+- **Legs:**
+  - **worst:** median lit 5 %, **70 of 182 legs never lit** (a single shadowed 100 m sample darkens a whole leg);
+  - **most:** median 31 %, none never lit.
+  - Main legs (worst / most): PAD_A@1→BASE 29 / 57 %, BASE→POWER 39 / 63 %, CONSTR→ISRU 20 / 31 %.
+
+**Engine rule (when set; off = byte-identical)**
+- A rover that cannot work in the dark does not start a job or a reposition at a dark site.
+- A plan is caught by the dark at the first moment one of its legs or stops is not lit; the rover then waits there until it is lit again. (The v2 rule waits a fixed night length.)
+- The marketplace's night check and anticipatory staging ask whether any leg of the plan goes dark.
+- Parked rovers wake whenever a site becomes lit; the night speed factor applies on dark legs.
+- Pad↔pad legs are lit when both ends are.
+- The trace's `nights` = BASE's dark windows.
+- **Off-path checks:** the baseline md5 is unchanged (`739e9ba72c15`); the full test suite passes (423 tests, 5 min).
+
+**First runs** (P2 default fleet, E21 settings, seed 0, 2028)
+
+| Earth link | Night rule | t delivered | Urgent p90 |
+|---|---|---|---|
+| always | night_fraction | 515.1 | 3.8 h |
+| always | real sun, leg rule most | 508.8 | 13.6 h |
+| always | real sun, leg rule worst | 511.7 | 27.9 h |
+| DTE only | night_fraction | 310 | 328 h |
+| DTE only | real sun | 310 | 345 h |
+
+- Run times 0.6-16 s.
+
+**Stage D** (`python experiments/phase4/run_phase4.py e21d --cells a-b`)
+- **Design:** 32 cells = comms {dte, relay 0.5} × mix {default, supervised strict} × sun {night_fraction 0.15, real} × start year 2028-2031. The year is a cell factor here, not seed mod 4.
+- Each row gets `delivered_t_m01..m12` (tonnes per twelfth of the year) for the ~347-day ripple.
+- **Size:** × 20 seeds = 640 runs, ~85 min.
+- **Chunks:**
+  - cells 0-15 are DTE (~4 min each): 2 per chunk;
+  - cells 16-31 are relay (~1 min each): 8 per chunk.
+- **Smoke test** (2 cells × 2 seeds, scratch folder): works, and the summary table carries the monthly means.
+- **Table format:** `table` now groups by two more factors (`sun`, `year`; constant for A-C), so the next table rebuild adds two columns to table_E21.csv. **After it, rerun `python -m lunarsim.stories build`**: the E21 story records that table's hash. I rebuilt it once to test and restored both tables to HEAD content (no content diff).
+
+- **Tests:** `test_illumination.py` 9 passed. They cover:
+  - the committed file validates, is < 2 MB and its checks hold;
+  - its schema; the disc formula; window queries (reverse leg key, missing leg = both ends, first dark along a plan, dark windows, wake-ups);
+  - start year follows comms;
+  - engine off = unchanged (NaN-safe), on ≠ off;
+  - parked in the dark until 500 h; no job starts or runs into 4-hourly dark spells;
+  - scenario round trip and CLI.
+- **How to test:** `.venv\Scripts\python -m pytest tests\test_illumination.py -q`. A run: `python -m lunarsim run --scenario P2-default --terrain connecting_ridge --pad-standoff 1 --landing-model classical --autonomy driving-v1 --illumination on`.
+- **Questions for LEAD:**
+  1. **Leg rule.** The task said worst sample, but then 70 of 182 legs never see half the Sun, so I made **"most" (≥ 80 % of samples lit) the default** and kept "worst" selectable. Stage D uses the default. Keep, or switch stage D to worst?
+  2. **Observer height** 2.5 m (Assumed) sets the answer more than anything else (2 m: BASE 79 %; 10 m: 92 %). OK, or a different panel height?
+
+## F-34 DONE 13:36 (parity at the data's rounding; exact parity needs BACKEND, see below) | Lander lab in 3D: "The last 500 metres"
+- **Files:**
+  - Page: `site/lab/lander/index.html` is now an instrument page (`body.instrument`) with a 3D section on top; the browser lab below is unchanged (tier 0, and it still flies episodes live).
+  - New: `site/src/lander/lab3d.js` (page side: door, controls, score, phases, timeline, story, text mirror), `site/src/lander/lab3d-scene.js` (the 3D scene, lazy chunk 3.9 kB gz + the stage chunks), `site/src/lander/trajectories.js` (trajectories-v1 as functions of time, no three.js), `site/lib/tex.mjs` + a `<!--@tex:name-->` transform in `site/vite.config.js` (KaTeX 0.18.11 at build time, MathML output: no KaTeX CSS, fonts or JS on the page; `katex` pinned as a devDependency), `site/tests/lander-trajectories.test.mjs`.
+  - Changed: `site/src/lander/lab.css` (3D section), `site/src/stage/terrain.js` (your M2 notes, below).
+- **The 3D view:** recorded episodes at true scale over the 5 m PAD_A terrain; catalogue lander with attitude from the quaternion; F-33 glow, dust sheet (onset per the file; √thrust for MK1/LARGE), obscuration layer and scour; the catalogue pad with its berm; the touchdown box as the 50 m delivery ring (dashed) and the 15 m hover point; the Monte Carlo touchdowns of the chosen pilot on the ground (one 0.7 m disc per landing, coloured by outcome, legend in text); long shadows (shadow camera on the lander).
+  - Controls: Lander Small/Medium/Large; Pilot Network/Classical/Memoryless/PPO/Hover hack (only what the file has per class: CLPS 5, MK1 and LARGE 2); Episode Close/Typical/Wide/First failure (Hover hack opens on its first failure, the 150 s hover); View Chase/Side/Pad camera/Into the sun (cameras follow the lander, orbit stays free); Show Guidance (flown path, velocity white vs the guidance field's velocity cyan, hover point) / Thrust (thrust and weight as forces, so T/W shows) / Sensors (altimeter beam and reading, amber during dropouts); speed 1×/2×/4×; Play/Pause.
+  - SCORE counter from the recorded terms (track + effort + low_alt + terminal + η per step, ticking every 0.2 s), red/green with sign; a clock chip ("T+ … of 150 s" for the hover hack, amber in its last 30 s); phase chips Approach (above 20 m) / Hover / Touchdown (below 3 m) that jump there; timeline ticks for 20 m, dust onset, the first altimeter dropouts and touchdown; story card per phase with the touchdown-box check (vertical, horizontal, tilt, rotation against their limits); chalkboard card (thrust and gravity, the per-step reward, the landing bonus, the hover hack) linking to the reward rules; a text mirror (pilot, time, phase, altitude, speeds, distance, throttle, propellant, altimeter, score, outcome).
+  - The sun is placed per episode so the default Side view sees the lander lit (sun behind the camera), at the azimuth near that which lights the most of the pad and the approach ground (horizon profiles); exposure ×2 for the regolith.
+- **Your M2 notes (F-33 accepted message), applied in `stage/terrain.js` for every on-site page:** (1) metre-scale detail: two sparse fields of worn craters (cells 9 m and 2.6 m), clods at 0.12–0.4 m and ±12 % albedo noise, each faded below a pixel, plus seeded instanced rocks and boulders (power-law sizes, 1.5k/4k/8k by tier, none on the pad), all flagged representative; `shadeWithHorizon()` gives rocks, the pad and the vehicles the horizon-map shadow (off for a vehicle more than 30 m up, where the 1 m horizon no longer applies); (2) framing: follow cameras look down ~25° from just above the lander, so the ground is in frame from 430 m up; (3) default view Side with the lander lit; Into the sun kept for the dust; (4) noted.
+  - Found and fixed on the way: with the lander 430 m up the shadow camera's depth reached the ground 16 km away and its acne blackened the lander; the shadow camera now reaches the ground only within 60 m of it.
+- **Checks:**
+  - **Every pilot × class × episode in the file plays** (36, scripted sweep to the end of each; no errors). Final scores equal B-33's table (e.g. CLPS classical p10 −176.8, p50 −245.4; hover hack first failure −92.7).
+  - Frame cost at T−1.5 s, Into the sun, all overlays on, 1440×656, back-to-back frames with GPU timer queries, p50/p95: **tier 1 GPU 1.73/2.07 ms (CPU 0.90/1.30); tier 2 2.97/3.20 (1.40/2.10); tier 3 4.17/4.43 (1.50/2.00)**; measured with the old 12k rocks at tier 3 (now 8k).
+  - **Lighthouse 13.5.0 desktop, production build, /lab/lander/: performance 93, accessibility 100, best practices 100** (LCP 0.7 s, TBT 210 ms, CLS 0.015). The 3D data (recordings 2.9 MB, terrain, catalogue) loads only after "Enter the 3D view".
+  - Budgets (`tools/ci/budgets.py pages`): OK; lab/lander JS 115.6 of 130 kB gz, CSS 8.7 of 10 kB, data at load unchanged.
+  - Console: no errors. 390 px (iframe): no horizontal scroll; view on top, HUD and controls stacked.
+  - Reduced motion: no autoplay, counter instant, camera cuts instant (code path; not emulated in the browser).
+  - Dev and preview servers stopped by PID; Chrome tab closed; no headless Chrome left.
+- **Parity (`site/tests/lander-trajectories.test.mjs`, 2 tests, pass with F-33's 4):**
+  - The browser env cannot replay an episode "from its seed": it draws starts and sensor noise from its own generator (sfc32), not numpy's. So the test replays every 0.2 s guidance step of all 36 episodes (13,000+ steps) through `site/src/lander/physics.js` from the recorded state, throttle and thrust direction and compares the predicted position with `pos_m`: **worst 1.6e-5 m, inside the rounding bound 2.5e-5 m** (the file stores velocities to 1e-4 m/s, which alone allows 0.2 s × 5e-5 = 1e-5 m per step). It also checks the score sum, the touchdown point = miss, the pad-to-scene mapping and the pilot list per class.
+  - **For 1e-6 m (the task's target) BACKEND needs to export, for at least one episode, the raw actions [a0, a1, a2] and the initial state at full float64 precision** (or a small `tests/fixtures/lander_trajectory_parity.json`). Then the test replays the whole episode open-loop and tightens to 1e-6.
+- **Known limits:** the hover-hack network was trained under the first reward rules (landing bonus 10); the file scores it with today's rules, so its score is negative and the story says so. The browser lab below still flies its own random starts (it is not a mirror of the recorded episode; the 3D section has its own text mirror). `design/effects.js` still carries its own copy of the episode helper (to fold into `trajectories.js` with F-36). No tier switcher on the lab page (`?tier=` works; tiers were measured through the stage API).
+- **For BACKEND:** the full-precision actions above (the only open item).
+- **Questions for LEAD:** none.

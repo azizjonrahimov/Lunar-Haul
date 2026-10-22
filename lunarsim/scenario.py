@@ -106,6 +106,9 @@ class Scenario:
     # Phase 4 (R-1), opt-in: Earth-link windows ({mode, criterion, relay, mast, supervised_policy, start_year,
     # link_series}); None = no link rule (and mode "always" = identical results). See lunarsim/comms.py
     comms: Optional[dict] = None
+    # Phase 4 (B-44), opt-in: real sun per site and leg ({file, criterion, leg_rule, start_year, start_h}); None = the
+    # night_fraction rule. See lunarsim/illumination.py
+    illumination: Optional[dict] = None
 
     def with_(self, **kw) -> "Scenario":
         return replace(self, **kw)

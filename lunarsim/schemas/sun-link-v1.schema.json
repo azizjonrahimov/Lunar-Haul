@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://azizjonrahimov.github.io/Lunar-Haul/schemas/sun-link-v1.schema.json",
+  "title": "lunarsim-sun-link v1",
+  "description": "Sunlit windows at the sites, pads and rover legs of a terrain pack, hourly 2028-2031 (writer tools/illumination/sun_link.py; reader lunarsim/illumination.py, whose validate() also checks that every window code decodes to sorted windows inside the series and matches its summary). Windows: [s0, l0, g1, l1, ...] hour indices, start0 = s0, end0 = start0 + l0 (exclusive), start1 = end0 + g1.",
+  "type": "object",
+  "required": ["format", "version", "terrain", "time", "criteria", "default_criterion", "leg_rules", "points", "legs", "provenance"],
+  "properties": {
+    "format": {"const": "lunarsim-sun-link"},
+    "version": {"const": 1},
+    "terrain": {"type": "string"},
+    "time": {"type": "object", "required": ["start_utc", "step_min", "n"],
+             "properties": {"start_utc": {"type": "string"}, "step_min": {"const": 60}, "n": {"type": "integer", "minimum": 1}}},
+    "criteria": {"type": "object", "required": ["any_part", "half", "full"]},
+    "default_criterion": {"enum": ["any_part", "half", "full"]},
+    "leg_rules": {"type": "object", "required": ["worst", "most"]},
+    "observer_height_m": {"type": "number"},
+    "sun_radius_km": {"type": "number"},
+    "points": {"type": "object", "additionalProperties": {"$ref": "#/$defs/entry"}},
+    "legs": {"type": "object", "additionalProperties": {
+      "type": "object", "required": ["worst", "most", "samples"],
+      "properties": {"worst": {"$ref": "#/$defs/entry"}, "most": {"$ref": "#/$defs/entry"}, "samples": {"type": "integer", "minimum": 1}}}},
+    "checks": {"type": "object"},
+    "provenance": {"type": "object"},
+    "generated": {"type": "object"}
+  },
+  "$defs": {
+    "code": {"type": "array", "items": {"type": "integer", "minimum": 0}},
+    "entry": {
+      "type": "object",
+      "required": ["lit", "summary"],
+      "properties": {
+        "lit": {"type": "object", "required": ["any_part", "half", "full"],
+                "properties": {"any_part": {"$ref": "#/$defs/code"}, "half": {"$ref": "#/$defs/code"}, "full": {"$ref": "#/$defs/code"}}},
+        "summary": {"type": "object", "required": ["any_part", "half", "full", "mean_disc_fraction"]}
+      }
+    }
+  }
+}

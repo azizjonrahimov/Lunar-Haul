@@ -46,7 +46,8 @@ from .scenario import Scenario, BulkFlow
 SCENARIO_FORMAT = "lunarsim-scenario"
 SCENARIO_VERSION = 1
 HEADER_KEYS = ("format", "version", "form")
-PHASE3_FIELDS = ("terrain", "pad_standoff_km", "landing_model", "plume", "autonomy_model", "comms")   # + Phase 4 comms
+PHASE3_FIELDS = ("terrain", "pad_standoff_km", "landing_model", "plume", "autonomy_model", "comms",
+                 "illumination")   # + Phase 4 comms, illumination
 
 COMPACT_KEYS = {"format", "version", "form", "name", "phase", "bulk_t_per_year", "fleet", "night_fraction",
                 "rtt_s", "n_operators", "other_duty_share", "mtbf_mult", "common_standard_share", "marketplace"}

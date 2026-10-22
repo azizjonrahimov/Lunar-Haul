@@ -2,6 +2,7 @@
 
 Usage:  python experiments/phase4/run_phase4.py e21a [--seeds 20] [--workers 1] [--cells 0-9] [--max-seconds 540]
         python experiments/phase4/run_phase4.py e21b e21c            # B reads the Stage A table
+        python experiments/phase4/run_phase4.py e21d --cells 0-7      # stage D (real sun), in chunks
         python experiments/phase4/run_phase4.py table                 # rebuild results/table_E21*.csv only
 
 Conventions as experiments/phase3/run_phase3.py: a cell is (tag, scenario, mechanism) replicated over seeds with common
@@ -23,6 +24,10 @@ model, pads at 1 km, Earth-link criterion any_part (lunarsim/comms.py; data/comm
         year that equals N rovers' capital cost)                                               -> table_E21_breakeven.csv
   e21c  at three Stage A cells: pads {0.5, 1, 3 km} x criterion {any_part, centre+0.5deg, centre+2deg} (defer 24 h),
         plus defer_wait_h {12, 72, none} at pads 1 km / any_part                                -> E21c_pads_criterion.csv
+  e21d  H6, Earth's 27.21-day elevation cycle against the 29.53-day lunar day (beat ~347 d): comms {dte, dte+relay 0.5}
+        x mix {P2 default, all supervised-strict} x sun {night_fraction 0.15, real (Scenario.illumination, B-44:
+        criterion half, leg rule most)} x start year 2028-2031 as a cell factor (not seed mod 4), with the delivered
+        tonnes per twelfth of the year (delivered_t_m01..m12) for the ripple                    -> E21d_sun.csv
 Summary of every stage present: results/table_E21.csv (mean and 95 % CI per cell of delivered t/yr inside the year,
 urgent p90 delay, $/landed kg, blackout wait, operator peak, plus the other B-41 metrics).
 """
@@ -72,9 +77,14 @@ E21C_CRITERIA = ("any_part", "centre+0.5deg", "centre+2deg")
 E21C_BASE = (("dte", None, "default"), ("dte", None, "teleop_4s"), ("dte+relay", 0.8, "supervised_strict"))
 DEFER_DEFAULT_H = 24.0            # lunarsim.comms.DEFAULT_DEFER_WAIT_H (Assumed)
 E21C_DEFERS = (12.0, 72.0, None)  # with the default 24 h from the pads x criterion grid; None = never defer
-STAGES = {"e21a": "E21a_comms_autonomy", "e21b": "E21b_breakeven", "e21c": "E21c_pads_criterion"}
+STAGES = {"e21a": "E21a_comms_autonomy", "e21b": "E21b_breakeven", "e21c": "E21c_pads_criterion", "e21d": "E21d_sun"}
+E21D_COMMS = (("dte", None), ("dte+relay", 0.5))
+E21D_MIXES = ("default", "supervised_strict")
+E21D_SUN = ("night_fraction", "real")
+E21D_YEARS = (2028, 2029, 2030, 2031)
+N_MONTHS = 12
 FACTORS = ["stage", "comms", "coverage", "mix", "policy", "extra_rovers", "mast", "pad_standoff_km", "criterion",
-           "defer_wait_h"]
+           "defer_wait_h", "sun", "year"]     # sun / year: stage D only (A-C: night_fraction, year -1 = start by seed)
 METRICS = ["delivered_t_in_year", "delay_prio1_p90_h", "cost_per_landed_kg_usd", "blackout_wait_vehicle_h",
            "operator_peak_demand", "delay_prio1_mean_h", "sl24_prio1", "delivered_kg", "blackout_wait_teleop_h",
            "blackout_wait_supervised_h", "blackout_jobs_delayed", "blackout_jobs_refused", "blackout_jobs_deferred",
@@ -183,6 +193,29 @@ def e21c_cells():
     return cells
 
 
+def e21d_cells():
+    cells = []
+    for mode, p in E21D_COMMS:
+        for mix in E21D_MIXES:
+            for sun in E21D_SUN:
+                for yr in E21D_YEARS:
+                    tag, sc = scenario(mix, mode, p)
+                    if sun == "real":
+                        sc = sc.with_(illumination={})              # defaults: criterion half, leg rule most
+                    tag.update(stage="D", sun=sun, start_year=yr)
+                    cells.append((tag, sc, MECH, *MECHS[MECH]))
+    return cells
+
+
+def monthly_delivered_t(sim, n: int = N_MONTHS) -> dict:
+    """Tonnes delivered in each n-th of the year (deliveries inside the horizon)."""
+    h = sim.sc.horizon_h
+    t = np.array([c.t_delivered for c in sim.all_cargo if c.t_delivered is not None and c.t_delivered <= h])
+    m = np.array([c.mass_kg for c in sim.all_cargo if c.t_delivered is not None and c.t_delivered <= h])
+    hist, _ = np.histogram(t, bins=n, range=(0.0, h), weights=m)
+    return {f"delivered_t_m{i + 1:02d}": float(v) / 1000.0 for i, v in enumerate(hist)}
+
+
 # ---------------------------------------------------------------------------
 # runs
 # ---------------------------------------------------------------------------
@@ -200,13 +233,16 @@ def e21_key(tag, mech_name) -> str:
 def _job(args):
     """One replication: the cell's scenario with the seed's start year (common random numbers otherwise)."""
     tag, sc, mech_name, mech, kw, seed = args
-    sc = sc.with_(comms=dict(sc.comms, start_year=start_year(seed)))
+    yr = int(tag["start_year"]) if "start_year" in tag else start_year(seed)     # stage D: the year is a cell factor
+    sc = sc.with_(comms=dict(sc.comms, start_year=yr))
     t0 = time.time()
     sim = Simulation(sc, mech, seed=seed, mech_kwargs=dict(kw))
     out = sim.run()
     out["seed"] = seed
-    out["start_year"] = start_year(seed)
+    out["start_year"] = yr
     out["run_s"] = round(time.time() - t0, 2)
+    if tag.get("stage") == "D":
+        out.update(monthly_delivered_t(sim))
     out["landings"] = len(sim.landing_schedule)
     out["delivered_t_in_year"] = out.get("delivered_kg_in_horizon", np.nan) / 1000.0
     out.update(tag)
@@ -276,8 +312,11 @@ def summary_table(raw: pd.DataFrame) -> pd.DataFrame:
         if f not in df.columns:
             df[f] = np.nan
     df["coverage"] = df["coverage"].fillna(-1.0)          # groupby drops NaN keys; -1 = no relay
-    t = fit_law.cell_means(df, FACTORS, METRICS)
+    df["sun"] = df["sun"].fillna("night_fraction")
+    df["year"] = np.where(df["stage"] == "D", df.get("start_year", np.nan), -1)
+    t = fit_law.cell_means(df, FACTORS, METRICS + [f"delivered_t_m{i + 1:02d}" for i in range(N_MONTHS)])
     t["coverage"] = t["coverage"].replace(-1.0, np.nan)
+    t["year"] = t["year"].replace(-1, np.nan)
     return t
 
 
@@ -363,7 +402,7 @@ def write_tables(results=None):
 # ---------------------------------------------------------------------------
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    p.add_argument("stages", nargs="*", help="e21a e21b e21c table (default: e21a)")
+    p.add_argument("stages", nargs="*", help="e21a e21b e21c e21d table (default: e21a)")
     p.add_argument("--seeds", type=int, default=N_SEEDS)
     p.add_argument("--workers", type=int, default=WORKERS)
     p.add_argument("--cells", default=None, help="cell range of the stage, e.g. 0-9 (0-based, inclusive)")
@@ -386,8 +425,10 @@ def main(argv=None):
             run_stage(STAGES[n], e21b_cells(STAGE_B_COVERAGE), a.seeds, a.workers, a.cells, a.results)
         elif n == "e21c":
             run_stage(STAGES[n], e21c_cells(), a.seeds, a.workers, a.cells, a.results)
+        elif n == "e21d":
+            run_stage(STAGES[n], e21d_cells(), a.seeds, a.workers, a.cells, a.results)
         elif n != "table":
-            raise SystemExit(f"unknown stage {n!r}; choose from e21a e21b e21c table")
+            raise SystemExit(f"unknown stage {n!r}; choose from e21a e21b e21c e21d table")
         write_tables(a.results)
     rss = None
     try:

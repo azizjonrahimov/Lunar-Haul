@@ -352,6 +352,18 @@
           ],
           "description": "Phase 3: \"driving-v1\" or a path to a lunarsim-driving table"
         },
+        "illumination": {
+          "type": ["object", "null"],
+          "description": "Phase 4 (B-44): real sun per site and leg (lunarsim/illumination.py). Absent or null = the night_fraction rule (v2 results).",
+          "additionalProperties": false,
+          "properties": {
+            "file": {"type": "string", "description": "path to sun_link-v1.json (default data/illumination/connecting_ridge/sun_link-v1.json)"},
+            "criterion": {"enum": ["any_part", "half", "full"], "description": "lit when some / half / all of the solar disc is above the local horizon (default half, Assumed)"},
+            "leg_rule": {"enum": ["most", "worst"], "description": "a leg is lit when >= 80 % of its route samples are (default; Assumed: short shadows on battery) / when every sample is"},
+            "start_year": {"enum": [2028, 2029, 2030, 2031], "description": "default: the comms start_year when comms is set, else 2028"},
+            "start_h": {"type": "number", "minimum": 0, "description": "hours after 2028-01-01 00:00 UTC that engine hour 0 maps to (overrides start_year)"}
+          }
+        },
         "comms": {
           "type": ["object", "null"],
           "description": "Phase 4 (R-1): Earth-link rules (lunarsim/comms.py CommsModel). Absent or null = no rule; mode 'always' gives identical results.",

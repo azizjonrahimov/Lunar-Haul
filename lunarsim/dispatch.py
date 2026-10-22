@@ -190,6 +190,8 @@ def _night_ok(sim: Simulation, v: Vehicle, job: Job) -> bool:
     if v.cls.night_ops:
         return True
     dur = sim.job_plan(job, sim.t)[0]
+    if sim.illum is not None:               # B-44: no leg or stop of the plan goes dark
+        return sim.illum.first_dark(sim._last_segments.get(v.id) or []) is None
     return sim.t + dur <= sim.next_night_start(sim.t)
 
 
@@ -232,7 +234,7 @@ def _anticipate(sim: Simulation, free: List[Vehicle], used: set, pool: List[Carg
         h = sim.travel_h(v, v.location, pad, False, False, sim.t)
         depart = max(sim.t, t_first - ANTICIPATE_MARGIN_H - h)
         # never stage a vehicle that would be caught by the night on the way
-        if not v.cls.night_ops and depart + h > sim.next_night_start(depart):
+        if not v.cls.night_ops and depart + h > sim.next_dark(depart, v.location, pad):
             continue
         sim.schedule_reposition(v, pad, depart)
         used.add(v.id)

@@ -250,6 +250,14 @@ class Simulation:
             self.comms = CommsModel(sc.comms, standoff, s, sc.horizon_h, self.world.pads, find=_find)
             self.comms.set_leg_km(self.world.distance_km)
             self.metrics.comms = self.comms
+        self.illum = None
+        if sc.illumination is not None:     # Phase 4 (B-44): opt-in real sun per site and leg; see lunarsim/illumination.py
+            from .illumination import Illumination
+            from .phase3 import _find
+            standoff = str(sc.pad_standoff_km) if sc.pad_standoff_km is not None else "1"
+            cy = int(sc.comms["start_year"]) if sc.comms and "start_year" in sc.comms else None
+            self.illum = Illumination(sc.illumination, standoff, sc.horizon_h, self.world.pads, comms_start_year=cy,
+                                      find=_find)
         self._build_fleet()
         self._schedule_demand()
         self.batch_h = self.mech_kwargs.get("batch_h", 0.0)
@@ -311,7 +319,10 @@ class Simulation:
                     t += self.sc.other_duty_block_h + self.rng_ops.exponential(
                         self.sc.other_duty_block_h * (1 - self.sc.other_duty_share) / self.sc.other_duty_share)
         # wake up at the end of every lunar night so parked vehicles get dispatched
-        if self.sc.night_fraction > 0:
+        if self.illum is not None:
+            for t in self.illum.light_returns(list(self.world.sites), self.sc.horizon_h):
+                self._push(t + 1e-6, "NIGHT_END", None)
+        elif self.sc.night_fraction > 0:
             t = self.night_end(0.0)
             while t < self.sc.horizon_h:
                 self._push(t + 1e-6, "NIGHT_END", None)
@@ -354,6 +365,18 @@ class Simulation:
             return (math.floor(t / LUNAR_CYCLE_H) + 1) * LUNAR_CYCLE_H
         return self.next_night_start(t) + self.sc.night_fraction * LUNAR_CYCLE_H
 
+    def dark(self, t: float, a: Optional[str] = None, b: Optional[str] = None) -> bool:
+        """Dark for a vehicle at site a (or on leg a -> b) at t: Scenario.illumination when set, else the v2 night."""
+        if self.illum is None or a is None:
+            return self.is_night(t)
+        return self.illum.dark(t, a, b)
+
+    def next_dark(self, t: float, a: Optional[str] = None, b: Optional[str] = None) -> float:
+        """When the dark next catches a vehicle at a / on a -> b (t if dark now); v2: the next night start."""
+        if self.illum is None or a is None:
+            return self.next_night_start(t)
+        return self.illum.next_dark(t, a, b)
+
     def autonomy_speed_mult(self, v: Vehicle) -> float:
         if v.autonomy == "teleop":
             return teleop_speed_kmh(self.rtt_s) / AUTONOMOUS_REF_KMH
@@ -387,7 +410,7 @@ class Simulation:
         speed *= self.autonomy_speed_mult(v)
         if team:
             speed *= TEAM_SPEED_MULT
-        if self.is_night(t) and v.cls.night_ops:
+        if self.dark(t, a, b) and v.cls.night_ops:
             speed *= self.sc.night_speed_mult
         return eq / max(speed, 1e-6)
 
@@ -397,7 +420,8 @@ class Simulation:
         interventions; a committed job (realize=True) draws time, energy and interventions from the ops stream."""
         if a == b:
             return 0.0, 0.0, 0.0, 0
-        light = self.drive.light_bin(t, self.sc.night_fraction > 0 and self.is_night(t))
+        light = self.drive.light_bin(t, self.dark(t, a, b) if self.illum is not None
+                                     else (self.sc.night_fraction > 0 and self.is_night(t)))
         e = self.drive.entry(a, b, self.world.pads, v.autonomy, self.drive.rtt_bin(self.rtt_s), light)
         if e is None:
             return None
@@ -509,7 +533,7 @@ class Simulation:
         speed *= self.autonomy_speed_mult(v)
         if team:
             speed *= TEAM_SPEED_MULT
-        if self.is_night(t) and v.cls.night_ops:
+        if self.dark(t, a, b) and v.cls.night_ops:
             speed *= self.sc.night_speed_mult
         return eq / max(speed, 1e-6)
 
@@ -622,7 +646,7 @@ class Simulation:
             if v.duty_pending:
                 self._start_duty(v)
                 continue
-            if self.is_night(self.t) and not v.cls.night_ops:
+            if self.dark(self.t, v.location) and not v.cls.night_ops:
                 continue
             out.append(v)
         return out
@@ -661,7 +685,7 @@ class Simulation:
                 v.repos_target = None
                 started = False
                 if (v.busy_until <= self.t and not v.duty_pending and v.location != pad
-                        and not (self.is_night(self.t) and not v.cls.night_ops)):
+                        and not (self.dark(self.t, v.location) and not v.cls.night_ops)):
                     started = self._reposition(v, pad)
                 if not started:
                     continue
@@ -768,7 +792,7 @@ class Simulation:
             if (not v.alive or v.busy_until > self.t + 1e-9 or v.location == shelter
                     or not self.plume.inside(v.location, pad)):
                 continue
-            if self.is_night(self.t) and not v.cls.night_ops:
+            if self.dark(self.t, v.location) and not v.cls.night_ops:
                 continue
             h = self.travel_h(v, v.location, shelter, False, False, self.t)
             origin = v.location
@@ -785,7 +809,7 @@ class Simulation:
         for vid, origin in back:
             v = self.vehicles[vid]
             if (not v.alive or v.busy_until > self.t + 1e-9 or v.location != shelter or origin == shelter
-                    or (self.is_night(self.t) and not v.cls.night_ops)):
+                    or (self.dark(self.t, v.location) and not v.cls.night_ops)):
                 continue
             h = self.travel_h(v, v.location, origin, False, False, self.t)
             if self._reposition(v, origin):
@@ -843,7 +867,7 @@ class Simulation:
                 return False                # the link never comes on this leg
             if waits_c:
                 h = segs_c[-1][3] - self.t
-        if not v.cls.night_ops and self.t + h > self.next_night_start(self.t):
+        if not v.cls.night_ops and self.t + h > self.next_dark(self.t, v.location, pad):
             return False
         t_end = self.t + h
         if segs_c is not None:
@@ -957,7 +981,15 @@ class Simulation:
                 self.metrics.faults += 1
         # night: a vehicle that cannot work in the dark and is caught out hibernates
         t_end = self.t + dur
-        if self.sc.night_fraction > 0:
+        if self.illum is not None:          # caught by the dark on a leg or at a stop: wait there until it is lit
+            for v in job.vehicles:
+                if not v.cls.night_ops:
+                    hit = self.illum.first_dark(self._last_segments.get(v.id) or [])
+                    if hit is not None and hit[0] < t_end - 1e-9:
+                        dur += min(hit[1], max(self.sc.horizon_h, t_end)) - hit[0]
+                        self.metrics.night_strandings += 1
+                        break
+        elif self.sc.night_fraction > 0:
             for v in job.vehicles:
                 if not v.cls.night_ops:
                     ns = self.next_night_start(self.t)
@@ -1087,9 +1119,9 @@ class Simulation:
         See lunarsim/schemas/trace-v1.schema.json. `mechanism` overrides the name
         recorded in the header (default: the dispatch function's __name__).
         """
-        nights = []
+        nights = [] if self.illum is None else self.illum.dark_windows("BASE", self.sc.horizon_h)
         t = 0.0
-        while self.sc.night_fraction > 0 and t < self.sc.horizon_h:
+        while self.illum is None and self.sc.night_fraction > 0 and t < self.sc.horizon_h:
             ns = self.next_night_start(t)
             ne = ns + self.sc.night_fraction * LUNAR_CYCLE_H
             nights.append([ns, min(ne, self.sc.horizon_h)])
