@@ -320,7 +320,7 @@ Due: Oct 16 07:00 (written 04:11)
 
 # PHASE 4 (from 22 Oct 2026): read `.team/PLAN-phase4-design.md` first (your steps B-30…B-39; ownership in its §9)
 
-## B-30 [OPEN] (<= 3 h) Vehicle and site catalogue: one sourced file for the engine and the 3D models
+## B-30 [DONE 08:05] (<= 3 h) Vehicle and site catalogue: one sourced file for the engine and the 3D models
 Goal: a single catalogue every 3D model and every on-screen vehicle number comes from (plan §4 B-30).
 Files (new): `lunarsim/catalog.py` (load + validate + `get(id)`), `lunarsim/catalog-v1.json` (package data; the source
 of truth), `lunarsim/schemas/catalog-v1.schema.json`, `tests/test_catalog.py`.
@@ -342,7 +342,7 @@ that the lander gate masses and thrusts equal `lunarsim/lander/classes.py`, so t
 Done when: the schema test, the equality tests and the fast suite pass; the baseline md5 is unchanged; the report
 lists every value flagged Assumed and gives the catalogue path for FRONTEND (they copy it in `prepare-data.mjs`).
 
-## B-34 [OPEN] (<= 4 h, foreground chunks) Terrain assets v2: normals, horizon maps, levels of detail
+## B-34 [IN PROGRESS] (<= 4 h, foreground chunks) Terrain assets v2: normals, horizon maps, levels of detail
 Goal: 3D pages get terrain that lights correctly for ANY sun position instantly, plus the geometry the
 Earth-visibility research (plan §10, R-1) needs. Today `site/src/world/scene.js` ray-marches sun visibility on the
 GPU each time the sun moves; a precomputed horizon map replaces that and also answers "is Earth above the local

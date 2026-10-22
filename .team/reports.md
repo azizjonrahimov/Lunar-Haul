@@ -1801,3 +1801,66 @@ FRONTEND: idle until driving-v1-learned.json lands (then the column, ~30 min). B
 
 ## LEAD 13:33: Phase 3 RELEASED. CI tests and the Pages deploy for 6863549 both green; live site checked.
 - Nothing open for BACKEND or FRONTEND. Owner-only items remain (repo rename, PyPI/npm, Zenodo DOI, hosting/OAuth, trademark, .team/).
+
+## B-30 DONE 08:05 | vehicle and site catalogue (lunarsim-catalog v1)
+- **Files (all new):**
+  - `lunarsim/catalog-v1.json`: the source of truth, 43 KB.
+  - `lunarsim/catalog.py`: `load`, `validate`, `get`, `value`, `quantity`, `entries`, `flagged`, `engine_mismatches`, and a CLI `python -m lunarsim.catalog`.
+  - `lunarsim/schemas/catalog-v1.schema.json`: draft 2020-12.
+  - `tests/test_catalog.py`: 21 tests.
+  - No engine file was touched.
+- **Content:** 15 entries and 106 sourced quantities: Spec 61, Modelled 10, Assumed 35, Measured 0. There are also 9 material tags, each with linear base colour, metalness and roughness.
+  - Landers: CLPS, MK1, LARGE. Rovers: LTV, HAUL, MICRO.
+  - Base elements: habitat, pad (with berm), solar_tower, comms_mast, cargo_pallet.
+  - Scale references: apollo_lrv, nova_c, griffin, viper.
+  - Every number is `{value, unit, flag, source}`. The validator rejects:
+    - a bare number;
+    - a Spec or Measured value whose source has no URL;
+    - an unknown material tag, kind or flag;
+    - a duplicate id.
+- **Engine link (no rewiring):** `engine_mismatches()` is empty. The tests compare:
+  - LTV/HAUL/MICRO `capacity_kg`, `speed_kmh` and `night_ops` with `entities.VEHICLE_CLASSES`;
+  - lander `gate.{m_gate_kg, prop_gate_kg, t_max_n, t_min_n, isp_s}`, values and flags, with `lander/classes.py`;
+  - `capacity_kg` and `max_item_kg` with `scenario.LANDER_TYPES` (upper payload bound, largest item).
+  - A deliberate drift is detected (tested).
+- **Baseline:** `test_all_off_is_byte_identical_to_v2` passes (canonical md5 of `compare --scenario P2-default --seeds 3`).
+- **Tests run:**
+  - `.venv\Scripts\python -m pytest tests\test_catalog.py -q`: 20 passed, 1 skipped. The skip is the jsonschema check (jsonschema is not in .venv).
+  - With jsonschema loaded from a scratch `--target` folder (not installed in .venv), all 21 pass, and Draft202012 `check_schema` passes.
+  - Catalogue + formats + phase3_engine + verification together: **121 passed, 3 skipped, 26.5 s**.
+  - **Full suite not run:** only 0.61 GB RAM was free at 08:03.
+- **How to test:**
+  - `.venv\Scripts\python -m pytest tests\test_catalog.py -q`
+  - `.venv\Scripts\python -m lunarsim.catalog` prints the counts, "engine link OK" and every Assumed value. Use `--flag Modelled` for the Modelled ones.
+- **Every value flagged Assumed (35):**
+  - Lander gate values mirrored from `lander/classes.py` (unchanged):
+    - CLPS prop_gate, t_min, isp;
+    - MK1 m_gate, prop_gate, isp;
+    - LARGE m_gate, prop_gate, t_min, isp.
+  - Leg spans (none is published): CLPS/nova_c 3.6 m, MK1 6.9 m, LARGE 20.0 m.
+    - Rule: body width × the Apollo LM ratio 9.4 m gear-extended / 4.22 m without = 2.23.
+  - Leg counts: MK1 4, LARGE 6.
+  - Lander payloads: MK1 max_item 2,000 kg; LARGE capacity 30,000 kg (NASA quotes 12-15 t).
+  - LTV: wheelbase 2.8, track 2.0, deck height 1.3 m. FLEX's wheel of 0.93 m is Spec (Venturi).
+  - HAUL, a concept with no counterpart:
+    - length 7.0, width 4.0, height 2.5 m; wheel 1.5 m; wheelbase 5.6, track 3.4, deck 1.5 m;
+    - mass 4 t, capacity 10 t, speed 4 km/h, night_ops true.
+  - MICRO: night_ops false.
+  - pad: berm centreline radius 37.5 m.
+  - solar_tower: array height 7 m.
+- **Source conflicts, kept and noted in the source strings:**
+  - VIPER is 1.7 m long and wide per NASA LSIC 2024; NASA's mission page says 1.5 m.
+  - Griffin height is 2.0 m (Space.com and the product graphic); other press says 1.6 m.
+  - Nova-C body is 1.6 m (NASA NDL paper); Wikipedia says 2 m.
+- **For FRONTEND (F-32):**
+  - Copy `lunarsim/catalog-v1.json` in `prepare-data.mjs`. Read `entries[]` by `id` and use `dims.*.value`, in metres.
+  - `representative` and `representative_note` give the on-screen label. `reference_vehicle.status` is one of flown / built / in_development / concept; HAUL is "concept".
+  - `plume_class`: CLPS methalox, MK1 hydrolox (nearly invisible), LARGE methalox; rovers and base "none". Griffin (hypergolic) is the alternative CLPS look.
+  - `materials` is a tag list on each entry. Their appearance is in the top-level `materials` map (`base_color_linear`, `metalness`, `roughness`).
+  - The pad uses `berm_*` keys; the solar tower has `array_width_m`, `array_height_m` and `power_kw`.
+- **Questions for LEAD:**
+  1. `pyproject.toml` `[tool.setuptools.package-data]` should include `"catalog-v1.json"` so a wheel ships it. Editable installs and CI already work. That file is yours.
+  2. I followed the inbox path (`lunarsim/catalog-v1.json`), not the plan's `data/catalog/vehicles-v1.json`.
+  3. CLPS is drawn as Nova-C (methalox), while its descent Isp is the Apollo DPS stand-in for a storable engine. Is that OK, or should CLPS use the Griffin (hypergolic) look?
+  4. Pad diameter is 54 m (Metzger & Autry's 27 m-radius pad). The Artemis requirement is 200 m, being negotiated down to 100 m; say if you want 100 m.
+  5. Full suite: run it when memory allows, or tell me to.

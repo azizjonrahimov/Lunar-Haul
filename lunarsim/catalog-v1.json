@@ -1,0 +1,450 @@
+{
+  "format": "lunarsim-catalog",
+  "version": 1,
+  "description": "LunarHaul vehicle and site catalogue: the single source of every vehicle number on screen and of the real dimensions the 3D models are built from. Every number is a quantity {value, unit, flag, source}. The engine's own constants (rover capacity, speed and night operation; lander payloads and descent constants) are mirrored here and checked equal by tests/test_catalog.py; the engine does not read this file. Loader: lunarsim/catalog.py. Schema: lunarsim/schemas/catalog-v1.schema.json. Written 22 Oct 2026 (B-30).",
+  "flags": {
+    "Spec": "a published specification or design value (URL in source)",
+    "Measured": "measured in flight or test (URL in source)",
+    "Modelled": "derived by our model or a stated calculation from sourced values",
+    "Assumed": "our assumption where nothing is published; the reasoning is in source"
+  },
+  "materials": {
+    "mli_gold": {
+      "description": "Gold multi-layer insulation: aluminised polyimide, the gold colour is the polyimide on the outside; crinkle normal map",
+      "base_color_linear": {"value": [0.8, 0.52, 0.16], "unit": "linear RGB", "flag": "Assumed", "source": "material rendering parameters are a modelling choice (design_research.md §2.2); appearance per NOAA NESDIS 'As Good As Gold': https://www.nesdis.noaa.gov/node/87"},
+      "metalness": {"value": 1.0, "unit": "", "flag": "Assumed", "source": "material rendering parameters are a modelling choice (design_research.md §2.2); https://www.nesdis.noaa.gov/node/87"},
+      "roughness": {"value": 0.4, "unit": "", "flag": "Assumed", "source": "material rendering parameters are a modelling choice (design_research.md §2.2); 0.3-0.5 with crinkle normals"}
+    },
+    "mli_silver": {
+      "description": "Silver (aluminium-side-out) multi-layer insulation; crinkle normal map",
+      "base_color_linear": {"value": [0.85, 0.85, 0.86], "unit": "linear RGB", "flag": "Assumed", "source": "material rendering parameters are a modelling choice (design_research.md §2.2); aluminised film per NOAA NESDIS: https://www.nesdis.noaa.gov/node/87"},
+      "metalness": {"value": 1.0, "unit": "", "flag": "Assumed", "source": "material rendering parameters are a modelling choice (design_research.md §2.2); https://www.nesdis.noaa.gov/node/87"},
+      "roughness": {"value": 0.35, "unit": "", "flag": "Assumed", "source": "material rendering parameters are a modelling choice (design_research.md §2.2); crinkled foil"}
+    },
+    "white_paint": {
+      "description": "White thermal-control paint (dielectric)",
+      "base_color_linear": {"value": [0.8, 0.8, 0.78], "unit": "linear RGB", "flag": "Assumed", "source": "material rendering parameters are a modelling choice (design_research.md §2.2); white dielectric"},
+      "metalness": {"value": 0.0, "unit": "", "flag": "Assumed", "source": "material rendering parameters are a modelling choice (design_research.md §2.2); dielectric"},
+      "roughness": {"value": 0.6, "unit": "", "flag": "Assumed", "source": "material rendering parameters are a modelling choice (design_research.md §2.2); roughness ~0.6"}
+    },
+    "aluminium": {
+      "description": "Bare or lightly anodised aluminium structure",
+      "base_color_linear": {"value": [0.91, 0.92, 0.92], "unit": "linear RGB", "flag": "Assumed", "source": "material rendering parameters are a modelling choice (design_research.md §2.2); near the reflectance of aluminium"},
+      "metalness": {"value": 1.0, "unit": "", "flag": "Assumed", "source": "material rendering parameters are a modelling choice (design_research.md §2.2); metal"},
+      "roughness": {"value": 0.45, "unit": "", "flag": "Assumed", "source": "material rendering parameters are a modelling choice (design_research.md §2.2); brushed"}
+    },
+    "stainless_steel": {
+      "description": "Stainless-steel hull (Starship-class)",
+      "base_color_linear": {"value": [0.65, 0.64, 0.62], "unit": "linear RGB", "flag": "Assumed", "source": "material rendering parameters are a modelling choice (design_research.md §2.2); Starship's stainless-steel structure: https://en.wikipedia.org/wiki/Starship_HLS"},
+      "metalness": {"value": 1.0, "unit": "", "flag": "Assumed", "source": "material rendering parameters are a modelling choice (design_research.md §2.2); metal"},
+      "roughness": {"value": 0.3, "unit": "", "flag": "Assumed", "source": "material rendering parameters are a modelling choice (design_research.md §2.2); rolled sheet"}
+    },
+    "solar_cell": {
+      "description": "Solar array face: very dark blue cells, low roughness",
+      "base_color_linear": {"value": [0.02, 0.03, 0.08], "unit": "linear RGB", "flag": "Assumed", "source": "material rendering parameters are a modelling choice (design_research.md §2.2); very dark blue, low roughness"},
+      "metalness": {"value": 0.2, "unit": "", "flag": "Assumed", "source": "material rendering parameters are a modelling choice (design_research.md §2.2); cover glass over cells"},
+      "roughness": {"value": 0.15, "unit": "", "flag": "Assumed", "source": "material rendering parameters are a modelling choice (design_research.md §2.2); low roughness"}
+    },
+    "radiator": {
+      "description": "Thermal radiator panel (white, high emissivity)",
+      "base_color_linear": {"value": [0.86, 0.86, 0.86], "unit": "linear RGB", "flag": "Assumed", "source": "material rendering parameters are a modelling choice (design_research.md §2.2); white high-emissivity coating"},
+      "metalness": {"value": 0.0, "unit": "", "flag": "Assumed", "source": "material rendering parameters are a modelling choice (design_research.md §2.2); dielectric"},
+      "roughness": {"value": 0.3, "unit": "", "flag": "Assumed", "source": "material rendering parameters are a modelling choice (design_research.md §2.2); smooth coating"}
+    },
+    "regolith_dust": {
+      "description": "South-pole highland regolith and the dust on the lower parts of vehicles",
+      "base_color_linear": {"value": [0.12, 0.115, 0.105], "unit": "linear RGB", "flag": "Modelled", "source": "Moon geometric albedo 0.12, Bond 0.11 (NSSDC: https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html); highlands 9-12 %; very slight warm tint (design_research.md §2.2)"},
+      "metalness": {"value": 0.0, "unit": "", "flag": "Assumed", "source": "material rendering parameters are a modelling choice (design_research.md §2.2); dielectric"},
+      "roughness": {"value": 0.95, "unit": "", "flag": "Assumed", "source": "material rendering parameters are a modelling choice (design_research.md §2.2); loose fine powder"}
+    },
+    "sintered_regolith": {
+      "description": "Prepared pad surface (sintered or polymer-bound regolith), slightly darker than loose regolith",
+      "base_color_linear": {"value": [0.09, 0.087, 0.08], "unit": "linear RGB", "flag": "Assumed", "source": "material rendering parameters are a modelling choice (design_research.md §2.2); darker than loose regolith (compacted, glassy)"},
+      "metalness": {"value": 0.0, "unit": "", "flag": "Assumed", "source": "material rendering parameters are a modelling choice (design_research.md §2.2); dielectric"},
+      "roughness": {"value": 0.8, "unit": "", "flag": "Assumed", "source": "material rendering parameters are a modelling choice (design_research.md §2.2); paved surface"}
+    }
+  },
+  "entries": [
+    {
+      "id": "CLPS",
+      "kind": "lander",
+      "name": "CLPS-class lander (2 t at the gate)",
+      "engine_class": "CLPS",
+      "reference_vehicle": {
+        "name": "Intuitive Machines Nova-C",
+        "url": "https://en.wikipedia.org/wiki/Intuitive_Machines_Nova-C",
+        "status": "flown"
+      },
+      "representative": false,
+      "representative_note": "Nova-C's published shape and size. The descent constants are the engine's SPLICE 2 t reference lander, not Nova-C's own (Nova-C is lighter). Alternative look: griffin. The leg span is not published (Assumed).",
+      "dims": {
+        "height_m": {"value": 3.938, "unit": "m", "flag": "Spec", "source": "Nova-C height 3.938 m (the infobox says 3 m): https://en.wikipedia.org/wiki/Intuitive_Machines_Nova-C"},
+        "diameter_m": {"value": 1.6, "unit": "m", "flag": "Spec", "source": "Nova-C body 1.6 m (NASA NDL paper; Wikipedia gives 2 m): https://ntrs.nasa.gov/api/citations/20250007036/downloads/aasimndl.pdf"},
+        "leg_count": {"value": 6, "unit": "", "flag": "Spec", "source": "six landing legs: https://en.wikipedia.org/wiki/Intuitive_Machines_Nova-C"},
+        "leg_span_m": {"value": 3.6, "unit": "m", "flag": "Assumed", "source": "Nova-C's leg span is not published; drawn at the Apollo LM's ratio of footprint to body width, 9.4 m with landing gear extended / 4.22 m without = 2.23 (https://en.wikipedia.org/wiki/Apollo_Lunar_Module), x 1.6 m body"}
+      },
+      "capacity_kg": {"value": 500, "unit": "kg", "flag": "Modelled", "source": "upper bound of the engine's 100-500 kg payload per CLPS landing (lunarsim/scenario.py LANDER_TYPES); CLPS task orders deliver 0.07-0.475 t: https://www.nasa.gov/wp-content/uploads/2025/02/iparch10-wp-logistics-mobility-cargo.pdf"},
+      "max_item_kg": {"value": 500, "unit": "kg", "flag": "Modelled", "source": "largest single item on a CLPS landing (lunarsim/scenario.py LANDER_TYPES)"},
+      "gate": {
+        "m_gate_kg": {"value": 2000.0, "unit": "kg", "flag": "Spec", "source": "SPLICE robotic reference lander, 2,000 kg with a 5,000 N motor: https://ntrs.nasa.gov/api/citations/20200002415/downloads/20200002415.pdf [mirrors lunarsim/lander/classes.py]"},
+        "prop_gate_kg": {"value": 300.0, "unit": "kg", "flag": "Assumed", "source": "15 % of gate mass; Assumed (terminal descent from the gate needs ~100 kg at Isp 311) [mirrors lunarsim/lander/classes.py]"},
+        "t_max_n": {"value": 5000.0, "unit": "N", "flag": "Spec", "source": "https://ntrs.nasa.gov/api/citations/20200002415/downloads/20200002415.pdf [mirrors lunarsim/lander/classes.py]"},
+        "t_min_n": {"value": 1000.0, "unit": "N", "flag": "Assumed", "source": "20 % throttle floor; Assumed (no CLPS throttle range published; Apollo DPS throttled to 10 %: https://www.lpi.usra.edu/lunar/documents/Bennett_NASA-TM-X-58040.pdf) [mirrors lunarsim/lander/classes.py]"},
+        "isp_s": {"value": 311.0, "unit": "s", "flag": "Assumed", "source": "Apollo DPS full-thrust Isp 311 s used as a stand-in for a storable CLPS engine: https://www.lpi.usra.edu/lunar/documents/Bennett_NASA-TM-X-58040.pdf [mirrors lunarsim/lander/classes.py]"}
+      },
+      "propellant": "LOX/LCH4 (Nova-C VR900; the descent model's 311 s Isp is the Apollo DPS stand-in)",
+      "plume_class": "methalox",
+      "materials": ["mli_silver", "white_paint", "solar_cell", "aluminium", "regolith_dust"]
+    },
+    {
+      "id": "MK1",
+      "kind": "lander",
+      "name": "Blue Moon MK1-class lander (9 t at the gate)",
+      "engine_class": "MK1",
+      "reference_vehicle": {
+        "name": "Blue Origin Blue Moon MK1",
+        "url": "https://space.skyrocket.de/doc_sdat/blue-moon.htm",
+        "status": "in_development"
+      },
+      "representative": true,
+      "representative_note": "Height and diameter are published; the landing legs are not (no source found), so the legs are a labelled representative shape. First flight (Pathfinder) NET Q1 2027.",
+      "dims": {
+        "height_m": {"value": 8.05, "unit": "m", "flag": "Spec", "source": "'roughly cylindrical', 8.05 m tall: https://space.skyrocket.de/doc_sdat/blue-moon.htm"},
+        "diameter_m": {"value": 3.08, "unit": "m", "flag": "Spec", "source": "3.08 m primary outer diameter: https://space.skyrocket.de/doc_sdat/blue-moon.htm"},
+        "leg_count": {"value": 4, "unit": "", "flag": "Assumed", "source": "legs unpublished; four legs as on Apollo LM and Griffin"},
+        "leg_span_m": {"value": 6.9, "unit": "m", "flag": "Assumed", "source": "MK1's leg span is not published; drawn at the Apollo LM's ratio of footprint to body width, 9.4 m with landing gear extended / 4.22 m without = 2.23 (https://en.wikipedia.org/wiki/Apollo_Lunar_Module), x 3.08 m body"}
+      },
+      "capacity_kg": {"value": 3000, "unit": "kg", "flag": "Spec", "source": "MK1 payload 3,000 kg to the surface: https://en.wikipedia.org/wiki/Blue_Moon_(spacecraft) (engine: 2-3 t per landing)"},
+      "max_item_kg": {"value": 2000, "unit": "kg", "flag": "Assumed", "source": "largest single item on an MK1 landing (lunarsim/scenario.py LANDER_TYPES); no published value"},
+      "gate": {
+        "m_gate_kg": {"value": 9000.0, "unit": "kg", "flag": "Assumed", "source": "Blue Moon MK1 dry mass unpublished (21,350 kg fuelled, 3,000 kg payload); ~9,000 kg at the gate is Assumed: https://en.wikipedia.org/wiki/Blue_Moon_(spacecraft); a derived bound puts MK1's landed mass at 5.1-11.5 t, which one BE-7 can hover in every case (verification_round_1.md item 3) [mirrors lunarsim/lander/classes.py]"},
+        "prop_gate_kg": {"value": 1000.0, "unit": "kg", "flag": "Assumed", "source": "Assumed in lunarsim/lander/classes.py (MK1); no published value [mirrors lunarsim/lander/classes.py]"},
+        "t_max_n": {"value": 44000.0, "unit": "N", "flag": "Spec", "source": "BE-7 44 kN maximum, the one figure all sources agree on: https://en.wikipedia.org/wiki/Blue_Moon_(spacecraft); https://en.wikipedia.org/wiki/BE-7 [mirrors lunarsim/lander/classes.py]"},
+        "t_min_n": {"value": 8900.0, "unit": "N", "flag": "Spec", "source": "BE-7 'throttling down to 2,000 lbf' (8.9 kN, 20 %): Blue Origin news release, 4 Dec 2020, https://www.blueorigin.com/news/be7-engine-testing (agrees with the 20-100 % in the BE-7 infobox; the 1,000 lbf figure has no source and is dropped; research_notes/.../verification_round_1.md item 3) [mirrors lunarsim/lander/classes.py]"},
+        "isp_s": {"value": 440.0, "unit": "s", "flag": "Assumed", "source": "BE-7 vacuum Isp 460 s is uncited and ~453 s is an estimate; 440 s Assumed: https://en.wikipedia.org/wiki/BE-7 [mirrors lunarsim/lander/classes.py]"}
+      },
+      "propellant": "LH2/LOX (one BE-7)",
+      "plume_class": "hydrolox",
+      "materials": ["white_paint", "mli_silver", "solar_cell", "aluminium", "regolith_dust"],
+      "notes": "Hydrolox plume is nearly invisible (hydrogen flames in daylight: https://spinoff.nasa.gov/node/10136)."
+    },
+    {
+      "id": "LARGE",
+      "kind": "lander",
+      "name": "Large cargo lander (60 t at the gate, Starship HLS class)",
+      "engine_class": "LARGE",
+      "reference_vehicle": {
+        "name": "SpaceX Starship HLS",
+        "url": "https://en.wikipedia.org/wiki/Starship_HLS",
+        "status": "in_development"
+      },
+      "representative": true,
+      "representative_note": "Height and diameter are published; the landing legs are not ('Lunar landing legs don't add much', Musk 2021), so the legs are a labelled representative shape.",
+      "dims": {
+        "height_m": {"value": 52, "unit": "m", "flag": "Spec", "source": "52 m tall (NASA, Creech IAC 2025): https://ntrs.nasa.gov/api/citations/20250008728/downloads/25%2008%2026%20IAC_Creech%20BP-1.pdf"},
+        "diameter_m": {"value": 9, "unit": "m", "flag": "Spec", "source": "9 m diameter: https://en.wikipedia.org/wiki/Starship_HLS"},
+        "leg_count": {"value": 6, "unit": "", "flag": "Assumed", "source": "legs unpublished; six, matching the six-engine layout"},
+        "leg_span_m": {"value": 20.0, "unit": "m", "flag": "Assumed", "source": "HLS's leg span is not published; drawn at the Apollo LM's ratio of footprint to body width, 9.4 m with landing gear extended / 4.22 m without = 2.23 (https://en.wikipedia.org/wiki/Apollo_Lunar_Module), x 9 m body"}
+      },
+      "capacity_kg": {"value": 30000, "unit": "kg", "flag": "Assumed", "source": "upper bound of the engine's 12-30 t per landing (lunarsim/scenario.py LANDER_TYPES); NASA quotes 12-15 t for the HLS cargo variants: https://ntrs.nasa.gov/api/citations/20250008728/downloads/25%2008%2026%20IAC_Creech%20BP-1.pdf"},
+      "max_item_kg": {"value": 15000, "unit": "kg", "flag": "Modelled", "source": "the upper end of NASA's 12-15 t cargo-variant figure: https://ntrs.nasa.gov/api/citations/20250008728/downloads/25%2008%2026%20IAC_Creech%20BP-1.pdf"},
+      "gate": {
+        "m_gate_kg": {"value": 60000.0, "unit": "kg", "flag": "Assumed", "source": "Parametric 60 t cargo lander (Starship HLS / Blue Moon MK2 cargo class; dry masses unpublished, cargo 12-15 t per NASA IAC 2025): reports/Lunar landing and rover autonomy logistics.md [mirrors lunarsim/lander/classes.py]"},
+        "prop_gate_kg": {"value": 5000.0, "unit": "kg", "flag": "Assumed", "source": "Assumed in lunarsim/lander/classes.py (LARGE); no published value [mirrors lunarsim/lander/classes.py]"},
+        "t_max_n": {"value": 145800.0, "unit": "N", "flag": "Modelled", "source": "hover T/W 1.5 at the gate mass (Modelled) [mirrors lunarsim/lander/classes.py]"},
+        "t_min_n": {"value": 36450.0, "unit": "N", "flag": "Assumed", "source": "25 % throttle floor (Assumed) [mirrors lunarsim/lander/classes.py]"},
+        "isp_s": {"value": 350.0, "unit": "s", "flag": "Assumed", "source": "methalox landing engines, Assumed [mirrors lunarsim/lander/classes.py]"}
+      },
+      "propellant": "LCH4/LOX (Raptor; GOX/GCH4 mid-body landing thrusters near the surface)",
+      "plume_class": "methalox",
+      "materials": ["stainless_steel", "white_paint", "solar_cell", "regolith_dust"],
+      "notes": "Reported to land on mid-body GOX/GCH4 thrusters within ~100 m of the surface: https://en.wikipedia.org/wiki/Starship_HLS"
+    },
+    {
+      "id": "LTV",
+      "kind": "rover",
+      "name": "LTV-class rover (1.5 t cargo)",
+      "engine_class": "LTV",
+      "reference_vehicle": {
+        "name": "Astrolab FLEX / CLV-1",
+        "url": "https://www.astrolab.space/2026/05/26/nasa-selects-astrolab-to-provide-lunar-rover-for-artemis-astronauts-return-to-the-moon/",
+        "status": "in_development"
+      },
+      "representative": true,
+      "representative_note": "CLV-1's final look is unpublished; FLEX's deployed envelope is used.",
+      "dims": {
+        "length_m": {"value": 4.0, "unit": "m", "flag": "Spec", "source": "FLEX/CLV-1 deployed ~4 x 2.3 x 2.6 m: https://www.astrolab.space/2026/05/26/nasa-selects-astrolab-to-provide-lunar-rover-for-artemis-astronauts-return-to-the-moon/"},
+        "width_m": {"value": 2.3, "unit": "m", "flag": "Spec", "source": "deployed ~4 x 2.3 x 2.6 m: https://www.astrolab.space/2026/05/26/nasa-selects-astrolab-to-provide-lunar-rover-for-artemis-astronauts-return-to-the-moon/"},
+        "height_m": {"value": 2.6, "unit": "m", "flag": "Spec", "source": "deployed ~4 x 2.3 x 2.6 m: https://www.astrolab.space/2026/05/26/nasa-selects-astrolab-to-provide-lunar-rover-for-artemis-astronauts-return-to-the-moon/"},
+        "wheel_count": {"value": 4, "unit": "", "flag": "Spec", "source": "four wheels, crab steering: https://www.astrolab.space"},
+        "wheel_d_m": {"value": 0.93, "unit": "m", "flag": "Spec", "source": "FLEX wheels 'an exceptional diameter of 930 mm' (Venturi, June 2023): https://www.venturi.com/wp-content/uploads/2023/06/PR_19_06_2023.pdf"},
+        "wheelbase_m": {"value": 2.8, "unit": "m", "flag": "Assumed", "source": "not published; 70 % of the 4 m deployed length"},
+        "track_m": {"value": 2.0, "unit": "m", "flag": "Assumed", "source": "not published; 2.3 m width less one wheel width (~0.3 m)"},
+        "deck_height_m": {"value": 1.3, "unit": "m", "flag": "Assumed", "source": "not published and variable ('can raise and lower the chassis ground clearance', FLEX Payload Interface Guide v2.0: https://science.nasa.gov/wp-content/uploads/2024/03/mathews.pdf); 0.93 m wheel plus chassis"}
+      },
+      "mass_kg": {"value": 907, "unit": "kg", "flag": "Spec", "source": "CLV-1 about 2,000 lb: https://www.nasa.gov/news-release/nasa-provides-update-on-moon-base-rovers-landers-missions/"},
+      "capacity_kg": {"value": 1500, "unit": "kg", "flag": "Modelled", "source": "1,500 kg, within NASA's LTV capability of 800 kg at full and 1,600 kg at reduced performance: https://www.nasa.gov/wp-content/uploads/2025/02/iparch10-wp-logistics-mobility-cargo.pdf [the engine's value; see lunarsim/entities.py and the paper's Table 3]"},
+      "speed_kmh": {"value": 6.0, "unit": "km/h", "flag": "Modelled", "source": "10 km/h design speed modelled as a 6 km/h autonomous average; CLV-1 '>6 mph on level terrain': https://www.nasa.gov/news-release/nasa-provides-update-on-moon-base-rovers-landers-missions/ [the engine's value; see lunarsim/entities.py and the paper's Table 3]"},
+      "night_ops": {"value": false, "unit": "", "flag": "Modelled", "source": "survives the night (requirement 85-125 h of darkness) but does not drive in it; the engine parks it [the engine's value; see lunarsim/entities.py and the paper's Table 3]"},
+      "propellant": "none (electric)",
+      "plume_class": "none",
+      "materials": ["white_paint", "aluminium", "solar_cell", "radiator", "regolith_dust"],
+      "notes": "FLEX payload guide (2022 prototype): top-deck payload envelope 1.5 x 0.75 x 2.5 m, standard underslung containers 1.5 x 1.0/1.5/2.0 x 1.0 m, robotic arm >25 kg within 2 m: https://science.nasa.gov/wp-content/uploads/2024/03/mathews.pdf"
+    },
+    {
+      "id": "HAUL",
+      "kind": "rover",
+      "name": "Heavy hauler (10 t cargo, works at night; concept)",
+      "engine_class": "HAUL",
+      "reference_vehicle": {
+        "name": "JPL ATHLETE / Tri-ATHLETE (nearest concept)",
+        "url": "https://robotics.jpl.nasa.gov/how-we-do-it/systems/the-athlete-rover/",
+        "status": "concept"
+      },
+      "representative": true,
+      "representative_note": "No flown or built counterpart: NASA lists >1,600 kg relocation as a capability that does not exist. Drawn as a generic low flat-bed on six wheels with a pallet interface, radiators and headlights, no solar mast; labelled 'concept'. Every dimension is Assumed.",
+      "dims": {
+        "length_m": {"value": 7.0, "unit": "m", "flag": "Assumed", "source": "deck long enough for a 6 m cargo element lying flat; illustrative"},
+        "width_m": {"value": 4.0, "unit": "m", "flag": "Assumed", "source": "about 1.5x ATHLETE gen-1's 2.75 m width for a 10 t payload; illustrative"},
+        "height_m": {"value": 2.5, "unit": "m", "flag": "Assumed", "source": "standing height a little above ATHLETE gen-1's ~2 m; illustrative"},
+        "wheel_count": {"value": 6, "unit": "", "flag": "Spec", "source": "six wheel-on-leg limbs, as on ATHLETE: https://robotics.jpl.nasa.gov/how-we-do-it/systems/the-athlete-rover/"},
+        "wheel_d_m": {"value": 1.5, "unit": "m", "flag": "Assumed", "source": "about twice the LRV's 0.818 m wheel, for a ~4 kN wheel load ((10 t + 4 t) x 1.62 m/s^2 / 6); illustrative, not a design"},
+        "wheelbase_m": {"value": 5.6, "unit": "m", "flag": "Assumed", "source": "80 % of the 7 m length; illustrative"},
+        "track_m": {"value": 3.4, "unit": "m", "flag": "Assumed", "source": "4 m width less one wheel width; illustrative"},
+        "deck_height_m": {"value": 1.5, "unit": "m", "flag": "Assumed", "source": "walking legs can raise it; ATHLETE was designed to offload from a 3.2 m lander deck: https://www-robotics.jpl.nasa.gov/media/documents/Heverly_2010_AMS_Tri-ATHLETE.pdf"}
+      },
+      "mass_kg": {"value": 4000, "unit": "kg", "flag": "Assumed", "source": "~4 t landed, the figure behind the engine's $600M unit cost (lunarsim/entities.py)"},
+      "capacity_kg": {"value": 10000, "unit": "kg", "flag": "Assumed", "source": "proxy for the 'high capacity mobility' NASA lists as missing above 1,600 kg: https://www.nasa.gov/wp-content/uploads/2025/02/iparch10-wp-logistics-mobility-cargo.pdf [the engine's value; see lunarsim/entities.py and the paper's Table 3]"},
+      "speed_kmh": {"value": 4.0, "unit": "km/h", "flag": "Assumed", "source": "slower than the LTV with a 10 t load [the engine's value; see lunarsim/entities.py and the paper's Table 3]"},
+      "night_ops": {"value": true, "unit": "", "flag": "Assumed", "source": "built to work through the lunar night (the reason it exists in the model) [the engine's value; see lunarsim/entities.py and the paper's Table 3]"},
+      "propellant": "none (electric)",
+      "plume_class": "none",
+      "materials": ["white_paint", "aluminium", "radiator", "mli_silver", "regolith_dust"]
+    },
+    {
+      "id": "MICRO",
+      "kind": "rover",
+      "name": "Small utility rover (0.3 t cargo)",
+      "engine_class": "MICRO",
+      "reference_vehicle": {
+        "name": "NASA VIPER (for scale)",
+        "url": "https://ntrs.nasa.gov/api/citations/20240013903/downloads/LSIC_2024-Tech%20Infusion_Panel-VIPER_Mob-HW.pdf",
+        "status": "built"
+      },
+      "representative": false,
+      "representative_note": "VIPER's published geometry at true scale. Capacity and speed are the engine's MICRO class, modelled on the Lunar Outpost HL-MAPP (250 kg rover, 200 kg payload), not VIPER.",
+      "dims": {
+        "length_m": {"value": 1.7, "unit": "m", "flag": "Spec", "source": "VIPER 1.7 x 1.7 x 2.5 m: https://ntrs.nasa.gov/api/citations/20240013903/downloads/LSIC_2024-Tech%20Infusion_Panel-VIPER_Mob-HW.pdf (NASA's mission page says 1.5 m: https://science.nasa.gov/mission/viper/rover-and-instruments)"},
+        "width_m": {"value": 1.7, "unit": "m", "flag": "Spec", "source": "VIPER 1.7 x 1.7 x 2.5 m: https://ntrs.nasa.gov/api/citations/20240013903/downloads/LSIC_2024-Tech%20Infusion_Panel-VIPER_Mob-HW.pdf (NASA's mission page says 1.5 m: https://science.nasa.gov/mission/viper/rover-and-instruments)"},
+        "height_m": {"value": 2.5, "unit": "m", "flag": "Spec", "source": "VIPER 1.7 x 1.7 x 2.5 m (to the mast top): https://ntrs.nasa.gov/api/citations/20240013903/downloads/LSIC_2024-Tech%20Infusion_Panel-VIPER_Mob-HW.pdf"},
+        "wheel_count": {"value": 4, "unit": "", "flag": "Spec", "source": "four wheels: https://ntrs.nasa.gov/api/citations/20240013903/downloads/LSIC_2024-Tech%20Infusion_Panel-VIPER_Mob-HW.pdf"},
+        "wheel_d_m": {"value": 0.5, "unit": "m", "flag": "Spec", "source": "50 cm wheels with 2.5 cm grousers: https://ntrs.nasa.gov/api/citations/20240013903/downloads/LSIC_2024-Tech%20Infusion_Panel-VIPER_Mob-HW.pdf"}
+      },
+      "capacity_kg": {"value": 300, "unit": "kg", "flag": "Modelled", "source": "HL-MAPP class carries 200 kg: https://lunaroutpost.com/rovers; modelled 300 kg [the engine's value; see lunarsim/entities.py and the paper's Table 3]"},
+      "speed_kmh": {"value": 3.0, "unit": "km/h", "flag": "Modelled", "source": "HL-MAPP up to 3 m/s: https://lunaroutpost.com/rovers; modelled 3 km/h average [the engine's value; see lunarsim/entities.py and the paper's Table 3]"},
+      "night_ops": {"value": false, "unit": "", "flag": "Assumed", "source": "parks at night [the engine's value; see lunarsim/entities.py and the paper's Table 3]"},
+      "propellant": "none (electric)",
+      "plume_class": "none",
+      "materials": ["aluminium", "solar_cell", "white_paint", "mli_silver", "regolith_dust"]
+    },
+    {
+      "id": "habitat",
+      "kind": "base",
+      "name": "Surface habitat module (NASA Common Habitat class)",
+      "reference_vehicle": {
+        "name": "NASA Common Habitat",
+        "url": "https://ntrs.nasa.gov/api/citations/20210020956/downloads/A%20Common%20Habitat%20Basecamp%20for%20Moon%20and%20Mars%20Surface%20Operations.pdf",
+        "status": "concept"
+      },
+      "representative": true,
+      "representative_note": "A NASA design concept (SLS-tank-derived) for Moon and Mars base camps; no surface habitat has a published final shape.",
+      "dims": {
+        "diameter_m": {"value": 8.4, "unit": "m", "flag": "Spec", "source": "'8.4 meters in diameter and 15.6 meters in length' (Howard et al., ASCEND 2023): https://ntrs.nasa.gov/citations/20220010430"},
+        "length_m": {"value": 15.6, "unit": "m", "flag": "Spec", "source": "'8.4 meters in diameter and 15.6 meters in length': https://ntrs.nasa.gov/citations/20220010430 (a 2022 AIAA paper gives 15 m)"}
+      },
+      "mass_kg": {"value": 90000, "unit": "kg", "flag": "Spec", "source": "'may mass as much as 90-tons when initially deployed', crew of eight: https://ntrs.nasa.gov/citations/20220010430"},
+      "propellant": "none",
+      "plume_class": "none",
+      "materials": ["white_paint", "mli_silver", "radiator", "regolith_dust"],
+      "notes": "Far heavier than any item the engine moves (largest element 15 t): scenery, landed in place."
+    },
+    {
+      "id": "pad",
+      "kind": "base",
+      "name": "Landing pad with ejecta berm",
+      "reference_vehicle": {
+        "name": "Metzger & Autry 2022 pad; NASA KSC Lunar Innovation Park berm",
+        "url": "https://arxiv.org/abs/2205.00378",
+        "status": "concept"
+      },
+      "representative": false,
+      "representative_note": "Published design dimensions; the berm was sized by NASA KSC for CLPS-class landers.",
+      "dims": {
+        "diameter_m": {"value": 54, "unit": "m", "flag": "Spec", "source": "Artemis-era two-zone pad of 27 m radius (Metzger & Autry 2022): https://arxiv.org/abs/2205.00378; the Artemis requirement is 200 m, being negotiated to 100 m: https://ntrs.nasa.gov/api/citations/20220000334/downloads/In%20situ%20Lunar%20Launch%20and%20Landing%20Pad%20Construction%20with%20Regolith%20and%20Thermoset%20Polymers%20ASCE%20Earth%20and%20Space%202022%20Paper%20SUBMITTED.pdf"},
+        "berm_height_m": {"value": 2.5, "unit": "m", "flag": "Spec", "source": "2.5 m berm (lander height with VSAT stowed), NASA KSC Lunar Innovation Park: https://ntrs.nasa.gov/api/citations/20260002816/downloads/329%20-%20Site%20Plan%20and%20Bulk%20Presentation.pdf"},
+        "berm_crest_m": {"value": 1.0, "unit": "m", "flag": "Spec", "source": "1 m crest: https://ntrs.nasa.gov/api/citations/20260002816/downloads/329%20-%20Site%20Plan%20and%20Bulk%20Presentation.pdf"},
+        "berm_slope_deg": {"value": 52, "unit": "deg", "flag": "Spec", "source": "52 deg side slopes: https://ntrs.nasa.gov/api/citations/20260002816/downloads/329%20-%20Site%20Plan%20and%20Bulk%20Presentation.pdf"},
+        "berm_base_m": {"value": 4.9, "unit": "m", "flag": "Spec", "source": "4.9 m berm base width: https://ntrs.nasa.gov/api/citations/20260002816/downloads/329%20-%20Site%20Plan%20and%20Bulk%20Presentation.pdf"},
+        "berm_radius_m": {"value": 37.5, "unit": "m", "flag": "Assumed", "source": "berm centreline = 27 m pad radius + KSC's 8 m standoff from the berm face + half the 4.9 m base (https://ntrs.nasa.gov/api/citations/20260002816/downloads/329%20-%20Site%20Plan%20and%20Bulk%20Presentation.pdf)"}
+      },
+      "propellant": "none",
+      "plume_class": "none",
+      "materials": ["sintered_regolith", "regolith_dust"],
+      "notes": "KSC's reusable pad: 20 m compacted foundation, 15 m durable surface, two 9 m accessways at 5 deg: https://ntrs.nasa.gov/api/citations/20260002816/downloads/329%20-%20Site%20Plan%20and%20Bulk%20Presentation.pdf. No berm has been designed for 15-100 t landers (KSC's outer berm handles a 6 deg ejecta angle)."
+    },
+    {
+      "id": "solar_tower",
+      "kind": "base",
+      "name": "Vertical solar array tower (VSAT class)",
+      "reference_vehicle": {
+        "name": "NASA Vertical Solar Array Technology (VSAT)",
+        "url": "https://www.nasa.gov/technology/nasa-industry-to-mature-vertical-solar-array-technologies-for-lunar-surface/",
+        "status": "in_development"
+      },
+      "representative": true,
+      "representative_note": "Mast height and power are NASA's; the array shape differs between the funded designs and its width is not published for the 10 kW class.",
+      "dims": {
+        "height_m": {"value": 10, "unit": "m", "flag": "Spec", "source": "'deploy up to 32 feet high' (NASA: https://www.nasa.gov/technology/nasa-industry-to-mature-vertical-solar-array-technologies-for-lunar-surface/); '~10 kWe class array ... on a >10 m tower' (BEACON, Oleson et al. 2025: https://ntrs.nasa.gov/api/citations/20240015887/downloads/BEACON%20Exec%20Summary.pdf)"},
+        "array_height_m": {"value": 7, "unit": "m", "flag": "Assumed", "source": "upper 70 % of the 10 m mast, so the array clears local terrain by 3 m"},
+        "array_width_m": {"value": 7.1, "unit": "m", "flag": "Modelled", "source": "area for 10 kW at the areal power of Astrobotic's VSAT-XL (50 kW from 20 m x 12.5 m = 200 W/m^2: https://www.astrobotic.com/astrobotic-developing-xl-solar-array-tech-for-lunar-power-infrastructure/; https://www.astrobotic.com/astrobotic-awarded-lunar-power-study-with-vsat-xl/) = 50 m^2, over a 7 m array height"}
+      },
+      "power_kw": {"value": 10, "unit": "kW", "flag": "Spec", "source": "'~10 kWe class array (7 kWe operational)': https://ntrs.nasa.gov/api/citations/20240015887/downloads/BEACON%20Exec%20Summary.pdf"},
+      "propellant": "none",
+      "plume_class": "none",
+      "materials": ["solar_cell", "aluminium", "white_paint", "regolith_dust"],
+      "notes": "Taller designs: Lockheed Martin up to 65 ft (https://www.lockheedmartin.com/en-us/news/features/2025/powering-the-moon--vertical-solar-arrays-charge-the-way-.html); Astrobotic VSAT-XL 34 m tall x 12.5 m wide, 50 kW (https://www.astrobotic.com/astrobotic-awarded-lunar-power-study-with-vsat-xl/)."
+    },
+    {
+      "id": "comms_mast",
+      "kind": "base",
+      "name": "Comms mast (VSAT with lunar surface relay)",
+      "reference_vehicle": {
+        "name": "NASA BEACON VSAT-LSR concept",
+        "url": "https://ntrs.nasa.gov/api/citations/20240015887/downloads/BEACON%20Exec%20Summary.pdf",
+        "status": "concept"
+      },
+      "representative": true,
+      "representative_note": "A NASA concept study; no surface comms tower has flown.",
+      "dims": {
+        "height_m": {"value": 17, "unit": "m", "flag": "Spec", "source": "'17 m tall VSAT-LSR', relay '60 Mbps for up to six users within 10 km': https://ntrs.nasa.gov/api/citations/20240015887/downloads/BEACON%20Exec%20Summary.pdf"}
+      },
+      "propellant": "none",
+      "plume_class": "none",
+      "materials": ["aluminium", "white_paint", "regolith_dust"],
+      "notes": "Honeybee's LUNARSABER is proposed at over 100 m: https://www.blueorigin.com/news/honeybee-robotics-to-develop-lunarsaber-for-darpas-luna-10-program"
+    },
+    {
+      "id": "cargo_pallet",
+      "kind": "base",
+      "name": "Standard cargo container",
+      "reference_vehicle": {
+        "name": "Astrolab FLEX standard-size cargo container",
+        "url": "https://science.nasa.gov/wp-content/uploads/2024/03/mathews.pdf",
+        "status": "in_development"
+      },
+      "representative": true,
+      "representative_note": "Size of FLEX's smallest standard container; its look is generic.",
+      "dims": {
+        "length_m": {"value": 1.5, "unit": "m", "flag": "Spec", "source": "standard-size cargo containers 1.5 x 1.0 x 1.0 m (also 1.5 x 1.5 and 1.5 x 2.0): https://science.nasa.gov/wp-content/uploads/2024/03/mathews.pdf"},
+        "width_m": {"value": 1.0, "unit": "m", "flag": "Spec", "source": "1.5 x 1.0 x 1.0 m: https://science.nasa.gov/wp-content/uploads/2024/03/mathews.pdf"},
+        "height_m": {"value": 1.0, "unit": "m", "flag": "Spec", "source": "1.5 x 1.0 x 1.0 m: https://science.nasa.gov/wp-content/uploads/2024/03/mathews.pdf"}
+      },
+      "capacity_kg": {"value": 375, "unit": "kg", "flag": "Spec", "source": "underslung mass limit 375 kg (top deck 460 kg): https://science.nasa.gov/wp-content/uploads/2024/03/mathews.pdf"},
+      "propellant": "none",
+      "plume_class": "none",
+      "materials": ["white_paint", "aluminium", "regolith_dust"],
+      "notes": "Packed with ISS cargo transfer bags (~50 x 42 x 25 cm each): https://ntrs.nasa.gov/api/citations/20160002631/downloads/20160002631.pdf. One container holds one engine consumables item (60-400 kg); heavier items are drawn larger."
+    },
+    {
+      "id": "nova_c",
+      "kind": "reference",
+      "name": "Intuitive Machines Nova-C (scale reference)",
+      "reference_vehicle": {
+        "name": "Intuitive Machines Nova-C",
+        "url": "https://en.wikipedia.org/wiki/Intuitive_Machines_Nova-C",
+        "status": "flown"
+      },
+      "representative": false,
+      "dims": {
+        "height_m": {"value": 3.938, "unit": "m", "flag": "Spec", "source": "3.938 m tall (the infobox says 3 m): https://en.wikipedia.org/wiki/Intuitive_Machines_Nova-C"},
+        "diameter_m": {"value": 1.6, "unit": "m", "flag": "Spec", "source": "1.6 m body (NASA NDL paper; Wikipedia gives 2 m): https://ntrs.nasa.gov/api/citations/20250007036/downloads/aasimndl.pdf"},
+        "leg_count": {"value": 6, "unit": "", "flag": "Spec", "source": "six landing legs: https://en.wikipedia.org/wiki/Intuitive_Machines_Nova-C"},
+        "leg_span_m": {"value": 3.6, "unit": "m", "flag": "Assumed", "source": "Nova-C's leg span is not published; drawn at the Apollo LM's ratio of footprint to body width, 9.4 m with landing gear extended / 4.22 m without = 2.23 (https://en.wikipedia.org/wiki/Apollo_Lunar_Module), x 1.6 m body"}
+      },
+      "propellant": "LOX/LCH4 (VR900, 3,100 N)",
+      "plume_class": "methalox",
+      "materials": ["mli_silver", "white_paint", "solar_cell", "aluminium", "regolith_dust"],
+      "notes": "IM-1 broke a leg and came to rest at ~30 deg; IM-2 fell on its side: https://en.wikipedia.org/wiki/Intuitive_Machines_Nova-C"
+    },
+    {
+      "id": "griffin",
+      "kind": "reference",
+      "name": "Astrobotic Griffin (scale reference, alternative CLPS look)",
+      "reference_vehicle": {
+        "name": "Astrobotic Griffin",
+        "url": "https://www.astrobotic.com/lunar-delivery/landers/griffin-lander/",
+        "status": "in_development"
+      },
+      "representative": false,
+      "representative_note": "Overall size is published; whether the 4.5 m is leg to leg or the whole envelope is not.",
+      "dims": {
+        "height_m": {"value": 2.0, "unit": "m", "flag": "Spec", "source": "'roughly 6 feet (2 meters) tall' (Space.com; the product page graphic says 2.0M; other press says 1.6 m): https://space.com/space-exploration/astrobotic-unveils-griffin-1-lunar-lander-for-nasa-moon-base-mission"},
+        "width_m": {"value": 4.5, "unit": "m", "flag": "Spec", "source": "'nearly 15 feet (4.5 meters) across' (Space.com; product page graphic 4.5M): https://space.com/space-exploration/astrobotic-unveils-griffin-1-lunar-lander-for-nasa-moon-base-mission"},
+        "leg_count": {"value": 4, "unit": "", "flag": "Spec", "source": "'four landing legs ... fastened to the bus structure' (Astrobotic PUG): https://science.nasa.gov/wp-content/uploads/2023/11/astrobotic-lunar-landers-pug.pdf"}
+      },
+      "capacity_kg": {"value": 625, "unit": "kg", "flag": "Spec", "source": "625 kg payload: https://www.astrobotic.com/lunar-delivery/landers/griffin-lander/"},
+      "propellant": "hydrazine derivative / MON-3 (Astrobotic user guide 2022)",
+      "plume_class": "hypergolic",
+      "materials": ["aluminium", "mli_gold", "solar_cell", "regolith_dust"],
+      "notes": "Griffin-1 carries Astrolab's FLIP rover to Nobile crater (late 2026). User guide: https://www.astrobotic.com/wp-content/uploads/2022/01/PUGLanders_011222.pdf"
+    },
+    {
+      "id": "apollo_lrv",
+      "kind": "reference",
+      "name": "Apollo Lunar Roving Vehicle (scale reference)",
+      "reference_vehicle": {
+        "name": "Apollo LRV",
+        "url": "https://nssdc.gsfc.nasa.gov/planetary/lunar/apollo_lrv.html",
+        "status": "flown"
+      },
+      "representative": false,
+      "dims": {
+        "length_m": {"value": 3.1, "unit": "m", "flag": "Spec", "source": "frame 3.1 m long: https://nssdc.gsfc.nasa.gov/planetary/lunar/apollo_lrv.html"},
+        "height_m": {"value": 1.14, "unit": "m", "flag": "Spec", "source": "maximum height 1.14 m: https://nssdc.gsfc.nasa.gov/planetary/lunar/apollo_lrv.html"},
+        "wheel_count": {"value": 4, "unit": "", "flag": "Spec", "source": "four wheels: https://nssdc.gsfc.nasa.gov/planetary/lunar/apollo_lrv.html"},
+        "wheel_d_m": {"value": 0.818, "unit": "m", "flag": "Spec", "source": "wheels 81.8 cm in diameter, 23 cm wide: https://nssdc.gsfc.nasa.gov/planetary/lunar/apollo_lrv.html"},
+        "wheelbase_m": {"value": 2.3, "unit": "m", "flag": "Spec", "source": "2.3 m wheelbase: https://nssdc.gsfc.nasa.gov/planetary/lunar/apollo_lrv.html"},
+        "ground_clearance_m": {"value": 0.36, "unit": "m", "flag": "Spec", "source": "36 cm ground clearance when loaded: https://nssdc.gsfc.nasa.gov/planetary/lunar/apollo_lrv.html"},
+        "track_m": {"value": 1.8, "unit": "m", "flag": "Spec", "source": "track width 1.8 m ('sporvidde pa 1,8 meter', Store norske leksikon): https://snl.no/Lunar_Roving_Vehicle"}
+      },
+      "mass_kg": {"value": 210, "unit": "kg", "flag": "Spec", "source": "210 kg: https://nssdc.gsfc.nasa.gov/planetary/lunar/apollo_lrv.html"},
+      "capacity_kg": {"value": 490, "unit": "kg", "flag": "Spec", "source": "designed to carry an additional 490 kg of payload (NASA ACR24 mobility white paper): https://www.nasa.gov/wp-content/uploads/2025/02/iparch10-wp-logistics-mobility-cargo.pdf"},
+      "propellant": "none (silver-zinc batteries)",
+      "plume_class": "none",
+      "materials": ["aluminium", "regolith_dust"]
+    },
+    {
+      "id": "viper",
+      "kind": "reference",
+      "name": "NASA VIPER (scale reference)",
+      "reference_vehicle": {
+        "name": "NASA VIPER",
+        "url": "https://ntrs.nasa.gov/api/citations/20240013903/downloads/LSIC_2024-Tech%20Infusion_Panel-VIPER_Mob-HW.pdf",
+        "status": "built"
+      },
+      "representative": false,
+      "dims": {
+        "length_m": {"value": 1.7, "unit": "m", "flag": "Spec", "source": "1.7 x 1.7 x 2.5 m: https://ntrs.nasa.gov/api/citations/20240013903/downloads/LSIC_2024-Tech%20Infusion_Panel-VIPER_Mob-HW.pdf (NASA's mission page says 1.5 m: https://science.nasa.gov/mission/viper/rover-and-instruments)"},
+        "width_m": {"value": 1.7, "unit": "m", "flag": "Spec", "source": "1.7 x 1.7 x 2.5 m: https://ntrs.nasa.gov/api/citations/20240013903/downloads/LSIC_2024-Tech%20Infusion_Panel-VIPER_Mob-HW.pdf (NASA's mission page says 1.5 m: https://science.nasa.gov/mission/viper/rover-and-instruments)"},
+        "height_m": {"value": 2.5, "unit": "m", "flag": "Spec", "source": "1.7 x 1.7 x 2.5 m: https://ntrs.nasa.gov/api/citations/20240013903/downloads/LSIC_2024-Tech%20Infusion_Panel-VIPER_Mob-HW.pdf"},
+        "wheel_count": {"value": 4, "unit": "", "flag": "Spec", "source": "four wheels: https://ntrs.nasa.gov/api/citations/20240013903/downloads/LSIC_2024-Tech%20Infusion_Panel-VIPER_Mob-HW.pdf"},
+        "wheel_d_m": {"value": 0.5, "unit": "m", "flag": "Spec", "source": "50 cm wheels, 2.5 cm grousers: https://ntrs.nasa.gov/api/citations/20240013903/downloads/LSIC_2024-Tech%20Infusion_Panel-VIPER_Mob-HW.pdf"}
+      },
+      "mass_kg": {"value": 447, "unit": "kg", "flag": "Spec", "source": "447 kg roving mass: https://ntrs.nasa.gov/api/citations/20240013903/downloads/LSIC_2024-Tech%20Infusion_Panel-VIPER_Mob-HW.pdf"},
+      "propellant": "none (electric)",
+      "plume_class": "none",
+      "materials": ["aluminium", "solar_cell", "mli_silver", "regolith_dust"],
+      "notes": "Now planned for 2027 on New Glenn: https://en.wikipedia.org/wiki/VIPER_(rover)"
+    }
+  ]
+}
