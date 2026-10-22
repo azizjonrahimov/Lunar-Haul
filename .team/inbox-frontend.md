@@ -275,3 +275,54 @@ values from BACKEND's B-18 report: PSR->PAD_A@3 night, expert autonomous: 1 inte
 Files: site/src/rover/env.js, site/src/rover/lab.js, site/src/verify/checks.worker.js, site/scripts/prepare-data.mjs.
 Done when: the parity rows pass, the hazard-leg check matches Python's intervention count, no console errors, Lighthouse 100 kept.
 Due: 2 h after the commit lands (written 09:55)
+
+---
+
+# PHASE 4 (from 22 Oct 2026): read `.team/PLAN-phase4-design.md` (your steps F-30…F-40; ownership in its §9) and `research_notes/LunarHaul 3D interactive design/design_research.md` first.
+
+## F-30 [OPEN] (<= 4 h) Design system v2: the "instrument" theme and the shared UI components
+Goal: the look of every Phase 4 3D page (plan §3, §5 F-30). Reading pages keep today's light theme and dark toggle.
+Owner decisions: dark "instrument" theme on 3D pages; keep Source Sans 3 for reading text; add **Sora** (display) and
+**JetBrains Mono** (all numbers, tabular), both OFL, self-hosted unmodified from npm (Fontsource packages); check the
+OFL text for a Reserved Font Name and report. You may A/B Sora against Space Grotesk on the demo page and say which
+reads better at 12–14 px.
+Files: `site/src/styles/tokens.css` (+ an instrument scope, e.g. `.instrument` on <body>), new `site/src/ui/*`, new
+page `site/design/index.html` (+ the `vite.config.js` PAGES entry; `noindex`, not in the nav), `site/package.json`.
+Tokens: near-black blue background; glass panels at ≥ 0.85 opacity wherever small text sits on them (research §3.3:
+the reference's translucent panels fail AA over sunlit regolith); 1 px light border; radius 16–18 px; ink and muted
+pass 4.5:1; "faint" only for ≥ 24 px text or decoration; cool cyan (data, guidance) and warm amber (thrust, heat)
+accents; Tol bright for categories; focus ring ≥ 3:1; 24 px minimum targets.
+Components (vanilla JS, no framework; keyboard support and ARIA on each): segmented pill control (radiogroup, arrow
+keys), stat chip (label, value, unit, flag + source via the existing `components/num.js`), narrative card (title,
+text, step dots, polite live region with final text only), callout label (a DOM API the 3D stage will position:
+dot + leader + pill), scene-switcher chips, timeline (range + event ticks), loading door (real byte progress,
+Enter button, skip link), big animated counter (sign colours, tabular digits, instant under
+prefers-reduced-motion), glass panel, tooltip.
+The /design/ page shows every component in the instrument and the reading theme, and a live contrast table (computed
+from the CSS variables, pass/fail per pair) over three backgrounds: black, mid grey, sunlit-regolith grey.
+Done when: every contrast pair in use passes AA; a keyboard-only walkthrough works; Lighthouse accessibility 100 on
+/design/; no console errors; existing pages unchanged (spot-check /, /world/, both labs).
+
+## F-31 [OPEN] (<= 6 h) The shared 3D stage (`site/src/stage/`) and one demo scene with the full pipeline
+Goal: plan §5 F-31. Every later 3D page builds on this; M1 is reviewed on the demo scene.
+API sketch (adapt it, report the final one): `createStage({canvas, preset: 'exhibit' | 'onsite', tier, sun: {az, el}})`
+→ `{scene, camera, renderer, director, labels, cutaway, explode, setTier, setToneMapping, renderOnce, dispose}`.
+- Renderer: three r186 `WebGLRenderer` (decision: no WebGPU this phase), `stencil: true`, reversed depth buffer when
+  supported (capability check), colour management on; tone mapping switchable Neutral / ACES / AgX for an A/B.
+- Lighting presets: exhibit (RoomEnvironment PMREM, soft studio key) and onsite (black sky, one sun at az/el, el
+  default 1.5°, dim lunar environment, Earth as a 1.9° disc placeholder near the horizon).
+- Post-processing by tier (detect-gpu with the existing self-hosted benchmarks): tier 1 = render + output + FXAA or
+  SMAA; tier 2 = + AO (try r186 GTAO and N8AO (npm, MIT); measure both) + bloom on emissive parts; tier 3 = all +
+  SMAA. An adaptive pixel-ratio monitor holding a frame-time target; render-on-demand when nothing moves.
+- Camera director on `camera-controls` (npm, MIT): named shots, smooth `setLookAt` moves, orbit limits, instant cuts
+  under prefers-reduced-motion; one pause button stops all motion.
+- Labels: F-30 callouts anchored to 3D points, hidden when occluded, simple overlap avoidance.
+- Cutaway helper: clipping plane(s) with solid stencil caps (three example `webgl_clipping_stencil`), optional
+  wedge; exploded-view helper (named parts, explode axes, 0–1 animation).
+- Hover/pick outline (OutlinePass on tier ≥ 2, emissive tint fallback); WebGL context-loss recovery; `dispose()`.
+- Demo page `site/design/stage/` (noindex): a procedural test object (a tank with a feed line and a bell nozzle,
+  named parts) with Whole / Cutaway / Exploded, both presets, callouts, a tier switcher, the tone-mapping A/B and an
+  on-screen frame-time readout (ms, p50 and p95 over 5 s).
+Done when: the demo runs at tiers 1–3; the report gives measured frame times per tier on this RTX 3050 laptop at the
+default view (target: tier 2 p95 ≤ 16.7 ms) and which AO you chose and why; reduced motion respected; no console
+errors; /world/ and the labs unchanged. Stop the dev server and close heavy tabs when done.

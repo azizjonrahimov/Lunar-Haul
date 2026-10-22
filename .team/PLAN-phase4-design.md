@@ -1,7 +1,8 @@
 # Phase 4 plan: a professional, 3D interactive LunarHaul
 
-Status: **DRAFT, waiting for the owner's go-ahead.** Nothing here is assigned yet; no task goes into the
-inboxes until the owner says start. Written 22 October 2026 by LEAD.
+Status: **APPROVED 22 October 2026.** The owner said: start with the foundations (M1) and continue step by
+step; take LEAD's recommendation on every open decision; host the backend inside the GitHub repository
+(section 4, B-37); and add research that can find something new (section 10). Written 22 October 2026 by LEAD.
 
 Goal in one line: the simulation should look and feel like the reference reels (cinematic 3D you can take
 apart, guided by a story, numbers live on screen) while every number stays sourced and reproducible.
@@ -110,9 +111,17 @@ Schema agreed with FRONTEND. 1–2 d.
 **B-36 Static scenario gallery.** Precompute 12–20 curated scenarios (phase × job rule × pad distance ×
 night) as scene packages + summary metrics, so the 3D site needs no server. Watch repository size. 1 d + compute.
 
-**B-37 Service: stream scenes (only after the hosting decision).** `GET /v2/runs/{id}/scene?seed=&chunk=`
-with ETag and immutable caching; the existing SSE progress feeds a "your run is being simulated" state in
-the 3D page. In-process tests. 1–2 d. Blocked: owner's hosting choice.
+**B-37 The backend inside the GitHub repository (owner decision, 22 Oct).** GitHub cannot run an always-on
+server (Pages serves static files only: ≤ 1 GB site, soft 100 GB/month), but GitHub Actions can compute on
+demand (jobs up to 6 h; free on standard runners for public repositories). So the hosted backend becomes:
+(1) **static results** on Pages (B-36 gallery, scene packages, tables); (2) **a run queue on GitHub Actions**: a
+visitor fills an issue form (scenario, job rule, seeds ≤ 30) → a workflow validates it, runs `lunarsim` with the
+same provenance the service records, posts the summary as a comment, and publishes the scene package and
+trace to the site's `runs/<id>/` (or as release assets when large) → the site opens `/world/?run=<id>`;
+(3) the existing FastAPI `service/` stays in the repo, tested, for the day a VPS is wanted. Guard rails: issue
+form only (no tokens in the browser), label-gated by LEAD for new submitters, seeds and scenario size capped,
+one run at a time (concurrency group). Done when: an issue with a scenario produces a published run that the
+world page replays, end to end, with provenance. 2–3 d.
 
 **B-38 CI gates and delivery.** The pages workflow fails on: JS or data over the per-page budget, schema errors
 in any data file, JS-vs-Python parity failures for the new formats, Lighthouse below target on three pages.
@@ -249,3 +258,44 @@ pages in a browser) and a push. Calendar estimate with the three sessions: 4–6
 Decided by LEAD unless the owner objects: stay on WebGL (not WebGPU) for this phase; tone mapping chosen by an
 A/B on real scenes (Neutral vs ACES vs AgX); terrain shadows from vehicles by sampling the shadow map in the
 existing terrain shader after a one-hour spike.
+
+**Owner's answers (22 Oct):** 1 start with M1, then step by step · 2 dark "instrument" theme on the 3D pages,
+light (with the existing dark toggle) on reading pages · 3 realistic lunar 3D + chalkboard explainers ·
+4 keep Source Sans 3 for reading text; add **Sora** (display) and **JetBrains Mono** (numbers), both OFL, served
+unmodified from npm packages (FRONTEND may A/B Sora against Space Grotesk in F-30 and report) · 5 build
+labelled "representative" shapes where the real one is unpublished · 6 backend hosted through the GitHub
+repository (B-37).
+
+## 9. File ownership (Phase 4)
+
+| Owner | May edit |
+|---|---|
+| **BACKEND** | `lunarsim/**` (new: `catalog.py`, `scene.py`, `comms.py`, exporters; engine changes only behind opt-in Scenario fields, results byte-identical with them off), `service/**`, `experiments/phase4/**` (new), `tests/**`, `tools/**` (new: asset and data pipelines), `.github/ISSUE_TEMPLATE/**` and `.github/workflows/run-*.yml` (B-37 only; report, LEAD reviews before merge) |
+| **FRONTEND** | `site/**` (new: `site/src/stage/`, `site/src/ui/`, `site/vehicles/`, `site/design/`), `web/**` (`web/sim.js` engine frozen) |
+| **LEAD** | `data/**` (generated with BACKEND tools, committed by LEAD), `results/**`, `figures/**`, `paper/**`, `research_notes/**`, `reports/**`, `README.md`, `.github/workflows/pages.yml` and `ci.yml`, `CITATION.cff`, `.team/PLAN*.md`, `.team/inbox-*.md`, `.team/prompts/**` |
+| Shared, append-only | `.team/reports.md` |
+
+Workers never run git add/commit/push. LEAD commits per task after review.
+
+## 10. Research that can find something new (owner request, 22 Oct)
+
+Honest assessment: the redesign alone makes the results clearer and more convincing, but it does not discover
+anything. What can: the geometry the 3D world needs (horizons, Earth's position, long shadows) opens questions our
+engine has never asked.
+
+**R-1 "Earth in sight" (main thread).** At the south pole Earth stays within about ±7° of the horizon and is below
+it roughly half of each month; local terrain hides it more. A rover driven from Earth cannot be driven without a
+link; supervised autonomy needs some contact. Question: *how much hauling capacity and delivery time does a
+south-pole base lose to direct-to-Earth blackout windows at its real (terrain-masked) sites, and when is a lunar
+relay, more autonomy, or more rovers the cheapest fix?* Method: Earth's elevation at each site over a year from an
+ephemeris, terrain horizon masks (B-34, extended beyond the 16 km tile), comms windows as an opt-in engine feature
+(like the night stand-down), then a suite across autonomy mixes, relay availability and phases, read as a law with
+confidence intervals like E20. Prior-art check: running (`research_notes/Lunar communications and visibility/`);
+the claim of novelty waits for it.
+
+**R-2 "Long shadows" (secondary).** At a 1.5° sun a 52 m lander casts a ~2 km shadow that sweeps around once per
+lunar day; tall solar towers shade each other. Does pad placement relative to arrays and routes cost power or
+driving time? Same ray-casting tools; a small study, kept only if the numbers are not negligible.
+
+BACKEND and LEAD tasks for R-1 (ephemeris and horizon pipeline, the engine's comms windows, the suite) are written
+after the prior-art check; the 3D world shows the result (Earth disc, "comms: relay only" chip, F-36).

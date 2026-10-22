@@ -315,3 +315,51 @@ Do NOT run a full training (memory; LEAD runs it). Report the expected working s
 Files: lunarsim/rover/bc.py, tests/test_rover_bc.py (or the existing rover test file).
 Done when: the smoke test passes single-process; the report gives the RSS printout from the smoke run and the estimate.
 Due: Oct 16 07:00 (written 04:11)
+
+---
+
+# PHASE 4 (from 22 Oct 2026): read `.team/PLAN-phase4-design.md` first (your steps B-30…B-39; ownership in its §9)
+
+## B-30 [OPEN] (<= 3 h) Vehicle and site catalogue: one sourced file for the engine and the 3D models
+Goal: a single catalogue every 3D model and every on-screen vehicle number comes from (plan §4 B-30).
+Files (new): `lunarsim/catalog.py` (load + validate + `get(id)`), `lunarsim/catalog-v1.json` (package data; the source
+of truth), `lunarsim/schemas/catalog-v1.schema.json`, `tests/test_catalog.py`.
+Content: entries for landers `CLPS`, `MK1`, `LARGE`; rovers `LTV`, `HAUL`, `MICRO`; base elements `habitat`, `pad`
+(with berm), `solar_tower`, `comms_mast`, `cargo_pallet`; scale references `apollo_lrv`, `nova_c`, `griffin`,
+`viper`. Each entry: `id`, `kind` (lander | rover | base | reference), `reference_vehicle` (name + URL),
+`representative` (true when the shape is not published), `dims` (height_m, diameter_m or length/width, leg_count,
+leg_span_m, wheel_count, wheel_d_m, wheelbase_m, track_m, deck_height_m: only those that apply), `capacity_kg`,
+`speed_kmh`, `night_ops`, `propellant` + `plume_class` (hydrolox | methalox | hypergolic | none), `materials`
+(tags: mli_gold, mli_silver, white_paint, aluminium, solar_cell, radiator, regolith_dust) and for EVERY number
+`{value, unit, flag: Spec | Measured | Assumed | Modelled, source: URL or reasoning}`.
+Starting values and sources: `research_notes/LunarHaul 3D interactive design/design_research.md` §2.1–2.2 (Nova-C 3.9 m,
+MK1 8.05 × 3.08 m, HLS 52 × 9 m, CLV-1/FLEX deployed ~4 × 2.3 × 2.6 m, VIPER 1.7 × 1.7 × 2.5 m with 0.5 m wheels,
+LRV 3.1 m frame / 2.3 m wheelbase / 0.818 m wheels, HAUL = ATHLETE-like concept with `representative: true`).
+Where the research says a value is unknown (MK1 and HLS legs), give an Assumed value with the reasoning.
+Engine link WITHOUT changing results: do not rewire the engine. Instead `tests/test_catalog.py` asserts that
+`capacity_kg`, `speed_kmh` and `night_ops` of LTV/HAUL/MICRO equal the `lunarsim.entities` VehicleClass values, and
+that the lander gate masses and thrusts equal `lunarsim/lander/classes.py`, so the two can never drift.
+Done when: the schema test, the equality tests and the fast suite pass; the baseline md5 is unchanged; the report
+lists every value flagged Assumed and gives the catalogue path for FRONTEND (they copy it in `prepare-data.mjs`).
+
+## B-34 [OPEN] (<= 4 h, foreground chunks) Terrain assets v2: normals, horizon maps, levels of detail
+Goal: 3D pages get terrain that lights correctly for ANY sun position instantly, plus the geometry the
+Earth-visibility research (plan §10, R-1) needs. Today `site/src/world/scene.js` ray-marches sun visibility on the
+GPU each time the sun moves; a precomputed horizon map replaces that and also answers "is Earth above the local
+horizon here?".
+Files (new): `tools/terrain_assets.py`, `tests/test_terrain_assets.py`. Output folder (LEAD commits):
+`data/terrain/connecting_ridge/v2/`.
+From `data/terrain/connecting_ridge/height_5m.png` (+ `meta.json` for scale and offset):
+1. `normal_20m.png` (RGB8, up = +z) and 5 m normal maps only for two 2 × 2 km patches centred on BASE and PAD_A
+   (coordinates in `sites.json`).
+2. Horizon map: horizon elevation angle (degrees, 0.05° steps, uint16) for 64 azimuth sectors at 20 m posts,
+   ray-marched over the tile. State clearly that terrain outside the 16 km tile is NOT included (R-1 extends it).
+   Pack it the way a three.js texture upload handles best (e.g. 16 RGBA16 PNGs, or one binary file + JSON index)
+   and say why. Validate against the existing sun-visibility shader logic for 4 sun azimuths (report agreement;
+   target > 99 % of posts).
+3. LODs: the existing 20 m grid + the 5 m patches above; `manifest.json` with every file's shape, encoding, size and
+   sha256.
+Budget: ≤ 30 MB on disk. Memory: process in row blocks, report peak RSS; each run under `timeout 540`.
+Tests: synthetic DEMs with analytic answers (flat plane → horizon 0°; a cone → known horizon angle at a known
+distance; a plane slope → known normals).
+Done when: tests pass; the 4-azimuth agreement numbers are in the report; files listed with sizes.
