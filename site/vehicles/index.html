@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vehicles · LunarHaul</title>
+<meta name="description" content="The landers, rovers and base elements of LunarHaul's simulated south-pole base, at true scale: whole, cut open and taken apart, with every number from the vehicle catalogue.">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="<!--@base-->favicon.svg" type="image/svg+xml">
+<script type="module" src="/src/main.js"></script>
+<script type="module" src="/src/vehicles/main.js"></script>
+</head>
+<body class="instrument">
+<!--@header-->
+<main id="main">
+  <div class="wrap">
+    <header class="page-head v-head">
+      <h1>The fleet, at true scale</h1>
+      <p>Every lander, rover and base element in the simulation, built from its catalogue dimensions. Pick one, cut it
+        open or take it apart; every number shown comes from the catalogue with its source.</p>
+    </header>
+    <div class="v-pick">
+      <div id="v-groups"></div>
+      <div id="v-vehicles"></div>
+    </div>
+    <div class="v-stage" id="v-stage">
+      <div class="v-view" id="v-view">
+        <canvas id="v-canvas" tabindex="0" aria-label="3D view of the selected vehicle. Arrow keys orbit, plus and minus zoom, Home resets the view." aria-describedby="v-tree-h"></canvas>
+        <div class="v-labels" id="v-labels"></div>
+        <p class="v-fallback" id="v-fallback" hidden></p>
+        <button class="v-rep" type="button" id="v-rep" hidden>Representative model</button>
+      </div>
+      <div class="v-hud">
+        <div class="v-story" id="v-story"></div>
+        <div class="v-chips ui-chips" id="v-chips"></div>
+        <div class="v-cam ui-glass" role="group" aria-label="Camera">
+          <button class="ui-iconbtn" type="button" data-cam="left" aria-label="Orbit left">&#x2190;</button>
+          <button class="ui-iconbtn" type="button" data-cam="right" aria-label="Orbit right">&#x2192;</button>
+          <button class="ui-iconbtn" type="button" data-cam="in" aria-label="Zoom in">+</button>
+          <button class="ui-iconbtn" type="button" data-cam="out" aria-label="Zoom out">&#x2212;</button>
+          <button class="ui-btn" type="button" data-cam="home">Reset view</button>
+        </div>
+      </div>
+    </div>
+    <div class="ui-glass v-controls">
+      <div id="v-modes" class="v-row"></div>
+      <div class="v-row v-buttons">
+        <button class="ui-btn" type="button" id="v-scale" aria-pressed="false">Scale: astronaut and Apollo rover</button>
+        <button class="ui-btn" type="button" id="v-pause" aria-pressed="false">Pause motion</button>
+      </div>
+    </div>
+    <div class="v-panels">
+      <details class="ui-glass v-tree" open>
+        <summary><h2 id="v-tree-h" class="ui-title">Parts</h2></summary>
+        <ul id="v-tree"></ul>
+      </details>
+      <section class="ui-glass v-props" aria-labelledby="v-props-h">
+        <h2 id="v-props-h" class="ui-title">Properties</h2>
+        <div id="v-props"><p class="muted">Pick a part in the list, in the view or on a callout.</p></div>
+      </section>
+    </div>
+  </div>
+</main>
+<!--@footer-->
+</body>
+</html>

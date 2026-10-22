@@ -26,6 +26,7 @@
 .ui-btn.primary { background: var(--accent); border-color: transparent; color: var(--on-accent); }
 .ui-btn.primary:hover { background: color-mix(in srgb, var(--accent) 85%, var(--ink)); }
 .ui-btn[disabled] { opacity: 0.55; cursor: not-allowed; }
+.ui-btn[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 22%, transparent); border-color: var(--accent); }
 .ui-btn .icon { width: 1em; height: 1em; }
 
 /* ---------- segmented pill control (native radios: arrow keys and radiogroup semantics come with them) ---------- */
@@ -58,6 +59,7 @@
 .ui-chip-value .num .u { font-size: 0.7em; }
 .ui-chip-value .flag { font-family: var(--font-display); font-size: 0.6875rem; vertical-align: 0.2em; }
 .ui-chip[data-tone="warm"] .ui-chip-value .v { color: var(--warm); }
+.ui-chip-value .ui-chip-text { font-family: var(--font-display); font-size: 0.8em; }
 .ui-chip[data-tone="cool"] .ui-chip-value .v { color: var(--accent); }
 
 /* flags upgraded to buttons by upgradeFlags(): same pill, now focusable and tappable */

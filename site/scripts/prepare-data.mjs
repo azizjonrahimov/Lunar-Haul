@@ -2,6 +2,7 @@
 //   terrain/hero/   height_20m.png + meta.json (+ sites.json when present), for the hero and /world
 //   world/          site_graph.json (the DES site graph) and samples/*.json (bundled traces)
 //   detect-gpu/     detect-gpu's benchmark tables, self-hosted so tiering makes no third-party request
+//   catalog/        catalog-v1.json, the vehicle and site catalogue (B-30)
 // Terrain source: data/terrain/connecting_ridge/ (LEAD, B-9); fallback site/.terrain-dev/ (scripts/make_dev_terrain.py).
 import { existsSync, mkdirSync, copyFileSync, readFileSync, readdirSync, cpSync, writeFileSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -95,3 +96,11 @@ const tables = ['table_E15.csv', 'table_E16.csv'].filter(f => existsSync(join(RO
 for (const f of tables) copyFileSync(join(ROOT, 'results', f), join(resOut, 'data', f));
 console.log(`prepare-data: results page: ${pngs.length} figures, tables ${tables.join(', ') || 'none'}`);
 console.log('prepare-data: world samples, site graph and detect-gpu benchmarks staged');
+
+// Phase 4: the vehicle and site catalogue (B-30), the one source of every vehicle number and 3D dimension on screen
+const catalog = join(ROOT, 'lunarsim', 'catalog-v1.json');
+if (existsSync(catalog)) {
+  mkdirSync(join(PUB, 'catalog'), { recursive: true });
+  copyFileSync(catalog, join(PUB, 'catalog', 'catalog-v1.json'));
+  console.log(`prepare-data: catalogue ${JSON.parse(readFileSync(catalog, 'utf8')).entries.length} entries`);
+} else console.warn('prepare-data: lunarsim/catalog-v1.json missing; pages that need the catalogue will say so');

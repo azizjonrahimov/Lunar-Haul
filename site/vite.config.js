@@ -7,8 +7,8 @@ import { pipeline } from './lib/pipeline.mjs';
 
 // Public base: '/' locally; CI sets SITE_BASE from actions/configure-pages (/Lunar-Haul/ on GitHub Pages).
 const base = process.env.SITE_BASE || '/';
-const PAGES = ['', 'world/', 'results/', 'lab/lander/', 'lab/rover/', 'method/', 'paper/', 'data/', 'about/', 'account/', 'changelog/', 'verification/',
-  'design/'];   // design/: development page (noindex, not in the nav)
+const PAGES = ['', 'world/', 'results/', 'lab/lander/', 'lab/rover/', 'method/', 'paper/', 'data/', 'about/', 'account/', 'changelog/', 'verification/', 'vehicles/',
+  'design/', 'design/stage/'];   // development pages (noindex, not in the nav)
 
 // <!--@header-->, <!--@footer-->, <!--@md:name-->, <!--@headline-->, <!--@results-->, <!--@pipeline--> and <!--@r:key--> (also inside markdown), <!--@icon:name-->, <!--@base--> in page HTML
 function lunarsimPages() {

@@ -303,7 +303,7 @@ from the CSS variables, pass/fail per pair) over three backgrounds: black, mid g
 Done when: every contrast pair in use passes AA; a keyboard-only walkthrough works; Lighthouse accessibility 100 on
 /design/; no console errors; existing pages unchanged (spot-check /, /world/, both labs).
 
-## F-31 [IN PROGRESS] (<= 6 h) The shared 3D stage (`site/src/stage/`) and one demo scene with the full pipeline
+## F-31 [DONE, accepted] (<= 6 h) The shared 3D stage (`site/src/stage/`) and one demo scene with the full pipeline
 Goal: plan §5 F-31. Every later 3D page builds on this; M1 is reviewed on the demo scene.
 API sketch (adapt it, report the final one): `createStage({canvas, preset: 'exhibit' | 'onsite', tier, sun: {az, el}})`
 → `{scene, camera, renderer, director, labels, cutaway, explode, setTier, setToneMapping, renderOnce, dispose}`.
@@ -329,7 +329,7 @@ errors; /world/ and the labs unchanged. Stop the dev server and close heavy tabs
 
 # M2 (vehicles and effects): start after F-31 is reported. Read plan §5 F-32/F-33 and research §1.4, §1.7, §2.1–2.2.
 
-## F-32 [OPEN] (after F-31; <= 8 h, may report in two parts a/b) The procedural vehicle kit and the `/vehicles/` exhibit page
+## F-32 [DONE, accepted] (after F-31; <= 8 h, may report in two parts a/b) The procedural vehicle kit and the `/vehicles/` exhibit page
 Goal: the first page in the reference reel's pattern, for our own fleet (plan §5 F-32). Everything at true scale from
 `lunarsim/catalog-v1.json` (your copy in `site/public/catalog/`); no glTF downloads.
 **F-32a the kit** (`site/src/stage/models/` or `site/src/models/`, your call): one generator per catalogue id —

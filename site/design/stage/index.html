@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3D stage · LunarHaul</title>
+<meta name="description" content="Development page: the shared 3D stage of LunarHaul's Phase 4 pages, with a test object, both lighting presets, the tiers and a frame-time readout.">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="<!--@base-->favicon.svg" type="image/svg+xml">
+<script type="module" src="/src/main.js"></script>
+<script type="module" src="/src/design/stage.js"></script>
+</head>
+<body class="instrument">
+<!--@header-->
+<main id="main">
+  <div class="wrap">
+    <header class="page-head s-head">
+      <p class="ui-label">Development page · not in the navigation</p>
+      <h1>The 3D stage</h1>
+      <p>The module every Phase 4 3D page is built on, shown on a test object (not a vehicle): whole, cut open and
+        taken apart, under studio light or the low polar sun, at each quality tier, with the frame time measured live.</p>
+    </header>
+  </div>
+  <div class="wrap">
+    <div class="s-stage" id="s-stage">
+      <div class="s-view" id="s-view">
+        <canvas id="s-canvas" tabindex="0" aria-label="3D view of the test object. Arrow keys orbit, plus and minus zoom, Home resets the view." aria-describedby="s-parts-note"></canvas>
+        <div class="s-labels" id="s-labels"></div>
+        <p class="s-fallback" id="s-fallback" hidden></p>
+      </div>
+      <div class="s-hud">
+        <div class="s-story" id="s-story"></div>
+        <div class="ui-glass s-readout" id="s-readout">
+          <p class="ui-label">Frame time (last 5 s)</p>
+          <dl id="s-perf"></dl>
+        </div>
+        <div class="s-cam ui-glass" role="group" aria-label="Camera">
+          <button class="ui-iconbtn" type="button" data-cam="left" aria-label="Orbit left">&#x2190;</button>
+          <button class="ui-iconbtn" type="button" data-cam="right" aria-label="Orbit right">&#x2192;</button>
+          <button class="ui-iconbtn" type="button" data-cam="up" aria-label="Orbit up">&#x2191;</button>
+          <button class="ui-iconbtn" type="button" data-cam="down" aria-label="Orbit down">&#x2193;</button>
+          <button class="ui-iconbtn" type="button" data-cam="in" aria-label="Zoom in">+</button>
+          <button class="ui-iconbtn" type="button" data-cam="out" aria-label="Zoom out">&#x2212;</button>
+          <button class="ui-btn" type="button" data-cam="home">Reset view</button>
+        </div>
+      </div>
+    </div>
+    <div class="ui-glass s-controls" id="s-controls">
+      <div class="s-row" id="s-row1"></div>
+      <div class="s-row" id="s-row2"></div>
+      <div class="s-row s-buttons">
+        <button class="ui-btn" type="button" id="s-pause" aria-pressed="false">Pause motion</button>
+        <button class="ui-btn" type="button" id="s-turn" aria-pressed="false">Turntable</button>
+        <button class="ui-btn primary" type="button" id="s-measure">Measure 150 frames</button>
+        <button class="ui-btn" type="button" id="s-lose">Simulate context loss</button>
+        <label class="s-check"><input type="checkbox" id="s-adaptive" checked> Adaptive resolution</label>
+        <span class="s-status" id="s-status" role="status"></span>
+      </div>
+    </div>
+  </div>
+
+  <section class="wrap s-sec" aria-labelledby="h-meas">
+    <h2 id="h-meas">Measurements</h2>
+    <p class="prose">Each "Measure 150 frames" run holds the adaptive resolution still, warms the GPU up, then draws 150
+      frames at the current view, one per task, each inside a GPU timer query, and logs the GPU and CPU time per frame
+      (p50 and p95). A real frame overlaps the two, so its cost is about the larger one; the frame budget at 60 Hz is
+      16.7 ms. The live readout above shows the frame interval, which the display's refresh rate caps and which a
+      browser throttles when its window is in the background.</p>
+    <div class="s-tablewrap" tabindex="0" role="region" aria-label="Measurement log">
+      <table class="s-log"><caption class="visually-hidden">Measurement log</caption>
+        <thead><tr><th scope="col">Tier</th><th scope="col">AO</th><th scope="col">Light</th><th scope="col">Tone</th><th scope="col">View</th>
+          <th scope="col" class="n">Frames</th><th scope="col" class="n">GPU p50 ms</th><th scope="col" class="n">GPU p95 ms</th>
+          <th scope="col" class="n">CPU p50 ms</th><th scope="col" class="n">CPU p95 ms</th><th scope="col" class="n">Pixels</th><th scope="col" class="n">Draw calls</th></tr></thead>
+        <tbody id="s-log"><tr><td colspan="12" class="muted">No runs yet.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="wrap s-sec" aria-labelledby="h-parts">
+    <h2 id="h-parts">Parts (text version of the scene)</h2>
+    <p class="prose" id="s-parts-note">The callouts in the view are buttons: Tab to one and press Enter to select that part.</p>
+    <ul class="s-parts" id="s-parts"></ul>
+  </section>
+</main>
+<!--@footer-->
+</body>
+</html>

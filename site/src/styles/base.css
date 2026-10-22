@@ -63,6 +63,7 @@ section + section { margin-top: var(--s-7); }
 .nav a[aria-current="page"] { color: var(--ink); font-weight: 600; }
 .theme-btn { border: 0; background: none; color: var(--ink-2); padding: 0.4em; border-radius: var(--radius); cursor: pointer; min-width: 2.25rem; min-height: 2.25rem; display: inline-flex; align-items: center; justify-content: center; }
 .theme-btn:hover { color: var(--ink); background: var(--bg-2); }
+body.instrument [data-theme-toggle] { display: none; }   /* 3D pages are always dark; the reading-theme switch would change nothing */
 .menu-btn { display: none; }
 .theme-btn .i-light { display: none; }  /* show the moon in light mode, the sun in dark mode */
 :root[data-theme="dark"] .theme-btn .i-light { display: inline; }

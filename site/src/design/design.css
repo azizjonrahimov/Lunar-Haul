@@ -1,5 +1,4 @@
 /* /design/ (development page): stage layout for the instrument specimen, reading-theme grid, type and contrast tables. */
-@import '@fontsource-variable/space-grotesk/wght.css';   /* only for the display-face A/B on this page */
 
 .d-controls { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-5); margin: 0 0 var(--s-4); }
 .d-sec { margin-top: var(--s-7); }

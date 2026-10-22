@@ -1,28 +1,23 @@
-// /design/ (development page, F-30): every Phase 4 UI component in the instrument and the reading theme, the
-// display-face A/B, and a contrast table computed live from the CSS variables over several backdrops.
-// Specimen numbers below come from published specifications (research_notes/LunarHaul 3D interactive design §2.1);
-// MOCK until B-30: the 3D pages will read them from data/catalog/vehicles-v1.json instead.
+// /design/ (development page, F-30): every Phase 4 UI component in the instrument and the reading theme, and a
+// contrast table computed live from the CSS variables over several backdrops. The vehicle numbers come from the
+// catalogue (lunarsim/catalog-v1.json, B-30), like on every 3D page.
 import './design.css';
 import { segmented, statChip, narrative, callouts, sceneChips, timeline, door, counter, tooltip, h } from '../ui/index.js';
 import { num } from '../components/num.js';
 import { rgba, over, ratio, tokens } from '../ui/contrast.js';
+import { loadCatalog } from '../catalog.js';
 
 const $ = id => document.getElementById(id);
 const BASE = import.meta.env.BASE_URL;
-const GUNTER = 'Gunter’s Space Page, Blue Moon (space.skyrocket.de/doc_sdat/blue-moon.htm)';
+const SUN_EL = 1.5;   // degrees: the polar sun elevation (research notes §2.2)
+const cat = await loadCatalog();
+const height = cat.q('MK1', 'dims.height_m', { digits: 2 });
 const SPEC = {
-  height: { value: 8.05, unit: 'm', flag: 'Spec', digits: 2, source: GUNTER },
-  diameter: { value: 3.08, unit: 'm', flag: 'Spec', digits: 2, source: GUNTER },
-  thrust: { value: 40, unit: 'kN', flag: 'Spec', digits: 0, source: `${GUNTER}; BE-7, about 40-44 kN` },
-  shadow: { value: 307, unit: 'm', flag: 'Modelled', digits: 0, source: 'Height / tan(1.5°), the polar sun elevation (research notes §1.7)' },
+  height, diameter: cat.q('MK1', 'dims.diameter_m', { digits: 2 }),
+  thrust: cat.q('MK1', 'gate.t_max_n', { scale: 1e-3, unit: 'kN', digits: 0 }),
+  shadow: { value: height.value / Math.tan(SUN_EL * Math.PI / 180), unit: 'm', flag: 'Modelled', digits: 0,
+    source: `catalogue height ${height.value} m / tan(${SUN_EL}°), the polar sun elevation (research notes §1.7)` },
 };
-
-// ---------- display face A/B ----------
-const FACES = { sora: "'Sora Variable'", grotesk: "'Space Grotesk Variable'" };
-$('d-face').append(segmented({
-  legend: 'Display face (A/B)', options: [{ value: 'sora', label: 'Sora' }, { value: 'grotesk', label: 'Space Grotesk' }],
-  onChange: v => document.documentElement.style.setProperty('--font-display', `${FACES[v]}, var(--font-sans)`),
-}).el);
 
 // ---------- shared specimen content ----------
 const steps = [
@@ -130,12 +125,11 @@ new ResizeObserver(() => { rPills[0].place(rBox.clientWidth * 0.3, rBox.clientHe
 const SAMPLE = 'Cutaway · Follow propellant · Landers';
 const sizes = [12, 13, 14, 16, 20, 28];
 $('d-type').append(
-  h('div', { class: 'd-tablewrap', tabindex: '0', role: 'region', 'aria-label': 'Display face A/B by size' }, h('table', { class: 'd-typetable' },
-    h('caption', { class: 'visually-hidden' }, 'Display face A/B by size'),
-    h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Size'), h('th', { scope: 'col' }, 'Sora'), h('th', { scope: 'col' }, 'Space Grotesk'))),
+  h('div', { class: 'd-tablewrap', tabindex: '0', role: 'region', 'aria-label': 'Sora by size' }, h('table', { class: 'd-typetable' },
+    h('caption', { class: 'visually-hidden' }, 'Sora by size'),
+    h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Size'), h('th', { scope: 'col' }, 'Sora (display)'))),
     h('tbody', {}, sizes.map(px => h('tr', {}, h('th', { scope: 'row' }, `${px} px`),
-      h('td', { style: `font: 600 ${px}px/1.3 'Sora Variable'` }, SAMPLE),
-      h('td', { style: `font: 600 ${px}px/1.3 'Space Grotesk Variable'` }, SAMPLE)))))),
+      h('td', { style: `font: 600 ${px}px/1.3 var(--font-display)` }, SAMPLE)))))),
   h('div', { class: 'd-typenums' },
     h('p', { class: 'ui-label' }, 'JetBrains Mono, tabular figures'),
     h('p', { class: 'd-mono' }, '0123456789 · −71 → +40 · 1,234.5 t · 06:42:10'),

@@ -3,17 +3,25 @@
 // apart, or is instant under prefers-reduced-motion.
 import { h, uid, reducedMotion } from './dom.js';
 
-const MB = b => (b / 1e6).toFixed(1);
+const MB = b => b < 1e6 ? `${Math.max(1, Math.round(b / 1e3))} kB` : `${(b / 1e6).toFixed(1)} MB`;   // size with its unit
 
-// door({title, subtitle, skip: {href, label}, enterLabel, autoEnter, onEnter}) -> {el, fetch(url, {bytes, label}), ready(), fail(msg), open(), reset()}
+// door({title, subtitle, skip: {href, label}, enterLabel, autoEnter, onEnter, beforeOpen}) -> {el, fetch(url, {bytes, label}), ready(), fail(msg), open(), reset()}
+// beforeOpen: async work started by Enter (e.g. building the 3D scene); the door stays shut, says so, then opens
 // bytes: the expected (decoded) size when known, e.g. from a manifest; otherwise Content-Length is used unless the
 // response is content-encoded (then the browser hands over more bytes than the header says and only MB loaded is shown).
-export function door({ title, subtitle = '', skip, enterLabel = 'Enter', autoEnter = false, onEnter = () => {} }) {
+export function door({ title, subtitle = '', skip, enterLabel = 'Enter', autoEnter = false, onEnter = () => {}, beforeOpen = null }) {
   const tid = uid('door');
   const fill = h('i');
   const bar = h('div', { class: 'ui-door-bar', role: 'progressbar', 'aria-labelledby': tid, 'aria-valuemin': '0', 'aria-valuemax': '100' }, fill);
   const status = h('p', { class: 'ui-door-status' });
-  const enter = h('button', { class: 'ui-btn primary', type: 'button', disabled: true, onclick: () => api.open() }, enterLabel);
+  const enter = h('button', { class: 'ui-btn primary', type: 'button', disabled: true, onclick: () => go() }, enterLabel);
+  async function go() {
+    if (beforeOpen) {
+      enter.disabled = true; bar.classList.add('indeterminate'); bar.removeAttribute('aria-valuenow'); status.textContent = 'Starting the 3D view…';
+      try { await beforeOpen(); } catch (e) { return api.fail(`The 3D view could not start (${e.message}).`); }
+    }
+    api.open();
+  }
   const card = h('div', { class: 'ui-door-card ui-glass' },
     h('p', { class: 'ui-label' }, 'Loading'),
     h('h2', { class: 'ui-title ui-door-title', id: tid }, title),
@@ -29,10 +37,10 @@ export function door({ title, subtitle = '', skip, enterLabel = 'Enter', autoEnt
     if (known && total) {
       const p = Math.min(100, (loaded / total) * 100);
       fill.style.width = `${p}%`; bar.classList.remove('indeterminate'); bar.setAttribute('aria-valuenow', Math.round(p));
-      status.textContent = `${label ? label + ' · ' : ''}${MB(loaded)} of ${MB(total)} MB`;
+      status.textContent = `${label ? label + ' · ' : ''}${MB(loaded)} of ${MB(total)}`;
     } else {
       bar.classList.add('indeterminate'); bar.removeAttribute('aria-valuenow');
-      status.textContent = `${label ? label + ' · ' : ''}${MB(loaded)} MB`;
+      status.textContent = `${label ? label + ' · ' : ''}${MB(loaded)}`;
     }
   }
 
@@ -59,8 +67,8 @@ export function door({ title, subtitle = '', skip, enterLabel = 'Enter', autoEnt
     ready() {
       fill.style.width = '100%'; bar.classList.remove('indeterminate'); bar.setAttribute('aria-valuenow', '100');
       enter.disabled = false;
-      status.textContent = `Ready · ${MB([...files.values()].reduce((s, f) => s + f.loaded, 0))} MB loaded`;
-      if (autoEnter) api.open();
+      status.textContent = `Ready · ${MB([...files.values()].reduce((s, f) => s + f.loaded, 0))} loaded`;
+      if (autoEnter) go();
       else if (!document.activeElement || document.activeElement === document.body || el.contains(document.activeElement)) enter.focus({ preventScroll: true });
     },
     fail(msg) { bar.classList.remove('indeterminate'); status.textContent = msg; enter.disabled = true; },
