@@ -290,7 +290,8 @@ def build(trace: Dict[str, Any], out_dir: str, routes_doc=None, traj_doc=None, t
     ci = {c: i for i, c in enumerate(cols)}
     for r in trace["cargo"]:
         if r[ci["t_delivered"]] is not None:
-            deliveries.append([float(r[ci["t_delivered"]]), r[ci["dest"]], float(r[ci["mass_kg"]]), int(r[ci["id"]])])
+            deliveries.append([float(r[ci["t_delivered"]]), r[ci["dest"]], float(r[ci["mass_kg"]]), int(r[ci["id"]]),
+                               int(r[ci["priority"]]), float(r[ci["t_ready"]])])
     deliveries.sort(key=lambda d: (d[0], d[3]))
 
     # ---- chunking -------------------------------------------------------------------------------------------
@@ -351,7 +352,7 @@ def build(trace: Dict[str, Any], out_dir: str, routes_doc=None, traj_doc=None, t
         miss = float(math.hypot(*L["miss_m"])) if L.get("miss_m") is not None else None
         landings.append({"t_h": float(L["t"]), "cls": L["type"], "pad": L["pad"], "miss_m": miss, "ok": L.get("ok"),
                          "failure_kind": L.get("failure_kind"), "cargo_kg": L.get("cargo_kg"),
-                         "trajectory": _nearest_trajectory(traj_doc, L["type"], miss, L.get("ok"))})
+                         "trajectory": _nearest_trajectory(traj_doc, L["type"], miss, L.get("ok"), L.get("failure_kind"))})
     checks = {"delivered_kg_cargo_table": round(sum(d[2] for d in deliveries), 3),
               "delivered_kg_summary": trace["summary"].get("delivered_kg"),
               "trips": sum(1 for j in trace["jobs"] if j.get("kind") != "reposition"),
@@ -372,7 +373,8 @@ def build(trace: Dict[str, Any], out_dir: str, routes_doc=None, traj_doc=None, t
         "landings": landings,
         "keepout_windows": [[float(a), float(b), p, float(r)] for a, b, p, r in trace.get("plume_windows", [])],
         "nights": nights,
-        "deliveries": [[round(d[0], 4), site_ix.get(d[1], -1), d[2]] for d in deliveries],
+        "deliveries": [[round(d[0], 4), site_ix.get(d[1], -1), d[2], d[4], round(d[0] - d[5], 4)] for d in deliveries],
+        "delivery_columns": ["t_h", "site", "mass_kg", "priority", "wait_h"],
         "jobs": [[jid, rec.get("kind", ""), rec["veh"], len(rec.get("team") or [rec["veh"]]), round(rec["t0"], 4),
                   round(rec["t1"], 4), len(rec.get("items", []))] for jid, rec in enumerate(trace["jobs"])],
         "jobs_columns": ["job", "kind", "lead_vehicle", "team_size", "t0", "t1", "items"],
@@ -419,20 +421,32 @@ def _earth_hourly(track, start_h: float, hours: np.ndarray) -> np.ndarray:
     return np.column_stack([el, rad, brg])
 
 
-def _nearest_trajectory(doc, cls: str, miss: Optional[float], ok) -> Optional[Dict[str, Any]]:
-    """The B-33 episode of the classical law for this class whose |miss| is nearest (a failed landing prefers the
-    first-failure episode)."""
-    if not doc or miss is None:
+def _episode_ok(e: Dict[str, Any]) -> bool:
+    out = e.get("outcome") or {}
+    return bool(out["ok"]) if "ok" in out else e["pick"] != "first_failure"
+
+
+def _nearest_trajectory(doc, cls: str, miss: Optional[float], ok, failure_kind: Optional[str] = None
+                        ) -> Optional[Dict[str, Any]]:
+    """The B-33 episode of the classical law for this class that shows this landing: a successful (or unjudged)
+    landing takes the successful pick (p10/p50/p90) whose |miss| is nearest; a failed landing takes a failed episode,
+    one of the same failure kind when there is one, else the nearest failure in |miss|."""
+    if not doc or (miss is None and ok is not False):
         return None
     for p in doc["pilots"]:
         if p["cls"] == cls and p["pilot"] == "classical":
             eps = p["episodes"]
+            near = lambda e: (abs(e["miss_m"] - miss) if miss is not None else 0.0, e["seed"])
             if ok is False:
-                fails = [e for e in eps if e["pick"] == "first_failure"]
+                fails = [e for e in eps if not _episode_ok(e)]
                 if fails:
-                    e = fails[0]
+                    same = [e for e in fails if (e.get("outcome") or {}).get("failure_kind") == failure_kind]
+                    e = min(same or fails, key=near)
                     return {"cls": cls, "pilot": "classical", "pick": e["pick"], "seed": e["seed"], "miss_m": e["miss_m"]}
-            e = min(eps, key=lambda e: (abs(e["miss_m"] - miss), e["seed"]))
+                if miss is None:
+                    return None
+            good = [e for e in eps if _episode_ok(e)] or eps
+            e = min(good, key=near)
             return {"cls": cls, "pilot": "classical", "pick": e["pick"], "seed": e["seed"], "miss_m": e["miss_m"]}
     return None
 

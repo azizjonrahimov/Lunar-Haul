@@ -3274,3 +3274,30 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
   - assert each position (and ideally the whole state) within 1e-6 m of `state`.
 - **How to test:** `.venv\Scripts\python -m pytest tests\test_lander_trajectory_parity.py -q`. Regenerate: `.venv\Scripts\python tests\fixtures\make_lander_trajectory_parity.py`.
 - **Questions for LEAD:** none.
+
+## B-47 DONE 13:55 | Scene packages: landing-episode mapping fix and per-delivery priority / wait
+- **Files:** `lunarsim/scene.py`, `lunarsim/schemas/scene-v1.schema.json`, `tests/test_scene.py` (+3 tests).
+  - **Data for LEAD to commit:** `data/scenes/*/scene.json` for all 12 packages (the binary chunks and routes are byte-identical: only scene.json changed in each folder) and `data/scenes/gallery.json`.
+- **1. Mapping fix:** FRONTEND was right. The classical first-failure episode has the smallest |miss| (0.26 m CLPS), so the nearest-miss rule gave it to good landings: **8 of the 72 landings in the 12 packages pointed at it; now 0.** New rule in `_nearest_trajectory`:
+  - successful (or unjudged) landings choose among the successful picks (p10/p50/p90; success read from each episode's `outcome.ok`, else from the pick name) by |miss|;
+  - failed landings choose a failed episode, of the same `failure_kind` when the file has one, else the nearest failure in |miss|. The current file has one failure per class (first_failure, timeout).
+- **2. Per-delivery priority and wait:**
+  - delivery rows are now `[t_h, site, mass_kg, priority, wait_h]`, with `wait_h` = delivered − ready (4 decimals), plus `"delivery_columns": ["t_h", "site", "mass_kg", "priority", "wait_h"]`;
+  - schema: rows hold 3-5 values and `delivery_columns` is optional, so readers that use the first three keep working;
+  - deterministic; gzip size of the 12 packages 2.11 → 2.13 MB (budget 4 MB).
+  - Urgent (priority 1) deliveries per year: P1 4-5, P2 23, P3 45, P2 direct links only 9.
+- **3. Rebuilt everything:**
+  - all 12 gallery packages, which include the 5 samples P1/P2/P3/P2V2/P2-comms-dte: `gallery.py scenes --force`, one process, 32 s;
+  - every reproduction check holds (trips = summary, delivered kg = cargo table, landings);
+  - `gallery.json` re-indexed (the sizes changed);
+  - `lunarsim.stories check`: 4 stories, 0 problems; the schemas step: 35 files, 0 problems.
+  - **Run-queue path:** `tools/actions/run_issue.py` calls `lunarsim.scene.build`, so it gets both changes. Checked with a terrain-on request (1 seed): its `scene.tar.gz` has the new columns and good landings map to p50/p90.
+- **Tests:** test_scene, test_gallery, test_stories, test_run_issue, test_verification_phase4, test_ci_budgets: 69 passed. The new scene tests cover:
+  - the mapping with outcome fields: a good landing at 0.3 m gets p10, not the failure; unjudged = good; failure kinds matched, else the nearest failure; a lost landing without miss gets the failure;
+  - the delivery columns against the trace's cargo table (priority equal; wait = delivered − ready ≥ 0);
+  - every committed package has the columns and no good landing showing a failure episode.
+- **For FRONTEND:**
+  - `deliveries[i][3]` = priority (1 urgent), `deliveries[i][4]` = wait_h, column names in `delivery_columns`;
+  - "urgent 90 % delivered within, so far" = the 90th percentile of `wait_h` over the rows with priority 1 and t_h ≤ now;
+  - landing `trajectory.pick` is now p10/p50/p90 for good landings.
+- **Questions for LEAD:** none.

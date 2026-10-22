@@ -113,7 +113,7 @@
      "offpad_landings": 0,
      "failed_landings": 0
     },
-    "gz_bytes": 119897,
+    "gz_bytes": 120099,
     "files": 15
    },
    "headline": {
@@ -179,7 +179,7 @@
      "offpad_landings": 0,
      "failed_landings": 1
     },
-    "gz_bytes": 121186,
+    "gz_bytes": 121373,
     "files": 15
    },
    "headline": {
@@ -245,7 +245,7 @@
      "offpad_landings": 0,
      "failed_landings": 0
     },
-    "gz_bytes": 179209,
+    "gz_bytes": 180572,
     "files": 15
    },
    "headline": {
@@ -311,7 +311,7 @@
      "offpad_landings": 0,
      "failed_landings": 0
     },
-    "gz_bytes": 185252,
+    "gz_bytes": 186675,
     "files": 15
    },
    "headline": {
@@ -377,7 +377,7 @@
      "offpad_landings": 0,
      "failed_landings": 0
     },
-    "gz_bytes": 273596,
+    "gz_bytes": 277493,
     "files": 15
    },
    "headline": {
@@ -443,7 +443,7 @@
      "offpad_landings": 0,
      "failed_landings": 0
     },
-    "gz_bytes": 275231,
+    "gz_bytes": 279701,
     "files": 15
    },
    "headline": {
@@ -509,7 +509,7 @@
      "offpad_landings": 0,
      "failed_landings": 0
     },
-    "gz_bytes": 178394,
+    "gz_bytes": 179808,
     "files": 15
    },
    "headline": {
@@ -575,7 +575,7 @@
      "offpad_landings": 0,
      "failed_landings": 1
     },
-    "gz_bytes": 186085,
+    "gz_bytes": 187506,
     "files": 15
    },
    "headline": {
@@ -641,7 +641,7 @@
      "offpad_landings": 0,
      "failed_landings": 1
     },
-    "gz_bytes": 140498,
+    "gz_bytes": 141541,
     "files": 15
    },
    "headline": {
@@ -712,7 +712,7 @@
      "offpad_landings": 0,
      "failed_landings": 0
     },
-    "gz_bytes": 188597,
+    "gz_bytes": 190117,
     "files": 15
    },
    "headline": {
@@ -783,7 +783,7 @@
      "offpad_landings": 0,
      "failed_landings": 1
     },
-    "gz_bytes": 181509,
+    "gz_bytes": 182841,
     "files": 15
    },
    "headline": {
@@ -854,7 +854,7 @@
      "offpad_landings": 0,
      "failed_landings": 0
     },
-    "gz_bytes": 183858,
+    "gz_bytes": 185358,
     "files": 15
    },
    "headline": {
@@ -888,6 +888,6 @@
    "source": "results/gallery_runs.csv, cell p2-small-fleet, seeds 0-19 (experiments/phase4/gallery.py headline)"
   }
  ],
- "total_gz_bytes": 2213312,
+ "total_gz_bytes": 2233084,
  "budget_gz_bytes": 4194304
 }

@@ -583,7 +583,7 @@ initial state and every step's raw action [a0, a1, a2], the sensor readings the 
 full float64 precision (repr), plus the env constants used. A Python test replays it through the env (exact). Tell
 FRONTEND the path (via LEAD) so `site/tests/lander-trajectories.test.mjs` can assert < 1e-6 m.
 
-## B-47 [OPEN] (<= 1.5 h) Scene packages: landing-episode mapping fix and per-delivery priority/wait (F-36 needs)
+## B-47 [DONE 13:55] (<= 1.5 h) Scene packages: landing-episode mapping fix and per-delivery priority/wait (F-36 needs)
 1. Bug found by FRONTEND: `lunarsim/scene.py` `_nearest_trajectory` picks the episode nearest in |miss| among all
    four picks including failures, so successful landings point at the classical law's first_failure episode (a 150 s
    hover). Fix: successful landings choose among the successful picks (p10/p50/p90) by |miss|; failed landings

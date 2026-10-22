@@ -137,3 +137,45 @@ def test_committed_samples():
     c = {k: i for i, k in enumerate(dte["index"]["segment_columns"])}
     states = {dte["index"]["states"][int(s)] for s in dte["segments"][:, c["state"]]}
     assert "waiting_for_earth" in states and dte["index"]["comms"]["mode"] == "dte" and dte["index"]["comms_waits"]
+
+
+def test_trajectory_mapping_uses_outcomes():
+    """B-47: a good landing never shows a failed episode (the classical first failure has the smallest |miss|); a failed
+    landing shows a failure of its own kind when the file has one."""
+    ep = lambda pick, seed, miss, ok, kind=None: {"pick": pick, "seed": seed, "miss_m": miss,
+                                                  "outcome": {"ok": ok, "failure_kind": kind}}
+    doc = {"pilots": [{"cls": "CLPS", "pilot": "classical", "episodes": [
+        ep("p10", 1, 0.8, True), ep("p50", 2, 2.0, True), ep("p90", 3, 4.5, True),
+        ep("first_failure", 4, 0.3, False, "timeout"), ep("failure_velocity", 5, 6.0, False, "velocity")]}]}
+    assert S._nearest_trajectory(doc, "CLPS", 0.3, True)["pick"] == "p10"
+    assert S._nearest_trajectory(doc, "CLPS", 9.0, None)["pick"] == "p90"          # unjudged = treated as good
+    assert S._nearest_trajectory(doc, "CLPS", 0.1, False, "velocity")["pick"] == "failure_velocity"
+    assert S._nearest_trajectory(doc, "CLPS", 5.5, False, "tilt")["pick"] == "failure_velocity"   # nearest failure
+    assert S._nearest_trajectory(doc, "CLPS", None, False, "lost")["pick"] == "first_failure"
+    assert S._nearest_trajectory(doc, "CLPS", None, True) is None
+
+
+@needs
+def test_delivery_priority_and_wait(built):
+    trace, a, _ = built
+    idx = S.read(a)["index"]
+    assert idx["delivery_columns"] == ["t_h", "site", "mass_kg", "priority", "wait_h"]
+    ci = {c: i for i, c in enumerate(trace["cargo_columns"])}
+    rows = sorted((r for r in trace["cargo"] if r[ci["t_delivered"]] is not None),
+                  key=lambda r: (r[ci["t_delivered"]], r[ci["id"]]))
+    assert len(rows) == len(idx["deliveries"])
+    for d, r in zip(idx["deliveries"], rows):
+        assert len(d) == 5 and d[3] == r[ci["priority"]] and d[3] in (1, 2, 3)
+        assert d[4] == pytest.approx(r[ci["t_delivered"]] - r[ci["t_ready"]], abs=1e-4) and d[4] >= -1e-9
+
+
+@needs
+def test_committed_packages_landings_and_deliveries():
+    gal = json.load(open(os.path.join(SCENES, "gallery.json"), encoding="utf-8"))
+    for s in gal["scenes"]:
+        idx = S.read(os.path.join(SCENES, s["package"]))["index"]
+        assert idx.get("delivery_columns") == ["t_h", "site", "mass_kg", "priority", "wait_h"], s["package"]
+        assert all(len(d) == 5 for d in idx["deliveries"])
+        for L in idx["landings"]:
+            if L["trajectory"] is not None and L["ok"] is not False:
+                assert L["trajectory"]["pick"] != "first_failure", (s["package"], L)
