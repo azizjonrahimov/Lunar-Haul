@@ -130,7 +130,7 @@ async function action(btn) {
   try {
     if (act === 'world') {
       const text = await api.trace(id); store.set('lunarsim.worldTrace', text);
-      location.href = `${BASE}world/?from=service&run=${encodeURIComponent(id)}`; return;
+      location.href = `${BASE}world/trace/?from=service&run=${encodeURIComponent(id)}`; return;
     }
     if (act === 'replicate') {
       const r = await api.replicate(id); status(`Replicating as ${r.run_id}…`);

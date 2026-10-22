@@ -3301,3 +3301,44 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
   - "urgent 90 % delivered within, so far" = the 90th percentile of `wait_h` over the rows with priority 1 and t_h ≤ now;
   - landing `trajectory.pick` is now p10/p50/p90 for good landings.
 - **Questions for LEAD:** none.
+
+## F-36 DONE 14:31 (part c; with parts a+b reported at 13:46) | World v2: Follow, Earth-link chip, compare, 2D plan, live urgent wait; budgets; strict lander parity
+- **Files (part c):**
+  - World page: `site/src/world/v2.js` and `v2-scene.js`; new `plan-v2.js` (the 2D plan) and `states.js` (rover state colours, three-free); `site/src/world/v2.css`.
+  - `site/src/stage/labels.js`: `setHidden()`.
+  - `site/tests/lander-trajectories.test.mjs`: the strict B-46 test.
+  - `tools/ci/budgets.json`: the world entries, as you allowed.
+  - Part a+b files are also still uncommitted: `site/world/index.html`, `site/world/trace/`, `site/tests/scene-data.test.mjs`, the fixture, and the account and simulator links.
+- **New on /world/:**
+  - **Follow** (Free / Cargo / Rovers / Landers / Night). The camera stays on the most-loaded rover (else the site with most waiting cargo), a driving rover, the descending lander (else the next landing's pad), or the base at night (Night also jumps to the next night). It moves with camera-controls (instant under reduced motion) and says what it follows in the status line.
+  - **Earth-link chip** ("direct to Earth" / "relay only" / "none") for scenes with comms. Direct when any part of Earth's disc is above the horizon at BASE; otherwise relay only (dte+relay scenes) or none (dte only). The source note says the relay is up about 80 % of hours and that its windows are not in the package.
+  - **Urgent: 90 % delivered within (live)**, from B-47's delivery rows: the numpy-style 90th percentile of `wait_h` over the priority-1 rows delivered so far. At year end it equals each summary's `delay_prio1_p90_h` within 0.004 h (P1 3.09/3.08, P2 5.30/5.30, P3 14.63/14.64, P2V2 6.63/6.62, P2 DTE 22.44/22.43). Packages without the columns fall back to the summary value, labelled "whole year".
+  - **Compare with (same seed)**: a second gallery scene rides along. Its rovers show as pink wireframe boxes on the same terrain and clock, with "B · delivered" and "B · waiting" chips.
+    - Example: P2 direct links only vs P2 at hour 573.6 → 11 t vs 32 t delivered, 22 t vs 2 t waiting, and three A rovers waiting for Earth.
+    - I chose an overlay over a split screen because a second WebGL view would double GPU memory on this laptop. A true split screen can come in F-40 if wanted.
+  - **Tier 0**: the 2D plan of the package itself (`plan-v2.js`) replaces the pointer to the trace viewer. It shows the LOLA hillshade, routes, sites (circles) with waiting counts, active keep-out rings, landers (triangles) and rovers (squares in the 3D ring colours, fanned out round a site when parked), dimmed at night, with a 1 km bar.
+    - The same controls drive it: play, speed, timeline, chips, story, text version, compare. `?view2d=1` forces it for testing.
+  - **Headlight cones** (additive, no lighting cost) on night-capable rovers in the dark while not parked.
+  - **Label decluttering**: vehicle labels only within 2.5 km of the camera or for the followed vehicle. Site labels always show.
+  - The failed-episode workaround is removed, now that B-47 maps good landings to successful episodes.
+  - CLS fix: space reserved for the gallery and scene title. CLS went from 0.103 to 0.079.
+- **Checks:**
+  - **All five samples play a full year** (P1, P2, P3, P2V2, P2 DTE): 8,760 h swept in 48 h steps (184 moments each) in the 3D page, **0 errors**. Year-end chips match the summaries (P2 530.3 t delivered, 545 trips).
+  - **Node tests: 11/11** (`node --test site/tests/*.mjs`).
+    - The scene reader still matches Python's `lunarsim.scene.position` < 1e-6 m at 30 moments per package.
+    - **New strict lander parity** (B-46 fixture, chained from state0 with `step()` and `touchdown()`): asserts < 1e-6 m and a relative state difference < 1e-9. **Measured worst position difference: 0 m** for both episodes (CLPS classical, 353 steps: 344 states bit-identical in all 11 components; CLPS network bc_v3, 342 steps: 256 bit-identical). The rest differ only in the last bits.
+  - **Budgets:**
+    - World v2 data, honest total for the default scene: 4,265.5 kB gz. Before Enter: `scenes/gallery.json`. After Enter: catalogue, trajectories, terrain meta and 20 m heights, v2 manifest, 20 m and 5 m normals, the 5 m BASE heights, the first horizon file, and P2's `scene.json`, `routes.bin` and 13 chunks. Each further 22.5° of sun azimuth adds one ~1.4 MB horizon file as the year plays; that is not counted.
+    - Thresholds from `budgets.py --propose`: js 25 / css 15 / data 5,335 kB.
+    - The old world list moved to a new `world/trace/index.html` entry (2,936 kB measured, threshold 3,675 kB, unchanged).
+    - `budgets.py pages`: **OK**.
+  - **Lighthouse 13.5.0 desktop**, production `/world/`: **performance 90–92, accessibility 100, best practices 100** (LCP 0.6 s, TBT 180–230 ms, CLS 0.079).
+  - **Keyboard:** checked structurally only. Every new control is in the tab order (Follow and Speed radiogroups, compare select, timeline and event buttons, chip flags). Real Tab presses did not reach the page in this browser connection (focus stayed put), so no live walk this time. The components themselves were walked with real keys in F-30 and F-32.
+  - **Reduced motion:** no auto-play; Follow and shots cut instead of gliding.
+  - **390 px** (2D plan in an iframe): no horizontal scroll. The screenshot failed because the window reported a 0×0 viewport.
+  - **Not done:** `?run=<id>` in the browser. My build has no published run, and the page reads `runs/<id>/scene/` with the same reader as the gallery. Please send a published run id (or tell me to stage one) and I will check it.
+  - All my servers are stopped by PID; the browser tab is closed.
+- **From BACKEND:** none.
+- **Questions for LEAD:**
+  1. A published run id for the `?run=` check.
+  2. Compare as an overlay (as built) or a true split screen in F-40?

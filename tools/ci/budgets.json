@@ -99,6 +99,27 @@
    "data_gzip_kb": 670
   },
   "world/index.html": {
+   "js_gzip_kb": 25,
+   "css_gzip_kb": 15,
+   "data": [
+    "scenes/gallery.json",
+    "catalog/catalog-v1.json",
+    "lab/policies/trajectories-v1.json",
+    "terrain/hero/meta.json",
+    "terrain/hero/height_20m.png",
+    "terrain/hero/v2/manifest.json",
+    "terrain/hero/v2/normal_20m.png",
+    "terrain/hero/v2/normal_5m_BASE.png",
+    "terrain/hero/v2/normal_5m_PAD_A.png",
+    "terrain/hero/v2/height_5m_BASE.png",
+    "terrain/hero/v2/horizon_20m_00.png",
+    "scenes/P2/scene.json",
+    "scenes/P2/routes.bin",
+    "scenes/P2/chunk_*.bin"
+   ],
+   "data_gzip_kb": 5335
+  },
+  "world/trace/index.html": {
    "js_gzip_kb": 20,
    "css_gzip_kb": 10,
    "data": [

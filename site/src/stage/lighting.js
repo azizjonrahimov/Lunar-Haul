@@ -95,7 +95,7 @@ export function createLighting(renderer, scene) {
       } else {
         scene.background = new THREE.Color(0, 0, 0);
         const d = dirFromAzEl(sunAzEl.az, sunAzEl.el);
-        setEnv(pmrem.fromScene(lunarEnvScene(d), 0, 0.1, 100).texture);
+        setEnv(pmrem.fromScene(lunarEnvScene(d), 0, 0.1, 100).texture); api.envAz = sunAzEl.az;
         scene.environmentIntensity = 1;
         sun.color.set(0xffffff); sun.intensity = SUN_ONSITE;   // harsh: sunlit hull faces saturate, as in lunar photos; level ground stays dark
         fill.visible = false;
@@ -108,6 +108,15 @@ export function createLighting(renderer, scene) {
       api.fit(bounds);
     },
     setNight(v) { night = !!v; applyNight(); },
+    // move the on-site sun without a full apply(): the bounce-light environment is rebuilt only after a 30° turn
+    // (a year's replay moves the sun every hour)
+    setSun({ az, el = sunAzEl.el }) {
+      if (preset !== 'onsite') return;
+      const turned = Math.abs(((az - (api.envAz ?? az) + 540) % 360) - 180);
+      sunAzEl = { az, el };
+      if (api.envAz === undefined || turned > 30) { setEnv(pmrem.fromScene(lunarEnvScene(dirFromAzEl(az, el)), 0, 0.1, 100).texture); api.envAz = az; }
+      applyNight(); api.fit(bounds);
+    },
     // Aim the sun/key light and fit its shadow camera tightly to the subject (plus its shadow on the ground). On site a
     // page calls this every frame for the focused vehicle; groundY (scene) lets the shadow of a vehicle high above the
     // ground still land inside the shadow camera's depth range.

@@ -4,83 +4,52 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>World · LunarHaul</title>
-<meta name="description" content="Replay a simulated year on real LOLA terrain: landers, rovers, the night, plume keep-out.">
-<meta name="color-scheme" content="light dark">
+<meta name="description" content="One simulated year of a south-pole base in 3D on real LOLA terrain: rovers on their routes, landers coming down with their dust, the lunar night and Earth setting behind the ridge.">
+<meta name="color-scheme" content="dark">
 <link rel="icon" href="<!--@base-->favicon.svg" type="image/svg+xml">
-<script>try { var t = localStorage.getItem('lunarsim.theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <script type="module" src="/src/main.js"></script>
-<script type="module" src="/src/world/main.js"></script>
+<script type="module" src="/src/world/v2.js"></script>
 </head>
-<body class="world">
+<body class="instrument">
 <!--@header-->
 <main id="main"><div class="wrap">
-  <header class="page-head w-pagehead">
-    <h1>A simulated year on real terrain</h1>
-    <p>A replay of one simulated year on real Moon terrain around the base (NASA LOLA elevation data): rovers driving between sites, landers arriving, the lunar night, and cargo waiting at each site. The table beside the view shows the same moment as numbers.</p>
+  <header class="page-head">
+    <h1>A year at the base</h1>
+    <p>One simulated year of the base, replayed in 3D on real Moon terrain (NASA LOLA): rovers driving their planned routes, landers coming down with their dust, cargo stacking up at each site, the lunar night, and Earth bobbing along the horizon. Pick a scene, press Enter, and play the year.</p>
   </header>
 
-  <div class="toolbar w-load" role="group" aria-label="Choose a run">
-    <label class="visually-hidden" for="w-sample">Load a run</label>
-    <select id="w-sample">
-      <option value="" selected>Load a run…</option>
-      <option value="P1">Sample: Phase 1 (small base) · marketplace · year 3</option>
-      <option value="P2">Sample: Phase 2 (medium base) · marketplace · year 3</option>
-      <option value="P3">Sample: Phase 3 (large base) · marketplace · year 3</option>
-      <option value="P2V2">Sample: Phase 2 with 4 rovers on real terrain routes, landing results and plume keep-out zones (full year)</option>
-      <option value="sim">Your last run in the simulator (this browser)</option>
-    </select>
-    <label class="btn" for="w-file">Load trace file…</label>
-    <input id="w-file" type="file" accept="application/json,.json" class="visually-hidden">
-    <span class="muted small" id="w-tier"></span>
-  </div>
-  <p class="status-line" id="w-status" role="status" aria-live="polite">Loading…</p>
-  <p class="w-head" id="w-head"></p>
+  <div class="w2-gallery" id="w2-gallery" aria-label="Scenes"></div>
+  <p class="w2-scene"><strong id="w2-scene-title"></strong> <span id="w2-scene-desc"></span></p>
 
-  <div class="w-grid">
-    <div class="w-viewcol">
-      <div class="w-stage" id="w-stage">
-        <canvas id="w-canvas" class="w-canvas" role="img" aria-label="3D view of the base on LOLA terrain. The table 'State at this moment' gives the same information as text."></canvas>
-        <div id="w-labels" class="w-labels" aria-hidden="true"></div>
-        <canvas id="w-plan" class="w-plan" role="img" aria-label="Plan view of the base: sites, legs, vehicles and waiting cargo. The table 'State at this moment' gives the same information as text."></canvas>
-        <canvas id="w-inset" class="w-inset" aria-hidden="true"></canvas>
-        <span class="w-repr">Representative models · not to scale</span>
-      </div>
-      <div class="w-controls" role="group" aria-label="Playback">
-        <button class="btn primary" type="button" id="w-play" aria-pressed="false"><span class="i-play"><!--@icon:play--></span><span class="i-pause"><!--@icon:pause--></span><span data-label>Play</span></button>
-        <label class="visually-hidden" for="w-scrub">Sim time (hours)</label>
-        <input id="w-scrub" type="range" min="0" max="8760" step="1" value="0">
-        <span class="mono w-clock" id="w-clock">day 0, 00:00</span>
-        <label class="visually-hidden" for="w-speed">Playback speed</label>
-        <select id="w-speed">
-          <option value="1">1 h / s</option><option value="6">6 h / s</option><option value="24" selected>1 day / s</option><option value="72">3 days / s</option><option value="240">10 days / s</option>
-        </select>
-      </div>
-      <div class="w-controls" role="group" aria-label="Camera and display">
-        <button class="btn" type="button" data-preset="overview">Overview</button>
-        <button class="btn" type="button" data-preset="base">Base</button>
-        <button class="btn" type="button" data-preset="pads">Pads</button>
-        <button class="btn" type="button" data-preset="tile">Whole tile</button>
-        <label class="visually-hidden" for="w-follow">Follow a vehicle</label>
-        <select id="w-follow"><option value="">Follow vehicle…</option></select>
-        <label class="chk"><input type="checkbox" id="w-labels-on" checked> labels</label>
-        <label class="chk"><input type="checkbox" id="w-slow" checked> slow down for landings</label>
-        <label class="chk"><input type="checkbox" id="w-view2d"> 2D plan view</label>
-      </div>
-      <div class="w-legend" id="w-legend"></div>
-      <div class="w-notes small muted" id="w-notes"></div>
+  <div class="w2-stage" id="w2-stage">
+    <div class="w2-view" id="w2-view">
+      <canvas id="w2-canvas" tabindex="0" aria-label="3D replay of the year on the terrain round the base. Arrow keys orbit, plus and minus zoom. The text version below the view gives the same moment as words and numbers." aria-describedby="w2-mirror-h"></canvas>
+      <div class="w2-labels" id="w2-labels"></div>
+      <p class="w2-fallback" id="w2-fallback" hidden></p>
     </div>
+    <div class="w2-hud">
+      <div class="w2-left"><div id="w2-story"></div></div>
+      <div class="w2-right" id="w2-chips"></div>
+      <div class="w2-shots" id="w2-shots"></div>
+    </div>
+  </div>
+  <div class="w2-controls ui-glass" id="w2-controls">
+    <div class="w2-row" id="w2-row1"></div>
+    <div class="w2-row w2-time" id="w2-time"></div>
+    <p class="w2-status small" id="w2-status" role="status"></p>
+  </div>
 
-    <aside class="w-rail" aria-labelledby="w-rail-title">
-      <h2 id="w-rail-title">State at this moment</h2>
-      <table class="w-table"><tbody id="w-rail-body"></tbody></table>
-      <h3>Now</h3>
-      <p class="small" id="w-events">—</p>
-      <h3>Cargo waiting by site</h3>
-      <ul class="small w-waiting" id="w-waiting"></ul>
-      <h3>Steps</h3>
-      <ol class="w-steps" id="w-steps"></ol>
-      <p class="small muted">Keyboard: Space plays or pauses; ← and → move one day.</p>
-    </aside>
+  <div class="w2-below">
+    <section aria-labelledby="w2-mirror-h">
+      <h2 id="w2-mirror-h">At this moment (text version)</h2>
+      <dl class="w2-dl" id="w2-mirror"><dt>Status</dt><dd>Press Enter above to load the year.</dd></dl>
+    </section>
+    <section aria-labelledby="w2-head-h">
+      <h2 id="w2-head-h">This scene over 20 seeds</h2>
+      <div class="w2-headline" id="w2-headline"></div>
+      <p class="small muted">The replay is one year (seed 3); the numbers are the mean of 20 years with the same settings, with their 95 % interval. Ring colours under the rovers: cyan driving, green loading, grey parked for the night, amber holding outside a landing keep-out, purple waiting for Earth, red recovering from a fault. Models are representative; icons are drawn larger than scale.</p>
+      <p class="small">Runs from the browser simulator and trace files open in the <a href="<!--@base-->world/trace/">trace viewer</a>, which also has a 2D plan view.</p>
+    </section>
   </div>
 </div></main>
 <!--@footer-->

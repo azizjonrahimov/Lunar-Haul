@@ -4,6 +4,7 @@
 //   detect-gpu/     detect-gpu's benchmark tables, self-hosted so tiering makes no third-party request
 //   catalog/        catalog-v1.json, the vehicle and site catalogue (B-30)
 //   terrain/hero/v2/ the B-34 horizon map, normals and 5 m height patches; comms/ Earth's track (R-1)
+//   scenes/         lunarsim-scene packages (B-31) and gallery.json (B-36), for /world/
 // Terrain source: data/terrain/connecting_ridge/ (LEAD, B-9); fallback site/.terrain-dev/ (scripts/make_dev_terrain.py).
 import { existsSync, mkdirSync, copyFileSync, readFileSync, readdirSync, cpSync, writeFileSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -121,3 +122,10 @@ if (existsSync(join(v2, 'manifest.json'))) {
 // R-1 (B-40): Earth's hourly position seen from BASE (SPICE), for the sky on on-site 3D views; gzip, decoded in the page
 const earth = join(ROOT, 'data', 'comms', 'connecting_ridge', 'earth_track-v1.json.gz');
 if (existsSync(earth)) { mkdirSync(join(PUB, 'comms'), { recursive: true }); copyFileSync(earth, join(PUB, 'comms', 'earth_track-v1.json.gz')); console.log('prepare-data: Earth track staged'); }
+
+// F-36: scene packages (B-31) and the scenario gallery (B-36) for /world/; every package folder under data/scenes/
+const scenes = join(ROOT, 'data', 'scenes');
+if (existsSync(join(scenes, 'gallery.json'))) {
+  cpSync(scenes, join(PUB, 'scenes'), { recursive: true, filter: f => !/\.md$/.test(f) });
+  console.log(`prepare-data: scenes, ${readdirSync(scenes).filter(d => existsSync(join(scenes, d, 'scene.json'))).length} packages + gallery.json`);
+}

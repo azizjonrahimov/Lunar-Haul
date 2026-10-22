@@ -1,0 +1,261 @@
+// /world/ v2 (F-36): one simulated year of the base from a scene package (B-31), chosen from the gallery (B-36) or
+// opened from the run queue (?run=<id>, runs/<id>/scene/). The page side: gallery chips, the loading door, scene
+// shots (Overview, Pads & keep-out, Rover legs, Base, Night), icons or true scale, play and speed, a timeline with
+// landings, nights and Earth set/rise, stat chips, the story card for the current moment and a text mirror. The 3D
+// scene loads on Enter (v2-scene.js); Follow keeps the camera on cargo, a rover, the next lander or the base at night;
+// "Compare with" adds a second scene of the same seed as ghost rovers with its own chips. Without 3D (tier 0) the same
+// controls drive a 2D plan of the package (plan-v2.js). Traces from the browser simulator, the service and trace files
+// open in the trace viewer (/world/trace/).
+import './v2.css';
+import { door, segmented, sceneChips, narrative, statChip, timeline, h, reducedMotion } from '../ui/index.js';
+import { detectTier } from '../stage/tier.js';
+import { loadScene } from './scene-data.js';
+import { loadTrajectories } from '../lander/trajectories.js';
+
+const $ = id => document.getElementById(id);
+const BASE = import.meta.env.BASE_URL;
+const q = new URLSearchParams(location.search);
+// the old entry points (simulator hand-off, service runs, bundled traces, the 2D plan) belong to the trace viewer
+if (q.has('from') || q.has('sample') || q.get('view') === '2d') location.replace(`${BASE}world/trace/${location.search}`);
+
+const fmt = (v, d = 0) => (Number.isFinite(v) ? v.toLocaleString('en-GB', { minimumFractionDigits: d, maximumFractionDigits: d }) : '–');
+const day = t => `day ${Math.floor(t / 24)}, ${String(Math.floor(t % 24)).padStart(2, '0')}:${String(Math.floor((t % 1) * 60)).padStart(2, '0')}`;
+const GROUP_LABEL = { phases: 'Base size and job rule', pads: 'Pad distance', earth: 'Earth link', fleet: 'Fleet' };
+const SPEEDS = [{ value: '1', label: '1 h/s' }, { value: '6', label: '6 h/s' }, { value: '24', label: '1 day/s' }, { value: '72', label: '3 days/s' }, { value: '240', label: '10 days/s' }];
+
+const ui = { scene: q.get('scene') || 'p2-marketplace', run: q.get('run'), speed: 24, shot: 'overview', icons: true, follow: 'none', compare: '' };
+const story = narrative({ label: 'What is happening' });
+$('w2-story').append(story.el);
+story.set({ eyebrow: 'A year at the base', title: 'Rovers, landers, night and Earth', html: '<p>Press Enter to load the terrain and the year (about 4 MB), then play it.</p>' });
+const status = m => { $('w2-status').textContent = m; };
+
+let gallery = null;
+try { gallery = await (await fetch(BASE + 'scenes/gallery.json')).json(); } catch (e) { status(`Could not load the scene gallery (${e.message}).`); }
+const entry = () => gallery?.scenes.find(s => s.id === ui.scene) || gallery?.scenes[0];
+if (gallery && !ui.run) drawGallery();
+headline();
+
+const tierInfo = await detectTier();
+let sc = null, pkg = null, chunks = [], traj = null, tl = null, shotChips = null, chips = {}, pkgB = null, chunksB = [], chipsB = null, linkChip = null, linkText = '', followStart = false;
+let lastSlow = 0, lastStory = '';   // module state is declared before the tier-0 path runs open() at load
+const time = { t: 0, playing: false };
+if (tierInfo.tier === 0 && !tierInfo.forced || q.get('view2d') === '1') {
+  const mod = await import('./plan-v2.js');
+  sc = mod.createPlanScene({ host: $('w2-view'), canvas: $('w2-canvas') });
+  $('w2-shots').hidden = true;
+  status(`No 3D on this device (${tierInfo.gpu}): the 2D plan shows the same year.`);
+  controls(true);
+  await open();
+} else {
+  const gate = door({ title: 'A year at the base', subtitle: 'One simulated year on the real terrain round the base: rovers, landers, the night and Earth.',
+    skip: { href: '#w2-mirror-h', label: 'Skip to the text version' }, enterLabel: 'Enter the 3D world', beforeOpen: () => start(gate) });
+  $('w2-view').append(gate.el); gate.ready();
+}
+
+function drawGallery() {
+  const host = $('w2-gallery'); host.replaceChildren();
+  for (const [g, label] of Object.entries(GROUP_LABEL)) {
+    const scenes = gallery.scenes.filter(s => s.group === g); if (!scenes.length) continue;
+    host.append(sceneChips({ label, scenes: scenes.map(s => ({ value: s.id, label: s.title })), value: scenes.some(s => s.id === ui.scene) ? ui.scene : null,
+      onChange: id => { ui.scene = id; history.replaceState(null, '', `?scene=${id}`); drawGallery(); headline(); if (sc) open(); } }).el);
+  }
+}
+function headline() {
+  const e = entry(), host = $('w2-headline');
+  if (ui.run) { host.replaceChildren(h('p', {}, `Run ${ui.run} from the run queue.`)); return; }
+  if (!e) return;
+  $('w2-scene-title').textContent = e.title; $('w2-scene-desc').textContent = e.description;
+  const m = gallery.metrics.filter(k => e.headline?.[k.key]);
+  host.replaceChildren(...m.map(k => statChip({ label: k.label, value: e.headline[k.key].mean, unit: k.unit, digits: k.digits, flag: k.flag,
+    source: `${gallery.common.seeds} seeds, mean ± ${fmt(e.headline[k.key].ci95, k.digits)} (95 %); ${e.source || 'gallery.json (B-36)'}` }).el));
+}
+
+// ---------- start: the 3D scene, the trajectories, the package ----------
+async function start(gate) {
+  const fetchFn = label => url => gate.fetch(url, { label });
+  const [mod, tj] = await Promise.all([import('./v2-scene.js'), loadTrajectories(BASE + 'lab/policies/trajectories-v1.json', { fetchFn: fetchFn('landing recordings') }).catch(() => null)]);
+  traj = tj;
+  sc = await mod.createWorldScene({ canvas: $('w2-canvas'), labelsHost: $('w2-labels'), tier: Math.max(1, tierInfo.tier), fetchFn: fetchFn('catalogue'),
+    onStatus: s => status(s === 'lost' ? 'The graphics context was lost; it will come back by itself.' : '') });
+  if (import.meta.env.DEV) window.__w2 = { sc, ui, time, get pkg() { return pkg; } };
+  sc.stage.director.bindKeys($('w2-canvas'));
+  sc.stage.director.limits({ minDistance: 20, maxDistance: 22000, maxPolar: 88 });
+  controls();
+  await open(fetchFn('the year'));
+}
+
+async function open(fetchFn = fetch) {
+  setPlaying(false);
+  const base = ui.run ? `${BASE}runs/${encodeURIComponent(ui.run)}/scene/` : `${BASE}scenes/${entry().package}/`;
+  status('Loading the year…');
+  try {
+    pkg = await loadScene(base, { fetchFn });
+    chunks = await Promise.all(pkg.index.chunks.map((_, k) => pkg.chunk(k)));
+  } catch (e) { status(`Could not load ${ui.run ? 'run ' + ui.run : 'the scene'} (${e.message}).`); return; }
+  sc.setPackage(pkg, traj); sc.shots();
+  linkChip?.el.remove(); linkChip = null; linkText = '';
+  if (ui.compare) { compareSelect.fill?.(); await openCompare(); }
+  if (urgentP90(pkg.index, 0) === null) chips.urgent.el.querySelector('.ui-label').textContent = 'Urgent: 90 % within (whole year)';
+  time.t = 0; await sc.go(ui.shot, true);
+  drawTimeline(); update(true); status('');
+  if (!reducedMotion()) setPlaying(true);
+}
+
+// ---------- controls ----------
+function controls(plan = false) {
+  shotChips = sceneChips({ label: 'Scenes', scenes: [{ value: 'overview', label: 'Overview' }, { value: 'pads', label: 'Pads & keep-out' }, { value: 'legs', label: 'Rover legs' }, { value: 'base', label: 'Base' }, { value: 'night', label: 'Night' }],
+    value: ui.shot, onChange: v => { ui.shot = v; if (v === 'night') { const n = pkg.index.nights.find(([a, b]) => b > time.t) || pkg.index.nights[0]; if (n && !(time.t >= n[0] && time.t < n[1])) seek(n[0] + 2); } sc.go(v); } });
+  if (!plan) $('w2-shots').append(shotChips.el);
+  const r1 = $('w2-row1');
+  const play = h('button', { class: 'ui-btn primary', type: 'button', id: 'w2-play', 'aria-pressed': 'false' }, 'Play');
+  play.addEventListener('click', () => setPlaying(!time.playing));
+  r1.append(play, segmented({ legend: 'Speed', options: SPEEDS, value: String(ui.speed), onChange: v => { ui.speed = +v; } }).el,
+    plan ? '' : segmented({ legend: 'Vehicles', options: [{ value: 'icons', label: 'Icons' }, { value: 'true', label: 'True scale' }], value: 'icons', onChange: v => { ui.icons = v === 'icons'; sc.setIcons(ui.icons); update(true); } }).el,
+    plan ? '' : segmented({ legend: 'Follow', options: [{ value: 'none', label: 'Free' }, { value: 'cargo', label: 'Cargo' }, { value: 'rovers', label: 'Rovers' }, { value: 'landers', label: 'Landers' }, { value: 'night', label: 'Night' }],
+      value: ui.follow, onChange: v => { ui.follow = v; sc.clearFollow?.(); followStart = true; if (v === 'night') nextNight(); if (v === 'none') status(''); update(true); } }).el,
+    compareSelect());
+  const host = $('w2-chips');
+  chips = {
+    delivered: statChip({ label: 'Delivered so far', value: 0, unit: 't', digits: 1, flag: 'Modelled', source: 'Sum of the deliveries up to this moment (scene package, B-31)', tone: 'cool' }),
+    waiting: statChip({ label: 'Waiting now', value: 0, unit: 't', digits: 1, flag: 'Modelled', source: 'Cargo waiting at all sites this hour (scene package hourly series)', tone: 'warm' }),
+    trips: statChip({ label: 'Trips done', value: 0, unit: '', digits: 0, flag: 'Modelled', source: 'Jobs finished up to this moment (scene package job list)' }),
+    urgent: statChip({ label: 'Urgent: 90 % delivered within', value: NaN, unit: 'h', digits: 1, flag: 'Modelled', source: '90th percentile of the wait (ready to delivered) of the priority-1 deliveries so far (scene package delivery rows, B-47)', tone: 'warm' }),
+  };
+  host.append(...Object.values(chips).map(c => c.el));
+}
+function nextNight() { const n = pkg.index.nights.find(([, b]) => b > time.t) || pkg.index.nights[0]; if (n && !(time.t >= n[0] && time.t < n[1])) seek(n[0] + 2); }
+function compareSelect() {
+  if (!gallery || ui.run) return '';
+  const sel = h('select', { id: 'w2-compare', class: 'w2-select' }, h('option', { value: '' }, 'nothing'));
+  const fill = () => { sel.replaceChildren(h('option', { value: '' }, 'nothing'), ...gallery.scenes.filter(x => x.id !== ui.scene).map(x => h('option', { value: x.id }, x.title))); sel.value = ui.compare; };
+  fill(); compareSelect.fill = fill;
+  sel.addEventListener('change', () => { ui.compare = sel.value; openCompare(); });
+  return h('label', { class: 'w2-compare' }, h('span', { class: 'ui-label' }, 'Compare with (same seed)'), sel);
+}
+async function openCompare() {
+  chipsB?.forEach(c => c.el.remove()); chipsB = null; pkgB = null; chunksB = []; sc.setCompare?.(null);
+  const e = gallery?.scenes.find(x => x.id === ui.compare);
+  if (!e) { update(true); return; }
+  status(`Loading ${e.title} to compare…`);
+  try { pkgB = await loadScene(`${BASE}scenes/${e.package}/`); chunksB = await Promise.all(pkgB.index.chunks.map((_, k) => pkgB.chunk(k))); }
+  catch (err) { status(`Could not load ${e.title} (${err.message}).`); pkgB = null; return; }
+  if (pkgB.index.seed !== pkg.index.seed) status(`Note: ${e.title} is seed ${pkgB.index.seed}, this scene seed ${pkg.index.seed}.`); else status('');
+  sc.setCompare?.(pkgB);
+  const src = `${e.title}, same seed (scene package)`;
+  chipsB = [statChip({ label: `B · delivered so far`, value: 0, unit: 't', digits: 1, flag: 'Modelled', source: src, tone: 'cool' }),
+    statChip({ label: `B · waiting now`, value: 0, unit: 't', digits: 1, flag: 'Modelled', source: src, tone: 'warm' })];
+  $('w2-chips').append(...chipsB.map(c => c.el));
+  update(true);
+}
+// numpy-style (linear) 90th percentile of the priority-1 waits delivered by time t; null when the package has no columns
+function urgentP90(idx, t) {
+  const cols = idx.delivery_columns || [], pi = cols.indexOf('priority'), wi = cols.indexOf('wait_h');
+  if (pi < 0 || wi < 0) return null;
+  const w = idx.deliveries.filter(d => d[pi] === 1 && d[0] <= t).map(d => d[wi]).sort((a, b) => a - b);
+  if (!w.length) return NaN;
+  const r = 0.9 * (w.length - 1), lo = Math.floor(r);
+  return w[lo] + (w[Math.min(lo + 1, w.length - 1)] - w[lo]) * (r - lo);
+}
+// direct when any part of Earth's disc is above the horizon at BASE; otherwise relay only (if the scene has a relay) or none
+function linkState(idx, hr) {
+  if (!idx.comms) return null;
+  if (hr.earth_el_deg + hr.earth_radius_deg > 0) return 'direct to Earth';
+  return idx.comms.mode.includes('relay') ? 'relay only' : 'none';
+}
+
+function setPlaying(v) {
+  time.playing = v; const b = $('w2-play'); if (!b) return;
+  b.textContent = v ? 'Pause' : 'Play'; b.setAttribute('aria-pressed', String(v));
+  if (v) { if (time.t >= pkg.horizon - 1) time.t = 0; sc.stage.animate(tick); }
+}
+function tick(dt) {
+  if (!time.playing) return false;
+  // slow to 10 sim-seconds per second while a lander descends, so the landing is seen
+  const rate = sc.activeLandings.length ? 10 / 3600 : ui.speed;
+  time.t = Math.min(pkg.horizon - 1e-3, time.t + dt * rate);
+  update();
+  if (time.t >= pkg.horizon - 1e-3) setPlaying(false);
+  return time.playing;
+}
+function seek(t) { time.t = Math.max(0, Math.min(pkg.horizon - 1e-3, t)); update(true); }
+
+// ---------- timeline: landings, nights (bands), Earth set and rise, Earth-link waits ----------
+function drawTimeline() {
+  const idx = pkg.index, ev = idx.landings.map(L => ({ t: L.t_h, kind: 'landing', label: `${L.cls} lands at ${L.pad.replace('_', ' ')}${L.ok ? '' : ' (failed: ' + L.failure_kind + ')'}` }));
+  // Earth set/rise at BASE from the hourly series (upper limb against the geometric horizon)
+  let up = null;
+  for (const ch of chunks) for (let i = 0; i < ch.hRows; i++) {
+    const t = ch.firstHour + i, hr = pkg.hourly(ch, t + 0.5), now = hr.earth_el_deg + hr.earth_radius_deg > 0;
+    if (up !== null && now !== up) ev.push({ t, kind: 'info', label: now ? 'Earth rises' : 'Earth sets' });
+    up = now;
+  }
+  for (const w of idx.comms_waits || []) if (w[4] === 'start') ev.push({ t: w[1], kind: 'strand', label: `Rover ${w[0]} waits for Earth (${w[3]})` });
+  ev.sort((a, b) => a.t - b.t);
+  const el = timeline({ label: 'Time in the year', min: 0, max: pkg.horizon, step: 'any', value: time.t, format: day, events: ev,
+    bands: idx.nights.map(([a, b]) => ({ from: a, to: b })), bandLabel: 'Lunar night', onInput: v => { setPlaying(false); seek(v); } });
+  if (tl) tl.el.replaceWith(el.el); else $('w2-time').append(el.el);
+  tl = el; ui.events = ev;
+}
+
+// ---------- the moment ----------
+function update(force = false) {
+  if (!sc || !pkg) return;
+  const t = time.t, k = pkg.chunkIndex(t), ch = chunks[k];
+  sc.setTime(t, ch, pkgB ? chunksB[pkgB.chunkIndex(t)] : null);
+  const now = performance.now();
+  if (!force && now - lastSlow < 250) return;
+  lastSlow = now;
+  const idx = pkg.index, hr = pkg.hourly(ch, t);
+  const delivered = idx.deliveries.reduce((s, d) => s + (d[0] <= t ? d[2] : 0), 0) / 1000;
+  const waiting = Object.values(hr.waiting).reduce((s, w) => s + w.kg, 0) / 1000;
+  const trips = idx.jobs.reduce((s, j) => s + (j[1] !== 'reposition' && j[5] <= t ? 1 : 0), 0);
+  chips.delivered.set(delivered); chips.waiting.set(waiting); chips.trips.set(trips);
+  const u = urgentP90(idx, t); chips.urgent.set(u === null ? idx.summary?.delay_prio1_p90_h : u);
+  const link = linkState(idx, hr);
+  if (link !== null && link !== linkText) {
+    linkText = link; linkChip?.el.remove();
+    linkChip = statChip({ label: 'Earth link now', text: link, flag: 'Modelled', source: `Earth's hourly elevation at BASE (terrain horizon not applied here); link mode ${idx.comms.mode}${idx.comms.mode.includes('relay') ? ', relay up about 80 % of hours (its windows are not in the package)' : ''} (scene package, R-1)` });
+    $('w2-chips').insertBefore(linkChip.el, chips.urgent.el.nextSibling);
+  }
+  if (pkgB && chipsB) {
+    const chB = chunksB[pkgB.chunkIndex(t)], hb = pkgB.hourly(chB, t);
+    chipsB[0].set(pkgB.index.deliveries.reduce((a, d) => a + (d[0] <= t ? d[2] : 0), 0) / 1000);
+    chipsB[1].set(Object.values(hb.waiting).reduce((a, w) => a + w.kg, 0) / 1000);
+  }
+  if (ui.follow !== 'none' && sc.followTarget) {
+    const f = sc.followTarget(ui.follow, t, hr), c = sc.stage.director.controls;
+    if (f) {
+      c.moveTo(f.pos.x, f.pos.y, f.pos.z, !reducedMotion());
+      if (followStart) { c.dollyTo(f.dist, !reducedMotion()); followStart = false; }
+      status(`Following ${f.what}.`);
+    }
+  }
+  if (tl && time.playing) tl.set(t);
+  narrate(t, hr);
+  mirror(t, hr, delivered, waiting, trips);
+}
+
+function narrate(t, hr) {
+  const idx = pkg.index, act = sc.activeLandings[0], vs = sc.vehicles, count = st => vs.filter(v => v.state === st).length;
+  let s;
+  const last = idx.landings.filter(L => L.t_h <= t && t - L.t_h < 6).pop();
+  if (act) s = { eyebrow: 'Landing', title: `A ${act.cls}-class lander comes down at ${act.pad.replace('_', ' ')}`, html: `<p>It carries ${fmt(act.cargo_kg)} kg. Rovers stay outside the ${fmt(1)} km keep-out ring until the dust settles; the descent replays the recorded ${act.trajectory?.pilot || 'classical'} landing nearest this one (${fmt(act.miss_m, 1)} m from the pad centre).</p>` };
+  else if (last) s = { eyebrow: 'Landed', title: last.ok ? `Down at ${last.pad.replace('_', ' ')}, ${fmt(last.miss_m, 1)} m from the centre` : `A failed landing at ${last.pad.replace('_', ' ')}`, html: `<p>${last.ok ? 'Its cargo now waits on the pad for a rover.' : `It failed (${last.failure_kind}); its cargo is lost.`}</p>` };
+  else if (hr.night > 0.5) s = { eyebrow: 'Lunar night', title: `${count('parked_night')} of ${vs.length} rovers parked`, html: '<p>The sun is below the horizon for days. Rovers without night power park; those with headlights and batteries keep working.</p>' };
+  else if (count('waiting_for_earth')) s = { eyebrow: 'No Earth link', title: `${count('waiting_for_earth')} rover${count('waiting_for_earth') > 1 ? 's' : ''} waiting for Earth`, html: '<p>Supervised rovers need a link to Earth to drive. Earth is below the ridge line now, so they hold until it rises.</p>' };
+  else if (count('standdown')) s = { eyebrow: 'Keep-out', title: 'Holding outside the landing zone', html: '<p>A lander is due; rovers keep out of the plume ring until the stand-down ends.</p>' };
+  else s = { eyebrow: day(t), title: `${count('driving') + count('team_lift')} driving, ${count('loading')} loading`, html: '<p>Rovers carry cargo between the pads, the depot and the base along their planned routes. Cargo waiting at each site stacks up as pallets.</p>' };
+  const key = s.eyebrow + s.title; if (key === lastStory) return; lastStory = key; story.set(s);
+}
+
+function mirror(t, hr, delivered, waiting, trips) {
+  const idx = pkg.index, rows = [
+    ['Scene', ui.run ? `run ${ui.run}` : `${entry().title} (seed ${idx.seed})`], ['Time', day(t)],
+    ['Sun', hr.night > 0.5 ? 'below the horizon (night)' : `azimuth ${fmt(hr.sun_az_deg)}°, 1.5° up`],
+    ['Earth seen from BASE', `${fmt(hr.earth_el_deg, 1)}° up, bearing ${fmt(hr.earth_bearing_deg, 1)}°${hr.earth_el_deg + hr.earth_radius_deg > 0 ? '' : ' (below the horizon)'}`],
+    ['Delivered so far', `${fmt(delivered, 1)} t`], ['Waiting now', `${fmt(waiting, 1)} t`], ['Trips done', fmt(trips)],
+    ...sc.vehicles.map(v => [`${v.cls} ${v.id} (${v.owner})`, `${(sc.STATE_STYLE[v.state] || [0, v.state])[1]}${v.load > 0 ? `, carrying ${fmt(v.load)} kg` : ''}`]),
+    ...Object.entries(hr.waiting).filter(([, w]) => w.items > 0).map(([s, w]) => [`Waiting at ${s.replace('_', ' ')}`, `${fmt(w.items)} items, ${fmt(w.kg)} kg`]),
+  ];
+  $('w2-mirror').replaceChildren(...rows.flatMap(([a, b]) => [h('dt', {}, a), h('dd', {}, b)]));
+}

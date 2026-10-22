@@ -229,7 +229,7 @@ $('openWorld').addEventListener('click', () => {
   if (!replay.tr) return;
   try { localStorage.setItem('lunarsim.worldTrace', JSON.stringify(traceToJson(replay.tr))); }
   catch (e) { $('rstatus').textContent = 'This browser would not store the trace (storage full or blocked); use "Export this trace" and load the file in the 3D world instead.'; return; }
-  location.href = new URL('../world/?from=simulator', location.href).href;
+  location.href = new URL('../world/trace/?from=simulator', location.href).href;
 });
 $('exportTrace').addEventListener('click', () => { if (!replay.tr) return; const m = replay.tr.meta || {}; const name = ['lunarsim-trace', m.scenario, m.mechanism, m.seed === null || m.seed === undefined ? null : 'seed' + m.seed].filter(x => x !== null && x !== undefined && x !== '').join('_').replace(/[^\w.-]+/g, '-') + '.json'; download(name, JSON.stringify(traceToJson(replay.tr)), 'application/json'); $('rstatus').textContent = `Exported ${name}.`; });
 $('tslider').addEventListener('input', e => { replay.t = +e.target.value; drawMap(); });

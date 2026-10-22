@@ -395,7 +395,7 @@ shaping, linking to the existing reward-rules section. JS parity: replay one exp
 node test for B-38's CI hook). Done when: every pilot × class in the file plays; parity test passes; tiers;
 reduced motion; Lighthouse ≥ 85 performance desktop; no console errors.
 
-## F-36 [IN PROGRESS] (after F-34; <= 8 h, may report in parts) World v2: the flagship (plan §5 F-36)
+## F-36 [REVIEW] (after F-34; <= 8 h, may report in parts) World v2: the flagship (plan §5 F-36)
 `/world/` on the shared stage, instrument theme, reading the B-31 scene packages (write the JS reader
 `site/src/world/scene-data.js`; the five samples in `data/scenes/` and the run-queue path `runs/<id>/scene/`):
 loading door → fly-in; scene chips Overview · Pads & keep-out · Rover legs · Base · Night; true-scale / icon toggle;

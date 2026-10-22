@@ -2,8 +2,8 @@
 // The browser env cannot redraw numpy's random starts and sensor noise from a seed, so each 0.2 s guidance step is
 // replayed through site/src/lander/physics.js from the recorded state, throttle and thrust direction, and the
 // predicted position is compared with pos_m. The file rounds velocities to 1e-4 m/s, which alone allows
-// 0.2 s x 5e-5 m/s = 1e-5 m per step; with position, direction and throttle rounding the bound is 2.5e-5 m. A 1e-6 m
-// check needs the actions at full precision (requested from BACKEND; see the F-34 report).
+// 0.2 s x 5e-5 m/s = 1e-5 m per step; with position, direction and throttle rounding the bound is 2.5e-5 m. The strict
+// check (1e-6 m, chained from state0) runs on the full-precision fixture of B-46 in the last test.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
@@ -54,4 +54,32 @@ test('scores, outcomes and the lab view agree with the file', { skip: !doc && 't
   const clps = pilotsFor(doc, 'CLPS').map(p => p.kind);
   assert.deepEqual(clps, ['network', 'classical', 'memoryless', 'ppo', 'hover']);
   assert.deepEqual(pilotsFor(doc, 'MK1').map(p => p.kind), ['classical', 'memoryless']);
+});
+
+// B-46: the full-precision fixture (floats as Python repr, so JSON.parse gives the same float64). Starting from state0,
+// physics.step() per recorded raw action (and touchdown() on the flagged step) must reproduce every recorded state;
+// chained on the JS states themselves, so any drift between the ports would accumulate and show.
+const FIX = fileURLToPath(new URL('../../tests/fixtures/lander_trajectory_parity.json', import.meta.url));
+const fx = existsSync(FIX) ? JSON.parse(readFileSync(FIX, 'utf8')) : null;
+
+test('full-precision replay from state0 reproduces every state within 1e-6 (B-46 fixture)', { skip: !fx && 'lander_trajectory_parity.json missing' }, () => {
+  assert.deepEqual(fx.state_layout, ['x', 'y', 'z', 'vx', 'vy', 'vz', 'm', 'tx', 'ty', 'wx', 'wy']);
+  for (const ep of fx.episodes) {
+    const cls = CLASSES[ep.cls];
+    let s = Float64Array.from(ep.state0), worstPos = 0, worstAny = 0;
+    for (const st of ep.steps) {
+      const [n] = P.step(s, st.action, cls, ep.dt, ep.thrust_scale, ep.isp_scale, ep.m_dry);
+      const next = st.touchdown ? P.touchdown(s, n) : n;
+      for (let j = 0; j < 11; j++) {
+        const d = Math.abs(next[j] - st.state[j]);
+        if (j < 3) worstPos = Math.max(worstPos, d);
+        worstAny = Math.max(worstAny, d / Math.max(1, Math.abs(st.state[j])));
+      }
+      s = next;
+    }
+    assert.equal(ep.steps.length, ep.n_steps);
+    assert.ok(ep.steps.at(-1).touchdown || ep.outcome.failure_kind, `${ep.pilot}: the last step is the touchdown`);
+    assert.ok(worstPos < 1e-6, `${ep.cls} ${ep.pilot} ${ep.pick}: worst position difference ${worstPos.toExponential(2)} m`);
+    assert.ok(worstAny < 1e-9, `${ep.cls} ${ep.pilot} ${ep.pick}: worst relative state difference ${worstAny.toExponential(2)}`);
+  }
 });

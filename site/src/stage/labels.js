@@ -18,10 +18,12 @@ export function createLabels(host, camera, { occluders = () => [], isClipped = (
     // add({id, text, object, anchor: Vector3 in the object's space, onSelect, tone})
     add({ id, text, object, anchor = new THREE.Vector3(), onSelect, tone }) {
       const c = layer.add({ id, text, onSelect, tone });
-      const it = { id, object, anchor: anchor.clone(), c, occluded: false };
+      const it = { id, object, anchor: anchor.clone(), c, occluded: false, hidden: false };
       items.push(it); return c;
     },
     setPressed(id) { for (const it of items) it.c.setPressed(it.id === id); },
+    // hide one label whatever its visibility (decluttering: e.g. vehicle labels in far views)
+    setHidden(id, v) { const it = items.find(x => x.id === id); if (it) it.hidden = v; },
     show(v) { enabled = v; for (const it of items) it.c.show(v); },
     // force: run the occlusion test now (the stage does this when motion stops, so no stale state is left)
     update(width, height, force = false) {
@@ -39,7 +41,7 @@ export function createLabels(host, camera, { occluders = () => [], isClipped = (
           ray.set(camera.position, dir); ray.far = dist - 0.02;
           it.occluded = ray.intersectObjects(targets, false).some(hit => !isClipped(hit.point) && !hit.object.userData.cutHelper && !within(hit.object, it.object));
         }
-        const visible = !behind && !off && !it.occluded;
+        const visible = !it.hidden && !behind && !off && !it.occluded;
         it.c.show(visible);
         if (visible) it.c.place((v.x * 0.5 + 0.5) * width, (-v.y * 0.5 + 0.5) * height);
       }

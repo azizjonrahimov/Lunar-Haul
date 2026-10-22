@@ -158,7 +158,7 @@ function grid(nx, ny, posAt, skirt) {
 
 /* createLunarTerrain({base: BASE + 'terrain/hero/', renderer, site, tier}) -> {group, origin, heightAt(x, z), setSun(az, el),
    setScour(o), profileAt(x, z, eyeM), material, dispose}. Throws when the v2 assets are missing (pages fall back). */
-export async function createLunarTerrain({ base, renderer, site = 'PAD_A', tier = 2, onAssets = () => {} }) {
+export async function createLunarTerrain({ base, renderer, site = 'PAD_A', tier = 2, farStride = 0, onAssets = () => {} }) {
   const [tile, v2] = await Promise.all([loadTerrain(base), loadTerrainV2(base + 'v2/')]);
   const patch = v2.patches.find(p => p.site === site);
   if (!patch || !patch.height) throw new Error(`terrain v2: no 5 m patch for ${site}`);
@@ -196,7 +196,7 @@ export async function createLunarTerrain({ base, renderer, site = 'PAD_A', tier 
     const x = x0 + (i * ps + 0.5) * post, y = y1 - (j * ps + 0.5) * post;
     pos[k] = x - cx; pos[k + 1] = height5(x, y) - z0; pos[k + 2] = cy - y;
   }, 30);
-  const fs = tier >= 2 ? 4 : 8, nf = Math.floor(tile.cols / fs), fpost = tile.postM * fs;
+  const fs = farStride || (tier >= 2 ? 4 : 8), nf = Math.floor(tile.cols / fs), fpost = tile.postM * fs;
   const farGeo = grid(nf, nf, (i, j, pos, k) => {
     const x = (i + 0.5) * fpost, y = H - (j + 0.5) * fpost;
     pos[k] = x - cx; pos[k + 1] = tile.height(x, y) - z0 - (inPatch(x, y) ? 40 : 0); pos[k + 2] = cy - y;
@@ -270,6 +270,16 @@ export async function createLunarTerrain({ base, renderer, site = 'PAD_A', tier 
     triangles: (patchGeo.index.count + farGeo.index.count) / 3,
     // ground height (scene y) at scene x, z
     heightAt: (x, z) => heightLocal(x + cx, cy - z) - z0,
+    // height of the drawn surface (the coarse tile mesh outside the patch), so things placed on it neither float nor sink
+    surfaceAt(x, z) {
+      const lx = x + cx, ly = cy - z;
+      if (inPatch(lx, ly)) return height5(lx, ly) - z0;
+      const fc = lx / fpost - 0.5, fr = (H - ly) / fpost - 0.5, c0 = Math.max(0, Math.min(nf - 2, Math.floor(fc))), r0 = Math.max(0, Math.min(nf - 2, Math.floor(fr)));
+      const tx = Math.max(0, Math.min(1, fc - c0)), ty = Math.max(0, Math.min(1, fr - r0)), hp = (c, r) => tile.height((c + 0.5) * fpost, H - (r + 0.5) * fpost);
+      return (hp(c0, r0) * (1 - tx) + hp(c0 + 1, r0) * tx) * (1 - ty) + (hp(c0, r0 + 1) * (1 - tx) + hp(c0 + 1, r0 + 1) * tx) * ty - z0;
+    },
+    // scene point of a terrain-pack point (x east, y north, z height)
+    toScene: (x, y, z) => [x - cx, z - z0, cy - y],
     setSun,
     // the landing's scour mark: centre (scene x, z), inner and outer radius (m), amount 0..1, pattern seed
     setScour({ x = 0, z = 0, rIn = 5, rOut = 50, amount = 0, seed = 1 } = {}) {
