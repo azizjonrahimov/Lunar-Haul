@@ -358,7 +358,7 @@ Cutaway shows solid caps; Exploded separates parts cleanly; tier 1 holds ≥ 30 
 this laptop at the default view (report numbers); keyboard and reduced motion work; Lighthouse accessibility
 ≥ 95 and performance ≥ 85 (desktop); no console errors; 390 px layout works.
 
-## F-33 [OPEN] (after F-32; <= 6 h) Lunar light and effects; /world/ terrain on the horizon map
+## F-33 [IN PROGRESS] (after F-32; <= 6 h) Lunar light and effects; /world/ terrain on the horizon map
 Goal: plan §5 F-33 and the B-34 finding (the horizon map is more accurate than today's shader off-axis).
 1. **/world/ terrain lighting from `data/terrain/connecting_ridge/v2/`** (copy via `prepare-data.mjs`): sample the
    16 RGBA16 horizon textures (manifest for encoding; frame note: normal (nx, ny, nz) → scene (nx, nz, −ny)) so the
@@ -376,3 +376,49 @@ Goal: plan §5 F-33 and the B-34 finding (the horizon map is more accurate than 
 Done when: a /design/stage/ "effects" scene shows each effect with the tier switch and frame times; /world/ uses
 the horizon map (side-by-side screenshots old vs new at sun azimuth 30°, where the old shader is weakest);
 determinism: the same seed gives the same dust frames; reduced motion pauses particles; no console errors.
+
+# M3/M4 frontend (queued 22 Oct 12:35). Order: F-34, F-36, F-35, F-37. Data now committed: trajectories-v1 (B-33),
+# routes-v1 (B-32), scene packages + earth_track (B-31), earth_link (B-40).
+
+## F-34 [OPEN] (after F-33; <= 6 h) Lander lab in 3D: "The last 500 metres"
+Plan §5 F-34. Upgrade `/lab/lander/` to an instrument page on the shared stage (on-site preset), keeping the 2D side
+view as tier 0 and as the accessible mirror. Replay `data/policies/trajectories-v1.json` episodes at true scale over
+the terrain at PAD_A (5 m patch from B-34): the catalogue lander model, attitude from the quaternion, the F-33
+engine glow and dust sheet (onset per the file), touchdown box drawn in 3D, the 500-landing scatter from the
+outcomes tables on the pad. Controls: Pilot [Network | Classical | Memoryless | PPO | Hover hack] (only what exists
+per class), Lander [Small | Medium | Large], View [Chase | Side | Pad camera], Show [Guidance | Thrust | Sensors]
+(velocity-field arrows, thrust vector, altimeter beam with dropouts), phase chips Approach / Hover / Touchdown, the
+big SCORE counter driven by the per-step reward terms (red/green with sign; the hover-hack episode shows the clock
+running out), and a chalkboard card (KaTeX rendered at build time: thrust, gravity, the reward sum) for reward
+shaping, linking to the existing reward-rules section. JS parity: replay one exported episode through
+`site/src/lander/env.js` from its seed and compare positions with `pos_m` (< 1e-6 m; add as a `site/tests/*.mjs`
+node test for B-38's CI hook). Done when: every pilot × class in the file plays; parity test passes; tiers;
+reduced motion; Lighthouse ≥ 85 performance desktop; no console errors.
+
+## F-36 [OPEN] (after F-34; <= 8 h, may report in parts) World v2: the flagship (plan §5 F-36)
+`/world/` on the shared stage, instrument theme, reading the B-31 scene packages (write the JS reader
+`site/src/world/scene-data.js`; the five samples in `data/scenes/` and the run-queue path `runs/<id>/scene/`):
+loading door → fly-in; scene chips Overview · Pads & keep-out · Rover legs · Base · Night; true-scale / icon toggle;
+rovers on their routes (f-interpolation per the schema) with states shown (parked at night, stand-down,
+"waiting for Earth" from the comms sample); landers descending along the nearest B-33 trajectory with glow, dust
+and keep-out rings; pallets stacking at sites from the hourly waiting series; Earth at its real elevation from the
+hourly series, hidden by the horizon map, with a "comms" chip (direct / relay only / none) when the sample has
+comms; timeline with event ticks (landings, nightfall, strandings, Earth set/rise); stat chips (delivered, waiting,
+trips, urgent 90 % wait so far); a narrative card for the current event; Follow [Cargo | Rovers | Landers | Night];
+a split view comparing two samples on the same seed (e.g. P2 always vs P2 DTE-only). Keep the 2D plan view as
+tier 0. Done when: all five samples play a full year; `?run=<id>` loads a run-queue scene; position checks against
+the Python reader (`lunarsim.scene.position`) at 20 random times (node test); tiers, reduced motion, keyboard,
+Lighthouse ≥ 85 desktop.
+
+## F-35 [OPEN] (after F-36; <= 5 h) Rover lab in 3D (plan §5 F-35)
+`/lab/rover/` on the stage: drive the chosen leg on the terrain along the B-32 route for the chosen lighting, chase
+and cockpit cameras, a "ghost" rover where your delayed command will take effect, the low-sun glare cone and long
+shadows, slip indicator, interventions as 3D markers with callouts, expert vs neural-network race on the same leg,
+Earth visibility along the route (from earth_link samples: where on the leg a teleoperated rover would lose the
+link). 2D plan view stays as tier 0 and mirror.
+
+## F-37 [OPEN] (after F-35; <= 5 h) Simulator v3 on the design system (plan §5 F-37)
+The `/simulator/` page rebuilt on the site's design system (glass panels, segmented controls, the plain labels of
+22 Oct kept word for word unless clearer), engine files `web/sim.js` and `web/worker.js` untouched; results as stat
+chips and Observable Plot charts; Compare as four answer-style cards (one per job rule, the SpaceX-reel pattern);
+"Watch this year in 3D" opens /world/ with the run; the v2 page stays reachable at `/simulator/v2/` for one release.
