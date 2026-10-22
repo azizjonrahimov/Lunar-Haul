@@ -8,6 +8,7 @@
     python tools/comms/earth_link.py link                  # link states, windows -> earth_link-v1.json
     python tools/comms/earth_link.py horizons              # cross-check one month at BASE against JPL Horizons
     python tools/comms/earth_link.py avgvisib              # compare with the PDS average Earth-visibility map
+    python tools/comms/earth_link.py track                 # hourly Earth track at BASE -> earth_track-v1.json.gz
 
 Intermediate files (kernels, DEM window, routes, masks; ~100 MB) live in ``.cache/comms/`` (git-ignored); the
 output ``data/comms/connecting_ridge/earth_link-v1.json`` (format: lunarsim/comms.py) is < 1 MB.
@@ -805,6 +806,33 @@ def step_avgvisib(log=print) -> Dict:
     return res
 
 
+TRACK_OUT = os.path.join(ROOT, "data", "comms", "connecting_ridge", "earth_track-v1.json.gz")
+
+
+def step_track(out: str = TRACK_OUT, log=print) -> Dict:
+    """Hourly Earth elevation, apparent radius and grid bearing at BASE (ground level), 2028-2031, for the 3D world
+    (the Earth disc, scene packages). Integers in centidegrees; deterministic gzip."""
+    import gzip
+    e = np.load(ephem_path())
+    E, P_base = e["E_base_km"], e["P_base_km"]
+    lat, lon = (float(v) for v in e["base_latlon"])
+    k = 60 // STEP_MIN
+    _, el, brg, rad = earth_topo(E[::k], P_base, P_base, lat, lon)
+    cd = lambda a: np.rint(np.asarray(a) * 100.0).astype(int).tolist()
+    doc = {"format": "lunarsim-earth-track", "version": 1, "site": "BASE", "lat_deg": round(lat, 5), "lon_deg": round(lon, 4),
+           "time": {"start_utc": START_UTC, "step_h": 1, "n": int(len(el))},
+           "units": "centidegrees (value / 100 = degrees)",
+           "elevation_cdeg": cd(el), "radius_cdeg": cd(rad), "grid_bearing_cdeg": cd(brg),
+           "note": "Earth's centre seen from BASE at ground level (no antenna height, no terrain): elevation above the "
+                   "local horizontal, apparent radius, grid bearing (0 = +y, 90 = +x); SPICE, MOON_ME, LT+S "
+                   "(tools/comms/earth_link.py ephem)",
+           "kernels": json.load(open(os.path.join(CACHE, "ephem.json")))["kernels"]}
+    with open(out, "wb") as f:
+        f.write(gzip.compress(json.dumps(doc, separators=(",", ":")).encode("utf-8"), 9, mtime=0))
+    log(f"track: {len(el)} hours -> {_rel(out)} ({os.path.getsize(out) / 1024:.0f} KB)")
+    return doc
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     ap = argparse.ArgumentParser(prog="python tools/comms/earth_link.py", description=__doc__.split("\n\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -820,6 +848,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument("--out", default=OUT)
     sub.add_parser("horizons")
     sub.add_parser("avgvisib")
+    sub.add_parser("track")
     for sp_ in sub.choices.values():
         sp_.add_argument("--max-seconds", type=float, default=540.0,
                          help="stop this process after so many seconds (Windows: `timeout` only kills the venv launcher)")
@@ -844,6 +873,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         step_horizons()
     elif a.cmd == "avgvisib":
         step_avgvisib()
+    elif a.cmd == "track":
+        step_track()
     rss = peak_rss_mb()
     if rss:
         print(f"peak RSS {rss:.0f} MB")

@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://azizjonrahimov.github.io/Lunar-Haul/schemas/scene-v1.schema.json",
+  "title": "lunarsim-scene v1 (scene.json, the package index)",
+  "description": "A 3D replay of one simulated year (writer lunarsim/scene.py; Python reader scene.read / scene.position). The package folder holds scene.json, routes.bin and chunk_NNN.bin. Binaries are little-endian float32 matrices. routes.bin: per item in routes.items, n rows x route_columns (x, y, z, f) at byte `offset`; f is the cumulative time fraction along the route. chunk_NNN.bin: segments (rows x segment_columns) at segments.offset, then hourly series (rows x hourly_columns) at hourly.offset, the first row being hour hourly.first_hour. A vehicle's segments cover [0, horizon_h] without gaps; a segment with route >= 0 moves along routes.items[route] from f0 to f1, f linear in time; route = -1 moves on the straight line (x0, y0, z0) -> (x1, y1, z1) (stationary when both are equal). state indexes `states`; job indexes `jobs` (-1 = idle or parked). Segments are split at chunk boundaries and at Earth-link waits.",
+  "type": "object",
+  "required": ["format", "version", "scenario", "mechanism", "seed", "terrain", "pad_standoff_km", "horizon_h", "chunk_h", "frame", "sites", "vehicles", "states", "segment_columns", "hourly_columns", "route_columns", "routes", "chunks", "landings", "keepout_windows", "nights", "deliveries", "jobs", "jobs_columns", "earth", "checks"],
+  "properties": {
+    "format": {"const": "lunarsim-scene"},
+    "version": {"const": 1},
+    "scenario": {"type": "string"},
+    "mechanism": {"type": "string"},
+    "seed": {"type": "integer"},
+    "terrain": {"type": "string"},
+    "pad_standoff_km": {"type": "string"},
+    "horizon_h": {"type": "number"},
+    "chunk_h": {"type": "number"},
+    "frame": {"type": "string"},
+    "sites": {"type": "object", "additionalProperties": {"type": "array", "items": {"type": "number"}, "minItems": 3, "maxItems": 3}},
+    "vehicles": {"type": "array", "items": {"type": "object", "required": ["id", "owner", "cls", "autonomy", "night_ops", "capacity_kg"]}},
+    "states": {"const": ["idle", "driving", "loading", "team_lift", "parked_night", "standdown", "waiting_for_earth", "failed"]},
+    "segment_columns": {"const": ["veh", "job", "t0", "t1", "x0", "y0", "z0", "x1", "y1", "z1", "route", "f0", "f1", "load_kg", "state", "heading_deg"]},
+    "hourly_columns": {"type": "array", "items": {"type": "string"}, "description": "sun_az_deg, night (0/1), earth_el_deg, earth_radius_deg, earth_bearing_deg (BASE, ground level; NaN without the Earth track), then waiting_n_<site> and waiting_kg_<site> for every site in `sites` order (items ready and not yet picked up at the start of the hour)"},
+    "route_columns": {"const": ["x", "y", "z", "f"]},
+    "routes": {
+      "type": "object",
+      "required": ["file", "bytes", "sha256", "items"],
+      "properties": {
+        "file": {"const": "routes.bin"},
+        "items": {"type": "array", "items": {"type": "object", "required": ["leg", "lighting", "n", "offset", "length_m"]}}
+      }
+    },
+    "chunks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["file", "t0", "t1", "bytes", "sha256", "segments", "hourly"],
+        "properties": {
+          "segments": {"type": "object", "required": ["offset", "rows", "cols"]},
+          "hourly": {"type": "object", "required": ["offset", "rows", "cols", "first_hour"]}
+        }
+      }
+    },
+    "landings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["t_h", "cls", "pad", "miss_m", "ok", "failure_kind", "trajectory"],
+        "properties": {
+          "trajectory": {"description": "the B-33 episode (data/policies/trajectories-v1.json) of the classical law for this class whose |miss| is nearest; a failed landing points to the first-failure episode", "type": ["object", "null"]}
+        }
+      }
+    },
+    "keepout_windows": {"type": "array", "items": {"type": "array", "minItems": 4, "maxItems": 4}, "description": "[t0, t1, pad, radius_km]"},
+    "nights": {"type": "array", "items": {"type": "array", "items": {"type": "number"}, "minItems": 2, "maxItems": 2}},
+    "deliveries": {"type": "array", "items": {"type": "array", "minItems": 3, "maxItems": 3}, "description": "[t_h, site index into `sites`, mass_kg as the trace's cargo table gives it]"},
+    "jobs": {"type": "array", "items": {"type": "array", "minItems": 7, "maxItems": 7}},
+    "jobs_columns": {"const": ["job", "kind", "lead_vehicle", "team_size", "t0", "t1", "items"]},
+    "comms": {"type": ["object", "null"]},
+    "comms_waits": {"type": ["array", "null"]},
+    "earth": {"type": "object", "required": ["source", "start_h"]},
+    "checks": {"type": "object", "required": ["delivered_kg_cargo_table", "delivered_kg_summary", "trips", "trips_summary", "landings"]},
+    "summary": {"type": "object"}
+  }
+}
