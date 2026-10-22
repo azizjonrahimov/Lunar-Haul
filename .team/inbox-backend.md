@@ -494,3 +494,38 @@ if not, publish into the Pages artifact instead and say so). Guard rails: `concu
 Done when: the parser tests pass (valid form, out-of-range values, injection attempts); a dry run of
 `tools/actions/run_issue.py` on a sample issue body produces the comment text and the files locally; the report
 gives the exact steps LEAD takes to enable it.
+
+# M4/M5 backend (queued 22 Oct 12:10). Order: B-39, B-38, B-35, B-36. LEAD is running E21; keep runs small.
+
+## B-39 [OPEN] (<= 1.5 h) Verification rows for the Phase 4 data
+Add checks to the verification that `lunarsim verify` and the site's /verification/ page show (follow how the Phase 3
+rows are produced; FRONTEND renders new rows if the format needs it, tell them): (1) catalogue numbers equal engine
+constants (B-30); (2) a scene package reproduces its trace's trips, landings and delivered kg (B-31, on the P2 sample);
+(3) a trajectory episode replays to < 1e-6 m (B-33); (4) the Earth-link ephemeris agrees with the stored Horizons
+month (B-40); (5) comms=always reproduces the baseline md5 (B-41). Each row: reference, simulated, error, tolerance,
+basis, source. Done when: `lunarsim verify` lists them and passes; tests.
+
+## B-38 [OPEN] (<= 2 h) CI gates (files: `.github/workflows/ci.yml` changes go in your report as a diff; LEAD applies)
+A script `tools/ci/budgets.py` + tests: (1) per-page budgets on `site/dist` after a build (JS gzip per page entry,
+data bytes fetched at load per page: list them from the Vite manifest and `prepare-data.mjs` outputs; thresholds in a
+JSON file you propose); (2) schema-validate every data file that has a schema (catalog, routes, trajectories,
+scene indexes, earth_link, scenario and trace samples) with jsonschema (add `jsonschema` to the `[full]` extra; report
+the pyproject line); (3) a Node parity test runner hook: if `site/tests/*.mjs` exist, run them with `node --test`
+(FRONTEND will add JS-vs-Python parity tests for the new formats). Report the ci.yml diff and the time it adds.
+
+## B-35 [OPEN] (<= 2.5 h) Story data and the number check (plan §4 B-35; schema agreed with FRONTEND via LEAD)
+`data/stories/*.json` + `lunarsim/stories.py` (validator) + schema + tests. A story = ordered steps
+{id, title, text (with {{r:key}} placeholders), camera shot name, highlight ids, mode switches, scene sample}. The
+validator resolves every placeholder from a registry of sourced numbers: results tables (`results/*.csv`, keyed
+table/row/column), the catalogue, the E20 law JSON, and (later) `results/table_E21.csv`; it fails on any unresolved
+or unsourced number and on any digit typed directly in `text` (except years and units listed in an allow-list).
+Draft three stories from existing results (text kept short; LEAD edits wording): "How far should the pads be?"
+(E20 standoff law), "Why sharing rovers cuts the wait" (E1/E19 job rules), "Learned vs classical landing" (E15).
+A fourth, "What Earth's horizon costs" (E21), as a skeleton with placeholders only.
+
+## B-36 [OPEN] (<= 2 h + compute in chunks) Static scenario gallery for the 3D world
+12 curated scene packages (B-31 format) + `data/scenes/gallery.json` (title, one-line description in plain words,
+the scenario flags, headline numbers with CIs from 20 seeds for the cell): phase {P1, P2, P3} × job rule {in-house,
+marketplace} at 1 km pads; P2 marketplace at pads {0.5, 3 km}; P2 marketplace with comms {dte, dte+relay 0.8} and the
+all-autonomous fleet under dte. Seed 3 for the replay. Budget ≤ 4 MB gzipped in total. Coordinate with LEAD before
+running the 20-seed headline numbers (E21 may already have some of them).
