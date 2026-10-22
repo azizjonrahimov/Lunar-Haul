@@ -637,7 +637,7 @@ Referee M2-M5 and the statistics notes:
   teleop under the soft pool).
 - t intervals (not 1.96 SE) for cell means (E20). Write `results/E21_fit_r2.json` and the `_r2` tables; keep r1.
 
-## B-50 [OPEN] (<= 2 h, plotting only; LEAD allows you to edit `paper/r1/make_figures_r1.py` for this task) R-1 figures for round 2
+## B-50 [DONE 15:15] (<= 2 h, plotting only; LEAD allows you to edit `paper/r1/make_figures_r1.py` for this task) R-1 figures for round 2
 Memory is too tight for a second suite (LEAD runs the r2 suites); this task is light. Update the figure script to read
 the round-2 outputs (`results/*_r2.csv`, `E21_fit_r2.json`, the r2 figure CSVs from analyse_e21; fall back to r1 with
 a printed warning while r2 is incomplete) and apply the referee's W11:

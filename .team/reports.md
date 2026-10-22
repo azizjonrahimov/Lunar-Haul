@@ -3507,3 +3507,18 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
   - throughput split incl. 3 km pads;
   - the rounds check.
 - **Questions for LEAD:** none. If you rerun `fit` for round 1, the effects table gains the robust columns; the numbers already there do not change.
+
+## B-50 DONE 15:15 | R-1 figures for round 2 (`paper/r1/make_figures_r1.py`, edited with your permission)
+- **File:** `paper/r1/make_figures_r1.py` (rewritten; LF). Not run into `figures/` and nothing committed. It was run on the r1 data copied as `_r2` into a scratch folder (`--results`, `--out`), and I checked all six PNGs by eye.
+- **Inputs:**
+  - `results/E21{a,b,a2}_*_r2.csv`, `table_E21_breakeven_delay_r2.csv` and `fig_E21_operator_demand_r2.csv`, falling back per file to round 1 with a printed WARNING;
+  - every figure with round-1 data carries a small red "round-1 data (round 2 incomplete)" note in its top-right corner, and the run ends with a NOTE listing those figures.
+  - Run when the r2 suites and `analyse_e21.py fit --round r2` are done: `python paper/r1/make_figures_r1.py` (defaults `--results results --out figures`). It takes about 10 s and plots only.
+- **Referee W11 (and S5, E12, O6, M3):**
+  - **Fig. 1:** LOLA elevation in light greys (the 20 m height layer, with a horizontal elevation scale under the map), so no cast-shadow black. Each route has a thin dark outline under its viridis colour. The title says each leg is drawn once, as its night route from the alphabetically first end. Two overlapping labels (POWER, BASE) are moved.
+  - **Fig. 2:** two panels, lander cargo and bulk regolith (the bulk title names the 200 t/yr to ISRU). Means ± 95 % t intervals per coverage, markers offset per fleet, an Earth-always reference line in each panel. With round-1 data, lander cargo falls back to `delivered_nonbulk_kg` (booked at pickup), with a warning.
+  - **Fig. 3:** the **censored** urgent p90 (round-2 column). Points are geometric means over seeds with t intervals computed on log values, so there are no bars down to 5 h. Cells where under 90 % of urgent items were delivered are drawn **hollow** (a lower bound). Markers are offset per fleet; **no fitted laws**.
+  - **Fig. 4:** paired differences against the strict fleet at relay 0.5 (Δ urgent p90 with 95 % t intervals) for +1/+2/+3 rovers, strategic, strategic with look-ahead (round 2) and strategic + 1 rover. Each is labelled with its equivalent coverage and bootstrap interval from the round-2 break-even table ("beyond 1" when infinite; look-ahead gets a model-free point value, since it is not a break-even option). Zero line; base value in the axis label.
+  - **Fig. 5:** the absolute peak of linked operator demand (mean ± t) against coverage for the teleop and Phase 2 fleets, the dashed staffing line (3 on duty), and the hard-limit (A2) cells overlaid hollow with dotted lines (round 2). "n/20" seeds above the staff are annotated; **no "always" point**.
+  - **Fig. 6 (new):** per start year, (a) the paired DTE − always cargo difference for the strict and strategic fleets, showing the strategic 2028 collapse (−405 t against about −10 t in 2029-2031), and (b) the strategic/strict urgent-p90 geometric-mean ratio at relay 0.1, both with t intervals over the year's 5 seeds. The title states only what is measured, not a cause.
+- **Questions for LEAD:** none. Fig. 1 uses data files only, so it does not depend on the round.
