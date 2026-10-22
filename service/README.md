@@ -175,7 +175,7 @@ bucket for backups.
    ```
    useradd -r -m -d /srv/lunarsim lunarsim
    mkdir -p /var/lib/lunarsim /etc/lunarsim && chown lunarsim:lunarsim /var/lib/lunarsim
-   sudo -u lunarsim git clone https://github.com/azizjonrahimov/lunar-logistics-research /srv/lunarsim/repo
+   sudo -u lunarsim git clone https://github.com/azizjonrahimov/Lunar-Haul /srv/lunarsim/repo
    sudo -u lunarsim python3.12 -m venv /srv/lunarsim/venv
    sudo -u lunarsim /srv/lunarsim/venv/bin/pip install -e "/srv/lunarsim/repo[service]"
    ```

@@ -5,7 +5,7 @@ import { header, footer, markdown, headline, figure, icon, resultText, SITE, ROO
 import { results } from './lib/results.mjs';
 import { pipeline } from './lib/pipeline.mjs';
 
-// Public base: '/' locally; CI sets SITE_BASE=/lunar-logistics-research/ for GitHub Pages.
+// Public base: '/' locally; CI sets SITE_BASE from actions/configure-pages (/Lunar-Haul/ on GitHub Pages).
 const base = process.env.SITE_BASE || '/';
 const PAGES = ['', 'world/', 'results/', 'lab/lander/', 'lab/rover/', 'method/', 'paper/', 'data/', 'about/', 'account/', 'changelog/', 'verification/'];
 

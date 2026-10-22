@@ -7,7 +7,7 @@ import { num, esc } from '../src/components/num.js';
 
 export const SITE = join(import.meta.dirname, '..');
 export const ROOT = join(SITE, '..');
-export const REPO = 'https://github.com/azizjonrahimov/lunar-logistics-research';
+export const REPO = 'https://github.com/azizjonrahimov/Lunar-Haul';
 
 // ---------- icons (Lucide, ISC) ----------
 const iconCache = {};

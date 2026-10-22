@@ -31,6 +31,6 @@ lunarsim = ["schemas/*.json"]
 testpaths = ["tests"]
 
 [project.urls]
-Homepage = "https://azizjonrahimov.github.io/lunar-logistics-research/"
-Repository = "https://github.com/azizjonrahimov/lunar-logistics-research"
-Paper = "https://github.com/azizjonrahimov/lunar-logistics-research/blob/main/paper/lunar_logistics_marketplace_paper_v2.pdf"
+Homepage = "https://azizjonrahimov.github.io/Lunar-Haul/"
+Repository = "https://github.com/azizjonrahimov/Lunar-Haul"
+Paper = "https://github.com/azizjonrahimov/Lunar-Haul/blob/main/paper/lunar_logistics_marketplace_paper_v2.pdf"

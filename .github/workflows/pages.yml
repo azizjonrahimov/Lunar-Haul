@@ -20,6 +20,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # base_path is "/<repository name>" for a project site (renames are not redirected), "" on a custom domain
+      - id: pages
+        uses: actions/configure-pages@v5
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - run: pip install numpy pandas
@@ -29,7 +32,7 @@ jobs:
         working-directory: site
       - run: npm run build
         working-directory: site
-        env: { SITE_BASE: /lunar-logistics-research/, PYTHON: python }
+        env: { SITE_BASE: "${{ steps.pages.outputs.base_path }}/", PYTHON: python }
       - uses: actions/upload-pages-artifact@v3
         with: { path: site/dist }
   deploy:

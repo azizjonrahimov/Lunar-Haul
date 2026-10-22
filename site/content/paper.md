@@ -3,8 +3,8 @@
 ## Who Hauls the Habitat? A Verified Simulation Testbed, a Pooled Dispatch Marketplace and a Reference Design for Lunar Surface Logistics
 
 Azizjon Rahimov, Roatify Research · version 2, October 2026 · 44 pages ·
-[PDF](https://github.com/azizjonrahimov/lunar-logistics-research/blob/main/paper/lunar_logistics_marketplace_paper_v2.pdf) ·
-[Code and data](https://github.com/azizjonrahimov/lunar-logistics-research)
+[PDF](https://github.com/azizjonrahimov/Lunar-Haul/blob/main/paper/lunar_logistics_marketplace_paper_v2.pdf) ·
+[Code and data](https://github.com/azizjonrahimov/Lunar-Haul)
 
 **Abstract.** NASA's Moon Base plan lands about 4 tonnes of cargo at the lunar south pole before 2029, roughly
 60 tonnes in 2029–2032 and 150 tonnes after that. Individual items range from 10 kg instruments to 15-tonne
@@ -31,7 +31,7 @@ landed kilogram rather than about $5,000: $5,525 [4,460, 7,281] at Phase 2 with 
 
 **Where the Lander Lands: Landing Precision, Pad Standoff, Plume Keep-Out and Rover Autonomy Priced in Lunar
 Surface Logistics.** Azizjon Rahimov, Roatify Research ·
-[Version 3 (draft, October 2026, PDF, 75 pages)](https://github.com/azizjonrahimov/lunar-logistics-research/blob/main/paper/v3/where_the_lander_lands_v3.pdf) ·
+[Version 3 (draft, October 2026, PDF, 75 pages)](https://github.com/azizjonrahimov/Lunar-Haul/blob/main/paper/v3/where_the_lander_lands_v3.pdf) ·
 A draft; not yet posted with a DOI.
 
 It puts the base on real LOLA terrain, adds learned landing controllers and a rover driving model to the testbed,
@@ -50,7 +50,7 @@ pad. The figures and tables are on the [Results](../results/) page as they are p
   year    = {2026},
   version = {3.0.0},
   note    = {Draft, October 2026},
-  url     = {https://github.com/azizjonrahimov/lunar-logistics-research}
+  url     = {https://github.com/azizjonrahimov/Lunar-Haul}
 }
 ```
 

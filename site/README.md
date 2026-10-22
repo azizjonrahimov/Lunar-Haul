@@ -18,8 +18,8 @@ npm run dev          # http://localhost:5173/  (also serves /simulator/ from web
 
 ```sh
 npm run build                                          # site/dist, base "/"
-SITE_BASE=/lunar-logistics-research/ npm run build     # the GitHub Pages build (CI)
-npx vite preview --base /lunar-logistics-research/     # serve a prefixed build locally
+SITE_BASE=/Lunar-Haul/ npm run build     # the GitHub Pages build (CI)
+npx vite preview --base /Lunar-Haul/     # serve a prefixed build locally
 ```
 
 The build runs prepare-data, then `vite build`, then `scripts/copy-simulator.mjs` (runs `web/build_web.py` with

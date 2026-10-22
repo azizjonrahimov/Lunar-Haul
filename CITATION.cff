@@ -8,8 +8,8 @@ authors:
 version: 3.0.0
 date-released: 2026-10-16
 license: MIT
-repository-code: https://github.com/azizjonrahimov/lunar-logistics-research
-url: https://azizjonrahimov.github.io/lunar-logistics-research/
+repository-code: https://github.com/azizjonrahimov/Lunar-Haul
+url: https://azizjonrahimov.github.io/Lunar-Haul/
 keywords:
   - lunar surface logistics
   - multi-robot task allocation
