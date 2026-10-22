@@ -410,7 +410,7 @@ tier 0. Done when: all five samples play a full year; `?run=<id>` loads a run-qu
 the Python reader (`lunarsim.scene.position`) at 20 random times (node test); tiers, reduced motion, keyboard,
 Lighthouse ≥ 85 desktop.
 
-## F-36d [OPEN] (next, before F-35; <= 3 h) World v2 polish: make the flagship read like the reels
+## F-36d [REVIEW] (next, before F-35; <= 3 h) World v2 polish: make the flagship read like the reels
 LEAD's browser review of F-36 (22 Oct 14:40), P2 scene: the data, controls and chips work; the look is not there yet.
 1. **Routes:** today every planned route (all lighting variants) is drawn bright cyan, so the network reads as
    spaghetti and hides the terrain. Draw each leg once as a thin, low-contrast line (night route), brighten only the

@@ -8,6 +8,8 @@
 // true scale or as constant-size icons (at true scale a 2.6 m rover is a dot from 5 km). Rovers that work at night
 // show headlight cones in the dark; vehicle labels appear only within 2.5 km of the camera (or for the followed one).
 // A second package of the same seed can ride along as ghosts (compare view): its rovers as outlined boxes.
+// Routes (F-36d): each leg once as a faint line (its night variant), and only the legs in use now drawn bright in the
+// driving rover's state colour, fading back over about two seconds. Rover icons carry a marker pin and a 3 h trail.
 import * as THREE from 'three';
 import { createStage } from '../stage/index.js';
 import { createLunarTerrain } from '../stage/terrain.js';
@@ -39,10 +41,11 @@ export async function createWorldScene({ canvas, labelsHost, tier, fetchFn = fet
   const pxScale = p => { const d = camera.position.distanceTo(p), hgt = 2 * d * Math.tan(camera.fov * Math.PI / 360); return hgt / Math.max(1, stage.size[1]); };
 
   let pkg = null, sitesG = null, routesL = null, vehicles = [], pallets = new Map(), rings = [], landers = [], traj = null, iconMode = true, followId = null;
-  let pkgB = null, ghosts = [];
+  let isNight = false, pkgB = null, ghosts = [], legs = new Map(), legOf = [], activeL = null, lastReal = 0;
+  const pinGeo = new THREE.CylinderGeometry(0.06, 0.06, 1, 6).translate(0, 0.5, 0), headGeo = new THREE.SphereGeometry(0.42, 16, 10), TRAIL = 30;
   // headlight cone: apex at the rover's nose, 30 m forward, additive (no lighting cost)
   const coneGeo = new THREE.ConeGeometry(9, 30, 24, 1, true).rotateX(-Math.PI / 2);
-  const coneMat = new THREE.MeshBasicMaterial({ color: '#fff1d0', transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
+  const coneMat = new THREE.MeshBasicMaterial({ color: '#fff1d0', transparent: true, opacity: 0.09, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
   const ghostGeo = new THREE.BoxGeometry(1, 1, 1), ghostMat = new THREE.MeshBasicMaterial({ color: '#d36ba6', wireframe: true, toneMapped: false });
   const dyn = new THREE.Group(); dyn.name = 'world-dynamic'; scene.add(dyn);
 
@@ -75,23 +78,42 @@ export async function createWorldScene({ canvas, labelsHost, tier, fetchFn = fet
       stage.labels.add({ id: 'site-' + name, text: name.replace('_', ' '), object: g, anchor: new THREE.Vector3(0, 6, 0) });
     }
     // drive routes (lifted 1.5 m so they read over the terrain)
+    // one line per leg, A->B and B->A together, the night variant when the package has it (the most cautious route)
+    legs = new Map();
+    p.routes.forEach((r, i) => {
+      const key = r.leg.split('->').sort().join('~'), have = legs.get(key);
+      if (!have || (r.lighting === 'night' && have.lighting !== 'night')) legs.set(key, { route: i, lighting: r.lighting, b: 0 });
+    });
+    legOf = p.routes.map(r => r.leg.split('->').sort().join('~'));
     const pts = [];
-    for (const r of p.routes) for (let i = 0; i + 1 < r.n; i++) {
-      const a = at(r.block[4 * i], r.block[4 * i + 1], 1.5), b = at(r.block[4 * i + 4], r.block[4 * i + 5], 1.5);
-      pts.push(a.x, a.y, a.z, b.x, b.y, b.z);
+    for (const [key, L] of legs) {
+      const r = p.routes[L.route]; L.from = pts.length / 3;
+      for (let i = 0; i + 1 < r.n; i++) { const a = at(r.block[4 * i], r.block[4 * i + 1], 1.5), b = at(r.block[4 * i + 4], r.block[4 * i + 5], 1.5); pts.push(a.x, a.y, a.z, b.x, b.y, b.z); }
+      L.to = pts.length / 3;
     }
     const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-    routesL = new THREE.LineSegments(rg, new THREE.LineBasicMaterial({ color: '#6fcde9', transparent: true, opacity: 0.35 })); routesL.userData.noAO = true; dyn.add(routesL);
+    routesL = new THREE.LineSegments(rg, new THREE.LineBasicMaterial({ color: '#4d7f93', transparent: true, opacity: 0.32 })); routesL.userData.noAO = true; dyn.add(routesL);
+    // the active overlay: the same vertices, coloured per leg by brightness x state colour, added on top
+    const ag = new THREE.BufferGeometry(); ag.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3)); ag.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(pts.length), 3));
+    activeL = new THREE.LineSegments(ag, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+    activeL.userData.noAO = true; activeL.renderOrder = 5; dyn.add(activeL);
     // vehicles: simplified kit model + a state ring underneath
     for (const v of idx.vehicles) {
       const model = buildVehicle(catalog, mats, v.cls, { lod: 'simple' }), g = new THREE.Group(), L = Math.max(model.size.x, model.size.z);
       shade(model.root); g.add(model.root);
       const ring = new THREE.Mesh(new THREE.RingGeometry(L * 0.75, L * 0.95, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#ffffff', toneMapped: false, transparent: true, opacity: 0.9, side: THREE.DoubleSide }));
       ring.position.y = 0.15; ring.userData.noAO = true; g.add(ring);
-      const cone = new THREE.Mesh(coneGeo, coneMat); cone.position.set(0, model.size.y * 0.45, model.size.z / 2 + 15); cone.scale.setScalar(Math.max(0.6, L / 4)); cone.visible = false; cone.userData.noAO = true;
+      const cone = new THREE.Mesh(coneGeo, coneMat); cone.position.set(0, model.size.y * 0.45, model.size.z / 2 + 15); cone.userData.base = Math.max(0.6, L / 4); cone.visible = false; cone.userData.noAO = true;
       if (v.night_ops) g.add(cone);
+      // marker for far views: a pin with a head in the state colour (scaled with the icon), and a trail of the last 3 h
+      const pinMat = new THREE.MeshBasicMaterial({ color: '#ffffff', toneMapped: false });
+      const pin = new THREE.Mesh(pinGeo, pinMat), head = new THREE.Mesh(headGeo, pinMat);
+      pin.scale.set(L * 0.5, L * 2.2, L * 0.5); head.scale.setScalar(L * 0.9); head.position.y = L * 2.2; pin.userData.noAO = head.userData.noAO = true; g.add(pin, head);
+      const tg = new THREE.BufferGeometry(); tg.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(TRAIL * 3), 3)); tg.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(TRAIL * 3), 3)); tg.setDrawRange(0, 0);
+      const trail = new THREE.Line(tg, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+      trail.userData.noAO = true; trail.frustumCulled = false; dyn.add(trail);
       dyn.add(g);
-      vehicles.push({ ...v, group: g, ring, L, model, cone });
+      vehicles.push({ ...v, group: g, ring, L, model, cone, pin, head, pinMat, trail, hist: [], lastHistT: -1 });
       stage.labels.add({ id: 'veh-' + v.id, text: `${v.cls} ${v.id}`, object: g, anchor: new THREE.Vector3(0, model.size.y + 1, 0) });
     }
     // cargo pallets per site (instanced, up to 48 shown; the text mirror has the exact count)
@@ -138,7 +160,7 @@ export async function createWorldScene({ canvas, labelsHost, tier, fetchFn = fet
     if (!pkg || !ch) return;
     const idx = pkg.index, hr = pkg.hourly(ch, t);
     // sun and night
-    const night = hr.night > 0.5;
+    const night = hr.night > 0.5; isNight = night;
     if (lastSun === null || Math.abs(hr.sun_az_deg - lastSun) > 0.2 || night !== lastNight) {
       lighting.setSun({ az: hr.sun_az_deg, el: 1.5 }); terrain.setSun(hr.sun_az_deg, 1.5);
       if (night !== lastNight) { lighting.setNight(night); terrain.setNight(night); }
@@ -153,10 +175,30 @@ export async function createWorldScene({ canvas, labelsHost, tier, fetchFn = fet
       v.group.visible = true; v.state = p.state; v.load = p.load; v.pos = p;
       const s = at(p.x, p.y); v.group.position.copy(s); v.group.rotation.y = -p.heading * Math.PI / 180 + Math.PI;
       v.ring.material.color.set((STATE_STYLE[p.state] || STATE_STYLE.idle)[0]);
-      v.group.scale.setScalar(iconMode ? Math.max(1, 22 * pxScale(s) / v.L) : 1);
+      const col = (STATE_STYLE[p.state] || STATE_STYLE.idle)[0];
+      v.pinMat.color.set(col); iconFor(v);
+      // trail: a point every 0.1 h of simulated time, the last 3 h; cleared after a jump
+      if (v.lastHistT < 0 || t < v.lastHistT || t - v.lastHistT > 6) v.hist = [];
+      if (v.lastHistT < 0 || t - v.lastHistT >= 0.1 || t < v.lastHistT) { v.hist.push(s.clone().setY(s.y + 2)); if (v.hist.length > TRAIL) v.hist.shift(); v.lastHistT = t; }
+      { const pa = v.trail.geometry.attributes.position, ca = v.trail.geometry.attributes.color, c3 = new THREE.Color(col), n = v.hist.length;
+        for (let i = 0; i < n; i++) { const q = v.hist[i], k = (i + 1) / n * 0.9; pa.setXYZ(i, q.x, q.y, q.z); ca.setXYZ(i, c3.r * k, c3.g * k, c3.b * k); }
+        pa.needsUpdate = ca.needsUpdate = true; v.trail.geometry.setDrawRange(0, n); v.trail.visible = n > 1; }
+      if (p.driving && p.route >= 0) { const L2 = legs.get(legOf[p.route]); if (L2) { L2.b = 1; L2.col = col; } }
       v.cone.visible = night && v.night_ops && p.state !== 'parked_night';
       stage.labels.setHidden('veh-' + v.id, v.id !== followId && camera.position.distanceTo(s) > 2500);
     }
+    // active legs: bright while a rover drives them, fading back over ~2 s of real time
+    { const now = performance.now(), dt = lastReal ? Math.min(0.25, (now - lastReal) / 1000) : 0; lastReal = now;
+      const ca = activeL?.geometry.attributes.color, c3 = new THREE.Color(); let any = false;
+      if (ca) for (const L of legs.values()) {
+        if (L.b <= 0 && !L.drawn) continue;
+        c3.set(L.col || '#6fcde9').multiplyScalar(L.b * 1.6);
+        for (let i = L.from; i < L.to; i++) ca.setXYZ(i, c3.r, c3.g, c3.b);
+        L.drawn = L.b > 0; if (L.b > 0) any = true;
+        L.b = Math.max(0, L.b - dt / 2);
+      }
+      if (ca) { ca.needsUpdate = true; activeL.visible = any; }
+      if (any) stage.invalidate(); }
     // the compared package's rovers, as outlined boxes the size of the vehicle (or icons)
     if (pkgB && chB) for (const gh of ghosts) {
       const p = pkgB.position(chB, gh.id, t);
@@ -168,8 +210,9 @@ export async function createWorldScene({ canvas, labelsHost, tier, fetchFn = fet
     for (const [name, P] of pallets) {
       const n = Math.min(48, Math.round(hr.waiting[name]?.items || 0));
       if (P.im.count !== n) { P.im.count = n; P.im.instanceMatrix.needsUpdate = true; }
-      P.g.visible = n > 0; P.g.scale.setScalar(iconMode ? Math.max(1, 9 * pxScale(P.g.position) / 1.5) : 1);
+      P.g.visible = n > 0;
     }
+    iconsForCamera();
     // keep-out rings
     for (const r of rings) r.visible = false;
     for (const [t0, t1, pad, Rkm] of idx.keepout_windows) if (t >= t0 && t <= t1) { const r = rings.find(q => q.userData.pad === pad); if (r) { drape(r, Rkm * 1000); r.visible = true; } }
@@ -183,7 +226,8 @@ export async function createWorldScene({ canvas, labelsHost, tier, fetchFn = fet
       const te = Math.min(L.view.tEnd, (t - start) * 3600), [x, y, z] = L.view.pos(te), base = L.padPos;
       const gx = base.x + x, gz = base.z - y;
       L.holder.position.set(gx, terrain.surfaceAt(gx, gz) + z, gz); L.holder.quaternion.fromArray(L.view.quatScene(te));
-      L.holder.scale.setScalar(iconMode && te >= L.view.tEnd ? Math.max(1, 26 * pxScale(L.holder.position) / L.vehicle.size.y) : 1);
+      // icons: 26 px once down; 16 px while descending, so a lander is seen from the pad shot (its dust stays true scale)
+      L.holder.scale.setScalar(iconMode ? Math.max(1, (te >= L.view.tEnd ? 26 : 16) * pxScale(L.holder.position) / L.vehicle.size.y) : 1);
       const descending = te < L.view.tEnd + 10;
       if (descending && !L.dust && t < L.t_h + 0.01) {
         const tl = { t: [], h: [], thrust: [], gx: [], gy: [], gz: [] }, tMax = (traj.plume[L.cls]?.t_max_n || 5000) * L.view.ep.episode.thrust_scale;
@@ -234,6 +278,24 @@ export async function createWorldScene({ canvas, labelsHost, tier, fetchFn = fet
     followId = v.id;
     return { pos: v.group.position.clone(), dist: Math.max(120, v.L * 40), what: `${v.cls} ${v.id}${v.load > 0 ? `, carrying ${Math.round(v.load)} kg` : ''}` };
   }
+  // icon sizes and far-view markers depend on the camera, so they are refreshed when it moves as well as each moment
+  function iconFor(v) {
+    const s = v.group.position;
+    v.group.scale.setScalar(iconMode ? Math.max(1, 34 * pxScale(s) / v.L) : 1);
+    v.pin.visible = v.head.visible = iconMode && (isNight || camera.position.distanceTo(s) > 400);   // markers for far views, and in the dark
+    v.cone.scale.setScalar(v.cone.userData.base / v.group.scale.x);   // the headlight cone lights the ground at true size
+  }
+  function iconsForCamera() {
+    for (const v of vehicles) if (v.group.visible) iconFor(v);
+    for (const P of pallets.values()) if (P.g.visible) P.g.scale.setScalar(iconMode ? Math.max(1, 9 * pxScale(P.g.position) / 1.5) : 1);
+  }
+  stage.director.controls.addEventListener('update', () => { if (pkg) iconsForCamera(); });
+  // frame a point from the sun's side (lit faces towards the camera), dist m away, el degrees up, turned by dAz degrees
+  function frameAt(pos, dist, el = 28, dAz = 35, instant = false) {
+    const az = (lastSun ?? 135) + dAz, d = dirFromAzEl(az, el);
+    return stage.director.controls.setLookAt(pos.x + d.x * dist, pos.y + d.y * dist, pos.z + d.z * dist, pos.x, pos.y, pos.z, !(instant || reducedMotion()));
+  }
+  const activeLegs = () => [...legs.entries()].filter(([, L]) => L.b > 0.95).map(([k]) => k.replace('~', ' and '));
   function setCompare(p2) {
     for (const g of ghosts) dyn.remove(g.mesh);
     ghosts = []; pkgB = p2;
@@ -248,10 +310,13 @@ export async function createWorldScene({ canvas, labelsHost, tier, fetchFn = fet
 
   return {
     stage, terrain, catalog, STATE_STYLE,
-    setPackage, setTime, shots, followTarget, setCompare,
+    setPackage, setTime, shots, followTarget, setCompare, frameAt, activeLegs,
+    // the start of the next recorded descent after t (playback stops there so no landing is stepped over)
+    nextLandingStart(t) { let m = Infinity; for (const L of landers) { const st = L.t_h - L.dur; if (L.view && st > t + 1e-6 && st < m) m = st; } return m; },
+    sitePos: name => at(pkg.index.sites[name][0], pkg.index.sites[name][1]),
     clearFollow() { followId = null; },
     go: (name, instant = false) => stage.director.go(name, { instant: instant || reducedMotion() }),
-    setIcons(v) { iconMode = v; stage.invalidate(); },
+    setIcons(v) { iconMode = v; if (pkg) iconsForCamera(); stage.invalidate(); },
     get vehicles() { return vehicles; }, get activeLandings() { return active; },
     setRoutes(v) { if (routesL) routesL.visible = v; },
     setTier(t) { for (const L of landers) L.dust?.setCount(TIERS[t].particles); },

@@ -62,11 +62,11 @@ export async function loadScene(base, { fetchFn = fetch } = {}) {
     index, routes, columns: C, hourlyColumns: H, horizon: index.horizon_h, chunk, chunkIndex,
     // load what time t needs (and the next chunk, so playback does not stall)
     async ready(t) { const k = chunkIndex(t); await chunk(k); if (k + 1 < index.chunks.length) chunk(k + 1); return k; },
-    /* position(ch, veh, t) -> {x, y, z, state, heading, load, job, driving} from a loaded chunk; null if no segment */
+    /* position(ch, veh, t) -> {x, y, z, state, heading, load, job, driving, route} from a loaded chunk; null if no segment */
     position(ch, veh, t) {
       const r = segmentRow(ch, veh, t); if (r < 0) return null;
       const s = ch.seg, o = r * nCol, t0 = s[o + C.t0], t1 = s[o + C.t1], g = (t - t0) / Math.max(t1 - t0, 1e-12), ri = s[o + C.route];
-      const out = { state: index.states[s[o + C.state]], load: s[o + C.load_kg], job: s[o + C.job], heading: s[o + C.heading_deg], driving: false, x: 0, y: 0, z: 0 };
+      const out = { state: index.states[s[o + C.state]], load: s[o + C.load_kg], job: s[o + C.job], heading: s[o + C.heading_deg], driving: false, route: ri, x: 0, y: 0, z: 0 };
       if (ri >= 0) {
         const R = routes[ri], f = s[o + C.f0] + (s[o + C.f1] - s[o + C.f0]) * g;
         out.x = interp(R.block, R.n, f, 0); out.y = interp(R.block, R.n, f, 1); out.z = interp(R.block, R.n, f, 2);

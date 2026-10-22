@@ -92,11 +92,16 @@ async function open(fetchFn = fetch) {
     pkg = await loadScene(base, { fetchFn });
     chunks = await Promise.all(pkg.index.chunks.map((_, k) => pkg.chunk(k)));
   } catch (e) { status(`Could not load ${ui.run ? 'run ' + ui.run : 'the scene'} (${e.message}).`); return; }
+  pkg.index.landings.sort((a, b) => a.t_h - b.t_h);   // the code below takes the next landing in array order
   sc.setPackage(pkg, traj); sc.shots();
   linkChip?.el.remove(); linkChip = null; linkText = '';
   if (ui.compare) { compareSelect.fill?.(); await openCompare(); }
   if (urgentP90(pkg.index, 0) === null) chips.urgent.el.querySelector('.ui-label').textContent = 'Urgent: 90 % within (whole year)';
-  time.t = 0; await sc.go(ui.shot, true);
+  const idx0 = pkg.index, L0 = idx0.landings.find(L => L.ok && !nightAt(L.t_h)) || idx0.landings[0];
+  time.t = L0 ? Math.max(0, L0.t_h - 0.1) : 0;
+  update(true);
+  if (L0 && sc.frameAt) { ui.shot = 'pads'; shotChips?.set('pads'); await sc.frameAt(sc.sitePos(L0.pad), 600, 22, 35, true); }
+  else await sc.go(ui.shot, true);
   drawTimeline(); update(true); status('');
   if (!reducedMotion()) setPlaying(true);
 }
@@ -104,13 +109,18 @@ async function open(fetchFn = fetch) {
 // ---------- controls ----------
 function controls(plan = false) {
   shotChips = sceneChips({ label: 'Scenes', scenes: [{ value: 'overview', label: 'Overview' }, { value: 'pads', label: 'Pads & keep-out' }, { value: 'legs', label: 'Rover legs' }, { value: 'base', label: 'Base' }, { value: 'night', label: 'Night' }],
-    value: ui.shot, onChange: v => { ui.shot = v; if (v === 'night') { const n = pkg.index.nights.find(([a, b]) => b > time.t) || pkg.index.nights[0]; if (n && !(time.t >= n[0] && time.t < n[1])) seek(n[0] + 2); } sc.go(v); } });
+    value: ui.shot, onChange: v => chooseShot(v) });
   if (!plan) $('w2-shots').append(shotChips.el);
   const r1 = $('w2-row1');
   const play = h('button', { class: 'ui-btn primary', type: 'button', id: 'w2-play', 'aria-pressed': 'false' }, 'Play');
   play.addEventListener('click', () => setPlaying(!time.playing));
   r1.append(play, segmented({ legend: 'Speed', options: SPEEDS, value: String(ui.speed), onChange: v => { ui.speed = +v; } }).el,
-    plan ? '' : segmented({ legend: 'Vehicles', options: [{ value: 'icons', label: 'Icons' }, { value: 'true', label: 'True scale' }], value: 'icons', onChange: v => { ui.icons = v === 'icons'; sc.setIcons(ui.icons); update(true); } }).el,
+    plan ? '' : segmented({ legend: 'Vehicles', options: [{ value: 'icons', label: 'Icons' }, { value: 'true', label: 'True scale' }], value: 'icons', onChange: v => {
+      ui.icons = v === 'icons'; sc.setIcons(ui.icons); update(true);
+      if (!ui.icons) { const f = sc.followTarget?.('rovers', time.t, pkg.hourly(chunks[pkg.chunkIndex(time.t)], time.t)); if (f) sc.frameAt(f.pos, 45, 18, 35);
+        status(`True scale: vehicles at their real size (an LTV is ${fmt(sc.catalog.entry('LTV').dims.length_m.value, 1)} m long); from the overview they would be dots.`); }
+      else { sc.go(ui.shot); status(''); }
+    } }).el,
     plan ? '' : segmented({ legend: 'Follow', options: [{ value: 'none', label: 'Free' }, { value: 'cargo', label: 'Cargo' }, { value: 'rovers', label: 'Rovers' }, { value: 'landers', label: 'Landers' }, { value: 'night', label: 'Night' }],
       value: ui.follow, onChange: v => { ui.follow = v; sc.clearFollow?.(); followStart = true; if (v === 'night') nextNight(); if (v === 'none') status(''); update(true); } }).el,
     compareSelect());
@@ -122,6 +132,26 @@ function controls(plan = false) {
     urgent: statChip({ label: 'Urgent: 90 % delivered within', value: NaN, unit: 'h', digits: 1, flag: 'Modelled', source: '90th percentile of the wait (ready to delivered) of the priority-1 deliveries so far (scene package delivery rows, B-47)', tone: 'warm' }),
   };
   host.append(...Object.values(chips).map(c => c.el));
+}
+function nightAt(t) { return pkg.index.nights.some(([a, b]) => t >= a && t < b); }   // hoisted: the tier-0 path calls open() at load
+// Pads: play up to the next landing and frame the pads with their rings; Rover legs: a driving rover at rover scale;
+// Base: the base cluster; Night: the next night, framed on a rover that works in the dark (its headlights) or the base
+function chooseShot(v) {
+  ui.shot = v; lastStory = '';
+  const idx = pkg.index, hrNow = () => pkg.hourly(chunks[pkg.chunkIndex(time.t)], time.t);
+  if (v === 'pads') { const n = idx.landings.find(L => L.t_h > time.t + 0.15) || idx.landings[0]; if (n) seek(n.t_h - 0.12); sc.go('pads'); }
+  else if (v === 'legs') {
+    // nobody driving now: play ahead (up to 3 days, quarter-hour steps) to the next moment a rover is on the road
+    const driving = t => { const ch = chunks[pkg.chunkIndex(t)]; return pkg.index.vehicles.some(q => pkg.position(ch, q.id, t)?.driving); };
+    if (!driving(time.t)) for (let t = time.t + 0.25; t < Math.min(pkg.horizon - 1e-3, time.t + 72); t += 0.25) if (driving(t)) { seek(t + 0.05); break; }
+    let f = sc.followTarget?.('rovers', time.t, hrNow());
+    if (f && sc.frameAt) sc.frameAt(f.pos, 260, 30, 35); else sc.go('legs');
+  } else if (v === 'night') {
+    nextNight();
+    const hn = sc.vehicles.find(q => q.night_ops && q.group?.visible);
+    if (sc.frameAt) sc.frameAt(hn ? hn.group.position : sc.sitePos('BASE'), hn ? 320 : 800, 20, 35); else sc.go('night');
+  } else sc.go(v);
+  update(true);
 }
 function nextNight() { const n = pkg.index.nights.find(([, b]) => b > time.t) || pkg.index.nights[0]; if (n && !(time.t >= n[0] && time.t < n[1])) seek(n[0] + 2); }
 function compareSelect() {
@@ -172,7 +202,10 @@ function tick(dt) {
   if (!time.playing) return false;
   // slow to 10 sim-seconds per second while a lander descends, so the landing is seen
   const rate = sc.activeLandings.length ? 10 / 3600 : ui.speed;
-  time.t = Math.min(pkg.horizon - 1e-3, time.t + dt * rate);
+  // one frame at 1 day/s is ~0.4 h and a descent ~0.05 h: stop at the next descent's start instead of stepping over it
+  let next = time.t + dt * rate;
+  if (!sc.activeLandings.length && sc.nextLandingStart) { const s0 = sc.nextLandingStart(time.t); if (s0 <= next) next = s0 + 1e-4; }
+  time.t = Math.min(pkg.horizon - 1e-3, next);
   update();
   if (time.t >= pkg.horizon - 1e-3) setPlaying(false);
   return time.playing;
@@ -239,13 +272,39 @@ function narrate(t, hr) {
   const idx = pkg.index, act = sc.activeLandings[0], vs = sc.vehicles, count = st => vs.filter(v => v.state === st).length;
   let s;
   const last = idx.landings.filter(L => L.t_h <= t && t - L.t_h < 6).pop();
-  if (act) s = { eyebrow: 'Landing', title: `A ${act.cls}-class lander comes down at ${act.pad.replace('_', ' ')}`, html: `<p>It carries ${fmt(act.cargo_kg)} kg. Rovers stay outside the ${fmt(1)} km keep-out ring until the dust settles; the descent replays the recorded ${act.trajectory?.pilot || 'classical'} landing nearest this one (${fmt(act.miss_m, 1)} m from the pad centre).</p>` };
+  if (act) s = { eyebrow: 'Landing', title: `A ${act.cls}-class lander comes down at ${act.pad.replace('_', ' ')}`, html: `<p>It carries ${fmt(act.cargo_kg)} kg. Rovers stay outside the ${fmt((idx.keepout_windows.find(k => k[2] === act.pad && k[1] >= act.t_h) || [0, 0, 0, 1])[3], 1)} km keep-out ring until the dust settles; the descent replays the recorded ${act.trajectory?.pilot || 'classical'} landing nearest this one (${fmt(act.miss_m, 1)} m from the pad centre).</p>` };
   else if (last) s = { eyebrow: 'Landed', title: last.ok ? `Down at ${last.pad.replace('_', ' ')}, ${fmt(last.miss_m, 1)} m from the centre` : `A failed landing at ${last.pad.replace('_', ' ')}`, html: `<p>${last.ok ? 'Its cargo now waits on the pad for a rover.' : `It failed (${last.failure_kind}); its cargo is lost.`}</p>` };
   else if (hr.night > 0.5) s = { eyebrow: 'Lunar night', title: `${count('parked_night')} of ${vs.length} rovers parked`, html: '<p>The sun is below the horizon for days. Rovers without night power park; those with headlights and batteries keep working.</p>' };
   else if (count('waiting_for_earth')) s = { eyebrow: 'No Earth link', title: `${count('waiting_for_earth')} rover${count('waiting_for_earth') > 1 ? 's' : ''} waiting for Earth`, html: '<p>Supervised rovers need a link to Earth to drive. Earth is below the ridge line now, so they hold until it rises.</p>' };
   else if (count('standdown')) s = { eyebrow: 'Keep-out', title: 'Holding outside the landing zone', html: '<p>A lander is due; rovers keep out of the plume ring until the stand-down ends.</p>' };
-  else s = { eyebrow: day(t), title: `${count('driving') + count('team_lift')} driving, ${count('loading')} loading`, html: '<p>Rovers carry cargo between the pads, the depot and the base along their planned routes. Cargo waiting at each site stacks up as pallets.</p>' };
+  else s = chipStory(t, hr, count);
   const key = s.eyebrow + s.title; if (key === lastStory) return; lastStory = key; story.set(s);
+}
+
+function chipStory(t, hr, count) {
+  const idx = pkg.index, place = p => p.replace('_', ' '), inH = h => h > 48 ? `${fmt(h / 24)} days` : `${fmt(h, 1)} h`;
+  if (ui.shot === 'pads') {
+    const n = idx.landings.find(L => L.t_h > t), w = n && idx.keepout_windows.find(k => k[2] === n.pad && k[1] >= n.t_h);
+    return n ? { eyebrow: 'Pads & keep-out', title: `Next landing: a ${n.cls}-class lander at ${place(n.pad)} in ${inH(n.t_h - t)}`,
+      html: `<p>${w ? `While it lands, rovers keep outside a ${fmt(w[3], 1)} km ring round the pad for ${fmt(w[1] - w[0], 1)} h, then go in for its ${fmt(n.cargo_kg)} kg of cargo.` : `It brings ${fmt(n.cargo_kg)} kg of cargo.`}</p>` }
+      : { eyebrow: 'Pads & keep-out', title: 'No landings left this year', html: '<p>Cargo already on the pads waits for a rover.</p>' };
+  }
+  if (ui.shot === 'legs') {
+    const legs = sc.activeLegs?.() || [], v = sc.vehicles.find(q => q.state === 'driving');
+    return { eyebrow: 'Rover legs', title: legs.length ? `${legs.length} leg${legs.length > 1 ? 's' : ''} in use now` : 'No rover on the road right now',
+      html: `<p>${legs.length ? `Bright lines are the legs being driven: ${legs.slice(0, 3).map(place).join('; ')}${legs.length > 3 ? '…' : ''}.` : 'The faint lines are the planned routes between the sites.'}${v ? ` ${v.cls} ${v.id} is driving${v.load > 0 ? ` with ${fmt(v.load)} kg` : ' empty'}.` : ''}</p>` };
+  }
+  if (ui.shot === 'base') {
+    const w = hr.waiting.BASE || { items: 0, kg: 0 };
+    return { eyebrow: 'Base', title: w.items ? `${fmt(w.items)} item${w.items > 1 ? 's' : ''} waiting at the base` : 'Nothing waiting at the base',
+      html: `<p>${w.items ? `${fmt(w.kg)} kg sits on pallets at the habitat until a rover moves it on.` : 'Deliveries to the base have kept up.'} ${count('loading')} rover${count('loading') === 1 ? ' is' : 's are'} loading or unloading somewhere on the base.</p>` };
+  }
+  if (ui.shot === 'night') {
+    const n = idx.nights.find(([, b]) => b > t);
+    return { eyebrow: 'Night', title: n ? `The next night begins in ${inH(n[0] - t)}` : 'No more nights this year',
+      html: '<p>At the pole the sun circles the horizon and dips below the ridges for days at a time. Only rovers with night power keep driving, by headlight.</p>' };
+  }
+  return { eyebrow: day(t), title: `${count('driving') + count('team_lift')} driving, ${count('loading')} loading`, html: '<p>Rovers carry cargo between the pads, the depot and the base along their planned routes. Cargo waiting at each site stacks up as pallets.</p>' };
 }
 
 function mirror(t, hr, delivered, waiting, trips) {

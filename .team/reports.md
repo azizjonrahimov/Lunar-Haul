@@ -3342,3 +3342,37 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
 - **Questions for LEAD:**
   1. A published run id for the `?run=` check.
   2. Compare as an overlay (as built) or a true split screen in F-40?
+
+## F-36d DONE 14:45 | World v2 polish: routes, scene chips, rovers, first frame; ?run=1 checked
+- **Files:**
+  - World page: `site/src/world/v2.js` and `site/src/world/v2-scene.js`.
+  - `site/src/world/scene-data.js`: `position()` also returns `route`. Parity tests unchanged and passing.
+  - `site/.gitignore`: `public/runs/`.
+- **1. Routes:**
+  - Each leg is drawn once (A→B and B→A together, the night variant where the package has one) as a thin, low-contrast line: 43 legs instead of 101 route variants.
+  - An additive overlay brightens only the legs being driven now, in the driving rover's state colour, fading back over ~2 s.
+  - Note: the colour follows the state all the time, not only with Follow or Earth-link on. Mostly that is "driving" cyan; Earth-link and stand-down colours show when a rover in that state is on a leg.
+- **2. Scene chips move the camera and rewrite the story:**
+  - **Pads & keep-out** plays to 0.12 h before the next landing and frames the pads. Story: "Next landing: a MK1-class lander at PAD B in 101 days… rovers keep outside a 1.0 km ring for 1.0 h, then go in for its 2,362 kg".
+  - **Rover legs**: if nobody is driving it plays ahead (up to 3 days) to the next drive, then frames that rover at 260 m. Story: "1 leg in use now: BASE and CONSTR. LTV 2 is driving empty".
+  - **Base** frames the base cluster; the story counts the cargo waiting at the habitat.
+  - **Night** jumps to the next night and frames a night-capable rover (its true-size headlight cone) or the base. Story: "5 of 6 rovers parked".
+  - The landing story now quotes the window's real keep-out radius instead of a fixed 1 km. Long waits read in days.
+- **3. Rovers:**
+  - Icons are larger (34 px, was 22) and carry a marker pin and head in the state colour beyond 400 m and always at night.
+  - A 3 h trail fades behind each rover.
+  - Icon sizes and markers refresh when the camera moves, not only when the clock does.
+  - **True scale** flies down to a driving rover at ~45 m and says "an LTV is 4.0 m long; from the overview they would be dots".
+  - Descending landers keep a 16 px minimum in icon mode (26 px once down). Their dust stays true scale.
+- **4. First frame:**
+  - Enter opens on the first successful landing in daylight, framed at 600 m from the sun's side (lit faces towards the camera). For P2: the CLPS landing at PAD A, hour 824.6, with the keep-out ring and HAUL 3 on its lit leg.
+  - Bug found and fixed: at 1 day/s one frame is ~0.4 h and a descent ~0.05 h, so playback could step over a whole landing. It now stops at the next descent's start (`nextLandingStart`) and slows there as before.
+- **?run=1:** downloaded the release (`gh release download run-1`) and extracted `scene.tar.gz` into the git-ignored `site/public/runs/1/`. `/world/?run=1` loads run 1 (issue-P1-default, seed 0) from the run queue and plays its first landing (hour 145), 0 errors.
+- **Checks (Chrome, this laptop):**
+  - Frame cost at the opening view (landing, dust, ring), GPU timer, p50/p95: tier 1 GPU 1.7/4.0 ms, CPU 2.5/4.9 ms; tier 2 GPU 2.8/5.8, CPU 3.8/6.3; tier 3 GPU 4.0/7.1, CPU 3.6/6.2 (1440×675).
+  - 1440 px: the first frame, each chip, Night and True scale all looked at.
+  - 390 px: no horizontal scroll; the opening landing frame with the story below.
+  - No console errors.
+  - `node --test site/tests/*.mjs`: 11/11. Build OK. Budgets OK (world JS 19.7 of 25 kB).
+  - My servers are stopped by PID; the tab is closed.
+- **Questions for LEAD:** none.
