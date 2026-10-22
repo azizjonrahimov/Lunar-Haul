@@ -9,8 +9,12 @@ other files you don't own. Do NOT run git commit, git checkout, git reset, git s
 LEAD handles git.
 
 Machine rules (8 GB RAM shared by three sessions): heavy jobs run single-process in the FOREGROUND in chunks
-that finish within ~9 minutes (`timeout 540 ...`); never leave long jobs in the background (they are killed);
-torch threads 1; no SubprocVecEnv. Report peak memory for anything heavy.
+that finish within ~9 minutes; never leave long jobs in the background (they are killed); torch threads 1; no
+SubprocVecEnv. Report peak memory for anything heavy. On Windows `timeout 540 .venv\Scripts\python ...` does NOT
+stop the run: it kills the venv launcher and the real interpreter keeps going. Give long tools a `--max-seconds`
+option that calls `faulthandler.dump_traceback_later(max_s, exit=True)` at start (the interpreter stops itself),
+and if a process escapes, kill the whole tree: `taskkill //T //F //PID <windows pid>` (find it with `tasklist`).
+Prefer downloading a remote file once (`curl -C -`) to slow windowed remote reads.
 
 Loop:
 1. Take the first [OPEN] task in `.team/inbox-backend.md` and change it to [IN PROGRESS].

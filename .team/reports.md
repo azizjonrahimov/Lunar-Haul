@@ -1993,3 +1993,171 @@ FRONTEND: idle until driving-v1-learned.json lands (then the column, ~30 min). B
 - **Questions for LEAD:**
   1. The 5 m patches use the default pad set ('1' km PAD_A at 8130, 8210). Should other standoffs get patches too? Each patch is about 0.28 MB.
   2. Should `data/terrain/_cache/` stay the source for v2 rebuilds? It is not in git; CI would fall back to the quantised PNG.
+
+## B-40 DONE 10:12 | R-1 data: Earth-link windows at our sites and along our routes
+- **Files (new):**
+  - `tools/comms/earth_link.py`: pipeline with stages ephem, routes, points, dem, masks, link, horizons, avgvisib.
+  - `lunarsim/comms.py`: reader (`EarthLink`: `linked`, `next_change`, `windows`, `summary`), `validate()`, and the CLI `python -m lunarsim.comms`.
+  - `tests/test_comms_data.py`: 10 tests.
+  - Output (LEAD commits): `data/comms/connecting_ridge/earth_link-v1.json` (383 KB) and `.sha256` (b2e28870…).
+  - Caches in `.cache/comms/` (git-ignored, ≈ 250 MB): kernels, the full 80 m DEM, routes, masks, check files.
+- **Method:**
+  - **Ephemeris:**
+    - SPICE kernels: de440s, moon_pa_de440_200625, moon_de440_250416 (MOON_ME = MOON_ME_DE440_ME421), pck00011, naif0012.
+    - `spkcpo` / `azlcpo` with `LT+S`, every 10 min from 2028-01-01 00:00 to 2031-12-31 23:50 UTC: 210,384 epochs.
+    - Other points use BASE's Earth vector shifted by the point's offset, in the point's own local frame. Checked against `azlcpo`: max difference 6e-14°.
+  - **Horizon masks:**
+    - Grid bearings −12…+12° in 0.1° steps. Earth's bearing at BASE spans −8.05…+8.03°; Earth's elevation −7.54…+6.23°.
+    - Elevations computed exactly on the 1,737.4 km sphere.
+    - Near field: the float 5 m tile out to 8 km. Far field: `LDEM_80S_80MPP_ADJ` (PGDA 90) from 8 to 300 km.
+    - The two DEMs agree: far − near mean −0.01 m, RMS 1.24 m over 361 posts.
+    - Antennas: 2.5 m for the rover (sites, pads, route samples), 10 m for the mast at BASE.
+  - **Points:**
+    - 7 sites and 10 pads (all 5 standoffs in `sites.json`).
+    - 2,404 route cells: the slope-only A* route of each of the 182 legs (= the night route), sampled every 100 m and snapped to 20 m posts.
+  - **Link rules:**
+    - A leg is linked only when every sample is linked.
+    - Mast mode: a sample also links if it has line of sight to the mast top within 10 km (`Terrain.los_clearance_m`, 2.5 m to 10 m) while the mast sees Earth.
+- **Checks:**
+  - **JPL Horizons, one month at BASE** (the note's exact request, 2028-01, 10 min, 4,465 epochs): max |Δaz| 1.0e-6°, |Δel| 5.5e-7°, |Δdiameter| 0.0006″.
+  - **PDS AVGVISIB at BASE: map pixel 0.503 vs our 0.593. Explained.**
+    - Our pipeline run the map's way (surface level, the 5 m tile averaged to the map's 60 m pixels, at each map pixel centre) gives **0.471 at BASE**, within ±0.05.
+    - Over all 17 points the map's way averages −0.004 against the map (mean |Δ| 0.028); 15/17 are within 0.05.
+    - The two outliers (PAD_A@1 −0.083, PAD_A@3 −0.123) sit where neighbouring map pixels span 0.43-0.58 and 0-0.33.
+    - The difference comes from the antenna and resolution:
+      - BASE is a ridge crest. At 0 m on the 5 m tile, metre-scale relief within a few metres raises the horizon toward Earth to +2.9°, giving a fraction of 0.384.
+      - At 2.5 m it is −1.26° (set by terrain beyond 8 km), giving 0.593. The 10 m mast gets 0.597.
+      - The 60 m map smooths that relief and sits in between.
+    - Epoch matters little: over 18.6 years, hourly, BASE (2.5 m) is 0.580 against 0.593 for 2028-31. Single years range 0.546-0.626.
+    - Pixel registration: the label's 2528.5 offsets are 0-based pixel-centre coordinates, so the image is centred on the pole. The other reading moves BASE to 0.58.
+  - **Window lengths at BASE:** 16.0 d any_part, 14.1 d centre+0.5°, 12.1 d centre+2°. They track the link fraction × 27.2 d. The expected ~13-14 d corresponds to a 50 % site.
+  - **ISRU = 0** under every criterion, as on the map. **SCI_1 = 0.085** any_part (rare moments of peak libration; 0 under the centre criteria; map pixel 0, 3×3 up to 0.43). PSR 0.123.
+- **Runs** (all foreground; wall time and peak RSS):
+
+  | Stage | Time | Peak RSS |
+  |---|---|---|
+  | ephem | 16 s | 192 MB |
+  | routes | 25 s | 231 MB |
+  | points | 30 s | 179 MB |
+  | dem (local file) | 2 s | 203 MB |
+  | masks (10 parts) | ~15 s each | 177 MB |
+  | link | 366 s | 281 MB |
+  | horizons | 4 s | 98 MB |
+  | avgvisib | 15 s | 208 MB |
+
+  - **Process problem, read this:** `timeout 540` does NOT stop a run of `.venv\Scripts\python` on Windows.
+    - It kills the venv launcher; the real interpreter it started keeps running.
+    - My first `dem` stage (a remote windowed read: PGDA serves ~0.4 MB/s and GDAL makes many small range requests) ran from 08:39 to 09:41 until I stopped both processes by hand.
+    - Fix used: download the whole 181 MB file once with `curl -C -` (6.5 min), then read locally (2 s).
+    - For the team rule, suggest calling the base interpreter directly, or killing the process tree (`taskkill /T /F /PID`).
+- **Tests:** `tests/test_comms_data.py`, 10 passed:
+  - map ↔ lat/lon and the note's BASE coordinates;
+  - grid bearing = local azimuth + longitude;
+  - **flat sphere → horizon = the dip** (2.5 m, 10 m, 1,958 m);
+  - **a wall → its exact elevation, and the link blocked below it** (all three criteria);
+  - **sinusoidal Earth over a flat sphere → windows at the analytic crossings**, and fractions to 2e-3;
+  - run-length round trips;
+  - reader queries (`linked`, `next_change`, wrap, `summary`) on a hand-made series;
+  - `validate()` catches bad windows;
+  - `earth_topo` = `azlcpo` to 1e-9°;
+  - the committed file validates (size, sha256, 182 legs, ISRU 0).
+
+  With the terrain and catalogue tests: 44 passed, 1 skipped.
+- **How to test:**
+  - `.venv\Scripts\python -m pytest tests\test_comms_data.py -q`
+  - `.venv\Scripts\python -m lunarsim.comms` prints the site table; add `--legs` for every leg and `--mode dte+mast` for the mast.
+  - Rebuild: `tools/comms/earth_link.py ephem; routes; points; dem; masks --part i --parts 10 (i = 0…9); horizons; link; avgvisib; link`. The final `link` repeats so the checks are embedded.
+- **For B-41 (engine) and FRONTEND:**
+  - Keys: points `BASE`, …, `PAD_A@1`; legs as in `legs_from_sites` (`PAD_A@1->BASE`).
+  - Time = hours since 2028-01-01 00:00 UTC, step 10 min.
+  - `EarthLink.next_change(key, t_h, criterion, mode)` gives the DES its wake-up times.
+  - The 3D world can use `points[*].horizon_at_mean_bearing_deg` or the B-34 horizon map for Earth's disc.
+- **The R-1 headline in the data:**
+  - A rover at BASE sees Earth 59 % of the time. But **101 of 182 legs are never linked end to end (any_part)**, and **138/182 under the centre criteria**.
+  - Every leg touching ISRU, SCI_1 or PSR has at most 0.123, and pad legs at 3 and 5 km standoff are dark.
+  - The BASE mast lifts the inner legs to its own 0.597 but cannot reach those sites.
+  - Teleoperation of most of our network needs a relay or autonomy. E21 should vary exactly that.
+
+Per site and pad (fraction / mean gap h / max gap h; 35064 h = never linked), direct (dte):
+
+| point | any_part | centre+0.5deg | centre+2deg | mean window d (any) | with mast, any_part |
+|---|---|---|---|---|---|
+| BASE | 0.593 / 264 / 296 | 0.521 / 311 / 343 | 0.447 / 359 / 392 | 16.0 | 0.597 / 262 / 291 |
+| DEPOT | 0.470 / 344 / 380 | 0.397 / 392 / 429 | 0.312 / 439 / 484 | 12.7 | 0.597 / 262 / 291 |
+| POWER | 0.596 / 262 / 292 | 0.524 / 309 / 340 | 0.449 / 358 / 389 | 16.1 | 0.597 / 262 / 291 |
+| CONSTR | 0.578 / 274 / 304 | 0.507 / 320 / 352 | 0.434 / 368 / 402 | 15.6 | 0.597 / 262 / 291 |
+| ISRU | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.0 | 0.000 / 35064 / 35064 |
+| SCI_1 | 0.085 / 746 / 7929 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 2.9 | 0.085 / 746 / 7929 |
+| PSR | 0.123 / 559 / 602 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 3.3 | 0.123 / 559 / 602 |
+| PAD_A@0.5 | 0.596 / 262 / 292 | 0.524 / 309 / 339 | 0.450 / 357 / 388 | 16.1 | 0.597 / 262 / 291 |
+| PAD_B@0.5 | 0.525 / 309 / 342 | 0.454 / 355 / 390 | 0.377 / 404 / 441 | 14.2 | 0.597 / 262 / 291 |
+| PAD_A@1 | 0.518 / 313 / 345 | 0.448 / 358 / 393 | 0.372 / 401 / 443 | 14.0 | 0.597 / 262 / 291 |
+| PAD_B@1 | 0.286 / 455 / 492 | 0.177 / 524 / 562 | 0.000 / 35064 / 35064 | 7.7 | 0.286 / 455 / 492 |
+| PAD_A@2 | 0.080 / 827 / 8595 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 3.1 | 0.080 / 827 / 8595 |
+| PAD_B@2 | 0.488 / 332 / 369 | 0.414 / 380 / 419 | 0.330 / 427 / 474 | 13.2 | 0.488 / 332 / 369 |
+| PAD_A@3 | 0.249 / 479 / 516 | 0.112 / 566 / 612 | 0.000 / 35064 / 35064 | 6.7 | 0.249 / 479 / 516 |
+| PAD_B@3 | 0.076 / 876 / 11837 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 3.1 | 0.076 / 876 / 11837 |
+| PAD_A@5 | 0.354 / 412 / 451 | 0.268 / 467 / 504 | 0.138 / 550 / 641 | 9.6 | 0.354 / 412 / 451 |
+| PAD_B@5 | 0.251 / 478 / 516 | 0.112 / 677 / 4686 | 0.000 / 35064 / 35064 | 6.8 | 0.251 / 478 / 516 |
+| mast at BASE (10 m) | 0.597 / 262 / 291 | 0.525 / 309 / 339 | 0.450 / 357 / 388 | 16.1 | � |
+
+Site-to-site legs, direct (fraction / mean gap h / max gap h):
+
+| leg | length m | any_part | centre+0.5deg | centre+2deg | with mast, any_part |
+|---|---|---|---|---|---|
+| BASE->DEPOT | 408 | 0.431 / 369 / 405 | 0.355 / 412 / 455 | 0.261 / 471 / 517 | 0.597 / 262 / 291 |
+| BASE->POWER | 750 | 0.441 / 363 / 396 | 0.367 / 403 / 446 | 0.280 / 459 / 502 | 0.597 / 262 / 291 |
+| BASE->CONSTR | 266 | 0.578 / 274 / 304 | 0.507 / 320 / 352 | 0.434 / 368 / 402 | 0.597 / 262 / 291 |
+| BASE->ISRU | 1243 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 |
+| BASE->SCI_1 | 2354 | 0.085 / 746 / 7929 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.085 / 746 / 7929 |
+| BASE->PSR | 4283 | 0.123 / 559 / 602 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.123 / 559 / 602 |
+| DEPOT->BASE | 408 | 0.467 / 346 / 382 | 0.393 / 394 / 432 | 0.307 / 442 / 488 | 0.597 / 262 / 291 |
+| DEPOT->POWER | 1135 | 0.467 / 346 / 382 | 0.393 / 394 / 432 | 0.307 / 442 / 488 | 0.597 / 262 / 291 |
+| DEPOT->CONSTR | 650 | 0.467 / 346 / 382 | 0.393 / 394 / 432 | 0.307 / 442 / 488 | 0.597 / 262 / 291 |
+| DEPOT->ISRU | 1568 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 |
+| DEPOT->SCI_1 | 2762 | 0.085 / 746 / 7929 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.085 / 746 / 7929 |
+| DEPOT->PSR | 4691 | 0.123 / 559 / 602 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.123 / 559 / 602 |
+| POWER->BASE | 750 | 0.592 / 265 / 296 | 0.521 / 311 / 343 | 0.447 / 359 / 392 | 0.597 / 262 / 291 |
+| POWER->DEPOT | 1135 | 0.470 / 344 / 380 | 0.397 / 392 / 429 | 0.312 / 439 / 484 | 0.597 / 262 / 291 |
+| POWER->CONSTR | 484 | 0.578 / 274 / 304 | 0.507 / 320 / 352 | 0.434 / 368 / 402 | 0.597 / 262 / 291 |
+| POWER->ISRU | 1054 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 |
+| POWER->SCI_1 | 1662 | 0.085 / 746 / 7929 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.085 / 746 / 7929 |
+| POWER->PSR | 3591 | 0.123 / 559 / 602 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.123 / 559 / 602 |
+| CONSTR->BASE | 266 | 0.578 / 274 / 304 | 0.507 / 320 / 352 | 0.434 / 368 / 402 | 0.597 / 262 / 291 |
+| CONSTR->DEPOT | 650 | 0.467 / 346 / 382 | 0.393 / 394 / 432 | 0.307 / 442 / 488 | 0.597 / 262 / 291 |
+| CONSTR->POWER | 484 | 0.578 / 274 / 304 | 0.507 / 320 / 352 | 0.434 / 368 / 402 | 0.597 / 262 / 291 |
+| CONSTR->ISRU | 1116 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 |
+| CONSTR->SCI_1 | 2111 | 0.085 / 746 / 7929 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.085 / 746 / 7929 |
+| CONSTR->PSR | 4040 | 0.123 / 559 / 602 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.123 / 559 / 602 |
+| ISRU->BASE | 1243 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 |
+| ISRU->DEPOT | 1568 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 |
+| ISRU->POWER | 1054 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 |
+| ISRU->CONSTR | 1116 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 |
+| ISRU->SCI_1 | 1405 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 |
+| ISRU->PSR | 3152 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 |
+| SCI_1->BASE | 2354 | 0.085 / 746 / 7929 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.085 / 746 / 7929 |
+| SCI_1->DEPOT | 2762 | 0.085 / 746 / 7929 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.085 / 746 / 7929 |
+| SCI_1->POWER | 1662 | 0.085 / 746 / 7929 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.085 / 746 / 7929 |
+| SCI_1->CONSTR | 2111 | 0.085 / 746 / 7929 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.085 / 746 / 7929 |
+| SCI_1->ISRU | 1405 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 |
+| SCI_1->PSR | 2066 | 0.073 / 756 / 7929 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.073 / 756 / 7929 |
+| PSR->BASE | 4283 | 0.123 / 559 / 602 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.123 / 559 / 602 |
+| PSR->DEPOT | 4691 | 0.123 / 559 / 602 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.123 / 559 / 602 |
+| PSR->POWER | 3591 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 |
+| PSR->CONSTR | 4040 | 0.123 / 559 / 602 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.123 / 559 / 602 |
+| PSR->ISRU | 3152 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 |
+| PSR->SCI_1 | 2066 | 0.073 / 756 / 7929 | 0.000 / 35064 / 35064 | 0.000 / 35064 / 35064 | 0.073 / 756 / 7929 |
+
+Pad legs grouped by standoff (mean link fraction over the 28 legs per standoff; legs never linked):
+
+| standoff km | any_part | centre+0.5deg | centre+2deg | with mast, any_part |
+|---|---|---|---|---|
+| 0.5 | 0.334 (4/28 never) | 0.263 (12/28 never) | 0.219 (12/28 never) | 0.371 (4/28 never) |
+| 1 | 0.156 (15/28 never) | 0.119 (20/28 never) | 0.096 (20/28 never) | 0.171 (15/28 never) |
+| 2 | 0.129 (14/28 never) | 0.088 (20/28 never) | 0.051 (20/28 never) | 0.129 (14/28 never) |
+| 3 | 0.000 (28/28 never) | 0.000 (28/28 never) | 0.000 (28/28 never) | 0.000 (28/28 never) |
+| 5 | 0.003 (27/28 never) | 0.000 (28/28 never) | 0.000 (28/28 never) | 0.003 (27/28 never) |
+
+- **Questions for LEAD:**
+  1. A leg needs every 100 m sample linked. That is strict (one blind cell darkens a leg); it is the task's rule. For B-41's `strategic` supervised policy, should I add each leg's linked share of samples per epoch?
+  2. Routes are the slope-only A* routes. A→B and B→A sometimes differ by A* ties, e.g. BASE->DEPOT 0.431 vs DEPOT->BASE 0.467. Keep them per direction (the engine looks up directed legs)?

@@ -364,7 +364,7 @@ Tests: synthetic DEMs with analytic answers (flat plane → horizon 0°; a cone 
 distance; a plane slope → known normals).
 Done when: tests pass; the 4-azimuth agreement numbers are in the report; files listed with sizes.
 
-## B-40 [IN PROGRESS] (after B-34; <= 5 h, foreground chunks) R-1 data: Earth-link windows at our sites and along our routes
+## B-40 [DONE 10:12] (after B-34; <= 5 h, foreground chunks) R-1 data: Earth-link windows at our sites and along our routes
 Goal: the data behind research thread R-1 "Earth in sight" (plan §10). Read first:
 `research_notes/Lunar communications and visibility/earth_visibility_prior_art.md`, sections "Site facts",
 Q4 and "Minimal data pipeline". The prior-art verdict: site visibility percentages are published; the coupling to
@@ -392,7 +392,7 @@ Done when: tests pass (synthetic: flat sphere, Earth at fixed elevation → anal
 wedge); the JSON validates; the report tables per site and per leg (link fraction, mean and max gap) under each
 criterion.
 
-## B-41 [OPEN] (after B-40; <= 5 h) R-1 engine: opt-in `comms` scenario field (results byte-identical when off)
+## B-41 [IN PROGRESS] (after B-40; <= 5 h) R-1 engine: opt-in `comms` scenario field (results byte-identical when off)
 Goal: the engine can run with Earth-link windows (design: the note's "Experiment design in our engine").
 Scenario field `comms` (default None): `mode` always | dte | dte+relay; `relay` {coverage 0–1, gap_model
 "parametric", mean_gap_h}; `mast` {site, height_m, range_km} or None; `link_series` (path to earth_link-v1.json);
