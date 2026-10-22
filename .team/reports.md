@@ -3376,3 +3376,74 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
   - `node --test site/tests/*.mjs`: 11/11. Build OK. Budgets OK (world JS 19.7 of 25 kB).
   - My servers are stopped by PID; the tab is closed.
 - **Questions for LEAD:** none.
+
+## B-48 DONE 14:55 | Censored urgent metrics, completion shares, round-2 files and the new E21 cells (referee round 1)
+- **Files:**
+  - `lunarsim/comms.py`: outcome metrics, periodic relay, intervention scale, `SUMMARY_PREFIXES`, faster link series.
+  - `lunarsim/engine.py`: `Metrics.cargo`, handed to the comms summary.
+  - `lunarsim/vv.py` and `tests/test_comms_engine.py`: the "always = baseline" checks drop every comms column via `SUMMARY_PREFIXES`.
+  - `lunarsim/schemas/scenario-v1.schema.json`: relay `gap_model: periodic` + `period_h`, `intervention_scale`.
+  - `experiments/phase4/run_phase4.py`: `--round`, the new cells, stage `e21e`. Swapped in through a compile-checked temp file while your stage D chunks run; r1 cell lists unchanged.
+  - `experiments/phase4/analyse_e21.py`: `rounds` subcommand.
+  - `tests/test_comms_round2.py`: new, 7 tests; `tests/test_analyse_e21.py`: +1 test.
+- **1. Metrics** (comms-on runs only; the plain baseline md5 is unchanged and `lunarsim verify` passes 21/21). Over the cargo ready inside the year:
+  - `prio1_completion_share`: urgent items delivered inside the year / ready.
+  - `delay_prio1_p90_censored_h` and `delay_prio1_mean_censored_h`: every ready urgent item; one not delivered inside the year counts with horizon − ready, a lower bound on its wait. This includes items picked up before the end but delivered after it.
+  - `delay_prio1_p90_censored_is_bound` (0/1). It is 1 when a censored wait is among the order statistics the p90 interpolates, or below them. That is more exact than "completion < 90 %" and implies it: with < 90 % completion it is always 1, and it is also 1 when one late-ready censored item sits below the p90. Ties are sorted censored-first (conservative).
+  - `completion_share_bulk` and `completion_share_landed` (item shares; landed = neither bulk nor return).
+  - `delivered_bulk_kg_in_horizon` and `delivered_landed_kg_in_horizon`; bulk + landed + return = `delivered_kg_in_horizon`.
+  - **Seed 0, 2028:**
+
+    | Cell | Uncensored p90 | Censored p90 | Bound | Urgent completion | Bulk completion | Landed completion |
+    |---|---|---|---|---|---|---|
+    | strict, DTE | 328 h | **7,197 h** | yes | 79 % | 60 % | 72 % |
+    | strict, always | 3.8 h | 3.8 h | no | 100 % | 100 % | 100 % |
+    | default, relay 0.1 | 244 h | 5,987 h | yes | 87.5 % | 100 % | 84 % |
+
+    Delivered under DTE (strict): bulk 300.0 t + landed 9.2 t + return 0.8 t = 310.0 t.
+- **2. Round-2 files:** `--round r2` writes `results/<stage>_r2.csv`, `table_E21_r2.csv` and `table_E21_breakeven_r2.csv`; round 1 is never touched.
+  - `python experiments/phase4/analyse_e21.py rounds` checks that every r2 row with an r1 twin (same file, cell key, seed) equals it in every r1 column. It reads with round-trip float parsing, because pandas' default parser is one ULP off at times; I first misread that as a difference. Exit 1 on any difference.
+  - Smoke rows (relay 0.1, default and strict, seed 0): all 97 columns equal.
+  - New cells exist only in r2 (`e21a_cells("r2")` etc.), so an r1 rerun could not append them to r1 files.
+- **3. New cells** (all 20 seeds, start year 2028 + seed mod 4):
+  - **Stage A:** relay 0.05, 0.6, 0.7 × the six mixes. 78 cells in r2 (60 + 18).
+  - **Stage B:** 56 cells (32 + 24):
+    - strategic+avoid on the full grid (DTE and p = 0.5 × +0..3 rovers × mast): 16;
+    - strict and strategic with +0 and +1 rover at p = 0.2 and 0.8 (no mast): 8.
+  - **Stage E (`e21e`, sensitivity, r2 only):** 32 cells, each with a Stage A twin; factor `sensitivity` (FACTORS gains it; "none" elsewhere).
+    - relay gap: exponential mean gap 2 h and 24 h, and periodic at the **DRM-0 784 min** and the **RC 3.1 ~30 h** orbit periods (R-1 note); × p {0.1, 0.5} × {strict, teleop}: 16. M8 asked for both orbits, so I included both.
+    - intervention rate ×0.5 and ×2 for strategic and strategic+avoid at DTE and p = 0.5: 8.
+    - plume keep-out 1 km / 0.5 h at DTE (default mix) and p = 0.5 (strict): 2.
+    - ISRU with local feedstock (the CONSTR→ISRU flow removed) at DTE and always × {default, strict, teleop}: 6.
+  - **New options:**
+    - `comms.relay = {coverage, gap_model: "periodic", period_h}`: up p·T of every T, random phase from the relay's own stream.
+    - `comms.intervention_scale`: a leg's driving-table intervention count k becomes Poisson(s·k), or the hazard rate is scaled; scale 1 = the unchanged code path.
+- **Speed-up (exact):** a relay-0.05 run took 222 s (strict), so I profiled.
+  - **Cause:** 6.7 M scalar `np.searchsorted` calls in `_Intervals`, plus unmemoised `_Or` / `_And`.
+  - **Fix:** `bisect` on plain lists, same comparisons and `float()` results; bounded memos like `_Windows` has.
+  - **Result:** 3.75× faster on that run (2,000 h profile 112 → 30 s).
+  - **Exactness:** five committed r1 cells recomputed (default relay 0.1, teleop relay 0.3, strict DTE, strategic+avoid relay 0.5, strategic DTE; seed 0) equal their r1 rows in **every column**, read round-trip; the relay cells now run 2-3× faster than r1's recorded times.
+- **4. Runtime estimate** (single process; from r1's recorded run times with the measured speed-ups, plus timed new cells):
+
+  | Stage | Cells | Runs | Estimate | Note |
+  |---|---|---|---|---|
+  | A | 78 | 1,560 | ~3.5 h | the relay-0.05 level ~2.9 h of it; teleop at 0.05 is 370 s per run (~2.1 h), strict 46 s, default 72 s |
+  | B | 56 | 1,120 | ~1.0 h | |
+  | C | 36 | 720 | ~0.6 h | |
+  | D | 32 | 640 | ~0.9 h | |
+  | A2 | 12 | 240 | ~0.5 h | |
+  | E | 32 | 640 | ~1.5 h | relay cells 7-49 s per run, worst periodic RC 3.1 teleop p = 0.1 |
+  | **Total** | **246** | **4,920** | **≈ 8 h** | ~4-5 h on two workers |
+
+  - Suggestion: run the A cells at relay 0.05 (cells 60-65; teleop is cell 60) last, in their own chunks; each teleop chunk does ~1.4 seeds per 9 min.
+- **Tests:**
+  - `test_comms_round2.py` 7 passed:
+    - censored = uncensored when all are delivered;
+    - bound flag both ways; delivered-after-year counts as censored;
+    - the bulk / landed split;
+    - engine with the never-linked ISRU (bulk completion < 0.7 under DTE) and "always" (censored = engine p90);
+    - periodic relay geometry; intervention scale 1 = unchanged and 0 = no intervention waits;
+    - the round-2 cell sets (r1 ⊂ r2).
+  - **Full suite:** 444 passed; `lunarsim verify` 21/21; schemas 35/35.
+- **Cross-platform:** your lander-parity fix is noted. The new tests compare floats with tolerances, except where the arithmetic is platform-independent (sums of the same doubles in the same order, CSV round trips).
+- **Questions for LEAD:** none. Note: a `table` rebuild of round 1 now adds a `sensitivity` column ("none"), so rebuild the stories after it, as with stage D.

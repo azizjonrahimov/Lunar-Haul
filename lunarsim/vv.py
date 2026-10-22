@@ -345,7 +345,8 @@ def check_comms_always_baseline() -> Check:
     buf = io.StringIO()
     pd.DataFrame(rows).to_csv(buf, index=False)
     df = pd.read_csv(io.StringIO(buf.getvalue()), float_precision="round_trip")
-    drop = [c for c in df.columns if c.startswith(("blackout", "operator_peak", "linked_share", "delivered_kg_in_horizon"))
+    from .comms import SUMMARY_PREFIXES
+    drop = [c for c in df.columns if c.startswith(SUMMARY_PREFIXES)
             or c in ("delivered_nonbulk_kg", "cost_per_landed_kg_usd")]
     md5 = hashlib.md5(df.drop(columns=drop).to_csv(index=False, lineterminator=chr(10)).encode()).hexdigest()
     return Check("Earth-link rule 'always' reproduces the baseline", 1.0, float(md5 == want), 0.0, "match",

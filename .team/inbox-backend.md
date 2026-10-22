@@ -598,7 +598,7 @@ FRONTEND the path (via LEAD) so `site/tests/lander-trajectories.test.mjs` can as
 # R-1 revision round 2 (queued 22 Oct 14:15). Read `paper/r1/REVIEW_round1.md` first (§2 errors, §4 statistics,
 # §5 missing analyses M1-M14, §7 required changes). Order: B-48, B-49. LEAD runs the suites.
 
-## B-48 [OPEN] (<= 3 h) Censored urgent-delay metrics, the new E21 cells, and round-2 result files
+## B-48 [DONE 14:55] (<= 3 h) Censored urgent-delay metrics, the new E21 cells, and round-2 result files
 1. **Metrics (comms-on runs only, so the baseline md5 cannot move):** add to `CommsModel.summary()`:
    `prio1_completion_share` (priority-1 items delivered in the year / priority-1 items ready in the year),
    `delay_prio1_p90_censored_h` and `delay_prio1_mean_censored_h` (every priority-1 item ready in the year; an
@@ -621,7 +621,7 @@ FRONTEND the path (via LEAD) so `site/tests/lander-trajectories.test.mjs` can as
 4. Report the runtime estimate per stage and the cell counts. Tests for the new metrics on a tiny scenario
    (completion share with a never-linked destination; censored p90 equals the uncensored one when all are delivered).
 
-## B-49 [OPEN] (after B-48; <= 3 h) Analysis for round 2 (analyse_e21.py, reads the r2 files)
+## B-49 [IN PROGRESS] (after B-48; <= 3 h) Analysis for round 2 (analyse_e21.py, reads the r2 files)
 Referee M2-M5 and the statistics notes:
 - **Throughput split** (M2): bulk vs landed cargo delivered, per mix and link regime, paired effects; the 200 t/yr
   CONSTR→ISRU feedstock stated; landed cargo at 3 km pads under DTE.

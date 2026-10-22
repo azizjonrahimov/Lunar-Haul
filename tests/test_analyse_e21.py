@@ -182,3 +182,19 @@ def test_strict_operator_family_and_demand():
     o = A.operator_demand(df, mixes=("teleop_4s",))
     assert set(o["operators"]) == {"lenient", "strict"}
     assert not o[o.operators == "strict"]["over_staffing"].any()
+
+
+def test_check_rounds(tmp_path):
+    """Round-2 rows must equal their round-1 twins in every round-1 column; a difference is reported."""
+    r1 = pd.DataFrame({"cell": ["a", "a", "b"], "seed": [0, 1, 0], "x": [0.1 + 0.2, 2.0, np.nan], "run_s": [1, 2, 3]})
+    r2 = r1.copy()
+    r2["run_s"] = [9, 9, 9]
+    r2["new_metric"] = 1.0
+    r2 = pd.concat([r2, pd.DataFrame({"cell": ["c"], "seed": [0], "x": [5.0], "run_s": [1], "new_metric": [0.0]})])
+    r1.to_csv(tmp_path / "E21a_comms_autonomy.csv", index=False)
+    r2.to_csv(tmp_path / "E21a_comms_autonomy_r2.csv", index=False)
+    res = A.check_rounds(str(tmp_path))["E21a_comms_autonomy.csv"]
+    assert res["pairs"] == 3 and res["differing"] == {}                 # 0.30000000000000004 round-trips exactly
+    r2.loc[1, "x"] = 2.0000000001
+    r2.to_csv(tmp_path / "E21a_comms_autonomy_r2.csv", index=False)
+    assert A.check_rounds(str(tmp_path))["E21a_comms_autonomy.csv"]["differing"] == {"x": 1}

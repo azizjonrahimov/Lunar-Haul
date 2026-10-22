@@ -114,6 +114,7 @@ class Metrics:
     intervention_h: float = 0.0
     prop_residual_kg: List[float] = field(default_factory=list)
     comms: Optional[object] = None          # Phase 4: the CommsModel when Scenario.comms is set (adds its columns)
+    cargo: Optional[object] = None          # B-48: the run's cargo list, for the comms outcome metrics
 
     def summary(self) -> Dict[str, float]:
         d = np.array(self.delays_h) if self.delays_h else np.array([np.nan])
@@ -192,7 +193,7 @@ class Metrics:
                 "prop_residual_kg_mean": float(np.mean(self.prop_residual_kg)) if self.prop_residual_kg else np.nan,
             })
         if self.comms is not None:
-            out.update(self.comms.summary())
+            out.update(self.comms.summary(self.cargo))
         return out
 
 
@@ -250,6 +251,7 @@ class Simulation:
             self.comms = CommsModel(sc.comms, standoff, s, sc.horizon_h, self.world.pads, find=_find)
             self.comms.set_leg_km(self.world.distance_km)
             self.metrics.comms = self.comms
+            self.metrics.cargo = self.all_cargo
         self.illum = None
         if sc.illumination is not None:     # Phase 4 (B-44): opt-in real sun per site and leg; see lunarsim/illumination.py
             from .illumination import Illumination

@@ -124,7 +124,29 @@ def paired(ref: pd.DataFrame, cell: pd.DataFrame, metric: str) -> Dict[str, floa
     d = (j["cell"] - j["ref"]).to_numpy(float)
     m, h = float(d.mean()), float(stats.t.ppf(0.975, n - 1) * d.std(ddof=1) / math.sqrt(n))
     rel = 100.0 * m / out["ref_mean"] if out["ref_mean"] else np.nan
-    return {**out, "diff": m, "ci_lo": m - h, "ci_hi": m + h, "rel_pct": rel}
+    return {**out, "diff": m, "ci_lo": m - h, "ci_hi": m + h, "rel_pct": rel, **robust_stats(j["ref"], j["cell"])}
+
+
+def robust_stats(ref: pd.Series, cell: pd.Series) -> Dict[str, float]:
+    """Medians, the paired log-ratio (geometric-mean ratio cell / ref, t interval on the log scale; only when every
+    pair is positive) and the Wilcoxon signed-rank p of the differences (zeros dropped)."""
+    r, c = ref.to_numpy(float), cell.to_numpy(float)
+    d = c - r
+    out = {"ref_median": float(np.median(r)), "cell_median": float(np.median(c)), "median_diff": float(np.median(d)),
+           "n_increase": int((d > 0).sum()), "gm_ratio": np.nan, "gm_ratio_lo": np.nan, "gm_ratio_hi": np.nan,
+           "wilcoxon_p": np.nan}
+    n = len(d)
+    if n >= 2 and np.all(r > 0) and np.all(c > 0):
+        lr = np.log(c / r)
+        h = stats.t.ppf(0.975, n - 1) * lr.std(ddof=1) / math.sqrt(n)
+        out.update(gm_ratio=float(np.exp(lr.mean())), gm_ratio_lo=float(np.exp(lr.mean() - h)),
+                   gm_ratio_hi=float(np.exp(lr.mean() + h)))
+    if n >= 2 and np.any(d != 0):
+        try:
+            out["wilcoxon_p"] = float(stats.wilcoxon(d, zero_method="wilcox").pvalue)
+        except ValueError:
+            pass
+    return out
 
 
 def _rows(family: str, ref_label: str, cell_label: str, ctx: Dict[str, Any], ref: pd.DataFrame, cell: pd.DataFrame,
@@ -624,9 +646,51 @@ def cmd_fit(a) -> None:
     print(f"E21_fit.json written ({time.time() - t0:.0f} s)")
 
 
+ROUND_FILES = STAGE_FILES + ("E21d_sun.csv",)
+
+
+def check_rounds(results: str = RESULTS) -> Dict[str, Any]:
+    """Round 2 reruns the round-1 cells with an unchanged engine: every round-2 row that has a round-1 twin (same
+    stage file, cell key and seed) must equal it in every round-1 column. Files are read with round-trip float parsing
+    (pandas' default parser can be one unit in the last place off)."""
+    out: Dict[str, Any] = {}
+    for f in ROUND_FILES:
+        p1, p2 = os.path.join(results, f), os.path.join(results, f.replace(".csv", "_r2.csv"))
+        if not (os.path.exists(p1) and os.path.exists(p2)):
+            continue
+        a = pd.read_csv(p1, float_precision="round_trip")
+        b = pd.read_csv(p2, float_precision="round_trip")
+        cols = [c for c in a.columns if c in b.columns and c not in ("cell", "seed", "run_s")]
+        m = a.merge(b, on=["cell", "seed"], suffixes=("_1", "_2"))
+        diff = {}
+        for c in cols:
+            x, y = m[c + "_1"], m[c + "_2"]
+            same = (x == y) | (x.isna() & y.isna())
+            if not same.all():
+                diff[c] = int((~same).sum())
+        out[f] = {"pairs": int(len(m)), "r1_rows": int(len(a)), "columns": len(cols), "differing": diff}
+    return out
+
+
+def cmd_rounds(a) -> None:
+    res = check_rounds(a.results)
+    if not res:
+        print("no stage has both round-1 and round-2 files yet")
+        return
+    bad = 0
+    for f, r in res.items():
+        bad += len(r["differing"])
+        print(f"{f}: {r['pairs']} of {r['r1_rows']} round-1 rows have a round-2 twin; {r['columns']} columns; "
+              + ("all equal" if not r["differing"] else f"DIFFERING {r['differing']}"))
+    if bad:
+        raise SystemExit(1)
+
+
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
+    p = sub.add_parser("rounds", help="round-2 rows equal their round-1 twins in every round-1 column")
+    p.add_argument("--results", default=RESULTS)
     p = sub.add_parser("demand")
     p.add_argument("--seeds", type=int, default=20)
     p.add_argument("--mix", default="supervised_strict")
@@ -636,7 +700,7 @@ def main(argv=None) -> None:
     p.add_argument("--boot", type=int, default=N_BOOT)
     p.add_argument("--results", default=RESULTS)
     a = ap.parse_args(argv)
-    {"demand": cmd_demand, "fit": cmd_fit}[a.cmd](a)
+    {"demand": cmd_demand, "fit": cmd_fit, "rounds": cmd_rounds}[a.cmd](a)
 
 
 if __name__ == "__main__":

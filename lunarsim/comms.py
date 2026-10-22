@@ -281,7 +281,19 @@ class EarthLink:
 #   mode               "always" (no link rule: results identical to comms=None) | "dte" | "dte+relay"
 #   criterion          one of CRITERIA (default "any_part")
 #   link_series        path to earth_link-v1.json (default DEFAULT_LINK_SERIES; its samples file is read too)
-#   relay              {"coverage": p in [0, 1], "gap_model": "parametric", "mean_gap_h": g} for dte+relay
+#   relay              {"coverage": p in [0, 1], "gap_model": "parametric", "mean_gap_h": g} for dte+relay, or
+#                      {"coverage": p, "gap_model": "periodic", "period_h": T}: up p T, down (1 - p) T, random phase
+#                      (B-48 sensitivity: an orbit's near-periodic pass, DRM-0 T = 784 min or RC 3.1 T ~ 30 h)
+#   intervention_scale strategic policies (B-48 sensitivity): a leg's intervention count k becomes Poisson(s k) (mean
+#                      s times the driving table's), or the hazard rate is scaled by s; default 1 = unchanged
+#   outcome metrics    summary(cargo) adds, over the cargo ready inside the year: prio1_completion_share (urgent items
+#                      delivered inside the year / ready), delay_prio1_p90_censored_h and _mean_censored_h (every
+#                      ready urgent item; one not delivered inside the year counts with horizon - ready, a lower
+#                      bound on its wait), delay_prio1_p90_censored_is_bound (1 when a censored wait is among the order
+#                      statistics the p90 interpolates or below them, so the p90 is a lower bound; always so when
+#                      completion < 90 %), completion_share_bulk
+#                      and _landed (item shares; landed = neither bulk nor return), delivered_bulk_kg_in_horizon and
+#                      delivered_landed_kg_in_horizon
 #   mast               {"site": "BASE", "height_m": 10, "range_km": 10} or None (the mast the link file was built for)
 #   supervised_policy  "strict" (default) | "strategic" | "strategic+avoid"
 #   start_year         2028-2031 (the series year engine hour 0 maps to; default 2028), or start_h (hours from
@@ -325,7 +337,12 @@ import os as _os
 COMMS_MODES = ("always", "dte", "dte+relay")
 SUPERVISED_POLICIES = ("strict", "strategic", "strategic+avoid")
 COMMS_KEYS = {"mode", "criterion", "link_series", "relay", "mast", "supervised_policy", "start_year", "start_h",
-              "defer_wait_h", "operators_strict"}
+              "defer_wait_h", "operators_strict", "intervention_scale"}
+# columns CommsModel.summary() adds to a run (comms set); checks of "always" against the baseline drop these
+SUMMARY_PREFIXES = ("blackout", "operator_peak", "operator_wait", "operator_waits", "linked_share",
+                    "delivered_kg_in_horizon", "prio1_completion", "delay_prio1_p90_censored",
+                    "delay_prio1_mean_censored", "completion_share", "delivered_bulk_kg_in_horizon",
+                    "delivered_landed_kg_in_horizon")
 _BIG_H = 1e12
 DEFAULT_LINK_SERIES = _os.path.join("data", "comms", "connecting_ridge", "earth_link-v1.json")
 SERIES_YEARS = (2028, 2029, 2030, 2031)
@@ -383,20 +400,38 @@ class _Intervals(_Series):
 
     def __init__(self, iv: np.ndarray):
         self.iv = iv
+        self._s = [float(x) for x in iv[:, 0]] if len(iv) else []      # plain lists: bisect on a scalar is ~10x
+        self._e = [float(x) for x in iv[:, 1]] if len(iv) else []      # faster than numpy's searchsorted call
 
     def next_change(self, t):
-        iv = self.iv
-        j = int(np.searchsorted(iv[:, 0], t, side="right")) - 1 if len(iv) else -1
-        if j >= 0 and t < iv[j, 1]:
-            return True, float(iv[j, 1] - t)
-        return False, (float(iv[j + 1, 0] - t) if j + 1 < len(iv) else math.inf)
+        s, e = self._s, self._e
+        j = bisect_right(s, t) - 1
+        if j >= 0 and t < e[j]:
+            return True, float(e[j] - t)
+        return False, (float(s[j + 1] - t) if j + 1 < len(s) else math.inf)
 
 
-class _Or(_Series):
+class _Memo(_Series):
+    """A combinator with a bounded memo of next_change(t) (the series are fixed, so the answer for t is too)."""
+
     def __init__(self, a: _Series, b: _Series):
         self.a, self.b = a, b
+        self._memo: Dict[float, Tuple[bool, float]] = {}
 
     def next_change(self, t):
+        r = self._memo.get(t)
+        if r is None:
+            if len(self._memo) > 50000:
+                self._memo.clear()
+            r = self._memo[t] = self._next_change(t)
+        return r
+
+    def _next_change(self, t):
+        raise NotImplementedError
+
+
+class _Or(_Memo):
+    def _next_change(self, t):
         ua, da = self.a.next_change(t)
         ub, db = self.b.next_change(t)
         if not (ua or ub):
@@ -412,11 +447,8 @@ class _Or(_Series):
         return True, e - t
 
 
-class _And(_Series):
-    def __init__(self, a: _Series, b: _Series):
-        self.a, self.b = a, b
-
-    def next_change(self, t):
+class _And(_Memo):
+    def _next_change(self, t):
         ua, da = self.a.next_change(t)
         ub, db = self.b.next_change(t)
         if ua and ub:
@@ -498,16 +530,28 @@ class CommsModel:
             got = (self.mast.get("site", "BASE"), float(self.mast.get("height_m", 10.0)), float(self.mast.get("range_km", 10.0)))
             if got != want:
                 raise ValueError(f"comms mast {got} differs from the mast the link file was built for {want}")
+        self.iv_scale = float(cfg.get("intervention_scale", 1.0))
+        if self.iv_scale < 0:
+            raise ValueError("comms intervention_scale must be >= 0")
         if self.mode == "dte+relay":
             r = cfg.get("relay") or {}
-            if r.get("gap_model", "parametric") != "parametric":
-                raise ValueError("only relay gap_model 'parametric' is implemented")
+            model = r.get("gap_model", "parametric")
+            if model not in ("parametric", "periodic"):
+                raise ValueError("relay gap_model must be 'parametric' or 'periodic'")
             p = float(r.get("coverage", 0.8))
-            g = float(r.get("mean_gap_h", DEFAULT_RELAY_GAP_H))
-            if not 0.0 <= p <= 1.0 or g <= 0:
-                raise ValueError("relay coverage must be in [0, 1] and mean_gap_h > 0")
-            self._relay_p, self._relay_g = p, g
-            self.relay = _Intervals(self._relay_intervals(p, g, np.random.default_rng([int(seed), 41, 2])))
+            rng_r = np.random.default_rng([int(seed), 41, 2])
+            if model == "periodic":
+                T = float(r.get("period_h", 784.0 / 60.0))
+                if not 0.0 <= p <= 1.0 or T <= 0:
+                    raise ValueError("relay coverage must be in [0, 1] and period_h > 0")
+                self._relay_p, self._relay_g = p, (1.0 - p) * T
+                self.relay = _Intervals(self._periodic_intervals(p, T, rng_r))
+            else:
+                g = float(r.get("mean_gap_h", DEFAULT_RELAY_GAP_H))
+                if not 0.0 <= p <= 1.0 or g <= 0:
+                    raise ValueError("relay coverage must be in [0, 1] and mean_gap_h > 0")
+                self._relay_p, self._relay_g = p, g
+                self.relay = _Intervals(self._relay_intervals(p, g, rng_r))
 
     # ---- link series -------------------------------------------------------------------------------------
     def _relay_intervals(self, p: float, g: float, rng) -> np.ndarray:
@@ -525,6 +569,18 @@ class CommsModel:
             t += d
             up = not up
         return np.array(out) if out else np.zeros((0, 2))
+
+    def _periodic_intervals(self, p: float, T: float, rng) -> np.ndarray:
+        """Up for p T of every period T from a uniformly random phase (an orbit's pass over the pole)."""
+        if p >= 1.0:
+            return np.array([[0.0, math.inf]])
+        if p <= 0.0:
+            return np.zeros((0, 2))
+        phase = float(rng.random()) * T
+        n = int(math.ceil((self.horizon_h + 10 * T) / T)) + 2
+        starts = -phase + T * np.arange(n)
+        iv = np.stack([starts, starts + p * T], axis=1)
+        return iv[iv[:, 1] > 0.0]
 
     def name(self, site: str) -> str:
         return f"{site}@{self.standoff}" if site in self.pads else site
@@ -781,9 +837,12 @@ class CommsModel:
                     k = 0
                 elif ks is not None and idx < len(ks):            # the driving table's draw for this leg
                     k = int(ks[idx])
+                    if self.iv_scale != 1.0:                      # B-48 sensitivity: s times as many, on average
+                        k = int(self.rng_iv.poisson(self.iv_scale * k))
                 else:                                             # no driving table: draw from the hazard rate
                     km = self._km_of(a, b) if self._km_of else 0.0
-                    k = int(self.rng_iv.poisson(HAZARD_SUPERVISED_PER_KM * km))
+                    k = int(self.rng_iv.poisson(self.iv_scale * HAZARD_SUPERVISED_PER_KM * km if self.iv_scale != 1.0
+                                                else HAZARD_SUPERVISED_PER_KM * km))
                 extra = 0.0
                 if a != b and k > 0:
                     for u in np.sort(self.rng_iv.random(k)):
@@ -990,7 +1049,34 @@ class CommsModel:
                 t = e if e > t + _EPS else self.horizon_h
             self.linked_share_by_leg[key] = on / self.horizon_h
 
-    def summary(self) -> Dict[str, float]:
+    def outcome_metrics(self, cargo) -> Dict[str, float]:
+        """Completion and censored urgent delay over the cargo ready inside the year (see the block comment)."""
+        H = self.horizon_h
+        ready = [c for c in cargo if c.t_ready < H]
+        done = lambda c: c.t_delivered is not None and c.t_delivered <= H + 1e-9
+        share = lambda xs: float(np.mean([done(c) for c in xs])) if xs else float("nan")
+        p1 = [c for c in ready if c.priority == 1]
+        waits = np.array([(c.t_delivered - c.t_ready) if done(c) else (H - c.t_ready) for c in p1], dtype=float)
+        censored = np.array([not done(c) for c in p1], dtype=bool)
+        p90 = float(np.percentile(waits, 90)) if len(waits) else float("nan")
+        bound = False
+        if censored.any():                    # the p90 interpolates order statistics k and k + 1: it is exact only
+            n = len(waits)                    # when no censored wait sits at or below the ones it uses
+            k = int(math.floor(0.9 * (n - 1)))
+            upper = k + 1 if 0.9 * (n - 1) - k > 1e-12 else k
+            order = np.lexsort((~censored, waits))        # ties: censored first (conservative)
+            bound = bool(censored[order[:upper + 1]].any())
+        bulk = [c for c in ready if c.cls == "bulk"]
+        landed = [c for c in ready if c.cls not in ("bulk", "return")]
+        kg = lambda xs: float(sum(c.mass_kg for c in xs if done(c)))
+        return {"prio1_completion_share": share(p1),
+                "delay_prio1_p90_censored_h": p90,
+                "delay_prio1_mean_censored_h": float(waits.mean()) if len(waits) else float("nan"),
+                "delay_prio1_p90_censored_is_bound": float(bound),
+                "completion_share_bulk": share(bulk), "completion_share_landed": share(landed),
+                "delivered_bulk_kg_in_horizon": kg(bulk), "delivered_landed_kg_in_horizon": kg(landed)}
+
+    def summary(self, cargo=None) -> Dict[str, float]:
         uses = sum(self.leg_uses.values())
         share = (sum(self.linked_share_by_leg.get(k, 0.0) * n for k, n in self.leg_uses.items()) / uses
                  if uses and self.linked_share_by_leg else (1.0 if not self.active else float("nan")))
@@ -1007,6 +1093,7 @@ class CommsModel:
             "delivered_kg_in_horizon": self.delivered_in_horizon_kg,
             "linked_share_by_leg_mean": share,
             **({"operator_wait_vehicle_h": self.op_wait_h, "operator_waits": self.op_waits} if self.operators_strict else {}),
+            **(self.outcome_metrics(cargo) if cargo is not None else {}),
         }
 
 

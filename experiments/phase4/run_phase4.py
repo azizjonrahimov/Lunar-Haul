@@ -4,6 +4,7 @@ Usage:  python experiments/phase4/run_phase4.py e21a [--seeds 20] [--workers 1] 
         python experiments/phase4/run_phase4.py e21b e21c            # B reads the Stage A table
         python experiments/phase4/run_phase4.py e21d --cells 0-7      # stage D (real sun), in chunks
         python experiments/phase4/run_phase4.py e21a2                 # stage A2 (strict operators)
+        python experiments/phase4/run_phase4.py e21a --round r2       # round 2 (referee round 1): *_r2.csv files
         python experiments/phase4/run_phase4.py table                 # rebuild results/table_E21*.csv only
 
 Conventions as experiments/phase3/run_phase3.py: a cell is (tag, scenario, mechanism) replicated over seeds with common
@@ -33,6 +34,16 @@ model, pads at 1 km, Earth-link criterion any_part (lunarsim/comms.py; data/comm
         x mix {P2 default, all supervised-strict} x sun {night_fraction 0.15, real (Scenario.illumination, B-44:
         criterion half, leg rule most)} x start year 2028-2031 as a cell factor (not seed mod 4), with the delivered
         tonnes per twelfth of the year (delivered_t_m01..m12) for the ripple                    -> E21d_sun.csv
+  e21e  (round 2) sensitivities, each against its Stage A twin: relay mean gap 2 h and 24 h and a periodic relay
+        (DRM-0 784 min and RC 3.1 ~30 h orbit periods) at p = 0.1 and 0.5 for the strict and teleop fleets;
+        intervention rate x0.5 and x2 for strategic and strategic+avoid at DTE and p = 0.5; plume keep-out 1 km /
+        0.5 h at DTE (P2 default mix) and p = 0.5 (strict); ISRU with local feedstock (no CONSTR -> ISRU haul) at DTE
+        and always for the default, strict and teleop fleets                                     -> E21e_sensitivity.csv
+Round 2 (--round r2): every stage writes results/<stage>_r2.csv and the tables table_E21_r2.csv,
+table_E21_breakeven_r2.csv, so round-1 files stay as they were. The engine is unchanged, so a round-2 row equals its
+round-1 row in every round-1 column (analyse_e21.py checks it); round 2 adds the B-48 outcome columns (completion and
+censored urgent delay, bulk / landed kg) and the new cells: Stage A relay 0.05, 0.6, 0.7; Stage B strategic+avoid on
+the full grid and strict / strategic at +0 / +1 rover at p = 0.2 and 0.8; Stage E.
 Summary of every stage present: results/table_E21.csv (mean and 95 % CI per cell of delivered t/yr inside the year,
 urgent p90 delay, $/landed kg, blackout wait, operator peak, plus the other B-41 metrics).
 """
@@ -83,7 +94,13 @@ E21C_BASE = (("dte", None, "default"), ("dte", None, "teleop_4s"), ("dte+relay",
 DEFER_DEFAULT_H = 24.0            # lunarsim.comms.DEFAULT_DEFER_WAIT_H (Assumed)
 E21C_DEFERS = (12.0, 72.0, None)  # with the default 24 h from the pads x criterion grid; None = never defer
 STAGES = {"e21a": "E21a_comms_autonomy", "e21b": "E21b_breakeven", "e21c": "E21c_pads_criterion", "e21d": "E21d_sun",
-          "e21a2": "E21a2_operators"}
+          "e21a2": "E21a2_operators", "e21e": "E21e_sensitivity"}
+ROUNDS = ("r1", "r2")
+R2_LEVELS = (("dte+relay", 0.05), ("dte+relay", 0.6), ("dte+relay", 0.7))       # referee M1 (round 2 only)
+R2_B_POLICY = "strategic+avoid"                                                   # referee M6
+R2_B_EXTRA_P = (0.2, 0.8)
+LCRNS_DRM0_PERIOD_H = 784.0 / 60.0      # Modelled: LCRNS DRM-0, one relay, 784 min orbit (R-1 note)
+LCRNS_RC31_PERIOD_H = 30.0              # Modelled: LCRNS Reference Constellation 3.1 ELFO, period about 30 h (R-1 note)
 E21A2_COMMS = (("dte", None), ("dte+relay", 0.1), ("dte+relay", 0.3), ("dte+relay", 0.5), ("dte+relay", 0.8),
                ("dte+relay", 1.0))
 E21A2_MIXES = ("teleop_4s", "default")
@@ -93,11 +110,14 @@ E21D_SUN = ("night_fraction", "real")
 E21D_YEARS = (2028, 2029, 2030, 2031)
 N_MONTHS = 12
 FACTORS = ["stage", "comms", "coverage", "mix", "policy", "extra_rovers", "mast", "pad_standoff_km", "criterion",
-           "defer_wait_h", "sun", "year"]     # sun / year: stage D only (A-C: night_fraction, year -1 = start by seed)
+           "defer_wait_h", "sun", "year", "sensitivity"]   # sun / year: stage D (else night_fraction, -1); sensitivity: E
 METRICS = ["delivered_t_in_year", "delay_prio1_p90_h", "cost_per_landed_kg_usd", "blackout_wait_vehicle_h",
            "operator_peak_demand", "delay_prio1_mean_h", "sl24_prio1", "delivered_kg", "blackout_wait_teleop_h",
            "blackout_wait_supervised_h", "blackout_jobs_delayed", "blackout_jobs_refused", "blackout_jobs_deferred",
            "blackout_jobs_avoided", "operator_wait_vehicle_h", "operator_waits",
+           "prio1_completion_share", "delay_prio1_p90_censored_h", "delay_prio1_mean_censored_h",
+           "delay_prio1_p90_censored_is_bound", "completion_share_bulk", "completion_share_landed",
+           "delivered_bulk_kg_in_horizon", "delivered_landed_kg_in_horizon",
            "linked_share_by_leg_mean", "operator_hours", "jobs", "utilisation", "backlog_kg"]
 EXTRA_ROVER = ("EXTRA", "LTV", "supervised", "A")
 
@@ -148,9 +168,9 @@ def scenario(mix, comms_mode, coverage=None, extra=0, mast=None, standoff=STANDO
     return tag, sc
 
 
-def e21a_cells():
+def e21a_cells(rnd: str = "r1"):
     cells = []
-    for mode, p in COMMS_LEVELS:
+    for mode, p in COMMS_LEVELS + (R2_LEVELS if rnd != "r1" else ()):
         for mix in MIXES:
             tag, sc = scenario(mix, mode, p)
             tag["stage"] = "A"
@@ -172,15 +192,24 @@ def knee_coverage(table: pd.DataFrame, mix="supervised_strict", metric="delivere
     return float(ok.index.min())
 
 
-def e21b_cells(p_knee: float):
+def e21b_cells(p_knee: float, rnd: str = "r1"):
     cells = []
+    pols = POLICIES + ((R2_B_POLICY,) if rnd != "r1" else ())
     for mode, p in (("dte", None), ("dte+relay", p_knee)):
         if mode == "dte+relay" and p_knee <= 0:
             continue
         for extra in EXTRA_ROVERS:
             for mast in MASTS:
-                for pol in POLICIES:
+                for pol in pols:
                     tag, sc = scenario("supervised_strict", mode, p, extra=extra, mast=mast, policy_override=pol)
+                    tag["stage"] = "B"
+                    tag["p_knee"] = float(p_knee)
+                    cells.append((tag, sc, MECH, *MECHS[MECH]))
+    if rnd != "r1":                                   # a second and third coverage for the rover equivalent (M6)
+        for p in R2_B_EXTRA_P:
+            for pol in POLICIES:
+                for extra in (0, 1):
+                    tag, sc = scenario("supervised_strict", "dte+relay", p, extra=extra, policy_override=pol)
                     tag["stage"] = "B"
                     tag["p_knee"] = float(p_knee)
                     cells.append((tag, sc, MECH, *MECHS[MECH]))
@@ -199,6 +228,39 @@ def e21c_cells():
             tag, sc = scenario(mix, mode, p, defer=dw)
             tag["stage"] = "C"
             cells.append((tag, sc, MECH, *MECHS[MECH]))
+    return cells
+
+
+def e21e_cells():
+    """Round-2 sensitivities (referee M8, M12, M13, M14); each has a Stage A twin with the same comms, mix and seeds."""
+    cells = []
+
+    def add(name, mix, mode, p, change):
+        tag, sc = scenario(mix, mode, p)
+        tag.update(stage="E", sensitivity=name)
+        cells.append((tag, change(sc), MECH, *MECHS[MECH]))
+
+    gaps = (("relay_gap_2h", {"gap_model": "parametric", "mean_gap_h": 2.0}),
+            ("relay_gap_24h", {"gap_model": "parametric", "mean_gap_h": 24.0}),
+            ("relay_periodic_drm0", {"gap_model": "periodic", "period_h": LCRNS_DRM0_PERIOD_H}),
+            ("relay_periodic_rc31", {"gap_model": "periodic", "period_h": LCRNS_RC31_PERIOD_H}))
+    for p in (0.1, 0.5):
+        for mix in ("supervised_strict", "teleop_4s"):
+            for name, r in gaps:
+                add(name, mix, "dte+relay", p,
+                    lambda sc, r=r, p=p: sc.with_(comms=dict(sc.comms, relay={"coverage": float(p), **r})))
+    for mode, p in (("dte", None), ("dte+relay", 0.5)):
+        for mix in ("supervised_strategic", "supervised_strategic+avoid"):
+            for k in (0.5, 2.0):
+                add(f"interventions_x{k:g}", mix, mode, p,
+                    lambda sc, k=k: sc.with_(comms=dict(sc.comms, intervention_scale=k)))
+    plume = {"keepout_km": 1.0, "standdown_h": 0.5, "shelter": "auto"}
+    add("plume_1km_0.5h", "default", "dte", None, lambda sc: sc.with_(plume=dict(plume)))
+    add("plume_1km_0.5h", "supervised_strict", "dte+relay", 0.5, lambda sc: sc.with_(plume=dict(plume)))
+    local = lambda sc: sc.with_(bulk_flows=[b for b in sc.bulk_flows if not (b.origin == "CONSTR" and b.dest == "ISRU")])
+    for mode in ("dte", "always"):
+        for mix in ("default", "supervised_strict", "teleop_4s"):
+            add("isru_local_feedstock", mix, mode, None, local)
     return cells
 
 
@@ -316,10 +378,17 @@ def run_stage(name, cells, seeds=N_SEEDS, workers=WORKERS, cells_spec=None, resu
     return pd.read_csv(path)
 
 
-def load_raw(results=None) -> pd.DataFrame:
+def sfx(rnd: str) -> str:
+    """File-name suffix of a round: '' for round 1, '_r2' for round 2."""
+    if rnd not in ROUNDS:
+        raise SystemExit(f"--round must be one of {ROUNDS}")
+    return "" if rnd == "r1" else f"_{rnd}"
+
+
+def load_raw(results=None, rnd: str = "r1") -> pd.DataFrame:
     results = results or RESULTS
-    frames = [pd.read_csv(os.path.join(results, f"{n}.csv")) for n in STAGES.values()
-              if os.path.exists(os.path.join(results, f"{n}.csv"))]
+    frames = [pd.read_csv(os.path.join(results, f"{n}{sfx(rnd)}.csv")) for n in STAGES.values()
+              if os.path.exists(os.path.join(results, f"{n}{sfx(rnd)}.csv"))]
     return pd.concat(frames, ignore_index=True, sort=False) if frames else pd.DataFrame()
 
 
@@ -333,6 +402,7 @@ def summary_table(raw: pd.DataFrame) -> pd.DataFrame:
             df[f] = np.nan
     df["coverage"] = df["coverage"].fillna(-1.0)          # groupby drops NaN keys; -1 = no relay
     df["sun"] = df["sun"].fillna("night_fraction")
+    df["sensitivity"] = df["sensitivity"].fillna("none")
     df["year"] = np.where(df["stage"] == "D", df.get("start_year", np.nan), -1)
     t = fit_law.cell_means(df, FACTORS, METRICS + [f"delivered_t_m{i + 1:02d}" for i in range(N_MONTHS)])
     t["coverage"] = t["coverage"].replace(-1.0, np.nan)
@@ -403,26 +473,27 @@ def breakeven_table(table: pd.DataFrame, metric="delivered_t_in_year") -> pd.Dat
     return out
 
 
-def write_tables(results=None):
+def write_tables(results=None, rnd: str = "r1"):
     results = results or RESULTS
-    raw = load_raw(results)
+    raw = load_raw(results, rnd)
     if raw.empty:
         print("[table] no E21 rows yet")
         return None
     t = summary_table(raw)
-    t.to_csv(os.path.join(results, "table_E21.csv"), index=False)
-    print(f"[table_E21.csv] {len(t)} cells")
+    t.to_csv(os.path.join(results, f"table_E21{sfx(rnd)}.csv"), index=False)
+    print(f"[table_E21{sfx(rnd)}.csv] {len(t)} cells")
     if (t["stage"] == "B").any():
         be = breakeven_table(t)
-        be.to_csv(os.path.join(results, "table_E21_breakeven.csv"), index=False)
-        print(f"[table_E21_breakeven.csv] {len(be)} rows (one LTV = {be.attrs['rover_musd_per_yr']:.0f} M$/yr)")
+        be.to_csv(os.path.join(results, f"table_E21_breakeven{sfx(rnd)}.csv"), index=False)
+        print(f"[table_E21_breakeven{sfx(rnd)}.csv] {len(be)} rows (one LTV = {be.attrs['rover_musd_per_yr']:.0f} M$/yr)")
     return t
 
 
 # ---------------------------------------------------------------------------
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    p.add_argument("stages", nargs="*", help="e21a e21b e21c e21d e21a2 table (default: e21a)")
+    p.add_argument("stages", nargs="*", help="e21a e21b e21c e21d e21a2 e21e table (default: e21a)")
+    p.add_argument("--round", default="r1", choices=ROUNDS, help="r2 writes *_r2.csv (default r1: the round-1 files)")
     p.add_argument("--seeds", type=int, default=N_SEEDS)
     p.add_argument("--workers", type=int, default=WORKERS)
     p.add_argument("--cells", default=None, help="cell range of the stage, e.g. 0-9 (0-based, inclusive)")
@@ -434,24 +505,30 @@ def main(argv=None):
         faulthandler.dump_traceback_later(a.max_seconds, exit=True)
     names = [s.lower() for s in a.stages] or ["e21a"]
     t0 = time.time()
+    rnd, x = a.round, sfx(a.round)
     for n in names:
         if n == "e21a":
-            run_stage(STAGES[n], e21a_cells(), a.seeds, a.workers, a.cells, a.results)
+            run_stage(STAGES[n] + x, e21a_cells(rnd), a.seeds, a.workers, a.cells, a.results)
         elif n == "e21b":
-            t = write_tables(a.results)
-            pk = knee_coverage(t)
-            print(f"[e21b] knee of the supervised-strict coverage curve: p = {pk:g} ({KNEE_SHARE:.0%} of full coverage); "
-                  f"stage B runs at p = {STAGE_B_COVERAGE:g}")
-            run_stage(STAGES[n], e21b_cells(STAGE_B_COVERAGE), a.seeds, a.workers, a.cells, a.results)
+            t = write_tables(a.results, rnd)
+            if t is not None and ((t["stage"] == "A") & (t["mix"] == "supervised_strict")).any():
+                pk = knee_coverage(t)
+                print(f"[e21b] knee of the supervised-strict coverage curve: p = {pk:g} ({KNEE_SHARE:.0%} of full "
+                      f"coverage); stage B runs at p = {STAGE_B_COVERAGE:g}")
+            run_stage(STAGES[n] + x, e21b_cells(STAGE_B_COVERAGE, rnd), a.seeds, a.workers, a.cells, a.results)
         elif n == "e21c":
-            run_stage(STAGES[n], e21c_cells(), a.seeds, a.workers, a.cells, a.results)
+            run_stage(STAGES[n] + x, e21c_cells(), a.seeds, a.workers, a.cells, a.results)
         elif n == "e21d":
-            run_stage(STAGES[n], e21d_cells(), a.seeds, a.workers, a.cells, a.results)
+            run_stage(STAGES[n] + x, e21d_cells(), a.seeds, a.workers, a.cells, a.results)
         elif n == "e21a2":
-            run_stage(STAGES[n], e21a2_cells(), a.seeds, a.workers, a.cells, a.results)
+            run_stage(STAGES[n] + x, e21a2_cells(), a.seeds, a.workers, a.cells, a.results)
+        elif n == "e21e":
+            if rnd == "r1":
+                raise SystemExit("stage e21e is a round-2 stage: add --round r2")
+            run_stage(STAGES[n] + x, e21e_cells(), a.seeds, a.workers, a.cells, a.results)
         elif n != "table":
-            raise SystemExit(f"unknown stage {n!r}; choose from e21a e21b e21c e21d e21a2 table")
-        write_tables(a.results)
+            raise SystemExit(f"unknown stage {n!r}; choose from e21a e21b e21c e21d e21a2 e21e table")
+        write_tables(a.results, rnd)
     rss = None
     try:
         sys.path.insert(0, os.path.join(ROOT, "tools"))

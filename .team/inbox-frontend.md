@@ -424,7 +424,7 @@ LEAD's browser review of F-36 (22 Oct 14:40), P2 scene: the data, controls and c
    idle moment; pick the start time from the package's events.
 Check in the browser at 1440 and 390 px; frame times per tier; no console errors.
 
-## F-35 [OPEN] (after F-36; <= 5 h) Rover lab in 3D (plan §5 F-35)
+## F-35 [IN PROGRESS] (after F-36; <= 5 h) Rover lab in 3D (plan §5 F-35)
 `/lab/rover/` on the stage: drive the chosen leg on the terrain along the B-32 route for the chosen lighting, chase
 and cockpit cameras, a "ghost" rover where your delayed command will take effect, the low-sun glare cone and long
 shadows, slip indicator, interventions as 3D markers with callouts, expert vs neural-network race on the same leg,

@@ -61,7 +61,7 @@ def small(**kw):
     return sc.with_(**kw)
 
 
-V2_SKIP = ("blackout", "operator_peak_demand", "linked_share", "delivered_kg_in_horizon")
+from lunarsim.comms import SUMMARY_PREFIXES as V2_SKIP     # every column the comms model adds
 
 
 def v2_part(r):

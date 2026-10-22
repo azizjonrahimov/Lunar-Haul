@@ -379,10 +379,12 @@
               "additionalProperties": false,
               "properties": {
                 "coverage": {"type": "number", "minimum": 0, "maximum": 1},
-                "gap_model": {"const": "parametric"},
-                "mean_gap_h": {"type": "number", "exclusiveMinimum": 0}
+                "gap_model": {"enum": ["parametric", "periodic"], "description": "parametric: exponential up/gap periods; periodic (B-48): up for coverage x period_h of every period_h, random phase"},
+                "mean_gap_h": {"type": "number", "exclusiveMinimum": 0},
+                "period_h": {"type": "number", "exclusiveMinimum": 0, "description": "periodic model: the orbit period (h)"}
               }
             },
+            "intervention_scale": {"type": "number", "minimum": 0, "description": "B-48 sensitivity: strategic policies' intervention count k becomes Poisson(s k), or the hazard rate is scaled by s; default 1"},
             "mast": {
               "type": ["object", "null"],
               "properties": {"site": {"type": "string"}, "height_m": {"type": "number"}, "range_km": {"type": "number"}}
