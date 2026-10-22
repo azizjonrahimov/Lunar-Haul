@@ -459,14 +459,14 @@ step's text with every number as a stat chip carrying its flag and source (the r
 unit, flag, source per number), Next / Back and a step bar, keyboard, a text-only twin of every step (the `visual`
 field), reduced motion = cuts. Nav: "Stories" after World. Lighthouse ≥ 85 performance desktop; no console errors.
 
-## F-39 [IN PROGRESS] (<= 2 h) Landing page hero, plan §5 F-39
+## F-39 [REVIEW] (<= 2 h) Landing page hero, plan §5 F-39
 The home page opens with the loading door and a slow cinematic orbit of the base under the low sun (on-site preset,
 the gallery's P2 scene, landers and rovers moving), three big counters from the results (sourced: simulated years
 in the law fit, cost per landed kg at the marketplace, and the Earth's-horizon headline from the published story's
 numbers), and entry chips to World, Vehicles, Labs, Simulator and Stories. Keep LCP ≤ 2.5 s on mobile: the hero
 3D starts after first paint and only on capable tiers; tier 0 shows a still image.
 
-## F-40 [OPEN] (<= 4 h, then continuous) Quality pass, plan §5 F-40, plus the notes collected in reviews
+## F-40 [IN PROGRESS] (<= 4 h, then continuous) Quality pass, plan §5 F-40, plus the notes collected in reviews
 - Measure tiers in a FOREGROUND window (frame interval at display rate) on every 3D page; record numbers.
 - Lander lab: frame the Approach phase with the ground in view (no black first frame).
 - Rover lab: the stretched brown streak pattern on the ground near the camera (chase view, first frame).

@@ -3711,3 +3711,48 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
 - **Checks:** `stories check`: 4 stories, 0 problems; schemas 35/35; `test_stories.py` 13 passed. The tests cover pass-through incl. pending, the length and digit errors, and every committed number having a valid label.
 - **For FRONTEND:** `numbers[key].label` is in every resolved story, so the page can drop its 49-key map (it already prefers a data label).
 - **Questions for LEAD:** none.
+
+## F-39 DONE 16:55 | Home hero: still first, the P2 year in 3D on capable tiers, three sourced counters, entry chips
+- **Every file F-39 touches.** Your dc84565 already holds earlier versions of some; the list is the full F-39 set.
+  - `site/index.html`: the hero section.
+  - `site/src/home-hero.js` (new): a small entry, about 0.3 kB.
+  - `site/src/home-hero-3d.js` (new): lazy; door, tier check, scene.
+  - `site/src/home-hero.css` (new): inlined into the page at build time.
+  - `site/public/hero/base-p2-720.webp`, `base-p2-800.webp`, `base-p2-1280.webp` (new: the still, 13 / 15 / 27 kB).
+  - `site/lib/pages.mjs`: `heroCounters()`, read at build time.
+  - `site/vite.config.js`: the `<!--@hero-counters-->` and `<!--@hero-css-->` placeholders.
+  - `tools/ci/budgets.json`: the `index.html` entry, as you asked.
+  - Old `site/src/hero.js` (the terrain-shader hero) is no longer loaded: `main.js` loads it only for `[data-hero]`, which the page no longer has. I left the file in place; say if it should go.
+- **What the hero does:**
+  - **First paint is a still** of the base: lit ridges, long shadows, the routes and pad A as a lander comes down. It is captured from the same 3D scene, served by `srcset` (720/800/1280 w) with `fetchpriority="high"`, and has alt text. It is the whole hero at tier 0–1 (detected, or forced with `?tier=`), with Save-Data, or under reduced motion.
+  - **On capable tiers (≥ 2):** after first paint, at idle, a small glass door card ("One year at the base", "Watch it in 3D") sits top right.
+    - Pressing it loads the /world/ scene with the gallery's P2 package (shared rovers): about 4 MB on the world page's budget; no landing recordings.
+    - It fades in over the still on a slow orbit (1.2°/s), framed like /world/'s first view: the first daylight landing's pad from the sun's side, shifted right of the copy.
+    - The year plays at 0.4 h/s and slows through every descent. Vehicles are at true scale with no labels.
+    - The view takes no input, so the page scrolls through it. Pause button (WCAG 2.2.2); it stops off screen and in hidden tabs. Tier is capped at 2.
+  - **Not automatic (please decide):** with the 3D starting by itself, Lighthouse desktop measured TBT 3.1 s and performance 68 (scene-build tasks up to 1.4 s). So the visitor starts it, as on /world/. Auto-start is one line (`autoEnter: true` in `home-hero-3d.js`) if you prefer the motion over the 3 s busy page.
+  - **Three counters, built at build time** (static HTML, each flagged with its source in the tooltip):
+    - **62,640** simulated years behind the law of pad distance (the pads story's `fit_years`, table_E20).
+    - **$16.2k** surface cost per landed kg with shared rovers, ± $7.4k over 20 seeds (gallery.json P2 headline from results/gallery_runs.csv). The interval is wide, and the label says so.
+    - **42 %** less cargo when rovers must see Earth (the Earth story's `dte_loss`; the tooltip quotes both underlying table_E21 cells).
+  - **Entry chips:** World in 3D (primary), Stories, Vehicles, Lander lab, Rover lab, Simulator.
+  - Mobile (≤ 720 px): the still on top, then the copy, counters and chips on black.
+- **Checks:**
+  - Lighthouse 13.5, production build, `/`:
+    - **Desktop:** performance 100, accessibility 100, best practices 100 (LCP 0.6 s, TBT 0, CLS 0.003).
+    - **Mobile:** performance 93–94, accessibility 100, best practices 100. LCP **2.6 s** (the target is ≤ 2.5 s), FCP 2.3–2.4 s, CLS 0.061 (was 0.137 before I reserved the copy's lines against the font swap).
+  - **The mobile LCP is 0.1 s over, and it is site-wide.**
+    - The LCP is the still, downloaded by 55 ms; its delay is first paint itself.
+    - Other pages have the same mobile first paint (/stories/ FCP 2.3 s, /results/ FCP 2.0 s with LCP 4.2 s).
+    - The largest early request is the 170 kB Source Sans variable TTF, plus a 41 kB mono font, both very high priority.
+    - Already done for the home page: the hero CSS is inlined (one render-blocking request fewer) and an 800 w still was added; LCP did not move.
+    - I propose woff2 subsets of the fonts in F-40; that should bring every page's mobile first paint down.
+  - Browser: the still at `?tier=0` (no 3D, no Pause); Watch it in 3D on the production build; 390 px with no horizontal scroll; 0 console errors.
+  - Tests 11/11. Build OK. `budgets.py pages`: OK.
+    - Home: 3.5 of 5 kB JS (the first build was 10.1 kB, which is what CI caught; the 3D part is now a lazy chunk), 4.3 of 10 kB CSS.
+    - The data list is now the still (`hero/base-p2-1280.webp`, the largest a browser may pick: 26 kB), threshold 35 kB from `--propose`. It replaces the old hero's height_20m.png and meta.json, which the page no longer loads.
+  - Servers stopped by PID; tab closed.
+- **Questions for LEAD:**
+  1. Auto-start the 3D, or keep "Watch it in 3D"?
+  2. Remove the old `site/src/hero.js`?
+  3. Font subsetting in F-40 for the site-wide mobile first paint?

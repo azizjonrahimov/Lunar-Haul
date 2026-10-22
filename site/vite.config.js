@@ -23,6 +23,7 @@ function lunarsimPages() {
           .replace('<!--@footer-->', () => footer(base))
           .replace('<!--@headline-->', () => headline())
           .replace('<!--@hero-counters-->', () => heroCounters())
+          .replace('<!--@hero-css-->', () => `<style>${readFileSync(join(SITE, 'src', 'home-hero.css'), 'utf8')}</style>`)   // inlined: one render-blocking request fewer on the home page
           .replace('<!--@results-->', () => results(base))
           .replace(/<!--@md:([\w-]+)-->/g, (_, n) => markdown(n))
           .replace('<!--@pipeline-->', () => pipeline())

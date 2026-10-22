@@ -39,10 +39,9 @@
       "js_gzip_kb": 5,
       "css_gzip_kb": 10,
       "data": [
-        "terrain/hero/height_20m.png",
-        "terrain/hero/meta.json"
+        "hero/base-p2-1280.webp"
       ],
-      "data_gzip_kb": 415
+      "data_gzip_kb": 35
     },
     "lab/lander/index.html": {
       "js_gzip_kb": 130,
