@@ -15,7 +15,8 @@
     "dte_refused": {"table": "results/table_E21.csv", "where": {"stage": "A", "comms": "dte", "mix": "supervised_strict"}, "column": "blackout_jobs_refused", "digits": 0, "unit": "jobs", "note": "jobs no rover could start for want of a link"},
     "relay_t": {"table": "results/table_E21.csv", "where": {"stage": "A", "comms": "dte+relay", "coverage": 0.1, "mix": "supervised_strict"}, "column": "delivered_t_in_year", "digits": 0, "unit": "t per year", "note": "a relay satellite in view a tenth of the time, besides direct links"},
     "auto_t": {"table": "results/table_E21.csv", "where": {"stage": "A", "comms": "dte", "mix": "autonomous"}, "column": "delivered_t_in_year", "digits": 0, "unit": "t per year", "note": "direct links only, fully autonomous rovers"},
-    "relay_price": {"table": "results/table_E21_breakeven.csv", "where": {"option": "relay"}, "column": "relay_price_musd_per_yr_equiv", "digits": 0, "unit": "M$ per year", "note": "the relay price per year that equals the capital cost of the extra rovers giving the same gain"}
+    "relay_gain": {"table": "results/table_E21_breakeven.csv", "where": {"option": "relay coverage 0.1"}, "column": "gain_vs_dte", "digits": 0, "unit": "t per year", "note": "gain over direct links only, all supervised rovers, strict policy (experiment E21 break-even table)"},
+    "rover_gain": {"table": "results/table_E21_breakeven.csv", "where": {"option": "+1 supervised LTV"}, "column": "gain_vs_dte", "digits": 1, "unit": "t per year", "note": "gain of one extra supervised LTV over direct links only (experiment E21 stage B)"}
   },
   "steps": [
     {
@@ -57,11 +58,11 @@
     },
     {
       "id": "breakeven",
-      "title": "What a relay is worth",
-      "text": "Buying the same gain with extra rovers would cost {{r:relay_price}}: a relay service priced below that pays.",
-      "visual": "The base with its rover fleet, extra rovers drawn faded.",
+      "title": "More rovers cannot buy it back",
+      "text": "A relay in view a tenth of the time adds {{r:relay_gain}}. One more supervised rover adds {{r:rover_gain}}: it waits for Earth like the others.",
+      "visual": "The base with its rover fleet, an extra rover drawn faded and parked in the waiting colour.",
       "camera": {"shot": "overview"},
-      "chips": ["relay_price"]
+      "chips": ["relay_gain", "rover_gain"]
     }
   ]
 }

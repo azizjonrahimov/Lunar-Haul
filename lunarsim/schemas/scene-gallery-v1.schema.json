@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://azizjonrahimov.github.io/Lunar-Haul/schemas/scene-gallery-v1.schema.json",
+  "title": "lunarsim-scene-gallery v1",
+  "description": "data/scenes/gallery.json (writer experiments/phase4/gallery.py index): curated scene packages for the 3D world. Each scene's replay is data/scenes/<package>/ (lunarsim-scene v1, seed common.replay_seed); its headline numbers are the mean and 1.96 sd / sqrt(n) over common.seeds seeds of the same settings, or null while those runs are pending.",
+  "type": "object",
+  "required": ["format", "version", "description", "common", "metrics", "groups", "scenes", "total_gz_bytes", "budget_gz_bytes"],
+  "properties": {
+    "format": {"const": "lunarsim-scene-gallery"},
+    "version": {"const": 1},
+    "description": {"type": "string"},
+    "common": {"type": "object", "required": ["replay_seed", "seeds"]},
+    "metrics": {
+      "type": "array",
+      "items": {"type": "object", "required": ["key", "label", "unit", "digits", "flag"],
+                "properties": {"key": {"type": "string"}, "label": {"type": "string"}, "unit": {"type": "string"},
+                               "digits": {"type": "integer", "minimum": 0}, "flag": {"enum": ["Spec", "Measured", "Assumed", "Modelled"]}}}
+    },
+    "groups": {
+      "type": "array",
+      "items": {"type": "object", "required": ["id", "title", "description"]}
+    },
+    "scenes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "package", "group", "title", "description", "flags", "replay", "headline", "source"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9.-]*$"},
+          "package": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"},
+          "group": {"type": "string"},
+          "title": {"type": "string", "minLength": 1},
+          "description": {"type": "string", "minLength": 1},
+          "flags": {"type": "object", "required": ["scenario", "phase", "job_rule", "pad_standoff_km", "earth_link", "fleet", "n_vehicles"]},
+          "replay": {"type": "object", "required": ["seed", "summary", "gz_bytes", "files"],
+                     "properties": {"seed": {"type": "integer"}, "gz_bytes": {"type": "integer", "minimum": 1}}},
+          "headline": {
+            "anyOf": [
+              {"type": "null"},
+              {"type": "object", "required": ["n_seeds"],
+               "properties": {"n_seeds": {"type": "integer", "minimum": 2}},
+               "additionalProperties": {"type": "object", "required": ["mean", "ci95", "n"],
+                                        "properties": {"mean": {"type": "number"}, "ci95": {"type": ["number", "null"]}, "n": {"type": "integer"}}}}
+            ]
+          },
+          "source": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "total_gz_bytes": {"type": "integer", "minimum": 0},
+    "budget_gz_bytes": {"type": "integer", "minimum": 1}
+  }
+}

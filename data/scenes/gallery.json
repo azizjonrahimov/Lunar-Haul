@@ -1,0 +1,893 @@
+{
+ "format": "lunarsim-scene-gallery",
+ "version": 1,
+ "description": "Curated years of the base for the 3D world: each scene is a replay of one simulated year (a lunarsim-scene v1 package under data/scenes/<package>) with headline numbers over 20 seeds of the same settings.",
+ "common": {
+  "terrain": "connecting_ridge",
+  "landing_model": "classical",
+  "plume": {
+   "keepout_km": 1.0,
+   "standdown_h": 0.5
+  },
+  "autonomy_model": "driving-v1",
+  "replay_seed": 3,
+  "seeds": 20
+ },
+ "metrics": [
+  {
+   "key": "delivered_t",
+   "label": "Cargo delivered in the year",
+   "unit": "t",
+   "digits": 0,
+   "flag": "Modelled"
+  },
+  {
+   "key": "delay_prio1_mean_h",
+   "label": "Mean wait of urgent cargo",
+   "unit": "h",
+   "digits": 1,
+   "flag": "Modelled"
+  },
+  {
+   "key": "delay_prio1_p90_h",
+   "label": "One in ten urgent items waits longer than",
+   "unit": "h",
+   "digits": 0,
+   "flag": "Modelled"
+  },
+  {
+   "key": "sl24_prio1",
+   "label": "Urgent items delivered within a day",
+   "unit": "%",
+   "digits": 0,
+   "flag": "Modelled"
+  },
+  {
+   "key": "cost_per_landed_kg_usd",
+   "label": "Surface cost per landed kg",
+   "unit": "$/kg",
+   "digits": 0,
+   "flag": "Modelled"
+  },
+  {
+   "key": "blackout_wait_vehicle_h",
+   "label": "Rover-hours waiting for Earth",
+   "unit": "h",
+   "digits": 0,
+   "flag": "Modelled"
+  }
+ ],
+ "groups": [
+  {
+   "id": "phases",
+   "title": "Three phases, two job rules",
+   "description": "The base as it grows, with each company running its own rovers or every rover taking any job."
+  },
+  {
+   "id": "pads",
+   "title": "How far the pads are",
+   "description": "The second phase with the shared job rule and the landing pads nearer or farther than the usual distance."
+  },
+  {
+   "id": "earth",
+   "title": "Earth below the horizon",
+   "description": "The second phase when supervised rovers need Earth in view, with and without a relay or autonomy."
+  },
+  {
+   "id": "fleet",
+   "title": "A small fleet",
+   "description": "The second phase with fewer rovers."
+  }
+ ],
+ "scenes": [
+  {
+   "id": "p1-inhouse",
+   "package": "P1-inhouse",
+   "group": "phases",
+   "title": "First phase, own rovers",
+   "description": "A small outpost; each company drives only its own rovers.",
+   "flags": {
+    "scenario": "P1-default",
+    "phase": "P1",
+    "job_rule": "inhouse",
+    "pad_standoff_km": 1.0,
+    "earth_link": "always",
+    "fleet": "default",
+    "n_vehicles": 3,
+    "landing_model": "classical",
+    "plume": {
+     "keepout_km": 1.0,
+     "standdown_h": 0.5
+    },
+    "autonomy_model": "driving-v1",
+    "terrain": "connecting_ridge"
+   },
+   "replay": {
+    "seed": 3,
+    "summary": {
+     "delivered_kg": 33746.80032532189,
+     "jobs": 70,
+     "delay_prio1_p90_h": 40.58856328163511,
+     "delay_mean_h": 20.37255102884934,
+     "plume_standdowns": 2,
+     "offpad_landings": 0,
+     "failed_landings": 0
+    },
+    "gz_bytes": 119897,
+    "files": 15
+   },
+   "headline": {
+    "n_seeds": 20,
+    "delivered_t": {
+     "mean": 33.738837349377434,
+     "ci95": 1.5255050330593531,
+     "n": 20
+    },
+    "delay_prio1_mean_h": {
+     "mean": 16.385693973637416,
+     "ci95": 5.875329149377832,
+     "n": 20
+    },
+    "delay_prio1_p90_h": {
+     "mean": 37.42952192559019,
+     "ci95": 13.205835857667624,
+     "n": 20
+    },
+    "sl24_prio1": {
+     "mean": 76.88870851370851,
+     "ci95": 10.750008010514014,
+     "n": 20
+    },
+    "cost_per_landed_kg_usd": {
+     "mean": 67664.39964815976,
+     "ci95": 30533.638593786764,
+     "n": 20
+    }
+   },
+   "source": "results/gallery_runs.csv, cell p1-inhouse, seeds 0-19 (experiments/phase4/gallery.py headline)"
+  },
+  {
+   "id": "p1-marketplace",
+   "package": "P1",
+   "group": "phases",
+   "title": "First phase, shared rovers",
+   "description": "A small outpost; every rover can take any company's job, offered in an auction.",
+   "flags": {
+    "scenario": "P1-default",
+    "phase": "P1",
+    "job_rule": "marketplace",
+    "pad_standoff_km": 1.0,
+    "earth_link": "always",
+    "fleet": "default",
+    "n_vehicles": 3,
+    "landing_model": "classical",
+    "plume": {
+     "keepout_km": 1.0,
+     "standdown_h": 0.5
+    },
+    "autonomy_model": "driving-v1",
+    "terrain": "connecting_ridge"
+   },
+   "replay": {
+    "seed": 3,
+    "summary": {
+     "delivered_kg": 33596.09833343457,
+     "jobs": 69,
+     "delay_prio1_p90_h": 3.0818904747067792,
+     "delay_mean_h": 31.546522545888998,
+     "plume_standdowns": 4,
+     "offpad_landings": 0,
+     "failed_landings": 1
+    },
+    "gz_bytes": 121186,
+    "files": 15
+   },
+   "headline": {
+    "n_seeds": 20,
+    "delivered_t": {
+     "mean": 35.46461124631745,
+     "ci95": 2.1937672316127084,
+     "n": 20
+    },
+    "delay_prio1_mean_h": {
+     "mean": 11.605381623229132,
+     "ci95": 6.18705184343896,
+     "n": 20
+    },
+    "delay_prio1_p90_h": {
+     "mean": 25.186512411980452,
+     "ci95": 14.040242994245892,
+     "n": 20
+    },
+    "sl24_prio1": {
+     "mean": 88.3452380952381,
+     "ci95": 7.893608747862252,
+     "n": 20
+    },
+    "cost_per_landed_kg_usd": {
+     "mean": 45451.9788551476,
+     "ci95": 16979.616945390684,
+     "n": 20
+    }
+   },
+   "source": "results/gallery_runs.csv, cell p1-marketplace, seeds 0-19 (experiments/phase4/gallery.py headline)"
+  },
+  {
+   "id": "p2-inhouse",
+   "package": "P2-inhouse",
+   "group": "phases",
+   "title": "Second phase, own rovers",
+   "description": "A busier base; each company drives only its own rovers.",
+   "flags": {
+    "scenario": "P2-default",
+    "phase": "P2",
+    "job_rule": "inhouse",
+    "pad_standoff_km": 1.0,
+    "earth_link": "always",
+    "fleet": "default",
+    "n_vehicles": 6,
+    "landing_model": "classical",
+    "plume": {
+     "keepout_km": 1.0,
+     "standdown_h": 0.5
+    },
+    "autonomy_model": "driving-v1",
+    "terrain": "connecting_ridge"
+   },
+   "replay": {
+    "seed": 3,
+    "summary": {
+     "delivered_kg": 512678.6158190654,
+     "jobs": 554,
+     "delay_prio1_p90_h": 28.487534685105693,
+     "delay_mean_h": 12.59576025241543,
+     "plume_standdowns": 8,
+     "offpad_landings": 0,
+     "failed_landings": 0
+    },
+    "gz_bytes": 179209,
+    "files": 15
+   },
+   "headline": {
+    "n_seeds": 20,
+    "delivered_t": {
+     "mean": 516.046745363427,
+     "ci95": 4.338973948928365,
+     "n": 20
+    },
+    "delay_prio1_mean_h": {
+     "mean": 14.86530086114501,
+     "ci95": 5.079870479136789,
+     "n": 20
+    },
+    "delay_prio1_p90_h": {
+     "mean": 44.443021606179514,
+     "ci95": 16.432580737183542,
+     "n": 20
+    },
+    "sl24_prio1": {
+     "mean": 84.03726269454329,
+     "ci95": 6.192952982223797,
+     "n": 20
+    },
+    "cost_per_landed_kg_usd": {
+     "mean": 29330.956638649273,
+     "ci95": 14199.07782497762,
+     "n": 20
+    }
+   },
+   "source": "results/gallery_runs.csv, cell p2-inhouse, seeds 0-19 (experiments/phase4/gallery.py headline)"
+  },
+  {
+   "id": "p2-marketplace",
+   "package": "P2",
+   "group": "phases",
+   "title": "Second phase, shared rovers",
+   "description": "A busier base; every rover can take any job. The reference for the other second-phase scenes.",
+   "flags": {
+    "scenario": "P2-default",
+    "phase": "P2",
+    "job_rule": "marketplace",
+    "pad_standoff_km": 1.0,
+    "earth_link": "always",
+    "fleet": "default",
+    "n_vehicles": 6,
+    "landing_model": "classical",
+    "plume": {
+     "keepout_km": 1.0,
+     "standdown_h": 0.5
+    },
+    "autonomy_model": "driving-v1",
+    "terrain": "connecting_ridge"
+   },
+   "replay": {
+    "seed": 3,
+    "summary": {
+     "delivered_kg": 530327.860284328,
+     "jobs": 545,
+     "delay_prio1_p90_h": 5.301873417742718,
+     "delay_mean_h": 21.763502498241422,
+     "plume_standdowns": 13,
+     "offpad_landings": 0,
+     "failed_landings": 0
+    },
+    "gz_bytes": 185252,
+    "files": 15
+   },
+   "headline": {
+    "n_seeds": 20,
+    "delivered_t": {
+     "mean": 532.4097651640307,
+     "ci95": 9.32978604294253,
+     "n": 20
+    },
+    "delay_prio1_mean_h": {
+     "mean": 6.605775309519264,
+     "ci95": 2.5094532638473805,
+     "n": 20
+    },
+    "delay_prio1_p90_h": {
+     "mean": 19.443803655543935,
+     "ci95": 12.857838108461577,
+     "n": 20
+    },
+    "sl24_prio1": {
+     "mean": 94.11252626515785,
+     "ci95": 3.218267051186296,
+     "n": 20
+    },
+    "cost_per_landed_kg_usd": {
+     "mean": 16226.402273362986,
+     "ci95": 7389.020550635655,
+     "n": 20
+    }
+   },
+   "source": "results/gallery_runs.csv, cell p2-marketplace, seeds 0-19 (experiments/phase4/gallery.py headline)"
+  },
+  {
+   "id": "p3-inhouse",
+   "package": "P3-inhouse",
+   "group": "phases",
+   "title": "Third phase, own rovers",
+   "description": "The full base with bulk cargo; each company drives only its own rovers.",
+   "flags": {
+    "scenario": "P3-default",
+    "phase": "P3",
+    "job_rule": "inhouse",
+    "pad_standoff_km": 1.0,
+    "earth_link": "always",
+    "fleet": "default",
+    "n_vehicles": 9,
+    "landing_model": "classical",
+    "plume": {
+     "keepout_km": 1.0,
+     "standdown_h": 0.5
+    },
+    "autonomy_model": "driving-v1",
+    "terrain": "connecting_ridge"
+   },
+   "replay": {
+    "seed": 3,
+    "summary": {
+     "delivered_kg": 1582952.0557773896,
+     "jobs": 1732,
+     "delay_prio1_p90_h": 23.596735387774796,
+     "delay_mean_h": 8.311638782858557,
+     "plume_standdowns": 25,
+     "offpad_landings": 0,
+     "failed_landings": 0
+    },
+    "gz_bytes": 273596,
+    "files": 15
+   },
+   "headline": {
+    "n_seeds": 20,
+    "delivered_t": {
+     "mean": 1564.5558632179989,
+     "ci95": 14.205698975734553,
+     "n": 20
+    },
+    "delay_prio1_mean_h": {
+     "mean": 8.7531004481272,
+     "ci95": 1.7789979314010032,
+     "n": 20
+    },
+    "delay_prio1_p90_h": {
+     "mean": 21.43552226797059,
+     "ci95": 7.091432998160981,
+     "n": 20
+    },
+    "sl24_prio1": {
+     "mean": 91.56107989556334,
+     "ci95": 3.3927267233453744,
+     "n": 20
+    },
+    "cost_per_landed_kg_usd": {
+     "mean": 13973.094605249193,
+     "ci95": 10272.889752008565,
+     "n": 20
+    }
+   },
+   "source": "results/gallery_runs.csv, cell p3-inhouse, seeds 0-19 (experiments/phase4/gallery.py headline)"
+  },
+  {
+   "id": "p3-marketplace",
+   "package": "P3",
+   "group": "phases",
+   "title": "Third phase, shared rovers",
+   "description": "The full base with bulk cargo; every rover can take any job.",
+   "flags": {
+    "scenario": "P3-default",
+    "phase": "P3",
+    "job_rule": "marketplace",
+    "pad_standoff_km": 1.0,
+    "earth_link": "always",
+    "fleet": "default",
+    "n_vehicles": 9,
+    "landing_model": "classical",
+    "plume": {
+     "keepout_km": 1.0,
+     "standdown_h": 0.5
+    },
+    "autonomy_model": "driving-v1",
+    "terrain": "connecting_ridge"
+   },
+   "replay": {
+    "seed": 3,
+    "summary": {
+     "delivered_kg": 1619301.3378479234,
+     "jobs": 1694,
+     "delay_prio1_p90_h": 14.635078702118163,
+     "delay_mean_h": 15.61767705304163,
+     "plume_standdowns": 25,
+     "offpad_landings": 0,
+     "failed_landings": 0
+    },
+    "gz_bytes": 275231,
+    "files": 15
+   },
+   "headline": {
+    "n_seeds": 20,
+    "delivered_t": {
+     "mean": 1584.159957370141,
+     "ci95": 14.978088401166987,
+     "n": 20
+    },
+    "delay_prio1_mean_h": {
+     "mean": 3.7682068057326275,
+     "ci95": 1.3102503630919835,
+     "n": 20
+    },
+    "delay_prio1_p90_h": {
+     "mean": 7.875182162782463,
+     "ci95": 4.496682952716672,
+     "n": 20
+    },
+    "sl24_prio1": {
+     "mean": 97.49349807619463,
+     "ci95": 3.236989815300955,
+     "n": 20
+    },
+    "cost_per_landed_kg_usd": {
+     "mean": 7772.6250023002185,
+     "ci95": 3149.7069495960914,
+     "n": 20
+    }
+   },
+   "source": "results/gallery_runs.csv, cell p3-marketplace, seeds 0-19 (experiments/phase4/gallery.py headline)"
+  },
+  {
+   "id": "p2-pads-near",
+   "package": "P2-pads-0.5km",
+   "group": "pads",
+   "title": "Pads close to the base",
+   "description": "The landing pads half the usual distance from the base: shorter drives, more ejecta.",
+   "flags": {
+    "scenario": "P2-default",
+    "phase": "P2",
+    "job_rule": "marketplace",
+    "pad_standoff_km": 0.5,
+    "earth_link": "always",
+    "fleet": "default",
+    "n_vehicles": 6,
+    "landing_model": "classical",
+    "plume": {
+     "keepout_km": 1.0,
+     "standdown_h": 0.5
+    },
+    "autonomy_model": "driving-v1",
+    "terrain": "connecting_ridge"
+   },
+   "replay": {
+    "seed": 3,
+    "summary": {
+     "delivered_kg": 530327.860284328,
+     "jobs": 546,
+     "delay_prio1_p90_h": 4.787755631258733,
+     "delay_mean_h": 21.70181431975575,
+     "plume_standdowns": 16,
+     "offpad_landings": 0,
+     "failed_landings": 0
+    },
+    "gz_bytes": 178394,
+    "files": 15
+   },
+   "headline": {
+    "n_seeds": 20,
+    "delivered_t": {
+     "mean": 532.1111125449718,
+     "ci95": 9.274228654466294,
+     "n": 20
+    },
+    "delay_prio1_mean_h": {
+     "mean": 5.579518851229829,
+     "ci95": 2.1638039604638863,
+     "n": 20
+    },
+    "delay_prio1_p90_h": {
+     "mean": 17.87972774916576,
+     "ci95": 12.016070069754702,
+     "n": 20
+    },
+    "sl24_prio1": {
+     "mean": 95.4442782495414,
+     "ci95": 3.0056110563157703,
+     "n": 20
+    },
+    "cost_per_landed_kg_usd": {
+     "mean": 16103.38708901467,
+     "ci95": 7230.133092275449,
+     "n": 20
+    }
+   },
+   "source": "results/gallery_runs.csv, cell p2-pads-near, seeds 0-19 (experiments/phase4/gallery.py headline)"
+  },
+  {
+   "id": "p2-pads-far",
+   "package": "P2-pads-3km",
+   "group": "pads",
+   "title": "Pads far from the base",
+   "description": "The landing pads three times the usual distance: longer drives, the base out of the spray.",
+   "flags": {
+    "scenario": "P2-default",
+    "phase": "P2",
+    "job_rule": "marketplace",
+    "pad_standoff_km": 3.0,
+    "earth_link": "always",
+    "fleet": "default",
+    "n_vehicles": 6,
+    "landing_model": "classical",
+    "plume": {
+     "keepout_km": 1.0,
+     "standdown_h": 0.5
+    },
+    "autonomy_model": "driving-v1",
+    "terrain": "connecting_ridge"
+   },
+   "replay": {
+    "seed": 3,
+    "summary": {
+     "delivered_kg": 508529.68633551506,
+     "jobs": 513,
+     "delay_prio1_p90_h": 8.90595748532487,
+     "delay_mean_h": 22.951283550646757,
+     "plume_standdowns": 1,
+     "offpad_landings": 0,
+     "failed_landings": 1
+    },
+    "gz_bytes": 186085,
+    "files": 15
+   },
+   "headline": {
+    "n_seeds": 20,
+    "delivered_t": {
+     "mean": 531.0547355462944,
+     "ci95": 9.646995450053538,
+     "n": 20
+    },
+    "delay_prio1_mean_h": {
+     "mean": 10.52556257176503,
+     "ci95": 2.1655466472936262,
+     "n": 20
+    },
+    "delay_prio1_p90_h": {
+     "mean": 27.697578570784664,
+     "ci95": 12.261881940880022,
+     "n": 20
+    },
+    "sl24_prio1": {
+     "mean": 92.37611334550694,
+     "ci95": 3.1714190417266663,
+     "n": 20
+    },
+    "cost_per_landed_kg_usd": {
+     "mean": 16870.24774063195,
+     "ci95": 7150.444600668646,
+     "n": 20
+    }
+   },
+   "source": "results/gallery_runs.csv, cell p2-pads-far, seeds 0-19 (experiments/phase4/gallery.py headline)"
+  },
+  {
+   "id": "p2-earth-direct",
+   "package": "P2-comms-dte",
+   "group": "earth",
+   "title": "Direct links to Earth only",
+   "description": "Supervised rovers drive only while Earth is in view of their whole route.",
+   "flags": {
+    "scenario": "P2-default",
+    "phase": "P2",
+    "job_rule": "marketplace",
+    "pad_standoff_km": 1.0,
+    "earth_link": "dte",
+    "fleet": "default",
+    "n_vehicles": 6,
+    "landing_model": "classical",
+    "plume": {
+     "keepout_km": 1.0,
+     "standdown_h": 0.5
+    },
+    "autonomy_model": "driving-v1",
+    "terrain": "connecting_ridge"
+   },
+   "replay": {
+    "seed": 3,
+    "summary": {
+     "delivered_kg": 302204.82320738345,
+     "jobs": 308,
+     "delay_prio1_p90_h": 22.43402477213641,
+     "delay_mean_h": 87.1978739113127,
+     "plume_standdowns": 1,
+     "offpad_landings": 0,
+     "failed_landings": 1
+    },
+    "gz_bytes": 140498,
+    "files": 15
+   },
+   "headline": {
+    "n_seeds": 20,
+    "delivered_t": {
+     "mean": 310.4946460867327,
+     "ci95": 3.6571103670607745,
+     "n": 20
+    },
+    "delay_prio1_mean_h": {
+     "mean": 342.8857423927853,
+     "ci95": 171.92833891966717,
+     "n": 20
+    },
+    "delay_prio1_p90_h": {
+     "mean": 813.5203115499367,
+     "ci95": 491.67501458514477,
+     "n": 20
+    },
+    "sl24_prio1": {
+     "mean": 43.066968325791855,
+     "ci95": 13.65693870028345,
+     "n": 20
+    },
+    "cost_per_landed_kg_usd": {
+     "mean": 95173.685146535,
+     "ci95": 73197.12623909133,
+     "n": 20
+    },
+    "blackout_wait_vehicle_h": {
+     "mean": 5043.967408456482,
+     "ci95": 1036.8639914974626,
+     "n": 20
+    }
+   },
+   "source": "results/gallery_runs.csv, cell p2-earth-direct, seeds 0-19 (experiments/phase4/gallery.py headline)"
+  },
+  {
+   "id": "p2-earth-relay",
+   "package": "P2-comms-relay-0.8",
+   "group": "earth",
+   "title": "A relay most of the time",
+   "description": "As with direct links, plus a relay satellite in view most of the time.",
+   "flags": {
+    "scenario": "P2-default",
+    "phase": "P2",
+    "job_rule": "marketplace",
+    "pad_standoff_km": 1.0,
+    "earth_link": "dte+relay 0.8",
+    "fleet": "default",
+    "n_vehicles": 6,
+    "landing_model": "classical",
+    "plume": {
+     "keepout_km": 1.0,
+     "standdown_h": 0.5
+    },
+    "autonomy_model": "driving-v1",
+    "terrain": "connecting_ridge"
+   },
+   "replay": {
+    "seed": 3,
+    "summary": {
+     "delivered_kg": 530327.860284328,
+     "jobs": 536,
+     "delay_prio1_p90_h": 5.260409480579438,
+     "delay_mean_h": 23.954292821491485,
+     "plume_standdowns": 12,
+     "offpad_landings": 0,
+     "failed_landings": 0
+    },
+    "gz_bytes": 188597,
+    "files": 15
+   },
+   "headline": {
+    "n_seeds": 20,
+    "delivered_t": {
+     "mean": 532.315002134062,
+     "ci95": 9.523156171282366,
+     "n": 20
+    },
+    "delay_prio1_mean_h": {
+     "mean": 7.960576922726821,
+     "ci95": 2.9401284284876197,
+     "n": 20
+    },
+    "delay_prio1_p90_h": {
+     "mean": 21.644972149736383,
+     "ci95": 12.521295374766636,
+     "n": 20
+    },
+    "sl24_prio1": {
+     "mean": 92.69511418886418,
+     "ci95": 4.347528723840555,
+     "n": 20
+    },
+    "cost_per_landed_kg_usd": {
+     "mean": 19341.231750094674,
+     "ci95": 10301.513292561076,
+     "n": 20
+    },
+    "blackout_wait_vehicle_h": {
+     "mean": 696.2554988765617,
+     "ci95": 53.18613646026932,
+     "n": 20
+    }
+   },
+   "source": "results/gallery_runs.csv, cell p2-earth-relay, seeds 0-19 (experiments/phase4/gallery.py headline)"
+  },
+  {
+   "id": "p2-earth-autonomous",
+   "package": "P2-comms-dte-autonomous",
+   "group": "earth",
+   "title": "Autonomous rovers, direct links",
+   "description": "Direct links only, but every rover drives itself and needs no link.",
+   "flags": {
+    "scenario": "P2-default",
+    "phase": "P2",
+    "job_rule": "marketplace",
+    "pad_standoff_km": 1.0,
+    "earth_link": "dte",
+    "fleet": "all autonomous",
+    "n_vehicles": 6,
+    "landing_model": "classical",
+    "plume": {
+     "keepout_km": 1.0,
+     "standdown_h": 0.5
+    },
+    "autonomy_model": "driving-v1",
+    "terrain": "connecting_ridge"
+   },
+   "replay": {
+    "seed": 3,
+    "summary": {
+     "delivered_kg": 529853.5495767961,
+     "jobs": 554,
+     "delay_prio1_p90_h": 2.200632433872124,
+     "delay_mean_h": 20.914404866876893,
+     "plume_standdowns": 15,
+     "offpad_landings": 0,
+     "failed_landings": 1
+    },
+    "gz_bytes": 181509,
+    "files": 15
+   },
+   "headline": {
+    "n_seeds": 20,
+    "delivered_t": {
+     "mean": 532.0863616499229,
+     "ci95": 9.318436853973406,
+     "n": 20
+    },
+    "delay_prio1_mean_h": {
+     "mean": 6.190380822528037,
+     "ci95": 3.4657713268008363,
+     "n": 20
+    },
+    "delay_prio1_p90_h": {
+     "mean": 17.58621762555231,
+     "ci95": 11.72505859785223,
+     "n": 20
+    },
+    "sl24_prio1": {
+     "mean": 93.1957247376307,
+     "ci95": 4.955479103192177,
+     "n": 20
+    },
+    "cost_per_landed_kg_usd": {
+     "mean": 15693.842700120562,
+     "ci95": 7033.1695413126645,
+     "n": 20
+    },
+    "blackout_wait_vehicle_h": {
+     "mean": 0.0,
+     "ci95": 0.0,
+     "n": 20
+    }
+   },
+   "source": "results/gallery_runs.csv, cell p2-earth-autonomous, seeds 0-19 (experiments/phase4/gallery.py headline)"
+  },
+  {
+   "id": "p2-small-fleet",
+   "package": "P2V2",
+   "group": "fleet",
+   "title": "Second phase, four rovers",
+   "description": "The second phase with four rovers instead of the usual fleet, shared.",
+   "flags": {
+    "scenario": "P2-4-vehicles",
+    "phase": "P2",
+    "job_rule": "marketplace",
+    "pad_standoff_km": 1.0,
+    "earth_link": "always",
+    "fleet": "default",
+    "n_vehicles": 4,
+    "landing_model": "classical",
+    "plume": {
+     "keepout_km": 1.0,
+     "standdown_h": 0.5
+    },
+    "autonomy_model": "driving-v1",
+    "terrain": "connecting_ridge"
+   },
+   "replay": {
+    "seed": 3,
+    "summary": {
+     "delivered_kg": 530327.860284328,
+     "jobs": 533,
+     "delay_prio1_p90_h": 6.624267346504531,
+     "delay_mean_h": 22.70743968522472,
+     "plume_standdowns": 6,
+     "offpad_landings": 0,
+     "failed_landings": 0
+    },
+    "gz_bytes": 183858,
+    "files": 15
+   },
+   "headline": {
+    "n_seeds": 20,
+    "delivered_t": {
+     "mean": 531.9168401505254,
+     "ci95": 9.494344014830736,
+     "n": 20
+    },
+    "delay_prio1_mean_h": {
+     "mean": 6.194376779754883,
+     "ci95": 1.6812416190958732,
+     "n": 20
+    },
+    "delay_prio1_p90_h": {
+     "mean": 16.950484469135,
+     "ci95": 7.254290724356057,
+     "n": 20
+    },
+    "sl24_prio1": {
+     "mean": 93.57862565641308,
+     "ci95": 3.405296261861684,
+     "n": 20
+    },
+    "cost_per_landed_kg_usd": {
+     "mean": 22623.15759670006,
+     "ci95": 27667.366204806232,
+     "n": 20
+    }
+   },
+   "source": "results/gallery_runs.csv, cell p2-small-fleet, seeds 0-19 (experiments/phase4/gallery.py headline)"
+  }
+ ],
+ "total_gz_bytes": 2213312,
+ "budget_gz_bytes": 4194304
+}

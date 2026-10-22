@@ -2872,3 +2872,60 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
   1. Does FRONTEND accept the format above, especially the shot and mode names? I'll rename to match theirs.
   2. Once B-36 lands, I'll switch the sharing story's in-house step to the in-house gallery scene. OK?
   3. Should the site show drafts at all? `index.json` carries `status` and `pending`.
+
+## B-36 DONE 12:29 | Static scenario gallery for the 3D world (12 scenes, 20-seed headlines, option (a) with the plume)
+- **Files:**
+  - `experiments/phase4/gallery.py`: new. Subcommands `scenes`, `headline` (resumable, `--max-seconds`) and `index`.
+  - `lunarsim/schemas/scene-gallery-v1.schema.json`: new.
+  - `tests/test_gallery.py`: new, 16 tests.
+  - `tools/ci/budgets.py`: the schemas step also covers `gallery.json` (34 files, 0 problems).
+  - **Data for LEAD to commit:**
+    - 7 new packages, 7.9 MB raw: `data/scenes/{P1-inhouse, P2-inhouse, P3-inhouse, P2-pads-0.5km, P2-pads-3km, P2-comms-relay-0.8, P2-comms-dte-autonomous}/`
+    - `data/scenes/gallery.json` (21 kB)
+    - `results/gallery_runs.csv` (228 kB; 240 rows = 12 cells × seeds 0-19, every engine metric + `cell`, `run_s`)
+    - Rebuilt `data/stories/resolved/*`, plus the story edits below.
+- **Cells** (all: terrain connecting_ridge, classical landings, plume 1 km / 0.5 h, driving-v1, replay seed 3):
+  - P1/P2/P3 × in-house/marketplace at 1 km pads;
+  - P2 marketplace with pads at 0.5 and 3 km;
+  - P2 marketplace with the Earth link: direct only, dte+relay 0.8, and all-autonomous under direct only;
+  - the 12th, my pick: **P2-4-vehicles marketplace** (the sharing story's small-fleet step; it reuses P2V2).
+- **Reused packages:** the five existing ones (P1, P2, P3, P2-comms-dte, P2V2) serve their cells unchanged. The tool rebuilds them **byte-identically** (sha256 of every file checked for P1, P2-comms-dte and P2V2), so every scene uses the same settings.
+- **Size:** all 12 packages are **2.11 MB gzipped** (budget 4 MB).
+- **Run:** 12 × 20 = 240 runs, one foreground process, **4 min 26 s** (12:20-12:25); the slowest run was 18 s (direct links only). Every package's reproduction checks hold: trips = summary; delivered kg from the cargo table = summary within 0.5 kg.
+- **Headline numbers** (mean ± 1.96 sd/√20, as `fit_law.cell_means`):
+
+  | Scene | t delivered in year | Urgent mean h | Urgent p90 h | Within a day % | Rover-h waiting for Earth |
+  |---|---|---|---|---|---|
+  | P1 in-house | 33.7 ± 1.5 | 16.4 ± 5.9 | 37 ± 13 | 77 ± 11 | – |
+  | P1 marketplace | 35.5 ± 2.2 | 11.6 ± 6.2 | 25 ± 14 | 88 ± 8 | – |
+  | P2 in-house | 516.0 ± 4.3 | 14.9 ± 5.1 | 44 ± 16 | 84 ± 6 | – |
+  | P2 marketplace | 532.4 ± 9.3 | 6.6 ± 2.5 | 19 ± 13 | 94 ± 3 | – |
+  | P3 in-house | 1,564.6 ± 14.2 | 8.8 ± 1.8 | 21 ± 7 | 92 ± 3 | – |
+  | P3 marketplace | 1,584.2 ± 15.0 | 3.8 ± 1.3 | 8 ± 5 | 98 ± 3 | – |
+  | P2 pads 0.5 km | 532.1 ± 9.3 | 5.6 ± 2.2 | 18 ± 12 | 95 ± 3 | – |
+  | P2 pads 3 km | 531.1 ± 9.6 | 10.5 ± 2.2 | 28 ± 12 | 92 ± 3 | – |
+  | P2 direct links only | 310.5 ± 3.7 | 343 ± 172 | 814 ± 492 | 43 ± 14 | 5,044 ± 1,037 |
+  | P2 relay 0.8 | 532.3 ± 9.5 | 8.0 ± 2.9 | 22 ± 13 | 93 ± 4 | 696 ± 53 |
+  | P2 autonomous, direct only | 532.1 ± 9.3 | 6.2 ± 3.5 | 18 ± 12 | 93 ± 5 | 0 |
+  | P2 four rovers | 531.9 ± 9.5 | 6.2 ± 1.7 | 17 ± 7 | 94 ± 3 | – |
+
+  - The index also carries the cost per landed kg. Its intervals are wide, e.g. the four-rover cell has 22,623 ± 27,668 $/kg; a few seeds with failed landings drive it.
+  - **Cross-check with E21 stage A** (no plume): always 532.3 t / 6.7 h; direct 306.7 t / 186 h / 977 rover-h; relay 0.8 531.5 t / 7.5 h; autonomous 532.1 t / 5.5 h.
+    - Throughput agrees within 4 t.
+    - Under direct links only, the plume raises the urgent delay (343 vs 186 h) and the rover-hours waiting (5,044 vs 977), but this is the default mixed fleet in both. E21's "default" mix = the same fleet, so the extra waiting comes from plume stand-downs pushing drives out of Earth windows. Worth a sentence in the E21 story when you rewrite it.
+- **gallery.json** (`lunarsim-scene-gallery` v1):
+  - Top level: `common` settings, `metrics` (key, label, unit, digits, flag Modelled), `groups` (phases, pads, earth, fleet: title + one plain line each).
+  - Per scene: `{id, package, group, title, description, flags {scenario, phase, job_rule, pad_standoff_km, earth_link, fleet, n_vehicles, …}, replay {seed, summary, gz_bytes, files}, headline {n_seeds, <metric>: {mean, ci95, n}} | null, source}`.
+  - `total_gz_bytes` / `budget_gz_bytes`.
+  - A headline stays null until all 20 seeds exist.
+- **Stories (your answer 2):** step scenes now point at the gallery packages:
+  - sharing: in-house steps → P2-inhouse, shared → P2, small fleet → P2V2;
+  - pads: ejecta → P2-pads-0.5km, answer → P2-pads-3km;
+  - Earth draft: blackouts → P2-comms-dte, relay → P2-comms-relay-0.8.
+- **E21 draft fix:** your new `table_E21_breakeven.csv` has no "relay" row, and the relay price equivalent is NaN, because extra rovers never reach the relay's gain (+1 LTV gains 0.63 t/yr vs 224 t/yr for 10 % relay). The checker caught it. The last draft step now says "A relay in view a tenth of the time adds {{r:relay_gain}}. One more supervised rover adds {{r:rover_gain}}: it waits for Earth like the others." All 9 draft numbers resolve now, but from a table that is still changing. Drafts are not in the stale-file test, so rebuild after stage B/C.
+- **Tests:** 38 passed:
+  - `test_gallery.py`: every package matches its cell (job rule, seed, pads, Earth link, all-autonomous fleet, vehicle count, reproduction checks); budget; headline maths; a missing seed gives null; the committed index is current and matches the schema.
+  - `test_stories.py`, `test_ci_budgets.py`, `test_scene.py`.
+- **How to test:** `.venv\Scripts\python -m pytest tests\test_gallery.py -q`. To rebuild: `python experiments\phase4\gallery.py scenes`, then `headline --seeds 20` (resumes), then `index`.
+- **For FRONTEND:** gallery.json lists the scenes. Load `data/scenes/<package>/` with the B-31 reader. Show `headline[metric].mean ± ci95` with the metric's label, unit and digits; source = `scene.source`; flag Modelled. Group scenes by `group`.
+- **Questions for LEAD:** none. Peak memory was not measured (one Python process, no workers; psutil is not in .venv). The python.exe processes near 140 MB in tasklist afterwards belong to other sessions.

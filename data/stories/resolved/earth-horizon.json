@@ -59,8 +59,19 @@
    "flag": "Modelled",
    "source": "results/table_E21.csv, row stage = A, comms = dte, mix = autonomous, column delivered_t_in_year; direct links only, fully autonomous rovers"
   },
-  "relay_price": {
-   "pending": "results/table_E21_breakeven.csv does not exist yet"
+  "relay_gain": {
+   "value": 223.6426133773291,
+   "text": "224 t per year",
+   "unit": "t per year",
+   "flag": "Modelled",
+   "source": "results/table_E21_breakeven.csv, row option = relay coverage 0.1, column gain_vs_dte; gain over direct links only, all supervised rovers, strict policy (experiment E21 break-even table)"
+  },
+  "rover_gain": {
+   "value": 0.6336891229229309,
+   "text": "0.6 t per year",
+   "unit": "t per year",
+   "flag": "Modelled",
+   "source": "results/table_E21_breakeven.csv, row option = +1 supervised LTV, column gain_vs_dte; gain of one extra supervised LTV over direct links only (experiment E21 stage B)"
   }
  },
  "steps": [
@@ -142,24 +153,24 @@
   },
   {
    "id": "breakeven",
-   "title": "What a relay is worth",
-   "text": "Buying the same gain with extra rovers would cost {{r:relay_price}}: a relay service priced below that pays.",
-   "visual": "The base with its rover fleet, extra rovers drawn faded.",
+   "title": "More rovers cannot buy it back",
+   "text": "A relay in view a tenth of the time adds {{r:relay_gain}}. One more supervised rover adds {{r:rover_gain}}: it waits for Earth like the others.",
+   "visual": "The base with its rover fleet, an extra rover drawn faded and parked in the waiting colour.",
    "camera": {
     "shot": "overview"
    },
    "chips": [
-    "relay_price"
+    "relay_gain",
+    "rover_gain"
    ],
-   "title_plain": "What a relay is worth",
-   "text_plain": "Buying the same gain with extra rovers would cost (pending): a relay service priced below that pays.",
-   "visual_plain": "The base with its rover fleet, extra rovers drawn faded."
+   "title_plain": "More rovers cannot buy it back",
+   "text_plain": "A relay in view a tenth of the time adds 224 t per year. One more supervised rover adds 0.6 t per year: it waits for Earth like the others.",
+   "visual_plain": "The base with its rover fleet, an extra rover drawn faded and parked in the waiting colour."
   }
  ],
- "pending": [
-  "relay_price"
- ],
+ "pending": [],
  "sources": {
-  "results/table_E21.csv": "3bbfbc3d827ace64fe0b53b4947dee777884a5864b0540d79ccffb060e0fe1d1"
+  "results/table_E21.csv": "0e335e43cc05e8dc4d511822c08cbd471d3f27e5f47bedc4efcf5cda5e442613",
+  "results/table_E21_breakeven.csv": "d755c28918dfa49c4522b230b5b3a2143a632993a627d21e249c5e814950a90e"
  }
 }
