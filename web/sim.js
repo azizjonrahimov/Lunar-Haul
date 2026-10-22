@@ -290,7 +290,7 @@ function marketplace(sim, waiting, free, o = {}) {
 }
 marketplace.supportsTeam = true; marketplace.anticipates = true;
 const MECHS = { inhouse, pooled_greedy: pooledGreedy, central_assign: centralAssign, marketplace };
-const MECH_LABEL = { inhouse: 'In-house fleets', pooled_greedy: 'Pooled greedy', central_assign: 'Batched assignment', marketplace: 'Marketplace' };
+const MECH_LABEL = { inhouse: 'Separate fleets', pooled_greedy: 'Nearest free rover', central_assign: 'Hourly matching', marketplace: 'Marketplace' };
 const MECH_COLOR = { inhouse: 'var(--s2)', pooled_greedy: 'var(--s4)', central_assign: 'var(--s6)', marketplace: 'var(--s1)' };
 
 function runOne(sc, mechName, seed, opts = {}) { const mech = MECHS[mechName]; const mo = Object.assign({}, opts); if (mech.batch_h) mo.batch_h = mech.batch_h; if (mechName !== 'marketplace') { mo.team_lift = undefined; } const sim = new Simulation(sc, mech, seed, mo); const s = sim.run(); s.seed = seed; return [s, sim]; }

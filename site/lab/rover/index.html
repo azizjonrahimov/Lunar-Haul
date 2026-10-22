@@ -16,24 +16,24 @@
 <main id="main"><div class="wrap">
   <header class="page-head">
     <h1>Rover lab: drive a leg of the base</h1>
-    <p>Pick two sites on the LOLA terrain, an autonomy level and the lighting, and drive the leg in your browser with the same model the logistics simulation's driving tables come from: slope limits, wheel slip, up-sun glare and shadow, Earth–Moon latency, energy and interventions. Drive it yourself to feel what a four-second round trip does.</p>
+    <p>Pick two sites on real Moon terrain (NASA LOLA elevation data), who drives and the lighting, then drive the route in your browser. It is the same model the logistics simulation takes its driving times from: slope limits, wheel slip, glare when driving towards the low sun, shadows, the Earth–Moon signal delay, energy use and interventions (a person on Earth stepping in). Drive it yourself to feel what a four-second delay does.</p>
   </header>
 
   <div class="toolbar r-controls" role="group" aria-label="Leg">
     <label class="lbl" for="r-from">From</label><select id="r-from"></select>
     <label class="lbl" for="r-to">To</label><select id="r-to"></select>
-    <label class="lbl" for="r-standoff">Pad standoff</label><select id="r-standoff"></select>
+    <label class="lbl" for="r-standoff">Landing pads this far from the base</label><select id="r-standoff"></select>
     <label class="lbl" for="r-light">Lighting</label>
-    <select id="r-light"><option value="0">sun at 0° (grid azimuth)</option><option value="90" selected>sun at 90°</option><option value="180">sun at 180°</option><option value="270">sun at 270°</option><option value="night">night (headlights)</option></select>
+    <select id="r-light"><option value="0">low sun at 0° bearing</option><option value="90" selected>low sun at 90°</option><option value="180">low sun at 180°</option><option value="270">low sun at 270°</option><option value="night">night: headlights only</option></select>
     <label class="lbl" for="r-soil">Soil</label>
-    <select id="r-soil"><option value="47.8">dense, friction angle 47.8°</option><option value="42" selected>medium, 42°</option><option value="37.8">loose, 37.8°</option><option value="sampled">sampled per drive, 37.8–47.8°</option></select>
+    <select id="r-soil"><option value="47.8">firm (friction angle 47.8°)</option><option value="42" selected>medium (42°)</option><option value="37.8">loose (37.8°), more wheel slip</option><option value="sampled">random each drive (37.8–47.8°)</option></select>
     <span class="small"><span class="flag" data-flag="Modelled" id="r-soil-flag">Modelled</span><span class="visually-hidden" id="r-soil-src"></span></span>
   </div>
   <div class="toolbar r-controls" role="group" aria-label="Driver">
-    <label class="lbl" for="r-level">Autonomy</label>
-    <select id="r-level"><option value="teleop:0">teleoperated, 0 s round trip</option><option value="teleop:4" selected>teleoperated, 4 s (Earth–Moon)</option><option value="teleop:6">teleoperated, 6 s</option><option value="teleop:8">teleoperated, 8 s</option><option value="supervised">supervised autonomy</option><option value="autonomous">full autonomy</option></select>
+    <label class="lbl" for="r-level">Control mode</label>
+    <select id="r-level"><option value="teleop:0">driven from Earth, no delay (0 s)</option><option value="teleop:4" selected>driven from Earth, 4 s delay (real Earth–Moon)</option><option value="teleop:6">driven from Earth, 6 s delay</option><option value="teleop:8">driven from Earth, 8 s delay</option><option value="supervised">supervised: drives itself, a person checks</option><option value="autonomous">fully autonomous</option></select>
     <label class="lbl" for="r-ctrl">Driver</label>
-    <select id="r-ctrl"><option value="expert" selected>Scripted expert (A* + pure pursuit)</option><option value="human">You (arrow keys)</option><option value="learned">Learned driver (rover_bc_s0, loads on choice)</option></select>
+    <select id="r-ctrl"><option value="expert" selected>Built-in expert (route planner + path follower)</option><option value="human">You (arrow keys)</option><option value="learned">Neural-network driver (rover_bc_s0, about 15 MB download)</option></select>
     <label class="lbl" for="r-speed">Speed</label>
     <select id="r-speed"><option value="1">real time</option><option value="10">10×</option><option value="60" selected>60×</option><option value="300">300×</option><option value="0">instant</option></select>
     <button class="btn primary" type="button" id="r-drive" aria-pressed="false">Drive</button>
@@ -48,7 +48,7 @@
     <div>
       <canvas id="r-plan" class="r-plan" role="img" aria-label="Plan view of the leg on the LOLA hillshade: planned route (cyan), the path driven (yellow), the rover (red), cast shadows for the chosen sun and interventions (red crosses). The telemetry table gives the same state as text."></canvas>
       <canvas id="r-prof" class="r-prof" role="img" aria-label="Elevation profile along the planned route with the rover's position."></canvas>
-      <p class="small muted">Grid azimuths: at the pole “north” is the map's +y direction. Shadows are cast by terrain inside the tile only, at a 1.5° sun.</p>
+      <p class="small muted">Sun bearings are grid bearings: at the pole “north” is the map's +y direction. The sun is only 1.5° above the horizon, so shadows are long; they are cast by terrain inside this map tile only.</p>
     </div>
     <aside class="r-rail" aria-labelledby="r-tele-title">
       <h2 id="r-tele-title" class="h3">Telemetry</h2>

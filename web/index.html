@@ -76,6 +76,12 @@ input[type=range] { width: 100%; accent-color: var(--accent); margin: 2px 0 10px
 .fleet-list { display: flex; flex-direction: column; gap: 6px; }
 .veh { display: grid; grid-template-columns: 1fr 1fr 1.2fr auto; gap: 6px; align-items: center; }
 .veh select { padding: 5px 6px; font-size: 12.5px; }
+.vehhead { font-size: 11px; color: var(--muted); letter-spacing: 0.02em; margin-bottom: 4px; }
+.hint { font-size: 11.5px; color: var(--muted); margin: -6px 0 10px; line-height: 1.4; }
+.row + .hint { margin: 6px 0 0; }
+.row > div.wide { flex-basis: 100%; }
+.fleetkey { margin: 10px 0 0; padding-left: 16px; }
+.fleetkey li { margin: 2px 0; }
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 16px; }
 .kpi { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; background: var(--panel); box-shadow: var(--shadow); }
 .kpi .lab { font-size: 11.5px; color: var(--muted); letter-spacing: 0.02em; min-height: 30px; }
@@ -152,38 +158,40 @@ footer { max-width: 1480px; margin: 0 auto; padding: 0 20px 40px; font-size: 12p
   <section class="card">
     <h2>Scenario</h2>
     <div class="row">
-      <div><label for="phase">Demand phase</label>
+      <div class="wide"><label for="phase">Base phase (cargo landed a year)</label>
         <select id="phase">
-          <option value="P1">Phase 1 · pre-2029 · ~5 t/yr landed</option>
-          <option value="P2" selected>Phase 2 · 2029–32 · ~30 t/yr</option>
-          <option value="P3">Phase 3 · 2032+ · ~74 t/yr</option>
+          <option value="P1">Phase 1, before 2029: about 5 t a year</option>
+          <option value="P2" selected>Phase 2, 2029–2032: about 30 t a year</option>
+          <option value="P3">Phase 3, after 2032: about 74 t a year</option>
         </select></div>
-      <div><label for="bulk">Bulk regolith flows (t/yr)</label><input id="bulk" type="number" min="0" max="5000" step="100" value="500"></div>
+      <div><label for="bulk">Moon soil to move (t a year)</label><input id="bulk" type="number" min="0" max="5000" step="100" value="500"></div>
     </div>
+    <p class="hint">Landed cargo arrives on landers at two pads. Moon soil (regolith) is dug at work sites and hauled to the base for building.</p>
     <div class="row" style="margin-top:10px">
-      <div><label for="mech">Dispatch rule (Run tab)</label>
+      <div class="wide"><label for="mech">How rovers get their jobs</label>
         <select id="mech">
-          <option value="inhouse">In-house fleets (bilateral contracts)</option>
-          <option value="pooled_greedy">Pooled greedy</option>
-          <option value="central_assign">Batched assignment (Hungarian)</option>
-          <option value="marketplace" selected>Marketplace (auction, team lift, night-aware)</option>
+          <option value="inhouse">Separate fleets: each owner uses only its own carrier</option>
+          <option value="pooled_greedy">Shared fleet: nearest free rover takes the oldest job</option>
+          <option value="central_assign">Shared fleet: best rover-to-job matching every hour</option>
+          <option value="marketplace" selected>Marketplace: rovers bid for jobs</option>
         </select></div>
-      <div><label for="seeds">Replications (seeds)</label><input id="seeds" type="number" min="1" max="500" value="10"></div>
+      <div><label for="seeds">Simulated years</label><input id="seeds" type="number" min="1" max="500" value="10"></div>
     </div>
-    <details style="margin-top:10px"><summary class="note">Marketplace components</summary>
+    <p class="hint">Each simulated year uses a different random seed: other landing dates, cargo and breakdowns. More years give tighter error bars.</p>
+    <details style="margin-top:10px"><summary class="note">Marketplace features (switch one off to see what it adds)</summary>
       <div class="row" style="margin-top:8px">
-        <label><input type="checkbox" id="c_bundling" checked> bundling</label>
-        <label><input type="checkbox" id="c_consolidate" checked> consolidation of bulk lots</label>
-        <label><input type="checkbox" id="c_team" checked> team lift</label>
-        <label><input type="checkbox" id="c_night" checked> night awareness</label>
-        <label><input type="checkbox" id="c_anticipate" checked> anticipatory staging</label>
-        <label><input type="checkbox" id="c_backhaul" checked> backhaul</label>
-        <label><input type="checkbox" id="c_priority" checked> priority credit</label>
+        <label><input type="checkbox" id="c_bundling" checked> carry several items from one pad in a trip</label>
+        <label><input type="checkbox" id="c_consolidate" checked> wait to fill a soil load (70 % full or 24 h)</label>
+        <label><input type="checkbox" id="c_team" checked> team lift: 2–3 rovers carry an item too heavy for one</label>
+        <label><input type="checkbox" id="c_night" checked> refuse trips that would end in the dark</label>
+        <label><input type="checkbox" id="c_anticipate" checked> send an idle rover to the pad before a landing</label>
+        <label><input type="checkbox" id="c_backhaul" checked> bring return items (trash, samples) back on the same trip</label>
+        <label><input type="checkbox" id="c_priority" checked> urgent cargo gets a price credit and goes first</label>
       </div>
     </details>
     <div class="toolbar" style="margin-top:10px">
-      <button class="btn ghost small" id="exportScenario" type="button">Export scenario JSON</button>
-      <label class="btn ghost small" for="importScenario" style="margin:0">Import JSON</label>
+      <button class="btn ghost small" id="exportScenario" type="button">Save scenario (JSON)</button>
+      <label class="btn ghost small" for="importScenario" style="margin:0">Load scenario (JSON)</label>
       <input id="importScenario" type="file" accept="application/json" class="hidden">
     </div>
     <div id="scnote" class="note scnote hidden" role="status" aria-live="polite"></div>
@@ -192,44 +200,57 @@ footer { max-width: 1480px; margin: 0 auto; padding: 0 20px 40px; font-size: 12p
   <section class="card">
     <h2>Fleet</h2>
     <div class="row" style="margin-bottom:10px">
-      <div><label for="preset">Preset</label>
+      <div class="wide"><label for="preset">Ready-made fleet</label>
         <select id="preset">
-          <option value="2">2 LTVs</option>
-          <option value="3">2 LTVs + small rover</option>
-          <option value="4" selected>2 LTVs + hauler + small rover</option>
-          <option value="5">3 LTVs + hauler + small rover</option>
-          <option value="6">Phase-2 default (6 vehicles)</option>
-          <option value="8">8 mixed vehicles</option>
-          <option value="9">Phase-3 default (9 vehicles)</option>
+          <option value="2">2 LTV rovers</option>
+          <option value="3">2 LTVs + 1 small rover</option>
+          <option value="4" selected>2 LTVs + 1 hauler + 1 small rover</option>
+          <option value="5">3 LTVs + 1 hauler + 1 small rover</option>
+          <option value="6">6 rovers (Phase 2 default)</option>
+          <option value="8">8 mixed rovers</option>
+          <option value="9">9 rovers (Phase 3 default)</option>
         </select></div>
-      <div><button class="btn ghost small" id="addveh" type="button">+ vehicle</button></div>
+      <div><button class="btn ghost small" id="addveh" type="button">+ rover</button></div>
     </div>
+    <div class="veh vehhead" aria-hidden="true"><span>Owner</span><span>Type</span><span>Who drives</span><span></span></div>
     <div class="fleet-list" id="fleet"></div>
-    <p class="note" style="margin:10px 0 0">LTV 1.5 t, 6 km/h, parks at night · HAUL 10 t, 4 km/h, works at night · MICRO 0.3 t, 3 km/h. Cargo is owned by NASA, CoA, CoB and CoC; in-house dispatch binds each owner to one carrier.</p>
+    <ul class="note fleetkey">
+      <li><b>LTV</b> (lunar terrain vehicle): carries 1.5 t at 6 km/h; parks in the dark.</li>
+      <li><b>HAUL</b> (heavy hauler): carries 10 t at 4 km/h; keeps working in the dark at 60 % speed.</li>
+      <li><b>MICRO</b> (small rover): carries 0.3 t at 3 km/h; parks in the dark.</li>
+      <li><b>Who drives:</b> a driver on Earth (needs one full driver), supervised autonomy (a quarter of one driver), or fully autonomous.</li>
+      <li><b>Owners:</b> NASA and three companies (Co. A, B and C) own the cargo and the rovers.</li>
+    </ul>
   </section>
 
   <section class="card">
     <h2>Environment</h2>
-    <label for="night">Dark share of the lunar cycle <span class="val" id="night_v">0.15</span></label>
+    <label for="night">Time the site is dark (share of each lunar month) <span class="val" id="night_v">0.15</span></label>
     <input id="night" type="range" min="0" max="0.5" step="0.05" value="0.15">
-    <label for="rtt">Round-trip control latency (s) <span class="val" id="rtt_v">5.0</span></label>
+    <p class="hint">0.15 means dark 15 % of the time. LTVs and small rovers park until the sun returns.</p>
+    <label for="rtt">Earth–Moon signal delay, round trip (s) <span class="val" id="rtt_v">5.0</span></label>
     <input id="rtt" type="range" min="2.6" max="60" step="0.2" value="5.0">
-    <label for="ops">Earth operators on console <span class="val" id="ops_v">3</span></label>
+    <p class="hint">Rovers driven from Earth slow down as the delay grows: 2.56 km/h at 4 s, 1.76 km/h at 8 s (NASA trials). 2.6 s is the speed-of-light minimum.</p>
+    <label for="ops">Rover drivers on duty on Earth <span class="val" id="ops_v">3</span></label>
     <input id="ops" type="range" min="1" max="8" step="1" value="3">
-    <label for="duty">Vehicle time on owners' other duties <span class="val" id="duty_v">0.30</span></label>
+    <p class="hint">If every driver is busy, rovers that need one wait.</p>
+    <label for="duty">Rover time taken by the owner's other work (share) <span class="val" id="duty_v">0.30</span></label>
     <input id="duty" type="range" min="0" max="0.8" step="0.05" value="0.3">
-    <label for="mtbf">Reliability (MTBF multiplier) <span class="val" id="mtbf_v">1.0</span></label>
+    <p class="hint">0.30 means each rover is away on other tasks 30 % of the time, in 48-hour blocks.</p>
+    <label for="mtbf">Reliability (time between breakdowns, × normal) <span class="val" id="mtbf_v">1.0</span></label>
     <input id="mtbf" type="range" min="0.25" max="4" step="0.25" value="1">
-    <label for="std">Cargo on the common interface standard <span class="val" id="std_v">1.00</span></label>
+    <p class="hint">2 means breakdowns happen half as often. A repair takes 12–36 h, depending on the rover.</p>
+    <label for="std">Cargo that fits the rovers' standard handling interface (share) <span class="val" id="std_v">1.00</span></label>
     <input id="std" type="range" min="0.5" max="1" step="0.05" value="1">
+    <p class="hint">Cargo without the standard interface cannot be picked up; it stays at the pad.</p>
   </section>
 
   <section class="card">
     <button class="btn" id="run" type="button" style="width:100%">Run simulation</button>
-    <button class="btn secondary" id="runprec" type="button" style="width:100%; margin-top:8px">Run until the 99% CI is within 2%</button>
-    <button class="btn secondary hidden" id="runpy" type="button" style="width:100%; margin-top:8px" title="Runs this scenario on the local Python engine (lunarsim serve), at most 100 seeds">Run in Python</button>
+    <button class="btn secondary" id="runprec" type="button" style="width:100%; margin-top:8px">Run until the result is precise (99 % interval within ±2 %)</button>
+    <button class="btn secondary hidden" id="runpy" type="button" style="width:100%; margin-top:8px" title="Runs this scenario on the local Python engine (lunarsim serve), at most 100 simulated years">Run in Python</button>
     <progress id="prog" value="0" max="1" class="hidden" style="margin-top:10px"></progress>
-    <div class="status" id="status">Ready. One simulated year takes about 0.1–0.5 s per seed in a background worker.</div>
+    <div class="status" id="status">Ready. Each simulated year takes 0.1–0.5 s in your browser.</div>
   </section>
 </aside>
 
@@ -237,43 +258,43 @@ footer { max-width: 1480px; margin: 0 auto; padding: 0 20px 40px; font-size: 12p
   <section id="tab-run" class="tabpane">
     <div class="kpis" id="kpis"></div>
     <div class="grid2">
-      <div class="card"><h3>Delay by cargo class</h3><p class="sub">Hours from release at the pad to delivery. Bars are means over the seeds; whiskers are 95% confidence intervals. Deferrable bulk lots are held on purpose under the marketplace.</p><svg class="chart" id="chart_delay" viewBox="0 0 560 250" role="img" aria-label="Delay by cargo class"></svg></div>
-      <div class="card"><h3>Items of the first seed</h3><p class="sub">Each dot is one delivered item at its release day and delay (log scale). Grey bands are nights, orange ticks are landings.</p><svg class="chart" id="chart_timeline" viewBox="0 0 560 250" role="img" aria-label="Delay timeline"></svg></div>
+      <div class="card"><h3>Waiting time by cargo type</h3><p class="sub">Hours from when cargo is ready at the pad until it is delivered. Bars: average over the simulated years. Whiskers: 95 % confidence interval. Under the marketplace, soil loads wait on purpose until a load is full.</p><svg class="chart" id="chart_delay" viewBox="0 0 560 250" role="img" aria-label="Waiting time by cargo type"></svg></div>
+      <div class="card"><h3>Every delivery in the first simulated year</h3><p class="sub">One dot per item: the day it was ready and how long it waited (hours, log scale). Grey bands: darkness. Orange ticks: landings.</p><svg class="chart" id="chart_timeline" viewBox="0 0 560 250" role="img" aria-label="Waiting time of each delivered item over the year"></svg></div>
     </div>
     <div class="card" style="margin-top:14px">
-      <div class="toolbar"><h3 style="margin:0">Per-seed results</h3><span class="spacer"></span><button class="btn ghost small" id="exportRuns" type="button">Export CSV</button></div>
+      <div class="toolbar"><h3 style="margin:0">Results for each simulated year</h3><span class="spacer"></span><button class="btn ghost small" id="exportRuns" type="button">Export CSV</button></div>
       <div class="scroll"><table id="seedtable"></table></div>
     </div>
   </section>
 
   <section id="tab-compare" class="tabpane hidden">
     <div class="card">
-      <h3>All four dispatch rules on the same seeds</h3>
-      <p class="sub">Common random numbers: every rule sees the same landings, manifests and faults for a given seed, so the differences are paired. The comparison takes about four times as long as a single run.</p>
+      <h3>The four job rules on the same simulated years</h3>
+      <p class="sub">In each simulated year every rule sees the same landings, cargo and breakdowns, so any difference comes from the rule itself. This takes about four times as long as one run.</p>
       <div class="toolbar"><button class="btn" id="compare" type="button">Compare</button><span class="status" id="cstatus" style="margin:0"></span><span class="spacer"></span><button class="btn ghost small" id="exportCompare" type="button">Export CSV</button></div>
     </div>
     <div class="kpis" id="ckpis" style="margin-top:14px"></div>
     <div class="grid2">
-      <div class="card"><h3>Urgent cargo: 90th-percentile delay (h)</h3><svg class="chart" id="chart_c1" viewBox="0 0 560 230" role="img"></svg></div>
-      <div class="card"><h3>Urgent cargo delivered within 24 h</h3><svg class="chart" id="chart_c2" viewBox="0 0 560 230" role="img"></svg></div>
-      <div class="card"><h3>Landed cargo mass that is immovable (%)</h3><svg class="chart" id="chart_c3" viewBox="0 0 560 230" role="img"></svg></div>
-      <div class="card"><h3>Vehicles caught by the night (per year)</h3><svg class="chart" id="chart_c4" viewBox="0 0 560 230" role="img"></svg></div>
+      <div class="card"><h3>Urgent cargo: 90 % delivered within (hours)</h3><svg class="chart" id="chart_c1" viewBox="0 0 560 230" role="img" aria-label="Urgent cargo: hours within which 90 % is delivered, by rule"></svg></div>
+      <div class="card"><h3>Urgent cargo delivered within 24 h (share)</h3><svg class="chart" id="chart_c2" viewBox="0 0 560 230" role="img" aria-label="Share of urgent cargo delivered within 24 hours, by rule"></svg></div>
+      <div class="card"><h3>Landed cargo no rover can move (% of mass)</h3><svg class="chart" id="chart_c3" viewBox="0 0 560 230" role="img" aria-label="Share of landed cargo mass no rover can move, by rule"></svg></div>
+      <div class="card"><h3>Rovers caught out by darkness (per year)</h3><svg class="chart" id="chart_c4" viewBox="0 0 560 230" role="img" aria-label="Rovers caught out by darkness per year, by rule"></svg></div>
     </div>
-    <div class="card" style="margin-top:14px"><h3>Table</h3><div class="scroll"><table id="ctable"></table></div></div>
+    <div class="card" style="margin-top:14px"><h3>All numbers</h3><div class="scroll"><table id="ctable"></table></div></div>
   </section>
 
   <section id="tab-replay" class="tabpane hidden">
     <div class="card">
-      <h3>One simulated year on the base map</h3>
-      <p class="sub">Replays the first seed of the last run, or any lunarsim-trace v1 file (the Python <code>lunarsim trace</code> output or a trace exported here). Vehicles move along the site graph; a ring around a site shows cargo waiting there; the shaded overlay is the lunar night. Filled markers are loaded vehicles; the label gives the load.</p>
+      <h3>Watch one simulated year on the base map</h3>
+      <p class="sub">Plays the first simulated year of your last run, or a saved trace file (<code>lunarsim-trace</code> v1: from the Python command <code>lunarsim trace</code> or the Export button here). Rovers move between sites; a ring shows cargo waiting at a site; the dark overlay is night. A filled rover is carrying cargo, and its label gives the load.</p>
       <div class="toolbar">
         <select id="sampleTrace" aria-label="Load a sample year" style="width:auto">
           <option value="" selected>Sample years…</option>
-          <option value="P1_marketplace_seed3.json">Phase 1 · marketplace · seed 3</option>
-          <option value="P2_marketplace_seed3.json">Phase 2 · marketplace · seed 3</option>
-          <option value="P3_marketplace_seed3.json">Phase 3 · marketplace · seed 3</option>
+          <option value="P1_marketplace_seed3.json">Phase 1 · marketplace · year 3</option>
+          <option value="P2_marketplace_seed3.json">Phase 2 · marketplace · year 3</option>
+          <option value="P3_marketplace_seed3.json">Phase 3 · marketplace · year 3</option>
         </select>
-        <label class="btn ghost small" for="importTrace" style="margin:0">Load trace JSON…</label>
+        <label class="btn ghost small" for="importTrace" style="margin:0">Load trace file…</label>
         <input id="importTrace" type="file" accept="application/json,.json" class="hidden">
         <button class="btn ghost small" id="exportTrace" type="button" disabled>Export this trace</button>
         <button class="btn ghost small" id="openWorld" type="button" disabled title="Replay this trace on the real LOLA terrain (site page /world)">Open in 3D world</button>
@@ -295,7 +316,7 @@ footer { max-width: 1480px; margin: 0 auto; padding: 0 20px 40px; font-size: 12p
   <section id="tab-verify" class="tabpane hidden">
     <div class="card" id="enginecard">
       <h3>Engine</h3>
-      <p class="sub">Optional. Start the reference engine locally with <code>lunarsim serve</code> (port 8765) and connect: the cross-implementation check can then run the Python side live on the same seeds, and the Run tab gets a <b>Run in Python</b> button. Without a server the page works exactly as before.</p>
+      <p class="sub">Optional. If the Python engine runs on your computer (<code>lunarsim serve</code>, port 8765), connect to it here. The browser-vs-Python check below can then run the Python side live on the same simulated years, and the Run tab gets a <b>Run in Python</b> button. Without it, the page works on its own.</p>
       <div class="engine-row">
         <label for="apibase" class="visually-hidden">Python API base URL</label>
         <input id="apibase" type="text" spellcheck="false" autocomplete="off" value="http://127.0.0.1:8765" aria-label="Python API base URL">
@@ -305,15 +326,15 @@ footer { max-width: 1480px; margin: 0 auto; padding: 0 20px 40px; font-size: 12p
     </div>
     <div class="card" style="margin-top:14px">
       <h3>Verification checks</h3>
-      <p class="sub">Each check compares the simulator with an independent reference: an analytic formula, a published measurement or a conservation identity. The same checks run in the Python test-suite of the research repository.</p>
+      <p class="sub">Each check compares the simulator with an answer worked out another way: a formula, a published measurement, or a quantity that must add up. The same checks run in the Python tests of the repository.</p>
       <div class="toolbar"><button class="btn" id="verify" type="button">Run checks</button><span class="status" id="vstatus" style="margin:0"></span></div>
       <div class="scroll" style="margin-top:10px; max-height:none"><table id="vtable"></table></div>
     </div>
     <div class="card" style="margin-top:14px">
-      <h3>Cross-implementation check</h3>
-      <p class="sub">Python reference results for the Phase-2 default fleet (30 seeds, from the paper's E1 suite) against this browser implementation on its own seeds. The two use different random-number generators, so agreement is statistical: means should lie within each other's 95% confidence intervals.</p>
-      <div class="toolbar"><label class="xsrc"><input type="checkbox" id="xlive" disabled> Python side from the live engine (seeds 0–29), not the embedded reference</label></div>
-      <div class="toolbar"><button class="btn secondary" id="xcheck" type="button">Run the Phase-2 default cells (30 seeds × 4 rules)</button><span class="status" id="xstatus" style="margin:0"></span></div>
+      <h3>Browser vs Python check</h3>
+      <p class="sub">Compares this browser engine with the Python engine on the Phase 2 default fleet (30 simulated years, from the paper's E1 suite). The two use different random-number generators, so they agree statistically: the averages should fall within each other's 95 % intervals.</p>
+      <div class="toolbar"><label class="xsrc"><input type="checkbox" id="xlive" disabled> Use the live Python engine (years 0–29) instead of the stored Python results</label></div>
+      <div class="toolbar"><button class="btn secondary" id="xcheck" type="button">Run the check (30 years × 4 rules)</button><span class="status" id="xstatus" style="margin:0"></span></div>
       <div class="scroll" style="margin-top:10px; max-height:none"><table id="xtable"></table></div>
     </div>
   </section>
@@ -321,13 +342,17 @@ footer { max-width: 1480px; margin: 0 auto; padding: 0 20px 40px; font-size: 12p
   <section id="tab-about" class="tabpane hidden">
     <div class="card prose">
       <h3>What is simulated</h3>
-      <p>Landers arrive as Poisson processes (CLPS-class 100–500 kg, Blue Moon MK1-class 2–3 t, large landers 12–30 t) at one of two pads more than 1 km from the base. Each landing draws a manifest from five cargo classes with NASA's published mass ranges; items become available after an offload delay. Bulk regolith lots and return items (trash, samples) add recurring flows. Vehicles belong to owners and have a capacity, speed, night capability, autonomy level, fault process and other duties. Travel time follows the slope-weighted site graph; teleoperated speed follows NASA's JSC trial table (3.24, 2.56, 2.03, 1.76 km/h at 0, 4, 6, 8 s round trip).</p>
-      <h3>Dispatch rules</h3>
-      <p><b>In-house</b>: each cargo owner is served by one contracted carrier, oldest item first, nearest vehicle. <b>Pooled greedy</b>: any vehicle may serve any item. <b>Batched assignment</b>: every hour, a minimum-cost assignment of free vehicles to waiting items. <b>Marketplace</b>: a sequential single-item auction on generalised cost (vehicle wear, operator time and the shipper's value of delivery time, minus an urgency credit), with bundling of same-pad items, consolidation of bulk lots to a 70% load or 24 h, team lifts for items heavier than any one vehicle, backhaul of return items, refusal of jobs that would be caught by the night, and anticipatory staging of an idle vehicle at the pad before a published landing.</p>
+      <p>Landers arrive at random times at one of two landing pads, each more than 1 km from the base. There are three sizes: CLPS-class landers (100–500 kg of cargo), Blue Moon MK1-class landers (2–3 t) and large landers (12–30 t). Each landing brings a random load drawn from five cargo types, with NASA's published mass ranges; an item can be picked up once it has been unloaded. Moon soil for building and return items (trash, samples) add regular extra jobs.</p>
+      <p>Each rover has an owner, a load limit, a speed, a way of being driven, random breakdowns and other work for its owner. Driving time follows the site map, weighted by slope. Rovers driven from Earth go slower when the signal delay is longer, as measured in NASA JSC trials: 3.24, 2.56, 2.03 and 1.76 km/h at 0, 4, 6 and 8 s round trip.</p>
+      <h3>The four job rules</h3>
+      <p><b>Separate fleets</b> (called <i>in-house</i> in the paper): each cargo owner is served by one contracted carrier; the oldest item goes first, to the nearest rover.</p>
+      <p><b>Shared fleet, nearest free rover</b> (<i>pooled greedy</i>): the same, but any rover may carry any owner's cargo.</p>
+      <p><b>Shared fleet, hourly matching</b> (<i>batched assignment</i>): every hour, free rovers are matched to waiting items so that the total cost is lowest (Hungarian algorithm).</p>
+      <p><b>Marketplace</b>: each item is auctioned. A rover's bid is its cost (wear and driver time) plus the cost of waiting to the cargo owner, minus a credit for urgent cargo. On top of the auction: items from the same pad share a trip; soil loads wait until 70 % full or 24 h; 2–3 rovers lift items too heavy for one; return items ride back on the same trip; jobs that would end in the dark are refused; and an idle rover waits at the pad before a scheduled landing.</p>
       <h3>Reading the numbers</h3>
-      <p>The primary metric is the 90th-percentile delay of urgent (priority-1) cargo and the share delivered within 24 h. <i>Immovable</i> mass is landed cargo heavier than any vehicle or team in the fleet. Costs are the fleet's amortised capital plus operator time, per kilogram of all mass moved, and per kilogram of landed cargo alone. Confidence intervals are 1.96 standard errors across seeds; the precision mode adds seeds until the 99% interval of the mean urgent delay is within 2% of the mean.</p>
+      <p>The main result is how long <b>urgent</b> (priority 1) cargo waits: the time within which 90 % of it is delivered, and the share delivered within 24 h. <b>Cargo no rover can move</b> is landed mass that is heavier than any rover or team in the fleet, or lacks the standard handling interface. <b>Cost</b> is the fleet's yearly capital cost plus driver time, per kilogram of everything moved and per kilogram of landed cargo only. Error bars are 95 % confidence intervals (1.96 standard errors across simulated years). The precision button keeps adding years until the 99 % interval of the average urgent wait is within 2 % of the average.</p>
       <h3>Relation to the paper and the code</h3>
-      <p>This page is a line-by-line port of the Python package <code>lunarsim</code> used for the preprint <i>Who Hauls the Habitat?</i> The Verification tab runs the same analytic checks as the Python test-suite and compares the two implementations on the paper's Phase-2 cells. Scenarios can be exported as JSON and run from the command line with <code>lunarsim run --scenario file.json</code>. Parameters marked as assumptions in the paper (hauler cost, bulk flows, operator cost, value of time) are the defaults here and can be changed in the rail.</p>
+      <p>This page is a line-by-line port of the Python package <code>lunarsim</code> used for the preprint <i>Who Hauls the Habitat?</i> The Verification tab runs the same checks as the Python tests and compares both engines on the paper's Phase 2 runs. Save a scenario as JSON and run it from the command line with <code>lunarsim run --scenario file.json</code>. Numbers the paper marks as assumptions (hauler cost, soil amounts, driver cost, value of time) are the defaults here; the soil amount can be changed in the left panel.</p>
     </div>
   </section>
 </main>

@@ -46,7 +46,7 @@ async function boot() {
 // do not, so class, reward variant and method fall back to the id. Order = how the lab offers them: the best learned
 // lander first (imitation + DAgger from the memoryless classical law), then the comparisons, then the failure demos.
 const TAG_ORDER = ['bc_v3', 'bcv3', 'bcml', 'bc', 'baseline', 'hover_bonus', 'no_eta', 'hover_bonus_v1'];   // an observation-v3 clone, once published, is the default
-const TAG_LABEL = { bc_v3: 'imitation + DAgger, observation v3 (altimeter history)', bcv3: 'imitation + DAgger, observation v3 (altimeter history)', bcml: 'imitation + DAgger, memoryless classical teacher', bc: 'imitation + DAgger', baseline: 'PPO', hover_bonus: 'PPO, hover bonus (env v2)', hover_bonus_v1: 'PPO, hover bonus (env v1)', no_eta: 'PPO, no survival term' };
+const TAG_LABEL = { bc_v3: 'copies the classical law, sees altimeter history', bcv3: 'copies the classical law, sees altimeter history', bcml: 'copies the memoryless classical law', bc: 'copies the classical law', baseline: 'trial and error (PPO)', hover_bonus: 'trial and error, paid to hover (env v2)', hover_bonus_v1: 'trial and error, paid to hover (env v1)', no_eta: 'trial and error, no pay for staying alive' };
 function meta(p) {
   const t = p.doc.training || {}, m = String(p.id).match(/^lander_([A-Za-z0-9]+)_(.+)_s(\d+)$/) || [], tag = m[2] || '';
   return { cls: t.cls || m[1], tag, seed: t.seed ?? (m[3] !== undefined ? +m[3] : undefined),
@@ -62,8 +62,8 @@ function hoverPolicy() {   // the reward-hacking demo: the env-v1 hover-bonus po
 }
 function renderClassOptions() {
   const cls = $('l-class').value, pols = policiesFor(cls), pol = policyFor(cls), sel = $('l-ctrl');
-  sel.innerHTML = pols.map(p => `<option value="${esc(p.id)}"${p === pol ? ' selected' : ''}>Trained policy: ${esc(meta(p).label)} (${esc(p.id)})</option>`).join('') + '<option value="classical">Classical ZEM/ZEV law</option>';
-  $('l-ctrl-note').textContent = pol ? '' : `No trained policy for ${cls} yet; the classical law flies it.`;
+  sel.innerHTML = pols.map(p => `<option value="${esc(p.id)}"${p === pol ? ' selected' : ''}>Neural network: ${esc(meta(p).label)} (${esc(p.id)})</option>`).join('') + '<option value="classical">Classical guidance law (ZEM/ZEV, no learning)</option>';
+  $('l-ctrl-note').textContent = pol ? '' : `No neural network is trained for this lander yet, so the classical law flies it.`;
   const hp = hoverPolicy(); $('l-hover').disabled = !hp;
   $('l-hover-note').textContent = hp ? `Loads ${hp.id}, trained with η = ${RV(hp.doc.env_version || 1).hover_bonus.eta} per step alive (env v${hp.doc.env_version || 1} rewards).` : 'Hover-bonus policy not trained yet (LEAD trains it); the button activates when its file is published.';
 }

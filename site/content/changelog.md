@@ -13,6 +13,12 @@ The format follows Keep a Changelog. Versions are the engine's version in `pypro
 - Plume keep-out windows and shelters around landings in the dispatch rules.
 - This site: 3D world viewer, lander and rover labs, method, paper and data pages.
 
+### Changed (22 October 2026)
+- The site moved to `/Lunar-Haul/` with the repository rename; the build now takes its base path from GitHub Pages.
+- Plain-language labels in the simulator and the labs: scenario, fleet, environment and job-rule names say what
+  they do, with a short hint under each setting. The paper's names (in-house, pooled greedy, batched assignment)
+  are given in the Method tab. Nothing in the engines changed.
+
 ## 2.1.0 — 2026-10-15
 
 ### Added

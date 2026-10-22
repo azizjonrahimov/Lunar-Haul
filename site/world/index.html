@@ -16,18 +16,18 @@
 <main id="main"><div class="wrap">
   <header class="page-head w-pagehead">
     <h1>A simulated year on real terrain</h1>
-    <p>Replay of one LunarHaul run on the LOLA terrain around the base: rovers driving the site graph's legs, landers arriving, the lunar night and cargo waiting at each site. The table beside the view gives the same state as numbers.</p>
+    <p>A replay of one simulated year on real Moon terrain around the base (NASA LOLA elevation data): rovers driving between sites, landers arriving, the lunar night, and cargo waiting at each site. The table beside the view shows the same moment as numbers.</p>
   </header>
 
   <div class="toolbar w-load" role="group" aria-label="Choose a run">
     <label class="visually-hidden" for="w-sample">Load a run</label>
     <select id="w-sample">
       <option value="" selected>Load a run…</option>
-      <option value="P1">Sample: Phase 1 · marketplace · seed 3</option>
-      <option value="P2">Sample: Phase 2 · marketplace · seed 3</option>
-      <option value="P3">Sample: Phase 3 · marketplace · seed 3</option>
-      <option value="P2V2">Sample: Phase 2, 4 vehicles, terrain legs + landing outcomes + plume keep-out (trace v2, full year)</option>
-      <option value="sim">The simulator's last run (this browser)</option>
+      <option value="P1">Sample: Phase 1 (small base) · marketplace · year 3</option>
+      <option value="P2">Sample: Phase 2 (medium base) · marketplace · year 3</option>
+      <option value="P3">Sample: Phase 3 (large base) · marketplace · year 3</option>
+      <option value="P2V2">Sample: Phase 2 with 4 rovers on real terrain routes, landing results and plume keep-out zones (full year)</option>
+      <option value="sim">Your last run in the simulator (this browser)</option>
     </select>
     <label class="btn" for="w-file">Load trace file…</label>
     <input id="w-file" type="file" accept="application/json,.json" class="visually-hidden">

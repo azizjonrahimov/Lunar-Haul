@@ -16,22 +16,23 @@
 <main id="main"><div class="wrap">
   <header class="page-head">
     <h1>Lander lab: the last 500 metres</h1>
-    <p>A lander's terminal descent from the SPLICE braking gate to touchdown, simulated in your browser by the same equations as the Python environment. Fly it with the trained neural-network policy or the classical guidance law, watch the score it was trained on, change the reward rules, and compare both controllers over 500 dispersed landings.</p>
+    <p>Watch a lander fly its last 500 m: from the start of the final approach (NASA's SPLICE reference point, 430 m up and 250 m out) to touchdown. It runs in your browser with the same equations as the Python model. Let a trained neural network or the classical guidance law fly it, watch the score the network was trained on, change the reward rules, and compare both over 500 landings with random starting errors.</p>
   </header>
 
   <div class="toolbar l-controls" role="group" aria-label="Episode">
-    <label class="lbl" for="l-class">Lander class</label>
-    <select id="l-class"><option value="CLPS" selected>CLPS (2 t, SPLICE reference)</option><option value="MK1">MK1 class (9 t at the gate)</option><option value="LARGE">Large cargo (60 t)</option></select>
-    <label class="lbl" for="l-ctrl">Controller</label>
+    <label class="lbl" for="l-class">Lander</label>
+    <select id="l-class"><option value="CLPS" selected>Small: CLPS class, 2 t (NASA SPLICE reference)</option><option value="MK1">Medium: Blue Moon MK1 class, 9 t</option><option value="LARGE">Large cargo lander, 60 t</option></select>
+    <label class="lbl" for="l-ctrl">Who flies it</label>
     <select id="l-ctrl"></select>
-    <label class="lbl" for="l-seed">Episode</label>
+    <label class="lbl" for="l-seed">Start number</label>
     <input id="l-seed" type="number" min="0" step="1" value="0" style="width:6rem">
-    <button class="btn" type="button" id="l-random">Random episode</button>
+    <button class="btn" type="button" id="l-random">Random start</button>
     <button class="btn primary" type="button" id="l-run">Run</button>
   </div>
+  <p class="small muted">Masses are at the start of the final approach. The 60 t lander starts 400 m out at 25 m/s, because it cannot stop within 250 m. Each start number gives a different, repeatable set of starting errors and noise.</p>
   <div class="toolbar l-controls" role="group" aria-label="Options">
-    <label class="chk"><input type="checkbox" id="l-rand" checked> dispersion and randomised hardware</label>
-    <label class="chk"><input type="checkbox" id="l-sensor" checked> sensor noise and altimeter dropouts</label>
+    <label class="chk"><input type="checkbox" id="l-rand" checked> random starting errors and engine/mass spread</label>
+    <label class="chk"><input type="checkbox" id="l-sensor" checked> noisy sensors and altimeter dropouts</label>
     <label class="lbl" for="l-speed">Playback</label>
     <select id="l-speed"><option value="1" selected>real time</option><option value="2">2×</option><option value="5">5×</option><option value="0">instant</option></select>
     <button class="btn" type="button" id="l-play" aria-pressed="false">Replay</button>
@@ -42,7 +43,7 @@
   <div class="l-grid">
     <div>
       <canvas id="l-side" class="l-side" role="img" aria-label="Side view of the descent: altitude against distance along the approach, over the terrain profile. The telemetry table gives the same values as text."></canvas>
-      <p class="small muted">Side view along the approach direction. Solid line: this run; dashed: the other controller on the same episode. The ground profile is the LOLA terrain through PAD A for context; the environment itself lands on a flat plane with a sampled site slope (0–5°). The lander is drawn far larger than scale.</p>
+      <p class="small muted">Side view along the approach. Solid line: this flight. Dashed: the other pilot (network or classical law) from the same start. The ground line is real terrain through pad A (NASA LOLA), shown for context only; the model lands on flat ground tilted by a random 0–5°. The lander is drawn much larger than scale.</p>
     </div>
     <aside class="l-rail" aria-labelledby="l-tele-title">
       <div class="l-score-box"><span class="small muted">Score</span><output id="l-score" class="l-score" aria-live="off">0.0</output><span class="small" id="l-score-note"></span></div>
@@ -62,7 +63,7 @@
 
   <section aria-labelledby="h-mc">
     <h2 id="h-mc">Monte Carlo landings: learned policies against the classical law</h2>
-    <p class="prose">Each controller flew the same 500 dispersed episodes (same initial conditions, hardware spread and sensor noise), computed by <code>lunarsim.lander.evaluate</code> in Python. These tables are what the logistics simulation samples landing outcomes from.</p>
+    <p class="prose">Each pilot flew the same 500 landings (same starting errors, engine and mass spread, and sensor noise), computed in Python by <code>lunarsim.lander.evaluate</code>. The logistics simulation draws its landing results from these tables.</p>
     <div id="l-mc" class="l-mc"></div>
   </section>
 

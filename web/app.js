@@ -64,10 +64,11 @@ function renderFleet() {
   const el = $('fleet'); el.innerHTML = '';
   fleet.forEach((f, i) => {
     const row = document.createElement('div'); row.className = 'veh';
-    row.innerHTML = `<select aria-label="owner" data-i="${i}" data-k="owner">${['NASA', 'CoA', 'CoB', 'CoC'].map(o => `<option ${o === f.owner ? 'selected' : ''}>${o}</option>`).join('')}</select>` +
-      `<select aria-label="class" data-i="${i}" data-k="cls">${['LTV', 'HAUL', 'MICRO'].map(o => `<option ${o === f.cls ? 'selected' : ''}>${o}</option>`).join('')}</select>` +
-      `<select aria-label="autonomy" data-i="${i}" data-k="autonomy">${['teleop', 'supervised', 'autonomous'].map(o => `<option ${o === f.autonomy ? 'selected' : ''}>${o}</option>`).join('')}</select>` +
-      `<button class="btn ghost small" type="button" data-del="${i}" aria-label="remove vehicle">×</button>`;
+    const opts = (pairs, cur) => pairs.map(([v, t]) => `<option value="${v}"${v === cur ? ' selected' : ''}>${t}</option>`).join('');
+    row.innerHTML = `<select aria-label="owner" data-i="${i}" data-k="owner">${opts([['NASA', 'NASA'], ['CoA', 'Co. A'], ['CoB', 'Co. B'], ['CoC', 'Co. C']], f.owner)}</select>` +
+      `<select aria-label="rover type" data-i="${i}" data-k="cls">${opts([['LTV', 'LTV'], ['HAUL', 'HAUL'], ['MICRO', 'MICRO']], f.cls)}</select>` +
+      `<select aria-label="who drives" data-i="${i}" data-k="autonomy">${opts([['teleop', 'from Earth'], ['supervised', 'supervised'], ['autonomous', 'autonomous']], f.autonomy)}</select>` +
+      `<button class="btn ghost small" type="button" data-del="${i}" aria-label="remove rover">×</button>`;
     el.appendChild(row);
   });
   el.querySelectorAll('select').forEach(s => s.addEventListener('change', e => { fleet[+e.target.dataset.i][e.target.dataset.k] = e.target.value; }));
@@ -129,7 +130,7 @@ $('run').addEventListener('click', async () => {
   const sc = readScenario(), mechName = $('mech').value, n = Math.max(1, Math.min(500, +$('seeds').value)); const seeds = Array.from({ length: n }, (_, i) => i);
   setBusy(true, 'running…'); const t0 = performance.now();
   const [runs, trace] = await runSeeds(sc, mechName, seeds, mechName === 'marketplace' ? marketOpts() : {}, p => $('prog').value = p);
-  lastRuns = runs; lastTrace = trace; lastScenario = sc; setBusy(false, `${n} seed(s) of ${MECH_LABEL[mechName]} in ${((performance.now() - t0) / 1000).toFixed(1)} s on ${workers.length} worker(s).`);
+  lastRuns = runs; lastTrace = trace; lastScenario = sc; setBusy(false, `${n} simulated year${n > 1 ? 's' : ''} with ${MECH_LABEL[mechName]} in ${((performance.now() - t0) / 1000).toFixed(1)} s (${workers.length} background worker${workers.length > 1 ? 's' : ''}).`);
   renderRun(runs, trace); setupReplay(trace);
 });
 $('runprec').addEventListener('click', async () => {
@@ -137,22 +138,22 @@ $('runprec').addEventListener('click', async () => {
   for (;;) {
     const seeds = Array.from({ length: 40 }, (_, i) => n + i); const [r, tr] = await runSeeds(sc, mechName, seeds, opts, null); if (!trace0) trace0 = tr; runs = runs.concat(r); n += 40;
     const vals = runs.map(x => x.delay_prio1_mean_h); const hw = ci99(vals), m = mean(vals); const rel = hw / Math.abs(m);
-    $('status').textContent = `n=${n}: mean urgent delay ${fmtN(m, 2)} h, 99% CI ±${fmtN(hw, 2)} h (${(100 * rel).toFixed(2)}% of mean)`; $('prog').value = Math.min(1, 0.02 / Math.max(rel, 1e-9)); renderRun(runs, trace0);
+    $('status').textContent = `${n} years: average urgent wait ${fmtN(m, 2)} h, 99 % interval ±${fmtN(hw, 2)} h (${(100 * rel).toFixed(2)} % of the average)`; $('prog').value = Math.min(1, 0.02 / Math.max(rel, 1e-9)); renderRun(runs, trace0);
     if ((rel <= 0.02 && n >= 80) || n >= 2000) break;
   }
-  lastRuns = runs; lastTrace = trace0; lastScenario = sc; setupReplay(trace0); setBusy(false, $('status').textContent + ` — stopped after ${n} seeds in ${((performance.now() - t0) / 1000).toFixed(0)} s.`);
+  lastRuns = runs; lastTrace = trace0; lastScenario = sc; setupReplay(trace0); setBusy(false, $('status').textContent + ` — stopped after ${n} simulated years in ${((performance.now() - t0) / 1000).toFixed(0)} s.`);
 });
 function setBusy(b, msg) { $('run').disabled = b; $('runprec').disabled = b; $('runpy').disabled = b; $('compare').disabled = b; $('prog').classList.toggle('hidden', !b); if (b) $('prog').value = 0; if (msg) $('status').textContent = msg; }
 
 function renderRun(runs, trace) {
-  $('kpis').innerHTML = kpi('Urgent cargo · 90th-percentile delay (h)', runs, 'delay_prio1_p90_h', 1, 1, true) + kpi('Urgent cargo delivered within 24 h', runs, 'sl24_prio1', 3) + kpi('Landed cargo mass immovable (%)', runs, 'immovable_share', 1, 100)
-    + kpi('Vehicle trips per year', runs, 'jobs', 0) + kpi('Vehicles caught by the night (per yr)', runs, 'night_strandings', 2) + kpi('Operator console hours per year', runs, 'operator_hours', 0)
-    + kpi('System cost per kg moved ($)', runs, 'cost_per_kg_usd', 0) + kpi('System cost per landed kg ($)', runs, 'cost_per_landed_kg_usd', 0) + kpi('Team lifts per year', runs, 'team_lifts', 1) + kpi('Fleet utilisation', runs, 'utilisation', 3);
+  $('kpis').innerHTML = kpi('Urgent cargo: 90 % delivered within (h)', runs, 'delay_prio1_p90_h', 1, 1, true) + kpi('Urgent cargo delivered within 24 h (share)', runs, 'sl24_prio1', 3) + kpi('Landed cargo no rover can move (% of mass)', runs, 'immovable_share', 1, 100)
+    + kpi('Rover trips per year', runs, 'jobs', 0) + kpi('Rovers caught out by darkness (per year)', runs, 'night_strandings', 2) + kpi('Driver hours on Earth per year', runs, 'operator_hours', 0)
+    + kpi('Cost per kg moved ($)', runs, 'cost_per_kg_usd', 0) + kpi('Cost per kg of landed cargo ($)', runs, 'cost_per_landed_kg_usd', 0) + kpi('Team lifts per year (2–3 rovers, one item)', runs, 'team_lifts', 1) + kpi('Share of time the fleet is busy', runs, 'utilisation', 3);
   const labs = ['consumables', 'science', 'equipment', 'infrastructure', 'element', 'bulk', 'return'];
   barChart($('chart_delay'), labs.map(l => l[0].toUpperCase() + l.slice(1)), labs.map(l => mean(runs.map(r => r.delay_by_class[l]))), labs.map(l => ci95(runs.map(r => r.delay_by_class[l]))),
     ['var(--s8)', 'var(--s3)', 'var(--s1)', 'var(--s6)', 'var(--s4)', 'var(--muted)', 'var(--s5)'], 'hours');
   if (trace) timelineChart($('chart_timeline'), trace);
-  const keys = [['seed', 'Seed', 0], ['delay_prio1_p90_h', 'Urgent p90 (h)', 1], ['delay_prio1_mean_h', 'Urgent mean (h)', 2], ['sl24_prio1', 'Within 24 h', 3], ['immovable_share', 'Immovable', 3], ['jobs', 'Trips', 0], ['bundled_jobs', 'Bundled', 0], ['team_lifts', 'Team lifts', 0], ['repositions', 'Staging', 0], ['night_strandings', 'Night', 0], ['faults', 'Faults', 0], ['operator_hours', 'Operator h', 0], ['landed_kg', 'Landed kg', 0], ['delivered_kg', 'Delivered kg', 0], ['backlog_kg', 'Backlog kg', 0]];
+  const keys = [['seed', 'Year (seed)', 0], ['delay_prio1_p90_h', 'Urgent 90 % (h)', 1], ['delay_prio1_mean_h', 'Urgent avg (h)', 2], ['sl24_prio1', 'Within 24 h', 3], ['immovable_share', 'Can\'t move', 3], ['jobs', 'Trips', 0], ['bundled_jobs', 'Shared trips', 0], ['team_lifts', 'Team lifts', 0], ['repositions', 'Sent to pad', 0], ['night_strandings', 'Caught by dark', 0], ['faults', 'Breakdowns', 0], ['operator_hours', 'Driver h', 0], ['landed_kg', 'Landed kg', 0], ['delivered_kg', 'Delivered kg', 0], ['backlog_kg', 'Still waiting kg', 0]];
   $('seedtable').innerHTML = '<tr>' + keys.map(k => `<th class="num">${k[1]}</th>`).join('') + '</tr>' + runs.slice(0, 200).map(r => '<tr>' + keys.map(k => `<td class="num">${fmtN(r[k[0]], k[2])}</td>`).join('') + '</tr>').join('');
 }
 
@@ -186,25 +187,26 @@ function timelineChart(svg, tr) {
 $('compare').addEventListener('click', async () => {
   const sc = readScenario(), n = Math.max(1, Math.min(500, +$('seeds').value)); const seeds = Array.from({ length: n }, (_, i) => i); setBusy(true, 'comparing…'); const res = {}; const t0 = performance.now();
   for (const mn of Object.keys(MECHS)) { $('cstatus').textContent = `running ${MECH_LABEL[mn]}…`; const [runs] = await runSeeds(sc, mn, seeds, mn === 'marketplace' ? marketOpts() : {}, null); res[mn] = runs; }
-  compareRuns = res; setBusy(false, 'comparison done.'); $('cstatus').textContent = `done in ${((performance.now() - t0) / 1000).toFixed(1)} s (${n} seeds × 4 rules).`; renderCompare(res, n);
+  compareRuns = res; setBusy(false, 'comparison done.'); $('cstatus').textContent = `done in ${((performance.now() - t0) / 1000).toFixed(1)} s (${n} simulated years × 4 rules).`; renderCompare(res, n);
 });
 function renderCompare(res, n) {
   const mn = Object.keys(res), labels = mn.map(m => MECH_LABEL[m]), colors = mn.map(m => MECH_COLOR[m]);
   const mk = (key, scale = 1) => [mn.map(m => mean(res[m].map(r => r[key] * scale))), mn.map(m => ci95(res[m].map(r => r[key] * scale)))];
   let [m1, c1] = mk('delay_prio1_p90_h'); barChart($('chart_c1'), labels, m1, c1, colors, 'hours'); let [m2, c2] = mk('sl24_prio1'); barChart($('chart_c2'), labels, m2, c2, colors, 'share', 1.05); let [m3, c3] = mk('immovable_share', 100); barChart($('chart_c3'), labels, m3, c3, colors, '%'); let [m4, c4] = mk('night_strandings'); barChart($('chart_c4'), labels, m4, c4, colors, 'per year');
   const paired = (a, b, key, d = 2) => { const diff = res[a].map((r, i) => r[key] - res[b][i][key]); return `${fmtN(mean(diff), d)} ± ${fmtN(ci95(diff), d)}`; };
-  $('ckpis').innerHTML = `<div class="kpi accent"><div class="lab">Marketplace − pooled greedy · urgent p90 (h)</div><div class="num">${paired('marketplace', 'pooled_greedy', 'delay_prio1_p90_h')}</div><div class="ci">paired difference · 95% CI · n=${n}</div></div>`
-    + `<div class="kpi"><div class="lab">Marketplace − pooled greedy · within 24 h</div><div class="num">${paired('marketplace', 'pooled_greedy', 'sl24_prio1', 3)}</div><div class="ci">paired difference</div></div>`
-    + `<div class="kpi"><div class="lab">Marketplace − pooled greedy · trips per year</div><div class="num">${paired('marketplace', 'pooled_greedy', 'jobs', 1)}</div><div class="ci">paired difference</div></div>`
-    + `<div class="kpi"><div class="lab">Marketplace − in-house · urgent p90 (h)</div><div class="num">${paired('marketplace', 'inhouse', 'delay_prio1_p90_h')}</div><div class="ci">paired difference</div></div>`;
-  const keys = [['delay_prio1_p90_h', 'Urgent p90 (h)', 1], ['delay_prio1_mean_h', 'Urgent mean (h)', 2], ['sl24_prio1', 'Within 24 h', 3], ['immovable_share', 'Immovable', 3], ['backlog_kg', 'Backlog kg', 0], ['jobs', 'Trips', 0], ['bundled_jobs', 'Bundled', 0], ['team_lifts', 'Team lifts', 1], ['night_strandings', 'Night', 2], ['operator_hours', 'Operator h', 0], ['empty_km_share', 'Empty km', 3], ['revenue_gini', 'Revenue Gini', 2], ['cost_per_kg_usd', '$/kg moved', 0]];
+  const vs = `${MECH_LABEL.marketplace} minus ${MECH_LABEL.pooled_greedy}`;
+  $('ckpis').innerHTML = `<div class="kpi accent"><div class="lab">${vs}: urgent 90 % delivered within (h)</div><div class="num">${paired('marketplace', 'pooled_greedy', 'delay_prio1_p90_h')}</div><div class="ci">difference on the same years · 95% CI · n=${n}</div></div>`
+    + `<div class="kpi"><div class="lab">${vs}: urgent share within 24 h</div><div class="num">${paired('marketplace', 'pooled_greedy', 'sl24_prio1', 3)}</div><div class="ci">difference on the same years</div></div>`
+    + `<div class="kpi"><div class="lab">${vs}: trips per year</div><div class="num">${paired('marketplace', 'pooled_greedy', 'jobs', 1)}</div><div class="ci">difference on the same years</div></div>`
+    + `<div class="kpi"><div class="lab">${MECH_LABEL.marketplace} minus ${MECH_LABEL.inhouse}: urgent 90 % delivered within (h)</div><div class="num">${paired('marketplace', 'inhouse', 'delay_prio1_p90_h')}</div><div class="ci">difference on the same years</div></div>`;
+  const keys = [['delay_prio1_p90_h', 'Urgent 90 % (h)', 1], ['delay_prio1_mean_h', 'Urgent avg (h)', 2], ['sl24_prio1', 'Within 24 h', 3], ['immovable_share', 'Can\'t move', 3], ['backlog_kg', 'Still waiting kg', 0], ['jobs', 'Trips', 0], ['bundled_jobs', 'Shared trips', 0], ['team_lifts', 'Team lifts', 1], ['night_strandings', 'Caught by dark', 2], ['operator_hours', 'Driver h', 0], ['empty_km_share', 'Empty km share', 3], ['revenue_gini', 'Revenue inequality (Gini)', 2], ['cost_per_kg_usd', '$/kg moved', 0]];
   $('ctable').innerHTML = '<tr><th>Rule</th>' + keys.map(k => `<th class="num">${k[1]}</th>`).join('') + '</tr>' + mn.map(m => `<tr class="${m === 'marketplace' ? 'hl' : ''}"><td>${MECH_LABEL[m]}</td>` + keys.map(k => `<td class="num">${fmtN(mean(res[m].map(r => r[k[0]])), k[2])} <span class="note">±${fmtN(ci95(res[m].map(r => r[k[0]])), k[2])}</span></td>`).join('') + '</tr>').join('');
 }
 
 // ---------- replay ----------
 function setupReplay(tr, source) { if (!tr) return; replay.tr = tr; replay.t = 0; replay.playing = false; $('play').textContent = 'Play'; $('tslider').max = Math.floor(tr.horizon); $('tslider').value = 0; const owners = [...new Set(tr.vehicles.map(v => v.owner))]; $('maplegend').innerHTML = owners.map((o, i) => `<span style="--c: var(--s${(i % 8) + 1})">${o}</span>`).join('') + `<span style="--c: var(--s2)">landing pad</span><span style="--c: var(--night)">night</span>`; replayHeader(tr, source); $('exportTrace').disabled = false; $('openWorld').disabled = false; drawMap(); }
 function replayHeader(tr, source) { const m = tr.meta || {}, esc = x => String(x).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]); const val = x => x === null || x === undefined || x === '' ? '–' : esc(x);
-  $('replayhead').innerHTML = `<span>engine <b>${val(m.engine)}</b></span><span>scenario <b>${val(m.scenario)}</b></span><span>mechanism <b>${val(MECH_LABEL[m.mechanism] || m.mechanism)}</b></span><span>seed <b>${val(m.seed)}</b></span><span class="src">${source ? (source.startsWith('sample ') ? 'bundled ' : 'from file ') + esc(source) + (m.legacy ? ' (no format header; read as v1)' : '') : 'from the last run'}</span>`; }
+  $('replayhead').innerHTML = `<span>engine <b>${val(m.engine)}</b></span><span>scenario <b>${val(m.scenario)}</b></span><span>job rule <b>${val(MECH_LABEL[m.mechanism] || m.mechanism)}</b></span><span>year (seed) <b>${val(m.seed)}</b></span><span class="src">${source ? (source.startsWith('sample ') ? 'bundled ' : 'from file ') + esc(source) + (m.legacy ? ' (no format header; read as v1)' : '') : 'from the last run'}</span>`; }
 $('importTrace').addEventListener('change', e => {
   const f = e.target.files[0]; if (!f) return; const r = new FileReader();
   r.onload = () => { try { const tr = readTrace(String(r.result)); setupReplay(tr, f.name); $('rstatus').textContent = `Loaded ${f.name}: ${tr.vehicles.length} vehicles, ${tr.jobs.length} trips, ${tr.cargo.length} cargo items, ${tr.landings.length} landings, ${tr.nights.length} nights.`; }
@@ -251,16 +253,16 @@ function drawMap() {
   if (tr) for (const [tl, name, pad] of tr.landings) { if (t >= tl && t < tl + 72) { const [x, y] = sitePos(pad, W, H); ctx.strokeStyle = col('--s2'); ctx.lineWidth = 2; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.arc(x, y, 30, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = col('--s2'); ctx.font = '12px ' + col('--font'); ctx.fillText(name + ' landed', x - 34, y + 48); } }
   if (tr) { const owners = [...new Set(tr.vehicles.map(v => v.owner))]; tr.vehicles.forEach(v => { const { pos, loaded } = vehiclePos(v, tr, t, W, H); const [x, y] = pos; const c = col(`--s${(owners.indexOf(v.owner) % 8) + 1}`); const r = v.cls === 'HAUL' ? 12 : v.cls === 'LTV' ? 9 : 6.5; const ox = (v.id % 3) * 5 - 5, oy = Math.floor(v.id / 3) * 5 - 5; ctx.beginPath(); ctx.arc(x + ox, y + oy, r, 0, 2 * Math.PI); ctx.fillStyle = loaded > 0 ? c : col('--panel'); ctx.strokeStyle = c; ctx.lineWidth = 2.5; ctx.fill(); ctx.stroke(); if (loaded > 0) { ctx.fillStyle = col('--ink'); ctx.font = '10.5px ' + col('--mono'); ctx.fillText(Math.round(loaded) + ' kg', x + ox + r + 3, y + oy + 4); } }); }
   const day = Math.floor(t / 24), hr = Math.floor(t % 24); $('clock').textContent = `day ${day}, ${String(hr).padStart(2, '0')}:00${night ? ' · night' : ''}`;
-  if (tr) { const delivered = tr.cargo.filter(c => c.tDelivered !== null && c.tDelivered <= t).length, waitingN = Object.values(waiting).reduce((a, b) => a + b, 0), jobsSoFar = tr.jobs.filter(j => j.t0 <= t).length; $('replaystats').textContent = `${delivered} items delivered so far · ${waitingN} waiting · ${jobsSoFar} trips started · ${tr.landings.filter(l => l[0] <= t).length} of ${tr.landings.length} landings`; }
+  if (tr) { const delivered = tr.cargo.filter(c => c.tDelivered !== null && c.tDelivered <= t).length, waitingN = Object.values(waiting).reduce((a, b) => a + b, 0), jobsSoFar = tr.jobs.filter(j => j.t0 <= t).length; $('replaystats').textContent = `${delivered} items delivered so far · ${waitingN} waiting · ${jobsSoFar} trips started · ${tr.landings.filter(l => l[0] <= t).length} of ${tr.landings.length} landings so far`; }
 }
 
 // ---------- verification ----------
 $('verify').addEventListener('click', async () => {
   $('vstatus').textContent = 'running…'; const m = await workerCall({ type: 'verify' }); const checks = m.checks; const np = checks.filter(c => c.passed).length;
   $('vstatus').textContent = `${np} of ${checks.length} checks passed.`; $('vbadge').textContent = `${np}/${checks.length} checks pass`; $('vbadge').classList.toggle('pending', np !== checks.length);
-  $('vtable').innerHTML = '<tr><th>Check</th><th class="num">Reference</th><th class="num">Simulated</th><th class="num">Error</th><th class="num">Tolerance</th><th>Basis</th><th>Result</th></tr>' + checks.map(c => `<tr><td>${c.name}</td><td class="num">${fmtN(c.ref, 4)} ${c.unit}</td><td class="num">${fmtN(c.sim, 4)} ${c.unit}</td><td class="num">${(100 * c.err).toFixed(3)}%</td><td class="num">${(100 * c.tol).toFixed(1)}%</td><td class="note">${c.basis}</td><td><span class="pill ${c.passed ? 'pass' : 'fail'}">${c.passed ? 'PASS' : 'FAIL'}</span></td></tr>`).join('');
+  $('vtable').innerHTML = '<tr><th>Check</th><th class="num">Expected</th><th class="num">Simulated</th><th class="num">Error</th><th class="num">Allowed</th><th>Where the expected value comes from</th><th>Result</th></tr>' + checks.map(c => `<tr><td>${c.name}</td><td class="num">${fmtN(c.ref, 4)} ${c.unit}</td><td class="num">${fmtN(c.sim, 4)} ${c.unit}</td><td class="num">${(100 * c.err).toFixed(3)}%</td><td class="num">${(100 * c.tol).toFixed(1)}%</td><td class="note">${c.basis}</td><td><span class="pill ${c.passed ? 'pass' : 'fail'}">${c.passed ? 'PASS' : 'FAIL'}</span></td></tr>`).join('');
 });
-const XCHECK_KEYS = [['delay_prio1_mean_h', 'Urgent mean delay (h)'], ['delay_prio1_p90_h', 'Urgent p90 delay (h)'], ['sl24_prio1', 'Urgent within 24 h'], ['jobs', 'Trips per year'], ['night_strandings', 'Night strandings'], ['delivered_share', 'Delivered share']];
+const XCHECK_KEYS = [['delay_prio1_mean_h', 'Urgent cargo, average wait (h)'], ['delay_prio1_p90_h', 'Urgent cargo, 90 % delivered within (h)'], ['sl24_prio1', 'Urgent cargo within 24 h (share)'], ['jobs', 'Trips per year'], ['night_strandings', 'Rovers caught out by darkness'], ['delivered_share', 'Share of cargo delivered']];
 $('xcheck').addEventListener('click', async () => {
   const live = $('xlive').checked && PY_API.connected;
   if (!live && !PY_REF) { $('xstatus').textContent = 'No Python reference embedded in this build. Connect a local engine in the Engine card to run it live.'; return; }
@@ -274,8 +276,8 @@ $('xcheck').addEventListener('click', async () => {
     try { const res = await pyJob; ref = {}; for (const mn of Object.keys(MECHS)) { const pr = (res.runs[mn] || []).map(pyRowToPage); ref[mn] = {}; for (const [key] of XCHECK_KEYS) { const v = pr.map(r => r[key]); ref[mn][key] = { mean: mean(v), ci: ci95(v), n: v.length }; } } src = `live Python engine at ${PY_API.base}, same seeds 0–29, ${(res.ms / 1000).toFixed(1)} s`; }
     catch (err) { engineFailed(err); $('xcheck').disabled = false; $('xstatus').textContent = `Python engine failed: ${err.message}. Untick the live option to use the embedded reference.`; return; } }
   for (const mn of Object.keys(MECHS)) for (const [key, lab] of XCHECK_KEYS) { const js = jsRuns[mn].map(r => r[key]); const r0 = ref[mn] && ref[mn][key]; if (!r0) continue; const mj = mean(js), cj = ci95(js); rows.push({ mn, lab, mj, cj, ref: r0, overlap: Math.abs(mj - r0.mean) <= (cj + r0.ci) }); }
-  $('xcheck').disabled = false; $('xstatus').textContent = `${rows.filter(r => r.overlap).length} of ${rows.length} metric cells agree within combined 95% CIs. Python side: ${src}.`;
-  $('xtable').innerHTML = '<tr><th>Rule</th><th>Metric</th><th class="num">Browser (mean ± CI)</th><th class="num">Python (mean ± CI)</th><th>Agree</th></tr>' + rows.map(r => `<tr><td>${MECH_LABEL[r.mn]}</td><td>${r.lab}</td><td class="num">${fmtN(r.mj, 2)} ± ${fmtN(r.cj, 2)}</td><td class="num">${fmtN(r.ref.mean, 2)} ± ${fmtN(r.ref.ci, 2)}</td><td><span class="pill ${r.overlap ? 'pass' : 'fail'}">${r.overlap ? 'yes' : 'no'}</span></td></tr>`).join('');
+  $('xcheck').disabled = false; $('xstatus').textContent = `${rows.filter(r => r.overlap).length} of ${rows.length} numbers agree within their combined 95 % intervals. Python side: ${src}.`;
+  $('xtable').innerHTML = '<tr><th>Job rule</th><th>Number</th><th class="num">Browser (average ± 95 %)</th><th class="num">Python (average ± 95 %)</th><th>Agree</th></tr>' + rows.map(r => `<tr><td>${MECH_LABEL[r.mn]}</td><td>${r.lab}</td><td class="num">${fmtN(r.mj, 2)} ± ${fmtN(r.cj, 2)}</td><td class="num">${fmtN(r.ref.mean, 2)} ± ${fmtN(r.ref.ci, 2)}</td><td><span class="pill ${r.overlap ? 'pass' : 'fail'}">${r.overlap ? 'yes' : 'no'}</span></td></tr>`).join('');
 });
 
 // ---------- optional local Python engine (api.js) ----------
@@ -310,15 +312,15 @@ $('runpy').addEventListener('click', async () => {
   if (!PY_API.connected) return;
   const mechName = $('mech').value, want = Math.max(1, Math.floor(+$('seeds').value) || 1), n = Math.min(PY_API.MAX_SEEDS, want), seeds = Array.from({ length: n }, (_, i) => i);
   const opts = mechName === 'marketplace' ? marketOpts() : {}, scenario = uiToScenario(readUi()), capped = want > n ? ` (capped at ${PY_API.MAX_SEEDS} per request)` : '';
-  setBusy(true, `Python engine: running ${n} seed(s) of ${MECH_LABEL[mechName]}${capped}…`); $('prog').removeAttribute('value');  // indeterminate bar: the server reports no progress
+  setBusy(true, `Python engine: running ${n} simulated year${n > 1 ? 's' : ''} with ${MECH_LABEL[mechName]}${capped}…`); $('prog').removeAttribute('value');  // indeterminate bar: the server reports no progress
   try {
     const [res, tr] = await Promise.all([PY_API.run(scenario, mechName, seeds, opts), PY_API.trace(scenario, mechName, seeds[0], opts).catch(() => null)]);
     const runs = res.runs.map(pyRowToPage).sort((a, b) => a.seed - b.seed); let trace = null; try { trace = tr ? readTrace(tr) : null; } catch (e) { trace = null; }
     lastRuns = runs; lastTrace = trace; lastScenario = null; renderRun(runs, trace); if (trace) setupReplay(trace);
-    setBusy(false, `${n} seed(s) of ${MECH_LABEL[mechName]} on the Python engine in ${(res.ms / 1000).toFixed(1)} s${capped}.${trace ? ' Replay shows its seed-0 trace.' : ''}`);
+    setBusy(false, `${n} simulated year${n > 1 ? 's' : ''} with ${MECH_LABEL[mechName]} on the Python engine in ${(res.ms / 1000).toFixed(1)} s${capped}.${trace ? ' The Replay tab shows year 0.' : ''}`);
   } catch (err) { engineFailed(err); setBusy(false, `Python engine: ${err.message}`); }
 });
 renderEngine();
 
 // ---------- open with a result ----------
-(async () => { const sc = readScenario(); const [runs, trace] = await runSeeds(sc, 'marketplace', [0, 1, 2], marketOpts(), null); lastRuns = runs; lastTrace = trace; lastScenario = sc; renderRun(runs, trace); setupReplay(trace); $('status').textContent = `Opened with a 3-seed marketplace run of the Phase-2 scenario on ${workers.length} worker(s). Change anything in the rail and run again.`; })();
+(async () => { const sc = readScenario(); const [runs, trace] = await runSeeds(sc, 'marketplace', [0, 1, 2], marketOpts(), null); lastRuns = runs; lastTrace = trace; lastScenario = sc; renderRun(runs, trace); setupReplay(trace); $('status').textContent = `Showing a quick start: 3 simulated years of Phase 2 with the marketplace. Change anything on the left and press Run simulation.`; })();
