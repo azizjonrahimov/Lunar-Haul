@@ -12,7 +12,8 @@ prepare-data.mjs outputs) and measured the same way. The site total is checked a
 tools/ci/budgets.json; a page without its own entry uses "defaults". Exit 1 on any violation or missing file.
 
 schemas: validates with jsonschema (Draft 2020-12) and, where a format has one, its Python validator too:
-catalog, routes, trajectories, scene indexes, earth link, scenario files and sample traces (v1 or v2 by version).
+catalog, routes, trajectories, scene indexes and gallery, earth link, stories, scenario files and sample traces (v1 or v2 by
+version).
 """
 from __future__ import annotations
 
@@ -156,6 +157,8 @@ def schema_targets(root: str = ROOT) -> List[Tuple[str, str]]:
          (j("data", "comms", "connecting_ridge", "earth_link-v1.json"), "earth-link-v1")]
     t += [(p, "scene-v1") for p in sorted(glob.glob(j("data", "scenes", "*", "scene.json")))]
     t += [(p, "scenario-v1") for p in sorted(glob.glob(j("data", "scenarios", "*.json")))]
+    t += [(j("data", "scenes", "gallery.json"), "scene-gallery-v1")]
+    t += [(p, "story-v1") for p in sorted(glob.glob(j("data", "stories", "*.json")))]
     for p in sorted(glob.glob(j("data", "sample_traces", "*.json"))):
         t.append((p, "trace-v2" if _load(p).get("version") == 2 else "trace-v1"))
     return [(p, s) for p, s in t if os.path.isfile(p)]
@@ -177,6 +180,9 @@ def _python_validator(schema: str):
     if schema.startswith("trace-"):
         from lunarsim.formats import validate_trace
         return validate_trace
+    if schema == "story-v1":
+        from lunarsim.stories import check
+        return lambda doc: check(doc)[0]
     if schema == "scenario-v1":
         from lunarsim.formats import validate_scenario
         return validate_scenario

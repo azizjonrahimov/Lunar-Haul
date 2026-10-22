@@ -1,0 +1,165 @@
+{
+ "format": "lunarsim-story-resolved",
+ "version": 1,
+ "id": "earth-horizon",
+ "title": "What Earth's horizon costs",
+ "title_plain": "What Earth's horizon costs",
+ "status": "draft",
+ "summary": "At the south pole Earth sits low on the horizon, and ridges hide it. Without a relay, the base delivers {{r:dte_loss}} less cargo a year.",
+ "summary_plain": "At the south pole Earth sits low on the horizon, and ridges hide it. Without a relay, the base delivers 42 % less cargo a year.",
+ "scene": "world:P2-comms-dte",
+ "notes": "Skeleton for E21 (results/table_E21.csv, table_E21_breakeven.csv, written by experiments/phase4/run_phase4.py table). Every number is pending until those tables exist; check the row selectors against the final tables then. Wording for LEAD to edit.",
+ "numbers": {
+  "always_t": {
+   "value": 532.1890613057118,
+   "text": "532 t per year",
+   "unit": "t per year",
+   "flag": "Modelled",
+   "source": "results/table_E21.csv, row stage = A, comms = always, mix = supervised_strict, column delivered_t_in_year; Earth always in view (the baseline), all supervised rovers, strict policy (experiment E21 stage A)"
+  },
+  "dte_t": {
+   "value": 306.52480475755556,
+   "text": "307 t per year",
+   "unit": "t per year",
+   "flag": "Modelled",
+   "source": "results/table_E21.csv, row stage = A, comms = dte, mix = supervised_strict, column delivered_t_in_year; direct-to-Earth links only (experiment E21 stage A)"
+  },
+  "dte_loss": {
+   "value": 42.40302421746417,
+   "text": "42 %",
+   "unit": "%",
+   "flag": "Modelled",
+   "source": "pct_change of always_t and dte_t (unrounded); neg"
+  },
+  "dte_wait": {
+   "value": 971.6935881257552,
+   "text": "972 rover-hours",
+   "unit": "rover-hours",
+   "flag": "Modelled",
+   "source": "results/table_E21.csv, row stage = A, comms = dte, mix = supervised_strict, column blackout_wait_vehicle_h; rover time spent waiting for Earth in the year"
+  },
+  "dte_refused": {
+   "value": 13.4,
+   "text": "13 jobs",
+   "unit": "jobs",
+   "flag": "Modelled",
+   "source": "results/table_E21.csv, row stage = A, comms = dte, mix = supervised_strict, column blackout_jobs_refused; jobs no rover could start for want of a link"
+  },
+  "relay_t": {
+   "value": 530.1674181348847,
+   "text": "530 t per year",
+   "unit": "t per year",
+   "flag": "Modelled",
+   "source": "results/table_E21.csv, row stage = A, comms = dte+relay, coverage = 0.1, mix = supervised_strict, column delivered_t_in_year; a relay satellite in view a tenth of the time, besides direct links"
+  },
+  "auto_t": {
+   "value": 532.0537503335801,
+   "text": "532 t per year",
+   "unit": "t per year",
+   "flag": "Modelled",
+   "source": "results/table_E21.csv, row stage = A, comms = dte, mix = autonomous, column delivered_t_in_year; direct links only, fully autonomous rovers"
+  },
+  "relay_price": {
+   "pending": "results/table_E21_breakeven.csv does not exist yet"
+  }
+ },
+ "steps": [
+  {
+   "id": "low-earth",
+   "title": "Earth hangs on the horizon",
+   "text": "Seen from the south pole Earth never climbs high. Ridges and crater rims hide it for days at a time, and supervised rovers need a link to Earth to drive.",
+   "visual": "Earth low over the ridge; the shadow of the terrain marks where it is hidden.",
+   "camera": {
+    "shot": "horizon"
+   },
+   "highlight": [
+    "BASE"
+   ],
+   "modes": {
+    "earth_link": true,
+    "earth": true
+   },
+   "title_plain": "Earth hangs on the horizon",
+   "text_plain": "Seen from the south pole Earth never climbs high. Ridges and crater rims hide it for days at a time, and supervised rovers need a link to Earth to drive.",
+   "visual_plain": "Earth low over the ridge; the shadow of the terrain marks where it is hidden."
+  },
+  {
+   "id": "blackouts",
+   "scene": "world:P2-comms-dte",
+   "title": "Waiting for Earth",
+   "text": "With direct links only, rovers spend {{r:dte_wait}} a year waiting for Earth to rise, and {{r:dte_refused}} cannot start at all.",
+   "visual": "Rovers parked at the base in the waiting colour while Earth is below the ridge.",
+   "camera": {
+    "shot": "overview"
+   },
+   "modes": {
+    "earth_link": true,
+    "play": true
+   },
+   "chips": [
+    "dte_wait"
+   ],
+   "title_plain": "Waiting for Earth",
+   "text_plain": "With direct links only, rovers spend 972 rover-hours a year waiting for Earth to rise, and 13 jobs cannot start at all.",
+   "visual_plain": "Rovers parked at the base in the waiting colour while Earth is below the ridge."
+  },
+  {
+   "id": "cost",
+   "title": "The cargo it costs",
+   "text": "The base delivers {{r:dte_t}} instead of {{r:always_t}}: {{r:dte_loss}} less.",
+   "visual": "The delivery counter of the year, with and without the horizon.",
+   "camera": {
+    "shot": "overview"
+   },
+   "chips": [
+    "dte_t",
+    "dte_loss"
+   ],
+   "title_plain": "The cargo it costs",
+   "text_plain": "The base delivers 307 t per year instead of 532 t per year: 42 % less.",
+   "visual_plain": "The delivery counter of the year, with and without the horizon."
+  },
+  {
+   "id": "relay",
+   "scene": "world:P2-comms-relay-0.8",
+   "title": "A relay, or autonomy",
+   "text": "A relay satellite that is in view only part of the time already restores most of it: {{r:relay_t}}. Autonomous rovers that need no link reach {{r:auto_t}}.",
+   "visual": "A relay link drawn from the rovers to a satellite passing overhead.",
+   "camera": {
+    "shot": "horizon"
+   },
+   "modes": {
+    "earth_link": true,
+    "relay": true
+   },
+   "chips": [
+    "relay_t",
+    "auto_t"
+   ],
+   "title_plain": "A relay, or autonomy",
+   "text_plain": "A relay satellite that is in view only part of the time already restores most of it: 530 t per year. Autonomous rovers that need no link reach 532 t per year.",
+   "visual_plain": "A relay link drawn from the rovers to a satellite passing overhead."
+  },
+  {
+   "id": "breakeven",
+   "title": "What a relay is worth",
+   "text": "Buying the same gain with extra rovers would cost {{r:relay_price}}: a relay service priced below that pays.",
+   "visual": "The base with its rover fleet, extra rovers drawn faded.",
+   "camera": {
+    "shot": "overview"
+   },
+   "chips": [
+    "relay_price"
+   ],
+   "title_plain": "What a relay is worth",
+   "text_plain": "Buying the same gain with extra rovers would cost (pending): a relay service priced below that pays.",
+   "visual_plain": "The base with its rover fleet, extra rovers drawn faded."
+  }
+ ],
+ "pending": [
+  "relay_price"
+ ],
+ "sources": {
+  "results/table_E21.csv": "3bbfbc3d827ace64fe0b53b4947dee777884a5864b0540d79ccffb060e0fe1d1"
+ }
+}

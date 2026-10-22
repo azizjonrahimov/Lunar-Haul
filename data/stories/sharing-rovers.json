@@ -1,0 +1,77 @@
+{
+  "format": "lunarsim-story",
+  "version": 1,
+  "id": "sharing-rovers",
+  "title": "Why sharing rovers cuts the wait",
+  "status": "published",
+  "summary": "Letting every rover take any company's job cuts the mean wait of urgent cargo by {{r:market_cut}}, with the same rovers.",
+  "scene": "world:P2",
+  "notes": "E1 main table and paired differences (results/table_main.csv, table_paired_E1.csv), E19 fleet x job rule x autonomy (results/table_E19.csv). Step scenes are gallery packages (data/scenes/gallery.json). Wording for LEAD to edit.",
+  "numbers": {
+    "inhouse_mean": {"table": "results/table_main.csv", "where": {"phase": "P2", "mechanism": "In-house fleets"}, "column": "delay_prio1_mean_h", "digits": 1, "unit": "h", "note": "mean delay of urgent items, mean over seeds (experiment E1)"},
+    "inhouse_p90": {"table": "results/table_main.csv", "where": {"phase": "P2", "mechanism": "In-house fleets"}, "column": "delay_prio1_p90_h", "digits": 0, "unit": "h", "note": "90th percentile delay of urgent items, mean over seeds (experiment E1)"},
+    "inhouse_sl24": {"table": "results/table_main.csv", "where": {"phase": "P2", "mechanism": "In-house fleets"}, "column": "sl24_prio1", "scale": 100, "digits": 0, "unit": "%", "note": "share of urgent items delivered within a day (experiment E1)"},
+    "market_mean": {"table": "results/table_main.csv", "where": {"phase": "P2", "mechanism": "Marketplace (ours)"}, "column": "delay_prio1_mean_h", "digits": 1, "unit": "h", "note": "mean delay of urgent items, mean over seeds (experiment E1)"},
+    "market_p90": {"table": "results/table_main.csv", "where": {"phase": "P2", "mechanism": "Marketplace (ours)"}, "column": "delay_prio1_p90_h", "digits": 0, "unit": "h", "note": "90th percentile delay of urgent items (experiment E1)"},
+    "market_sl24": {"table": "results/table_main.csv", "where": {"phase": "P2", "mechanism": "Marketplace (ours)"}, "column": "sl24_prio1", "scale": 100, "digits": 0, "unit": "%", "note": "share of urgent items delivered within a day (experiment E1)"},
+    "market_cut": {"derive": "pct_change", "of": ["inhouse_mean", "market_mean"], "transform": "neg", "digits": 0, "unit": "%"},
+    "vs_greedy": {"table": "results/table_paired_E1.csv", "where": {"phase": "P2", "metric": "delay_prio1_mean_h"}, "column": "rel_%", "transform": "neg", "digits": 0, "unit": "%", "note": "marketplace minus pooled greedy, paired over common seeds, relative to greedy (experiment E1)"},
+    "e19_rovers": {"table": "results/table_E19.csv", "where": {"scenario": "P2-4-vehicles", "mechanism": "inhouse", "autonomy": "supervised"}, "column": "n_vehicles", "digits": 0, "unit": "rovers"},
+    "e19_inhouse": {"table": "results/table_E19.csv", "where": {"scenario": "P2-4-vehicles", "mechanism": "inhouse", "autonomy": "supervised"}, "column": "delay_prio1_mean_h", "digits": 1, "unit": "h", "note": "mean urgent delay, supervised driving, mean over seeds (experiment E19)"},
+    "e19_market": {"table": "results/table_E19.csv", "where": {"scenario": "P2-4-vehicles", "mechanism": "marketplace", "autonomy": "supervised"}, "column": "delay_prio1_mean_h", "digits": 1, "unit": "h", "note": "the same with the marketplace job rule (experiment E19)"},
+    "e19_auto": {"table": "results/table_E19.csv", "where": {"scenario": "P2-4-vehicles", "mechanism": "marketplace", "autonomy": "autonomous"}, "column": "delay_prio1_mean_h", "digits": 1, "unit": "h", "note": "marketplace with autonomous driving (experiment E19)"}
+  },
+  "steps": [
+    {
+      "id": "two-ways",
+      "scene": "world:P2-inhouse",
+      "title": "Two ways to run the rovers",
+      "text": "Each company can keep its own rovers for its own cargo. Or every rover can take any job, offered in a small auction to whichever rover can finish it soonest.",
+      "visual": "The base from above; each rover is coloured by the company that owns it.",
+      "camera": {"shot": "overview"},
+      "modes": {"job_rule": "inhouse", "colour_by": "owner", "play": true}
+    },
+    {
+      "id": "inhouse",
+      "scene": "world:P2-inhouse",
+      "title": "Own rovers, own queue",
+      "text": "With in-house fleets an urgent item waits {{r:inhouse_mean}} on average in the second phase of the base, and one in ten waits more than {{r:inhouse_p90}}. Only {{r:inhouse_sl24}} arrive within a day.",
+      "visual": "Cargo piles up at a pad while a rover of another company stands idle nearby.",
+      "camera": {"shot": "pads", "target": "PAD_A"},
+      "highlight": ["PAD_A"],
+      "modes": {"job_rule": "inhouse", "queues": true},
+      "chips": ["inhouse_mean", "inhouse_sl24"]
+    },
+    {
+      "id": "shared",
+      "scene": "world:P2",
+      "title": "Any rover, any job",
+      "text": "When every rover can take any job, the mean wait falls to {{r:market_mean}} and the slow tail to {{r:market_p90}}: {{r:market_cut}} less waiting with the same rovers. {{r:market_sl24}} of urgent items now arrive within a day.",
+      "visual": "The same moment with the shared job rule: the idle rover picks up the waiting cargo.",
+      "camera": {"shot": "pads", "target": "PAD_A"},
+      "highlight": ["PAD_A"],
+      "modes": {"job_rule": "marketplace", "queues": true},
+      "chips": ["market_mean", "market_cut"]
+    },
+    {
+      "id": "auction",
+      "scene": "world:P2",
+      "title": "The auction beats first come, first served",
+      "text": "Sharing alone does most of the work, but the auction adds to it: {{r:vs_greedy}} less waiting than handing each job to the nearest free rover, in paired runs.",
+      "visual": "Bids from several rovers appear over a new job; the earliest finisher wins it.",
+      "camera": {"shot": "overview"},
+      "modes": {"job_rule": "marketplace", "bids": true},
+      "chips": ["vs_greedy"]
+    },
+    {
+      "id": "scarce",
+      "scene": "world:P2V2",
+      "title": "It matters most when rovers are few",
+      "text": "With {{r:e19_rovers}}, sharing cuts the urgent wait from {{r:e19_inhouse}} to {{r:e19_market}}. Autonomous driving brings it down to {{r:e19_auto}}.",
+      "visual": "A small fleet crossing the base, every rover busy.",
+      "camera": {"shot": "overview"},
+      "modes": {"job_rule": "marketplace", "play": true},
+      "chips": ["e19_inhouse", "e19_market"]
+    }
+  ]
+}

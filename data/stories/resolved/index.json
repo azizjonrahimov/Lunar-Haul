@@ -1,0 +1,38 @@
+{
+ "format": "lunarsim-stories-index",
+ "version": 1,
+ "stories": [
+  {
+   "id": "earth-horizon",
+   "title": "What Earth's horizon costs",
+   "status": "draft",
+   "steps": 5,
+   "pending": 1,
+   "file": "earth-horizon.json"
+  },
+  {
+   "id": "learned-landing",
+   "title": "Learned vs classical landing",
+   "status": "published",
+   "steps": 5,
+   "pending": 0,
+   "file": "learned-landing.json"
+  },
+  {
+   "id": "pads-distance",
+   "title": "How far should the pads be?",
+   "status": "published",
+   "steps": 6,
+   "pending": 0,
+   "file": "pads-distance.json"
+  },
+  {
+   "id": "sharing-rovers",
+   "title": "Why sharing rovers cuts the wait",
+   "status": "published",
+   "steps": 5,
+   "pending": 0,
+   "file": "sharing-rovers.json"
+  }
+ ]
+}

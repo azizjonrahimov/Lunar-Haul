@@ -1,0 +1,180 @@
+{
+ "format": "lunarsim-story-resolved",
+ "version": 1,
+ "id": "learned-landing",
+ "title": "Learned vs classical landing",
+ "title_plain": "Learned vs classical landing",
+ "status": "published",
+ "summary": "A neural network that imitates the classical guidance law lands inside the touchdown limits in {{r:learned_pass}} of dispersed landings; the law itself in {{r:classical_pass}}.",
+ "summary_plain": "A neural network that imitates the classical guidance law lands inside the touchdown limits in 89.0 % of dispersed landings; the law itself in 93.8 %.",
+ "scene": "lander:CLPS/classical/p50",
+ "notes": "E15 outcome table (results/table_E15.csv): CLPS class, altimeter model on, the same dispersed seeds for every pilot. Episodes from data/policies/trajectories-v1.json. Wording for LEAD to edit.",
+ "numbers": {
+  "n_landings": {
+   "value": 500.0,
+   "text": "500",
+   "unit": "",
+   "flag": "Modelled",
+   "source": "results/table_E15.csv, row policy = classical_CLPS, column n; dispersed CLPS landings per pilot, the same seeds for each (experiment E15)"
+  },
+  "classical_pass": {
+   "value": 93.8,
+   "text": "93.8 %",
+   "unit": "%",
+   "flag": "Modelled",
+   "source": "results/table_E15.csv, row policy = classical_CLPS, column pass_rate; x 100; share inside the SPLICE touchdown limits, classical ZEM/ZEV law (experiment E15)"
+  },
+  "classical_miss": {
+   "value": 2.902305490200324,
+   "text": "2.9 m",
+   "unit": "m",
+   "flag": "Modelled",
+   "source": "results/table_E15.csv, row policy = classical_CLPS, column miss_mean_m; mean distance of touchdown from the aim point"
+  },
+  "classical_stale": {
+   "value": 6.0,
+   "text": "6",
+   "unit": "",
+   "flag": "Modelled",
+   "source": "results/table_E15.csv, row policy = classical_CLPS, column fail_sensor; failed touchdowns while the altimeter held a dropped-out reading"
+  },
+  "rl_pass": {
+   "value": 63.2,
+   "text": "63.2 %",
+   "unit": "%",
+   "flag": "Modelled",
+   "source": "results/table_E15.csv, row policy = lander_CLPS_baseline_s0, column pass_rate; x 100; PPO from a random start (experiment E15)"
+  },
+  "rl_steps": {
+   "value": 2007040.0,
+   "text": "2,007,040 simulated steps",
+   "unit": "simulated steps",
+   "flag": "Modelled",
+   "source": "results/table_E15.csv, row policy = lander_CLPS_baseline_s0, column training_steps; PPO training length"
+  },
+  "learned_pass": {
+   "value": 89.0,
+   "text": "89.0 %",
+   "unit": "%",
+   "flag": "Modelled",
+   "source": "results/table_E15.csv, row policy = lander_CLPS_bc_v3_s0, column pass_rate; x 100; imitation of the classical law with DAgger, observation v3 with the altimeter history (experiment E15)"
+  },
+  "learned_miss": {
+   "value": 3.227145462609916,
+   "text": "3.2 m",
+   "unit": "m",
+   "flag": "Modelled",
+   "source": "results/table_E15.csv, row policy = lander_CLPS_bc_v3_s0, column miss_mean_m"
+  },
+  "learned_stale": {
+   "value": 33.0,
+   "text": "33",
+   "unit": "",
+   "flag": "Modelled",
+   "source": "results/table_E15.csv, row policy = lander_CLPS_bc_v3_s0, column fail_sensor; failed touchdowns while the altimeter held a dropped-out reading"
+  },
+  "gap": {
+   "value": 4.799999999999994,
+   "text": "4.8 percentage points",
+   "unit": "percentage points",
+   "flag": "Modelled",
+   "source": "results/table_E15.csv, row policy = lander_CLPS_bc_v3_s0, column d_pass_rate; neg; x 100; classical minus learned success, paired on the same seeds"
+  },
+  "gap_ci": {
+   "value": 3.462671597480766,
+   "text": "3.5 percentage points",
+   "unit": "percentage points",
+   "flag": "Modelled",
+   "source": "results/table_E15.csv, row policy = lander_CLPS_bc_v3_s0, column d_pass_rate_ci95; x 100; half-width of the 95 % interval of the paired difference"
+  }
+ },
+ "steps": [
+  {
+   "id": "descent",
+   "title": "The last minutes of a landing",
+   "text": "A CLPS-class lander comes down from the end of its braking burn to the pad. Two kinds of pilot fly it here: a classical guidance law, and neural networks trained in simulation.",
+   "visual": "A lander descending over the pad on its engine, its path traced behind it.",
+   "camera": {
+    "shot": "descent"
+   },
+   "highlight": [
+    "CLPS",
+    "PAD_A"
+   ],
+   "modes": {
+    "play": true
+   },
+   "title_plain": "The last minutes of a landing",
+   "text_plain": "A CLPS-class lander comes down from the end of its braking burn to the pad. Two kinds of pilot fly it here: a classical guidance law, and neural networks trained in simulation.",
+   "visual_plain": "A lander descending over the pad on its engine, its path traced behind it."
+  },
+  {
+   "id": "classical",
+   "title": "The classical law",
+   "text": "The law lands inside the touchdown limits in {{r:classical_pass}} of {{r:n_landings}} dispersed landings, on average {{r:classical_miss}} from the aim point.",
+   "visual": "A typical landing by the classical law: a smooth arc, then a vertical final descent.",
+   "camera": {
+    "shot": "descent"
+   },
+   "scene": "lander:CLPS/classical/p50",
+   "chips": [
+    "classical_pass"
+   ],
+   "title_plain": "The classical law",
+   "text_plain": "The law lands inside the touchdown limits in 93.8 % of 500 dispersed landings, on average 2.9 m from the aim point.",
+   "visual_plain": "A typical landing by the classical law: a smooth arc, then a vertical final descent."
+  },
+  {
+   "id": "trial-and-error",
+   "title": "Learning by trial and error",
+   "text": "A network trained by reinforcement learning from scratch, over {{r:rl_steps}}, lands safely in only {{r:rl_pass}}.",
+   "visual": "A typical landing by the reinforcement-learning pilot: a wandering path and a hard touchdown.",
+   "camera": {
+    "shot": "descent"
+   },
+   "scene": "lander:CLPS/lander_CLPS_baseline_s0/p50",
+   "chips": [
+    "rl_pass"
+   ],
+   "title_plain": "Learning by trial and error",
+   "text_plain": "A network trained by reinforcement learning from scratch, over 2,007,040 simulated steps, lands safely in only 63.2 %.",
+   "visual_plain": "A typical landing by the reinforcement-learning pilot: a wandering path and a hard touchdown."
+  },
+  {
+   "id": "imitation",
+   "title": "Learning by imitation",
+   "text": "A network that imitates the law, and sees the altimeter's recent history, reaches {{r:learned_pass}}, landing on average {{r:learned_miss}} from the aim point.",
+   "visual": "A typical landing by the imitation pilot, close to the law's path.",
+   "camera": {
+    "shot": "descent"
+   },
+   "scene": "lander:CLPS/lander_CLPS_bc_v3_s0/p50",
+   "chips": [
+    "learned_pass"
+   ],
+   "title_plain": "Learning by imitation",
+   "text_plain": "A network that imitates the law, and sees the altimeter's recent history, reaches 89.0 %, landing on average 3.2 m from the aim point.",
+   "visual_plain": "A typical landing by the imitation pilot, close to the law's path."
+  },
+  {
+   "id": "gap",
+   "title": "Close, not better",
+   "text": "On the same landings the network still trails the law by {{r:gap}}, give or take {{r:gap_ci}}. Most of its extra failures come when the altimeter drops out near the ground: {{r:learned_stale}} touchdowns, against {{r:classical_stale}} for the law.",
+   "visual": "The network's first failed landing: the altimeter reading freezes and the lander touches down too fast.",
+   "camera": {
+    "shot": "touchdown"
+   },
+   "scene": "lander:CLPS/lander_CLPS_bc_v3_s0/first_failure",
+   "chips": [
+    "gap"
+   ],
+   "title_plain": "Close, not better",
+   "text_plain": "On the same landings the network still trails the law by 4.8 percentage points, give or take 3.5 percentage points. Most of its extra failures come when the altimeter drops out near the ground: 33 touchdowns, against 6 for the law.",
+   "visual_plain": "The network's first failed landing: the altimeter reading freezes and the lander touches down too fast."
+  }
+ ],
+ "pending": [],
+ "sources": {
+  "results/table_E15.csv": "7d400c68a544b5d274c7a40611e2e80003e3e2e3db60091cc397f2e4252b9a03"
+ }
+}

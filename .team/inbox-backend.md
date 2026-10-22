@@ -513,7 +513,7 @@ scene indexes, earth_link, scenario and trace samples) with jsonschema (add `jso
 the pyproject line); (3) a Node parity test runner hook: if `site/tests/*.mjs` exist, run them with `node --test`
 (FRONTEND will add JS-vs-Python parity tests for the new formats). Report the ci.yml diff and the time it adds.
 
-## B-35 [IN PROGRESS] (<= 2.5 h) Story data and the number check (plan §4 B-35; schema agreed with FRONTEND via LEAD)
+## B-35 [DONE 12:14] (<= 2.5 h) Story data and the number check (plan §4 B-35; schema agreed with FRONTEND via LEAD)
 `data/stories/*.json` + `lunarsim/stories.py` (validator) + schema + tests. A story = ordered steps
 {id, title, text (with {{r:key}} placeholders), camera shot name, highlight ids, mode switches, scene sample}. The
 validator resolves every placeholder from a registry of sourced numbers: results tables (`results/*.csv`, keyed
@@ -523,7 +523,7 @@ Draft three stories from existing results (text kept short; LEAD edits wording):
 (E20 standoff law), "Why sharing rovers cuts the wait" (E1/E19 job rules), "Learned vs classical landing" (E15).
 A fourth, "What Earth's horizon costs" (E21), as a skeleton with placeholders only.
 
-## B-36 [OPEN] (<= 2 h + compute in chunks) Static scenario gallery for the 3D world
+## B-36 [IN PROGRESS] (<= 2 h + compute in chunks) Static scenario gallery for the 3D world
 12 curated scene packages (B-31 format) + `data/scenes/gallery.json` (title, one-line description in plain words,
 the scenario flags, headline numbers with CIs from 20 seeds for the cell): phase {P1, P2, P3} × job rule {in-house,
 marketplace} at 1 km pads; P2 marketplace at pads {0.5, 3 km}; P2 marketplace with comms {dte, dte+relay 0.8} and the

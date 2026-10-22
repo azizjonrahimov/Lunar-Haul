@@ -1,0 +1,215 @@
+{
+ "format": "lunarsim-story-resolved",
+ "version": 1,
+ "id": "sharing-rovers",
+ "title": "Why sharing rovers cuts the wait",
+ "title_plain": "Why sharing rovers cuts the wait",
+ "status": "published",
+ "summary": "Letting every rover take any company's job cuts the mean wait of urgent cargo by {{r:market_cut}}, with the same rovers.",
+ "summary_plain": "Letting every rover take any company's job cuts the mean wait of urgent cargo by 63 %, with the same rovers.",
+ "scene": "world:P2",
+ "notes": "E1 main table and paired differences (results/table_main.csv, table_paired_E1.csv), E19 fleet x job rule x autonomy (results/table_E19.csv). Step scenes are gallery packages (data/scenes/gallery.json). Wording for LEAD to edit.",
+ "numbers": {
+  "inhouse_mean": {
+   "value": 16.2,
+   "text": "16.2 h",
+   "unit": "h",
+   "flag": "Modelled",
+   "source": "results/table_main.csv, row phase = P2, mechanism = In-house fleets, column delay_prio1_mean_h; mean delay of urgent items, mean over seeds (experiment E1)"
+  },
+  "inhouse_p90": {
+   "value": 49.1,
+   "text": "49 h",
+   "unit": "h",
+   "flag": "Modelled",
+   "source": "results/table_main.csv, row phase = P2, mechanism = In-house fleets, column delay_prio1_p90_h; 90th percentile delay of urgent items, mean over seeds (experiment E1)"
+  },
+  "inhouse_sl24": {
+   "value": 81.8,
+   "text": "82 %",
+   "unit": "%",
+   "flag": "Modelled",
+   "source": "results/table_main.csv, row phase = P2, mechanism = In-house fleets, column sl24_prio1; x 100; share of urgent items delivered within a day (experiment E1)"
+  },
+  "market_mean": {
+   "value": 5.95,
+   "text": "6.0 h",
+   "unit": "h",
+   "flag": "Modelled",
+   "source": "results/table_main.csv, row phase = P2, mechanism = Marketplace (ours), column delay_prio1_mean_h; mean delay of urgent items, mean over seeds (experiment E1)"
+  },
+  "market_p90": {
+   "value": 15.4,
+   "text": "15 h",
+   "unit": "h",
+   "flag": "Modelled",
+   "source": "results/table_main.csv, row phase = P2, mechanism = Marketplace (ours), column delay_prio1_p90_h; 90th percentile delay of urgent items (experiment E1)"
+  },
+  "market_sl24": {
+   "value": 95.19999999999999,
+   "text": "95 %",
+   "unit": "%",
+   "flag": "Modelled",
+   "source": "results/table_main.csv, row phase = P2, mechanism = Marketplace (ours), column sl24_prio1; x 100; share of urgent items delivered within a day (experiment E1)"
+  },
+  "market_cut": {
+   "value": 63.27160493827161,
+   "text": "63 %",
+   "unit": "%",
+   "flag": "Modelled",
+   "source": "pct_change of inhouse_mean and market_mean (unrounded); neg"
+  },
+  "vs_greedy": {
+   "value": 21.81027257274853,
+   "text": "22 %",
+   "unit": "%",
+   "flag": "Modelled",
+   "source": "results/table_paired_E1.csv, row phase = P2, metric = delay_prio1_mean_h, column rel_%; neg; marketplace minus pooled greedy, paired over common seeds, relative to greedy (experiment E1)"
+  },
+  "e19_rovers": {
+   "value": 4.0,
+   "text": "4 rovers",
+   "unit": "rovers",
+   "flag": "Modelled",
+   "source": "results/table_E19.csv, row scenario = P2-4-vehicles, mechanism = inhouse, autonomy = supervised, column n_vehicles"
+  },
+  "e19_inhouse": {
+   "value": 19.009261601837345,
+   "text": "19.0 h",
+   "unit": "h",
+   "flag": "Modelled",
+   "source": "results/table_E19.csv, row scenario = P2-4-vehicles, mechanism = inhouse, autonomy = supervised, column delay_prio1_mean_h; mean urgent delay, supervised driving, mean over seeds (experiment E19)"
+  },
+  "e19_market": {
+   "value": 6.416142967643799,
+   "text": "6.4 h",
+   "unit": "h",
+   "flag": "Modelled",
+   "source": "results/table_E19.csv, row scenario = P2-4-vehicles, mechanism = marketplace, autonomy = supervised, column delay_prio1_mean_h; the same with the marketplace job rule (experiment E19)"
+  },
+  "e19_auto": {
+   "value": 4.272514763374013,
+   "text": "4.3 h",
+   "unit": "h",
+   "flag": "Modelled",
+   "source": "results/table_E19.csv, row scenario = P2-4-vehicles, mechanism = marketplace, autonomy = autonomous, column delay_prio1_mean_h; marketplace with autonomous driving (experiment E19)"
+  }
+ },
+ "steps": [
+  {
+   "id": "two-ways",
+   "scene": "world:P2-inhouse",
+   "title": "Two ways to run the rovers",
+   "text": "Each company can keep its own rovers for its own cargo. Or every rover can take any job, offered in a small auction to whichever rover can finish it soonest.",
+   "visual": "The base from above; each rover is coloured by the company that owns it.",
+   "camera": {
+    "shot": "overview"
+   },
+   "modes": {
+    "job_rule": "inhouse",
+    "colour_by": "owner",
+    "play": true
+   },
+   "title_plain": "Two ways to run the rovers",
+   "text_plain": "Each company can keep its own rovers for its own cargo. Or every rover can take any job, offered in a small auction to whichever rover can finish it soonest.",
+   "visual_plain": "The base from above; each rover is coloured by the company that owns it."
+  },
+  {
+   "id": "inhouse",
+   "scene": "world:P2-inhouse",
+   "title": "Own rovers, own queue",
+   "text": "With in-house fleets an urgent item waits {{r:inhouse_mean}} on average in the second phase of the base, and one in ten waits more than {{r:inhouse_p90}}. Only {{r:inhouse_sl24}} arrive within a day.",
+   "visual": "Cargo piles up at a pad while a rover of another company stands idle nearby.",
+   "camera": {
+    "shot": "pads",
+    "target": "PAD_A"
+   },
+   "highlight": [
+    "PAD_A"
+   ],
+   "modes": {
+    "job_rule": "inhouse",
+    "queues": true
+   },
+   "chips": [
+    "inhouse_mean",
+    "inhouse_sl24"
+   ],
+   "title_plain": "Own rovers, own queue",
+   "text_plain": "With in-house fleets an urgent item waits 16.2 h on average in the second phase of the base, and one in ten waits more than 49 h. Only 82 % arrive within a day.",
+   "visual_plain": "Cargo piles up at a pad while a rover of another company stands idle nearby."
+  },
+  {
+   "id": "shared",
+   "scene": "world:P2",
+   "title": "Any rover, any job",
+   "text": "When every rover can take any job, the mean wait falls to {{r:market_mean}} and the slow tail to {{r:market_p90}}: {{r:market_cut}} less waiting with the same rovers. {{r:market_sl24}} of urgent items now arrive within a day.",
+   "visual": "The same moment with the shared job rule: the idle rover picks up the waiting cargo.",
+   "camera": {
+    "shot": "pads",
+    "target": "PAD_A"
+   },
+   "highlight": [
+    "PAD_A"
+   ],
+   "modes": {
+    "job_rule": "marketplace",
+    "queues": true
+   },
+   "chips": [
+    "market_mean",
+    "market_cut"
+   ],
+   "title_plain": "Any rover, any job",
+   "text_plain": "When every rover can take any job, the mean wait falls to 6.0 h and the slow tail to 15 h: 63 % less waiting with the same rovers. 95 % of urgent items now arrive within a day.",
+   "visual_plain": "The same moment with the shared job rule: the idle rover picks up the waiting cargo."
+  },
+  {
+   "id": "auction",
+   "scene": "world:P2",
+   "title": "The auction beats first come, first served",
+   "text": "Sharing alone does most of the work, but the auction adds to it: {{r:vs_greedy}} less waiting than handing each job to the nearest free rover, in paired runs.",
+   "visual": "Bids from several rovers appear over a new job; the earliest finisher wins it.",
+   "camera": {
+    "shot": "overview"
+   },
+   "modes": {
+    "job_rule": "marketplace",
+    "bids": true
+   },
+   "chips": [
+    "vs_greedy"
+   ],
+   "title_plain": "The auction beats first come, first served",
+   "text_plain": "Sharing alone does most of the work, but the auction adds to it: 22 % less waiting than handing each job to the nearest free rover, in paired runs.",
+   "visual_plain": "Bids from several rovers appear over a new job; the earliest finisher wins it."
+  },
+  {
+   "id": "scarce",
+   "scene": "world:P2V2",
+   "title": "It matters most when rovers are few",
+   "text": "With {{r:e19_rovers}}, sharing cuts the urgent wait from {{r:e19_inhouse}} to {{r:e19_market}}. Autonomous driving brings it down to {{r:e19_auto}}.",
+   "visual": "A small fleet crossing the base, every rover busy.",
+   "camera": {
+    "shot": "overview"
+   },
+   "modes": {
+    "job_rule": "marketplace",
+    "play": true
+   },
+   "chips": [
+    "e19_inhouse",
+    "e19_market"
+   ],
+   "title_plain": "It matters most when rovers are few",
+   "text_plain": "With 4 rovers, sharing cuts the urgent wait from 19.0 h to 6.4 h. Autonomous driving brings it down to 4.3 h.",
+   "visual_plain": "A small fleet crossing the base, every rover busy."
+  }
+ ],
+ "pending": [],
+ "sources": {
+  "results/table_E19.csv": "7a0948278092a90a218d45f29b7069518abdd46db3affb28ce33240a04398f68",
+  "results/table_main.csv": "abbce49b451f5ba36b1dbe4f802c558ae7c1d2d1c5ab865e85c4e4746c6cc01d",
+  "results/table_paired_E1.csv": "9dc11f021d3de2266ae48086a38bb982a3b4d9523f6357a1f56aa402f692cbf5"
+ }
+}

@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://azizjonrahimov.github.io/Lunar-Haul/schemas/story-v1.schema.json",
+  "title": "lunarsim-story v1",
+  "description": "A guided story (data/stories/<id>.json; checker lunarsim/stories.py, which also enforces what a schema cannot: every {{r:key}} placeholder is declared and resolves to its source, every declared number is used, no digit is typed into prose except years and the allowed labels, highlight ids and scene samples exist). Prose fields: title, summary, and each step's title, text and visual (the text-only twin of the view).",
+  "type": "object",
+  "required": ["format", "version", "id", "title", "status", "summary", "numbers", "steps"],
+  "additionalProperties": false,
+  "properties": {
+    "format": {"const": "lunarsim-story"},
+    "version": {"const": 1},
+    "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$", "description": "equals the file name"},
+    "title": {"type": "string", "minLength": 1},
+    "status": {"enum": ["draft", "published"], "description": "a draft may have pending numbers (their results file does not exist yet); a published story may not"},
+    "summary": {"type": "string", "minLength": 1},
+    "scene": {"$ref": "#/$defs/sceneRef", "description": "the default scene sample for every step"},
+    "notes": {"type": "string", "description": "for the editors; not shown, not checked"},
+    "numbers": {
+      "type": "object",
+      "propertyNames": {"pattern": "^[A-Za-z0-9_]+$"},
+      "additionalProperties": {"$ref": "#/$defs/number"}
+    },
+    "steps": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/step"}}
+  },
+  "$defs": {
+    "sceneRef": {
+      "type": "string",
+      "pattern": "^(world|lander|rover):[A-Za-z0-9_./>-]+$",
+      "description": "world:<scene package or gallery id> | lander:<cls>/<pilot>/<pick> (trajectories-v1) | rover:<leg key> (routes-v1)"
+    },
+    "step": {
+      "type": "object",
+      "required": ["id", "title", "text", "visual", "camera"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+        "title": {"type": "string", "minLength": 1},
+        "text": {"type": "string", "minLength": 1},
+        "visual": {"type": "string", "minLength": 1, "description": "what the view shows, in words (the text-only twin)"},
+        "camera": {
+          "type": "object",
+          "required": ["shot"],
+          "additionalProperties": false,
+          "properties": {
+            "shot": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$", "description": "a named shot of the page's camera director"},
+            "target": {"type": "string", "description": "a highlight id to frame, when the shot follows one"}
+          }
+        },
+        "highlight": {"type": "array", "items": {"type": "string"}, "uniqueItems": true, "description": "site ids (data/site_graph.json) or catalogue entry ids"},
+        "modes": {
+          "type": "object",
+          "propertyNames": {"pattern": "^[a-z][a-z0-9_]*$"},
+          "additionalProperties": {"type": ["string", "number", "boolean"]},
+          "description": "view switches the page applies on entering the step"
+        },
+        "chips": {"type": "array", "items": {"type": "string"}, "uniqueItems": true, "description": "number keys shown as stat chips beside the text"},
+        "scene": {"$ref": "#/$defs/sceneRef"}
+      }
+    },
+    "number": {
+      "type": "object",
+      "oneOf": [
+        {
+          "required": ["table", "column"],
+          "properties": {
+            "table": {"type": "string", "pattern": "^results/[^/]+\\.csv(\\.gz)?$"},
+            "where": {"type": "object", "additionalProperties": {"type": ["string", "number"]}},
+            "column": {"type": "string"},
+            "part": {"enum": ["value", "pm"], "description": "for 'a ± b' cells: a (value) or b (pm)"}
+          }
+        },
+        {
+          "required": ["json", "path"],
+          "properties": {
+            "json": {"type": "string", "pattern": "^results/[^/]+\\.json$"},
+            "path": {"type": "array", "minItems": 1, "items": {"type": ["string", "integer"]}}
+          }
+        },
+        {
+          "required": ["catalog", "quantity"],
+          "properties": {"catalog": {"type": "string"}, "quantity": {"type": "string", "pattern": "^[a-z0-9_.]+$"}}
+        },
+        {
+          "required": ["derive", "of"],
+          "properties": {
+            "derive": {"enum": ["diff", "ratio", "pct_change"]},
+            "of": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "string"}}
+          }
+        }
+      ],
+      "properties": {
+        "transform": {"enum": ["exp_pct", "neg", "abs"]},
+        "scale": {"type": "number"},
+        "digits": {"type": "integer", "minimum": 0, "maximum": 4},
+        "unit": {"type": "string"},
+        "flag": {"enum": ["Spec", "Measured", "Assumed", "Modelled"]},
+        "note": {"type": "string"}
+      },
+      "unevaluatedProperties": false
+    }
+  }
+}

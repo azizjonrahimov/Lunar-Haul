@@ -2802,3 +2802,73 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
   - a broken catalogue is caught by both validators.
 - **How to test:** `python tools/ci/budgets.py pages --dist site/dist` (after `npm run build`); `python tools/ci/budgets.py schemas` (needs jsonschema).
 - **Questions for LEAD:** none. FRONTEND should confirm the per-page data lists in budgets.json, especially lab/lander, which today counts every policy card.
+
+## B-35 DONE 12:14 | Story data and the number check
+- **Files:**
+  - `lunarsim/stories.py`: new; the checker and resolver, with CLI `check` / `build`.
+  - `lunarsim/schemas/story-v1.schema.json`: new.
+  - `tests/test_stories.py`: new, 10 tests.
+  - `tools/ci/budgets.py`: the schemas step now also validates `data/stories/*.json`, with jsonschema plus the full number check.
+  - **Data for LEAD to commit:**
+    - `data/stories/{pads-distance,sharing-rovers,learned-landing,earth-horizon}.json`
+    - `data/stories/resolved/*.json` + `index.json` (76 KB in all)
+- **Story format (proposal for FRONTEND; please confirm or ask for changes through LEAD):**
+  ```
+  {format: "lunarsim-story", version: 1, id (= file name), title, status: draft|published, summary,
+   scene?: "world:<scene id>" | "lander:<cls>/<pilot>/<pick>" | "rover:<leg key>", notes?,
+   numbers: {key: source spec},
+   steps: [{id, title, text, visual (the text-only twin of the view), camera: {shot, target?},
+            highlight?: [site or catalogue ids], modes?: {name: string|number|bool}, chips?: [number keys], scene?}]}
+  ```
+  - **Camera shots used** (FRONTEND defines them in the director): overview, pads, base, descent, touchdown, horizon.
+  - **Modes used** (hints; FRONTEND maps or renames): routes, play, keepout, touchdowns, ejecta, job_rule (inhouse|marketplace), colour_by (owner), queues, bids, earth_link, earth, relay.
+  - **Highlight ids** are checked against `data/site_graph.json` site names and catalogue entry ids. **Scene samples** are checked against `data/scenes/<id>` (or `gallery.json` after B-36), trajectories-v1 episodes, and routes-v1 legs.
+- **The number check** (`python -m lunarsim.stories check`, exit 1 on any problem):
+  - Prose (title, summary, and each step's title, text and visual) carries numbers only as `{{r:key}}`.
+  - Each key is declared once in `numbers` with its source, one of:
+    - a results-table row and column: `table` + `where` (exactly one row must match) + `column`; "a ± b" cells give a, or b with `part: "pm"`;
+    - `json` + `path` into a results JSON (E20_fit.json);
+    - `catalog` + `quantity`, which carries the catalogue's own flag and source;
+    - `derive`: diff, ratio or pct_change of two declared numbers.
+  - Then optionally `transform` (exp_pct, neg, abs), `scale`, `digits`, `unit`, `flag` and `note`.
+  - **It fails on:**
+    - an undeclared placeholder;
+    - a declared but unused number;
+    - a source that does not resolve (0 or 2+ matching rows, missing column, bad path);
+    - a missing results file in a *published* story (in a draft the number is only *pending*);
+    - any digit typed into prose. Allowed: years 1900-2099 and the labels 2D, 3D, P1, P2, P3; superscripts such as m² are not digits.
+    - unknown highlight ids or scene samples.
+- **Resolved files for the site** (`python -m lunarsim.stories build` → `data/stories/resolved/<id>.json` + `index.json`):
+  - The source fields as written (placeholders kept in `text`, so numbers can be rendered as chips with flag tooltips).
+  - Every prose field filled in as `<field>_plain`; a pending number reads "(pending)".
+  - `numbers[key]` = {value, text, unit, flag, source} or {pending}.
+  - `pending[]`, and `sources` (sha256 of every file read).
+  - A test fails when a *published* story's resolved file is stale. **After a results table or story changes, rerun `build`.** Drafts are left out of that test because E21 is still moving.
+- **The stories** (text short; LEAD edits wording):
+
+  | Story | Status | Steps | Numbers | Sources |
+  |---|---|---|---|---|
+  | How far should the pads be? | published | 6 | 12 | table_E20 (pooled law), E20_fit.json siting |
+  | Why sharing rovers cuts the wait | published | 5 | 12 | table_main (P2), table_paired_E1, table_E19 (4 rovers) |
+  | Learned vs classical landing | published | 5 | 11 | table_E15; trajectory episodes as scenes |
+  | What Earth's horizon costs (E21) | draft | 5 | 8 | table_E21, table_E21_breakeven |
+
+  - **Pads:** +35.0 % per km of standoff (interval 32.6 to 37.6 %); fit over 62,640 simulated years from 30 seeds; keep-out −0.5 % per km (interval −1.5 to 0.8 %); +8.2 % per e-fold of landing miss; 12 vs 0.37 ejecta impacts per landing at the nearest vs farthest standoff. The farthest standoff is cheapest in 100 % of cells at middle prices (flag Assumed).
+  - **Sharing:** in-house 16.2 h mean / 49 h p90 / 82 % within a day → marketplace 6.0 h / 15 h / 95 %: 63 % less waiting. The auction gives 22 % less than greedy (paired). With 4 rovers: 19.0 h → 6.4 h, autonomous 4.3 h.
+  - **Landing:** law 93.8 % of 500 landings (2.9 m mean miss); PPO from scratch 63.2 % after 2,007,040 steps; imitation v3 89.0 % (3.2 m). Gap 4.8 ± 3.5 percentage points; 33 vs 6 touchdowns failed on a held altimeter reading.
+  - **Earth's horizon (E21):** the summary says "Without a relay, the base delivers {{r:dte_loss}} less cargo a year". **`results/table_E21.csv` already exists here (12:10), so 7 of its 8 numbers resolve from the current table:** 532 → 307 t/yr (−42 %), 972 rover-hours waiting, 13 jobs refused, relay p 0.1 530 t/yr, autonomous 532 t/yr. Only `relay_price` is pending (needs table_E21_breakeven.csv). The row selectors (stage A, mix supervised_strict, comms always/dte/dte+relay at coverage 0.1/autonomous) need checking against the final table.
+- **Tests:** `test_stories.py` 10 passed. They cover:
+  - typed-digit rules;
+  - table/json/derive/catalogue sources and formatting (real minus sign, thousands separators);
+  - every error kind;
+  - draft vs published pending, including derived from pending;
+  - scene references;
+  - the committed stories check and match the schema;
+  - the resolved files are current.
+
+  Also `test_ci_budgets.py` 6 passed; `budgets.py schemas`: 26 files, 0 problems.
+- **How to test:** `.venv\Scripts\python -m lunarsim.stories check`; `... build`; `.venv\Scripts\python -m pytest tests\test_stories.py -q`.
+- **Questions for LEAD:**
+  1. Does FRONTEND accept the format above, especially the shot and mode names? I'll rename to match theirs.
+  2. Once B-36 lands, I'll switch the sharing story's in-house step to the in-house gallery scene. OK?
+  3. Should the site show drafts at all? `index.json` carries `status` and `pending`.

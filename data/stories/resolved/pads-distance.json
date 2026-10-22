@@ -1,0 +1,234 @@
+{
+ "format": "lunarsim-story-resolved",
+ "version": 1,
+ "id": "pads-distance",
+ "title": "How far should the pads be?",
+ "title_plain": "How far should the pads be?",
+ "status": "published",
+ "summary": "The wait of urgent cargo grows by {{r:standoff_pct}} of distance between the landing pads and the base, but close pads spray the base with ejecta.",
+ "summary_plain": "The wait of urgent cargo grows by 35.0 % per km of distance between the landing pads and the base, but close pads spray the base with ejecta.",
+ "scene": "world:P2",
+ "notes": "E20 pooled law at the typical fleet load (results/table_E20.csv) and the E20 siting model (results/E20_fit.json). Wording for LEAD to edit.",
+ "numbers": {
+  "standoff_pct": {
+   "value": 35.02236573467372,
+   "text": "35.0 % per km",
+   "unit": "% per km",
+   "flag": "Modelled",
+   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = standoff, column pct_per_unit; pooled fit of ln(urgent mean delay), 100 (e^b - 1) per km of pad standoff, at the typical fleet load (experiment E20)"
+  },
+  "standoff_lo": {
+   "value": 32.62744153405361,
+   "text": "32.6 %",
+   "unit": "%",
+   "flag": "Modelled",
+   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = standoff, column ci_lo; 100 (e^v - 1); lower end of the 95 % bootstrap interval over seeds"
+  },
+  "standoff_hi": {
+   "value": 37.64470999763604,
+   "text": "37.6 %",
+   "unit": "%",
+   "flag": "Modelled",
+   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = standoff, column ci_hi; 100 (e^v - 1); upper end of the 95 % bootstrap interval over seeds"
+  },
+  "fit_years": {
+   "value": 62640.0,
+   "text": "62,640 simulated years",
+   "unit": "simulated years",
+   "flag": "Modelled",
+   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = standoff, column n; rows of the pooled fit: one seed of one cell each (E17 + E18)"
+  },
+  "fit_seeds": {
+   "value": 30.0,
+   "text": "30 seeds",
+   "unit": "seeds",
+   "flag": "Modelled",
+   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = standoff, column n_seeds"
+  },
+  "keepout_pct": {
+   "value": -0.49872585937157377,
+   "text": "−0.5 % per km",
+   "unit": "% per km",
+   "flag": "Modelled",
+   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = keepout, column pct_per_unit; per km of plume keep-out radius"
+  },
+  "keepout_lo": {
+   "value": -1.4956649201952796,
+   "text": "−1.5 %",
+   "unit": "%",
+   "flag": "Modelled",
+   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = keepout, column ci_lo; 100 (e^v - 1); 95 % bootstrap interval, lower end"
+  },
+  "keepout_hi": {
+   "value": 0.8281990234159148,
+   "text": "0.8 %",
+   "unit": "%",
+   "flag": "Modelled",
+   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = keepout, column ci_hi; 100 (e^v - 1); 95 % bootstrap interval, upper end"
+  },
+  "miss_pct": {
+   "value": 8.161346176786344,
+   "text": "8.2 %",
+   "unit": "%",
+   "flag": "Modelled",
+   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = log_miss, column pct_per_unit; per e-fold of the mean landing miss"
+  },
+  "impacts_near": {
+   "value": 11.747650563538281,
+   "text": "12",
+   "unit": "",
+   "flag": "Modelled",
+   "source": "results/E20_fit.json: siting/impacts_per_landing_at_standoffs/0.5; ejecta impacts on the base per landing at a 0.5 km standoff, Modelled from the Wittal et al. (2022) anchors"
+  },
+  "impacts_far": {
+   "value": 0.37,
+   "text": "0.37",
+   "unit": "",
+   "flag": "Modelled",
+   "source": "results/E20_fit.json: siting/impacts_per_landing_at_standoffs/5; the same at a 5 km standoff"
+  },
+  "far_cheapest": {
+   "value": 100.0,
+   "text": "100 %",
+   "unit": "%",
+   "flag": "Assumed",
+   "source": "results/E20_fit.json: siting/share_of_minima_by_standoff/13/share_min_at_5km; x 100; share of the fleet and dispatch cells whose cheapest standoff is 5 km, at energy 500 $/kWh, damage 1 M$ per impact, delay valued at 100 $ per item-hour (prices Assumed)"
+  }
+ },
+ "steps": [
+  {
+   "id": "law",
+   "title": "Every kilometre costs time",
+   "text": "Rovers carry each delivery from the pads to the base. The mean wait of urgent cargo grows by {{r:standoff_pct}} of standoff, with an interval of {{r:standoff_lo}} to {{r:standoff_hi}}.",
+   "visual": "The base and its two landing pads, with the rover routes between them drawn on the ground.",
+   "camera": {
+    "shot": "pads"
+   },
+   "highlight": [
+    "PAD_A",
+    "PAD_B",
+    "BASE"
+   ],
+   "modes": {
+    "routes": true
+   },
+   "chips": [
+    "standoff_pct"
+   ],
+   "title_plain": "Every kilometre costs time",
+   "text_plain": "Rovers carry each delivery from the pads to the base. The mean wait of urgent cargo grows by 35.0 % per km of standoff, with an interval of 32.6 % to 37.6 %.",
+   "visual_plain": "The base and its two landing pads, with the rover routes between them drawn on the ground."
+  },
+  {
+   "id": "evidence",
+   "title": "Where the law comes from",
+   "text": "One fit over {{r:fit_years}} from {{r:fit_seeds}}: every fleet size, job rule, landing accuracy and pad size of the study.",
+   "visual": "The whole base from above, rovers driving between pads, depot and work sites.",
+   "camera": {
+    "shot": "overview"
+   },
+   "modes": {
+    "play": true
+   },
+   "chips": [
+    "fit_years"
+   ],
+   "title_plain": "Where the law comes from",
+   "text_plain": "One fit over 62,640 simulated years from 30 seeds: every fleet size, job rule, landing accuracy and pad size of the study.",
+   "visual_plain": "The whole base from above, rovers driving between pads, depot and work sites."
+  },
+  {
+   "id": "keepout",
+   "title": "Keep-out zones barely matter",
+   "text": "Clearing a plume keep-out zone during each landing changes the wait by {{r:keepout_pct}} of keep-out radius, an interval of {{r:keepout_lo}} to {{r:keepout_hi}} that includes zero. The fleets are idle most of the time and absorb the evacuations.",
+   "visual": "A ring around the active pad marks the plume keep-out zone; rovers wait outside it until the lander is down.",
+   "camera": {
+    "shot": "pads",
+    "target": "PAD_A"
+   },
+   "highlight": [
+    "PAD_A"
+   ],
+   "modes": {
+    "keepout": true
+   },
+   "chips": [
+    "keepout_pct"
+   ],
+   "title_plain": "Keep-out zones barely matter",
+   "text_plain": "Clearing a plume keep-out zone during each landing changes the wait by −0.5 % per km of keep-out radius, an interval of −1.5 % to 0.8 % that includes zero. The fleets are idle most of the time and absorb the evacuations.",
+   "visual_plain": "A ring around the active pad marks the plume keep-out zone; rovers wait outside it until the lander is down."
+  },
+  {
+   "id": "accuracy",
+   "title": "Landing accuracy acts through the pad edge",
+   "text": "Each e-fold of the mean landing miss adds {{r:miss_pct}}, because landings off the pad mean longer, rougher drives.",
+   "visual": "Touchdown points scattered around the pad; the ones outside its rim are highlighted.",
+   "camera": {
+    "shot": "pads",
+    "target": "PAD_A"
+   },
+   "highlight": [
+    "PAD_A"
+   ],
+   "modes": {
+    "touchdowns": true
+   },
+   "chips": [
+    "miss_pct"
+   ],
+   "title_plain": "Landing accuracy acts through the pad edge",
+   "text_plain": "Each e-fold of the mean landing miss adds 8.2 %, because landings off the pad mean longer, rougher drives.",
+   "visual_plain": "Touchdown points scattered around the pad; the ones outside its rim are highlighted."
+  },
+  {
+   "id": "ejecta",
+   "scene": "world:P2-pads-0.5km",
+   "title": "Close pads spray the base",
+   "text": "A landing blasts regolith outward. At the nearest standoff studied the model expects about {{r:impacts_near}} ejecta impacts on the base per landing; at the farthest, {{r:impacts_far}}.",
+   "visual": "The ejecta fan from a landing on the near pad reaching the base buildings.",
+   "camera": {
+    "shot": "base"
+   },
+   "highlight": [
+    "BASE",
+    "PAD_A"
+   ],
+   "modes": {
+    "ejecta": true
+   },
+   "chips": [
+    "impacts_near",
+    "impacts_far"
+   ],
+   "title_plain": "Close pads spray the base",
+   "text_plain": "A landing blasts regolith outward. At the nearest standoff studied the model expects about 12 ejecta impacts on the base per landing; at the farthest, 0.37.",
+   "visual_plain": "The ejecta fan from a landing on the near pad reaching the base buildings."
+  },
+  {
+   "id": "answer",
+   "scene": "world:P2-pads-3km",
+   "title": "So: far, unless energy is dear",
+   "text": "Pricing hauling, ejecta damage and waiting time together, the farthest standoff studied is cheapest in {{r:far_cheapest}} of the cells at middle prices. Only cheap damage, together with dear energy or highly valued time, pulls the pads closer.",
+   "visual": "The base from a distance, with the pads at the far end of their routes.",
+   "camera": {
+    "shot": "overview"
+   },
+   "highlight": [
+    "PAD_A",
+    "PAD_B"
+   ],
+   "chips": [
+    "far_cheapest"
+   ],
+   "title_plain": "So: far, unless energy is dear",
+   "text_plain": "Pricing hauling, ejecta damage and waiting time together, the farthest standoff studied is cheapest in 100 % of the cells at middle prices. Only cheap damage, together with dear energy or highly valued time, pulls the pads closer.",
+   "visual_plain": "The base from a distance, with the pads at the far end of their routes."
+  }
+ ],
+ "pending": [],
+ "sources": {
+  "results/E20_fit.json": "e259209b7575a2eb28e0a7580ee34d7d8743da33544c20d77efee62fd74b1239",
+  "results/table_E20.csv": "5f6f96967d25c7d9a4af05529dbd2e27d69630ae3accadc542a40507ca9c648a"
+ }
+}
