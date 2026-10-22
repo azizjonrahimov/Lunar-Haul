@@ -636,3 +636,20 @@ Referee M2-M5 and the statistics notes:
   delay, completion) paired with stage A; "full relay = always" checked per mix (the referee says it fails for
   teleop under the soft pool).
 - t intervals (not 1.96 SE) for cell means (E20). Write `results/E21_fit_r2.json` and the `_r2` tables; keep r1.
+
+## B-50 [OPEN] (<= 2 h, plotting only; LEAD allows you to edit `paper/r1/make_figures_r1.py` for this task) R-1 figures for round 2
+Memory is too tight for a second suite (LEAD runs the r2 suites); this task is light. Update the figure script to read
+the round-2 outputs (`results/*_r2.csv`, `E21_fit_r2.json`, the r2 figure CSVs from analyse_e21; fall back to r1 with
+a printed warning while r2 is incomplete) and apply the referee's W11:
+- Fig. 1: elevation shading instead of the hillshade (the dark shadow region hid half the map), routes readable on
+  it (thin dark outline under each route), and say in the title which direction of each leg is drawn.
+- Fig. 2: throughput split into two panels: lander (landed) cargo and bulk regolith; Earth-always reference lines.
+- Fig. 3: censored urgent p90 (lower bound where completion < 90 %, drawn hollow) with t intervals on the log scale
+  computed on log values (no bars reaching 5 h), markers offset per fleet, no fitted law curves (the referee's S5).
+- Fig. 4: a panel of paired differences vs the strict fleet at p = 0.5 (Δ urgent p90 with t intervals) for +1/+2/+3
+  rovers, strategic, strategic+avoid, strategic + 1 rover; equivalent-coverage labels with their bootstrap intervals.
+- Fig. 5: absolute peak of linked operator demand vs coverage, the staffing line at 3, the hard-limit (A2) cells
+  overlaid, seeds over staff annotated; no "always" point.
+- New Fig. 6: per start year (2028-2031), the two primary comparisons (DTE vs always throughput; strategic vs strict
+  urgent p90 at p = 0.1), to show the calendar effect (2028).
+Run it on the current r1 data copied as r2 into a scratch results folder to check the code paths; do not commit.
