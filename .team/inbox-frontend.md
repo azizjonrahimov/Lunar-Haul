@@ -395,7 +395,7 @@ shaping, linking to the existing reward-rules section. JS parity: replay one exp
 node test for B-38's CI hook). Done when: every pilot × class in the file plays; parity test passes; tiers;
 reduced motion; Lighthouse ≥ 85 performance desktop; no console errors.
 
-## F-36 [REVIEW] (after F-34; <= 8 h, may report in parts) World v2: the flagship (plan §5 F-36)
+## F-36 [DONE, accepted] (after F-34; <= 8 h, may report in parts) World v2: the flagship (plan §5 F-36)
 `/world/` on the shared stage, instrument theme, reading the B-31 scene packages (write the JS reader
 `site/src/world/scene-data.js`; the five samples in `data/scenes/` and the run-queue path `runs/<id>/scene/`):
 loading door → fly-in; scene chips Overview · Pads & keep-out · Rover legs · Base · Night; true-scale / icon toggle;
@@ -409,6 +409,20 @@ a split view comparing two samples on the same seed (e.g. P2 always vs P2 DTE-on
 tier 0. Done when: all five samples play a full year; `?run=<id>` loads a run-queue scene; position checks against
 the Python reader (`lunarsim.scene.position`) at 20 random times (node test); tiers, reduced motion, keyboard,
 Lighthouse ≥ 85 desktop.
+
+## F-36d [OPEN] (next, before F-35; <= 3 h) World v2 polish: make the flagship read like the reels
+LEAD's browser review of F-36 (22 Oct 14:40), P2 scene: the data, controls and chips work; the look is not there yet.
+1. **Routes:** today every planned route (all lighting variants) is drawn bright cyan, so the network reads as
+   spaghetti and hides the terrain. Draw each leg once as a thin, low-contrast line (night route), brighten only the
+   legs in use now (and fade them back), and colour by state when Follow/Earth-link is on.
+2. **Scene chips must move the camera and the story:** "Pads & keep-out" should frame the pads with their keep-out
+   rings (and play to the next landing), "Rover legs" a busy leg at rover scale, "Base" the base cluster, "Night" a
+   site in the dark with headlights; the narrative card rewrites itself per chip (today it stays on "0 driving").
+3. **Show the rovers:** at overview distance the icons are hard to find; make them larger, brighter, with a short
+   trail, and make "True scale" obviously true scale.
+4. **First frame:** Enter should open on a lit, framed view with something happening (a landing or a convoy), not an
+   idle moment; pick the start time from the package's events.
+Check in the browser at 1440 and 390 px; frame times per tier; no console errors.
 
 ## F-35 [OPEN] (after F-36; <= 5 h) Rover lab in 3D (plan §5 F-35)
 `/lab/rover/` on the stage: drive the chosen leg on the terrain along the B-32 route for the chosen lighting, chase
