@@ -363,3 +363,46 @@ Budget: ≤ 30 MB on disk. Memory: process in row blocks, report peak RSS; each 
 Tests: synthetic DEMs with analytic answers (flat plane → horizon 0°; a cone → known horizon angle at a known
 distance; a plane slope → known normals).
 Done when: tests pass; the 4-azimuth agreement numbers are in the report; files listed with sizes.
+
+## B-40 [OPEN] (after B-34; <= 5 h, foreground chunks) R-1 data: Earth-link windows at our sites and along our routes
+Goal: the data behind research thread R-1 "Earth in sight" (plan §10). Read first:
+`research_notes/Lunar communications and visibility/earth_visibility_prior_art.md`, sections "Site facts",
+Q4 and "Minimal data pipeline". The prior-art verdict: site visibility percentages are published; the coupling to
+fleet logistics is not. Our sites ISRU and SCI_1 never see Earth on the PDS 60 m map; BASE 0.50.
+Files (new): `tools/comms/` (pipeline scripts), `lunarsim/comms.py` (reader + link queries only in this task),
+`tests/test_comms_data.py`. Output (LEAD commits): `data/comms/connecting_ridge/earth_link-v1.json` (< 1 MB) with
+sha256 and provenance. Kernels and DEM downloads go to an ignored cache folder (`.cache/comms/`), not the repo.
+`spiceypy` 8.3 is installed in .venv (pyproject extra `[comms]`); rasterio is there for windowed COG reads.
+1. Ephemeris: SPICE (`de440s.bsp`, `moon_pa_de440_200625.bpc`, `moon_de440_250416.tf`, `pck00011.tpc`,
+   `naif0012.tls` from NAIF generic_kernels) and `spiceypy.azlcpo` in MOON_ME: Earth's topocentric azimuth,
+   elevation and apparent radius, every 10 min, 2028-01-01 to 2031-12-31, for the 9 sites, both pad sets used by
+   the engine (standoffs in `sites.json`) and route samples every 100 m along each leg's expert route (run the
+   existing A* planner in `lunarsim/rover` per leg; no driving simulation). Cross-check one month at BASE against the
+   JPL Horizons API with the exact parameters in the note (report the max difference).
+2. Horizon masks only in Earth's wedge (grid bearing ±12° around the mean Earth direction, 0.1° steps): near field
+   ≤ 8 km from the cached 5 m DEM, 8–300 km from windowed reads of PGDA `LDEM_80S_80MPP_ADJ.TIF`, spherical
+   curvature R = 1,737.4 km, antenna height 2.5 m (rover), 10 m (mast at BASE).
+3. Link state per point and time under three criteria (`any_part`, `centre+0.5deg`, `centre+2deg`): run-length
+   windows per point; per leg, linked only when every sample is linked. A 10 m BASE mast option: a point is linked
+   if it has line of sight to the mast top within 10 km and the mast sees Earth.
+Checks (in the report): BASE any-part fraction vs the PDS AVGVISIB map value 0.50 (±0.05; explain any epoch or
+criterion difference); typical window lengths ~13–14 d; ISRU and SCI_1 ≈ 0; the Horizons cross-check.
+Memory: chunk by point groups; report peak RSS; every run under `timeout 540`.
+Done when: tests pass (synthetic: flat sphere, Earth at fixed elevation → analytic windows; a wall → blocked
+wedge); the JSON validates; the report tables per site and per leg (link fraction, mean and max gap) under each
+criterion.
+
+## B-41 [OPEN] (after B-40; <= 5 h) R-1 engine: opt-in `comms` scenario field (results byte-identical when off)
+Goal: the engine can run with Earth-link windows (design: the note's "Experiment design in our engine").
+Scenario field `comms` (default None): `mode` always | dte | dte+relay; `relay` {coverage 0–1, gap_model
+"parametric", mean_gap_h}; `mast` {site, height_m, range_km} or None; `link_series` (path to earth_link-v1.json);
+`criterion`. Rules: teleop may start a leg or a load/unload only when the leg is linked; if the link drops mid-leg
+the rover parks and resumes at the next link-up (log the wait); supervised has two policies, `strict` (no driving
+without a link) and `strategic` (drives planned legs without a link, but each intervention, drawn from the
+driving tables' interventions/km, waits for the link); operator demand counts only while linked (log peak
+concurrent demand per hour); autonomous unaffected. New metrics: `blackout_wait_vehicle_h` (by autonomy level),
+`blackout_jobs_delayed`, `operator_peak_demand`, `linked_share_by_leg`. Same rule in the trace (v2 events) so the
+3D world can show "waiting for Earth".
+Done when: `comms=None` and `comms.mode=always` both reproduce the baseline md5 (use the new constant
+739e9ba7…); unit tests for each rule on a tiny scenario with a hand-made link series; one smoke run of P2 with
+`mode=dte` for 2 seeds reported (delays and the new metrics), single process. Do NOT run the suite (LEAD runs E21).

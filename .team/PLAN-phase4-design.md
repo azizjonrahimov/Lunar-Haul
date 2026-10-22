@@ -297,5 +297,23 @@ the claim of novelty waits for it.
 lunar day; tall solar towers shade each other. Does pad placement relative to arrays and routes cost power or
 driving time? Same ray-casting tools; a small study, kept only if the numbers are not negligible.
 
-BACKEND and LEAD tasks for R-1 (ephemeris and horizon pipeline, the engine's comms windows, the suite) are written
-after the prior-art check; the 3D world shows the result (Earth disc, "comms: relay only" chip, F-36).
+**Prior-art verdict (22 Oct, `research_notes/Lunar communications and visibility/earth_visibility_prior_art.md`):**
+R-1 is partly covered: Earth-visibility percentages at polar sites (Bryant 2009, De Rosa 2012, the LOLA
+average-visibility maps), relay coverage (Esper/LCRNS: direct-to-Earth 17–43 % a year, one relay 80–86 %), and
+single-rover traverse planning around link gaps (VIPER, Otten 2017) are published. Not found anywhere: terrain-
+masked link windows along real routes → fleet availability → cargo delay and $/kg, and the break-even between
+relay coverage, autonomy, extra rovers and a base mast. That coupling is the claim to test (confidence Medium).
+At our own layout two work sites (ISRU, SCI_1) never see Earth and BASE sees it half the time, so the effect is
+not marginal here. R-2 is low value: tower shading is published, and a lander's full shadow ends at ~107× its
+width (~1 km for HLS); a point 1 km away is shaded ~2 h per lunar day. R-2 stays a visual and a one-line siting
+rule, not a study.
+
+R-1 work: **B-40** Earth-link data (SPICE ephemeris 2028–2031, horizon masks in Earth's wedge from the 5 m DEM
+and the 80 m polar DEM, link windows per site and per route, three link criteria, a 10 m base mast option);
+**B-41** opt-in `comms` in the engine (teleop waits for a link, supervised `strict` or `strategic`, operator demand
+only while linked; byte-identical when off); **E21** (LEAD) the staged suite: comms {always, DTE, DTE + relay
+50/80/90/100 %} × autonomy mix × 20 seeds × 4 years, then break-evens (+0…3 rovers, base mast), then
+sensitivity (pad standoff, link criterion). Hypotheses H1–H6 in the note, including a ~347-day ripple from Earth's
+27.21-day elevation cycle beating against the 29.53-day lunar day. Paper: a new section or short paper on
+"what Earth's horizon costs a lunar base". The 3D world shows the result (Earth disc, "waiting for Earth" on
+rovers, the "comms: relay only" chip, F-36).

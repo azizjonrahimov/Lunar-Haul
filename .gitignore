@@ -22,3 +22,4 @@ site/public/terrain/
 site/.terrain-dev/
 data/policies/*.csv
 service_data/
+.cache/
