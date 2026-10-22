@@ -565,3 +565,13 @@ Phase 3 notes cite values; e.g. Mazarico 2011 / Gläser); the engine reproduces 
 Then a small stage D runner cell set in run_phase4.py: comms {dte, relay 0.5} × mix {default, strict} × sun
 {night_fraction 0.15, real} × 20 seeds × start years 2028–2031, plus monthly throughput series to look for the
 ~347-day ripple. Report; LEAD runs stage D.
+
+## B-45 [OPEN] (after B-44; <= 3 h) Strict operator capacity in linked modes (H5 done properly)
+B-43 showed that in linked modes the operator admission check sees only demand already linked, so peaks can exceed
+`n_operators` even at full relay (teleop 3.37 vs 3.00 under "always"). That is bookkeeping, not operations. Add an
+opt-in `comms.operators_strict: true`: when a vehicle's link comes up (or a job would start) and linked demand would
+exceed `n_operators`, the vehicle waits for an operator (FIFO by job priority, then age); log `operator_wait_vehicle_h`
+and the peak (now ≤ n_operators by construction). Byte-identical when off (and with comms off). Tests on a tiny
+scenario. Then add a stage-A2 cell set to run_phase4.py: comms {always, dte, relay 0.1, 0.3, 0.5, 0.8, 1.0} × mix
+{teleop_4s, default} × operators_strict × 20 seeds, and `analyse_e21.py` effects for it (operator waits and urgent
+p90 vs the non-strict cells, paired). Report the expected runtime; LEAD runs it.
