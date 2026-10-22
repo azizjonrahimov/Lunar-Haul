@@ -621,7 +621,7 @@ FRONTEND the path (via LEAD) so `site/tests/lander-trajectories.test.mjs` can as
 4. Report the runtime estimate per stage and the cell counts. Tests for the new metrics on a tiny scenario
    (completion share with a never-linked destination; censored p90 equals the uncensored one when all are delivered).
 
-## B-49 [IN PROGRESS] (after B-48; <= 3 h) Analysis for round 2 (analyse_e21.py, reads the r2 files)
+## B-49 [DONE 15:00] (after B-48; <= 3 h) Analysis for round 2 (analyse_e21.py, reads the r2 files)
 Referee M2-M5 and the statistics notes:
 - **Throughput split** (M2): bulk vs landed cargo delivered, per mix and link regime, paired effects; the 200 t/yr
   CONSTR→ISRU feedstock stated; landed cargo at 3 km pads under DTE.

@@ -198,3 +198,98 @@ def test_check_rounds(tmp_path):
     r2.loc[1, "x"] = 2.0000000001
     r2.to_csv(tmp_path / "E21a_comms_autonomy_r2.csv", index=False)
     assert A.check_rounds(str(tmp_path))["E21a_comms_autonomy.csv"]["differing"] == {"x": 1}
+
+
+# ---- round 2 (B-49) ----
+def test_robust_stats():
+    ref = pd.Series([10.0, 20.0, 40.0, 80.0])
+    cell = ref * 2.0
+    r = A.robust_stats(ref, cell)
+    assert r["gm_ratio"] == pytest.approx(2.0) and r["gm_ratio_lo"] == pytest.approx(2.0)
+    assert r["ref_median"] == 30.0 and r["median_diff"] == 30.0 and r["n_increase"] == 4
+    assert r["wilcoxon_p"] == pytest.approx(stats.wilcoxon([10.0, 20.0, 40.0, 80.0]).pvalue)
+    z = A.robust_stats(pd.Series([0.0, 1.0]), pd.Series([1.0, 2.0]))
+    assert math.isnan(z["gm_ratio"])                                    # a zero: no log-ratio
+
+
+def test_order_statistic_quantile_keeps_infinities():
+    x = np.array([1.0, 2.0, 3.0, np.inf, np.inf])
+    assert A._q(x, 0.975) == np.inf and A._q(x, 0.025) == 1.0 and A._q(np.array([np.nan]), 0.5) != A._q(x, 0.5)
+
+
+def test_breakeven_r2_keeps_all_draws():
+    df, curve = _breakeven_df()
+    t, worth = A.breakeven_r2(df, boot=50)
+    pe = dict(zip(t["option"], t["p_equiv"]))
+    assert pe["+1 rover"] == pytest.approx(0.7) and math.isinf(pe["strategic step + 1 rover"])
+    assert "p_equiv_law" not in t                                       # referee S5
+    row = t[t.option == "strategic step + 1 rover"].iloc[0]
+    assert row["share_beyond_full_coverage"] == 1.0 and row["ci95_hi_beyond_full_coverage"]
+    assert worth["price_musd_per_0.1_coverage"] == pytest.approx(0.1 * A.ltv_musd_per_year() / 0.2)
+    assert worth["price_ci95"][0] == pytest.approx(worth["price_ci95"][1])            # no seed noise in this curve
+    assert worth["strategic_minus_rover"]["point"] == pytest.approx(0.2) and worth["strategic_minus_rover"]["share_positive"] == 1.0
+    assert worth["share_draws_rover_buys_nothing"] == 0.0
+
+
+def _year_df():
+    rows = []
+    for s in range(8):
+        yr = 2028 + s % 4
+        for comms, p in (("always", None), ("dte", 0.0)):
+            v = 500.0 if comms == "always" else (100.0 if yr == 2028 else 400.0)
+            rows.append(_row("A", comms, p, "supervised_strategic", s, delivered_t_in_year=v, start_year=yr))
+    return A.prepare(pd.DataFrame(rows))
+
+
+def test_year_table_and_blocked_interval():
+    df = _year_df()
+    y = A.year_table(df, ["delivered_t_in_year"])
+    dte = y[(y.comms == "dte") & (y.mix == "supervised_strategic")]
+    assert dte[dte.start_year == 2028]["flag"].iloc[0] and not dte[dte.start_year == 2029]["flag"].iloc[0]
+    a = df[df.stage == "A"]
+    b = A.year_blocked(A.select(a, comms="always", mix="supervised_strategic"),
+                       A.select(a, p=0.0, mix="supervised_strategic"), "delivered_t_in_year")
+    assert b["years"] == 4 and b["diff"] == pytest.approx(-175.0) and b["by_year"][2028] == -400.0
+    assert b["ci_hi"] - b["ci_lo"] == pytest.approx(2 * stats.t.ppf(0.975, 3) * np.std([-400, -100, -100, -100], ddof=1) / 2)
+
+
+def test_full_relay_check_and_cell_table():
+    rows = []
+    for s in range(4):
+        for mix, bump in (("default", 0.0), ("teleop_4s", 1.0 if s == 2 else 0.0)):
+            rows.append(_row("A", "always", None, mix, s, delay_prio1_p90_h=20.0))
+            rows.append(_row("A", "dte+relay", 1.0, mix, s, delay_prio1_p90_h=20.0 + bump))
+    df = A.prepare(pd.DataFrame(rows))
+    chk = A.full_relay_vs_always(df, ["delay_prio1_p90_h"])
+    assert chk["default"]["identical"] and not chk["teleop_4s"]["identical"]
+    assert chk["teleop_4s"]["metrics"]["delay_prio1_p90_h"] == {"seeds_differing": 1, "max_abs_diff": 1.0}
+    df["sensitivity"] = "none"
+    ct = A.cell_table(df, ["delay_prio1_p90_h"])
+    tele = ct[(ct.mix == "teleop_4s") & (ct.comms == "dte+relay")].iloc[0]
+    v = np.array([20.0, 20.0, 21.0, 20.0])
+    assert tele["delay_prio1_p90_h_ci95_t"] == pytest.approx(stats.t.ppf(0.975, 3) * v.std(ddof=1) / 2)
+    assert tele["delay_prio1_p90_h_median"] == 20.0 and tele["n_seeds"] == 4
+
+
+def test_split_summary():
+    rows = []
+    for s in range(4):
+        for comms, p, bulk, landed in (("always", None, 500e3, 29e3), ("dte", 0.0, 300e3, 9.5e3)):
+            rows.append(_row("A", comms, p, "supervised_strict", s, delivered_t_in_year=(bulk + landed + 800) / 1000,
+                             delivered_bulk_kg_in_horizon=bulk, delivered_landed_kg_in_horizon=landed))
+        r = _row("C", "dte", 0.0, "default", s, delivered_bulk_kg_in_horizon=296e3, delivered_landed_kg_in_horizon=0.0,
+                 delivered_t_in_year=296.0)
+        r["pad_standoff_km"] = 3.0
+        rows.append(r)
+    tmp = pd.DataFrame(rows)
+    tmp["sensitivity"] = "none"
+    df = A.prepare(tmp)
+    for k in ("bulk", "landed"):
+        df[f"delivered_{k}_t"] = df[f"delivered_{k}_kg_in_horizon"] / 1000.0
+    df["delivered_return_t"] = df["delivered_t_in_year"] - df["delivered_bulk_t"] - df["delivered_landed_t"]
+    sp = A.split_summary(df)
+    assert {"origin": "CONSTR", "dest": "ISRU", "t_per_year": 200} in sp["bulk_flows_P2"]
+    d = sp["dte_vs_always"]["supervised_strict"]
+    assert d["delivered_landed_t"]["diff"] == pytest.approx(-19.5) and d["delivered_bulk_t"]["diff"] == pytest.approx(-200.0)
+    assert d["delivered_return_t"]["diff"] == pytest.approx(0.0, abs=1e-9)
+    assert sp["pads_3km_dte"]["default/any_part"] == {"landed_t_mean": 0.0, "seeds_with_landed_cargo": 0, "n_seeds": 4}

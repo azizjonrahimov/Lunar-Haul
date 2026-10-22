@@ -4,6 +4,13 @@ E21c_pads_criterion.csv when present).
 
     python experiments/phase4/analyse_e21.py demand [--seeds 20] [--max-seconds 540]   # -> results/E21_demand_by_dest.csv
     python experiments/phase4/analyse_e21.py fit [--boot 400]                          # -> the tables below
+    python experiments/phase4/analyse_e21.py fit --round r2 [--boot 2000]              # round 2: reads/writes *_r2
+    python experiments/phase4/analyse_e21.py rounds                                    # round-2 rows = round-1 rows
+
+Round 2 (referee round 1) also writes table_E21_cells_r2.csv (cell means, Student-t intervals, medians, completion
+next to every p90), table_E21_years_r2.csv (key cells by start year, 2028-style flags) and, in E21_fit_r2.json, the
+throughput split (bulk / landed / return), year-blocked intervals for the primary comparisons, the full-relay = always
+check per mix and the break-even with every bootstrap draw kept.
 
 Writes results/E21_fit.json, results/table_E21_effects.csv, results/table_E21_breakeven_delay.csv and the figure-ready
 results/fig_E21_delay_coverage.csv and results/fig_E21_operator_demand.csv.
@@ -195,6 +202,23 @@ def effects(df: pd.DataFrame, metrics: Sequence[str] = METRICS) -> pd.DataFrame:
             for mast in sorted(x for x in b["mast"].unique() if x != "none"):
                 cell = select(b, p=float(p), policy=pol, extra_rovers=0, mast=mast)
                 rows += _rows("mast_vs_none", "no mast", mast, {**ctx, "mast": mast}, base, cell, metrics)
+            for pol2 in sorted(x for x in b["policy"].unique() if x != "strict"):      # round 2: the policies in B
+                if pol != "strict":
+                    continue
+                for n in sorted(b["extra_rovers"].unique()):
+                    for mast in sorted(b["mast"].unique()):
+                        ref = select(b, p=float(p), policy="strict", extra_rovers=int(n), mast=mast)
+                        cell = select(b, p=float(p), policy=pol2, extra_rovers=int(n), mast=mast)
+                        rows += _rows("b_policy_vs_strict", "strict", pol2,
+                                      {"stage": "B", "mix": "supervised", "policy": pol2, "p": p, "extra_rovers": int(n),
+                                       "mast": mast}, ref, cell, metrics)
+    e = df[df["stage"] == "E"] if "sensitivity" in df else None             # round 2: sensitivity vs the Stage A twin
+    for (sens, mix, p), g in (e.groupby(["sensitivity", "mix", e["p"].fillna(-1.0)]) if e is not None and len(e) else ()):
+        p = np.nan if p < 0 else p
+        comms = g["comms"].iloc[0]
+        ref = select(a, comms=comms, mix=mix) if comms == "always" else select(a, p=float(p), mix=mix)
+        rows += _rows("sensitivity_vs_stage_a", "Stage A twin", sens, {"stage": "E", "mix": mix, "p": p,
+                      "sensitivity": sens}, ref, g, metrics)
     a2 = df[df["stage"] == "A2"]                 # B-45: strict operators vs the Stage A twin (same seeds and years)
     for (mix, p), g in a2.groupby(["mix", a2["p"].fillna(-1.0)]):
         p = np.nan if p < 0 else p
@@ -224,7 +248,9 @@ def effects(df: pd.DataFrame, metrics: Sequence[str] = METRICS) -> pd.DataFrame:
                 rows += _rows("defer_vs_24h", "defer after 24 h", "never defer" if np.isinf(dw) else f"defer after {dw:g} h",
                               {**ctx0, "defer_wait_h": dw}, ref, cell, metrics)
     cols = ["family", "stage", "mix", "policy", "p", "extra_rovers", "mast", "pad_standoff_km", "criterion", "defer_wait_h",
-            "reference", "cell", "metric", "n", "ref_mean", "cell_mean", "diff", "ci_lo", "ci_hi", "rel_pct", "ci_excludes_0"]
+            "sensitivity", "reference", "cell", "metric", "n", "ref_mean", "cell_mean", "diff", "ci_lo", "ci_hi", "rel_pct",
+            "ci_excludes_0", "ref_median", "cell_median", "median_diff", "n_increase", "gm_ratio", "gm_ratio_lo",
+            "gm_ratio_hi", "wilcoxon_p"]
     return pd.DataFrame(rows).reindex(columns=cols)
 
 
@@ -646,6 +672,301 @@ def cmd_fit(a) -> None:
     print(f"E21_fit.json written ({time.time() - t0:.0f} s)")
 
 
+# ---------------------------------------------------------------------------------------------------------
+# round 2 (B-49, referee round 1): reads the *_r2 files, writes *_r2 outputs; the round-1 files stay as they are
+# ---------------------------------------------------------------------------------------------------------
+R2_FILES = STAGE_FILES + ("E21e_sensitivity.csv",)
+R2_METRICS = METRICS + ["delay_prio1_p90_censored_h", "delay_prio1_mean_censored_h", "prio1_completion_share",
+                        "delivered_bulk_t", "delivered_landed_t", "completion_share_landed", "completion_share_bulk"]
+N_BOOT_R2 = 2000
+PRICE_POORLY_DETERMINED_MUSD = 200.0
+CELL_KEYS = ["stage", "comms", "p", "mix", "policy", "extra_rovers", "mast", "pad_standoff_km", "criterion", "defer_wait_h",
+             "sensitivity"]
+YEAR_CELLS = [("always", np.nan), ("dte", 0.0), ("dte+relay", 0.1), ("dte+relay", 0.5), ("dte+relay", 1.0)]
+YEAR_MIXES = ("default", "supervised_strict", "supervised_strategic", "supervised_strategic+avoid", "teleop_4s")
+# the primary comparisons (referee S16): (family, mix, p, metric, cell label or None); intervals are per comparison
+PRIMARY = [("dte_vs_always", "supervised_strict", 0.0, "delivered_t_in_year", None),
+           ("dte_vs_always", "supervised_strict", 0.0, "delivered_landed_t", None),
+           ("dte_vs_always", "supervised_strict", 0.0, "delay_prio1_p90_censored_h", None),
+           ("relay_vs_always", "supervised_strict", 0.5, "delay_prio1_p90_h", None),
+           ("policy_vs_strict", "supervised_strategic", 0.1, "delay_prio1_p90_h", None),
+           ("rovers_vs_0", "supervised", 0.5, "delay_prio1_p90_h", "+1 rovers")]
+
+
+def load_round(results: str = RESULTS, rnd: str = "r1") -> pd.DataFrame:
+    x = "" if rnd == "r1" else f"_{rnd}"
+    files = [f.replace(".csv", f"{x}.csv") for f in (STAGE_FILES if rnd == "r1" else R2_FILES)]
+    parts = [pd.read_csv(os.path.join(results, f)) for f in files if os.path.exists(os.path.join(results, f))]
+    if not parts:
+        raise SystemExit(f"no E21 {rnd} replication files in {results}")
+    df = prepare(pd.concat(parts, ignore_index=True, sort=False))
+    if "sensitivity" not in df:
+        df["sensitivity"] = "none"
+    df["sensitivity"] = df["sensitivity"].fillna("none")
+    for k in ("bulk", "landed"):
+        if f"delivered_{k}_kg_in_horizon" in df:
+            df[f"delivered_{k}_t"] = df[f"delivered_{k}_kg_in_horizon"] / 1000.0
+    if "delivered_bulk_t" in df and "delivered_landed_t" in df:
+        df["delivered_return_t"] = df["delivered_t_in_year"] - df["delivered_bulk_t"] - df["delivered_landed_t"]
+    return df
+
+
+def _tci(v: np.ndarray) -> float:
+    v = v[np.isfinite(v)]
+    return float(stats.t.ppf(0.975, len(v) - 1) * v.std(ddof=1) / math.sqrt(len(v))) if len(v) > 1 else np.nan
+
+
+def cell_table(df: pd.DataFrame, metrics: Sequence[str]) -> pd.DataFrame:
+    """One row per cell: mean, Student-t 95 % half-width (n - 1 dof, referee E20), median and n per metric; the
+    share of seeds whose censored p90 is only a bound; the operator peak's maximum and the seeds over the staff."""
+    metrics = [m for m in metrics if m in df]
+    keys = [k for k in CELL_KEYS if k in df]
+    rows = []
+    for key, g in df.groupby(keys, dropna=False, sort=True):
+        r = dict(zip(keys, key))
+        r["n_seeds"] = int(g["seed"].nunique())
+        for m in metrics:
+            v = g[m].to_numpy(float)
+            fin = v[np.isfinite(v)]
+            r[m] = float(fin.mean()) if len(fin) else np.nan
+            r[m + "_ci95_t"] = _tci(v)
+            r[m + "_median"] = float(np.median(fin)) if len(fin) else np.nan
+            r[m + "_n"] = int(len(fin))
+        if "delay_prio1_p90_censored_is_bound" in g:
+            r["p90_censored_bound_share"] = float(g["delay_prio1_p90_censored_is_bound"].mean())
+        if "operator_peak_demand" in g:
+            r["operator_peak_max"] = float(g["operator_peak_demand"].max())
+            r["seeds_over_staff"] = int((g["operator_peak_demand"] > g["n_operators"] + 1e-9).sum())
+        rows.append(r)
+    return pd.DataFrame(rows)
+
+
+def split_summary(df: pd.DataFrame) -> Dict[str, Any]:
+    """Referee M2/O1: the throughput split. The demand model's bulk flows, landed cargo lost under DTE per mix, and
+    the landed cargo that moves at 3 km pads under DTE (Stage C)."""
+    from lunarsim.phases import PHASES
+    flows = [{"origin": b.origin, "dest": b.dest, "t_per_year": b.tonnes_per_year} for b in PHASES["P2"].bulk_flows]
+    out: Dict[str, Any] = {"bulk_flows_P2": flows,
+                           "note": "bulk = regolith flows (the demand model); landed = lander cargo (not bulk, not "
+                                   "return); return = items sent back to the pads"}
+    if "delivered_landed_t" not in df:
+        out["missing"] = "no delivered_landed_kg_in_horizon column (round-1 files)"
+        return out
+    a = df[df["stage"] == "A"]
+    per = {}
+    for mix in sorted(a["mix"].unique()):
+        ref, cell = select(a, comms="always", mix=mix), select(a, comms="dte", mix=mix)
+        per[mix] = {m: paired(ref, cell, m) for m in ("delivered_bulk_t", "delivered_landed_t", "delivered_return_t")
+                    if m in df}
+    out["dte_vs_always"] = per
+    c = df[(df["stage"] == "C") & np.isclose(df["pad_standoff_km"], 3.0) & (df["comms"] == "dte")]
+    out["pads_3km_dte"] = {f"{mix}/{crit}": {"landed_t_mean": float(g["delivered_landed_t"].mean()),
+                                             "seeds_with_landed_cargo": int((g["delivered_landed_t"] > 0).sum()),
+                                             "n_seeds": int(len(g))}
+                           for (mix, crit), g in c.groupby(["mix", "criterion"])}
+    return out
+
+
+def year_table(df: pd.DataFrame, metrics: Sequence[str]) -> pd.DataFrame:
+    """Referee M3/S3: key Stage A cells by start year (2028-2031, five seeds each), with a flag where one year's mean
+    is less than half or more than twice the other years' mean (e.g. the 2028 stranding)."""
+    a = df[df["stage"] == "A"]
+    metrics = [m for m in metrics if m in df]
+    rows = []
+    for comms, p in YEAR_CELLS:
+        for mix in YEAR_MIXES:
+            g = select(a, comms=comms, mix=mix) if comms == "always" else select(a, p=float(p), mix=mix)
+            if g.empty:
+                continue
+            for m in metrics:
+                by = g.groupby("start_year")[m]
+                means = by.mean()
+                for yr, v in by:
+                    others = means.drop(yr).mean()
+                    ratio = float(means[yr] / others) if others and np.isfinite(others) and others != 0 else np.nan
+                    rows.append({"comms": comms, "p": p, "mix": mix, "metric": m, "start_year": int(yr),
+                                 "n": int(v.notna().sum()), "mean": float(v.mean()), "median": float(v.median()),
+                                 "ratio_to_other_years": ratio,
+                                 "flag": bool(np.isfinite(ratio) and (ratio < 0.5 or ratio > 2.0))})
+    return pd.DataFrame(rows)
+
+
+def year_blocked(ref: pd.DataFrame, cell: pd.DataFrame, metric: str) -> Dict[str, float]:
+    """The paired effect with the calendar as the unit: per-year means of the per-seed differences (four years),
+    t interval on 3 dof."""
+    j = pd.concat([ref.drop_duplicates("seed").set_index("seed")[[metric, "start_year"]].rename(columns={metric: "r"}),
+                   cell.drop_duplicates("seed").set_index("seed")[[metric]].rename(columns={metric: "c"})],
+                  axis=1, join="inner").dropna()
+    ym = (j["c"] - j["r"]).groupby(j["start_year"]).mean()
+    n = len(ym)
+    if n < 2:
+        return {"years": n, "diff": np.nan, "ci_lo": np.nan, "ci_hi": np.nan}
+    h = stats.t.ppf(0.975, n - 1) * ym.std(ddof=1) / math.sqrt(n)
+    return {"years": n, "diff": float(ym.mean()), "ci_lo": float(ym.mean() - h), "ci_hi": float(ym.mean() + h),
+            "by_year": {int(k): float(v) for k, v in ym.items()}}
+
+
+def _q(x: np.ndarray, q: float) -> float:
+    """Order-statistic quantile that keeps +-inf draws (no interpolation across an infinite value)."""
+    x = np.sort(np.asarray(x, float))
+    x = x[~np.isnan(x)]
+    if not len(x):
+        return np.nan
+    return float(x[int(math.floor(q * (len(x) - 1)))] if q < 0.5 else x[int(math.ceil(q * (len(x) - 1)))])
+
+
+def breakeven_r2(df: pd.DataFrame, metric: str = "delay_prio1_p90_h", boot: int = N_BOOT_R2, seed: int = 1,
+                 p_b: float = B_P) -> Tuple[pd.DataFrame, Dict[str, Any]]:
+    """Referee M5/S4/E2/E15: the model-free break-even with every bootstrap draw kept. A draw where an option beats
+    the full-coverage cell has p_equiv = inf (delta_p = inf, price ~ 0); a draw where one rover buys nothing has
+    delta_p <= 0 (price unbounded). Intervals are order statistics over all draws. Also the paired difference
+    delta_p(strategic step) - delta_p(+1 rover) on the same draws. No law-based column (referee S5)."""
+    a = df[(df["stage"] == "A") & df["p"].notna() & (df["mix"] == "supervised_strict")]
+    b = df[df["stage"] == "B"]
+    Yc = _pivot(a, metric)
+    P = Yc.columns.to_numpy(float)
+    opts = {lab: select(b, p=p_b, policy=pol, extra_rovers=n, mast="none").drop_duplicates("seed").set_index("seed")[metric]
+            for lab, pol, n in BREAKEVEN_OPTIONS}
+    base = select(b, p=p_b, policy="strict", extra_rovers=0, mast="none").drop_duplicates("seed").set_index("seed")[metric]
+    seeds = sorted(set(Yc.index) & set(base.index).intersection(*[set(s.index) for s in opts.values()]))
+    Y = Yc.loc[seeds].to_numpy(float)
+    ltv = ltv_musd_per_year()
+
+    def one(rows):
+        m = _means(Y[rows])
+        sd = [seeds[i] for i in rows]
+        return {lab: mono_inverse(P, m, float(np.nanmean(opts[lab].loc[sd]))) for lab in opts}, \
+            float(np.nanmean(opts["+1 rover"].loc[sd]))
+
+    pt, _ = one(np.arange(len(seeds)))
+    rng = np.random.default_rng(seed)
+    draws = [one(rng.integers(0, len(seeds), len(seeds)))[0] for _ in range(boot)]
+    rows = []
+    for lab, pol, n in BREAKEVEN_OPTIONS:
+        pe = np.array([d[lab] for d in draws])
+        dp = pe - p_b
+        rows.append({"option": lab, "policy": pol, "extra_rovers": n, "metric": metric, "n_seeds": len(seeds), "boot": boot,
+                     "value": float(np.nanmean(opts[lab].loc[seeds])), "base_value": float(np.nanmean(base.loc[seeds])),
+                     "p_equiv": pt[lab], "p_equiv_ci95_lo": _q(pe, 0.025), "p_equiv_ci95_hi": _q(pe, 0.975),
+                     "delta_p": pt[lab] - p_b, "delta_p_ci95_lo": _q(dp, 0.025), "delta_p_ci95_hi": _q(dp, 0.975),
+                     "share_beyond_full_coverage": float(np.mean(np.isinf(pe))),
+                     "ci95_hi_beyond_full_coverage": bool(np.isinf(_q(pe, 0.975))),     # JSON writes inf as null
+                     "share_delta_p_not_positive": float(np.mean(dp <= 0))})
+    t = pd.DataFrame(rows)
+    dp1 = np.array([d["+1 rover"] for d in draws]) - p_b
+    price = np.where(dp1 <= 0, np.inf, np.where(np.isinf(dp1), 0.0, 0.1 * ltv / np.where(dp1 > 0, dp1, 1.0)))
+    hi = _q(price, 0.975)
+    dps = np.array([d["strategic step"] for d in draws]) - p_b
+    with np.errstate(invalid="ignore"):
+        diff = dps - dp1                                   # inf - inf = nan: both beyond full coverage
+    worth = {"ltv_musd_per_year": ltv, "p_b": p_b, "boot": boot,
+             "price_musd_per_0.1_coverage": (0.1 * ltv / (pt["+1 rover"] - p_b)
+                                             if np.isfinite(pt["+1 rover"]) and pt["+1 rover"] > p_b else None),
+             "price_ci95": [_q(price, 0.025), hi],
+             "price_upper_poorly_determined": bool(not np.isfinite(hi) or hi > PRICE_POORLY_DETERMINED_MUSD),
+             "share_draws_rover_buys_nothing": float(np.mean(dp1 <= 0)),
+             "share_draws_rover_beyond_full_coverage": float(np.mean(np.isinf(dp1))),
+             "strategic_minus_rover": {"point": pt["strategic step"] - pt["+1 rover"],
+                                       "ci95": [_q(diff, 0.025), _q(diff, 0.975)],
+                                       "share_positive": float(np.mean(diff > 0)),
+                                       "share_undetermined": float(np.mean(np.isnan(diff)))},
+             "curve": "model-free: the measured supervised-strict Stage A cells (non-increasing envelope, log-linear "
+                      "between grid points; round 2 has levels 0.05, 0.6 and 0.7)",
+             "at": "p = 0.5, supervised-strict fleet, this demand (referee O5)"}
+    return t, worth
+
+
+def full_relay_vs_always(df: pd.DataFrame, metrics: Sequence[str]) -> Dict[str, Dict[str, Any]]:
+    """Referee E5: per mix, does relay coverage 1.0 reproduce 'always' seed by seed?"""
+    a = df[df["stage"] == "A"]
+    out = {}
+    for mix in sorted(a["mix"].unique()):
+        r = select(a, comms="always", mix=mix).drop_duplicates("seed").set_index("seed")
+        c = select(a, p=1.0, mix=mix).drop_duplicates("seed").set_index("seed")
+        common = r.index.intersection(c.index)
+        res = {}
+        for m in [m for m in metrics if m in a] + [m for m in ("unmet_operator_waits",) if m in a]:
+            x, y = r.loc[common, m].astype(float), c.loc[common, m].astype(float)
+            same = (x == y) | (x.isna() & y.isna())
+            res[m] = {"seeds_differing": int((~same).sum()),
+                      "max_abs_diff": float(np.nanmax(np.abs(x - y))) if (~same).any() else 0.0}
+        out[mix] = {"seeds": int(len(common)), "identical": all(v["seeds_differing"] == 0 for v in res.values()),
+                    "metrics": res}
+    return out
+
+
+def mark_primary(eff: pd.DataFrame) -> pd.DataFrame:
+    eff = eff.copy()
+    eff["primary"] = False
+    for fam, mix, p, metric, cell in PRIMARY:
+        m = ((eff["family"] == fam) & (eff["mix"] == mix) & np.isclose(eff["p"].astype(float), p, equal_nan=False)
+             & (eff["metric"] == metric))
+        if fam == "rovers_vs_0":
+            m &= (eff["policy"] == "strict") & (eff["cell"] == cell)
+        if fam == "policy_vs_strict":
+            m &= eff["stage"] == "A"
+        eff.loc[m, "primary"] = True
+    return eff
+
+
+def cmd_fit_r2(a) -> None:
+    rnd, x = a.round, f"_{a.round}"
+    df = load_round(a.results, rnd)
+    w = lambda name: os.path.join(a.results, name.replace(".csv", f"{x}.csv").replace(".json", f"{x}.json"))
+    t0 = time.time()
+    eff = mark_primary(effects(df, R2_METRICS))
+    eff.to_csv(w("table_E21_effects.csv"), index=False, lineterminator="\n")
+    cells = cell_table(df, R2_METRICS + ["delivered_return_t", "operator_peak_demand", "operator_wait_vehicle_h"])
+    cells.to_csv(w("table_E21_cells.csv"), index=False, lineterminator="\n")
+    years = year_table(df, ["delivered_t_in_year", "delivered_landed_t", "delay_prio1_p90_h",
+                            "delay_prio1_p90_censored_h", "prio1_completion_share"])
+    years.to_csv(w("table_E21_years.csv"), index=False, lineterminator="\n")
+    print(f"effects {len(eff)}, cells {len(cells)}, year rows {len(years)} ({time.time() - t0:.0f} s)")
+    blocked = {}
+    a_ = df[df["stage"] == "A"]
+    b_ = df[df["stage"] == "B"]
+    for fam, mix, p, metric, cell in PRIMARY:
+        if metric not in df:
+            continue
+        if fam == "rovers_vs_0":
+            ref, cel = (select(b_, p=p, policy="strict", extra_rovers=0, mast="none"),
+                        select(b_, p=p, policy="strict", extra_rovers=1, mast="none"))
+        elif fam == "policy_vs_strict":
+            ref, cel = select(a_, p=p, mix="supervised_strict"), select(a_, p=p, mix=mix)
+        else:
+            ref, cel = select(a_, comms="always", mix=mix), select(a_, p=p, mix=mix)
+        blocked[f"{fam}|{mix}|{p}|{metric}"] = year_blocked(ref, cel, metric)
+    L = laws(df, a.boot_law)
+    be, worth = breakeven_r2(df, boot=a.boot)
+    be.to_csv(w("table_E21_breakeven_delay.csv"), index=False, lineterminator="\n")
+    ops = operator_demand(df)
+    ops.to_csv(w("fig_E21_operator_demand.csv"), index=False, lineterminator="\n")
+    fr = site_link_fractions()
+    never = [k for k, v in fr.items() if v == 0.0 and "@" not in k]
+    dp = os.path.join(a.results, DEMAND_FILE)
+    doc = {"experiment": "E21", "round": rnd, "stages": sorted(df["stage"].unique().tolist()), "n_rows": int(len(df)),
+           "method": __doc__.split("Method:", 1)[1].strip()
+           + "\n  round 2: medians, paired log-ratios (geometric-mean ratio, t interval on the log scale) and Wilcoxon"
+             " signed-rank p beside every paired effect; cell intervals Student-t; the break-even keeps every bootstrap"
+             " draw (2,000); year-blocked intervals for the primary comparisons; intervals are per comparison, not"
+             " adjusted for multiplicity.",
+           "primary_comparisons": [dict(zip(("family", "mix", "p", "metric", "cell"), p)) for p in PRIMARY],
+           "year_blocked": blocked,
+           "throughput_split": split_summary(df),
+           "full_relay_vs_always": full_relay_vs_always(df, R2_METRICS),
+           "laws": {"note": "descriptive only: the three families cannot represent the slow decline between p = 0.2 and 1 "
+                            "(referee S5); use the model-free coverages (p_2x_cells, p_1.5x_cells)", **L},
+           "breakeven_delay": {"options": be.to_dict(orient="records"), **worth},
+           "operators": ops.to_dict(orient="records"),
+           "throughput_bound": ({"site_link_fraction_dte_any_part": fr,
+                                 **throughput_bound(pd.read_csv(dp), never)} if os.path.exists(dp) else None),
+           "rounds_check": check_rounds(a.results)}
+    with open(w("E21_fit.json"), "w", encoding="utf-8", newline="\n") as f:
+        json.dump(_json(doc), f, indent=1)
+        f.write("\n")
+    print(f"E21_fit{x}.json and the {x} tables written ({time.time() - t0:.0f} s)")
+
+
 ROUND_FILES = STAGE_FILES + ("E21d_sun.csv",)
 
 
@@ -697,9 +1018,16 @@ def main(argv=None) -> None:
     p.add_argument("--results", default=RESULTS)
     p.add_argument("--max-seconds", type=float, default=540.0)
     p = sub.add_parser("fit")
-    p.add_argument("--boot", type=int, default=N_BOOT)
+    p.add_argument("--round", default="r1", choices=("r1", "r2"),
+                   help="r2 reads the *_r2 files and writes *_r2 outputs (round-1 outputs are left as they are)")
+    p.add_argument("--boot", type=int, default=None, help=f"break-even draws (default {N_BOOT}; round 2 {N_BOOT_R2})")
+    p.add_argument("--boot-law", type=int, default=N_BOOT, help="law bootstrap draws (round 2)")
     p.add_argument("--results", default=RESULTS)
     a = ap.parse_args(argv)
+    if a.cmd == "fit":
+        a.boot = a.boot or (N_BOOT if a.round == "r1" else N_BOOT_R2)
+        if a.round != "r1":
+            return cmd_fit_r2(a)
     {"demand": cmd_demand, "fit": cmd_fit, "rounds": cmd_rounds}[a.cmd](a)
 
 

@@ -3447,3 +3447,63 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
   - **Full suite:** 444 passed; `lunarsim verify` 21/21; schemas 35/35.
 - **Cross-platform:** your lander-parity fix is noted. The new tests compare floats with tolerances, except where the arithmetic is platform-independent (sums of the same doubles in the same order, CSV round trips).
 - **Questions for LEAD:** none. Note: a `table` rebuild of round 1 now adds a `sensitivity` column ("none"), so rebuild the stories after it, as with stage D.
+
+## B-49 DONE 15:00 | Round-2 analysis (`analyse_e21.py fit --round r2`): ready for the r2 files
+- **Files:** `experiments/phase4/analyse_e21.py` (round-2 path; the round-1 path is unchanged apart from the extra effect columns) and `tests/test_analyse_e21.py` (+7 tests, 19 in all).
+- **Run, after the r2 suites:**
+  - `python experiments/phase4/analyse_e21.py rounds`: r2 = r1 per seed, exit 1 on any difference.
+  - `python experiments/phase4/analyse_e21.py fit --round r2`: 2,000 break-even draws, law bootstrap 400, about 3 min.
+  - It reads `results/E21{a,b,c,a2,e}_*_r2.csv`.
+  - It writes `table_E21_effects_r2.csv`, `table_E21_cells_r2.csv`, `table_E21_years_r2.csv`, `table_E21_breakeven_delay_r2.csv`, `fig_E21_operator_demand_r2.csv` and `E21_fit_r2.json`.
+  - **Round-1 outputs are never written** by `--round r2`.
+- **What each referee point gets:**
+  - **M2 throughput split:**
+    - `delivered_bulk_t`, `delivered_landed_t`, `delivered_return_t` (derived from the B-48 columns) are in every cell row and paired effect;
+    - `E21_fit_r2.json` → `throughput_split`: the P2 bulk flows (CONSTR→BASE 300, **CONSTR→ISRU 200 t/yr**, read from the demand model), DTE vs always per mix for bulk / landed / return, and the **3 km pads under DTE** (landed t per mix and criterion, and the seeds with any landed cargo).
+  - **M4 censoring:**
+    - `table_E21_cells_r2.csv` puts, next to every p90: mean, median, t interval, n, `prio1_completion_share`, `delay_prio1_p90_censored_h` and the share of seeds whose censored p90 is only a bound;
+    - the censored metrics and the completion shares are also paired effects.
+  - **M5/S2 robust effects:** every paired effect now also has:
+    - the medians and the median difference;
+    - the count of seeds that increase;
+    - the paired **log-ratio** (geometric-mean ratio, t interval on the log scale; when every pair is positive);
+    - the **Wilcoxon signed-rank p**.
+  - **M3/S3 calendar:**
+    - `table_E21_years_r2.csv`: key Stage A cells ({always, DTE, relay 0.1, 0.5, 1.0} × 5 mixes) by start year (mean, median, n), flagged where a year's mean is < ½ or > 2× the other years';
+    - **year-blocked intervals** (four year means, t on 3 dof) for the primary comparisons in the JSON.
+  - **M5/S4/E2/E15 break-even:**
+    - 2,000 draws; **every draw kept** (beyond full coverage = ∞, rover buys nothing = Δp ≤ 0); order-statistic intervals;
+    - `share_beyond_full_coverage`, `share_delta_p_not_positive`, `ci95_hi_beyond_full_coverage`;
+    - price interval over all draws, with `price_upper_poorly_determined` when the upper end is ∞ or > 200 M$;
+    - **paired Δp(strategic) − Δp(+1 rover)** on the same draws (point, interval, share positive, share undetermined);
+    - **no law-based column (S5)**; the laws stay in the JSON marked "descriptive only".
+  - **S11/E12 operators:**
+    - absolute peaks (mean, max), seeds over staff, for lenient (A) and strict (A2) cells;
+    - the A2 effects (operator waits, urgent p90, completion, censored p90) paired with Stage A;
+    - **`full_relay_vs_always` per mix**, seeds differing per metric including unmet operator waits.
+  - **E20:** Student-t cell intervals in the new cell table.
+  - **S16:** six **primary comparisons** named in the JSON and flagged (`primary`) in the effects table:
+    - DTE vs always: delivered, landed, censored p90 (strict);
+    - relay 0.5 vs always: p90 (strict);
+    - strategic vs strict at p = 0.1: p90;
+    - +1 rover at p = 0.5: p90.
+
+    The JSON says the intervals are per comparison, not adjusted.
+  - **New families:** `sensitivity_vs_stage_a` (each Stage E cell vs its Stage A twin) and `b_policy_vs_strict` (strategic / strategic+avoid vs strict inside Stage B at every coverage, rover count and mast).
+- **Smoke test on round-1 data copied as `_r2`** (the new columns are absent, and the code skips what needs them). It reproduces the referee's recomputations:
+  - price per 0.1 coverage **[10, 225] M$, flagged poorly determined** (300 smoke draws; the referee got [11, 355] with 2,000 draws kept);
+  - Δp(strategic) − Δp(+1 rover) **+0.11 [−0.19, +0.29], positive in 78 %** of draws (referee: 79 %, [−0.15, +0.32]);
+  - full relay = always fails for **teleop only** (p90 differs in 8 of 20 seeds, delivered in 3, unmet operator waits in 18); the other mixes differ only in the operator-peak bookkeeping;
+  - the year table flags strategic DTE 2028 (113 t, 0.21 × the other years) and strict DTE 2031 p90 (989 h, 3.7×).
+  - Primary effects:
+    - +1 rover p90 −9.1 h [−19.6, +1.4], median −1.1 h, gm ratio 0.84 [0.69, 1.03], Wilcoxon p 0.23, 7 of 20 seeds increase: **not significant on any of the three tests**;
+    - strategic vs strict at p = 0.1: gm ratio 0.18 [0.13, 0.25], p < 0.001.
+- **Tests:** `test_analyse_e21.py` 19 passed (+ `test_comms_round2.py` 7). They cover:
+  - robust stats (gm ratio, Wilcoxon, zeros);
+  - quantiles that keep ∞;
+  - break-even with all draws (exact p 0.7, ∞ option, price, strategic − rover = 0.2, no law column);
+  - year table flags and the year-blocked interval;
+  - full-relay check and t cell intervals;
+  - throughput split incl. 3 km pads;
+  - the rounds check.
+- **Questions for LEAD:** none. If you rerun `fit` for round 1, the effects table gains the robust columns; the numbers already there do not change.
