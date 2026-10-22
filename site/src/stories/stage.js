@@ -6,6 +6,7 @@
 // descent and touchdown (lander). Modes shown: play, keepout (a keep-out window), touchdowns and ejecta (a landing at
 // the pad), queues (the busiest hour at the target), earth / earth_link (Earth low over the horizon). Modes the stage
 // does not draw (routes are always drawn; job_rule follows the scene; colour_by, bids, relay) leave the view as is.
+// Every step: rings round its highlight sites, legs without an Earth link in red (earth_link steps), no vehicle labels.
 import { reducedMotion } from '../ui/dom.js';
 import { loadTrajectories, episodeView } from '../lander/trajectories.js';
 import { loadScene } from '../world/scene-data.js';
@@ -92,7 +93,9 @@ async function worldStage({ canvas, labelsHost, tier, fetchFn, onStatus }) {
     async apply(step, story, { instant: cut = false } = {}) {
       stop();
       await open((step.scene || story.scene).split(':')[1]);
-      const instant = cut || reducedMotion();
+      const instant = cut || reducedMotion(), m = step.modes || {};
+      sc.setVehicleLabels(false);   // story views: the steps name sites, not vehicles
+      sc.setHighlight(step.highlight || []); sc.setNoLink(!!(m.earth_link || m.earth), Array.isArray(m.no_link) ? m.no_link : []);   // modes.no_link: [sites]: their legs held red
       setTime(moment(step)); shot(step.camera, instant); setTime(time.t);   // the camera glides on its own; the first step cuts (the door is still shut)
       if ((step.modes || {}).play && !instant) play();
       return { t: time.t, night: nightAt(time.t) };

@@ -124,7 +124,8 @@ export async function createLanderScene({ canvas, labelsHost, tier, fetchFn = fe
 
   // ---------- cameras ----------
   const tmpP = new THREE.Vector3(), tmpT = new THREE.Vector3(), last = new THREE.Vector3(), box = new THREE.Box3();
-  let viewMode = 'side', following = true;
+  let viewMode = 'side', following = true, approachLock = false, userMoved = false;
+  stage.director.controls.addEventListener('controlstart', () => { userMoved = true; });   // the visitor's orbit wins over the approach framing
   const landerPos = () => cur.holder.position;
   function shot(mode, instant = false) {
     viewMode = mode;
@@ -133,7 +134,15 @@ export async function createLanderScene({ canvas, labelsHost, tier, fetchFn = fe
     const d = 10 * h + 25;
     let pos, tgt = p.clone().add(new THREE.Vector3(0, h * 0.5, 0));
     // a little above the lander, looking down ~25°, so the ground is in the frame even 400 m up
-    if (mode === 'chase') pos = p.clone().addScaledVector(a, -d).add(new THREE.Vector3(0, 0.5 * d, 0));
+    // approach (F-40): high above the pad the frame holds the lander and the pad together, so the lit pad area, its ring
+    // and the touchdown scatter fill the lower half (seen from up there alone, level regolith under a 1.5° sun is near black)
+    const padP = new THREE.Vector3(0, terrain.heightAt(0, 0), 0), alt = p.y - padP.y;
+    approachLock = (mode === 'chase' || mode === 'side') && alt > 60;
+    if (approachLock) {
+      // from the sun's side of the approach, as high as the lander (above any hill), far enough to hold lander and pad
+      const sideSun = side.dot(sun) >= 0 ? side.clone() : side.clone().negate(), tg = p.clone().lerp(padP, 0.5), d2 = Math.max(d, 0.5 * p.distanceTo(padP) / Math.tan(0.7 * stage.camera.fov / 2 * DEG));   // lander and pad span ~70 % of the frame height
+      pos = tg.clone().addScaledVector(sideSun.addScaledVector(a, -0.35).normalize(), d2); pos.y = Math.max(p.y, tg.y + 0.3 * d2); tgt = tg;
+    } else if (mode === 'chase') pos = p.clone().addScaledVector(a, -d).add(new THREE.Vector3(0, 0.5 * d, 0));
     else if (mode === 'side') pos = p.clone().addScaledVector(side.dot(sun) >= 0 ? side : side.negate(), d).add(new THREE.Vector3(0, 0.45 * d, 0));
     else if (mode === 'sun') pos = p.clone().addScaledVector(sun, -d).add(new THREE.Vector3(0, 0.3 * d, 0));   // high enough to see over the pad's berm
     else {   // pad camera: on the ground at the pad's edge, sun at its back, looking up at the lander
@@ -147,6 +156,11 @@ export async function createLanderScene({ canvas, labelsHost, tier, fetchFn = fe
   function follow() {
     if (!following || !cur) return;
     const p = landerPos(), c = stage.director.controls;
+    if (!approachLock && !userMoved && (viewMode === 'side' || viewMode === 'chase') && p.y - terrain.heightAt(0, 0) > 60) approachLock = true;   // back up high (a replay, a seek)
+    if (approachLock && !userMoved) {   // re-framed each frame until 60 m, then the normal framing glides in
+      if (p.y - terrain.heightAt(0, 0) > 60) { shot(viewMode, true); return; }
+      approachLock = false; shot(viewMode); return;
+    }
     if (viewMode === 'pad') { c.getPosition(tmpP); c.setLookAt(tmpP.x, tmpP.y, tmpP.z, p.x, p.y + cur.vehicle.size.y * 0.5, p.z, false); return; }
     const dx = p.x - last.x, dy = p.y - last.y, dz = p.z - last.z;
     if (dx || dy || dz) { c.getPosition(tmpP); c.getTarget(tmpT); c.setLookAt(tmpP.x + dx, tmpP.y + dy, tmpP.z + dz, tmpT.x + dx, tmpT.y + dy, tmpT.z + dz, false); }
@@ -202,7 +216,7 @@ export async function createLanderScene({ canvas, labelsHost, tier, fetchFn = fe
     stage, terrain, catalog,
     setEpisode, setTime, setScatter,
     setShow(s) { Object.assign(show, s); },
-    setView: (m, instant) => shot(m, instant), get view() { return viewMode; },
+    setView: (m, instant) => { userMoved = false; shot(m, instant); }, get view() { return viewMode; },
     setFollow(v) { following = v; },
     // put the sun where the side camera sees the lander lit (the pad stays in sun); returns the azimuth used
     lightForSide() {

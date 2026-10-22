@@ -52,6 +52,9 @@ const index = { policies: polFiles.filter(f => /^lander_.*\.json$/.test(f) && !f
 writeFileSync(join(labOut, 'index.json'), JSON.stringify(index, null, 1));
 console.log(`prepare-data: lab policies ${index.policies.join(', ') || 'none'}; outcome tables ${index.outcomes.join(', ') || 'none'}`);
 
+// verification page: the recorded Phase 4 checks (data/verification/verification-v1.json, phase4[])
+const verRec = join(ROOT, 'data', 'verification', 'verification-v1.json');
+if (existsSync(verRec)) { mkdirSync(join(PUB, 'verify'), { recursive: true }); copyFileSync(verRec, join(PUB, 'verify', 'verification-v1.json')); }
 // verification page: BACKEND's lander parity fixture (tests/fixtures/lander_parity.json)
 const fixture = join(ROOT, 'tests', 'fixtures', 'lander_parity.json');
 if (existsSync(fixture)) { mkdirSync(join(PUB, 'verify'), { recursive: true }); copyFileSync(fixture, join(PUB, 'verify', 'lander_parity.json')); }

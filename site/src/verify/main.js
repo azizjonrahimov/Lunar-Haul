@@ -1,14 +1,14 @@
 // /verification: every check that ties the browser code to the Python reference or to independent data, with a
 // "N of M checks pass" badge. Engine checks and the cross-implementation check reuse the simulator's worker
-// (simulator/worker.js + sim.js); Phase-3 checks run in checks.worker.js.
+// (simulator/engine/worker.js + sim.js); Phase-3 checks run in checks.worker.js.
 import './verify.css';
 import refs from '../../verify/refs.json';
 import { esc } from '../components/num.js';
 
 const $ = id => document.getElementById(id);
-const BASE = import.meta.env.BASE_URL, SIM = BASE + 'simulator/';
+const BASE = import.meta.env.BASE_URL, SIM = BASE + 'simulator/engine/';   // the engine files (F-37: v3 page at /simulator/, v2 at /simulator/v2/)
 const checks = [];   // {group, name, reference, computed, tolerance, pass (true|false|null), basis}
-const GROUP_ORDER = ['Simulation engine (13 checks, as in the paper)', 'Python vs browser engine', 'Trained policies', 'Lander environment (JS port vs Python)', 'Rover model (JS port vs Python and data)', 'Terrain pack'];
+const GROUP_ORDER = ['Simulation engine (13 checks, as in the paper)', 'Python vs browser engine', 'Trained policies', 'Lander environment (JS port vs Python)', 'Rover model (JS port vs Python and data)', 'Terrain pack', 'Phase 4 data (recorded by the Python checks)'];
 
 function add(c) { checks.push(c); render(); }
 function render() {
@@ -71,10 +71,26 @@ function phase3() {
   });
 }
 
+// ---------- Phase 4 checks: run by the Python tools and recorded in data/verification/verification-v1.json (phase4[]) ----------
+// The page shows the recorded result of each (the catalogue, the scene packages, the stories ...); it does not rerun them.
+const P4 = 'Phase 4 data (recorded by the Python checks)';
+async function phase4() {
+  try {
+    const r = await fetch(BASE + 'verify/verification-v1.json'); if (!r.ok) throw new Error(`verification-v1.json: HTTP ${r.status}`);
+    const j = await r.json();
+    for (const c of j.phase4 || []) {
+      const d = Number.isInteger(c.reference) && Number.isInteger(c.simulated) ? 0 : 4;
+      add({ group: P4, name: c.name, reference: `${fmt(c.reference, d)} ${c.unit}`, computed: `${fmt(c.simulated, d)} ${c.unit}`,
+        tolerance: c.mode === 'abs' ? `± ${fmt(c.tolerance, d)} ${c.unit}` : `${(100 * c.tolerance).toFixed(1)} %`, pass: c.skipped ? null : !!c.passed,
+        basis: `${c.basis}. Source: ${c.source}${c.skipped ? `. Skipped: ${c.skipped}` : ''}. Recorded at commit ${String(j.commit || '').slice(0, 7)} (${j.time || '?'}).` });
+    }
+  } catch (e) { add({ group: P4, name: 'Phase 4 records', reference: '–', computed: e.message, tolerance: '–', pass: false, basis: 'data/verification/verification-v1.json, staged by site/scripts/prepare-data.mjs' }); }
+}
 async function runAll() {
   $('v-run').disabled = true; checks.length = 0; render(); $('v-status').textContent = 'Running the engine checks and the Phase-3 checks…';
-  const t0 = performance.now(); await Promise.all([engineChecks(), phase3()]);
+  const t0 = performance.now(); await Promise.all([engineChecks(), phase3(), phase4()]);
   $('v-status').textContent = `Done in ${((performance.now() - t0) / 1000).toFixed(1)} s. The cross-implementation check (about 15 s) runs separately.`; $('v-run').disabled = false;
+  $('v-results').classList.add('done');
 }
 $('v-run').addEventListener('click', runAll);
 $('v-cross').addEventListener('click', crossCheck);

@@ -98,7 +98,7 @@ export async function createRoverScene({ canvas, labelsHost, tier, fetchFn = fet
   { const c = new Float32Array((1 + RINGS * (SEGS + 1)) * 3), g = new THREE.Color(COLOURS.glare); for (let i = 0; i < c.length / 3; i++) { const r = i === 0 ? 0 : Math.floor((i - 1) / (SEGS + 1)) + 1, k = (1 - r / RINGS) ** 1.5; c[3 * i] = g.r * k; c[3 * i + 1] = g.g * k; c[3 * i + 2] = g.b * k; } glareGeo.setAttribute('color', new THREE.Float32BufferAttribute(c, 3)); }
   { const idx = []; for (let r = 0; r < RINGS; r++) for (let k = 0; k < SEGS; k++) { const a = r === 0 ? 0 : 1 + (r - 1) * (SEGS + 1) + k, b = r === 0 ? 0 : a + 1, c = 1 + r * (SEGS + 1) + k, d = c + 1; if (r === 0) idx.push(0, c, d); else idx.push(a, c, b, b, c, d); } glareGeo.setIndex(idx); }
   const glareMat = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.1, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
-  const glare = new THREE.Mesh(glareGeo, glareMat); glare.frustumCulled = false; glare.renderOrder = 4; scene.add(flat(glare));
+  const glare = new THREE.Mesh(glareGeo, glareMat); glare.frustumCulled = false; glare.renderOrder = 4; scene.add(flat(glare)); glareMat.visible = false;   // F-40: the fill is off; its outline (a child) marks the cone
   const edgeGeo = new THREE.BufferGeometry(); edgeGeo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array((SEGS + 3) * 3), 3));
   const edgeMat = new THREE.LineBasicMaterial({ color: COLOURS.glare, transparent: true, opacity: 0.35, depthWrite: false, toneMapped: false });
   const glareEdge = new THREE.Line(edgeGeo, edgeMat); glareEdge.frustumCulled = false; glare.add(flat(glareEdge));
@@ -309,7 +309,7 @@ export async function createRoverScene({ canvas, labelsHost, tier, fetchFn = fet
       drapeGlare(p0, sunAz);
       const hd = Math.abs((((states[0].psi / DEG - sunAz) % 360) + 540) % 360 - 180);
       const inCone = hd <= UP_SUN_HALF_ANGLE_DEG;
-      glareMat.opacity = inCone ? 0.014 : 0.004; edgeMat.opacity = inCone ? 0.6 : 0.22;   // HDR: the regolith is dim next to an additive 1.0
+      glareMat.opacity = 0; edgeMat.opacity = inCone ? 0.6 : 0.22;   // F-40: outline only (the faint fill read as a brown streak near the camera)
     }
     // shadow camera on the driver's rover: the long shadow of a 2.6 m rover in a 1.5° sun is about 100 m
     box.copy(r0.model.box).applyMatrix4(r0.model.root.matrixWorld); lighting.fit(box, { groundY: null });

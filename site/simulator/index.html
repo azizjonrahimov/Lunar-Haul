@@ -132,7 +132,8 @@
           <h3 class="sim-h3">Watch one simulated year on the base map</h3>
           <p class="sim-sub">Plays the first simulated year of your last run, or a saved trace file (<code>lunarsim-trace</code> v1: from the Python command <code>lunarsim trace</code> or the Export button here). Rovers move between sites; a ring shows cargo waiting at a site; the dark overlay is night. A filled rover is carrying cargo, and its label gives the load.</p>
           <div class="sim-row">
-            <button class="ui-btn primary" id="openWorld" type="button" disabled title="Replay this year on the real LOLA terrain in 3D">Watch this year in 3D</button>
+            <button class="ui-btn primary" id="openWorld" type="button" disabled title="Replay this trace on the real LOLA terrain in the 3D trace viewer">Trace replay of this run</button>
+            <a class="ui-btn" id="ghRun" href="https://github.com/azizjonrahimov/Lunar-Haul/issues/new?template=run-scenario.yml" target="_blank" rel="noopener">Full 3D replay on GitHub</a>
             <select id="sampleTrace" aria-label="Load a sample year">
               <option value="" selected>Sample years…</option>
               <option value="P1_marketplace_seed3.json">Phase 1 · marketplace · year 3</option>
@@ -143,6 +144,7 @@
             <input id="importTrace" type="file" accept="application/json,.json" class="visually-hidden">
             <button class="ui-btn" id="exportTrace" type="button" disabled>Export this trace</button>
           </div>
+          <p class="sim-note">"Full 3D replay on GitHub" opens a run request prefilled from your settings (a GitHub account is needed). The Python engine runs it on GitHub, and the result plays in the 3D world at <code>/world/?run=&lt;issue number&gt;</code>. Settings the form has no field for are written into its Purpose box.</p>
           <p class="sim-status" id="rstatus" role="status" aria-live="polite"></p>
           <div class="replayhead" id="replayhead"></div>
           <canvas id="map" width="1100" height="660" role="img" aria-label="Base map: sites, routes coloured by slope, rovers (filled when carrying cargo) and rings for waiting cargo. The line under the map gives the same counts as text."></canvas>

@@ -42,6 +42,10 @@ export async function createWorldScene({ canvas, labelsHost, tier, fetchFn = fet
 
   let pkg = null, sitesG = null, routesL = null, vehicles = [], pallets = new Map(), rings = [], landers = [], traj = null, iconMode = true, followId = null;
   let isNight = false, pkgB = null, ghosts = [], legs = new Map(), legOf = [], activeL = null, lastReal = 0;
+  // story views (F-40): legs without an Earth link drawn red, vehicle labels off, highlight rings round named sites
+  let noLink = false, vehLabels = true, hiRings = [], noLinkSites = [];
+  const legKey = leg => leg.split('->').sort().join('~');
+  const hiMat = new THREE.MeshBasicMaterial({ color: '#f0a54a', transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false, toneMapped: false });
   const pinGeo = new THREE.CylinderGeometry(0.06, 0.06, 1, 6).translate(0, 0.5, 0), headGeo = new THREE.SphereGeometry(0.42, 16, 10), TRAIL = 30;
   // headlight cone: apex at the rover's nose, 30 m forward, additive (no lighting cost)
   const coneGeo = new THREE.ConeGeometry(9, 30, 24, 1, true).rotateX(-Math.PI / 2);
@@ -185,8 +189,11 @@ export async function createWorldScene({ canvas, labelsHost, tier, fetchFn = fet
         pa.needsUpdate = ca.needsUpdate = true; v.trail.geometry.setDrawRange(0, n); v.trail.visible = n > 1; }
       if (p.driving && p.route >= 0) { const L2 = legs.get(legOf[p.route]); if (L2) { L2.b = 1; L2.col = col; } }
       v.cone.visible = night && v.night_ops && p.state !== 'parked_night';
-      stage.labels.setHidden('veh-' + v.id, v.id !== followId && camera.position.distanceTo(s) > 2500);
+      stage.labels.setHidden('veh-' + v.id, !vehLabels || (v.id !== followId && camera.position.distanceTo(s) > 2500));
     }
+    // legs a rover is waiting to start for want of an Earth link (the package's comms_waits), held red while it waits
+    if (noLink && pkg.index.comms_waits) for (const w of pkg.index.comms_waits) if (t >= w[1] && t < w[2]) { const L3 = legs.get(legKey(w[3])); if (L3) { L3.b = 1; L3.col = '#EE6677'; } }
+    if (noLinkSites.length) for (const [k, L4] of legs) if (k.split('~').some(n => noLinkSites.includes(n))) { L4.b = 1; L4.col = '#EE6677'; }   // sites a story says never see Earth
     // active legs: bright while a rover drives them, fading back over ~2 s of real time
     { const now = performance.now(), dt = lastReal ? Math.min(0.25, (now - lastReal) / 1000) : 0; lastReal = now;
       const ca = activeL?.geometry.attributes.color, c3 = new THREE.Color(); let any = false;
@@ -311,6 +318,20 @@ export async function createWorldScene({ canvas, labelsHost, tier, fetchFn = fet
   return {
     stage, terrain, catalog, STATE_STYLE,
     setPackage, setTime, shots, followTarget, setCompare, frameAt, activeLegs,
+    // story views: red legs while rovers wait for Earth; vehicle labels on or off; rings round the named sites
+    setNoLink(v, sites = []) { noLink = !!v; noLinkSites = sites; stage.invalidate(); },
+    setVehicleLabels(v) { vehLabels = !!v; stage.invalidate(); },
+    setHighlight(names = []) {
+      for (const r of hiRings) { dyn.remove(r); r.geometry.dispose(); }
+      hiRings = [];
+      for (const n of names) {
+        if (!pkg?.index.sites[n]) continue;
+        const r = new THREE.Mesh(new THREE.RingGeometry(80, 92, 72).rotateX(-Math.PI / 2), hiMat);
+        r.position.copy(at(pkg.index.sites[n][0], pkg.index.sites[n][1])).y += 3; r.userData.noAO = true; r.renderOrder = 6;
+        dyn.add(r); hiRings.push(r);
+      }
+      stage.invalidate();
+    },
     // the start of the next recorded descent after t (playback stops there so no landing is stepped over)
     nextLandingStart(t) { let m = Infinity; for (const L of landers) { const st = L.t_h - L.dur; if (L.view && st > t + 1e-6 && st < m) m = st; } return m; },
     sitePos: name => at(pkg.index.sites[name][0], pkg.index.sites[name][1]),

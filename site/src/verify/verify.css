@@ -16,3 +16,7 @@
 .pill.pass { color: var(--flag-measured); border: 1px solid currentColor; }
 .pill.fail { color: var(--tol-red); border: 1px solid currentColor; }
 .pill.note { color: var(--ink-2); border: 1px dashed currentColor; }
+
+/* F-40: the checks arrive one by one; the area is reserved so the text below does not jump (Lighthouse CLS 0.65) */
+#v-results { min-height: 140rem; }
+#v-results.done { min-height: 0; }

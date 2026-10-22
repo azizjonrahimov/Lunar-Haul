@@ -9,25 +9,6 @@ import { esc } from '../components/num.js';
 
 const $ = id => document.getElementById(id);
 const BASE = import.meta.env.BASE_URL, DATA = BASE + 'story-data/';
-// chip labels (the resolved numbers carry value, text, unit, flag and source; a data "label" wins when present)
-const LABELS = {
-  standoff_pct: 'Urgent wait per km of pad distance', standoff_lo: 'Lower end of its 95 % interval', standoff_hi: 'Upper end of its 95 % interval',
-  fit_years: 'Simulated years in the fit', fit_seeds: 'Seeds per setting', keepout_pct: 'Urgent wait per km of keep-out radius',
-  keepout_lo: 'Lower end of its 95 % interval', keepout_hi: 'Upper end of its 95 % interval', miss_pct: 'Urgent wait per e-fold of landing miss',
-  impacts_near: 'Ejecta impacts on the base per landing, pads 0.5 km away', impacts_far: 'The same with pads 5 km away', far_cheapest: 'Settings where 5 km is cheapest',
-  inhouse_mean: 'Own rovers: mean urgent wait', inhouse_sl24: 'Own rovers: urgent delivered within a day', inhouse_p90: 'Own rovers: 90 % of urgent delivered within',
-  market_mean: 'Shared rovers (marketplace): mean urgent wait', market_cut: 'Cut in the mean urgent wait', market_p90: 'Shared rovers: 90 % of urgent delivered within',
-  market_sl24: 'Shared rovers: urgent delivered within a day', vs_greedy: 'Marketplace against the nearest free rover', e19_inhouse: 'Supervised, own rovers: mean urgent wait',
-  e19_market: 'Supervised, marketplace: mean urgent wait', e19_rovers: 'Fleet in this case', e19_auto: 'Autonomous, marketplace: mean urgent wait',
-  classical_pass: 'Classical law: landings inside the limits', rl_pass: 'Trial and error (PPO): inside the limits', learned_pass: 'Imitation network: inside the limits',
-  gap: 'Classical minus imitation network', n_landings: 'Landings per pilot', classical_miss: 'Classical law: mean miss', rl_steps: 'PPO training length',
-  learned_miss: 'Imitation network: mean miss', gap_ci: 'Half-width of its 95 % interval', learned_stale: 'Network failures on a stale altimeter reading',
-  classical_stale: 'Classical failures on a stale altimeter reading',
-  base_link: 'Time Earth is in view at the base', dte_wait: 'Rover time spent waiting for Earth', dte_t: 'Delivered with direct links only', dte_loss: 'Lost against Earth always in view',
-  isru_lost: 'ISRU cargo never delivered', relay_t: 'Delivered with a relay a tenth of the time', auto_t: 'Delivered by autonomous rovers', rover_gain: 'Gain from one extra supervised rover',
-  half_strict: 'Urgent 90 % within: relay half the time', half_plus1: 'The same with one extra rover', half_strategic: 'The same with rovers driving between check-ins',
-  always_t: 'Delivered with Earth always in view', rover_dp: 'Relay coverage worth one extra rover', strategic_dp: 'Relay coverage worth the strategic policy',
-};
 const params = new URLSearchParams(location.search), sid = params.get('s');
 async function getJson(u) { const r = await fetch(u); if (!r.ok) throw new Error(`${u}: HTTP ${r.status}`); return r.json(); }
 const status = m => { $('st-status').textContent = m; };
@@ -89,7 +70,7 @@ async function play(entry) {
     $('st-visual').textContent = s.visual_plain || s.visual || '';
     // every number of the step as a stat chip: its chips first, then the others its text quotes
     const keys = [...new Set([...(s.chips || []), ...keysIn(s.text)])].filter(k => doc.numbers[k]);
-    $('st-chips').replaceChildren(...keys.map(k => { const n = doc.numbers[k]; return statChip({ label: n.label || LABELS[k] || k.replace(/_/g, ' '), text: n.text, flag: n.flag, source: n.source, tone: (s.chips || []).includes(k) ? 'cool' : undefined }).el; }));
+    $('st-chips').replaceChildren(...keys.map(k => { const n = doc.numbers[k]; return statChip({ label: n.label || k.replace(/_/g, ' '), text: n.text, flag: n.flag, source: n.source, tone: (s.chips || []).includes(k) ? 'cool' : undefined }).el; }));
     [...bar.children].forEach((b, k) => { if (k === i) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current'); });
     $('st-prev').disabled = i === 0; $('st-next').disabled = i === steps.length - 1;
     $('st-next').textContent = i === steps.length - 1 ? 'The end' : 'Next';

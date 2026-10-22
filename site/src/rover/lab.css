@@ -70,3 +70,11 @@
   .r3-left, .r3-right, .r3-views { position: static; width: auto; }
   .r3-right { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); }
 }
+
+/* F-40: fixed widths, so filling the options at boot does not re-wrap the toolbars (layout shift above the 3D view) */
+#r-from, #r-to { width: 9.5rem; }
+#r-standoff { width: 5.5rem; }
+#r-light { width: 13rem; }
+#r-soil { width: 17rem; }
+#r-level { width: 19rem; }
+#r-ctrl { width: 22rem; max-width: 100%; }

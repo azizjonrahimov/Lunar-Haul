@@ -8,22 +8,16 @@
 @import '@fontsource-variable/sora/wght.css';
 @import '@fontsource-variable/jetbrains-mono/wght.css';
 
-@font-face {
-  /* Adobe's own WOFF2 build of Source Sans 3 (OFL 1.1, unmodified, so the Reserved Font Name stays) */
-  font-family: 'Source Sans 3';
-  font-weight: 200 900; font-style: normal; font-display: swap;
-  src: url('@fonts/WOFF2/VF/SourceSans3VF-Upright.ttf.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Source Sans 3';
-  font-weight: 200 900; font-style: italic; font-display: swap;
-  src: url('@fonts/WOFF2/VF/SourceSans3VF-Italic.ttf.woff2') format('woff2');
-}
+/* F-40: Source Sans 3 from Fontsource (the Google Fonts build, OFL 1.1, no Reserved Font Name), split by unicode-range so a page
+   loads only the subsets it uses: the Latin file is 29 kB against 170 kB for Adobe's full variable font, the largest early
+   request on every page (mobile first paint) */
+@import '@fontsource-variable/source-sans-3/wght.css';
+@import '@fontsource-variable/source-sans-3/wght-italic.css';
 
 :root {
   color-scheme: light;
   /* type */
-  --font-sans: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Source Sans 3 Variable', 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;  /* telemetry: tabular */
   --font-display: 'Sora Variable', var(--font-sans);                                    /* Phase 4: titles, pills */
   --font-num: 'JetBrains Mono Variable', var(--font-mono);                              /* Phase 4: every number */
@@ -55,8 +49,10 @@
   --focus: #4477AA;
 
   /* Paul Tol bright: categorical series; pair with shape or direct labels */
-  --tol-blue: #4477AA; --tol-red: #EE6677; --tol-green: #228833; --tol-yellow: #CCBB44;
-  --tol-cyan: #66CCEE; --tol-purple: #AA3377; --tol-grey: #BBBBBB;
+  --tol-blue: #4477AA; --tol-red: #EE6677; --tol-green: #228833; --tol-yellow: #998822;
+  --tol-cyan: #2B8CB5; --tol-purple: #AA3377; --tol-grey: #888888;
+  /* F-40: on white, Tol bright yellow, cyan and grey are below 3:1 for marks (1.9, 1.8, 1.9); the light theme uses the same
+     hues darkened to 3.6, 3.8 and 3.5:1. The dark themes and the 3D pages keep the bright values (9.6-10.2:1 on dark). */
 
   /* Crameri batlow, 9 even stops (elevation, slope) */
   --batlow-0: #011959; --batlow-1: #114360; --batlow-2: #226061; --batlow-3: #4D734D; --batlow-4: #828231;
@@ -78,7 +74,7 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --bg: #111214; --bg-2: #1a1c1f;
+    --bg: #111214; --bg-2: #1a1c1f; --tol-yellow: #CCBB44; --tol-cyan: #66CCEE; --tol-grey: #BBBBBB;
     --ink: rgba(255, 255, 255, 0.87); --ink-2: rgba(255, 255, 255, 0.65); --ink-3: rgba(255, 255, 255, 0.5);
     --hairline: rgba(255, 255, 255, 0.1);
     --link: #8db3dc; --focus: #66CCEE;
@@ -88,7 +84,7 @@
   }
 }
 :root[data-theme="dark"] {
-  --bg: #111214; --bg-2: #1a1c1f;
+  --bg: #111214; --bg-2: #1a1c1f; --tol-yellow: #CCBB44; --tol-cyan: #66CCEE; --tol-grey: #BBBBBB;
   --ink: rgba(255, 255, 255, 0.87); --ink-2: rgba(255, 255, 255, 0.65); --ink-3: rgba(255, 255, 255, 0.5);
   --hairline: rgba(255, 255, 255, 0.1);
   --link: #8db3dc; --focus: #66CCEE;
@@ -103,7 +99,7 @@
    keep 3:1 for marks on dark glass; the other Tol bright colours pass as they are. */
 .instrument {
   color-scheme: dark;
-  --bg: #070b14; --bg-2: #0d1422;
+  --bg: #070b14; --bg-2: #0d1422; --tol-yellow: #CCBB44; --tol-cyan: #66CCEE; --tol-grey: #BBBBBB;
   --ink: #edf1f7; --ink-2: #aab5c7; --ink-3: #6f7b91;
   --hairline: rgba(255, 255, 255, 0.12);
   --link: #8fd7f2; --focus: #8fe3ff;

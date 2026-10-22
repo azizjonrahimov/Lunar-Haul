@@ -156,7 +156,7 @@ body.instrument [data-theme-toggle] { display: none; }   /* 3D pages are always 
 select { max-width: 100%; }
 .stub { color: var(--ink-3); font-style: italic; }
 
-/* motion tiering: CSS transitions only; canvas motion is gated in JS (hero.js) */
+/* motion tiering: CSS transitions only; canvas motion is gated in JS (home-hero-3d.js and the 3D pages) */
 @media (prefers-reduced-motion: no-preference) {
   .btn, .nav a, .theme-btn { transition: background-color var(--dur-fast), color var(--dur-fast); }
 }

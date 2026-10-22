@@ -210,19 +210,26 @@ export function headline() {
 }
 
 // ---------- F-39: the home hero's three counters, read at build time ----------
-// simulated years behind the distance law (the pads story), the surface cost per landed kg in the gallery's second-phase
-// marketplace scene, and the Earth's-horizon headline (the published story's numbers); every one flagged and sourced
+// simulated years behind the distance law (the pads story), the paper's surface cost per landed kg (results/
+// table_cost_landed_kg.csv, P2 / 4 vehicles / marketplace) and the Earth's-horizon story's headline number (the first number of
+// its summary, so a rewritten story carries the counter with it); every one flagged and sourced
+// the words under the Earth counter: the known headline gets a sentence, any other the data's own label
+const earthLabel = (key, n) => (key === 'dte_loss' ? 'less cargo when rovers must see Earth' : n.label || key);
 export function heroCounters() {
   const story = id => JSON.parse(readFileSync(join(ROOT, 'data', 'stories', 'resolved', `${id}.json`), 'utf8'));
-  const pads = story('pads-distance').numbers.fit_years, en = story('earth-horizon').numbers, earth = { ...en.dte_loss };
-  if (/^pct_change of always_t and dte_t/.test(earth.source)) earth.source = `the change from ${en.always_t.text} (${en.always_t.source}) to ${en.dte_t.text} (${en.dte_t.source})`;
-  const gal = JSON.parse(readFileSync(join(ROOT, 'data', 'scenes', 'gallery.json'), 'utf8')), p2 = gal.scenes.find(s => s.package === 'P2');
-  const cost = p2.headline.cost_per_landed_kg_usd, n = p2.headline.n_seeds;
+  const pads = story('pads-distance').numbers.fit_years, es = story('earth-horizon'), en = es.numbers;
+  const hk = (es.summary.match(/\{\{r:(\w+)\}\}/) || [])[1], earth = { ...en[hk] };
+  if (earth.label === undefined) earth.label = hk;
+  const COST = 'results/table_cost_landed_kg.csv', crow = csv(readFileSync(join(ROOT, COST), 'utf8')).find(r => r.phase === 'P2' && r.fleet === '4 vehicles' && r.mechanism === 'marketplace');
+  if (!crow) throw new Error(`${COST}: no P2 / 4 vehicles / marketplace row`);
+  // the exact ratio from the table's own columns (cost / delivered non-bulk kg); its cost column holds it rounded to 0.1
+  const cost = 1e6 * +crow.cost_musd_mean / +crow.delivered_nonbulk_kg_mean, lo = +crow.ci_lo, hi = +crow.ci_hi, n = +crow.n;
+  if (Math.abs(cost - +crow.cost_per_landed_kg_usd) > 0.5) throw new Error(`${COST}: cost ratio ${cost} disagrees with cost_per_landed_kg_usd ${crow.cost_per_landed_kg_usd}`);
   const item = (big, unit, label, flag, source) => `<li class="hero-counter"><span class="hc-big">${esc(big)}<span class="hc-unit">${esc(unit)}</span></span>` +
     `<span class="hc-label">${esc(label)} <span class="flag" data-flag="${esc(flag)}" title="${esc(flag)}. Source: ${esc(source)}">${esc(flag)}</span></span></li>`;
   const years = pads.text.replace(/\s*simulated years$/, '');
   return `<ul class="hero-counters" aria-label="Three numbers from the results">` +
     item(years, '', 'simulated years behind the law of pad distance', pads.flag, pads.source) +
-    item(`$${Math.round(cost.mean / 100) * 100 >= 10000 ? (Math.round(cost.mean / 100) / 10).toFixed(1) + 'k' : Math.round(cost.mean)}`, '', `surface cost per landed kg, shared rovers (± $${(cost.ci95 / 1000).toFixed(1)}k, ${n} seeds)`, 'Modelled', `${p2.source}; mean ± 95 % interval over ${n} seeds`) +
-    item(earth.text.replace(/\s*%$/, ''), '%', 'less cargo when rovers must see Earth', earth.flag, earth.source) + `</ul>`;
+    item(`$${Math.round(cost).toLocaleString('en-US')}`, '', `surface cost per landed kg, shared rovers (95 % interval $${Math.round(lo).toLocaleString('en-US')}–$${Math.round(hi).toLocaleString('en-US')}, ${n} seeds)`, 'Modelled', `${COST}, row P2 / 4 vehicles / marketplace, column cost_per_landed_kg_usd (ci_lo, ci_hi); ${n} seeds, exact cost ratio`) +
+    item(earth.text.replace(/\s*%$/, ''), /%$/.test(earth.text) ? '%' : '', earthLabel(hk, earth), earth.flag, earth.source) + `</ul>`;
 }

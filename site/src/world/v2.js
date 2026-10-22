@@ -94,6 +94,7 @@ async function open(fetchFn = fetch) {
   } catch (e) { status(`Could not load ${ui.run ? 'run ' + ui.run : 'the scene'} (${e.message}).`); return; }
   pkg.index.landings.sort((a, b) => a.t_h - b.t_h);   // the code below takes the next landing in array order
   sc.setPackage(pkg, traj); sc.shots();
+  sc.setNoLink(!!pkg.index.comms && pkg.index.comms.mode !== 'off');   // F-40: legs a rover waits to start for want of an Earth link turn red
   linkChip?.el.remove(); linkChip = null; linkText = '';
   if (ui.compare) { compareSelect.fill?.(); await openCompare(); }
   if (urgentP90(pkg.index, 0) === null) chips.urgent.el.querySelector('.ui-label').textContent = 'Urgent: 90 % within (whole year)';
@@ -244,6 +245,7 @@ function update(force = false) {
   const trips = idx.jobs.reduce((s, j) => s + (j[1] !== 'reposition' && j[5] <= t ? 1 : 0), 0);
   chips.delivered.set(delivered); chips.waiting.set(waiting); chips.trips.set(trips);
   const u = urgentP90(idx, t); chips.urgent.set(u === null ? idx.summary?.delay_prio1_p90_h : u);
+  if (u !== null) { const lab = Number.isNaN(u) ? 'Urgent: none delivered yet' : 'Urgent: 90 % delivered within', le = chips.urgent.el.querySelector('.ui-label'); if (le.textContent !== lab) le.textContent = lab; }   // F-40: say why there is no value early in the year
   const link = linkState(idx, hr);
   if (link !== null && link !== linkText) {
     linkText = link; linkChip?.el.remove();

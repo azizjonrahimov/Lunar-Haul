@@ -104,7 +104,7 @@ function svg(name, { id = 'pl', standalone = false } = {}) {
   const style = standalone ? `<style>
 .pn rect { fill: #fff; stroke: rgba(0,0,0,.45); stroke-width: 1; } .la rect { stroke: #4477AA; fill: #ecf1f6; } .lb rect { stroke: #228833; fill: #e9f3ea; } .lc rect { stroke: #EE6677; fill: #fdf0f1; }
 .dual rect, .dual-key { stroke-dasharray: 5 3; stroke-width: 1.4; } .dual-key { fill: none; stroke: rgba(0,0,0,.6); }
-.pt { font: 600 ${T}px 'Source Sans 3', 'Source Sans Pro', Arial, sans-serif; fill: rgba(0,0,0,.85); } .pd { font: 400 ${D}px 'Source Sans 3', 'Source Sans Pro', Arial, sans-serif; fill: rgba(0,0,0,.62); }
+.pt { font: 600 ${T}px 'Source Sans 3 Variable', 'Source Sans 3', 'Source Sans Pro', Arial, sans-serif; fill: rgba(0,0,0,.85); } .pd { font: 400 ${D}px 'Source Sans 3 Variable', 'Source Sans 3', 'Source Sans Pro', Arial, sans-serif; fill: rgba(0,0,0,.62); }
 .pe { fill: none; stroke: rgba(0,0,0,.5); stroke-width: 1; } .pa { fill: rgba(0,0,0,.5); }
 </style>` : '';
   return `<svg ${standalone ? 'xmlns="http://www.w3.org/2000/svg" ' : ''}class="pipeline-svg pipeline-${name}" viewBox="0 0 ${L.W} ${H}" width="${L.W}" height="${H}"${standalone ? '' : ' aria-hidden="true" focusable="false"'}>${style}

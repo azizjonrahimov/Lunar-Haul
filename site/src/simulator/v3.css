@@ -39,7 +39,7 @@
 .fleetkey { padding-left: 1.1em; }
 .fleetkey li { margin-bottom: 2px; }
 
-.sim-tabs { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-4); align-items: center; justify-content: space-between; }
+.sim-tabs { min-height: 2.9rem; display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-4); align-items: center; justify-content: space-between; }
 .sim-badge { font-size: 0.75rem; padding: 0.2em 0.7em; border-radius: 999px; border: 1px solid var(--panel-line); color: var(--ink-2); }
 .sim-badge[data-state="pass"] { border-color: var(--tol-green); color: var(--ink); }
 .sim-badge[data-state="fail"] { border-color: var(--tol-red); color: var(--ink); }
@@ -47,10 +47,12 @@
 .sim-pane[hidden] { display: none; }
 .sim-chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 10.5rem), 1fr)); gap: var(--s-3); }
 .sim-chips:empty { display: none; }
+#kpis { min-height: 19rem; }   /* F-40: the quick-start run fills it after first paint; no layout shift */
+@media (max-width: 960px) { #kpis { min-height: 30rem; } }
 .sim-ci { display: block; font-size: 0.75rem; color: var(--ink-3); margin-top: 2px; font-family: var(--font-num); }
 .sim-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: var(--s-4); }
 .sim-fig { margin: 0; }
-.sim-chart { min-height: 220px; }
+.sim-chart { min-height: 290px; }
 .sim-chart svg { max-width: 100%; height: auto; }
 .sim-scroll { overflow: auto; max-height: 26rem; }
 .sim-table th, .sim-table td { white-space: nowrap; }

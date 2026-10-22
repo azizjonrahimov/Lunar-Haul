@@ -54,11 +54,25 @@ function lunarsimPages() {
   };
 }
 
+// F-40: preload the body face's Latin subset on every built page (its hashed name is only known once the bundle exists)
+function preloadBodyFont() {
+  return {
+    name: 'lunarsim-preload-font',
+    transformIndexHtml: {
+      order: 'post',
+      handler(html, ctx) {
+        const f = ctx.bundle && Object.keys(ctx.bundle).find(n => /source-sans-3-latin-wght-normal-[^/]*\.woff2$/.test(n));
+        return f ? html.replace('</head>', `<link rel="preload" href="${base}${f}" as="font" type="font/woff2" crossorigin>\n</head>`) : html;
+      },
+    },
+  };
+}
+
 export default defineConfig({
   base,
   root: SITE,
   resolve: { alias: { '@fonts': join(SITE, 'node_modules', 'source-sans') } },
-  plugins: [lunarsimPages()],
+  plugins: [lunarsimPages(), preloadBodyFont()],
   build: {
     outDir: 'dist', emptyOutDir: true, target: 'es2022', assetsInlineLimit: 0, sourcemap: true,
     chunkSizeWarningLimit: 600,  // the hero chunk is three.js (~530 kB min, ~133 kB gz), loaded only where a 3D view is

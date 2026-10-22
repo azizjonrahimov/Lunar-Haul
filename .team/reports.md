@@ -3756,3 +3756,77 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
   1. Auto-start the 3D, or keep "Watch it in 3D"?
   2. Remove the old `site/src/hero.js`?
   3. Font subsetting in F-40 for the site-wide mobile first paint?
+
+## F-40 PART 1 DONE 16:50 | Quality pass: review notes, fonts, Lighthouse table, foreground frame times (F-40 stays IN PROGRESS)
+- **Every file in this part:**
+  - Modified: `site/lib/pages.mjs`, `site/lib/pipeline.mjs`, `site/package.json`, `site/package-lock.json`, `site/scripts/prepare-data.mjs`, `site/simulator/index.html`, `site/src/lander/lab3d-scene.js`, `site/src/main.js`, `site/src/rover/lab.css`, `site/src/rover/lab3d-scene.js`, `site/src/simulator/v3.css`, `site/src/simulator/v3.js`, `site/src/stories/stage.js`, `site/src/stories/stories.js`, `site/src/styles/base.css` (one comment), `site/src/styles/tokens.css`, `site/src/verify/main.js`, `site/src/verify/verify.css`, `site/src/world/v2-scene.js`, `site/src/world/v2.js`, `site/vite.config.js`.
+  - Deleted: `site/src/hero.js`.
+- **Review notes:**
+  - **Lander lab approach:** above 60 m the camera now frames the lander and the pad together. It sits on the sun's side of the approach, at least as high as the lander, at a distance set from the field of view so both span about 70 % of the height. The first frame shows the whole descent path, the lit pad, its ring and the touchdown scatter, where before it was a black sky. Below 60 m the normal follow glides in; the visitor's orbit wins at once; a replay or seek back up re-engages it.
+  - **Rover lab ground streak:** it was the glare wedge's faint fill stretched along the ground near the camera. The fill is off; the thin outline still marks the cone, brighter while the rover heads into it.
+  - **World Earth-link scenes:**
+    - In a scene with an Earth link, a leg turns red while a rover waits to start it for want of Earth, from the package's `comms_waits`.
+    - Checked at hour 578 of "Direct links to Earth only": the story card reads "3 rovers waiting for Earth"; BASE–CONSTR is red; the waiting rovers have magenta pins; the link chip says "none".
+    - The urgent chip now says "Urgent: none delivered yet" instead of a bare "–" before the first urgent delivery.
+  - **Simulator:**
+    - "Full 3D replay on GitHub" opens `.github/ISSUE_TEMPLATE/run-scenario.yml` prefilled through its field ids: phase, fleet, mechanism, night_fraction, rtt_s, n_operators, seeds and title. Dropdown values match the form's option text.
+    - Fleet maps to "phase default" or "P2: N vehicles" only when the browser fleet equals that preset; I checked that `lunarsim/phases.py` FLEETS match the browser's PRESETS for 2/4/6/8.
+    - Soil, duty, reliability, interface share, marketplace switches and any custom fleet are written into the Purpose box. The button opens in a new tab.
+    - "Trace replay of this run" keeps /world/trace/.
+  - **/verification/:**
+    - A "Phase 4 data (recorded by the Python checks)" group shows the 8 rows of `data/verification/verification-v1.json` `phase4[]`: reference, simulated, tolerance, pass, basis, source, and the recorded commit and time. All 8 pass. `prepare-data.mjs` stages the file.
+    - **Regression found and fixed:** since F-37 the page's engine checks loaded `sim.js` and `worker.js` from `/simulator/`, where they no longer are. They now load from `/simulator/engine/`.
+  - **Light-theme Tol marks:** yellow, cyan and grey were 1.9 / 1.8 / 1.9:1 on white. The light theme now uses the same hues darker (#998822 3.6:1, #2B8CB5 3.8:1, #888888 3.5:1). The dark themes and the instrument (3D) scope keep the bright values, at 9.6–10.2:1 on dark.
+  - **Stories:**
+    - The 49-key label map is gone; chips use B-53's `label`.
+    - World steps draw orange rings round their `highlight` sites, and hide vehicle labels (the steps name sites, never vehicles).
+    - Legs turn red while rovers wait for Earth in `earth_link` steps.
+    - **Data request:** the Earth story's step "never" says ISRU's route is drawn in the no-link colour, but no rover waits for it, so nothing is red. The stage now reads an optional `modes.no_link: ["ISRU"]` (those sites' legs held red). Please have BACKEND add it to that step.
+  - **Home hero:**
+    - The cost counter now uses the paper's number from `results/table_cost_landed_kg.csv` (P2 / 4 vehicles / marketplace): **$5,525** per landed kg, 95 % interval $4,436–$7,298, 30 seeds. It is computed as the table's exact ratio of `cost_musd_mean` to `delivered_nonbulk_kg_mean` (5525.47), checked against its 0.1-rounded column (5525.5).
+    - The Earth counter reads the first number of the Earth story's summary, so your rewrite carries it.
+    - The old `src/hero.js` and its loader in `main.js` are deleted.
+- **Fonts (site-wide):**
+  - Source Sans 3 now comes from `@fontsource-variable/source-sans-3@5.3.0` (pinned): the Google Fonts build, OFL 1.1 with no Reserved Font Name, split by unicode-range. A page now loads the 28 kB Latin file instead of Adobe's 170 kB full variable font, the largest early request on every page.
+  - A build hook preloads that file in every page's head.
+  - Result: home mobile **FCP 2.4 → 1.5 s, LCP 2.6 → 1.8 s** (target ≤ 2.5 s met), performance 99, CLS 0.001.
+- **Lighthouse 13.5, production build** (perf / a11y / best practices; * = re-measured after the fixes):
+
+  | page | desktop | mobile | notes |
+  |---|---|---|---|
+  | / | 100/100/100 | 99/100/100 | mobile LCP 1.8 s |
+  | /world/ | 90/100/100 | 91/100/100* | |
+  | /world/trace/ | 68/100/100 | 66/100/100 | CLS 0.56 (w-grid); not fixed yet |
+  | /stories/ | 100/100/100 | 99/100/100* | |
+  | /vehicles/ | 88/100/100 | 70/100/100 | |
+  | /results/ | 99/100/100 | 99/100/100 | |
+  | /lab/lander/ | 98/100/100 | 70/100/100 | |
+  | /lab/rover/ | 51/100/100* | 42/100/100 | TBT 1.4 s: see below |
+  | /simulator/ | 96/100/100* | 93/100/100* | was 91 and a11y 97 (Plot's aria-label on `<g>`; now removed and the chart SVG named) |
+  | /method/ | 100/100/100 | 99/100/100* | |
+  | /paper/ | 100/100/100* | 100/100/100 | |
+  | /data/ | 100/100/100* | 99/100/100 | |
+  | /verification/ | 100/100/100* | 82/100/100 | was 77 (CLS 0.65 as checks arrive; the area is now reserved) |
+  | /about/, /changelog/ | 100/100/100 | 100/100/100 | |
+  | /account/ | 100/100/96 | 100/100/96 | best practices: a console `ERR_CONNECTION_REFUSED` (the page probes a local service); not mine, and not fixed |
+
+  - Targets met: 3D pages ≥ 85 desktop except /world/trace/ and /lab/rover/; reading pages ≥ 95 desktop.
+- **Foreground frame intervals** (this laptop's RTX 3050, 120 Hz display, `stage.measure`, about 1440×650 device px, adaptive resolution off; p50/p95, GPU p50):
+  - /world/: T1 8.3/8.4 ms, GPU 5.3; T2 8.3/8.5, GPU 7.1; T3 8.3/8.6, GPU 7.8. That is 120 fps at every tier.
+  - /lab/lander/: 8.3/8.5 at all tiers, GPU 5.7 / 7.2 / 5.9.
+  - /lab/rover/ (driving): T1 8.3/8.4, GPU 5.5; T2 8.3/8.5, GPU 6.1; T3 8.3/**16.5**, GPU 7.2. Tier 3 drops an occasional frame while driving.
+  - /vehicles/: 8.3/8.5 at all tiers, GPU 3.3 / 4.9 / 5.7.
+  - Home hero: 8.3/8.5 at all tiers, GPU 6.5 / 6.0 / 7.5.
+  - /stories/ runs the world scene (same numbers).
+  - An Intel-integrated laptop and a phone are still to be measured; I have neither here.
+- **Still to do (F-40 continues):**
+  1. **/lab/rover/ TBT 1.4 s:** the 2D lab plans its A* route on the main thread at load (about 1 s). Proposed fix: stage one small route file per leg and lighting from `routes-v1.json` (identical to the lab's A* output, checked in F-35) and drop the runtime planning; or a worker.
+  2. /world/trace/ CLS.
+  3. A keyboard, screen-reader and reduced-motion walk of every page.
+  4. On-screen orbit and zoom buttons (WCAG 2.5.7).
+  5. URL-hash deep links.
+  6. GPU memory per tier.
+- **Checks:** tests 11/11; build OK; `budgets.py pages`: OK; servers stopped by PID; tab closed.
+- **Questions for LEAD:**
+  1. `modes.no_link` for the Earth story's step "never" (BACKEND).
+  2. The rover lab's route files: may I stage per-leg files from `data/driving/routes-v1.json` in `prepare-data.mjs`?

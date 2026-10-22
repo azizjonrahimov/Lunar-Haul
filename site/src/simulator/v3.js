@@ -173,7 +173,11 @@ function renderRun(runs, trace) {
 }
 function plot(host, spec) {
   const w = Math.max(280, host.clientWidth || 560);
-  host.replaceChildren(Plot.plot({ width: w, style: { background: 'transparent', color: css('--ink-2'), fontFamily: 'inherit', fontSize: '11px' }, ...spec }));
+  const fig = Plot.plot({ width: w, style: { background: 'transparent', color: css('--ink-2'), fontFamily: 'inherit', fontSize: '11px' }, ...spec });
+  fig.querySelectorAll('g[aria-label]').forEach(g => g.removeAttribute('aria-label'));   // aria-label on a plain <g> is prohibited (axe)
+  const svg = fig.tagName === 'svg' ? fig : fig.querySelector('svg'), title = host.closest('figure')?.querySelector('h3')?.textContent;
+  if (svg && title) { svg.setAttribute('role', 'img'); svg.setAttribute('aria-label', `${title} (the tables give the same numbers)`); }
+  host.replaceChildren(fig);
 }
 function timelineChart(tr) {
   const items = tr.cargo.filter(c => c.tDelivered !== null).map(c => ({ day: c.tReady / 24, d: Math.max(0.5, c.tDelivered - c.tReady), prio: c.prio, label: `${c.cls} ${fmtN(c.mass, 0)} kg → ${c.dest}\nready day ${Math.floor(c.tReady / 24)}, waited ${fmtN(c.tDelivered - c.tReady, 1)} h` }));
@@ -255,7 +259,25 @@ $('sampleTrace').addEventListener('change', async e => {   // bundled Python tra
   } catch (err) { $('rstatus').textContent = `Could not load ${label}: ${err.message}. The previous replay is unchanged.`; }
   finally { e.target.disabled = false; e.target.value = ''; }
 });
-// "Watch this year in 3D": the trace goes to the site's 3D trace viewer on the LOLA terrain (same origin)
+// "Full 3D replay on GitHub": the run-queue issue form (.github/ISSUE_TEMPLATE/run-scenario.yml) prefilled through URL
+// query parameters keyed by its field ids; dropdown values must match the form's option text. What the form cannot hold
+// (soil, duty, reliability, interface share, a custom fleet) is written into its Purpose box.
+const GH_FORM = 'https://github.com/azizjonrahimov/Lunar-Haul/issues/new';
+function ghLink() {
+  const n = Math.max(1, Math.min(500, +$('seeds').value || 1)), def = { P2: '6', P3: '9' }[ui.phase], pre = $('preset').value;
+  const fleetDesc = fleet.map(f => `${f.cls} (${f.owner}, ${{ teleop: 'from Earth', supervised: 'supervised', autonomous: 'autonomous' }[f.autonomy]})`).join(', ');
+  const same = JSON.stringify(fleet) === JSON.stringify(PRESETS[pre]);
+  const fleetOpt = same && pre === def ? 'phase default' : same && ui.phase === 'P2' && ['2', '4', '6', '8'].includes(pre) ? `P2: ${pre} vehicles` : 'phase default';
+  const q = new URLSearchParams({ template: 'run-scenario.yml', title: `Run: ${ui.phase} ${ui.mech} (from the browser simulator)`, phase: ui.phase, fleet: fleetOpt, mechanism: ui.mech,
+    night_fraction: (+$('night').value).toFixed(2), rtt_s: (+$('rtt').value).toFixed(1), n_operators: $('ops').value, seeds: String(n),
+    purpose: `Opened from the browser simulator (/simulator/). Settings the form has no field for: Moon soil ${$('bulk').value} t a year; owner's other work ${(+$('duty').value).toFixed(2)}; reliability ${(+$('mtbf').value).toFixed(2)} x normal; standard interface share ${(+$('std').value).toFixed(2)}${ui.mech === 'marketplace' ? `; marketplace features: ${Object.entries(marketOpts()).filter(([, v]) => !v).map(([k]) => k).join(', ') || 'all on'}${Object.values(marketOpts()).some(v => !v) ? ' off' : ''}` : ''}. Browser fleet: ${fleetDesc}${fleetOpt === 'phase default' && !(same && pre === def) ? ' (the form has no field for it; the run uses the phase default)' : ''}.` });
+  return `${GH_FORM}?${q}`;
+}
+for (const el of document.querySelectorAll('#tab-run, .sim-rail')) el.addEventListener('input', () => { $('ghRun').href = ghLink(); });
+$('ghRun').addEventListener('pointerdown', () => { $('ghRun').href = ghLink(); });
+$('ghRun').addEventListener('focus', () => { $('ghRun').href = ghLink(); });
+$('ghRun').href = ghLink();
+// "Trace replay of this run": the trace goes to the site's 3D trace viewer on the LOLA terrain (same origin)
 $('openWorld').addEventListener('click', () => {
   if (!replay.tr) return;
   try { localStorage.setItem('lunarsim.worldTrace', JSON.stringify(traceToJson(replay.tr))); }
