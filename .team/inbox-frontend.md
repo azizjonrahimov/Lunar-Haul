@@ -424,14 +424,14 @@ LEAD's browser review of F-36 (22 Oct 14:40), P2 scene: the data, controls and c
    idle moment; pick the start time from the package's events.
 Check in the browser at 1440 and 390 px; frame times per tier; no console errors.
 
-## F-35 [IN PROGRESS] (after F-36; <= 5 h) Rover lab in 3D (plan §5 F-35)
+## F-35 [REVIEW] (after F-36; <= 5 h) Rover lab in 3D (plan §5 F-35)
 `/lab/rover/` on the stage: drive the chosen leg on the terrain along the B-32 route for the chosen lighting, chase
 and cockpit cameras, a "ghost" rover where your delayed command will take effect, the low-sun glare cone and long
 shadows, slip indicator, interventions as 3D markers with callouts, expert vs neural-network race on the same leg,
 Earth visibility along the route (from earth_link samples: where on the leg a teleoperated rover would lose the
 link). 2D plan view stays as tier 0 and mirror.
 
-## F-37 [OPEN] (after F-35; <= 5 h) Simulator v3 on the design system (plan §5 F-37)
+## F-37 [IN PROGRESS] (after F-35; <= 5 h) Simulator v3 on the design system (plan §5 F-37)
 The `/simulator/` page rebuilt on the site's design system (glass panels, segmented controls, the plain labels of
 22 Oct kept word for word unless clearer), engine files `web/sim.js` and `web/worker.js` untouched; results as stat
 chips and Observable Plot charts; Compare as four answer-style cards (one per job rule, the SpaceX-reel pattern);

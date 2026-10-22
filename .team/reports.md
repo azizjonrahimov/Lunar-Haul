@@ -3522,3 +3522,39 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
   - **Fig. 5:** the absolute peak of linked operator demand (mean ± t) against coverage for the teleop and Phase 2 fleets, the dashed staffing line (3 on duty), and the hard-limit (A2) cells overlaid hollow with dotted lines (round 2). "n/20" seeds above the staff are annotated; **no "always" point**.
   - **Fig. 6 (new):** per start year, (a) the paired DTE − always cargo difference for the strict and strategic fleets, showing the strategic 2028 collapse (−405 t against about −10 t in 2029-2031), and (b) the strategic/strict urgent-p90 geometric-mean ratio at relay 0.1, both with t intervals over the year's 5 seeds. The title states only what is measured, not a cause.
 - **Questions for LEAD:** none. Fig. 1 uses data files only, so it does not depend on the round.
+
+## F-35 DONE 15:14 | Rover lab in 3D: drive the leg on the terrain, ghost rover, glare, shadows, interventions, race, Earth link
+- **Files:**
+  - New: `site/src/rover/lab3d.js` (page side: door, HUD, view chips, Show toggles, Earth-link date, story, text version; loaded lazily after the lab boots) and `site/src/rover/lab3d-scene.js` (the three.js scene; loads on Enter).
+  - Changed: `site/src/rover/lab.js` (3D hooks, the race), `site/src/rover/lab.css`, `site/lab/rover/index.html`, and `site/scripts/prepare-data.mjs` (stages `earth_link-v1-samples.json.gz` into `public/comms/`).
+- **What it does:** a 3D view above the existing lab shows the same drive, on the shared stage (on-site preset) with the BASE 5 m patch inside the 20 m tile. The 2D plan, profile and telemetry stay below as the mirror, and as the whole lab at tier 0.
+  - **Route:** the cyan ribbon is the lab's A* plan for the chosen lighting. It matches B-32: BASE→PSR is 4.28 km at sun 90° and 4.62 km at 270°; routes-v1 has 4.283 and 4.618 km.
+  - **Rover:** the catalogue LTV, pitched and rolled to the ground under its wheels, with a 3 h-style trail of the path driven.
+  - **Views:** Chase (turns with the rover's smoothed heading; orbiting stays free), Cockpit (a camera on the front, 1.7 m up; the rover's own body is hidden), Side (across the sun, for the long shadow) and Whole leg.
+  - **Ghost rover** (teleop): where the command sent now takes effect. It runs the queued commands through the model's own `step`/`advance`/`slip`, so it is exact except for stops and interventions. It reads env state only and never calls `pp.closest()`, so the drive's determinism is untouched.
+  - **Glare cone:** a fading 90° wedge round the sun's bearing (the model's ±45° up-sun rule). It is brighter while the rover heads inside it, and hidden in shadow and at night, where the model applies no glare.
+  - **Long shadows:** the stage sun's shadow camera is fitted to the rover each frame (about 100 m at 1.5°), plus the horizon-map terrain shadows. Night turns on the LTV's headlights.
+  - **Slip indicator:** a HUD chip with a meter marked at the 80 % dig-in point; it turns amber at 30 %.
+  - **Interventions:** red pins with callouts ("intervention 1: rough ground"). The story card explains each reason and its cost (round trip + 300 s).
+  - **Race:** a new Driver option, "Race: expert against the neural network". The network drives a second env on the same route, level, lighting and soil. It shows as an orange-ringed second rover (orange path, circles on the plan), with a "Network 74 m behind" chip, a telemetry row and a race result in the story and status line.
+  - **Earth link (B-40 samples):** the leg's sample points (about 100 m apart) stand as 2.5 m posts, the antenna height. They are cyan while any part of Earth is above the terrain from there and red when none is, using the `any_part` criterion.
+    - They follow the drive's clock: the start date (a timeline over 2028–2031; the default is the first hour of 2028 when the start sees Earth and part of the leg does not) plus the elapsed time.
+    - The sky's Earth comes from earth_track at that hour. The "Earth from here" chip and the story give the wait until Earth rises again, e.g. "back in 2.9 days" at the PSR end.
+    - The text version says when the comms file's sample route runs more than 40 m from the route planned for the chosen lighting.
+  - **Story cards per moment:** ready, driven from Earth / supervised / autonomous, low sun, shadow, night, slip, intervention, Earth lost, race, long shadows (Side view) and arrival.
+  - **First view:** on Enter the speed drops from 60× to 10× (unless you changed it) and the drive starts (not under reduced motion). The default sun is now 270°, behind the rover on the default leg, so the first chase frame is lit, with the shadow ahead and the ghost visible.
+- **Checks (Chrome, this laptop):**
+  - Frame cost while driving, GPU timer, p50/p95 (1440×625): tier 3 GPU 5.5/7.0 ms, CPU 3.1/4.8; tier 2 GPU 4.0/5.7, CPU 2.8/4.1; tier 1 GPU 2.0/3.1, CPU 1.6/2.7. Tier 1 also builds a lighter terrain (20 m tile at stride 4) and fewer rocks than measured here, since those are fixed when the scene is built.
+  - Looked at at 1440 px: chase, cockpit, side, whole leg, the race at 60×, and an instant expert drive to arrival with its intervention pin and callout.
+  - 390 px: no horizontal scroll; the HUD stacks under the view.
+  - Light theme checked. No console errors in any run.
+  - `node --test site/tests/*.mjs`: 11/11. Build OK.
+  - `budgets.py pages`: OK. The rover page is 21.9 of 25 kB JS and 5.8 of 10 kB CSS. The 3D page module is lazy: loaded statically it made the page 33.1 kB. Enter loads about 3.5 MB of data (terrain v2 normals, one horizon sector at 1.36 MB, 5 m BASE heights, the Earth-link samples at 490 kB, earth_track, catalogue); each other sun bearing adds about 1.4 MB.
+  - Servers stopped by PID; tab closed.
+- **Known limits:**
+  - The race steps only as fast as the network infers in the browser, about 6 steps/s here, so "60×" plays at about 6× in a race.
+  - The 3D ground away from the BASE patch is the 20 m mesh; the rover sits on the drawn surface while the model drives on the 5 m heights.
+  - The lab's sun bearing is the lab's choice and is not tied to the Earth-link date.
+- **From BACKEND:** none.
+- **Questions for LEAD:**
+  1. The Earth-link sample points follow one B-32 route per leg (they matched the 90°/night route of BASE→PSR, not the 270° one). Would BACKEND samples per lighting route be worth having, or is the stated offset enough?

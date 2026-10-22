@@ -1,6 +1,7 @@
 // /lab/rover (F-8): drive a leg of the base on LOLA terrain with the JS port of lunar/Drive-v0 (parity-checked
 // against Python): the scripted expert now, you at the keyboard with Earth-Moon latency, and B-13's learned driver
 // later through the same controller interface {name, act(obs, env)}.
+// F-35: the same drive in 3D above the plan (lab3d.js), and a race: the expert and the network on the same leg and soil.
 import './lab.css';
 import * as R from './physics.js';
 import { RoverTerrain } from './terrain.js';
@@ -28,7 +29,12 @@ async function boot() {
 
   } catch (e) { status(`The rover lab needs the terrain pack's 5 m layer (${e.message}).`); return; }
   $('r-tele-title').insertAdjacentHTML('beforeend', ` <span class="small muted">${ENV_ID}, env v${ENV_VERSION}</span>`);
-  fillSelectors(); wire(); renderConstants(); await prepare();
+  fillSelectors(); wire(); renderConstants();
+  // the 3D view's page side loads after the lab is ready (its door, HUD and controls; the scene itself waits for Enter)
+  import('./lab3d.js').then(m => { v3 = m.mount3d({ st, points, tableKey, level, lighting, status, drive: () => drive(), human: () => $('r-ctrl').value === 'human',
+    driverName: () => ({ expert: 'The scripted expert', human: 'You', learned: 'The neural network', race: 'The expert' })[$('r-ctrl').value],
+    lightingText: () => $('r-light').selectedOptions[0].textContent, levelText: () => $('r-level').selectedOptions[0].textContent.toLowerCase() }); }).catch(e => { $('r3-controls').hidden = true; status(`The 3D view could not load (${e.message}); the plan view below shows the drive.`); });
+  await prepare();
 }
 
 // ---------- leg selection ----------
@@ -90,8 +96,15 @@ function reset() {
   const lv = level(); st.env = new DriveEnv(st.t);
   st.obs = st.env.reset({ waypoints: st.route, autonomy: lv.autonomy, rttS: lv.rtt, sunAz: lighting(), phi: soil() });
   const c = $('r-ctrl').value;
-  st.ctl = c === 'human' ? human() : c === 'learned' && st.learned ? st.learned : expertController(st.env.route); st.thr = 0.5;
+  st.ctl = c === 'human' ? human() : c === 'learned' && st.learned ? st.learned : expertController(st.env.route); st.thr = 0.5;   // race: the expert drives env, the network env2
   st.trail = [[st.env.state.x, st.env.state.y]]; st.events = []; st.done = null; st.rec = null; st.sent = [0, 0]; st.acc = 0; st.gen = (st.gen || 0) + 1;
+  // race: the network drives a second env on the same route, level, lighting and soil
+  st.env2 = null; st.done2 = null; st.events2 = []; st.trail2 = [];
+  if (c === 'race' && st.learned) {
+    st.env2 = new DriveEnv(st.t); st.obs2 = st.env2.reset({ waypoints: st.route, autonomy: lv.autonomy, rttS: lv.rtt, sunAz: lighting(), phi: st.env.phi });
+    st.ctl2 = st.learned; st.trail2 = [[st.env2.state.x, st.env2.state.y]];
+  }
+  v3?.leg();
   drawAll(true);
 }
 function applyStep(a) {
@@ -102,15 +115,27 @@ function applyStep(a) {
   if (r.terminated || r.truncated) { st.done = r.leg; return false; }
   return true;
 }
+function applyStep2(a) {
+  const r = st.env2.step(a); st.obs2 = r.obs;
+  if (r.rec.intervention) st.events2.push({ x: st.env2.state.x, y: st.env2.state.y, why: r.rec.intervention, t: st.env2.timeS });
+  if (st.env2.steps % 5 === 0) st.trail2.push([st.env2.state.x, st.env2.state.y]);
+  if (r.terminated || r.truncated) { st.done2 = r.leg; return false; }
+  return true;
+}
 function stepOnce() { return applyStep(st.ctl.act(st.obs, st.env)); }
 /* one step for any controller; undefined if the episode was reset while the network was running */
-async function stepAsync() { const gen = st.gen, a = st.ctl.actAsync ? await st.ctl.actAsync(st.obs, st.env) : st.ctl.act(st.obs, st.env); return gen === st.gen ? applyStep(a) : undefined; }
+async function stepAsync() {
+  const gen = st.gen; let going = false;
+  if (!st.done) { const a = st.ctl.actAsync ? await st.ctl.actAsync(st.obs, st.env) : st.ctl.act(st.obs, st.env); if (gen !== st.gen) return undefined; going = applyStep(a); }
+  if (st.env2 && !st.done2) { const a = await st.ctl2.actAsync(st.obs2, st.env2); if (gen !== st.gen) return undefined; going = applyStep2(a) || going; }   // a race runs until both arrive
+  return going;
+}
 async function drive() {
   if (!st.route || st.busy) return; if (st.done || !st.env || st.env.steps === 0) reset();
   const rate = +$('r-speed').value;
   if (rate === 0 || reduced.matches && $('r-ctrl').value !== 'human') {
     const t0 = performance.now(), gen = st.gen; st.busy = true; $('r-drive').disabled = true;
-    try { while (gen === st.gen && await stepAsync()) { if (performance.now() - t0 > (st.ctl.actAsync ? 20000 : 4000)) break; } } finally { st.busy = false; $('r-drive').disabled = false; }
+    try { while (gen === st.gen && await stepAsync()) { if (performance.now() - t0 > (st.ctl.actAsync || st.env2 ? 20000 : 4000)) break; } } finally { st.busy = false; $('r-drive').disabled = false; }
     drawAll(true); finish(); return;
   }
   st.running = true; $('r-drive').textContent = 'Pause'; $('r-drive').setAttribute('aria-pressed', 'true'); st.last = 0; if (!st.raf) st.raf = requestAnimationFrame(tick);
@@ -120,19 +145,19 @@ async function tick(now) {
   st.raf = 0; if (!st.running) return;
   const dt = st.last ? Math.min(0.1, (now - st.last) / 1000) : 0; st.last = now; st.acc += dt * +$('r-speed').value;
   let going = true;
-  if (st.ctl.actAsync) { const gen = st.gen; while (st.acc >= R_DT && going && gen === st.gen) { st.acc -= R_DT; going = (await stepAsync()) !== false; } }
+  if (st.ctl.actAsync || st.env2) { const gen = st.gen; while (st.acc >= R_DT && going && gen === st.gen) { st.acc -= R_DT; going = (await stepAsync()) !== false; } }
   else while (st.acc >= R_DT && going) { st.acc -= R_DT; going = stepOnce(); }
   if (!st.running) return;
   drawAll(false); if (!going) { stop(); finish(); return; }
   st.raf = requestAnimationFrame(tick);
 }
 const R_DT = 1.0;
-function finish() { renderComparison(); const L = st.done; if (L) status(`${L.reached ? 'Arrived' : 'Stopped (step cap)'}: ${fmt(L.distance_m / 1000, 2)} km in ${hms(L.time_s)}, ${fmt(L.energy_wh, 0)} Wh, ${L.interventions} intervention(s), ${L.stops} stop(s).`); }
+function finish() { renderComparison(); const L = st.done, L2 = st.done2; if (L) status(`${L.reached ? 'Arrived' : 'Stopped (step cap)'}: ${fmt(L.distance_m / 1000, 2)} km in ${hms(L.time_s)}, ${fmt(L.energy_wh, 0)} Wh, ${L.interventions} intervention(s), ${L.stops} stop(s).${L2 ? ` Network: ${L2.reached ? 'arrived' : 'stopped'} in ${hms(L2.time_s)}, ${L2.interventions} intervention(s).` : ''}`); v3?.update(true); }
 const hms = s => { const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), ss = Math.floor(s % 60); return `${h}:${String(m).padStart(2, '0')}:${String(ss).padStart(2, '0')}`; };
 
 // ---------- drawing ----------
-let lastDom = 0;
-function drawAll(force) { planView(); profileView(); const now = performance.now(); if (force || now - lastDom > 120) { telemetry(); patchView(); controls(); lastDom = now; } }
+let lastDom = 0, v3 = null;
+function drawAll(force) { planView(); profileView(); v3?.update(force); const now = performance.now(); if (force || now - lastDom > 120) { telemetry(); patchView(); controls(); lastDom = now; } }
 function viewBox() {
   const xs = st.route.map(p => p[0]), ys = st.route.map(p => p[1]), m = 300;
   return [Math.min(...xs) - m, Math.max(...xs) + m, Math.min(...ys) - m, Math.max(...ys) + m];
@@ -146,6 +171,11 @@ function planView() {
     ctx.imageSmoothingEnabled = true; ctx.drawImage(img, sx, sy, sw, sh, dx, dy, sw * px * s, sh * px * s); }
   ctx.strokeStyle = 'rgba(102,204,238,.9)'; ctx.lineWidth = 4; ctx.beginPath(); st.route.forEach((p, i) => { const [a, b] = P(p[0], p[1]); i ? ctx.lineTo(a, b) : ctx.moveTo(a, b); }); ctx.stroke();
   ctx.strokeStyle = '#CCBB44'; ctx.lineWidth = 2; ctx.beginPath(); st.trail.concat(st.env ? [[st.env.state.x, st.env.state.y]] : []).forEach((p, i) => { const [a, b] = P(p[0], p[1]); i ? ctx.lineTo(a, b) : ctx.moveTo(a, b); }); ctx.stroke();
+  if (st.env2) {   // race: the network's path (orange), its interventions (circles) and the rover
+    ctx.strokeStyle = '#EE7733'; ctx.lineWidth = 2; ctx.beginPath(); st.trail2.concat([[st.env2.state.x, st.env2.state.y]]).forEach((p, i) => { const [a, b] = P(p[0], p[1]); i ? ctx.lineTo(a, b) : ctx.moveTo(a, b); }); ctx.stroke();
+    for (const e of st.events2) { const [a, b] = P(e.x, e.y); ctx.beginPath(); ctx.arc(a, b, 5, 0, 7); ctx.stroke(); }
+    const s2 = st.env2.state, [a, b] = P(s2.x, s2.y); ctx.save(); ctx.translate(a, b); ctx.rotate(s2.psi); ctx.fillStyle = '#EE7733'; ctx.beginPath(); ctx.moveTo(0, -9); ctx.lineTo(6, 7); ctx.lineTo(-6, 7); ctx.closePath(); ctx.fill(); ctx.restore();
+  }
   for (const e of st.events) { const [a, b] = P(e.x, e.y); ctx.strokeStyle = '#EE6677'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(a - 5, b - 5); ctx.lineTo(a + 5, b + 5); ctx.moveTo(a + 5, b - 5); ctx.lineTo(a - 5, b + 5); ctx.stroke(); }
   const pts = points(); ctx.font = '600 11px ' + getComputedStyle(document.body).fontFamily; ctx.fillStyle = '#fff';
   for (const n of [$('r-from').value, $('r-to').value]) { const [a, b] = P(...pts[n]); ctx.beginPath(); ctx.arc(a, b, 4, 0, 7); ctx.fill(); ctx.fillText(n.replace('_', ' '), a + 7, b - 6); }
@@ -190,6 +220,7 @@ function telemetry() {
     ['Speed made good', M(smg, 'km/h', 2)], ['Ground speed now', M(r.gv * 3.6, 'km/h', 2)], ['Grade ahead', M(r.grade, '°', 1)], ['Slip', M(100 * r.slip, '%', 0)], ['Soil friction angle', num({ value: e.phi, unit: '°', flag: R.FLAGS.phi[0], digits: 1, source: R.FLAGS.phi[1] + ($('r-soil').value === 'sampled' ? '; drawn for this drive' : '; chosen above') })],
     ['Energy used', M(e.energyWh, 'Wh', 0)], ['Stops to confirm', M(e.stops, '', 0)], ['Interventions', M(e.interventions, '', 0)],
     ['Autonomy', `${M(100 * auto, '%', 1)} <span class="muted small">1 − interventions × (RTT + ${R.INTERVENTION.recovery_s} s) / elapsed</span>`]];
+  if (st.env2) { const e2 = st.env2; rows.push(['Network (race)', `${M(e2.distM / 1000, 'km', 2)} in <span class="mono">${hms(e2.timeS)}</span>, ${e2.interventions} intervention(s)${st.done2 ? (st.done2.reached ? ', arrived' : ', stopped') : ''}`]); }
   $('r-tele').innerHTML = rows.map(([a, b]) => `<tr><th scope="row">${a}</th><td>${b}</td></tr>`).join('');
   $('r-events').textContent = st.events.length ? st.events.slice(-3).map(v => `${hms(v.t)} ${v.why}`).join(' · ') : (r.stopped ? 'Stopped to confirm the next segment.' : '—');
 }
@@ -250,9 +281,9 @@ function wire() {
   for (const id of ['r-from', 'r-to', 'r-standoff', 'r-light']) $(id).addEventListener('change', () => { if (id === 'r-standoff') { const f = $('r-from').value, t = $('r-to').value; fillSelectors(); $('r-from').value = f; $('r-to').value = t; } prepare(); });
   $('r-soil-flag').title = `Modelled. Source: ${R.FLAGS.slip_table[1]}`; $('r-soil-src').textContent = ` (slip curves Modelled. Source: ${R.FLAGS.slip_table[1]})`;
   $('r-ctrl').addEventListener('change', async () => {   // the learned driver is fetched the first time it is chosen
-    if ($('r-ctrl').value !== 'learned' || st.learned) return;
+    if (!['learned', 'race'].includes($('r-ctrl').value) || st.learned) return;
     stop(); $('r-drive').disabled = true; status('Loading the learned driver (network and in-browser runtime, about 15 MB the first time)…');
-    try { st.learned = await loadLearned(); status(`Learned driver ready (${fmt(st.learned.loadMs / 1000, 1)} s). Press Drive.`); if (st.route && $('r-ctrl').value === 'learned') { reset(); renderComparison(); } }
+    try { st.learned = await loadLearned(); status(`Learned driver ready (${fmt(st.learned.loadMs / 1000, 1)} s). Press Drive.`); if (st.route && ['learned', 'race'].includes($('r-ctrl').value)) { reset(); renderComparison(); } }
     catch (e) { status(`The learned driver could not be loaded (${e.message}); the scripted expert drives.`); $('r-ctrl').value = 'expert'; if (st.route) reset(); }
     finally { $('r-drive').disabled = false; }
   });

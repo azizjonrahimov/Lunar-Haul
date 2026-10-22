@@ -29,3 +29,44 @@
 .r-thr-svg text { font-size: 9px; fill: var(--ink-2); }
 @media (prefers-reduced-motion: reduce) { .wheel { transition: none; } }
 .r-scroll { overflow-x: auto; }
+
+/* F-35: the drive in 3D (instrument page; the plan view below is tier 0 and the mirror) */
+.r3 { margin-top: var(--s-2); }
+.r3-stage { position: relative; height: clamp(500px, 70vh, 720px); border-radius: var(--radius-panel); overflow: hidden; background: #000; }
+.r3-view { position: absolute; inset: 0; }
+.r3-view canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+.r3-view canvas:focus-visible { outline: 2px solid var(--focus); outline-offset: -4px; }
+.r3-labels { position: absolute; inset: 0; pointer-events: none; }
+.r3-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: var(--s-6); margin: 0; text-align: center; color: var(--ink-2); }
+.r3-hud { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+.r3-hud > * { pointer-events: auto; }
+.r3-left { position: absolute; left: 16px; top: 16px; width: min(22rem, 36%); }
+.r3-right { position: absolute; right: 16px; top: 16px; display: flex; flex-direction: column; align-items: stretch; gap: var(--s-2); width: min(15rem, 30%); }
+.r3-views { position: absolute; left: 16px; bottom: 16px; }
+.ui-chip .r3-chip-text { font-family: var(--font-display); font-size: 0.875rem; font-weight: 500; line-height: 1.3; white-space: normal; overflow-wrap: anywhere; }
+.r3-meter { position: relative; height: 6px; margin-top: 6px; border-radius: 3px; background: color-mix(in srgb, var(--ink) 14%, transparent); overflow: hidden; }
+.r3-meter-fill { position: absolute; left: 0; top: 0; bottom: 0; width: var(--slip, 0%); background: var(--accent); transition: width 120ms linear; }
+.r3-meter[data-level="high"] .r3-meter-fill { background: var(--warm); }
+.r3-meter[data-level="dig"] .r3-meter-fill { background: var(--tol-red); }
+.r3-meter-mark { position: absolute; left: 80%; top: -2px; bottom: -2px; width: 2px; background: var(--ink-2); }
+.r3-controls { margin-top: var(--s-3); padding: var(--s-3) var(--s-4); display: flex; flex-direction: column; gap: var(--s-3); }
+.r3-controls[hidden] { display: none; }
+.r3-row { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-5); align-items: flex-end; }
+.r3-row[hidden] { display: none; }
+.r3-earth > * { flex: 1 1 100%; }
+.r3-show { display: flex; flex-wrap: wrap; gap: 0 var(--s-4); border: 0; padding: 0; margin: 0; }
+.r3-show legend { width: 100%; margin-bottom: var(--s-1); }
+.r3-show .s-check { display: inline-flex; align-items: center; gap: 0.4em; font-size: 0.875rem; color: var(--ink-2); min-height: var(--target); }
+.r3-show input { width: 1.1rem; height: 1.1rem; accent-color: var(--accent); }
+.r3-mirror { margin-top: var(--s-4); }
+.r3-dl { display: grid; grid-template-columns: auto 1fr; gap: 2px var(--s-4); margin: 0 0 var(--s-2); font-size: var(--fs-small); }
+.r3-dl dt { color: var(--ink-2); }
+.r3-dl dd { margin: 0; font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .r3-meter-fill { transition: none; } }
+@media (max-width: 900px) {
+  .r3-stage { height: auto; overflow: visible; background: none; }
+  .r3-view { position: relative; height: 380px; border-radius: var(--radius-panel); overflow: hidden; background: #000; }
+  .r3-hud { position: static; display: flex; flex-direction: column; gap: var(--s-3); margin-top: var(--s-3); }
+  .r3-left, .r3-right, .r3-views { position: static; width: auto; }
+  .r3-right { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); }
+}

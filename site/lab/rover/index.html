@@ -24,7 +24,7 @@
     <label class="lbl" for="r-to">To</label><select id="r-to"></select>
     <label class="lbl" for="r-standoff">Landing pads this far from the base</label><select id="r-standoff"></select>
     <label class="lbl" for="r-light">Lighting</label>
-    <select id="r-light"><option value="0">low sun at 0° bearing</option><option value="90" selected>low sun at 90°</option><option value="180">low sun at 180°</option><option value="270">low sun at 270°</option><option value="night">night: headlights only</option></select>
+    <select id="r-light"><option value="0">low sun at 0° bearing</option><option value="90">low sun at 90°</option><option value="180">low sun at 180°</option><option value="270" selected>low sun at 270°</option><option value="night">night: headlights only</option></select>
     <label class="lbl" for="r-soil">Soil</label>
     <select id="r-soil"><option value="47.8">firm (friction angle 47.8°)</option><option value="42" selected>medium (42°)</option><option value="37.8">loose (37.8°), more wheel slip</option><option value="sampled">random each drive (37.8–47.8°)</option></select>
     <span class="small"><span class="flag" data-flag="Modelled" id="r-soil-flag">Modelled</span><span class="visually-hidden" id="r-soil-src"></span></span>
@@ -33,7 +33,7 @@
     <label class="lbl" for="r-level">Control mode</label>
     <select id="r-level"><option value="teleop:0">driven from Earth, no delay (0 s)</option><option value="teleop:4" selected>driven from Earth, 4 s delay (real Earth–Moon)</option><option value="teleop:6">driven from Earth, 6 s delay</option><option value="teleop:8">driven from Earth, 8 s delay</option><option value="supervised">supervised: drives itself, a person checks</option><option value="autonomous">fully autonomous</option></select>
     <label class="lbl" for="r-ctrl">Driver</label>
-    <select id="r-ctrl"><option value="expert" selected>Built-in expert (route planner + path follower)</option><option value="human">You (arrow keys)</option><option value="learned">Neural-network driver (rover_bc_s0, about 15 MB download)</option></select>
+    <select id="r-ctrl"><option value="expert" selected>Built-in expert (route planner + path follower)</option><option value="human">You (arrow keys)</option><option value="learned">Neural-network driver (rover_bc_s0, about 15 MB download)</option><option value="race">Race: expert against the neural network (same leg and soil)</option></select>
     <label class="lbl" for="r-speed">Speed</label>
     <select id="r-speed"><option value="1">real time</option><option value="10">10×</option><option value="60" selected>60×</option><option value="300">300×</option><option value="0">instant</option></select>
     <button class="btn primary" type="button" id="r-drive" aria-pressed="false">Drive</button>
@@ -43,6 +43,31 @@
     <p class="small">Arrow keys: ← → steer, ↑ full throttle, ↓ stop. Your commands reach the rover one round trip later, and it halts to confirm every so often, exactly as in the model. Touch: <button class="btn" type="button" data-key="ArrowLeft" aria-label="Steer left">◀</button> <button class="btn" type="button" data-key="ArrowUp" aria-label="Throttle">▲</button> <button class="btn" type="button" data-key="ArrowDown" aria-label="Stop">▼</button> <button class="btn" type="button" data-key="ArrowRight" aria-label="Steer right">▶</button></p>
   </div>
   <p class="status-line" id="r-status" role="status" aria-live="polite">Loading…</p>
+
+  <section class="r3" aria-labelledby="r3-title">
+    <h2 id="r3-title" class="visually-hidden">The drive in 3D</h2>
+    <div class="r3-stage" id="r3-stage">
+      <div class="r3-view" id="r3-view">
+        <canvas id="r3-canvas" tabindex="0" aria-label="3D view of the drive on the LOLA terrain. Arrow keys orbit (they steer when you drive), plus and minus zoom. The text version below the view gives the same state." aria-describedby="r3-mirror-h"></canvas>
+        <div class="r3-labels" id="r3-labels"></div>
+        <p class="r3-fallback" id="r3-fallback" hidden></p>
+      </div>
+      <div class="r3-hud">
+        <div class="r3-left"><div id="r3-story"></div></div>
+        <div class="r3-right" id="r3-chips"></div>
+        <div class="r3-views" id="r3-views"></div>
+      </div>
+    </div>
+    <div class="r3-controls ui-glass" id="r3-controls">
+      <div class="r3-row" id="r3-row"></div>
+      <div class="r3-row r3-earth" id="r3-earth" hidden></div>
+    </div>
+    <div class="r3-mirror">
+      <h3 id="r3-mirror-h" class="h3">The 3D view in words</h3>
+      <dl class="r3-dl" id="r3-mirror"></dl>
+      <p class="small muted">Yellow ring: the driver (in a race, the scripted expert); orange: the neural network. Cyan ribbon: the planned route. Posts along the leg: Earth-link sample points about 100 m apart, 2.5 m tall like the antenna, cyan while any part of Earth is above the terrain from there and red when none is (R-1, SPICE and LOLA horizons). Red pins: interventions. Rocks are representative: LOLA cannot resolve them and the driving model does not see them.</p>
+    </div>
+  </section>
 
   <div class="r-grid">
     <div>
