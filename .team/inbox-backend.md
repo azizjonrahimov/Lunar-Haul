@@ -582,3 +582,15 @@ F-34's node test replays the trajectory steps at the file's rounding (2.5e-5 m).
 initial state and every step's raw action [a0, a1, a2], the sensor readings the pilot saw and the resulting state at
 full float64 precision (repr), plus the env constants used. A Python test replays it through the env (exact). Tell
 FRONTEND the path (via LEAD) so `site/tests/lander-trajectories.test.mjs` can assert < 1e-6 m.
+
+## B-47 [OPEN] (<= 1.5 h) Scene packages: landing-episode mapping fix and per-delivery priority/wait (F-36 needs)
+1. Bug found by FRONTEND: `lunarsim/scene.py` `_nearest_trajectory` picks the episode nearest in |miss| among all
+   four picks including failures, so successful landings point at the classical law's first_failure episode (a 150 s
+   hover). Fix: successful landings choose among the successful picks (p10/p50/p90) by |miss|; failed landings
+   choose the first_failure episode of the same class (or the nearest failure kind if the file has several). Test it.
+2. Add per-delivery columns to the package (optional in the schema, so old readers still work): priority and
+   wait_h (ready → delivered) for every delivery event, so the 3D world can compute "urgent 90 % delivered within,
+   so far" live. Keep packages deterministic and within budget.
+3. Rebuild every committed package (the 12 gallery scenes, the 5 samples) and the run-queue path's scene build
+   (tools/actions/run_issue.py uses lunarsim.scene); check byte-determinism and the reproduction checks; update
+   gallery.json if needed; rerun `python -m lunarsim.stories check`.
