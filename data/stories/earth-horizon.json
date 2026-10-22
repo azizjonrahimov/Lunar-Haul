@@ -3,37 +3,43 @@
   "version": 1,
   "id": "earth-horizon",
   "title": "What Earth's horizon costs",
-  "status": "draft",
-  "summary": "At the south pole Earth sits low on the horizon, and ridges hide it. Without a relay, the base delivers {{r:dte_loss}} less cargo a year.",
+  "status": "published",
+  "summary": "At the south pole Earth sits low on the horizon and ridges hide it. With direct links only, the base delivers {{r:dte_loss}} less cargo a year, mostly because one work site never sees Earth. A part-time relay or more autonomy fixes it; more rovers do not.",
   "scene": "world:P2-comms-dte",
-  "notes": "Skeleton for E21 (results/table_E21.csv, table_E21_breakeven.csv, written by experiments/phase4/run_phase4.py table). Every number is pending until those tables exist; check the row selectors against the final tables then. Wording for LEAD to edit.",
+  "notes": "E21 (experiments/phase4/run_phase4.py, analysis experiments/phase4/analyse_e21.py): P2 six-rover fleet, marketplace, pads 1 km, no plume, 20 seeds per cell, start years 2028-2031. Wording by LEAD, 22 Oct 2026.",
   "numbers": {
-    "always_t": {"table": "results/table_E21.csv", "where": {"stage": "A", "comms": "always", "mix": "supervised_strict"}, "column": "delivered_t_in_year", "digits": 0, "unit": "t per year", "note": "Earth always in view (the baseline), all supervised rovers, strict policy (experiment E21 stage A)"},
-    "dte_t": {"table": "results/table_E21.csv", "where": {"stage": "A", "comms": "dte", "mix": "supervised_strict"}, "column": "delivered_t_in_year", "digits": 0, "unit": "t per year", "note": "direct-to-Earth links only (experiment E21 stage A)"},
+    "always_t": {"table": "results/table_E21.csv", "where": {"stage": "A", "comms": "always", "mix": "supervised_strict"}, "column": "delivered_t_in_year", "digits": 0, "unit": "t per year", "note": "Earth always in view, all supervised rovers, strict policy (E21 stage A)"},
+    "dte_t": {"table": "results/table_E21.csv", "where": {"stage": "A", "comms": "dte", "mix": "supervised_strict"}, "column": "delivered_t_in_year", "digits": 0, "unit": "t per year", "note": "direct-to-Earth links only (E21 stage A)"},
     "dte_loss": {"derive": "pct_change", "of": ["always_t", "dte_t"], "transform": "neg", "digits": 0, "unit": "%"},
+    "base_link": {"json": "results/E21_fit.json", "path": ["throughput", "site_link_fraction_dte_any_part", "BASE"], "scale": 100, "digits": 0, "unit": "%", "note": "share of 2028-2031 in which any part of Earth's disc is above the terrain horizon at the base, 2.5 m antenna (B-40)"},
+    "isru_lost": {"json": "results/E21_fit.json", "path": ["throughput", "lost_at_never_linked_t", "mean"], "digits": 0, "unit": "t per year", "note": "cargo bound for the ISRU plant that is never delivered under direct links only (E21 analysis)"},
     "dte_wait": {"table": "results/table_E21.csv", "where": {"stage": "A", "comms": "dte", "mix": "supervised_strict"}, "column": "blackout_wait_vehicle_h", "digits": 0, "unit": "rover-hours", "note": "rover time spent waiting for Earth in the year"},
-    "dte_refused": {"table": "results/table_E21.csv", "where": {"stage": "A", "comms": "dte", "mix": "supervised_strict"}, "column": "blackout_jobs_refused", "digits": 0, "unit": "jobs", "note": "jobs no rover could start for want of a link"},
     "relay_t": {"table": "results/table_E21.csv", "where": {"stage": "A", "comms": "dte+relay", "coverage": 0.1, "mix": "supervised_strict"}, "column": "delivered_t_in_year", "digits": 0, "unit": "t per year", "note": "a relay satellite in view a tenth of the time, besides direct links"},
     "auto_t": {"table": "results/table_E21.csv", "where": {"stage": "A", "comms": "dte", "mix": "autonomous"}, "column": "delivered_t_in_year", "digits": 0, "unit": "t per year", "note": "direct links only, fully autonomous rovers"},
-    "relay_gain": {"table": "results/table_E21_breakeven.csv", "where": {"option": "relay coverage 0.1"}, "column": "gain_vs_dte", "digits": 0, "unit": "t per year", "note": "gain over direct links only, all supervised rovers, strict policy (experiment E21 break-even table)"},
-    "rover_gain": {"table": "results/table_E21_breakeven.csv", "where": {"option": "+1 supervised LTV"}, "column": "gain_vs_dte", "digits": 1, "unit": "t per year", "note": "gain of one extra supervised LTV over direct links only (experiment E21 stage B)"}
+    "rover_gain": {"table": "results/table_E21_breakeven.csv", "where": {"option": "+1 supervised LTV"}, "column": "gain_vs_dte", "digits": 1, "unit": "t per year", "note": "gain of one extra supervised LTV over direct links only (E21 stage B)"},
+    "half_strict": {"table": "results/table_E21_breakeven_delay.csv", "where": {"option": "+1 rover"}, "column": "base_value", "digits": 0, "unit": "h", "note": "urgent cargo: hours within which 90 % is delivered, relay in view half the time, strict supervision (E21 stage B)"},
+    "half_plus1": {"table": "results/table_E21_breakeven_delay.csv", "where": {"option": "+1 rover"}, "column": "value", "digits": 0, "unit": "h", "note": "the same with one extra rover"},
+    "half_strategic": {"table": "results/table_E21_breakeven_delay.csv", "where": {"option": "strategic step"}, "column": "value", "digits": 0, "unit": "h", "note": "the same with supervised rovers that drive between check-ins on their own (strategic policy)"},
+    "rover_dp": {"table": "results/table_E21_breakeven_delay.csv", "where": {"option": "+1 rover"}, "column": "delta_p", "scale": 100, "digits": 0, "unit": "percentage points of relay coverage", "note": "relay coverage that gives the same urgent delay as one extra rover, at half coverage (bootstrap over seeds)"},
+    "strategic_dp": {"table": "results/table_E21_breakeven_delay.csv", "where": {"option": "strategic step"}, "column": "delta_p", "scale": 100, "digits": 0, "unit": "percentage points of relay coverage", "note": "relay coverage that gives the same urgent delay as the strategic policy, at half coverage"}
   },
   "steps": [
     {
       "id": "low-earth",
       "title": "Earth hangs on the horizon",
-      "text": "Seen from the south pole Earth never climbs high. Ridges and crater rims hide it for days at a time, and supervised rovers need a link to Earth to drive.",
-      "visual": "Earth low over the ridge; the shadow of the terrain marks where it is hidden.",
+      "text": "Seen from the south pole Earth never climbs high, and ridges hide it. From the base it is in view {{r:base_link}} of the time. A rover driven or supervised from Earth needs that link.",
+      "visual": "Earth low over the ridge; the terrain shadow marks where it is hidden.",
       "camera": {"shot": "horizon"},
       "highlight": ["BASE"],
-      "modes": {"earth_link": true, "earth": true}
+      "modes": {"earth_link": true, "earth": true},
+      "chips": ["base_link"]
     },
     {
       "id": "blackouts",
       "scene": "world:P2-comms-dte",
       "title": "Waiting for Earth",
-      "text": "With direct links only, rovers spend {{r:dte_wait}} a year waiting for Earth to rise, and {{r:dte_refused}} cannot start at all.",
-      "visual": "Rovers parked at the base in the waiting colour while Earth is below the ridge.",
+      "text": "With direct links only, rovers spend {{r:dte_wait}} a year parked, waiting for Earth to rise.",
+      "visual": "Rovers parked in the waiting colour while Earth is below the ridge.",
       "camera": {"shot": "overview"},
       "modes": {"earth_link": true, "play": true},
       "chips": ["dte_wait"]
@@ -47,22 +53,40 @@
       "chips": ["dte_t", "dte_loss"]
     },
     {
+      "id": "never",
+      "title": "One site never sees Earth",
+      "text": "Most of that loss is one place. The plant that makes oxygen from regolith sits where Earth is never in view, so {{r:isru_lost}} of cargo for it never arrives. No rover driven from Earth can work there.",
+      "visual": "The ISRU site highlighted; its route drawn in the colour for no link.",
+      "camera": {"shot": "overview"},
+      "highlight": ["ISRU"],
+      "modes": {"earth_link": true},
+      "chips": ["isru_lost"]
+    },
+    {
       "id": "relay",
       "scene": "world:P2-comms-relay-0.8",
       "title": "A relay, or autonomy",
-      "text": "A relay satellite that is in view only part of the time already restores most of it: {{r:relay_t}}. Autonomous rovers that need no link reach {{r:auto_t}}.",
-      "visual": "A relay link drawn from the rovers to a satellite passing overhead.",
+      "text": "A relay satellite in view only a tenth of the time brings deliveries back to {{r:relay_t}}. Fully autonomous rovers reach {{r:auto_t}} with no relay at all.",
+      "visual": "A relay link drawn from the rovers to a satellite passing over.",
       "camera": {"shot": "horizon"},
       "modes": {"earth_link": true, "relay": true},
       "chips": ["relay_t", "auto_t"]
     },
     {
-      "id": "breakeven",
+      "id": "rovers",
       "title": "More rovers cannot buy it back",
-      "text": "A relay in view a tenth of the time adds {{r:relay_gain}}. One more supervised rover adds {{r:rover_gain}}: it waits for Earth like the others.",
-      "visual": "The base with its rover fleet, an extra rover drawn faded and parked in the waiting colour.",
+      "text": "One more supervised rover adds {{r:rover_gain}}: it waits for Earth like the others.",
+      "visual": "The fleet with an extra rover, parked in the waiting colour.",
       "camera": {"shot": "overview"},
-      "chips": ["relay_gain", "rover_gain"]
+      "chips": ["rover_gain"]
+    },
+    {
+      "id": "autonomy",
+      "title": "Autonomy is worth more than a rover",
+      "text": "With a relay in view half the time, nine in ten urgent items arrive within {{r:half_strict}}. One more rover brings that to {{r:half_plus1}}. Letting supervised rovers drive on their own between check-ins brings it to {{r:half_strategic}}. In relay terms the rover is worth {{r:rover_dp}} and the autonomy step {{r:strategic_dp}}.",
+      "visual": "Three bars: the fleet as it is, one more rover, and the autonomy step.",
+      "camera": {"shot": "overview"},
+      "chips": ["half_strict", "half_plus1", "half_strategic"]
     }
   ]
 }
