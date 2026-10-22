@@ -1,0 +1,57 @@
+name: run-scenario
+
+# The LunarHaul run queue (B-37). An issue made with the "Run a scenario" form runs only when a maintainer adds the
+# label run-request (adding labels needs triage access, so strangers cannot spend Actions minutes). The form is parsed
+# strictly by tools/actions/run_issue.py; the issue body reaches it through an environment variable only, never
+# through a ${{ }} expression inside a shell line. Results: a comment on the issue, a release run-<issue> with the
+# files (not committed to main), and a dispatch of the pages workflow, which copies run-* release files into the site
+# (release download URLs send no CORS headers, so the browser reads runs from the Pages site instead).
+
+on:
+  issues:
+    types: [labeled]
+
+permissions: {}
+
+concurrency:
+  group: run-queue
+  cancel-in-progress: false
+
+jobs:
+  run:
+    if: github.event.label.name == 'run-request' && github.event.issue.state == 'open'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write      # create the run-<issue> release
+      issues: write        # comment on the issue
+      actions: write       # dispatch pages.yml so the site picks up the run
+    env:
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -e . pillow
+      - name: Parse the form and run
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: python tools/actions/run_issue.py --body-env ISSUE_BODY --issue "$ISSUE_NUMBER" --out out
+      - name: Publish the release
+        run: |
+          gh release delete "run-$ISSUE_NUMBER" --yes --cleanup-tag || true
+          gh release create "run-$ISSUE_NUMBER" out/assets/* --title "Run for issue #$ISSUE_NUMBER" \
+            --notes-file out/release_notes.md --prerelease --target "$GITHUB_SHA"
+      - name: Comment the summary
+        run: gh issue comment "$ISSUE_NUMBER" --body-file out/comment.md
+      - name: Refresh the site
+        run: gh workflow run pages.yml --ref main
+      - name: Report a rejected or failed run
+        if: failure()
+        run: |
+          if [ -f out/error.md ]; then
+            gh issue comment "$ISSUE_NUMBER" --body-file out/error.md
+          else
+            gh issue comment "$ISSUE_NUMBER" --body "The run failed; the log is at $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          fi

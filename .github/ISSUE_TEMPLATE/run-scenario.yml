@@ -1,0 +1,122 @@
+name: Run a scenario
+description: Ask the LunarHaul run queue to simulate a scenario on GitHub Actions. A maintainer adds the run-request label after a look; the results come back as a comment, a release and a 3D replay on the site.
+title: "Run: "
+labels: ["run-pending"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Fill in the fields and submit. Nothing runs until a maintainer adds the **run-request** label.
+        Keep the section headings as they are: the runner accepts only these fields, with these values.
+        One simulated year per seed; results: a summary table here, the files as release `run-<issue number>`, and `/world/?run=<issue number>` on the site.
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Phase
+      description: Base build-out phase (landings per year, cargo mix, default fleet).
+      options: ["P1", "P2", "P3"]
+      default: 1
+    validations:
+      required: true
+  - type: dropdown
+    id: fleet
+    attributes:
+      label: Fleet preset
+      description: The phase's own fleet, or a Phase-2 fleet of a given size.
+      options: ["phase default", "P2: 2 vehicles", "P2: 4 vehicles", "P2: 6 vehicles", "P2: 8 vehicles"]
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: mechanism
+    attributes:
+      label: Job rule
+      description: How jobs are given to rovers (marketplace = shared auction; pooled_greedy; inhouse = each owner's own rovers; central_assign).
+      options: ["marketplace", "pooled_greedy", "inhouse", "central_assign"]
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: terrain
+    attributes:
+      label: Terrain and Phase-3 models
+      description: "on = real terrain legs and driving tables, landing outcomes, keep-out (needed for the 3D replay); off = the simple site graph."
+      options: ["on", "off"]
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: pad_standoff_km
+    attributes:
+      label: Pad standoff (km)
+      description: Distance of the landing pads from the base (terrain on).
+      options: ["0.5", "1", "2", "3", "5"]
+      default: 1
+    validations:
+      required: true
+  - type: dropdown
+    id: keepout_km
+    attributes:
+      label: Plume keep-out radius (km)
+      description: Rovers stay this far from a landing for 0.5 h either side (terrain on).
+      options: ["none", "0.5", "1", "2"]
+      default: 2
+    validations:
+      required: true
+  - type: input
+    id: night_fraction
+    attributes:
+      label: Night share of each lunar day
+      description: 0 to 0.5 (0.15 = the phase default).
+      placeholder: "0.15"
+    validations:
+      required: true
+  - type: input
+    id: rtt_s
+    attributes:
+      label: Round-trip delay (s)
+      description: Earth-Moon round-trip control delay, 0 to 30 s (5 = default).
+      placeholder: "5"
+    validations:
+      required: true
+  - type: input
+    id: n_operators
+    attributes:
+      label: Operators on console
+      description: Whole number, 1 to 20.
+      placeholder: "3"
+    validations:
+      required: true
+  - type: dropdown
+    id: comms
+    attributes:
+      label: Earth link
+      description: "off = not modelled; always = modelled, always up; dte = direct to Earth only (terrain-masked windows); dte+relay p = plus a relay up a share p of the time; dte + BASE mast = a 10 m relay mast at the base."
+      options: ["off", "always", "dte", "dte+relay 0.5", "dte+relay 0.8", "dte+relay 0.9", "dte + BASE mast"]
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: supervised_policy
+    attributes:
+      label: Supervised driving policy
+      description: "With an Earth link model: strict = no driving without a link; strategic = drive, help requests wait for a link; strategic+avoid = strategic with a look-ahead along the route."
+      options: ["strict", "strategic", "strategic+avoid"]
+      default: 0
+    validations:
+      required: true
+  - type: input
+    id: seeds
+    attributes:
+      label: Seeds
+      description: Replications (simulated years), 1 to 30.
+      placeholder: "10"
+    validations:
+      required: true
+  - type: textarea
+    id: purpose
+    attributes:
+      label: Purpose
+      description: Optional, up to 500 characters; it is shown in the reply only.
+    validations:
+      required: false

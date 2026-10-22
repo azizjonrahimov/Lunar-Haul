@@ -452,7 +452,7 @@ and outcome.
 
 # M3/M4 backend (queued 22 Oct 11:30). Order: B-32, B-31, B-37.
 
-## B-32 [OPEN] (<= 2.5 h) Rover route geometry for the 3D views (light: planned routes, no driving simulation)
+## B-32 [DONE 11:36] (<= 2.5 h) Rover route geometry for the 3D views (light: planned routes, no driving simulation)
 Goal: rovers in /world/ and the 3D rover lab follow the real routes over the terrain, not straight lines (plan §4 B-32).
 Files: new `lunarsim/rover/routes.py` (or a mode of `lunarsim/rover/tables.py`), `tests/test_rover_routes.py`.
 Output (LEAD commits): `data/driving/routes-v1.json` (+ schema), budget ≤ 4 MB (gzip-friendly, columnar).
@@ -465,7 +465,7 @@ the table's `route.length_m` (report the max difference) and the pads at every s
 Done when: tests (a synthetic grid: A* = straight on flat ground; decimation keeps corners; time fractions sum to 1)
 pass; the report gives size, leg count and the length check.
 
-## B-31 [OPEN] (after B-32; <= 4 h) Scene package `lunarsim-scene v1`: what a 3D replay of a simulated year needs
+## B-31 [DONE 11:47] (after B-32; <= 4 h) Scene package `lunarsim-scene v1`: what a 3D replay of a simulated year needs
 Goal: plan §4 B-31. Writer `lunarsim/scene.py` (+ schema, `tests/test_scene.py`); FRONTEND writes the JS reader.
 From one trace v2 run (terrain legs, landing outcomes, plume, optional comms) produce a JSON index + Float32 binary
 chunks of 30 days: per vehicle keyframes on the B-32 routes (t_h, x, y, z, heading, load_kg, state ∈ {idle, driving,
@@ -479,7 +479,7 @@ kg, trips and landings exactly (test). Produce the four world samples (P1, P2, P
 Done when: tests pass; sizes and the reproduction checks are in the report; the JSON index format is documented in
 the schema for FRONTEND.
 
-## B-37 [OPEN] (after B-31; <= 3 h) The backend inside the GitHub repository: a run queue on GitHub Actions
+## B-37 [DONE 11:52] (after B-31; <= 3 h) The backend inside the GitHub repository: a run queue on GitHub Actions
 Goal: plan §4 B-37 (owner decision: host the backend through the Lunar-Haul repository). Files (yours for this task):
 `.github/ISSUE_TEMPLATE/run-scenario.yml` (issue form: phase, job rule, fleet preset, environment values, comms
 mode, seeds ≤ 30, a free-text purpose), `.github/workflows/run-scenario.yml`, `tools/actions/run_issue.py`,

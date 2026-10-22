@@ -33,6 +33,15 @@ jobs:
       - run: npm run build
         working-directory: site
         env: { SITE_BASE: "${{ steps.pages.outputs.base_path }}/", PYTHON: python }
+      - name: Published runs (run-* releases from the run queue, B-37) into the site
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          mkdir -p site/dist/runs
+          for tag in $(gh release list --limit 200 --json tagName --jq '.[].tagName | select(startswith("run-"))'); do
+            d="site/dist/runs/${tag#run-}"; mkdir -p "$d"
+            gh release download "$tag" --dir "$d" --pattern 'summary.json' --pattern 'trace_seed0.json.gz' --pattern 'scene.tar.gz'
+            if [ -f "$d/scene.tar.gz" ]; then tar -xzf "$d/scene.tar.gz" -C "$d" && rm "$d/scene.tar.gz"; fi
+          done
       - uses: actions/upload-pages-artifact@v3
         with: { path: site/dist }
   deploy:
