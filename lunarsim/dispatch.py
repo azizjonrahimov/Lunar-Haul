@@ -18,6 +18,8 @@ marketplace      Pooled sequential single-item auction with bundling by insertio
 """
 from __future__ import annotations
 
+import math
+
 from typing import Dict, List, Optional, Tuple
 import itertools
 
@@ -41,6 +43,14 @@ def _single_job_hours(sim: Simulation, v: Vehicle, c: Cargo) -> float:
     return sim.job_plan(job, sim.t)[0]
 
 
+def _comms_blocked(sim: Simulation, v: Vehicle, c: Cargo) -> bool:
+    """Phase 4: with the Earth-link rule on, a vehicle that needs the link cannot take a job whose link never comes."""
+    cm = getattr(sim, "comms", None)
+    if cm is None or not cm.active or not cm.needs_link(v.autonomy):
+        return False
+    return not math.isfinite(_single_job_hours(sim, v, c))
+
+
 # ----------------------------------------------------------------------------
 # Baselines
 # ----------------------------------------------------------------------------
@@ -56,6 +66,8 @@ def _greedy(sim: Simulation, waiting: List[Cargo], free: List[Vehicle], pooled: 
             if v.id in used or not _feasible_single(v, c):
                 continue
             if not pooled and sim.carrier_of.get(c.owner, c.owner) != v.owner:
+                continue
+            if _comms_blocked(sim, v, c):
                 continue
             h = _approach_h(sim, v, c)
             if best is None or h < best_h:
@@ -86,7 +98,9 @@ def central_assign(sim, waiting, free, **kw):
             if _feasible_single(v, c):
                 # weight waiting age lightly so starved items are not ignored forever
                 age = sim.t - c.t_ready
-                cost[i, j] = _single_job_hours(sim, v, c) - 0.05 * age
+                h = _single_job_hours(sim, v, c)
+                if math.isfinite(h):            # Phase 4 comms: inf = the link never comes (stays BIG)
+                    cost[i, j] = h - 0.05 * age
     rows, cols = min_cost_assignment(cost)
     jobs = []
     for i, j in zip(rows, cols):
@@ -287,6 +301,8 @@ def marketplace(sim, waiting, free, bundling=True, team_lift=True, backhaul=True
                 else:
                     bundle, route = [c], [c.dest]
                     bid = _bid(sim, v, bundle, route, priority, w)
+                if not math.isfinite(bid):         # Phase 4 comms: a needed Earth link never comes
+                    continue
                 if best is None or bid < best[0]:
                     best = (bid, v, bundle, route)
         if best is None:

@@ -52,6 +52,9 @@ def _add_phase3_args(p):
     g.add_argument("--policy-dir", default=None, help="directory of the outcome tables (default data/policies)")
     g.add_argument("--plume", default=None, metavar="R,T", help="keep-out radius km and stand-down hours, e.g. 1,0.5")
     g.add_argument("--autonomy", default=None, help="'driving-v1' or a path to a lunarsim-driving table")
+    g.add_argument("--comms", default=None,
+                   help="Phase 4 Earth-link rule: a mode (always | dte | dte+relay) or a JSON object with the "
+                        "Scenario.comms keys, e.g. '{\"mode\": \"dte\", \"supervised_policy\": \"strategic\"}'")
 
 
 def _with_phase3(sc, a):
@@ -79,6 +82,9 @@ def _with_phase3(sc, a):
         kw["plume"] = {"keepout_km": r, "standdown_h": t, "shelter": "auto"}
     if a.autonomy:
         kw["autonomy_model"] = a.autonomy
+    if getattr(a, "comms", None):
+        c = a.comms.strip()
+        kw["comms"] = json.loads(c) if c.startswith("{") else {"mode": c}
     return sc.with_(**kw) if kw else sc
 
 

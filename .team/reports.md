@@ -2161,3 +2161,89 @@ Pad legs grouped by standoff (mean link fraction over the 28 legs per standoff; 
 - **Questions for LEAD:**
   1. A leg needs every 100 m sample linked. That is strict (one blind cell darkens a leg); it is the task's rule. For B-41's `strategic` supervised policy, should I add each leg's linked share of samples per epoch?
   2. Routes are the slope-only A* routes. A→B and B→A sometimes differ by A* ties, e.g. BASE->DEPOT 0.431 vs DEPOT->BASE 0.467. Keep them per direction (the engine looks up directed legs)?
+
+## B-41 DONE 10:50 | R-1 engine: opt-in `comms` scenario field (results byte-identical when off)
+- **Files:**
+  - `lunarsim/comms.py`: CommsModel and link series; also per-sample queries `leg_samples` / `sample_wait_h` in the reader.
+  - `lunarsim/engine.py`: all hooks guarded by `self.comms`.
+  - `lunarsim/dispatch.py`: three guards, active only with the link rule on: the marketplace skips inf bids; greedy skips vehicles whose job never gets a link; Hungarian keeps inf as BIG.
+  - `lunarsim/scenario.py`: field `comms`.
+  - `lunarsim/config.py`: `comms` is written only when set.
+  - `lunarsim/cli.py`: `--comms <mode | JSON>` on compare and trace.
+  - `lunarsim/schemas/scenario-v1.schema.json` (`comms`) and `trace-v2.schema.json` (`comms`, `comms_waits`).
+  - `tools/comms/earth_link.py`: per-sample windows file (below), and `--max-seconds` as LEAD asked; also added to `tools/terrain_assets.py`.
+  - `tests/test_comms_engine.py`: new, 14 tests. `tests/test_comms_data.py`: plus the samples test.
+  - **Data for LEAD to commit:**
+    - `data/comms/connecting_ridge/earth_link-v1-samples.json.gz` (new, 490 KB).
+    - `earth_link-v1.json` (regenerated: same windows, now names its samples file with sha256) and its `.sha256`.
+- **Identity:**
+  - `comms=None`: `test_all_off_is_byte_identical_to_v2` passes.
+  - **`comms.mode=always`: `compare --scenario P2-default --seeds 3 --comms always` gives canonical md5 739e9ba72c1563f4ae508ebc1dfd9938** (test).
+  - `dte+relay` with coverage 1.0 is exactly identical too (test, three mechanisms).
+  - The link rules draw only from their own streams `[seed, 41, 1/2]`; the demand and ops streams are untouched.
+- **Rules as built** (the full list is in the block comment in comms.py):
+  - **Teleop and supervised-strict:** start a drive or a load/unload only while the leg (every route sample) or the site is linked. If the link drops, the rover parks and resumes at the next link-up. A wait before a segment becomes a stationary segment; a mid-way wait lengthens the segment.
+  - **Supervised-strategic (LEAD's answer):**
+    - Each intervention sits at a uniformly drawn route sample (seeded) and waits for that sample's next link-up.
+    - The count comes from the driving tables' per-leg draw, recorded per segment, or 0.10 interventions/km without tables.
+    - The series come from the new hourly per-sample file, conservative: an hour is linked only if all six 10-min epochs are.
+  - **Autonomous:** unaffected.
+  - **Relay:** an alternating up/gap process with availability p. Exponential gaps with mean default 7.67 h (one LCRNS relay sees the pole 324 of 784 min; Esper, NTRS 20250003321; Modelled). It is OR-ed with DTE and assumed to see every route point.
+  - **Mast:** uses the file's `dte+mast` windows. The configured mast must match the file's (BASE, 10 m, 10 km).
+  - **pad↔pad legs** have no route in the file: linked when both end points are linked; listed in `trace.comms.missing_legs`.
+  - **Operators:** demand counts only while the vehicle's current leg or site is linked. The admission check sees only demand linked right now, so link-ups can bunch demand (H5). `operator_hours` counts linked demand-hours when the rule is on.
+  - **Added, needs your OK: `defer_wait_h` (default 24 h, Assumed).**
+    - A job whose planned link wait exceeds 24 h is not committed; the rover stays free, and a WAKE event re-dispatches at the link-up time.
+    - `null` = commit regardless (the rover parks with the job).
+    - Without this rule, rovers sat loaded at pads for months: seed 1 urgent p90 4,096 h, supervised waits 14,589 h.
+  - **Never-linked jobs** (e.g. any leg to ISRU) get an infinite duration, so every mechanism avoids them. If one still reaches `_start_job` it is refused (counted).
+  - **If every vehicle in the fleet needs a link**, items whose delivery leg is never linked leave the candidate list. Without this the run starved: 63 t instead of 310 t.
+- **New summary columns** (only when `comms` is set):
+  - `blackout_wait_vehicle_h`, with `_teleop_h`, `_supervised_h`, `_autonomous_h`, clipped to the year;
+  - `blackout_jobs_delayed`, `blackout_jobs_refused`, `blackout_jobs_deferred`;
+  - `operator_peak_demand` (the largest hourly mean of concurrent linked demand);
+  - `linked_share_by_leg_mean` (traversal-weighted; the per-leg dict is `sim.comms.linked_share_by_leg`);
+  - `delivered_kg_in_horizon`. The engine books a delivery at pickup, so blackout-delayed jobs ending after the year would otherwise count.
+- **Trace v2:** `comms` (settings, missing legs) and `comms_waits` = [vehicle, t0, t1, site or leg, start | midway | intervention]. Absent when `comms` is None, so existing traces are unchanged. FRONTEND can show "waiting for Earth" from it.
+- **Smoke run** (P2-default 6-vehicle fleet, terrain connecting_ridge, pads at 1 km, driving-v1, marketplace, criterion any_part, start 2028; single process, peak RSS 107 MB):
+
+| comms | seed | s/run | delivered t (in year) | urgent p90 h | mean delay h | jobs | operator h | wait teleop h | wait supervised h | jobs delayed / refused / deferred | operator peak | linked share |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| off | 0 | 0.4 | 515.1 | 4 | 21 | 529 | 506 | - | - | - | - | - |
+| off | 1 | 0.3 | 524.5 | 4 | 22 | 514 | 458 | - | - | - | - | - |
+| always | 0 | 0.3 | 515.1 (515.1) | 4 | 21 | 529 | 506 | 0 | 0 | 0 / 0 / 0 | 2.5 | 1.00 |
+| always | 1 | 0.3 | 524.5 (524.5) | 4 | 22 | 514 | 458 | 0 | 0 | 0 / 0 / 0 | 1.5 | 1.00 |
+| dte strict | 0 | 9.7 | 310.0 (310.0) | 328 | 129 | 272 | 257 | 216 | 721 | 47 / 3 / 3 | 2.0 | 0.60 |
+| dte strict | 1 | 2.5 | 315.8 (315.8) | 1492 | 99 | 284 | 215 | 158 | 730 | 41 / 0 / 0 | 2.0 | 0.60 |
+| dte strategic | 0 | 2.9 | 409.3 (404.3) | 375 | 322 | 360 | 619 | 182 | 28138 | 38 / 114 / 2 | 2.2 | 0.40 |
+| dte strategic | 1 | 4.3 | 122.1 (118.1) | 323 | 524 | 127 | 206 | 73 | 31807 | 20 / 88 / 0 | 1.4 | 0.40 |
+| relay 0.8 strict | 0 | 1.3 | 515.1 (515.1) | 6 | 23 | 528 | 506 | 85 | 544 | 91 / 0 / 0 | 2.8 | 0.90 |
+| relay 0.8 strict | 1 | 1.2 | 524.5 (524.5) | 14 | 24 | 507 | 440 | 20 | 574 | 82 / 0 / 0 | 1.5 | 0.90 |
+| dte+mast strict | 0 | 9.2 | 310.0 (310.0) | 314 | 129 | 288 | 258 | 187 | 1205 | 40 / 15 / 15 | 2.0 | 0.60 |
+| dte+mast strict | 1 | 3.5 | 315.8 (315.8) | 4126 | 122 | 264 | 216 | 138 | 706 | 41 / 0 / 0 | 2.0 | 0.60 |
+| dte strict, no defer | 0 | 5.5 | 310.0 (310.0) | 396 | 148 | 320 | 289 | 1866 | 14589 | 57 / 0 / 0 | 2.2 | 0.60 |
+| dte strict, no defer | 1 | 2.4 | 315.8 (315.8) | 4096 | 131 | 304 | 236 | 1878 | 8488 | 59 / 0 / 0 | 2.0 | 0.60 |
+| dte strategic, no defer | 0 | 3.0 | 395.3 (390.3) | 373 | 342 | 340 | 657 | 2102 | 29150 | 43 / 127 / 0 | 2.2 | 0.50 |
+| dte strategic, no defer | 1 | 2.7 | 272.9 (268.9) | 467 | 371 | 255 | 373 | 1744 | 28216 | 34 / 191 / 0 | 1.2 | 0.40 |
+
+- **Reading:**
+  - **DTE only, strict:** delivered mass falls 40 % (515 → 310 t). The lost cargo is what goes to never-linked sites (ISRU; and SCI_1/PSR through teleop).
+  - Urgent p90 rises from 4 h to 329 h (seed 0) and 1,492 h (seed 1). Seed 1 is dominated by PAD_B@1, whose link is up only 29 % of the time.
+  - **A relay at p = 0.8 restores throughput** (515 t). Urgent p90 is 6 / 14 h; the remaining supervised waits are 544 / 574 h.
+  - The BASE mast does not help this fleet: the blocked legs are the far ones.
+- **Strict vs per-sample (strategic) on 2 seeds** (your request):
+  - Strategic delivers more on seed 0 (409 vs 310 t) but far less on seed 1 (122 vs 316 t).
+  - Supervised waits are 28-32k vehicle-h, against 0.7k under strict. An intervention at a rarely linked sample (near SCI_1, PSR, PAD_B@1; gaps up to 7,928 h) strands the rover for months.
+  - 88-114 jobs were refused when a drawn intervention landed on a never-linked sample.
+  - Planning cannot foresee these waits (they are random), so the deferral rule cannot help.
+  - This is a real policy result: strategic autonomy is only as good as the link at the worst sample of the route. E21 should report it.
+- **Runtime:** off/always 0.3 s per run; dte 2-10 s; relay 1.2 s. Stage A estimate in B-42.
+- **How to test:**
+  - `.venv\Scripts\python -m pytest tests\test_comms_engine.py tests\test_comms_data.py -q`
+  - `lunarsim compare --scenario P2-default --seeds 2 --terrain connecting_ridge --pad-standoff 1 --autonomy driving-v1 --comms '{"mode": "dte"}'`
+  - Related files: 241 passed, 3 skipped (formats, phase3 engine, verification, server, service, experiments, catalogue, terrain assets, comms).
+- **For FRONTEND:** `trace.comms_waits` for "waiting for Earth" (vehicle, interval, place, kind). No other format change.
+- **Questions for LEAD:**
+  1. Is the default `defer_wait_h` = 24 h OK? E21 could add {12, 24, 72, null} as a factor.
+  2. Strategic strands rovers at rarely linked samples. Add a `strategic+avoid` variant that refuses routes whose worst sample has a long expected wait, or keep the plain rule as the comparison?
+  3. The relay is taken to see every route point (no relay masks). OK for E21?

@@ -66,6 +66,7 @@ WEDGE_STEP_DEG = 0.1
 NEAR_MAX_M = 8000.0
 FAR_MAX_M = 300000.0
 ROUTE_STEP_M = 100.0
+SAMPLE_STEP_MIN = 60              # time step of the per-sample windows (earth_link-v1-samples.json)
 MARGIN_DEG = {"any_part": None, "centre+0.5deg": 0.5, "centre+2deg": 2.0}
 CACHE = os.path.join(ROOT, ".cache", "comms")
 KDIR = os.path.join(CACHE, "kernels")
@@ -406,7 +407,7 @@ def step_points(log=print) -> Dict:
             else:
                 cx, cy = (math.floor(x / 20.0) + 0.5) * 20.0, (math.floor(y / 20.0) + 0.5) * 20.0
                 ids.append(add(("cell", cx, cy), cx, cy, "route", ANT_ROVER_M))
-        leg_pts[name] = sorted(set(ids))
+        leg_pts[name] = [k for j, k in enumerate(ids) if j == 0 or k != ids[j - 1]]   # route order
     doc = {"points": pts, "legs": leg_pts, "lengths_m": lengths}
     with open(os.path.join(CACHE, "points.json"), "w") as f:
         json.dump(doc, f)
@@ -579,6 +580,17 @@ def step_link(out: str = OUT, log=print) -> Dict:
                                "horizon_at_mean_bearing_deg": round(float(np.interp(0.5 * (bearings[0] + bearings[-1]),
                                                                                     bearings, M[i])), 3),
                                "windows": w, "summary": summ}
+    # every route sample once: direct windows per criterion (the mast mode is derived from these, mast_los and the
+    # mast's windows, here and in the engine)
+    pt_win: Dict[int, Dict[str, List[int]]] = {}
+    pt_hour: Dict[int, Dict[str, List[int]]] = {}
+    k_h = SAMPLE_STEP_MIN // STEP_MIN
+    for i in sorted({k for ids in leg_pts.values() for k in ids}):
+        s = series(i)
+        pt_win[i] = {c: enc(s[c]) for c in C.CRITERIA}
+        # hourly sample series: an hour counts as linked only when all of its 10-min epochs are (conservative)
+        pt_hour[i] = {c: enc(s[c][: n - n % k_h].reshape(-1, k_h).all(axis=1)) for c in C.CRITERIA}
+    mask_of = lambda code: C.windows_to_mask(C.decode_windows(code), n)
     legs_out = {}
     for name, ids in leg_pts.items():
         if not ids:
@@ -587,13 +599,38 @@ def step_link(out: str = OUT, log=print) -> Dict:
         acc = {c: np.ones(n, dtype=bool) for c in C.CRITERIA}
         accm = {c: np.ones(n, dtype=bool) for c in C.CRITERIA}
         for i in ids:
-            s = series(i)
             for c in C.CRITERIA:
-                acc[c] &= s[c]
-                accm[c] &= s[c] | (los[i] & mast[c])
+                m_ = mask_of(pt_win[i][c])
+                acc[c] &= m_
+                accm[c] &= m_ | (los[i] & mast[c])
         w, summ = pack(acc, accm)
         legs_out[name] = {"length_m": round(pdoc["lengths_m"][name], 1), "n_samples": len(ids),
                           "mast_los_share": round(float(los[ids].mean()), 3), "windows": w, "summary": summ}
+    # per-sample windows (for interventions that wait for the link at their own position): deduplicated series
+    series_ix: Dict[Tuple[int, ...], int] = {}
+    series_list: List[List[int]] = []
+
+    def sid(code):
+        key = tuple(code)
+        if key not in series_ix:
+            series_ix[key] = len(series_list)
+            series_list.append(code)
+        return series_ix[key]
+
+    used = sorted(pt_win)
+    new_ix = {i: k for k, i in enumerate(used)}
+    samples_doc = {
+        "format": C.EARTH_LINK_SAMPLES_FORMAT, "version": C.EARTH_LINK_VERSION, "terrain": meta["site_id"],
+        "time": {"start_utc": START_UTC, "step_min": SAMPLE_STEP_MIN, "n": int(n // k_h)},
+        "criteria": list(C.CRITERIA),
+        "samples": [{"xy_m": [pts[i]["x"], pts[i]["y"]], "id": pts[i]["id"], "mast_los": bool(los[i]),
+                     "w": [sid(pt_hour[i][c]) for c in C.CRITERIA]} for i in used],
+        "series": series_list,
+        "legs": {name: [new_ix[i] for i in ids] for name, ids in leg_pts.items()},
+        "note": "sample windows are direct (dte), hourly: an hour is linked only when all six 10-min epochs are; with the mast a sample is also linked when mast_los and the mast "
+                "(earth_link-v1.json 'mast') is linked; legs list their samples in route order, end points included",
+    }
+    samples_path = os.path.join(os.path.dirname(out), "earth_link-v1-samples.json.gz")
     ephem = json.load(open(os.path.join(CACHE, "ephem.json")))
     dem = json.load(open(os.path.join(CACHE, "dem.json")))
     hz = os.path.join(CACHE, "horizons_check.json")
@@ -634,11 +671,18 @@ def step_link(out: str = OUT, log=print) -> Dict:
                       "time": _dt.datetime.now(_dt.timezone.utc).replace(microsecond=0).isoformat()},
     }
     os.makedirs(os.path.dirname(out), exist_ok=True)
+    import gzip
+    with open(samples_path, "wb") as f:                       # deterministic gzip (no name, mtime 0)
+        f.write(gzip.compress(json.dumps(samples_doc, separators=(",", ":")).encode("utf-8"), 9, mtime=0))
+    doc["samples_file"] = {"file": os.path.basename(samples_path), "sha256": sha256(samples_path),
+                           "n_samples": len(used), "n_series": len(series_list)}
     with open(out, "w", encoding="utf-8") as f:
         json.dump(doc, f, separators=(",", ":"))
     with open(out + ".sha256", "w") as f:
         f.write(f"{sha256(out)}  {os.path.basename(out)}\n")
     rss = peak_rss_mb()
+    log(f"samples: {len(used)} samples, {len(series_list)} distinct series -> {_rel(samples_path)} "
+        f"({os.path.getsize(samples_path) / 1024:.0f} KB)")
     log(f"link: {len(points_out)} points, {len(legs_out)} legs -> {_rel(out)} ({os.path.getsize(out) / 1024:.0f} KB) "
         f"in {time.time() - t0:.0f} s" + (f"; peak RSS {rss:.0f} MB" if rss else ""))
     return doc
@@ -776,7 +820,13 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument("--out", default=OUT)
     sub.add_parser("horizons")
     sub.add_parser("avgvisib")
+    for sp_ in sub.choices.values():
+        sp_.add_argument("--max-seconds", type=float, default=540.0,
+                         help="stop this process after so many seconds (Windows: `timeout` only kills the venv launcher)")
     a = ap.parse_args(argv)
+    if a.max_seconds and a.max_seconds > 0:
+        import faulthandler
+        faulthandler.dump_traceback_later(a.max_seconds, exit=True)
     os.makedirs(CACHE, exist_ok=True)
     if a.cmd == "ephem":
         step_ephem()

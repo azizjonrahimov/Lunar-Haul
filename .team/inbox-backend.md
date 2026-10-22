@@ -392,7 +392,7 @@ Done when: tests pass (synthetic: flat sphere, Earth at fixed elevation → anal
 wedge); the JSON validates; the report tables per site and per leg (link fraction, mean and max gap) under each
 criterion.
 
-## B-41 [IN PROGRESS] (after B-40; <= 5 h) R-1 engine: opt-in `comms` scenario field (results byte-identical when off)
+## B-41 [DONE 10:50] (after B-40; <= 5 h) R-1 engine: opt-in `comms` scenario field (results byte-identical when off)
 Goal: the engine can run with Earth-link windows (design: the note's "Experiment design in our engine").
 Scenario field `comms` (default None): `mode` always | dte | dte+relay; `relay` {coverage 0–1, gap_model
 "parametric", mean_gap_h}; `mast` {site, height_m, range_km} or None; `link_series` (path to earth_link-v1.json);
@@ -407,7 +407,7 @@ Done when: `comms=None` and `comms.mode=always` both reproduce the baseline md5 
 739e9ba7…); unit tests for each rule on a tiny scenario with a hand-made link series; one smoke run of P2 with
 `mode=dte` for 2 seeds reported (delays and the new metrics), single process. Do NOT run the suite (LEAD runs E21).
 
-## B-42 [OPEN] (after B-41, before B-33; <= 3 h) R-1 suite runner E21 "Earth in sight" (LEAD runs the suite)
+## B-42 [IN PROGRESS] (after B-41, before B-33; <= 3 h) R-1 suite runner E21 "Earth in sight" (LEAD runs the suite)
 Goal: the experiment that tests H1–H6 of the R-1 note (plan §10). File (new): `experiments/phase4/run_phase4.py`
 following `experiments/phase3/run_phase3.py` conventions (cells × seeds with common random numbers, resumable raw
 CSV keyed by `cell` and `seed`, summary table, `--seeds`, `--workers` default 1, plus `--cells a-b` so LEAD can run

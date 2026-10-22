@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://azizjonrahimov.github.io/lunar-logistics-research/schemas/trace-v2.schema.json",
   "title": "lunarsim-trace v2",
-  "description": "Phase-3 trace (PLAN \u00a75.5): v1 plus landing outcomes as objects, plume keep-out windows, shelters, terrain id, site positions, per-job interventions and energy. Readers accept v1 and v2. Written by the Python engine when any Phase-3 Scenario field is set.",
+  "description": "Phase-3 trace (PLAN §5.5): v1 plus landing outcomes as objects, plume keep-out windows, shelters, terrain id, site positions, per-job interventions and energy. Readers accept v1 and v2. Written by the Python engine when any Phase-3 Scenario field is set.",
   "type": "object",
   "required": [
     "horizon_h",
@@ -319,6 +319,52 @@
         "maxItems": 2
       },
       "description": "world site -> local terrain metres (terrain pack frame) or v2 world km x 1000 without terrain"
+    },
+    "comms": {
+      "type": "object",
+      "description": "Phase 4 (R-1), only when Scenario.comms is set: link settings (lunarsim/comms.py).",
+      "properties": {
+        "mode": {
+          "enum": [
+            "always",
+            "dte",
+            "dte+relay"
+          ]
+        },
+        "criterion": {
+          "type": "string"
+        },
+        "link_mode": {
+          "enum": [
+            "dte",
+            "dte+mast"
+          ]
+        },
+        "supervised_policy": {
+          "enum": [
+            "strict",
+            "strategic"
+          ]
+        },
+        "start_h": {
+          "type": "number"
+        },
+        "missing_legs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "comms_waits": {
+      "type": "array",
+      "description": "Phase 4: every interval a vehicle waited for an Earth link: [vehicle id, t0 h, t1 h, site or leg \"A->B\", \"start\" (parked before the segment) | \"midway\" (parked when the link dropped) | \"intervention\" (supervised-strategic help request)]. The wait is also inside the job segments (a stationary segment for start, a longer segment otherwise).",
+      "items": {
+        "type": "array",
+        "minItems": 5,
+        "maxItems": 5
+      }
     }
   },
   "$defs": {

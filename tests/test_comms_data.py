@@ -168,3 +168,25 @@ def test_committed_earth_link_file():
     assert len(doc["legs"]) == 182
     sha = open(DATA + ".sha256").read().split()[0]
     assert sha == E.sha256(DATA)
+
+
+def test_samples_file_agrees_with_the_leg_windows():
+    """Hourly per-sample series (conservative): when every sample of a leg is linked for an hour, the leg is too."""
+    if not os.path.isfile(DATA):
+        pytest.skip("earth_link-v1.json not generated")
+    el = C.EarthLink.load(DATA, samples=True)
+    with open(DATA + ".sha256") as f:
+        assert f.read().split()[0] == E.sha256(DATA)
+    assert el.doc["samples_file"]["sha256"] == E.sha256(os.path.join(os.path.dirname(DATA), el.doc["samples_file"]["file"]))
+    rng = np.random.default_rng(0)
+    checked = 0
+    for leg in ("BASE->DEPOT", "POWER->CONSTR", "PAD_A@1->BASE", "BASE->PSR"):
+        ids = el.leg_samples(leg)
+        assert len(ids) == el.doc["legs"][leg]["n_samples"]
+        for t in rng.uniform(0, el.horizon_h - 2, 40):
+            h = math.floor(t)
+            if all(el.sample_wait_h(i, h) == 0.0 for i in ids):
+                assert el.linked(leg, h + 0.5)
+                checked += 1
+    assert checked > 10
+    assert el.sample_wait_h(el.leg_samples("BASE->ISRU")[-1], 10.0) == math.inf     # ISRU never sees Earth

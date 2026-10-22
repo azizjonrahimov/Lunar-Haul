@@ -103,6 +103,9 @@ class Scenario:
     landing_model: Optional[dict] = None     # {policy, sigma_scale, pad_radius_m, failure_policy, dir}
     plume: Optional[dict] = None             # {keepout_km, standdown_h, shelter: "auto"}
     autonomy_model: Optional[str] = None     # "driving-v1" or a path to a lunarsim-driving table
+    # Phase 4 (R-1), opt-in: Earth-link windows ({mode, criterion, relay, mast, supervised_policy, start_year,
+    # link_series}); None = no link rule (and mode "always" = identical results). See lunarsim/comms.py
+    comms: Optional[dict] = None
 
     def with_(self, **kw) -> "Scenario":
         return replace(self, **kw)

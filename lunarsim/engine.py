@@ -113,6 +113,7 @@ class Metrics:
     interventions: int = 0
     intervention_h: float = 0.0
     prop_residual_kg: List[float] = field(default_factory=list)
+    comms: Optional[object] = None          # Phase 4: the CommsModel when Scenario.comms is set (adds its columns)
 
     def summary(self) -> Dict[str, float]:
         d = np.array(self.delays_h) if self.delays_h else np.array([np.nan])
@@ -190,6 +191,8 @@ class Metrics:
                 "intervention_h": self.intervention_h,
                 "prop_residual_kg_mean": float(np.mean(self.prop_residual_kg)) if self.prop_residual_kg else np.nan,
             })
+        if self.comms is not None:
+            out.update(self.comms.summary())
         return out
 
 
@@ -236,8 +239,17 @@ class Simulation:
         self.sites = self.drive = self.landing = self.plume = None
         self.p3_landings: List[dict] = []
         self._last_interventions = 0
+        self._last_segk: Dict[int, list] = {}  # per segment intervention counts of the last plan (driving tables)
         if self.p3:
             self._init_phase3()
+        self.comms = None
+        if sc.comms is not None:            # Phase 4 (R-1): opt-in Earth-link rules; own random streams
+            from .comms import CommsModel
+            from .phase3 import _find
+            standoff = str(sc.pad_standoff_km) if sc.pad_standoff_km is not None else "1"
+            self.comms = CommsModel(sc.comms, standoff, s, sc.horizon_h, self.world.pads, find=_find)
+            self.comms.set_leg_km(self.world.distance_km)
+            self.metrics.comms = self.comms
         self._build_fleet()
         self._schedule_demand()
         self.batch_h = self.mech_kwargs.get("batch_h", 0.0)
@@ -412,6 +424,7 @@ class Simulation:
         dur_max = 0.0
         km_sum = km_empty_sum = e_sum = 0.0
         self._last_segments = {}
+        self._last_segk = {}
         self._last_interventions = 0
         off = self._offpad_km(job) if self.landing is not None else 0.0
 
@@ -425,13 +438,16 @@ class Simulation:
         for v in job.vehicles:
             t = t_start
             segs = []
+            segk = []                                          # interventions per segment (Phase 4 comms)
             h, e, d0, k = leg(v, v.location, pad, False, False, t)
             self._last_interventions += k
             segs.append([v.location, pad, t, t + h, 0.0])
+            segk.append(k)
             t += h
             if off > 0:
                 h_off = 2.0 * off / max(v.cls.speed_kmh * self.autonomy_speed_mult(v) * OFFPAD_SPEED_FACTOR, 1e-6)
                 segs.append([pad, pad, t, t + h_off, 0.0])
+                segk.append(0)
                 t += h_off
                 e += 2.0 * off * v.cls.energy_wh_per_km * OFFPAD_ENERGY_FACTOR
                 d0 += 2.0 * off
@@ -440,6 +456,7 @@ class Simulation:
             hm = self.handling_mult(v)
             t_load = v.cls.load_h * hm * max(1, len(job.items))
             segs.append([pad, pad, t, t + t_load, 0.0])
+            segk.append(0)
             t += t_load
             prev = pad
             km = d0
@@ -449,10 +466,12 @@ class Simulation:
                 h, el, dk, k = leg(v, prev, stop, True, team, t)
                 self._last_interventions += k
                 segs.append([prev, stop, t, t + h, onboard])
+                segk.append(k)
                 t += h
                 e += el * (1.0 + 0.6 * load_kg / max(v.cls.capacity_kg, 1))
                 t_un = v.cls.unload_h * hm * sum(1 for c in job.items if c.dest == stop)
                 segs.append([stop, stop, t, t + t_un, onboard])
+                segk.append(0)
                 t += t_un
                 onboard -= sum(c.mass_kg for c in job.items if c.dest == stop) / len(job.vehicles)
                 km += dk
@@ -460,16 +479,19 @@ class Simulation:
             if job.backhaul:
                 t_l = v.cls.load_h * hm * len(job.backhaul)
                 segs.append([prev, prev, t, t + t_l, 0.0])
+                segk.append(0)
                 t += t_l
                 dest = job.backhaul[0].dest
                 h, el, dk, k = leg(v, prev, dest, True, False, t)
                 self._last_interventions += k
                 bh_kg = sum(c.mass_kg for c in job.backhaul)
                 segs.append([prev, dest, t, t + h, bh_kg])
+                segk.append(k)
                 t += h
                 e += el * 1.3
                 t_un = v.cls.unload_h * hm * len(job.backhaul)
                 segs.append([dest, dest, t, t + t_un, bh_kg])
+                segk.append(0)
                 t += t_un
                 km += dk
                 prev = dest
@@ -478,6 +500,7 @@ class Simulation:
             km_empty_sum += d0
             e_sum += e
             self._last_segments[v.id] = segs
+            self._last_segk[v.id] = segk
         return dur_max, km_sum, km_empty_sum, e_sum, False
 
     def _v2_travel_h(self, v, a, b, loaded, team, t):
@@ -491,6 +514,13 @@ class Simulation:
         return eq / max(speed, 1e-6)
 
     def job_plan(self, job: Job, t_start: float, realize: bool = False) -> Tuple[float, float, float, float, bool]:
+        """_job_plan, with the Earth-link waits of Scenario.comms inserted when that rule is on (Phase 4);
+        the duration is inf when a needed link never comes."""
+        if self.comms is not None and self.comms.active:
+            return self.comms.plan(self, job, t_start, realize)
+        return self._job_plan(job, t_start, realize)
+
+    def _job_plan(self, job: Job, t_start: float, realize: bool = False) -> Tuple[float, float, float, float, bool]:
         """Return (duration_h, km, km_empty, energy_wh, needs_night) for the job
         if it starts at t_start. Duration is the slowest vehicle's duration.
         Does not include operator waits, faults, or night hibernation.
@@ -598,6 +628,8 @@ class Simulation:
         return out
 
     def operators_available(self) -> float:
+        if self.comms is not None and self.comms.active:      # Phase 4: only demand linked right now counts
+            return self.sc.n_operators - self.comms.demand_at(self.t)
         self.op_jobs = [(e, d) for (e, d) in self.op_jobs if e > self.t]
         return self.sc.n_operators - sum(d for _, d in self.op_jobs)
 
@@ -804,12 +836,22 @@ class Simulation:
     def _reposition(self, v: Vehicle, pad: str):
         h = self.travel_h(v, v.location, pad, False, False, self.t)
         d = self.world.distance_km(v.location, pad)
+        segs_c = None
+        if self.comms is not None and self.comms.active and self.comms.needs_link(v.autonomy):
+            segs_c, waits_c = self.comms.reposition(v, v.location, pad, self.t, h)
+            if segs_c is None:
+                return False                # the link never comes on this leg
+            if waits_c:
+                h = segs_c[-1][3] - self.t
         if not v.cls.night_ops and self.t + h > self.next_night_start(self.t):
             return False
         t_end = self.t + h
+        if segs_c is not None:
+            self.comms.book_waits(v, waits_c)
         if self.record_trace:
             self.trace.append({"kind": "reposition", "veh": v.id, "team": [v.id], "t0": self.t, "t1": t_end,
-                               "segments": [[v.location, pad, self.t, t_end, 0.0]], "items": []})
+                               "segments": segs_c if segs_c is not None else [[v.location, pad, self.t, t_end, 0.0]],
+                               "items": []})
         v.busy_until = t_end
         v.location = pad
         v.km_total += d
@@ -828,6 +870,8 @@ class Simulation:
         candidates = [c for c in self.waiting if not c.stranded]
         if self.plume is not None:      # Phase 3: no pickup at, or delivery to, a pad inside a keep-out window
             candidates = [c for c in candidates if not (self.pad_blocked(c.origin) or self.pad_blocked(c.dest))]
+        if self.comms is not None and self.comms.active:      # Phase 4: items no vehicle could ever deliver
+            candidates = self.comms.filter_candidates(self, candidates)
         free = self.free_vehicles()
         if not free:
             return
@@ -836,12 +880,23 @@ class Simulation:
         jobs: List[Job] = self.mechanism(self, candidates, free, **self.mech_kwargs)
         for job in jobs:
             self._start_job(job)
+        if self.comms is not None and self.comms.active:      # Phase 4: re-dispatch when a deferred link returns
+            for tw in self.comms.pop_wakes(self.t):
+                self._push(tw, "WAKE", None)
 
     def _start_job(self, job: Job):
         # operator check
         demand = sum(self.operator_demand(v) for v in job.vehicles)
         avail = self.operators_available()
         if demand > avail + 1e-9:
+            if self.comms is not None and self.comms.active:
+                t_free = self.comms.next_demand_drop(self.t)
+                if t_free is not None:
+                    for v in job.vehicles:
+                        v.busy_until = max(v.busy_until, t_free)
+                    self._push(t_free, "FREE", None)
+                    self.metrics.unmet_operator_waits += 1
+                return
             # wait until the earliest operator job ends
             if self.op_jobs:
                 t_free = min(e for e, _ in self.op_jobs)
@@ -850,8 +905,12 @@ class Simulation:
                 self._push(t_free, "FREE", None)
                 self.metrics.unmet_operator_waits += 1
             return
+        comms_on = self.comms is not None and self.comms.active
         if not self.p3:
-            dur, km, km_empty, e_wh, _ = self.job_plan(job, self.t)
+            if comms_on:                    # committed job: the strategic interventions are drawn
+                dur, km, km_empty, e_wh, _ = self.job_plan(job, self.t, realize=True)
+            else:
+                dur, km, km_empty, e_wh, _ = self.job_plan(job, self.t)
         else:
             dur, km, km_empty, e_wh, _ = self.job_plan(job, self.t, realize=True)
             hold = 0.0
@@ -870,11 +929,17 @@ class Simulation:
                     self.metrics.plume_standdowns += 1
                     self.metrics.standdown_vehicle_h += hold * len(job.vehicles)
                     self.metrics.standdown_hold_h += hold * len(job.vehicles)
+            if comms_on and not math.isfinite(dur):
+                self.comms.jobs_refused += 1    # a needed Earth link never comes on this job's legs
+                return
             off = self._offpad_km(job) if self.landing is not None else 0.0
             self.metrics.km_offpad_extra += 2.0 * off * len(job.vehicles)
             self.metrics.interventions += self._last_interventions
             self.metrics.intervention_h += self._last_interventions * (self.rtt_s + INTERVENTION_RECOVERY_S) / 3600.0
             job_interventions = self._last_interventions
+        if comms_on and not math.isfinite(dur):
+            self.comms.jobs_refused += 1
+            return
         # battery: if the trip needs more than is in the pack, charge first
         for v in job.vehicles:
             need = e_wh / len(job.vehicles)
@@ -901,6 +966,11 @@ class Simulation:
                         self.metrics.night_strandings += 1
                         break
         t_end = self.t + dur
+        op_linked_h = None
+        if comms_on:
+            op_linked_h = self.comms.commit(self, job, self.t, t_end)
+        elif self.comms is not None:        # mode "always": record operator demand only
+            self.comms.log_job_passive(self.t, t_end, demand)
         last_stop = job.backhaul[0].dest if job.backhaul else job.route[-1]
         if self.record_trace:
             segs = self._last_segments.get(job.vehicles[0].id, [])
@@ -953,6 +1023,8 @@ class Simulation:
             c.t_delivered = t_end
             self._record_delivery(c)
             self.metrics.backhaul_kg += c.mass_kg
+        if self.comms is not None:
+            self.comms.note_deliveries(job.items + job.backhaul)
         if len(job.vehicles) > 1:
             self.metrics.team_lifts += 1
         if len(job.items) > 1:
@@ -962,7 +1034,7 @@ class Simulation:
         self.metrics.km_empty += km_empty
         self.metrics.energy_kwh += e_wh / 1000.0
         self.metrics.veh_hours_busy += dur * len(job.vehicles)
-        self.metrics.operator_hours += dur * demand
+        self.metrics.operator_hours += dur * demand if op_linked_h is None else op_linked_h
         self._push(t_end, "FREE", None)
 
     def _record_delivery(self, c: Cargo):
@@ -1002,6 +1074,8 @@ class Simulation:
         m.operator_cost_musd += m.operator_hours * self.sc.operator_cost_per_h / 1e6
         m.repositions = self.repositions
         m.km_reposition = self.km_reposition
+        if self.comms is not None:
+            self.comms.finalise()
 
     # ------------------------------------------------------------- export
     def _trace_v2(self, nights, clean, mechanism):
@@ -1060,7 +1134,7 @@ def _trace_v2_body(sim: "Simulation", nights, clean, mechanism) -> dict:
             s = plume.shelter(pad)
             shelters.append({"pad": pad, "site": s,
                              "los_blocked": None if s is None else sim.sites.line_of_sight_blocked(pad, s)})
-    return {
+    out = {
         "format": "lunarsim-trace", "version": 2, "engine": "python", "scenario": sim.sc.name,
         "mechanism": mechanism, "seed": int(sim.seed), "terrain": sim.sc.terrain,
         "pad_standoff_km": sim.sites.standoff if sim.sc.terrain else None,
@@ -1082,6 +1156,13 @@ def _trace_v2_body(sim: "Simulation", nights, clean, mechanism) -> dict:
                    int(getattr(c, "lost", False))] for c in sim.all_cargo],
         "summary": clean,
     }
+    if sim.comms is not None:               # Phase 4: link settings and every "waiting for Earth" interval
+        cm = sim.comms
+        out["comms"] = {"mode": cm.mode, "criterion": cm.criterion, "link_mode": cm.link_mode,
+                        "supervised_policy": cm.policy, "start_h": cm.start_h,
+                        "missing_legs": sorted(cm.missing_legs)}
+        out["comms_waits"] = cm.waits       # [vehicle id, t0, t1, site or leg, "start" | "midway" | "intervention"]
+    return out
 
 
 def run(sc: Scenario, mechanism: Callable, seed: int, **mech_kwargs) -> Dict[str, float]:

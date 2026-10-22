@@ -705,7 +705,12 @@ def main(argv: Optional[List[str]] = None) -> int:
         if name == "build":
             p.add_argument("--files", default=None, help="horizon files to compute, e.g. 0-7 or 3,5 (default: all)")
             p.add_argument("--skip-static", action="store_true", help="do not rewrite the normal maps and patches")
+        p.add_argument("--max-seconds", type=float, default=540.0,
+                       help="stop this process after so many seconds (Windows: `timeout` only kills the venv launcher)")
     a = ap.parse_args(argv)
+    if a.max_seconds and a.max_seconds > 0:
+        import faulthandler
+        faulthandler.dump_traceback_later(a.max_seconds, exit=True)
     out = a.out or os.path.join(a.pack, "v2")
     dem = None if a.dem == "none" else a.dem
     if a.cmd == "build":

@@ -351,6 +351,32 @@
             "null"
           ],
           "description": "Phase 3: \"driving-v1\" or a path to a lunarsim-driving table"
+        },
+        "comms": {
+          "type": ["object", "null"],
+          "description": "Phase 4 (R-1): Earth-link rules (lunarsim/comms.py CommsModel). Absent or null = no rule; mode 'always' gives identical results.",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {"enum": ["always", "dte", "dte+relay"]},
+            "criterion": {"enum": ["any_part", "centre+0.5deg", "centre+2deg"]},
+            "link_series": {"type": "string", "description": "path to earth_link-v1.json (default data/comms/connecting_ridge/earth_link-v1.json)"},
+            "relay": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "coverage": {"type": "number", "minimum": 0, "maximum": 1},
+                "gap_model": {"const": "parametric"},
+                "mean_gap_h": {"type": "number", "exclusiveMinimum": 0}
+              }
+            },
+            "mast": {
+              "type": ["object", "null"],
+              "properties": {"site": {"type": "string"}, "height_m": {"type": "number"}, "range_km": {"type": "number"}}
+            },
+            "supervised_policy": {"enum": ["strict", "strategic"]},
+            "start_year": {"enum": [2028, 2029, 2030, 2031]},
+            "start_h": {"type": "number", "minimum": 0}
+          }
         }
       }
     },
