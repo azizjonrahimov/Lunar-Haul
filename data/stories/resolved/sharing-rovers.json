@@ -15,84 +15,96 @@
    "text": "16.2 h",
    "unit": "h",
    "flag": "Modelled",
-   "source": "results/table_main.csv, row phase = P2, mechanism = In-house fleets, column delay_prio1_mean_h; mean delay of urgent items, mean over seeds (experiment E1)"
+   "source": "results/table_main.csv, row phase = P2, mechanism = In-house fleets, column delay_prio1_mean_h; mean delay of urgent items, mean over seeds (experiment E1)",
+   "label": "Own rovers: mean urgent wait"
   },
   "inhouse_p90": {
    "value": 49.1,
    "text": "49 h",
    "unit": "h",
    "flag": "Modelled",
-   "source": "results/table_main.csv, row phase = P2, mechanism = In-house fleets, column delay_prio1_p90_h; 90th percentile delay of urgent items, mean over seeds (experiment E1)"
+   "source": "results/table_main.csv, row phase = P2, mechanism = In-house fleets, column delay_prio1_p90_h; 90th percentile delay of urgent items, mean over seeds (experiment E1)",
+   "label": "Own rovers: one in ten urgent waits over"
   },
   "inhouse_sl24": {
    "value": 81.8,
    "text": "82 %",
    "unit": "%",
    "flag": "Modelled",
-   "source": "results/table_main.csv, row phase = P2, mechanism = In-house fleets, column sl24_prio1; x 100; share of urgent items delivered within a day (experiment E1)"
+   "source": "results/table_main.csv, row phase = P2, mechanism = In-house fleets, column sl24_prio1; x 100; share of urgent items delivered within a day (experiment E1)",
+   "label": "Own rovers: urgent within a day"
   },
   "market_mean": {
    "value": 5.95,
    "text": "6.0 h",
    "unit": "h",
    "flag": "Modelled",
-   "source": "results/table_main.csv, row phase = P2, mechanism = Marketplace (ours), column delay_prio1_mean_h; mean delay of urgent items, mean over seeds (experiment E1)"
+   "source": "results/table_main.csv, row phase = P2, mechanism = Marketplace (ours), column delay_prio1_mean_h; mean delay of urgent items, mean over seeds (experiment E1)",
+   "label": "Shared rovers: mean urgent wait"
   },
   "market_p90": {
    "value": 15.4,
    "text": "15 h",
    "unit": "h",
    "flag": "Modelled",
-   "source": "results/table_main.csv, row phase = P2, mechanism = Marketplace (ours), column delay_prio1_p90_h; 90th percentile delay of urgent items (experiment E1)"
+   "source": "results/table_main.csv, row phase = P2, mechanism = Marketplace (ours), column delay_prio1_p90_h; 90th percentile delay of urgent items (experiment E1)",
+   "label": "Shared rovers: one in ten waits over"
   },
   "market_sl24": {
    "value": 95.2,
    "text": "95 %",
    "unit": "%",
    "flag": "Modelled",
-   "source": "results/table_main.csv, row phase = P2, mechanism = Marketplace (ours), column sl24_prio1; x 100; share of urgent items delivered within a day (experiment E1)"
+   "source": "results/table_main.csv, row phase = P2, mechanism = Marketplace (ours), column sl24_prio1; x 100; share of urgent items delivered within a day (experiment E1)",
+   "label": "Shared rovers: urgent within a day"
   },
   "market_cut": {
    "value": 63.2716049383,
    "text": "63 %",
    "unit": "%",
    "flag": "Modelled",
-   "source": "pct_change of inhouse_mean and market_mean (unrounded); neg"
+   "source": "pct_change of inhouse_mean and market_mean (unrounded); neg",
+   "label": "Cut in the mean urgent wait"
   },
   "vs_greedy": {
    "value": 21.8102725727,
    "text": "22 %",
    "unit": "%",
    "flag": "Modelled",
-   "source": "results/table_paired_E1.csv, row phase = P2, metric = delay_prio1_mean_h, column rel_%; neg; marketplace minus pooled greedy, paired over common seeds, relative to greedy (experiment E1)"
+   "source": "results/table_paired_E1.csv, row phase = P2, metric = delay_prio1_mean_h, column rel_%; neg; marketplace minus pooled greedy, paired over common seeds, relative to greedy (experiment E1)",
+   "label": "Auction against nearest free rover"
   },
   "e19_rovers": {
    "value": 4.0,
    "text": "4 rovers",
    "unit": "rovers",
    "flag": "Modelled",
-   "source": "results/table_E19.csv, row scenario = P2-4-vehicles, mechanism = inhouse, autonomy = supervised, column n_vehicles"
+   "source": "results/table_E19.csv, row scenario = P2-4-vehicles, mechanism = inhouse, autonomy = supervised, column n_vehicles",
+   "label": "Rovers in this case"
   },
   "e19_inhouse": {
    "value": 19.0092616018,
    "text": "19.0 h",
    "unit": "h",
    "flag": "Modelled",
-   "source": "results/table_E19.csv, row scenario = P2-4-vehicles, mechanism = inhouse, autonomy = supervised, column delay_prio1_mean_h; mean urgent delay, supervised driving, mean over seeds (experiment E19)"
+   "source": "results/table_E19.csv, row scenario = P2-4-vehicles, mechanism = inhouse, autonomy = supervised, column delay_prio1_mean_h; mean urgent delay, supervised driving, mean over seeds (experiment E19)",
+   "label": "Supervised, own rovers: mean urgent wait"
   },
   "e19_market": {
    "value": 6.41614296764,
    "text": "6.4 h",
    "unit": "h",
    "flag": "Modelled",
-   "source": "results/table_E19.csv, row scenario = P2-4-vehicles, mechanism = marketplace, autonomy = supervised, column delay_prio1_mean_h; the same with the marketplace job rule (experiment E19)"
+   "source": "results/table_E19.csv, row scenario = P2-4-vehicles, mechanism = marketplace, autonomy = supervised, column delay_prio1_mean_h; the same with the marketplace job rule (experiment E19)",
+   "label": "Supervised, shared: mean urgent wait"
   },
   "e19_auto": {
    "value": 4.27251476337,
    "text": "4.3 h",
    "unit": "h",
    "flag": "Modelled",
-   "source": "results/table_E19.csv, row scenario = P2-4-vehicles, mechanism = marketplace, autonomy = autonomous, column delay_prio1_mean_h; marketplace with autonomous driving (experiment E19)"
+   "source": "results/table_E19.csv, row scenario = P2-4-vehicles, mechanism = marketplace, autonomy = autonomous, column delay_prio1_mean_h; marketplace with autonomous driving (experiment E19)",
+   "label": "Autonomous, shared: mean urgent wait"
   }
  },
  "steps": [

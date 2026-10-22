@@ -664,7 +664,7 @@ F-35 draws Earth-link posts from the night (slope-only) route samples; lighting 
 samples for every B-32 route (all five lightings) to the link pipeline (masks + link stages), a samples file v2 or an
 extra block, keep the engine's night-route rule unchanged (byte-identical E21), and tell FRONTEND the keys.
 
-## B-53 [OPEN] (small; after B-52 or now if waiting) Story numbers get a `label`
+## B-53 [DONE 15:55] (small; after B-52 or now if waiting) Story numbers get a `label`
 F-38 needs a short display label for every story number (the page carries a 49-key label map for now). Add an
 optional `label` (≤ 40 characters, plain words) to `numbers.*` in story-v1 (schema + resolver passes it through to
 `resolved/*.json`), draft labels for the four stories' numbers, rebuild resolved files, tests. Tell FRONTEND (via

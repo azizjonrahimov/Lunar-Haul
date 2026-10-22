@@ -15,84 +15,96 @@
    "text": "35.0 % per km",
    "unit": "% per km",
    "flag": "Modelled",
-   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = standoff, column pct_per_unit; pooled fit of ln(urgent mean delay), 100 (e^b - 1) per km of pad standoff, at the typical fleet load (experiment E20)"
+   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = standoff, column pct_per_unit; pooled fit of ln(urgent mean delay), 100 (e^b - 1) per km of pad standoff, at the typical fleet load (experiment E20)",
+   "label": "Urgent wait per km of pad distance"
   },
   "standoff_lo": {
    "value": 32.6274415341,
    "text": "32.6 %",
    "unit": "%",
    "flag": "Modelled",
-   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = standoff, column ci_lo; 100 (e^v - 1); lower end of the 95 % bootstrap interval over seeds"
+   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = standoff, column ci_lo; 100 (e^v - 1); lower end of the 95 % bootstrap interval over seeds",
+   "label": "Lower end of its interval"
   },
   "standoff_hi": {
    "value": 37.6447099976,
    "text": "37.6 %",
    "unit": "%",
    "flag": "Modelled",
-   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = standoff, column ci_hi; 100 (e^v - 1); upper end of the 95 % bootstrap interval over seeds"
+   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = standoff, column ci_hi; 100 (e^v - 1); upper end of the 95 % bootstrap interval over seeds",
+   "label": "Upper end of its interval"
   },
   "fit_years": {
    "value": 62640.0,
    "text": "62,640 simulated years",
    "unit": "simulated years",
    "flag": "Modelled",
-   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = standoff, column n; rows of the pooled fit: one seed of one cell each (E17 + E18)"
+   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = standoff, column n; rows of the pooled fit: one seed of one cell each (E17 + E18)",
+   "label": "Simulated years in the fit"
   },
   "fit_seeds": {
    "value": 30.0,
    "text": "30 seeds",
    "unit": "seeds",
    "flag": "Modelled",
-   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = standoff, column n_seeds"
+   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = standoff, column n_seeds",
+   "label": "Seeds per setting"
   },
   "keepout_pct": {
    "value": -0.498725859372,
    "text": "−0.5 % per km",
    "unit": "% per km",
    "flag": "Modelled",
-   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = keepout, column pct_per_unit; per km of plume keep-out radius"
+   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = keepout, column pct_per_unit; per km of plume keep-out radius",
+   "label": "Urgent wait per km of keep-out radius"
   },
   "keepout_lo": {
    "value": -1.4956649202,
    "text": "−1.5 %",
    "unit": "%",
    "flag": "Modelled",
-   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = keepout, column ci_lo; 100 (e^v - 1); 95 % bootstrap interval, lower end"
+   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = keepout, column ci_lo; 100 (e^v - 1); 95 % bootstrap interval, lower end",
+   "label": "Lower end of its interval"
   },
   "keepout_hi": {
    "value": 0.828199023416,
    "text": "0.8 %",
    "unit": "%",
    "flag": "Modelled",
-   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = keepout, column ci_hi; 100 (e^v - 1); 95 % bootstrap interval, upper end"
+   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = keepout, column ci_hi; 100 (e^v - 1); 95 % bootstrap interval, upper end",
+   "label": "Upper end of its interval"
   },
   "miss_pct": {
    "value": 8.16134617679,
    "text": "8.2 %",
    "unit": "%",
    "flag": "Modelled",
-   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = log_miss, column pct_per_unit; per e-fold of the mean landing miss"
+   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = log_miss, column pct_per_unit; per e-fold of the mean landing miss",
+   "label": "Urgent wait per e-fold of landing miss"
   },
   "impacts_near": {
    "value": 11.7476505635,
    "text": "12",
    "unit": "",
    "flag": "Modelled",
-   "source": "results/E20_fit.json: siting/impacts_per_landing_at_standoffs/0.5; ejecta impacts on the base per landing at a 0.5 km standoff, Modelled from the Wittal et al. (2022) anchors"
+   "source": "results/E20_fit.json: siting/impacts_per_landing_at_standoffs/0.5; ejecta impacts on the base per landing at a 0.5 km standoff, Modelled from the Wittal et al. (2022) anchors",
+   "label": "Ejecta impacts per landing, nearest pads"
   },
   "impacts_far": {
    "value": 0.37,
    "text": "0.37",
    "unit": "",
    "flag": "Modelled",
-   "source": "results/E20_fit.json: siting/impacts_per_landing_at_standoffs/5; the same at a 5 km standoff"
+   "source": "results/E20_fit.json: siting/impacts_per_landing_at_standoffs/5; the same at a 5 km standoff",
+   "label": "The same, farthest pads"
   },
   "far_cheapest": {
    "value": 100.0,
    "text": "100 %",
    "unit": "%",
    "flag": "Assumed",
-   "source": "results/E20_fit.json: siting/share_of_minima_by_standoff/13/share_min_at_5km; x 100; share of the fleet and dispatch cells whose cheapest standoff is 5 km, at energy 500 $/kWh, damage 1 M$ per impact, delay valued at 100 $ per item-hour (prices Assumed)"
+   "source": "results/E20_fit.json: siting/share_of_minima_by_standoff/13/share_min_at_5km; x 100; share of the fleet and dispatch cells whose cheapest standoff is 5 km, at energy 500 $/kWh, damage 1 M$ per impact, delay valued at 100 $ per item-hour (prices Assumed)",
+   "label": "Cells where the farthest pads cost least"
   }
  },
  "steps": [

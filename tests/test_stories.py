@@ -175,3 +175,28 @@ def test_text_sources_hash_with_lf(tmp_path):
         assert src.table("results/t.csv") == [{"a": "x", "b": "1.5"}]
         shas.append(src.used["results/t.csv"])
     assert shas[0] == shas[1]
+
+
+def test_number_labels(root):
+    """B-53: an optional display label per number, passed through to the resolved story (pending ones too); at most
+    40 characters and no typed digits."""
+    nums = {"a": {"table": "results/t.csv", "where": {"phase": "P2", "rule": "a"}, "column": "delay", "unit": "h",
+                  "label": "Own rovers: mean urgent wait"},
+            "later": {"table": "results/none.csv", "column": "v", "label": "Not there yet"}}
+    doc = _story(nums, "{{r:a}} and {{r:later}}", status="draft")
+    errs, pend = S.check(doc, root)
+    assert errs == [] and pend == ["later"]
+    r = S.resolve(doc, root)["numbers"]
+    assert r["a"]["label"] == "Own rovers: mean urgent wait" and r["later"] == {"pending": r["later"]["pending"],
+                                                                                 "label": "Not there yet"}
+    nums["a"]["label"] = "x" * 41
+    nums["later"]["label"] = "Pads 5 km away"
+    errs, _ = S.check(_story(nums, "{{r:a}} and {{r:later}}", status="draft"), root)
+    assert any("numbers.a.label: must be 1-40" in e for e in errs) and any("numbers.later.label: typed number '5'" in e for e in errs)
+
+
+def test_committed_stories_have_labels():
+    for p in S.story_files():
+        doc = S.load(p)
+        for k, spec in doc["numbers"].items():
+            assert spec.get("label") and len(spec["label"]) <= 40 and not S.typed_digits(spec["label"]), (p, k)

@@ -15,77 +15,88 @@
    "text": "500",
    "unit": "",
    "flag": "Modelled",
-   "source": "results/table_E15.csv, row policy = classical_CLPS, column n; dispersed CLPS landings per pilot, the same seeds for each (experiment E15)"
+   "source": "results/table_E15.csv, row policy = classical_CLPS, column n; dispersed CLPS landings per pilot, the same seeds for each (experiment E15)",
+   "label": "Landings per pilot"
   },
   "classical_pass": {
    "value": 93.8,
    "text": "93.8 %",
    "unit": "%",
    "flag": "Modelled",
-   "source": "results/table_E15.csv, row policy = classical_CLPS, column pass_rate; x 100; share inside the SPLICE touchdown limits, classical ZEM/ZEV law (experiment E15)"
+   "source": "results/table_E15.csv, row policy = classical_CLPS, column pass_rate; x 100; share inside the SPLICE touchdown limits, classical ZEM/ZEV law (experiment E15)",
+   "label": "Classical law: landings inside limits"
   },
   "classical_miss": {
    "value": 2.9023054902,
    "text": "2.9 m",
    "unit": "m",
    "flag": "Modelled",
-   "source": "results/table_E15.csv, row policy = classical_CLPS, column miss_mean_m; mean distance of touchdown from the aim point"
+   "source": "results/table_E15.csv, row policy = classical_CLPS, column miss_mean_m; mean distance of touchdown from the aim point",
+   "label": "Classical law: mean miss"
   },
   "classical_stale": {
    "value": 6.0,
    "text": "6",
    "unit": "",
    "flag": "Modelled",
-   "source": "results/table_E15.csv, row policy = classical_CLPS, column fail_sensor; failed touchdowns while the altimeter held a dropped-out reading"
+   "source": "results/table_E15.csv, row policy = classical_CLPS, column fail_sensor; failed touchdowns while the altimeter held a dropped-out reading",
+   "label": "Classical law: fails on stale altimeter"
   },
   "rl_pass": {
    "value": 63.2,
    "text": "63.2 %",
    "unit": "%",
    "flag": "Modelled",
-   "source": "results/table_E15.csv, row policy = lander_CLPS_baseline_s0, column pass_rate; x 100; PPO from a random start (experiment E15)"
+   "source": "results/table_E15.csv, row policy = lander_CLPS_baseline_s0, column pass_rate; x 100; PPO from a random start (experiment E15)",
+   "label": "Trial and error: landings inside limits"
   },
   "rl_steps": {
    "value": 2007040.0,
    "text": "2,007,040 simulated steps",
    "unit": "simulated steps",
    "flag": "Modelled",
-   "source": "results/table_E15.csv, row policy = lander_CLPS_baseline_s0, column training_steps; PPO training length"
+   "source": "results/table_E15.csv, row policy = lander_CLPS_baseline_s0, column training_steps; PPO training length",
+   "label": "Trial-and-error training length"
   },
   "learned_pass": {
    "value": 89.0,
    "text": "89.0 %",
    "unit": "%",
    "flag": "Modelled",
-   "source": "results/table_E15.csv, row policy = lander_CLPS_bc_v3_s0, column pass_rate; x 100; imitation of the classical law with DAgger, observation v3 with the altimeter history (experiment E15)"
+   "source": "results/table_E15.csv, row policy = lander_CLPS_bc_v3_s0, column pass_rate; x 100; imitation of the classical law with DAgger, observation v3 with the altimeter history (experiment E15)",
+   "label": "Imitation network: inside the limits"
   },
   "learned_miss": {
    "value": 3.22714546261,
    "text": "3.2 m",
    "unit": "m",
    "flag": "Modelled",
-   "source": "results/table_E15.csv, row policy = lander_CLPS_bc_v3_s0, column miss_mean_m"
+   "source": "results/table_E15.csv, row policy = lander_CLPS_bc_v3_s0, column miss_mean_m",
+   "label": "Imitation network: mean miss"
   },
   "learned_stale": {
    "value": 33.0,
    "text": "33",
    "unit": "",
    "flag": "Modelled",
-   "source": "results/table_E15.csv, row policy = lander_CLPS_bc_v3_s0, column fail_sensor; failed touchdowns while the altimeter held a dropped-out reading"
+   "source": "results/table_E15.csv, row policy = lander_CLPS_bc_v3_s0, column fail_sensor; failed touchdowns while the altimeter held a dropped-out reading",
+   "label": "Network: fails on stale altimeter"
   },
   "gap": {
    "value": 4.8,
    "text": "4.8 percentage points",
    "unit": "percentage points",
    "flag": "Modelled",
-   "source": "results/table_E15.csv, row policy = lander_CLPS_bc_v3_s0, column d_pass_rate; neg; x 100; classical minus learned success, paired on the same seeds"
+   "source": "results/table_E15.csv, row policy = lander_CLPS_bc_v3_s0, column d_pass_rate; neg; x 100; classical minus learned success, paired on the same seeds",
+   "label": "Classical minus imitation network"
   },
   "gap_ci": {
    "value": 3.46267159748,
    "text": "3.5 percentage points",
    "unit": "percentage points",
    "flag": "Modelled",
-   "source": "results/table_E15.csv, row policy = lander_CLPS_bc_v3_s0, column d_pass_rate_ci95; x 100; half-width of the 95 % interval of the paired difference"
+   "source": "results/table_E15.csv, row policy = lander_CLPS_bc_v3_s0, column d_pass_rate_ci95; x 100; half-width of the 95 % interval of the paired difference",
+   "label": "Half-width of its interval"
   }
  },
  "steps": [

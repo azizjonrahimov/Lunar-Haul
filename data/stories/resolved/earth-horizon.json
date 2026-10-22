@@ -15,98 +15,112 @@
    "text": "532 t per year",
    "unit": "t per year",
    "flag": "Modelled",
-   "source": "results/table_E21.csv, row stage = A, comms = always, mix = supervised_strict, column delivered_t_in_year; Earth always in view, all supervised rovers, strict policy (E21 stage A)"
+   "source": "results/table_E21.csv, row stage = A, comms = always, mix = supervised_strict, column delivered_t_in_year; Earth always in view, all supervised rovers, strict policy (E21 stage A)",
+   "label": "Delivered with Earth always in view"
   },
   "dte_t": {
    "value": 306.524804758,
    "text": "307 t per year",
    "unit": "t per year",
    "flag": "Modelled",
-   "source": "results/table_E21.csv, row stage = A, comms = dte, mix = supervised_strict, column delivered_t_in_year; direct-to-Earth links only (E21 stage A)"
+   "source": "results/table_E21.csv, row stage = A, comms = dte, mix = supervised_strict, column delivered_t_in_year; direct-to-Earth links only (E21 stage A)",
+   "label": "Delivered with direct links only"
   },
   "dte_loss": {
    "value": 42.4030242174,
    "text": "42 %",
    "unit": "%",
    "flag": "Modelled",
-   "source": "pct_change of always_t and dte_t (unrounded); neg"
+   "source": "pct_change of always_t and dte_t (unrounded); neg",
+   "label": "Lost against Earth always in view"
   },
   "base_link": {
    "value": 59.267,
    "text": "59 %",
    "unit": "%",
    "flag": "Modelled",
-   "source": "results/E21_fit.json: throughput/site_link_fraction_dte_any_part/BASE; x 100; share of 2028-2031 in which any part of Earth's disc is above the terrain horizon at the base, 2.5 m antenna (B-40)"
+   "source": "results/E21_fit.json: throughput/site_link_fraction_dte_any_part/BASE; x 100; share of 2028-2031 in which any part of Earth's disc is above the terrain horizon at the base, 2.5 m antenna (B-40)",
+   "label": "Time Earth is in view at the base"
   },
   "isru_lost": {
    "value": 204.15036,
    "text": "204 t per year",
    "unit": "t per year",
    "flag": "Modelled",
-   "source": "results/E21_fit.json: throughput/lost_at_never_linked_t/mean; cargo bound for the ISRU plant that is never delivered under direct links only (E21 analysis)"
+   "source": "results/E21_fit.json: throughput/lost_at_never_linked_t/mean; cargo bound for the ISRU plant that is never delivered under direct links only (E21 analysis)",
+   "label": "ISRU cargo never delivered"
   },
   "dte_wait": {
    "value": 971.693588126,
    "text": "972 rover-hours",
    "unit": "rover-hours",
    "flag": "Modelled",
-   "source": "results/table_E21.csv, row stage = A, comms = dte, mix = supervised_strict, column blackout_wait_vehicle_h; rover time spent waiting for Earth in the year"
+   "source": "results/table_E21.csv, row stage = A, comms = dte, mix = supervised_strict, column blackout_wait_vehicle_h; rover time spent waiting for Earth in the year",
+   "label": "Rover time spent waiting for Earth"
   },
   "relay_t": {
    "value": 530.167418135,
    "text": "530 t per year",
    "unit": "t per year",
    "flag": "Modelled",
-   "source": "results/table_E21.csv, row stage = A, comms = dte+relay, coverage = 0.1, mix = supervised_strict, column delivered_t_in_year; a relay satellite in view a tenth of the time, besides direct links"
+   "source": "results/table_E21.csv, row stage = A, comms = dte+relay, coverage = 0.1, mix = supervised_strict, column delivered_t_in_year; a relay satellite in view a tenth of the time, besides direct links",
+   "label": "Delivered, relay a tenth of the time"
   },
   "auto_t": {
    "value": 532.053750334,
    "text": "532 t per year",
    "unit": "t per year",
    "flag": "Modelled",
-   "source": "results/table_E21.csv, row stage = A, comms = dte, mix = autonomous, column delivered_t_in_year; direct links only, fully autonomous rovers"
+   "source": "results/table_E21.csv, row stage = A, comms = dte, mix = autonomous, column delivered_t_in_year; direct links only, fully autonomous rovers",
+   "label": "Delivered by autonomous rovers"
   },
   "rover_gain": {
    "value": 0.633689122923,
    "text": "0.6 t per year",
    "unit": "t per year",
    "flag": "Modelled",
-   "source": "results/table_E21_breakeven.csv, row option = +1 supervised LTV, column gain_vs_dte; gain of one extra supervised LTV over direct links only (E21 stage B)"
+   "source": "results/table_E21_breakeven.csv, row option = +1 supervised LTV, column gain_vs_dte; gain of one extra supervised LTV over direct links only (E21 stage B)",
+   "label": "Gain from one extra supervised rover"
   },
   "half_strict": {
    "value": 40.17412598,
    "text": "40 h",
    "unit": "h",
    "flag": "Modelled",
-   "source": "results/table_E21_breakeven_delay.csv, row option = +1 rover, column base_value; urgent cargo: hours within which 90 % is delivered, relay in view half the time, strict supervision (E21 stage B)"
+   "source": "results/table_E21_breakeven_delay.csv, row option = +1 rover, column base_value; urgent cargo: hours within which 90 % is delivered, relay in view half the time, strict supervision (E21 stage B)",
+   "label": "Half relay: one in ten urgent waits over"
   },
   "half_plus1": {
    "value": 31.0840153677,
    "text": "31 h",
    "unit": "h",
    "flag": "Modelled",
-   "source": "results/table_E21_breakeven_delay.csv, row option = +1 rover, column value; the same with one extra rover"
+   "source": "results/table_E21_breakeven_delay.csv, row option = +1 rover, column value; the same with one extra rover",
+   "label": "The same with one extra rover"
   },
   "half_strategic": {
    "value": 26.5062498987,
    "text": "27 h",
    "unit": "h",
    "flag": "Modelled",
-   "source": "results/table_E21_breakeven_delay.csv, row option = strategic step, column value; the same with supervised rovers that drive between check-ins on their own (strategic policy)"
+   "source": "results/table_E21_breakeven_delay.csv, row option = strategic step, column value; the same with supervised rovers that drive between check-ins on their own (strategic policy)",
+   "label": "The same with strategic driving"
   },
   "rover_dp": {
    "value": 17.5912743748,
    "text": "18 percentage points of relay coverage",
    "unit": "percentage points of relay coverage",
    "flag": "Modelled",
-   "source": "results/table_E21_breakeven_delay.csv, row option = +1 rover, column delta_p; x 100; relay coverage that gives the same urgent delay as one extra rover, at half coverage (bootstrap over seeds)"
+   "source": "results/table_E21_breakeven_delay.csv, row option = +1 rover, column delta_p; x 100; relay coverage that gives the same urgent delay as one extra rover, at half coverage (bootstrap over seeds)",
+   "label": "Relay coverage worth one extra rover"
   },
   "strategic_dp": {
    "value": 28.5160301652,
    "text": "29 percentage points of relay coverage",
    "unit": "percentage points of relay coverage",
    "flag": "Modelled",
-   "source": "results/table_E21_breakeven_delay.csv, row option = strategic step, column delta_p; x 100; relay coverage that gives the same urgent delay as the strategic policy, at half coverage"
+   "source": "results/table_E21_breakeven_delay.csv, row option = strategic step, column delta_p; x 100; relay coverage that gives the same urgent delay as the strategic policy, at half coverage",
+   "label": "Relay coverage worth strategic driving"
   }
  },
  "steps": [

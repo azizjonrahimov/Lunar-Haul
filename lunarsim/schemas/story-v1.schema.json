@@ -94,7 +94,9 @@
         "digits": {"type": "integer", "minimum": 0, "maximum": 4},
         "unit": {"type": "string"},
         "flag": {"enum": ["Spec", "Measured", "Assumed", "Modelled"]},
-        "note": {"type": "string"}
+        "note": {"type": "string"},
+        "label": {"type": "string", "minLength": 1, "maxLength": 40,
+                  "description": "short display label for the number's chip (plain words, no typed digits)"}
       },
       "unevaluatedProperties": false
     }

@@ -3695,3 +3695,19 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
   - Servers stopped by PID; tab closed.
 - **From BACKEND:** the `label` field (note 1), if wanted.
 - **Questions for LEAD:** notes 1–2.
+
+## B-53 DONE 15:55 | Story numbers get a `label`
+- **Files:** `lunarsim/schemas/story-v1.schema.json`, `lunarsim/stories.py`, `tests/test_stories.py` (+2 tests).
+  - **Data for LEAD to commit:** `data/stories/{earth-horizon,learned-landing,pads-distance,sharing-rovers}.json` (a label added to every number, at text level, so the files keep their layout) and the rebuilt `data/stories/resolved/*.json`.
+- **Format:** `numbers.<key>.label`, optional, a string of 1-40 characters.
+  - The resolver copies it into `resolved/<id>.json` → `numbers.<key>.label`, next to value, text, unit, flag and source; pending numbers carry it too.
+  - `stories check` enforces the length and the **no-typed-digits rule** on labels, as on prose.
+- **Labels:** all 49 numbers of the four stories, starting from FRONTEND's map. Where an entry was over 40 characters or contained a typed number, I reworded it:
+  - "Lower end of its 95 % interval" → "Lower end of its interval";
+  - "Ejecta impacts on the base per landing, pads 0.5 km away" → "Ejecta impacts per landing, nearest pads";
+  - "Own rovers: 90 % of urgent delivered within" → "Own rovers: one in ten urgent waits over";
+  - "Urgent 90 % within: relay half the time" → "Half relay: one in ten urgent waits over";
+  - "Delivered with a relay a tenth of the time" → "Delivered, relay a tenth of the time".
+- **Checks:** `stories check`: 4 stories, 0 problems; schemas 35/35; `test_stories.py` 13 passed. The tests cover pass-through incl. pending, the length and digit errors, and every committed number having a valid label.
+- **For FRONTEND:** `numbers[key].label` is in every resolved story, so the page can drop its 49-key map (it already prefers a data label).
+- **Questions for LEAD:** none.

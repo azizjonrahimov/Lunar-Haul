@@ -8,17 +8,17 @@
   "scene": "lander:CLPS/classical/p50",
   "notes": "E15 outcome table (results/table_E15.csv): CLPS class, altimeter model on, the same dispersed seeds for every pilot. Episodes from data/policies/trajectories-v1.json. Wording for LEAD to edit.",
   "numbers": {
-    "n_landings": {"table": "results/table_E15.csv", "where": {"policy": "classical_CLPS"}, "column": "n", "digits": 0, "unit": "", "note": "dispersed CLPS landings per pilot, the same seeds for each (experiment E15)"},
-    "classical_pass": {"table": "results/table_E15.csv", "where": {"policy": "classical_CLPS"}, "column": "pass_rate", "scale": 100, "digits": 1, "unit": "%", "note": "share inside the SPLICE touchdown limits, classical ZEM/ZEV law (experiment E15)"},
-    "classical_miss": {"table": "results/table_E15.csv", "where": {"policy": "classical_CLPS"}, "column": "miss_mean_m", "digits": 1, "unit": "m", "note": "mean distance of touchdown from the aim point"},
-    "classical_stale": {"table": "results/table_E15.csv", "where": {"policy": "classical_CLPS"}, "column": "fail_sensor", "digits": 0, "unit": "", "note": "failed touchdowns while the altimeter held a dropped-out reading"},
-    "rl_pass": {"table": "results/table_E15.csv", "where": {"policy": "lander_CLPS_baseline_s0"}, "column": "pass_rate", "scale": 100, "digits": 1, "unit": "%", "note": "PPO from a random start (experiment E15)"},
-    "rl_steps": {"table": "results/table_E15.csv", "where": {"policy": "lander_CLPS_baseline_s0"}, "column": "training_steps", "digits": 0, "unit": "simulated steps", "note": "PPO training length"},
-    "learned_pass": {"table": "results/table_E15.csv", "where": {"policy": "lander_CLPS_bc_v3_s0"}, "column": "pass_rate", "scale": 100, "digits": 1, "unit": "%", "note": "imitation of the classical law with DAgger, observation v3 with the altimeter history (experiment E15)"},
-    "learned_miss": {"table": "results/table_E15.csv", "where": {"policy": "lander_CLPS_bc_v3_s0"}, "column": "miss_mean_m", "digits": 1, "unit": "m"},
-    "learned_stale": {"table": "results/table_E15.csv", "where": {"policy": "lander_CLPS_bc_v3_s0"}, "column": "fail_sensor", "digits": 0, "unit": "", "note": "failed touchdowns while the altimeter held a dropped-out reading"},
-    "gap": {"table": "results/table_E15.csv", "where": {"policy": "lander_CLPS_bc_v3_s0"}, "column": "d_pass_rate", "transform": "neg", "scale": 100, "digits": 1, "unit": "percentage points", "note": "classical minus learned success, paired on the same seeds"},
-    "gap_ci": {"table": "results/table_E15.csv", "where": {"policy": "lander_CLPS_bc_v3_s0"}, "column": "d_pass_rate_ci95", "scale": 100, "digits": 1, "unit": "percentage points", "note": "half-width of the 95 % interval of the paired difference"}
+    "n_landings": {"label": "Landings per pilot", "table": "results/table_E15.csv", "where": {"policy": "classical_CLPS"}, "column": "n", "digits": 0, "unit": "", "note": "dispersed CLPS landings per pilot, the same seeds for each (experiment E15)"},
+    "classical_pass": {"label": "Classical law: landings inside limits", "table": "results/table_E15.csv", "where": {"policy": "classical_CLPS"}, "column": "pass_rate", "scale": 100, "digits": 1, "unit": "%", "note": "share inside the SPLICE touchdown limits, classical ZEM/ZEV law (experiment E15)"},
+    "classical_miss": {"label": "Classical law: mean miss", "table": "results/table_E15.csv", "where": {"policy": "classical_CLPS"}, "column": "miss_mean_m", "digits": 1, "unit": "m", "note": "mean distance of touchdown from the aim point"},
+    "classical_stale": {"label": "Classical law: fails on stale altimeter", "table": "results/table_E15.csv", "where": {"policy": "classical_CLPS"}, "column": "fail_sensor", "digits": 0, "unit": "", "note": "failed touchdowns while the altimeter held a dropped-out reading"},
+    "rl_pass": {"label": "Trial and error: landings inside limits", "table": "results/table_E15.csv", "where": {"policy": "lander_CLPS_baseline_s0"}, "column": "pass_rate", "scale": 100, "digits": 1, "unit": "%", "note": "PPO from a random start (experiment E15)"},
+    "rl_steps": {"label": "Trial-and-error training length", "table": "results/table_E15.csv", "where": {"policy": "lander_CLPS_baseline_s0"}, "column": "training_steps", "digits": 0, "unit": "simulated steps", "note": "PPO training length"},
+    "learned_pass": {"label": "Imitation network: inside the limits", "table": "results/table_E15.csv", "where": {"policy": "lander_CLPS_bc_v3_s0"}, "column": "pass_rate", "scale": 100, "digits": 1, "unit": "%", "note": "imitation of the classical law with DAgger, observation v3 with the altimeter history (experiment E15)"},
+    "learned_miss": {"label": "Imitation network: mean miss", "table": "results/table_E15.csv", "where": {"policy": "lander_CLPS_bc_v3_s0"}, "column": "miss_mean_m", "digits": 1, "unit": "m"},
+    "learned_stale": {"label": "Network: fails on stale altimeter", "table": "results/table_E15.csv", "where": {"policy": "lander_CLPS_bc_v3_s0"}, "column": "fail_sensor", "digits": 0, "unit": "", "note": "failed touchdowns while the altimeter held a dropped-out reading"},
+    "gap": {"label": "Classical minus imitation network", "table": "results/table_E15.csv", "where": {"policy": "lander_CLPS_bc_v3_s0"}, "column": "d_pass_rate", "transform": "neg", "scale": 100, "digits": 1, "unit": "percentage points", "note": "classical minus learned success, paired on the same seeds"},
+    "gap_ci": {"label": "Half-width of its interval", "table": "results/table_E15.csv", "where": {"policy": "lander_CLPS_bc_v3_s0"}, "column": "d_pass_rate_ci95", "scale": 100, "digits": 1, "unit": "percentage points", "note": "half-width of the 95 % interval of the paired difference"}
   },
   "steps": [
     {

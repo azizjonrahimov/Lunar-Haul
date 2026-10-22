@@ -47,6 +47,7 @@ STEP_PROSE = ("title", "text", "visual")
 FLAG_RANK = {"Spec": 0, "Measured": 1, "Modelled": 2, "Assumed": 3}   # a derived number takes its weakest input's
 MINUS = "−"
 PENDING_TEXT = "(pending)"
+LABEL_MAX = 40                                       # a number's optional display label (B-53)
 
 
 class StoryError(Exception):
@@ -253,6 +254,8 @@ def _resolve_one(key: str, numbers: Dict[str, Any], src: Sources, done: Dict[str
         source += f"; {spec['note']}"
     out = {"value": v, "text": fmt(v, int(spec.get("digits", 1)), spec.get("unit", "")), "unit": spec.get("unit", ""),
            "flag": flag, "source": source}
+    if spec.get("label"):
+        out["label"] = spec["label"]
     done[key] = out
     return out
 
@@ -269,6 +272,9 @@ def resolve_numbers(doc: Dict[str, Any], src: Sources) -> Dict[str, Dict[str, An
             done[k] = {"pending": str(e)}
         except StoryError as e:
             done[k] = {"error": str(e)}
+    for k, spec in numbers.items():                     # pending numbers keep their label too
+        if spec.get("label") and "label" not in done[k]:
+            done[k] = {**done[k], "label": spec["label"]}
     return {k: done[k] for k in numbers}
 
 
@@ -362,6 +368,12 @@ def check(doc: Dict[str, Any], root: str = ROOT, refs: bool = True,
     for k, spec in numbers.items():
         if "derive" in spec:
             used |= set(spec.get("of", []))
+        lab = spec.get("label")
+        if lab is not None:
+            if not isinstance(lab, str) or not 0 < len(lab) <= LABEL_MAX:
+                errs.append(f"numbers.{k}.label: must be 1-{LABEL_MAX} characters")
+            for t in typed_digits(lab if isinstance(lab, str) else ""):
+                errs.append(f"numbers.{k}.label: typed number {t!r}")
     for k in numbers:
         if k not in used:
             errs.append(f"numbers.{k}: declared but not used")
