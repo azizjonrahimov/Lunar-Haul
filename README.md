@@ -1,6 +1,6 @@
 # LunarHaul: lunar surface logistics testbed, marketplace mechanism, datasets and paper
 
-LunarHaul was called LunarSim until 15 October 2026; the name changed because three unrelated projects use it. The Python package, the
+LunarHaul was called Lunar Simulator until 15 October 2026; The Python package, the
 command (`lunarsim`), the file formats (`lunarsim-*`) and the repository URL keep the old identifier until the next release.
 
 [![tests](https://github.com/azizjonrahimov/lunar-logistics-research/actions/workflows/ci.yml/badge.svg)](https://github.com/azizjonrahimov/lunar-logistics-research/actions/workflows/ci.yml)
