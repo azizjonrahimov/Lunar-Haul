@@ -475,5 +475,7 @@ numbers), and entry chips to World, Vehicles, Labs, Simulator and Stories. Keep 
   query parameters keyed by the form's field ids); keep "trace replay of this run" for /world/trace/.
 - /verification/: show the Phase 4 rows from `data/verification/verification-v1.json` → `phase4[]`.
 - Light-theme Tol yellow/cyan/grey marks below 3:1 on white (from F-30): fix or add outlines.
+- Stories: draw `highlight` (e.g. ISRU in the Earth story) and the route colour for no link; declutter vehicle labels
+  in story views (show only the vehicles a step talks about); after B-53 use the data's `label` field.
 - Keyboard, screen-reader mirror, reduced motion, contrast on every page; Lighthouse table for every page;
   a screenshot set (desktop + 390 px) committed under `site/design/shots/` is NOT wanted — keep them out of git.
