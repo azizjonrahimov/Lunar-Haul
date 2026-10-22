@@ -71,7 +71,7 @@ models exist for Blue Moon, HLS, Nova-C, Griffin, the LTVs or VIPER (only paid o
 Each step: what, why, done when, effort (agent-days), depends on.
 
 **B-30 Vehicle and site catalogue (single source of truth).**
-`data/catalog/vehicles-v1.json` + `lunarsim/catalog.py` + JSON Schema: every lander and rover class and base
+`lunarsim/catalog-v1.json` (package data, the source of truth; DONE 22 Oct, 2b74fac) + `lunarsim/catalog.py` + JSON Schema: every lander and rover class and base
 element with real dimensions (height, diameter, leg span, wheelbase, wheel size), masses, capacity, speeds,
 paint/foil colours, each value flagged Spec / Assumed / Modelled with a URL. The engine reads capacities and
 speeds from it (results must not change: baseline md5 identical); the site reads dimensions for the 3D models.
