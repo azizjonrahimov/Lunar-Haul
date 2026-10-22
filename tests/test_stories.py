@@ -118,7 +118,7 @@ def test_committed_stories_check():
         assert errs == [], (stem, errs)
         if built[stem]["status"] == "published":
             assert pend == [], stem
-    assert built["earth-horizon"]["status"] == "draft"
+    assert built["earth-horizon"]["status"] == "published"   # E21 results final (stages A-C), 22 Oct 2026
 
 
 def test_committed_stories_schema():
