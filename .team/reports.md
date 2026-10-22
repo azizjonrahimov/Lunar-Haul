@@ -3558,3 +3558,36 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
 - **From BACKEND:** none.
 - **Questions for LEAD:**
   1. The Earth-link sample points follow one B-32 route per leg (they matched the 90°/night route of BASE→PSR, not the 270° one). Would BACKEND samples per lighting route be worth having, or is the stated offset enough?
+
+## F-37 DONE 15:31 | Simulator v3 on the design system; v2 at /simulator/v2/; "Watch this year in 3D"
+- **Files:**
+  - New: `site/src/simulator/v3.js` (the page, v2's app.js ported), `site/src/simulator/v3.css`, `site/src/simulator/plot-marks.js` (the Plot marks it uses, loaded lazily).
+  - `site/simulator/index.html` is the page. Note: your F-35 commit c0fbf3c already picked up this file from my working tree; it has not changed since.
+  - Changed: `site/vite.config.js` (`simulator/` in the page list; the dev middleware now serves `/simulator/v2/` and `/simulator/engine/` from web/dist), `site/scripts/copy-simulator.mjs` (web/dist goes to `dist/simulator/v2/`, the engine files to `dist/simulator/engine/`; it no longer wipes `dist/simulator/`), and `web/app.js` (one line: v2's "Open in 3D world" link climbs two levels from `/simulator/v2/`).
+  - **Engine files untouched:** `web/sim.js` and `web/worker.js` load as-is, together with `formats.js`, `api.js` and `ref.js`, as classic scripts from `/simulator/engine/` (the workers `importScripts('sim.js')` next to them).
+- **The page:**
+  - **Rail (glass panels):** Scenario, Fleet, Environment and Run.
+    - Phase and job rule are segmented controls; each option's full v2 wording shows under it ("Phase 2, 2029–2032: about 30 t a year"; "Marketplace: rovers bid for jobs").
+    - Every other label, hint, the fleet key, the marketplace features, the sliders and the run buttons are word for word from v2. The marketplace features show only while the marketplace is the chosen rule.
+    - Two label changes: the cost labels now read "Cost per kg moved (US $)" / "Cost per kg of landed cargo (US $)", and the unit sits on the number (9.1 h).
+  - **Tabs** as scene chips: Run, Compare rules, Replay a year, Verification, Method. A verification badge sits beside them.
+  - **Run:** ten stat chips (value, unit, Modelled flag with source, "± x · 95 % CI · n = y" under each), then two Plot charts: waiting time by cargo type (bars, 95 % whiskers, values) and every delivery in the first year (log scale, night bands, landing marks, legend, tooltips). Then the per-year table and CSV export.
+  - **Compare rules:** four answer cards, one per job rule. Each has its rank ("Fastest for urgent cargo" … "Fourth fastest"), the headline answer (urgent cargo: 90 % delivered within X h ± CI), urgent within 24 h, cargo no rover can move, rovers caught by the dark, trips, and the rule in plain words. The rule colour runs along the top and the fastest card is ringed. Below: the four paired-difference chips (same years), a Plot bar chart and the full table.
+  - **Replay a year:** the base map, now in site colours that follow the theme. **"Watch this year in 3D"** hands the trace to `/world/trace/?from=simulator`; checked, it loads the run ("4 vehicles, 511 trips, 539 cargo items, 8 landings, 13 nights").
+  - **Verification and Method:** v2's text copied verbatim. The Python engine connection, the checks and the browser-vs-Python check work as before.
+  - The 2D canvas map and the tables are the text-and-numbers versions; the page has no WebGL.
+- **Checks (Chrome; dev and production build):**
+  - Quick start renders (3 years, marketplace).
+  - Compare on 10 years × 4 rules: marketplace fastest at 18.6 h, then hourly matching 21.5, nearest free rover 22.0, separate fleets 55.5 h.
+  - Verification 13/13 checks pass; the browser-vs-Python check agrees on 24/24 numbers (embedded reference).
+  - Replay plays. `/simulator/v2/` still works (dev and production).
+  - 390 px: no horizontal scroll; the rail stacks above the work area. Light and dark themes checked. 0 console errors.
+  - `node --test site/tests/*.mjs`: 11/11. Build OK.
+  - `budgets.py pages`: OK.
+    - simulator 18.8 of 60 kB JS, 9.1 of 20 kB CSS. Plot loads lazily right after the controls: its tree-shaken chunk is 84.5 kB gz, which budgets.py does not count. The classic engine scripts are 22.6 kB gz and are not counted either. **Honest first load is about 126 kB.** Say if you want a budget entry that counts both.
+    - A full dynamic import of Plot first pushed the lander lab to 159 kB (one untree-shaken 130 kB Plot chunk shared with it), so the simulator imports a three-line re-export module instead. Lander lab now 119.7 of 130 kB (was 116.5).
+  - Servers stopped by PID; tab closed.
+- **From BACKEND:** none.
+- **Questions for LEAD:**
+  1. The task says "opens /world/ with the run". The new /world/ reads scene packages (B-31), which the browser engine does not produce, so the button opens the 3D trace viewer (`/world/trace/`) with the run. For /world/ proper, the run would need a trace-to-scene converter (BACKEND, or a JS port) or a hosted run (B-37). OK as is?
+  2. Budget for the simulator: keep 60/20 as measured by budgets.py, or count the lazy Plot chunk and the engine scripts (about 126 kB)?

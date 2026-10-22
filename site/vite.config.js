@@ -8,7 +8,7 @@ import { tex } from './lib/tex.mjs';
 
 // Public base: '/' locally; CI sets SITE_BASE from actions/configure-pages (/Lunar-Haul/ on GitHub Pages).
 const base = process.env.SITE_BASE || '/';
-const PAGES = ['', 'world/', 'world/trace/', 'results/', 'lab/lander/', 'lab/rover/', 'method/', 'paper/', 'data/', 'about/', 'account/', 'changelog/', 'verification/', 'vehicles/',
+const PAGES = ['', 'world/', 'world/trace/', 'results/', 'lab/lander/', 'lab/rover/', 'method/', 'paper/', 'data/', 'about/', 'account/', 'changelog/', 'verification/', 'vehicles/', 'simulator/',
   'design/', 'design/stage/'];   // development pages (noindex, not in the nav)
 
 // <!--@header-->, <!--@footer-->, <!--@md:name-->, <!--@headline-->, <!--@results-->, <!--@pipeline--> and <!--@r:key--> (also inside markdown), <!--@icon:name-->, <!--@tex:name--> (KaTeX at build time), <!--@base--> in page HTML
@@ -32,14 +32,15 @@ function lunarsimPages() {
           .replace(/<!--@base-->/g, base);
       },
     },
-    // dev only: serve the built simulator (web/dist, made by web/build_web.py) under /simulator/
+    // dev only: serve the built v2 simulator (web/dist, made by web/build_web.py) under /simulator/v2/, and its engine files
+    // (sim.js, worker.js, formats.js, api.js, ref.js, samples/) under /simulator/engine/ for the v3 page at /simulator/ (F-37)
     configureServer(server) {
       const dist = join(ROOT, 'web', 'dist');
       server.middlewares.use((req, res, next) => {
-        const m = req.url && req.url.split('?')[0].match(/^\/simulator(\/.*)?$/);
+        const m = req.url && req.url.split('?')[0].match(/^\/simulator\/(v2|engine)(\/.*)?$/);
         if (!m) return next();
-        if (!m[1]) { res.statusCode = 301; res.setHeader('Location', '/simulator/'); return res.end(); }
-        let f = join(dist, decodeURIComponent(m[1]));
+        if (!m[2]) { res.statusCode = 301; res.setHeader('Location', `/simulator/${m[1]}/`); return res.end(); }
+        let f = join(dist, decodeURIComponent(m[2]));
         if (!f.startsWith(dist)) { res.statusCode = 403; return res.end(); }
         if (existsSync(f) && statSync(f).isDirectory()) f = join(f, 'index.html');
         if (!existsSync(f)) { res.statusCode = 404; return res.end('Simulator not built: run python web/build_web.py'); }

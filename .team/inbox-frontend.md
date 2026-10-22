@@ -431,7 +431,7 @@ shadows, slip indicator, interventions as 3D markers with callouts, expert vs ne
 Earth visibility along the route (from earth_link samples: where on the leg a teleoperated rover would lose the
 link). 2D plan view stays as tier 0 and mirror.
 
-## F-35d [OPEN] (after F-37 if F-37 is under way, else before; <= 2 h) Rover lab 3D polish (LEAD browser review 22 Oct)
+## F-35d [IN PROGRESS] (after F-37 if F-37 is under way, else before; <= 2 h) Rover lab 3D polish (LEAD browser review 22 Oct)
 1. Open on a sunlit stretch of the leg (today the first frame is in terrain shadow); pick the start from the leg's
    lighting so the rover and ground are lit, then let the drive reach the shadow.
 2. The flat cyan disc and yellow ring around the rover are too heavy: make the glare cone and command marker subtle
@@ -441,7 +441,7 @@ link). 2D plan view stays as tier 0 and mirror.
 5. Label the Earth-link posts as computed for the leg's night route (BACKEND adds per-lighting samples later).
 Check at 1440 and 390 px; no console errors.
 
-## F-37 [IN PROGRESS] (after F-35; <= 5 h) Simulator v3 on the design system (plan §5 F-37)
+## F-37 [REVIEW] (after F-35; <= 5 h) Simulator v3 on the design system (plan §5 F-37)
 The `/simulator/` page rebuilt on the site's design system (glass panels, segmented controls, the plain labels of
 22 Oct kept word for word unless clearer), engine files `web/sim.js` and `web/worker.js` untouched; results as stat
 chips and Observable Plot charts; Compare as four answer-style cards (one per job rule, the SpaceX-reel pattern);

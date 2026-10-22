@@ -45,7 +45,7 @@ uniform vec4 uTile;                     // site x, y in the tile (m), tile width
 uniform sampler2D uN20; uniform sampler2D uN5; uniform vec4 uPatch; uniform float uUsePatch;
 uniform sampler2D uHorizon; uniform float uUseHz; uniform float uHzW; uniform float uSunElDeg; uniform float uSunRadDeg;
 uniform float uAlbedo; uniform vec3 uAmbient;
-uniform vec4 uScour; uniform float uScourAmt; uniform float uScourSeed; uniform float uDetail;
+uniform vec4 uScour; uniform float uScourAmt; uniform float uScourSeed; uniform float uDetail; uniform float uCraterVar;
 varying vec3 vWorld; varying vec3 vViewPosition;
 float hh1(vec2 p) { return fract(sin(dot(p, vec2(41.31, 289.17))) * 13758.5453); }
 vec2 hh2(vec2 p) { return fract(sin(vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)))) * 43758.5453); }
@@ -56,17 +56,20 @@ vec3 noised(vec2 x) {
   return vec3(a + (b - a) * u.x + (c - a) * u.y + (a - b - c + d) * u.x * u.y, du * (vec2(b - a, c - a) + (a - b - c + d) * u.yx));
 }
 // a crater field with cells of s metres: a share of the cells (prob) holds a worn bowl with a low rim, wall slope k
-// at the rim (0.25 ~ depth/diameter 0.06, a degraded small crater); returns the slope (dh/dx, dh/dz)
-vec2 craters(vec2 p, float s, float seed, float prob, float k) {
+// at the rim (0.25 ~ depth/diameter 0.06, a degraded small crater); returns the slope (dh/dx, dh/dz). vary (0..1, F-35d):
+// each crater gets its own depth (worn to fresh), a slight ellipse and a rotation, so close views do not look stamped
+vec2 craters(vec2 p, float s, float seed, float prob, float k, float vary) {
   vec2 c = floor(p / s), g = vec2(0.0);
   for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
     vec2 cell = c + vec2(float(i), float(j)), h = hh2(cell + seed);
     if (h.x > prob) continue;
-    vec2 d = p - (cell + 0.25 + 0.5 * hh2(cell + seed + 7.0)) * s;
-    float R = s * (0.16 + 0.26 * h.y), r = length(d), x = r / R;
+    vec2 d = p - (cell + 0.25 + 0.5 * hh2(cell + seed + 7.0)) * s, v3 = hh2(cell + seed + 13.0);
+    float a = 6.2832 * v3.y, ca = cos(a), sa = sin(a);
+    vec2 e = vec2(ca * d.x + sa * d.y, -sa * d.x + ca * d.y); e.x /= mix(1.0, 1.0 + 0.35 * v3.x, vary);
+    float R = s * (0.16 + 0.26 * h.y) * mix(1.0, 0.7 + 0.6 * fract(v3.x * 7.31), vary), r = length(e), x = r / R, kk = k * mix(1.0, 0.3 + 1.1 * fract(v3.y * 5.77), vary);
     if (x > 1.9) continue;
-    float dh = x < 1.0 ? k * sin(1.5708 * x) : -0.12 * k * exp(-(x - 1.0) * (x - 1.0) / 0.09) * 2.0 * (x - 1.0) / 0.09;   // bowl, then the rim falling off
-    g += dh * d / max(r, 1e-4);
+    float dh = x < 1.0 ? kk * sin(1.5708 * x) : -0.12 * kk * exp(-(x - 1.0) * (x - 1.0) / 0.09) * 2.0 * (x - 1.0) / 0.09;   // bowl, then the rim falling off
+    g += dh * vec2(ca * e.x - sa * e.y, sa * e.x + ca * e.y) / max(r, 1e-4);
   }
   return g;
 }
@@ -87,7 +90,8 @@ void main() {
   float detailAlb = 1.0;
   if (uDetail > 0.5) {                                               // metre-scale detail, faded below a pixel
     vec2 p = vWorld.xz; float fw = length(fwidth(p));
-    vec2 g = craters(p, 9.0, 3.0, 0.09, 0.18) * (1.0 - smoothstep(0.6, 2.0, fw)) + craters(p, 2.6, 11.0, 0.12, 0.22) * (1.0 - smoothstep(0.2, 0.6, fw));
+    float nearFade = mix(1.0, smoothstep(5.0, 35.0, length(vViewPosition)), uCraterVar);   // fewer small bowls right in front of the camera
+    vec2 g = craters(p, 9.0, 3.0, 0.09, 0.18, uCraterVar) * (1.0 - smoothstep(0.6, 2.0, fw)) + craters(p, 2.6, 11.0, 0.12, 0.22, uCraterVar) * (1.0 - smoothstep(0.2, 0.6, fw)) * nearFade;
     vec3 c1 = noised(p / 0.4), c2 = noised(p / 0.12);
     g += c1.yz / 0.4 * 0.05 * (1.0 - smoothstep(0.04, 0.12, fw)) + c2.yz / 0.12 * 0.012 * (1.0 - smoothstep(0.012, 0.04, fw));
     nW = normalize(nW + vec3(-g.x, 0.0, -g.y));
@@ -185,7 +189,7 @@ export async function createLunarTerrain({ base, renderer, site = 'PAD_A', tier 
     uHorizon: { value: v2.tex }, uUseHz: { value: 0 }, uHzW: { value: 0 }, uSunElDeg: { value: 1.5 }, uSunRadDeg: { value: SUN_RADIUS_DEG },
     uAlbedo: { value: 0.12 }, uAmbient: { value: new THREE.Color(0.06, 0.06, 0.063) },   // shadows: bounce from sunlit slopes
     uScour: { value: new THREE.Vector4(0, 0, 5, 50) }, uScourAmt: { value: 0 }, uScourSeed: { value: 1 }, uDetail: { value: 1 },
-    uHzOn: { value: 1 },
+    uHzOn: { value: 1 }, uCraterVar: { value: 0 },
   });
   const material = new THREE.ShaderMaterial({ vertexShader: vert, fragmentShader: frag, uniforms, lights: true, side: THREE.DoubleSide });
   material.name = 'lunar-terrain';
@@ -287,6 +291,8 @@ export async function createLunarTerrain({ base, renderer, site = 'PAD_A', tier 
     },
     setAmbient(c) { uniforms.uAmbient.value.copy(c); },
     setDetail(on) { uniforms.uDetail.value = on ? 1 : 0; },
+    // 1: varied crater depth, shape and rotation, and fewer small craters close to the camera (rover chase views)
+    setCraterVariety(v) { uniforms.uCraterVar.value = v; },
     // night: the sun is off, so the horizon shadow must not dim headlight light on patched materials
     setNight(on) { uniforms.uHzOn.value = on ? 0 : 1; },
     shadeWithHorizon, scatterRocks,
