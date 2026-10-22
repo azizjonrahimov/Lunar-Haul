@@ -280,7 +280,7 @@ Due: 2 h after the commit lands (written 09:55)
 
 # PHASE 4 (from 22 Oct 2026): read `.team/PLAN-phase4-design.md` (your steps F-30…F-40; ownership in its §9) and `research_notes/LunarHaul 3D interactive design/design_research.md` first.
 
-## F-30 [REVIEW] (<= 4 h) Design system v2: the "instrument" theme and the shared UI components
+## F-30 [DONE 08:16, accepted] (<= 4 h) Design system v2: the "instrument" theme and the shared UI components
 Goal: the look of every Phase 4 3D page (plan §3, §5 F-30). Reading pages keep today's light theme and dark toggle.
 Owner decisions: dark "instrument" theme on 3D pages; keep Source Sans 3 for reading text; add **Sora** (display) and
 **JetBrains Mono** (all numbers, tabular), both OFL, self-hosted unmodified from npm (Fontsource packages); check the
@@ -326,3 +326,53 @@ API sketch (adapt it, report the final one): `createStage({canvas, preset: 'exhi
 Done when: the demo runs at tiers 1–3; the report gives measured frame times per tier on this RTX 3050 laptop at the
 default view (target: tier 2 p95 ≤ 16.7 ms) and which AO you chose and why; reduced motion respected; no console
 errors; /world/ and the labs unchanged. Stop the dev server and close heavy tabs when done.
+
+# M2 (vehicles and effects): start after F-31 is reported. Read plan §5 F-32/F-33 and research §1.4, §1.7, §2.1–2.2.
+
+## F-32 [OPEN] (after F-31; <= 8 h, may report in two parts a/b) The procedural vehicle kit and the `/vehicles/` exhibit page
+Goal: the first page in the reference reel's pattern, for our own fleet (plan §5 F-32). Everything at true scale from
+`lunarsim/catalog-v1.json` (your copy in `site/public/catalog/`); no glTF downloads.
+**F-32a the kit** (`site/src/stage/models/` or `site/src/models/`, your call): one generator per catalogue id —
+`CLPS` (Nova-C-like: hexagonal body, 6 legs, top-deck solar panel, one bell), `MK1` (8.05 m × 3.08 m cylinder,
+4 representative legs, BE-7 bell, side solar panels), `LARGE` (52 × 9 m HLS-like: no flaps, a solar band, an
+airlock and an elevator from the deck to the ground, 6 representative legs, mid-body landing thrusters), `LTV`
+(CLV-1/FLEX-like: 4 large wheels with chevron treads, deck, crab-steer pivots, solar panel, small robotic arm),
+`HAUL` (the concept: low flat-bed, 6 wheels of 1.5 m, pallet interface, radiators, headlights, no solar mast),
+`MICRO` (VIPER-scale, 4 wheels of 0.5 m with grousers, mast with lights), base elements `habitat`, `pad` (with berm),
+`solar_tower`, `comms_mast`, `cargo_pallet` (instanced). Rules: real dimensions from `dims.*.value` (metres); named
+parts with an explode axis each; closed meshes (caps work in Cutaway); materials from the catalogue's material map
+(gold and silver MLI with a crinkle normal map generated in code, white paint, aluminium, dark solar cells,
+regolith dust on the lower 30–50 cm); three levels of detail (full, simplified, today's constant-size icon for the
+far view); triangle budget per vehicle at full detail ≤ 60k (report the counts); one `buildVehicle(id, {lod})`
+entry point. Representative parts carry `userData.representative = true` so the page can say so.
+**F-32b the page** `site/vehicles/index.html` (+ nav entry "Vehicles", `<body class="instrument">`): the Exhibit
+lighting preset; scene chips Landers · Rovers · Base, then one chip per vehicle; View [Whole | Cutaway | Exploded];
+Follow [Propellant | Power | Cargo] (animated flow along feed lines, cables or the load path); a narrative card per
+vehicle × mode (plain words, numbers from the catalogue through `{{…}}`-style lookups, never typed in HTML); stat
+chips (e.g. "Carries 1.5 t · 6 km/h · parks in the dark", each with its flag and source); callouts for 4–6 parts;
+a component tree and a properties panel (OpenRocket-style, collapsible on phones); a scale reference toggle (an
+astronaut silhouette 1.8 m and the Apollo LRV); the loading door; a DOM mirror (part list, current numbers) for
+screen readers; the "representative model" label wherever `representative` is true.
+Done when: every catalogue vehicle renders at its catalogue size (report: measured bounding boxes vs catalogue);
+Cutaway shows solid caps; Exploded separates parts cleanly; tier 1 holds ≥ 30 fps and tier 2 p95 ≤ 16.7 ms on
+this laptop at the default view (report numbers); keyboard and reduced motion work; Lighthouse accessibility
+≥ 95 and performance ≥ 85 (desktop); no console errors; 390 px layout works.
+
+## F-33 [OPEN] (after F-32; <= 6 h) Lunar light and effects; /world/ terrain on the horizon map
+Goal: plan §5 F-33 and the B-34 finding (the horizon map is more accurate than today's shader off-axis).
+1. **/world/ terrain lighting from `data/terrain/connecting_ridge/v2/`** (copy via `prepare-data.mjs`): sample the
+   16 RGBA16 horizon textures (manifest for encoding; frame note: normal (nx, ny, nz) → scene (nx, nz, −ny)) so the
+   sun can sit at any azimuth instantly (no re-bake), with a soft edge for the 0.53° solar disc; use `normal_20m`
+   and the 5 m patches near BASE and PAD_A. Keep the current shader as the fallback if textures fail to load.
+2. **Engine glow and landing dust** (stage module `effects/`): a faint near-nozzle glow by `plume_class` (hydrolox
+   almost none, methalox and hypergolic faint), no shock diamonds; a deterministic dust sheet (seeded particles on
+   ballistic paths, g = 1.62 m/s², no drag, launched at 1–3°, starting below an onset height that scales with
+   thrust, ~15 m for CLPS-class), an obscuration layer that peaks in the last seconds and vanishes at engine
+   cut-off, and a scour decal left on the terrain. Particle budget by tier (≈ 2k / 10k / 30k).
+3. **Long shadows and night**: a tight shadow camera on the focused vehicle (shadows ≈ 38× height at 1.5°), the
+   terrain shader samples that shadow map; headlight cones for rovers at night; wheel dust behind moving rovers.
+4. **Sky**: black; Earth as a 1.9° disc placed by a simple ephemeris for now (R-1 will supply the real series)
+   and hidden when below the horizon map; stars off at sunlit exposure (an "exposure" toggle may show them).
+Done when: a /design/stage/ "effects" scene shows each effect with the tier switch and frame times; /world/ uses
+the horizon map (side-by-side screenshots old vs new at sun azimuth 30°, where the old shader is weakest);
+determinism: the same seed gives the same dust frames; reduced motion pauses particles; no console errors.

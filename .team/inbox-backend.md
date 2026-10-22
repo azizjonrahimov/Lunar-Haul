@@ -406,3 +406,19 @@ concurrent demand per hour); autonomous unaffected. New metrics: `blackout_wait_
 Done when: `comms=None` and `comms.mode=always` both reproduce the baseline md5 (use the new constant
 739e9ba7…); unit tests for each rule on a tiny scenario with a hand-made link series; one smoke run of P2 with
 `mode=dte` for 2 seeds reported (delays and the new metrics), single process. Do NOT run the suite (LEAD runs E21).
+
+## B-33 [OPEN] (after B-41; <= 3 h) Descent trajectories for the 3D landing lab
+Goal: F-34 replays real descents at true scale (plan §4 B-33). Files: new `lunarsim/lander/trajectories.py` (or an
+`--export-trajectories` mode in `evaluate.py`), `tests/test_lander_trajectories.py`. Output (LEAD commits):
+`data/policies/trajectories-v1.json` (+ schema), budget ≤ 3 MB.
+For each class (CLPS, MK1, LARGE) × pilot (classical law, memoryless law, and for CLPS also `lander_CLPS_bc_v3_s0`,
+`lander_CLPS_baseline_s0` (PPO) and the hover-bonus v1 policy as the reward-hacking demo), pick episodes from the
+existing 500-episode Monte Carlo seeds: the median miss, p10 and p90 miss, and the first failure if any (say which
+seed and why). Record at 10 Hz: t, position (m, pad frame), velocity, attitude quaternion, throttle (0–1),
+thrust direction, propellant left, altitude, the reward terms per step (so the lab's SCORE counter can tick from
+real data), and the outcome block; plus per class the plume-surface numbers the keep-out model uses (onset
+altitude for dust if the model has one; otherwise state that F-33 uses the research note's ~15 m CLPS onset).
+Parity: replaying one exported episode through the JS env (`site/src/lander/env.js`) or the Python env from the
+same seed reproduces positions to < 1e-6 m (test in Python; FRONTEND checks the JS side).
+Done when: the file validates, parity passes, the report lists the chosen seeds per class × pilot with their miss
+and outcome.
