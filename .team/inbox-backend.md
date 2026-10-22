@@ -434,7 +434,7 @@ blackout wait, operator peak.
 Done when: the smoke test passes single-process; the report gives the expected runtime per seed for P2 with comms
 on (measured on 2 seeds) and the total for Stage A, and the peak RSS.
 
-## B-33 [IN PROGRESS] (after B-41; <= 3 h) Descent trajectories for the 3D landing lab
+## B-33 [DONE 11:16] (after B-41; <= 3 h) Descent trajectories for the 3D landing lab
 Goal: F-34 replays real descents at true scale (plan §4 B-33). Files: new `lunarsim/lander/trajectories.py` (or an
 `--export-trajectories` mode in `evaluate.py`), `tests/test_lander_trajectories.py`. Output (LEAD commits):
 `data/policies/trajectories-v1.json` (+ schema), budget ≤ 3 MB.

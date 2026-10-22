@@ -2317,3 +2317,62 @@ Pad legs grouped by standoff (mean link fraction over the 28 legs per standoff; 
   1. OK for the look-ahead in place of the static expected wait for `strategic+avoid`?
   2. Stage C crosses defer only at pads 1 km / any_part (36 cells, not 108). Full cross?
   3. `KNEE_SHARE` = 0.95 (Assumed); on the smoke the knee is the first relay level, 0.5. Add relay levels 0.1-0.4 to Stage A (+24 cells) so the knee is resolved?
+
+## B-33 DONE 11:16 | Descent trajectories for the 3D landing lab (lunarsim-trajectories v1)
+- **Files:**
+  - `lunarsim/lander/trajectories.py`: new; `python -m lunarsim.lander.trajectories [--check]`.
+  - `lunarsim/schemas/trajectories-v1.schema.json`: new.
+  - `tests/test_lander_trajectories.py`: new, 7 tests.
+  - **Data for LEAD to commit:**
+    - `data/policies/trajectories-v1.json`: 2.89 MB, within the 3 MB budget; 36 episodes.
+    - `data/policies/outcomes_memoryless_MK1.json` and `outcomes_memoryless_LARGE.json` (+ .csv): new 500-episode Monte Carlos. They did not exist and the memoryless pilot needs them. MK1 pass 0.950, LARGE 0.972; failures mostly sensor.
+  - No engine file changed.
+- **Selection** (also in the file):
+  - p10, p50 and p90 = the episode whose |miss| is nearest that percentile among the Monte Carlo episodes that reached the ground (not timeout or lost). Ties go to the lower seed.
+  - The first failure = the lowest seed with ok = false.
+  - **Every replay reproduces its Monte Carlo record** (`matches_monte_carlo` = true for all 36), including the files written under env v1/v2: those versions changed only the reward.
+- **Recorded per episode:**
+  - Positions and velocities at **10 Hz** (t = 0, 0.1, … then the touchdown or end instant). The 0.1 s samples are exact: the model holds thrust and direction constant within each 0.2 s step.
+  - Per 0.2 s guidance step: throttle (thrust / maximum, 0-1), thrust direction, attitude quaternion [w, x, y, z] (body +z → thrust direction, no roll), propellant left, the altimeter reading the pilot saw (with noise, bias and dropouts), and the reward terms.
+  - Reward terms (track, effort, low_alt, terminal, plus the constant eta per step) are checked to sum to the env's reward at every step (1e-9). The SCORE counter can tick from them.
+  - Rewards use the current env (v3) under the pilot's variant: baseline, or hover_bonus for the hacking demo.
+  - Also the outcome record and the episode's randomised mass, thrust scale and site slope.
+  - Frame: the pad frame (x, y horizontal, z up). The file states the three.js mapping (x, z, −y).
+- **Plume and surface:** the keep-out model (`PlumeModel`) has no dust-onset altitude, and the file says so per class.
+  - CLPS: `f33_onset_altitude_m` = 15 m, Measured (Blue Ghost SCALPSS, NASA).
+  - MK1 and LARGE: null, Assumed ("scales with thrust", design_research §1.4; F-33 decides).
+  - Each class also gets t_max, t_min and the gate mass.
+- **Parity:** `--check` replays all 36 episodes in the Python env. **Max |position difference| 5.0e-7 m < 1e-6** (positions are stored to 1e-6 m). The test replays 2 committed episodes. FRONTEND checks the JS env against `pos_m` the same way.
+- **Validation:** `trajectories.validate()` OK; JSON Schema (Draft 2020-12) 0 errors (checked with jsonschema from a scratch folder).
+- **Chosen seeds** (seed: |miss|, outcome, duration, score):
+
+memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} miss p50 2.04
+| class | pilot (MC pass rate) | p10 | p50 | p90 | first failure |
+|---|---|---|---|---|---|
+| CLPS | classical (0.938) | 100483: 0.79 m, ok, 64 s, score -177 | 100202: 2.15 m, ok, 71 s, score -245 | 100143: 4.69 m, ok, 79 s, score -321 | 100000: 0.26 m, timeout, 150 s, score -449 |
+| CLPS | memoryless (0.948) | 100241: 0.71 m, ok, 83 s, score -300 | 100450: 2.16 m, ok, 80 s, score -288 | 100244: 4.73 m, ok, 55 s, score -174 | 100006: 80.45 m, velocity, 27 s, score -251 |
+| CLPS | lander_CLPS_bc_v3_s0 (0.890) | 100241: 0.70 m, ok, 80 s, score -284 | 100471: 2.23 m, ok, 68 s, score -236 | 100372: 4.80 m, sensor, 52 s, score -183 | 100004: 2.61 m, sensor, 54 s, score -165 |
+| CLPS | lander_CLPS_baseline_s0 (0.632) | 100328: 1.95 m, ok, 43 s, score -27 | 100207: 3.99 m, sensor, 39 s, score -102 | 100226: 7.84 m, ok, 42 s, score -54 | 100001: 2.15 m, velocity, 37 s, score -87 |
+| CLPS | lander_CLPS_hover_bonus_v1_s0 (0.063) | 100171: 1.63 m, tilt, 47 s, score -13 | 100025: 5.98 m, sensor, 49 s, score -34 | 100278: 32.46 m, velocity, 26 s, score -130 | 100000: 1.06 m, timeout, 150 s, score -93 |
+| MK1 | classical (0.930) | 100463: 0.78 m, ok, 57 s, score -132 | 100166: 2.12 m, ok, 65 s, score -188 | 100244: 4.42 m, ok, 60 s, score -169 | 100000: 0.19 m, timeout, 150 s, score -425 |
+| MK1 | memoryless (0.950) | 100355: 0.72 m, ok, 65 s, score -224 | 100032: 2.05 m, ok, 96 s, score -337 | 100143: 4.47 m, ok, 75 s, score -289 | 100006: 2.89 m, sensor, 54 s, score -167 |
+| LARGE | classical (0.970) | 100203: 0.73 m, ok, 83 s, score -320 | 100124: 2.09 m, ok, 66 s, score -244 | 100292: 4.41 m, ok, 100 s, score -405 | 100035: 1.52 m, timeout, 150 s, score -545 |
+| LARGE | memoryless (0.972) | 100241: 0.71 m, ok, 83 s, score -317 | 100332: 2.04 m, ok, 59 s, score -152 | 100333: 4.28 m, sensor, 73 s, score -285 | 100092: 1.49 m, sensor, 60 s, score -195 |
+
+- **Notes for F-34:**
+  - The hover-bonus policy reached the ground in only 72 of 300 episodes. Its percentile picks are landings; **its reward-hacking behaviour is the first-failure episode, seed 100000**: it hovers until the 150 s timeout.
+  - The classical law's first failure is also a timeout (seed 100000, 150 s, CLPS and MK1), as is LARGE's (seed 100035). They hover too long rather than crash.
+  - PPO baseline p50 is a "sensor" failure (the median miss among its touchdowns).
+- **How to test:**
+  - `.venv\Scripts\python -m pytest tests\test_lander_trajectories.py -q`: 6 passed, 1 skipped (the jsonschema part: not in .venv).
+  - With `tests\test_lander.py`: 30 passed, 1 skipped.
+  - Rebuild: `python -m lunarsim.lander.trajectories` (~4 s once the Monte Carlo files exist).
+  - Check: `python -m lunarsim.lander.trajectories --check`
+- **For FRONTEND (F-34):**
+  - Read `data/policies/trajectories-v1.json`: `pilots[]` → `episodes[]` with columnar arrays.
+  - `pos_m` / `vel_mps` have `n_samples` rows; the per-step series have `n_steps` rows, row k covering [0.2 (k−1), 0.2 k].
+  - Score so far after step k = Σ(track + effort + low_alt + terminal) up to k + eta × k.
+- **Housekeeping:**
+  - `experiments/phase4/run_phase4.py` and `tests/test_phase4_runner.py` show as modified in `git status`. They were committed with CRLF under `* text=auto eol=lf`. Their bytes equal HEAD exactly and `git diff` is empty; a renormalising commit would clear it.
+  - `results/E21a_comms_autonomy.csv` is yours (the running Stage A).
+- **Questions for LEAD:** none.
