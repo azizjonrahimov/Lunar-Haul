@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://azizjonrahimov.github.io/Lunar-Haul/schemas/earth-link-v1.schema.json",
+  "title": "lunarsim-earth-link v1",
+  "description": "Earth-link windows at the sites, pads and rover legs of a terrain pack (writer tools/comms/earth_link.py; reader lunarsim/comms.py, whose validate() also checks that every window code decodes to sorted windows inside the series and matches its summary). Windows: [s0, l0, g1, l1, ...] epoch indices, start0 = s0, end0 = start0 + l0 (exclusive), start1 = end0 + g1. Epoch i covers [i, i + 1) x time.step_min minutes from time.start_utc.",
+  "type": "object",
+  "required": ["format", "version", "terrain", "time", "criteria", "modes", "points", "legs", "provenance"],
+  "properties": {
+    "format": {"const": "lunarsim-earth-link"},
+    "version": {"const": 1},
+    "terrain": {"type": "string"},
+    "time": {
+      "type": "object",
+      "required": ["start_utc", "step_min", "n"],
+      "properties": {"start_utc": {"type": "string"}, "step_min": {"type": "number", "exclusiveMinimum": 0}, "n": {"type": "integer", "minimum": 1}}
+    },
+    "criteria": {"type": "object", "required": ["any_part", "centre+0.5deg", "centre+2deg"]},
+    "modes": {"type": "object", "required": ["dte", "dte+mast"]},
+    "mast": {
+      "type": ["object", "null"],
+      "properties": {"windows": {"$ref": "#/$defs/byCriterion"}, "summary": {"type": "object"}}
+    },
+    "points": {"type": "object", "additionalProperties": {"$ref": "#/$defs/entry"}},
+    "legs": {"type": "object", "additionalProperties": {"anyOf": [{"$ref": "#/$defs/entry"}, {"type": "object", "properties": {"route": {"type": "null"}}, "required": ["route"]}]}},
+    "samples_file": {"type": "object", "required": ["file", "sha256"]},
+    "earth": {"type": "object"},
+    "provenance": {"type": "object"},
+    "generated": {"type": "object"}
+  },
+  "$defs": {
+    "code": {"type": "array", "items": {"type": "integer", "minimum": 0}},
+    "byCriterion": {
+      "type": "object",
+      "required": ["any_part", "centre+0.5deg", "centre+2deg"],
+      "properties": {"any_part": {"$ref": "#/$defs/code"}, "centre+0.5deg": {"$ref": "#/$defs/code"}, "centre+2deg": {"$ref": "#/$defs/code"}}
+    },
+    "entry": {
+      "type": "object",
+      "required": ["windows", "summary"],
+      "properties": {
+        "windows": {"type": "object", "required": ["dte", "dte+mast"], "properties": {"dte": {"$ref": "#/$defs/byCriterion"}, "dte+mast": {"$ref": "#/$defs/byCriterion"}}},
+        "summary": {"type": "object", "required": ["dte", "dte+mast"]}
+      }
+    }
+  }
+}

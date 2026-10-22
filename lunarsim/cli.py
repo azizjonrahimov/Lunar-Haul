@@ -165,8 +165,28 @@ def cmd_verify(a):
         flag = "PASS" if c["passed"] else "FAIL"
         ok += c["passed"]
         print(f"{flag}  {c['name']:62s} ref={c['reference']:.5g} sim={c['simulated']:.5g} err={100*c['rel_error']:.3f}%")
-    print(f"{ok} of {len(checks)} checks passed")
-    sys.exit(0 if ok == len(checks) else 1)
+    p4 = [] if getattr(a, "no_phase4", False) else vv.run_phase4_checks()
+    n_skip = 0
+    for c in p4:
+        if c["skipped"]:
+            n_skip += 1
+            print(f"SKIP  {c['name']:62s} ({c['skipped']})")
+            continue
+        ok += c["passed"]
+        err = f"err={c['error']:.3g} {c['unit']} (tol {c['tolerance']:g})" if c["mode"] == "abs" else f"err={100*c['error']:.3f}%"
+        print(f"{'PASS' if c['passed'] else 'FAIL'}  {c['name']:62s} ref={c['reference']:.6g} sim={c['simulated']:.6g} {err}")
+    total = len(checks) + len(p4) - n_skip
+    print(f"{ok} of {total} checks passed" + (f" ({n_skip} skipped)" if n_skip else ""))
+    if getattr(a, "json", None):
+        import datetime as _dt
+        from .terrain import _git_sha
+        doc = {"format": "lunarsim-verification", "version": 1, "commit": _git_sha(),
+               "time": _dt.datetime.now(_dt.timezone.utc).replace(microsecond=0).isoformat(),
+               "checks": checks, "phase4": p4}
+        with open(a.json, "w", encoding="utf-8") as f:
+            json.dump(doc, f, indent=1, default=lambda x: None)
+        print(f"wrote {a.json}")
+    sys.exit(0 if ok == total else 1)
 
 
 def cmd_scenarios(a):
@@ -305,6 +325,8 @@ def main(argv=None):
     _add_phase3_args(t)
     t.set_defaults(func=cmd_trace)
     v = sub.add_parser("verify", help="run the verification checks")
+    v.add_argument("--json", default=None, help="also write every row (Phase 4 data checks included) to this file")
+    v.add_argument("--no-phase4", action="store_true", help="only the engine checks (skip the Phase 4 data checks)")
     v.set_defaults(func=cmd_verify)
     s = sub.add_parser("scenarios", help="list or export the named scenarios")
     s.add_argument("action", choices=["list", "export"])

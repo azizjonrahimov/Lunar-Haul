@@ -13,7 +13,7 @@ requires-python = ">=3.10"
 dependencies = ["numpy>=1.24", "pandas>=2.0"]
 
 [project.optional-dependencies]
-full = ["scipy>=1.10", "matplotlib>=3.7", "pymupdf>=1.24", "pytest>=7"]
+full = ["scipy>=1.10", "matplotlib>=3.7", "pymupdf>=1.24", "pytest>=7", "jsonschema>=4.18"]
 terrain = ["rasterio>=1.4", "pillow>=10"]
 comms = ["spiceypy>=6.0", "rasterio>=1.4"]  # R-1 Earth-link pipeline (tools/comms/): SPICE ephemeris + windowed LOLA DEM reads
 ml = ["stable-baselines3>=2.9", "gymnasium[box2d]>=1.4", "torch>=2.8", "tensorboard>=2.17", "onnx>=1.17", "onnxruntime>=1.20"]  # torch: --index-url https://download.pytorch.org/whl/cpu for the lander MLP

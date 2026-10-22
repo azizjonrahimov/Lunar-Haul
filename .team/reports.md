@@ -2696,3 +2696,109 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
   6. Try it: open an issue with "Run a scenario" (e.g. P1, terrain on, 2 seeds), add `run-request`, and watch Actions. Expect a comment in ~1 min, release `run-<n>`, and the site in a few minutes.
 - **Limits:** seeds ≤ 30 and one year each. The slowest case (P3, terrain on, dte, 30 seeds) should take ~5-10 min against the 60 min limit; `--max-seconds 3300` also stops the runner itself before the job limit.
 - **Questions for LEAD:** none.
+
+## B-39 DONE 11:58 | Verification rows for the Phase 4 data
+- **Files:**
+  - `lunarsim/vv.py`:
+    - `Check` gains `source`, `mode` (rel | abs), `error`, `skipped`. Existing rows keep their keys and values; `run_all_checks()` is unchanged.
+    - New `run_phase4_checks()`.
+  - `lunarsim/cli.py`: `lunarsim verify` prints the Phase 4 rows too. New `--json PATH` (all rows + commit) and `--no-phase4`. Exit 0 when nothing fails; skipped rows are not failures.
+  - `tests/test_verification_phase4.py`: new, 4 tests.
+  - **Data for LEAD to commit:**
+    - `data/comms/connecting_ridge/horizons_2028-01_base.json` (39 KB): 745 hourly rows of the JPL Horizons month, January 2028, Earth from BASE, with the exact API request. It is the independent reference for row 4 and works without SPICE in CI.
+    - `data/verification/verification-v1.json`: every row from `lunarsim verify --json`, for the site.
+- **The new rows** (reference / simulated / error / tolerance / basis / source each):
+
+  | # | Row | Reference | Simulated | Error | Tolerance |
+  |---|---|---|---|---|---|
+  | 1 | Catalogue values equal the engine constants | 45 values | 45 equal | 0 | 0 |
+  | 2 | Scene package (P2 v2 sample): trips | 533 | 533 | 0 | 0 |
+  | 2 | Scene package: landings | 6 | 6 | 0 | 0 |
+  | 2 | Scene package: delivered kg (the trace's cargo table) | 530,328.0 | 530,328.0 | 0 | 0 |
+  | 3 | Descent trajectory replays (CLPS classical p50, seed 100202) | stored positions | replay | 5.0e-7 m | 1e-6 m |
+  | 4 | Earth elevation at BASE vs JPL Horizons (744 h) | Horizons | earth_track | 0.0050° | 0.01° |
+  | 4 | Earth azimuth at BASE vs JPL Horizons | Horizons | earth_track | 0.0052° | 0.01° |
+  | 5 | Earth-link rule "always" reproduces the baseline | md5 739e9ba7… | 739e9ba7… | 0 | 0 |
+
+  - Row 1 compares values and flags: rover capacity / speed / night ×3, lander payload / largest item ×3, gate constants ×5 ×3, flags included.
+  - Row 4's error is the track's centidegree rounding plus the ~30 m between BASE and the Horizons site coordinates.
+  - Row 5 runs `compare` P2-default × 3 seeds × 4 job rules with the CLI's job-rule options.
+  - **`lunarsim verify`: 21 of 21 checks passed** (13 engine + 8 new), ~12 s.
+  - In CI (`.[full]`, no gymnasium) row 3 shows as SKIP ("needs the [ml] extra") and the command still exits 0.
+- **Tests:** `test_verification_phase4.py` + `test_verification.py` + `test_server.py`: 71 passed. They cover:
+  - every new row passes or is skipped with a reason;
+  - abs/rel modes and skip;
+  - a drifted catalogue fails row 1;
+  - `verify --json` writes all rows, and the CLI exit code.
+- **How to test:** `.venv\Scripts\python -m lunarsim verify` (or `--json out.json`); `.venv\Scripts\python -m pytest tests\test_verification_phase4.py -q`.
+- **For FRONTEND:** the /verification/ page can show the Phase 4 rows from `data/verification/verification-v1.json` → `phase4[]`. Columns: name, reference, simulated, error, tolerance, unit, mode, basis, source, passed, skipped. Present them as Python-side data checks run at commit `commit`; they are not recomputed in the browser. Regenerate with `lunarsim verify --json data/verification/verification-v1.json`.
+- **Questions for LEAD:** none.
+
+## B-38 DONE 12:03 | CI gates: per-page budgets, schema validation, the Node parity hook
+- **Files:**
+  - `tools/ci/budgets.py`: new; subcommands `pages` and `schemas`.
+  - `tools/ci/budgets.json`: new; the thresholds.
+  - `lunarsim/schemas/earth-link-v1.schema.json`: new. The Earth-link file had only a Python validator; it now has a schema too.
+  - `tests/test_ci_budgets.py`: new, 6 tests.
+- **(1) Per-page budgets** (`python tools/ci/budgets.py pages --dist site/dist`):
+  - For each built page, the initial JS and CSS = the files its HTML loads (module script, modulepreload links, stylesheets), measured gzip-compressed. Vite writes no manifest here, and the HTML is exactly what a page fetches first. Lazy chunks (the 3D stage) are not counted.
+  - The data fetched at load is **declared per page** in budgets.json (globs under dist, from the page code and the prepare-data outputs) and measured the same way. FRONTEND should keep the lists current; a declared file that disappears fails the check.
+  - Also checked: the site total against a 900 MB ceiling (Pages limit 1 GB), and stale entries for pages the build no longer has.
+  - Thresholds = today's sizes + 25 %, rounded up to 5 kB. Today's build passes all 16 pages and totals 50.9 MB.
+  - Today's largest pages:
+
+    | Page | JS (kB gzip) | Data (kB gzip) |
+    |---|---|---|
+    | lab/rover | 20 | 3,407 (5 m heights + 4 shadow maps) |
+    | lab/lander | 103 | 1,187 (policy cards) |
+    | verification | 8 | 535 |
+    | world | 15 | 380 |
+    | vehicles | 78 | 9 |
+    | design/stage | 222 | 0 |
+
+  - `--propose` prints new thresholds after an intended change.
+- **(2) Schema validation** (`python tools/ci/budgets.py schemas`): jsonschema Draft 2020-12 plus each format's Python validator.
+  - Files: the catalogue, routes, trajectories, the Earth link, the 5 scene indexes, the 9 scenario files and the 4 sample traces (v1 or v2 by version) = **22 files, 0 problems, ~20 s**.
+- **(3) Node hook:** CI runs `node --test site/tests/` when `site/tests/*.mjs` exist. FRONTEND adds the JS-vs-Python parity tests there.
+- **pyproject (yours):** `full = ["scipy>=1.10", "matplotlib>=3.7", "pymupdf>=1.24", "pytest>=7", "jsonschema>=4.18"]`. This also turns on the `importorskip("jsonschema")` checks already in the tests (catalogue, routes, trajectories, scenes, formats).
+- **ci.yml diff (LEAD applies):**
+  ```diff
+         - run: pip install -e ".[full]"
+         - run: python -m pytest tests -q
+         - run: python -m lunarsim verify
+         - run: python -m lunarsim validate data/scenarios/*.json data/sample_traces/*.json
+  +      - run: python tools/ci/budgets.py schemas
+  +
+  +  site:
+  +    runs-on: ubuntu-latest
+  +    steps:
+  +      - uses: actions/checkout@v4
+  +      - uses: actions/setup-python@v5
+  +        with: { python-version: "3.12" }
+  +      - run: pip install numpy pandas
+  +      - uses: actions/setup-node@v4
+  +        with: { node-version: "24", cache: npm, cache-dependency-path: site/package-lock.json }
+  +      - run: npm ci
+  +        working-directory: site
+  +      - run: npm run build
+  +        working-directory: site
+  +        env: { PYTHON: python }
+  +      - run: python tools/ci/budgets.py pages --dist site/dist
+  +      - name: JS-vs-Python parity tests (site/tests/*.mjs)
+  +        run: if ls site/tests/*.mjs >/dev/null 2>&1; then node --test site/tests/; else echo "no site/tests/*.mjs yet"; fi
+  ```
+  - The `site` job runs in parallel with `pytest`, so PRs are gated on budgets and parity before Pages builds.
+  - The build uses base `/`; sizes do not depend on the base.
+  - Note: `lunarsim verify` in CI shows the trajectory row as SKIP (no gymnasium in `[full]`) and still exits 0.
+- **Time added:**
+  - pytest job: +~20 s for the schemas step (measured locally: 22 files in 20 s).
+  - The parallel site job: about the length of the Pages build (the last three pages.yml runs took 56-95 s including deploy), so ~1.5 min. The CI wall time (last runs 73-127 s) grows by at most ~20-40 s.
+- **Tests:** `.venv\Scripts\python -m pytest tests\test_ci_budgets.py -q`: 6 passed with jsonschema, 5 + 1 skipped without. They cover:
+  - a synthetic build (absolute-with-base and relative script paths, preloads, CSS, declared data);
+  - violations, a missing declared file and a stale page entry;
+  - `--propose` rounding;
+  - the committed budgets meet today's local build;
+  - schema targets cover every format;
+  - a broken catalogue is caught by both validators.
+- **How to test:** `python tools/ci/budgets.py pages --dist site/dist` (after `npm run build`); `python tools/ci/budgets.py schemas` (needs jsonschema).
+- **Questions for LEAD:** none. FRONTEND should confirm the per-page data lists in budgets.json, especially lab/lander, which today counts every policy card.

@@ -25,15 +25,20 @@ class Check:
     name: str
     reference: float
     simulated: float
-    tolerance: float      # relative tolerance
+    tolerance: float      # relative tolerance (mode "rel") or absolute, in `unit` (mode "abs")
     unit: str
     basis: str
     passed: bool = False
     rel_error: float = float("nan")
+    source: str = ""      # where the reference comes from (Phase 4 rows)
+    mode: str = "rel"
+    error: float = float("nan")     # the error the tolerance applies to (relative or absolute)
+    skipped: str = ""     # non-empty: the check could not run here, and why (not a failure)
 
     def finish(self):
         self.rel_error = abs(self.simulated - self.reference) / max(abs(self.reference), 1e-12)
-        self.passed = bool(self.rel_error <= self.tolerance)
+        self.error = abs(self.simulated - self.reference) if self.mode == "abs" else self.rel_error
+        self.passed = bool(self.error <= self.tolerance)
         return self
 
 
@@ -219,6 +224,141 @@ def run_all_checks() -> List[Dict]:
     checks += [check_night_fraction(), check_mass_conservation(dispatch.marketplace),
                check_mass_conservation(dispatch.pooled_greedy), check_stranding_rule(),
                check_common_random_numbers(), check_fleet_cost(), check_mg1_queue()]
+    return [asdict(c) for c in checks]
+
+
+# ---------------------------------------------------------------------------
+# Phase 4 data checks (B-39): the new data files against the code that made them and independent references
+# ---------------------------------------------------------------------------
+def _repo(*parts) -> str:
+    import os
+    return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), *parts)
+
+
+def _skip(name: str, unit: str, basis: str, source: str, why: str) -> Check:
+    return Check(name, float("nan"), float("nan"), 0.0, unit, basis, False, float("nan"), source, "abs", float("nan"), why)
+
+
+def check_catalogue_engine() -> Check:
+    """B-30: the catalogue's capacities, speeds, night operation, payloads and descent constants equal the engine's."""
+    from . import catalog
+    from .lander.classes import CLASSES
+    from .scenario import LANDER_TYPES
+    n = 3 * len(VEHICLE_CLASSES) + len(LANDER_TYPES) * 2 + len(CLASSES) * 2 * len(catalog.GATE_KEYS)
+    mism = catalog.engine_mismatches()
+    return Check("Catalogue values equal the engine constants", float(n), float(n - len(mism)), 0.0, "values",
+                 "lunarsim/catalog-v1.json vs entities.VEHICLE_CLASSES, scenario.LANDER_TYPES, lander/classes.py "
+                 "(values and flags)", source="lunarsim/catalog.py engine_mismatches()", mode="abs").finish()
+
+
+def check_scene_reproduces_trace() -> List[Check]:
+    """B-31: a scene package of the P2 v2 sample trace reproduces its trips, landings and delivered kg."""
+    import json, os, tempfile
+    from . import scene as SCN
+    trace_path = _repo("data", "sample_traces", "P2_marketplace_seed3_v2.json")
+    src = "data/sample_traces/P2_marketplace_seed3_v2.json -> lunarsim/scene.py build/read"
+    if not (os.path.isfile(trace_path) and os.path.isfile(_repo("data", "driving", "routes-v1.json"))):
+        return [_skip("Scene package reproduces the trace", "", "", src, "sample trace or routes-v1.json missing")]
+    with open(trace_path, encoding="utf-8") as f:
+        trace = json.load(f)
+    with tempfile.TemporaryDirectory() as d:
+        SCN.build(trace, d)
+        got = SCN.replay_counts(SCN.read(d))
+    ci = {c: i for i, c in enumerate(trace["cargo_columns"])}
+    kg = round(sum(r[ci["mass_kg"]] for r in trace["cargo"] if r[ci["t_delivered"]] is not None), 3)
+    trips = sum(1 for j in trace["jobs"] if j["kind"] != "reposition")
+    return [Check("Scene package: trips equal the trace's", float(trips), float(got["trips"]), 0.0, "trips",
+                  "job records in the trace (repositions excluded) vs distinct jobs in the package", source=src, mode="abs").finish(),
+            Check("Scene package: landings equal the trace's", float(len(trace["landings"])), float(got["landings"]), 0.0,
+                  "landings", "landing events", source=src, mode="abs").finish(),
+            Check("Scene package: delivered kg equals the trace's", kg, got["delivered_kg"], 0.0, "kg",
+                  "sum of delivered masses in the trace's cargo table (0.1 kg) vs the package's deliveries", source=src,
+                  mode="abs").finish()]
+
+
+def check_trajectory_replay() -> Check:
+    """B-33: an exported descent episode replays in the Python env to < 1e-6 m."""
+    import json, os
+    import numpy as np
+    path = _repo("data", "policies", "trajectories-v1.json")
+    src = "data/policies/trajectories-v1.json (CLPS, classical law, p50 episode) -> lunar/Descent-v0"
+    name = "Descent trajectory replays to the stored positions"
+    if not os.path.isfile(path):
+        return _skip(name, "m", "", src, "trajectories-v1.json missing")
+    try:
+        from .lander import trajectories as TJ
+        controller, obs_v, variant, _ = TJ.controller_for("law", "classical", None)
+        with open(path, encoding="utf-8") as f:
+            doc = json.load(f)
+        ep = next(e for p in doc["pilots"] if p["cls"] == "CLPS" and p["pilot"] == "classical"
+                  for e in p["episodes"] if e["pick"] == "p50")
+        rec = TJ.record_episode("CLPS", controller, obs_v, variant, ep["seed"])
+    except ImportError as e:
+        return _skip(name, "m", "", src, f"needs the [ml] extra ({e.name or e})")
+    d = float(np.max(np.abs(np.asarray(rec["pos"]) - np.asarray(ep["pos_m"]))))
+    return Check(name, 0.0, d, 1e-6, "m", f"seed {ep['seed']}: max |position difference| over "
+                 f"{len(ep['pos_m'])} samples (stored to 1e-6 m)", source=src, mode="abs").finish()
+
+
+def check_ephemeris_horizons() -> List[Check]:
+    """B-40: the stored Earth track at BASE (SPICE) agrees with an independent JPL Horizons month."""
+    import gzip, json, os
+    import numpy as np
+    hpath = _repo("data", "comms", "connecting_ridge", "horizons_2028-01_base.json")
+    tpath = _repo("data", "comms", "connecting_ridge", "earth_track-v1.json.gz")
+    src = "data/comms/connecting_ridge/horizons_2028-01_base.json (JPL Horizons API) vs earth_track-v1.json.gz (SPICE)"
+    if not (os.path.isfile(hpath) and os.path.isfile(tpath)):
+        return [_skip("Earth elevation at BASE vs JPL Horizons", "deg", "", src, "Horizons month or Earth track missing")]
+    with open(hpath, encoding="utf-8") as f:
+        hz = json.load(f)
+    with open(tpath, "rb") as f:
+        tr = json.loads(gzip.decompress(f.read()))
+    n = len(hz["rows"])
+    el_h = np.array([r[2] for r in hz["rows"]])
+    az_h = np.array([r[1] for r in hz["rows"]])
+    el_t = np.asarray(tr["elevation_cdeg"][:n]) / 100.0                  # both start 2028-01-01 00:00 UTC, hourly
+    az_t = (np.asarray(tr["grid_bearing_cdeg"][:n]) / 100.0 - tr["lon_deg"]) % 360.0
+    d_el = float(np.max(np.abs(el_t - el_h)))
+    d_az = float(np.max(np.abs((az_t - az_h + 180.0) % 360.0 - 180.0)))
+    basis = (f"max over {n} hours of January 2028; the track is stored in centidegrees and BASE sits within ~30 m of "
+             "the Horizons site coordinates")
+    return [Check("Earth elevation at BASE vs JPL Horizons", 0.0, d_el, 0.01, "deg", basis, source=src, mode="abs").finish(),
+            Check("Earth azimuth at BASE vs JPL Horizons", 0.0, d_az, 0.01, "deg", basis, source=src, mode="abs").finish()]
+
+
+def check_comms_always_baseline() -> Check:
+    """B-41: with comms mode 'always' the engine reproduces the baseline (canonical md5 of compare P2-default x 3)."""
+    import hashlib, io
+    import pandas as pd
+    from .config import library
+    from .engine import run
+    from .cli import _mechanism
+    want = "739e9ba72c1563f4ae508ebc1dfd9938"
+    sc = library()["P2-default"].with_(comms={"mode": "always"})
+    rows = []
+    for name in ("inhouse", "pooled_greedy", "central_assign", "marketplace"):     # as `lunarsim compare`
+        fn, kw = _mechanism(name)
+        for s in range(3):
+            r = run(sc, fn, seed=s, **kw)
+            r["mechanism"] = name
+            rows.append(r)
+    buf = io.StringIO()
+    pd.DataFrame(rows).to_csv(buf, index=False)
+    df = pd.read_csv(io.StringIO(buf.getvalue()), float_precision="round_trip")
+    drop = [c for c in df.columns if c.startswith(("blackout", "operator_peak", "linked_share", "delivered_kg_in_horizon"))
+            or c in ("delivered_nonbulk_kg", "cost_per_landed_kg_usd")]
+    md5 = hashlib.md5(df.drop(columns=drop).to_csv(index=False, lineterminator=chr(10)).encode()).hexdigest()
+    return Check("Earth-link rule 'always' reproduces the baseline", 1.0, float(md5 == want), 0.0, "match",
+                 f"canonical md5 of compare P2-default x 3 seeds x 4 job rules: {md5[:12]} vs {want[:12]}",
+                 source="tests/test_phase3_engine.py BASELINE_V2_CANONICAL_MD5", mode="abs").finish()
+
+
+def run_phase4_checks() -> List[Dict]:
+    checks: List[Check] = [check_catalogue_engine()]
+    checks += check_scene_reproduces_trace()
+    checks.append(check_trajectory_replay())
+    checks += check_ephemeris_horizons()
+    checks.append(check_comms_always_baseline())
     return [asdict(c) for c in checks]
 
 

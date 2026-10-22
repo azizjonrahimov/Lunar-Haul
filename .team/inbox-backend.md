@@ -497,7 +497,7 @@ gives the exact steps LEAD takes to enable it.
 
 # M4/M5 backend (queued 22 Oct 12:10). Order: B-39, B-38, B-35, B-36. LEAD is running E21; keep runs small.
 
-## B-39 [OPEN] (<= 1.5 h) Verification rows for the Phase 4 data
+## B-39 [DONE 11:58] (<= 1.5 h) Verification rows for the Phase 4 data
 Add checks to the verification that `lunarsim verify` and the site's /verification/ page show (follow how the Phase 3
 rows are produced; FRONTEND renders new rows if the format needs it, tell them): (1) catalogue numbers equal engine
 constants (B-30); (2) a scene package reproduces its trace's trips, landings and delivered kg (B-31, on the P2 sample);
@@ -505,7 +505,7 @@ constants (B-30); (2) a scene package reproduces its trace's trips, landings and
 month (B-40); (5) comms=always reproduces the baseline md5 (B-41). Each row: reference, simulated, error, tolerance,
 basis, source. Done when: `lunarsim verify` lists them and passes; tests.
 
-## B-38 [OPEN] (<= 2 h) CI gates (files: `.github/workflows/ci.yml` changes go in your report as a diff; LEAD applies)
+## B-38 [DONE 12:03] (<= 2 h) CI gates (files: `.github/workflows/ci.yml` changes go in your report as a diff; LEAD applies)
 A script `tools/ci/budgets.py` + tests: (1) per-page budgets on `site/dist` after a build (JS gzip per page entry,
 data bytes fetched at load per page: list them from the Vite manifest and `prepare-data.mjs` outputs; thresholds in a
 JSON file you propose); (2) schema-validate every data file that has a schema (catalog, routes, trajectories,
@@ -513,7 +513,7 @@ scene indexes, earth_link, scenario and trace samples) with jsonschema (add `jso
 the pyproject line); (3) a Node parity test runner hook: if `site/tests/*.mjs` exist, run them with `node --test`
 (FRONTEND will add JS-vs-Python parity tests for the new formats). Report the ci.yml diff and the time it adds.
 
-## B-35 [OPEN] (<= 2.5 h) Story data and the number check (plan §4 B-35; schema agreed with FRONTEND via LEAD)
+## B-35 [IN PROGRESS] (<= 2.5 h) Story data and the number check (plan §4 B-35; schema agreed with FRONTEND via LEAD)
 `data/stories/*.json` + `lunarsim/stories.py` (validator) + schema + tests. A story = ordered steps
 {id, title, text (with {{r:key}} placeholders), camera shot name, highlight ids, mode switches, scene sample}. The
 validator resolves every placeholder from a registry of sourced numbers: results tables (`results/*.csv`, keyed

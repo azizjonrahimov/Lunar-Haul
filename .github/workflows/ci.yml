@@ -17,3 +17,22 @@ jobs:
       - run: python -m pytest tests -q
       - run: python -m lunarsim verify
       - run: python -m lunarsim validate data/scenarios/*.json data/sample_traces/*.json
+      - run: python tools/ci/budgets.py schemas
+
+  site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install numpy pandas
+      - uses: actions/setup-node@v4
+        with: { node-version: "24", cache: npm, cache-dependency-path: site/package-lock.json }
+      - run: npm ci
+        working-directory: site
+      - run: npm run build
+        working-directory: site
+        env: { PYTHON: python }
+      - run: python tools/ci/budgets.py pages --dist site/dist
+      - name: JS-vs-Python parity tests (site/tests/*.mjs)
+        run: if ls site/tests/*.mjs >/dev/null 2>&1; then node --test site/tests/; else echo "no site/tests/*.mjs yet"; fi
