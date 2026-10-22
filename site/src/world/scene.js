@@ -1,6 +1,8 @@
 // three.js scene for /world: LOLA terrain lit by the grazing polar sun, the site layout, representative vehicles,
-// landers, plume keep-out rings and cargo rings. Terrain shadows are baked into a sun-visibility texture (one
-// ray-march pass over the heightmap whenever the sun moves > 0.25 deg) so the per-frame cost is a texture lookup.
+// landers, plume keep-out rings and cargo rings. Terrain shadows come from the B-34 horizon map (64 sectors per 20 m
+// post, two on the GPU at a time, see ../horizon.js) with the 20 m and 5 m normal maps; until those load, or if they fail,
+// the older bake runs (one ray-march pass over the heightmap whenever the sun moves > 0.25 deg). ?horizon=0 forces
+// the bake, ?sun=AZ fixes the sun's azimuth (both for comparisons).
 import {
   WebGLRenderer, Scene, PerspectiveCamera, BufferGeometry, BufferAttribute, Mesh, ShaderMaterial, DataTexture, RedFormat,
   RGBAFormat, FloatType, UnsignedByteType, NearestFilter, LinearFilter, Vector3, Color, GLSL3, WebGLRenderTarget,
@@ -10,6 +12,7 @@ import {
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { DESCENT_S, DESCENT_FROM_M } from './state.js';
+import { loadTerrainV2 } from '../horizon.js';
 
 const SUN_EL_DEG = 1.5, SUN_RADIUS_DEG = 0.267, LUNAR_DAY_H = 29.53 * 24, MESH_N = 400, MAX_LIGHTS = 12;
 import { OWNER_COLOURS, EXTRA_COLOURS } from './colours.js';
@@ -43,12 +46,30 @@ precision highp float;
 in vec2 vUv; in vec3 vPos; out vec4 outColor;
 uniform sampler2D uNormal; uniform sampler2D uVis; uniform vec3 uSun; uniform vec3 uCam; uniform float uDay; uniform float uAmbient;
 uniform vec3 uLights[${MAX_LIGHTS}]; uniform vec2 uLightDir[${MAX_LIGHTS}]; uniform int uNLights; uniform float uLightRange;
+uniform sampler2D uHorizon; uniform float uUseHz; uniform float uHzW; uniform float uSunElDeg; uniform float uSunRadDeg;
+uniform sampler2D uPatchN0; uniform sampler2D uPatchN1; uniform vec4 uPatchB0; uniform vec4 uPatchB1; uniform float uUsePatch;
+// 5 m normals inside a patch (bounds x0, y0, x1, y1 in local metres; row 0 = north), blended in over the last 5 %
+vec3 patchN(vec3 n, sampler2D t, vec4 b) {
+  vec2 q = (vec2(vPos.x, -vPos.z) - b.xy) / (b.zw - b.xy);
+  if (any(lessThan(q, vec2(0.0))) || any(greaterThan(q, vec2(1.0)))) return n;
+  float e = min(min(q.x, 1.0 - q.x), min(q.y, 1.0 - q.y));
+  return mix(n, texture(t, vec2(q.x, 1.0 - q.y)).xyz, smoothstep(0.0, 0.05, e));
+}
+// sun visibility: horizon elevation (degrees) interpolated between the two sectors round the sun's azimuth, against
+// the sun's elevation with a soft edge for the 0.53 deg disc; the bake (uVis) is the fallback
+float sunVis() {   // no early return: ANGLE's HLSL compiler warns about it
+  vec2 h = texture(uHorizon, vUv).rg;
+  float hv = smoothstep(-uSunRadDeg, uSunRadDeg, uSunElDeg - mix(h.r, h.g, uHzW));
+  return uUseHz > 0.5 ? hv : texture(uVis, vUv).r;
+}
 void main() {
-  vec3 n = normalize(texture(uNormal, vUv).xyz * 2.0 - 1.0);
+  vec3 nt = texture(uNormal, vUv).xyz;
+  if (uUsePatch > 0.5) { nt = patchN(nt, uPatchN0, uPatchB0); nt = patchN(nt, uPatchN1, uPatchB1); }
+  vec3 n = normalize(nt * 2.0 - 1.0);
   vec3 v = normalize(uCam - vPos);
   float ci = dot(n, uSun), ce = max(dot(n, v), 0.0);
   float lit = ci > 0.0 ? ci / (ci + ce + 1e-4) : 0.0;
-  float c = 0.12 * 3.2 * lit * texture(uVis, vUv).r * uDay + uAmbient;
+  float c = 0.12 * 3.2 * lit * sunVis() * uDay + uAmbient;
   for (int i = 0; i < ${MAX_LIGHTS}; i++) {           // headlights: a forward cone on the ground
     if (i >= uNLights) break;
     vec3 d = vPos - uLights[i]; float dist = length(d.xz);
@@ -101,7 +122,8 @@ function drapedCircle(terrain, cx, cy, R, segs = 96) {
   const g = new BufferGeometry(); g.setAttribute('position', new BufferAttribute(pts, 3)); return g;
 }
 
-export function createScene({ canvas, labelHost, terrain, layout, pixelBudget = 5.2e6 }) {
+export function createScene({ canvas, labelHost, terrain, layout, pixelBudget = 5.2e6, onAssets = () => {} }) {
+  const params = new URLSearchParams(location.search), sunOverride = params.has('sun') ? +params.get('sun') : null;
   const renderer = new WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
   renderer.setClearColor(new Color(0x050506));
   const css = new CSS2DRenderer({ element: labelHost });
@@ -119,18 +141,41 @@ export function createScene({ canvas, labelHost, terrain, layout, pixelBudget = 
   const sun = new Vector3();
   const terrMat = new ShaderMaterial({ glslVersion: GLSL3, vertexShader: terrVert, fragmentShader: terrFrag,
     uniforms: { uNormal: { value: normalMap(terrain) }, uVis: { value: visRT.texture }, uSize: { value: [W, H] }, uSun: { value: sun }, uCam: { value: camera.position },
-      uDay: { value: 1 }, uAmbient: { value: 0 }, uLights: { value: lights }, uLightDir: { value: lightDir }, uNLights: { value: 0 }, uLightRange: { value: 420 } } });
+      uDay: { value: 1 }, uAmbient: { value: 0 }, uLights: { value: lights }, uLightDir: { value: lightDir }, uNLights: { value: 0 }, uLightRange: { value: 420 },
+      uHorizon: { value: null }, uUseHz: { value: 0 }, uHzW: { value: 0 }, uSunElDeg: { value: SUN_EL_DEG }, uSunRadDeg: { value: SUN_RADIUS_DEG },
+      uPatchN0: { value: null }, uPatchN1: { value: null }, uPatchB0: { value: [0, 0, 0, 0] }, uPatchB1: { value: [0, 0, 0, 0] }, uUsePatch: { value: 0 } } });
   scene.add(new Mesh(terrainGeometry(terrain), terrMat));
-  let bakedAz = null;
+  let bakedAz = null, hz = null, lastSun = [135, true];
   function setSun(azDeg, day) {
+    if (sunOverride !== null) azDeg = sunOverride;
+    lastSun = [azDeg, day];
     const a = azDeg * Math.PI / 180, el = SUN_EL_DEG * Math.PI / 180;
     sun.set(Math.sin(a) * Math.cos(el), Math.sin(el), -Math.cos(a) * Math.cos(el));
     terrMat.uniforms.uDay.value = day ? 1 : 0; terrMat.uniforms.uAmbient.value = day ? 0 : 0.006;   // night: faint earthshine
+    if (hz) {
+      const { k0, k1, w } = hz.sectorsFor(azDeg), u = terrMat.uniforms;
+      u.uHzW.value = w;
+      if (hz.loaded === `${k0},${k1}`) { u.uUseHz.value = 1; return; }
+      u.uUseHz.value = 0;   // the bake covers until these sectors arrive
+      hz.load(k0, k1).then(ok => { if (ok) { setSun(...lastSun); onAssets('horizon'); } }).catch(() => {});
+    }
     if (bakedAz === null || Math.abs(((azDeg - bakedAz + 540) % 360) - 180) > 0.25) {
       visMat.uniforms.uSunDir.value.set(Math.sin(a), Math.cos(a));   // heightmap texels: +col east, +row south -> north = -row
       visMat.uniforms.uSunDir.value.y = -Math.cos(a);
       renderer.setRenderTarget(visRT); renderer.render(visScene, visCam); renderer.setRenderTarget(null); bakedAz = azDeg;
     }
+  }
+
+  if (params.get('horizon') !== '0') {
+    loadTerrainV2(import.meta.env.BASE_URL + 'terrain/hero/v2/').then(v2 => {
+      if (!renderer.extensions.has('OES_texture_float_linear')) v2.tex.magFilter = v2.tex.minFilter = NearestFilter;
+      const u = terrMat.uniforms;
+      u.uNormal.value.dispose(); u.uNormal.value = v2.normal; u.uHorizon.value = v2.tex;
+      const [p0, p1] = v2.patches;
+      if (p0 && p1) { u.uPatchN0.value = p0.tex; u.uPatchN1.value = p1.tex; u.uPatchB0.value = p0.bounds; u.uPatchB1.value = p1.bounds; u.uUsePatch.value = 1; }
+      hz = v2; setSun(...lastSun);
+      onAssets(`horizon map (64 sectors, ${v2.patches.map(q => q.site).join(' and ')} at 5 m)`);
+    }).catch(err => onAssets(`horizon map unavailable (${err.message}); using the bake`));
   }
 
   // --- layout: legs, sites, pads

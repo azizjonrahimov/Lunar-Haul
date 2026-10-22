@@ -26,6 +26,13 @@
 .s-log { font-size: 0.8125rem; min-width: 52rem; }
 .s-log td { font-family: var(--font-num); white-space: nowrap; }
 .s-parts { padding-left: 1.2em; }
+/* effects scene (F-33): sliders, the seed box and the effect switches */
+.s-slider { display: inline-flex; flex-direction: column; gap: var(--s-1); min-width: 12rem; }
+.s-slider input { width: 100%; min-height: var(--target); accent-color: var(--accent); }
+.s-out { font-family: var(--font-num); font-size: 0.8125rem; color: var(--ink-2); }
+.s-num { width: 6.5rem; min-height: var(--target); font-family: var(--font-num); background: transparent; color: var(--ink); border: 1px solid var(--panel-line); border-radius: 8px; padding: 0 var(--s-2); }
+.s-fxset { display: flex; flex-wrap: wrap; gap: 0 var(--s-4); border: 0; padding: 0; margin: 0; }
+.s-fxset legend { width: 100%; margin-bottom: var(--s-1); }
 @media (max-width: 900px) {
   .s-stage { height: auto; overflow: visible; background: none; }
   .s-view { position: relative; height: 380px; border-radius: var(--radius-panel); overflow: hidden; background: #000; }

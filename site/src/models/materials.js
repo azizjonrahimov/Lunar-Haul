@@ -61,7 +61,7 @@ export function createMaterials(map) {
   // extra non-catalogue materials used by the generators (named so the properties panel can say so)
   base.dark_metal = addDust(new THREE.MeshStandardMaterial({ color: '#3a3d42', metalness: 0.85, roughness: 0.4, name: 'dark_metal (nozzle, representative)' }), dust);
   base.tyre = addDust(new THREE.MeshStandardMaterial({ color: '#8f9296', metalness: 0.7, roughness: 0.55, name: 'tyre mesh (representative)' }), dust);
-  base.lamp = new THREE.MeshStandardMaterial({ color: '#202020', emissive: '#fff3d6', emissiveIntensity: 3, name: 'lamp' });
+  base.lamp = new THREE.MeshStandardMaterial({ color: '#202020', emissive: '#fff3d6', emissiveIntensity: 8, name: 'lamp' });   // above the bloom threshold
   const used = [];
   return {
     get(id) {

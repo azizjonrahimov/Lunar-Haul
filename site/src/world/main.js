@@ -86,7 +86,9 @@ async function ensureViewsAsync() {
   if (st.mode === '3d' && !st.scene) {
     try {
       sceneMod = sceneMod || await import('./scene.js');
-      st.scene = sceneMod.createScene({ canvas: $('w-canvas'), labelHost: $('w-labels'), terrain: st.terrain, layout: st.layout });
+      const tierText = $('w-tier').textContent;
+      st.scene = sceneMod.createScene({ canvas: $('w-canvas'), labelHost: $('w-labels'), terrain: st.terrain, layout: st.layout,
+        onAssets: msg => { if (msg !== 'horizon') $('w-tier').textContent = `${tierText} Terrain light: ${msg}.`; draw(true); } });
       st.sceneRO && st.sceneRO.disconnect();
       st.sceneRO = new ResizeObserver(() => { if (st.scene) { st.scene.resize(); draw(true); } }); st.sceneRO.observe($('w-canvas'));
       st.scene.resize(); if (st.tr) st.scene.setTrace(st.tr); st.scene.preset('overview', false);

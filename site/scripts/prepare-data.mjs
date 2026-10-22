@@ -3,6 +3,7 @@
 //   world/          site_graph.json (the DES site graph) and samples/*.json (bundled traces)
 //   detect-gpu/     detect-gpu's benchmark tables, self-hosted so tiering makes no third-party request
 //   catalog/        catalog-v1.json, the vehicle and site catalogue (B-30)
+//   terrain/hero/v2/ the B-34 horizon map, normals and 5 m height patches; comms/ Earth's track (R-1)
 // Terrain source: data/terrain/connecting_ridge/ (LEAD, B-9); fallback site/.terrain-dev/ (scripts/make_dev_terrain.py).
 import { existsSync, mkdirSync, copyFileSync, readFileSync, readdirSync, cpSync, writeFileSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -104,3 +105,19 @@ if (existsSync(catalog)) {
   copyFileSync(catalog, join(PUB, 'catalog', 'catalog-v1.json'));
   console.log(`prepare-data: catalogue ${JSON.parse(readFileSync(catalog, 'utf8')).entries.length} entries`);
 } else console.warn('prepare-data: lunarsim/catalog-v1.json missing; pages that need the catalogue will say so');
+
+// Phase 4 (B-34): terrain assets v2 (horizon map, 20 m and 5 m normals, 5 m height patches) for /world/ and the stage's
+// lunar terrain; files listed in its manifest
+const v2 = join(src, 'v2');
+if (existsSync(join(v2, 'manifest.json'))) {
+  const out2 = join(PUB, 'terrain', 'hero', 'v2'), man = JSON.parse(readFileSync(join(v2, 'manifest.json'), 'utf8'));
+  mkdirSync(out2, { recursive: true });
+  copyFileSync(join(v2, 'manifest.json'), join(out2, 'manifest.json'));
+  const files = man.files.filter(f => ['horizon', 'normals', 'height'].includes(f.role)).map(f => f.file);
+  for (const f of files) copyFileSync(join(v2, f), join(out2, f));
+  console.log(`prepare-data: terrain v2, ${files.length} files (horizon map, normals, 5 m heights)`);
+}
+
+// R-1 (B-40): Earth's hourly position seen from BASE (SPICE), for the sky on on-site 3D views; gzip, decoded in the page
+const earth = join(ROOT, 'data', 'comms', 'connecting_ridge', 'earth_track-v1.json.gz');
+if (existsSync(earth)) { mkdirSync(join(PUB, 'comms'), { recursive: true }); copyFileSync(earth, join(PUB, 'comms', 'earth_track-v1.json.gz')); console.log('prepare-data: Earth track staged'); }

@@ -3041,3 +3041,44 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
   - effect families; operator flags vs full relay; the throughput bound.
 - **How to test:** `.venv\Scripts\python -m pytest tests\test_analyse_e21.py -q`; `python experiments\phase4\analyse_e21.py fit`.
 - **Question for LEAD:** the operator admission check sees only linked segments already under way, so a job can be admitted while another is between segments. That gives peaks above staffing even at full relay (teleop 3.37 vs 3.00 under "always", same operations). Should the engine reserve each committed job's linked demand over its whole span? That would change comms-run results (not byte-identical for linked modes). Until then, H5 should be stated relative to full relay, as above.
+
+## F-33 DONE 13:13 | Lunar light and effects (stage `effects/`, lunar terrain, sky) + /world/ on the horizon map
+- **Files:**
+  - New, stage: `site/src/stage/effects/{rng,dust-model,particles,dust,wheel-dust,glow}.js`, `site/src/stage/terrain.js` (lunar terrain), `site/src/stage/sky.js` (Earth, stars, horizon cut-off).
+  - New, shared: `site/src/horizon.js` (moved from `world/horizon.js`; + `horizonProfile()`, a CPU horizon all round a viewpoint from the 20 m heights, B-34's ray schedule).
+  - New, demo: `site/src/design/effects.js` (lazy chunk, 15 kB gz), `/design/stage/?scene=effects`; `site/src/design/stage.{js,css}` (Scene switch Test object / Lunar effects).
+  - New test: `site/tests/dust.test.mjs` (4 tests, pass).
+  - Changed: `stage/lighting.js` (sky replaces the Earth placeholder; `apply(…, {ground: false})`; `setNight()`; `fit(box, {groundY})` so a high lander's shadow stays in the shadow camera), `stage/post.js` (objects with `userData.noAO` kept out of GTAO's normal pass), `stage/tier.js` (`particles` 2k / 10k / 30k), `world/scene.js` + `world/main.js` + `terrain.js` (horizon map, step 1), `scripts/prepare-data.mjs` (v2 heights + `comms/earth_track-v1.json.gz`), `site/.gitignore` (`public/comms/`).
+  - Also in the working tree from the F-32 follow-ups: bloom threshold exhibit 2.5 → 5 with lamp and throat emissive raised above it, LARGE explode distances scaled to the 52 m hull, callout pills no longer cover another callout's dot.
+- **1. /world/ on the horizon map:** 64 sectors, the two round the sun's azimuth on the GPU (RG float), soft edge for the 0.53° disc, 20 m normals + 5 m patches at BASE and PAD_A; the bake stays as fallback (`?horizon=0` forces it, `?sun=AZ` fixes the sun). Sectors switch while a year plays (checked: file 01 → 06 as the sun moved). **Side-by-side at sun azimuth 30°:** `site/design/shots/world-az30-old-bake.png` and `world-az30-new-horizon-map.png` (same camera). The map lights ground west and south of SCI 1 and PSR that the old shader left dark (B-34: the shader misses oblique terrain), and the 5 m patch shows real small craters round BASE.
+- **2. Effects (stage `effects/`):**
+  - Dust sheet: seeded GPU grains on analytic ballistic arcs (g = 1.62, no drag), launch 1–3° (Measured), 70 % in 40 streaks, ranges log-uniform to the 1 km keep-out (Modelled), births by inverse CDF of an emission rate that starts below the onset height: **CLPS 15 m (Measured, from the trajectories file); MK1 44.5 m, LARGE 81 m (Assumed: h_on = 15 m × √(T / 5 kN), since a free jet's ground pressure falls as T/h²)**. Forward scattering (Henyey-Greenstein g = 0.7): it glows looking toward the 1.5° sun and nearly vanishes with the sun behind.
+  - Obscuration layer: three terrain-draped discs (radius 3 × onset), opacity = emission over the last 0.6 s, **zero from cut-off on**; grains in flight finish their arcs.
+  - Scour mark in the terrain shader: darker centre, brighter streaky blast zone, radius 150 m × √(T / 45 kN) (Assumed), growing with the dust thrown so far.
+  - Engine glow by `plume_class`: methalox and hypergolic faint, hydrolox almost none (all flagged Assumed with the research note), no shock diamonds; LARGE glows at its mid-body landing thrusters.
+  - Wheel dust: short arcs at rim speed (= driving speed), births on a fixed time grid from hash(seed, k), so scrubbing is exact.
+- **3. Long shadows and night:** `createLunarTerrain()` draws the PAD_A 5 m patch inside the 20 m tile with one shader: Lommel-Seeliger albedo 0.12 × a back-scatter phase exp(−1.1 α) (Assumed; ground is bright down-sun and dark up-sun as in lunar photos), the horizon map, **the stage sun's shadow map (three's chunks, `lights: true`)** with the shadow camera fitted every frame to the focused vehicle (lander or rover), and three's SpotLights as headlight cones on the ground at night (no beams).
+- **4. Sky:** black; Earth from the **real SPICE track** (`earth_track-v1`, R-1, gunzipped in the page; `earthSimple()` libration model as fallback), true radius (~0.91°), phase lit by the sun, hidden below the horizon profile at the camera (checked: up on 2028-01-06…12, hidden from about day 14); stars only at Exposure "Long".
+- **Demo:** `/design/stage/?scene=effects` (`&lander=MK1|LARGE`, `&seed=N`, `&tier=1..3`): Lander Small/Medium/Large (classical p50 episode from trajectories-v1), Camera Toward the sun / Sun behind / Wide / Rover, shadow camera on Lander/Rover, Day/Night, Exposure, sun azimuth slider (any azimuth, no re-bake), Earth date slider, time scrub (−25…+8 s), dust seed, one switch per effect, text mirror of every effect with numbers and flags, narrative card per phase.
+- **Checks:**
+  - Frame cost at T−1.5 s looking toward the sun (dust heavy), 1440×675, back-to-back frames with GPU timer queries, 150 frames, p50/p95:
+
+    | Tier | Grains drawn | GPU ms | CPU ms | Triangles |
+    |---|---|---|---|---|
+    | 1 (`?tier=1`: 10 m patch) | 747 of 2,000 | 0.50 / 0.52 | 1.00 / 2.30 | 119k |
+    | 2 | 3,662 of 10,000 | 1.00 / 1.02 | 1.10 / 1.50 | 817k |
+    | 3 | 11,038 of 30,000 | 2.02 / 2.28 | 1.00 / 1.90 | 817k |
+
+    The display-rate interval again could not be measured (Chrome window covered; rAF throttled, GPU at idle clocks): noted for F-40 as before.
+  - **Determinism (in-page button):** grain positions identical for seed 1 built twice, different for seed 2; frame hash b965c16a then b965c16a, seed 2 92c6dfd8. Node test covers the same plus births only below onset and before cut-off, launch angles, g, apex height, keep-out reach, obscuration zero at cut-off.
+  - Console: no errors on /design/stage/ (both scenes), /world/ (load and play), /vehicles/?v=MK1. Only three's ANGLE X4122 warning.
+  - 390 px (iframe): no horizontal scroll; controls stack.
+  - `vite build` OK; `tools/ci/budgets.py pages`: OK (design/stage JS 226 kB of 280; the effects scene is a lazy chunk).
+  - Dev server stopped by PID; Chrome tab closed.
+- **Known limits:** reduced motion starts the effects timeline paused and the stage Pause stops it (code path; not emulated in the browser). Terrain mesh resolution is chosen at load (the tier switch changes grains, post-processing and shadows, not the mesh). Dust flies over a plane at its launch height (fine at the pad, not across ridges).
+- **For F-34:** `createLunarTerrain({base, renderer, site:'PAD_A', tier})` → `heightAt`, `setSun`, `setScour`, `profileAt`; `createLandingDust({timeline, cutoff, keepoutM, seed, n, thrustN})`; `createGlow(vehicle, plume_class)` + `nozzleExit(vehicle)`; `lighting.fit(box, {groundY})` per frame; `lighting.sky.setEarth/setHorizon`; `TIERS[t].particles`. `design/effects.js` already turns a trajectories-v1 episode into pose, attitude (quaternion, pad frame → scene) and a dust timeline.
+- **What I need:**
+  - **LEAD (CI, blocking once this lands):** `ci.yml` runs `node --test site/tests/`; on Node 24 a directory argument fails ("Cannot find module …site\tests"). Please change it to `node --test "site/tests/*.test.mjs"` (checked locally: 4 pass).
+  - LEAD/BACKEND: `tools/ci/budgets.json` world data list: the 3D view now also fetches `terrain/hero/v2/manifest.json`, `normal_20m.png`, `normal_5m_{BASE,PAD_A}.png` and one `horizon_20m_*.png` (≈ 2.6 MB more, after the first frame; LCP unaffected). As the sun turns, a full lunar day touches all 16 horizon files (22.5 MB, 3 kept decoded). If that is too much for /world/, BACKEND could add a 400 × 400 horizon map for the overview (~5.6 MB for all 16).
+  - BACKEND: nothing blocking. The √thrust onset (MK1 44.5 m, LARGE 81 m) could go into trajectories-v1's `f33_onset_altitude_m` as Assumed if you agree.
+- **Questions for LEAD:** commit `site/design/shots/*.png` (1 MB, not in the build) or keep them out?

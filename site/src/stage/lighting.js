@@ -1,10 +1,11 @@
 // Lighting presets (research §1.6, §2.2). "exhibit": a dark studio stage lit by RoomEnvironment (PMREM) and a soft key
 // light, for taking a vehicle apart. "onsite": the lunar south pole: black sky, one hard sun at az/el (el 1.5° by
-// default), a dim environment that is only regolith bounce, a regolith ground, and Earth as a 1.9° disc near the
-// horizon (placeholder position until the ephemeris lands with R-1). Directions: y up, north = -z, east = +x,
-// azimuth clockwise from north.
+// default), a dim environment that is only regolith bounce, a regolith ground (or a page's own lunar terrain, see
+// terrain.js) and the sky (sky.js: Earth from its track, stars at a long exposure). Night: the sun off, faint earthshine.
+// Directions: y up, north = -z, east = +x, azimuth clockwise from north.
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { createSky } from './sky.js';
 
 const DEG = Math.PI / 180;
 export const EARTH_DIAMETER_DEG = 1.9;   // 12,742 km / 384,400 km (research §2.2)
@@ -62,19 +63,26 @@ export function createLighting(renderer, scene) {
   const sun = new THREE.DirectionalLight(0xffffff, 3); sun.castShadow = true;
   const fill = new THREE.DirectionalLight(0x9fc8ff, 0.6);
   group.add(sun, sun.target, fill);
-  let env = null, floor = null, earth = null, preset = 'exhibit', sunAzEl = { az: 135, el: 1.5 }, bounds = new THREE.Box3(new THREE.Vector3(-1, 0, -1), new THREE.Vector3(1, 2, 1));
-
-  const earthMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.35, 0.5, 0.85), fog: false, toneMapped: true });
+  let env = null, floor = null, sky = null, preset = 'exhibit', sunAzEl = { az: 135, el: 1.5 }, night = false, ground = true, groundY = null;
+  let bounds = new THREE.Box3(new THREE.Vector3(-1, 0, -1), new THREE.Vector3(1, 2, 1));
+  const SUN_ONSITE = 10;
   function setEnv(tex) { if (env) env.dispose(); env = tex; scene.environment = tex; }
   function clearExtras() {
-    for (const o of [floor, earth]) if (o) { group.remove(o); o.geometry.dispose(); if (o.material !== earthMat) o.material.dispose(); }
-    floor = earth = null;
+    if (floor) { group.remove(floor); floor.geometry.dispose(); floor.material.dispose(); floor = null; }
+    if (sky) { group.remove(sky.group); sky.dispose(); sky = null; }
+  }
+  function applyNight() {
+    if (preset !== 'onsite') return;
+    sun.intensity = night ? 0 : SUN_ONSITE; sun.castShadow = !night;
+    scene.environmentIntensity = night ? 0.06 : 1;   // night: no regolith bounce, only faint earthshine
+    sky?.setSun(dirFromAzEl(sunAzEl.az, sunAzEl.el), night ? 0 : SUN_ONSITE);
   }
 
   const api = {
-    sun, get preset() { return preset; },
+    sun, get preset() { return preset; }, get sky() { return sky; }, get sunAzEl() { return sunAzEl; }, get night() { return night; },
+    // opts: sun {az, el}; ground false when the page brings its own terrain
     apply(name, opts = {}) {
-      preset = name; if (opts.sun) sunAzEl = { ...sunAzEl, ...opts.sun };
+      preset = name; if (opts.sun) sunAzEl = { ...sunAzEl, ...opts.sun }; if (opts.ground !== undefined) ground = opts.ground;
       clearExtras();
       if (name === 'exhibit') {
         scene.background = new THREE.Color('#06090f');
@@ -89,17 +97,22 @@ export function createLighting(renderer, scene) {
         const d = dirFromAzEl(sunAzEl.az, sunAzEl.el);
         setEnv(pmrem.fromScene(lunarEnvScene(d), 0, 0.1, 100).texture);
         scene.environmentIntensity = 1;
-        sun.color.set(0xffffff); sun.intensity = 10;   // harsh: sunlit hull faces saturate, as in lunar photos; level ground stays dark
+        sun.color.set(0xffffff); sun.intensity = SUN_ONSITE;   // harsh: sunlit hull faces saturate, as in lunar photos; level ground stays dark
         fill.visible = false;
-        floor = groundMesh(600, 300);
-        earth = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), earthMat); earth.name = 'earth'; earth.userData.noPick = true;
+        if (ground) floor = groundMesh(600, 300);
+        sky = createSky();
       }
-      group.add(...[floor, earth].filter(Boolean));
+      sun.castShadow = true;
+      group.add(...[floor, sky?.group].filter(Boolean));
+      applyNight();
       api.fit(bounds);
     },
-    // Aim the sun/key light and fit its shadow camera tightly to the subject (plus its shadow on the ground)
-    fit(box) {
-      bounds = box.clone();
+    setNight(v) { night = !!v; applyNight(); },
+    // Aim the sun/key light and fit its shadow camera tightly to the subject (plus its shadow on the ground). On site a
+    // page calls this every frame for the focused vehicle; groundY (scene) lets the shadow of a vehicle high above the
+    // ground still land inside the shadow camera's depth range.
+    fit(box, opts = {}) {
+      bounds = box.clone(); if (opts.groundY !== undefined) groundY = opts.groundY;
       const c = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3()), r = Math.max(0.5, size.length() / 2);
       const dir = preset === 'exhibit' ? new THREE.Vector3(-0.55, 0.75, 0.45).normalize() : dirFromAzEl(sunAzEl.az, sunAzEl.el);
       sun.target.position.copy(c);
@@ -107,7 +120,8 @@ export function createLighting(renderer, scene) {
       fill.position.copy(c).addScaledVector(new THREE.Vector3(0.6, 0.4, -0.7).normalize(), r + 5);
       fill.target = sun.target;
       const cam = sun.shadow.camera, el = Math.asin(dir.y);
-      const len = size.y / Math.tan(Math.max(el, 0.5 * DEG));   // shadow length along the ground (38 h at 1.5°)
+      const tall = groundY === null ? size.y : Math.max(size.y, box.max.y - groundY);
+      const len = tall / Math.tan(Math.max(el, 0.5 * DEG));   // shadow length along the ground (38 h at 1.5°)
       cam.left = cam.bottom = -r * 1.15; cam.right = cam.top = r * 1.15;
       cam.near = 0.1; cam.far = r * 2 + 5 + len * Math.cos(el) + r;
       cam.updateProjectionMatrix();
@@ -120,14 +134,9 @@ export function createLighting(renderer, scene) {
       sun.shadow.mapSize.set(n, n);
       if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; }
     },
-    // keep Earth at a fixed direction "at infinity": just inside the far plane, sized to 1.9°
-    update(camera) {
-      if (!earth) return;
-      const D = camera.far * 0.9, dir = dirFromAzEl((sunAzEl.az + 125) % 360, 4);
-      earth.position.copy(camera.position).addScaledVector(dir, D);
-      earth.scale.setScalar(D * Math.tan(EARTH_DIAMETER_DEG / 2 * DEG));
-    },
-    dispose() { clearExtras(); if (env) env.dispose(); earthMat.dispose(); pmrem.dispose(); scene.remove(group); sun.shadow.map?.dispose(); },
+    // the sky sits "at infinity": it follows the camera, just inside the far plane
+    update(camera) { sky?.update(camera); },
+    dispose() { clearExtras(); if (env) env.dispose(); pmrem.dispose(); scene.remove(group); sun.shadow.map?.dispose(); },
     rebuild() { api.apply(preset); },   // after a WebGL context restore: PMREM textures are lost
   };
   return api;

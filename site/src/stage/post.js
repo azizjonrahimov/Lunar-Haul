@@ -20,7 +20,7 @@ import { TIERS } from './tier.js';
 const scaled = (pass, k) => { const set = pass.setSize.bind(pass); pass.setSize = (w, h) => set(Math.round(w * k), Math.round(h * k)); return pass; };
 
 export function createPost(renderer, scene, camera, { reversed, ao = 'gtao' }) {
-  let composer = null, passes = {}, tier = 1, aoKind = ao, clipPlanes = [], hideFromAO = () => false, bloomThreshold = 2.5;
+  let composer = null, passes = {}, tier = 1, aoKind = ao, clipPlanes = [], hideFromAO = () => false, bloomThreshold = 5;
 
   function build() {
     dispose();
@@ -100,7 +100,8 @@ function n8aoPass(scene, camera, size, half, reversed) {
 }
 
 // GTAOPass draws its normal/depth buffer with an override material, which ignores the cutaway's clipping planes and
-// would draw the stencil caps as whole quads. Give that material the planes and hide caps and stencil writers.
+// would draw the stencil caps as whole quads. Give that material the planes and hide caps and stencil writers, and
+// everything marked userData.noAO (glow cones, dust layers, the sky: transparent or at infinity).
 function patchGtao(g, planes, hide) {
   const orig = g._overrideVisibility.bind(g);
   g._overrideVisibility = function () {
@@ -108,6 +109,6 @@ function patchGtao(g, planes, hide) {
     const p = planes();
     g.normalMaterial.clippingPlanes = p.length ? p : null;
     g.normalMaterial.clipIntersection = p.length > 1;
-    g.scene.traverse(o => { if (o.visible && hide(o)) { o.visible = false; g._visibilityCache.push(o); } });
+    g.scene.traverse(o => { if (o.visible && (hide(o) || o.userData.noAO)) { o.visible = false; g._visibilityCache.push(o); } });
   };
 }

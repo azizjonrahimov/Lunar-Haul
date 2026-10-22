@@ -1,6 +1,7 @@
 // /design/stage/ (development page, F-31): the shared 3D stage on a procedural test object. Whole / Cutaway /
 // Exploded, both lighting presets, tiers 1-3, GTAO vs N8AO, the tone-mapping A/B, a live frame-time readout and a
 // 5-second measurement log. Tier 0 (no WebGL2, or detect-gpu tier 0) shows a text fallback instead.
+// ?scene=effects (F-33) swaps the test object for the lunar effects scene (effects.js, loaded on demand).
 import './stage.css';
 import { Vector3 } from 'three';
 import { segmented, narrative, h } from '../ui/index.js';
@@ -16,6 +17,14 @@ const STORY = {
   exploded: { eyebrow: 'Exploded', title: 'Taken apart along each part’s axis', html: '<p>The tank rises, the engine slides forward and the legs move out, so every joint shows. The callouts follow the parts.</p>' },
 };
 
+const SCENE = new URLSearchParams(location.search).get('scene') === 'effects' ? 'effects' : 'object';
+if (SCENE === 'effects') {
+  document.querySelector('.s-head h1').textContent = 'Lunar light and effects';
+  document.querySelector('.s-head p:not(.ui-label)').textContent = 'The stage on site at PAD_A: real 5 m terrain lit by the horizon map, a recorded descent with its engine glow, dust sheet, obscuration layer and scour mark, a rover with wheel dust, long shadows and headlights, and Earth from its track. Each effect has a switch; the frame time is measured live.';
+  document.getElementById('h-parts').textContent = 'Effects (text version of the scene)';
+  document.getElementById('s-parts-note').textContent = 'What each effect shows, with its numbers and where they come from.';
+  document.title = 'Lunar effects · LunarHaul';
+}
 const tierInfo = await detectTier();
 const story = narrative({ label: 'Stage mode' });
 $('s-story').append(story.el);
@@ -27,10 +36,10 @@ if (tierInfo.tier === 0 && !tierInfo.forced) {
 } else start();
 
 async function start() {
-  const ui = { view: 'whole', cut: 'plane', preset: 'exhibit', tone: 'neutral', tier: String(Math.max(1, tierInfo.tier)), ao: 'gtao' };
+  const ui = { view: 'whole', cut: 'plane', preset: SCENE === 'effects' ? 'onsite' : 'exhibit', tone: 'neutral', tier: String(Math.max(1, tierInfo.tier)), ao: 'gtao' };
   const status = msg => { $('s-status').textContent = msg; };
-  const obj = buildTank();
-  let stage, explode;
+  const obj = SCENE === 'object' ? buildTank() : null;
+  let stage, explode, fx = null;
 
   async function boot() {
     stage = await createStage({
@@ -39,6 +48,13 @@ async function start() {
       onPick: select, onHover: () => {},
     });
     if (import.meta.env.DEV) window.__stage = stage;   // console access while developing
+    if (SCENE === 'effects') {
+      stage.director.bindKeys($('s-canvas'));
+      fx = await (await import('./effects.js')).bootEffects({ stage, story, status, controls: $('s-controls'), parts: $('s-parts'), tier: +ui.tier });
+      if (import.meta.env.DEV) window.__fx = fx;
+      stage.setAdaptive($('s-adaptive').checked);
+      return;
+    }
     const box = stage.setSubject(obj.root, { cutTargets: obj.cutTargets });
     const c = box.getCenter(new Vector3());
     stage.director.shot('home', { position: [c.x + 9, c.y + 3.5, c.z + 12], target: [c.x, c.y - 0.3, c.z] })
@@ -72,11 +88,18 @@ async function start() {
 
   // ---------- controls ----------
   const seg = (legend, options, key, fn, row = 's-row1') => $(row).append(segmented({ legend, options, value: ui[key], onChange: v => { ui[key] = v; fn(v); } }).el);
+  ui.scene = SCENE;
+  seg('Scene', [{ value: 'object', label: 'Test object' }, { value: 'effects', label: 'Lunar effects' }], 'scene', v => {
+    const p = new URLSearchParams(location.search); if (v === 'effects') p.set('scene', 'effects'); else p.delete('scene');
+    location.search = p.toString();
+  });
+  if (SCENE === 'object') {
   seg('View', [{ value: 'whole', label: 'Whole' }, { value: 'cutaway', label: 'Cutaway' }, { value: 'exploded', label: 'Exploded' }], 'view', () => applyView());
   seg('Cut', [{ value: 'plane', label: 'Half' }, { value: 'wedge', label: 'Wedge' }], 'cut', () => { if (ui.view === 'cutaway') applyView(); });
   seg('Light', [{ value: 'exhibit', label: 'Exhibit' }, { value: 'onsite', label: 'On site (1.5° sun)' }], 'preset', v => { stage.setPreset(v); applyView(); });
+  }
   seg('Tone mapping', [{ value: 'neutral', label: 'Neutral' }, { value: 'aces', label: 'ACES' }, { value: 'agx', label: 'AgX' }], 'tone', v => stage.setToneMapping(v), 's-row2');
-  seg('Tier', [{ value: '1', label: '1' }, { value: '2', label: '2' }, { value: '3', label: '3' }], 'tier', v => stage.setTier(+v), 's-row2');
+  seg('Tier', [{ value: '1', label: '1' }, { value: '2', label: '2' }, { value: '3', label: '3' }], 'tier', v => { stage.setTier(+v); fx?.setTier(+v); }, 's-row2');
   seg('Ambient occlusion', [{ value: 'gtao', label: 'GTAO' }, { value: 'n8ao', label: 'N8AO' }], 'ao', async v => { status('Loading…'); await stage.setAO(v); status(''); }, 's-row2');
   $('s-row2').append(h('p', { class: 's-detected small' }, `Detected: tier ${tierInfo.tier} (${tierInfo.gpu}).`));
 
@@ -86,7 +109,7 @@ async function start() {
   $('s-adaptive').addEventListener('change', e => stage.setAdaptive(e.target.checked));
   for (const b of document.querySelectorAll('[data-cam]')) b.addEventListener('click', () => {
     const d = stage.director, k = b.dataset.cam;
-    ({ left: () => d.nudge(-20), right: () => d.nudge(20), up: () => d.nudge(0, -10), down: () => d.nudge(0, 10), in: () => d.zoom(1.25), out: () => d.zoom(0.8), home: () => applyView() })[k]();
+    ({ left: () => d.nudge(-20), right: () => d.nudge(20), up: () => d.nudge(0, -10), down: () => d.nudge(0, 10), in: () => d.zoom(1.25), out: () => d.zoom(0.8), home: () => (fx ? fx.home() : applyView()) })[k]();
   });
   $('s-lose').addEventListener('click', () => {
     const ext = stage.loseContext(); if (!ext) return status('This browser cannot simulate a context loss.');
@@ -98,7 +121,7 @@ async function start() {
     await stage.benchmark(30, 5);   // let the GPU clock up first
     const s = await stage.benchmark(150, 10);
     stage.setAdaptive(adaptive);
-    const row = [ui.tier, ui.tier === '1' ? 'off' : ui.ao.toUpperCase(), ui.preset, ui.tone, ui.view, s.gpuN, fmt(s.gpuP50, 2), fmt(s.gpuP95, 2), fmt(s.cpuP50, 2), fmt(s.cpuP95, 2),
+    const row = [ui.tier, ui.tier === '1' ? 'off' : ui.ao.toUpperCase(), ui.preset, ui.tone, fx ? 'effects' : ui.view, s.gpuN, fmt(s.gpuP50, 2), fmt(s.gpuP95, 2), fmt(s.cpuP50, 2), fmt(s.cpuP95, 2),
       `${s.drawingBuffer[0]}×${s.drawingBuffer[1]}`, s.calls];
     const log = $('s-log'); if (log.querySelector('.muted')) log.replaceChildren();
     log.append(h('tr', {}, row.map((v, i) => h('td', { class: i >= 5 ? 'n' : '' }, String(v)))));
@@ -115,11 +138,11 @@ async function start() {
       ['GPU p50 / p95', !i.gpuTimer ? 'no timer extension' : s.gpuN ? `${fmt(s.gpuP50, 2)} / ${fmt(s.gpuP95, 2)} ms` : '–'],
       ['Pixels', `${i.drawingBuffer[0]}×${i.drawingBuffer[1]} (ratio ${fmt(i.pixelRatio, 2)})`],
       ['Draw calls', String(i.calls)], ['Tier', `${stage.tier}${stage.tier > 1 ? ' · ' + stage.post.aoKind.toUpperCase() : ''}`],
-      ['Depth buffer', i.reversedDepth ? 'reversed' : 'standard']];
+      ['Depth buffer', i.reversedDepth ? 'reversed' : 'standard'], ...(fx ? fx.readout() : [])];
     perf.replaceChildren(...rows.flatMap(([k, v]) => [h('dt', {}, k), h('dd', {}, v)]));
   }, 500);
 
-  $('s-parts').append(...Object.values(obj.parts).map(p => h('li', {}, h('strong', {}, p.name), ` — ${p.note}.`)));
+  if (obj) $('s-parts').append(...Object.values(obj.parts).map(p => h('li', {}, h('strong', {}, p.name), ` — ${p.note}.`)));
   try { await boot(); } catch (e) {
     const fb = $('s-fallback'); fb.hidden = false; fb.textContent = `The 3D view could not start (${e.message}). The parts list below describes the test object.`;
   }

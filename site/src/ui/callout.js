@@ -56,7 +56,8 @@ export function callouts(container) {
     return api;
   }
 
-  // Resolve vertical overlaps between visible pills on the same side (greedy, top to bottom).
+  // Resolve vertical overlaps between visible pills on the same side (greedy, top to bottom), then move any pill that
+  // covers another callout's dot to just below that dot.
   function layout() {
     for (const side of [1, -1]) {
       const list = [...items.values()].map(i => i.c).filter(c => c.visible && c.side === side).sort((a, b) => a.py - b.py);
@@ -66,6 +67,15 @@ export function callouts(container) {
         const overlapX = Math.abs(ax - bx) < Math.max(a.w, b.w) + PAD;
         const need = a.py + (a.hgt + b.hgt) / 2 + PAD;
         if (overlapX && b.py < need) { b.py = need; b.draw(); }
+      }
+    }
+    const vis = [...items.values()].map(i => i.c).filter(c => c.visible);
+    for (const c of vis) {
+      const ex = c.x + c.side * RUN, px = Math.max(PAD, Math.min(c.W - c.w - PAD, c.side > 0 ? ex + TAIL : ex - TAIL - c.w));
+      for (const o of vis) {
+        if (o === c) continue;
+        const inside = o.x > px - 6 && o.x < px + c.w + 6 && o.y > c.py - c.hgt / 2 - 6 && o.y < c.py + c.hgt / 2 + 6;
+        if (inside) { c.py = o.y + c.hgt / 2 + 9; c.draw(); }
       }
     }
   }

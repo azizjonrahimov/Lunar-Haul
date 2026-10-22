@@ -16,6 +16,15 @@ export async function decodePng16(buffer) { return decodePngGray(buffer, 16); }
 /* decodePngGray(ArrayBuffer, depth 8|16) -> {width, height, data: Uint8Array|Uint16Array}: greyscale PNG layers
    (16-bit heights; 8-bit slope_20m.png). Exact samples, unlike canvas decoding (colour management, premultiply). */
 export async function decodePngGray(buffer, wantDepth = 16) {
+  const png = await decodePng(buffer);
+  if (png.depth !== wantDepth || png.channels !== 1) throw new Error(`expected a ${wantDepth}-bit greyscale PNG (got depth ${png.depth}, ${png.channels} channels)`);
+  return { width: png.width, height: png.height, data: png.data };
+}
+
+/* decodePng(ArrayBuffer) -> {width, height, channels, depth, data}: grey, grey+alpha, RGB or RGBA at 8 or 16 bits, not
+   interlaced; data holds channels interleaved per pixel (Uint16Array for 16-bit, big-endian samples decoded). Used for the
+   v2 terrain assets: RGBA16 horizon maps and RGB8 normal maps. */
+export async function decodePng(buffer) {
   const b = new Uint8Array(buffer), dv = new DataView(buffer);
   if (!PNG_SIG.every((v, i) => b[i] === v)) throw new Error('not a PNG file');
   let off = 8, width = 0, height = 0, depth = 0, ctype = 0, interlace = 0; const idat = [];
@@ -26,12 +35,13 @@ export async function decodePngGray(buffer, wantDepth = 16) {
     else if (type === 'IEND') break;
     off = body + len + 4;  // + CRC
   }
-  if (depth !== wantDepth || ctype !== 0) throw new Error(`expected a ${wantDepth}-bit greyscale PNG (got depth ${depth}, colour type ${ctype})`);
-  if (interlace) throw new Error('interlaced PNG heightmaps are not supported');
-  const total = idat.reduce((s, x) => s + x.length, 0), z = new Uint8Array(total); let p = 0; for (const c of idat) { z.set(c, p); p += c.length; }
-  const raw = await inflate(z), bpp = wantDepth / 8, stride = width * bpp;
+  const channels = { 0: 1, 2: 3, 4: 2, 6: 4 }[ctype];
+  if (!channels || (depth !== 8 && depth !== 16)) throw new Error(`unsupported PNG (colour type ${ctype}, depth ${depth})`);
+  if (interlace) throw new Error('interlaced PNGs are not supported');
+  const total = idat.reduce((t, x) => t + x.length, 0), z = new Uint8Array(total); let q = 0; for (const c of idat) { z.set(c, q); q += c.length; }
+  const raw = await inflate(z), bpp = channels * depth / 8, stride = width * bpp;
   if (raw.length < height * (stride + 1)) throw new Error('PNG data is truncated');
-  const out = wantDepth === 16 ? new Uint16Array(width * height) : new Uint8Array(width * height), prev = new Uint8Array(stride), cur = new Uint8Array(stride);
+  const n = width * height * channels, out = depth === 16 ? new Uint16Array(n) : new Uint8Array(n), prev = new Uint8Array(stride), cur = new Uint8Array(stride);
   for (let y = 0; y < height; y++) {
     const ft = raw[y * (stride + 1)], row = raw.subarray(y * (stride + 1) + 1, (y + 1) * (stride + 1));
     for (let i = 0; i < stride; i++) {
@@ -41,11 +51,12 @@ export async function decodePngGray(buffer, wantDepth = 16) {
       else if (ft !== 0) throw new Error(`bad PNG filter ${ft} on row ${y}`);
       cur[i] = v & 255;
     }
-    if (bpp === 2) for (let x = 0; x < width; x++) out[y * width + x] = (cur[2 * x] << 8) | cur[2 * x + 1];  // big-endian samples
-    else out.set(cur, y * width);
+    const o = y * width * channels;
+    if (depth === 16) for (let k = 0; k < width * channels; k++) out[o + k] = (cur[2 * k] << 8) | cur[2 * k + 1];  // big-endian samples
+    else out.set(cur, o);
     prev.set(cur);
   }
-  return { width, height, data: out };
+  return { width, height, channels, depth, data: out };
 }
 
 export class Terrain {

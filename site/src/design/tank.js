@@ -50,7 +50,7 @@ export function buildTank() {
   const chamber = new THREE.Mesh(lathe([V(0, 0), V(0.17, 0), V(0.32, 0.22), V(0.32, 0.5), V(0.24, 0.6), V(0, 0.62)]),
     mat({ color: '#b87333', roughness: 0.35, metalness: 0.85 }));
   chamber.position.y = yT; chamber.userData = { part: 'chamber', capColor: '#d08a4a' };
-  const throat = new THREE.Mesh(new THREE.TorusGeometry(0.185, 0.035, 12, SEG), mat({ color: '#1a0f05', emissive: '#ffb054', emissiveIntensity: 9, roughness: 0.6 }));
+  const throat = new THREE.Mesh(new THREE.TorusGeometry(0.185, 0.035, 12, SEG), mat({ color: '#1a0f05', emissive: '#ffb054', emissiveIntensity: 14, roughness: 0.6 }));
   throat.rotation.x = Math.PI / 2; throat.userData = { capColor: '#ffb054' };
   chamber.add(throat);
 

@@ -380,7 +380,7 @@ determinism: the same seed gives the same dust frames; reduced motion pauses par
 # M3/M4 frontend (queued 22 Oct 12:35). Order: F-34, F-36, F-35, F-37. Data now committed: trajectories-v1 (B-33),
 # routes-v1 (B-32), scene packages + earth_track (B-31), earth_link (B-40).
 
-## F-34 [OPEN] (after F-33; <= 6 h) Lander lab in 3D: "The last 500 metres"
+## F-34 [IN PROGRESS] (after F-33; <= 6 h) Lander lab in 3D: "The last 500 metres"
 Plan §5 F-34. Upgrade `/lab/lander/` to an instrument page on the shared stage (on-site preset), keeping the 2D side
 view as tier 0 and as the accessible mirror. Replay `data/policies/trajectories-v1.json` episodes at true scale over
 the terrain at PAD_A (5 m patch from B-34): the catalogue lander model, attitude from the quaternion, the F-33

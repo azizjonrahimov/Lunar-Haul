@@ -84,30 +84,30 @@ export function large(e, mats, opts) {
   const outer = prof.slice(0, prof.findIndex(p => p.y >= yNose) + 1).concat(nose.slice(1)); outer[outer.length - 1].x = 0;
   const innerR = R - 0.12;
   b.mesh(hull, lathe(outer.concat([V2(0, H - 0.3), V2(innerR * 0.6, H - 1.5), V2(innerR, yNose), V2(innerR, y0), V2(0, y0 - 0.48)]), s), 'stainless_steel', { cut: true, capColor: '#b9b8b4' });
-  const ch4 = b.part('ch4', 'Methane tank', { distance: 6 });
+  const ch4 = b.part('ch4', 'Methane tank', { distance: 18 });   // explode distances scale with the 52 m hull
   b.mesh(ch4, lathe(tankProfile(R - 0.3, 22, 28, 2.2), s), 'stainless_steel', { cut: true, capColor: '#c9b48a' });
-  const lox = b.part('lox', 'Liquid oxygen tank', { distance: 3 });
+  const lox = b.part('lox', 'Liquid oxygen tank', { distance: 9 });
   b.mesh(lox, lathe(tankProfile(R - 0.3, 7.5, 17, 2.4), s), 'stainless_steel', { cut: true, capColor: '#7fb3db' });
   const band = b.part('solar', 'Solar band', { distance: 0, note: 'A band of solar panels around the circumference (catalogue, Starship HLS)' });
   b.mesh(band, lathe(ringProfile(R + 0.01, R + 0.08, 38, 41.5), s), 'solar_cell', { cut: true });
-  const airlock = b.part('airlock', 'Airlock and elevator', { axis: V3(0, 0, 1), distance: 4, representative: true,
+  const airlock = b.part('airlock', 'Airlock and elevator', { axis: V3(0, 0, 1), distance: 10, representative: true,
     note: 'Elevator from the deck to the surface (catalogue, Starship HLS); its shape here is representative' });
   b.mesh(airlock, new THREE.BoxGeometry(2.6, 3.2, 1.4), 'white_paint', { pos: V3(0, 35.6, R + 0.5) });
   b.mesh(airlock, new THREE.BoxGeometry(2.4, 0.25, 2.2), 'aluminium', { pos: V3(0, 12, R + 1.4) });   // the elevator platform, part-way down
   for (const x of [-1.3, 1.3]) b.mesh(airlock, new THREE.BoxGeometry(0.18, 34, 0.18), 'aluminium', { pos: V3(x, 17.5, R + 1.25) });
-  const thr = b.part('thrusters', 'Mid-body landing thrusters', { axis: Y, distance: 2.5, representative: true,
+  const thr = b.part('thrusters', 'Mid-body landing thrusters', { axis: Y, distance: 7, representative: true,
     note: 'Reported GOX/GCH4 landing thrusters in the mid-body, used within ~100 m of the surface (catalogue note)' });
   for (let k = 0; k < 6; k++) {
     const a = k * Math.PI / 3 + Math.PI / 6, g = new THREE.Group(); thr.add(g);
     b.mesh(g, lathe(bellProfile(0.12, 0.38, 0.75, 0.03), b.seg(24)), 'dark_metal', { pos: at(a, R + 0.05, 30.5) });
   }
-  const eng = b.part('engines', 'Raptor engines (3 sea-level, 3 vacuum)', { axis: DOWN, distance: 2 });
+  const eng = b.part('engines', 'Raptor engines (3 sea-level, 3 vacuum)', { axis: DOWN, distance: 6 });
   for (let k = 0; k < 6; k++) {
     const vac = k % 2 === 0, a = k * Math.PI / 3, r = vac ? 3.1 : 1.3;
     b.mesh(eng, lathe(bellProfile(0.22, vac ? 1.15 : 0.65, vac ? 2.3 : 1.3, 0.04), b.seg(32)), 'dark_metal', { cut: true, pos: at(a, r, y0 - 0.2) });
   }
   for (let k = 0; k < n; k++) {
-    const a = (k + 0.5) * 2 * Math.PI / n, leg = b.part(`leg${k}`, 'Landing leg (representative)', { axis: radial(a), distance: 3, representative: true,
+    const a = (k + 0.5) * 2 * Math.PI / n, leg = b.part(`leg${k}`, 'Landing leg (representative)', { axis: radial(a), distance: 8, representative: true,
       note: 'HLS legs are unpublished; six legs at the catalogue leg_span_m (Assumed)' });
     leg.userData.group = 'legs';
     const knee = at(a, R - 0.2, 9), foot = at(a, span - 1.6, 0.15);   // pad edge at the leg span

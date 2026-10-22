@@ -134,7 +134,7 @@ export async function createStage({ canvas, labelsHost, preset = 'exhibit', tier
   async function setAO(kind) { if (kind === 'n8ao') await preloadN8AO(); post.configure({ ao: kind }); settle(); resize(); }
   function setToneMapping(name, exposure = 1) { renderer.toneMapping = TONE[name] ?? THREE.NeutralToneMapping; renderer.toneMappingExposure = exposure; invalidate(); }
   // bloom threshold per preset: the on-site sun is ~4x the studio key, so sunlit white paint reaches ~8 in linear HDR
-  const BLOOM = { exhibit: 2.5, onsite: 12 };
+  const BLOOM = { exhibit: 5, onsite: 12 };   // above sunlit paint and stainless; emissive parts are brighter
   function setPreset(name, opts = {}) { return compiled(() => { lighting.apply(name, opts); post.setBloomThreshold(BLOOM[name]); if (subject) lighting.fit(new THREE.Box3().setFromObject(subject)); }); }
 
   lighting.apply(preset, { sun }); post.setBloomThreshold(BLOOM[preset]);

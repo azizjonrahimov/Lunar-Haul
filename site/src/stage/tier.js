@@ -15,9 +15,9 @@ export async function detectTier() {
   } catch (e) { return { tier: 1, gpu: `unknown (${e.message})` }; }
 }
 
-// Per-tier settings (research §1.13 table; tuned in F-40 on real hardware)
+// Per-tier settings (research §1.13 table; tuned in F-40 on real hardware). particles: the landing dust budget (F-33).
 export const TIERS = {
-  1: { pixels: 1.8e6, ao: false, bloom: false, aa: 'fxaa', shadow: 1024, outline: false, frameMs: 33.3 },
-  2: { pixels: 3.3e6, ao: 'half', bloom: 'half', aa: 'fxaa', shadow: 2048, outline: true, frameMs: 16.7 },
-  3: { pixels: 5.2e6, ao: 'full', bloom: 'full', aa: 'smaa', shadow: 2048, outline: true, frameMs: 16.7 },
+  1: { pixels: 1.8e6, ao: false, bloom: false, aa: 'fxaa', shadow: 1024, outline: false, frameMs: 33.3, particles: 2000 },
+  2: { pixels: 3.3e6, ao: 'half', bloom: 'half', aa: 'fxaa', shadow: 2048, outline: true, frameMs: 16.7, particles: 10000 },
+  3: { pixels: 5.2e6, ao: 'full', bloom: 'full', aa: 'smaa', shadow: 2048, outline: true, frameMs: 16.7, particles: 30000 },
 };
