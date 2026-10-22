@@ -78,6 +78,35 @@ function sliceTable(src, dir, indexName, label) {
 }
 sliceTable(join(ROOT, 'data', 'driving', 'driving-v1.json'), 'legs', 'driving-index.json', 'driving table');
 sliceTable(join(ROOT, 'data', 'driving', 'driving-v1-learned.json'), 'learned', 'learned-index.json', 'learned-driver table');
+// F-40: every leg's route for every lighting (B-32, data/driving/routes-v1.json), one small file per leg, so the lab need not
+// run A* when it loads (about 1 s of main thread). The file's geometry is the planner's polyline subdivided to <= 10 m;
+// it is reduced here to the points the lab's plan() returns: the end points and the 20 m cell centres between them.
+const routesSrc = join(ROOT, 'data', 'driving', 'routes-v1.json');
+if (existsSync(routesSrc)) {
+  const RJ = JSON.parse(readFileSync(routesSrc, 'utf8')), q = RJ.encoding.xy_z_s_unit_m, file = k => k.replace('->', '__').replace(/@/g, '_at_').replace(/[^\w.-]/g, '_') + '.json';
+  const decode = g => { let x = g.x0, y = g.y0; const pts = [[x * q, y * q]]; for (let i = 0; i < g.dx.length; i++) { x += g.dx[i]; y += g.dy[i]; pts.push([x * q, y * q]); } return pts; };
+  // B-32 merged straight runs before subdividing, so the cell centres inside a run are rebuilt: the turning points are cell
+  // centres (or the end points), and a straight run between two centres steps 20 m along an axis or a diagonal
+  const centre = v => Math.abs((((v % 20) + 20) % 20) - 10) < 0.06, isC = pt => centre(pt[0]) && centre(pt[1]);
+  const turns = pts => {
+    const T = pts.filter((pt, i) => {
+      if (i === 0 || i === pts.length - 1) return true;
+      const ax = pt[0] - pts[i - 1][0], ay = pt[1] - pts[i - 1][1], bx = pts[i + 1][0] - pt[0], by = pts[i + 1][1] - pt[1];
+      return Math.abs(Math.atan2(ax * by - ay * bx, ax * bx + ay * by)) > 0.02 || (isC(pt) && !isC(pts[i - 1]) && i === 1);
+    });
+    const out = [T[0]];
+    for (let k = 1; k < T.length; k++) {
+      const P = T[k - 1], Q = T[k], dx = Q[0] - P[0], dy = Q[1] - P[1];
+      if (isC(P) && isC(Q)) { const n = Math.round(Math.max(Math.abs(dx), Math.abs(dy)) / 20); for (let j = 1; j < n; j++) out.push([P[0] + dx * j / n, P[1] + dy * j / n]); }
+      out.push(Q);
+    }
+    return out.map(([x, y]) => [Math.round(x * 10) / 10, Math.round(y * 10) / 10]);
+  };
+  mkdirSync(join(roverOut, 'routes'), { recursive: true });
+  for (const [k, byLight] of Object.entries(RJ.legs)) writeFileSync(join(roverOut, 'routes', file(k)), JSON.stringify(Object.fromEntries(Object.entries(byLight).map(([l, r]) => [l, turns(decode(RJ.geoms[r.geom]))]))));
+  writeFileSync(join(roverOut, 'routes-index.json'), JSON.stringify({ source: 'data/driving/routes-v1.json (B-32)', generated: RJ.generated, legs: Object.fromEntries(Object.keys(RJ.legs).map(k => [k, file(k)])) }));
+  console.log(`prepare-data: rover routes, ${Object.keys(RJ.legs).length} legs x ${RJ.lighting.length} lightings`);
+}
 if (existsSync(join(src, 'height_5m.png')) && !meta.dev_standin) {
   const { RoverTerrain } = await import('../src/rover/terrain.js'), { decodePngGray } = await import('../src/terrain.js');
   const ld = (f, dd) => { const b = readFileSync(join(src, f)); return decodePngGray(b.buffer.slice(b.byteOffset, b.byteOffset + b.length), dd); };

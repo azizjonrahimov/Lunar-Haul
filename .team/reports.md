@@ -3830,3 +3830,32 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
 - **Questions for LEAD:**
   1. `modes.no_link` for the Earth story's step "never" (BACKEND).
   2. The rover lab's route files: may I stage per-leg files from `data/driving/routes-v1.json` in `prepare-data.mjs`?
+
+## F-40 PART 2 DONE 17:00 | Rover lab off the main thread (Lighthouse 52 → 100), /world/trace/ layout shift (68 → 91) (F-40 stays IN PROGRESS)
+- **Every file in this part:**
+  - Modified: `site/scripts/prepare-data.mjs`, `site/src/rover/lab.js`, `site/src/rover/terrain.js`, `site/src/world/world.css`.
+  - New: `site/src/rover/terrain-worker.js`.
+- **Route files from routes-v1** (your answer 2):
+  - `prepare-data.mjs` writes one file per leg with all five lightings, plus an index: `public/lab/rover/routes/<leg>.json` and `routes-index.json`. That is 182 legs, 1.8 MB in all, a few kB per leg.
+  - B-32 stores the planner's polyline merged into straight runs and subdivided to ≤ 10 m. The files hold exactly the points the lab's `plan()` returns: the end points and every 20 m cell centre, rebuilt between the turning points.
+  - **Checked equal to `plan()`:** 70 legs and lightings, worst difference 0.000 m. That is 20 hand-picked, 40 random site legs and 10 random pad legs. The point lists must match, not just the shape, because the drive densifies each segment to about 5 m, so the point spacing changes the expert's path.
+  - The lab now loads the leg's file instead of running A* (≈1 s on the main thread) and falls back to A* only for a leg or lighting the files lack. The status line says which: "the planner's route for this lighting (data/driving/routes-v1.json)".
+- **Terrain off the main thread:**
+  - Lighthouse still saw 1.5 s of unattributed script at load. It was the 3200 × 3200 16-bit height PNG being unfiltered in JS, plus the 20 m roughness grid.
+  - `RoverTerrain.loadInWorker()` builds the same `RoverTerrain` in a module worker and transfers its arrays back without copying, roughness included. It falls back to `load()` where module workers are missing.
+  - The verification page's worker still uses `load()` (it is already off the main thread).
+- **Same drive:** BASE→PSR at sun 270°, instant: 4.94 km, 2:51:32, 724 Wh, 1 intervention, 50 stops. That is identical to the F-35 run with A* and main-thread terrain.
+- **/lab/rover/ Lighthouse:**
+  - Desktop **100**/100/100: TBT 1,310 → 60 ms, LCP 3.2 → 0.4 s, CLS 0.002.
+  - Mobile 86/100/100 (was 42).
+- **/world/trace/:**
+  - Space is reserved for what fills in after load: the run header, a two-line status, and the GPU-tier note on its own line (its GPU name could re-wrap the toolbar).
+  - Desktop **91**/100/100 (was 68), CLS 0.56 → 0.02; mobile 67 (CLS 0.03, TBT 1.5 s from building the scene).
+- **Checks:** tests 11/11; build OK; `budgets.py pages`: OK (rover 21.9 of 25 kB JS). Servers stopped by PID; tab closed.
+- **Note for the budget:** the rover entry's data list does not yet include `lab/rover/routes-index.json` and one leg's route file (about 10 kB together at first load; the measured 3,407 kB is far under 4,260). Add them to `tools/ci/budgets.json` if you want them counted. I did not edit that entry.
+- **Next in F-40:**
+  1. A keyboard, screen-reader and reduced-motion walk of every page.
+  2. On-screen orbit and zoom buttons on the 3D views (WCAG 2.5.7).
+  3. URL-hash deep links.
+  4. GPU memory per tier.
+  5. The /account/ console error (not mine; tell me if I should look).

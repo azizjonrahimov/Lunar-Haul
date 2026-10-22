@@ -21,11 +21,12 @@ async function getJson(u) { const r = await fetch(u); if (!r.ok) throw new Error
 async function boot() {
   try {
     status('Loading the terrain (5 m heights, 2.9 MB)…');
-    st.t = await RoverTerrain.load(TERR, m => status('Loading ' + m));
+    st.t = await RoverTerrain.loadInWorker(TERR, m => status('Loading ' + m));   // F-40: decoded off the main thread
     st.sites = await getJson(TERR + 'sites.json');
     for (const az of [0, 90, 180, 270]) { try { const r = await fetch(`${LAB}shadow_${az}.bin`); if (r.ok) st.t.setShadowBits(az, new Uint8Array(await r.arrayBuffer())); } catch (e) { /* computed on demand */ } }
     st.index = await getJson(LAB + 'driving-index.json').catch(() => null);
     st.lindex = await getJson(LAB + 'learned-index.json').catch(() => null);   // the learned driver's table (driving-v1-learned.json), when built
+    st.rindex = await getJson(LAB + 'routes-index.json').catch(() => null); st.rcache = {};   // F-40: every leg's route per lighting (B-32)
 
   } catch (e) { status(`The rover lab needs the terrain pack's 5 m layer (${e.message}).`); return; }
   $('r-tele-title').insertAdjacentHTML('beforeend', ` <span class="small muted">${ENV_ID}, env v${ENV_VERSION}</span>`);
@@ -62,14 +63,19 @@ async function prepare() {
   if (a === b) { status('Pick two different sites.'); return; }
   const key = `${a}|${b}|${$('r-standoff').value}|${sun}`;
   if (key !== st.routeKey) {
-    status('Planning the route (A* over the 20 m slope and lighting grid)…'); await new Promise(r => setTimeout(r, 30));
-    const pts = points(), t0 = performance.now(); st.route = plan(st.t, pts[a], pts[b], sun); st.routeKey = key;
+    // F-40: the route comes from the staged B-32 files (data/driving/routes-v1.json): the same points plan() returns,
+    // checked equal for 70 legs and lightings, without ~1 s of A* on the main thread; A* only for a leg the files lack
+    const t0 = performance.now(), rfile = st.rindex && st.rindex.legs[tableKey(a, b)];
+    const leg = rfile ? (st.rcache[rfile] ||= await getJson(LAB + 'routes/' + rfile).catch(() => null)) : null;
+    st.route = (leg && leg[$('r-light').value]) || null; st.routeSrc = st.route ? 'B-32' : 'A*';
+    if (!st.route) { status('Planning the route (A* over the 20 m slope and lighting grid)…'); await new Promise(r => setTimeout(r, 30)); const pts = points(); st.route = plan(st.t, pts[a], pts[b], sun); }
+    st.routeKey = key;
     if (!st.route) { status(`No drivable route from ${a} to ${b} with this lighting (every path crosses ground steeper than ${R.ROVER.slope_hard_deg}°).`); return; }
     st.prof = legProfile(st.t, st.route, sun); st.planMs = performance.now() - t0;
     const file = st.index && st.index.legs[tableKey(a, b)]; st.legTable = file ? await getJson(LAB + 'legs/' + file).catch(() => null) : null;
     const lfile = st.lindex && st.lindex.legs[tableKey(a, b)]; st.learnedTable = lfile ? await getJson(LAB + 'learned/' + lfile).catch(() => null) : null;
   }
-  reset(); renderComparison(); status(`Route ${a} → ${b}: ${fmt(st.prof.length_m / 1000, 2)} km over ${st.route.length} cells, planned in ${fmt(st.planMs, 0)} ms. Press Drive.`);
+  reset(); renderComparison(); status(`Route ${a} → ${b}: ${fmt(st.prof.length_m / 1000, 2)} km over ${st.route.length} cells, ${st.routeSrc === 'B-32' ? "the planner's route for this lighting (data/driving/routes-v1.json)" : `planned in ${fmt(st.planMs, 0)} ms`}. Press Drive.`);
 }
 
 // ---------- controllers (B-13 hook: anything with {name, act(obs, env)}) ----------

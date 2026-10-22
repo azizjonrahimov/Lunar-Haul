@@ -51,3 +51,10 @@ body:not(.w-playing) .w-controls .i-pause, body.w-playing .w-controls .i-play { 
 .w-steps { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--s-2); }
 .w-steps .btn { width: 100%; justify-content: space-between; }
 .btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+/* F-40: space reserved for what the page fills after load (the run header, a two-line status), so the view below does
+   not jump (Lighthouse CLS 0.56 on /world/trace/) */
+.w-head { min-height: 1.5em; }
+#w-status { min-height: 3em; }
+@media (max-width: 700px) { .w-head { min-height: 4.5em; } }
+.w-load #w-tier { flex-basis: 100%; min-height: 1.4em; }   /* its own reserved line: the GPU name it shows can be long */

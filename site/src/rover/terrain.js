@@ -35,6 +35,30 @@ export class RoverTerrain {
     const [h5, h20, s20] = await Promise.all([png('height_5m', 16), png('height_20m', 16), png('slope_20m', 8)]);
     return new RoverTerrain(meta, h5, h20, s20);
   }
+  /* F-40: the same terrain built in a module worker (terrain-worker.js), its roughness grid included, so the page's main
+     thread stays free while it loads; falls back to load() where module workers are unavailable */
+  static loadInWorker(base, onProgress) {
+    let w;
+    try { w = new Worker(new URL('./terrain-worker.js', import.meta.url), { type: 'module' }); } catch (e) { return RoverTerrain.load(base, onProgress); }
+    return new Promise((resolve, reject) => {
+      w.onmessage = e => {
+        const m = e.data;
+        if (m.type === 'progress') { onProgress && onProgress(m.message); return; }
+        w.terminate();
+        if (m.type === 'error') { reject(new Error(m.message)); return; }
+        const t = Object.create(RoverTerrain.prototype);
+        Object.assign(t, m.fields, { _rough: m.rough, _shadow: new Map() });
+        resolve(t);
+      };
+      w.onerror = e => { w.terminate(); RoverTerrain.load(base, onProgress).then(resolve, reject); e.preventDefault?.(); };   // e.g. no module workers
+      w.postMessage({ base: new URL(base, location.href).href });
+    });
+  }
+  /* the plain fields of a built terrain (what loadInWorker() sends across); _rough and _shadow are kept apart */
+  fields() {
+    const { meta, sizeM, px5, px20, r5, c5, r20, c20, z5, z20, slope20 } = this;
+    return { meta, sizeM, px5, px20, r5, c5, r20, c20, z5, z20, slope20 };
+  }
   /* _bilinear: cell-centred grid, row 0 = south, clamped at the edges (same arithmetic order as numpy) */
   static bilinear(g, rows, cols, px, x, y) {
     const u = Math.min(Math.max(x / px - 0.5, 0), cols - 1), v = Math.min(Math.max(y / px - 0.5, 0), rows - 1);
