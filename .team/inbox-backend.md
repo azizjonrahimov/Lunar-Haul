@@ -532,7 +532,7 @@ running the 20-seed headline numbers (E21 may already have some of them).
 
 # R-1 analysis and extension (queued 22 Oct 13:05). Order: B-43, B-44.
 
-## B-43 [OPEN] (<= 3 h, light) E21 analysis: paired effects, the delay-coverage law, delay-based break-evens
+## B-43 [DONE 13:00] (<= 3 h, light) E21 analysis: paired effects, the delay-coverage law, delay-based break-evens
 Stage A and B are in `results/E21a_comms_autonomy.csv` and `results/E21b_breakeven.csv` (stage C is running; add it
 when it lands, same code). New `experiments/phase4/analyse_e21.py` (+ tests) writing `results/E21_fit.json` and
 `results/table_E21_effects.csv`, `results/table_E21_breakeven_delay.csv`, plus figure-ready CSVs:
@@ -553,7 +553,7 @@ when it lands, same code). New `experiments/phase4/analyse_e21.py` (+ tests) wri
 Done when: tests on synthetic tables (paired CI, law fit recovers known parameters, break-even inversion); the
 report gives the key numbers with CIs in plain sentences.
 
-## B-44 [OPEN] (after B-43; <= 4 h) Real sun at each site (opt-in): replace the fixed night share for R-1's H6
+## B-44 [IN PROGRESS] (after B-43; <= 4 h) Real sun at each site (opt-in): replace the fixed night share for R-1's H6
 H6 says Earth's 27.21-day elevation cycle beats against the 29.53-day lunar day (period ~347 d), so under direct
 links "Earth up and Sun up" overlaps drift through the year. Testing it needs real illumination per site, not
 `night_fraction`. Build an opt-in `illumination` scenario field: per site (and per leg, worst sample) hourly sunlit

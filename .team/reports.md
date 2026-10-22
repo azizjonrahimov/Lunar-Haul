@@ -2942,3 +2942,102 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
 - **Rebuilt** `data/stories/resolved/*` and `data/scenes/gallery.json`.
 - **Verified:** a build from `git archive HEAD` (LF bytes, as CI checks out) equals the local build byte for byte, for all 5 story files and the gallery. `test_stories` + `test_gallery` + `test_ci_budgets`: 34 passed.
 - **Other committed sha256s of text files:** `earth_link-v1.json.sha256` is written as LF bytes by the tool, so it is unaffected. The other committed sha256s cover binary files.
+
+## B-43 DONE 13:00 | E21 analysis: paired effects, the delay-coverage law, delay break-evens, operators, the throughput bound
+- **Files:**
+  - `experiments/phase4/analyse_e21.py`: new. `demand` re-runs 40 traced years; `fit` does the analysis, ~2 min, single process.
+  - `tests/test_analyse_e21.py`: new, 11 tests on synthetic tables.
+  - **Results for LEAD to commit** (all LF):
+    - `results/E21_fit.json` (44 kB)
+    - `results/table_E21_effects.csv` (708 rows)
+    - `results/table_E21_breakeven_delay.csv`
+    - `results/fig_E21_delay_coverage.csv` (cell means ± CI + fitted curve per mix)
+    - `results/fig_E21_operator_demand.csv`
+    - `results/E21_demand_by_dest.csv`
+  - Stage C is partial here (540 of 720 rows) and is included as it stands. **Rerun `python experiments/phase4/analyse_e21.py fit` when C finishes**; `demand` need not be rerun.
+- **Method:** every cell runs the same 20 seeds, with the start year 2028 + seed mod 4. Effects are means of the per-seed differences with Student-t 95 % intervals. Law and break-even intervals: bootstrap over seeds, 400 draws.
+- **Reproduction checks:**
+  - The 40 traced reruns equal the E21 raw delivered-in-year to 6e-11 kg.
+  - Stage B strict +0 rovers at p = 0.5 equals the stage A strict cell at p = 0.5 exactly (40.174 h).
+  - Relay coverage 1.0 equals "always" exactly in every throughput and delay metric.
+
+**1. Paired effects** (supervised-strict fleet unless stated)
+- **Direct links only (DTE) vs Earth always in view:**
+  - Delivered **−225.7 t/yr (95 % CI −234.2 to −217.1), −42 %**.
+  - Urgent p90 **17 → 446 h** (+429 h, CI +17 to +840); urgent items within 24 h **94 → 55 %** (−39 points, CI −56 to −23).
+  - The default, teleop and strategic+avoid fleets lose the same 225 t. The strategic policy loses only −107 t (CI −191 to −24), because it accepts passing unlinked points. Autonomous fleet: 0.
+- **Strategic vs strict policy, urgent p90:**
+  - relay 0.1: **136 → 27 h** (−108 h, CI −142 to −75);
+  - relay 0.5: **40 → 27 h** (−13.7 h, CI −20.1 to −7.3);
+  - full relay: no difference.
+  - At DTE the strategic policy delivers +118 t (CI +29 to +207) without a better p90. Strategic+avoid gains nothing at DTE (+0.4 t).
+- **Stage B at DTE: extra rovers and the mast recover nothing.** +1/+2/+3 rovers: +0.6 (CI −0.1 to +1.4) / +0.1 / −0.9 t; BASE 10 m mast: +0.7 t (CI −0.2 to +1.6).
+- **Stage B at p = 0.5 (strict):**
+  - +1 rover: p90 **40.2 → 31.1 h** (−9.1 h, CI −19.6 to +1.4); +2: −9.1 h (CI −18.5 to +0.3); +3: −1.9 h (CI −10.3 to +6.5).
+  - Mast: −1.3 h (CI −3.4 to +0.7).
+  - With the strategic policy, +1 rover: 26.5 → 18.0 h (−8.5 h, CI −22.4 to +5.4).
+- **Stage C (so far, DTE, default fleet):**
+  - pads at 0.5 km deliver **+15.2 t (CI +8.3 to +22.1)**; pads at 3 km **−10.4 t (CI −14.4 to −6.5)**;
+  - the centre+2° criterion raises p90 by 82 h (CI +44 to +120) at 0.5 km pads.
+
+**2. The delay-coverage law** (stage A, p = 0 is DTE)
+- **Form choice:** three forms were tried, chosen by 5-fold CV over seeds scored on held-out fold means. Scoring single seeds was useless: the seed-to-seed spread is ~1.2 in log p90, and leave-one-seed-out picked forms on noise.
+  - Hyperbolic and power fit about twice as well as exponential (in-sample log RMSE 0.12 vs 0.25 for strict).
+  - Strict p90 = 3.0 + 17.4 / (p + 0.040); CIs: a 0-16, b 12.0-26.4, c 0.016-0.129.
+  - Default fleet: power, 21.4 (p + 0.042)^-0.91.
+  - **No smooth form fits the slow decline between p = 0.2 and 1:** the law gives f(0.5) = 35 h against 40 h measured. So the coverage targets are read model-free off the cells (the law's values are in the JSON too).
+- **Coverage needed** (target = ratio × the full-coverage cell, model-free):
+
+  | Fleet | Full-coverage p90 | 2× reached at p | 1.5× reached at p |
+  |---|---|---|---|
+  | strict | 16.9 h (CI 8.8-27.7) | **0.62 (CI 0.36-0.82)** | **0.81 (CI 0.65-0.92)** |
+  | default | 19.8 h | 0.51 (CI 0.24-0.74) | 0.64 (CI 0.50-0.92) |
+  | teleop 4 s | 29.3 h | 0.43 (CI 0.19-0.65) | 0.58 (CI 0.42-0.81) |
+  | strategic | 16.9 h | **0.09 (CI 0.08-0.34)** | 0.14 (CI 0.08-0.67) |
+  | strategic+avoid | 16.9 h | 0.10 (CI 0.09-0.48) | 0.54 (CI 0.10-0.69) |
+  | autonomous | flat | 0 | 0 |
+
+  - Read: with the strategic policy a tenth of relay coverage halves the gap to full coverage; strict supervision needs about 60 %.
+
+**3. Delay-based break-even at p = 0.5** (model-free strict curve)
+- **Equivalent relay coverage per option:**
+
+  | Option | Urgent p90 | Equivalent coverage (CI) |
+  |---|---|---|
+  | +1 rover | 31.1 h | **0.68 (0.52-0.91)** |
+  | +2 rovers | 31.1 h | 0.68 (0.54-0.91) |
+  | +3 rovers | 38.3 h | 0.53 (0.38-0.79) |
+  | strategic step | 26.5 h | **0.79 (0.70-0.91)** |
+  | strategic step + 1 rover | 18.0 h | **0.98 (0.69-0.99)**, beyond full relay coverage in 44 % of draws |
+
+  - Law-based instead: 0.58, 0.58, 0.46, 0.70, beyond.
+- **One LTV (45 M$/yr capital, engine classes) ≈ +0.18 relay coverage (CI 0.02-0.41) at p = 0.5**, so 0.1 of relay coverage is worth **26 M$/yr (CI 11-139)**. The equivalent is ≤ 0 in 2.5 % of draws.
+- In plain words: the strategic policy alone is worth more relay coverage than an extra rover.
+
+**4. Operator-demand compression (H5)** (3 operators)
+- **Reference: relay coverage 1.0, not "always".** The operations are identical, but in "always" mode demand is booked over the whole job, while the linked modes book each driven segment and admit a job while another is between segments. So the teleop peak reads 3.37 at full relay vs 3.00 under "always", and exceeds staffing in 8/20 seeds even there.
+- **Teleop fleet**, peak extra operators vs full relay:
+  - DTE **+1.23 (CI 0.78-1.68)**;
+  - relay 0.1-0.3: **+1.9 to +2.2**;
+  - relay 0.5: +1.6 (CI 1.3-1.9);
+  - relay 0.8-0.9: +0.65.
+  - **The peak exceeds the 3 operators in 20 of 20 seeds at p ≤ 0.5** (max 6 concurrent).
+  - Peak/mean demand ratio: 15 at full relay → 22-25 at p 0.1-0.5 → **36 at DTE**.
+- **Default fleet:** the peak never exceeds 3 (+0.5-0.6 at p 0.1-0.5); peak/mean 42 → 83 at DTE.
+
+**5. Throughput: the DTE loss is the never-linked bound, plus a little delay spill**
+- **ISRU is the only site that never sees Earth** with direct links: 0 of 35,064 h in 2028-2031 (any part of the disc). SCI_1 sees it 8.5 % of the time, PSR 12.3 %, BASE 59 %.
+- **ISRU demand:** the demand model makes **204.2 ± 1.6 t/yr** ready for ISRU (the 200 t/yr CONSTR→ISRU bulk feedstock + equipment). Under DTE **none of it is delivered**, so 204.2 ± 1.6 t is lost.
+- The measured gap is **225.7 ± 8.6 t**, so **90 % of the loss is the never-linked ISRU cargo**.
+- The other **21.5 ± 7.7 t is cargo for linked sites still under way at year end**: BASE −8.7 t, POWER −5.9, CONSTR −3.4, PAD_B −2.2.
+- SCI_1 and PSR matter little (0.4 + 0.3 t/yr of demand).
+
+- **Tests:** 11 passed. They cover:
+  - paired CI = Student-t on matched seeds;
+  - exact inversion for all three forms;
+  - the law fit recovers known parameters (±15 %) and CV picks the true form;
+  - model-free inversion (envelope, beyond-range);
+  - break-even on a synthetic exponential curve (exact p 0.7/0.75/0.6/0.9, beyond for the last option, LTV worth = 0.2);
+  - effect families; operator flags vs full relay; the throughput bound.
+- **How to test:** `.venv\Scripts\python -m pytest tests\test_analyse_e21.py -q`; `python experiments\phase4\analyse_e21.py fit`.
+- **Question for LEAD:** the operator admission check sees only linked segments already under way, so a job can be admitted while another is between segments. That gives peaks above staffing even at full relay (teleop 3.37 vs 3.00 under "always", same operations). Should the engine reserve each committed job's linked demand over its whole span? That would change comms-run results (not byte-identical for linked modes). Until then, H5 should be stated relative to full relay, as above.
