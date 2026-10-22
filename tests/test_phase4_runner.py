@@ -13,7 +13,7 @@ LINK = os.path.join(ROOT, "data", "comms", "connecting_ridge", "earth_link-v1.js
 
 def test_cell_lists():
     a, b, c = R.e21a_cells(), R.e21b_cells(0.8), R.e21c_cells()
-    assert (len(a), len(b), len(c)) == (36, 32, 36)
+    assert (len(a), len(b), len(c)) == (60, 32, 36)
     for cells in (a, b, c):
         keys = [R.e21_key(t, mn) for (t, _, mn, _, _) in cells]
         assert len(set(keys)) == len(keys)

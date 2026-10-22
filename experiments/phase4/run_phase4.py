@@ -13,7 +13,7 @@ link series' ~347-day ripple (H6) is sampled; the start year is a column.
 Common settings (as E19): P2, marketplace, terrain connecting_ridge, driving tables driving-v1, classical landing
 model, pads at 1 km, Earth-link criterion any_part (lunarsim/comms.py; data/comms/connecting_ridge/earth_link-v1.json).
 
-  e21a  comms {always, dte, dte+relay p = 0.5, 0.8, 0.9, 1.0} x autonomy mix {all teleop (4 s RTT), the P2 default
+  e21a  comms {always, dte, dte+relay p = 0.1, 0.2, 0.3, 0.4, 0.5, 0.8, 0.9, 1.0} x autonomy mix {all teleop (4 s RTT), the P2 default
         mix, all supervised-strict, all supervised-strategic, all supervised-strategic+avoid, all autonomous}
                                                                                                -> E21a_comms_autonomy.csv
   e21b  at the knee of the Stage A coverage -> throughput curve (the smallest relay coverage reaching KNEE_SHARE of
@@ -56,8 +56,9 @@ RESULTS = os.path.join(ROOT, "results")
 MECH = "marketplace"
 CRITERION = "any_part"
 STANDOFF = 1.0
-COMMS_LEVELS = (("always", None), ("dte", None), ("dte+relay", 0.5), ("dte+relay", 0.8), ("dte+relay", 0.9),
-                ("dte+relay", 1.0))
+COMMS_LEVELS = (("always", None), ("dte", None), ("dte+relay", 0.1), ("dte+relay", 0.2), ("dte+relay", 0.3),
+                ("dte+relay", 0.4), ("dte+relay", 0.5), ("dte+relay", 0.8), ("dte+relay", 0.9), ("dte+relay", 1.0))
+# 0.1-0.4 added by LEAD (22 Oct) so the knee of the coverage -> throughput curve is resolved below 0.5
 MIXES = ("teleop_4s", "default", "supervised_strict", "supervised_strategic", "supervised_strategic+avoid", "autonomous")
 KNEE_SHARE = 0.95                 # Assumed: the knee = smallest coverage with >= 95 % of full-coverage throughput
 EXTRA_ROVERS = (0, 1, 2, 3)
