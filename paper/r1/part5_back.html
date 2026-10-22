@@ -1,0 +1,83 @@
+
+<h2 id="r1-sec-discussion">6. Discussion</h2>
+
+<p><b>Where a site is matters as much as how it is served.</b> The largest single number in this paper, the loss of
+{{R1-LOSS-SHARE-ISRU}} of the gap at one plant, is a siting result. The oxygen plant was placed in v3 [14] for its
+regolith and its distance from the pads, and nothing in that placement looked at Earth. A site that never sees Earth
+can only be served by autonomous rovers or through a relay, whatever the fleet. Earth visibility along the routes,
+not only at the sites, belongs in base layout next to slope, illumination and plume distance. The same applies to
+the pads: farther pads cost travel time (v3) and, under direct links, link time as well.</p>
+
+<p><b>A little relay coverage goes a long way for throughput, and a long way is needed for urgent delay.</b> A relay
+in view a tenth of the time returns the lost cargo, because the lost cargo was a question of whether a route can be
+driven at all, not of how often. Urgent delay is a question of how often, and there the coverage curve is long:
+strict supervision needs about {{R1-P-2X-STRICT}} coverage to come within twice the full-coverage delay. NASA's
+LCRNS reference numbers (one relay 80&ndash;86&nbsp;% a year [10], Section&nbsp;2) fall on the flat part of our curve,
+so a single relay would remove most of the effect for this layout.</p>
+
+<p><b>Autonomy and relays are substitutes, and rovers are not.</b> Letting supervised rovers drive between
+interventions moved the coverage needed for the same delay from about {{R1-P-2X-STRICT}} to {{R1-P-2X-STRATEGIC}},
+and at half coverage the strategic step was worth more relay coverage than an extra rover. This agrees with
+Otten and colleagues' argument for short preplanned drives without contact [7], and puts a number on it for a fleet.
+It also shows the condition: the policy must look ahead along its route, or a single hazard on a rarely linked
+stretch strands a rover for weeks.</p>
+
+<p><b>Operations planning has to expect bursts.</b> Link windows make operator demand arrive together. Staffing
+from yearly averages would underestimate the peak, and with teleoperation the bunching is strongest. How much delay
+the bursts cause with a hard operator limit is the next question.</p>
+
+<h2 id="r1-sec-limits">7. Limitations</h2>
+
+<ul>
+<li><b>Geometry, not radio.</b> A link is up when Earth's disc (or its centre with a margin) is above the terrain
+horizon. There is no link budget, no Fresnel-zone loss near grazing, and no ground-station scheduling. Stage&nbsp;C
+shows the throughput result does not depend on the criterion; urgent delay does, and a real link budget would sit
+between our criteria.</li>
+<li><b>The relay is parametric</b> (Assumed): an alternating up/gap process of the stated coverage with exponential
+gaps of mean 7.7&nbsp;h, taken to see every route point. Real relay passes are correlated in time and may be
+masked by terrain at low elevation, which would lengthen gaps at the dark sites.</li>
+<li><b>Night is not the real Sun.</b> E21 keeps v3's fixed night share. Earth's elevation cycle (27.2 days) and the
+lunar day (29.5 days) beat with a period of about 347 days, so the overlap of Sun and Earth drifts through the year;
+testing that needs illumination per site, which is in preparation.</li>
+<li><b>Operators.</b> The admission rule counts only linked demand (Section 5.6). The bursts are real in the model;
+whether they overrun a fixed staff is not settled here.</li>
+<li><b>Routes.</b> The slope-only route stands for every lighting case, and pad-to-pad legs are inferred from their
+end points. Strategic interventions are placed uniformly along a route; intervention rates come from v3's Assumed
+hazard model.</li>
+<li><b>Choices made during the study.</b> The 24&nbsp;h deferral limit was set from development runs, and
+Stage&nbsp;B's coverage of 0.5 was fixed after Stage&nbsp;A showed the throughput knee at 0.1. Both are reported
+with their alternatives (Table&nbsp;10).</li>
+<li><b>One site, one fleet, one phase.</b> All results are for the Connecting Ridge layout, the Phase-2 demand
+and a six-rover fleet, with v3's Assumed vehicle costs, 20 seeds per cell and the plume keep-out off. Crewed
+periods, when astronauts could drive locally, are not modelled.</li>
+</ul>
+
+<h2 id="r1-sec-conclusions">8. Conclusions</h2>
+
+<p>We computed when Earth can be seen along every route of a south-pole base on real terrain and put those windows
+into a verified cargo simulation. With direct links only, a fleet that needs operators on Earth delivers about
+{{R1-T-LOSS-PCT-PLAIN}} less cargo a year, almost all of it because one work site never sees Earth; more rovers or
+a mast at the base do not change that, and any relay or full autonomy does. Relay coverage then buys urgent
+delivery time along a long curve, and an autonomy step that lets supervised rovers drive between interventions is
+worth more of that curve than an extra rover, provided the rovers look ahead along their routes. For base planners
+the practical points are three: check Earth visibility along routes when siting work sites and pads; plan relay
+service against urgent delay, not throughput; and buy autonomy before rovers when links are scarce.</p>
+
+<h2 id="r1-sec-availability">Availability</h2>
+
+<p>The Earth-link pipeline (<span class="mono">tools/comms/earth_link.py</span>), the link windows
+(<span class="mono">data/comms/connecting_ridge/earth_link-v1.json</span>, sha256 recorded), the engine's opt-in
+<span class="mono">comms</span> rule (<span class="mono">lunarsim/comms.py</span>), the E21 runner and analysis
+(<span class="mono">experiments/phase4/run_phase4.py</span>, <span class="mono">analyse_e21.py</span>), every raw
+result file and the figure script (<span class="mono">paper/r1/make_figures_r1.py</span>) are in the repository at
+<a href="https://github.com/azizjonrahimov/Lunar-Haul">github.com/azizjonrahimov/Lunar-Haul</a>. The same scenarios
+can be run on GitHub Actions from an issue form, and the 3D site replays a year with and without Earth in view at
+<a href="https://azizjonrahimov.github.io/Lunar-Haul/">azizjonrahimov.github.io/Lunar-Haul</a>. The engine's
+verification (21 checks, including the agreement of the Earth track with JPL Horizons and the identity of the
+always-linked rule with the baseline) runs with <span class="mono">lunarsim verify</span>.</p>
+
+<h2 id="r1-sec-refs">References</h2>
+
+{{R1-REFERENCES}}
+</body>
+</html>

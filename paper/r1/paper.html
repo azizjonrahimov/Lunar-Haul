@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>What Earth's Horizon Costs a Lunar Base: Terrain-Masked Communication Windows in South-Pole Cargo Logistics</title>
+<link rel="stylesheet" href="../style.css">
+<style>table.wide { break-inside: auto; } table.wide tr { break-inside: avoid; }</style>
+</head>
+<body>
+
+<h1 id="r1-title">What Earth's Horizon Costs a Lunar Base: Terrain-Masked Communication Windows in South-Pole Cargo Logistics</h1>
+<div class="authors">Azizjon Rahimov</div>
+<div class="affil">Roatify Research &middot; Preprint, October 2026 &middot; Code, data and link windows: <a href="https://github.com/azizjonrahimov/Lunar-Haul">github.com/azizjonrahimov/Lunar-Haul</a> &middot; Live site: <a href="https://azizjonrahimov.github.io/Lunar-Haul/">azizjonrahimov.github.io/Lunar-Haul</a></div>
+
+<div class="abstract" id="r1-abstract">
+<p><b>Abstract.</b> At the lunar south pole Earth stays within about 7&deg; of the horizon and is below it for roughly half of each month; terrain hides it for longer. A rover driven from Earth cannot move without a direct-to-Earth (DTE) link, and a supervised rover needs one whenever an operator has to step in. Site visibility fractions, relay coverage and single-rover planning around link gaps are published; what the gaps cost a cargo fleet is not. We computed terrain-masked Earth-link windows for 2028&ndash;2031 at our base on the Connecting Ridge, from SPICE ephemerides and LOLA terrain out to 300 km, at every site and pad and every 100 m along 182 rover routes. The ephemeris agrees with JPL Horizons to 10<sup>&minus;6</sup> degrees, and computed the published map's way our fractions match the 60 m LOLA Earth-visibility map to &minus;0.004 on average over 17 points. A rover antenna at the base sees Earth 59% of the time, but 101 of the 182 routes are never in view of Earth from end to end, and the oxygen pilot plant never sees it. We added the windows to our verified discrete-event cargo simulation and ran 2,560 simulated years (experiment E21): DTE only and a relay of coverage 0.1&ndash;1.0 against six autonomy mixes; extra rovers, a 10 m base mast and supervised policies; and pad standoff, link criterion and a deferral limit. With DTE only the reference fleet delivers 307 &plusmn; 4 t a year against 532 &plusmn; 9 t (&minus;42&nbsp;% [&minus;44, &minus;41]), 90&nbsp;% of the loss being cargo for the oxygen plant, and the 90th-percentile urgent delay rises from 20&nbsp;h to 380 &plusmn; 283&nbsp;h. A relay in view 10% of the time restores 99&nbsp;% of the lost cargo; an extra rover adds 0.6&nbsp;t [&minus;0.1, 1.3] a year and the mast 0.7&nbsp;t [&minus;0.2, 1.6]. In urgent delay one extra supervised rover is worth 0.18 [0.02, 0.41] of relay coverage, which prices 0.1 of coverage at 26&nbsp;M$ [11, 139] a year. Under DTE only, operator demand in the teleoperated fleet comes in bursts: its peak is 36 &plusmn; 3 times its mean, against 15 &plusmn; 1 with full relay coverage. Code, data and the link windows are released.</p>
+<p class="kw"><b>Keywords:</b> lunar south pole, direct-to-Earth communication, Earth visibility, horizon mask, lunar relay, LCRNS, teleoperation, supervised autonomy, rover fleet, surface logistics, discrete-event simulation, LOLA, SPICE</p>
+</div>
+
+<h2 id="r1-sec-intro">1. Introduction</h2>
+
+<p>A base at the lunar south pole sees Earth low on the horizon. Over a month Earth wanders about &plusmn;6.9&deg; in latitude and &plusmn;8.2&deg; in longitude in the lunar sky [1]; De Rosa and colleagues put its centre within about &plusmn;6.5&deg; of elevation and &plusmn;8&deg; of azimuth as seen from polar sites [2]. At our base on the Connecting Ridge, Earth's centre moved between &minus;7.54&deg; and +6.23&deg; of elevation over 2028&ndash;2031, inside a wedge of azimuth 16&deg; wide (Modelled; Section 3.2). Its apparent disc is about 2&deg; across. For about two weeks of every month it is below the horizon [3, 4]. Terrain makes this worse. A site below a ridge or on a slope facing away from Earth loses it earlier and regains it later, and some sites never see it at all.</p>
+
+<p>This matters because of how surface rovers are expected to be driven. NASA's trials with a Lunar Terrain Vehicle measured how fast operators on Earth can drive at 0&ndash;8 s of round-trip delay, and assumed &ldquo;flawless high-bandwidth comms&rdquo; while doing so [5]. A teleoperated rover needs the link for every command. A supervised rover drives itself between approvals but stops at a hazard it cannot resolve, and an operator on Earth has to answer before it moves on. VIPER's planners treated the line of sight to the ground stations as a moving &ldquo;radio shadow&rdquo; and timed traverses so as not to be caught by it [6]. Otten, Wettergreen and Whittaker showed that requiring continuous Earth contact while driving forces a polar rover to &ldquo;dwell motionless near the day&ndash;night terminator for weeks&rdquo;, and proposed short, preplanned autonomous drives without communication [7]. De Rosa and colleagues concluded that windows of about 14 days &ldquo;demand a relatively high level of autonomy&rdquo; [2]. For Artemis III, NASA required direct communication with Earth assuming no relay is available, and screened out areas where Earth is visible less than 25% of the time (Spec) [8]; its 2026 site update prefers regions with greater Earth visibility if the mission uses a DTE architecture [9].</p>
+
+<p>There are four ways to buy the link back. The first is a relay in lunar orbit. NASA's Lunar Communications Relay and Navigation Systems (LCRNS) project states its case as coverage: DTE alone gives 17&ndash;43% yearly coverage at candidate south-pole sites, DTE plus one relay 80&ndash;86%, and DTE plus two relays 100% (Modelled) [10]. The relay services contract has a maximum potential value of $4.82 billion (Spec) [11]. The second is more autonomy, which is Otten's answer [7]. The third is more rovers, which add capacity but wait for the same link. The fourth is a mast at the base that sees Earth and relays to rovers within its line of sight; NASA Glenn's surface relay concept uses a 10 m boom and expects coverage &ldquo;out to 10 km, depending on local terrain&rdquo; [3]. Each costs money, and each is limited by terrain in a different way.</p>
+
+<p>Part of this is known. Earth-visibility fractions at named polar sites have been computed from radar and laser terrain [1, 2, 12]. Windows of about 14 days are published [2]. Relay coverage is published [10]. Traverse planning for a single rover around link gaps is published [6, 7, 13]. What we did not find, in about 35 searches and 25 full-text reads in October 2026 (Section 2.5), is a model that takes terrain-masked link windows along real routes and asks what they do to a fleet that has to move cargo: how much it delivers, how late urgent items arrive, and which of the four fixes buys the most. Nor did we find a public price for relay service per hour or per year (Section 2.2), so a break-even has to be stated as an equivalence between options rather than as a dollar verdict.</p>
+
+<p>Our previous paper [14] built a discrete-event testbed of cargo movement at a south-pole base on NASA's 5 m LOLA terrain of the Connecting Ridge, with rover routes and driving tables by autonomy level, and priced landing precision, pad standoff, a plume keep-out and rover autonomy. Like the JSC trials, it assumed the link to Earth is always there. At our layout that assumption fails badly. A rover antenna 2.5 m above the base sees Earth 59% of the time, but the oxygen pilot plant, 1.2 km from the base and 139 m below it, never does, and 101 of the 182 routes between our sites and pads are never in view of Earth from end to end (Section 3.5). This paper asks what that costs and what fixes it, for this one base. We ask four questions, numbered for this paper:</p>
+
+<ol>
+<li><b>RQ1.</b> How often, and in what windows, does each site, pad and route of a real terrain-masked base have a DTE link in 2028&ndash;2031, from a rover antenna and with a 10 m mast at the base, under three link criteria, and how does that compare with the published Earth-visibility map?</li>
+<li><b>RQ2.</b> How much cargo throughput and urgent-delivery delay does the fleet lose to DTE gaps, for teleoperated, supervised and autonomous fleets, and how do they recover as relay coverage rises?</li>
+<li><b>RQ3.</b> What are the break-evens between relay coverage, an autonomy step, extra rovers and a mast at the base, and what relay price per year do they imply?</li>
+<li><b>RQ4.</b> Do link windows bunch operator demand into the hours when Earth is in view, and how sensitive are the answers to pad standoff, to the link criterion and to the rule for deferring jobs that would wait long for a link?</li>
+</ol>
+
+<p>We answer RQ1 with data and RQ2&ndash;RQ4 with simulation. Earth's direction comes from NASA's SPICE toolkit every 10 minutes for four years. Horizon masks in Earth's direction come from the 5 m terrain tile out to 8 km and from NASA's 80 m polar terrain out to 300 km. The link windows enter the testbed of [14] as an opt-in rule: a teleoperated rover drives only while its whole route is in view, a supervised rover either does the same or waits for a link only when it needs an intervention, an autonomous rover is not affected, and a relay or mast adds link time. Experiment E21 then crosses the link regime with the autonomy mix, adds rovers, a mast and supervised policies, and varies pad standoff, link criterion and the deferral rule, over 20 seeds with common random numbers. Our contributions are:</p>
+
+<ul class="contrib">
+<li><b>Link windows for a real base layout.</b> Run-length windows at 10-minute resolution for 2028&ndash;2031 at 7 sites, 10 pads and 2,404 route cells along 182 legs, under three criteria, with and without a base mast, computed from SPICE and LOLA terrain to 300 km and checked against JPL Horizons and the published LOLA Earth-visibility map. The file is 383 KB with its provenance. We found no published dataset that gives windows along routes.</li>
+<li><b>An opt-in Earth-link rule in a verified logistics engine.</b> Rules for teleoperation, three supervised policies and autonomy; a relay; a mast; operator demand booked only while linked; and a deferral rule for jobs that would wait long for a link. With the rule off, or with the link always up, the engine's output is byte-identical to the previous version's.</li>
+<li><b>The cost of link gaps for a cargo fleet, and the break-evens.</b> Throughput and urgent delay by autonomy mix and relay coverage, a fitted delay&ndash;coverage law with bootstrap intervals, the relay coverage that one extra rover, one autonomy step or a mast is worth, the relay price per year that this implies, the peaks of linked operator demand, and their sensitivity to pad standoff, link criterion and deferral.</li>
+</ul>
+
+<p>We do not claim a radio link budget. Our criteria are geometric (any part of Earth's disc above the terrain horizon, or its centre 0.5&deg; or 2&deg; above it); we model no diffraction, no Fresnel-zone loss near grazing, and no scheduling of ground stations. The relay is a parametric on&ndash;off process with a stated coverage and mean gap, taken to see every route point (Assumed); we did not propagate the LCRNS orbits or mask them by terrain. Crewed periods, when astronauts at the base could drive rovers locally, are not modelled. The engine's lunar night is the synodic model of [14] with a dark fraction of 0.15, not the real Sun at each site, so E21 does not test how Earth windows and sunlit periods overlap. Supervised intervention rates are the Assumed hazard model of [14]; no measured interventions-per-kilometre figure exists for any lunar rover. The relay price we report is the price at which a relay equals extra rovers in our model, not a market price. One site, one terrain tile and one base layout are simulated. Every physical number carries a flag at first appearance, as in [14]: <b>Measured</b> (flight, laboratory or survey data), <b>Spec</b> (a published design value or requirement), <b>Modelled</b> (produced by a model, including ours) or <b>Assumed</b> (our choice, swept where it matters). Link fractions and windows are Modelled: we computed them from measured terrain and a fitted ephemeris.</p>
+
+<p>Section 2 reviews Earth visibility at polar sites, relay architectures, operations around link gaps and surface logistics simulation, and states the gap. Section 3 describes the data and the model: the site and routes, the ephemeris, the horizon masks, the link criteria, the windows per site and per leg, the validation against the published map, and the engine's link rules. Section 4 describes experiment E21. Section 5 reports the results, Section 6 discusses them, Section 7 gives the limitations and Section 8 the conclusions.</p>
+
+
+<h2 id="r1-sec-related">2. Related work</h2>
+
+<h3>2.1 Earth visibility at polar sites</h3>
+<p>Bryant computed horizon masks for the area within 100 km of the south pole from a Goldstone radar elevation model and integrated them over Earth's monthly motion, averaging over 2009&ndash;2028 [1]. His best base site had 92% solar and 51% DTE availability (Modelled). At B1, a peak on the ridge between Shackleton and de Gerlache, any part of Earth was visible 65.2% of the time, half the disc 58.2% and the whole disc 51.3%; sites on the Shackleton rim reached 62&ndash;64%, and Malapert and Leibnitz &beta; 100% (Modelled) [1]. He wrote that &ldquo;the best visibility to some part of the Earth is around 65 percent&rdquo; and that &ldquo;continuous polar lunar base coverage requires some kind of Earth relay&rdquo;, and suggested a radio reflector on Malapert. He gave fractions, not outage durations. B1 lies about 1.5 km from our base, but his grid comes from a different elevation model, so the match is approximate.</p>
+
+<p>De Rosa and colleagues characterised landing regions for ESA's Lunar Lander with LOLA terrain, JPL Horizons ephemerides and horizons out to 150 km at 720 azimuths [2]. Earth's centre followed &ldquo;a pattern of approximately &plusmn;6.5&deg; in elevation every month, constrained to approximately &plusmn;8&deg; in azimuth&rdquo;, and DTE windows followed &ldquo;a regular pattern of ~14 days&rdquo;, up to about 19 days near 85&deg;S. Their region CR1 on the Connecting Ridge lies 0.9 km from our base (Modelled from their published coordinates). At none of their regions did terrain toward Earth cause &ldquo;a significant decrease&rdquo; in visibility, and a 2&deg; minimum elevation cost at most 5% of availability. Their operational conclusion, that the windows &ldquo;demand a relatively high level of autonomy&rdquo;, is the starting point of this paper.</p>
+
+<p>The LOLA team publishes average Earth-visibility maps computed with the method of Mazarico and colleagues [12]: the fraction of hourly time steps over 18.6 years in which &ldquo;any part of [Earth's] disc is not obscured&rdquo;, at 240, 120 and 60 m for the south polar region. The product page notes that this criterion may be optimistic for radio-link studies. These maps are the natural check for any new computation, and we use the 60 m map in Section 3.6. They are surface-level averages: they carry no antenna height, no windows and no time series. Gl&auml;ser and colleagues computed illumination on the Connecting Ridge from LOLA terrain, 92.27% at 2 m above the ground and 95.65% at 10 m, with continuous darkness of typically only 3&ndash;5 days (Modelled) [15]; their abstracts give no Earth figures.</p>
+
+<p>Earth visibility has also entered site selection. A multi-criteria evaluation of Artemis III candidate sites scored DTE from the 240 m maps; its best point keeps direct communication with Earth about one third of the time, and the Connecting Ridge is not in its top 20 [16]. A 2025 study of terrain-driven Earth visibility for Moon-based Earth observation reports that terrain cuts visibility by up to 80% on crater rims and at high latitude, so that a smooth-sphere approximation fails there [17]; we read only its abstract. NASA screened Artemis III landing areas with Earth visibility below 25% [8], and its 2026 update evaluates constraints on a calendar basis and prefers regions with greater Earth visibility under a DTE architecture [9]. None of these studies gives windows along rover routes, and none relates the timing of windows to surface operations.</p>
+
+<h3>2.2 Relay architectures and coverage</h3>
+<p>NASA's answer to the polar link problem is the LCRNS relay service. The contract, awarded to Intuitive Machines in September 2024 under the Near Space Network, is a firm-fixed-price indefinite-delivery contract with a maximum potential value of $4.82 billion and an ordering period to 2029 with an option to 2034, for relays serving &ldquo;the Moon's South Pole region&rdquo; (Spec) [11]. The reference constellation has five satellites in elliptical lunar frozen orbits with apolune over the south pole, a semi-major axis of 11,305&ndash;11,326 km, an eccentricity of 0.692 and a period of about 30 h (Spec) [18]. Esper and colleagues report yearly coverage at candidate sites of 17&ndash;43% for DTE alone, 80&ndash;86% for DTE and one relay, and 100% for DTE and two relays; in the early DRM-0 design one satellite covered the south pole for 324 of every 784 minutes, about 41% (Modelled) [10]. Their DTE figures come from a ten-year line-of-sight simulation to Earth's centre; the worst case is named &ldquo;Spudis Ridge Peak&rdquo; and the best &ldquo;Mount Malapert Peak&rdquo;. Malapert at 43% does not match Bryant's 100% [1], so the LCRNS figure probably includes constraints the paper does not state in the part we read. In a 2024 plan the service was to reach one augmented forward signal over the south pole from September 2026, two by mid-2028 and four by September 2029 [19]; the first relay is to fly on the IM-3 mission, which in September 2026 NASA placed in the first part of 2027 [20]. Because the relay's apolune is about 19,150 km from the Moon's centre, a hop through it adds at most about 0.065 s one way, small against the 5.0 s round trip of our engine (Modelled from [18]). A relay therefore changes how often a rover can be driven, not how fast.</p>
+
+<p>Europe is building two systems. ESA's Lunar Pathfinder is a single relay in an elliptical lunar frozen orbit giving long daily visibility of the southern hemisphere [21]. ESA's Moonlight programme plans five satellites, one for communications and four for navigation, placed to prioritise coverage of the south pole, with initial service by the end of 2028 and full service by 2030 (Spec) [22]. We found no hours-per-day figure for either at the south pole.</p>
+
+<p>Surface relays are the cheaper end. NASA Glenn's Lunar Surface Relay concept puts a terminal on a 10 m boom, gives 3GPP coverage &ldquo;out to 10 km, depending on local terrain&rdquo; and Wi-Fi to about 300 m, and imagines mobile versions driven by waypoints (Spec) [3]. The same paper notes that when Earth is not visible from the south pole, &ldquo;nominally for 14 days every month&rdquo;, orbital relays provide service, and lists 18 m-class Lunar Exploration Ground Sites at White Sands, Matjiesfontein and Canberra as the Earth end of DTE links [3]. Jun and colleagues at JPL propose a single surface station on the Connecting Ridge relaying between orbiters and surface users, argue that a rover &ldquo;would benefit significantly&rdquo; from a link under 10 km, and put the cost of full constellations at &ldquo;many billions in USD over decades&rdquo; [4]. We found no public price per relay hour or per link. That is why we state relay value as an equivalence in rovers (Section 4.5).</p>
+
+<h3>2.3 Operations around link gaps</h3>
+<p>VIPER's mission planning is the closest prior work [6]. Its planners wrote that &ldquo;similar radio shadows are cast from a line-of-site radio link to ground stations&rdquo;, that &ldquo;Sun and radio shadows move at speeds similar to VIPER's average speed&rdquo; and that &ldquo;traverses must be timed to avoid moving shadows&rdquo;. DTE was one of four site-selection requirements; &ldquo;safe havens&rdquo; were places with at most 50 h of shadow while Earth is below the horizon; and traverse planning was posed as a cost-constrained travelling-salesman problem whose budget was the time Earth is above the horizon at the site. Monte Carlo stress tests counted DSN shadow and dropout events and hours. VIPER was to operate with 6&ndash;10 s of latency, around the clock, with Earth out of view two weeks a month [23]. This is one science rover visiting stations. It has no fleet, no cargo and no trade between a relay and autonomy.</p>
+
+<p>Otten, Wettergreen and Whittaker argue the autonomy side [7]. Requiring continuous Earth communication while driving forces a sun-synchronous polar rover to wait near the terminator for weeks, and blackouts are &ldquo;common at local depressions and on non-Earth-facing slopes&rdquo; and &ldquo;not conducive to highly supervised autonomy or teleoperation&rdquo;. Their remedy, &ldquo;strategic autonomy&rdquo;, lets the rover make &ldquo;preplanned, short, slow, autonomous drives without communication&rdquo;. The metric is mission duration and risk for one rover; cost does not enter. Inoue and Adachi plan spatio-temporal paths for a polar rover under time-varying illumination and Earth visibility, with allowance for schedule delay [13]; again one rover. On Mars, Gaines and colleagues found that rover productivity is shaped by the timing of relay passes, and that non-sun-synchronous relay orbiters could make this worse [24]. The teleoperation evidence for the Lunar Terrain Vehicle, by contrast, assumes the link: JSC's latency trials assumed &ldquo;flawless high-bandwidth comms&rdquo;, and the vehicle's requirement of 6 km per 24 h applies when it is &ldquo;operated remotely&rdquo; [5].</p>
+
+<h3>2.4 Surface logistics simulation</h3>
+<p>Campaign logistics models such as SpaceNet, the generalised multi-commodity network flow and time-expanded networks optimise flows between Earth, orbit and the lunar surface and treat the surface as one node [25&ndash;27]; a 2024 review of space logistics lists surface vehicle routing among the topics it does not cover [28]. Base-level agent-based and discrete-event models have rovers but no communication windows: a Mesa benchmark of a lunar base runs four astronauts and two rovers [29], and an agent-based Mars simulation resolves landing slots by message passing [30]. Work on autonomous multi-rover cargo transport, including a 2026 field test under a 5 s each-way delay, does not model communication windows [31, 32]. Version 2 [33] and version 3 [14] of our testbed are discrete-event models of cargo movement at a south-pole base with several owners, four dispatch rules, terrain routes and autonomy levels. Their only communication effect is latency: teleoperated speed falls with round-trip delay, and each intervention costs a round trip plus recovery time. The link itself is always there.</p>
+
+<h3>2.5 The gap</h3>
+<p>We searched in October 2026, about 35 web searches and about 25 full-text reads, across NTRS records and PDFs, arXiv, J-STAGE, publisher pages and NASA and ESA programme pages, for combinations of Earth visibility, DTE, relay, blackout or radio shadow with rover, teleoperation, autonomy, fleet, logistics, throughput, delay and simulation, and followed the reference lists of the closest papers. ScienceDirect and IEEE paywalls limited what we could read; the 2025 Earth-visibility study [17] and Gl&auml;ser and colleagues' 2018 paper were read as abstracts only. Within those limits three things hold. Site fractions, relay coverage and single-rover planning around link gaps are published (Table 1). No published model takes terrain-masked link windows along real routes to the availability of a teleoperated or supervised fleet and from there to cargo throughput and delay. No study states a break-even between relay coverage, an autonomy upgrade, extra rovers and a surface mast. Our confidence that this coupling is new is medium: the residual risk is a 2025&ndash;2026 paper in a venue we could not search.</p>
+
+<p class="tabcap" id="r1-tab-prior"><b>Table 1.</b> What the closest prior work models. A tick means the work models the feature; a dash means it does not; &ldquo;partly&rdquo; is explained in the text. &ldquo;Windows&rdquo; means a time series of link states, not only a long-run fraction.</p>
+<table class="small">
+<tr><th>Work</th><th>Terrain-masked Earth visibility</th><th>Windows in time</th><th>Along rover routes</th><th>Relay coverage</th><th>Autonomy levels</th><th>Fleet and cargo outputs</th><th>Break-even between fixes</th></tr>
+<tr><td>Bryant 2009 [1]</td><td>&#10003;</td><td>&ndash;</td><td>&ndash;</td><td>argued, not modelled</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
+<tr><td>De Rosa et al. 2012 [2]</td><td>&#10003;</td><td>&#10003; (window lengths)</td><td>&ndash;</td><td>&ndash;</td><td>argued, not modelled</td><td>&ndash;</td><td>&ndash;</td></tr>
+<tr><td>LOLA visibility maps [12]</td><td>&#10003;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
+<tr><td>Site selection [8, 9, 16]</td><td>&#10003;</td><td>partly (calendar)</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
+<tr><td>LCRNS [10, 18]</td><td>line of sight to Earth's centre</td><td>partly (yearly averages reported)</td><td>&ndash;</td><td>&#10003;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
+<tr><td>Surface relays [3, 4]</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&#10003; (surface station)</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
+<tr><td>VIPER planning [6]</td><td>&#10003;</td><td>&#10003;</td><td>&#10003; (one rover)</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
+<tr><td>Otten et al. 2017 [7]</td><td>&#10003;</td><td>&#10003;</td><td>&#10003; (one rover)</td><td>&ndash;</td><td>&#10003;</td><td>&ndash;</td><td>&ndash;</td></tr>
+<tr><td>Inoue and Adachi 2021 [13]</td><td>&#10003;</td><td>&#10003;</td><td>&#10003; (one rover)</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
+<tr><td>Campaign and base models [25&ndash;30]</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>partly</td><td>&ndash;</td></tr>
+<tr><td>Our versions 2 and 3 [14, 33]</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&#10003; (latency only)</td><td>&#10003;</td><td>&ndash;</td></tr>
+<tr><td><b>This paper</b></td><td>&#10003;</td><td>&#10003;</td><td>&#10003; (182 legs)</td><td>&#10003; (parametric)</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td></tr>
+</table>
+
+
+<h2 id="r1-sec-data">3. Data and model</h2>
+
+<p>This section describes how we computed the link windows (3.1&ndash;3.5), how we checked them against the published map (3.6), and how the simulation uses them (3.7). The data pipeline is <span class="mono">tools/comms/earth_link.py</span>; the reader and the engine rules are in <span class="mono">lunarsim/comms.py</span>.</p>
+
+<h3>3.1 The base, its sites and its routes</h3>
+<p>The base is the one of our previous paper [14], at the flattest high point of NASA Goddard's 5 m LOLA terrain tile of the Connecting Ridge between Shackleton and de Gerlache craters (Site01, 16 &times; 16 km, Measured) [34]: 89.439&deg;S, 222.761&deg;E, 1,957.6 m above the 1,737.4 km reference sphere. Six work sites lie 0.26&ndash;3.96 km away: a cargo depot (DEPOT), a power plant (POWER), a construction site (CONSTR), an oxygen pilot plant (ISRU), a science site (SCI_1) and a permanently shadowed crater (PSR). Two pads, A and B, sit at each of five standoffs, 0.5, 1, 2, 3 and 5 km; Table 2 of [14] gives the placement rule and every coordinate. ESA's candidate landing region CR1 [2] is 0.9 km from our base.</p>
+
+<p>With seven sites and ten pads there are 182 directed legs: 42 between sites and 140 between a site and a pad. For each leg we take the slope-only A* route of the driving expert of [14], which is also the expert's night route, sample it every 100 m and snap the samples to the centres of 20 m posts, so routes that share a corridor share cells: 2,404 route cells in all. A leg's end points are the site positions. The two directions of a leg are kept apart, because ties in the A* search can give different routes: BASE&rarr;DEPOT is linked 43.1% of the time and DEPOT&rarr;BASE 46.7% (criterion any_part, Section 3.4). The engine's driving tables use routes that depend on the lighting case [14]; the link file uses the slope-only route for every lighting case (Assumed).</p>
+
+<h3>3.2 Ephemeris</h3>
+<p>Earth's direction comes from NAIF's SPICE toolkit [36] through SpiceyPy [37], with the generic kernels <span class="mono">de440s.bsp</span> [38], <span class="mono">moon_pa_de440_200625.bpc</span>, <span class="mono">moon_de440_250416.tf</span>, <span class="mono">pck00011.tpc</span> and <span class="mono">naif0012.tls</span>. We work in MOON_ME, which these kernels realise as MOON_ME_DE440_ME421, the DE421 mean-Earth frame in which the LOLA products are given [35]. For BASE, the routine <span class="mono">azlcpo</span> gives Earth's azimuth, elevation and range with light-time and stellar-aberration corrections (<span class="mono">LT+S</span>), the apparent direction for an observer with no atmosphere, every 10 minutes from 2028-01-01 00:00 to 2031-12-31 23:50 UTC (210,384 epochs).</p>
+
+<p>For every other point we translate BASE's Earth vector by the point's offset and compute azimuth and elevation in the point's own local frame; against <span class="mono">azlcpo</span> run for each point, the largest difference over 2,169 test epochs is 6 &times; 10<sup>&minus;14</sup> degrees. Earth's apparent radius is the arcsine of 6,378.1366 km (the equatorial radius of <span class="mono">pck00011</span>, Spec) over the range. The grid bearing of a direction is its local azimuth plus the point's east longitude, because the pack's polar stereographic map preserves angles. Over 2028&ndash;2031 Earth's grid bearing at BASE spans &minus;8.05&deg; to +8.03&deg; and its elevation &minus;7.54&deg; to +6.23&deg; (Modelled).</p>
+
+<p>A check against JPL Horizons [39] for one month at BASE (January 2028 at 10-minute steps, 4,465 epochs, airless apparent quantities, Earth from DE441) gives largest differences of 1.0 &times; 10<sup>&minus;6</sup> degrees in azimuth, 5.5 &times; 10<sup>&minus;7</sup> degrees in elevation and 0.0006 arcseconds in Earth's apparent diameter, far below the 0.1&deg; step of our horizon masks.</p>
+
+<h3>3.3 Horizon masks</h3>
+<p>Earth stays in a wedge 16&deg; wide, so we compute the terrain horizon only there: grid bearings within 12&deg; of the middle of Earth's range at BASE, in 0.1&deg; steps. For each point and bearing the horizon is the largest elevation angle of the terrain along a straight map ray, computed exactly on the 1,737.4 km sphere so that the Moon's curvature is included. Out to 8 km the terrain is the floating-point 5 m tile [34]. From 8 to 300 km it is the 80 m polar model LDEM_80S_80MPP_ADJ of PGDA product 90 (Measured) [35], read in a window of 1,763 &times; 3,954 posts toward Earth; terrain beyond its 80&deg;S edge, 303 km from the pole, is not included. Where the two models overlap they differ by &minus;0.01 m on average, with an RMS of 1.24 m over 361 posts.</p>
+
+<p>The far field matters for a high site. BASE is 1.96 km above the reference sphere, so its smooth-sphere horizon dips 2.7&deg; below the horizontal, and a feature 3 km above BASE stays above that dip out to about 210 km (Modelled). Antennas are 2.5 m above the ground for a rover at sites, pads and route samples, and 10 m for a mast at BASE (both Assumed; the mast follows the 10 m boom of NASA Glenn's surface relay concept [3]). Unit tests check the geometry against known answers: the analytic dip on a smooth sphere, the exact elevation of a wall, and windows at the analytic crossings for a sinusoidal Earth, with link fractions correct to 2 &times; 10<sup>&minus;3</sup>.</p>
+
+<h3>3.4 Link criteria and modes</h3>
+<p>A point is linked at an epoch when Earth's disc clears the terrain horizon <i>h</i> at Earth's grid bearing. Under <b>any_part</b> the upper limb is above <i>h</i> (elevation plus apparent radius &gt; <i>h</i>), the criterion of the LOLA visibility maps [12]. Under <b>centre+0.5&deg;</b> and <b>centre+2&deg;</b> Earth's centre is at least 0.5&deg; or 2&deg; above <i>h</i>; 2&deg; is De Rosa and colleagues' minimum elevation [2]. Earth's apparent radius is 0.9&ndash;1.0&deg;, so the criteria sit about 1.5&deg; and 3&deg; of elevation apart. They are geometric. Near grazing a radio link also loses power to diffraction: at X-band (wavelength 3.6 cm, Assumed) the first Fresnel zone past an obstacle has a radius of about 6 m at 1 km and 19 m at 10 km (Modelled, &radic;(&lambda;<i>d</i>)), so a link that clears a ridge by less may be degraded. The centre criteria bracket that loss; we compute no link budget. E21 uses any_part and tests the other two in stage C.</p>
+
+<p>In mode <b>dte</b> a point is linked when Earth is in view of its own antenna. In mode <b>dte+mast</b> it is also linked when its antenna has line of sight to the top of the 10 m mast at BASE within 10 km while the mast sees Earth by the same criterion (line of sight on the 5 m tile with curvature, as in [14]; range Assumed after [3]). A leg is linked only when every sample on its route is linked, because a teleoperated drive needs the link from start to end. The rule is strict: one blind cell darkens a whole leg.</p>
+
+<p>Windows are stored run-length encoded per point, leg, criterion and mode at 10-minute resolution, with the sha256 of every kernel and terrain file and the checks of Sections 3.2 and 3.6, in a 383 KB file (<span class="mono">data/comms/connecting_ridge/earth_link-v1.json</span>). A 490 KB companion file holds hourly windows for every route sample, an hour counting as linked only if all six of its 10-minute epochs are; the engine uses it to place supervised interventions (Section 3.7). Each stage of the pipeline ran in one process in 2&ndash;366 s with at most 281 MB of memory.</p>
+
+<h3>3.5 Link windows per site and per leg</h3>
+<p>Table 2 gives every site and pad. A rover antenna at BASE sees some part of Earth 59.3% of the time, in windows of 16.0 days on average separated by gaps of 264 h on average and 296 h at most. Under the centre criteria the fraction is 52.1% and 44.7% and the mean window 14.1 and 12.1 days. Window length tracks the link fraction times the 27.2-day period of Earth's elevation cycle, so the ~14 days of De Rosa and colleagues [2] corresponds to a site linked about half the time. The year matters: averaged hourly over 18.6 years BASE is linked 58.0% of the time, and single years range from 54.6% to 62.6% (Modelled). This is why E21 rotates the start year (Section 4.3).</p>
+
+<p>Three sites are poor. The oxygen pilot plant never sees Earth. The science site sees some part of it 8.5% of the time, at rare moments of peak libration, with gaps of up to 7,929 h (330 days), and never under the centre criteria. The shadowed crater sees part of Earth 12.3% of the time and never its centre; shadowed ground can see Earth because Earth climbs to about 7&deg; above the horizon [1] while at the pole the Sun stays within about 1.5&deg; of it [14]. The pads vary as much. At 0.5 km pad A is linked 59.6% of the time and pad B 52.5%; at 1 km, the standoff of E21, 51.8% and 28.6%; at 2 km pad A only 8.0%; at 3 and 5 km all four pads are below 36%.</p>
+
+<p>A 10 m mast at BASE is itself linked 59.7% of the time. It lifts the depot, the power and construction sites, both pads at 0.5 km and pad A at 1 km to its own 59.7%. It has no line of sight to the oxygen plant, the science site, the shadowed crater, pad B at 1 km or any pad at 2 km or more, and leaves them as they were.</p>
+
+<p class="tabcap" id="r1-tab-sites"><b>Table 2.</b> Earth-link fractions at the sites and pads, 2028&ndash;2031, 10-minute epochs, rover antenna 2.5 m above the ground (Modelled from SPICE ephemerides and LOLA terrain). Gaps are the intervals between windows; &ldquo;never&rdquo; means no link in the four years. Distances to the base are from [14]. The last column adds a 10 m mast at BASE with a 10 km range; the mast itself is linked 0.597 (any part), 0.525 and 0.450 of the time.</p>
+<table class="small">
+<tr><th>Point</th><th class="num">Distance to base (km)</th><th class="num">Any part: fraction</th><th class="num">Mean gap (h)</th><th class="num">Max gap (h)</th><th class="num">Mean window (d)</th><th class="num">Centre +0.5&deg;</th><th class="num">Centre +2&deg;</th><th class="num">Any part, with mast</th></tr>
+<tr><td>BASE</td><td class="num">&ndash;</td><td class="num">0.593</td><td class="num">264</td><td class="num">296</td><td class="num">16.0</td><td class="num">0.521</td><td class="num">0.447</td><td class="num">0.597</td></tr>
+<tr><td>CONSTR</td><td class="num">0.26</td><td class="num">0.578</td><td class="num">274</td><td class="num">304</td><td class="num">15.6</td><td class="num">0.507</td><td class="num">0.434</td><td class="num">0.597</td></tr>
+<tr><td>DEPOT</td><td class="num">0.40</td><td class="num">0.470</td><td class="num">344</td><td class="num">380</td><td class="num">12.7</td><td class="num">0.397</td><td class="num">0.312</td><td class="num">0.597</td></tr>
+<tr><td>POWER</td><td class="num">0.73</td><td class="num">0.596</td><td class="num">262</td><td class="num">292</td><td class="num">16.1</td><td class="num">0.524</td><td class="num">0.449</td><td class="num">0.597</td></tr>
+<tr><td>ISRU</td><td class="num">1.16</td><td class="num">0.000</td><td class="num">never</td><td class="num">never</td><td class="num">&ndash;</td><td class="num">0.000</td><td class="num">0.000</td><td class="num">0.000</td></tr>
+<tr><td>SCI_1</td><td class="num">2.14</td><td class="num">0.085</td><td class="num">746</td><td class="num">7,929</td><td class="num">2.9</td><td class="num">0.000</td><td class="num">0.000</td><td class="num">0.085</td></tr>
+<tr><td>PSR</td><td class="num">3.96</td><td class="num">0.123</td><td class="num">559</td><td class="num">602</td><td class="num">3.3</td><td class="num">0.000</td><td class="num">0.000</td><td class="num">0.123</td></tr>
+<tr><td>PAD_A at 0.5 km</td><td class="num">0.48</td><td class="num">0.596</td><td class="num">262</td><td class="num">292</td><td class="num">16.1</td><td class="num">0.524</td><td class="num">0.450</td><td class="num">0.597</td></tr>
+<tr><td>PAD_B at 0.5 km</td><td class="num">0.48</td><td class="num">0.525</td><td class="num">309</td><td class="num">342</td><td class="num">14.2</td><td class="num">0.454</td><td class="num">0.377</td><td class="num">0.597</td></tr>
+<tr><td>PAD_A at 1 km</td><td class="num">0.98</td><td class="num">0.518</td><td class="num">313</td><td class="num">345</td><td class="num">14.0</td><td class="num">0.448</td><td class="num">0.372</td><td class="num">0.597</td></tr>
+<tr><td>PAD_B at 1 km</td><td class="num">1.03</td><td class="num">0.286</td><td class="num">455</td><td class="num">492</td><td class="num">7.7</td><td class="num">0.177</td><td class="num">0.000</td><td class="num">0.286</td></tr>
+<tr><td>PAD_A at 2 km</td><td class="num">2.10</td><td class="num">0.080</td><td class="num">827</td><td class="num">8,595</td><td class="num">3.1</td><td class="num">0.000</td><td class="num">0.000</td><td class="num">0.080</td></tr>
+<tr><td>PAD_B at 2 km</td><td class="num">2.07</td><td class="num">0.488</td><td class="num">332</td><td class="num">369</td><td class="num">13.2</td><td class="num">0.414</td><td class="num">0.330</td><td class="num">0.488</td></tr>
+<tr><td>PAD_A at 3 km</td><td class="num">2.91</td><td class="num">0.249</td><td class="num">479</td><td class="num">516</td><td class="num">6.7</td><td class="num">0.112</td><td class="num">0.000</td><td class="num">0.249</td></tr>
+<tr><td>PAD_B at 3 km</td><td class="num">3.04</td><td class="num">0.076</td><td class="num">876</td><td class="num">11,837</td><td class="num">3.1</td><td class="num">0.000</td><td class="num">0.000</td><td class="num">0.076</td></tr>
+<tr><td>PAD_A at 5 km</td><td class="num">4.94</td><td class="num">0.354</td><td class="num">412</td><td class="num">451</td><td class="num">9.6</td><td class="num">0.268</td><td class="num">0.138</td><td class="num">0.354</td></tr>
+<tr><td>PAD_B at 5 km</td><td class="num">4.99</td><td class="num">0.251</td><td class="num">478</td><td class="num">516</td><td class="num">6.8</td><td class="num">0.112</td><td class="num">0.000</td><td class="num">0.251</td></tr>
+</table>
+
+<p>Legs are worse than their end points, because a route can pass behind terrain between two linked sites. Of the 182 legs, 101 are never linked from end to end under any_part and 138 under either centre criterion. Of the 42 legs between sites, 13 are never linked: the twelve legs to or from the oxygen plant, and PSR&rarr;POWER (POWER&rarr;PSR is linked 12.3% of the time). BASE&rarr;DEPOT, 408 m between sites linked 59% and 47% of the time, is linked 43.1%. Every leg that touches the science site or the crater is linked at most 12.3% of the time, and never under the centre criteria. Pad legs beyond 2 km are almost never linked (Table 3). In the network E21 uses, the seven sites and the two pads at 1 km (70 legs), 28 legs are never linked under any_part and 50 under the centre criteria, and the mean leg is linked 17.4% of the time, 19.5% with the mast (Modelled).</p>
+
+<p class="tabcap" id="r1-tab-padlegs"><b>Table 3.</b> Legs between a site and a pad, grouped by standoff: mean link fraction over the 28 legs of each standoff (seven sites, two pads, two directions), and in brackets the number of legs never linked from end to end in 2028&ndash;2031 (Modelled).</p>
+<table class="small">
+<tr><th class="num">Standoff (km)</th><th class="num">Any part</th><th class="num">Centre +0.5&deg;</th><th class="num">Centre +2&deg;</th><th class="num">Any part, with mast</th></tr>
+<tr><td class="num">0.5</td><td class="num">0.334 (4 of 28)</td><td class="num">0.263 (12)</td><td class="num">0.219 (12)</td><td class="num">0.371 (4)</td></tr>
+<tr><td class="num">1</td><td class="num">0.156 (15)</td><td class="num">0.119 (20)</td><td class="num">0.096 (20)</td><td class="num">0.171 (15)</td></tr>
+<tr><td class="num">2</td><td class="num">0.129 (14)</td><td class="num">0.088 (20)</td><td class="num">0.051 (20)</td><td class="num">0.129 (14)</td></tr>
+<tr><td class="num">3</td><td class="num">0.000 (28)</td><td class="num">0.000 (28)</td><td class="num">0.000 (28)</td><td class="num">0.000 (28)</td></tr>
+<tr><td class="num">5</td><td class="num">0.003 (27)</td><td class="num">0.000 (28)</td><td class="num">0.000 (28)</td><td class="num">0.003 (27)</td></tr>
+</table>
+
+<h3>3.6 Validation against the published Earth-visibility map</h3>
+<p>The LOLA team's 60 m map AVGVISIB_85S_060M_201608_EARTH gives, for each pixel, the fraction of hourly steps over 18.6 years in which any part of Earth's disc is visible from the surface [12, 40]. At BASE it gives 0.503; our rover antenna on the 5 m tile gives 0.593. Before comparing we had set a tolerance of &plusmn;0.05 for differences of criterion and epoch. Because the two numbers answer different questions, we also ran our pipeline the map's way: antenna at the surface, the 5 m tile averaged to the map's 60 m pixels, and the horizon computed at each pixel centre. That gives 0.471 at BASE, 0.032 below the map and inside the tolerance.</p>
+
+<p>Over all 17 points the map's way differs from the map by &minus;0.004 on average and 0.028 in absolute value, and 15 points are within 0.05 (Table 4). The two outliers, pad A at 1 km (&minus;0.083) and pad A at 3 km (&minus;0.123), sit where neighbouring map pixels span 0.43&ndash;0.58 and 0&ndash;0.33, so a fraction of a pixel of registration moves them by more than the difference. Registration matters at BASE too: we read the label's offsets of 2,528.5 as zero-based pixel-centre coordinates, which centres the image on the pole; the other reading moves the map's value at BASE to 0.58.</p>
+
+<p>The remaining 0.032 at BASE is the size of the scatter over all points, and we have not separated its causes. Epoch is not one of them: over a full 18.6-year cycle our own BASE fraction at 2.5 m is 0.580, 0.013 below the 2028&ndash;2031 value, which would widen the gap rather than close it. Likelier causes are how steep relief inside a 60 m pixel on a ridge crest is averaged, registration, and the terrain behind the map, which predates the 2021 and 2023 models we use.</p>
+
+<p>The larger difference, 0.593 against 0.503, is the antenna. BASE is a ridge crest. At 0 m on the 5 m tile, relief within a few metres of the point raises the horizon toward Earth to +2.9&deg;, and the fraction is 0.384. At 2.5 m the antenna clears that relief, the horizon at Earth's mean bearing drops to &minus;1.26&deg;, set by terrain beyond 8 km, and the fraction is 0.593; a 10 m mast gets 0.597. The 60 m map smooths the metre-scale relief and falls between the two. At 16 of our 17 points the 2.5 m antenna sees Earth at least as often as the map's way, by up to 0.25 (pad A at 3 km); at the other, pad A at 5 km, it sees it 0.007 less often. A surface-level map therefore understates what a rover antenna sees at a crest, where the height of the antenna matters more than the resolution of the map.</p>
+
+<p class="tabcap" id="r1-tab-avgvisib"><b>Table 4.</b> Our link fractions against the LOLA average Earth-visibility map at 60 m [12, 40] (any part of the disc). &ldquo;Map&rdquo; is the pixel containing the point and &ldquo;3 &times; 3&rdquo; the range over its neighbours. &ldquo;Ours, map's way&rdquo; is our pipeline at the surface on the 5 m tile averaged to 60 m pixels; &ldquo;Ours, 2.5 m&rdquo; is the rover antenna on the 5 m tile, the value the engine uses. Ours cover 2028&ndash;2031; the map covers 18.6 years.</p>
+<table class="small">
+<tr><th>Point</th><th class="num">Map</th><th class="num">Map, 3 &times; 3 range</th><th class="num">Ours, map's way</th><th class="num">Map's way &minus; map</th><th class="num">Ours, 2.5 m</th></tr>
+<tr><td>BASE</td><td class="num">0.503</td><td class="num">0.411&ndash;0.580</td><td class="num">0.471</td><td class="num">&minus;0.032</td><td class="num">0.593</td></tr>
+<tr><td>DEPOT</td><td class="num">0.370</td><td class="num">0.217&ndash;0.438</td><td class="num">0.374</td><td class="num">+0.004</td><td class="num">0.470</td></tr>
+<tr><td>POWER</td><td class="num">0.572</td><td class="num">0.391&ndash;0.581</td><td class="num">0.588</td><td class="num">+0.016</td><td class="num">0.596</td></tr>
+<tr><td>CONSTR</td><td class="num">0.522</td><td class="num">0.000&ndash;0.579</td><td class="num">0.505</td><td class="num">&minus;0.017</td><td class="num">0.578</td></tr>
+<tr><td>ISRU</td><td class="num">0.000</td><td class="num">0.000&ndash;0.000</td><td class="num">0.000</td><td class="num">0.000</td><td class="num">0.000</td></tr>
+<tr><td>SCI_1</td><td class="num">0.000</td><td class="num">0.000&ndash;0.425</td><td class="num">0.000</td><td class="num">0.000</td><td class="num">0.085</td></tr>
+<tr><td>PSR</td><td class="num">0.113</td><td class="num">0.000&ndash;0.373</td><td class="num">0.099</td><td class="num">&minus;0.014</td><td class="num">0.123</td></tr>
+<tr><td>PAD_A at 0.5 km</td><td class="num">0.582</td><td class="num">0.582&ndash;0.582</td><td class="num">0.596</td><td class="num">+0.014</td><td class="num">0.596</td></tr>
+<tr><td>PAD_B at 0.5 km</td><td class="num">0.348</td><td class="num">0.202&ndash;0.438</td><td class="num">0.394</td><td class="num">+0.046</td><td class="num">0.525</td></tr>
+<tr><td>PAD_A at 1 km</td><td class="num">0.496</td><td class="num">0.432&ndash;0.581</td><td class="num">0.413</td><td class="num">&minus;0.083</td><td class="num">0.518</td></tr>
+<tr><td>PAD_B at 1 km</td><td class="num">0.262</td><td class="num">0.000&ndash;0.277</td><td class="num">0.278</td><td class="num">+0.016</td><td class="num">0.286</td></tr>
+<tr><td>PAD_A at 2 km</td><td class="num">0.057</td><td class="num">0.000&ndash;0.087</td><td class="num">0.080</td><td class="num">+0.023</td><td class="num">0.080</td></tr>
+<tr><td>PAD_B at 2 km</td><td class="num">0.414</td><td class="num">0.000&ndash;0.579</td><td class="num">0.446</td><td class="num">+0.032</td><td class="num">0.488</td></tr>
+<tr><td>PAD_A at 3 km</td><td class="num">0.123</td><td class="num">0.000&ndash;0.334</td><td class="num">0.000</td><td class="num">&minus;0.123</td><td class="num">0.249</td></tr>
+<tr><td>PAD_B at 3 km</td><td class="num">0.051</td><td class="num">0.032&ndash;0.083</td><td class="num">0.062</td><td class="num">+0.011</td><td class="num">0.076</td></tr>
+<tr><td>PAD_A at 5 km</td><td class="num">0.340</td><td class="num">0.000&ndash;0.361</td><td class="num">0.361</td><td class="num">+0.021</td><td class="num">0.354</td></tr>
+<tr><td>PAD_B at 5 km</td><td class="num">0.231</td><td class="num">0.212&ndash;0.241</td><td class="num">0.249</td><td class="num">+0.018</td><td class="num">0.251</td></tr>
+<tr><td><b>Mean over 17</b></td><td class="num"></td><td class="num"></td><td class="num"></td><td class="num">&minus;0.004 (|&Delta;| 0.028)</td><td class="num"></td></tr>
+</table>
+
+<h3>3.7 The engine and its link rule</h3>
+<p>LunarHaul is the discrete-event simulation of version 2 [33] with the terrain, driving and landing models of version 3 [14], where it is described in full. A run covers one year (8,760 h). Cargo moves between the seven sites and the two pads of the chosen standoff. Landers arrive as Poisson processes, bulk regolith flows add recurring lots, and a fleet owned by several companies moves the items under the pooled marketplace rule of [33]. Each leg's time, energy and intervention count are drawn from the driving tables of [14]; an intervention costs the round trip (5.0 s by default: 2.6 s of light time and 2.4 s of ground processing) plus 300 s of recovery (Assumed in [14]). A shared pool of Earth operators gives a teleoperated vehicle one operator, a supervised vehicle a quarter of one and an autonomous vehicle 0.05 (Assumed in [33]). The night is a 708.7 h cycle with a dark fraction of 0.15 from hour 0 of each run, not phased with the real Sun. Demand and operations draw from separate seeded streams, so every variant of a cell meets the same landings, manifests and faults for a given seed (common random numbers).</p>
+
+<p>The link rule is a new optional scenario field, <span class="mono">comms</span>. When it is unset the engine never builds the link model and runs the version-3 code. When it is set, the engine reads the windows of Section 3.4 and applies the rules of Table 5. Engine hour 0 maps to 1 January of the run's start year; times past the end of 2031 wrap around to the start of the series.</p>
+
+<p class="tabcap" id="r1-tab-rules"><b>Table 5.</b> The engine's link rules (<span class="mono">lunarsim/comms.py</span>). &ldquo;Linked&rdquo; means linked under the chosen criterion and mode: DTE only, DTE or relay, or DTE or mast. The rules are Modelled; the parameters marked Assumed are ours.</p>
+<table class="small">
+<tr><th>Element</th><th>Rule</th><th>Flag and basis</th></tr>
+<tr><td>Teleoperated vehicle</td><td>Starts a drive, a loading or an unloading only while the leg (every 100 m sample) or the site is linked. If the link drops during a drive, the rover parks and resumes at the next link-up. A wait before a segment becomes a stationary segment; a wait during one lengthens it. Every wait is logged.</td><td>Modelled; the JSC trials assumed a continuous link [5]</td></tr>
+<tr><td>Supervised, <i>strict</i></td><td>As teleoperated.</td><td>Modelled; the conservative policy criticised in [7]</td></tr>
+<tr><td>Supervised, <i>strategic</i></td><td>Drives without a link. Each intervention (its count drawn from the driving tables for the leg) is placed at a route sample drawn uniformly and waits for that sample's next hourly link-up. Planning does not foresee these waits.</td><td>Modelled after [7]; uniform placement Assumed</td></tr>
+<tr><td>Supervised, <i>strategic+avoid</i></td><td>As strategic, with a look-ahead. Before a job is committed, every route sample is checked at the time the rover would pass it. If an intervention there would wait longer than the deferral limit, the job is deferred to that link-up. Routes with a never-linked sample are never taken.</td><td>Modelled</td></tr>
+<tr><td>Autonomous vehicle</td><td>Not affected.</td><td>Modelled</td></tr>
+<tr><td>Relay (<i>dte+relay</i>)</td><td>An on&ndash;off process independent of DTE with availability <i>p</i>: gaps exponential with mean 7.67 h, up periods exponential with mean 7.67 <i>p</i>/(1 &minus; <i>p</i>) h, from its own random stream. A point is linked when DTE or the relay is up. The relay sees every route point. Latency is unchanged.</td><td>Gap Modelled from one LCRNS DRM-0 satellite, 460 of every 784 min out of view [10]; no relay terrain masks: Assumed</td></tr>
+<tr><td>Mast (<i>dte+mast</i>)</td><td>Uses the mast windows of Section 3.4 (BASE, 10 m, 10 km).</td><td>Assumed after [3]</td></tr>
+<tr><td>Operators</td><td>A vehicle's operator demand counts only while its current leg or site is linked. The admission check at the start of a job sees only the demand linked at that moment, so link-ups can bunch demand. Operator hours count linked demand-hours.</td><td>Modelled</td></tr>
+<tr><td>Deferral</td><td>A job whose planned wait for a link exceeds a limit (24 h by default) is not committed. The rover stays free, and dispatch is woken at the link-up. With no limit the rover parks with the job until the link comes.</td><td>Assumed; swept in stage C (12 h, 72 h, none)</td></tr>
+<tr><td>Never-linked jobs</td><td>A job whose wait is infinite is given an infinite duration, so dispatch avoids it; if one still reaches the start of a job it is refused and counted. When every vehicle in the fleet needs a link, items whose delivery leg is never linked leave the candidate list.</td><td>Modelled</td></tr>
+<tr><td>Pad-to-pad legs</td><td>Not in the link file; linked when both end points are linked.</td><td>Assumed</td></tr>
+</table>
+
+<p>Three rules need a reason. The <b>deferral limit</b> exists because, without it, rovers in development runs sat loaded at pads for months waiting for a link. DTE windows are predictable from the ephemeris, so an operator would schedule such a job for the next window rather than reserve a rover; 24 h is our choice of how long a wait justifies reserving one. The <b>look-ahead</b> of strategic+avoid replaced a static rule that compared each sample's long-run expected wait, &Sigma;<i>g</i>&sup2;/(2&Sigma;<i>g</i>) over its gaps <i>g</i>, with the limit. That rule is degenerate here: under DTE the worst sample of every leg waits 160&ndash;1,270 h or never links, so a 24 h limit forbids all supervised driving, while with any relay the expected wait is capped near the relay's gap and the rule changes nothing. The <b>relay gap</b> of 7.67 h fixes the structure of coverage. The relay is up for 0.85 h at a time on average at <i>p</i> = 0.1, shorter than many drives, for 7.67 h at <i>p</i> = 0.5 and for 69 h at <i>p</i> = 0.9. One DRM-0 satellite corresponds to <i>p</i> &asymp; 0.41 [10]. LCRNS's 80&ndash;86% for DTE plus one relay [10] is combined coverage; at a site that DTE links half the time it corresponds to a relay alone at <i>p</i> &asymp; 0.6&ndash;0.7 if the two are independent (Modelled). The relay hop adds at most about 0.065 s one way (Section 2.2), so the round trip stays at 5.0 s.</p>
+
+<p>With the rule on, delivered mass counts only deliveries completed inside the year, because the engine books a delivery at pickup and a blackout can push the drop-off past the end of the year. The summary gains the blackout wait in vehicle-hours by autonomy level, the counts of jobs delayed, refused, deferred and avoided, the peak of linked operator demand, and the use-weighted linked share of the legs driven.</p>
+
+<p>The rule leaves the engine unchanged when it is off or idle. With <span class="mono">comms</span> and the other optional fields unset, the output is byte-identical to version 2's, the check of [14]. With the link always up, the canonical md5 of the Phase-2 reference comparison over three seeds is the version-2 baseline's (739e9ba72c1563f4ae508ebc1dfd9938), and under three dispatch rules the rule off, the link always up and a relay at <i>p</i> = 1 give identical results. The link rules draw from their own seeded streams, so the demand and operations streams are untouched. Twenty-five unit test functions cover the data and the rules (<span class="mono">tests/test_comms_data.py</span>, <span class="mono">tests/test_comms_engine.py</span>).</p>
+
+<h2 id="r1-sec-e21">4. Experiment E21</h2>
+
+<h3>4.1 Scenario and fleet</h3>
+<p>Every E21 cell starts from the Phase-2 reference scenario of [33, 14] on the terrain: four CLPS-class, three MK1-class and one large landing a year; two bulk regolith flows from the construction site, 300 t a year to the base and 200 t a year to the oxygen plant, in 1 t lots; pads at 1 km; the version-1 driving tables; the classical landing model of [14]; the marketplace rule; the criterion any_part; and a deferral limit of 24 h. The reference fleet has six vehicles owned by NASA and three companies: three LTV-class rovers and a 10 t hauler under supervised autonomy, and a micro-rover and an LTV-class rover teleoperated at the default 5.0 s round trip. Earth operators number max(3, &lfloor;<i>n</i>/2&rfloor;) for <i>n</i> vehicles, three for six or seven vehicles and four for eight or nine. Because the oxygen plant never sees Earth (Table 2), no teleoperated or strictly supervised rover can deliver the regolith bound for it under DTE alone; the experiment measures what else is lost and what each fix recovers.</p>
+
+<p>Six autonomy mixes replace the vehicles' autonomy levels and keep the vehicles: <i>teleop 4 s</i> (every vehicle teleoperated at a 4 s round trip), <i>default</i> (the reference fleet as above), <i>supervised strict</i>, <i>supervised strategic</i> and <i>supervised strategic+avoid</i> (every vehicle supervised under that policy), and <i>autonomous</i> (every vehicle autonomous).</p>
+
+<h3>4.2 Stages</h3>
+<p>E21 runs in three stages (Table 6). <b>Stage A</b> crosses the link regime with the six mixes: always linked, DTE only, and DTE plus a relay at coverage 0.1, 0.2, 0.3, 0.4, 0.5, 0.8, 0.9 and 1.0. The levels 0.1&ndash;0.4 were added after a two-seed pilot put the knee of the throughput curve at 0.5, then the lowest relay level. <b>Stage B</b> asks what else buys back the link. On an all-supervised fleet, at DTE only and at relay coverage 0.5, it adds 0&ndash;3 supervised LTV-class rovers, a 10 m mast at BASE or none, and the strict or the strategic policy. We had planned stage B at the knee of the stage A throughput curve, the smallest coverage reaching 95% of full-coverage throughput (Assumed share). In stage A that knee was the lowest level tested (p&nbsp;=&nbsp;0.1), so it does not discriminate, and we fixed stage B at <i>p</i> = 0.5, the middle of the urgent-delay curve, after stage A and before running stage B. <b>Stage C</b> tests sensitivity at three stage A cells: pad standoff {0.5, 1, 3 km} crossed with the link criterion at the 24 h limit, and the limit itself {12 h, 72 h, none} at 1 km and any_part.</p>
+
+<p class="tabcap" id="r1-tab-stages"><b>Table 6.</b> The stages of E21. All cells use the Phase-2 reference scenario on the terrain with the marketplace rule, 20 seeds and one simulated year per seed. Settings not listed are those of Section 4.1.</p>
+<table class="small">
+<tr><th>Stage</th><th>Question</th><th>Factors and levels</th><th class="num">Cells &times; seeds</th><th>Output</th></tr>
+<tr><td>A. Link regime &times; autonomy</td><td>RQ2, RQ4</td><td>Link {always; DTE; DTE + relay <i>p</i> &isin; {0.1, 0.2, 0.3, 0.4, 0.5, 0.8, 0.9, 1.0}} &times; mix {teleop 4 s, default, supervised strict, supervised strategic, supervised strategic+avoid, autonomous}</td><td class="num">60 &times; 20</td><td><span class="mono">E21a_comms_autonomy.csv</span></td></tr>
+<tr><td>B. Break-evens</td><td>RQ3</td><td>Link {DTE; DTE + relay <i>p</i> = 0.5} &times; extra supervised LTVs {0, 1, 2, 3} &times; mast {none; BASE 10 m} &times; supervised policy {strict, strategic}; all-supervised fleet</td><td class="num">32 &times; 20</td><td><span class="mono">E21b_breakeven.csv</span></td></tr>
+<tr><td>C. Sensitivity</td><td>RQ4</td><td>At (DTE, default), (DTE, teleop 4 s), (relay 0.8, supervised strict): pads {0.5, 1, 3 km} &times; criterion {any_part, centre+0.5&deg;, centre+2&deg;} with deferral 24 h; plus deferral {12 h, 72 h, none} at 1 km and any_part</td><td class="num">36 &times; 20</td><td><span class="mono">E21c_pads_criterion.csv</span></td></tr>
+<tr><td><b>Total</b></td><td></td><td></td><td class="num">128 &times; 20 = 2,560 years</td><td><span class="mono">table_E21.csv</span></td></tr>
+</table>
+
+<h3>4.3 Replications and calendar</h3>
+<p>Every cell runs seeds 0&ndash;19 with common random numbers. As in [14], seed <i>s</i> seeds the demand stream with <i>s</i> and the operations stream with <i>s</i> + 100,003; the link rules draw intervention positions and relay periods from two further streams derived from <i>s</i>. Replication <i>s</i> simulates the year starting on 1 January of 2028 + (<i>s</i> mod 4), so each year of the link series starts five replications and its year-to-year variation (Section 3.5) is part of the spread between seeds. A year in which no urgent item is delivered has no urgent delay; delay means are then taken over the remaining seeds, and the tables give the count.</p>
+
+<h3>4.4 Metrics</h3>
+<p>The primary metrics are the mass delivered inside the simulated year (t/yr), the 90th-percentile and mean delay of urgent (priority 1) items from release to delivery, the share of urgent items delivered within 24 h, and the cost per landed kilogram as defined in [14]. The link metrics are the blackout wait in vehicle-hours, in total and for teleoperated and supervised vehicles; the numbers of jobs delayed by a wait, refused (never linked), deferred (wait above the limit) and avoided (by the look-ahead); the peak of linked operator demand, the largest hourly mean of concurrent linked demand; operator hours; the linked share of the legs driven; utilisation; and the backlog at the end of the year.</p>
+
+<h3>4.5 Statistics, the delay law and the break-evens</h3>
+<p><b>Cell means</b> carry 95% intervals of 1.96 standard errors over the 20 seeds. <b>Effects</b> are paired: for each comparison, the mean over seeds of the per-seed difference between a cell and its reference cell, on the seeds where both are finite, with a Student-<i>t</i> 95% interval on <i>n</i> &minus; 1 degrees of freedom. The reference depends on the family: DTE or relay against always linked, a supervised policy against strict, extra rovers against none, the mast against none, a standoff against 1 km, a criterion against any_part, and a deferral limit against 24 h (<span class="mono">table_E21_effects.csv</span>).</p>
+
+<p><b>The delay&ndash;coverage law.</b> For each mix we fit the urgent 90th-percentile delay, and separately the mean, against relay coverage on the nine stage A levels (<i>p</i> = 0 is DTE only). The fit is to cell means in log space, because the delay spans more than an order of magnitude, with three forms: hyperbolic, <i>a</i> + <i>b</i>/(<i>p</i> + <i>c</i>); exponential, <i>a</i> + <i>b</i> e<sup>&minus;<i>kp</i></sup>; and power, <i>b</i>(<i>p</i> + <i>c</i>)<sup>&minus;<i>g</i></sup>. We keep the form with the lower five-fold cross-validated RMSE of log delay, with folds of seeds. Parameters, the fitted full-coverage delay <i>f</i>(1) and the coverages at which the delay falls to 2 and 1.5 times <i>f</i>(1) carry percentile intervals from 400 bootstrap resamples of seeds; the two coverages are also read directly off the measured cells (<span class="mono">E21_fit.json</span>, <span class="mono">fig_E21_delay_coverage.csv</span>).</p>
+
+<p><b>Break-evens in throughput.</b> For each option (a relay level, an autonomy step from strict to strategic or to autonomous, one to three extra rovers, the mast) we take its gain in delivered mass over the DTE-only supervised-strict cell. Its relay equivalent is the coverage with the same gain on the stage A curve; its rover equivalent is the number of extra rovers with the same gain on the monotone envelope of the stage B rover cells, both interpolated. That number times one rover's capital cost per year is the break-even relay price: $450 million delivered for an LTV-class rover (a task order plus a lander delivery; Modelled in [33]) over a 10-year life (Assumed), or $45 million a year (<span class="mono">table_E21_breakeven.csv</span>). If extra rovers never reach an option's gain, the equivalent and the price are undefined.</p>
+
+<p><b>Break-evens in delay.</b> At <i>p</i> = 0.5 (stage B) we ask what relay coverage an option is worth in urgent delay. The options are one, two or three extra rovers under the strict policy, the step to the strategic policy, and that step plus one rover. An option's equivalent coverage is the point on the stage A supervised-strict curve where the urgent 90th-percentile delay equals the option's. The curve is the measured cell means, made non-increasing and interpolated log-linearly, because no smooth form fits the slow decline between <i>p</i> = 0.2 and 1 well enough to invert there; the law's answer is kept for comparison. The coverage worth one extra rover, &Delta;<i>p</i>, prices relay coverage at $45 million a year per &Delta;<i>p</i>, reported per 0.1. Intervals come from 400 bootstrap resamples of seeds with the same draw for curve and option; an option that beats the full-coverage cell is reported as &ldquo;beyond full coverage&rdquo;. As a check, the stage B cell with no extra rover must equal the stage A cell at <i>p</i> = 0.5 (<span class="mono">table_E21_breakeven_delay.csv</span>).</p>
+
+<p><b>Operator demand and the throughput bound.</b> For each cell we compare the peak of linked operator demand with its mean (linked operator hours over the year), and flag the cell when the peak exceeds the number of operators in any seed. The comparison point is relay coverage 1.0, whose operations equal those of the always-linked cell but whose demand is booked the linked way (<span class="mono">fig_E21_operator_demand.csv</span>). To bound the throughput loss we count, from each seed's own demand stream, the cargo that becomes ready in the year for destinations never linked under DTE (<span class="mono">E21_demand_by_dest.csv</span>).</p>
+
+<h3>4.6 Compute</h3>
+<p>All runs were made in a single foreground process on the 8 GB laptop of [14], in chunks that stop themselves after 540 s and resume by cell and seed. A two-seed pilot of stage A took 1.85 s per simulated year on average, from 0.32 s for the always-linked cells to 6.2 s for DTE only, with a peak memory of 148 MB. The full experiment took 2.4 h of wall-clock time (stage A 67 min, stage B 32 min, stage C 42 min). Every run record stores the seed, the start year, the cell's settings and the run time.</p>
+
+
+<h2 id="r1-sec-results">5. Results</h2>
+
+<p>All numbers in this section come from experiment E21 (Section 4): 2,560 simulated years, 20 seeds per cell, the
+same seeds in every cell. Differences between cells are paired by seed and carry Student-t 95&nbsp;% intervals;
+the coverage law and the break-evens carry bootstrap intervals over seeds (400 draws). Unless a sentence names
+another fleet, it refers to the reference fleet of Phase 2: six rovers, the marketplace job rule, pads 1&nbsp;km from
+the base, the link criterion &ldquo;any part of Earth's disc&rdquo; and the 24&nbsp;h deferral limit. The plume
+keep-out of v3 is off in E21, so that the link effect is seen alone.</p>
+
+<h3 id="r1-sec-res-map">5.1 Where Earth can be seen</h3>
+
+<p>Figure&nbsp;1 puts the link fractions of Table&nbsp;2 on the map. Four sites on the crest of the ridge (BASE,
+POWER, CONSTR and DEPOT) see Earth about half the time. The oxygen pilot plant (ISRU) sits in a hollow east of the
+base and never sees it in 2028&ndash;2031; the science site SCI_1 and the shadowed crater site PSR see it
+8&ndash;12&nbsp;% of the time, and only in the weeks of largest libration. A route is linked only while every
+100&nbsp;m sample on it sees Earth, so every route to ISRU, SCI_1 or PSR is dark or nearly so, and so is the route
+to pad B, which leaves the ridge.</p>
+
+<figure id="r1-fig-map"><img src="../../figures/r1_fig1_map.png" alt="Map of the base on the LOLA hillshade with each route coloured by the share of 2028-2031 in which Earth is in view along all of it">
+<figcaption><b>Figure 1.</b> Sites, pads at 1&nbsp;km and the slope-only route of every leg on the LOLA 20&nbsp;m
+hillshade, coloured by the share of 2028&ndash;2031 in which any part of Earth's disc is above the terrain horizon
+at every 100&nbsp;m sample of the route (direct-to-Earth links, 2.5&nbsp;m antenna; Modelled from SPICE and LOLA,
+Section&nbsp;3). Labels give each site's own fraction.</figcaption></figure>
+
+<h3 id="r1-sec-res-throughput">5.2 Throughput: a reachability loss</h3>
+
+<p>With direct links only, the reference fleet delivers 307 &plusmn; 4&nbsp;t of cargo in the year against
+532 &plusmn; 9&nbsp;t when Earth is always in view, a paired change of &minus;42&nbsp;% [&minus;44, &minus;41] (Table&nbsp;7,
+Figure&nbsp;2). Every fleet that needs a person for some of its driving loses about the same amount: the
+teleoperated fleet, the Phase-2 mix, and supervised rovers under the strict policy or the look-ahead policy. A fully
+autonomous fleet loses nothing.</p>
+
+<p>The loss is almost all one destination. The demand model makes 204.2 &plusmn; 1.6&nbsp;t of cargo a year ready for the
+ISRU plant, mostly regolith feedstock and plant equipment. Under direct links none of it is delivered:
+204.2 &plusmn; 1.6&nbsp;t is lost there, which is 90&nbsp;% of the total gap of 225.7 &plusmn; 8.6&nbsp;t (computed on the strict-policy fleet; the
+reference fleet's loss is the same within its interval, Table&nbsp;7). The remaining
+21.5 &plusmn; 7.7&nbsp;t is cargo for linked sites that is still under way at the end of the year, because rovers wait for
+Earth on their way to it.</p>
+
+<p>So the loss is not a shortage of rovers. One extra supervised rover adds 0.6&nbsp;t [&minus;0.1, 1.3] a year under
+direct links, and a 10&nbsp;m mast at the base adds 0.7&nbsp;t [&minus;0.2, 1.6]: neither interval excludes zero. The mast does
+link the inner routes, but the dark routes are the far ones. Any relay restores the cargo: at a coverage of 0.1 the
+fleet recovers 99&nbsp;% of the lost tonnage, and the throughput knee of Stage&nbsp;A is at
+p&nbsp;=&nbsp;0.1, the first coverage tested.</p>
+
+<p class="tabcap"><b>Table 7.</b> Direct-to-Earth links only against Earth always in view, by fleet (Stage A). Cargo delivered inside the year and urgent delay (90&nbsp;% of priority-1 items within), cell means &plusmn; 95&nbsp;% interval over 20 seeds; change = paired difference with its 95&nbsp;% interval.</p>
+<table class="small"><tr><th>Fleet</th><th class="num">Delivered, always (t)</th><th class="num">Delivered, DTE only (t)</th><th class="num">Change (t)</th><th class="num">Urgent 90&nbsp;%, always (h)</th><th class="num">Urgent 90&nbsp;%, DTE only (h)</th></tr>
+<tr><td>Teleoperated, 4 s round trip</td><td class='num'>532 &plusmn; 9</td><td class='num'>307 &plusmn; 5</td><td class='num'>&minus;225 [&minus;234, &minus;216]</td><td class='num'>29 &plusmn; 15</td><td class='num'>662 &plusmn; 613</td></tr>
+<tr><td>Phase-2 mix (reference)</td><td class='num'>532 &plusmn; 9</td><td class='num'>307 &plusmn; 4</td><td class='num'>&minus;226 [&minus;235, &minus;217]</td><td class='num'>20 &plusmn; 13</td><td class='num'>380 &plusmn; 283</td></tr>
+<tr><td>Supervised, strict</td><td class='num'>532 &plusmn; 9</td><td class='num'>307 &plusmn; 5</td><td class='num'>&minus;226 [&minus;234, &minus;217]</td><td class='num'>17 &plusmn; 10</td><td class='num'>446 &plusmn; 383</td></tr>
+<tr><td>Supervised, strategic</td><td class='num'>532 &plusmn; 9</td><td class='num'>425 &plusmn; 82</td><td class='num'>&minus;107 [&minus;191, &minus;24]</td><td class='num'>17 &plusmn; 10</td><td class='num'>716 &plusmn; 386</td></tr>
+<tr><td>Supervised, strategic with look-ahead</td><td class='num'>532 &plusmn; 9</td><td class='num'>307 &plusmn; 5</td><td class='num'>&minus;225 [&minus;234, &minus;217]</td><td class='num'>17 &plusmn; 10</td><td class='num'>701 &plusmn; 606</td></tr>
+<tr><td>Autonomous</td><td class='num'>532 &plusmn; 9</td><td class='num'>532 &plusmn; 9</td><td class='num'>0 [0, 0]</td><td class='num'>17 &plusmn; 11</td><td class='num'>17 &plusmn; 11</td></tr>
+</table>
+
+<figure id="r1-fig-throughput"><img src="../../figures/r1_fig2_throughput.png" alt="Cargo delivered in the year against relay coverage for six fleets">
+<figcaption><b>Figure 2.</b> Cargo delivered inside the simulated year against relay coverage (0 = direct links
+only), six autonomy mixes, mean &plusmn; 95&nbsp;% interval over 20 seeds. The dashed line is the
+always-linked reference.</figcaption></figure>
+
+<h3 id="r1-sec-res-delay">5.3 Urgent delay: what coverage buys</h3>
+
+<p>Throughput saturates at the first relay level; urgent delay does not. Figure&nbsp;3 shows the time within which
+90&nbsp;% of urgent items are delivered against relay coverage. With direct links only, the reference fleet's value
+rises from 20&nbsp;h to 380 &plusmn; 283&nbsp;h. Coverage brings it down steadily rather than at a knee, and how fast
+depends on how much the rovers need a person. Table&nbsp;8 reads, for each fleet, the coverage at which the urgent
+delay falls to twice and to one and a half times its full-coverage value. Supervised rovers under the strict policy
+need a coverage of 0.62 [0.36, 0.82] for the first target; under the strategic policy they need
+0.09 [0.07, 0.34]. Hyperbolic and power laws fit the cells about twice as well as an exponential one
+(cross-validated over seeds), but no smooth form follows the slow decline between 0.2 and 1 closely enough to be
+inverted, so the targets in Table&nbsp;8 are read from the cells.</p>
+
+<figure id="r1-fig-delay"><img src="../../figures/r1_fig3_delay.png" alt="Urgent delay against relay coverage for six fleets on a log scale with fitted laws">
+<figcaption><b>Figure 3.</b> Hours within which 90&nbsp;% of urgent (priority-1) items are delivered, against relay
+coverage, log scale. Points are cell means with 95&nbsp;% intervals over 20 seeds; lines are the law chosen per
+fleet by cross-validation (hyperbolic or power).</figcaption></figure>
+
+<p class="tabcap"><b>Table 8.</b> Relay coverage needed for the urgent delay (90&nbsp;% within) to reach twice and one and a half times its full-coverage value, read from the Stage A cells (non-increasing envelope, log-linear between grid points), with bootstrap 95&nbsp;% intervals over seeds. Law: the form chosen by five-fold cross-validation over seeds.</p>
+<table class="small"><tr><th>Fleet</th><th class="num">Full coverage (h)</th><th class="num">Coverage for 2&times;</th><th class="num">Coverage for 1.5&times;</th><th>Law</th></tr>
+<tr><td>Teleoperated, 4 s round trip</td><td class='num'>29.3</td><td class='num'>0.43 [0.19, 0.65]</td><td class='num'>0.58 [0.42, 0.81]</td><td>hyperbolic</td></tr>
+<tr><td>Phase-2 mix (reference)</td><td class='num'>19.8</td><td class='num'>0.51 [0.24, 0.74]</td><td class='num'>0.64 [0.50, 0.92]</td><td>power</td></tr>
+<tr><td>Supervised, strict</td><td class='num'>16.9</td><td class='num'>0.62 [0.36, 0.82]</td><td class='num'>0.81 [0.65, 0.92]</td><td>hyperbolic</td></tr>
+<tr><td>Supervised, strategic</td><td class='num'>16.9</td><td class='num'>0.09 [0.07, 0.34]</td><td class='num'>0.14 [0.08, 0.67]</td><td>power</td></tr>
+<tr><td>Supervised, strategic with look-ahead</td><td class='num'>16.9</td><td class='num'>0.10 [0.09, 0.48]</td><td class='num'>0.54 [0.10, 0.69]</td><td>power</td></tr>
+<tr><td>Autonomous</td><td class='num'>16.7</td><td class='num'>0.00 [0.00, 0.00]</td><td class='num'>0.00 [0.00, 0.00]</td><td>hyperbolic</td></tr>
+</table>
+
+<h3 id="r1-sec-res-breakeven">5.4 Rovers, a mast or autonomy, priced in relay coverage</h3>
+
+<p>Stage&nbsp;B asks what else could stand in for coverage. At a relay coverage of 0.5, where Figure&nbsp;3 is
+still falling, Table&nbsp;9 reads each option's urgent delay off the strict-policy curve as an equivalent coverage
+(Figure&nbsp;4). One extra rover shortens the delay by about a quarter and is worth 0.18 [0.02, 0.41] of coverage.
+A second rover adds nothing more, and a third gives most of the gain back, probably because operator demand grows
+with the fleet (the peak of linked demand rises from 1.3 to 1.6 operators). The strategic step, letting supervised
+rovers drive on their own between interventions, is worth more than a rover on its own, and the strategic step with
+one extra rover comes close to full coverage.</p>
+
+<p>Priced with the capital cost of one rover in our engine (45&nbsp;M$ a year, from v3's Assumed vehicle costs),
+0.1 of relay coverage at this point is worth 26&nbsp;M$ [11, 139] a year. The interval is wide because the rover's
+effect is: in 2.5&nbsp;% of the bootstrap draws one rover bought no delay at all. We report it as an order
+of magnitude for comparing a relay service with fleet purchases, not as a price.</p>
+
+<p class="tabcap"><b>Table 9.</b> Options at relay coverage 0.5 (Stage B) and the relay coverage that gives the same urgent delay on the strict fleet's Stage A curve (model-free; law-based in brackets). Value: urgent delay, 90&nbsp;% within, mean with 95&nbsp;% interval over seeds. Strict fleet as it is: 40.2&nbsp;h.</p>
+<table class="small"><tr><th>Option</th><th class="num">Urgent 90&nbsp;% (h)</th><th class="num">Equivalent coverage</th><th class="num">Coverage gained</th><th class="num">Law-based</th></tr>
+<tr><td>+1 rover</td><td class='num'>31.1 [23.7, 40.4]</td><td class='num'>0.68 [0.52, 0.91]</td><td class='num'>+0.18</td><td class='num'>0.58</td></tr>
+<tr><td>+2 rovers</td><td class='num'>31.1 [22.4, 42.3]</td><td class='num'>0.68 [0.54, 0.91]</td><td class='num'>+0.18</td><td class='num'>0.58</td></tr>
+<tr><td>+3 rovers</td><td class='num'>38.3 [28.1, 50.8]</td><td class='num'>0.53 [0.38, 0.79]</td><td class='num'>+0.03</td><td class='num'>0.45</td></tr>
+<tr><td>strategic step</td><td class='num'>26.5 [15.5, 41.9]</td><td class='num'>0.79 [0.70, 0.91]</td><td class='num'>+0.29</td><td class='num'>0.70</td></tr>
+<tr><td>strategic step + 1 rover</td><td class='num'>18.0 [10.8, 26.5]</td><td class='num'>0.98 [0.69, 0.99]</td><td class='num'>+0.48</td><td class='num'>&gt; 1</td></tr>
+</table>
+
+<figure id="r1-fig-breakeven"><img src="../../figures/r1_fig4_breakeven.png" alt="Bars of urgent delay at relay coverage 0.5 for the strict fleet, extra rovers and the strategic step, with equivalent coverage">
+<figcaption><b>Figure 4.</b> Urgent delay (90&nbsp;% within, hours) at relay coverage 0.5 for the strict-policy
+fleet as it is, with one to three extra supervised rovers, with the strategic policy, and with both. Labels give the
+relay coverage that gives the same delay on the strict fleet's Stage-A curve. Intervals: 95&nbsp;% over seeds.</figcaption></figure>
+
+<h3 id="r1-sec-res-policy">5.5 Driving without a link: the stranding problem</h3>
+
+<p>The strategic policy is only as good as the worst point on its route. Under direct links it delivers
+425 &plusmn; 82&nbsp;t, more than the strict fleet because it passes unlinked stretches, but its rovers spend
+29,927 &plusmn; 3,794 rover-hours a year stopped at an intervention where Earth will not rise for weeks, against
+972 &plusmn; 144 under the strict policy. The spread between seeds is large, because one hazard drawn on a
+rarely linked stretch can hold a rover for most of the year. Checking every sample of the route before committing,
+at the time the rover would pass it, removes the stranding (78 &plusmn; 19 rover-hours), but then the fleet refuses
+the same dark routes as the strict one and delivers the same tonnage. With any relay the two strategic policies are
+nearly equal, and both well ahead of the strict policy in urgent delay (Table&nbsp;8).</p>
+
+<p>The deferral limit matters just as much. When a job whose link is more than a day away is committed anyway, the
+rover parks with its load until the link returns, and the urgent delay of the reference fleet under direct links
+rises from 380 &plusmn; 283&nbsp;h to 2,319 &plusmn; 1,978&nbsp;h (Table&nbsp;10).</p>
+
+<h3 id="r1-sec-res-operators">5.6 Operator demand comes in bursts</h3>
+
+<p>When links come and go, the rovers that need an operator all need one at the next link-up. For the teleoperated
+fleet the peak of linked operator demand divided by its mean rises from 15 &plusmn; 1 with a relay always in view
+to 36 &plusmn; 3 under direct links only (Figure&nbsp;5). We do not claim from E21 that the three operators on duty
+are overrun: the admission rule of the engine counts only demand that is linked at the moment, so a job can start
+while another rover is between linked stretches, and the peak exceeds the staff slightly even at full coverage.
+A version with a hard operator limit is in preparation; the bunching itself does not depend on that rule.</p>
+
+<figure id="r1-fig-operators"><img src="../../figures/r1_fig5_operators.png" alt="Peak to mean operator demand against relay coverage for the teleoperated fleet and the Phase-2 mix">
+<figcaption><b>Figure 5.</b> Peak divided by mean of linked operator demand (operators) against relay coverage,
+teleoperated fleet (4&nbsp;s round trip) and Phase-2 mix; mean &plusmn; 95&nbsp;% interval over 20 seeds.</figcaption></figure>
+
+<h3 id="r1-sec-res-sensitivity">5.7 Sensitivity</h3>
+
+<p>Table&nbsp;10 collects Stage&nbsp;C. Throughput hardly depends on the link criterion: requiring the centre of the
+disc 2&deg; above the horizon instead of any part of it changes the delivered tonnage by at most 0.9&nbsp;%.
+Urgent delay depends on it more, as expected from shorter windows. Pad standoff matters under direct links, because
+pads farther from the ridge see less of Earth: pads at 0.5&nbsp;km deliver 15&nbsp;t [8, 22] more a year than
+pads at 1&nbsp;km, and pads at 3&nbsp;km 10&nbsp;t [7, 14] less. With a relay of coverage 0.8 the standoff has no
+measurable effect on tonnage. This adds a second cost to pad distance besides the travel cost measured in v3.</p>
+
+<p class="tabcap"><b>Table 10.</b> Stage C: pad standoff and link criterion (deferral 24&nbsp;h), and the deferral limit (pads 1&nbsp;km, any part of the disc). Means &plusmn; 95&nbsp;% interval over 20 seeds.</p>
+<table class="small"><tr><th>Cell</th><th>Pads (km)</th><th>Criterion</th><th class="num">Deferral (h)</th><th class="num">Delivered (t)</th><th class="num">Urgent 90&nbsp;% (h)</th></tr>
+<tr><td>DTE only, Phase-2 mix</td><td>1</td><td>any_part</td><td class='num'>12</td><td class='num'>307 &plusmn; 4</td><td class='num'>475 &plusmn; 357</td></tr>
+<tr><td>DTE only, Phase-2 mix</td><td>0.5</td><td>any_part</td><td class='num'>24</td><td class='num'>322 &plusmn; 8</td><td class='num'>210 &plusmn; 41</td></tr>
+<tr><td>DTE only, Phase-2 mix</td><td>0.5</td><td>centre+0.5deg</td><td class='num'>24</td><td class='num'>322 &plusmn; 9</td><td class='num'>231 &plusmn; 46</td></tr>
+<tr><td>DTE only, Phase-2 mix</td><td>0.5</td><td>centre+2deg</td><td class='num'>24</td><td class='num'>321 &plusmn; 9</td><td class='num'>292 &plusmn; 46</td></tr>
+<tr><td>DTE only, Phase-2 mix</td><td>1</td><td>any_part</td><td class='num'>24</td><td class='num'>307 &plusmn; 4</td><td class='num'>380 &plusmn; 283</td></tr>
+<tr><td>DTE only, Phase-2 mix</td><td>1</td><td>centre+0.5deg</td><td class='num'>24</td><td class='num'>306 &plusmn; 5</td><td class='num'>235 &plusmn; 59</td></tr>
+<tr><td>DTE only, Phase-2 mix</td><td>1</td><td>centre+2deg</td><td class='num'>24</td><td class='num'>306 &plusmn; 5</td><td class='num'>305 &plusmn; 70</td></tr>
+<tr><td>DTE only, Phase-2 mix</td><td>3</td><td>any_part</td><td class='num'>24</td><td class='num'>296 &plusmn; 2</td><td class='num'>&ndash;</td></tr>
+<tr><td>DTE only, Phase-2 mix</td><td>3</td><td>centre+0.5deg</td><td class='num'>24</td><td class='num'>296 &plusmn; 2</td><td class='num'>&ndash;</td></tr>
+<tr><td>DTE only, Phase-2 mix</td><td>3</td><td>centre+2deg</td><td class='num'>24</td><td class='num'>295 &plusmn; 2</td><td class='num'>&ndash;</td></tr>
+<tr><td>DTE only, Phase-2 mix</td><td>1</td><td>any_part</td><td class='num'>72</td><td class='num'>307 &plusmn; 5</td><td class='num'>548 &plusmn; 586</td></tr>
+<tr><td>DTE only, Phase-2 mix</td><td>1</td><td>any_part</td><td class='num'>none</td><td class='num'>307 &plusmn; 4</td><td class='num'>2,319 &plusmn; 1,978</td></tr>
+<tr><td>DTE only, teleoperated</td><td>1</td><td>any_part</td><td class='num'>12</td><td class='num'>306 &plusmn; 5</td><td class='num'>395 &plusmn; 287</td></tr>
+<tr><td>DTE only, teleoperated</td><td>0.5</td><td>any_part</td><td class='num'>24</td><td class='num'>324 &plusmn; 9</td><td class='num'>229 &plusmn; 37</td></tr>
+<tr><td>DTE only, teleoperated</td><td>0.5</td><td>centre+0.5deg</td><td class='num'>24</td><td class='num'>323 &plusmn; 8</td><td class='num'>258 &plusmn; 38</td></tr>
+<tr><td>DTE only, teleoperated</td><td>0.5</td><td>centre+2deg</td><td class='num'>24</td><td class='num'>322 &plusmn; 8</td><td class='num'>291 &plusmn; 46</td></tr>
+<tr><td>DTE only, teleoperated</td><td>1</td><td>any_part</td><td class='num'>24</td><td class='num'>307 &plusmn; 5</td><td class='num'>662 &plusmn; 613</td></tr>
+<tr><td>DTE only, teleoperated</td><td>1</td><td>centre+0.5deg</td><td class='num'>24</td><td class='num'>306 &plusmn; 5</td><td class='num'>228 &plusmn; 73</td></tr>
+<tr><td>DTE only, teleoperated</td><td>1</td><td>centre+2deg</td><td class='num'>24</td><td class='num'>304 &plusmn; 4</td><td class='num'>318 &plusmn; 63</td></tr>
+<tr><td>DTE only, teleoperated</td><td>3</td><td>any_part</td><td class='num'>24</td><td class='num'>296 &plusmn; 2</td><td class='num'>&ndash;</td></tr>
+<tr><td>DTE only, teleoperated</td><td>3</td><td>centre+0.5deg</td><td class='num'>24</td><td class='num'>296 &plusmn; 2</td><td class='num'>&ndash;</td></tr>
+<tr><td>DTE only, teleoperated</td><td>3</td><td>centre+2deg</td><td class='num'>24</td><td class='num'>295 &plusmn; 2</td><td class='num'>&ndash;</td></tr>
+<tr><td>DTE only, teleoperated</td><td>1</td><td>any_part</td><td class='num'>72</td><td class='num'>307 &plusmn; 5</td><td class='num'>550 &plusmn; 582</td></tr>
+<tr><td>DTE only, teleoperated</td><td>1</td><td>any_part</td><td class='num'>none</td><td class='num'>307 &plusmn; 4</td><td class='num'>1,363 &plusmn; 1,163</td></tr>
+<tr><td>relay 0.8, supervised strict</td><td>1</td><td>any_part</td><td class='num'>12</td><td class='num'>533 &plusmn; 9</td><td class='num'>25 &plusmn; 13</td></tr>
+<tr><td>relay 0.8, supervised strict</td><td>0.5</td><td>any_part</td><td class='num'>24</td><td class='num'>532 &plusmn; 9</td><td class='num'>20 &plusmn; 11</td></tr>
+<tr><td>relay 0.8, supervised strict</td><td>0.5</td><td>centre+0.5deg</td><td class='num'>24</td><td class='num'>532 &plusmn; 9</td><td class='num'>21 &plusmn; 12</td></tr>
+<tr><td>relay 0.8, supervised strict</td><td>0.5</td><td>centre+2deg</td><td class='num'>24</td><td class='num'>532 &plusmn; 9</td><td class='num'>22 &plusmn; 11</td></tr>
+<tr><td>relay 0.8, supervised strict</td><td>1</td><td>any_part</td><td class='num'>24</td><td class='num'>533 &plusmn; 9</td><td class='num'>26 &plusmn; 12</td></tr>
+<tr><td>relay 0.8, supervised strict</td><td>1</td><td>centre+0.5deg</td><td class='num'>24</td><td class='num'>532 &plusmn; 9</td><td class='num'>27 &plusmn; 13</td></tr>
+<tr><td>relay 0.8, supervised strict</td><td>1</td><td>centre+2deg</td><td class='num'>24</td><td class='num'>533 &plusmn; 9</td><td class='num'>30 &plusmn; 15</td></tr>
+<tr><td>relay 0.8, supervised strict</td><td>3</td><td>any_part</td><td class='num'>24</td><td class='num'>532 &plusmn; 9</td><td class='num'>22 &plusmn; 6</td></tr>
+<tr><td>relay 0.8, supervised strict</td><td>3</td><td>centre+0.5deg</td><td class='num'>24</td><td class='num'>532 &plusmn; 9</td><td class='num'>29 &plusmn; 12</td></tr>
+<tr><td>relay 0.8, supervised strict</td><td>3</td><td>centre+2deg</td><td class='num'>24</td><td class='num'>532 &plusmn; 9</td><td class='num'>30 &plusmn; 12</td></tr>
+<tr><td>relay 0.8, supervised strict</td><td>1</td><td>any_part</td><td class='num'>72</td><td class='num'>531 &plusmn; 10</td><td class='num'>20 &plusmn; 12</td></tr>
+<tr><td>relay 0.8, supervised strict</td><td>1</td><td>any_part</td><td class='num'>none</td><td class='num'>531 &plusmn; 10</td><td class='num'>20 &plusmn; 12</td></tr>
+</table>
+
+
+<h2 id="r1-sec-discussion">6. Discussion</h2>
+
+<p><b>Where a site is matters as much as how it is served.</b> The largest single number in this paper, the loss of
+90&nbsp;% of the gap at one plant, is a siting result. The oxygen plant was placed in v3 [14] for its
+regolith and its distance from the pads, and nothing in that placement looked at Earth. A site that never sees Earth
+can only be served by autonomous rovers or through a relay, whatever the fleet. Earth visibility along the routes,
+not only at the sites, belongs in base layout next to slope, illumination and plume distance. The same applies to
+the pads: farther pads cost travel time (v3) and, under direct links, link time as well.</p>
+
+<p><b>A little relay coverage goes a long way for throughput, and a long way is needed for urgent delay.</b> A relay
+in view a tenth of the time returns the lost cargo, because the lost cargo was a question of whether a route can be
+driven at all, not of how often. Urgent delay is a question of how often, and there the coverage curve is long:
+strict supervision needs about 0.62 [0.36, 0.82] coverage to come within twice the full-coverage delay. NASA's
+LCRNS reference numbers (one relay 80&ndash;86&nbsp;% a year [10], Section&nbsp;2) fall on the flat part of our curve,
+so a single relay would remove most of the effect for this layout.</p>
+
+<p><b>Autonomy and relays are substitutes, and rovers are not.</b> Letting supervised rovers drive between
+interventions moved the coverage needed for the same delay from about 0.62 [0.36, 0.82] to 0.09 [0.07, 0.34],
+and at half coverage the strategic step was worth more relay coverage than an extra rover. This agrees with
+Otten and colleagues' argument for short preplanned drives without contact [7], and puts a number on it for a fleet.
+It also shows the condition: the policy must look ahead along its route, or a single hazard on a rarely linked
+stretch strands a rover for weeks.</p>
+
+<p><b>Operations planning has to expect bursts.</b> Link windows make operator demand arrive together. Staffing
+from yearly averages would underestimate the peak, and with teleoperation the bunching is strongest. How much delay
+the bursts cause with a hard operator limit is the next question.</p>
+
+<h2 id="r1-sec-limits">7. Limitations</h2>
+
+<ul>
+<li><b>Geometry, not radio.</b> A link is up when Earth's disc (or its centre with a margin) is above the terrain
+horizon. There is no link budget, no Fresnel-zone loss near grazing, and no ground-station scheduling. Stage&nbsp;C
+shows the throughput result does not depend on the criterion; urgent delay does, and a real link budget would sit
+between our criteria.</li>
+<li><b>The relay is parametric</b> (Assumed): an alternating up/gap process of the stated coverage with exponential
+gaps of mean 7.7&nbsp;h, taken to see every route point. Real relay passes are correlated in time and may be
+masked by terrain at low elevation, which would lengthen gaps at the dark sites.</li>
+<li><b>Night is not the real Sun.</b> E21 keeps v3's fixed night share. Earth's elevation cycle (27.2 days) and the
+lunar day (29.5 days) beat with a period of about 347 days, so the overlap of Sun and Earth drifts through the year;
+testing that needs illumination per site, which is in preparation.</li>
+<li><b>Operators.</b> The admission rule counts only linked demand (Section 5.6). The bursts are real in the model;
+whether they overrun a fixed staff is not settled here.</li>
+<li><b>Routes.</b> The slope-only route stands for every lighting case, and pad-to-pad legs are inferred from their
+end points. Strategic interventions are placed uniformly along a route; intervention rates come from v3's Assumed
+hazard model.</li>
+<li><b>Choices made during the study.</b> The 24&nbsp;h deferral limit was set from development runs, and
+Stage&nbsp;B's coverage of 0.5 was fixed after Stage&nbsp;A showed the throughput knee at 0.1. Both are reported
+with their alternatives (Table&nbsp;10).</li>
+<li><b>One site, one fleet, one phase.</b> All results are for the Connecting Ridge layout, the Phase-2 demand
+and a six-rover fleet, with v3's Assumed vehicle costs, 20 seeds per cell and the plume keep-out off. Crewed
+periods, when astronauts could drive locally, are not modelled.</li>
+</ul>
+
+<h2 id="r1-sec-conclusions">8. Conclusions</h2>
+
+<p>We computed when Earth can be seen along every route of a south-pole base on real terrain and put those windows
+into a verified cargo simulation. With direct links only, a fleet that needs operators on Earth delivers about
+42&nbsp;% less cargo a year, almost all of it because one work site never sees Earth; more rovers or
+a mast at the base do not change that, and any relay or full autonomy does. Relay coverage then buys urgent
+delivery time along a long curve, and an autonomy step that lets supervised rovers drive between interventions is
+worth more of that curve than an extra rover, provided the rovers look ahead along their routes. For base planners
+the practical points are three: check Earth visibility along routes when siting work sites and pads; plan relay
+service against urgent delay, not throughput; and buy autonomy before rovers when links are scarce.</p>
+
+<h2 id="r1-sec-availability">Availability</h2>
+
+<p>The Earth-link pipeline (<span class="mono">tools/comms/earth_link.py</span>), the link windows
+(<span class="mono">data/comms/connecting_ridge/earth_link-v1.json</span>, sha256 recorded), the engine's opt-in
+<span class="mono">comms</span> rule (<span class="mono">lunarsim/comms.py</span>), the E21 runner and analysis
+(<span class="mono">experiments/phase4/run_phase4.py</span>, <span class="mono">analyse_e21.py</span>), every raw
+result file and the figure script (<span class="mono">paper/r1/make_figures_r1.py</span>) are in the repository at
+<a href="https://github.com/azizjonrahimov/Lunar-Haul">github.com/azizjonrahimov/Lunar-Haul</a>. The same scenarios
+can be run on GitHub Actions from an issue form, and the 3D site replays a year with and without Earth in view at
+<a href="https://azizjonrahimov.github.io/Lunar-Haul/">azizjonrahimov.github.io/Lunar-Haul</a>. The engine's
+verification (21 checks, including the agreement of the Earth track with JPL Horizons and the identity of the
+always-linked rule with the baseline) runs with <span class="mono">lunarsim verify</span>.</p>
+
+<h2 id="r1-sec-refs">References</h2>
+
+<ol class="refs">
+<li value="1">S. Bryant. &quot;Lunar Pole Illumination and Communications Maps Computed from Goldstone Solar System Radar Elevation Data.&quot; <i>The Interplanetary Network Progress Report</i> 42-176, Jet Propulsion Laboratory, 15 February 2009. <a href="https://ipnpr.jpl.nasa.gov/progress_report/42-176/176C.pdf">https://ipnpr.jpl.nasa.gov/progress_report/42-176/176C.pdf</a></li>
+<li value="2">D. De Rosa, B. Bussey, J. T. Cahill, T. Lutz, I. Crawford, T. Hackwill, S. van Gasselt, G. Neukum, L. Witte, A. McGovern, J. D. Carpenter. &quot;Characterisation of potential landing sites for the European Space Agency&#x27;s Lunar Lander project.&quot; <i>Planetary and Space Science</i> 74, 2012. doi:10.1016/j.pss.2012.08.002; <a href="https://arxiv.org/abs/1208.5587">https://arxiv.org/abs/1208.5587</a></li>
+<li value="3">M. C. Scardelletti, M. R. Gasper, R. C. Reinhart, M. J. Zemba, J. L. Rock, S. R. Oleson, E. R. Turnbull. &quot;Lunar Surface Network Relay Terminal: A Lunar Communications Platform.&quot; 40th International Communications Satellite Systems Conference (ICSSC), Bradford, UK, 23-26 October 2023. NTRS 20230013361. <a href="https://ntrs.nasa.gov/api/citations/20230013361/downloads/ICSSC-2023_LSR_paper%20rev7k.pdf">https://ntrs.nasa.gov/api/citations/20230013361/downloads/ICSSC-2023_LSR_paper%20rev7k.pdf</a></li>
+<li value="4">W. W. Jun, T. Tanaka, P. Carter, R. L. Anderson, S. Bhamidipati, K.-M. Cheung. &quot;A Rapid, Low-Cost Path to Lunar Communication and Navigation.&quot; IEEE Aerospace Conference, Big Sky, MT, 2025 (JPL-hosted version). <a href="https://www-robotics.jpl.nasa.gov/media/documents/A_Rapid_Low-Cost_Path_to_Lunar_Communication_and_Navigation.pdf">https://www-robotics.jpl.nasa.gov/media/documents/A_Rapid_Low-Cost_Path_to_Lunar_Communication_and_Navigation.pdf</a></li>
+<li value="5">H. L. Litaker, Z. Q. Li, K. H. Beaton, J. F. Lewis. <i>Lunar Terrain Vehicle (LTV) Remote Teleoperation Studies Under Four Lunar Communication Latencies</i>. NASA TM-20240001217, 2024; follow-up NTRS 20240011392, 2025. <a href="https://ntrs.nasa.gov/citations/20240001217">https://ntrs.nasa.gov/citations/20240001217</a> ; <a href="https://ntrs.nasa.gov/citations/20240011392">https://ntrs.nasa.gov/citations/20240011392</a> (v3 reference [29])</li>
+<li value="6">M. Shirley, E. Balaban. &quot;An Overview of Mission Planning for the VIPER Rover.&quot; SpaceOps 2022 Mission Planning Workshop, 2 June 2022. <a href="https://www.nasa.gov/wp-content/uploads/2022/05/overview_of_mission_planning_for_the_viper_rover.pdf">https://www.nasa.gov/wp-content/uploads/2022/05/overview_of_mission_planning_for_the_viper_rover.pdf</a></li>
+<li value="7">N. Otten, D. Wettergreen, W. Whittaker. &quot;Strategic Autonomy for Reducing Risk of Sun-Synchronous Lunar Polar Exploration.&quot; <i>Field and Service Robotics</i> (FSR 2017), Springer, 2018. <a href="https://www.ri.cmu.edu/app/uploads/2018/01/FSR_2017_Otten_66.pdf">https://www.ri.cmu.edu/app/uploads/2018/01/FSR_2017_Otten_66.pdf</a> ; N. Otten, <i>Planning for Sun-Synchronous Lunar Polar Roving</i>, PhD thesis, Carnegie Mellon University, 2018, <a href="https://www.ri.cmu.edu/app/uploads/2018/01/thesis_otten.pdf">https://www.ri.cmu.edu/app/uploads/2018/01/thesis_otten.pdf</a></li>
+<li value="8">A. Dwyer Cianciolo. &quot;Artemis Human Landing System Update.&quot; NASA LaRC/ARC EDL Summer Seminar Series, August 2024. NTRS 20240009596. <a href="https://ntrs.nasa.gov/api/citations/20240009596/downloads/ArtemisHLSUpdate_2024.pdf">https://ntrs.nasa.gov/api/citations/20240009596/downloads/ArtemisHLSUpdate_2024.pdf</a></li>
+<li value="9">T. George, M. A. Rubio, S. J. Lawrence, P. Curell. &quot;Artemis III Site Selection Update: Downselection From Thirteen to Nine Candidate Regions.&quot; Lunar and Planetary Science Conference, The Woodlands, TX, March 2026. NTRS 20250011660. <a href="https://ntrs.nasa.gov/citations/20250011660">https://ntrs.nasa.gov/citations/20250011660</a></li>
+<li value="10">J. Esper, G. Heckler, J. Verville, G. Ryden. &quot;NASA&#x27;s Lunar Communications Relay and Navigation Systems (LCRNS).&quot; 18th International Conference on Space Operations (SpaceOps 2025), Montreal, 26-30 May 2025. NTRS 20250003321. <a href="https://ntrs.nasa.gov/api/citations/20250003321/downloads/LCRNS_Esper_257.pdf">https://ntrs.nasa.gov/api/citations/20250003321/downloads/LCRNS_Esper_257.pdf</a></li>
+<li value="11">NASA. &quot;NASA Selects Lunar Relay Contractor for Near Space Network Services.&quot; News release, 17 September 2024. <a href="https://www.nasa.gov/news-release/nasa-selects-lunar-relay-contractor-for-near-space-network-services">https://www.nasa.gov/news-release/nasa-selects-lunar-relay-contractor-for-near-space-network-services</a></li>
+<li value="12">E. Mazarico, G. A. Neumann, D. E. Smith, M. T. Zuber, M. H. Torrence. &quot;Illumination conditions of the lunar polar regions using LOLA topography.&quot; <i>Icarus</i> 211:1066-1081, 2011. doi:10.1016/j.icarus.2010.10.030. LOLA average Earth-visibility maps: PGDA product 69, <a href="https://pgda.gsfc.nasa.gov/products/69">https://pgda.gsfc.nasa.gov/products/69</a></li>
+<li value="13">H. Inoue, S. Adachi. &quot;Spatio-Temporal Path Planning for Lunar Polar Exploration with Robustness against Schedule Delay.&quot; <i>Transactions of the Japan Society for Aeronautical and Space Sciences</i> 64(6):304-311, 2021. doi:10.2322/tjsass.64.304</li>
+<li value="14">A. Rahimov. <i>Where the Lander Lands: Landing Precision, Pad Standoff, Plume Keep-Out and Rover Autonomy Priced in Lunar Surface Logistics</i>. Preprint, version 3, October 2026. (Our previous paper; DOI to be assigned on deposit.)</li>
+<li value="15">P. Gläser, F. Scholten, D. De Rosa, R. M. Figuera, J. Oberst, E. Mazarico, G. Neumann, M. S. Robinson. &quot;Illumination conditions at the lunar south pole using high resolution Digital Terrain Models from LOLA.&quot; <i>Icarus</i> 243:79-90, 2014. doi:10.1016/j.icarus.2014.08.013; <a href="https://elib.dlr.de/94240">https://elib.dlr.de/94240</a></li>
+<li value="16">E. Peña-Asensio, Á.-S. Neira-Acosta, J. M. Sánchez-Lozano. &quot;Evaluating potential landing sites for the Artemis III mission using a multi-criteria decision making approach.&quot; arXiv:2406.19863, 2024 (accepted in <i>Acta Astronautica</i>). <a href="https://arxiv.org/abs/2406.19863">https://arxiv.org/abs/2406.19863</a></li>
+<li value="17">&quot;Lunar Terrain-Driven Earth Visibility Analysis for South Polar Moon-Based Observations.&quot; <i>IEEE Geoscience and Remote Sensing Letters</i> 22, 2025. ADS 2025IGRSL..22L1520W. <a href="https://ui.adsabs.harvard.edu/abs/2025IGRSL..22L1520W/abstract">https://ui.adsabs.harvard.edu/abs/2025IGRSL..22L1520W/abstract</a> (authors not verified; abstract only)</li>
+<li value="18">G. Ryden, M. Volle. <i>NASA Lunar Communications Relay and Navigation Systems (LCRNS) Reference Constellation 3.1</i>. NASA white paper, 2025. NTRS 20250002698. <a href="https://ntrs.nasa.gov/citations/20250002698">https://ntrs.nasa.gov/citations/20250002698</a></li>
+<li value="19">UNOOSA International Committee on GNSS, Working Group B, Lunar PNT meeting, June 2024 (LCRNS service schedule slides). <a href="https://www.unoosa.org/documents/pdf/icg/2024/WG-B_Lunar_PNT_Jun24/LunarPNT_Jun24_01_02.pdf">https://www.unoosa.org/documents/pdf/icg/2024/WG-B_Lunar_PNT_Jun24/LunarPNT_Jun24_01_02.pdf</a></li>
+<li value="20">Wikipedia. &quot;IM-3&quot; (revision of 15 October 2026). <a href="https://en.wikipedia.org/wiki/IM-3">https://en.wikipedia.org/wiki/IM-3</a></li>
+<li value="21">ESA. &quot;The Moon where no satnav has gone before.&quot; <a href="https://www.esa.int/Applications/Navigation/The_Moon_where_no_satnav_has_gone_before">https://www.esa.int/Applications/Navigation/The_Moon_where_no_satnav_has_gone_before</a> ; SSTL. &quot;ESA signs further order for commercial lunar relay services from SSTL,&quot; 2023. <a href="https://sstl.co.uk/media-hub/latest-news/2023/esa-signs-further-order-for-commercial-lunar-relay-services-from-sstl">https://sstl.co.uk/media-hub/latest-news/2023/esa-signs-further-order-for-commercial-lunar-relay-services-from-sstl</a></li>
+<li value="22">ESA. &quot;ESA&#x27;s Moonlight programme: pioneering the path for lunar exploration.&quot; <a href="https://esa.int/Applications/Connectivity_and_Secure_Communications/ESA_s_Moonlight_programme_Pioneering_the_path_for_lunar_exploration">https://esa.int/Applications/Connectivity_and_Secure_Communications/ESA_s_Moonlight_programme_Pioneering_the_path_for_lunar_exploration</a></li>
+<li value="23">NASA. &quot;VIPER: Lunar Operations.&quot; <a href="https://science.nasa.gov/mission/viper/lunar-operations/">https://science.nasa.gov/mission/viper/lunar-operations/</a> (v3 reference [103])</li>
+<li value="24">D. Gaines et al. &quot;Productivity Challenges for Mars Rover Operations.&quot; JPL D-97908, 2016 (same title as the ICAPS 2016 workshop paper). <a href="https://ai.jpl.nasa.gov/public/documents/papers/gaines-report-roverProductivity.pdf">https://ai.jpl.nasa.gov/public/documents/papers/gaines-report-roverProductivity.pdf</a></li>
+<li value="25">E. L. Gralla, S. Shull, O. L. de Weck. &quot;A modeling framework for interplanetary supply chains.&quot; AIAA SPACE 2006; S. A. Shull, <i>Integrated Modeling and Simulation of Lunar Exploration Campaign Logistics</i>, S.M. thesis, MIT, 2007. <a href="https://dspace.mit.edu/handle/1721.1/39711">https://dspace.mit.edu/handle/1721.1/39711</a> (v3 [14])</li>
+<li value="26">T. Ishimatsu, O. L. de Weck, J. A. Hoffman, Y. Ohkami, R. Shishko. &quot;Generalized multicommodity network flow model for the Earth-Moon-Mars logistics system.&quot; <i>Journal of Spacecraft and Rockets</i> 53(1):25-38, 2016. <a href="https://dspace.mit.edu/handle/1721.1/110236">https://dspace.mit.edu/handle/1721.1/110236</a> (v3 [15])</li>
+<li value="27">K. Ho. <i>Dynamic Network Modeling for Spaceflight Logistics with Time-Expanded Networks</i>, PhD thesis, MIT, 2015; B. B. Jagannatha, K. Ho, &quot;Event-driven network model for space mission optimization,&quot; <i>Journal of Spacecraft and Rockets</i> 57(3), 2020. <a href="https://arxiv.org/abs/1904.09364">https://arxiv.org/abs/1904.09364</a> (v3 [16])</li>
+<li value="28">K. Ho et al. &quot;Space logistics: a review.&quot; 2024. <a href="https://arxiv.org/abs/2306.01107">https://arxiv.org/abs/2306.01107</a> (v3 [65])</li>
+<li value="29">Vera et al. &quot;A Mesa agent-based benchmark of a lunar base.&quot; <i>PLOS ONE</i>, 2026. <a href="https://doi.org/10.1371/journal.pone.0348882">https://doi.org/10.1371/journal.pone.0348882</a> (v3 [69])</li>
+<li value="30">Wang. &quot;Agent Mars.&quot; 2026. <a href="https://arxiv.org/abs/2602.13291">https://arxiv.org/abs/2602.13291</a> (v3 [70])</li>
+<li value="31">A. Krawciw, L. Antonyshyn, S. Lilge, N. Olmedo, F. Rehmatullah, M. Desjardins-Goulet, P. Toupin, T. D. Barfoot. &quot;Sharing the load: autonomous multi-rover cargo transport.&quot; arXiv:2510.18766, 2025. <a href="https://arxiv.org/abs/2510.18766">https://arxiv.org/abs/2510.18766</a> (v3 [18])</li>
+<li value="32">A. Krawciw et al. Autonomous cargo rover field test, 2026. <a href="https://arxiv.org/abs/2601.03371">https://arxiv.org/abs/2601.03371</a> (v3 [68])</li>
+<li value="33">A. Rahimov. <i>Who Hauls the Habitat? A Verified Simulation Testbed, a Pooled Dispatch Marketplace and a Reference Design for Lunar Surface Logistics</i>. Preprint, version 2, October 2026. (v3 [113])</li>
+<li value="34">M. K. Barker et al. &quot;Improved LOLA elevation maps for south pole landing sites: error estimates and their impact on illumination conditions.&quot; <i>Planetary and Space Science</i> 203:105119, 2021; PGDA product 78 (Site01, 5 m). <a href="https://pgda.gsfc.nasa.gov/products/78">https://pgda.gsfc.nasa.gov/products/78</a> (v3 [95])</li>
+<li value="35">M. K. Barker, E. Mazarico, G. A. Neumann, D. E. Smith, M. T. Zuber, J. W. Head, X. Sun. &quot;A New View of the Lunar South Pole from the Lunar Orbiter Laser Altimeter (LOLA).&quot; <i>The Planetary Science Journal</i> 4:183, 2023. doi:10.3847/PSJ/acf3e1; PGDA product 90, <a href="https://pgda.gsfc.nasa.gov/products/90">https://pgda.gsfc.nasa.gov/products/90</a> ; data doi:10.60903/gsfcpgda-lola-spole</li>
+<li value="36">C. H. Acton. &quot;Ancillary data services of NASA&#x27;s Navigation and Ancillary Information Facility.&quot; <i>Planetary and Space Science</i> 44(1):65-70, 1996; NAIF generic kernels, <a href="https://naif.jpl.nasa.gov/pub/naif/generic_kernels/">https://naif.jpl.nasa.gov/pub/naif/generic_kernels/</a> ; `azlcpo_c`, <a href="https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/cspice/azlcpo_c.html">https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/cspice/azlcpo_c.html</a></li>
+<li value="37">A. M. Annex et al. &quot;SpiceyPy: a Pythonic Wrapper for the SPICE Toolkit.&quot; <i>Journal of Open Source Software</i> 5(46):2050, 2020. doi:10.21105/joss.02050</li>
+<li value="38">R. S. Park, W. M. Folkner, J. G. Williams, D. H. Boggs. &quot;The JPL Planetary and Lunar Ephemerides DE440 and DE441.&quot; <i>The Astronomical Journal</i> 161:105, 2021. doi:10.3847/1538-3881/abd414</li>
+<li value="39">JPL Solar System Dynamics. Horizons API. <a href="https://ssd-api.jpl.nasa.gov/doc/horizons.html">https://ssd-api.jpl.nasa.gov/doc/horizons.html</a> ; request used: see `provenance.horizons_check.url` in `data/comms/connecting_ridge/earth_link-v1.json`</li>
+<li value="40">LOLA team. `AVGVISIB_85S_060M_201608_EARTH` (IMG and label), LRO LOLA GDR illumination extras. <a href="http://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/AVGVISIB_85S_060M_201608_EARTH.LBL">http://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/AVGVISIB_85S_060M_201608_EARTH.LBL</a></li>
+</ol>
+</body>
+</html>

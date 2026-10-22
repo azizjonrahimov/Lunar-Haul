@@ -1,0 +1,132 @@
+
+<h2 id="r1-sec-results">5. Results</h2>
+
+<p>All numbers in this section come from experiment E21 (Section 4): 2,560 simulated years, 20 seeds per cell, the
+same seeds in every cell. Differences between cells are paired by seed and carry Student-t 95&nbsp;% intervals;
+the coverage law and the break-evens carry bootstrap intervals over seeds (400 draws). Unless a sentence names
+another fleet, it refers to the reference fleet of Phase 2: six rovers, the marketplace job rule, pads 1&nbsp;km from
+the base, the link criterion &ldquo;any part of Earth's disc&rdquo; and the 24&nbsp;h deferral limit. The plume
+keep-out of v3 is off in E21, so that the link effect is seen alone.</p>
+
+<h3 id="r1-sec-res-map">5.1 Where Earth can be seen</h3>
+
+<p>Figure&nbsp;1 puts the link fractions of Table&nbsp;2 on the map. Four sites on the crest of the ridge (BASE,
+POWER, CONSTR and DEPOT) see Earth about half the time. The oxygen pilot plant (ISRU) sits in a hollow east of the
+base and never sees it in 2028&ndash;2031; the science site SCI_1 and the shadowed crater site PSR see it
+8&ndash;12&nbsp;% of the time, and only in the weeks of largest libration. A route is linked only while every
+100&nbsp;m sample on it sees Earth, so every route to ISRU, SCI_1 or PSR is dark or nearly so, and so is the route
+to pad B, which leaves the ridge.</p>
+
+<figure id="r1-fig-map"><img src="../../figures/r1_fig1_map.png" alt="Map of the base on the LOLA hillshade with each route coloured by the share of 2028-2031 in which Earth is in view along all of it">
+<figcaption><b>Figure 1.</b> Sites, pads at 1&nbsp;km and the slope-only route of every leg on the LOLA 20&nbsp;m
+hillshade, coloured by the share of 2028&ndash;2031 in which any part of Earth's disc is above the terrain horizon
+at every 100&nbsp;m sample of the route (direct-to-Earth links, 2.5&nbsp;m antenna; Modelled from SPICE and LOLA,
+Section&nbsp;3). Labels give each site's own fraction.</figcaption></figure>
+
+<h3 id="r1-sec-res-throughput">5.2 Throughput: a reachability loss</h3>
+
+<p>With direct links only, the reference fleet delivers {{R1-T-DTE}}&nbsp;t of cargo in the year against
+{{R1-T-ALWAYS}}&nbsp;t when Earth is always in view, a paired change of {{R1-T-LOSS-PCT}} (Table&nbsp;7,
+Figure&nbsp;2). Every fleet that needs a person for some of its driving loses about the same amount: the
+teleoperated fleet, the Phase-2 mix, and supervised rovers under the strict policy or the look-ahead policy. A fully
+autonomous fleet loses nothing.</p>
+
+<p>The loss is almost all one destination. The demand model makes {{R1-ISRU-BOUND-T}} of cargo a year ready for the
+ISRU plant, mostly regolith feedstock and plant equipment. Under direct links none of it is delivered:
+{{R1-LOST-ISRU-T}} is lost there, which is {{R1-LOSS-SHARE-ISRU}} of the total gap of {{R1-GAP-T}} (computed on the strict-policy fleet; the
+reference fleet's loss is the same within its interval, Table&nbsp;7). The remaining
+{{R1-GAP-ELSE-T}} is cargo for linked sites that is still under way at the end of the year, because rovers wait for
+Earth on their way to it.</p>
+
+<p>So the loss is not a shortage of rovers. One extra supervised rover adds {{R1-ROVER-GAIN-T}} a year under
+direct links, and a 10&nbsp;m mast at the base adds {{R1-MAST-GAIN-T}}: neither interval excludes zero. The mast does
+link the inner routes, but the dark routes are the far ones. Any relay restores the cargo: at a coverage of 0.1 the
+fleet recovers {{R1-RELAY01-RESTORE-PCT}} of the lost tonnage, and the throughput knee of Stage&nbsp;A is at
+{{R1-A-KNEE-P}}, the first coverage tested.</p>
+
+{{R1-TABLE-DTE}}
+
+<figure id="r1-fig-throughput"><img src="../../figures/r1_fig2_throughput.png" alt="Cargo delivered in the year against relay coverage for six fleets">
+<figcaption><b>Figure 2.</b> Cargo delivered inside the simulated year against relay coverage (0 = direct links
+only), six autonomy mixes, mean &plusmn; 95&nbsp;% interval over 20 seeds. The dashed line is the
+always-linked reference.</figcaption></figure>
+
+<h3 id="r1-sec-res-delay">5.3 Urgent delay: what coverage buys</h3>
+
+<p>Throughput saturates at the first relay level; urgent delay does not. Figure&nbsp;3 shows the time within which
+90&nbsp;% of urgent items are delivered against relay coverage. With direct links only, the reference fleet's value
+rises from {{R1-P90-ALWAYS}} to {{R1-P90-DTE}}. Coverage brings it down steadily rather than at a knee, and how fast
+depends on how much the rovers need a person. Table&nbsp;8 reads, for each fleet, the coverage at which the urgent
+delay falls to twice and to one and a half times its full-coverage value. Supervised rovers under the strict policy
+need a coverage of {{R1-P-2X-STRICT}} for the first target; under the strategic policy they need
+{{R1-P-2X-STRATEGIC}}. Hyperbolic and power laws fit the cells about twice as well as an exponential one
+(cross-validated over seeds), but no smooth form follows the slow decline between 0.2 and 1 closely enough to be
+inverted, so the targets in Table&nbsp;8 are read from the cells.</p>
+
+<figure id="r1-fig-delay"><img src="../../figures/r1_fig3_delay.png" alt="Urgent delay against relay coverage for six fleets on a log scale with fitted laws">
+<figcaption><b>Figure 3.</b> Hours within which 90&nbsp;% of urgent (priority-1) items are delivered, against relay
+coverage, log scale. Points are cell means with 95&nbsp;% intervals over 20 seeds; lines are the law chosen per
+fleet by cross-validation (hyperbolic or power).</figcaption></figure>
+
+{{R1-TABLE-COVERAGE}}
+
+<h3 id="r1-sec-res-breakeven">5.4 Rovers, a mast or autonomy, priced in relay coverage</h3>
+
+<p>Stage&nbsp;B asks what else could stand in for coverage. At a relay coverage of 0.5, where Figure&nbsp;3 is
+still falling, Table&nbsp;9 reads each option's urgent delay off the strict-policy curve as an equivalent coverage
+(Figure&nbsp;4). One extra rover shortens the delay by about a quarter and is worth {{R1-DP-ONE-LTV}} of coverage.
+A second rover adds nothing more, and a third gives most of the gain back, probably because operator demand grows
+with the fleet (the peak of linked demand rises from 1.3 to 1.6 operators). The strategic step, letting supervised
+rovers drive on their own between interventions, is worth more than a rover on its own, and the strategic step with
+one extra rover comes close to full coverage.</p>
+
+<p>Priced with the capital cost of one rover in our engine (45&nbsp;M$ a year, from v3's Assumed vehicle costs),
+0.1 of relay coverage at this point is worth {{R1-MUSD-PER-01}} a year. The interval is wide because the rover's
+effect is: in {{R1-SHARE-NONPOS}} of the bootstrap draws one rover bought no delay at all. We report it as an order
+of magnitude for comparing a relay service with fleet purchases, not as a price.</p>
+
+{{R1-TABLE-BREAKEVEN}}
+
+<figure id="r1-fig-breakeven"><img src="../../figures/r1_fig4_breakeven.png" alt="Bars of urgent delay at relay coverage 0.5 for the strict fleet, extra rovers and the strategic step, with equivalent coverage">
+<figcaption><b>Figure 4.</b> Urgent delay (90&nbsp;% within, hours) at relay coverage 0.5 for the strict-policy
+fleet as it is, with one to three extra supervised rovers, with the strategic policy, and with both. Labels give the
+relay coverage that gives the same delay on the strict fleet's Stage-A curve. Intervals: 95&nbsp;% over seeds.</figcaption></figure>
+
+<h3 id="r1-sec-res-policy">5.5 Driving without a link: the stranding problem</h3>
+
+<p>The strategic policy is only as good as the worst point on its route. Under direct links it delivers
+{{R1-T-STRATEGIC-DTE}}, more than the strict fleet because it passes unlinked stretches, but its rovers spend
+{{R1-WAIT-STRATEGIC-DTE}} a year stopped at an intervention where Earth will not rise for weeks, against
+{{R1-WAIT-STRICT-DTE}} under the strict policy. The spread between seeds is large, because one hazard drawn on a
+rarely linked stretch can hold a rover for most of the year. Checking every sample of the route before committing,
+at the time the rover would pass it, removes the stranding ({{R1-WAIT-AVOID-DTE}}), but then the fleet refuses
+the same dark routes as the strict one and delivers the same tonnage. With any relay the two strategic policies are
+nearly equal, and both well ahead of the strict policy in urgent delay (Table&nbsp;8).</p>
+
+<p>The deferral limit matters just as much. When a job whose link is more than a day away is committed anyway, the
+rover parks with its load until the link returns, and the urgent delay of the reference fleet under direct links
+rises from {{R1-DEFER24-P90}} to {{R1-NODEFER-P90}} (Table&nbsp;10).</p>
+
+<h3 id="r1-sec-res-operators">5.6 Operator demand comes in bursts</h3>
+
+<p>When links come and go, the rovers that need an operator all need one at the next link-up. For the teleoperated
+fleet the peak of linked operator demand divided by its mean rises from {{R1-PTM-FULL}} with a relay always in view
+to {{R1-PTM-DTE}} under direct links only (Figure&nbsp;5). We do not claim from E21 that the three operators on duty
+are overrun: the admission rule of the engine counts only demand that is linked at the moment, so a job can start
+while another rover is between linked stretches, and the peak exceeds the staff slightly even at full coverage.
+A version with a hard operator limit is in preparation; the bunching itself does not depend on that rule.</p>
+
+<figure id="r1-fig-operators"><img src="../../figures/r1_fig5_operators.png" alt="Peak to mean operator demand against relay coverage for the teleoperated fleet and the Phase-2 mix">
+<figcaption><b>Figure 5.</b> Peak divided by mean of linked operator demand (operators) against relay coverage,
+teleoperated fleet (4&nbsp;s round trip) and Phase-2 mix; mean &plusmn; 95&nbsp;% interval over 20 seeds.</figcaption></figure>
+
+<h3 id="r1-sec-res-sensitivity">5.7 Sensitivity</h3>
+
+<p>Table&nbsp;10 collects Stage&nbsp;C. Throughput hardly depends on the link criterion: requiring the centre of the
+disc 2&deg; above the horizon instead of any part of it changes the delivered tonnage by at most {{R1-CRIT-RANGE}}.
+Urgent delay depends on it more, as expected from shorter windows. Pad standoff matters under direct links, because
+pads farther from the ridge see less of Earth: pads at 0.5&nbsp;km deliver {{R1-PADS-05-GAIN}} more a year than
+pads at 1&nbsp;km, and pads at 3&nbsp;km {{R1-PADS-3-LOSS}} less. With a relay of coverage 0.8 the standoff has no
+measurable effect on tonnage. This adds a second cost to pad distance besides the travel cost measured in v3.</p>
+
+{{R1-TABLE-STAGEC}}
