@@ -1,0 +1,213 @@
+/* Phase 4 UI components (F-30): glass panel, segmented pills, stat chip, narrative card, callouts, scene chips,
+   timeline, loading door, big counter, tooltip. Tokens only (tokens.css), so every component works in the
+   instrument scope and in both reading themes. Targets >= 24 px (WCAG 2.5.8); focus rings use --focus (>= 3:1). */
+
+/* ---------- glass panel ---------- */
+.ui-glass {
+  background: var(--panel); color: var(--ink); border: 1px solid var(--panel-line); border-radius: var(--radius-panel);
+  box-shadow: var(--panel-shadow); padding: var(--s-4);
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .instrument .ui-glass, .instrument.ui-glass, .instrument .ui-chip, .instrument .ui-callout-pill {
+    -webkit-backdrop-filter: blur(14px) saturate(1.15); backdrop-filter: blur(14px) saturate(1.15);
+  }
+}
+.ui-label {
+  font-family: var(--font-display); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink-2); line-height: 1.4; margin: 0;
+}
+.ui-title { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; color: var(--ink); }
+.ui-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2); min-height: 2rem; min-width: 2rem;
+  padding: 0.3em 0.85em; border-radius: 999px; border: 1px solid var(--panel-line); background: transparent; color: var(--ink);
+  font: 600 0.8125rem/1.2 var(--font-display); cursor: pointer; text-decoration: none;
+}
+.ui-btn:hover { background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.ui-btn.primary { background: var(--accent); border-color: transparent; color: var(--on-accent); }
+.ui-btn.primary:hover { background: color-mix(in srgb, var(--accent) 85%, var(--ink)); }
+.ui-btn[disabled] { opacity: 0.55; cursor: not-allowed; }
+.ui-btn .icon { width: 1em; height: 1em; }
+
+/* ---------- segmented pill control (native radios: arrow keys and radiogroup semantics come with them) ---------- */
+.ui-seg { border: 0; margin: 0; padding: 0; min-inline-size: 0; }
+.ui-seg > legend { padding: 0; margin-bottom: var(--s-1); }
+.ui-seg-track {
+  display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 7%, var(--panel)); border: 1px solid var(--panel-line);
+}
+.ui-seg label { position: relative; display: inline-flex; }
+.ui-seg input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.ui-seg span {
+  display: inline-flex; align-items: center; gap: 0.4em; min-height: 2rem; padding: 0.3em 0.95em; border-radius: 999px;
+  font: 600 0.8125rem/1.2 var(--font-display); color: var(--ink-2); white-space: nowrap;
+}
+.ui-seg label:hover span { color: var(--ink); }
+.ui-seg input:checked + span { background: var(--accent); color: var(--on-accent); }
+.ui-seg input:focus-visible + span { outline: 2px solid var(--focus); outline-offset: 2px; }
+.ui-seg input:disabled + span { opacity: 0.5; }
+@media (forced-colors: active) { .ui-seg input:checked + span { outline: 2px solid CanvasText; } }
+
+/* ---------- stat chip ---------- */
+.ui-chips { display: flex; flex-wrap: wrap; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+.ui-chip {
+  display: inline-flex; flex-direction: column; gap: 2px; padding: 0.45rem 0.8rem 0.5rem; min-width: 7.5rem;
+  background: var(--panel); border: 1px solid var(--panel-line); border-radius: 12px; color: var(--ink);
+}
+.ui-chip-value { font-family: var(--font-num); font-size: 1.25rem; line-height: 1.25; white-space: nowrap; }
+.ui-chip-value .num .v { font-weight: 600; }
+.ui-chip-value .num .u { font-size: 0.7em; }
+.ui-chip-value .flag { font-family: var(--font-display); font-size: 0.6875rem; vertical-align: 0.2em; }
+.ui-chip[data-tone="warm"] .ui-chip-value .v { color: var(--warm); }
+.ui-chip[data-tone="cool"] .ui-chip-value .v { color: var(--accent); }
+
+/* flags upgraded to buttons by upgradeFlags(): same pill, now focusable and tappable */
+button.flag { font-family: inherit; background: transparent; cursor: help; min-height: 0; position: relative; }
+button.flag::after { content: ''; position: absolute; inset: -6px -4px; }   /* 24 px hit area around the small pill */
+
+/* ---------- narrative card ---------- */
+.ui-story { max-width: 24rem; display: flex; flex-direction: column; gap: var(--s-2); }
+.ui-story-title { font-size: 1.25rem; margin: 0; }
+.ui-story-text { font-size: 0.9375rem; line-height: 1.6; color: var(--ink); }
+.ui-story-text p { margin: 0 0 var(--s-2); }
+.ui-story-text p:last-child { margin-bottom: 0; }
+.ui-story-text .num .v { font-family: var(--font-num); font-weight: 600; }
+.ui-story-nav { display: flex; align-items: center; gap: var(--s-2); margin-top: var(--s-2); }
+.ui-dots { display: flex; gap: 0; margin: 0; padding: 0; list-style: none; }
+.ui-dots button {
+  width: var(--target); height: var(--target); padding: 0; border: 0; background: none; cursor: pointer; border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.ui-dots button::before {
+  content: ''; width: 8px; height: 8px; border-radius: 999px; background: var(--ink-2);
+  transition: width var(--dur), background-color var(--dur);
+}
+.ui-dots button[aria-current="step"]::before { width: 18px; background: var(--accent); }
+.ui-iconbtn {
+  width: 2rem; height: 2rem; border-radius: 999px; border: 1px solid var(--panel-line); background: transparent; color: var(--ink);
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; flex: none;
+}
+.ui-iconbtn:hover { background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.ui-iconbtn[disabled] { opacity: 0.4; cursor: default; }
+.ui-iconbtn .icon { width: 1rem; height: 1rem; }
+
+/* ---------- callouts: dot + leader + pill, positioned by the 3D stage ---------- */
+.ui-callouts { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.ui-callouts svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.ui-callouts polyline { fill: none; stroke: var(--ink); stroke-opacity: 0.8; stroke-width: 1; }
+.ui-callouts polyline.halo { stroke: var(--bg); stroke-opacity: 0.7; stroke-width: 3; }
+.ui-callout-dot, .ui-callout-pill { position: absolute; left: 0; top: 0; will-change: transform; }
+.ui-callout-dot {
+  width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 999px; background: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent), 0 0 0 1px var(--bg);
+}
+.ui-callout-pill {
+  pointer-events: auto; white-space: nowrap; padding: 0.2rem 0.7rem; min-height: var(--target); display: inline-flex; align-items: center;
+  border-radius: 999px; background: var(--panel); border: 1px solid var(--panel-line); color: var(--ink);
+  font: 600 0.75rem/1.2 var(--font-display); letter-spacing: 0.01em;
+}
+button.ui-callout-pill { cursor: pointer; }
+button.ui-callout-pill:hover, .ui-callout-pill[aria-pressed="true"] { border-color: var(--accent); }
+.ui-callout-pill[data-tone="warm"] { border-color: color-mix(in srgb, var(--warm) 60%, var(--panel-line)); }
+.ui-callout[hidden] { display: none; }
+
+/* ---------- scene-switcher chips (toolbar of toggle buttons) ---------- */
+.ui-scenes { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.ui-scene {
+  display: inline-flex; flex-direction: column; align-items: flex-start; gap: 0; min-height: 2.75rem; padding: 0.35rem 0.9rem 0.4rem;
+  border-radius: 12px; border: 1px solid var(--panel-line); background: var(--panel); color: var(--ink); cursor: pointer; text-align: left;
+  font: 600 0.875rem/1.25 var(--font-display); position: relative;
+}
+.ui-scene small { font: 400 0.75rem/1.3 var(--font-sans); color: var(--ink-2); }
+.ui-scene:hover { border-color: color-mix(in srgb, var(--accent) 60%, var(--panel-line)); }
+.ui-scene[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 -3px 0 var(--accent); }
+.ui-scene[aria-pressed="true"]::after {   /* not colour alone: a check mark on the current scene */
+  content: ''; position: absolute; top: 0.45rem; right: 0.5rem; width: 0.4rem; height: 0.7rem;
+  border: solid var(--accent); border-width: 0 2px 2px 0; transform: rotate(45deg);
+}
+.ui-scene[aria-pressed="true"] { padding-right: 1.6rem; }
+
+/* ---------- timeline: native range over night bands and event ticks ---------- */
+.ui-timeline { display: flex; flex-direction: column; gap: var(--s-1); min-width: 0; }
+.ui-tl-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-3); }
+.ui-tl-value { font-family: var(--font-num); font-size: 0.875rem; color: var(--ink); white-space: nowrap; }
+.ui-tl-track { position: relative; height: 2.25rem; }
+.ui-tl-bands, .ui-tl-ticks { position: absolute; left: 9px; right: 9px; pointer-events: none; }   /* 9 px = half the thumb */
+.ui-tl-bands { top: 50%; height: 14px; margin-top: -7px; }
+.ui-tl-band { position: absolute; top: 0; bottom: 0; background: color-mix(in srgb, var(--ink) 28%, transparent); border-radius: 2px; }
+.ui-tl-ticks { top: 0; height: 9px; }
+.ui-tl-tick { position: absolute; top: 0; width: 9px; height: 9px; margin-left: -4.5px; }
+.ui-tl-tick[data-kind="landing"] { background: var(--warm); clip-path: polygon(50% 100%, 0 0, 100% 0); }
+.ui-tl-tick[data-kind="night"] { border-radius: 999px; border: 2px solid var(--ink-2); }
+.ui-tl-tick[data-kind="strand"] { background: var(--neg); clip-path: polygon(15% 0, 50% 35%, 85% 0, 100% 15%, 65% 50%, 100% 85%, 85% 100%, 50% 65%, 15% 100%, 0 85%, 35% 50%, 0 15%); }
+.ui-tl-tick[data-kind="info"] { background: var(--accent); clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+.ui-timeline input[type=range] {
+  -webkit-appearance: none; appearance: none; position: absolute; left: 0; right: 0; top: 50%; margin: -12px 0 0; width: 100%; height: 24px;
+  background: transparent; cursor: pointer;
+}
+.ui-timeline input[type=range]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 999px;
+  background: linear-gradient(to right, var(--accent) var(--p, 0%), color-mix(in srgb, var(--ink) 35%, transparent) var(--p, 0%));
+}
+.ui-timeline input[type=range]::-moz-range-track { height: 4px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 35%, transparent); }
+.ui-timeline input[type=range]::-moz-range-progress { height: 4px; border-radius: 999px; background: var(--accent); }
+.ui-timeline input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 18px; height: 18px; margin-top: -7px; border-radius: 999px;
+  background: var(--ink); border: 3px solid var(--accent);
+}
+.ui-timeline input[type=range]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 999px; background: var(--ink); border: 3px solid var(--accent); }
+.ui-timeline input[type=range]:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 999px; }
+.ui-tl-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-3); font-size: 0.8125rem; color: var(--ink-2); }
+.ui-tl-legend { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-3); margin: 0 0 0 auto; padding: 0; list-style: none; }
+.ui-tl-legend li { display: inline-flex; align-items: center; gap: 0.35em; }
+.ui-tl-legend .ui-tl-tick { position: static; margin: 0; display: inline-block; }
+.ui-tl-legend .ui-tl-band { position: static; display: inline-block; width: 14px; height: 9px; }
+
+/* ---------- loading door ---------- */
+.ui-door { position: absolute; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; padding: var(--s-4); overflow: hidden; }
+.ui-door[hidden] { display: none; }
+.ui-door-leaf { position: absolute; top: 0; bottom: 0; width: 50.5%; background: var(--bg); transition: transform 700ms cubic-bezier(.7, 0, .2, 1); }
+.ui-door-leaf.l { left: 0; border-right: 1px solid var(--panel-line); }
+.ui-door-leaf.r { right: 0; }
+.ui-door.opening .ui-door-leaf.l { transform: translateX(-101%); }
+.ui-door.opening .ui-door-leaf.r { transform: translateX(101%); }
+.ui-door-card { position: relative; width: min(22rem, 100%); display: flex; flex-direction: column; gap: var(--s-3); text-align: left; transition: opacity 250ms; }
+.ui-door.opening .ui-door-card { opacity: 0; }
+.ui-door-title { font-size: 1.375rem; margin: 0; }
+.ui-door-sub { margin: 0; color: var(--ink-2); font-size: 0.875rem; line-height: 1.5; }
+.ui-door-bar { height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 14%, transparent); overflow: hidden; }
+.ui-door-bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: inherit; transition: width 150ms linear; }
+.ui-door-bar.indeterminate i { width: 30%; animation: ui-door-slide 1.2s ease-in-out infinite; }
+@keyframes ui-door-slide { from { transform: translateX(-100%); } to { transform: translateX(340%); } }
+.ui-door-status { font-family: var(--font-num); font-size: 0.8125rem; color: var(--ink-2); min-height: 1.3em; margin: 0; }
+.ui-door-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-4); }
+.ui-door-actions a { font-size: 0.875rem; color: var(--link); }
+@media (prefers-reduced-motion: reduce) {
+  .ui-door-leaf, .ui-door-card, .ui-door-bar i { transition: none; }
+  .ui-door-bar.indeterminate i { animation: none; width: 100%; opacity: 0.5; }
+}
+
+/* ---------- big animated counter ---------- */
+.ui-counter { display: inline-flex; flex-direction: column; gap: 0; }
+.ui-counter-value {
+  display: inline-flex; align-items: baseline; gap: 0.15em; font-family: var(--font-num); font-weight: 600; line-height: 1.05;
+  font-size: clamp(2.5rem, 1.6rem + 3.6vw, 4.5rem); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; color: var(--ink);
+}
+.ui-counter[data-sign="pos"] .ui-counter-value { color: var(--pos); }
+.ui-counter[data-sign="neg"] .ui-counter-value { color: var(--neg); }
+.ui-counter-glyph { width: 0.42em; height: 0.36em; background: currentColor; clip-path: polygon(50% 0, 100% 100%, 0 100%); align-self: center; margin-right: 0.08em; }
+.ui-counter[data-sign="neg"] .ui-counter-glyph { transform: rotate(180deg); }
+.ui-counter[data-sign="zero"] .ui-counter-glyph { clip-path: none; height: 0.08em; }
+.ui-counter-unit { font-size: 0.32em; font-weight: 500; color: var(--ink-2); letter-spacing: 0; margin-left: 0.2em; }
+
+/* ---------- tooltip (hover, focus or tap; Esc closes; the pointer can move onto it) ---------- */
+.ui-tip {
+  position: fixed; left: 0; top: 0; z-index: 1000; max-width: min(18rem, calc(100vw - 16px)); padding: 0.45rem 0.65rem;
+  background: var(--bg-2); color: var(--ink); border: 1px solid var(--panel-line); border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3); font: 400 0.8125rem/1.45 var(--font-sans); text-align: left; white-space: normal;
+}
+.ui-tip[hidden] { display: none; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .ui-btn, .ui-seg span, .ui-scene, .ui-iconbtn { transition: background-color var(--dur-fast), color var(--dur-fast), border-color var(--dur-fast); }
+}
+@media (prefers-reduced-motion: reduce) { .ui-dots button::before { transition: none; } }

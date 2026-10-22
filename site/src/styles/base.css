@@ -56,7 +56,7 @@ section + section { margin-top: var(--s-7); }
 .site-header { border-bottom: 1px solid var(--hairline); background: var(--bg); position: sticky; top: 0; z-index: 50; }
 .site-header .bar { display: flex; align-items: center; gap: var(--s-4); min-height: 3.25rem; }
 .brand { font-weight: 700; color: var(--ink); text-decoration: none; letter-spacing: -0.01em; white-space: nowrap; }
-.brand span { color: var(--ink-3); font-weight: 500; }
+.brand span { color: var(--ink-2); font-weight: 500; }   /* ink-3 was 3.4:1 on white (below AA; found on /design/) */
 .nav { display: flex; gap: var(--s-1); flex-wrap: wrap; margin: 0 0 0 auto; padding: 0; list-style: none; font-size: var(--fs-small); }
 .nav a { color: var(--ink-2); text-decoration: none; padding: 0.35em 0.55em; border-radius: var(--radius); display: block; }
 .nav a:hover { color: var(--ink); background: var(--bg-2); }

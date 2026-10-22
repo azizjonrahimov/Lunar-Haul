@@ -1864,3 +1864,54 @@ FRONTEND: idle until driving-v1-learned.json lands (then the column, ~30 min). B
   3. CLPS is drawn as Nova-C (methalox), while its descent Isp is the Apollo DPS stand-in for a storable engine. Is that OK, or should CLPS use the Griffin (hypergolic) look?
   4. Pad diameter is 54 m (Metzger & Autry's 27 m-radius pad). The Artemis requirement is 200 m, being negotiated down to 100 m; say if you want 100 m.
   5. Full suite: run it when memory allows, or tell me to.
+
+## F-30 DONE 08:16 | Design system v2: the "instrument" theme, the UI kit (site/src/ui/) and the /design/ page
+- **Files changed:**
+  - `site/src/styles/tokens.css`: Sora + JetBrains Mono faces (Fontsource `@import`, only downloaded where used), `--font-display`, `--font-num`, `--radius-panel` 16 px, `--target` 24 px; component tokens (`--panel`, `--panel-line`, `--panel-shadow`, `--accent`, `--on-accent`, `--warm`, `--pos`, `--neg`) for the light and dark reading themes; the `.instrument` scope (on `<body>` or any block; always dark).
+  - Two AA fixes that touch every page, both found by the new checks: the light theme's `--flag-assumed` #8a7a1c → #807118 (was 4.30:1 on white), and in `site/src/styles/base.css` the header subtitle `.brand span` ink-3 → ink-2 (was 3.36:1 on white).
+  - New `site/src/ui/`: `ui.css`, `index.js`, `dom.js`, `segmented.js`, `chip.js`, `narrative.js`, `callout.js`, `scenes.js`, `timeline.js`, `door.js`, `counter.js`, `tooltip.js`, `contrast.js`.
+  - New page `site/design/index.html` (noindex, not in the nav) + `site/src/design/{main.js,design.css}`; `site/vite.config.js` (PAGES gets `design/`); `site/package.json` + lock: `@fontsource-variable/{sora,jetbrains-mono,space-grotesk}` 5.3.0, pinned, devDependencies.
+- **API** (import from `site/src/ui/index.js`; vanilla JS, each returns `{el, …}`):
+  - `segmented({legend, options, value, onChange})` → `set`, `setDisabled`. Native radios in a fieldset, so radiogroup semantics and arrow keys come from the browser.
+  - `statChip({label, value, unit, flag, source, digits, tone})` → `set(value)`. Renders through `components/num.js`; the flag becomes a tooltip button (hover, focus or tap).
+  - `narrative({steps: [{eyebrow, title, html}], onStep, level, label})` → `go(i)`, `set(content)`. Step dots + arrows; a polite live region is filled 500 ms after the last change (final text only).
+  - `callouts(container)` → `add({id, text, onSelect, tone})` returns `{place(x, y), show(bool), setText, setPressed, remove}`; plus `layout()` (vertical overlap push). Dot + leader (with a dark halo) + pill. Transforms are written only on change; pills stay inside the layer. For F-31: project anchors, then call place() for each and layout() once per frame.
+  - `sceneChips({label, scenes: [{value, label, note}], value, onChange})`: a toolbar of toggle buttons; arrow keys move focus, Enter switches (no data load per arrow press).
+  - `timeline({label, min, max, step, value, format, events: [{t, kind, label}], bands, onInput})` → `set`, `setEvents`, `setBands`. Native range with aria-valuetext; ticks by shape (landing ▼, nightfall ○, stranding ✕, info ◆), night bands, previous/next-event buttons, legend.
+  - `door({title, subtitle, skip: {href, label}, autoEnter, onEnter})` → `fetch(url, {bytes, label})` (returns a Response), `ready()`, `fail(msg)`, `open()`, `reset()`. Real byte progress from the stream: Content-Length when not content-encoded, or a known `bytes` value; otherwise "x MB loaded".
+  - `counter({label, value, digits, unit, signed})` → `set(v, {animate})`, `commit()`. Tabular mono digits, explicit sign plus a ▲/▼ glyph beside the red/green, 400 ms count; instant under reduced motion; only `commit()` is announced.
+  - `tooltip(trigger, text)` (WCAG 1.4.13: hoverable, Esc closes it, tap toggles it, tap outside closes it), `upgradeFlags(root)`. Glass panel = class `ui-glass`. `contrast.js`: `rgba`, `over`, `ratio`, `tokens`.
+- **Instrument tokens:**
+  - bg #070b14; glass `rgba(11,17,30,.88)` with a 14 px backdrop blur, opaque under prefers-reduced-transparency.
+  - ink #edf1f7, muted #aab5c7, faint #6f7b91 (for text ≥ 24 px only).
+  - cyan #74d5f5, amber #ffb054, pos #62d394, neg #ff8088, focus #8fe3ff.
+  - Tol blue, purple and green lifted to #6b9bd1, #cc5c9a and #34a447 (same hue) so marks keep 3:1 on dark glass; the other Tol bright colours are unchanged.
+- **Checks:**
+  - Live contrast table on /design/: **170 of 170 pairs pass**.
+    - Instrument columns: page; glass over black, mid grey, sunlit regolith #b0b0b0 and white (worst case). Reading light and dark columns: page and panel.
+    - Worst instrument small-text pair: muted on glass over white, 6.6:1.
+  - **Lighthouse 13.5.0** on the production build, /design/: **accessibility 100, best practices 100**.
+  - axe-core 4.14 in the tab: 0 violations, light and dark, with the scene backdrop and the white one.
+  - Keyboard-only: a 30-Tab walk reaches every control in a sensible order (story, counter, scene toolbar as one tab stop, chip flags, modes, timeline, callout buttons, door). Arrow keys work on the radios; Esc closes tooltips; focus rings are visible in both themes.
+  - Phone at 390 px (iframe): no horizontal scroll; the scene is on top, the panels stack below.
+  - Reduced motion (matchMedia override): the counter snaps and the door opens instantly; CSS transitions are off.
+  - Door: real fetches of 5 terrain-pack files, with progress counted from the stream.
+  - Existing pages /, /world/, /lab/lander/ and /lab/rover/: no console errors; the only visible changes are the two colour fixes.
+  - `npx vite build` clean; /design/ is 25 kB JS (10 kB gzip) + 17 kB CSS.
+  - Dev and preview servers are stopped and the browser tab is closed.
+- **Fonts:**
+  - The OFL files of Sora ("Copyright 2019 The Sora Project Authors"), JetBrains Mono and Space Grotesk declare **no Reserved Font Name**. The Fontsource files are the unmodified Google Fonts subsets.
+  - Latin woff2 sizes: Sora 33.7 kB, JetBrains Mono 40.4 kB, Space Grotesk 22.3 kB (Space Grotesk is loaded on /design/ only).
+- **A/B:** **Sora reads better at 12–14 px.** It has open apertures, a larger x-height and plain letterforms. Space Grotesk's narrow, quirky y/a/t and tighter spacing smudge in the 12–13 px uppercase labels. Sora costs about 10–15 % more width; the pills are sized for it. Recommendation: Sora. After you decide, I drop the Space Grotesk dependency and the A/B control.
+- **How to check:**
+  - Run `cd site && npm run dev` and open http://localhost:5173/design/.
+  - "Behind the glass" → White or Sunlit regolith: the glass stays legible.
+  - Tab through the stage; "Display face (A/B)"; "Play −71 to +40"; "Replay the loading door".
+  - The contrast summary above the tables reads "170 of 170 pairs pass".
+  - Switch the theme in the header for the reading section.
+- **From BACKEND:** B-30 `data/catalog/vehicles-v1.json`. The specimen numbers in `site/src/design/main.js` are published specs with sources, marked MOCK until then.
+- **Questions for LEAD:**
+  1. OK to keep the two global colour fixes (header subtitle, light Assumed flag)? Both were real AA failures.
+  2. Pre-existing and unchanged: on light reading pages, Tol yellow, cyan and grey are below 3:1 as marks on white. They are used with direct labels. Leave them?
+  3. Lighthouse was re-run on /design/ only (0.4–0.6 GB RAM free); the other pages were spot-checked in the browser, not re-scored.
+  4. 3D pages will set `<body class="instrument">` and the header adapts. The header's theme button then changes nothing visible there: hide it on instrument pages (my plan for F-31) or keep it?

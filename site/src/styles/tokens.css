@@ -1,5 +1,12 @@
 /* LunarSim design tokens (PLAN 5.7). Measures follow Distill's d-article.css; colour sets are
-   Paul Tol "bright" (categorical) and Fabio Crameri "batlow" (elevation, 9 stops from cmcrameri 1.10). */
+   Paul Tol "bright" (categorical) and Fabio Crameri "batlow" (elevation, 9 stops from cmcrameri 1.10).
+   Phase 4 (F-30): display + number faces, component tokens for both reading themes, and the dark
+   "instrument" scope (class .instrument on <body> or on any block) used by the 3D pages. */
+
+/* Sora (display) and JetBrains Mono (numbers): Fontsource builds of the Google Fonts files, OFL 1.1, unmodified;
+   neither OFL file declares a Reserved Font Name. A face is only downloaded on pages that use it. */
+@import '@fontsource-variable/sora/wght.css';
+@import '@fontsource-variable/jetbrains-mono/wght.css';
 
 @font-face {
   /* Adobe's own WOFF2 build of Source Sans 3 (OFL 1.1, unmodified, so the Reserved Font Name stays) */
@@ -18,6 +25,8 @@
   /* type */
   --font-sans: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;  /* telemetry: tabular */
+  --font-display: 'Sora Variable', var(--font-sans);                                    /* Phase 4: titles, pills */
+  --font-num: 'JetBrains Mono Variable', var(--font-mono);                              /* Phase 4: every number */
   --fs-body: 1rem;             /* 16 px; 1.06rem from 1024 px (base.css) */
   --lh-body: 1.7;
   --fs-small: 0.875rem;
@@ -32,6 +41,8 @@
   --s-1: 0.25rem; --s-2: 0.5rem; --s-3: 0.75rem; --s-4: 1rem; --s-5: 1.5rem; --s-6: 2rem; --s-7: 3rem; --s-8: 4.5rem;
   --gutter: 16px;              /* phone side gutter */
   --radius: 6px;
+  --radius-panel: 16px;        /* glass panels, cards */
+  --target: 24px;              /* WCAG 2.5.8 minimum target size */
 
   /* surfaces and ink (light) */
   --bg: #ffffff;
@@ -52,7 +63,11 @@
   --batlow-5: #BE9035; --batlow-6: #F19D6B; --batlow-7: #FDB4B4; --batlow-8: #FACCFA;
 
   /* provenance flags on numbers (Num, Figure) */
-  --flag-measured: #228833; --flag-spec: #4477AA; --flag-modelled: #AA3377; --flag-assumed: #8a7a1c;
+  --flag-measured: #228833; --flag-spec: #4477AA; --flag-modelled: #AA3377; --flag-assumed: #807118;   /* was #8a7a1c (4.30:1 on white, below AA; found by /design/) */
+
+  /* components (src/ui): panel surface, cool accent (data, guidance), warm accent (thrust, heat), signs */
+  --panel: #ffffff; --panel-line: rgba(0, 0, 0, 0.14); --panel-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --accent: #1d6b8a; --on-accent: #ffffff; --warm: #9a5200; --pos: #1f7a3f; --neg: #b3261e;
 
   /* motion: tiered, see base.css */
   --dur-fast: 120ms; --dur: 220ms;
@@ -68,6 +83,8 @@
     --hairline: rgba(255, 255, 255, 0.1);
     --link: #8db3dc; --focus: #66CCEE;
     --flag-measured: #4fbf5c; --flag-spec: #7aa6d6; --flag-modelled: #d47aac; --flag-assumed: #d8c75a;
+    --panel: #1a1c1f; --panel-line: rgba(255, 255, 255, 0.16); --panel-shadow: none;
+    --accent: #6fcde9; --on-accent: #0b1a22; --warm: #f0a54a; --pos: #5cc98a; --neg: #ff8a80;
   }
 }
 :root[data-theme="dark"] {
@@ -76,6 +93,30 @@
   --hairline: rgba(255, 255, 255, 0.1);
   --link: #8db3dc; --focus: #66CCEE;
   --flag-measured: #4fbf5c; --flag-spec: #7aa6d6; --flag-modelled: #d47aac; --flag-assumed: #d8c75a;
+  --panel: #1a1c1f; --panel-line: rgba(255, 255, 255, 0.16); --panel-shadow: none;
+  --accent: #6fcde9; --on-accent: #0b1a22; --warm: #f0a54a; --pos: #5cc98a; --neg: #ff8a80;
+}
+
+/* Instrument theme (Phase 4 3D pages): always dark, whatever the reading theme. Glass panels stay >= 0.88 opaque
+   so small text passes 4.5:1 even with a white scene behind them (research §3.3; live table on /design/).
+   ink-3 ("faint") is for text >= 24 px or decoration only. Tol blue, purple and green are lifted (same hue) to
+   keep 3:1 for marks on dark glass; the other Tol bright colours pass as they are. */
+.instrument {
+  color-scheme: dark;
+  --bg: #070b14; --bg-2: #0d1422;
+  --ink: #edf1f7; --ink-2: #aab5c7; --ink-3: #6f7b91;
+  --hairline: rgba(255, 255, 255, 0.12);
+  --link: #8fd7f2; --focus: #8fe3ff;
+  --font-mono: var(--font-num);
+  --panel: rgba(11, 17, 30, 0.88); --panel-line: rgba(255, 255, 255, 0.14);
+  --panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  --accent: #74d5f5; --on-accent: #04121b; --warm: #ffb054; --pos: #62d394; --neg: #ff8088;
+  --tol-blue: #6b9bd1; --tol-purple: #cc5c9a; --tol-green: #34a447;
+  --flag-measured: #4fbf5c; --flag-spec: #7aa6d6; --flag-modelled: #d47aac; --flag-assumed: #d8c75a;
+  background: var(--bg); color: var(--ink);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .instrument { --panel: rgb(11, 17, 30); }
 }
 
 @media (prefers-reduced-motion: reduce) {

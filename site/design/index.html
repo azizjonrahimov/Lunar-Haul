@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design system · LunarHaul</title>
+<meta name="description" content="Development page: the Phase 4 instrument theme and UI components of LunarHaul, with a live contrast check.">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="<!--@base-->favicon.svg" type="image/svg+xml">
+<script>try { var t = localStorage.getItem('lunarsim.theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<script type="module" src="/src/main.js"></script>
+<script type="module" src="/src/design/main.js"></script>
+</head>
+<body>
+<!--@header-->
+<main id="main">
+  <div class="wrap">
+    <header class="page-head">
+      <p class="ui-label">Development page · not in the navigation</p>
+      <h1>Design system v2</h1>
+      <p>The parts every Phase 4 3D page is built from, shown in the dark instrument theme and in the reading theme,
+        with a contrast table computed live from the CSS variables. The vehicle numbers are specimens taken from
+        published specifications; the 3D pages will read them from the vehicle catalogue.</p>
+    </header>
+    <div class="d-controls" id="d-face"></div>
+  </div>
+
+  <section class="d-sec" aria-labelledby="h-inst">
+    <div class="wrap">
+      <h2 id="h-inst">Instrument theme</h2>
+      <p class="prose">A 3D page: one subject in the middle, a few segmented modes, a story card that rewrites itself,
+        live numbers in chips. Change what sits behind the glass to check legibility over the darkest and the
+        brightest parts of a scene.</p>
+      <div class="d-controls" id="d-backdrop-ctl"></div>
+      <div class="instrument d-inst">
+        <div class="d-stage" id="d-stage" data-bg="scene">
+          <div class="d-hud">
+            <div class="d-story" id="i-story"></div>
+            <div class="d-right">
+              <div class="ui-glass d-counter-box" id="i-counter"></div>
+              <div id="i-scenes"></div>
+              <div id="i-chips" class="ui-chips"></div>
+            </div>
+            <div class="d-bottom">
+              <div class="d-row"><div class="ui-glass d-modes" id="i-modes"></div></div>
+              <div class="ui-glass" id="i-timeline"></div>
+            </div>
+          </div>
+          <div class="d-view" id="d-view">
+            <svg class="d-backdrop" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+              <defs>
+                <linearGradient id="d-ground" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#c4c4c4"/><stop offset="0.35" stop-color="#a6a6a6"/><stop offset="1" stop-color="#3a3a3a"/>
+                </linearGradient>
+                <linearGradient id="d-foil" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0" stop-color="#7a5a12"/><stop offset="0.45" stop-color="#e2b54a"/><stop offset="1" stop-color="#5e430c"/>
+                </linearGradient>
+              </defs>
+              <g class="d-scene">
+                <rect width="1600" height="900" fill="#000"/>
+                <circle cx="1310" cy="452" r="16" fill="#9fb8d8"/>
+                <path d="M0 470 L380 462 L720 474 L1080 458 L1600 468 L1600 900 L0 900 Z" fill="url(#d-ground)"/>
+                <path d="M845 690 L1600 610 L1600 660 L860 712 Z" fill="#141414" opacity="0.85"/>
+                <path d="M120 560 L700 540 L700 548 L130 570 Z M980 520 L1600 500 L1600 506 L990 528 Z" fill="#1c1c1c" opacity="0.8"/>
+              </g>
+              <g class="d-lander" transform="translate(120 -60) scale(0.85)">
+                <rect x="736" y="360" width="128" height="250" rx="10" fill="#eceff3"/>
+                <rect x="736" y="470" width="128" height="90" fill="url(#d-foil)"/>
+                <rect x="760" y="300" width="80" height="60" rx="8" fill="#d9dde3"/>
+                <rect x="690" y="318" width="60" height="28" fill="#1b2a4a" stroke="#5d6f93" stroke-width="2"/>
+                <rect x="850" y="318" width="60" height="28" fill="#1b2a4a" stroke="#5d6f93" stroke-width="2"/>
+                <path d="M776 610 L824 610 L842 660 L758 660 Z" fill="#6d7178"/>
+                <path d="M740 590 L668 690 M860 590 L932 690 M760 600 L728 694 M840 600 L872 694" stroke="#b9bec6" stroke-width="7" stroke-linecap="round"/>
+                <path d="M650 692 h36 M914 692 h36" stroke="#b9bec6" stroke-width="8" stroke-linecap="round"/>
+                <circle data-anchor="lh2" cx="800" cy="410" r="1" fill="none"/>
+                <circle data-anchor="lox" cx="800" cy="515" r="1" fill="none"/>
+                <circle data-anchor="engine" cx="800" cy="640" r="1" fill="none"/>
+                <circle data-anchor="leg" cx="690" cy="662" r="1" fill="none"/>
+                <circle data-anchor="solar" cx="880" cy="332" r="1" fill="none"/>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <p class="small muted">Representative model drawn for this page only. Callouts are buttons; the counter
+        buttons sit with the counter; Esc closes a tooltip.</p>
+
+      <h3>Loading door</h3>
+      <p class="prose">Covers only the 3D stage while its files download (here: five files of the terrain pack,
+        byte counts from the server), so the page text is readable at once.</p>
+      <p><button class="btn" type="button" id="door-replay">Replay the loading door</button></p>
+      <div class="instrument d-doorbox" id="door-box">
+        <svg class="d-backdrop" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+          <rect width="1600" height="900" fill="#000"/>
+          <path d="M0 470 L380 462 L720 474 L1080 458 L1600 468 L1600 900 L0 900 Z" fill="url(#d-ground)"/>
+        </svg>
+        <p class="d-doorbox-msg ui-glass" id="door-after" tabindex="-1">The 3D view would start here.</p>
+      </div>
+      <p class="small muted" id="door-text">Text version of the scene: this is where a 3D page links its tables.</p>
+    </div>
+  </section>
+
+  <section class="d-sec wrap" aria-labelledby="h-read">
+    <h2 id="h-read">Reading theme</h2>
+    <p class="prose">The same components on a reading page; the theme button in the header switches light and dark.</p>
+    <div class="d-grid">
+      <div class="d-card"><h3>Segmented control</h3><div id="r-seg" class="d-stack"></div></div>
+      <div class="d-card"><h3>Stat chips</h3><div id="r-chips" class="ui-chips"></div></div>
+      <div class="d-card"><h3>Narrative card</h3><div id="r-story"></div></div>
+      <div class="d-card"><h3>Scene chips</h3><div id="r-scenes"></div></div>
+      <div class="d-card d-wide"><h3>Timeline</h3><div id="r-timeline"></div></div>
+      <div class="d-card"><h3>Big counter</h3><div id="r-counter"></div></div>
+      <div class="d-card"><h3>Glass panel and tooltip</h3>
+        <div class="ui-glass d-tipdemo"><p class="ui-label">Panel</p>
+          <p>A panel with a tooltip on the button: hover, focus or tap it.</p>
+          <button class="ui-btn" type="button" id="r-tip">What is a flag?</button></div></div>
+      <div class="d-card d-wide"><h3>Callouts</h3><div class="d-calloutbox" id="r-callouts"><div class="d-box"></div></div></div>
+    </div>
+  </section>
+
+  <section class="d-sec wrap" aria-labelledby="h-type">
+    <h2 id="h-type">Typography</h2>
+    <p class="prose">Source Sans 3 stays the reading face. Sora (display) is set for titles, labels and pills, with
+      Space Grotesk beside it for the A/B at the small sizes where they differ most; the control above switches the
+      whole page. JetBrains Mono sets every number, with tabular figures.</p>
+    <div class="d-type" id="d-type"></div>
+  </section>
+
+  <section class="d-sec wrap" aria-labelledby="h-contrast">
+    <h2 id="h-contrast">Contrast, computed now</h2>
+    <p class="prose">Every colour pair the components use, read from the CSS variables in this browser and checked
+      against WCAG 2.2: 4.5:1 for text, 3:1 for text of 24 px and larger, focus rings and marks (1.4.3, 1.4.11).
+      In the instrument theme, text sits on glass, so the panel colour is composited over each backdrop the way
+      the browser paints it; white is the worst case (a sunlit hull, bloom).</p>
+    <p class="d-summary" id="c-summary" role="status"></p>
+    <div id="c-tables"></div>
+  </section>
+</main>
+<!--@footer-->
+</body>
+</html>

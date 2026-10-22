@@ -280,7 +280,7 @@ Due: 2 h after the commit lands (written 09:55)
 
 # PHASE 4 (from 22 Oct 2026): read `.team/PLAN-phase4-design.md` (your steps F-30…F-40; ownership in its §9) and `research_notes/LunarHaul 3D interactive design/design_research.md` first.
 
-## F-30 [IN PROGRESS] (<= 4 h) Design system v2: the "instrument" theme and the shared UI components
+## F-30 [REVIEW] (<= 4 h) Design system v2: the "instrument" theme and the shared UI components
 Goal: the look of every Phase 4 3D page (plan §3, §5 F-30). Reading pages keep today's light theme and dark toggle.
 Owner decisions: dark "instrument" theme on 3D pages; keep Source Sans 3 for reading text; add **Sora** (display) and
 **JetBrains Mono** (all numbers, tabular), both OFL, self-hosted unmodified from npm (Fontsource packages); check the
@@ -303,7 +303,7 @@ from the CSS variables, pass/fail per pair) over three backgrounds: black, mid g
 Done when: every contrast pair in use passes AA; a keyboard-only walkthrough works; Lighthouse accessibility 100 on
 /design/; no console errors; existing pages unchanged (spot-check /, /world/, both labs).
 
-## F-31 [OPEN] (<= 6 h) The shared 3D stage (`site/src/stage/`) and one demo scene with the full pipeline
+## F-31 [IN PROGRESS] (<= 6 h) The shared 3D stage (`site/src/stage/`) and one demo scene with the full pipeline
 Goal: plan §5 F-31. Every later 3D page builds on this; M1 is reviewed on the demo scene.
 API sketch (adapt it, report the final one): `createStage({canvas, preset: 'exhibit' | 'onsite', tier, sun: {az, el}})`
 → `{scene, camera, renderer, director, labels, cutaway, explode, setTier, setToneMapping, renderOnce, dispose}`.
