@@ -575,3 +575,10 @@ and the peak (now ≤ n_operators by construction). Byte-identical when off (and
 scenario. Then add a stage-A2 cell set to run_phase4.py: comms {always, dte, relay 0.1, 0.3, 0.5, 0.8, 1.0} × mix
 {teleop_4s, default} × operators_strict × 20 seeds, and `analyse_e21.py` effects for it (operator waits and urgent
 p90 vs the non-strict cells, paired). Report the expected runtime; LEAD runs it.
+
+## B-46 [OPEN] (small, <= 45 min; after B-45) Full-precision lander parity fixture for the JS test
+F-34's node test replays the trajectory steps at the file's rounding (2.5e-5 m). For the 1e-6 m target, write
+`tests/fixtures/lander_trajectory_parity.json`: for 2 episodes (CLPS classical p50 and the CLPS network p50) the
+initial state and every step's raw action [a0, a1, a2], the sensor readings the pilot saw and the resulting state at
+full float64 precision (repr), plus the env constants used. A Python test replays it through the env (exact). Tell
+FRONTEND the path (via LEAD) so `site/tests/lander-trajectories.test.mjs` can assert < 1e-6 m.
