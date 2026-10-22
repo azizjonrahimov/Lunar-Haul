@@ -283,7 +283,7 @@ class EarthLink:
 #   link_series        path to earth_link-v1.json (default DEFAULT_LINK_SERIES; its samples file is read too)
 #   relay              {"coverage": p in [0, 1], "gap_model": "parametric", "mean_gap_h": g} for dte+relay
 #   mast               {"site": "BASE", "height_m": 10, "range_km": 10} or None (the mast the link file was built for)
-#   supervised_policy  "strict" (default) | "strategic"
+#   supervised_policy  "strict" (default) | "strategic" | "strategic+avoid"
 #   start_year         2028-2031 (the series year engine hour 0 maps to; default 2028), or start_h (hours from
 #                      2028-01-01 00:00 UTC); engine times past the series end wrap around it
 #   defer_wait_h       a job whose planned blackout wait exceeds this is not committed now (the rover stays free
@@ -296,10 +296,17 @@ class EarthLink:
 #   supervised         drives without a link, but each intervention (driving tables' count per leg, or
 #     strategic        HAZARD_SUPERVISED_PER_KM without tables) sits at a uniformly drawn route sample and waits for
 #                      that sample's next link-up (hourly sample series); planning does not foresee these waits
+#   supervised         as strategic, with a look-ahead: before committing, every route sample is checked at the time
+#     strategic+avoid  the rover would pass it; if an intervention there would wait longer than defer_wait_h the job
+#                      is deferred (dispatch wakes up when that link returns), and routes with a never-linked sample
+#                      are never taken. (A static rule, each sample's long-run expected wait sum(g^2)/(2 sum g) against
+#                      defer_wait_h, is degenerate: 160-1270 h on every leg under DTE, <= the relay gap with any relay;
+#                      leg_worst_expected_wait() keeps it as a diagnostic.)
 #   autonomous         unaffected
 #   relay              dte+relay: an alternating up/gap process independent of DTE, availability p, exponential gaps
 #                      of mean g (default DEFAULT_RELAY_GAP_H), from its own random stream; a point is linked when
-#                      DTE or the relay is up (the relay is taken to see every route point)
+#                      DTE or the relay is up. Assumed: the relay sees every route point (no relay terrain masks; a
+#                      relay in an elliptical frozen orbit over the pole is high in the sky)
 #   operators          demand counts only while the vehicle's current leg or site is linked: the admission check
 #                      at job start sees only the demand linked at that moment, so link-ups can bunch demand;
 #                      operator_peak_demand is the largest hourly mean of concurrent linked demand
@@ -308,7 +315,7 @@ class EarthLink:
 import os as _os
 
 COMMS_MODES = ("always", "dte", "dte+relay")
-SUPERVISED_POLICIES = ("strict", "strategic")
+SUPERVISED_POLICIES = ("strict", "strategic", "strategic+avoid")
 COMMS_KEYS = {"mode", "criterion", "link_series", "relay", "mast", "supervised_policy", "start_year", "start_h",
               "defer_wait_h"}
 DEFAULT_LINK_SERIES = _os.path.join("data", "comms", "connecting_ridge", "earth_link-v1.json")
@@ -461,6 +468,11 @@ class CommsModel:
         self._last: Dict[int, Dict[str, Any]] = {}
         self._km_of = None
         self._never: Dict[Tuple[str, str], bool] = {}
+        self._ew: Dict[Any, float] = {}
+        self._pass_cache: Dict[Tuple[int, int], float] = {}
+        self._leg_pass: Dict[Tuple, float] = {}
+        self._serve: Dict[Tuple, bool] = {}
+        self.jobs_avoided = 0
         self.delivered_in_horizon_kg = 0.0
         if not self.active:
             return
@@ -481,6 +493,7 @@ class CommsModel:
             g = float(r.get("mean_gap_h", DEFAULT_RELAY_GAP_H))
             if not 0.0 <= p <= 1.0 or g <= 0:
                 raise ValueError("relay coverage must be in [0, 1] and mean_gap_h > 0")
+            self._relay_p, self._relay_g = p, g
             self.relay = _Intervals(self._relay_intervals(p, g, np.random.default_rng([int(seed), 41, 2])))
 
     # ---- link series -------------------------------------------------------------------------------------
@@ -537,12 +550,133 @@ class CommsModel:
     def needs_link(self, autonomy: str) -> bool:
         return autonomy == "teleop" or (autonomy == "supervised" and self.policy == "strict")
 
+    def avoids(self, autonomy: str) -> bool:
+        return autonomy == "supervised" and self.policy == "strategic+avoid"
+
+    def restricted(self, autonomy: str) -> bool:
+        """True when the link rule can make a job impossible for this vehicle (strict link or route avoidance)."""
+        return self.needs_link(autonomy) or self.avoids(autonomy)
+
+    # ---- expected waits (strategic+avoid) ------------------------------------------------------------------
+    @staticmethod
+    def _expected_residual_wait(w: np.ndarray, n: int, step_h: float) -> float:
+        """sum(g^2) / (2 sum(g)) over the gaps of a windows series (the series repeats): inf without any window."""
+        if len(w) == 0:
+            return math.inf
+        gaps = list((w[1:, 0] - w[:-1, 1]).tolist()) + [n - w[-1, 1] + w[0, 0]]
+        gaps = np.array([g for g in gaps if g > 0], dtype=float) * step_h
+        return float((gaps ** 2).sum() / (2.0 * gaps.sum())) if gaps.size else 0.0
+
+    def _relay_cap(self, e: float) -> float:
+        if self.relay is None:
+            return e
+        p, g = self._relay_p, self._relay_g
+        return 0.0 if p >= 1.0 else (min(e, g) if p > 0 else e)
+
+    def _mast_expected(self) -> float:
+        if not hasattr(self, "_mast_e"):
+            w = self.el.windows("mast", self.criterion, "dte")
+            self._mast_e = self._expected_residual_wait(w, self.el.n, self.el.step_h)
+        return self._mast_e
+
+    def sample_expected_wait(self, sid: int) -> float:
+        k = ("s", sid)
+        if k not in self._ew:
+            s = self.el.samples["samples"][sid]
+            w = self.el._series(s["w"][CRITERIA.index(self.criterion)])
+            e = self._expected_residual_wait(w, int(self.el.samples["time"]["n"]), self.el._s_step_h)
+            if self.link_mode == "dte+mast" and s.get("mast_los"):
+                e = min(e, self._mast_expected())
+            self._ew[k] = self._relay_cap(e)
+        return self._ew[k]
+
+    def leg_worst_expected_wait(self, a: str, b: str) -> float:
+        """Largest expected wait over the route samples of leg a -> b (end points for a leg without a route)."""
+        k = ("leg", a, b)
+        if k not in self._ew:
+            key = f"{self.name(a)}->{self.name(b)}"
+            if key in self.el.samples["legs"]:
+                e = max(self.sample_expected_wait(i) for i in self.el.leg_samples(key))
+            else:
+                e = 0.0
+                for site in (a, b):
+                    w = self.el.windows(self.name(site), self.criterion, self.link_mode)
+                    e = max(e, self._relay_cap(self._expected_residual_wait(w, self.el.n, self.el.step_h)))
+            self._ew[k] = e
+        return self._ew[k]
+
+    def route_worst_wait(self, segs) -> float:
+        """Largest wait an intervention would face along the planned drives: each route sample is checked at the time
+        the rover passes it (samples spread evenly over the drive); a leg without samples uses its own series."""
+        worst = 0.0
+        for a, b, t0, t1, _ in segs:
+            if a == b:
+                continue
+            lk = (a, b, int(t0 * 4.0), int((t1 - t0) * 4.0))          # quarter-hour memo of a leg's look-ahead
+            w_leg = self._leg_pass.get(lk)
+            if w_leg is None:
+                if len(self._leg_pass) > 200000:
+                    self._leg_pass.clear()
+                w_leg = self._leg_pass[lk] = self._leg_worst_pass(a, b, t0, t1)
+            if w_leg > worst:
+                worst = w_leg
+                if not math.isfinite(worst):
+                    return worst
+        return worst
+
+    def _leg_worst_pass(self, a, b, t0, t1) -> float:
+        """Worst sample wait along one drive a -> b over [t0, t1] (samples spread evenly in time)."""
+        key = f"{self.name(a)}->{self.name(b)}"
+        if key not in self.el.samples["legs"]:
+            return self.series(a, b).wait(t0)
+        ids = self.el.leg_samples(key)
+        n = len(ids)
+        worst = 0.0
+        for j, sid in enumerate(ids):
+            tp = t0 + (j / (n - 1) if n > 1 else 0.0) * (t1 - t0)
+            ck = (sid, int(tp))
+            w = self._pass_cache.get(ck)
+            if w is None:
+                if len(self._pass_cache) > 200000:
+                    self._pass_cache.clear()
+                w = self.el.sample_wait_h(sid, (self.start_h + tp) % self.el.horizon_h, self.criterion,
+                                          self.link_mode, wrap=True)
+                if self.relay is not None and w > 0:
+                    w = min(w, self.relay.wait(tp))
+                self._pass_cache[ck] = w
+            if w > worst:
+                worst = w
+                if not math.isfinite(w):
+                    return w
+        return worst
+
+    def could_serve(self, autonomy: str, a: str, b: str) -> bool:
+        """Static check: can a vehicle of this autonomy ever drive a -> b under the rule?"""
+        if self.needs_link(autonomy):
+            k = (a, b)
+            if k not in self._never:
+                self._never[k] = not math.isfinite(self.series(a, b).wait(0.0))
+            return not self._never[k]
+        if self.avoids(autonomy):                                 # some sample on the route never links
+            return math.isfinite(self.leg_worst_expected_wait(a, b))
+        return True
+
     # ---- job timelines ------------------------------------------------------------------------------------
     def plan(self, sim, job, t_start: float, realize: bool):
         """sim._job_plan with the link rules applied to every vehicle's segment list; inf duration if a needed
         link never comes (the job cannot be done)."""
         sim._last_segk = {}
         dur, km, km_empty, e_wh, night = sim._job_plan(job, t_start, realize)
+        for v in job.vehicles:                                    # strategic+avoid: look ahead along the route
+            if self.avoids(v.autonomy):
+                w = self.route_worst_wait(sim._last_segments.get(v.id, []))
+                if w > self.defer_wait_h + _EPS:
+                    self._last = {}
+                    if math.isfinite(w):
+                        self.wakes.add(round(t_start + w, 4))
+                    if realize:
+                        self.jobs_avoided += 1
+                    return math.inf, km, km_empty, e_wh, night
         segk = sim._last_segk
         dur_max = 0.0
         any_wait = False
@@ -578,7 +712,7 @@ class CommsModel:
 
     def _apply(self, v, segs, ks, realize):
         need = self.needs_link(v.autonomy)
-        strategic = v.autonomy == "supervised" and self.policy == "strategic"
+        strategic = v.autonomy == "supervised" and self.policy in ("strategic", "strategic+avoid")
         if not (need or (strategic and realize)):
             return segs, []
         out, waits, shift = [], [], 0.0
@@ -654,14 +788,17 @@ class CommsModel:
     def filter_candidates(self, sim, candidates):
         """When every vehicle needs a link, drop items whose delivery leg is never linked at all (no vehicle could
         ever take them; keeps the mechanisms from re-proposing them at every event)."""
-        if any(v.alive and not self.needs_link(v.autonomy) for v in sim.vehicles):
+        alive = [v for v in sim.vehicles if v.alive]
+        if any(not self.restricted(v.autonomy) for v in alive):
             return candidates
+        kinds = tuple(sorted({v.autonomy for v in alive}))
         out = []
         for c in candidates:
-            k = (c.origin, c.dest)
-            if k not in self._never:
-                self._never[k] = not math.isfinite(self.series(c.origin, c.dest).wait(0.0))
-            if not self._never[k]:
+            k = (kinds, c.origin, c.dest)
+            ok = self._serve.get(k)
+            if ok is None:
+                ok = self._serve[k] = any(self.could_serve(a, c.origin, c.dest) for a in kinds)
+            if ok:
                 out.append(c)
         return out
 
@@ -761,6 +898,7 @@ class CommsModel:
             "blackout_jobs_delayed": self.jobs_delayed,
             "blackout_jobs_refused": self.jobs_refused,
             "blackout_jobs_deferred": self.jobs_deferred,
+            "blackout_jobs_avoided": self.jobs_avoided,
             "operator_peak_demand": float(self.hour_demand.max()),
             "delivered_kg_in_horizon": self.delivered_in_horizon_kg,
             "linked_share_by_leg_mean": share,

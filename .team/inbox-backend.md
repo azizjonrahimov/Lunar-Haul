@@ -407,7 +407,7 @@ Done when: `comms=None` and `comms.mode=always` both reproduce the baseline md5 
 739e9ba7…); unit tests for each rule on a tiny scenario with a hand-made link series; one smoke run of P2 with
 `mode=dte` for 2 seeds reported (delays and the new metrics), single process. Do NOT run the suite (LEAD runs E21).
 
-## B-42 [IN PROGRESS] (after B-41, before B-33; <= 3 h) R-1 suite runner E21 "Earth in sight" (LEAD runs the suite)
+## B-42 [DONE 11:10] (after B-41, before B-33; <= 3 h) R-1 suite runner E21 "Earth in sight" (LEAD runs the suite)
 Goal: the experiment that tests H1–H6 of the R-1 note (plan §10). File (new): `experiments/phase4/run_phase4.py`
 following `experiments/phase3/run_phase3.py` conventions (cells × seeds with common random numbers, resumable raw
 CSV keyed by `cell` and `seed`, summary table, `--seeds`, `--workers` default 1, plus `--cells a-b` so LEAD can run
@@ -434,7 +434,7 @@ blackout wait, operator peak.
 Done when: the smoke test passes single-process; the report gives the expected runtime per seed for P2 with comms
 on (measured on 2 seeds) and the total for Stage A, and the peak RSS.
 
-## B-33 [OPEN] (after B-41; <= 3 h) Descent trajectories for the 3D landing lab
+## B-33 [IN PROGRESS] (after B-41; <= 3 h) Descent trajectories for the 3D landing lab
 Goal: F-34 replays real descents at true scale (plan §4 B-33). Files: new `lunarsim/lander/trajectories.py` (or an
 `--export-trajectories` mode in `evaluate.py`), `tests/test_lander_trajectories.py`. Output (LEAD commits):
 `data/policies/trajectories-v1.json` (+ schema), budget ≤ 3 MB.

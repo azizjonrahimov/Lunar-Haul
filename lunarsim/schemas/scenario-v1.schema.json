@@ -362,6 +362,7 @@
             "link_series": {"type": "string", "description": "path to earth_link-v1.json (default data/comms/connecting_ridge/earth_link-v1.json)"},
             "relay": {
               "type": "object",
+              "description": "Assumed: the relay sees every route point (no relay terrain masks)",
               "additionalProperties": false,
               "properties": {
                 "coverage": {"type": "number", "minimum": 0, "maximum": 1},
@@ -373,7 +374,8 @@
               "type": ["object", "null"],
               "properties": {"site": {"type": "string"}, "height_m": {"type": "number"}, "range_km": {"type": "number"}}
             },
-            "supervised_policy": {"enum": ["strict", "strategic"]},
+            "supervised_policy": {"enum": ["strict", "strategic", "strategic+avoid"]},
+            "defer_wait_h": {"type": ["number", "null"], "minimum": 0, "description": "jobs with a longer planned link wait are deferred (default 24 h, Assumed); null = never defer"},
             "start_year": {"enum": [2028, 2029, 2030, 2031]},
             "start_h": {"type": "number", "minimum": 0}
           }

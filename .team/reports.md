@@ -2247,3 +2247,73 @@ Pad legs grouped by standoff (mean link fraction over the 28 legs per standoff; 
   1. Is the default `defer_wait_h` = 24 h OK? E21 could add {12, 24, 72, null} as a factor.
   2. Strategic strands rovers at rarely linked samples. Add a `strategic+avoid` variant that refuses routes whose worst sample has a long expected wait, or keep the plain rule as the comparison?
   3. The relay is taken to see every route point (no relay masks). OK for E21?
+
+## B-42 DONE 11:10 | E21 "Earth in sight" suite runner (LEAD runs the suite) + strategic+avoid + defer factor
+- **Files:**
+  - `experiments/phase4/run_phase4.py`: new.
+  - `tests/test_phase4_runner.py`: new, 3 tests (cell lists; a 2 cells × 2 seeds smoke with resume; knee and break-even on a synthetic table).
+  - `lunarsim/comms.py`: `strategic+avoid`, `restricted()`, look-ahead caches; the relay flagged Assumed in the source.
+  - `lunarsim/dispatch.py`: the greedy guard uses `restricted()`.
+  - `lunarsim/schemas/scenario-v1.schema.json`: `strategic+avoid`, `defer_wait_h`, relay "Assumed" note.
+  - `tests/test_comms_engine.py`: +2 tests.
+  - No data file changed.
+- **Runner** (conventions as run_phase3):
+  - Common random numbers; resumable raw CSV keyed by `cell` and `seed`.
+  - `--seeds` (default 20); `--workers` (default 1 = this process); `--cells a-b`; `--results`; `--max-seconds` (default 540; self-stop, rows already written are kept, rerun to resume).
+  - Each run is appended as it finishes.
+  - Calendar: `start_year` = 2028 + seed mod 4, recorded as a column.
+  - Settings as E19: P2 6-vehicle default fleet, marketplace, terrain, driving-v1, classical landing model, pads 1 km, any_part.
+- **Cells per stage:**
+  - **e21a: 36 cells.** comms {always, dte, relay 0.5/0.8/0.9/1.0} × six mixes {teleop 4 s, P2 mix, supervised-strict, -strategic, -strategic+avoid, autonomous}.
+  - **e21b: 32 cells.** {dte, relay at p_knee} × +0…3 supervised LTVs × mast {none, BASE 10 m} × {strict, strategic}.
+    - p_knee = the smallest coverage reaching 95 % of full-coverage throughput (supervised-strict; `KNEE_SHARE`, Assumed).
+    - Writes `table_E21_breakeven.csv`. Each option (relay p, autonomy step, +N rovers, mast) gets its gain over DTE plus two equivalents: the relay coverage and the number of extra rovers with the same gain (smallest that reaches it, monotone envelope). The relay price per year equals that many LTVs' capital cost: one LTV = $450 M / 10 yr = 45 M$/yr.
+  - **e21c: 36 cells.** For the three Stage A cells (dte P2 mix, dte teleop, relay 0.8 supervised-strict):
+    - pads {0.5, 1, 3} × criterion {any_part, centre+0.5°, centre+2°} at defer 24 h;
+    - plus **defer_wait_h {12, 72, none}** at pads 1 km / any_part (your item 1).
+  - `results/table_E21.csv`: per cell, mean and 95 % CI (fit_law.cell_means) of `delivered_t_in_year` (inside the simulated year), urgent p90, $/landed kg, blackout wait, operator peak, plus the other B-41 columns.
+- **strategic+avoid (your item 2), built differently from the spec. Please confirm.**
+  - The static rule (each sample's long-run expected wait Σg²/2Σg against `defer_wait_h`) is degenerate:
+    - Under DTE every leg's worst sample is 160-1,270 h or inf (PAD_A@1→BASE 160 h, BASE→DEPOT 186 h, BASE→SCI_1 1,270 h, PAD_B@1/ISRU inf), so a 24 h threshold forbids all supervised driving.
+    - With any relay the expected wait is capped at the relay gap (7.7 h), so it equals plain strategic.
+  - So `strategic+avoid` is a **look-ahead** instead:
+    - Before committing, every route sample is checked at the time the rover would pass it.
+    - If an intervention there would wait more than `defer_wait_h`, the job is deferred, with a WAKE at that link-up.
+    - Routes with a never-linked sample are never taken.
+    - `leg_worst_expected_wait()` keeps the static number as a diagnostic.
+  - Effect, all-supervised fleet, DTE, seeds 0/1:
+
+    | Policy | Supervised waits (vehicle-h) | Urgent p90 (h) | Delivered (t) |
+    |---|---|---|---|
+    | strategic+avoid | 148 / 82 | 274 / 416 | 310 / 316 |
+    | strategic | 45,646 / 42,672 | 2,012 / 1,454 | 128 / 481 |
+    | strict | 935 / 889 | 329 / 1,492 | 310 / 316 |
+
+  - New column `blackout_jobs_avoided`, a subset of `_refused`.
+- **Relay (your item 3):** "sees every route point" is now flagged Assumed in comms.py and in the schema. It should go in the limitations.
+- **Runtime, measured on 2 seeds** (Stage A all 36 cells, `--cells 0-17` then `18-35`; single process; **peak RSS 148 MB**):
+  - 72 runs in 133 s, mean 1.85 s per run, longest 23 s.
+  - Seconds per run by comms level: always 0.32, dte 6.24, relay 0.5 1.79, 0.8 1.05, 0.9 0.94, 1.0 0.73.
+  - **Expected totals at 20 seeds (single process):**
+
+    | Stage | Runs | Estimate | Basis |
+    |---|---|---|---|
+    | A | 720 | ≈ 22 min (1,330 s) | the 2-seed timing above |
+    | B | 640 | ≈ 55 min | ≈ 5 s per run in the smoke (16 runs, 79 s) |
+    | C | 720 | ≈ 70 min | ≈ 6 s per run (6 runs, 35 s) |
+
+  - Run in foreground chunks, e.g. `python experiments/phase4/run_phase4.py e21a --cells 6-11` (the dte cells), repeated until it prints "0 to run". `--max-seconds 540` stops each call cleanly.
+- **What the 2-seed smoke already shows** (indicative only; LEAD's 20 seeds decide). Delivered t / year:
+  - DTE only: 306-309 t for every mix except autonomous (520 t). The rest goes to never-linked ISRU and rarely linked SCI_1/PSR.
+  - Relay 0.5: 518-520 t, so **the knee is p = 0.5**.
+  - Urgent p90 at DTE only: 291 h (P2 mix and strict), 413 h (strategic), 790 h (avoid), 1,115 h (teleop). At relay 0.8: 4-10 h.
+  - **Deferral matters most** (Stage C, dte, P2 mix): defer 12 / 24 / 72 h gives urgent p90 292 / 291 / 306 h; **none gives 9,044 h**.
+  - **Break-even (partial B smoke):** +1 supervised LTV gains 0 t and the BASE mast 0.5 t. Under DTE more rovers cannot replace the link: the lost cargo is link-gated, so the rover-equivalent relay price is undefined. The equivalent is the autonomy step (all-autonomous restores 520 t at DTE). That is the H2/H4 break-even, worth stating in E21.
+- **How to test:**
+  - `.venv\Scripts\python -m pytest tests\test_phase4_runner.py tests\test_comms_engine.py -q`
+  - Smoke: `python experiments/phase4/run_phase4.py e21a --seeds 2 --cells 0-1 --results <tmp>`
+  - Related test files: 246 passed, 3 skipped; baseline md5 (None and always) still passes.
+- **Questions for LEAD:**
+  1. OK for the look-ahead in place of the static expected wait for `strategic+avoid`?
+  2. Stage C crosses defer only at pads 1 km / any_part (36 cells, not 108). Full cross?
+  3. `KNEE_SHARE` = 0.95 (Assumed); on the smoke the knee is the first relay level, 0.5. Add relay levels 0.1-0.4 to Stage A (+24 cells) so the knee is resolved?

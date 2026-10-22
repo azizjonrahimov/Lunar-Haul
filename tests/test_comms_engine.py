@@ -251,3 +251,33 @@ def test_real_series_start_year_and_mast():
     assert r28["delivered_kg"] != r31["delivered_kg"] or r28["blackout_wait_vehicle_h"] != r31["blackout_wait_vehicle_h"]
     m = run(small(comms={"mode": "dte", "mast": {"site": "BASE", "height_m": 10, "range_km": 10}}), dispatch.marketplace, seed=0)
     assert m["blackout_wait_vehicle_h"] <= r28["blackout_wait_vehicle_h"] + 1e-9 or m["delivered_kg"] >= r28["delivered_kg"]
+
+
+def test_strategic_avoid_looks_ahead_and_defers(tmp_path):
+    """strategic+avoid: a route whose sample would make an intervention wait > defer_wait_h at passing time is not
+    taken now (a wake-up is set at the link-up); a never-linked sample means never; plain strategic takes both."""
+    path = write_series(str(tmp_path), leg_windows={"DEPOT->BASE": [], "DEPOT->ISRU": []},
+                        sample_windows={"DEPOT->BASE": _windows([(100, N / 6)]), "DEPOT->ISRU": []})
+    sc = small(fleet=[("NASA", "LTV", "supervised", "A")],
+               comms={"mode": "dte", "link_series": path, "supervised_policy": "strategic+avoid"})
+    sim = Simulation(sc, dispatch.marketplace, seed=0)
+    cm = sim.comms
+    assert cm.restricted("supervised") and not cm.needs_link("supervised")
+    assert cm.route_worst_wait([["DEPOT", "BASE", 10.0, 14.0, 0.0]]) == pytest.approx(90.0)   # first sample at t = 10
+    assert cm.route_worst_wait([["DEPOT", "BASE", 120.0, 124.0, 0.0]]) == 0.0
+    assert cm.route_worst_wait([["DEPOT", "ISRU", 120.0, 124.0, 0.0]]) == math.inf
+    assert not cm.could_serve("supervised", "DEPOT", "ISRU") and cm.could_serve("supervised", "DEPOT", "BASE")
+    assert math.isinf(cm.leg_worst_expected_wait("DEPOT", "ISRU"))
+    cm2 = C.CommsModel({"mode": "dte", "link_series": path, "supervised_policy": "strategic"}, "1", 0, 2000.0, ["PAD_A", "PAD_B"])
+    assert not cm2.restricted("supervised")
+
+
+def test_strategic_avoid_engine_run_waits_less_than_strategic():
+    if not os.path.isfile(REAL):
+        pytest.skip("earth_link-v1.json not generated")
+    sup = [(o, c, "supervised", s) for (o, c, _, s) in library()["P2-default"].fleet]
+    sc = small(fleet=sup, terrain="connecting_ridge", pad_standoff_km="1", autonomy_model="driving-v1")
+    plain = run(sc.with_(comms={"mode": "dte", "supervised_policy": "strategic"}), dispatch.marketplace, seed=1)
+    avoid = run(sc.with_(comms={"mode": "dte", "supervised_policy": "strategic+avoid"}), dispatch.marketplace, seed=1)
+    assert avoid["blackout_wait_supervised_h"] < plain["blackout_wait_supervised_h"]
+    assert "blackout_jobs_avoided" in avoid

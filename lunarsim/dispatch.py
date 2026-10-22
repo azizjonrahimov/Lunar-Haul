@@ -44,9 +44,10 @@ def _single_job_hours(sim: Simulation, v: Vehicle, c: Cargo) -> float:
 
 
 def _comms_blocked(sim: Simulation, v: Vehicle, c: Cargo) -> bool:
-    """Phase 4: with the Earth-link rule on, a vehicle that needs the link cannot take a job whose link never comes."""
+    """Phase 4: with the Earth-link rule on, a restricted vehicle (link needed, or routes avoided) cannot take a job
+    that the rule makes impossible."""
     cm = getattr(sim, "comms", None)
-    if cm is None or not cm.active or not cm.needs_link(v.autonomy):
+    if cm is None or not cm.active or not cm.restricted(v.autonomy):
         return False
     return not math.isfinite(_single_job_hours(sim, v, c))
 
