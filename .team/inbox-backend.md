@@ -594,3 +594,45 @@ FRONTEND the path (via LEAD) so `site/tests/lander-trajectories.test.mjs` can as
 3. Rebuild every committed package (the 12 gallery scenes, the 5 samples) and the run-queue path's scene build
    (tools/actions/run_issue.py uses lunarsim.scene); check byte-determinism and the reproduction checks; update
    gallery.json if needed; rerun `python -m lunarsim.stories check`.
+
+# R-1 revision round 2 (queued 22 Oct 14:15). Read `paper/r1/REVIEW_round1.md` first (§2 errors, §4 statistics,
+# §5 missing analyses M1-M14, §7 required changes). Order: B-48, B-49. LEAD runs the suites.
+
+## B-48 [OPEN] (<= 3 h) Censored urgent-delay metrics, the new E21 cells, and round-2 result files
+1. **Metrics (comms-on runs only, so the baseline md5 cannot move):** add to `CommsModel.summary()`:
+   `prio1_completion_share` (priority-1 items delivered in the year / priority-1 items ready in the year),
+   `delay_prio1_p90_censored_h` and `delay_prio1_mean_censored_h` (every priority-1 item ready in the year; an
+   undelivered item counts with the censored wait = horizon − ready; the p90 is then a lower bound when
+   completion < 90 %: report a flag `delay_prio1_p90_censored_is_bound`), and the same completion share for all
+   cargo by class (`completion_share_bulk`, `completion_share_landed`). Also `delivered_bulk_kg_in_horizon` and
+   `delivered_landed_kg_in_horizon` (non-bulk), so the throughput split needs no inference.
+2. **Round-2 files:** a `--round r2` option (default r1) in run_phase4.py so new runs write
+   `results/E21{a,b,c,d,a2}_*_r2.csv` and `table_E21_r2.csv`; r1 files stay untouched for the record. Engine
+   dynamics are unchanged, so every r1 metric must equal its r2 value seed by seed: add a check to the analysis.
+3. **New cells (referee M1, M6, M8, M12, M13, M14; M7 = your A2):**
+   - stage A: relay coverage 0.05, 0.6, 0.7 for all six mixes;
+   - stage B: `strategic+avoid` alongside strict and strategic at DTE and p = 0.5; and strict/strategic with +0 and
+     +1 rover at p = 0.2 and 0.8;
+   - stage E (`e21e`, sensitivity): relay mean gap 2 h and 24 h and a periodic relay (gap pattern from the LCRNS
+     reference orbit period in the R-1 note; a few lines in `_relay_intervals`), at p = 0.1 and 0.5, strict and
+     teleop; intervention rate ×0.5 and ×2 for strategic and strategic+avoid at DTE and p = 0.5; plume keep-out on
+     (1 km / 0.5 h) at DTE (Phase-2 mix) and p = 0.5 (strict); ISRU with local feedstock (no CONSTR→ISRU bulk haul)
+     at DTE and always for the Phase-2 mix, strict and teleop. All 20 seeds, start year 2028 + seed mod 4.
+4. Report the runtime estimate per stage and the cell counts. Tests for the new metrics on a tiny scenario
+   (completion share with a never-linked destination; censored p90 equals the uncensored one when all are delivered).
+
+## B-49 [OPEN] (after B-48; <= 3 h) Analysis for round 2 (analyse_e21.py, reads the r2 files)
+Referee M2-M5 and the statistics notes:
+- **Throughput split** (M2): bulk vs landed cargo delivered, per mix and link regime, paired effects; the 200 t/yr
+  CONSTR→ISRU feedstock stated; landed cargo at 3 km pads under DTE.
+- **Censoring** (M4): completion share of priority-1 items next to every p90; censored p90 with its bound flag.
+- **Robust paired effects** (M5, S2): for the main delay comparisons, the paired log-ratio (geometric mean ratio)
+  with a t interval and a Wilcoxon signed-rank p; medians across seeds next to means.
+- **Per start year** (M3): key cells by start year (2028-2031); year-blocked intervals; flag the 2028 stranding.
+- **Break-even** (M5, S4): bootstrap with all draws (2,000), report the share of non-positive draws and an upper
+  bound "poorly determined" when it exceeds, e.g., 200 M$; paired bootstrap of Δp(strategic) − Δp(+1 rover); drop
+  the law-based column (the referee's S5).
+- **Operators** (S11, E12): absolute peaks and seeds over staff; the A2 strict-limit effects (operator waits, urgent
+  delay, completion) paired with stage A; "full relay = always" checked per mix (the referee says it fails for
+  teleop under the soft pool).
+- t intervals (not 1.96 SE) for cell means (E20). Write `results/E21_fit_r2.json` and the `_r2` tables; keep r1.
