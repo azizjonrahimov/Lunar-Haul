@@ -653,3 +653,13 @@ a printed warning while r2 is incomplete) and apply the referee's W11:
 - New Fig. 6: per start year (2028-2031), the two primary comparisons (DTE vs always throughput; strategic vs strict
   urgent p90 at p = 0.1), to show the calendar effect (2028).
 Run it on the current r1 data copied as r2 into a scratch results folder to check the code paths; do not commit.
+
+## B-51 [OPEN] (small, now; light) Simulator page budget counts its classic scripts and the lazy Plot chunk
+FRONTEND's F-37 page loads the engine as classic scripts (`simulator/engine/*.js`) plus a lazy Plot chunk (~126 kB
+first load). Teach `tools/ci/budgets.py pages` to count classic `<script src>` files and declared lazy chunks for a
+page (a `lazy` list in budgets.json, reported separately, budgeted at today + 25 %), set the simulator entry, test.
+
+## B-52 [OPEN] (after LEAD's r2 suites finish; LEAD will message) Earth-link samples per lighting route
+F-35 draws Earth-link posts from the night (slope-only) route samples; lighting routes differ (BASE→PSR at 270°). Add
+samples for every B-32 route (all five lightings) to the link pipeline (masks + link stages), a samples file v2 or an
+extra block, keep the engine's night-route rule unchanged (byte-identical E21), and tell FRONTEND the keys.

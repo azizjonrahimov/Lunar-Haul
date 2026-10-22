@@ -358,7 +358,7 @@ Cutaway shows solid caps; Exploded separates parts cleanly; tier 1 holds ≥ 30 
 this laptop at the default view (report numbers); keyboard and reduced motion work; Lighthouse accessibility
 ≥ 95 and performance ≥ 85 (desktop); no console errors; 390 px layout works.
 
-## F-33 [IN PROGRESS] (after F-32; <= 6 h) Lunar light and effects; /world/ terrain on the horizon map
+## F-33 [DONE, accepted] (after F-32; <= 6 h) Lunar light and effects; /world/ terrain on the horizon map
 Goal: plan §5 F-33 and the B-34 finding (the horizon map is more accurate than today's shader off-axis).
 1. **/world/ terrain lighting from `data/terrain/connecting_ridge/v2/`** (copy via `prepare-data.mjs`): sample the
    16 RGBA16 horizon textures (manifest for encoding; frame note: normal (nx, ny, nz) → scene (nx, nz, −ny)) so the
@@ -380,7 +380,7 @@ determinism: the same seed gives the same dust frames; reduced motion pauses par
 # M3/M4 frontend (queued 22 Oct 12:35). Order: F-34, F-36, F-35, F-37. Data now committed: trajectories-v1 (B-33),
 # routes-v1 (B-32), scene packages + earth_track (B-31), earth_link (B-40).
 
-## F-34 [IN PROGRESS] (after F-33; <= 6 h) Lander lab in 3D: "The last 500 metres"
+## F-34 [DONE, accepted] (after F-33; <= 6 h) Lander lab in 3D: "The last 500 metres"
 Plan §5 F-34. Upgrade `/lab/lander/` to an instrument page on the shared stage (on-site preset), keeping the 2D side
 view as tier 0 and as the accessible mirror. Replay `data/policies/trajectories-v1.json` episodes at true scale over
 the terrain at PAD_A (5 m patch from B-34): the catalogue lander model, attitude from the quaternion, the F-33
@@ -431,7 +431,7 @@ shadows, slip indicator, interventions as 3D markers with callouts, expert vs ne
 Earth visibility along the route (from earth_link samples: where on the leg a teleoperated rover would lose the
 link). 2D plan view stays as tier 0 and mirror.
 
-## F-35d [IN PROGRESS] (after F-37 if F-37 is under way, else before; <= 2 h) Rover lab 3D polish (LEAD browser review 22 Oct)
+## F-35d [DONE, accepted] (after F-37 if F-37 is under way, else before; <= 2 h) Rover lab 3D polish (LEAD browser review 22 Oct)
 1. Open on a sunlit stretch of the leg (today the first frame is in terrain shadow); pick the start from the leg's
    lighting so the rover and ground are lit, then let the drive reach the shadow.
 2. The flat cyan disc and yellow ring around the rover are too heavy: make the glare cone and command marker subtle
@@ -441,8 +441,39 @@ link). 2D plan view stays as tier 0 and mirror.
 5. Label the Earth-link posts as computed for the leg's night route (BACKEND adds per-lighting samples later).
 Check at 1440 and 390 px; no console errors.
 
-## F-37 [REVIEW] (after F-35; <= 5 h) Simulator v3 on the design system (plan §5 F-37)
+## F-37 [DONE, accepted] (after F-35; <= 5 h) Simulator v3 on the design system (plan §5 F-37)
 The `/simulator/` page rebuilt on the site's design system (glass panels, segmented controls, the plain labels of
 22 Oct kept word for word unless clearer), engine files `web/sim.js` and `web/worker.js` untouched; results as stat
 chips and Observable Plot charts; Compare as four answer-style cards (one per job rule, the SpaceX-reel pattern);
 "Watch this year in 3D" opens /world/ with the run; the v2 page stays reachable at `/simulator/v2/` for one release.
+
+# M5 (stories, landing page, quality). Order: F-38, F-39, F-40. Queued 22 Oct 15:45.
+
+## F-38 [OPEN] (<= 5 h) Guided stories (explorable explanations), plan §5 F-38
+Data: `data/stories/resolved/*.json` (+ `index.json`), format in `lunarsim/schemas/story-v1.schema.json` (B-35).
+Published stories only (four: pads distance, sharing rovers, learned landing, Earth's horizon). New page `/stories/`
+(list) and `/stories/<id>/` (one page per story, or one page with ?s=<id>): each step drives the matching 3D stage
+(world scenes from the gallery, the lander lab's episodes, rover legs), switches modes, moves the camera to the named
+shot (map the B-35 shot and mode names to your stage; tell LEAD if any name should change in the data), shows the
+step's text with every number as a stat chip carrying its flag and source (the resolved file has value, text,
+unit, flag, source per number), Next / Back and a step bar, keyboard, a text-only twin of every step (the `visual`
+field), reduced motion = cuts. Nav: "Stories" after World. Lighthouse ≥ 85 performance desktop; no console errors.
+
+## F-39 [OPEN] (<= 2 h) Landing page hero, plan §5 F-39
+The home page opens with the loading door and a slow cinematic orbit of the base under the low sun (on-site preset,
+the gallery's P2 scene, landers and rovers moving), three big counters from the results (sourced: simulated years
+in the law fit, cost per landed kg at the marketplace, and the Earth's-horizon headline from the published story's
+numbers), and entry chips to World, Vehicles, Labs, Simulator and Stories. Keep LCP ≤ 2.5 s on mobile: the hero
+3D starts after first paint and only on capable tiers; tier 0 shows a still image.
+
+## F-40 [OPEN] (<= 4 h, then continuous) Quality pass, plan §5 F-40, plus the notes collected in reviews
+- Measure tiers in a FOREGROUND window (frame interval at display rate) on every 3D page; record numbers.
+- Lander lab: frame the Approach phase with the ground in view (no black first frame).
+- Rover lab: the stretched brown streak pattern on the ground near the camera (chase view, first frame).
+- World: verify the Earth-link scenes show "waiting for Earth" clearly; the urgent chip's live value.
+- Simulator: "Full 3D replay on GitHub" button opening the run-queue issue form prefilled from the settings (URL
+  query parameters keyed by the form's field ids); keep "trace replay of this run" for /world/trace/.
+- /verification/: show the Phase 4 rows from `data/verification/verification-v1.json` → `phase4[]`.
+- Light-theme Tol yellow/cyan/grey marks below 3:1 on white (from F-30): fix or add outlines.
+- Keyboard, screen-reader mirror, reduced motion, contrast on every page; Lighthouse table for every page;
+  a screenshot set (desktop + 390 px) committed under `site/design/shots/` is NOT wanted — keep them out of git.

@@ -57,7 +57,8 @@ vec3 noised(vec2 x) {
 }
 // a crater field with cells of s metres: a share of the cells (prob) holds a worn bowl with a low rim, wall slope k
 // at the rim (0.25 ~ depth/diameter 0.06, a degraded small crater); returns the slope (dh/dx, dh/dz). vary (0..1, F-35d):
-// each crater gets its own depth (worn to fresh), a slight ellipse and a rotation, so close views do not look stamped
+// each crater gets its own depth (worn to fresh), a slight ellipse and a rotation, so close views do not look stamped (the
+// same switch turns the 0.4 m clod noise down: on its grid, the low sun lit it as rows of dashes)
 vec2 craters(vec2 p, float s, float seed, float prob, float k, float vary) {
   vec2 c = floor(p / s), g = vec2(0.0);
   for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
@@ -90,10 +91,10 @@ void main() {
   float detailAlb = 1.0;
   if (uDetail > 0.5) {                                               // metre-scale detail, faded below a pixel
     vec2 p = vWorld.xz; float fw = length(fwidth(p));
-    float nearFade = mix(1.0, smoothstep(5.0, 35.0, length(vViewPosition)), uCraterVar);   // fewer small bowls right in front of the camera
-    vec2 g = craters(p, 9.0, 3.0, 0.09, 0.18, uCraterVar) * (1.0 - smoothstep(0.6, 2.0, fw)) + craters(p, 2.6, 11.0, 0.12, 0.22, uCraterVar) * (1.0 - smoothstep(0.2, 0.6, fw)) * nearFade;
+    float nearFade = mix(1.0, smoothstep(8.0, 60.0, length(vViewPosition)), uCraterVar);   // fewer small bowls right in front of the camera
+    vec2 g = craters(p, 9.0, 3.0, 0.09, 0.18, uCraterVar) * (1.0 - smoothstep(0.6, 2.0, fw)) + craters(p, 2.6, 11.0, mix(0.12, 0.06, uCraterVar), 0.22, uCraterVar) * (1.0 - smoothstep(0.2, 0.6, fw)) * nearFade;
     vec3 c1 = noised(p / 0.4), c2 = noised(p / 0.12);
-    g += c1.yz / 0.4 * 0.05 * (1.0 - smoothstep(0.04, 0.12, fw)) + c2.yz / 0.12 * 0.012 * (1.0 - smoothstep(0.012, 0.04, fw));
+    g += c1.yz / 0.4 * 0.05 * mix(1.0, 0.3, uCraterVar) * (1.0 - smoothstep(0.04, 0.12, fw)) + c2.yz / 0.12 * 0.012 * (1.0 - smoothstep(0.012, 0.04, fw));
     nW = normalize(nW + vec3(-g.x, 0.0, -g.y));
     detailAlb = 0.88 + 0.12 * noised(p / 3.0).x + 0.12 * noised(p / 0.9).x * (1.0 - smoothstep(0.1, 0.3, fw));
   }
@@ -293,6 +294,15 @@ export async function createLunarTerrain({ base, renderer, site = 'PAD_A', tier 
     setDetail(on) { uniforms.uDetail.value = on ? 1 : 0; },
     // 1: varied crater depth, shape and rotation, and fewer small craters close to the camera (rover chase views)
     setCraterVariety(v) { uniforms.uCraterVar.value = v; },
+    // the horizon-map sun visibility (0..1) at scene x, z, as the shader computes it (nearest texel); null until the map
+    // for the current sun has loaded
+    sunAt(x, z) {
+      if (uniforms.uUseHz.value < 0.5) return null;
+      const img = v2.tex.image, w2 = img.width, h2 = img.height, u = (x + cx) / W, v = 1 - (cy - z) / H;
+      const i = Math.min(w2 - 1, Math.max(0, Math.floor(u * w2))), j = Math.min(h2 - 1, Math.max(0, Math.floor(v * h2))), k = 2 * (j * w2 + i), w = uniforms.uHzW.value;
+      const d = uniforms.uSunElDeg.value - (img.data[k] * (1 - w) + img.data[k + 1] * w), r = uniforms.uSunRadDeg.value, t = Math.min(1, Math.max(0, (d + r) / (2 * r)));
+      return t * t * (3 - 2 * t);
+    },
     // night: the sun is off, so the horizon shadow must not dim headlight light on patched materials
     setNight(on) { uniforms.uHzOn.value = on ? 0 : 1; },
     shadeWithHorizon, scatterRocks,

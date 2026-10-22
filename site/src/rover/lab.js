@@ -32,6 +32,8 @@ async function boot() {
   fillSelectors(); wire(); renderConstants();
   // the 3D view's page side loads after the lab is ready (its door, HUD and controls; the scene itself waits for Enter)
   import('./lab3d.js').then(m => { v3 = m.mount3d({ st, points, tableKey, level, lighting, status, drive: () => drive(), human: () => $('r-ctrl').value === 'human',
+    // run the drive on (the same drive, at once) while pred() holds: the 3D view opens where the leg is sunlit
+    skip: (pred, max = 4000) => { let n = 0; if (st.ctl.actAsync || st.env2) return 0; while (!st.done && n < max && pred()) { if (!stepOnce()) break; n++; } drawAll(true); return n; },
     driverName: () => ({ expert: 'The scripted expert', human: 'You', learned: 'The neural network', race: 'The expert' })[$('r-ctrl').value],
     lightingText: () => $('r-light').selectedOptions[0].textContent, levelText: () => $('r-level').selectedOptions[0].textContent.toLowerCase() }); }).catch(e => { $('r3-controls').hidden = true; status(`The 3D view could not load (${e.message}); the plan view below shows the drive.`); });
   await prepare();

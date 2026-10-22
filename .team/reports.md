@@ -3591,3 +3591,40 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
 - **Questions for LEAD:**
   1. The task says "opens /world/ with the run". The new /world/ reads scene packages (B-31), which the browser engine does not produce, so the button opens the 3D trace viewer (`/world/trace/`) with the run. For /world/ proper, the run would need a trace-to-scene converter (BACKEND, or a JS port) or a hosted run (B-37). OK as is?
   2. Budget for the simulator: keep 60/20 as measured by budgets.py, or count the lazy Plot chunk and the engine scripts (about 126 kB)?
+
+## F-35d DONE 15:40 | Rover lab 3D polish: sunlit first frame, light markers, posts beside the route, no stamped ground, night-route label
+- **Files:**
+  - `site/src/rover/lab3d.js`, `lab3d-scene.js`, `lab.js` (one `skip()` helper for the 3D view) and `site/lab/rover/index.html` (legend).
+  - `site/src/stage/terrain.js`: new opt-in `setCraterVariety(v)` and `sunAt(x, z)`. The uniform defaults to 0, so the lander lab and /world/ look exactly as before.
+- **1. Opens sunlit.**
+  - On Enter, the drive finds the first route point lit both in the model (its 20 m shadow grid) and in the view (the horizon map, read on the CPU by the new `terrain.sunAt()`; it also sees terrain beyond the tile).
+  - If that point is within the first 70 % of the leg, the same drive runs on at once to it and the view joins there. The status line says so: "The first 0.01 km of this leg run in the shadow of the terrain (0:00:31 of the drive)… Back to start drives it from the beginning". The drive then reaches the later shadows as it plays.
+  - This applies to the expert and the network, not to you at the keys or the race.
+  - The chase camera now swings up to about 40° towards the sun, so the rover's lit side faces it and the camera looks partly down-sun.
+  - The default leg opens with the rover and wheels lit and its 100 m shadow across the ground.
+  - Note: level regolith stays dark under a 1.5° sun (Lommel-Seeliger); only slopes facing the sun are bright.
+- **2. Light markers.**
+  - The heavy cyan disc was an Earth-link marker at the start; it is gone.
+  - The rover ring now appears only in a race (to tell the expert from the network), and is thin and 45 % opaque.
+  - The glare cone is a thin outline over an almost invisible fill: it brightens to 0.6 opacity while the rover heads into it, then fades back.
+  - The ghost (where the command acts) is now an edge outline of the rover at 50 % instead of a solid.
+- **3. Earth-link posts:** 1.4 m tall (were 2.5 m), set 6 m to the right of the way the samples run, and fading out within 6 to 30 m of the camera. They no longer stand in or in front of the rover.
+- **4. Stamped ground.** The repeated bright dashes close up were not craters: the 0.4 m clod noise sits on a grid, and the low sun lit it as rows of dashes. Fixes in variety mode:
+  - The clod noise is turned down to 30 %.
+  - Each crater gets its own depth (0.3–1.4×), a slight ellipse and a rotation.
+  - The small 2.6 m field is halved and fades out within 8 to 60 m of the camera.
+  - The representative rocks are cut to about a third and clustered (as round fresh craters) instead of spread evenly; the route stays clear for 6 m either side.
+- **5. Labels:** the legend, the text version and the code say the Earth-link points are "computed along the leg's night route (points for each lighting route will follow)", with the offset from the planned route when over 40 m.
+- **Checks:**
+  - 1440 px: first frame, a drive at 60× (lit rover, long shadow, outline ghost, no ring), and the earlier views.
+  - 390 px: no horizontal scroll. No console errors.
+  - Tests 11/11. Build OK. Budgets OK (rover 22.0 of 25 kB, lander 119.7 of 130 kB).
+  - Servers stopped by PID; tab closed.
+- **Simulator budget (your answer 2):** it needs `tools/ci/budgets.py`, which is BACKEND's (`tools/**`). It counts only module scripts and modulepreload links. To count honestly it should also:
+  - count classic `<script src>` tags (the simulator's engine: sim.js, formats.js, api.js, ref.js, 22.6 kB gz);
+  - add the lazy Plot chunk (84.5 kB gz) to the simulator's first-load figure, since the page fetches it at once (from Vite's `.vite/manifest.json` `dynamicImports` of the entry, or simply as an extra file in the page's budget entry);
+  - list other lazy chunks per page as unbudgeted information.
+
+  Measured first load is then about 126 kB, so a threshold of 135 kB would fit (`--propose` style). I have not edited `tools/**`. Route it to BACKEND, or say if I should make the change myself.
+- **From BACKEND:** none.
+- **Questions for LEAD:** the budget item above.

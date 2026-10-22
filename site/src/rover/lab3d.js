@@ -4,7 +4,8 @@
 // when the visitor presses Enter (lab3d-scene.js). The plan view and telemetry below show the same drive at every
 // tier; at tier 0 they are the whole lab.
 // Earth link (R-1, B-40): data/comms/.../earth_link-v1-samples.json.gz holds hourly direct-to-Earth windows for points
-// about 100 m apart along every leg (2028-2031, criterion: any part of Earth's disc above the terrain at 2.5 m).
+// about 100 m apart along every leg (2028-2031, criterion: any part of Earth's disc above the terrain at 2.5 m), computed on
+// the leg's night route (BACKEND adds one set per lighting route later).
 import { door, sceneChips, narrative, statChip, timeline, h, reducedMotion } from '../ui/index.js';
 import { detectTier } from '../stage/tier.js';
 import * as R from './physics.js';
@@ -97,6 +98,19 @@ export function mount3d(api) {
     entered = true;
     if (!speedTouched && $('r-speed').value === '60') $('r-speed').value = '10';   // 10x reads at chase distance; the plan view keeps up
     leg();
+    // open on a sunlit stretch: the first route point lit both in the model (its 20 m shadow grid) and in the view (the
+    // horizon map, which also sees terrain beyond the tile); the drive runs on at once to it, if it is in the first 70 %
+    if (api.lighting() !== R.NIGHT && !api.human()) {
+      for (let i = 0; i < 60 && sc.sunlitAt(st.env.state.x, st.env.state.y) === null; i++) await new Promise(r => setTimeout(r, 100));   // the horizon map for this sun
+      const path = st.env.pp.path, s = st.env.pp.s, total = s[s.length - 1];
+      const lit = q => !st.env.inShadow(q[0], q[1]) && (sc.sunlitAt(q[0], q[1]) ?? 1) >= 0.5;
+      let k = 0; while (k < path.length && !lit(path[k])) k++;
+      const n = k > 0 && k < path.length && s[k] < 0.7 * total ? api.skip(() => progress(st.env) < s[k] + 5) : 0;
+      if (n && !st.done) {
+        sc.setView(ui.view, true); update(true);
+        api.status(`The first ${fmt(progress(st.env) / 1000, 2)} km of this leg run in the shadow of the terrain (${hms(st.env.timeS)} of the drive); the view joins where the sun reaches the rover. Back to start drives it from the beginning.`);
+      }
+    }
     if (!reducedMotion() && !api.human()) api.drive();
   }
   async function gunzipJson(url, fetchFn) {
@@ -256,7 +270,7 @@ export function mount3d(api) {
     ];
     if (samples && ui.show.earth) {
       const n = samples.filter(s => s.linked).length, lost = samples.find(s => !s.linked);
-      rows.push(['Earth link along the leg', `${date(hr)}: ${n} of ${samples.length} points see Earth${lost ? `; first loss ${fmt(lost.km, 2)} km in` : ''}${samples.off > 40 ? ` (the points follow the comms file's route for this leg, on average ${Math.round(samples.off)} m from the route planned for this lighting)` : ''}`]);
+      rows.push(['Earth link along the leg', `${date(hr)}: ${n} of ${samples.length} points see Earth${lost ? `; first loss ${fmt(lost.km, 2)} km in` : ''} (computed along the leg's night route${samples.off > 40 ? `, on average ${Math.round(samples.off)} m from the route planned for this lighting` : ''})`]);
       if (p) rows.push(['Earth from the rover', p.linked ? 'in sight' : `behind the terrain, back in ${inH(p.wait)}`]);
     } else if (ui.show.earth && earth) rows.push(['Earth link along the leg', 'no samples for this leg']);
     rows.push(['Interventions', st.events.length ? st.events.map((v, i) => `${i + 1}. ${hms(v.t)} ${v.why}`).join('; ') : 'none yet']);
