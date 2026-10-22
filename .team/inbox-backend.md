@@ -529,3 +529,39 @@ the scenario flags, headline numbers with CIs from 20 seeds for the cell): phase
 marketplace} at 1 km pads; P2 marketplace at pads {0.5, 3 km}; P2 marketplace with comms {dte, dte+relay 0.8} and the
 all-autonomous fleet under dte. Seed 3 for the replay. Budget ≤ 4 MB gzipped in total. Coordinate with LEAD before
 running the 20-seed headline numbers (E21 may already have some of them).
+
+# R-1 analysis and extension (queued 22 Oct 13:05). Order: B-43, B-44.
+
+## B-43 [OPEN] (<= 3 h, light) E21 analysis: paired effects, the delay-coverage law, delay-based break-evens
+Stage A and B are in `results/E21a_comms_autonomy.csv` and `results/E21b_breakeven.csv` (stage C is running; add it
+when it lands, same code). New `experiments/phase4/analyse_e21.py` (+ tests) writing `results/E21_fit.json` and
+`results/table_E21_effects.csv`, `results/table_E21_breakeven_delay.csv`, plus figure-ready CSVs:
+1. **Paired effects** (common random numbers: same seed across cells) with 95 % CIs from the per-seed differences:
+   DTE vs always per autonomy mix (delivered t, urgent p90 and mean, within 24 h, blackout wait, operator peak); each
+   relay level vs always; strategic and strategic+avoid vs strict at each coverage; stage B: +N rovers vs +0 and
+   mast vs none at DTE and at p = 0.5, per policy.
+2. **The delay–coverage law** per mix: fit urgent p90 (and mean) against relay coverage p on the stage A cells
+   (try 1/(p + c) and exponential forms; pick by cross-validated error over seeds; report parameters with
+   bootstrap CIs over seeds) and the coverage needed to reach 2× and 1.5× the full-coverage delay for each mix.
+3. **Delay-based break-even** at p = 0.5 (stage B): the relay coverage (on the strict curve) that gives the same
+   urgent p90 as (a) +1, +2, +3 rovers, (b) the strategic step, (c) the strategic step + 1 rover; with bootstrap
+   CIs; and the implied "relay coverage worth one LTV" (LTV capital 45 M$/yr from the engine's classes).
+4. **Operator-demand compression (H5)**: peak/mean ratio of linked operator demand vs coverage for the teleop and
+   default mixes, against `n_operators`; flag cells whose peak exceeds the staffing.
+5. Throughput: state plainly that the DTE loss equals the cargo bound for never-linked sites (compute the expected
+   mass bound for ISRU/SCI_1/PSR destinations from the demand model and compare with the measured 225 t gap).
+Done when: tests on synthetic tables (paired CI, law fit recovers known parameters, break-even inversion); the
+report gives the key numbers with CIs in plain sentences.
+
+## B-44 [OPEN] (after B-43; <= 4 h) Real sun at each site (opt-in): replace the fixed night share for R-1's H6
+H6 says Earth's 27.21-day elevation cycle beats against the 29.53-day lunar day (period ~347 d), so under direct
+links "Earth up and Sun up" overlaps drift through the year. Testing it needs real illumination per site, not
+`night_fraction`. Build an opt-in `illumination` scenario field: per site (and per leg, worst sample) hourly sunlit
+fraction for 2028–2031 from the SPICE Sun vector (reuse tools/comms ephemeris code) and the B-34 horizon map
+(+ the 0.53° solar disc), with night = sunlit fraction below a threshold (state it). The engine's night rule reads
+it per site/leg when set (byte-identical when off). Data: `data/illumination/connecting_ridge/sun_link-v1.json`
+(< 2 MB). Checks: BASE's yearly sunlit fraction against published Connecting Ridge illumination (the R-1 note and
+Phase 3 notes cite values; e.g. Mazarico 2011 / Gläser); the engine reproduces the baseline with the field off.
+Then a small stage D runner cell set in run_phase4.py: comms {dte, relay 0.5} × mix {default, strict} × sun
+{night_fraction 0.15, real} × 20 seeds × start years 2028–2031, plus monthly throughput series to look for the
+~347-day ripple. Report; LEAD runs stage D.
