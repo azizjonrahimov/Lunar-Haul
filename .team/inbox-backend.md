@@ -654,7 +654,7 @@ a printed warning while r2 is incomplete) and apply the referee's W11:
   urgent p90 at p = 0.1), to show the calendar effect (2028).
 Run it on the current r1 data copied as r2 into a scratch results folder to check the code paths; do not commit.
 
-## B-51 [OPEN] (small, now; light) Simulator page budget counts its classic scripts and the lazy Plot chunk
+## B-51 [DONE 15:45] (small, now; light) Simulator page budget counts its classic scripts and the lazy Plot chunk
 FRONTEND's F-37 page loads the engine as classic scripts (`simulator/engine/*.js`) plus a lazy Plot chunk (~126 kB
 first load). Teach `tools/ci/budgets.py pages` to count classic `<script src>` files and declared lazy chunks for a
 page (a `lazy` list in budgets.json, reported separately, budgeted at today + 25 %), set the simulator entry, test.

@@ -67,10 +67,45 @@ def test_committed_budgets_file_is_consistent():
         assert page.endswith(".html")
         if "data" in s:
             assert "data_gzip_kb" in s and all(isinstance(g, str) for g in s["data"])
+        if "lazy" in s:
+            assert "lazy_gzip_kb" in s and all(isinstance(g, str) for g in s["lazy"])
     dist = os.path.join(ROOT, "site", "dist")
     if os.path.isdir(dist):                                   # a local build exists: today's site meets its budgets
+        if not os.path.isdir(os.path.join(dist, "simulator", "engine")):
+            pytest.skip("site/dist is a bare `vite build` (no simulator/engine): run `npm run build` for the full site")
         _, errs = B.check_pages(dist, b)
         assert errs == [], errs
+
+
+def test_classic_scripts_and_lazy_chunks(tmp_path):
+    """Classic <script src> files count with the page JS; a declared lazy entry chunk is measured with its static
+    imports (minus files the page already loaded), reported and budgeted separately."""
+    d = _site(tmp_path)
+    (d / "simulator" / "engine").mkdir(parents=True)
+    (d / "simulator" / "engine" / "sim.js").write_bytes(b"var a=1;" * 3000)
+    (d / "assets" / "plot-marks-abc.js").write_text('import{x}from"./src-def.js";import"./dep-def.js";export const p=x;')
+    (d / "assets" / "src-def.js").write_bytes(b"export const x=1;" * 4000)
+    (d / "simulator" / "index.html").write_text('<script defer src="/Lunar-Haul/simulator/engine/sim.js"></script>'
+                                                '<script>inline()</script><script type="module" src="/assets/dep-def.js">'
+                                                '</script>')
+    budgets = {"defaults": {"js_gzip_kb": 100, "css_gzip_kb": 100}, "site_total_mb": 10,
+               "pages": {"simulator/index.html": {"lazy": ["assets/plot-marks-*.js"], "lazy_gzip_kb": 100}}}
+    rows, errs = B.check_pages(str(d), budgets)
+    r = next(x for x in rows if x["page"] == "simulator/index.html")
+    assert errs == [] and r["n_classic"] == 1 and r["n_js"] == 2          # base prefix stripped; inline ignored
+    assert r["js_gzip_kb"] == pytest.approx((B.gz(str(d / "simulator/engine/sim.js")) + B.gz(str(d / "assets/dep-def.js"))) / 1024)
+    want = (B.gz(str(d / "assets/plot-marks-abc.js")) + B.gz(str(d / "assets/src-def.js"))) / 1024     # dep-def already loaded
+    assert r["n_lazy"] == 2 and r["lazy_gzip_kb"] == pytest.approx(want)
+    budgets["pages"]["simulator/index.html"]["lazy_gzip_kb"] = 0.01
+    _, errs = B.check_pages(str(d), budgets)
+    assert any("lazy_gzip_kb" in e for e in errs)
+    assert B.propose(rows)["simulator/index.html"]["lazy"] == ["assets/plot-marks-*.js"]
+    budgets["pages"]["simulator/index.html"]["lazy"] = ["assets/none-*.js"]
+    _, errs = B.check_pages(str(d), budgets)
+    assert any("missing assets/none-*.js" in e for e in errs)
+    (d / "simulator" / "engine" / "sim.js").unlink()
+    _, errs = B.check_pages(str(d), {"defaults": {"js_gzip_kb": 100, "css_gzip_kb": 100}, "pages": {}})
+    assert any("missing" in e and "sim.js" in e for e in errs)
 
 
 def test_schema_targets_cover_every_format():

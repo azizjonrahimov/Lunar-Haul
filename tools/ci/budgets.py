@@ -8,7 +8,11 @@ pages: for each built page (site/dist/**/index.html, 404.html) the initial JavaS
 loads (module scripts, modulepreload links, stylesheets: what Vite emits for the page's static imports; lazy chunks
 such as the 3D stage load later and are not counted), measured gzip-compressed (GitHub Pages serves gzip). The data a
 page fetches at load is declared per page in tools/ci/budgets.json (globs under dist; listed from the page code and
-prepare-data.mjs outputs) and measured the same way. The site total is checked against the Pages limit. Thresholds:
+prepare-data.mjs outputs) and measured the same way. Classic scripts (<script src> without type="module", e.g. the
+simulator's engine files copied in by site/scripts/copy-simulator.mjs) count with the page's JS. Chunks a page loads
+later by dynamic import are declared per page as "lazy" (globs of the entry chunks; their static imports are followed,
+minus the files the page already loaded) and reported and budgeted separately (lazy_gzip_kb). The site total is
+checked against the Pages limit. Thresholds:
 tools/ci/budgets.json; a page without its own entry uses "defaults". Exit 1 on any violation or missing file.
 
 schemas: validates with jsonschema (Draft 2020-12) and, where a format has one, its Python validator too:
@@ -43,11 +47,14 @@ class _Refs(HTMLParser):
         super().__init__()
         self.js: List[str] = []
         self.css: List[str] = []
+        self.classic: List[str] = []
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
         if tag == "script" and a.get("type") == "module" and a.get("src"):
             self.js.append(a["src"])
+        elif tag == "script" and a.get("src") and a.get("type") in (None, "", "text/javascript", "application/javascript"):
+            self.classic.append(a["src"])
         elif tag == "link" and a.get("href"):
             rel = (a.get("rel") or "").lower()
             if rel == "modulepreload":
@@ -64,8 +71,29 @@ def _local(href: str, dist: str, page_dir: str) -> str:
     if "/assets/" in href or href.startswith("assets/"):
         return os.path.join(dist, "assets", href.split("assets/", 1)[1])
     if href.startswith("/"):
-        return os.path.join(dist, href.lstrip("/"))
+        p = os.path.join(dist, href.lstrip("/"))
+        parts = href.lstrip("/").split("/", 1)
+        if not os.path.exists(p) and len(parts) == 2 and os.path.exists(os.path.join(dist, parts[1])):
+            return os.path.join(dist, parts[1])               # a site base prefix (e.g. /Lunar-Haul/) on a "/" build
+        return p
     return os.path.normpath(os.path.join(page_dir, href))
+
+
+_IMPORT = re.compile(r"""(?:\bfrom\s*|\bimport\s*)["'](\./[^"']+\.js)["']""")
+
+
+def static_closure(entries: List[str]) -> List[str]:
+    """The entry chunks and every chunk they import statically (relative ./x.js imports of Vite's output)."""
+    seen, todo = set(), list(entries)
+    while todo:
+        f = os.path.normpath(todo.pop())
+        if f in seen or not os.path.isfile(f):
+            continue
+        seen.add(f)
+        with open(f, encoding="utf-8", errors="replace") as fh:
+            for rel in _IMPORT.findall(fh.read()):
+                todo.append(os.path.join(os.path.dirname(f), rel))
+    return sorted(seen)
 
 
 def gz(path: str) -> int:
@@ -88,7 +116,7 @@ def measure(dist: str, budgets: Dict[str, Any]) -> List[Dict[str, Any]]:
             p.feed(f.read())
         page_dir = os.path.dirname(os.path.join(dist, page))
         missing = []
-        js_files = sorted({_local(h, dist, page_dir) for h in p.js} - {""})
+        js_files = sorted({_local(h, dist, page_dir) for h in p.js + p.classic} - {""})
         css_files = sorted({_local(h, dist, page_dir) for h in p.css} - {""})
         js = sum(gz(f) for f in js_files if os.path.isfile(f))
         css = sum(gz(f) for f in css_files if os.path.isfile(f))
@@ -101,8 +129,18 @@ def measure(dist: str, budgets: Dict[str, Any]) -> List[Dict[str, Any]]:
                 missing.append(pattern)
             data_files += hits
         data = sum(gz(f) for f in sorted(set(data_files)))
+        lazy_entries = []
+        for pattern in spec.get("lazy", []):
+            hits = sorted(glob.glob(os.path.join(dist, pattern)))
+            if not hits:
+                missing.append(pattern)
+            lazy_entries += hits
+        initial = {os.path.normpath(f) for f in js_files}
+        lazy_files = [f for f in static_closure(lazy_entries) if f not in initial]
+        lazy = sum(gz(f) for f in lazy_files)
         rows.append({"page": page, "js_gzip_kb": js / 1024, "css_gzip_kb": css / 1024, "data_gzip_kb": data / 1024,
-                     "n_js": len(js_files), "n_data": len(set(data_files)), "missing": missing, "spec": spec})
+                     "lazy_gzip_kb": lazy / 1024, "n_js": len(js_files), "n_classic": len(set(p.classic)),
+                     "n_lazy": len(lazy_files), "n_data": len(set(data_files)), "missing": missing, "spec": spec})
     return rows
 
 
@@ -111,7 +149,7 @@ def check_pages(dist: str, budgets: Dict[str, Any]) -> Tuple[List[Dict[str, Any]
     errs = []
     for r in rows:
         s = r["spec"]
-        for k in ("js_gzip_kb", "css_gzip_kb", "data_gzip_kb"):
+        for k in ("js_gzip_kb", "css_gzip_kb", "data_gzip_kb", "lazy_gzip_kb"):
             if k in s and r[k] > s[k] + 1e-9:
                 errs.append(f"{r['page']}: {k} {r[k]:.1f} > budget {s[k]}")
         for m in r["missing"]:
@@ -136,6 +174,8 @@ def propose(rows: List[Dict[str, Any]], margin: float = 1.25) -> Dict[str, Any]:
         out[r["page"]] = {"js_gzip_kb": up(r["js_gzip_kb"]), "css_gzip_kb": up(r["css_gzip_kb"])}
         if r["spec"].get("data"):
             out[r["page"]].update(data=r["spec"]["data"], data_gzip_kb=up(r["data_gzip_kb"]))
+        if r["spec"].get("lazy"):
+            out[r["page"]].update(lazy=r["spec"]["lazy"], lazy_gzip_kb=up(r["lazy_gzip_kb"]))
     return out
 
 
@@ -232,14 +272,16 @@ def main(argv=None) -> int:
         with open(a.budgets, encoding="utf-8") as f:
             budgets = json.load(f)
         rows, errs = check_pages(a.dist, budgets)
-        print(f"{'page':28s} {'JS gz kB':>9s} {'CSS gz kB':>9s} {'data gz kB':>10s}   budgets (JS / CSS / data)")
+        print(f"{'page':28s} {'JS gz kB':>9s} {'CSS gz kB':>9s} {'data gz kB':>10s} {'lazy gz kB':>10s}   "
+              f"budgets (JS / CSS / data / lazy)")
         for r in rows:
             if r["page"].startswith("("):
                 print(f"{r['page']:28s} {r['total_mb']:.1f} MB (limit {r['spec']['site_total_mb']} MB)")
                 continue
             s = r["spec"]
-            print(f"{r['page']:28s} {r['js_gzip_kb']:9.1f} {r['css_gzip_kb']:9.1f} {r['data_gzip_kb']:10.1f}   "
-                  f"{s.get('js_gzip_kb', '-')} / {s.get('css_gzip_kb', '-')} / {s.get('data_gzip_kb', '-')}")
+            print(f"{r['page']:28s} {r['js_gzip_kb']:9.1f} {r['css_gzip_kb']:9.1f} {r['data_gzip_kb']:10.1f} "
+                  f"{r['lazy_gzip_kb']:10.1f}   {s.get('js_gzip_kb', '-')} / {s.get('css_gzip_kb', '-')} / "
+                  f"{s.get('data_gzip_kb', '-')} / {s.get('lazy_gzip_kb', '-')}")
         if a.propose:
             print(json.dumps(propose(rows), indent=1))
         for e in errs:

@@ -3628,3 +3628,28 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
   Measured first load is then about 126 kB, so a threshold of 135 kB would fit (`--propose` style). I have not edited `tools/**`. Route it to BACKEND, or say if I should make the change myself.
 - **From BACKEND:** none.
 - **Questions for LEAD:** the budget item above.
+
+## B-51 DONE 15:45 | Page budgets count classic scripts and declared lazy chunks (the simulator page)
+- **Files:** `tools/ci/budgets.py`, `tools/ci/budgets.json` (simulator entry + note), `tests/test_ci_budgets.py` (+1 test).
+- **Classic scripts:** `<script src>` without `type="module"` (inline scripts ignored) now count with the page's initial JS, e.g. the simulator's `engine/{ref,sim,formats,api}.js`, which `site/scripts/copy-simulator.mjs` copies in after `vite build`.
+  - An absolute src with a site-base prefix (`/Lunar-Haul/...`) on a `/`-base build resolves by dropping the prefix.
+  - A missing classic file is reported like any missing asset.
+- **Lazy chunks:** a page's `lazy` list holds globs of the entry chunks it imports later.
+  - The tool follows their static imports (Vite's `from"./x.js"` / `import"./x.js"`), so the generated shared chunk name need not be declared, minus the files the page already loaded.
+  - It reports a separate **lazy gz kB** column and budget `lazy_gzip_kb`; `--propose` includes it.
+- **Simulator entry** (measured on a full build: site/dist plus the engine files copied as copy-simulator does):
+
+  | Load | Today (kB gz) | Budget (today + 25 %, rounded to 5) |
+  |---|---|---|
+  | Initial JS: 12 files incl. the 4 classic engine scripts (22.1 kB) | 40.9 | **55** |
+  | CSS | 9.1 | **15** |
+  | Lazy: `assets/plot-marks-*.js` → plot-marks 0.9 kB + its shared chunk `src-*` 82.8 kB | 83.7 | **105** |
+
+  - All pages pass on that full build.
+- **Tests:** `test_ci_budgets.py` 6 passed, 1 skipped. The new test covers:
+  - a classic script with a base prefix; inline ignored;
+  - a lazy entry with a static import, excluding an already-loaded chunk;
+  - lazy over budget; missing lazy glob; missing classic file.
+- **Local skip:** `test_committed_budgets_file_is_consistent` now **skips locally when site/dist is a bare `vite build`** (no `simulator/engine/`), with that reason; CI's site job runs the full `npm run build`. Before, it would have failed on the missing engine files.
+- **Note for FRONTEND:** declare new lazy entry chunks in budgets.json per page; their shared imports are found automatically.
+- **Questions for LEAD:** none.
