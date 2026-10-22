@@ -9,29 +9,33 @@
 <link rel="icon" href="<!--@base-->favicon.svg" type="image/svg+xml">
 <script>try { var t = localStorage.getItem('lunarsim.theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <script type="module" src="/src/main.js"></script>
+<script type="module" src="/src/home-hero.js"></script>
 </head>
 <body>
 <!--@header-->
 <main id="main">
-  <section class="hero" data-hero data-terrain="<!--@base-->terrain/hero/" aria-labelledby="hero-title">
+  <section class="hero hero4" data-hero4 aria-labelledby="hero-title">
     <div class="hero-stage">
-      <canvas role="img" aria-labelledby="hero-title" aria-describedby="hero-desc"></canvas>
-      <div class="hero-fallback"><p data-hero-status>Loading the terrain…</p></div>
-      <div class="hero-controls">
-        <span class="hero-sun" data-hero-sun aria-live="off"></span>
-        <label class="visually-hidden" for="hero-az">Sun azimuth (degrees)</label>
-        <input id="hero-az" data-hero-az type="range" min="0" max="359" step="1" value="135" style="width:7rem">
-        <button class="btn" type="button" data-hero-pause aria-pressed="false"><span class="i-pause"><!--@icon:pause--></span><span class="i-play"><!--@icon:play--></span><span data-label>Pause sun</span></button>
-      </div>
+      <img class="hero-still" src="<!--@base-->hero/base-p2-1280.webp" srcset="<!--@base-->hero/base-p2-720.webp 720w, <!--@base-->hero/base-p2-1280.webp 1280w" sizes="100vw" width="1280" height="672" fetchpriority="high" alt="The base on NASA terrain near the lunar south pole under a sun 1.5° above the horizon: the habitat, landing pads, rover routes and long shadows.">
+      <canvas class="hero-canvas" aria-hidden="true"></canvas>
+      <div class="hero-labels"></div>
+      <div class="hero-view"></div>
+      <button class="ui-btn hero-pause" type="button" aria-pressed="false" hidden>Pause</button>
       <div class="hero-copy"><div class="wrap">
         <h1 id="hero-title">Cargo logistics at a lunar south-pole base, on real terrain</h1>
         <p>A discrete-event simulator of how landed cargo gets from the pads to where it is needed, with learned landing and driving models on NASA terrain of the Connecting Ridge.</p>
+        <!--@hero-counters-->
+        <nav class="hero-entry" aria-label="Start here">
+          <a class="primary" href="<!--@base-->world/">World in 3D</a>
+          <a href="<!--@base-->stories/">Stories</a>
+          <a href="<!--@base-->vehicles/">Vehicles</a>
+          <a href="<!--@base-->lab/lander/">Lander lab</a>
+          <a href="<!--@base-->lab/rover/">Rover lab</a>
+          <a href="<!--@base-->simulator/">Simulator</a>
+        </nav>
       </div></div>
     </div>
-    <div class="wrap"><p id="hero-desc" class="hero-caption">
-      Terrain near the lunar south pole from NASA's Lunar Orbiter Laser Altimeter, lit by a sun that stays within 1.5° of the horizon and circles once per lunar day; long shadows cross the ridges and low ground the sun cannot reach stays black. Shadows are cast only by terrain inside this tile.
-      <span data-hero-terrain></span>
-    </p></div>
+    <div class="wrap"><p id="hero-desc" class="hero-caption">The view: one simulated year of the base's second phase with shared rovers (gallery scene P2), sped up, on NASA's Lunar Orbiter Laser Altimeter terrain of the Connecting Ridge. Landers come down at the two pads and rovers carry the cargo; the sun stays within 1.5° of the horizon, so shadows are long. The 3D view loads after the page on capable graphics; otherwise the still image shows the same scene.</p></div>
   </section>
 
   <div class="wrap">

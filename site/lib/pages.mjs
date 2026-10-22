@@ -22,7 +22,7 @@ export function icon(name, cls = 'icon') {
 
 // ---------- navigation ----------
 export const NAV = [
-  ['world/', 'World'], ['vehicles/', 'Vehicles'], ['results/', 'Results'], ['lab/lander/', 'Lander lab'], ['lab/rover/', 'Rover lab'], ['simulator/', 'Simulator'],
+  ['world/', 'World'], ['stories/', 'Stories'], ['vehicles/', 'Vehicles'], ['results/', 'Results'], ['lab/lander/', 'Lander lab'], ['lab/rover/', 'Rover lab'], ['simulator/', 'Simulator'],
   ['method/', 'Method'], ['paper/', 'Paper'], ['data/', 'Data'], ['about/', 'About'],
 ];
 export const FOOT = [['verification/', 'Verification'], ['changelog/', 'Changelog'], ['account/', 'Account'], ['simulator/', 'Simulator (v2)']];
@@ -207,4 +207,22 @@ export function headline() {
 <ul class="headline">${items.map(it => `<li><span class="label">${esc(it.label)}</span>
   <span class="big">${it.html}</span><span class="ctx">${it.ctxHtml || esc(it.ctx)}</span></li>`).join('')}</ul>
 <p class="small muted">Read at build time from ${[...files].map(f => `<code>${esc(f)}</code>`).join(', ')}. Every number carries its flag; hover a flag for its source (screen readers read it out).</p>`;
+}
+
+// ---------- F-39: the home hero's three counters, read at build time ----------
+// simulated years behind the distance law (the pads story), the surface cost per landed kg in the gallery's second-phase
+// marketplace scene, and the Earth's-horizon headline (the published story's numbers); every one flagged and sourced
+export function heroCounters() {
+  const story = id => JSON.parse(readFileSync(join(ROOT, 'data', 'stories', 'resolved', `${id}.json`), 'utf8'));
+  const pads = story('pads-distance').numbers.fit_years, en = story('earth-horizon').numbers, earth = { ...en.dte_loss };
+  if (/^pct_change of always_t and dte_t/.test(earth.source)) earth.source = `the change from ${en.always_t.text} (${en.always_t.source}) to ${en.dte_t.text} (${en.dte_t.source})`;
+  const gal = JSON.parse(readFileSync(join(ROOT, 'data', 'scenes', 'gallery.json'), 'utf8')), p2 = gal.scenes.find(s => s.package === 'P2');
+  const cost = p2.headline.cost_per_landed_kg_usd, n = p2.headline.n_seeds;
+  const item = (big, unit, label, flag, source) => `<li class="hero-counter"><span class="hc-big">${esc(big)}<span class="hc-unit">${esc(unit)}</span></span>` +
+    `<span class="hc-label">${esc(label)} <span class="flag" data-flag="${esc(flag)}" title="${esc(flag)}. Source: ${esc(source)}">${esc(flag)}</span></span></li>`;
+  const years = pads.text.replace(/\s*simulated years$/, '');
+  return `<ul class="hero-counters" aria-label="Three numbers from the results">` +
+    item(years, '', 'simulated years behind the law of pad distance', pads.flag, pads.source) +
+    item(`$${Math.round(cost.mean / 100) * 100 >= 10000 ? (Math.round(cost.mean / 100) / 10).toFixed(1) + 'k' : Math.round(cost.mean)}`, '', `surface cost per landed kg, shared rovers (± $${(cost.ci95 / 1000).toFixed(1)}k, ${n} seeds)`, 'Modelled', `${p2.source}; mean ± 95 % interval over ${n} seeds`) +
+    item(earth.text.replace(/\s*%$/, ''), '%', 'less cargo when rovers must see Earth', earth.flag, earth.source) + `</ul>`;
 }

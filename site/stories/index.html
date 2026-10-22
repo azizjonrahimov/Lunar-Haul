@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stories · LunarHaul</title>
+<meta name="description" content="Short guided walks through the results: how far the landing pads should be, why sharing rovers cuts the wait, learned against classical landing, and what Earth's horizon costs. Every number carries its source.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="<!--@base-->favicon.svg" type="image/svg+xml">
+<script>try { var t = localStorage.getItem('lunarsim.theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<script>if (/[?&]s=/.test(location.search)) document.documentElement.classList.add('st-one');   /* one story: no list layout first (no layout shift) */</script>
+<script type="module" src="/src/main.js"></script>
+<script type="module" src="/src/stories/stories.js"></script>
+<link rel="stylesheet" href="/src/stories/stories.css">
+</head>
+<body>
+<!--@header-->
+<main id="main"><div class="wrap">
+  <header class="page-head" id="st-head">
+    <h1>Stories</h1>
+    <p>Short guided walks through the results, a few steps each. Every number comes from the result files and carries its flag and source; the 3D view follows the steps.</p>
+  </header>
+  <section class="st-list" id="st-list" aria-label="Stories"></section>
+
+  <section class="st-player" id="st-player" aria-labelledby="st-title" hidden>
+    <p class="st-crumb small"><a href="./">All stories</a></p>
+    <h1 id="st-title" class="st-title"></h1>
+    <p id="st-summary" class="prose st-summary"></p>
+    <div class="st-layout">
+      <div class="st-stage" id="st-stage">
+        <div class="st-view" id="st-view">
+          <canvas id="st-canvas" tabindex="0" aria-label="3D view for this step. Arrow keys orbit while it has focus. The step text says what it shows." aria-describedby="st-visual"></canvas>
+          <div class="st-labels" id="st-labels"></div>
+          <p class="st-fallback" id="st-fallback" hidden></p>
+        </div>
+      </div>
+      <div class="st-panel ui-glass" id="st-panel">
+        <nav class="st-bar" id="st-bar" aria-label="Steps"></nav>
+        <p class="ui-label st-count" id="st-count"></p>
+        <h2 class="st-step-title" id="st-step-title"></h2>
+        <div class="st-text" id="st-text" tabindex="-1" aria-live="polite"></div>
+        <div class="st-chips" id="st-chips"></div>
+        <p class="st-visual small"><span class="ui-label">In the view</span> <span id="st-visual"></span></p>
+        <div class="st-nav">
+          <button class="ui-btn" id="st-prev" type="button">Back</button>
+          <button class="ui-btn primary" id="st-next" type="button">Next</button>
+        </div>
+        <p class="small muted st-keys">Arrow keys ← → step through (outside the 3D view).</p>
+        <p class="small st-status" id="st-status" role="status"></p>
+      </div>
+    </div>
+    <details class="st-sources" id="st-sources-box"><summary>Result files behind these numbers</summary><ul id="st-sources" class="small"></ul></details>
+  </section>
+</div></main>
+<!--@footer-->
+</body>
+</html>

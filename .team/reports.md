@@ -3653,3 +3653,45 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
 - **Local skip:** `test_committed_budgets_file_is_consistent` now **skips locally when site/dist is a bare `vite build`** (no `simulator/engine/`), with that reason; CI's site job runs the full `npm run build`. Before, it would have failed on the missing engine files.
 - **Note for FRONTEND:** declare new lazy entry chunks in budgets.json per page; their shared imports are found automatically.
 - **Questions for LEAD:** none.
+
+## F-38 DONE 16:20 | /stories/: four guided stories, 3D stage per step, every number a stat chip
+- **Files:**
+  - New: `site/stories/index.html`, `site/src/stories/stories.js` (list and player), `site/src/stories/stage.js` (the 3D side, loaded on Enter), `site/src/stories/stories.css`.
+  - Changed: `site/vite.config.js` (page), `site/lib/pages.mjs` (nav: "Stories" after World), `site/scripts/prepare-data.mjs` (stages `data/stories/resolved/` into `public/story-data/`), and `site/.gitignore`.
+- **What it does:**
+  - `/stories/` lists the published stories (four), each with its title, step count and summary.
+  - `/stories/?s=<id>` plays one story; `&step=n` is kept in the URL, so a step can be linked. Each step shows:
+    - the title and the text, with the `{{r:…}}` numbers in bold;
+    - **every number of the step as a stat chip** (its `chips` first, highlighted, then the others its text quotes), carrying the resolved text, flag and source;
+    - the text twin ("In the view", from `visual_plain`);
+    - Back / Next, a step bar (numbered buttons, `aria-current="step"`), and ← → keys outside the 3D view.
+  - Under each story is a "Result files behind these numbers" list (the file names and sha256 values from `sources`).
+  - **3D stage:** one per story, loaded on Enter.
+    - **World stories** (`world:<package>`) use the /world/ scene and switch packages per step (P2, P2-inhouse, P2V2, P2-pads-0.5km/3km, P2-comms-dte, P2-comms-relay-0.8; cached).
+    - **The landing story** (`lander:<cls>/<pilot>/<pick>`) uses the lander lab's scene and replays the named episode (classical / baseline PPO / bc_v3, p50 and first failure).
+    - The first step cuts; later steps glide. Under reduced motion everything cuts and nothing plays. Tier 0: no 3D, the text carries every step.
+  - **Shot mapping:**
+    - overview, base: the world director's shots.
+    - pads: frames `camera.target`, or the next landing's pad.
+    - horizon: low beside the base looking at Earth, at a daylight hour with Earth 0.5–5° up and far from the sun's bearing, so Earth is lit and the camera looks down-sun.
+    - descent, touchdown: the lander lab's side view, from the start, or from 3 s before touchdown.
+  - **Mode mapping:**
+    - play: 6 h/s, slowing for each descent.
+    - keepout: a moment inside a keep-out window at the target pad.
+    - touchdowns, ejecta: a landing at the target pad.
+    - queues: the busiest daylight hour at the target.
+    - earth, earth_link: the Earth moment above.
+    - routes and job_rule: always shown / follow the scene.
+- **Data notes for LEAD/BACKEND:**
+  1. The numbers have no label, so the page carries a label map for all 49 keys (e.g. "Own rovers: mean urgent wait"). A `label` per number in the story files would replace it (the page already prefers a data label).
+  2. Modes the stage does not draw: `colour_by: owner`, `bids`, `relay`, and the `highlight` list (site labels are always shown). Rename or drop them in the data, or I can draw them in F-40.
+  3. `touchdown` uses the side view: the lab's pad camera looked into the glare (blown-out ground).
+- **Checks:**
+  - All four stories played through in Chrome with 0 console errors: pads-distance 6/6, sharing-rovers (steps 1–2), learned-landing 5/5, earth-horizon step 1.
+  - Lighthouse 13.5 desktop, production build: `/stories/` performance 100, accessibility 100, best practices 100 (CLS 0.008). `?s=pads-distance` 100/100/100 (CLS 0.028). `?s=learned-landing` 100/100/100.
+    - The first story run scored 79 (CLS 0.48: the list header showed before the player). An inline class from `?s=` now picks the layout before first paint, and the title and summary have reserved space.
+  - 390 px, light theme: no horizontal scroll (374 px content in a 389 px viewport), and → moved to step 2. **The screenshot could not be taken**: captures of the iframe timed out (the GPU tier check running inside it).
+  - Tests 11/11. Build OK. Budgets OK (stories 11.8 kB JS, 8.3 kB CSS against the default 60/20; the story JSON is 48 kB and not in a data list).
+  - Servers stopped by PID; tab closed.
+- **From BACKEND:** the `label` field (note 1), if wanted.
+- **Questions for LEAD:** notes 1–2.

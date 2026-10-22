@@ -1,14 +1,14 @@
 import { defineConfig } from 'vite';
 import { join, extname } from 'node:path';
 import { existsSync, readFileSync, statSync } from 'node:fs';
-import { header, footer, markdown, headline, figure, icon, resultText, SITE, ROOT } from './lib/pages.mjs';
+import { header, footer, markdown, headline, figure, icon, resultText, heroCounters, SITE, ROOT } from './lib/pages.mjs';
 import { results } from './lib/results.mjs';
 import { pipeline } from './lib/pipeline.mjs';
 import { tex } from './lib/tex.mjs';
 
 // Public base: '/' locally; CI sets SITE_BASE from actions/configure-pages (/Lunar-Haul/ on GitHub Pages).
 const base = process.env.SITE_BASE || '/';
-const PAGES = ['', 'world/', 'world/trace/', 'results/', 'lab/lander/', 'lab/rover/', 'method/', 'paper/', 'data/', 'about/', 'account/', 'changelog/', 'verification/', 'vehicles/', 'simulator/',
+const PAGES = ['', 'world/', 'world/trace/', 'results/', 'lab/lander/', 'lab/rover/', 'method/', 'paper/', 'data/', 'about/', 'account/', 'changelog/', 'verification/', 'vehicles/', 'simulator/', 'stories/',
   'design/', 'design/stage/'];   // development pages (noindex, not in the nav)
 
 // <!--@header-->, <!--@footer-->, <!--@md:name-->, <!--@headline-->, <!--@results-->, <!--@pipeline--> and <!--@r:key--> (also inside markdown), <!--@icon:name-->, <!--@tex:name--> (KaTeX at build time), <!--@base--> in page HTML
@@ -22,6 +22,7 @@ function lunarsimPages() {
           .replace('<!--@header-->', () => header(base, ctx.path))
           .replace('<!--@footer-->', () => footer(base))
           .replace('<!--@headline-->', () => headline())
+          .replace('<!--@hero-counters-->', () => heroCounters())
           .replace('<!--@results-->', () => results(base))
           .replace(/<!--@md:([\w-]+)-->/g, (_, n) => markdown(n))
           .replace('<!--@pipeline-->', () => pipeline())

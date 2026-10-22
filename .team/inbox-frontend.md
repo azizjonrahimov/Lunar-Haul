@@ -449,7 +449,7 @@ chips and Observable Plot charts; Compare as four answer-style cards (one per jo
 
 # M5 (stories, landing page, quality). Order: F-38, F-39, F-40. Queued 22 Oct 15:45.
 
-## F-38 [OPEN] (<= 5 h) Guided stories (explorable explanations), plan §5 F-38
+## F-38 [REVIEW] (<= 5 h) Guided stories (explorable explanations), plan §5 F-38
 Data: `data/stories/resolved/*.json` (+ `index.json`), format in `lunarsim/schemas/story-v1.schema.json` (B-35).
 Published stories only (four: pads distance, sharing rovers, learned landing, Earth's horizon). New page `/stories/`
 (list) and `/stories/<id>/` (one page per story, or one page with ?s=<id>): each step drives the matching 3D stage
@@ -459,7 +459,7 @@ step's text with every number as a stat chip carrying its flag and source (the r
 unit, flag, source per number), Next / Back and a step bar, keyboard, a text-only twin of every step (the `visual`
 field), reduced motion = cuts. Nav: "Stories" after World. Lighthouse ≥ 85 performance desktop; no console errors.
 
-## F-39 [OPEN] (<= 2 h) Landing page hero, plan §5 F-39
+## F-39 [IN PROGRESS] (<= 2 h) Landing page hero, plan §5 F-39
 The home page opens with the loading door and a slow cinematic orbit of the base under the low sun (on-site preset,
 the gallery's P2 scene, landers and rovers moving), three big counters from the results (sourced: simulated years
 in the law fit, cost per landed kg at the marketplace, and the Earth's-horizon headline from the published story's
