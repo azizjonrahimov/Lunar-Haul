@@ -410,7 +410,7 @@ tier 0. Done when: all five samples play a full year; `?run=<id>` loads a run-qu
 the Python reader (`lunarsim.scene.position`) at 20 random times (node test); tiers, reduced motion, keyboard,
 Lighthouse ≥ 85 desktop.
 
-## F-36d [REVIEW] (next, before F-35; <= 3 h) World v2 polish: make the flagship read like the reels
+## F-36d [DONE, accepted] (next, before F-35; <= 3 h) World v2 polish: make the flagship read like the reels
 LEAD's browser review of F-36 (22 Oct 14:40), P2 scene: the data, controls and chips work; the look is not there yet.
 1. **Routes:** today every planned route (all lighting variants) is drawn bright cyan, so the network reads as
    spaghetti and hides the terrain. Draw each leg once as a thin, low-contrast line (night route), brighten only the
@@ -424,12 +424,22 @@ LEAD's browser review of F-36 (22 Oct 14:40), P2 scene: the data, controls and c
    idle moment; pick the start time from the package's events.
 Check in the browser at 1440 and 390 px; frame times per tier; no console errors.
 
-## F-35 [REVIEW] (after F-36; <= 5 h) Rover lab in 3D (plan §5 F-35)
+## F-35 [DONE, accepted] (after F-36; <= 5 h) Rover lab in 3D (plan §5 F-35)
 `/lab/rover/` on the stage: drive the chosen leg on the terrain along the B-32 route for the chosen lighting, chase
 and cockpit cameras, a "ghost" rover where your delayed command will take effect, the low-sun glare cone and long
 shadows, slip indicator, interventions as 3D markers with callouts, expert vs neural-network race on the same leg,
 Earth visibility along the route (from earth_link samples: where on the leg a teleoperated rover would lose the
 link). 2D plan view stays as tier 0 and mirror.
+
+## F-35d [OPEN] (after F-37 if F-37 is under way, else before; <= 2 h) Rover lab 3D polish (LEAD browser review 22 Oct)
+1. Open on a sunlit stretch of the leg (today the first frame is in terrain shadow); pick the start from the leg's
+   lighting so the rover and ground are lit, then let the drive reach the shadow.
+2. The flat cyan disc and yellow ring around the rover are too heavy: make the glare cone and command marker subtle
+   (thin outline, low alpha), the ring only when it means something.
+3. Earth-link posts must not spear the rover: shorter, offset to the route side, fading near the camera.
+4. Close-up craters look stamped and repetitive: vary size, rotation and depth, lower the density near the camera.
+5. Label the Earth-link posts as computed for the leg's night route (BACKEND adds per-lighting samples later).
+Check at 1440 and 390 px; no console errors.
 
 ## F-37 [IN PROGRESS] (after F-35; <= 5 h) Simulator v3 on the design system (plan §5 F-37)
 The `/simulator/` page rebuilt on the site's design system (glass panels, segmented controls, the plain labels of
