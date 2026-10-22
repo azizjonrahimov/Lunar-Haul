@@ -27,18 +27,24 @@ def test_fixture_shape(fx):
         assert e["steps"][-1].get("touchdown") is True
 
 
-def test_physics_replay_is_exact(fx):
-    """physics.step chained from state0 with the recorded actions (physics.touchdown on the landing step) gives every
-    recorded state bit for bit: what the JS port must reproduce."""
+def test_physics_replay_matches(fx):
+    """physics.step with the recorded actions (physics.touchdown on the landing step) reproduces the recorded states:
+    each step from its recorded start state to 1e-9, and the chained replay from state0 to 1e-6 (the JS port's target).
+    Bit-for-bit equality holds on the machine that wrote the fixture but not across platforms (libm differs in the last
+    bit: CI on Linux diverged at step 79), so the test asserts tolerances, not identity."""
     for e in fx["episodes"]:
         c = CLASSES[e["cls"]]
-        s = np.array(e["state0"])
+        prev = np.array(e["state0"]); chain = prev.copy(); worst = 0.0
         for k, st in enumerate(e["steps"]):
-            new, _ = P.step(s, st["action"], c, e["dt"], e["thrust_scale"], e["isp_scale"], e["m_dry"])
+            rec = np.array(st["state"])
+            new, _ = P.step(prev, st["action"], c, e["dt"], e["thrust_scale"], e["isp_scale"], e["m_dry"])
+            nxt, _ = P.step(chain, st["action"], c, e["dt"], e["thrust_scale"], e["isp_scale"], e["m_dry"])
             if st.get("touchdown"):
-                new = P.touchdown(s, new)
-            assert np.array_equal(new, np.array(st["state"])), (e["pilot"], k)
-            s = new
+                new, nxt = P.touchdown(prev, new), P.touchdown(chain, nxt)
+            assert np.allclose(new, rec, rtol=0, atol=1e-9), (e["pilot"], k)
+            worst = max(worst, float(np.max(np.abs(nxt - rec))))
+            prev, chain = rec, nxt
+        assert worst < 1e-6, (e["pilot"], worst)
 
 
 def test_env_replay_is_exact(fx):
