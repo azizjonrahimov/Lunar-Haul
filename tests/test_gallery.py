@@ -1,5 +1,5 @@
 """Static scenario gallery (B-36, experiments/phase4/gallery.py): packages, settings, budget and the index."""
-import importlib.util, json, os, sys
+import importlib.util, json, math, os, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 import pytest
@@ -54,13 +54,34 @@ def test_headline_numbers(tmp_path):
     assert G.headline_numbers(df, "p2-marketplace", 5) is None          # a seed missing: pending, not a short mean
 
 
+def close(a, b, path="") -> list:
+    """Paths where two JSON documents differ, floats compared to 1e-9 relative (machines differ in the last bit)."""
+    if isinstance(a, dict) and isinstance(b, dict):
+        return [p for k in set(a) | set(b) for p in close(a.get(k), b.get(k), f"{path}/{k}")]
+    if isinstance(a, list) and isinstance(b, list):
+        if len(a) != len(b):
+            return [f"{path}: length {len(a)} != {len(b)}"]
+        return [p for i, (x, y) in enumerate(zip(a, b)) for p in close(x, y, f"{path}[{i}]")]
+    if isinstance(a, float) or isinstance(b, float):
+        ok = (isinstance(a, (int, float)) and isinstance(b, (int, float))
+              and math.isclose(a, b, rel_tol=1e-9, abs_tol=1e-12))
+        return [] if ok else [f"{path}: {a!r} != {b!r}"]
+    return [] if a == b else [f"{path}: {a!r} != {b!r}"]
+
+
+def test_close_tolerates_last_bit_only():
+    assert close({"a": [1.5255050330593534]}, {"a": [1.5255050330593531]}) == []
+    assert close({"a": 1.0}, {"a": 1.001}) and close({"a": "x"}, {"a": "y"}) and close([1], [1, 2])
+
+
 def test_committed_index_is_current_and_valid():
     if not os.path.isfile(GALLERY):
         pytest.skip("gallery.json not built yet")
     with open(GALLERY, encoding="utf-8") as f:
         doc = json.load(f)
     seeds = doc["common"]["seeds"]
-    assert doc == json.loads(json.dumps(G.build_index(seeds=seeds))), "stale: run gallery.py index"
+    diff = close(doc, json.loads(json.dumps(G.build_index(seeds=seeds))))
+    assert not diff, f"stale (run gallery.py index): {diff[:5]}"
     jsonschema = pytest.importorskip("jsonschema")
     from lunarsim.formats import load_schema
     assert list(jsonschema.Draft202012Validator(load_schema("scene-gallery-v1")).iter_errors(doc)) == []

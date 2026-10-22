@@ -11,28 +11,28 @@
  "notes": "Skeleton for E21 (results/table_E21.csv, table_E21_breakeven.csv, written by experiments/phase4/run_phase4.py table). Every number is pending until those tables exist; check the row selectors against the final tables then. Wording for LEAD to edit.",
  "numbers": {
   "always_t": {
-   "value": 532.1890613057118,
+   "value": 532.189061306,
    "text": "532 t per year",
    "unit": "t per year",
    "flag": "Modelled",
    "source": "results/table_E21.csv, row stage = A, comms = always, mix = supervised_strict, column delivered_t_in_year; Earth always in view (the baseline), all supervised rovers, strict policy (experiment E21 stage A)"
   },
   "dte_t": {
-   "value": 306.52480475755556,
+   "value": 306.524804758,
    "text": "307 t per year",
    "unit": "t per year",
    "flag": "Modelled",
    "source": "results/table_E21.csv, row stage = A, comms = dte, mix = supervised_strict, column delivered_t_in_year; direct-to-Earth links only (experiment E21 stage A)"
   },
   "dte_loss": {
-   "value": 42.40302421746417,
+   "value": 42.4030242174,
    "text": "42 %",
    "unit": "%",
    "flag": "Modelled",
    "source": "pct_change of always_t and dte_t (unrounded); neg"
   },
   "dte_wait": {
-   "value": 971.6935881257552,
+   "value": 971.693588126,
    "text": "972 rover-hours",
    "unit": "rover-hours",
    "flag": "Modelled",
@@ -46,28 +46,28 @@
    "source": "results/table_E21.csv, row stage = A, comms = dte, mix = supervised_strict, column blackout_jobs_refused; jobs no rover could start for want of a link"
   },
   "relay_t": {
-   "value": 530.1674181348847,
+   "value": 530.167418135,
    "text": "530 t per year",
    "unit": "t per year",
    "flag": "Modelled",
    "source": "results/table_E21.csv, row stage = A, comms = dte+relay, coverage = 0.1, mix = supervised_strict, column delivered_t_in_year; a relay satellite in view a tenth of the time, besides direct links"
   },
   "auto_t": {
-   "value": 532.0537503335801,
+   "value": 532.053750334,
    "text": "532 t per year",
    "unit": "t per year",
    "flag": "Modelled",
    "source": "results/table_E21.csv, row stage = A, comms = dte, mix = autonomous, column delivered_t_in_year; direct links only, fully autonomous rovers"
   },
   "relay_gain": {
-   "value": 223.6426133773291,
+   "value": 223.642613377,
    "text": "224 t per year",
    "unit": "t per year",
    "flag": "Modelled",
    "source": "results/table_E21_breakeven.csv, row option = relay coverage 0.1, column gain_vs_dte; gain over direct links only, all supervised rovers, strict policy (experiment E21 break-even table)"
   },
   "rover_gain": {
-   "value": 0.6336891229229309,
+   "value": 0.633689122923,
    "text": "0.6 t per year",
    "unit": "t per year",
    "flag": "Modelled",
@@ -170,7 +170,7 @@
  ],
  "pending": [],
  "sources": {
-  "results/table_E21.csv": "0e335e43cc05e8dc4d511822c08cbd471d3f27e5f47bedc4efcf5cda5e442613",
-  "results/table_E21_breakeven.csv": "d755c28918dfa49c4522b230b5b3a2143a632993a627d21e249c5e814950a90e"
+  "results/table_E21.csv": "fac936034749c303b99261a4b1a1d820061a2a8fb089de405d5ad4773a193527",
+  "results/table_E21_breakeven.csv": "afa5a8efac6baa04b60b01981aa14bf7ba8acfc3ca30ac23f8be9d78c61c1d9d"
  }
 }

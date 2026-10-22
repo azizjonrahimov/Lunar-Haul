@@ -102,8 +102,13 @@ class Sources:
             raise Pending(f"{rel} does not exist yet")
         with open(p, "rb") as f:
             raw = f.read()
+        if raw[:2] == b"\x1f\x8b":
+            self.used[rel.replace(os.sep, "/")] = hashlib.sha256(raw).hexdigest()
+            return gzip.decompress(raw)
+        # text: hash with LF line ends, so a CRLF working copy (git stores eol=lf) gives the same sha as CI
+        raw = raw.replace(b"\r\n", b"\n")
         self.used[rel.replace(os.sep, "/")] = hashlib.sha256(raw).hexdigest()
-        return gzip.decompress(raw) if raw[:2] == b"\x1f\x8b" else raw
+        return raw
 
     def table(self, rel: str) -> List[Dict[str, str]]:
         if rel not in self._cache:
@@ -239,6 +244,7 @@ def _resolve_one(key: str, numbers: Dict[str, Any], src: Sources, done: Dict[str
     v *= spec.get("scale", 1.0)
     if not math.isfinite(v):
         raise StoryError("value is not finite")
+    v = float(f"{v:.12g}")          # 12 significant digits: platform libm last-bit noise stays out of the files
     if t:
         source += f"; {'100 (e^v - 1)' if t == 'exp_pct' else t}"
     if spec.get("scale", 1.0) != 1.0:

@@ -25,7 +25,7 @@
    "source": "results/table_E15.csv, row policy = classical_CLPS, column pass_rate; x 100; share inside the SPLICE touchdown limits, classical ZEM/ZEV law (experiment E15)"
   },
   "classical_miss": {
-   "value": 2.902305490200324,
+   "value": 2.9023054902,
    "text": "2.9 m",
    "unit": "m",
    "flag": "Modelled",
@@ -60,7 +60,7 @@
    "source": "results/table_E15.csv, row policy = lander_CLPS_bc_v3_s0, column pass_rate; x 100; imitation of the classical law with DAgger, observation v3 with the altimeter history (experiment E15)"
   },
   "learned_miss": {
-   "value": 3.227145462609916,
+   "value": 3.22714546261,
    "text": "3.2 m",
    "unit": "m",
    "flag": "Modelled",
@@ -74,14 +74,14 @@
    "source": "results/table_E15.csv, row policy = lander_CLPS_bc_v3_s0, column fail_sensor; failed touchdowns while the altimeter held a dropped-out reading"
   },
   "gap": {
-   "value": 4.799999999999994,
+   "value": 4.8,
    "text": "4.8 percentage points",
    "unit": "percentage points",
    "flag": "Modelled",
    "source": "results/table_E15.csv, row policy = lander_CLPS_bc_v3_s0, column d_pass_rate; neg; x 100; classical minus learned success, paired on the same seeds"
   },
   "gap_ci": {
-   "value": 3.462671597480766,
+   "value": 3.46267159748,
    "text": "3.5 percentage points",
    "unit": "percentage points",
    "flag": "Modelled",
@@ -175,6 +175,6 @@
  ],
  "pending": [],
  "sources": {
-  "results/table_E15.csv": "7d400c68a544b5d274c7a40611e2e80003e3e2e3db60091cc397f2e4252b9a03"
+  "results/table_E15.csv": "f8ed3e644b76eb943db4457713e977e60499ecf601c435da5869aa5a409f8810"
  }
 }

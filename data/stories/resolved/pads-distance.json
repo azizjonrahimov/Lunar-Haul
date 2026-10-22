@@ -11,21 +11,21 @@
  "notes": "E20 pooled law at the typical fleet load (results/table_E20.csv) and the E20 siting model (results/E20_fit.json). Wording for LEAD to edit.",
  "numbers": {
   "standoff_pct": {
-   "value": 35.02236573467372,
+   "value": 35.0223657347,
    "text": "35.0 % per km",
    "unit": "% per km",
    "flag": "Modelled",
    "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = standoff, column pct_per_unit; pooled fit of ln(urgent mean delay), 100 (e^b - 1) per km of pad standoff, at the typical fleet load (experiment E20)"
   },
   "standoff_lo": {
-   "value": 32.62744153405361,
+   "value": 32.6274415341,
    "text": "32.6 %",
    "unit": "%",
    "flag": "Modelled",
    "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = standoff, column ci_lo; 100 (e^v - 1); lower end of the 95 % bootstrap interval over seeds"
   },
   "standoff_hi": {
-   "value": 37.64470999763604,
+   "value": 37.6447099976,
    "text": "37.6 %",
    "unit": "%",
    "flag": "Modelled",
@@ -46,35 +46,35 @@
    "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = standoff, column n_seeds"
   },
   "keepout_pct": {
-   "value": -0.49872585937157377,
+   "value": -0.498725859372,
    "text": "−0.5 % per km",
    "unit": "% per km",
    "flag": "Modelled",
    "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = keepout, column pct_per_unit; per km of plume keep-out radius"
   },
   "keepout_lo": {
-   "value": -1.4956649201952796,
+   "value": -1.4956649202,
    "text": "−1.5 %",
    "unit": "%",
    "flag": "Modelled",
    "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = keepout, column ci_lo; 100 (e^v - 1); 95 % bootstrap interval, lower end"
   },
   "keepout_hi": {
-   "value": 0.8281990234159148,
+   "value": 0.828199023416,
    "text": "0.8 %",
    "unit": "%",
    "flag": "Modelled",
    "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = keepout, column ci_hi; 100 (e^v - 1); 95 % bootstrap interval, upper end"
   },
   "miss_pct": {
-   "value": 8.161346176786344,
+   "value": 8.16134617679,
    "text": "8.2 %",
    "unit": "%",
    "flag": "Modelled",
    "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = log_miss, column pct_per_unit; per e-fold of the mean landing miss"
   },
   "impacts_near": {
-   "value": 11.747650563538281,
+   "value": 11.7476505635,
    "text": "12",
    "unit": "",
    "flag": "Modelled",
@@ -228,7 +228,7 @@
  ],
  "pending": [],
  "sources": {
-  "results/E20_fit.json": "e259209b7575a2eb28e0a7580ee34d7d8743da33544c20d77efee62fd74b1239",
-  "results/table_E20.csv": "5f6f96967d25c7d9a4af05529dbd2e27d69630ae3accadc542a40507ca9c648a"
+  "results/E20_fit.json": "27d999adcb483d7776751c353462a908304a5e7c2d4ee7b7e8ef920cda2a1653",
+  "results/table_E20.csv": "5fb55878a04420fcd88cbd88d05444b74c17279aecc6e473bfe4499f1855cca2"
  }
 }

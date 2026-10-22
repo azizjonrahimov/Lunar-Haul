@@ -207,6 +207,11 @@ def cmd_headline(a) -> None:
             print(f"  {i + 1}/{len(todo)} ({time.time() - t_all:.0f} s)")
 
 
+def _r(x: float) -> float:
+    """12 significant digits: numpy's reductions differ in the last bit between machines (SIMD width)."""
+    return float(f"{float(x):.12g}")
+
+
 def headline_numbers(runs: pd.DataFrame, cell_id: str, seeds: int) -> Dict[str, Any]:
     sub = runs[(runs["cell"] == cell_id) & (runs["seed"] < seeds)]
     if sub["seed"].nunique() < seeds:
@@ -223,7 +228,7 @@ def headline_numbers(runs: pd.DataFrame, cell_id: str, seeds: int) -> Dict[str, 
         v = v[np.isfinite(v)] * scale
         if not len(v):
             continue
-        out[key] = {"mean": float(v.mean()), "ci95": float(1.96 * v.std(ddof=1) / math.sqrt(len(v))) if len(v) > 1 else None,
+        out[key] = {"mean": _r(v.mean()), "ci95": _r(1.96 * v.std(ddof=1) / math.sqrt(len(v))) if len(v) > 1 else None,
                     "n": int(len(v))}
     return out
 

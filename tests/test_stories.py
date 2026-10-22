@@ -1,5 +1,5 @@
 """Guided stories (B-35): the number check, sources, formatting, references, and the committed stories."""
-import json, os, sys
+import json, math, os, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 import pytest
@@ -143,5 +143,35 @@ def test_resolved_files_are_current_for_published_stories(tmp_path):
         doc = json.loads(b)
         if doc["status"] != "published":
             continue
-        with open(os.path.join(committed, name), "rb") as f:
-            assert f.read() == b, f"{name} is stale: run python -m lunarsim.stories build"
+        with open(os.path.join(committed, name), encoding="utf-8") as f:
+            diff = close(json.load(f), doc)
+        assert not diff, f"{name} is stale (run python -m lunarsim.stories build): {diff[:5]}"
+
+
+def close(a, b, path="") -> list:
+    """Paths where two JSON documents differ, floats compared to 1e-9 relative (machines differ in the last bit)."""
+    if isinstance(a, dict) and isinstance(b, dict):
+        return [p for k in set(a) | set(b) for p in close(a.get(k), b.get(k), f"{path}/{k}")]
+    if isinstance(a, list) and isinstance(b, list):
+        if len(a) != len(b):
+            return [f"{path}: length {len(a)} != {len(b)}"]
+        return [p for i, (x, y) in enumerate(zip(a, b)) for p in close(x, y, f"{path}[{i}]")]
+    if isinstance(a, float) or isinstance(b, float):
+        ok = (isinstance(a, (int, float)) and isinstance(b, (int, float))
+              and math.isclose(a, b, rel_tol=1e-9, abs_tol=1e-12))
+        return [] if ok else [f"{path}: {a!r} != {b!r}"]
+    return [] if a == b else [f"{path}: {a!r} != {b!r}"]
+
+
+def test_text_sources_hash_with_lf(tmp_path):
+    """A CRLF working copy hashes like the LF bytes git stores (and CI checks out)."""
+    for name, eol in (("lf", b"\n"), ("crlf", b"\r\n")):
+        d = tmp_path / name / "results"
+        d.mkdir(parents=True)
+        (d / "t.csv").write_bytes(eol.join([b"a,b", b"x,1.5", b""]))
+    shas = []
+    for name in ("lf", "crlf"):
+        src = S.Sources(str(tmp_path / name))
+        assert src.table("results/t.csv") == [{"a": "x", "b": "1.5"}]
+        shas.append(src.used["results/t.csv"])
+    assert shas[0] == shas[1]

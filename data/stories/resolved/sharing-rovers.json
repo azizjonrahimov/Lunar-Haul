@@ -46,21 +46,21 @@
    "source": "results/table_main.csv, row phase = P2, mechanism = Marketplace (ours), column delay_prio1_p90_h; 90th percentile delay of urgent items (experiment E1)"
   },
   "market_sl24": {
-   "value": 95.19999999999999,
+   "value": 95.2,
    "text": "95 %",
    "unit": "%",
    "flag": "Modelled",
    "source": "results/table_main.csv, row phase = P2, mechanism = Marketplace (ours), column sl24_prio1; x 100; share of urgent items delivered within a day (experiment E1)"
   },
   "market_cut": {
-   "value": 63.27160493827161,
+   "value": 63.2716049383,
    "text": "63 %",
    "unit": "%",
    "flag": "Modelled",
    "source": "pct_change of inhouse_mean and market_mean (unrounded); neg"
   },
   "vs_greedy": {
-   "value": 21.81027257274853,
+   "value": 21.8102725727,
    "text": "22 %",
    "unit": "%",
    "flag": "Modelled",
@@ -74,21 +74,21 @@
    "source": "results/table_E19.csv, row scenario = P2-4-vehicles, mechanism = inhouse, autonomy = supervised, column n_vehicles"
   },
   "e19_inhouse": {
-   "value": 19.009261601837345,
+   "value": 19.0092616018,
    "text": "19.0 h",
    "unit": "h",
    "flag": "Modelled",
    "source": "results/table_E19.csv, row scenario = P2-4-vehicles, mechanism = inhouse, autonomy = supervised, column delay_prio1_mean_h; mean urgent delay, supervised driving, mean over seeds (experiment E19)"
   },
   "e19_market": {
-   "value": 6.416142967643799,
+   "value": 6.41614296764,
    "text": "6.4 h",
    "unit": "h",
    "flag": "Modelled",
    "source": "results/table_E19.csv, row scenario = P2-4-vehicles, mechanism = marketplace, autonomy = supervised, column delay_prio1_mean_h; the same with the marketplace job rule (experiment E19)"
   },
   "e19_auto": {
-   "value": 4.272514763374013,
+   "value": 4.27251476337,
    "text": "4.3 h",
    "unit": "h",
    "flag": "Modelled",
@@ -208,8 +208,8 @@
  ],
  "pending": [],
  "sources": {
-  "results/table_E19.csv": "7a0948278092a90a218d45f29b7069518abdd46db3affb28ce33240a04398f68",
-  "results/table_main.csv": "abbce49b451f5ba36b1dbe4f802c558ae7c1d2d1c5ab865e85c4e4746c6cc01d",
-  "results/table_paired_E1.csv": "9dc11f021d3de2266ae48086a38bb982a3b4d9523f6357a1f56aa402f692cbf5"
+  "results/table_E19.csv": "d7fafdb0d7193c226934d094c38ed36f5279d62c7931c1504cb328a72bcc495a",
+  "results/table_main.csv": "16fc2e9a72a26a2e89216289ce1eed0a18520031fe088a58b83434b9374e1c05",
+  "results/table_paired_E1.csv": "df87b1448269c67f170188bae217cb127ae4f9a80146eded3b8b30efb6ad9641"
  }
 }

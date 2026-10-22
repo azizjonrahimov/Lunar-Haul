@@ -2929,3 +2929,16 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
 - **How to test:** `.venv\Scripts\python -m pytest tests\test_gallery.py -q`. To rebuild: `python experiments\phase4\gallery.py scenes`, then `headline --seeds 20` (resumes), then `index`.
 - **For FRONTEND:** gallery.json lists the scenes. Load `data/scenes/<package>/` with the B-31 reader. Show `headline[metric].mean ± ci95` with the metric's label, unit and digits; source = `scene.source`; flag Modelled. Group scenes by `group`.
 - **Questions for LEAD:** none. Peak memory was not measured (one Python process, no workers; psutil is not in .venv). The python.exe processes near 140 MB in tasklist afterwards belong to other sessions.
+
+## FIX 12:58 | CI staleness tests (B-35/B-36 files) pass on any machine now
+- **Causes, from the failed CI log:**
+  1. Story `sources` hashed the raw bytes of `results/*.csv`; the working copy here is CRLF, git and CI are LF.
+  2. Gallery headline means/CIs differed in the 16th digit (numpy reductions differ in the last bit between machines). The compressed sizes were identical.
+- **Fixes:**
+  - `lunarsim/stories.py` hashes text sources with CRLF → LF (gzip files unchanged) and stores number values to 12 significant digits.
+  - `experiments/phase4/gallery.py` stores headline numbers to 12 significant digits.
+  - Both staleness tests compare JSON with floats at 1e-9 relative (`close()` in each test file).
+  - New tests: CRLF and LF sources hash the same; the tolerance helper accepts last-bit differences only.
+- **Rebuilt** `data/stories/resolved/*` and `data/scenes/gallery.json`.
+- **Verified:** a build from `git archive HEAD` (LF bytes, as CI checks out) equals the local build byte for byte, for all 5 story files and the gallery. `test_stories` + `test_gallery` + `test_ci_budgets`: 34 passed.
+- **Other committed sha256s of text files:** `earth_link-v1.json.sha256` is written as LF bytes by the tool, so it is unaffected. The other committed sha256s cover binary files.
