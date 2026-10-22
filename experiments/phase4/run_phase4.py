@@ -61,6 +61,9 @@ COMMS_LEVELS = (("always", None), ("dte", None), ("dte+relay", 0.1), ("dte+relay
 # 0.1-0.4 added by LEAD (22 Oct) so the knee of the coverage -> throughput curve is resolved below 0.5
 MIXES = ("teleop_4s", "default", "supervised_strict", "supervised_strategic", "supervised_strategic+avoid", "autonomous")
 KNEE_SHARE = 0.95                 # Assumed: the knee = smallest coverage with >= 95 % of full-coverage throughput
+STAGE_B_COVERAGE = 0.5            # LEAD 22 Oct: stage A showed throughput saturates already at p = 0.1 (the loss is
+                                  # reachability of never-linked sites), so the throughput knee is uninformative; stage B
+                                  # runs at DTE and at p = 0.5, the middle of the urgent-delay curve
 EXTRA_ROVERS = (0, 1, 2, 3)
 MASTS = (None, {"site": "BASE", "height_m": 10.0, "range_km": 10.0})
 POLICIES = ("strict", "strategic")
@@ -378,8 +381,9 @@ def main(argv=None):
         elif n == "e21b":
             t = write_tables(a.results)
             pk = knee_coverage(t)
-            print(f"[e21b] knee of the supervised-strict coverage curve: p = {pk:g} ({KNEE_SHARE:.0%} of full coverage)")
-            run_stage(STAGES[n], e21b_cells(pk), a.seeds, a.workers, a.cells, a.results)
+            print(f"[e21b] knee of the supervised-strict coverage curve: p = {pk:g} ({KNEE_SHARE:.0%} of full coverage); "
+                  f"stage B runs at p = {STAGE_B_COVERAGE:g}")
+            run_stage(STAGES[n], e21b_cells(STAGE_B_COVERAGE), a.seeds, a.workers, a.cells, a.results)
         elif n == "e21c":
             run_stage(STAGES[n], e21c_cells(), a.seeds, a.workers, a.cells, a.results)
         elif n != "table":
