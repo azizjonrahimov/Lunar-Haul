@@ -5,19 +5,56 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lander lab · LunarHaul</title>
 <meta name="description" content="The lunar terminal-descent environment in the browser with the trained policy and the classical guidance law: live telemetry, reward shaping and Monte Carlo landing dispersion.">
-<meta name="color-scheme" content="light dark">
+<meta name="color-scheme" content="dark">
 <link rel="icon" href="<!--@base-->favicon.svg" type="image/svg+xml">
-<script>try { var t = localStorage.getItem('lunarsim.theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <script type="module" src="/src/main.js"></script>
 <script type="module" src="/src/lander/lab.js"></script>
+<script type="module" src="/src/lander/lab3d.js"></script>
 </head>
-<body>
+<body class="instrument">
 <!--@header-->
 <main id="main"><div class="wrap">
   <header class="page-head">
     <h1>Lander lab: the last 500 metres</h1>
     <p>Watch a lander fly its last 500 m: from the start of the final approach (NASA's SPLICE reference point, 430 m up and 250 m out) to touchdown. It runs in your browser with the same equations as the Python model. Let a trained neural network or the classical guidance law fly it, watch the score the network was trained on, change the reward rules, and compare both over 500 landings with random starting errors.</p>
   </header>
+
+  <section class="l3" aria-labelledby="l3-title">
+    <h2 id="l3-title">Recorded descents in 3D</h2>
+    <p class="prose">Landings recorded from the Python model, replayed at true scale over the real terrain at pad A (NASA LOLA, 5 m). Pick a pilot and a lander; the score counts up from the same reward terms the networks were trained on.</p>
+    <div class="l3-stage" id="l3-stage">
+      <div class="l3-view" id="l3-view">
+        <canvas id="l3-canvas" tabindex="0" aria-label="3D replay of the recorded descent over the terrain at pad A. Arrow keys orbit, plus and minus zoom. The flight data below the view gives the same values as text." aria-describedby="l3-mirror-h"></canvas>
+        <div class="l3-labels" id="l3-labels"></div>
+        <p class="l3-fallback" id="l3-fallback" hidden></p>
+      </div>
+      <div class="l3-hud">
+        <div class="l3-left"><div id="l3-story"></div></div>
+        <div class="l3-right"><div id="l3-score"></div><div id="l3-clock" class="l3-clock ui-glass"></div></div>
+        <div class="l3-phases" id="l3-phases"></div>
+      </div>
+    </div>
+    <div class="l3-controls ui-glass" id="l3-controls">
+      <div class="l3-row" id="l3-row1"></div>
+      <div class="l3-row" id="l3-row2"></div>
+      <div class="l3-row l3-time" id="l3-time"></div>
+      <p class="l3-status small" id="l3-status" role="status"></p>
+    </div>
+    <div class="l3-below">
+      <div class="l3-mirror">
+        <h3 id="l3-mirror-h" class="h3">Flight data (text version of the 3D view)</h3>
+        <dl class="l3-dl" id="l3-mirror"></dl>
+        <p class="small muted" id="l3-mc-legend"></p>
+      </div>
+      <aside class="l3-chalk ui-glass" aria-labelledby="l3-chalk-h">
+        <h3 id="l3-chalk-h" class="h3">On the chalkboard</h3>
+        <!--@tex:lander-->
+        <p class="small">The networks learn whatever this sum pays for. <a href="#h-rw">Change the reward rules</a> and re-score a flight below.</p>
+      </aside>
+    </div>
+  </section>
+
+  <h2 class="l3-2d">Fly it in your browser</h2>
 
   <div class="toolbar l-controls" role="group" aria-label="Episode">
     <label class="lbl" for="l-class">Lander</label>

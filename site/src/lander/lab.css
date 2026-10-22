@@ -33,3 +33,43 @@
 .fail { color: var(--tol-red); }
 .l-consts th { width: 40%; }
 .l-fail { grid-column: 1 / -1; overflow-x: auto; }
+
+/* F-34: the 3D section on top (instrument page) */
+.l3 { margin-top: var(--s-5); }
+.l3-stage { position: relative; height: clamp(500px, 72vh, 740px); border-radius: var(--radius-panel); overflow: hidden; background: #000; margin-top: var(--s-3); }
+.l3-view { position: absolute; inset: 0; }
+.l3-view canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+.l3-view canvas:focus-visible { outline: 2px solid var(--focus); outline-offset: -4px; }
+.l3-labels { position: absolute; inset: 0; pointer-events: none; }
+.l3-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: var(--s-6); margin: 0; text-align: center; color: var(--ink-2); }
+.l3-hud { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+.l3-hud > * { pointer-events: auto; }
+.l3-left { position: absolute; left: 16px; top: 16px; width: min(22rem, 36%); }
+.l3-right { position: absolute; right: 16px; top: 16px; display: flex; flex-direction: column; align-items: flex-end; gap: var(--s-2); }
+.l3-clock { padding: var(--s-1) var(--s-3); font-family: var(--font-num); font-variant-numeric: tabular-nums; font-size: 0.875rem; }
+.l3-clock:empty { display: none; }
+.l3-clock.warn { color: var(--warm); }
+.l3-phases { position: absolute; left: 16px; bottom: 16px; }
+.l3-controls { margin-top: var(--s-3); padding: var(--s-3) var(--s-4); display: flex; flex-direction: column; gap: var(--s-3); }
+.l3-row { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-5); align-items: flex-end; }
+.l3-show { display: flex; flex-wrap: wrap; gap: 0 var(--s-4); border: 0; padding: 0; margin: 0; }
+.l3-show legend { width: 100%; margin-bottom: var(--s-1); }
+.l3-show .s-check { display: inline-flex; align-items: center; gap: 0.4em; font-size: 0.875rem; color: var(--ink-2); min-height: var(--target); }
+.l3-show input { width: 1.1rem; height: 1.1rem; accent-color: var(--accent); }
+.l3-status { margin: 0; color: var(--ink-2); min-height: 1.2em; }
+.l3-below { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 26rem); gap: var(--s-5); margin-top: var(--s-4); align-items: start; }
+.l3-dl { display: grid; grid-template-columns: auto 1fr; gap: 2px var(--s-4); margin: 0; font-size: var(--fs-small); }
+.l3-dl dt { color: var(--ink-2); }
+.l3-dl dd { margin: 0; font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.l3-chalk { padding: var(--s-3) var(--s-4); }
+.l3-chalk math { font-size: 1.05rem; overflow-x: auto; max-width: 100%; }
+.l3-chalk .tex-row { margin-bottom: var(--s-2); overflow-x: auto; }
+.l3-chalk .tex-row .ui-label { margin: 0 0 2px; }
+.l3-2d { margin-top: var(--s-7); }
+@media (max-width: 900px) {
+  .l3-stage { height: auto; overflow: visible; background: none; }
+  .l3-view { position: relative; height: 380px; border-radius: var(--radius-panel); overflow: hidden; background: #000; }
+  .l3-hud { position: static; display: flex; flex-direction: column; gap: var(--s-3); margin-top: var(--s-3); }
+  .l3-left, .l3-right, .l3-phases { position: static; width: auto; align-items: stretch; }
+  .l3-below { grid-template-columns: minmax(0, 1fr); }
+}

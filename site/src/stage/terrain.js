@@ -9,7 +9,11 @@
 //  - vehicle shadows: the shader samples the stage sun's shadow map (research §1.7 option b); lighting.fit keeps that
 //    camera tight on the focused vehicle, so a 2.6 m rover's ~100 m shadow gets centimetre texels;
 //  - headlights: three's SpotLights, evaluated here as lit cones on the ground (no air, so no visible beams);
-//  - the landing scour mark: a darker scoured centre and a brighter, streaky blast zone (Assumed shape and size).
+//  - the landing scour mark: a darker scoured centre and a brighter, streaky blast zone (Assumed shape and size);
+//  - metre-scale detail the 5 m data cannot hold (representative, procedural, seeded): two sparse fields of worn craters (cells 9 m
+//    and 2.6 m, 9-12 % filled, depth/diameter ~0.05), clods at 0.12-0.4 m and ±12 % albedo noise, each faded out as it shrinks below a
+//    pixel; plus scatterRocks(): seeded instanced rocks and boulders near the site (power-law sizes).
+// shadeWithHorizon(material) gives any standard material (rocks, vehicles) the same horizon-map sun shadow.
 // Scene frame: origin on the ground at the patch centre (the site); x east, y up, z south (= -north); metres.
 import * as THREE from 'three';
 import { loadTerrain, decodePngGray } from '../terrain.js';
@@ -41,8 +45,31 @@ uniform vec4 uTile;                     // site x, y in the tile (m), tile width
 uniform sampler2D uN20; uniform sampler2D uN5; uniform vec4 uPatch; uniform float uUsePatch;
 uniform sampler2D uHorizon; uniform float uUseHz; uniform float uHzW; uniform float uSunElDeg; uniform float uSunRadDeg;
 uniform float uAlbedo; uniform vec3 uAmbient;
-uniform vec4 uScour; uniform float uScourAmt; uniform float uScourSeed;
+uniform vec4 uScour; uniform float uScourAmt; uniform float uScourSeed; uniform float uDetail;
 varying vec3 vWorld; varying vec3 vViewPosition;
+float hh1(vec2 p) { return fract(sin(dot(p, vec2(41.31, 289.17))) * 13758.5453); }
+vec2 hh2(vec2 p) { return fract(sin(vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)))) * 43758.5453); }
+// value noise with its gradient: (value, d/dx, d/dy)
+vec3 noised(vec2 x) {
+  vec2 i = floor(x), f = fract(x), u = f * f * (3.0 - 2.0 * f), du = 6.0 * f * (1.0 - f);
+  float a = hh1(i), b = hh1(i + vec2(1.0, 0.0)), c = hh1(i + vec2(0.0, 1.0)), d = hh1(i + vec2(1.0, 1.0));
+  return vec3(a + (b - a) * u.x + (c - a) * u.y + (a - b - c + d) * u.x * u.y, du * (vec2(b - a, c - a) + (a - b - c + d) * u.yx));
+}
+// a crater field with cells of s metres: a share of the cells (prob) holds a worn bowl with a low rim, wall slope k
+// at the rim (0.25 ~ depth/diameter 0.06, a degraded small crater); returns the slope (dh/dx, dh/dz)
+vec2 craters(vec2 p, float s, float seed, float prob, float k) {
+  vec2 c = floor(p / s), g = vec2(0.0);
+  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+    vec2 cell = c + vec2(float(i), float(j)), h = hh2(cell + seed);
+    if (h.x > prob) continue;
+    vec2 d = p - (cell + 0.25 + 0.5 * hh2(cell + seed + 7.0)) * s;
+    float R = s * (0.16 + 0.26 * h.y), r = length(d), x = r / R;
+    if (x > 1.9) continue;
+    float dh = x < 1.0 ? k * sin(1.5708 * x) : -0.12 * k * exp(-(x - 1.0) * (x - 1.0) / 0.09) * 2.0 * (x - 1.0) / 0.09;   // bowl, then the rim falling off
+    g += dh * d / max(r, 1e-4);
+  }
+  return g;
+}
 float h1(float x) { return fract(sin(x * 127.1 + uScourSeed * 3.7) * 43758.5453); }
 float n1(float x) { float i = floor(x), f = fract(x); return mix(h1(i), h1(i + 1.0), f * f * (3.0 - 2.0 * f)); }
 void main() {
@@ -57,9 +84,18 @@ void main() {
     }
   }
   vec3 nW = normalize(nt * 2.0 - 1.0);
+  float detailAlb = 1.0;
+  if (uDetail > 0.5) {                                               // metre-scale detail, faded below a pixel
+    vec2 p = vWorld.xz; float fw = length(fwidth(p));
+    vec2 g = craters(p, 9.0, 3.0, 0.09, 0.18) * (1.0 - smoothstep(0.6, 2.0, fw)) + craters(p, 2.6, 11.0, 0.12, 0.22) * (1.0 - smoothstep(0.2, 0.6, fw));
+    vec3 c1 = noised(p / 0.4), c2 = noised(p / 0.12);
+    g += c1.yz / 0.4 * 0.05 * (1.0 - smoothstep(0.04, 0.12, fw)) + c2.yz / 0.12 * 0.012 * (1.0 - smoothstep(0.012, 0.04, fw));
+    nW = normalize(nW + vec3(-g.x, 0.0, -g.y));
+    detailAlb = 0.88 + 0.12 * noised(p / 3.0).x + 0.12 * noised(p / 0.9).x * (1.0 - smoothstep(0.1, 0.3, fw));
+  }
   vec3 n = normalize((viewMatrix * vec4(nW, 0.0)).xyz), v = normalize(vViewPosition);
   float mu = max(dot(n, v), 0.0);
-  float alb = uAlbedo;
+  float alb = uAlbedo * detailAlb;
   if (uScourAmt > 0.0) {                                             // landing scour and blast zone
     vec2 sd = vWorld.xz - uScour.xy; float sr = length(sd);
     if (sr < uScour.w) {
@@ -147,8 +183,9 @@ export async function createLunarTerrain({ base, renderer, site = 'PAD_A', tier 
     uTile: { value: new THREE.Vector4(cx, cy, W, H) },
     uN20: { value: v2.normal }, uN5: { value: patch.tex }, uPatch: { value: new THREE.Vector4(x0, y0, x1, y1) }, uUsePatch: { value: 1 },
     uHorizon: { value: v2.tex }, uUseHz: { value: 0 }, uHzW: { value: 0 }, uSunElDeg: { value: 1.5 }, uSunRadDeg: { value: SUN_RADIUS_DEG },
-    uAlbedo: { value: 0.12 }, uAmbient: { value: new THREE.Color(0.02, 0.02, 0.021) },
-    uScour: { value: new THREE.Vector4(0, 0, 5, 50) }, uScourAmt: { value: 0 }, uScourSeed: { value: 1 },
+    uAlbedo: { value: 0.12 }, uAmbient: { value: new THREE.Color(0.06, 0.06, 0.063) },   // shadows: bounce from sunlit slopes
+    uScour: { value: new THREE.Vector4(0, 0, 5, 50) }, uScourAmt: { value: 0 }, uScourSeed: { value: 1 }, uDetail: { value: 1 },
+    uHzOn: { value: 1 },
   });
   const material = new THREE.ShaderMaterial({ vertexShader: vert, fragmentShader: frag, uniforms, lights: true, side: THREE.DoubleSide });
   material.name = 'lunar-terrain';
@@ -181,6 +218,53 @@ export async function createLunarTerrain({ base, renderer, site = 'PAD_A', tier 
     v2.load(k0, k1).then(ok => { if (ok) { setSun(...lastSun); onAssets('horizon'); } }).catch(e => onAssets(`horizon map unavailable (${e.message})`));
   }
 
+  // the horizon-map sun shadow for standard materials (rocks, vehicles); chained after any existing patch (the kit's dust).
+  // The map holds the horizon 1 m above the ground, so a page switches it off for a vehicle high in the air
+  // (material.userData.hzSelf.value = 0; see setHorizonShade).
+  const HZ_KEYS = ['uTile', 'uHorizon', 'uUseHz', 'uHzW', 'uSunElDeg', 'uSunRadDeg', 'uHzOn'];
+  function shadeWithHorizon(m) {
+    if (m.userData.hzPatched) return m;
+    const prev = m.onBeforeCompile, key = m.customProgramCacheKey?.() || '';
+    m.onBeforeCompile = (shader, r) => {
+      prev?.call(m, shader, r);
+      for (const k of HZ_KEYS) shader.uniforms[k] = uniforms[k];
+      shader.uniforms.uHzSelf = m.userData.hzSelf;
+      shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vHzW;')
+        .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\n{ vec4 q = vec4(transformed, 1.0);\n#ifdef USE_INSTANCING\n  q = instanceMatrix * q;\n#endif\n  vHzW = (modelMatrix * q).xyz; }');
+      shader.fragmentShader = shader.fragmentShader
+        .replace('#include <common>', '#include <common>\nvarying vec3 vHzW; uniform vec4 uTile; uniform sampler2D uHorizon; uniform float uUseHz, uHzW, uSunElDeg, uSunRadDeg, uHzOn, uHzSelf;')
+        .replace('#include <lights_fragment_end>', '#include <lights_fragment_end>\nif (uUseHz * uHzOn * uHzSelf > 0.5) {\n  vec2 xy = vec2(vHzW.x + uTile.x, uTile.y - vHzW.z), hz = texture2D(uHorizon, vec2(xy.x / uTile.z, 1.0 - xy.y / uTile.w)).rg;\n  float vis = smoothstep(-uSunRadDeg, uSunRadDeg, uSunElDeg - mix(hz.r, hz.g, uHzW));\n  reflectedLight.directDiffuse *= vis; reflectedLight.directSpecular *= vis;\n}');
+    };
+    m.customProgramCacheKey = () => key + '|hz';
+    m.userData.hzPatched = true; m.userData.hzSelf = { value: 1 }; m.needsUpdate = true;
+    return m;
+  }
+
+  // seeded rocks and boulders round a scene point: sizes from a power law (many 0.1-0.3 m stones, a few 1-2 m boulders),
+  // a fifth of each buried, none on the cleared pad (representative: LOLA cannot resolve them)
+  function scatterRocks({ count = 4000, x = 0, z = 0, radius = 250, clearM = 15, seed = 7 } = {}) {
+    let a = seed >>> 0;
+    const rnd = () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    const geo = new THREE.IcosahedronGeometry(1, 1), p = geo.attributes.position;
+    for (let i = 0; i < p.count; i++) { const k = 0.75 + 0.5 * rnd(); p.setXYZ(i, p.getX(i) * k, p.getY(i) * k * 0.7, p.getZ(i) * k); }
+    geo.computeVertexNormals();
+    const mat = shadeWithHorizon(new THREE.MeshStandardMaterial({ color: new THREE.Color(0.15, 0.147, 0.14), roughness: 0.95, metalness: 0, name: 'rock (representative)' }));
+    const mesh = new THREE.InstancedMesh(geo, mat, count), M = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), v = new THREE.Vector3(), sc = new THREE.Vector3();
+    let n = 0;
+    for (let i = 0; i < count * 3 && n < count; i++) {
+      const r = radius * Math.sqrt(rnd()), th = 2 * Math.PI * rnd(), px = x + r * Math.cos(th), pz = z + r * Math.sin(th);
+      if (r < clearM) continue;
+      const d = Math.min(2.0, 0.08 * Math.pow(1 - rnd(), -1 / 2.5));   // diameter, m
+      e.set(rnd() * 6.28, rnd() * 6.28, rnd() * 6.28); q.setFromEuler(e);
+      sc.set(d / 2 * (0.8 + 0.4 * rnd()), d / 2, d / 2 * (0.8 + 0.4 * rnd()));
+      v.set(px, heightLocal(px + cx, cy - pz) - z0 + 0.3 * d / 2, pz);
+      mesh.setMatrixAt(n++, M.compose(v, q, sc));
+    }
+    mesh.count = n; mesh.instanceMatrix.needsUpdate = true; mesh.computeBoundingSphere();
+    mesh.castShadow = true; mesh.receiveShadow = true; mesh.name = 'rocks'; mesh.userData = { noPick: true, representative: true };
+    return mesh;
+  }
+
   return {
     group, material, site, origin: { x: cx, y: cy, z: z0 }, patchBounds: [x0 - cx, cy - y1, x1 - cx, cy - y0],
     triangles: (patchGeo.index.count + farGeo.index.count) / 3,
@@ -192,6 +276,12 @@ export async function createLunarTerrain({ base, renderer, site = 'PAD_A', tier 
       uniforms.uScour.value.set(x, z, rIn, rOut); uniforms.uScourAmt.value = amount; uniforms.uScourSeed.value = seed % 997;
     },
     setAmbient(c) { uniforms.uAmbient.value.copy(c); },
+    setDetail(on) { uniforms.uDetail.value = on ? 1 : 0; },
+    // night: the sun is off, so the horizon shadow must not dim headlight light on patched materials
+    setNight(on) { uniforms.uHzOn.value = on ? 0 : 1; },
+    shadeWithHorizon, scatterRocks,
+    // horizon shading on or off for every patched material under an object (off while a lander is high up)
+    setHorizonShade(root, on) { root.traverse(o => { const s = o.material?.userData?.hzSelf; if (s) s.value = on ? 1 : 0; }); },
     // horizon elevation (deg) all round a scene point, for the sky's Earth and star cut-off
     profileAt: (x, z, eyeM = 1.5) => horizonProfile(tile, x + cx, cy - z, { eyeM }),
     dispose() { patchGeo.dispose(); farGeo.dispose(); material.dispose(); v2.normal.dispose(); v2.tex.dispose(); for (const p of v2.patches) p.tex.dispose(); },
