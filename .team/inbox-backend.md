@@ -449,3 +449,48 @@ Parity: replaying one exported episode through the JS env (`site/src/lander/env.
 same seed reproduces positions to < 1e-6 m (test in Python; FRONTEND checks the JS side).
 Done when: the file validates, parity passes, the report lists the chosen seeds per class × pilot with their miss
 and outcome.
+
+# M3/M4 backend (queued 22 Oct 11:30). Order: B-32, B-31, B-37.
+
+## B-32 [OPEN] (<= 2.5 h) Rover route geometry for the 3D views (light: planned routes, no driving simulation)
+Goal: rovers in /world/ and the 3D rover lab follow the real routes over the terrain, not straight lines (plan §4 B-32).
+Files: new `lunarsim/rover/routes.py` (or a mode of `lunarsim/rover/tables.py`), `tests/test_rover_routes.py`.
+Output (LEAD commits): `data/driving/routes-v1.json` (+ schema), budget ≤ 4 MB (gzip-friendly, columnar).
+For every directed leg in `driving-v1.json` × lighting {0, 90, 180, 270, night}: the expert's PLANNED route (the same
+cost grid and A* the driving tables use for that lighting; B-40's slope-only routes are the night case), decimated to
+≤ 10 m spacing (keep corners), with z from the 5 m DEM (+ 0 m; FRONTEND adds the wheel radius), cumulative distance,
+and a per-vertex time fraction from the expert's speed model along the route (slope, shadow and up-sun penalties),
+so the expected leg time from the table can be spread along the path. Include each leg's `length_m` check against
+the table's `route.length_m` (report the max difference) and the pads at every standoff.
+Done when: tests (a synthetic grid: A* = straight on flat ground; decimation keeps corners; time fractions sum to 1)
+pass; the report gives size, leg count and the length check.
+
+## B-31 [OPEN] (after B-32; <= 4 h) Scene package `lunarsim-scene v1`: what a 3D replay of a simulated year needs
+Goal: plan §4 B-31. Writer `lunarsim/scene.py` (+ schema, `tests/test_scene.py`); FRONTEND writes the JS reader.
+From one trace v2 run (terrain legs, landing outcomes, plume, optional comms) produce a JSON index + Float32 binary
+chunks of 30 days: per vehicle keyframes on the B-32 routes (t_h, x, y, z, heading, load_kg, state ∈ {idle, driving,
+loading, team_lift, parked_night, standdown, waiting_for_earth, failed}); landing events (t, class, pad, miss_m,
+outcome, and the id of the B-33 trajectory episode whose miss is nearest); keep-out windows; cargo waiting per site
+(hourly counts and kg); nights / sun azimuth per hour (from the scenario's night model now; later the B-34 sun
+series); Earth elevation at BASE per hour and the link state per vehicle when comms is on (from `comms_waits`).
+Determinism: the same run gives byte-identical packages. Replaying the package must reproduce the trace's delivered
+kg, trips and landings exactly (test). Produce the four world samples (P1, P2, P3, P2V2) and one P2 sample with
+`comms: dte` (for the "waiting for Earth" view), each ≤ 2 MB gzipped.
+Done when: tests pass; sizes and the reproduction checks are in the report; the JSON index format is documented in
+the schema for FRONTEND.
+
+## B-37 [OPEN] (after B-31; <= 3 h) The backend inside the GitHub repository: a run queue on GitHub Actions
+Goal: plan §4 B-37 (owner decision: host the backend through the Lunar-Haul repository). Files (yours for this task):
+`.github/ISSUE_TEMPLATE/run-scenario.yml` (issue form: phase, job rule, fleet preset, environment values, comms
+mode, seeds ≤ 30, a free-text purpose), `.github/workflows/run-scenario.yml`, `tools/actions/run_issue.py`,
+`tests/test_run_issue.py`. Flow: an issue with the label `run-request` (added by LEAD after a look, so strangers
+cannot burn minutes) → the workflow parses the form strictly (reject anything outside the allowed ranges, no
+free-form code or paths), runs `lunarsim` with the same provenance block the service records (engine version, git
+sha, data shas), comments the summary table on the issue, and publishes the run (summary JSON, trace for seed 0 and
+its scene package) as a GitHub Release asset `run-<issue>` (not committed to main), with a link the site can open
+(`/world/?run=<issue>` fetching from the release asset URL; check that the asset URL allows browser fetches —
+if not, publish into the Pages artifact instead and say so). Guard rails: `concurrency: run-queue`, job timeout
+60 min, `permissions` minimal (issues: write, contents: write only for the release), no secrets used.
+Done when: the parser tests pass (valid form, out-of-range values, injection attempts); a dry run of
+`tools/actions/run_issue.py` on a sample issue body produces the comment text and the files locally; the report
+gives the exact steps LEAD takes to enable it.
