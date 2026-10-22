@@ -26,3 +26,5 @@ Loop:
 
 When LEAD sends you a message (peer messaging), read it, then re-read your inbox: the message is a pointer, the
 inbox is the task.
+
+After appending a report, also send the session named LEAD a one-line message ("B-30 DONE, report in .team/reports.md" or "blocked: <reason>"). Do not message FRONTEND/BACKEND directly about tasks; ask LEAD.
