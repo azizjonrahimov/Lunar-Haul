@@ -22,15 +22,18 @@ from lunarsim.world import build_default_world
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 BASELINE_MD5 = "ebb9e0dea68005cddf4ab4d2bda1bfdd"          # lunarsim compare --scenario P2-default --seeds 3 (v2 file)
 # B-16 appended two columns, so the identity check compares the v2 columns in a canonical form:
-# pd.read_csv -> drop the columns added after v2 -> to_csv(index=False, lineterminator=LF). The v2 file above
-# (md5 ebb9e0de...) has exactly this canonical md5; values were checked equal with DataFrame.equals.
-BASELINE_V2_CANONICAL_MD5 = "e8d84022e4aa41ea389b9b1c15cadd22"
+# pd.read_csv(float_precision="round_trip") -> drop the columns added after v2 -> to_csv(index=False,
+# lineterminator=LF). With exact float parsing this text IS the v2 file above: with CRLF line ends its md5 is
+# ebb9e0de..., the v2 file's own md5. (Until 22 Oct 2026 the check used pandas' default parser, which in
+# pandas <= 3.0 was off in the last digit for some values (constant e8d84022...); pandas 3.1 parses exactly,
+# so the old constant broke although the engine output was byte-identical.)
+BASELINE_V2_CANONICAL_MD5 = "739e9ba72c1563f4ae508ebc1dfd9938"
 POST_V2_COLUMNS = ["delivered_nonbulk_kg", "cost_per_landed_kg_usd"]
 
 
 def v2_canonical_md5(path):
     import pandas as pd
-    df = pd.read_csv(path).drop(columns=[c for c in POST_V2_COLUMNS if c in pd.read_csv(path, nrows=0).columns])
+    df = pd.read_csv(path, float_precision="round_trip").drop(columns=[c for c in POST_V2_COLUMNS if c in pd.read_csv(path, nrows=0).columns])
     return hashlib.md5(df.to_csv(index=False, lineterminator=chr(10)).encode()).hexdigest()
 
 
