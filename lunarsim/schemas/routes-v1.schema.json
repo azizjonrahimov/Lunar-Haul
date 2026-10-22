@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://azizjonrahimov.github.io/Lunar-Haul/schemas/routes-v1.schema.json",
+  "title": "lunarsim-routes v1",
+  "description": "The rover expert's planned routes (A*, the driving tables' cost grid) for every directed leg x lighting case, resampled to <= max_spacing_m keeping corners, with terrain height and the cumulative time fraction of the expert's speed model. Writer and decoder: lunarsim/rover/routes.py. Geometry: x_k = (x0 + sum(dx[:k])) / 10 m (y, z the same); s_k = sum of the decoded horizontal segment lengths; time fraction f_k = sum(df[:k]) / 1e4. Extra rules (routes.validate): delta arrays have n - 1 entries, df sums to 10000.",
+  "type": "object",
+  "required": ["format", "version", "terrain", "frame", "encoding", "max_spacing_m", "lighting", "geoms", "legs", "checks"],
+  "properties": {
+    "format": {"const": "lunarsim-routes"},
+    "version": {"const": 1},
+    "terrain": {"type": "string"},
+    "description": {"type": "string"},
+    "frame": {"type": "string"},
+    "encoding": {"type": "object"},
+    "max_spacing_m": {"type": "number", "exclusiveMinimum": 0},
+    "lighting": {"type": "array", "items": {"enum": ["0", "90", "180", "270", "night"]}},
+    "driving_table": {"type": "object", "properties": {"file": {"type": "string"}, "sha256": {"type": "string"}}},
+    "speed_model": {"type": "string"},
+    "geoms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["n", "x0", "y0", "z0", "dx", "dy", "dz"],
+        "properties": {
+          "n": {"type": "integer", "minimum": 2},
+          "x0": {"type": "integer"},
+          "y0": {"type": "integer"},
+          "z0": {"type": "integer"},
+          "dx": {"type": "array", "items": {"type": "integer"}},
+          "dy": {"type": "array", "items": {"type": "integer"}},
+          "dz": {"type": "array", "items": {"type": "integer"}}
+        },
+        "additionalProperties": false
+      }
+    },
+    "legs": {
+      "type": "object",
+      "description": "leg name as in driving-v1.json ('BASE->DEPOT', 'PAD_A@1->BASE') -> lighting key -> route (null if A* found none)",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object",
+              "required": ["geom", "df", "length_m", "table_length_m"],
+              "properties": {
+                "geom": {"type": "integer", "minimum": 0},
+                "df": {"type": "array", "items": {"type": "integer", "minimum": 0}},
+                "length_m": {"type": "number"},
+                "table_length_m": {"type": ["number", "null"]}
+              },
+              "additionalProperties": false
+            }
+          ]
+        }
+      }
+    },
+    "checks": {"type": "object"},
+    "generated": {"type": "object"}
+  }
+}
