@@ -407,6 +407,27 @@ Done when: `comms=None` and `comms.mode=always` both reproduce the baseline md5 
 739e9ba7…); unit tests for each rule on a tiny scenario with a hand-made link series; one smoke run of P2 with
 `mode=dte` for 2 seeds reported (delays and the new metrics), single process. Do NOT run the suite (LEAD runs E21).
 
+## B-42 [OPEN] (after B-41, before B-33; <= 3 h) R-1 suite runner E21 "Earth in sight" (LEAD runs the suite)
+Goal: the experiment that tests H1–H6 of the R-1 note (plan §10). File (new): `experiments/phase4/run_phase4.py`
+following `experiments/phase3/run_phase3.py` conventions (cells × seeds with common random numbers, resumable raw
+CSV keyed by `cell` and `seed`, summary table, `--seeds`, `--workers` default 1, plus `--cells a-b` so LEAD can run
+foreground chunks), and `tests/test_phase4_runner.py` (smoke: 2 cells × 2 seeds).
+Calendar: each replication is one simulated year starting on 1 Jan of 2028 + (seed mod 4), so the link series'
+~347-day ripple (H6) is sampled; the start year is a column.
+Stage A (`e21a`): comms {always, dte, dte+relay p = 0.5, 0.8, 0.9, 1.0} × autonomy mix {all teleop (4 s), the
+phase's default mix, all supervised-strict, all supervised-strategic, all autonomous} × 20 seeds; P2, the 6-vehicle
+default fleet, marketplace, pads at 1 km, terrain legs and driving tables on (as in E19), criterion `any_part`.
+Stage B (`e21b`, reads the Stage A table): at the knee of the coverage → throughput curve, extra rovers +0…3 ×
+base mast {none, 10 m} × the two supervised policies; the break-even table: relay coverage ≡ one autonomy step ≡ N
+extra rovers ≡ mast, also as a break-even relay price per year using the fleet capital costs already in the engine.
+Stage C (`e21c`): pads {0.5, 1, 3 km} × criterion {any_part, centre+0.5deg, centre+2deg} at three Stage A cells.
+Columns: everything the engine reports, plus the B-41 metrics (`blackout_wait_vehicle_h` by autonomy level,
+`blackout_jobs_delayed`, `operator_peak_demand`, `linked_share_by_leg` summarised), `start_year`, the factor
+columns. Summary `results/table_E21.csv`: mean and 95 % CI per cell for delivered t/yr, urgent p90 delay, $/kg,
+blackout wait, operator peak.
+Done when: the smoke test passes single-process; the report gives the expected runtime per seed for P2 with comms
+on (measured on 2 seeds) and the total for Stage A, and the peak RSS.
+
 ## B-33 [OPEN] (after B-41; <= 3 h) Descent trajectories for the 3D landing lab
 Goal: F-34 replays real descents at true scale (plan §4 B-33). Files: new `lunarsim/lander/trajectories.py` (or an
 `--export-trajectories` mode in `evaluate.py`), `tests/test_lander_trajectories.py`. Output (LEAD commits):
