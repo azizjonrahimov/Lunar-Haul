@@ -1915,3 +1915,81 @@ FRONTEND: idle until driving-v1-learned.json lands (then the column, ~30 min). B
   2. Pre-existing and unchanged: on light reading pages, Tol yellow, cyan and grey are below 3:1 as marks on white. They are used with direct labels. Leave them?
   3. Lighthouse was re-run on /design/ only (0.4–0.6 GB RAM free); the other pages were spot-checked in the browser, not re-scored.
   4. 3D pages will set `<body class="instrument">` and the header adapts. The header's theme button then changes nothing visible there: hide it on instrument pages (my plan for F-31) or keep it?
+
+## B-34 DONE 08:30 | terrain assets v2: normals, horizon map, levels of detail
+- **Files (new):**
+  - `tools/terrain_assets.py`
+  - `tests/test_terrain_assets.py`: 14 tests.
+  - Output for LEAD to commit: `data/terrain/connecting_ridge/v2/` (24.7 MB). No `lunarsim/` file changed.
+- **Output files and sizes:**
+
+  | File | Size | Content |
+  |---|---|---|
+  | `normal_20m.png` | 762 KB | RGB8, 800 × 800 |
+  | `normal_5m_BASE.png` | 170 KB | RGB8, 400 × 400 |
+  | `normal_5m_PAD_A.png` | 178 KB | RGB8, 400 × 400 |
+  | `height_5m_BASE.png` | 107 KB | uint16, 400 × 400, 0.05 m/unit |
+  | `height_5m_PAD_A.png` | 109 KB | uint16, 400 × 400, 0.05 m/unit |
+  | `horizon_20m_00.png` … `_15.png` | 1.34-1.55 MB each, 22.5 MB together | RGBA16, 800 × 800 × 4 sectors |
+  | `manifest.json` | — | shape, encoding, bounds, bytes and sha256 per file, plus provenance and the validation |
+  | `patch_BASE.json`, `patch_PAD_A.json` | 115 B each | internal build state (the manifest has the same information) |
+
+  - **Total: 23.6 MiB, within the 30 MiB budget.**
+- **Heights:** taken from the float LOLA GeoTIFF in `data/terrain/_cache/` (git-ignored; sha256 recorded). It matches the pack's extent exactly, and the PNG's 0.5 m steps are too coarse to differentiate at 5 m.
+  - Without the GeoTIFF the tool falls back to the pack PNG and says so in the manifest.
+  - Sanity check: the mean slope from `normal_20m` is 12.4°; the pack's slope p50 is 12.3°. The 5 m shaded preview shows no terracing.
+- **Horizon map:**
+  - 64 sectors at azimuth k × 5.625° (grid convention), at the 20 m posts.
+  - Elevation angle of the terrain horizon seen from 1 m above the post (the world shader's eye height), Moon curvature included.
+  - Encoding: uint16 code = (angle + 90°) / 0.05°; code 0 = no terrain in that direction.
+  - Rays sample bilinearly every 20 m out to 4 km, then 0.5 % longer steps: 547 samples per ray.
+  - **Terrain outside the 16 km tile is NOT included** (stated in the manifest and the docstring). Rays stop at the edge; R-1 extends this.
+- **Packing: 16 RGBA16 PNGs** (file jj holds sectors 4jj..4jj+3 in R, G, B, A). Why:
+  - 4× fewer requests than single-channel files (Pages max-age=600).
+  - Four adjacent azimuths sit in one texel, so the pair bracketing the sun is in the same texture 3 times out of 4.
+  - Samples stay exact 16-bit through the site's own PNG reader (canvas decoding drops to 8 bits).
+  - Upload as a half-float DataTexture with linear filtering. KTX2 is not used: these are precise scalars, not colour.
+  - Pillow cannot write 16-bit RGBA, so the tool has a small PNG writer and reader. Pillow reads its 16-bit grey files exactly and its RGBA files as the high bytes (tested).
+- **Validation, 4 azimuths** (`python tools/terrain_assets.py validate`). Lit vs shadowed at all 640,000 posts, sun at 1.5°, comparing the horizon map with a port of `site/src/world/scene.js` visFrag on `height_20m.png`:
+  - **At azimuths 0 / 90 / 180 / 270 (sector centres): 99.73 / 99.22 / 99.65 / 99.37 % agreement. Target met.**
+  - Between sectors (30 / 120 / 210 / 300°, linear interpolation): only 97.64 / 98.94 / 97.37 / 95.73 % against the shader.
+  - Against an exact ray-march at the same azimuths, the map scores **99.41 / 99.93 / 99.84 / 99.83 %** and the shader 97.86 / 98.96 / 97.39 / 95.77 %.
+    - So the shortfall is the shader, not the map. Its 110 nearest-texel samples at ×1.07 steps miss terrain on oblique rays.
+    - At sector azimuths the map scores 99.86-99.93 % against the exact ray; the remainder is the 0.05° quantisation.
+  - Cause check: with curvature off on the same heights, agreement with the shader barely changes (98.87-99.64 %). Sampling, not curvature, is the difference.
+  - With 128 sectors (47 MB, over budget) the map would score 99.74-99.96 % against the exact ray. 64 is enough.
+  - The step schedule against dense 20 m steps at az 90: max 0.146°, p99.9 0.063°; 0.43 % of posts differ by more than 0.05°.
+- **Runs:**
+  - Two foreground chunks, `build --files 0-7` and `build --files 8-15 --skip-static`: 153 s and 135 s, about 17 s per horizon file.
+  - `validate`: 54 s.
+  - **Peak RSS 201 / 193 / 217 MB.**
+  - The first chunk dropped to the background at 2:00 (I forgot the tool's 120 s default). It finished at 2:34 with exit 0. The other runs were in the foreground with `timeout 540`.
+- **Tests:**
+  - `tests/test_terrain_assets.py`: 14 passed. They cover:
+    - a flat plane gives horizon 0, and with curvature the first-sample drop;
+    - a cone gives atan(H/D) on axis, and off axis within the stated 0.16° half-step bound;
+    - an inclined plane gives atan(slope) up-slope;
+    - a sloped plane gives the analytic normals;
+    - code round trip and interpolation across 360°;
+    - the shader port on a flat plane and a wall;
+    - PNG round trips for every filter and type, and Pillow cross-reads;
+    - a tiny synthetic pack end to end: manifest sha256s, a hill seen to the east, stored = fresh to 0.025°, and `--files` reruns.
+  - With `test_terrain.py` and `test_catalog.py`: 44 passed, 1 skipped (jsonschema).
+  - Baseline `test_all_off_is_byte_identical_to_v2` still passes.
+- **How to test:**
+  - `.venv\Scripts\python -m pytest tests\test_terrain_assets.py -q`
+  - Rebuild: `python tools/terrain_assets.py build`, all files in about 4.5 min.
+  - Check: `python tools/terrain_assets.py validate`
+- **For FRONTEND:**
+  - Read `v2/manifest.json`.
+  - Normals are in (x east, y north, z up). In the world scene's frame (X east, Y up, Z south) a normal is (nx, nz, −ny).
+  - Horizon at azimuth a:
+    - f = a / 5.625; k0 = floor(f) mod 64; k1 = (k0 + 1) mod 64;
+    - h = lerp(H[k0], H[k1], f − floor(f)), where H = 0.05 × v − 90;
+    - lit = smoothstep(−0.267°, 0.267°, el − h).
+    - This replaces the per-move ray-march and is more accurate off-axis.
+  - `site/src/terrain.js` `decodePngGray` needs a colour-type-6 branch (8 bytes per pixel) for the RGBA16 files.
+  - The LOD-2 patches give 5 m heights at 0.05 m/unit with bounds in local metres.
+- **Questions for LEAD:**
+  1. The 5 m patches use the default pad set ('1' km PAD_A at 8130, 8210). Should other standoffs get patches too? Each patch is about 0.28 MB.
+  2. Should `data/terrain/_cache/` stay the source for v2 rebuilds? It is not in git; CI would fall back to the quantised PNG.

@@ -342,7 +342,7 @@ that the lander gate masses and thrusts equal `lunarsim/lander/classes.py`, so t
 Done when: the schema test, the equality tests and the fast suite pass; the baseline md5 is unchanged; the report
 lists every value flagged Assumed and gives the catalogue path for FRONTEND (they copy it in `prepare-data.mjs`).
 
-## B-34 [IN PROGRESS] (<= 4 h, foreground chunks) Terrain assets v2: normals, horizon maps, levels of detail
+## B-34 [DONE 08:30] (<= 4 h, foreground chunks) Terrain assets v2: normals, horizon maps, levels of detail
 Goal: 3D pages get terrain that lights correctly for ANY sun position instantly, plus the geometry the
 Earth-visibility research (plan §10, R-1) needs. Today `site/src/world/scene.js` ray-marches sun visibility on the
 GPU each time the sun moves; a precomputed horizon map replaces that and also answers "is Earth above the local
@@ -364,7 +364,7 @@ Tests: synthetic DEMs with analytic answers (flat plane → horizon 0°; a cone 
 distance; a plane slope → known normals).
 Done when: tests pass; the 4-azimuth agreement numbers are in the report; files listed with sizes.
 
-## B-40 [OPEN] (after B-34; <= 5 h, foreground chunks) R-1 data: Earth-link windows at our sites and along our routes
+## B-40 [IN PROGRESS] (after B-34; <= 5 h, foreground chunks) R-1 data: Earth-link windows at our sites and along our routes
 Goal: the data behind research thread R-1 "Earth in sight" (plan §10). Read first:
 `research_notes/Lunar communications and visibility/earth_visibility_prior_art.md`, sections "Site facts",
 Q4 and "Minimal data pipeline". The prior-art verdict: site visibility percentages are published; the coupling to
