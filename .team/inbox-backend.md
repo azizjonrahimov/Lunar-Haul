@@ -566,7 +566,7 @@ Then a small stage D runner cell set in run_phase4.py: comms {dte, relay 0.5} ×
 {night_fraction 0.15, real} × 20 seeds × start years 2028–2031, plus monthly throughput series to look for the
 ~347-day ripple. Report; LEAD runs stage D.
 
-## B-45 [OPEN] (after B-44; <= 3 h) Strict operator capacity in linked modes (H5 done properly)
+## B-45 [DONE 13:45] (after B-44; <= 3 h) Strict operator capacity in linked modes (H5 done properly)
 B-43 showed that in linked modes the operator admission check sees only demand already linked, so peaks can exceed
 `n_operators` even at full relay (teleop 3.37 vs 3.00 under "always"). That is bookkeeping, not operations. Add an
 opt-in `comms.operators_strict: true`: when a vehicle's link comes up (or a job would start) and linked demand would
@@ -576,7 +576,7 @@ scenario. Then add a stage-A2 cell set to run_phase4.py: comms {always, dte, rel
 {teleop_4s, default} × operators_strict × 20 seeds, and `analyse_e21.py` effects for it (operator waits and urgent
 p90 vs the non-strict cells, paired). Report the expected runtime; LEAD runs it.
 
-## B-46 [OPEN] (small, <= 45 min; after B-45) Full-precision lander parity fixture for the JS test
+## B-46 [DONE 13:52] (small, <= 45 min; after B-45) Full-precision lander parity fixture for the JS test
 F-34's node test replays the trajectory steps at the file's rounding (2.5e-5 m). For the 1e-6 m target, write
 `tests/fixtures/lander_trajectory_parity.json`: for 2 episodes (CLPS classical p50 and the CLPS network p50) the
 initial state and every step's raw action [a0, a1, a2], the sensor readings the pilot saw and the resulting state at

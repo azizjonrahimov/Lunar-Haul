@@ -57,7 +57,7 @@ from scipy import stats  # noqa: E402
 from scipy.optimize import least_squares  # noqa: E402
 
 RESULTS = os.path.join(ROOT, "results")
-STAGE_FILES = ("E21a_comms_autonomy.csv", "E21b_breakeven.csv", "E21c_pads_criterion.csv")
+STAGE_FILES = ("E21a_comms_autonomy.csv", "E21b_breakeven.csv", "E21c_pads_criterion.csv", "E21a2_operators.csv")
 DEMAND_FILE = "E21_demand_by_dest.csv"
 METRICS = ["delivered_t_in_year", "delay_prio1_p90_h", "delay_prio1_mean_h", "sl24_prio1", "blackout_wait_vehicle_h",
            "operator_peak_demand"]
@@ -90,6 +90,9 @@ def prepare(df: pd.DataFrame) -> pd.DataFrame:
         if c not in df:
             df[c] = v
     df["defer_wait_h"] = pd.to_numeric(df["defer_wait_h"].replace({"inf": np.inf}), errors="coerce")
+    if "operator_wait_vehicle_h" in df:          # B-45: the lenient rule never makes a vehicle wait for an operator
+        lenient = df["stage"] != "A2"
+        df.loc[lenient, "operator_wait_vehicle_h"] = df.loc[lenient, "operator_wait_vehicle_h"].fillna(0.0)
     return df
 
 
@@ -170,6 +173,12 @@ def effects(df: pd.DataFrame, metrics: Sequence[str] = METRICS) -> pd.DataFrame:
             for mast in sorted(x for x in b["mast"].unique() if x != "none"):
                 cell = select(b, p=float(p), policy=pol, extra_rovers=0, mast=mast)
                 rows += _rows("mast_vs_none", "no mast", mast, {**ctx, "mast": mast}, base, cell, metrics)
+    a2 = df[df["stage"] == "A2"]                 # B-45: strict operators vs the Stage A twin (same seeds and years)
+    for (mix, p), g in a2.groupby(["mix", a2["p"].fillna(-1.0)]):
+        p = np.nan if p < 0 else p
+        ref = select(a, p=float(p), mix=mix)
+        rows += _rows("strict_vs_lenient", "lenient operators", "strict operators", {"stage": "A2", "mix": mix, "p": p},
+                      ref, g, list(metrics) + ["operator_wait_vehicle_h"])
     c = df[df["stage"] == "C"]
     if not c.empty:
         for (comms, mix), g in c.groupby(["comms", "mix"]):
@@ -453,10 +462,11 @@ def operator_demand(df: pd.DataFrame, mixes: Sequence[str] = ("teleop_4s", "defa
     is always up the operations equal 'always' exactly, but the linked modes book demand per driven segment (and admit
     a job while another is between segments), whereas 'always' books it over the whole job, so the peak is only
     comparable within the linked modes."""
-    a = df[df["stage"] == "A"]
     rows = []
-    for mix in mixes:
-        g = a[a["mix"] == mix]
+    for stage, mix in [(st, m) for st in ("A", "A2") for m in mixes]:
+        g = df[(df["stage"] == stage) & (df["mix"] == mix)]
+        if g.empty:
+            continue
         full = select(g, p=1.0)
         for p, h in g.groupby(g["p"].fillna(-1.0)):
             vs = paired(full, h, "operator_peak_demand") if len(full) and p >= 0 else {}
@@ -464,7 +474,8 @@ def operator_demand(df: pd.DataFrame, mixes: Sequence[str] = ("teleop_4s", "defa
             n_ops = int(h["n_operators"].iloc[0])
             n = int(ratio.notna().sum())
             t = stats.t.ppf(0.975, max(n - 1, 1))
-            rows.append({"mix": mix, "comms": h["comms"].iloc[0], "p": np.nan if p < 0 else p, "n_seeds": int(len(h)),
+            rows.append({"stage": stage, "operators": "strict" if stage == "A2" else "lenient", "mix": mix,
+                         "comms": h["comms"].iloc[0], "p": np.nan if p < 0 else p, "n_seeds": int(len(h)),
                          "peak_mean": float(h["operator_peak_demand"].mean()),
                          "peak_ci95": float(t * h["operator_peak_demand"].std(ddof=1) / math.sqrt(len(h))),
                          "peak_max": float(h["operator_peak_demand"].max()),

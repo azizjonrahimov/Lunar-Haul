@@ -310,6 +310,14 @@ class EarthLink:
 #   operators          demand counts only while the vehicle's current leg or site is linked: the admission check
 #                      at job start sees only the demand linked at that moment, so link-ups can bunch demand;
 #                      operator_peak_demand is the largest hourly mean of concurrent linked demand
+#   operators_strict   opt-in (B-45): operators are a hard capacity in the linked modes. Every committed job books the
+#                      operator demand of its linked driving and stops (waits excluded); a later plan's vehicle that
+#                      needs a link may drive a linked part only while the booked demand plus its own fits in
+#                      n_operators, else it waits where it is (an "operator" wait; operator_wait_vehicle_h). Operators
+#                      therefore go to jobs in commit order, which dispatch sets by priority and age, and the peak of
+#                      the booked demand stays <= n_operators for the vehicles planned this way (teleop and supervised
+#                      under the strict policy; autonomous attention and strategic interventions are booked unqueued).
+#                      No effect in mode "always" (the v2 admission already books whole jobs) or on repositions.
 #   legs missing       pad <-> pad has no route in the link file: linked when both end points are linked
 # Random streams of their own (seed-derived), so the demand and operations streams are untouched.
 import os as _os
@@ -317,7 +325,8 @@ import os as _os
 COMMS_MODES = ("always", "dte", "dte+relay")
 SUPERVISED_POLICIES = ("strict", "strategic", "strategic+avoid")
 COMMS_KEYS = {"mode", "criterion", "link_series", "relay", "mast", "supervised_policy", "start_year", "start_h",
-              "defer_wait_h"}
+              "defer_wait_h", "operators_strict"}
+_BIG_H = 1e12
 DEFAULT_LINK_SERIES = _os.path.join("data", "comms", "connecting_ridge", "earth_link-v1.json")
 SERIES_YEARS = (2028, 2029, 2030, 2031)
 # Modelled: one LCRNS reference relay sees the south pole 324 of every 784 min (DRM-0), i.e. a 460 min gap per orbit;
@@ -451,6 +460,10 @@ class CommsModel:
         self.active = self.mode != "always"
         self.mast = cfg.get("mast")
         self.link_mode = "dte+mast" if self.mast else "dte"
+        self.operators_strict = bool(cfg.get("operators_strict", False))
+        self._op: Optional[_Series] = None                                # the plan's operator availability (strict)
+        self.op_wait_h = 0.0
+        self.op_waits = 0
         self.el: Optional[EarthLink] = None
         self.relay: Optional[_Intervals] = None
         self.rng_iv = np.random.default_rng([int(seed), 41, 1])          # intervention positions
@@ -681,9 +694,17 @@ class CommsModel:
         dur_max = 0.0
         any_wait = False
         self._last = {}
+        extra: List[Tuple[float, float, float]] = []       # strict operators: this job's vehicles planned so far
         for v in job.vehicles:
             segs = sim._last_segments.get(v.id, [])
+            strict = self.operators_strict and self.needs_link(v.autonomy)
+            if strict:
+                self._op = self._op_series(sim.sc.n_operators, sim.operator_demand(v), extra, t_start)
             new, waits = self._apply(v, segs, segk.get(v.id), realize)
+            self._op = None
+            if strict and new is not None:
+                waits = self._split_op_waits(waits)
+                extra += self._linked_parts(new, waits, sim.operator_demand(v))
             if new is None:
                 self._last = {}
                 return math.inf, km, km_empty, e_wh, night
@@ -724,6 +745,8 @@ class CommsModel:
                 continue
             if need:
                 s = self.series(a, b)
+                if self._op is not None:                          # strict operators: link up and an operator free
+                    s = _And(s, self._op)
                 where = a if a == b else f"{a}->{b}"
                 up, dt = s.next_change(t0)
                 n_waits = len(waits)
@@ -777,12 +800,84 @@ class CommsModel:
 
     def reposition(self, v, a: str, b: str, t0: float, h: float):
         """An empty drive a -> b under the link rule: (segments, waits) or None when the link never comes."""
+        self._op = None
         return self._apply(v, [[a, b, t0, t0 + h, 0.0]], None, True)
+
+    # ---- strict operators (B-45) ----
+    def _op_series(self, n_ops: float, dem: float, extra, t_from: float) -> "_Intervals":
+        """Up while the booked operator demand (committed jobs + this job's vehicles so far) leaves room for dem."""
+        segs = [s for s in self.op_segs if s[1] > t_from + _EPS] + [s for s in extra if s[1] > t_from + _EPS]
+        pts = sorted({t_from} | {s[0] for s in segs if s[0] > t_from} | {s[1] for s in segs})
+        blocked = []
+        for lo, hi in zip(pts[:-1], pts[1:]):
+            mid = 0.5 * (lo + hi)
+            if sum(d for s0, s1, d in segs if s0 <= mid < s1) + dem > n_ops + 1e-9:
+                if blocked and abs(blocked[-1][1] - lo) <= _EPS:
+                    blocked[-1][1] = hi
+                else:
+                    blocked.append([lo, hi])
+        iv, prev = [], -_BIG_H
+        for lo, hi in blocked:
+            if lo > prev:
+                iv.append((prev, lo))
+            prev = hi
+        iv.append((prev, _BIG_H))
+        return _Intervals(np.array(iv, dtype=float))
+
+    def _split_op_waits(self, waits):
+        """Split link/operator waits: the parts where the link itself was up are operator waits."""
+        out = []
+        for w in waits:
+            if w[4] not in ("start", "midway"):
+                out.append(w)
+                continue
+            a, _, b = w[3].partition("->")
+            s = self.series(a, b or None)
+            t = w[1]
+            for _ in range(100000):
+                if t >= w[2] - _EPS:
+                    break
+                up, dt = s.next_change(t)
+                e = min(w[2], t + dt)
+                out.append([w[0], t, e, w[3], "operator" if up else w[4]])
+                t = e if e > t + _EPS else w[2]
+        return out
+
+    def _linked_parts(self, segs, waits, dem: float):
+        """(t0, t1, dem) where the vehicle's leg or stop is linked and it is not waiting."""
+        wins = sorted((w[1], w[2]) for w in waits if w[4] in ("start", "midway", "operator"))
+        out = []
+        for a, b, s0, s1, _ in segs:
+            if s1 - s0 <= _EPS:
+                continue
+            s = self.series(a, b)
+            t = s0
+            for _ in range(100000):
+                if t >= s1 - _EPS:
+                    break
+                up, dt = s.next_change(t)
+                e = min(s1, t + dt)
+                if up:
+                    cur = t
+                    for w0, w1 in wins:
+                        if w1 <= cur + _EPS or w0 >= e - _EPS:
+                            continue
+                        if w0 > cur + _EPS:
+                            out.append((cur, w0, dem))
+                        cur = max(cur, w1)
+                    if cur < e - _EPS:
+                        out.append((cur, e, dem))
+                t = e if e > t + _EPS else s1
+        return out
 
     def book_waits(self, v, waits) -> None:
         """Count waits inside the simulated horizon (the trace keeps them whole)."""
         for w in waits:
-            self.wait_h[v.autonomy] = self.wait_h.get(v.autonomy, 0.0) + max(0.0, min(w[2], self.horizon_h) - max(w[1], 0.0))
+            if w[4] == "operator":                       # strict operators: waiting for an operator, not for Earth
+                self.op_wait_h += max(0.0, min(w[2], self.horizon_h) - max(w[1], 0.0))
+                self.op_waits += 1
+            else:
+                self.wait_h[v.autonomy] = self.wait_h.get(v.autonomy, 0.0) + max(0.0, min(w[2], self.horizon_h) - max(w[1], 0.0))
             self.waits.append([round(x, 4) if isinstance(x, float) else x for x in w])
 
     def filter_candidates(self, sim, candidates):
@@ -845,6 +940,15 @@ class CommsModel:
             delayed = delayed or bool(rec["waits"])
             dem = sim.operator_demand(v)
             segs = sim._last_segments.get(v.id, [])
+            if self.operators_strict:                   # B-45: book exactly the linked, non-waiting parts
+                for a, b, s0, s1, _ in segs:
+                    if a != b and s1 - s0 > _EPS:
+                        key = f"{self.name(a)}->{self.name(b)}"
+                        self.leg_uses[key] = self.leg_uses.get(key, 0) + 1
+                for t, e, d in self._linked_parts(segs, rec["waits"], dem):
+                    self.op_segs.append((t, e, d))
+                    dh += self._log_demand(t, e, d)
+                continue
             in_wait = [(w[1], w[2]) for w in rec["waits"] if w[4] in ("start", "midway")]
             for a, b, s0, s1, _ in segs:
                 if s1 - s0 <= _EPS or (a == b and any(abs(s0 - w0) < 1e-9 and abs(s1 - w1) < 1e-9 for w0, w1 in in_wait)):
@@ -902,6 +1006,7 @@ class CommsModel:
             "operator_peak_demand": float(self.hour_demand.max()),
             "delivered_kg_in_horizon": self.delivered_in_horizon_kg,
             "linked_share_by_leg_mean": share,
+            **({"operator_wait_vehicle_h": self.op_wait_h, "operator_waits": self.op_waits} if self.operators_strict else {}),
         }
 
 

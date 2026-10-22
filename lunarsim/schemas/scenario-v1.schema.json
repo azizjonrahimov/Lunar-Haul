@@ -371,6 +371,7 @@
           "properties": {
             "mode": {"enum": ["always", "dte", "dte+relay"]},
             "criterion": {"enum": ["any_part", "centre+0.5deg", "centre+2deg"]},
+            "operators_strict": {"type": "boolean", "description": "B-45: operators are a hard capacity in the linked modes (vehicles that need a link wait for a free operator); default false"},
             "link_series": {"type": "string", "description": "path to earth_link-v1.json (default data/comms/connecting_ridge/earth_link-v1.json)"},
             "relay": {
               "type": "object",

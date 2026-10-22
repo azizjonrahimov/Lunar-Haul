@@ -3193,3 +3193,84 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
 - **Known limits:** the hover-hack network was trained under the first reward rules (landing bonus 10); the file scores it with today's rules, so its score is negative and the story says so. The browser lab below still flies its own random starts (it is not a mirror of the recorded episode; the 3D section has its own text mirror). `design/effects.js` still carries its own copy of the episode helper (to fold into `trajectories.js` with F-36). No tier switcher on the lab page (`?tier=` works; tiers were measured through the stage API).
 - **For BACKEND:** the full-precision actions above (the only open item).
 - **Questions for LEAD:** none.
+
+## B-45 DONE 13:45 | Strict operator capacity in the linked modes (`comms.operators_strict`) and stage A2
+- **Files:**
+  - `lunarsim/comms.py`: the rule, gated on `operators_strict`; the block comment explains it.
+  - `lunarsim/schemas/scenario-v1.schema.json`: `comms.operators_strict`.
+  - `experiments/phase4/run_phase4.py`: stage `e21a2`. Written through a compile-checked temp file, so your running stage D chunks never saw a half-written file; the D cells and keys are unchanged.
+  - `experiments/phase4/analyse_e21.py`: family `strict_vs_lenient`; the operator table gains the strict cells.
+  - `tests/test_operators_strict.py`: new, 5 tests; `tests/test_analyse_e21.py`: +1 test.
+- **The rule:** opt-in `comms.operators_strict: true`.
+  - **Bookings:** every committed job books the operator demand of its *linked, non-waiting* driving and stops.
+  - **Waiting:** a later plan's vehicle that needs a link may drive a linked part only while the booked demand plus its own fits in `n_operators`; otherwise it waits where it is. That wait is an `operator` wait in the trace's comms_waits, split exactly from link-down waits. New columns `operator_wait_vehicle_h` and `operator_waits` appear only when the rule is on.
+  - **Order:** operators go to jobs in commit order, which dispatch already sets by priority then age.
+  - **Bids and deferral:** they use the same rule, so a job whose planned waits exceed `defer_wait_h` is deferred as with link waits.
+  - **Scope:** the peak of booked demand stays ≤ `n_operators` for the vehicles planned this way: teleop, and supervised under the strict policy. Autonomous attention (0.05) and strategic interventions are booked but not queued.
+  - No effect in mode "always" (the v2 admission already books whole jobs) or on repositions, which are not operator-booked in any mode.
+  - The 3D scene shows operator waits as waiting_for_earth (one state for both).
+- **Byte-identical when off:**
+  - strict off reproduces the committed E21a rows metric for metric (teleop relay 0.3, default relay 0.5, teleop DTE; seed 0);
+  - summaries are the same with `operators_strict: false` as with no key;
+  - the baseline md5 test passes.
+- **First numbers** (seed 0, 2028; lenient → strict):
+
+  | Fleet, Earth link | Operator peak | Operator waits | Urgent p90 |
+  |---|---|---|---|
+  | teleop, relay 0.3 | **6.00 → 3.00** | 39 h in 24 waits | 64.5 → 64.3 h |
+  | teleop, DTE | 4.00 → 3.00 | 9 h | 396 h unchanged |
+  | default, relay 0.5 | 2.63 → 2.63 | none (never above 3) | unchanged |
+
+  - Throughput is unchanged in all three. So the over-staffing from B-43 mostly costs little once enforced; stage A2 will say how much with 20 seeds.
+- **Stage A2** (`python experiments/phase4/run_phase4.py e21a2`):
+  - **Design:** 12 strict cells = comms {dte, relay 0.1, 0.3, 0.5, 0.8, 1.0} × mix {teleop_4s, default} × 20 seeds = 240 runs.
+  - The **lenient twins are the Stage A rows** (same scenario, seeds and start years), so they are not re-run; "always" is left out (no effect).
+  - **Runtime:** DTE cells ~30 s per run (measured with your stage D running), relay cells ~6-12 s, so **~45 min single-process**.
+  - **Chunks:** cells 0-1 (DTE) take ~10 min each, so run them with `--cells 0` / `--cells 1` and rerun to resume after the `--max-seconds` stop; cells 2-11 in about three chunks.
+  - Then `table` (adds the two operator columns to table_E21.csv; rebuild the stories after it) and `analyse_e21.py fit`. The fit gives the paired strict-vs-lenient effects: operator waits, peak, urgent p90/mean, delivered, with CIs; the operator figure CSV holds both rules.
+- **Tests:** `test_operators_strict.py` 5 passed. They cover:
+  - availability from bookings (incl. this job's own vehicles), splitting waits into link and operator parts, linked parts excluding waits;
+  - off unchanged;
+  - an all-teleop fleet with 1 operator at relay 0.5: lenient peak > 1, strict ≤ 1, with operator waits.
+
+  Plus `test_analyse_e21.py` 12 passed and `test_comms_engine.py`, `test_verification_phase4.py`, `test_phase3_engine.py`, `test_formats.py`, `test_illumination.py` all pass.
+- **How to test:** `.venv\Scripts\python -m pytest tests\test_operators_strict.py -q`.
+- **Questions for LEAD:** none.
+
+## F-36 PART a+b 13:46 (not for acceptance yet; part c follows) | World v2: scene reader + parity test, the new /world/ on the stage
+- **Part a, the reader:** `site/src/world/scene-data.js` reads lunarsim-scene v1 (index, routes.bin, chunks on demand; mirrors `lunarsim.scene.read/position`, plus heading, load, the hourly series with waiting items/kg per site). **Node test `site/tests/scene-data.test.mjs`: positions and states equal Python's `lunarsim.scene.position` at 30 moments per package (20 random + 10 inside drives) for P2, P2-comms-dte and P3: worst difference < 1e-6 m**, fixture `site/tests/fixtures/scene_positions.json` (made with `.venv` from the committed packages; regenerate it if a package changes). All 10 site tests pass.
+- **Part b, the page:**
+  - `/world/` is now World v2 (`site/world/index.html`, `site/src/world/v2.js`, `v2-scene.js`, `v2.css`): gallery chips by group from `scenes/gallery.json` (all 12 scenes, `?scene=<id>`), `?run=<id>` reads `runs/<id>/scene/` (B-37's path; not tried yet: no published run in my build), loading door (4.0 MB: catalogue, recordings, terrain; the year itself is ~0.2 MB), scene chips Overview · Pads & keep-out · Rover legs · Base · Night (Night jumps to the next night), Icons / True scale, play with speeds 1 h/s … 10 days/s that slows to 10 sim-s per second while a lander descends, a year timeline with landing ticks, night bands, Earth set/rise (from the hourly series) and Earth-link waits, stat chips (delivered so far, waiting now, trips done), a story card for the moment (landing, landed, night, waiting for Earth, keep-out, day), a text mirror (sun, Earth, each rover's state and load, waiting cargo per site) and the 20-seed headline numbers of the scene as stat chips with their 95 % intervals.
+  - The scene: 16 km tile (40 m mesh at tier ≥ 2) with the 5 m patch round BASE, sun from the hourly azimuth (1.5°, off at night; `lighting.setSun()` rebuilds the bounce light only after a 30° turn), sites with kit models (habitat, pads with berms, three solar towers) and labels, drive routes, rovers on their routes with a state ring (driving, loading, parked for the night, keep-out hold, waiting for Earth, fault), cargo pallets stacking at each site from the hourly waiting counts, landers descending along their trajectory episode with glow, dust sheet and the keep-out ring of the window, then staying on the pad until the next landing there; Earth from the hourly series, cut off by the horizon profile at the camera.
+  - The old viewer moved to `/world/trace/` unchanged (trace files, the browser simulator's hand-off, service runs and the 2D plan view). `/world/?from=…`, `?sample=…` and `?view=2d` forward there; the simulator (`web/app.js`) and the account page now link there directly. Tier 0 on /world/ points to the trace viewer's 2D plan for now.
+  - Checked in Chrome: P2 loads and plays; landing 1 at PAD A shows the descent, dust (11k grains, obscuration 76 % at T−1.5 s) and the 1 km ring; the overview frames every site. Build OK; budgets OK (world JS 17.4 of 20 kB gz).
+- **Found in the data (for BACKEND, B-31):** `_nearest_trajectory` picks the episode nearest in |miss| among all four picks, failures included, so successful landings point at the classical law's **first_failure** episode (a 150 s hover that never touches down): P2 landing 1 and P3 landings 2, 3 and 5. The viewer now replaces a failed episode by the nearest successful one when the landing succeeded; the package should do that itself (restrict to `outcome.ok` episodes when the landing is ok).
+- **Part c (next):** Follow [Cargo | Rovers | Landers | Night], the comms chip (direct / relay only / none) for the comms samples, the split view of two samples on the same seed, a 2D plan of the scene package as tier 0 (instead of pointing to the trace viewer), headlights at night, label decluttering, framing passes, "urgent 90 % wait so far" (the package has no per-item delays, see below), checks for all five samples over a full year, keyboard, reduced motion, 390 px, Lighthouse.
+- **Questions for LEAD:**
+  1. The scene package has no per-item priority or delay, so "urgent 90 % wait so far" cannot be computed in the browser. Either BACKEND adds `deliveries` columns (priority, wait_h) to the package, or the chip shows the year's value from the summary. Which?
+  2. `tools/ci/budgets.json` world data list: the v2 page loads only `scenes/gallery.json` before Enter; after Enter the catalogue, `lab/policies/trajectories-v1.json`, the terrain v2 files and the scene package. Please update the list (or tell me the format and I send the lines).
+
+## B-46 DONE 13:52 | Full-precision lander trajectory parity fixture for the JS test
+- **Files:** new `tests/fixtures/make_lander_trajectory_parity.py` (generator), `tests/fixtures/lander_trajectory_parity.json` (301 kB, LF), `tests/test_lander_trajectory_parity.py` (4 tests).
+- **Fixture:** the CLPS classical law (seed 100202, 353 steps) and the CLPS network lander_CLPS_bc_v3_s0 (seed 100471, 342 steps) at their p50 picks in `trajectories-v1.json`, replayed exactly as the export records them.
+  - **Per episode:**
+    - `cls`, `pilot`, `seed`, `obs_version`, `reward_variant`;
+    - the domain-randomisation draws the physics needs: `thrust_scale`, `isp_scale`, `m_dry`;
+    - `dt` and `state0`.
+  - **Per step:**
+    - `action` = the raw [a0, a1, a2] the pilot returned, before the physics' own clipping;
+    - `est_pos`, `est_vel` = the navigation estimate (sensor readings) the pilot saw;
+    - `state` = the env state after the step;
+    - `touchdown: true` on the landing step, whose state is `physics.touchdown(prev, physics.step(prev, a))`.
+  - **Header:** `state_layout` (x, y, z, vx, vy, vz, m, tx, ty, wx, wy) and `constants` (g_moon, touchdown limits, the CLPS class dataclass).
+  - **Precision:** floats are Python repr (shortest round-trip), so `JSON.parse` gives the same float64.
+- **Checks** (`test_lander_trajectory_parity.py`, 4 passed):
+  - chaining `physics.step` from `state0` with the recorded actions (and `touchdown` on the flagged step) reproduces **every state bit for bit**. This runs without gymnasium, so also in CI.
+  - the env replay (`DescentEnv.reset(seed)` + the recorded actions) is bit-exact in state, DR draws and sensor estimates; it needs gymnasium.
+  - the fixture's step-boundary positions agree with the export's `pos_m` to < 1e-6 m (its rounding).
+- **For FRONTEND** (`site/tests/lander-trajectories.test.mjs`):
+  - read `tests/fixtures/lander_trajectory_parity.json`;
+  - for each episode, start from `state0` and apply the JS `step(state, action, cls, dt, thrust_scale, isp_scale, m_dry)` per step, with `touchdown(prev, new)` where `touchdown` is true;
+  - assert each position (and ideally the whole state) within 1e-6 m of `state`.
+- **How to test:** `.venv\Scripts\python -m pytest tests\test_lander_trajectory_parity.py -q`. Regenerate: `.venv\Scripts\python tests\fixtures\make_lander_trajectory_parity.py`.
+- **Questions for LEAD:** none.

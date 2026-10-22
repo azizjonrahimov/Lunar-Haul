@@ -157,3 +157,28 @@ def test_throughput_bound():
     assert tb["bound_ready_t"]["mean"] == pytest.approx(200.0) and tb["lost_at_never_linked_t"]["mean"] == pytest.approx(200.0)
     assert tb["gap_t"]["mean"] == pytest.approx(211.5) and tb["gap_elsewhere_t"]["mean"] == pytest.approx(11.5)
     assert tb["dte_delivered_to_never_linked_t"]["mean"] == 0.0
+
+
+def test_strict_operator_family_and_demand():
+    """Stage A2 (strict operators) is paired with its Stage A twin; lenient cells count no operator waits."""
+    rows = []
+    for s in range(5):
+        for p in (0.5, 1.0):
+            rows.append(_row("A", "dte+relay", p, "teleop_4s", s, operator_peak_demand=5.0 if p == 0.5 else 3.4,
+                             delay_prio1_p90_h=40.0))
+            rows.append(_row("A2", "dte+relay", p, "teleop_4s", s, operator_peak_demand=3.0,
+                             delay_prio1_p90_h=41.0 + s, operator_wait_vehicle_h=10.0 * (p == 0.5)))
+        rows.append(_row("A", "always", None, "teleop_4s", s, operator_peak_demand=3.0))
+    df = A.prepare(pd.DataFrame(rows))
+    assert (df.loc[df.stage == "A", "operator_wait_vehicle_h"] == 0).all()
+    e = A.effects(df)
+    st = e[e.family == "strict_vs_lenient"]
+    pk = st[(st.metric == "operator_peak_demand") & (st.p == 0.5)].iloc[0]
+    assert pk["diff"] == pytest.approx(-2.0) and pk["n"] == 5
+    w = st[(st.metric == "operator_wait_vehicle_h") & (st.p == 0.5)].iloc[0]
+    assert w["diff"] == pytest.approx(10.0)
+    d = st[(st.metric == "delay_prio1_p90_h") & (st.p == 0.5)].iloc[0]
+    assert d["diff"] == pytest.approx(3.0)
+    o = A.operator_demand(df, mixes=("teleop_4s",))
+    assert set(o["operators"]) == {"lenient", "strict"}
+    assert not o[o.operators == "strict"]["over_staffing"].any()

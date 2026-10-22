@@ -3,6 +3,7 @@
 Usage:  python experiments/phase4/run_phase4.py e21a [--seeds 20] [--workers 1] [--cells 0-9] [--max-seconds 540]
         python experiments/phase4/run_phase4.py e21b e21c            # B reads the Stage A table
         python experiments/phase4/run_phase4.py e21d --cells 0-7      # stage D (real sun), in chunks
+        python experiments/phase4/run_phase4.py e21a2                 # stage A2 (strict operators)
         python experiments/phase4/run_phase4.py table                 # rebuild results/table_E21*.csv only
 
 Conventions as experiments/phase3/run_phase3.py: a cell is (tag, scenario, mechanism) replicated over seeds with common
@@ -24,6 +25,10 @@ model, pads at 1 km, Earth-link criterion any_part (lunarsim/comms.py; data/comm
         year that equals N rovers' capital cost)                                               -> table_E21_breakeven.csv
   e21c  at three Stage A cells: pads {0.5, 1, 3 km} x criterion {any_part, centre+0.5deg, centre+2deg} (defer 24 h),
         plus defer_wait_h {12, 72, none} at pads 1 km / any_part                                -> E21c_pads_criterion.csv
+  e21a2 H5 done properly: the Stage A cells comms {dte, dte+relay 0.1, 0.3, 0.5, 0.8, 1.0} x mix {all teleop (4 s),
+        P2 default} again with comms.operators_strict (B-45: operators a hard capacity in the linked modes); the
+        lenient twins are the Stage A rows (same scenario, seeds and start years), and "always" is left out (the rule
+        has no effect there)                                                                   -> E21a2_operators.csv
   e21d  H6, Earth's 27.21-day elevation cycle against the 29.53-day lunar day (beat ~347 d): comms {dte, dte+relay 0.5}
         x mix {P2 default, all supervised-strict} x sun {night_fraction 0.15, real (Scenario.illumination, B-44:
         criterion half, leg rule most)} x start year 2028-2031 as a cell factor (not seed mod 4), with the delivered
@@ -77,7 +82,11 @@ E21C_CRITERIA = ("any_part", "centre+0.5deg", "centre+2deg")
 E21C_BASE = (("dte", None, "default"), ("dte", None, "teleop_4s"), ("dte+relay", 0.8, "supervised_strict"))
 DEFER_DEFAULT_H = 24.0            # lunarsim.comms.DEFAULT_DEFER_WAIT_H (Assumed)
 E21C_DEFERS = (12.0, 72.0, None)  # with the default 24 h from the pads x criterion grid; None = never defer
-STAGES = {"e21a": "E21a_comms_autonomy", "e21b": "E21b_breakeven", "e21c": "E21c_pads_criterion", "e21d": "E21d_sun"}
+STAGES = {"e21a": "E21a_comms_autonomy", "e21b": "E21b_breakeven", "e21c": "E21c_pads_criterion", "e21d": "E21d_sun",
+          "e21a2": "E21a2_operators"}
+E21A2_COMMS = (("dte", None), ("dte+relay", 0.1), ("dte+relay", 0.3), ("dte+relay", 0.5), ("dte+relay", 0.8),
+               ("dte+relay", 1.0))
+E21A2_MIXES = ("teleop_4s", "default")
 E21D_COMMS = (("dte", None), ("dte+relay", 0.5))
 E21D_MIXES = ("default", "supervised_strict")
 E21D_SUN = ("night_fraction", "real")
@@ -88,7 +97,7 @@ FACTORS = ["stage", "comms", "coverage", "mix", "policy", "extra_rovers", "mast"
 METRICS = ["delivered_t_in_year", "delay_prio1_p90_h", "cost_per_landed_kg_usd", "blackout_wait_vehicle_h",
            "operator_peak_demand", "delay_prio1_mean_h", "sl24_prio1", "delivered_kg", "blackout_wait_teleop_h",
            "blackout_wait_supervised_h", "blackout_jobs_delayed", "blackout_jobs_refused", "blackout_jobs_deferred",
-           "blackout_jobs_avoided",
+           "blackout_jobs_avoided", "operator_wait_vehicle_h", "operator_waits",
            "linked_share_by_leg_mean", "operator_hours", "jobs", "utilisation", "backlog_kg"]
 EXTRA_ROVER = ("EXTRA", "LTV", "supervised", "A")
 
@@ -189,6 +198,17 @@ def e21c_cells():
         for dw in E21C_DEFERS:
             tag, sc = scenario(mix, mode, p, defer=dw)
             tag["stage"] = "C"
+            cells.append((tag, sc, MECH, *MECHS[MECH]))
+    return cells
+
+
+def e21a2_cells():
+    cells = []
+    for mode, p in E21A2_COMMS:
+        for mix in E21A2_MIXES:
+            tag, sc = scenario(mix, mode, p)
+            sc = sc.with_(comms=dict(sc.comms, operators_strict=True))
+            tag.update(stage="A2", operators_strict=True)
             cells.append((tag, sc, MECH, *MECHS[MECH]))
     return cells
 
@@ -402,7 +422,7 @@ def write_tables(results=None):
 # ---------------------------------------------------------------------------
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    p.add_argument("stages", nargs="*", help="e21a e21b e21c e21d table (default: e21a)")
+    p.add_argument("stages", nargs="*", help="e21a e21b e21c e21d e21a2 table (default: e21a)")
     p.add_argument("--seeds", type=int, default=N_SEEDS)
     p.add_argument("--workers", type=int, default=WORKERS)
     p.add_argument("--cells", default=None, help="cell range of the stage, e.g. 0-9 (0-based, inclusive)")
@@ -427,8 +447,10 @@ def main(argv=None):
             run_stage(STAGES[n], e21c_cells(), a.seeds, a.workers, a.cells, a.results)
         elif n == "e21d":
             run_stage(STAGES[n], e21d_cells(), a.seeds, a.workers, a.cells, a.results)
+        elif n == "e21a2":
+            run_stage(STAGES[n], e21a2_cells(), a.seeds, a.workers, a.cells, a.results)
         elif n != "table":
-            raise SystemExit(f"unknown stage {n!r}; choose from e21a e21b e21c e21d table")
+            raise SystemExit(f"unknown stage {n!r}; choose from e21a e21b e21c e21d e21a2 table")
         write_tables(a.results)
     rss = None
     try:
