@@ -678,3 +678,21 @@ The Earth's-horizon story (data/stories/earth-horizon.json, round 2) needs scene
 - `P2-comms-dte-strategic`: "Rovers that drive out of sight" — direct links only, all supervised rovers, strategic
   policy (the story's autonomy step).
 Keep budgets (world data) honest. Tell LEAD the package ids when published; LEAD switches the story's step scenes.
+
+## B-55 [OPEN] (now; single process, light) Why strategic driving under DTE collapses in 2028 (paper R-1, referee E17)
+E21 r2 stage A, supervised strategic, DTE only, by start year: delivered 113 / 508 / 536 / 543 t (2028-31) and
+rover-hours waiting for Earth 41,026 / 34,201 / 21,362 / 23,117 (strict: ~1,000 every year; always-linked ~519-542 t).
+So strategic rovers strand (wait for Earth where it never or rarely rises) every year, the spare fleet absorbs it
+in 2029-31, and in 2028 it does not. Find the mechanism with data, no new suite:
+1. Stranding events (re-run a handful of seeds with the existing trace/event hooks, single process): where a rover
+   waits for Earth > 24 h (site or route point), when (hour of year), how long, why (intervention needed with no
+   link; check the strategic policy's rule), and whether it ever resumes. Per seed: time of each rover's first
+   stranding; fleet share stranded over the year (monthly).
+2. The calendar: monthly Earth-link fraction 2028-2031 at the stranding locations, BASE, DEPOT, CONSTR, the pads
+   (from the v1/v2 link files); and the 2028 vs 2029-31 demand (landings, items, destinations by month) so we can
+   tell geometry from demand. Say which explains 2028 (or both), with numbers.
+3. Write `results/E21_strategic_years.json` (plus a small figure-ready CSV if useful) and a short report section;
+   a test that the file exists and is consistent with E21a_comms_autonomy_r2.csv by start year.
+4. While at it: rebuild the older earth gallery cells (P2-comms-dte, P2-comms-relay-0.8, P2-comms-dte-autonomous)
+   with E21's start-year rule (2028 + seed mod 4) so every earth scene's headline matches the paper; one
+   commit-ready set, budgets checked.
