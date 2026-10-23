@@ -497,3 +497,19 @@ Every number a stat chip with flag and source (Modelled; SPICE + LOLA), text twi
 Link it from the Earth story's step 7 (a "Why 2028?" link; tell LEAD the URL so the story data can carry it) and
 from /research/ or Results. NOTE: the strategic policy's results are being re-examined (B-57); show the geometry
 and the stranding as measured, and do not add claims about which policy is best. Budget entry for the page.
+
+## F-41 part 2 [OPEN] (<= 1.5 h) B-58's skylines and the haul road on /research/earth-sky/; the rule's result (queued 22 Oct 21:55)
+- **Data:** stage `data/comms/connecting_ridge/horizons_dark_sample.json` (keys in BACKEND's B-58 report) and the
+  `bounded` block of `results/E21_fit_r2.json` (only what the page shows) in prepare-data; budget data entry.
+- **Figure 1:** draw the skylines at BASE and at the dark spot over Earth's path (same grid-bearing convention).
+  Earth is in view at the dark spot when its path rises above that skyline (5.9-8.6° against a ~6.2° peak); make
+  that the caption and keep or drop the dashed patch as you judge clearer. Table twin: skyline at the highest point's
+  bearing, per year.
+- **Figure 2:** add the haul road ISRU->CONSTR row: `all_samples_that_ever_link` ("its points that ever see Earth");
+  say in the caption that its point at the oxygen plant never does, so the whole road is never linked at once.
+- **Replace the note under section 3** (no task IDs on public pages) with the result, numbers from the staged data:
+  "The strategic rule has a second chance the model gives for free: when help would be needed at a point that never
+  sees Earth, the job is drawn again. Without that second chance (the rover waits there for the rest of the year), the
+  strategic fleet delivers 42 t a year (30 to 58 t by start year)." Add a fourth chip for it. A rescue-time result
+  follows from BACKEND (B-59); leave room for one more sentence.
+- Small (F-40 list): task IDs such as "(B-36)" in visible source text on /world/ chips: replace with the file name.

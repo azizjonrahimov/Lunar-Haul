@@ -742,3 +742,28 @@ bearing (0.1° steps over the bearings Earth can occupy, about -12° to 12°, or
 the 2028 dark sample (#188, its xy and the leg), for the 2.5 m antenna, from the same LOLA horizon masks B-40 used,
 plus the source sha256s. Also the monthly link fraction 2028-2031 of the ISRU->CONSTR leg (share of hours with every
 sample linked, and with the dark sample alone). Tell FRONTEND the keys.
+
+## B-59 [OPEN] (<= 1.5 h) How fast must help come where Earth never rises? (queued 22 Oct 21:55)
+B-57 showed plain strategic's DTE result rests on the free re-draw at never-linked samples (redraw 425 t/yr; strand
+42 t/yr; strict 307 t/yr). The real answer lies between, and depends on how long a rover that needs help at a point
+that never sees Earth waits for it (another rover parking within line of sight as a local relay, a crew, a tow).
+1. **Policy:** `never_linked: "rescue"` with `rescue_h` (h, >= 0; required with "rescue", rejected otherwise): an
+   intervention drawn on a never-linked sample is resolved after rescue_h (the rover waits there, then drives on).
+   The helper's own time is not modelled (optimistic; say so in the comment and the schema description). Counters
+   `blackout_rescues_never_linked` and `blackout_rescue_vehicle_h` in rescue runs only. Schema + tests (rescue 0 vs
+   redraw on a tiny scenario; a large rescue_h approaches strand). No existing row may change (same identity checks
+   as B-57).
+2. **Stage G** (`run_phase4.py e21g --round r2` -> `results/E21g_rescue_r2.csv`): plain strategic, all-supervised,
+   DTE only (with a relay nothing is never-linked; B-57 showed strand = strategic there), rescue_h in
+   {0, 24, 72, 168, 720}, 20 seeds, E21 year rule, common random numbers with Stage A. 5 cells, 100 runs.
+3. **Analysis** (`analyse_e21.py rescue` -> `E21_fit_r2.json["rescue"]` + `results/table_E21g_rescue_r2.csv`):
+   per level, paired against strategic (redraw), strict and look-ahead (Stage A, DTE), overall and by start year:
+   tonnage, bulk, lander cargo, urgent completion, censored p90 (GM ratio, Wilcoxon, median), waiting, rescues per
+   run and rescue hours. **Break-even rescue time** against strict for tonnage and for urgent completion: the
+   crossing of the paired mean differences, interpolated in log(1 + rescue_h), with a 2,000-draw seed bootstrap
+   interval like `breakeven_delay` (report "beyond 720 h" / "below 0 h" when it does not cross inside the range).
+4. **Pool diagnostic (your question 1):** from the code, one line each: are items blocked for every free rover
+   filtered before the 40-slot cap for strict and for the look-ahead? If not for strict, measure the share of the 40
+   slots held by blocked items under DTE (seed 0, each start year) into `bounded.pool_starvation.strict`. No pool
+   variant: the paper gets a limitation sentence.
+Runs: foreground chunks `--max-seconds 540`, `--workers 2` at most.
