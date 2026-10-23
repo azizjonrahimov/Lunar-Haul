@@ -7,7 +7,7 @@ import {
   WebGLRenderer, Scene, PerspectiveCamera, BufferGeometry, BufferAttribute, Mesh, ShaderMaterial, DataTexture, RedFormat,
   RGBAFormat, FloatType, UnsignedByteType, NearestFilter, LinearFilter, Vector3, Color, GLSL3, WebGLRenderTarget,
   OrthographicCamera, PlaneGeometry, Group, BoxGeometry, CylinderGeometry, MeshBasicMaterial, LineBasicMaterial, LineSegments,
-  LineLoop, Line, RingGeometry, DoubleSide, Vector2,
+  LineLoop, Line, RingGeometry, DoubleSide, Vector2, Spherical,
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
@@ -299,5 +299,15 @@ export function createScene({ canvas, labelHost, terrain, layout, pixelBudget = 
     if (tween) { const f = Math.min(1, (now - tween.s) / tween.dur), e = f < 0.5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2; camera.position.lerpVectors(tween.p0, tween.p1, e); controls.target.lerpVectors(tween.t0, tween.t1, e); if (f >= 1) tween = null; }
     focusFollow(); controls.update(); renderer.render(scene, camera); css.render(scene, camera);
   }
-  return { renderer, camera, controls, setTrace, update, render, resize, preset, followVehicle, isFollowing: () => follow, dispose: () => { controls.dispose(); renderer.dispose(); renderer.forceContextLoss(); labelHost.replaceChildren(); } };
+  // F-40: orbit and zoom without a drag (the view pad, WCAG 2.5.7), within the controls' limits
+  function nudge(azDeg, polDeg = 0) {
+    tween = null; const off = camera.position.clone().sub(controls.target), s = new Spherical().setFromVector3(off);
+    s.theta += azDeg * Math.PI / 180; s.phi = Math.min(controls.maxPolarAngle, Math.max(0.01, s.phi + polDeg * Math.PI / 180));
+    camera.position.copy(controls.target).add(off.setFromSpherical(s)); controls.update();
+  }
+  function zoom(f) {
+    tween = null; const off = camera.position.clone().sub(controls.target);
+    camera.position.copy(controls.target).add(off.setLength(Math.min(controls.maxDistance, Math.max(controls.minDistance, off.length() / f)))); controls.update();
+  }
+  return { renderer, camera, controls, setTrace, update, render, resize, preset, followVehicle, nudge, zoom, isFollowing: () => follow, dispose: () => { controls.dispose(); renderer.dispose(); renderer.forceContextLoss(); labelHost.replaceChildren(); } };
 }

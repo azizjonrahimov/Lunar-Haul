@@ -3,10 +3,10 @@
 // toggles, the Earth-link start date and a text version of the view. The scene (three.js, terrain, models) loads only
 // when the visitor presses Enter (lab3d-scene.js). The plan view and telemetry below show the same drive at every
 // tier; at tier 0 they are the whole lab.
-// Earth link (R-1, B-40): data/comms/.../earth_link-v1-samples.json.gz holds hourly direct-to-Earth windows for points
-// about 100 m apart along every leg (2028-2031, criterion: any part of Earth's disc above the terrain at 2.5 m), computed on
-// the leg's night route (BACKEND adds one set per lighting route later).
-import { door, sceneChips, narrative, statChip, timeline, h, reducedMotion } from '../ui/index.js';
+// Earth link (R-1, B-40, B-52): data/comms/.../earth_link-v2-samples-lite.json.gz holds hourly direct-to-Earth windows for
+// points about 100 m apart along every leg's route in each lighting (2028-2031, criterion: any part of Earth's disc above
+// the terrain at 2.5 m); routes[leg][lighting] lists them in route order, ends included, on the route the lab drives.
+import { door, sceneChips, narrative, statChip, timeline, h, reducedMotion, viewPad } from '../ui/index.js';
 import { detectTier } from '../stage/tier.js';
 import * as R from './physics.js';
 import { DT_S } from './env.js';
@@ -62,7 +62,7 @@ export function mount3d(api) {
   const light = textChip('Light'), link = textChip('Earth from here'), race = textChip('Race');
   $('r3-story').append(story.el); $('r3-chips').append(speed.el, slip.el, light.el, link.el, race.el);
   link.set(null); race.set(null);
-  story.set({ eyebrow: 'Rover lab in 3D', title: 'Drive the leg on the real terrain', html: '<p>Press Enter to load the terrain, the rover and the Earth-link samples (about 3.5 MB). The drive is the same one the plan view below shows.</p>' });
+  story.set({ eyebrow: 'Rover lab in 3D', title: 'Drive the leg on the real terrain', html: '<p>Press Enter to load the terrain, the rover and the Earth-link samples (about 3.7 MB). The drive is the same one the plan view below shows.</p>' });
   $('r-speed').addEventListener('change', () => { speedTouched = true; });
 
   (async () => {
@@ -81,7 +81,7 @@ export function mount3d(api) {
   async function start(gate, tier) {
     const fetchFn = label => url => gate.fetch(url, { label });
     const [mod, ej, tk] = await Promise.all([import('./lab3d-scene.js'),
-      gunzipJson(BASE + 'comms/earth_link-v1-samples.json.gz', fetchFn('Earth-link samples')).catch(() => null),
+      gunzipJson(BASE + 'comms/earth_link-v2-samples-lite.json.gz', fetchFn('Earth-link samples')).catch(() => null),
       import('../stage/sky.js').then(m => m.loadEarthTrack(BASE + 'comms/earth_track-v1.json.gz')).catch(() => null)]);   // sky.js brings three: load it with the scene
     earth = ej; track = tk;
     sc = await mod.createRoverScene({ canvas: $('r3-canvas'), labelsHost: $('r3-labels'), tier: Math.max(1, tier), fetchFn: fetchFn('catalogue'),
@@ -89,7 +89,7 @@ export function mount3d(api) {
     if (import.meta.env.DEV) window.__r3 = { sc, ui, st };
     sc.stage.director.limits({ minDistance: 2, maxDistance: 9000, maxPolar: 95 });
     // orbit keys on the canvas, except the arrows while you drive (they steer)
-    const proxy = new EventTarget(); sc.stage.director.bindKeys(proxy);
+    const proxy = new EventTarget(); sc.stage.director.bindKeys(proxy); $('r3-view').append(viewPad(sc.stage.director));   // F-40: orbit and zoom without a drag
     $('r3-canvas').addEventListener('keydown', e => {
       if (api.human() && e.key.startsWith('Arrow')) return;
       const ev = new KeyboardEvent('keydown', { key: e.key, shiftKey: e.shiftKey, cancelable: true }); proxy.dispatchEvent(ev); if (ev.defaultPrevented) e.preventDefault();
@@ -148,17 +148,15 @@ export function mount3d(api) {
     sc.setLeg({ path: st.env.pp.path, from: a, to: b, fromXY: pts[a], toXY: pts[b] });
     sc.setSun(api.lighting());
     sc.setRoverLabel(0, race2 ? 'Expert' : ({ expert: 'Expert', human: 'You', learned: 'Network' })[$('r-ctrl').value] || 'Rover');
-    // Earth-link samples of this leg (absent for a leg the comms file does not list)
-    const ids = earth?.legs[api.tableKey(a, b)];
-    samples = ids ? ids.map(i => { const s = earth.samples[i]; return { x: s.xy_m[0], y: s.xy_m[1], w: decodeWindows(earth.series[s.w[0]]), linked: true }; }) : null;
+    // Earth-link samples along this leg's route in this lighting (absent when the comms file has no route for it)
+    const ids = earth?.routes?.[api.tableKey(a, b)]?.[$('r-light').value];
+    samples = ids?.length ? ids.map(i => { const s = earth.samples[i]; return { x: s.xy_m[0], y: s.xy_m[1], w: decodeWindows(earth.series[s.w[0]]), linked: true }; }) : null;
     if (samples) {
       // first hour of 2028 when the start is linked but somewhere along the leg is not: where the story is
       const s0 = samples[0].w; h0 = 0;
       for (let hr = 0; hr < 8760; hr++) if (linkedAt(s0, hr) && samples.some(s => !linkedAt(s.w, hr))) { h0 = hr; break; }
       samples.forEach(s => { s.linked = linkedAt(s.w, h0); });
       let d = 0; samples.forEach((s, i) => { if (i) d += Math.hypot(s.x - samples[i - 1].x, s.y - samples[i - 1].y); s.km = d / 1000; });
-      const path = st.env.pp.path;
-      samples.off = samples.reduce((m, s) => m + Math.min(...path.map(q => Math.hypot(q[0] - s.x, q[1] - s.y))), 0) / samples.length;
     }
     sc.setEarth(samples); sc.setShow(ui.show);
     drawTimeline();
@@ -270,7 +268,7 @@ export function mount3d(api) {
     ];
     if (samples && ui.show.earth) {
       const n = samples.filter(s => s.linked).length, lost = samples.find(s => !s.linked);
-      rows.push(['Earth link along the leg', `${date(hr)}: ${n} of ${samples.length} points see Earth${lost ? `; first loss ${fmt(lost.km, 2)} km in` : ''} (computed along the leg's night route${samples.off > 40 ? `, on average ${Math.round(samples.off)} m from the route planned for this lighting` : ''})`]);
+      rows.push(['Earth link along the leg', `${date(hr)}: ${n} of ${samples.length} points see Earth${lost ? `; first loss ${fmt(lost.km, 2)} km in` : ''}`]);
       if (p) rows.push(['Earth from the rover', p.linked ? 'in sight' : `behind the terrain, back in ${inH(p.wait)}`]);
     } else if (ui.show.earth && earth) rows.push(['Earth link along the leg', 'no samples for this leg']);
     rows.push(['Interventions', st.events.length ? st.events.map((v, i) => `${i + 1}. ${hms(v.t)} ${v.why}`).join('; ') : 'none yet']);

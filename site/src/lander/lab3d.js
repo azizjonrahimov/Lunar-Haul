@@ -3,7 +3,7 @@
 // pilot, episode, view, overlays, speed), the SCORE counter driven by the recorded reward terms, phase chips, a
 // timeline with event ticks, the story card and a text mirror of every value. The 3D scene (three.js, terrain,
 // effects, models) loads only when the visitor presses Enter (lab3d-scene.js). Tier 0 keeps the browser lab below.
-import { door, segmented, sceneChips, narrative, counter, timeline, h, reducedMotion } from '../ui/index.js';
+import { door, segmented, sceneChips, narrative, counter, timeline, h, reducedMotion, viewPad } from '../ui/index.js';
 import { detectTier } from '../stage/tier.js';
 import { loadTrajectories, pilotsFor, episodeView, PICKS } from './trajectories.js';
 import { TOUCHDOWN } from './classes.js';
@@ -51,7 +51,7 @@ async function start(gate) {
     onStatus: s => status(s === 'lost' ? 'The graphics context was lost; it will come back by itself.' : '') });
   if (import.meta.env.DEV) window.__l3 = { sc, ui, time };
   sc.colours = mod.OUTCOME_COLOURS;
-  sc.stage.director.bindKeys($('l3-canvas'));
+  sc.stage.director.bindKeys($('l3-canvas')); $('l3-view').append(viewPad(sc.stage.director));   // F-40: orbit and zoom without a drag
   sc.stage.director.limits({ minDistance: 3, maxDistance: 2500, maxPolar: 95 });
   controls();
   await choose();

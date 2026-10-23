@@ -10,3 +10,4 @@ export { door } from './door.js';
 export { counter } from './counter.js';
 export { tooltip, upgradeFlags } from './tooltip.js';
 export { h, icon, reducedMotion } from './dom.js';
+export { viewPad } from './viewpad.js';

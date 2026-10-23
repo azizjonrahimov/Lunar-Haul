@@ -164,7 +164,7 @@ $('v-scale').addEventListener('click', e => { ui.scale = !ui.scale; e.currentTar
 $('v-pause').addEventListener('click', e => { const v = e.currentTarget.getAttribute('aria-pressed') !== 'true'; e.currentTarget.setAttribute('aria-pressed', String(v)); stage?.pause(v); });
 for (const b of document.querySelectorAll('[data-cam]')) b.addEventListener('click', () => {
   const d = stage?.director; if (!d) return;
-  ({ left: () => d.nudge(-20), right: () => d.nudge(20), in: () => d.zoom(1.25), out: () => d.zoom(0.8), home: () => applyView() })[b.dataset.cam]();
+  ({ left: () => d.nudge(-20), right: () => d.nudge(20), up: () => d.nudge(0, -10), down: () => d.nudge(0, 10), in: () => d.zoom(1.25), out: () => d.zoom(0.8), home: () => applyView() })[b.dataset.cam]();
 });
 tooltip($('v-rep'), 'Where the real shape is unpublished (legs, an elevator, a concept vehicle), the model shows a labelled representative shape at the catalogue’s dimensions. The part list marks which parts.');
 

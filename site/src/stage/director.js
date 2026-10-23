@@ -34,8 +34,10 @@ export function createDirector(camera, dom, { onWake = () => {} } = {}) {
       if (maxPolar !== undefined) controls.maxPolarAngle = maxPolar * DEG;
       if (boundary) controls.setBoundary(boundary);
     },
-    nudge(azimuthDeg, polarDeg = 0) { onWake(); controls.rotate(azimuthDeg * DEG, polarDeg * DEG, !reducedMotion()); },
-    zoom(factor) { onWake(); controls.dolly(controls.distance * (1 - 1 / factor), !reducedMotion()); },
+    // keys and on-screen buttons announce a visitor's move as a drag does ('controlstart'), so scenes that frame the camera
+    // themselves (the lander's approach) give way to it
+    nudge(azimuthDeg, polarDeg = 0) { controls.dispatchEvent({ type: 'controlstart' }); controls.rotate(azimuthDeg * DEG, polarDeg * DEG, !reducedMotion()); },
+    zoom(factor) { controls.dispatchEvent({ type: 'controlstart' }); controls.dolly(controls.distance * (1 - 1 / factor), !reducedMotion()); },
     autoRotate(degPerSecond) { auto = degPerSecond; if (auto) onWake(); },
     get autoRotating() { return !!auto && !paused && !reducedMotion(); },
     pause(v) { paused = v; if (v) controls.stop?.(); },

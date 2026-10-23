@@ -9,6 +9,7 @@
 // Every step: rings round its highlight sites, legs without an Earth link in red (earth_link steps; no_link holds the
 // highlight sites' legs red), no vehicle labels.
 import { reducedMotion } from '../ui/dom.js';
+import { viewPad } from '../ui/viewpad.js';
 import { loadTrajectories, episodeView } from '../lander/trajectories.js';
 import { loadScene } from '../world/scene-data.js';
 
@@ -23,7 +24,7 @@ export async function createStoryStage({ kind, canvas, labelsHost, tier, fetchFn
 async function worldStage({ canvas, labelsHost, tier, fetchFn, onStatus }) {
   const [{ createWorldScene }, traj] = await Promise.all([import('../world/v2-scene.js'), loadTrajectories(TRAJ, { fetchFn: fetchFn('landing recordings') }).catch(() => null)]);
   const sc = await createWorldScene({ canvas, labelsHost, tier, fetchFn: fetchFn('catalogue'), onStatus });
-  sc.stage.director.bindKeys(canvas);
+  sc.stage.director.bindKeys(canvas); canvas.parentElement.append(viewPad(sc.stage.director));   // F-40: orbit and zoom without a drag
   sc.stage.director.limits({ minDistance: 20, maxDistance: 22000, maxPolar: 88 });
   const cache = new Map(), time = { t: 0, playing: false, gen: 0 };
   let cur = null, gallery = null;   // cur: {id, pkg, chunks}
@@ -127,7 +128,7 @@ async function worldStage({ canvas, labelsHost, tier, fetchFn, onStatus }) {
 async function landerStage({ canvas, labelsHost, tier, fetchFn, onStatus }) {
   const [mod, doc] = await Promise.all([import('../lander/lab3d-scene.js'), loadTrajectories(TRAJ, { fetchFn: fetchFn('descent recordings') })]);
   const sc = await mod.createLanderScene({ canvas, labelsHost, tier, fetchFn: fetchFn('catalogue'), onStatus });
-  sc.stage.director.bindKeys(canvas);
+  sc.stage.director.bindKeys(canvas); canvas.parentElement.append(viewPad(sc.stage.director));
   sc.stage.director.limits({ minDistance: 3, maxDistance: 2500, maxPolar: 95 });
   const time = { t: 0, gen: 0 };
   let key = '', view = null;

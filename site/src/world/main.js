@@ -9,6 +9,7 @@ import { buildLayout } from './layout.js';
 import { indexTrace, snapshot, steps, descentH } from './state.js';
 import { createPlan } from './plan2d.js';
 import { OWNER_COLOURS } from './colours.js';
+import { viewPad } from '../ui/viewpad.js';
 
 const $ = id => document.getElementById(id);
 const BASE = import.meta.env.BASE_URL;
@@ -92,6 +93,8 @@ async function ensureViewsAsync() {
       st.sceneRO && st.sceneRO.disconnect();
       st.sceneRO = new ResizeObserver(() => { if (st.scene) { st.scene.resize(); draw(true); } }); st.sceneRO.observe($('w-canvas'));
       st.scene.resize(); if (st.tr) st.scene.setTrace(st.tr); st.scene.preset('overview', false);
+      // F-40: orbit and zoom without a drag (top right: the inset map holds the bottom corner)
+      if (!document.querySelector('#w-stage .ui-viewpad')) $('w-stage').append(viewPad({ nudge: (a, p) => { st.scene?.nudge(a, p); draw(true); }, zoom: f => { st.scene?.zoom(f); draw(true); } }, { place: 'top' }));
     } catch (err) { st.mode = '2d'; $('w-tier').textContent = `3D view unavailable (${err.message}): showing the 2D plan view.`; }
   }
   document.body.classList.toggle('w-2d', st.mode === '2d');

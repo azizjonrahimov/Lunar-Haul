@@ -61,10 +61,10 @@ async function list(ix) {
 
 // ---------- one story ----------
 async function play(entry) {
-  if (!entry) { $('st-list').textContent = 'No published story with that name. '; $('st-list').append(h('a', { href: './' }, 'All stories')); return; }
+  if (!entry) { document.documentElement.classList.remove('st-one'); $('st-list').textContent = 'No published story with that name. '; $('st-list').append(h('a', { href: './' }, 'All stories')); return; }
   const doc = await getJson(DATA + entry.file);
   document.title = `${doc.title} · Stories · LunarHaul`;
-  $('st-head').hidden = true; $('st-list').hidden = true; $('st-player').hidden = false;
+  $('st-head').hidden = true; $('st-list').hidden = true; document.documentElement.classList.add('st-one');
   $('st-title').textContent = doc.title; $('st-summary').innerHTML = withNumbers(doc.summary, doc.numbers);
   const steps = doc.steps;
   let i = Math.max(0, Math.min(steps.length - 1, (+params.get('step') || 1) - 1)), stage = null, applying = 0, chart = [];

@@ -14,7 +14,7 @@
 .w-labels { pointer-events: none; }
 .w-plan { display: none; }
 .w-2d .w-plan { display: block; }
-.w-2d .w-canvas, .w-2d .w-labels, .w-2d .w-inset { display: none; }
+.w-2d .w-canvas, .w-2d .w-labels, .w-2d .w-inset, .w-2d .ui-viewpad { display: none; }
 .w-inset { position: absolute; right: 10px; bottom: 10px; width: 210px; height: 160px; border: 1px solid rgba(255,255,255,.25); border-radius: var(--radius); opacity: 0.92; }
 @media (max-width: 600px) { .w-inset { display: none; } }
 .w-repr { position: absolute; left: 10px; bottom: 8px; font-size: 0.75rem; color: rgba(255,255,255,.7); background: rgba(5,5,6,.6); padding: 0.1em 0.5em; border-radius: var(--radius); }
@@ -58,3 +58,7 @@ body:not(.w-playing) .w-controls .i-pause, body.w-playing .w-controls .i-play { 
 #w-status { min-height: 3em; }
 @media (max-width: 700px) { .w-head { min-height: 4.5em; } }
 .w-load #w-tier { flex-basis: 100%; min-height: 1.4em; }   /* its own reserved line: the GPU name it shows can be long */
+/* F-40: the view pad (src/ui/viewpad.js) on the trace view, styled here so the page needn't load the UI kit's CSS */
+.w-stage .ui-viewpad { position: absolute; right: 10px; top: 10px; z-index: 2; display: grid; grid-template-columns: repeat(3, 2rem); gap: 4px; padding: 6px; background: rgba(5,5,6,.6); border-radius: var(--radius); }
+.w-stage .ui-viewpad button { width: 2rem; height: 2rem; border-radius: 999px; border: 1px solid rgba(255,255,255,.3); background: transparent; color: #fff; font: 600 1rem/1 var(--font-sans); cursor: pointer; padding: 0; }
+.w-stage .ui-viewpad button:hover { background: rgba(255,255,255,.14); }

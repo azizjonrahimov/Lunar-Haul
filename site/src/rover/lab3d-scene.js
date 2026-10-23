@@ -3,7 +3,7 @@
 // under its wheels, the planned route as a ribbon, the path driven, a ghost rover where the command sent now will act
 // (teleop: one round trip later), the glare cone (the model slows the rover within 45° of the low sun), long sun
 // shadows, headlights at night, interventions as pins with callouts, the network as a second rover in a race, and
-// the Earth-link samples along the leg (R-1, computed on the leg's night route) as short posts beside the route, cyan
+// the Earth-link samples along the leg (R-1, B-52: on the route of this lighting) as short posts beside the route, cyan
 // while Earth is in sight from there and red when it is not. Markers stay light (F-35d): outlines, low alpha, no rings
 // unless two rovers race.
 // Rocks are representative (LOLA cannot resolve them; the driving model sees only the 5 m and 20 m grids).

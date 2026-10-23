@@ -7,7 +7,7 @@
 //   scenes/         lunarsim-scene packages (B-31) and gallery.json (B-36), for /world/
 //   story-data/     resolved guided stories (B-35), for /stories/
 // Terrain source: data/terrain/connecting_ridge/ (LEAD, B-9); fallback site/.terrain-dev/ (scripts/make_dev_terrain.py).
-import { existsSync, mkdirSync, copyFileSync, readFileSync, readdirSync, cpSync, writeFileSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, copyFileSync, readFileSync, readdirSync, cpSync, writeFileSync, statSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -155,9 +155,11 @@ if (existsSync(join(v2, 'manifest.json'))) {
 // R-1 (B-40): Earth's hourly position seen from BASE (SPICE), for the sky on on-site 3D views; gzip, decoded in the page
 const earth = join(ROOT, 'data', 'comms', 'connecting_ridge', 'earth_track-v1.json.gz');
 if (existsSync(earth)) { mkdirSync(join(PUB, 'comms'), { recursive: true }); copyFileSync(earth, join(PUB, 'comms', 'earth_track-v1.json.gz')); console.log('prepare-data: Earth track staged'); }
-// F-35: hourly direct-to-Earth windows of points along every leg (B-40), for the rover lab's Earth-link posts
-const links = join(ROOT, 'data', 'comms', 'connecting_ridge', 'earth_link-v1-samples.json.gz');
-if (existsSync(links)) { mkdirSync(join(PUB, 'comms'), { recursive: true }); copyFileSync(links, join(PUB, 'comms', 'earth_link-v1-samples.json.gz')); console.log('prepare-data: Earth-link samples staged'); }
+// F-35: hourly direct-to-Earth windows of points along every leg, for the rover lab's Earth-link posts; F-40: version 2
+// (B-52, the lite file) adds the samples along each lighting's route (routes[leg][lighting]); v1 is no longer staged
+const links = join(ROOT, 'data', 'comms', 'connecting_ridge', 'earth_link-v2-samples-lite.json.gz');
+rmSync(join(PUB, 'comms', 'earth_link-v1-samples.json.gz'), { force: true });
+if (existsSync(links)) { mkdirSync(join(PUB, 'comms'), { recursive: true }); copyFileSync(links, join(PUB, 'comms', 'earth_link-v2-samples-lite.json.gz')); console.log('prepare-data: Earth-link samples staged'); }
 
 // F-38: resolved guided stories (B-35) for /stories/
 const stories = join(ROOT, 'data', 'stories', 'resolved');

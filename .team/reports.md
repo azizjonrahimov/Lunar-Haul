@@ -3941,3 +3941,63 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
 **Questions for LEAD**
 1. **A* tie-break (affects the engine's comms inputs, not changed here).** B-40's routes (`plan(..., None)`, which the engine uses) and the tables' / routes-v1 night routes (`plan(..., NIGHT)`) have identical lengths on all 182 legs (difference 0.00 m), but differ in geometry on 140 legs by more than 20 m (max 410 m, BASE->PAD_A@3). Cause: NIGHT multiplies every cell cost by 1/SHADOW_SPEED_FACTOR while the A* heuristic stays unscaled, so the search breaks the ties between equal-cost paths differently. For the link it matters on a few legs: the share of hours with every sample linked differs by > 1 pp on 22 legs, > 5 pp on 12, at most 17 pp (BASE->POWER 0.44 vs 0.59, POWER->BASE swapped; BASE->PAD_B@1 0.00 vs 0.12). E21's comms results therefore carry an arbitrary choice among equally short routes on those legs. Recommendation: keep E21 as is and add one limitation sentence (the route among equal-cost alternatives is arbitrary; a leg's linked share moves by up to 17 pp); switching the engine to the routes-v1 night lists would be a new round.
 2. Commit the two data files (2.0 MB) and add a `data/README.md` line; the site needs only the lite file.
+
+## B-52b DONE 18:40 | route-tie summary for the paper | results/E21_route_ties.json
+
+**Files:** `tools/comms/earth_link.py` (step `ties`; helpers `leg_linked_hours`, `route_tie_linked`), `tests/test_comms_data.py` (+1 test), **`results/E21_route_ties.json` for LEAD to commit**.
+
+**Content (keys for the paper):** `legs_compared` 182; `geometry.legs_differing_gt_20m` 140 (`gt_2m` 150), `geometry.max_m` 410.4 at `BASE->PAD_A@3`, median 56.6 m (symmetric Hausdorff distance, both polylines resampled at 1 m); `length.max_abs_diff_m` 0.0 (below 1 mm; routes-v1 stores decimetres); `linked_share.max_abs_diff_pp` 17.09 at `PAD_B@2->POWER` (engine 0.487 vs routes-v1 0.3161), `legs_gt_1pp` 22, `legs_gt_5pp` 12, median 0.0 pp; `sample_lists_differing` 143; `cause` (one line: the night cost grid scales every cell cost by 1/SHADOW_SPEED_FACTOR, the A* heuristic stays unscaled, so ties between equal-cost paths break differently); sources with sha256.
+
+**How to test:** `.venv/Scripts/python tools/comms/earth_link.py ties` (needs `.cache/comms/routes.json`; ~10 s, 146 MB) rewrites the file byte-identically (no timestamp). `.venv/Scripts/python -m pytest -q tests/test_comms_data.py` -> 16 passed; the new test recomputes the linked-share block from the committed v2 samples (integer hour counts, platform-independent), checks the source sha256s, the length difference against earth_link-v1.json, and that the geometry counts agree with the v2 `night_legs_off_v1` list (the geometry itself needs the git-ignored B-40 routes).
+
+**FRONTEND:** nothing. **Questions for LEAD:** none.
+
+## B-54 DONE 18:46 | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**Package ids (for the story's step scenes):** `world:P2-comms-relay-0.1` (gallery id `p2-earth-relay-0.1`, "A relay a tenth of the time") and `world:P2-comms-dte-strategic` (gallery id `p2-earth-strategic`, "Rovers that drive out of sight"), group "earth".
+
+**Settings:** every rover supervised; comms exactly E21's `comms_cfg` (dte+relay p = 0.1 parametric, strict; dte, strategic; criterion any_part, defer 24 h); P2-default, marketplace, pads at 1 km, classical landing, driving-v1, as the other gallery scenes. Two deliberate differences from the older gallery cells:
+- **Start year per seed as E21 (2028 + seed mod 4)**, not the engine default 2028 for every seed. Reason (a finding for LEAD): strategic driving with direct links only is strongly year-dependent. E21 r2 delivers 113 t in 2028 against 508, 536 and 543 t in 2029-2031 (the E21 mean of 425 t mixes them; urgent mean 743 h in 2028 against 102 h in 2031). Early 2028 is darker along the routes: 317 route samples see no Earth from January to March 2028, against 235 / 63 / 85 in 2029 / 2030 / 2031, and strategic rovers commit, then park at such samples for months. With the 2028 convention the card would have shown about 110 t and contradicted the story. No other E21 cell I checked varies like this in tonnage (all within about 40 t across years); urgent delays do vary by year in several cells.
+- The replay seed 3 is therefore a 2031 year (`start_h` 26304): relay 530 t, strategic 529 t.
+- The gallery plume (1 km, 0.5 h) stays on, as for every scene; E21 runs without it.
+
+**Headlines (20 seeds) against E21 r2:** relay 0.1 strict: delivered 530.4 ± 9.5 t (E21 530.2), urgent mean 56.7 ± 12.8 h (57.9), p90 134 ± 33 h (136), within a day 48.6 % (46.9), rover-hours waiting 6,118 (5,974). Strategic DTE: 426.5 ± 79.3 t (424.7), 319 ± 201 h (353), p90 667 ± 366 h (716), 40.6 % (40.9), 30,594 h (29,927). All agree within the intervals; the plume is the only setting that differs.
+
+**Files:** `experiments/phase4/gallery.py` (2 cells; `RELAY_01_STRICT`, `DTE_STRATEGIC`; `start_year_of`, `scenario_for_seed` used by `scenes` and `headline`; `flags_of` handles a comms dict without relay, says `all supervised`, adds `supervised_policy` and `start_year` flags for the new cells), `tests/test_gallery.py` (14 cells; package checks policy and replay year; new test: E21 comms and year rule). **For LEAD to commit:** `data/scenes/P2-comms-relay-0.1/` (206 KB gz), `data/scenes/P2-comms-dte-strategic/` (177 KB gz), `data/scenes/gallery.json`, `results/gallery_runs.csv` (+40 rows).
+
+**How to test:** `.venv/Scripts/python -m pytest -q tests/test_gallery.py` -> 20 passed; `.venv/Scripts/python tools/ci/budgets.py schemas` -> 39 files, 0 problems. Rebuild: `gallery.py scenes --only p2-earth-relay-0.1,p2-earth-strategic --force` (18 s), `gallery.py headline` (40 runs, 164 s, single process), `gallery.py index`.
+
+**Budgets:** gallery packages 2.50 MB of 4 MB gz (was 2.13); `gallery.json` 4.4 kB gz (+0.6 kB) inside the world page's 5,335 kB data budget; the new packages load only when chosen; site total about 100 MB of 900.
+
+**FRONTEND:** nothing to change. prepare-data copies every folder under data/scenes. New optional flags in `gallery.json` scenes: `flags.supervised_policy` ("strict" / "strategic") and `flags.start_year` ("2028 + seed mod 4, as E21 (replay 2031)"); `flags.fleet` = "all supervised".
+
+**Questions for LEAD**
+1. Switch the story's relay step to `world:P2-comms-relay-0.1` and the autonomy step to `world:P2-comms-dte-strategic`.
+2. The strategic year effect (113 t in 2028 against about 530 t in other years) may deserve a sentence in the paper or a story caveat. Data: `results/E21a_comms_autonomy_r2.csv`, grouped by `start_year`. Separately, the older earth cells use 2028 for every seed. That is harmless for their tonnage, but their urgent delays differ by year (e.g. default DTE urgent mean 181 h in 2028 against 87 h in 2029). Say if you want them on the E21 year rule too (a cheap rebuild).
+
+## F-40 PART 5 DONE 18:46 | Accessibility walk (1): audit of every page, on-screen orbit/zoom on every 3D view, hidden 3D fallbacks blocked every drag; B-52 Earth-link v2 in the rover lab (F-40 stays IN PROGRESS)
+- **Every file in this part:**
+  - New: `site/src/ui/viewpad.js`.
+  - Modified: `site/src/ui/index.js`, `site/src/ui/ui.css`, `site/src/stage/director.js`, `site/src/styles/base.css`, `site/src/world/v2.js`, `site/src/world/main.js`, `site/src/world/scene.js`, `site/src/world/world.css`, `site/src/lander/lab3d.js`, `site/src/rover/lab3d.js`, `site/src/rover/lab3d-scene.js`, `site/lab/rover/index.html`, `site/src/stories/stage.js`, `site/src/stories/stories.js`, `site/src/stories/stories.css`, `site/stories/index.html`, `site/src/vehicles/main.js`, `site/vehicles/index.html`, `site/scripts/prepare-data.mjs`.
+- **Lighthouse accessibility, every page (desktop):** 100 on all 18 audited pages (/, about, account, changelog, data, design, lab/lander, lab/rover, method, paper, results, simulator, stories, stories/?s=earth-horizon&step=8, vehicles, verification, world, world/trace). The automated audit cannot see the next two points.
+- **Bug: drag and wheel never reached the 3D canvas** on /world/, the labs, /vehicles/ and /stories/.
+  - Each view has an empty fallback paragraph with the `hidden` attribute, but its class sets `display: flex`. So it sat over the canvas and was the element under the pointer.
+  - Fix: one global `[hidden] { display: none !important; }` in base.css. Checked: the canvas now gets the pointer, and a real drag orbits /world/.
+  - I checked every element that ships `hidden`. Only the story player relied on CSS to show despite it. It is now hidden by a CSS rule (`#st-player`, shown by `.st-one` before first paint as before), not by the attribute.
+  - Also fixed: an unknown `?s=` name now shows "No published story with that name"; before, `.st-one` hid that message.
+- **On-screen orbit and zoom (WCAG 2.5.7):** `viewPad(cam)` in the UI kit, styled like the vehicles page's camera group.
+  - Six buttons, arranged + ↑ − over ← ↓ →, in that DOM order so tab order matches what is seen.
+  - Added at bottom right of /world/, /lab/lander/, /lab/rover/ and /stories/ (world and lander stages). On /world/trace/ it sits at top right, because the inset map holds the bottom corner; it is styled in world.css so that page doesn't load the UI kit's CSS (5.8 kB CSS), and hidden in 2D mode.
+  - /vehicles/ already had ←, →, +, −; I added ↑ and ↓.
+  - The trace view uses OrbitControls, so its scene got `nudge()` and `zoom()` within the controls' limits.
+  - `director.nudge()` and `zoom()` now announce a `controlstart` as a drag does. Otherwise the lander's approach framing would undo a button or arrow-key orbit every frame. Checked: an orbit during the approach holds.
+  - Checked in Chrome on all six pages: the pad shows and the camera moves; no overlap with the shot chips at desktop or 390 px.
+- **B-52 (your message):**
+  - prepare-data stages `earth_link-v2-samples-lite.json.gz` and removes the old v1 copy from `public/`.
+  - The rover lab reads `routes[tableKey(a, b)][r-light]`; an empty list shows "no samples for this leg".
+  - The night-route caveat is gone from the text version and from the page note ("along the route for this lighting").
+  - BASE→PSR now gives 46 points at sun 0°, 48 at 270° and 44 at night, each on its own route; no console errors.
+  - **Data budget:** the file is loaded only on entering 3D, and the rover entry's data list doesn't count it. First-load data is unchanged: 3,407 of 4,260 kB. The 3D download grows by 152 kB (v1 502 kB → v2-lite 654 kB); the door now says "about 3.7 MB". If you want the comms file and the route files counted, add them to the rover entry: 3,407 + 654 + about 10 ≈ 4,071 kB, still under 4,260.
+- **Checks:** tests 11/11; build OK; `budgets.py pages`: OK. Servers stopped by PID; tab closed.
+- **Seen, not fixed (small):** on /vehicles/ the "Hull" label sits under "Liquid hydrogen tank" on the MK1 lander.
+- **Next in F-40 (walk part 2):** a keyboard tab-through of every page, reduced motion (playback, autorotate, camera moves) per page, the screen-reader text versions of the 3D views; then URL-hash deep links and GPU memory per tier.

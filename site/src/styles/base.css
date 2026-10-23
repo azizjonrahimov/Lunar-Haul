@@ -30,6 +30,9 @@ td.n, th.n { text-align: right; }
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 2px; }
 .skip { position: absolute; left: var(--gutter); top: -3rem; z-index: 100; background: var(--bg); color: var(--ink); padding: var(--s-2) var(--s-3); border: 1px solid var(--hairline); border-radius: var(--radius); }
 .skip:focus { top: var(--s-2); }
+/* F-40: the hidden attribute always hides, whatever display a class sets (empty 3D fallbacks used to cover the canvas and
+   swallow every drag and wheel) */
+[hidden] { display: none !important; }
 .visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
 
 /* layout */

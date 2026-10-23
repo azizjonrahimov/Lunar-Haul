@@ -1,5 +1,6 @@
 /* /stories/ (F-38): a list of story cards; one story = the 3D stage beside a glass panel of text, chips and controls */
 .st-one #st-head, .st-one #st-list { display: none; }
+#st-player { display: none; }   /* the list; ?s= (the st-one class, set before first paint) shows one story */
 .st-one #st-player { display: block; }
 .st-list { min-height: 22rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: var(--s-4); margin-top: var(--s-4); }
 .st-card { padding: var(--s-4); display: flex; flex-direction: column; gap: var(--s-2); }

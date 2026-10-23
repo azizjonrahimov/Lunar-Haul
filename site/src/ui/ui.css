@@ -213,3 +213,9 @@ button.ui-callout-pill:hover, .ui-callout-pill[aria-pressed="true"] { border-col
   .ui-btn, .ui-seg span, .ui-scene, .ui-iconbtn { transition: background-color var(--dur-fast), color var(--dur-fast), border-color var(--dur-fast); }
 }
 @media (prefers-reduced-motion: reduce) { .ui-dots button::before { transition: none; } }
+
+/* ---------- view pad: on-screen orbit and zoom for a 3D view (F-40, WCAG 2.5.7) ---------- */
+.ui-viewpad { position: absolute; right: 16px; bottom: 16px; z-index: 2; display: grid; grid-template-columns: repeat(3, 2rem); gap: var(--s-1); padding: var(--s-2); }
+.ui-viewpad.top { top: 16px; bottom: auto; }
+.ui-viewpad .ui-iconbtn { font: 600 1rem/1 var(--font-sans); }
+@media (max-width: 640px) { .ui-viewpad { right: 8px; bottom: 8px; } .ui-viewpad.top { top: 8px; bottom: auto; } }

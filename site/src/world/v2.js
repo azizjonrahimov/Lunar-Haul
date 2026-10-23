@@ -7,7 +7,7 @@
 // controls drive a 2D plan of the package (plan-v2.js). Traces from the browser simulator, the service and trace files
 // open in the trace viewer (/world/trace/).
 import './v2.css';
-import { door, segmented, sceneChips, narrative, statChip, timeline, h, reducedMotion } from '../ui/index.js';
+import { door, segmented, sceneChips, narrative, statChip, timeline, h, reducedMotion, viewPad } from '../ui/index.js';
 import { detectTier } from '../stage/tier.js';
 import { loadScene } from './scene-data.js';
 import { loadTrajectories } from '../lander/trajectories.js';
@@ -78,7 +78,7 @@ async function start(gate) {
   sc = await mod.createWorldScene({ canvas: $('w2-canvas'), labelsHost: $('w2-labels'), tier: Math.max(1, tierInfo.tier), fetchFn: fetchFn('catalogue'),
     onStatus: s => status(s === 'lost' ? 'The graphics context was lost; it will come back by itself.' : '') });
   if (import.meta.env.DEV) window.__w2 = { sc, ui, time, get pkg() { return pkg; } };
-  sc.stage.director.bindKeys($('w2-canvas'));
+  sc.stage.director.bindKeys($('w2-canvas')); $('w2-view').append(viewPad(sc.stage.director));   // F-40: orbit and zoom without a drag
   sc.stage.director.limits({ minDistance: 20, maxDistance: 22000, maxPolar: 88 });
   controls();
   await open(fetchFn('the year'));
