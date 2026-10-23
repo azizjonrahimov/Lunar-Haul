@@ -46,7 +46,8 @@ PARTS = ["part1_front.html", "part2_related.html", "part3_methods.html", "part4_
 PDF = os.path.join(HERE, "what_earths_horizon_costs_r1.pdf")
 CHROME = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 RAW = {"A": "E21a_comms_autonomy_r2.csv", "A2": "E21a2_operators_r2.csv", "B": "E21b_breakeven_r2.csv",
-       "C": "E21c_pads_criterion_r2.csv", "D": "E21d_sun_r2.csv", "E": "E21e_sensitivity_r2.csv"}
+       "C": "E21c_pads_criterion_r2.csv", "D": "E21d_sun_r2.csv", "E": "E21e_sensitivity_r2.csv",
+       "F": "E21f_bounded_r2.csv"}
 MINUS, NB, PCT = "&minus;", "&nbsp;", "&#8239;%"
 MIX_LABEL = {"teleop_4s": "Teleoperated (4&nbsp;s round trip)", "default": "Reference mix",
              "supervised_strict": "Supervised, strict", "supervised_strategic": "Supervised, strategic",
@@ -182,6 +183,7 @@ class R:
         self.e = rd("table_E21_effects_r2.csv")
         self.y = rd("table_E21_years_r2.csv")
         self.bd = rd("table_E21_breakeven_delay_r2.csv")
+        self.fb = rd("table_E21f_bounded_r2.csv")
         self.ops = rd("fig_E21_operator_demand_r2.csv")
         self.f = json.load(open(os.path.join(RES, "E21_fit_r2.json"), encoding="utf-8"))
         self.raw = {k: AN.prepare(rd(v)) for k, v in RAW.items()}
@@ -315,7 +317,7 @@ def values(r: R):
 
     # ---- counts, compute, design ------------------------------------------------------------------------------
     cells = {k: int(v["cell"].nunique()) for k, v in raw.items()}
-    for k in ("A", "A2", "B", "C", "D", "E"):
+    for k in ("A", "A2", "B", "C", "D", "E", "F"):
         V[f"R1-CELLS-{k}"] = f"{cells[k]}"
     V["R1-N-CELLS"] = f"{sum(cells.values())}"
     V["R1-N-YEARS"] = f"{sum(len(v) for v in raw.values()):,}"
@@ -552,6 +554,58 @@ def values(r: R):
     V["R1-AVOID-CP90-GM-01"] = ratio(pe(AV, "delay_prio1_p90_censored_h", 0.1))
     cut = [-pe(m, "blackout_wait_vehicle_h", 0.1)["rel_pct"] for m in (ST, AV)]
     V["R1-STRAT-WAIT-CUT-01"] = f"{pc(cut[0])} and {pc(cut[1])}"
+
+    # the strategic rule's free re-draw at never-linked samples and the bounded rule (Stage F, B-57)
+    bz = f["bounded"]
+    rdw = {(x["policy"], x["link"]): x for x in bz["redraws"]}
+    sr = rdw[("strategic", "DTE")]
+    assert all(rdw[("strategic", k)]["refused_per_run"] == 0 for k in ("relay 0.1", "relay 0.5")), "5.4: no re-draws with a relay"
+    V["R1-F-REDRAWS"] = num(sr["refused_per_run"])
+    V["R1-F-REDRAWS-BY-YEAR"] = listing([num(sr[f"refused_per_run_{y}"]) for y in (2028, 2029, 2030, 2031)])
+    nl = bz["never_linked_legs"]
+    V["R1-F-NEVER-LEGS"] = f"{nl['main_network_legs_with_never_linked_sample']} of the {nl['main_network_legs']}"
+    V["R1-F-NEVER-SAMPLES"] = f"{nl['samples_never_linked']} of {nl['samples']:,}"
+    assert sum("ISRU" in k for k in nl["main_network_list"]) == 16, "5.4 names the oxygen plant's legs"
+    fc = {(x["link"], x["variant"]): x for x in bz["cells"]}
+    SN = "strategic, strand on never-linked"
+    sn, sa = fc[("DTE", SN)], fc[("DTE", "strategic (Stage A)")]
+    for lk in ("relay 0.1", "relay 0.5"):        # with a relay nothing is never linked: strand = strategic
+        assert abs(fc[(lk, SN)]["mean"]["delivered_t_in_year"] - fc[(lk, "strategic (Stage A)")]["mean"]["delivered_t_in_year"]) < 1e-9
+    V["R1-F-STRAND-T"] = t_(sn["mean"]["delivered_t_in_year"])
+    V["R1-F-STRAND-T-BY-YEAR"] = rng_txt([v["delivered_t_in_year"] for v in sn["by_year"].values()], num, NB + "t")
+    V["R1-F-STRAND-COMP"] = sh(sn["mean"]["prio1_completion_share"])
+    V["R1-F-STRAND-WAIT"] = num(sn["mean"]["blackout_wait_vehicle_h"])
+    fe = lambda ref, cell, metric, y="all": _match(r.fb, family="bounded" if y == "all" else "bounded_by_year", p=0.0,
+                                                   reference=ref, cell=cell, metric=metric, start_year=y).iloc[0]
+    V["R1-F-STRAND-VS-STRAT"] = dci(fe("strategic", SN, "delivered_t_in_year"))
+    fr = AN.select(raw["F"], p=0.0, mix=ST, never_linked="strand")
+    ps = paired_raw(AN.select(a, p=0.0, mix="supervised_strict"), fr, "delivered_t_in_year")
+    assert ps["n"] == 20 and ps["ci_hi"] < 0, "5.4: the stranding strategic fleet delivers less than the strict fleet"
+    V["R1-F-STRAND-VS-STRICT"] = dci(ps)
+    pc_ = paired_raw(AN.select(a, p=0.0, mix="supervised_strict"), fr, "prio1_completion_share")
+    V["R1-F-STRAND-VS-STRICT-COMP"] = pts(pc_)
+    vd = {x["variant"]: x for x in bz["verdict_dte"]}
+    BOUNDS = (24, 72, 168, 720)
+    ref_ = [vd[f"bound {b} h, never-linked refused"] for b in BOUNDS]
+    kee = [vd[f"bound {b} h, never-linked as strategic"] for b in BOUNDS]
+    assert all(not v["keeps_isru"] and v["avoids_2028_collapse"] for v in ref_), "5.4: refusing never-linked routes"
+    assert all(v["keeps_isru"] and not v["avoids_2028_collapse"] for v in kee), "5.4: leaving them to the re-draw"
+    V["R1-F-REFUSE-T"] = rng_txt([fc[("DTE", v["variant"])]["mean"]["delivered_t_in_year"] for v in ref_], num, NB + "t")
+    V["R1-F-REFUSE-WAIT"] = rng_txt([fc[("DTE", v["variant"])]["mean"]["blackout_wait_vehicle_h"] for v in ref_], num)
+    V["R1-F-KEEP-2028"] = rng_txt([v["t_2028"] for v in kee], num, NB + "t")
+    V["R1-F-KEEP-LATER"] = rng_txt([v["t_2029_2031"] for v in kee], num, NB + "t")
+    V["R1-F-KEEP-BULK"] = rng_txt([100 * v["bulk_share_of_strategic"] for v in kee], num, PCT)
+    k28 = fe("strategic", "bound 24 h, never-linked as strategic", "delivered_t_in_year", "2028")
+    V["R1-F-KEEP-2028-VS-STRAT"] = dci(k28)
+    V["R1-F-STRAT-2028"] = t_(vd["strategic (Stage A)"]["t_2028"])
+    ps_ = bz["pool_starvation"]
+    last = ps_["moments"][-1]
+    assert last["pool"] == last["pool_blocked"] == ps_["pool_cap"] and max(last["pool_lanes"], key=last["pool_lanes"].get) == "CONSTR->ISRU"
+    V["R1-F-POOL-CAP"] = f"{ps_['pool_cap']}"
+    V["R1-F-POOL-T"] = num(last["t_h"])
+    V["R1-F-POOL-ISRU"] = f"{last['pool_lanes']['CONSTR->ISRU']}"
+    V["R1-F-POOL-SERVABLE"] = f"{last['beyond_cap_servable_now']}"
+    V["R1-F-POOL-FREE"] = words(last["free_rovers"])
 
     # ---- 5.5 break-even -------------------------------------------------------------------------------------------
     bc = lambda p, pol, n, mast="none": _match(r.c[r.c["stage"] == "B"], p=p, policy=pol, extra_rovers=n, mast=mast).iloc[0]

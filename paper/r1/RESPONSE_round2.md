@@ -164,3 +164,14 @@ knee, the restoration and completion shares at the lowest level and the strict-f
   paired tests do not (t interval −19.6 to 1.4 h; Wilcoxon p = 0.23), and on the censored measure its point estimate
   goes the other way (ratio 1.52 [0.46, 5.02]). The text reports the value as weakly determined.
 - With a relay, the strategic step's benefit is in the delay of delivered items, not in completion or censored delay.
+- **The strategic rule's free second chance (new Stage F, Section 5.4).** Checking the rule after round 1, we found
+  that it treats two kinds of dark point differently. An intervention drawn on a route sample that never sees Earth
+  in 2028–2031 makes the job impossible, so dispatch refuses it and draws again later at no cost (138 times a run
+  under DTE). A long but finite wait is accepted and waited out. On 28 of the 70 main-network legs, every leg to or
+  from the oxygen plant among them, the first behaviour is what lets the strategic fleet haul feedstock. Stage F
+  brackets it. If the rover is instead held where it stopped until the year ends, the strategic fleet delivers 42 t a
+  year, 265 t less than the strict fleet. A bounded rule (the "middle rule" the round-1 Discussion proposed, at four
+  bounds from 24 to 720 h) either refuses those routes and matches the look-ahead (307–309 t, no oxygen-plant haul),
+  or leaves them to the re-draw and still collapses in 2028, now because deferred items fill the 40-item auction pool.
+  The abstract, Sections 5.4, 6 and 8, Table 4 and Table 5 are revised, and Section 7 states both features of the rule
+  and the pool limit. The relay results are unaffected: with a relay no point is never linked.

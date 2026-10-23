@@ -524,7 +524,7 @@ Earth outside the sample's bearing window). Section 5.8: the plume keep-out rais
 rover-hours (ratio 2.43 [1.91, 3.08], E21e), with tonnage and urgent delay unchanged (R1-E-PLUME-DTE-WAIT). Discussion
 and Conclusions: the strategic rule's risk and the untested middle rule.
 
-### OPEN (22 Oct, LEAD): the strategic policy's asymmetry must be stated and measured before round 2 goes out
+### DONE (22 Oct, LEAD; was OPEN): the strategic policy's asymmetry, stated and measured (Stage F, B-57)
 Table 4 and the never-linked-jobs rule together make plain `strategic` clairvoyant about never-linked samples only:
 an intervention drawn on a never-linked sample makes the job infinite, so dispatch avoids it or refuses it at start
 and the draw is repeated, while a draw on a long-dark (finite) sample is accepted and waited out. The first is what
@@ -532,3 +532,14 @@ lets strategic serve the oxygen plant (bulk 396 t under DTE); the second is what
 measures it: a no-clairvoyance `never_linked: strand` variant, refusal counts by start year, and the legs that hold
 never-linked samples; plus the bounded-wait rule in two variants. Sections 5.4, 6, 7 and 8 and the abstract's
 strategic sentence must be revisited with those results (state the asymmetry in Section 7 in any case).
+Done 22 Oct: Stage F (results/E21f_bounded_r2.csv, table_E21f_bounded_r2.csv, E21_fit_r2.json["bounded"]) is in
+the paper as R1-F-* placeholders (build asserts: no re-draws with a relay; strand = strategic with a relay; the
+stranding fleet below strict; refuse variants keep no ISRU haul and avoid 2028, re-draw variants the reverse; pool
+full of CONSTR->ISRU at the last moment). Text: abstract strategic sentence, Table 4 strategic row, Section 4.2 Stage F
+paragraph, Table 5 row F, compute paragraph (Stage F ran with two workers: summed run times), Section 5.4 (free
+second chance paragraph, bounded-rule paragraph, relay independence), Figure 4 caption, Section 5.8 (intervention
+rate "with its free re-draw"), Discussion paragraph 3, Limitations (two features of the rule; the auction pool),
+Conclusions (third finding; planning point on reaching a stopped rover), RESPONSE_round2.md.
+Pending: B-59 (rescue time at never-linked points, Stage G): one sentence each in 5.4, 6 and the abstract with the
+break-even rescue time against strict; BACKEND's answer on whether strict/look-ahead blocked items hold pool places
+(Limitations, auction pool bullet).
