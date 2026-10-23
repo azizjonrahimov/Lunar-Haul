@@ -4060,3 +4060,87 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
 - **Checks:**
   - `budgets.py pages`: OK; the note in budgets.json now states the 3D rule. Build OK. Servers stopped; tab closed.
   - **Tests 10/11.** `scene-data.test.mjs` fails on P2-comms-dte: vehicle 3 at 1448.9 h is "idle" where the fixture expects "waiting_for_earth". The test reads `data/scenes/` directly, and P2-comms-dte, P2-comms-dte-autonomous and P2-comms-relay-0.8 are rebuilt there but uncommitted (BACKEND's B-54 work), against the F-36 fixture `site/tests/fixtures/scene_positions.json`. None of my files touch it. It needs the fixture regenerated with the rebuilt packages.
+
+## F-40 PART 7 DONE 19:15 | Accessibility walk (2): keyboard, reduced motion, screen-reader text (F-40 stays IN PROGRESS)
+- **Every file in this part (all modified):** `site/src/ui/door.js`, `site/src/styles/base.css`, `site/src/home-hero-3d.js`, `site/src/simulator/v3.css`, `site/lib/pages.mjs`, `site/world/index.html`, `site/lab/lander/index.html`, `site/lab/rover/index.html`, `site/stories/index.html`, `site/vehicles/index.html`.
+  - NOT mine: `site/tests/fixtures/scene_positions.json` is modified in the tree by BACKEND's fixture regeneration. Don't commit it with this set.
+- **Keyboard, walked with real Tab presses** on /, /world/, /simulator/, /lab/rover/, /lab/lander/, /vehicles/ and /stories/?s=earth-horizon, before and after entering 3D by keyboard. Every focus change was logged: has a visible ring, is not covered, is not a 1 px element. Fixed:
+  1. **The door took focus at page load.** `ready()` focused Enter whenever focus was on the body, so Tab started mid-page past the header and "Skip to content". It now moves focus to Enter only from inside the door. Tab now starts at "Skip to content" on every page.
+  2. **Hidden controls were Tab stops under the closed door** (2.4.11): the 3D canvas, and the rover lab's HUD flags. While the door is up, everything else in its stage is now `inert`, and the canvases ship `tabindex="-1"`. Both are undone when the door opens; checked, no `inert` is left after entering.
+  3. **Focus was lost on entering 3D.** The door disables Enter during `beforeOpen`, which drops focus to the body, and the next Tab skipped the canvas. The door now records focus before disabling and hands it to the view's canvas. Checked on /world/ and the rover lab: focus lands on the canvas with its ring, and the arrow keys orbit at once.
+  4. **The canvas focus ring sat inside the 3D view** and fell on grey terrain (1.1–1.7:1). A focused canvas now also rings its stage from outside, against the page: 4.7:1 light, 10.2:1 dark.
+  5. **The simulator's "Load scenario (JSON)"** focused a visually hidden file input. Its ring now shows on the label that stands for it.
+  - The rest of the walk is clean. The 3D-view orbit pad comes right after the canvas. The lander lab's four formulas are focusable scroll regions, as they should be.
+  - /world/ hides the theme and menu buttons in its always-dark instrument theme; that is intended.
+- **Reduced motion, checked in code** (Chrome can't emulate the setting from the extension):
+  - Already gated: /world/ playback, the rover lab's opening drive, the lander lab's 2D and 3D playback, vehicle flows and the exploded view, story playback, director auto-rotate and camera glides, counters, CSS transitions.
+  - Not gated, fixed: the home hero's year played as soon as "Watch it in 3D" was pressed. Under reduced motion it now opens paused, with the button on "Play".
+- **Screen readers:**
+  - Every 3D canvas names its text version (world, lander and rover text versions, the story step text, the vehicle parts list, the trace table). The home still image has a descriptive alt.
+  - Live regions update only on user actions or settled values; nothing announces per frame.
+  - The home counters' flags carried their source only in `title`. They now add the same visually hidden "(Modelled. Source: …)" that `num.js` gives every other number.
+- **Checks:**
+  - Lighthouse accessibility 100 on /, /simulator/, /world/, /lab/rover/, /lab/lander/, /stories/ and /vehicles/ after the changes.
+  - `budgets.py pages`: OK. Build OK. Servers stopped; tabs closed.
+  - Tests 10/11: the same P2-comms-dte scene-data failure, BACKEND's in-progress data/fixture.
+- **Small, for LEAD (data, not mine):** the Earth story's `dte_loss` source reads "pct_change of landed_always and landed_dte (unrounded); neg". It shows in the home counter's tooltip and its screen-reader text. Could the resolver word it for readers ("lander cargo with direct links vs Earth always in view, percent change")?
+- **Next in F-40:** URL-hash deep links, GPU memory per tier.
+
+## B-55 DONE 19:16 | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**Answer: geometry, not demand. One route sample on the regolith leg ISRU->CONSTR sees Earth at no hour from January 2028 to June 2029.** Under the strategic rule each rover that draws an intervention there parks until July 2029, beyond the simulated year, so 2028 captures the fleet rover by rover.
+
+**1. The swap (demand fixed, year varied).** Seeds 0-7 x start years 2028-2031, all-supervised strategic DTE (the E21 r2 cell; each seed at its own E21 year reproduces its r2 row exactly).
+- Delivered per year, mean of 8 seeds: **123 / 503 / 526 / 530 t**. **Every seed** is lowest in 2028 (104-172 t), with the same seed giving 480-544 t in 2029-2031.
+- Landings are identical across years for a seed. Manifests differ in detail, because they are drawn at each landing from the engine's one random stream, which the run also uses, but they come from the same distribution: mean cargo 531 / 532 / 533 / 533 t.
+- E21's own year groups do not differ in demand either: landings 9.0 / 9.0 / 7.5 / 9.0, items 545 / 553 / 555 / 570 for seeds {0,4}, {1,5}, {2,6}, {3,7}.
+
+**2. Stranding (intervention waits > 24 h), per run, by start year 2028 / 2029 / 2030 / 2031:**
+- Stranded rover-hours 42,090 / 32,588 / 21,030 / 24,119.
+- Share of strandings still waiting at the year's end: **26 % / 10.5 % / 0.2 % / 0 %**.
+- Every rover strands at least once in every year (6 of 6).
+- **Stranded share of the fleet, January vs the May-December mean: 0.38 -> 0.89 in 2028**; 0.29 -> 0.64 in 2029; 0.29 -> 0.41 in 2030; 0.33 -> 0.46 in 2031.
+- So about 40 % of the fleet is always stranded and the spare fleet absorbs it in 2030-2031. In 2028 the fleet saturates by May (about 0.9 stranded, under one rover working).
+- **Where:** leg ISRU->CONSTR (the regolith haul) holds 32,822 of the 42,090 stranded rover-hours per run in 2028 (25,352 / 14,388 / 17,896 in the later years).
+- One sample, **#188 at (8,270, 7,490) m, about 0.8 km from ISRU, holds 79 % of all 2028 stranded rover-hours** (33,391 per run).
+  - Its monthly link fraction is 0.000 in all 12 months of 2028 and January-June 2029; its first link is in July 2029. In 2030 it is linked 3-18 % of every month.
+  - A rover that strands there in 2028 resumes in July 2029. In 2029 the same sample releases its rovers in July: the stranded share drops from 0.80 to 0.42 that month and deliveries catch up.
+
+**3. The calendar, and why 2028.**
+- At the sites the link barely changes across years. BASE is linked 0.53-0.67 of every month in 2028 and 2029; ISRU is 0 always.
+- The share of route samples dark for a whole month falls over the years: January-April means 15.3 % (2028), 11.4 % (2029), 4.5 % (2030), 5.9 % (2031).
+- Earth's peak elevation hardly changes (6.23° in 2028 to 6.10° in 2031, at BASE). Its direction does. Whenever Earth stands above 5.5°, it is at grid bearings -7.7° to 1.5° in 2028, -4.1° to 7.0° in 2029, 3.3° to 7.9° in 2030, and -0.8° to 7.1° in 2031.
+- Sample 188 sees Earth only when it is within 0.7° of its peak (≥ 5.48°) at bearings 2.7° to 7.9° (median 6.0°), behind a ridge to the west. That part of the sky holds Earth for **0 / 210 / 905 / 349 hours** in the four years (the sample is linked 0 / 184 / 820 / 340 hours).
+- This fits the libration pattern turning on its roughly 6-year cycle (the phase between the longitude and latitude librations): in 2028, high Earth stays west of grid north.
+- Demand explains none of it (point 1).
+- Modelling note for the paper: the collapse comes from the strategic rule meeting an 18-month dark spot. A rover waits at the sample whatever the wait. strategic+avoid never commits such a drive and delivers 300-315 t every year, losing the ISRU cargo.
+
+**4. Earth gallery scenes now reproduce their E21 cells exactly.**
+- All five earth cells (direct, relay 0.8, autonomous, relay 0.1 strict, strategic DTE) run with E21's year rule **and without the plume**.
+- I found the plume to be the last difference: on DTE it raises rover-hours waiting for Earth from 977 to 2,786 (seeds 0-3: 936 -> 2,318, 940 -> 2,447, 1,340 -> 3,575, 1,125 -> 2,295). Without it the gallery cell equals the E21 cell on every metric.
+- Headlines now equal E21 r2 means (test `test_earth_headlines_equal_the_e21_cells`, relative tolerance 1e-9): direct 306.7 t / 185.5 h / 977 h waiting; relay 0.8 531.5 t / 7.5 h; autonomous 532.1 t / 5.5 h; relay 0.1 530.2 t / 57.9 h; strategic 424.7 t / 352.5 h / 29,927 h.
+- Packages 2.49 MB of 4 MB gzip; `gallery.json` 25 kB.
+
+**Files**
+- `experiments/phase4/strategic_years.py` (new).
+- `tests/test_strategic_years.py` (new, 3 tests; no simulation): the E21-by-year block against the r2 table, own-year runs against their rows, and the calendar and sky blocks recomputed exactly from the committed link files.
+- `experiments/phase4/gallery.py`: cell key `e21=True` = no plume + E21 year; `headline --only ... --redo` drops those cells' rows and rewrites the others byte-identically (read as text).
+- `tests/test_gallery.py`: E21 rule for every earth cell; exact headline test.
+- `tools/scene_fixture.py` (new; writes the F-36 fixture reproducibly: 20 random + 10 drive + 3 waiting moments per package, only the packages named).
+- **For LEAD to commit:**
+  - `results/E21_strategic_years.json`, `results/E21_strategic_years_monthly.csv`: 48 months; route samples dark share and mean linked fraction; stranded fleet share by month; landings; linked fraction at 9 places.
+  - The five earth packages and `data/scenes/gallery.json`.
+  - `results/gallery_runs.csv` (100 earth rows replaced; the other 181 rows byte-identical).
+  - `site/tests/fixtures/scene_positions.json`: P2-comms-dte rows regenerated; P2 and P3 rows unchanged; note updated.
+
+**How to test**
+- `.venv/Scripts/python -m pytest -q tests/test_gallery.py tests/test_scene.py tests/test_strategic_years.py tests/test_comms_data.py tests/test_ci_budgets.py` -> 56 passed.
+- `cd site && node --test "tests/*.test.mjs"` -> 11/11.
+- `.venv/Scripts/python tools/ci/budgets.py schemas` -> 39 files, 0 problems.
+- Rebuild: `strategic_years.py --seeds 8` (60 s, single process); `gallery.py scenes --only <5 earth ids> --force` (30 s); `gallery.py headline --only <5 earth ids> --redo` (285 s); `gallery.py index`; `tools/scene_fixture.py --packages P2-comms-dte`.
+
+**FRONTEND:** the earth scenes have `flags.plume: null` (no keep-out rings in those replays), `flags.start_year` and `flags.matches`; `common.note` explains them. The site reads only `common.seeds`, so no change is needed.
+
+**Questions for LEAD**
+1. Paper: the E21 strategic-DTE mean (425 t) averages a 2028 collapse (113 t, one dark spot near ISRU until July 2029) and about 530 t in other years. I suggest reporting it by start year, or with a sentence plus `E21_strategic_years.json`.
+2. The plume roughly doubles DTE waits (977 -> 2,786 rover-hours), an interaction E21 does not cover except E21e's `plume_1km_0.5h` row (supervised strict, relay 0.5). Worth a limitation sentence, or a two-cell check if you want it.

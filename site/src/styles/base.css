@@ -28,6 +28,9 @@ td.n, th.n { text-align: right; }
 
 /* focus: always visible for keyboard users */
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 2px; }
+/* F-40: a focused 3D canvas also rings its stage from outside, where the focus colour meets the page (3:1 or more); the
+   ring inside the canvas can fall on grey terrain */
+:where(.v-stage, .w2-stage, .l3-stage, .r3-stage, .st-stage):has(canvas:focus-visible) { outline: 2px solid var(--focus); outline-offset: 3px; }
 .skip { position: absolute; left: var(--gutter); top: -3rem; z-index: 100; background: var(--bg); color: var(--ink); padding: var(--s-2) var(--s-3); border: 1px solid var(--hairline); border-radius: var(--radius); }
 .skip:focus { top: var(--s-2); }
 /* F-40: the hidden attribute always hides, whatever display a class sets (empty 3D fallbacks used to cover the canvas and

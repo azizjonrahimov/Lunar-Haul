@@ -46,11 +46,12 @@ async function build(gate, tier) {
   });
   canvas.classList.add('on');
   // pause: the button, off screen, a hidden tab
-  const btn = root.querySelector('.hero-pause'); let user = false;
-  const apply = () => sc.stage.pause(user || hidden || offscreen);
+  // F-40: under reduced motion the year opens paused (the button says Play), as /world/ does
+  const btn = root.querySelector('.hero-pause'); let user = reducedMotion();
+  const apply = () => sc.stage.pause(user || hidden || offscreen), label = () => { btn.textContent = user ? 'Play' : 'Pause'; btn.setAttribute('aria-pressed', String(user)); };
   let hidden = document.hidden, offscreen = false;
-  btn.hidden = false;
-  btn.addEventListener('click', () => { user = !user; btn.textContent = user ? 'Play' : 'Pause'; btn.setAttribute('aria-pressed', String(user)); apply(); });
+  btn.hidden = false; label(); apply();
+  btn.addEventListener('click', () => { user = !user; label(); apply(); });
   document.addEventListener('visibilitychange', () => { hidden = document.hidden; apply(); });
   new IntersectionObserver(([e]) => { offscreen = !e.isIntersecting; apply(); }, { threshold: 0.05 }).observe(root);
   if (import.meta.env.DEV) window.__hero = { sc, get time() { return time; } };

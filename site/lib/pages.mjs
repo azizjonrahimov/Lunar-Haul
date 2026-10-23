@@ -226,7 +226,8 @@ export function heroCounters() {
   const cost = 1e6 * +crow.cost_musd_mean / +crow.delivered_nonbulk_kg_mean, lo = +crow.ci_lo, hi = +crow.ci_hi, n = +crow.n;
   if (Math.abs(cost - +crow.cost_per_landed_kg_usd) > 0.5) throw new Error(`${COST}: cost ratio ${cost} disagrees with cost_per_landed_kg_usd ${crow.cost_per_landed_kg_usd}`);
   const item = (big, unit, label, flag, source) => `<li class="hero-counter"><span class="hc-big">${esc(big)}<span class="hc-unit">${esc(unit)}</span></span>` +
-    `<span class="hc-label">${esc(label)} <span class="flag" data-flag="${esc(flag)}" title="${esc(flag)}. Source: ${esc(source)}">${esc(flag)}</span></span></li>`;
+    `<span class="hc-label">${esc(label)} <span class="flag" data-flag="${esc(flag)}" title="${esc(flag)}. Source: ${esc(source)}">${esc(flag)}</span>` +
+    `<span class="visually-hidden"> (${esc(flag)}. Source: ${esc(source)})</span></span></li>`;   // F-40: the source for screen readers, as num.js does
   const years = pads.text.replace(/\s*simulated years$/, '');
   return `<ul class="hero-counters" aria-label="Three numbers from the results">` +
     item(years, '', 'simulated years behind the law of pad distance', pads.flag, pads.source) +

@@ -25,6 +25,8 @@
 .sim-row-end { align-items: flex-end; }
 .sim-row .grow, .sim-field.grow { flex: 1 1 10rem; }
 .sim-row label.ui-btn { margin: 0; cursor: pointer; }
+/* F-40: the file input is visually hidden, so its keyboard focus shows on the label that stands for it */
+.sim-row label.ui-btn:has(+ input:focus-visible), .sim-row:has(#importScenario:focus-visible) label[for=importScenario] { outline: 2px solid var(--focus); outline-offset: 2px; }
 .sim-details summary { cursor: pointer; font-size: var(--fs-small); color: var(--ink-2); min-height: var(--target); display: flex; align-items: center; }
 .sim-details .s-check, .sim .s-check { display: flex; gap: 0.5em; align-items: flex-start; font-size: var(--fs-small); color: var(--ink-2); padding: 3px 0; }
 .sim .s-check input { margin-top: 0.2em; accent-color: var(--accent); }

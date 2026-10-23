@@ -15,12 +15,23 @@ export function door({ title, subtitle = '', skip, enterLabel = 'Enter', autoEnt
   const bar = h('div', { class: 'ui-door-bar', role: 'progressbar', 'aria-labelledby': tid, 'aria-valuemin': '0', 'aria-valuemax': '100' }, fill);
   const status = h('p', { class: 'ui-door-status' });
   const enter = h('button', { class: 'ui-btn primary', type: 'button', disabled: true, onclick: () => go() }, enterLabel);
+  // F-40: the door covers the view it is appended to, and that view's stage (its parent) holds the HUD drawn over it; while
+  // the door is up, everything else in the stage is inert, so no hidden chip or flag takes keyboard focus
+  let covered = [];
+  function cover(on) {
+    for (const c of covered) c.inert = false;
+    covered = [];
+    const stage = on && el.parentElement?.parentElement; if (!stage) return;
+    const walk = node => { for (const c of node.children) { if (c === el) continue; if (c.contains(el)) walk(c); else { c.inert = true; covered.push(c); } } };
+    walk(stage);
+  }
   async function go() {
+    const had = el.contains(document.activeElement);   // before Enter is disabled (which drops focus to the body)
     if (beforeOpen) {
       enter.disabled = true; bar.classList.add('indeterminate'); bar.removeAttribute('aria-valuenow'); status.textContent = 'Starting the 3D view…';
       try { await beforeOpen(); } catch (e) { return api.fail(`The 3D view could not start (${e.message}).`); }
     }
-    api.open();
+    api.open(had);
   }
   const card = h('div', { class: 'ui-door-card ui-glass' },
     h('p', { class: 'ui-label' }, 'Loading'),
@@ -65,21 +76,30 @@ export function door({ title, subtitle = '', skip, enterLabel = 'Enter', autoEnt
       return new Response(new Blob(chunks), { headers: r.headers });
     },
     ready() {
+      cover(true);
       fill.style.width = '100%'; bar.classList.remove('indeterminate'); bar.setAttribute('aria-valuenow', '100');
       enter.disabled = false;
       status.textContent = `Ready · ${MB([...files.values()].reduce((s, f) => s + f.loaded, 0))} loaded`;
       if (autoEnter) go();
-      else if (!document.activeElement || document.activeElement === document.body || el.contains(document.activeElement)) enter.focus({ preventScroll: true });
+      // F-40: focus moves to Enter only from inside the door; on a fresh page it stays put, so Tab starts at 'Skip to content'
+      else if (el.contains(document.activeElement)) enter.focus({ preventScroll: true });
     },
     fail(msg) { bar.classList.remove('indeterminate'); status.textContent = msg; enter.disabled = true; },
-    open() {
-      const wasFocused = el.contains(document.activeElement);
-      const done = () => { el.hidden = true; el.classList.remove('opening'); onEnter({ focus: wasFocused }); };
+    open(had) {
+      const wasFocused = had ?? el.contains(document.activeElement);
+      // F-40: the view's canvas joins the tab order only now (tabindex=-1 in the page while the door covers it), and keyboard
+      // focus on the door goes on to it unless the page took it elsewhere in onEnter
+      const done = () => {
+        el.hidden = true; el.classList.remove('opening'); cover(false);
+        const canvas = el.parentElement?.querySelector('canvas[tabindex]'); if (canvas) canvas.tabIndex = 0;
+        onEnter({ focus: wasFocused });
+        if (wasFocused && canvas && (document.activeElement === document.body || el.contains(document.activeElement))) canvas.focus({ preventScroll: true });
+      };
       if (reducedMotion()) return done();
       el.classList.add('opening');
       setTimeout(done, 720);
     },
-    reset() { files.clear(); el.hidden = false; enter.disabled = true; fill.style.width = '0'; status.textContent = ''; bar.setAttribute('aria-valuenow', '0'); },
+    reset() { files.clear(); el.hidden = false; cover(true); enter.disabled = true; fill.style.width = '0'; status.textContent = ''; bar.setAttribute('aria-valuenow', '0'); },
   };
   return api;
 }
