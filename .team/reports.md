@@ -5125,3 +5125,49 @@ Every effect measured against strategic shifts by ~3 t, and Stage H 24 h tonnage
 **Questions for LEAD:**
 - The remaining F-40 items all need 3D: the lander and rover first frames, the world's "waiting for Earth" check, and story label declutter. Until memory frees up, I'm stopping here and waiting.
 - F-41 is still [IN PROGRESS] in my inbox although parts 1–2 and F-42/F-43 are committed. Mark it [REVIEW], or leave it open on purpose?
+
+## F-40 PART 15 ON HOLD 15:40 | The 3D items: free RAM under 0.4 GB; all four are already in the code (F-40 stays IN PROGRESS)
+
+**Free RAM:**
+- 0.31 GB at the start and 0.29 GB at a second check, both under the 0.4 GB limit.
+- I opened no 3D page, preview server or build.
+
+**Read-only check of the code against the four items.** All four were done in F-40 part 1 (commit 596fcfc, report "F-40 PART 1 DONE 16:50"), but the inbox list was never pruned:
+1. **Lander lab first frame:** `site/src/lander/lab3d-scene.js` `shot()` (approachLock above 60 m). The camera holds the lander and the pad together from the sun's side, so the first frame shows the descent path, the lit pad, its ring and the touchdown scatter, not a black sky. Below 60 m the follow camera glides in. A replay or seek re-engages the framing; the visitor's orbit wins.
+2. **Rover lab brown streak:** the glare wedge's faint fill, stretched along the ground near the camera. The fill is off (`site/src/rover/lab3d-scene.js`); the outline still marks the cone.
+3. **World Earth-link scenes:** a leg turns red while a rover waits for Earth to start it (`comms_waits`). Part 1 checked this at hour 578 of "Direct links to Earth only": the card read "3 rovers waiting for Earth", with magenta pins and the link chip at "none". The urgent chip updates every frame (`site/src/world/v2.js:285`) and says "Urgent: none delivered yet" before the first urgent delivery.
+4. **Story labels:** `site/src/stories/stage.js:113` `sc.setVehicleLabels(false)`. No step in the four stories names a vehicle (the highlights are sites, plus the single lander CLPS in its own scene), so no vehicle labels is the "only the vehicles a step talks about" case. Chips use the data's `label` (B-53), and the 49-key map is gone.
+
+**Still to do:** re-check each item in the browser on the current build, one page at a time, once free RAM is 0.4 GB or more. If you'd rather close them on part 1's checks, nothing else remains.
+
+**Files changed:** .team/inbox-frontend.md (part 15 [IN PROGRESS]), .team/reports.md
+
+**What I need from BACKEND:** nothing.
+
+**Questions for LEAD:** re-check in the browser when memory allows, or close the four items on part 1's evidence?
+
+## F-40 PART 16 DONE 15:52 | F-40 list pruned to what is really open; part 15 closed with no change (F-40 stays IN PROGRESS)
+
+- I marked part 15 [DONE, no change] in my inbox, on part 1's evidence (596fcfc).
+- I rewrote the F-40 list in my inbox. Each line is now [DONE] with its part and commit, or [OPEN] with what's left.
+- **Open (2), both on hold for memory:**
+  1. **Tier measurements.** Missing: /world/trace/ (not in part 1's frame-interval set), an Intel-integrated laptop and a phone (no such hardware here). Measured: the RTX 3050 numbers for /world/, /lab/lander/, /lab/rover/, /vehicles/, home hero and /stories/ (part 1), and GPU memory per tier (part 11).
+  2. **Lighthouse table.**
+     - /research/earth-sky/ has never been measured.
+     - The table predates parts 3–14, so it needs a re-run.
+     - Mobile performance has no target, and these pages sit low: /vehicles/ 70, /lab/lander/ 70, /lab/rover/ 86, /verification/ 82.
+- **Done:**
+  - Lander framing, rover streak, world "waiting for Earth" and the urgent chip: part 1, re-read in part 15.
+  - Simulator "Full 3D replay on GitHub" and /verification/ Phase 4 rows: part 1.
+  - Tol colours: parts 1 and 13.
+  - Stories highlight, no-link red legs, labels: parts 1, 3 and 13.
+  - Keyboard, screen-reader, reduced motion, contrast: parts 5 and 7.
+  - The screenshot rule (keep shots out of git) stays as a standing note.
+
+**Files changed:** .team/inbox-frontend.md, .team/reports.md
+
+**How to check:** read the F-40 block at the top of the FRONTEND inbox.
+
+**What I need from BACKEND:** nothing.
+
+**Questions for LEAD:** should mobile Lighthouse get a target (for example ≥ 70 on 3D pages, ≥ 90 on reading pages) before the re-run, or stay report-only?

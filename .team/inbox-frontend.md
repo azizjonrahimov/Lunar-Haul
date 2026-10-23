@@ -467,18 +467,26 @@ numbers), and entry chips to World, Vehicles, Labs, Simulator and Stories. Keep 
 3D starts after first paint and only on capable tiers; tier 0 shows a still image.
 
 ## F-40 [IN PROGRESS] (<= 4 h, then continuous) Quality pass, plan §5 F-40, plus the notes collected in reviews
-- Measure tiers in a FOREGROUND window (frame interval at display rate) on every 3D page; record numbers.
-- Lander lab: frame the Approach phase with the ground in view (no black first frame).
-- Rover lab: the stretched brown streak pattern on the ground near the camera (chase view, first frame).
-- World: verify the Earth-link scenes show "waiting for Earth" clearly; the urgent chip's live value.
-- Simulator: "Full 3D replay on GitHub" button opening the run-queue issue form prefilled from the settings (URL
-  query parameters keyed by the form's field ids); keep "trace replay of this run" for /world/trace/.
-- /verification/: show the Phase 4 rows from `data/verification/verification-v1.json` → `phase4[]`.
-- Light-theme Tol yellow/cyan/grey marks below 3:1 on white (from F-30): fix or add outlines.
-- Stories: draw `highlight` (e.g. ISRU in the Earth story) and the route colour for no link; declutter vehicle labels
-  in story views (show only the vehicles a step talks about); after B-53 use the data's `label` field.
-- Keyboard, screen-reader mirror, reduced motion, contrast on every page; Lighthouse table for every page;
-  a screenshot set (desktop + 390 px) committed under `site/design/shots/` is NOT wanted — keep them out of git.
+Status pruned 23 Oct 15:50 (FRONTEND, from the reports and commits; LEAD's call in part 15):
+- [OPEN] Tier measurements: RTX 3050 foreground frame intervals done for /world/, /lab/lander/, /lab/rover/, /vehicles/,
+  home hero and /stories/ (part 1, 596fcfc); GPU memory per tier (part 11, e707865). Left: /world/trace/ not measured;
+  an Intel-integrated laptop and a phone (no such hardware here). On hold for memory.
+- [DONE] Lander lab: Approach framed with the lit pad in view (part 1, 596fcfc; code re-read in part 15, no change).
+- [DONE] Rover lab: brown streak = the glare wedge's fill, now off (part 1, 596fcfc; re-read in part 15, no change).
+- [DONE] World: Earth-link legs red while rovers wait, "waiting for Earth" card; urgent chip live, "none delivered yet"
+  early (part 1, 596fcfc; re-read in part 15, no change).
+- [DONE] Simulator: "Full 3D replay on GitHub" opens run-scenario.yml prefilled by field ids; "Trace replay of this
+  run" kept (part 1, 596fcfc).
+- [DONE] /verification/: Phase 4 rows from phase4[] (part 1, 596fcfc; checked live in part 13: 8 / 8).
+- [DONE] Light-theme Tol yellow/cyan/grey: tokens (part 1, 596fcfc), leftovers on light surfaces (part 13, 5f49f55).
+- [DONE] Stories: highlight rings and no-link red legs (part 3, a6ba5d9; step 7 highlight, 5f49f55); vehicle labels
+  off in story views, no step names a vehicle; chips use B-53's `label` (part 1, 596fcfc; re-read in part 15).
+- [DONE] Keyboard, screen-reader mirror, reduced motion, contrast: walks of every page (part 5, 9c11572: Lighthouse
+  accessibility 100 on all 18 pages; part 7, d8e38f1). /research/earth-sky/ came later and was checked in F-41-F-43.
+- [OPEN] Lighthouse table: every page measured in part 1 (596fcfc), rover lab and /world/trace/ re-measured in part 2
+  (f7be256). Left: /research/earth-sky/ never measured; the table predates parts 3-14 (re-measure); mobile perf of
+  /vehicles/ (70), /lab/lander/ (70), /lab/rover/ (86) and /verification/ (82) has no target yet. On hold for memory.
+- Screenshot set under `site/design/shots/`: NOT wanted, keep them out of git (standing rule).
 
 ## F-41 [DONE cdb4c58] (<= 4 h) "Earth's sky, year by year": an explorable for R-1's 2028 finding (light reading page)
 The finding (B-55, paper §5.4): one 100 m route point on the regolith haul ISRU->CONSTR sees Earth at no hour from
@@ -557,7 +565,7 @@ no task IDs on the page; same light/dark, 390 px and budget checks as F-42.
    `years.json`); add the new files to the page's source list. Budget: data stays under the page's 100 KB.
 Files you own as usual; report with the file list. LEAD updates the Earth story separately.
 
-## F-40 part 15 [QUEUED 15:25] The 3D items, one page at a time (owner asked to continue; ~0.58 GB free)
+## F-40 part 15 [DONE, no change] The 3D items, one page at a time (owner asked to continue; ~0.58 GB free)
 Memory rules for this part: one 3D page open at a time; before opening each, check free RAM
 (`(Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory`) and stop and report if it is under 0.4 GB; close the
 tab and stop the preview server after each page; never two dev servers. Order, each its own short report line:
