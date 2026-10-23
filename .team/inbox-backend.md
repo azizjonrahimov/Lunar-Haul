@@ -790,3 +790,71 @@ No operator would help one rover within a week and leave another for 18 months.
       May-December?) (`strategic_2028_urgent` in `E21_strategic_years.json` or the fit file, your choice).
    c. One line each: does the swap test (B-55) fix the landings but redraw the manifests? Why does the paper say
       2,404 route cells (Sections 1, 3.1) and 283 of 2,421 route samples (5.4); are they different things?
+
+# ── R-1 follow-up: the three checks the paper names as open (owner's go-ahead, 23 Oct 10:37) ──────────────
+The paper's headline (Stage G2): under DTE, help within a week for any held strategic rover gives within 5 % of the
+always-linked tonnage in every start year. It names three gaps: nobody checked that a helper can park in line of
+sight of the dark points; the helper's own time is not modelled; and later years are not checked (the 2028 dark
+spell "should recur" with the ~6-year beat of the anomalistic and draconic months, 5.997 yr). Do them in this order,
+one report each. Rules as always: no existing E21 row may change (identity checks as B-57); every new constant
+carries a flag and source; single process, foreground chunks with `--max-seconds 540`; peak RSS in every report.
+
+## B-61 [QUEUED] Can a helper park where it sees both Earth and the held rover? (data only, no engine change)
+1. **Where help is needed.** Rerun Stage G2's 168 h cell and its 0 h cell (DTE, 20 seeds, same CRN; not written to
+   any results CSV) with a per-sample tally of capped waits: sample id, count, held rover-hours before the cap, by
+   start year. Plus the 283 never-linked samples and the 2028 dark sample #188 even if untallied. This is the set H.
+2. **Candidates.** For each sample in H: (a) every other route sample within 3 km straight-line (masks and hourly
+   DTE series exist); (b) only for samples with no route-sample solution, off-route points on a 40 m grid within
+   1.5 km, with masks and hourly any_part series computed the B-40 way (2.5 m antenna, 5 m tile + 80 m far DEM).
+3. **A parking point works for sample s** when: terrain line of sight from it to s, 2.5 m to 2.5 m
+   (`Terrain.los_clearance_m` > 0; also report with a 1 m clearance margin); it is reachable: on the route network,
+   or an expert A* path (`lunarsim.rover.expert.plan`, no lighting term) from the nearest route sample exists, and
+   give its length.
+4. **Per sample in H:** the best parking point (shortest drive from s; also its network drive distance from BASE),
+   its DTE link fraction 2028-2031, and the **effective help delay**: for every hour s is unlinked, the hours until
+   the best parking point (and until any working point within 1.5 km) is linked. Summarise as the share of tallied
+   held rover-hours (weights from step 1) where a working point gets a link within 0, 24 and 168 h. Name the
+   samples with no working point at all.
+5. **Spotlights, one line each:** #188 (2028: can a parked helper near it see Earth during its dark spell?); the
+   ISRU plant (never sees Earth: is there a point that sees both ISRU and Earth, and how far?); the legs with
+   never-linked points.
+Output: `data/comms/connecting_ridge/parking-v1.json` (schema in `lunarsim/schemas/`, sha256s of its inputs, a
+test) and `results/E21_parking.json` (summary). New earth_link.py stage(s) `tally`/`parking` as you see fit.
+
+## B-62 [QUEUED after B-61] The helper's own time (engine + Stage H)
+1. **Policy** (comms, with `never_linked: "rescue"`, `rescue_scope: "any"`): `helpers: {"n": k, "home": "BASE",
+   "service_h": S, "parking": "parking-v1.json", "from_fleet": bool}`. When a strategic intervention wait exceeds
+   rescue_h (now the call threshold), a helper is called at the stop; the wait ends at the earliest of its natural
+   end and: (first free helper slot after the call) + drive home -> s's best parking point (network distance + A*
+   leg, fleet's nominal speed) + wait for the parking point's own link + S. The helper is booked first-fit in an
+   interval list (like `op_segs`) for drive there + link wait + S + drive back home. No working parking point -> no
+   help (natural wait; never-linked -> strand). The helper's own driving needs no link (Assumed; say so: still
+   optimistic, but much less). S: pick a sourced or flagged value (an intervention session) and add S x 2 as a
+   sensitivity. `from_fleet: true` takes the helper out of the hauling fleet (same vehicle count as Stage A);
+   false adds it (one extra vehicle). Counters: calls, helps, unserved calls, helper busy hours, call -> release
+   hours (mean, p90). Schema + tests (helper with zero drive and S = 0 equals G2 at rescue_h; no parking -> strand).
+2. **Stage H** (`e21h --round r2` -> `results/E21h_helper_r2.csv`): plain strategic, all-supervised, DTE, 20 seeds,
+   CRN with Stage A: dedicated helper k = 1 at thresholds {24, 168} h; k = 2 at 24 h; from the fleet k = 1 at
+   {24, 168} h; S x 2 at the 24 h dedicated cell. Reference: strict with one extra rover under DTE (reuse the cell if
+   it exists, else run it), so "a helper" and "one more hauler" compare at the same vehicle count.
+3. **Analysis** (`analyse_e21.py helper` -> `E21_fit_r2.json["helper"]`, `results/table_E21h_helper_r2.csv`): per
+   cell, paired against strict, strict + 1 rover, G2 at the same threshold (the ideal helper) and always-linked
+   strategic: tonnage (overall and by start year; 2028!), urgent completion, censored p90, helper utilisation,
+   helps per run, call -> release delay. One line: does a real helper keep the G2 headline, and in which years not?
+
+## B-63 [QUEUED after B-62] Later years: does the 2028 dark spell recur? (data, then Stage J)
+1. **Data.** Ephemeris 2032-01-01 to 2046-12-31 (with 2028-2031 that is 19 years, more than the 18.6-year nodal
+   cycle and three ~6-year beats), the same SPICE setup. Check that Earth's grid bearing stays inside the masks'
+   wedge (b0 +/- 12 deg); if not, extend the masks and say by how much. Hourly DTE any_part series for every v1
+   sample, site and pad -> `earth_link-v3-samples.json.gz` (2032-2046; same format; the v1/v2 files unchanged).
+2. **The prediction.** Per year 2028-2046: hours linked at #188 and its longest dark spell; per sample, hours
+   linked per year; which of the 283 never-linked samples ever see Earth in 2032-2046; for the main-network legs,
+   the longest dark spell of any sample per year. Is there a 2028-like year (a used-leg sample dark from January for
+   six months or more), when, and is the spacing ~6.0 years? Fit or periodogram the annual series at #188 and say
+   what the period is, with honest uncertainty from 19 points.
+3. **Stage J** (`e21j`): the engine reads the v3 file only when asked (`link_series`); start_year 2032-2046 allowed
+   only with it; never-linked defined over the file's own span (report how many). DTE: strict, strategic
+   (re-draw), strategic G2 at 168 h, and the best Stage H cell; start years 2032-2046 x 5 seeds (CRN by seed).
+   Output `results/E21j_years_r2.csv`; analysis `analyse_e21.py years` -> `E21_fit_r2.json["later_years"]`: tonnage
+   by start year per policy; do the collapses come back where the dark spells do, and does help within a week hold
+   in every year?
