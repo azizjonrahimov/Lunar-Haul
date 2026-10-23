@@ -53,7 +53,7 @@ plt.rcParams.update({
     "grid.color": GRID, "grid.linewidth": 0.6, "axes.axisbelow": True, "legend.frameon": False, "legend.fontsize": 8,
     "figure.dpi": 150, "savefig.dpi": 200, "savefig.bbox": "tight", "savefig.facecolor": "white",
 })
-MIXES = [("teleop_4s", "Teleoperated (4 s)", TOL["red"], "o"), ("default", "Phase 2 mix", TOL["yellow"], "s"),
+MIXES = [("teleop_4s", "Teleoperated (4 s)", TOL["red"], "o"), ("default", "Reference mix", TOL["yellow"], "s"),
          ("supervised_strict", "Supervised, strict", TOL["blue"], "D"),
          ("supervised_strategic", "Supervised, strategic", TOL["cyan"], "^"),
          ("supervised_strategic+avoid", "Supervised, strategic with look-ahead", TOL["purple"], "v"),

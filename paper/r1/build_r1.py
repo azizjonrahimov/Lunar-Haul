@@ -521,7 +521,7 @@ def values(r: R):
     V["R1-SY-JAN"], V["R1-SY-LATE"] = sh(fs[0]), sh(sum(fs[4:]) / len(fs[4:]))
     V["R1-SY-NOTRESUME"] = sh(st28["share_not_resuming_in_year"])
     V["R1-SY-NOTRESUME-OTHER"] = rng_txt([100 * sy["stranding"][y]["share_not_resuming_in_year"]
-                                          for y in ("2029", "2030", "2031")], lambda v: num(v), PCT)
+                                          for y in ("2029", "2030", "2031")], lambda v: f"{math.floor(v + 0.5)}", PCT)
     sw = sy["swap"]
     assert sw["seeds_lowest_in_2028"] == len(sw["delivered_t_in_year"]["2028"]) and sw["landings_identical_across_years"]
     V["R1-SY-SWAP-N"] = words(sw["seeds_lowest_in_2028"])
@@ -623,6 +623,7 @@ def values(r: R):
     assert all(x["ci_lo"] < 0 < x["ci_hi"] for x in vs), "5.4: help within a week is indistinguishable from the free re-draw"
     assert all(ge("strategic", h, "delay_prio1_p90_censored_h")["wilcoxon_p"] > 0.05 for h in WK)
     V["R1-G-WEEK-VS-STRAT"] = dci(vs[-1])
+    V["R1-G-WEEK-CP90-VS-STRAT"] = ratio(ge("strategic", 168, "delay_prio1_p90_censored_h"))
     m7 = ge("strict", 720, "delivered_t_in_year")
     assert m7["ci_lo"] < 0 < m7["ci_hi"], "5.4: help after a month delivers no more tonnage than strict"
     V["R1-G-MONTH-T"], V["R1-G-MONTH-VS-STRICT"] = t_(m7["cell_mean"]), dci(m7)
@@ -634,11 +635,16 @@ def values(r: R):
     ms = ge("strategic", 720, "delivered_t_in_year")
     assert ms["ci_hi"] < 0
     V["R1-G-MONTH-VS-STRAT"] = dci(ms)
+    V["R1-G-MONTH-COMP-VS-STRAT"] = pts_abs(ge("strategic", 720, "prio1_completion_share"))
+    mq = ge("strategic", 720, "delay_prio1_p90_censored_h")
+    assert mq["gm_ratio_lo"] > 1, "5.4: help after a month lengthens the censored delay against the re-draw"
+    V["R1-G-MONTH-CP90-VS-STRAT"], V["R1-G-MONTH-CP90-VS-STRAT-W"] = ratio(mq), wil(mq["wilcoxon_p"])
     hx = lambda v: v if isinstance(v, str) else h_(v)
     be = rz["breakeven_vs_strict"]["delivered_t_in_year"]
-    V["R1-G-BE-T"] = be["breakeven_h"] if isinstance(be["breakeven_h"], str) else f"at {h_(be['breakeven_h'])}"
+    assert be["breakeven_h"] == "beyond 720 h", "5.4 says the tonnage break-even lies at about 720 h or beyond"
     V["R1-G-BE-T-CI"] = f"{hx(be['ci95'][0])} to {hx(be['ci95'][1])}"
     V["R1-G-BE-T-BEYOND"] = sh(be["share_beyond_range"])
+    V["R1-G-BE-T-BELOW"] = sh(be["share_below_range"])
     assert rz["breakeven_vs_strict"]["prio1_completion_share"]["share_beyond_range"] == 1.0, "5.4: 'in every draw'"
     y28 = [lv["by_year"]["2028"]["delivered_t_in_year"] for lv in rz["levels"]]
     assert max(y28) < 0.5 * min(lv["by_year"][y]["delivered_t_in_year"] for lv in rz["levels"] if lv["rescue_h"] <= 168
