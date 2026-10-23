@@ -6847,6 +6847,727 @@
     "2031"
    ]
   },
-  "g2_headline": "within 5 % of the always-linked strategic tonnage in every start year (Stage G2)"
+  "g2_headline": "within 5 % of the always-linked strategic tonnage in every start year (Stage G2)",
+  "diagnosis_168h": {
+   "cell": "dedicated k=1, 168 h (S = 1 h) vs Stage G2 168 h",
+   "paired_by_start_year": {
+    "2028": {
+     "delivered_t_in_year": {
+      "ref_mean": 506.8787299901584,
+      "cell_mean": 493.47284432079084,
+      "diff": -13.405885669367445,
+      "ci_lo": -35.52004787192624,
+      "ci_hi": 8.708276533191347
+     },
+     "delivered_bulk_t": {
+      "ref_mean": 489.4,
+      "cell_mean": 479.4,
+      "diff": -10.0,
+      "ci_lo": -25.00308317405333,
+      "ci_hi": 5.00308317405333
+     },
+     "delivered_landed_t": {
+      "ref_mean": 15.71650979705493,
+      "cell_mean": 12.9989779971215,
+      "diff": -2.7175317999334334,
+      "ci_lo": -10.066655459621176,
+      "ci_hi": 4.631591859754309
+     },
+     "blackout_wait_vehicle_h": {
+      "ref_mean": 26646.021002039568,
+      "cell_mean": 30813.868765852378,
+      "diff": 4167.847763812807,
+      "ci_lo": 3386.2914033902935,
+      "ci_hi": 4949.4041242353205
+     }
+    },
+    "2029": {
+     "delivered_t_in_year": {
+      "ref_mean": 508.6811429081528,
+      "cell_mean": 446.5184305579819,
+      "diff": -62.16271235017096,
+      "ci_lo": -92.37684383986745,
+      "ci_hi": -31.948580860474483
+     },
+     "delivered_bulk_t": {
+      "ref_mean": 485.0,
+      "cell_mean": 429.6,
+      "diff": -55.4,
+      "ci_lo": -93.04720328313147,
+      "ci_hi": -17.752796716868538
+     },
+     "delivered_landed_t": {
+      "ref_mean": 21.955930734946794,
+      "cell_mean": 15.43428399637241,
+      "diff": -6.521646738574384,
+      "ci_lo": -16.823845043232236,
+      "ci_hi": 3.780551566083467
+     },
+     "blackout_wait_vehicle_h": {
+      "ref_mean": 27677.39202013473,
+      "cell_mean": 31326.186332491565,
+      "diff": 3648.7943123568343,
+      "ci_lo": 2459.1991127066003,
+      "ci_hi": 4838.389512007068
+     }
+    },
+    "2030": {
+     "delivered_t_in_year": {
+      "ref_mean": 530.3717407199586,
+      "cell_mean": 508.3377191682351,
+      "diff": -22.03402155172345,
+      "ci_lo": -46.135948640394545,
+      "ci_hi": 2.0679055369476522
+     },
+     "delivered_bulk_t": {
+      "ref_mean": 494.8,
+      "cell_mean": 476.2,
+      "diff": -18.6,
+      "ci_lo": -36.75548853025661,
+      "ci_hi": -0.4445114697433894
+     },
+     "delivered_landed_t": {
+      "ref_mean": 32.080223405169974,
+      "cell_mean": 30.15603568945678,
+      "diff": -1.924187715713193,
+      "ci_lo": -6.042258563135984,
+      "ci_hi": 2.193883131709598
+     },
+     "blackout_wait_vehicle_h": {
+      "ref_mean": 26963.656768208933,
+      "cell_mean": 30312.70547452219,
+      "diff": 3349.0487063132578,
+      "ci_lo": 628.3948296473254,
+      "ci_hi": 6069.70258297919
+     }
+    },
+    "2031": {
+     "delivered_t_in_year": {
+      "ref_mean": 516.5164313391172,
+      "cell_mean": 497.6951854848632,
+      "diff": -18.821245854253995,
+      "ci_lo": -38.09685884119649,
+      "ci_hi": 0.45436713268850326
+     },
+     "delivered_bulk_t": {
+      "ref_mean": 476.8,
+      "cell_mean": 464.2,
+      "diff": -12.6,
+      "ci_lo": -40.00957456374231,
+      "ci_hi": 14.809574563742311
+     },
+     "delivered_landed_t": {
+      "ref_mean": 35.30377754697934,
+      "cell_mean": 29.908971931498023,
+      "diff": -5.3948056154813155,
+      "ci_lo": -18.84041217216715,
+      "ci_hi": 8.05080094120452
+     },
+     "blackout_wait_vehicle_h": {
+      "ref_mean": 27105.18617154823,
+      "cell_mean": 31787.169115595123,
+      "diff": 4681.982944046892,
+      "ci_lo": 3472.949428596351,
+      "ci_hi": 5891.016459497433
+     }
+    }
+   },
+   "excess_definition": "rover-hours held inside the year beyond G2's cap: per call, the wait with the helper minus min(168 h, hours left in the year)",
+   "runs_reproduce_stage_h": true,
+   "year_contrast_tonnage": {
+    "per_seed_diff_2028": [
+     2.0,
+     -40.9,
+     -20.0,
+     -9.4,
+     1.3
+    ],
+    "per_seed_diff_2029": [
+     -71.8,
+     -24.1,
+     -84.2,
+     -77.9,
+     -52.8
+    ],
+    "mean_diff_2029_minus_2028": -48.75682668080352,
+    "welch_t_p": 0.007915683606613549,
+    "mann_whitney_p": 0.015873015873015872
+   },
+   "by_year": {
+    "2028": {
+     "runs": 5,
+     "excess_h_per_run": 14744.0,
+     "calls_per_run": 95.0,
+     "excess_by_kind_h_per_run": {
+      "help": 14294.6,
+      "natural_first": 398.0,
+      "unserved": 51.4
+     },
+     "excess_by_call_month_h_per_run": [
+      1117.7,
+      1345.2,
+      1590.1,
+      1573.3,
+      1088.0,
+      1153.9,
+      1291.8,
+      1106.0,
+      1153.7,
+      1129.1,
+      1894.4,
+      300.7
+     ],
+     "top_samples": [
+      {
+       "sample": 230,
+       "excess_h_per_run": 2769.8,
+       "share_of_year_excess": 0.18786,
+       "calls_per_run": 16.0,
+       "own_link_share_in_year": 0.0,
+       "dark_hours_in_year": 8784,
+       "best_point": {
+        "kind": "route",
+        "dist_m": 529.5,
+        "link_share_in_year": 0.42077,
+        "share_of_dark_hours_linked_within_0_24_168h": [
+         0.42077,
+         0.45628,
+         0.6694
+        ]
+       }
+      },
+      {
+       "sample": 190,
+       "excess_h_per_run": 2203.6,
+       "share_of_year_excess": 0.14946,
+       "calls_per_run": 13.6,
+       "own_link_share_in_year": 0.0,
+       "dark_hours_in_year": 8784,
+       "best_point": {
+        "kind": "grid",
+        "dist_m": 592.1,
+        "link_share_in_year": 0.45298,
+        "share_of_dark_hours_linked_within_0_24_168h": [
+         0.45298,
+         0.4885,
+         0.70162
+        ]
+       }
+      },
+      {
+       "sample": 189,
+       "excess_h_per_run": 2202.4,
+       "share_of_year_excess": 0.14938,
+       "calls_per_run": 15.0,
+       "own_link_share_in_year": 0.0,
+       "dark_hours_in_year": 8784,
+       "best_point": {
+        "kind": "route",
+        "dist_m": 608.3,
+        "link_share_in_year": 0.4745,
+        "share_of_dark_hours_linked_within_0_24_168h": [
+         0.4745,
+         0.51002,
+         0.72313
+        ]
+       }
+      },
+      {
+       "sample": 4,
+       "excess_h_per_run": 2074.5,
+       "share_of_year_excess": 0.1407,
+       "calls_per_run": 11.6,
+       "own_link_share_in_year": 0.0,
+       "dark_hours_in_year": 8784,
+       "best_point": {
+        "kind": "route",
+        "dist_m": 520.0,
+        "link_share_in_year": 0.42077,
+        "share_of_dark_hours_linked_within_0_24_168h": [
+         0.42077,
+         0.45628,
+         0.6694
+        ]
+       }
+      },
+      {
+       "sample": 188,
+       "excess_h_per_run": 1905.0,
+       "share_of_year_excess": 0.1292,
+       "calls_per_run": 13.0,
+       "own_link_share_in_year": 0.0,
+       "dark_hours_in_year": 8784,
+       "best_point": {
+        "kind": "grid",
+        "dist_m": 638.9,
+        "link_share_in_year": 0.50387,
+        "share_of_dark_hours_linked_within_0_24_168h": [
+         0.50387,
+         0.53939,
+         0.7525
+        ]
+       }
+      }
+     ],
+     "top_legs": [
+      {
+       "leg": "ISRU->CONSTR",
+       "excess_h_per_run": 10531.4,
+       "share_of_year_excess": 0.71429
+      },
+      {
+       "leg": "CONSTR->ISRU",
+       "excess_h_per_run": 2943.0,
+       "share_of_year_excess": 0.19961
+      },
+      {
+       "leg": "ISRU->PAD_A",
+       "excess_h_per_run": 382.4,
+       "share_of_year_excess": 0.02594
+      },
+      {
+       "leg": "ISRU->POWER",
+       "excess_h_per_run": 167.8,
+       "share_of_year_excess": 0.01138
+      },
+      {
+       "leg": "ISRU->PAD_B",
+       "excess_h_per_run": 106.7,
+       "share_of_year_excess": 0.00723
+      }
+     ]
+    },
+    "2029": {
+     "runs": 5,
+     "excess_h_per_run": 14685.8,
+     "calls_per_run": 93.4,
+     "excess_by_kind_h_per_run": {
+      "help": 14429.4,
+      "natural_first": 216.9,
+      "unserved": 39.4
+     },
+     "excess_by_call_month_h_per_run": [
+      795.8,
+      1328.0,
+      1385.0,
+      1230.4,
+      1239.3,
+      1057.1,
+      1777.2,
+      1511.0,
+      1293.7,
+      1218.9,
+      1070.7,
+      778.7
+     ],
+     "top_samples": [
+      {
+       "sample": 188,
+       "excess_h_per_run": 2754.2,
+       "share_of_year_excess": 0.18755,
+       "calls_per_run": 14.2,
+       "own_link_share_in_year": 0.021,
+       "dark_hours_in_year": 8576,
+       "best_point": {
+        "kind": "grid",
+        "dist_m": 638.9,
+        "link_share_in_year": 0.48037,
+        "share_of_dark_hours_linked_within_0_24_168h": [
+         0.46922,
+         0.5056,
+         0.73729
+        ]
+       }
+      },
+      {
+       "sample": 4,
+       "excess_h_per_run": 2589.6,
+       "share_of_year_excess": 0.17634,
+       "calls_per_run": 14.4,
+       "own_link_share_in_year": 0.0,
+       "dark_hours_in_year": 8760,
+       "best_point": {
+        "kind": "route",
+        "dist_m": 520.0,
+        "link_share_in_year": 0.40297,
+        "share_of_dark_hours_linked_within_0_24_168h": [
+         0.40297,
+         0.43858,
+         0.66301
+        ]
+       }
+      },
+      {
+       "sample": 190,
+       "excess_h_per_run": 2344.6,
+       "share_of_year_excess": 0.15965,
+       "calls_per_run": 15.2,
+       "own_link_share_in_year": 0.0,
+       "dark_hours_in_year": 8760,
+       "best_point": {
+        "kind": "grid",
+        "dist_m": 592.1,
+        "link_share_in_year": 0.43242,
+        "share_of_dark_hours_linked_within_0_24_168h": [
+         0.43242,
+         0.46804,
+         0.69338
+        ]
+       }
+      },
+      {
+       "sample": 189,
+       "excess_h_per_run": 2195.9,
+       "share_of_year_excess": 0.14952,
+       "calls_per_run": 16.4,
+       "own_link_share_in_year": 0.0,
+       "dark_hours_in_year": 8760,
+       "best_point": {
+        "kind": "route",
+        "dist_m": 608.3,
+        "link_share_in_year": 0.45297,
+        "share_of_dark_hours_linked_within_0_24_168h": [
+         0.45297,
+         0.48858,
+         0.71461
+        ]
+       }
+      },
+      {
+       "sample": 230,
+       "excess_h_per_run": 1946.2,
+       "share_of_year_excess": 0.13253,
+       "calls_per_run": 12.4,
+       "own_link_share_in_year": 0.0,
+       "dark_hours_in_year": 8760,
+       "best_point": {
+        "kind": "route",
+        "dist_m": 529.5,
+        "link_share_in_year": 0.40297,
+        "share_of_dark_hours_linked_within_0_24_168h": [
+         0.40297,
+         0.43858,
+         0.66301
+        ]
+       }
+      }
+     ],
+     "top_legs": [
+      {
+       "leg": "ISRU->CONSTR",
+       "excess_h_per_run": 10830.4,
+       "share_of_year_excess": 0.73748
+      },
+      {
+       "leg": "CONSTR->ISRU",
+       "excess_h_per_run": 2772.1,
+       "share_of_year_excess": 0.18876
+      },
+      {
+       "leg": "ISRU->PAD_A",
+       "excess_h_per_run": 318.2,
+       "share_of_year_excess": 0.02167
+      },
+      {
+       "leg": "PAD_B->CONSTR",
+       "excess_h_per_run": 87.0,
+       "share_of_year_excess": 0.00592
+      },
+      {
+       "leg": "ISRU->POWER",
+       "excess_h_per_run": 75.8,
+       "share_of_year_excess": 0.00516
+      }
+     ]
+    },
+    "2030": {
+     "runs": 5,
+     "excess_h_per_run": 14684.6,
+     "calls_per_run": 89.4,
+     "excess_by_kind_h_per_run": {
+      "help": 13929.2,
+      "natural_first": 600.3,
+      "unserved": 155.1
+     },
+     "excess_by_call_month_h_per_run": [
+      1234.0,
+      1157.3,
+      1406.4,
+      1975.6,
+      967.4,
+      911.5,
+      1227.6,
+      933.1,
+      973.4,
+      1078.4,
+      1557.1,
+      1262.8
+     ],
+     "top_samples": [
+      {
+       "sample": 230,
+       "excess_h_per_run": 2789.9,
+       "share_of_year_excess": 0.18999,
+       "calls_per_run": 13.6,
+       "own_link_share_in_year": 0.0,
+       "dark_hours_in_year": 8760,
+       "best_point": {
+        "kind": "route",
+        "dist_m": 529.5,
+        "link_share_in_year": 0.40639,
+        "share_of_dark_hours_linked_within_0_24_168h": [
+         0.40639,
+         0.44475,
+         0.66416
+        ]
+       }
+      },
+      {
+       "sample": 189,
+       "excess_h_per_run": 2551.5,
+       "share_of_year_excess": 0.17376,
+       "calls_per_run": 17.2,
+       "own_link_share_in_year": 0.0,
+       "dark_hours_in_year": 8760,
+       "best_point": {
+        "kind": "route",
+        "dist_m": 608.3,
+        "link_share_in_year": 0.45217,
+        "share_of_dark_hours_linked_within_0_24_168h": [
+         0.45217,
+         0.49053,
+         0.70833
+        ]
+       }
+      },
+      {
+       "sample": 4,
+       "excess_h_per_run": 2550.9,
+       "share_of_year_excess": 0.17371,
+       "calls_per_run": 14.6,
+       "own_link_share_in_year": 0.0,
+       "dark_hours_in_year": 8760,
+       "best_point": {
+        "kind": "route",
+        "dist_m": 520.0,
+        "link_share_in_year": 0.40639,
+        "share_of_dark_hours_linked_within_0_24_168h": [
+         0.40639,
+         0.44475,
+         0.66416
+        ]
+       }
+      },
+      {
+       "sample": 190,
+       "excess_h_per_run": 2306.3,
+       "share_of_year_excess": 0.15706,
+       "calls_per_run": 15.0,
+       "own_link_share_in_year": 0.0,
+       "dark_hours_in_year": 8760,
+       "best_point": {
+        "kind": "grid",
+        "dist_m": 592.1,
+        "link_share_in_year": 0.43482,
+        "share_of_dark_hours_linked_within_0_24_168h": [
+         0.43482,
+         0.47317,
+         0.69167
+        ]
+       }
+      },
+      {
+       "sample": 188,
+       "excess_h_per_run": 1095.7,
+       "share_of_year_excess": 0.07461,
+       "calls_per_run": 5.4,
+       "own_link_share_in_year": 0.09361,
+       "dark_hours_in_year": 7940,
+       "best_point": {
+        "kind": "grid",
+        "dist_m": 638.9,
+        "link_share_in_year": 0.47842,
+        "share_of_dark_hours_linked_within_0_24_168h": [
+         0.42456,
+         0.46688,
+         0.7063
+        ]
+       }
+      }
+     ],
+     "top_legs": [
+      {
+       "leg": "ISRU->CONSTR",
+       "excess_h_per_run": 10840.7,
+       "share_of_year_excess": 0.73824
+      },
+      {
+       "leg": "CONSTR->ISRU",
+       "excess_h_per_run": 2497.8,
+       "share_of_year_excess": 0.17009
+      },
+      {
+       "leg": "ISRU->PAD_A",
+       "excess_h_per_run": 382.9,
+       "share_of_year_excess": 0.02607
+      },
+      {
+       "leg": "ISRU->PAD_B",
+       "excess_h_per_run": 158.3,
+       "share_of_year_excess": 0.01078
+      },
+      {
+       "leg": "ISRU->POWER",
+       "excess_h_per_run": 115.6,
+       "share_of_year_excess": 0.00787
+      }
+     ]
+    },
+    "2031": {
+     "runs": 5,
+     "excess_h_per_run": 15615.4,
+     "calls_per_run": 93.6,
+     "excess_by_kind_h_per_run": {
+      "help": 14852.0,
+      "natural_first": 640.6,
+      "unserved": 122.9
+     },
+     "excess_by_call_month_h_per_run": [
+      1058.9,
+      1252.7,
+      1351.3,
+      1117.7,
+      1025.1,
+      1318.5,
+      1337.0,
+      1631.3,
+      1896.7,
+      1659.7,
+      1604.8,
+      361.7
+     ],
+     "top_samples": [
+      {
+       "sample": 4,
+       "excess_h_per_run": 3032.0,
+       "share_of_year_excess": 0.19417,
+       "calls_per_run": 14.0,
+       "own_link_share_in_year": 0.0,
+       "dark_hours_in_year": 8760,
+       "best_point": {
+        "kind": "route",
+        "dist_m": 520.0,
+        "link_share_in_year": 0.3605,
+        "share_of_dark_hours_linked_within_0_24_168h": [
+         0.3605,
+         0.39886,
+         0.629
+        ]
+       }
+      },
+      {
+       "sample": 230,
+       "excess_h_per_run": 2497.4,
+       "share_of_year_excess": 0.15993,
+       "calls_per_run": 12.6,
+       "own_link_share_in_year": 0.0,
+       "dark_hours_in_year": 8760,
+       "best_point": {
+        "kind": "route",
+        "dist_m": 529.5,
+        "link_share_in_year": 0.3605,
+        "share_of_dark_hours_linked_within_0_24_168h": [
+         0.3605,
+         0.39886,
+         0.629
+        ]
+       }
+      },
+      {
+       "sample": 189,
+       "excess_h_per_run": 1800.6,
+       "share_of_year_excess": 0.11531,
+       "calls_per_run": 11.4,
+       "own_link_share_in_year": 0.0,
+       "dark_hours_in_year": 8760,
+       "best_point": {
+        "kind": "route",
+        "dist_m": 608.3,
+        "link_share_in_year": 0.40856,
+        "share_of_dark_hours_linked_within_0_24_168h": [
+         0.40856,
+         0.44692,
+         0.67705
+        ]
+       }
+      },
+      {
+       "sample": 188,
+       "excess_h_per_run": 1766.4,
+       "share_of_year_excess": 0.11312,
+       "calls_per_run": 9.8,
+       "own_link_share_in_year": 0.03881,
+       "dark_hours_in_year": 8420,
+       "best_point": {
+        "kind": "grid",
+        "dist_m": 638.9,
+        "link_share_in_year": 0.43505,
+        "share_of_dark_hours_linked_within_0_24_168h": [
+         0.41223,
+         0.45214,
+         0.69157
+        ]
+       }
+      },
+      {
+       "sample": 190,
+       "excess_h_per_run": 1569.2,
+       "share_of_year_excess": 0.10049,
+       "calls_per_run": 11.0,
+       "own_link_share_in_year": 0.0,
+       "dark_hours_in_year": 8760,
+       "best_point": {
+        "kind": "grid",
+        "dist_m": 592.1,
+        "link_share_in_year": 0.3879,
+        "share_of_dark_hours_linked_within_0_24_168h": [
+         0.3879,
+         0.42626,
+         0.65639
+        ]
+       }
+      }
+     ],
+     "top_legs": [
+      {
+       "leg": "ISRU->CONSTR",
+       "excess_h_per_run": 10699.9,
+       "share_of_year_excess": 0.68521
+      },
+      {
+       "leg": "CONSTR->ISRU",
+       "excess_h_per_run": 2351.7,
+       "share_of_year_excess": 0.1506
+      },
+      {
+       "leg": "ISRU->PAD_A",
+       "excess_h_per_run": 532.6,
+       "share_of_year_excess": 0.03411
+      },
+      {
+       "leg": "ISRU->PAD_B",
+       "excess_h_per_run": 294.5,
+       "share_of_year_excess": 0.01886
+      },
+      {
+       "leg": "ISRU->POWER",
+       "excess_h_per_run": 285.9,
+       "share_of_year_excess": 0.01831
+      }
+     ]
+    }
+   },
+   "summary": "The 168 h helper loses 62.2 t against G2 168 h in 2029 (446.5 vs 508.7; 95 % [-92.4, -31.9]) and 13.4 t in 2028 ([-35.5, 8.7]); the per-seed losses differ between the years (Welch p = 0.0079, Mann-Whitney p = 0.0159). It is not more held time: the rover-hours held beyond G2's cap are 14,744 h a run in 2028 and 14,686 in 2029 (paired extra intervention waiting 4,168 and 3,649 vehicle-hours), at the same five samples (#4 ISRU, #188, #189, #190, #230: 76% and 81% of it) on the same legs (ISRU->CONSTR 71% / 74%, CONSTR->ISRU 20% / 19%). It is not a worse parking point: #188's best point is linked 50.39% of 2028 and 48.04% of 2029, and links 75.25% / 73.73% of #188's dark hours within 168 h; the other four best points likewise. #188's dark spell does run on into 2029 (it holds 2,754 h a run against 1,905), yet the year's total excess is unchanged. The 2029 loss is bulk regolith (-55.4 t [-93.0, -17.8] of -62.2): the same held hours cost more of the CONSTR->ISRU flow in 2029. The tally does not show why; the excess falls at different times (2029 peaks in Jul, Aug, Mar; 2028 in Nov, Mar, Apr), a candidate, not a tested cause."
+  }
  }
 }

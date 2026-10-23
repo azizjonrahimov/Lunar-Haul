@@ -1505,6 +1505,191 @@ def cmd_helper(a) -> None:
               f"{hp['helps_per_run']:.1f}/run, utilisation {hp['utilisation']:.2%}, parked {hp['busy_split_share']['parked_waiting_for_earth']:.2%}")
 
 
+def helper_call_log(seed: int, rescue_h: float = 168.0) -> Dict[str, Any]:
+    """One Stage H replication (dedicated k = 1, S = 1 h) with every committed helper call logged: sample, leg, wait
+    start, natural wait, the rover's wait with the helper and the outcome (help / natural first / unserved)."""
+    from experiments.phase4 import run_phase4 as R
+    from lunarsim import Simulation
+    tag, sc, _, mech, kw = next(c for c in R.e21h_cells() if c[0]["rescue_h"] == rescue_h and c[0]["helpers_n"] == 1
+                                and not c[0]["helpers_from_fleet"] and c[0]["helpers_service_h"] == 1.0)
+    yr = R.start_year(seed)
+    sim = Simulation(sc.with_(comms=dict(sc.comms, start_year=yr)), mech, seed=seed, mech_kwargs=dict(kw))
+    cm = sim.comms
+    last: Dict[str, Any] = {}
+    log: List[Dict[str, Any]] = []
+    o_sw, o_hw, o_ch = cm._sample_wait, cm._helper_wait, cm._commit_helpers
+
+    def sample_wait(a, b, u, t):
+        last["leg"] = f"{a}->{b}"
+        return o_sw(a, b, u, t)
+
+    def helper_wait(sid, ti, w_nat):
+        w = o_hw(sid, ti, w_nat)
+        cm._hp_pend[-1].update(sid=sid, w_nat=w_nat, leg=last.get("leg"), held=w)
+        return w
+
+    def commit_helpers():
+        log.extend(dict(r) for r in cm._hp_pend)
+        o_ch()
+
+    cm._sample_wait, cm._helper_wait, cm._commit_helpers = sample_wait, helper_wait, commit_helpers
+    out = sim.run()
+    return {"seed": seed, "start_year": yr, "horizon_h": float(sc.horizon_h), "calls": log,
+            "delivered_t_in_year": out["delivered_kg_in_horizon"] / 1000.0, "start_h": cm.start_h}
+
+
+def cmd_helper168(a) -> None:
+    """B-62 addendum: why the 168 h helper loses more in 2029 than in 2028 (Stage H vs G2 at 168 h, paired by seed)."""
+    import gzip
+    t0 = time.time()
+    h = pd.read_csv(os.path.join(a.results, STAGE_H_FILE), float_precision="round_trip")
+    h = h[(h["rescue_h"] == 168.0) & (h["helpers_n"] == 1) & (~h["helpers_from_fleet"].astype(bool)) & (h["helpers_service_h"] == 1.0)]
+    g2 = pd.read_csv(os.path.join(a.results, STAGE_G2_FILE), float_precision="round_trip")
+    g2 = g2[g2["rescue_h"] == 168.0]
+    with open(os.path.join(ROOT, "data", "comms", "connecting_ridge", "parking-v1.json"), encoding="utf-8") as fh:
+        park = json.load(fh)
+    with open(os.path.join(ROOT, "data", "comms", "connecting_ridge", "earth_link-v1-samples.json.gz"), "rb") as fh:
+        sdoc = json.loads(gzip.decompress(fh.read()))
+    n_s = int(sdoc["time"]["n"])
+    linked = lambda code: windows_mask(code, n_s)
+    for d_ in (h, g2):
+        d_["delivered_bulk_t"] = d_["delivered_bulk_kg_in_horizon"] / 1000.0
+        d_["delivered_landed_t"] = d_["delivered_landed_kg_in_horizon"] / 1000.0
+    paired_y = {}
+    for y in YEARS:
+        hy, gy = h[h["start_year"] == y], g2[g2["start_year"] == y]
+        paired_y[str(y)] = {m: {k: paired(gy, hy, m)[k] for k in ("ref_mean", "cell_mean", "diff", "ci_lo", "ci_hi")}
+                            for m in ("delivered_t_in_year", "delivered_bulk_t", "delivered_landed_t",
+                                      "blackout_wait_vehicle_h")}
+    dd = lambda y: (h[h["start_year"] == y].set_index("seed")["delivered_t_in_year"]
+                    - g2[g2["start_year"] == y].set_index("seed")["delivered_t_in_year"]).dropna().to_numpy()
+    d28, d29 = dd(2028), dd(2029)
+    contrast = {"per_seed_diff_2028": [round(float(v), 1) for v in d28], "per_seed_diff_2029": [round(float(v), 1) for v in d29],
+                "mean_diff_2029_minus_2028": float(d29.mean() - d28.mean()),
+                "welch_t_p": float(stats.ttest_ind(d29, d28, equal_var=False).pvalue),
+                "mann_whitney_p": float(stats.mannwhitneyu(d29, d28, alternative="two-sided").pvalue)}
+    rows = []
+    for seed in sorted(h["seed"].unique().tolist()):
+        r = helper_call_log(int(seed))
+        want = float(h.loc[h["seed"] == seed, "delivered_t_in_year"].iloc[0])
+        if r["delivered_t_in_year"] != want:
+            raise SystemExit(f"helper168: seed {seed} does not reproduce its Stage H row")
+        H = r["horizon_h"]
+        for c in r["calls"]:
+            held = min(c["ti"] + c["held"], H) - c["ti"]                 # inside the year
+            excess = max(0.0, held - min(168.0, H - c["ti"]))           # G2 holds every capped wait 168 h
+            rows.append({"seed": int(seed), "start_year": r["start_year"], "sample": c["sid"], "leg": c["leg"],
+                         "kind": c["kind"], "ti": c["ti"], "excess_h": excess,
+                         "month": int(min(11, c["ti"] // (H / 12.0)))})
+    df = pd.DataFrame(rows)
+    edges = month_edges_hourly_2028()
+    out: Dict[str, Any] = {"cell": "dedicated k=1, 168 h (S = 1 h) vs Stage G2 168 h", "paired_by_start_year": paired_y,
+                           "excess_definition": "rover-hours held inside the year beyond G2's cap: per call, the wait "
+                                                "with the helper minus min(168 h, hours left in the year)",
+                           "runs_reproduce_stage_h": True, "year_contrast_tonnage": contrast, "by_year": {}}
+    for y in YEARS:
+        d = df[df["start_year"] == y]
+        runs = d["seed"].nunique()
+        tot = float(d["excess_h"].sum()) / runs
+        top_s = d.groupby("sample")["excess_h"].sum().sort_values(ascending=False).head(5) / runs
+        top_l = d.groupby("leg")["excess_h"].sum().sort_values(ascending=False).head(5) / runs
+        lo, hi = edges[12 * (y - 2028)], edges[12 * (y - 2027)]
+        samples = []
+        for s, ex in top_s.items():
+            s = int(s)
+            rec = park["samples"].get(str(s))
+            own = linked(sdoc["series"][sdoc["samples"][s]["w"][0]])
+            dark = np.flatnonzero(~own[lo:hi]) + lo
+            entry = {"sample": s, "excess_h_per_run": round(float(ex), 1),
+                     "share_of_year_excess": round(float(ex) / tot, 5) if tot else None,
+                     "calls_per_run": round(float((d["sample"] == s).sum()) / runs, 2),
+                     "own_link_share_in_year": round(float(own[lo:hi].mean()), 5), "dark_hours_in_year": int(len(dark))}
+            if rec and rec["top"]:
+                p = park["points"][rec["top"][0]["point"]]
+                pm = (linked(sdoc["series"][sdoc["samples"][p["sample"]]["w"][0]]) if p["kind"] == "route"
+                      else linked(p["windows"]))
+                W = _wait_until(pm)
+                entry["best_point"] = {"kind": p["kind"], "dist_m": rec["top"][0]["dist_m"],
+                                       "link_share_in_year": round(float(pm[lo:hi].mean()), 5),
+                                       "share_of_dark_hours_linked_within_0_24_168h":
+                                           [round(float((W[dark] <= x).mean()), 5) if len(dark) else None for x in (0, 24, 168)]}
+            samples.append(entry)
+        by_kind = (d.groupby("kind")["excess_h"].sum() / runs).round(1).to_dict()
+        out["by_year"][str(y)] = {"runs": int(runs), "excess_h_per_run": round(tot, 1),
+                                  "calls_per_run": round(len(d) / runs, 2), "excess_by_kind_h_per_run": by_kind,
+                                  "excess_by_call_month_h_per_run": [round(float(d.loc[d["month"] == m, "excess_h"].sum()) / runs, 1)
+                                                                     for m in range(12)],
+                                  "top_samples": samples,
+                                  "top_legs": [{"leg": k, "excess_h_per_run": round(float(v), 1),
+                                                "share_of_year_excess": round(float(v) / tot, 5) if tot else None}
+                                               for k, v in top_l.items()]}
+    b8, b9, p8, p9 = out["by_year"]["2028"], out["by_year"]["2029"], paired_y["2028"], paired_y["2029"]
+    top = lambda b: sum(s_["share_of_year_excess"] for s_ in b["top_samples"])
+    s188 = lambda b: next((s_ for s_ in b["top_samples"] if s_["sample"] == 188), None)
+    leg = lambda b, k: next((l_["share_of_year_excess"] for l_ in b["top_legs"] if l_["leg"] == k), 0.0)
+    pk = lambda b: sorted(range(12), key=lambda m: -b["excess_by_call_month_h_per_run"][m])[:3]
+    mon = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split()
+    t8, t9 = s188(b8), s188(b9)
+    out["summary"] = (
+        f"The 168 h helper loses {-p9['delivered_t_in_year']['diff']:.1f} t against G2 168 h in 2029 "
+        f"({p9['delivered_t_in_year']['cell_mean']:.1f} vs {p9['delivered_t_in_year']['ref_mean']:.1f}; 95 % "
+        f"[{p9['delivered_t_in_year']['ci_lo']:.1f}, {p9['delivered_t_in_year']['ci_hi']:.1f}]) and "
+        f"{-p8['delivered_t_in_year']['diff']:.1f} t in 2028 ([{p8['delivered_t_in_year']['ci_lo']:.1f}, "
+        f"{p8['delivered_t_in_year']['ci_hi']:.1f}]); the per-seed losses differ between the years (Welch p = "
+        f"{contrast['welch_t_p']:.4f}, Mann-Whitney p = {contrast['mann_whitney_p']:.4f}). It is not more held time: the "
+        f"rover-hours held beyond G2's cap are {b8['excess_h_per_run']:,.0f} h a run in 2028 and {b9['excess_h_per_run']:,.0f} "
+        f"in 2029 (paired extra intervention waiting {p8['blackout_wait_vehicle_h']['diff']:,.0f} and "
+        f"{p9['blackout_wait_vehicle_h']['diff']:,.0f} vehicle-hours), at the same five samples (#4 ISRU, #188, #189, #190, "
+        f"#230: {top(b8):.0%} and {top(b9):.0%} of it) on the same legs (ISRU->CONSTR {leg(b8, 'ISRU->CONSTR'):.0%} / "
+        f"{leg(b9, 'ISRU->CONSTR'):.0%}, CONSTR->ISRU {leg(b8, 'CONSTR->ISRU'):.0%} / {leg(b9, 'CONSTR->ISRU'):.0%}). It is "
+        f"not a worse parking point: #188's best point is linked {t8['best_point']['link_share_in_year']:.2%} of 2028 and "
+        f"{t9['best_point']['link_share_in_year']:.2%} of 2029, and links "
+        f"{t8['best_point']['share_of_dark_hours_linked_within_0_24_168h'][2]:.2%} / "
+        f"{t9['best_point']['share_of_dark_hours_linked_within_0_24_168h'][2]:.2%} of #188's dark hours within 168 h; "
+        f"the other four best points likewise. #188's dark spell does run on into 2029 (it holds {t9['excess_h_per_run']:,.0f} "
+        f"h a run against {t8['excess_h_per_run']:,.0f}), yet the year's total excess is unchanged. The 2029 loss is bulk regolith ({p9['delivered_bulk_t']['diff']:.1f} t "
+        f"[{p9['delivered_bulk_t']['ci_lo']:.1f}, {p9['delivered_bulk_t']['ci_hi']:.1f}] of "
+        f"{p9['delivered_t_in_year']['diff']:.1f}): the same held hours cost more of the CONSTR->ISRU flow in 2029. The "
+        f"tally does not show why; the excess falls at different times (2029 peaks in {', '.join(mon[m] for m in pk(b9))}; "
+        f"2028 in {', '.join(mon[m] for m in pk(b8))}), a candidate, not a tested cause.")
+    path = os.path.join(a.results, "E21_fit_r2.json")
+    with open(path, encoding="utf-8") as fh:
+        fit = json.load(fh)
+    fit["helper"]["diagnosis_168h"] = _json(out)
+    with open(path, "w", encoding="utf-8", newline="\n") as fh:
+        json.dump(fit, fh, indent=1)
+        fh.write("\n")
+    print(f"E21_fit_r2.json helper.diagnosis_168h written ({time.time() - t0:.0f} s)")
+    for y, b in out["by_year"].items():
+        print(f"  {y}: excess {b['excess_h_per_run']} h/run over {b['calls_per_run']} calls; by kind {b['excess_by_kind_h_per_run']}; "
+              f"tonnage diff {paired_y[y]['delivered_t_in_year']['diff']:.1f}; top samples "
+              + ", ".join(f"#{s['sample']} {s['excess_h_per_run']} h ({s['share_of_year_excess']:.0%})" for s in b["top_samples"]))
+
+
+def windows_mask(code: Sequence[int], n: int) -> np.ndarray:
+    from lunarsim.comms import decode_windows, windows_to_mask
+    return windows_to_mask(decode_windows(code), n)
+
+
+def _wait_until(linked: np.ndarray) -> np.ndarray:
+    n = len(linked)
+    if not linked.any():
+        return np.full(n, np.inf)
+    idx = np.where(np.concatenate([linked, linked]), np.arange(2 * n), 4 * n)
+    return (np.minimum.accumulate(idx[::-1])[::-1][:n] - np.arange(n)).astype(float)
+
+
+def month_edges_hourly_2028() -> List[int]:
+    """Hour indices of every month start 2028-01 .. 2031-12 (and the end) in the hourly sample series."""
+    import calendar
+    out, hh = [], 0
+    for y in YEARS:
+        for m in range(1, 13):
+            out.append(hh)
+            hh += 24 * calendar.monthrange(y, m)[1]
+    return out + [hh]
+
+
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -1531,6 +1716,9 @@ def main(argv=None) -> None:
     p.add_argument("--scope", default="never_linked", choices=tuple(RESCUE_RUNS))
     p = sub.add_parser("helper", help="Stage H (B-62) -> table_E21h_helper_r2.csv and E21_fit_r2.json 'helper'")
     p.add_argument("--results", default=RESULTS)
+    p = sub.add_parser("helper168", help="B-62 addendum: the 168 h helper's losses by start year (20 tally reruns)")
+    p.add_argument("--results", default=RESULTS)
+    p.add_argument("--max-seconds", type=float, default=540.0)
     p = sub.add_parser("pool2028", help="B-60 N7: pool-full share in the 2028 seeds of the bounded rule (a few per call)")
     p.add_argument("--results", default=RESULTS)
     p.add_argument("--seeds", default="0,4,8,12,16")
@@ -1540,10 +1728,10 @@ def main(argv=None) -> None:
         a.boot = a.boot or (N_BOOT if a.round == "r1" else N_BOOT_R2)
         if a.round != "r1":
             return cmd_fit_r2(a)
-    if a.cmd == "pool2028" and a.max_seconds > 0:
+    if a.cmd in ("pool2028", "helper168") and a.max_seconds > 0:
         faulthandler.dump_traceback_later(a.max_seconds, exit=True)
     {"demand": cmd_demand, "fit": cmd_fit, "rounds": cmd_rounds, "bounded": cmd_bounded, "rescue": cmd_rescue,
-     "pool2028": cmd_pool2028, "helper": cmd_helper}[a.cmd](a)
+     "pool2028": cmd_pool2028, "helper": cmd_helper, "helper168": cmd_helper168}[a.cmd](a)
 
 
 if __name__ == "__main__":

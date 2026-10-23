@@ -4842,3 +4842,19 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
 **FRONTEND:** nothing required. New result files only. Column names, if the site wants them: `helper_*` in E21h; `E21_fit_r2.json["helper"]`.
 
 **Questions for LEAD:** none.
+
+- **B-62 addendum 12:52** (LEAD: why does the 168 h helper lose more in 2029 than in 2028?). New block `E21_fit_r2.json["helper"]["diagnosis_168h"]`, with a `summary` paragraph; nothing else in the fit file changed.
+  - **Source:** 20 tally reruns of "dedicated k=1, 168 h" (`analyse_e21.py helper168`, 45 s; each reproduces its Stage H row), paired by seed with G2 168 h from the CSVs.
+  - **The year gap is real:** the helper loses 62.2 t in 2029 (446.5 vs 508.7; [-92.4, -31.9]) and 13.4 t in 2028 ([-35.5, 8.7]). Per-seed losses: 2028 +2.0 / -40.9 / -20.0 / -9.4 / +1.3, 2029 -71.8 / -24.1 / -84.2 / -77.9 / -52.8 (Welch p = 0.0079, Mann-Whitney p = 0.0159).
+  - **Not more held time:**
+    - Rover-hours held beyond G2's cap: 14,744 h a run in 2028, 14,686 in 2029.
+    - Paired extra intervention waiting: +4,168 vs +3,649 vehicle-hours.
+    - Same five samples (#4 ISRU, #188, #189, #190, #230): 76 % / 81 % of the excess.
+    - Same legs: ISRU->CONSTR 71 % / 74 %, CONSTR->ISRU 20 % / 19 %.
+  - **Not a worse parking point:**
+    - #188's best point is linked 50.39 % of 2028 vs 48.04 % of 2029, and covers 75.25 % / 73.73 % of #188's dark hours within 168 h.
+    - The other four within ~1 pp: #4 / #230 66.94 → 66.30 %, #190 70.16 → 69.34 %, #189 72.31 → 71.46 %.
+  - **#188's dark spell does run into 2029** (it holds 2,754 h a run vs 1,905), yet the year's total excess is unchanged.
+  - **What differs:** the 2029 loss is bulk regolith, -55.4 t [-93.0, -17.8] of -62.2 (landed -6.5 [-16.8, 3.8]). The same held hours cost more of the CONSTR->ISRU flow in 2029.
+  - **Why: not shown.** The tally does not show why. The excess falls at different times (2029 peaks in Jul / Aug / Mar, 2028 in Nov / Mar / Apr); that is a candidate, not a tested cause, and testing it would need delivery-by-month or item-level runs.
+  - **Files:** `experiments/phase4/analyse_e21.py` (`helper168`, `helper_call_log`); `results/E21_fit_r2.json`. Helper tests 6 passed.
