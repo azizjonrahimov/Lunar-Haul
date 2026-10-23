@@ -78,7 +78,7 @@ function headline() {
   $('w2-scene-title').textContent = e.title; $('w2-scene-desc').textContent = e.description;
   const m = gallery.metrics.filter(k => e.headline?.[k.key]);
   host.replaceChildren(...m.map(k => statChip({ label: k.label, value: e.headline[k.key].mean, unit: k.unit, digits: k.digits, flag: k.flag,
-    source: `${gallery.common.seeds} seeds, mean ± ${fmt(e.headline[k.key].ci95, k.digits)} (95 %); ${e.source || 'gallery.json (B-36)'}` }).el));
+    source: `${gallery.common.seeds} seeds, mean ± ${fmt(e.headline[k.key].ci95, k.digits)} (95 %); ${e.source || 'data/scenes/gallery.json'}` }).el));
 }
 
 // ---------- start: the 3D scene, the trajectories, the package ----------
@@ -139,10 +139,10 @@ function controls(plan = false) {
     compareSelect(), h('button', { class: 'ui-btn', type: 'button', id: 'w2-copy', onclick: copyMoment }, 'Copy link to this moment'));
   const host = $('w2-chips');
   chips = {
-    delivered: statChip({ label: 'Delivered so far', value: 0, unit: 't', digits: 1, flag: 'Modelled', source: 'Sum of the deliveries up to this moment (scene package, B-31)', tone: 'cool' }),
+    delivered: statChip({ label: 'Delivered so far', value: 0, unit: 't', digits: 1, flag: 'Modelled', source: "Sum of the deliveries up to this moment (the scene package's scene.json → deliveries)", tone: 'cool' }),
     waiting: statChip({ label: 'Waiting now', value: 0, unit: 't', digits: 1, flag: 'Modelled', source: 'Cargo waiting at all sites this hour (scene package hourly series)', tone: 'warm' }),
     trips: statChip({ label: 'Trips done', value: 0, unit: '', digits: 0, flag: 'Modelled', source: 'Jobs finished up to this moment (scene package job list)' }),
-    urgent: statChip({ label: 'Urgent: 90 % delivered within', value: NaN, unit: 'h', digits: 1, flag: 'Modelled', source: '90th percentile of the wait (ready to delivered) of the priority-1 deliveries so far (scene package delivery rows, B-47)', tone: 'warm' }),
+    urgent: statChip({ label: 'Urgent: 90 % delivered within', value: NaN, unit: 'h', digits: 1, flag: 'Modelled', source: "90th percentile of the wait (ready to delivered) of the priority-1 deliveries so far (the scene package's scene.json → deliveries)", tone: 'warm' }),
   };
   host.append(...Object.values(chips).map(c => c.el));
 }
@@ -287,7 +287,7 @@ function update(force = false) {
   const link = linkState(idx, hr);
   if (link !== null && link !== linkText) {
     linkText = link; linkChip?.el.remove();
-    linkChip = statChip({ label: 'Earth link now', text: link, flag: 'Modelled', source: `Earth's hourly elevation at BASE (terrain horizon not applied here); link mode ${idx.comms.mode}${idx.comms.mode.includes('relay') ? ', relay up about 80 % of hours (its windows are not in the package)' : ''} (scene package, R-1)` });
+    linkChip = statChip({ label: 'Earth link now', text: link, flag: 'Modelled', source: `Earth's hourly elevation at BASE (terrain horizon not applied here); link mode ${idx.comms.mode}${idx.comms.mode.includes('relay') ? ', relay up about 80 % of hours (its windows are not in the package)' : ''} (the scene package: scene.json → comms, the hourly chunks → earth_el_deg)` });
     $('w2-chips').insertBefore(linkChip.el, chips.urgent.el.nextSibling);
   }
   if (pkgB && chipsB) {

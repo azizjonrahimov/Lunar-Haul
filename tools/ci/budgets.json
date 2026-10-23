@@ -511,7 +511,9 @@
       "data": [
         "comms/earth_track-v1.json.gz",
         "research/earth-sky/strategic-years.json",
-        "research/earth-sky/deliveries-by-year.json"
+        "research/earth-sky/deliveries-by-year.json",
+        "comms/horizons_dark_sample.json",
+        "research/earth-sky/rescue.json"
       ],
       "data_gzip_kb": 100,
       "fonts": [

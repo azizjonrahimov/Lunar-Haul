@@ -498,7 +498,7 @@ Link it from the Earth story's step 7 (a "Why 2028?" link; tell LEAD the URL so 
 from /research/ or Results. NOTE: the strategic policy's results are being re-examined (B-57); show the geometry
 and the stranding as measured, and do not add claims about which policy is best. Budget entry for the page.
 
-## F-41 part 2 [OPEN] (<= 1.5 h) B-58's skylines and the haul road on /research/earth-sky/; the rule's result (queued 22 Oct 21:55)
+## F-41 part 2 [REVIEW] (<= 1.5 h) B-58's skylines and the haul road on /research/earth-sky/; the rule's result (queued 22 Oct 21:55)
 - **Data:** stage `data/comms/connecting_ridge/horizons_dark_sample.json` (keys in BACKEND's B-58 report) and the
   `bounded` block of `results/E21_fit_r2.json` (only what the page shows) in prepare-data; budget data entry.
 - **Figure 1:** draw the skylines at BASE and at the dark spot over Earth's path (same grid-bearing convention).

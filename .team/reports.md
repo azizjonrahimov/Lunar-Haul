@@ -4467,3 +4467,74 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
 **FRONTEND:** nothing.
 
 **Questions for LEAD:** none.
+
+## F-41 part 2 DONE 22:10 | files changed | how to check | what I need from BACKEND | questions for LEAD
+
+**What:** /research/earth-sky/ now has B-58's skylines and the haul road, and section 3 ends with the rescue result (your amendment). The /world/ chips no longer show task IDs.
+
+**Figure 1 (skylines)**
+- The skylines at the dark spot (solid) and at BASE (dashed) are drawn over Earth's path. The terrain under each one is lightly filled, and each line is labelled directly. I dropped the dashed patch: the skyline shows the cause, so the patch was redundant.
+- **The plotted height is now the top of Earth's disc, not its centre.** Earth's centre never clears the dark spot's skyline: the centre peaks at 6.2°, and the skyline's lowest point in view is 6.2°, at bearing +9°. Only the disc's upper edge clears it, and the link rule counts any part of the disc. The axis label and the intro say this.
+  - For the paper, "Earth peaks near 6.2°" is about the centre. The top of the disc reaches 7.2°.
+- I checked the rule against the data. Testing BASE's track against the dark spot's skyline reproduces the dark spot's monthly link share in 47 of 48 months. The exception is June 2029: the margin is +0.002°, but the series records no link. That is within the <0.1° direction difference that B-58 notes.
+- **Caption** (built from the data): the closest approach for the chosen month (cleared by X° / Y° below, and the bearing), and the dark spot's link share that month. "Earth is in view at the dark spot only when its path rises above that skyline (6.2°–8.3° across the chart)". The base's skyline lies below the horizontal, at −1.9° to −0.9°. Then the frame and antenna note, and the sources.
+- A ring marks the selected year's closest approach. Year labels sit below a peak that is close to the skyline, so they don't sit on the line.
+- **Table twin:** for each year, Earth's highest point, the bearing there, the dark spot's skyline at that bearing, the best margin over the skyline (with its bearing), and the link share.
+- **Fixed:** the y-axis tick labels were offset by a string concatenation (`y(v) + 4`).
+
+**Figure 2 (haul road)**
+- New row "Haul road ISRU→CONSTR (its points that ever see Earth)", from `isru_constr_monthly.all_samples_that_ever_link`.
+- Caption: "4 of its 13 points never see Earth, the one at the oxygen plant among them, so the whole road is never linked at once." The numbers come from the data.
+- Its series equals the dark spot's exactly. A sentence says so only because the page checks that the two match ("whenever the dark spot sees Earth, the road's other such points do too").
+
+**Section 3: the result (LEAD's amendment)**
+- I replaced the internal note with your rescue text, with one change: "at a point that never sees Earth" instead of "where Earth never rises". The terrain hides Earth there; Earth still rises. Numbers in the text:
+  - Help within a week: 403 t, against 425 t with help at once.
+  - Help after a month: 310 t against strict's 307 t, with 82 % of urgent items delivered against 43 %.
+  - No help: 42 t.
+  - "None of this changes 2028": the dark spot sees Earth again in Jul 2029, so a rover stopped there is on an ordinary long wait. The 2028 sky stays at 86–208 t whatever the help time.
+- Three chips under the text: "Help within a week" 403 t; "Help after a month" "310 t · urgent +39 points over strict"; "No help" 42 t.
+- The header chips are back to five, so the extra no-redraw chip from my first pass is gone. The 30–58 t by-year range is no longer shown.
+- Sources:
+  - `results/E21_fit_r2.json` → `rescue.levels[rescue_h]`, `rescue.references.{strict,strategic}` and `rescue.breakeven_vs_strict.prio1_completion_share.mean_diff_by_level`.
+  - The 42 t comes from `bounded.cells` (DTE, strand).
+
+**Data and budget**
+- prepare-data copies `data/comms/connecting_ridge/horizons_dark_sample.json` to `comms/`.
+- prepare-data writes `research/earth-sky/rescue.json` (1 KB), the subset the page shows:
+  - the rescue levels (tonnage, urgent share, 2028 tonnage);
+  - the strand cell;
+  - the strict and strategic references;
+  - the paired differences against strict.
+- `tools/ci/budgets.json`: two data entries were added to the earth-sky page. Its limits are unchanged.
+- Measured: JS 13.3/15, CSS 9.2/15, data 80.2/100, fonts 100.4/110.
+
+**/world/ (from the F-40 list)**
+- The visible chip sources name files now:
+  - `data/scenes/gallery.json` replaces "gallery.json (B-36)".
+  - "the scene package's scene.json → deliveries" replaces "(scene package, B-31)" and "(… B-47)".
+  - "(the scene package: scene.json → comms, the hourly chunks → earth_el_deg)" replaces "(scene package, R-1)".
+- I checked the gallery chips live. The playback chips appear only once 3D is entered, so I checked those in the code only.
+
+**Also fixed on the page**
+- At 390 px the page scrolled sideways by 16 px. Long file paths in the captions and the sources list caused it; they now wrap.
+- The desktop CLS was 0.01, because the lead paragraph grew after load. It is 0 now: the lead's filled height is reserved per screen width.
+- Two visible lines of internal team language are gone: "it follows from BACKEND" and "with BACKEND's next export".
+
+**Checks**
+- Build OK; node tests 11/11; `budgets.py pages`: OK; `pytest tests/test_ci_budgets.py`: 10 passed.
+- Desktop and 390 px, light and dark: no overflow, no console errors. Dec 2030 is checked as a linked month (it clears by 0.6°; 18 % of hours).
+- Servers stopped; tab closed.
+
+**Files:** `site/research/earth-sky/index.html`, `site/src/research/earth-sky.js`, `site/src/research/earth-sky.css`, `site/scripts/prepare-data.mjs`, `site/src/world/v2.js`, `tools/ci/budgets.json` (data entries, under the standing grant for this page), `.team/inbox-frontend.md` (status).
+
+**How to check:** `/research/earth-sky/`.
+- Figure 1: months Jan 2028 and Dec 2030.
+- Figure 2: the haul road row.
+- Section 3: the rescue text and its three chips.
+- /world/: hover a headline chip's flag.
+
+**From BACKEND:** nothing.
+
+**Questions for LEAD**
+1. The page header still says "Explainer · R-1, round 2". R-1 is the research question, not a task ID, so I left it. Should it go too?

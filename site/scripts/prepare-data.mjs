@@ -168,6 +168,27 @@ if (existsSync(e21years)) {
   writeFileSync(join(PUB, 'research', 'earth-sky', 'deliveries-by-year.json'), JSON.stringify({ source: 'results/table_E21_years_r2.csv', comms: 'dte', metric: 'delivered_t_in_year', by_mix: byMix }));
   console.log('prepare-data: E21 deliveries by start year staged');
 }
+// F-41 part 2: the skylines at BASE and at the dark route sample, and the haul road's monthly link (B-58)
+const skylines = join(ROOT, 'data', 'comms', 'connecting_ridge', 'horizons_dark_sample.json');
+if (existsSync(skylines)) { mkdirSync(join(PUB, 'comms'), { recursive: true }); copyFileSync(skylines, join(PUB, 'comms', 'horizons_dark_sample.json')); console.log('prepare-data: skylines at the dark sample staged'); }
+// F-41 part 2: the strategic rule when help at a never-linked point is late (E21 Stage G rescue) or never comes (Stage F
+// strand), with the strict and strategic references; only what /research/earth-sky/ shows
+const fit = join(ROOT, 'results', 'E21_fit_r2.json');
+if (existsSync(fit)) {
+  const j = JSON.parse(readFileSync(fit, 'utf8')), strand = j.bounded?.cells?.find(c => c.link === 'DTE' && c.variant === 'strategic, strand on never-linked');
+  const pick = m => ({ delivered_t_in_year: m.delivered_t_in_year, prio1_completion_share: m.prio1_completion_share });
+  const t2028 = by => by?.['2028']?.delivered_t_in_year ?? by?.['2028'];
+  if (j.rescue?.levels && strand) {
+    mkdirSync(join(PUB, 'research', 'earth-sky'), { recursive: true });
+    writeFileSync(join(PUB, 'research', 'earth-sky', 'rescue.json'), JSON.stringify({ source: 'results/E21_fit_r2.json', link: 'DTE',
+      rescue: j.rescue.levels.map(l => ({ rescue_h: l.rescue_h, n: l.n, ...pick(l.mean), t_2028: t2028(l.by_year) })),
+      strand: { path: 'bounded.cells', variant: strand.variant, n: strand.n, ...pick(strand.mean), t_2028: t2028(strand.by_year) },
+      strict: { n: j.rescue.references.strict.n, ...pick(j.rescue.references.strict.mean) },
+      strategic: { n: j.rescue.references.strategic.n, ...pick(j.rescue.references.strategic.mean) },
+      vs_strict: Object.fromEntries(Object.entries(j.rescue.breakeven_vs_strict).map(([k, v]) => [k, { levels_h: v.levels_h, mean_diff_by_level: v.mean_diff_by_level, breakeven_h: v.breakeven_h }])) }));
+    console.log('prepare-data: rescue times staged');
+  }
+}
 // F-35: hourly direct-to-Earth windows of points along every leg, for the rover lab's Earth-link posts; F-40: version 2
 // (B-52, the lite file) adds the samples along each lighting's route (routes[leg][lighting]); v1 is no longer staged
 const links = join(ROOT, 'data', 'comms', 'connecting_ridge', 'earth_link-v2-samples-lite.json.gz');
