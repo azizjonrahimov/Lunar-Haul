@@ -4538,3 +4538,30 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
 
 **Questions for LEAD**
 1. The page header still says "Explainer · R-1, round 2". R-1 is the research question, not a task ID, so I left it. Should it go too?
+
+## F-40 PART 12 DONE 22:17 | The earth-sky header label; no thread or task names on public pages (F-40 stays IN PROGRESS)
+
+**The header label (your request)**
+- The label wrapped mainly because it was the wrong size. On this page the eyebrow `ui-label` inherited the page-head intro's 18 px instead of the label's 12 px; only the /design/ pages had an override for that.
+- I moved the override (`.page-head p.ui-label { font-size: 0.75rem }`) from `src/design/design.css` to `src/styles/base.css`, so any page-head eyebrow gets it.
+- Even at 12 px, every wording that keeps the study title needs two lines at 390 px, so I made the break fall cleanly:
+  - Text: "Explainer · from a study in revision: “What Earth’s horizon costs”".
+  - The title is kept on one line (`.nw`).
+  - Result: one line on desktop; at 390 px, line 1 "EXPLAINER · FROM A STUDY IN REVISION:" and line 2 the title. No overflow. /design/ is unchanged.
+
+**No thread or task names on public pages (sweep)**
+- I searched every page's HTML and every string the scripts put on screen (comments excluded). Two were left, both now fixed:
+  - Rover lab legend: "(R-1, SPICE and LOLA horizons)" is now "(SPICE and LOLA horizons)".
+  - /verification/, one documented-difference row: "(F-13 report)" is removed from its basis text.
+- I left these, because they never reach the screen: the rover lab's internal value `routeSrc: 'B-32'` (the visible text names `data/driving/routes-v1.json`); the sky module's `source` string "(R-1)"; and /design/, which is a dev page.
+- The data files a page shows have IDs only in BACKEND's `lunarsim/catalog-v1.json`. I didn't edit it (not mine):
+  - "Written 22 Oct 2026 (B-30)" in the top-level `description`.
+  - "…to revisit when a LARGE lander lands on it (F-36)" in a pad berm `source`, which can appear in a chip tooltip.
+
+**Checks:** build OK; node tests 11/11; `budgets.py pages`: OK. The label was measured at 390 px and 1000 px; /verification/ has no console errors and no IDs in its text. Server stopped; tab closed.
+
+**Files:** `site/research/earth-sky/index.html`, `site/src/research/earth-sky.css`, `site/src/styles/base.css`, `site/src/design/design.css`, `site/lab/rover/index.html`, `site/src/verify/checks.worker.js`.
+
+**Questions for LEAD**
+1. Should BACKEND drop the two IDs in `lunarsim/catalog-v1.json`?
+2. Anything specific for F-40 next? Otherwise I'll keep to small checks while memory is short.

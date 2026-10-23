@@ -44,6 +44,7 @@ td.n, th.n { text-align: right; }
 main { display: block; padding-bottom: var(--s-8); }
 .page-head { padding: var(--s-7) 0 var(--s-5); }
 .page-head p { color: var(--ink-2); max-width: var(--measure); font-size: 1.125em; }
+.page-head p.ui-label { font-size: 0.75rem; margin-bottom: var(--s-2); }   /* an eyebrow label keeps the label size, not the intro's */
 section + section { margin-top: var(--s-7); }
 
 /* buttons */

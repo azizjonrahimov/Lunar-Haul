@@ -11,6 +11,7 @@
 :root[data-theme="dark"] { --y2028: #DD5B6E; --y2029: #A38F24; --y2030: #4F86D8; --y2031: #2F9A59; --cal-lo: #1f2a3a; --cal-hi: #8fc1ff; --board: #15171a; --board-line: rgba(255, 255, 255, 0.04); }
 
 .es-head .prose { max-width: 46rem; }
+.es-head .ui-label .nw { white-space: nowrap; }   /* the study title stays on one line; a phone breaks before it */
 .es-lead { min-height: 10.2em; }   /* the filled lead's height, so nothing below it moves when the numbers arrive */
 @media (max-width: 760px) { .es-lead { min-height: 12em; } }
 @media (max-width: 480px) { .es-lead { min-height: 20.4em; } }

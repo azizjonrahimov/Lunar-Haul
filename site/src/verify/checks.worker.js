@@ -135,7 +135,7 @@ async function rover(base, refs) {
     } catch (e) { fail(G, 'hazard leg', e); }
   }
   await driverParity(base, t, G);
-  post({ group: G, name: 'Documented difference: BASE → PSR, autonomous, sun 90°, soil 37.8° / 44.9° / 47.8° (step drive)', reference: 'Python step drive', computed: 'states identical until a heading of exactly 45° (a diagonal of the A* grid) falls on the up-sun limit, where a one-ulp heading difference flips the up-sun speed factor; then 1,825–2,088 steps within 6 of Python; energy within 0.05–0.2 % (572.02 vs 571.87, 657.91 vs 657.56, 581.82 vs 583.01 Wh)', tolerance: 'not a pass/fail check', pass: null, basis: 'one-ulp differences in V8 vs CPython sin/cos/atan meeting the 45° up-sun boundary (F-13 report); at soil 42° the day and night step drives are identical (rows above, and night teleop 4 s: 9,128 steps, 622.486 Wh on both sides)' });
+  post({ group: G, name: 'Documented difference: BASE → PSR, autonomous, sun 90°, soil 37.8° / 44.9° / 47.8° (step drive)', reference: 'Python step drive', computed: 'states identical until a heading of exactly 45° (a diagonal of the A* grid) falls on the up-sun limit, where a one-ulp heading difference flips the up-sun speed factor; then 1,825–2,088 steps within 6 of Python; energy within 0.05–0.2 % (572.02 vs 571.87, 657.91 vs 657.56, 581.82 vs 583.01 Wh)', tolerance: 'not a pass/fail check', pass: null, basis: 'one-ulp differences in V8 vs CPython sin/cos/atan meeting the 45° up-sun boundary; at soil 42° the day and night step drives are identical (rows above, and night teleop 4 s: 9,128 steps, 622.486 Wh on both sides)' });
 }
 
 // the learned rover driver (B-13 ONNX export) in onnxruntime-web, on the card's stored check vectors
