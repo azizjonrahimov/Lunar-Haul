@@ -480,7 +480,7 @@ numbers), and entry chips to World, Vehicles, Labs, Simulator and Stories. Keep 
 - Keyboard, screen-reader mirror, reduced motion, contrast on every page; Lighthouse table for every page;
   a screenshot set (desktop + 390 px) committed under `site/design/shots/` is NOT wanted — keep them out of git.
 
-## F-41 [IN PROGRESS] (<= 4 h) "Earth's sky, year by year": an explorable for R-1's 2028 finding (light reading page)
+## F-41 [DONE cdb4c58] (<= 4 h) "Earth's sky, year by year": an explorable for R-1's 2028 finding (light reading page)
 The finding (B-55, paper §5.4): one 100 m route point on the regolith haul ISRU->CONSTR sees Earth at no hour from
 Jan 2028 to Jul 2029; strategic rovers stopped there wait, and in 2028 the fleet is captured (113 t vs ~530 t in
 2029-31). The cause is where Earth stands when it is high: west of grid north in 2028, east of it in 2030.
@@ -498,7 +498,7 @@ Link it from the Earth story's step 7 (a "Why 2028?" link; tell LEAD the URL so 
 from /research/ or Results. NOTE: the strategic policy's results are being re-examined (B-57); show the geometry
 and the stranding as measured, and do not add claims about which policy is best. Budget entry for the page.
 
-## F-41 part 2 [REVIEW] (<= 1.5 h) B-58's skylines and the haul road on /research/earth-sky/; the rule's result (queued 22 Oct 21:55)
+## F-41 part 2 [DONE 200ab2f] (<= 1.5 h) B-58's skylines and the haul road on /research/earth-sky/; the rule's result (queued 22 Oct 21:55)
 - **Data:** stage `data/comms/connecting_ridge/horizons_dark_sample.json` (keys in BACKEND's B-58 report) and the
   `bounded` block of `results/E21_fit_r2.json` (only what the page shows) in prepare-data; budget data entry.
 - **Figure 1:** draw the skylines at BASE and at the dark spot over Earth's path (same grid-bearing convention).
@@ -514,7 +514,7 @@ and the stranding as measured, and do not add claims about which policy is best.
   follows from BACKEND (B-59); leave room for one more sentence.
 - Small (F-40 list): task IDs such as "(B-36)" in visible source text on /world/ chips: replace with the file name.
 
-## F-42 [REVIEW] (<= 45 min) /research/earth-sky/ section 3: help for any long wait fixes 2028 (B-60) (queued 22 Oct 22:45)
+## F-42 [DONE 6476a54] (<= 45 min) /research/earth-sky/ section 3: help for any long wait fixes 2028 (B-60) (queued 22 Oct 22:45)
 B-60 (`results/E21_fit_r2.json` -> `rescue_any`, same layout as `rescue`): when help comes for ANY strategic rover held
 longer than the rescue time, not only at points that never see Earth, 2028 recovers. Help within a week (168 h): 507 t
 in 2028, 516 t a year over all start years (always linked: about 532 t); help after a month: 302 t in 2028.
@@ -526,7 +526,7 @@ in 2028, 516 t a year over all start years (always linked: about 532 t); help af
   the helper's own time is not counted.
 - One chip: "Help for any long wait, 2028 sky" (507 t). Stage `rescue_any` into rescue.json (only what is shown).
 
-## F-43 [REVIEW] (<= 60 min) /research/earth-sky/: a real helper, Earth's cycle, and the years ahead (B-61/62/63)
+## F-43 [DONE 7da0ef6] (<= 60 min) /research/earth-sky/: a real helper, Earth's cycle, and the years ahead (B-61/62/63)
 Three new results are committed (paper 598bc15). The page's section 3 still says "help within a week (helper's time
 not counted)". Update it, and add a short section 4. Every number comes from staged data with its flag and source;
 no task IDs on the page; same light/dark, 390 px and budget checks as F-42.

@@ -5104,3 +5104,24 @@ Every effect measured against strategic shifts by ~3 t, and Stage H 24 h tonnage
 **Questions for LEAD:**
 1. budgets.json, earth-sky entry: may I add `lazy: ["assets/research-earth-sky-helper-*.js"]` with `lazy_gzip_kb: 10` (4.65 measured; +25 % rounded up to 5 kB) and add `research/earth-sky/years.json` to its data list (1.7 KB gz, total about 83/100)? Or do you prefer to make that edit yourself?
 2. The seed-count note above: the spec's "2028-2031 have 20" is per cell, not per start year. The paper's Table 5 / 5.4 may want the same care if it compares per-year values.
+
+## F-40 PART 14 DONE 15:05 | Earth-sky descriptions catch up with F-43 (F-40 stays IN PROGRESS)
+
+- `site/research/earth-sky/index.html`: the meta description now ends "…, the rover fleet it caught, the one helper rover that frees it, and the dark spells that come back every six years or so." It had said only "…and the rover fleet it caught."
+- `site/results/index.html`: the explainer link's text now reads "…where Earth stands when it is high, the stretch of route it leaves dark in 2028 and again in later years, and one helper rover that keeps the fleet moving." It had said only "…dark in 2028."
+- `site/src/research/earth-sky.js`: the header comment no longer says "Three" figures (comment only).
+
+**Checks:**
+- `npm run build` OK.
+- budgets.py pages OK: earth-sky 14.4 / 9.5 / 82.7 / lazy 4.5; results 1.7 / 5.0.
+- The only visible change is one prose sentence on /results/ with no long unbroken words, so I skipped a browser session (memory).
+
+**Files changed:** site/research/earth-sky/index.html, site/results/index.html, site/src/research/earth-sky.js, .team/reports.md
+
+**How to check:** view source of /research/earth-sky/ (meta description); /results/, the "Explainer:" line under the header.
+
+**What I need from BACKEND:** nothing.
+
+**Questions for LEAD:**
+- The remaining F-40 items all need 3D: the lander and rover first frames, the world's "waiting for Earth" check, and story label declutter. Until memory frees up, I'm stopping here and waiting.
+- F-41 is still [IN PROGRESS] in my inbox although parts 1–2 and F-42/F-43 are committed. Mark it [REVIEW], or leave it open on purpose?

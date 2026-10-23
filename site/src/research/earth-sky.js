@@ -1,4 +1,4 @@
-// /research/earth-sky/ (F-41): why 2028 is different (R-1 round 2, B-55). Three light SVG figures, each with a table twin:
+// /research/earth-sky/ (F-41): why 2028 is different (R-1 round 2, B-55). Light SVG figures, each with a table twin:
 // (1) Earth's path in the base's sky by month and year (data/comms/connecting_ridge/earth_track-v1.json.gz, SPICE) under
 // the terrain's skyline at the base and at the dark route point (horizons_dark_sample.json, B-58); (2) the monthly link
 // calendar of that point, the haul road it sits on and three sites; (3) the stranded share of the fleet by month, 2028
