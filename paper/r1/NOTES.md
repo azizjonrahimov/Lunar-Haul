@@ -540,6 +540,8 @@ paragraph, Table 5 row F, compute paragraph (Stage F ran with two workers: summe
 second chance paragraph, bounded-rule paragraph, relay independence), Figure 4 caption, Section 5.8 (intervention
 rate "with its free re-draw"), Discussion paragraph 3, Limitations (two features of the rule; the auction pool),
 Conclusions (third finding; planning point on reaching a stopped rover), RESPONSE_round2.md.
-Pending: B-59 (rescue time at never-linked points, Stage G): one sentence each in 5.4, 6 and the abstract with the
-break-even rescue time against strict; BACKEND's answer on whether strict/look-ahead blocked items hold pool places
-(Limitations, auction pool bullet).
+Done 22 Oct (later): B-59 Stage G (results/E21g_rescue_r2.csv, table_E21g_rescue_r2.csv, E21_fit_r2.json["rescue"])
+as R1-G-* placeholders (asserts: help <= 168 h indistinguishable from the re-draw in tonnage and censored delay; help
+at 720 h = strict tonnage but more urgent completion; completion break-even beyond 720 h in every draw; 2028 still
+collapses). The framing is now rescue time: within a week = free re-draw, a month = strict tonnage but the urgent gain
+kept, none = 42 t. Limitations: the strict/look-ahead pools never fill (R1-F-POOL-STRICT).

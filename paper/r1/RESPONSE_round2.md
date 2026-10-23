@@ -173,5 +173,10 @@ knee, the restoration and completion shares at the lowest level and the strict-f
   year, 265 t less than the strict fleet. A bounded rule (the "middle rule" the round-1 Discussion proposed, at four
   bounds from 24 to 720 h) either refuses those routes and matches the look-ahead (307–309 t, no oxygen-plant haul),
   or leaves them to the re-draw and still collapses in 2028, now because deferred items fill the 40-item auction pool.
-  The abstract, Sections 5.4, 6 and 8, Table 4 and Table 5 are revised, and Section 7 states both features of the rule
-  and the pool limit. The relay results are unaffected: with a relay no point is never linked.
+  New Stage G puts a delay on help at those points (an optimistic fixed rescue time; the helper's own time is not
+  modelled). Help within a week (0–168 h) is as good as the free re-draw (403–429 t). Help after a month (720 h) gives
+  strict's tonnage (+3 t [−37, 44]) but still 39 points more urgent completion. The tonnage break-even against strict
+  lies beyond 720 h (bootstrap 95 % from 310 h). 2028 collapses at every rescue time, because its dark point sees
+  Earth again in July 2029. The abstract, Sections 5.4, 6 and 8, Table 4 and Table 5 are revised, and Section 7
+  states both features of the rule and the pool limit (which never binds for the strict and look-ahead fleets). The
+  relay results are unaffected: with a relay no point is never linked.

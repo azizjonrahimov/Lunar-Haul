@@ -47,7 +47,7 @@ PDF = os.path.join(HERE, "what_earths_horizon_costs_r1.pdf")
 CHROME = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 RAW = {"A": "E21a_comms_autonomy_r2.csv", "A2": "E21a2_operators_r2.csv", "B": "E21b_breakeven_r2.csv",
        "C": "E21c_pads_criterion_r2.csv", "D": "E21d_sun_r2.csv", "E": "E21e_sensitivity_r2.csv",
-       "F": "E21f_bounded_r2.csv"}
+       "F": "E21f_bounded_r2.csv", "G": "E21g_rescue_r2.csv"}
 MINUS, NB, PCT = "&minus;", "&nbsp;", "&#8239;%"
 MIX_LABEL = {"teleop_4s": "Teleoperated (4&nbsp;s round trip)", "default": "Reference mix",
              "supervised_strict": "Supervised, strict", "supervised_strategic": "Supervised, strategic",
@@ -184,6 +184,7 @@ class R:
         self.y = rd("table_E21_years_r2.csv")
         self.bd = rd("table_E21_breakeven_delay_r2.csv")
         self.fb = rd("table_E21f_bounded_r2.csv")
+        self.gb = rd("table_E21g_rescue_r2.csv")
         self.ops = rd("fig_E21_operator_demand_r2.csv")
         self.f = json.load(open(os.path.join(RES, "E21_fit_r2.json"), encoding="utf-8"))
         self.raw = {k: AN.prepare(rd(v)) for k, v in RAW.items()}
@@ -317,7 +318,7 @@ def values(r: R):
 
     # ---- counts, compute, design ------------------------------------------------------------------------------
     cells = {k: int(v["cell"].nunique()) for k, v in raw.items()}
-    for k in ("A", "A2", "B", "C", "D", "E", "F"):
+    for k in ("A", "A2", "B", "C", "D", "E", "F", "G"):
         V[f"R1-CELLS-{k}"] = f"{cells[k]}"
     V["R1-N-CELLS"] = f"{sum(cells.values())}"
     V["R1-N-YEARS"] = f"{sum(len(v) for v in raw.values()):,}"
@@ -606,6 +607,44 @@ def values(r: R):
     V["R1-F-POOL-ISRU"] = f"{last['pool_lanes']['CONSTR->ISRU']}"
     V["R1-F-POOL-SERVABLE"] = f"{last['beyond_cap_servable_now']}"
     V["R1-F-POOL-FREE"] = words(last["free_rovers"])
+    ls_ = [x for x in ps_["strict"] + ps_["look_ahead"]]
+    assert all(x["pool_full_share"] == 0 for x in ls_), "Section 7: the strict and look-ahead pools are never full"
+    V["R1-F-POOL-STRICT"] = rng_txt([100 * x["blocked_share_of_slots"] for x in ls_], num, PCT)
+
+    # how fast help must come where Earth never rises (Stage G, B-59)
+    rz = f["rescue"]
+    ge = lambda ref, h, metric: _match(r.gb, family="rescue", rescue_h=float(h), start_year="all", reference=ref,
+                                       metric=metric).iloc[0]
+    LV = [lv["rescue_h"] for lv in rz["levels"]]
+    assert LV == [0.0, 24.0, 72.0, 168.0, 720.0], "Section 5.4 names a week (168 h) and a month (720 h)"
+    WK = [h for h in LV if h <= 168]
+    V["R1-G-WEEK-T"] = rng_txt([lv["mean"]["delivered_t_in_year"] for lv in rz["levels"] if lv["rescue_h"] <= 168], num, NB + "t")
+    vs = [ge("strategic", h, "delivered_t_in_year") for h in WK]
+    assert all(x["ci_lo"] < 0 < x["ci_hi"] for x in vs), "5.4: help within a week is indistinguishable from the free re-draw"
+    assert all(ge("strategic", h, "delay_prio1_p90_censored_h")["wilcoxon_p"] > 0.05 for h in WK)
+    V["R1-G-WEEK-VS-STRAT"] = dci(vs[-1])
+    m7 = ge("strict", 720, "delivered_t_in_year")
+    assert m7["ci_lo"] < 0 < m7["ci_hi"], "5.4: help after a month delivers no more tonnage than strict"
+    V["R1-G-MONTH-T"], V["R1-G-MONTH-VS-STRICT"] = t_(m7["cell_mean"]), dci(m7)
+    mc = ge("strict", 720, "prio1_completion_share")
+    assert mc["ci_lo"] > 0, "5.4: help after a month still completes more urgent items than strict"
+    V["R1-G-MONTH-COMP"], V["R1-G-MONTH-COMP-VS-STRICT"] = sh(mc["cell_mean"]), pts(mc)
+    mp = ge("strict", 720, "delay_prio1_p90_censored_h")
+    V["R1-G-MONTH-CP90-GM"], V["R1-G-MONTH-CP90-W"] = ratio(mp), wil(mp["wilcoxon_p"])
+    ms = ge("strategic", 720, "delivered_t_in_year")
+    assert ms["ci_hi"] < 0
+    V["R1-G-MONTH-VS-STRAT"] = dci(ms)
+    hx = lambda v: v if isinstance(v, str) else h_(v)
+    be = rz["breakeven_vs_strict"]["delivered_t_in_year"]
+    V["R1-G-BE-T"] = be["breakeven_h"] if isinstance(be["breakeven_h"], str) else f"at {h_(be['breakeven_h'])}"
+    V["R1-G-BE-T-CI"] = f"{hx(be['ci95'][0])} to {hx(be['ci95'][1])}"
+    V["R1-G-BE-T-BEYOND"] = sh(be["share_beyond_range"])
+    assert rz["breakeven_vs_strict"]["prio1_completion_share"]["share_beyond_range"] == 1.0, "5.4: 'in every draw'"
+    y28 = [lv["by_year"]["2028"]["delivered_t_in_year"] for lv in rz["levels"]]
+    assert max(y28) < 0.5 * min(lv["by_year"][y]["delivered_t_in_year"] for lv in rz["levels"] if lv["rescue_h"] <= 168
+                                for y in ("2029", "2030", "2031")), "5.4: 2028 still collapses with help"
+    V["R1-G-2028"] = rng_txt(y28, num, NB + "t")
+    V["R1-G-RESCUES"] = f"{num(rz['levels'][0]['rescues_per_run'])} to {num(rz['levels'][-1]['rescues_per_run'])}"
 
     # ---- 5.5 break-even -------------------------------------------------------------------------------------------
     bc = lambda p, pol, n, mast="none": _match(r.c[r.c["stage"] == "B"], p=p, policy=pol, extra_rovers=n, mast=mast).iloc[0]

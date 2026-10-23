@@ -130,6 +130,14 @@
    "source": "results/table_E21_cells_r2.csv, row stage = A, comms = dte, mix = supervised_strategic, column prio1_completion_share; x 100; direct links only; supervised rovers that may drive without a link (strategic policy)",
    "label": "Urgent items, rovers drive out of sight"
   },
+  "rescue_month_done": {
+   "value": 81.658876539,
+   "text": "82 %",
+   "unit": "%",
+   "flag": "Modelled",
+   "source": "results/table_E21g_rescue_r2.csv, row family = rescue, rescue_h = 720, start_year = all, reference = strict, metric = prio1_completion_share, column cell_mean; x 100; the same rovers when one that needs help where Earth never rises waits 720 hours for it (Stage G of the Earth-link experiment; the helper's own time is not modelled)",
+   "label": "Urgent items, help after a month"
+  },
   "strand_t": {
    "value": 41.8934030091,
    "text": "42 t per year",
@@ -331,7 +339,7 @@
    "id": "autonomy",
    "scene": "world:P2-comms-dte-strategic",
    "title": "Or let rovers drive out of sight",
-   "text": "With no relay at all, supervised rovers allowed to drive out of Earth's sight deliver {{r:strategic_done}} of urgent items, but only because the model gives them a free second try when help would be needed where Earth never rises. Left waiting there instead, they deliver {{r:strand_t}} in a whole year. Even with the free try, 2028's sky strands most of them. A cautious version that never starts a drive it cannot finish in sight gets {{r:avoid_done}} of urgent items.",
+   "text": "With no relay at all, supervised rovers allowed to drive out of Earth's sight deliver {{r:strategic_done}} of urgent items, if a rover that needs help where Earth never rises gets it within a week. With help after a month they still deliver {{r:rescue_month_done}}; with no help at all the fleet moves only {{r:strand_t}} in a whole year. In 2028 the sky strands most of them anyway. A cautious version that never starts a drive it cannot finish in sight gets {{r:avoid_done}} of urgent items.",
    "visual": "Supervised rovers driving on through the stretch where the link is lost.",
    "camera": {
     "shot": "overview"
@@ -342,6 +350,7 @@
    },
    "chips": [
     "strategic_done",
+    "rescue_month_done",
     "strand_t",
     "avoid_done"
    ],
@@ -352,7 +361,7 @@
     }
    ],
    "title_plain": "Or let rovers drive out of sight",
-   "text_plain": "With no relay at all, supervised rovers allowed to drive out of Earth's sight deliver 89 % of urgent items, but only because the model gives them a free second try when help would be needed where Earth never rises. Left waiting there instead, they deliver 42 t per year in a whole year. Even with the free try, 2028's sky strands most of them. A cautious version that never starts a drive it cannot finish in sight gets 50 % of urgent items.",
+   "text_plain": "With no relay at all, supervised rovers allowed to drive out of Earth's sight deliver 89 % of urgent items, if a rover that needs help where Earth never rises gets it within a week. With help after a month they still deliver 82 %; with no help at all the fleet moves only 42 t per year in a whole year. In 2028 the sky strands most of them anyway. A cautious version that never starts a drive it cannot finish in sight gets 50 % of urgent items.",
    "visual_plain": "Supervised rovers driving on through the stretch where the link is lost."
   },
   {
@@ -374,9 +383,10 @@
  ],
  "pending": [],
  "sources": {
-  "results/E21_fit_r2.json": "80e3caff4c6948709964e9d307bd2540cb540744827c63d98f87fe302b5b5d84",
+  "results/E21_fit_r2.json": "3a850f8124f14c18e1db6f3a8e7efdd2956b4fb444c7b4920a66f6a30a4e02b0",
   "results/table_E21_breakeven_delay_r2.csv": "93a7e18b318c752aaf2f165bb476c811ebb9ce80fae104f64533963a6b5aa461",
   "results/table_E21_cells_r2.csv": "c70242a7ef423588895bb8f01fb7c64374ef88451b11a52da6f7f1fe52bf755e",
-  "results/table_E21f_bounded_r2.csv": "de1a4bf17310563932c65cea847c38f62438dab1d5a54595f38474e89f1e5cf8"
+  "results/table_E21f_bounded_r2.csv": "de1a4bf17310563932c65cea847c38f62438dab1d5a54595f38474e89f1e5cf8",
+  "results/table_E21g_rescue_r2.csv": "a93e6fd6d03ccc58ed554fca8c1372bb247cdb8b32d8347973c2bff8124f94ed"
  }
 }
