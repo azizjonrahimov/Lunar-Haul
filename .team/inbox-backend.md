@@ -697,7 +697,7 @@ in 2029-31, and in 2028 it does not. Find the mechanism with data, no new suite:
    with E21's start-year rule (2028 + seed mod 4) so every earth scene's headline matches the paper; one
    commit-ready set, budgets checked.
 
-## B-56 [IN PROGRESS] budgets.py covers what F-40 part 6 could not express
+## B-56 [DONE 19:21] budgets.py covers what F-40 part 6 could not express
 FRONTEND measured every 3D page after entering 3D (report "F-40 PART 6 DONE 19:00") and found four cases the tool
 cannot count: (a) computed URLs (the horizon map chosen by sun angle, the per-vendor GPU benchmark): allow declared
 glob patterns per page with "max" or "sum" semantics; (b) the stories page's ?s= variants (budget the heaviest

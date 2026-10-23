@@ -4144,3 +4144,33 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
 **Questions for LEAD**
 1. Paper: the E21 strategic-DTE mean (425 t) averages a 2028 collapse (113 t, one dark spot near ISRU until July 2029) and about 530 t in other years. I suggest reporting it by start year, or with a sentence plus `E21_strategic_years.json`.
 2. The plume roughly doubles DTE waits (977 -> 2,786 rover-hours), an interaction E21 does not cover except E21e's `plume_1km_0.5h` row (supervised strict, relay 0.5). Worth a limitation sentence, or a two-cell check if you want it.
+
+## B-56 DONE 19:21 | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**What:** `tools/ci/budgets.py pages` now covers the four cases from F-40 part 6. Every current entry still passes (`pages: OK`, unchanged numbers). The new keys are optional and documented in the module docstring and the `budgets.json` note.
+
+**New keys per page entry (FRONTEND adopts them when convenient):**
+- **(a) `"computed": [{"glob": "terrain/hero/v2/horizon_20m_*.png", "count": "max"}, {"glob": "detect-gpu/benchmarks/d-*.json", "count": "max"}]`.** URLs chosen at run time.
+  - `"max"` counts the heaviest match (`"n": k` for the k heaviest); `"sum"` counts all matches.
+  - Added to `data_gzip_kb`. A file both listed and computed counts once.
+  - The printout names the chosen file(s) and how many matched.
+- **(b) `"variants": {"?s=earth-horizon": {"data": [...], "lazy": [...]}, "?s=learned-landing": {"data": [...], "lazy": ["assets/lander-lab3d-scene-*.js"]}}`.**
+  - Each variant's lists (data, computed, lazy, lazy_css, fonts) are added to the page's own lists, and every budget applies to the heaviest variant for that metric.
+  - The row reports `heaviest_variant` per metric and each variant's totals. A violation names the variant.
+- **(c) `"fonts": ["assets/sora-latin-wght-*.woff2", "assets/jetbrains-mono-latin-wght-*.woff2", "assets/source-sans-3-greek-wght-*.woff2"]` + `"fonts_kb"`.** Raw bytes, since woff2 is already compressed.
+  - Font preloads in the HTML always count (today every page preloads Source Sans latin, 28.1 kB).
+  - Each declared font must be named by an `@font-face` rule of the page's CSS (initial or lazy) or by a preload, otherwise it is an error, which catches stale names.
+  - The row also has `fonts_available_kb`, all `@font-face` files the page could fetch, as an upper bound.
+- **(d) `"lazy_css": ["assets/ui-*.css"]` + `"lazy_css_gzip_kb"`.**
+  - CSS that the page's scripts reference (Vite's dependency maps) but no list counts is printed as a note, not an error: a map lists the CSS of every dynamic import, triggered or not.
+  - The `ui-*.css` entries now sitting in the data lists of /, /lab/lander/ and /lab/rover/ can move to `lazy_css`.
+- **Strictness:** an unknown key in a page entry or variant is now an error. A typo such as `font_kb` would otherwise silently drop a budget.
+- `--propose` carries every list, variant and limit over.
+
+**Files:** `tools/ci/budgets.py`, `tools/ci/budgets.json` (note only; entries untouched), `tests/test_ci_budgets.py` (+3 tests: computed max / n / sum and its errors; variants and the heaviest-variant error; lazy CSS note and budget, fonts with preload, the @font-face check and an unknown key; the committed-file test now checks the new keys too).
+
+**How to test:** `.venv/Scripts/python -m pytest -q tests/test_ci_budgets.py` -> 10 passed (includes `check_pages` on the local full build). `.venv/Scripts/python tools/ci/budgets.py pages` -> OK, with new columns "lazy CSS" and "fonts kB".
+
+**FRONTEND:** the keys above. Example migration for /stories/: move the Earth-story lists into `variants["?s=earth-horizon"]` and add the other three stories. Replace the measured `horizon_20m_NN.png` and `d-nvidia.json` with the two `computed` globs. Move `assets/ui-*.css` from `data` to `lazy_css`. Declare the woff2 files measured in Chrome under `fonts`. Then set limits from `--propose`, or at measured + 5 % as in F-40.
+
+**Questions for LEAD:** none.

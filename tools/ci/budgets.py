@@ -14,6 +14,17 @@ later by dynamic import are declared per page as "lazy" (globs of the entry chun
 minus the files the page already loaded) and reported and budgeted separately (lazy_gzip_kb). The site total is
 checked against the Pages limit. Thresholds:
 tools/ci/budgets.json; a page without its own entry uses "defaults". Exit 1 on any violation or missing file.
+B-56 keys per page (all optional):
+  "computed": [{"glob": ..., "count": "max" | "sum", "n": 1}]   URLs the page computes at run time (the horizon map
+      chosen by the sun's bearing, the GPU benchmark chosen by vendor): "max" counts the n heaviest matches, "sum"
+      all of them; added to data_gzip_kb.
+  "variants": {"?s=earth-horizon": {"data": [...], "lazy": [...], ...}, ...}   query-string variants of one page:
+      each variant's lists are added to the page's own, and every budget applies to the heaviest variant for it.
+  "lazy_css": [globs] + "lazy_css_gzip_kb"   stylesheets loaded with lazy chunks. CSS the page's scripts reference
+      (Vite's dependency maps) but no list counts is printed as a note, not an error.
+  "fonts": [globs] + "fonts_kb"   font files the page uses (raw bytes: woff2 is already compressed); each must be
+      named by an @font-face rule of the page's CSS or a font preload. Font preloads in the HTML always count.
+An unknown key in a page entry is an error (typos would silently drop a budget).
 
 schemas: validates with jsonschema (Draft 2020-12) and, where a format has one, its Python validator too:
 catalog, routes, trajectories, scene indexes and gallery, earth link, stories, scenario files and sample traces (v1 or v2 by
@@ -48,6 +59,7 @@ class _Refs(HTMLParser):
         self.js: List[str] = []
         self.css: List[str] = []
         self.classic: List[str] = []
+        self.fonts: List[str] = []
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
@@ -61,6 +73,8 @@ class _Refs(HTMLParser):
                 self.js.append(a["href"])
             elif rel == "stylesheet":
                 self.css.append(a["href"])
+            elif rel == "preload" and (a.get("as") or "").lower() == "font":
+                self.fonts.append(a["href"])
 
 
 def _local(href: str, dist: str, page_dir: str) -> str:
@@ -101,6 +115,90 @@ def gz(path: str) -> int:
         return len(gzip.compress(f.read(), 6))
 
 
+_FONT_FACE = re.compile(r"@font-face\s*\{[^}]*\}", re.S)
+_FONT_URL = re.compile(r"""url\(\s*["']?([^"')]+?\.(?:woff2?|ttf|otf))(?:[?#][^"')]*)?["']?\s*\)""")
+_CSS_REF = re.compile(r"""["']([^"'\s]*?assets/[A-Za-z0-9_.-]+\.css)["']""")
+
+
+def font_faces(css_files: List[str], dist: str) -> List[str]:
+    """Font files named by the @font-face rules of these stylesheets (an upper bound of what the page can fetch:
+    the browser fetches a face only for text that uses it, within its unicode-range)."""
+    out = set()
+    for f in css_files:
+        if not os.path.isfile(f):
+            continue
+        with open(f, encoding="utf-8", errors="replace") as fh:
+            text = fh.read()
+        for block in _FONT_FACE.findall(text):
+            for u in _FONT_URL.findall(block):
+                p = _local(u, dist, os.path.dirname(f))
+                if p:
+                    out.add(os.path.normpath(p))
+    return sorted(out)
+
+
+def _globs(dist: str, patterns: List[str], missing: List[str]) -> List[str]:
+    out = []
+    for pattern in patterns:
+        hits = sorted(glob.glob(os.path.join(dist, pattern)))
+        if not hits:
+            missing.append(pattern)
+        out += [os.path.normpath(h) for h in hits]
+    return out
+
+
+def _computed(dist: str, items: List[Dict[str, Any]], missing: List[str], problems: List[str]):
+    """Files behind computed URLs (a map chosen by the sun's bearing, a benchmark chosen by GPU vendor): per declared
+    glob, the n heaviest matches (count "max", n default 1) or all of them (count "sum")."""
+    files, notes = [], []
+    for it in items:
+        hits = sorted(os.path.normpath(h) for h in glob.glob(os.path.join(dist, it.get("glob", ""))))
+        if not hits:
+            missing.append(it.get("glob", "(computed entry without glob)"))
+            continue
+        mode = it.get("count", "max")
+        if mode == "sum":
+            pick = hits
+        elif mode == "max":
+            pick = sorted(hits, key=lambda f: (-gz(f), f))[:int(it.get("n", 1))]
+        else:
+            problems.append(f"computed {it['glob']}: count must be 'max' or 'sum', not {mode!r}")
+            continue
+        files += pick
+        notes.append({"glob": it["glob"], "count": mode, "of": len(hits),
+                      "files": [os.path.relpath(f, dist).replace(os.sep, "/") for f in pick]})
+    return files, notes
+
+
+LISTS = ("data", "computed", "lazy", "lazy_css", "fonts")
+LIMITS = ("js_gzip_kb", "css_gzip_kb", "data_gzip_kb", "lazy_gzip_kb", "lazy_css_gzip_kb", "fonts_kb")
+KEYS = set(LISTS) | set(LIMITS) | {"variants", "note"}
+METRICS = ("data_gzip_kb", "lazy_gzip_kb", "lazy_css_gzip_kb", "fonts_kb")
+
+
+def _evaluate(dist: str, spec: Dict[str, Any], initial_js: set, initial_css: List[str], preload_fonts: List[str],
+              missing: List[str], problems: List[str]) -> Dict[str, Any]:
+    """Data (declared + computed), lazy JS closure, lazy CSS and fonts of one page spec (or one variant of it)."""
+    data_files = set(_globs(dist, spec.get("data", []), missing))
+    comp_files, comp_notes = _computed(dist, spec.get("computed", []), missing, problems)
+    data_files |= set(comp_files)
+    lazy_files = [f for f in static_closure(_globs(dist, spec.get("lazy", []), missing)) if f not in initial_js]
+    lazy_css = sorted(set(_globs(dist, spec.get("lazy_css", []), missing)) - set(initial_css))
+    faces = set(font_faces(initial_css + lazy_css, dist))
+    declared = _globs(dist, spec.get("fonts", []), missing)
+    for f in declared:
+        if f not in faces and f not in preload_fonts:
+            problems.append(f"font {os.path.relpath(f, dist).replace(os.sep, '/')} is in no @font-face rule or font "
+                            "preload of the page")
+    fonts = sorted(set(declared) | set(preload_fonts))
+    return {"data_gzip_kb": sum(gz(f) for f in sorted(data_files)) / 1024, "n_data": len(data_files),
+            "lazy_gzip_kb": sum(gz(f) for f in lazy_files) / 1024, "n_lazy": len(lazy_files), "lazy_files": lazy_files,
+            "lazy_css_gzip_kb": sum(gz(f) for f in lazy_css) / 1024, "n_lazy_css": len(lazy_css), "lazy_css": lazy_css,
+            "fonts_kb": sum(os.path.getsize(f) for f in fonts if os.path.isfile(f)) / 1024, "n_fonts": len(fonts),
+            "fonts_available_kb": sum(os.path.getsize(f) for f in faces if os.path.isfile(f)) / 1024,
+            "computed": comp_notes}
+
+
 def pages(dist: str) -> List[str]:
     out = sorted(os.path.relpath(p, dist).replace(os.sep, "/") for p in glob.glob(os.path.join(dist, "**", "index.html"), recursive=True))
     if os.path.isfile(os.path.join(dist, "404.html")):
@@ -122,25 +220,43 @@ def measure(dist: str, budgets: Dict[str, Any]) -> List[Dict[str, Any]]:
         css = sum(gz(f) for f in css_files if os.path.isfile(f))
         missing += [os.path.relpath(f, dist) for f in js_files + css_files if not os.path.isfile(f)]
         spec = {**budgets.get("defaults", {}), **budgets.get("pages", {}).get(page, {})}
-        data_files = []
-        for pattern in spec.get("data", []):
-            hits = sorted(glob.glob(os.path.join(dist, pattern)))
-            if not hits:
-                missing.append(pattern)
-            data_files += hits
-        data = sum(gz(f) for f in sorted(set(data_files)))
-        lazy_entries = []
-        for pattern in spec.get("lazy", []):
-            hits = sorted(glob.glob(os.path.join(dist, pattern)))
-            if not hits:
-                missing.append(pattern)
-            lazy_entries += hits
+        problems = [f"unknown key {k!r}" for k in sorted(set(spec) - KEYS)]
         initial = {os.path.normpath(f) for f in js_files}
-        lazy_files = [f for f in static_closure(lazy_entries) if f not in initial]
-        lazy = sum(gz(f) for f in lazy_files)
-        rows.append({"page": page, "js_gzip_kb": js / 1024, "css_gzip_kb": css / 1024, "data_gzip_kb": data / 1024,
-                     "lazy_gzip_kb": lazy / 1024, "n_js": len(js_files), "n_classic": len(set(p.classic)),
-                     "n_lazy": len(lazy_files), "n_data": len(set(data_files)), "missing": missing, "spec": spec})
+        css_n = [os.path.normpath(f) for f in css_files]
+        preload_fonts = sorted({os.path.normpath(_local(h, dist, page_dir)) for h in p.fonts} - {"", "."})
+        missing += [os.path.relpath(f, dist) for f in preload_fonts if not os.path.isfile(f)]
+        variants = spec.get("variants") or {}
+        if variants:                       # e.g. /stories/?s=<id>: base lists + each variant's; budget the heaviest
+            ev = {}
+            for name, v in variants.items():
+                problems += [f"variant {name}: unknown key {k!r}" for k in sorted(set(v) - set(LISTS))]
+                merged = {k: list(spec.get(k, [])) + list(v.get(k, [])) for k in LISTS}
+                ev[name] = _evaluate(dist, merged, initial, css_n, preload_fonts, missing, problems)
+            heaviest = {m: max(ev, key=lambda n: (ev[n][m], n)) for m in METRICS}
+            res = {m: ev[heaviest[m]][m] for m in METRICS}
+            base = ev[heaviest["data_gzip_kb"]]
+            res.update({k: base[k] for k in ("n_data", "computed")}, n_lazy=ev[heaviest["lazy_gzip_kb"]]["n_lazy"],
+                       lazy_files=sorted({f for e in ev.values() for f in e["lazy_files"]}),
+                       lazy_css=sorted({f for e in ev.values() for f in e["lazy_css"]}),
+                       n_lazy_css=ev[heaviest["lazy_css_gzip_kb"]]["n_lazy_css"],
+                       n_fonts=ev[heaviest["fonts_kb"]]["n_fonts"],
+                       fonts_available_kb=max(e["fonts_available_kb"] for e in ev.values()),
+                       heaviest_variant=heaviest,
+                       variants={n: {m: round(e[m], 1) for m in METRICS} for n, e in ev.items()})
+        else:
+            res = _evaluate(dist, spec, initial, css_n, preload_fonts, missing, problems)
+        # CSS the page's scripts can pull in later (Vite's dependency maps) that no budget counts: reported, not an error
+        refs = set()
+        for f in sorted(initial) + res["lazy_files"]:
+            if os.path.isfile(f):
+                with open(f, encoding="utf-8", errors="replace") as fh:
+                    refs |= {os.path.normpath(_local(h, dist, page_dir)) for h in _CSS_REF.findall(fh.read())}
+        counted = set(css_n) | set(res["lazy_css"]) | set(_globs(dist, spec.get("data", []), []))
+        undeclared = sorted(os.path.relpath(f, dist).replace(os.sep, "/") for f in refs - counted - {"", "."}
+                            if os.path.isfile(f))
+        rows.append({"page": page, "js_gzip_kb": js / 1024, "css_gzip_kb": css / 1024, **res,
+                     "n_js": len(js_files), "n_classic": len(set(p.classic)), "lazy_css_undeclared": undeclared,
+                     "missing": missing, "problems": problems, "spec": spec})
     return rows
 
 
@@ -149,11 +265,14 @@ def check_pages(dist: str, budgets: Dict[str, Any]) -> Tuple[List[Dict[str, Any]
     errs = []
     for r in rows:
         s = r["spec"]
-        for k in ("js_gzip_kb", "css_gzip_kb", "data_gzip_kb", "lazy_gzip_kb"):
+        for k in LIMITS:
             if k in s and r[k] > s[k] + 1e-9:
-                errs.append(f"{r['page']}: {k} {r[k]:.1f} > budget {s[k]}")
+                hv = r.get("heaviest_variant", {}).get(k)
+                errs.append(f"{r['page']}: {k} {r[k]:.1f} > budget {s[k]}" + (f" (variant {hv})" if hv else ""))
         for m in r["missing"]:
             errs.append(f"{r['page']}: missing {m}")
+        for m in r["problems"]:
+            errs.append(f"{r['page']}: {m}")
     known = set(budgets.get("pages", {}))
     for page in known - {r["page"] for r in rows}:
         errs.append(f"budgets.json lists {page}, which the build does not have")
@@ -171,11 +290,23 @@ def propose(rows: List[Dict[str, Any]], margin: float = 1.25) -> Dict[str, Any]:
     for r in rows:
         if r["page"].startswith("("):
             continue
-        out[r["page"]] = {"js_gzip_kb": up(r["js_gzip_kb"]), "css_gzip_kb": up(r["css_gzip_kb"])}
-        if r["spec"].get("data"):
-            out[r["page"]].update(data=r["spec"]["data"], data_gzip_kb=up(r["data_gzip_kb"]))
-        if r["spec"].get("lazy"):
-            out[r["page"]].update(lazy=r["spec"]["lazy"], lazy_gzip_kb=up(r["lazy_gzip_kb"]))
+        s, o = r["spec"], {"js_gzip_kb": up(r["js_gzip_kb"]), "css_gzip_kb": up(r["css_gzip_kb"])}
+        out[r["page"]] = o
+        var = s.get("variants") or {}
+        has = lambda k: bool(s.get(k)) or any(v.get(k) for v in var.values())
+        for k in ("data", "computed", "lazy", "lazy_css", "fonts"):
+            if s.get(k):
+                o[k] = s[k]
+        if var:
+            o["variants"] = var
+        if has("data") or has("computed"):
+            o["data_gzip_kb"] = up(r["data_gzip_kb"])
+        if has("lazy"):
+            o["lazy_gzip_kb"] = up(r["lazy_gzip_kb"])
+        if has("lazy_css"):
+            o["lazy_css_gzip_kb"] = up(r["lazy_css_gzip_kb"])
+        if has("fonts") or r.get("n_fonts"):
+            o["fonts_kb"] = up(r["fonts_kb"])
     return out
 
 
@@ -277,16 +408,22 @@ def main(argv=None) -> int:
         with open(a.budgets, encoding="utf-8") as f:
             budgets = json.load(f)
         rows, errs = check_pages(a.dist, budgets)
-        print(f"{'page':28s} {'JS gz kB':>9s} {'CSS gz kB':>9s} {'data gz kB':>10s} {'lazy gz kB':>10s}   "
-              f"budgets (JS / CSS / data / lazy)")
+        print(f"{'page':28s} {'JS gz kB':>9s} {'CSS gz kB':>9s} {'data gz kB':>10s} {'lazy gz kB':>10s} "
+              f"{'lazy CSS':>9s} {'fonts kB':>9s}   budgets (JS / CSS / data / lazy / lazy CSS / fonts)")
         for r in rows:
             if r["page"].startswith("("):
                 print(f"{r['page']:28s} {r['total_mb']:.1f} MB (limit {r['spec']['site_total_mb']} MB)")
                 continue
             s = r["spec"]
             print(f"{r['page']:28s} {r['js_gzip_kb']:9.1f} {r['css_gzip_kb']:9.1f} {r['data_gzip_kb']:10.1f} "
-                  f"{r['lazy_gzip_kb']:10.1f}   {s.get('js_gzip_kb', '-')} / {s.get('css_gzip_kb', '-')} / "
-                  f"{s.get('data_gzip_kb', '-')} / {s.get('lazy_gzip_kb', '-')}")
+                  f"{r['lazy_gzip_kb']:10.1f} {r['lazy_css_gzip_kb']:9.1f} {r['fonts_kb']:9.1f}   "
+                  + " / ".join(str(s.get(k, "-")) for k in LIMITS))
+            if r.get("heaviest_variant"):
+                print(f"{'':28s} heaviest variant: " + ", ".join(f"{k} {v}" for k, v in r["heaviest_variant"].items()))
+            for c in r.get("computed", []):
+                print(f"{'':28s} computed {c['glob']} ({c['count']} of {c['of']}): {', '.join(c['files'])}")
+            if r["lazy_css_undeclared"]:
+                print(f"{'':28s} note: CSS its scripts can load, not counted: {', '.join(r['lazy_css_undeclared'])}")
         if a.propose:
             print(json.dumps(propose(rows), indent=1))
         for e in errs:
