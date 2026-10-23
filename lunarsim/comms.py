@@ -378,7 +378,10 @@ class EarthLink:
 #   never_linked       strategic policies, B-57: "redraw" (default, every earlier run): an intervention drawn on a
 #                      never-linked sample makes the committed job impossible; the job is refused and dispatch tries
 #                      again later with a new draw (blackout_jobs_refused counts these). "strand": no such second
-#                      chance, the rover waits there until the end of the simulated year.
+#                      chance, the rover waits there until the end of the simulated year. "rescue" (B-59, with
+#                      rescue_h): help arrives after rescue_h hours (another rover parked as a local relay, a crew,
+#                      a tow) and the rover drives on; the helper's own time is not modelled, which is optimistic.
+#                      Rescue runs add blackout_rescues_never_linked and blackout_rescue_vehicle_h (inside the year).
 #   autonomous         unaffected
 #   relay              dte+relay: an alternating up/gap process independent of DTE, availability p, exponential gaps
 #                      of mean g (default DEFAULT_RELAY_GAP_H), from its own random stream; a point is linked when
@@ -402,9 +405,10 @@ import os as _os
 COMMS_MODES = ("always", "dte", "dte+relay")
 SUPERVISED_POLICIES = ("strict", "strategic", "strategic+avoid", "strategic+bound")
 COMMS_KEYS = {"mode", "criterion", "link_series", "relay", "mast", "supervised_policy", "start_year", "start_h",
-              "defer_wait_h", "operators_strict", "intervention_scale", "bound_h", "bound_never", "never_linked"}
+              "defer_wait_h", "operators_strict", "intervention_scale", "bound_h", "bound_never", "never_linked",
+              "rescue_h"}
 BOUND_NEVER = ("refuse", "strategic")      # strategic+bound: a never-linked sample refuses the leg, or is ignored
-NEVER_LINKED = ("redraw", "strand")        # strategic: an intervention drawn on a never-linked sample
+NEVER_LINKED = ("redraw", "strand", "rescue")   # strategic: an intervention drawn on a never-linked sample
 # columns CommsModel.summary() adds to a run (comms set); checks of "always" against the baseline drop these
 SUMMARY_PREFIXES = ("blackout", "operator_peak", "operator_wait", "operator_waits", "linked_share",
                     "delivered_kg_in_horizon", "prio1_completion", "delay_prio1_p90_censored",
@@ -564,7 +568,14 @@ class CommsModel:
             raise ValueError(f"comms never_linked {self.never_linked!r} not in {NEVER_LINKED}")
         if "never_linked" in cfg and not self.policy.startswith("strategic"):
             raise ValueError("comms never_linked needs a strategic supervised_policy")
+        if (self.never_linked == "rescue") != ("rescue_h" in cfg):
+            raise ValueError("comms rescue_h is required with never_linked 'rescue' and rejected otherwise")
+        self.rescue_h = float(cfg["rescue_h"]) if "rescue_h" in cfg else None
+        if self.rescue_h is not None and not (self.rescue_h >= 0 and math.isfinite(self.rescue_h)):
+            raise ValueError("comms rescue_h must be a finite number >= 0")
         self.never_strandings = 0
+        self.rescues = 0
+        self.rescue_h_booked = 0.0
         self.start_h = float(cfg["start_h"]) if "start_h" in cfg else year_start_h(int(cfg.get("start_year", 2028)))
         dw = cfg.get("defer_wait_h", DEFAULT_DEFER_WAIT_H)
         self.defer_wait_h = math.inf if dw is None else float(dw)
@@ -948,10 +959,15 @@ class CommsModel:
                         ti = t0 + u * dur + extra
                         w = self._sample_wait(a, b, float(u), ti)
                         if not math.isfinite(w):
-                            if self.never_linked != "strand":
+                            if self.never_linked == "redraw":
                                 return None, waits                # refused; dispatch tries again with a new draw
-                            w = max(self.horizon_h - ti, 0.0) + 1.0   # strand: there until the year is over
-                            self.never_strandings += 1
+                            if self.never_linked == "rescue":     # help arrives after rescue_h, then it drives on
+                                w = self.rescue_h
+                                self.rescues += 1
+                                self.rescue_h_booked += max(0.0, min(ti + w, self.horizon_h) - ti)
+                            else:
+                                w = max(self.horizon_h - ti, 0.0) + 1.0   # strand: there until the year is over
+                                self.never_strandings += 1
                         if w > _EPS:
                             waits.append([v.id, ti, ti + w, f"{a}->{b}", "intervention"])
                             extra += w
@@ -1196,6 +1212,8 @@ class CommsModel:
             "linked_share_by_leg_mean": share,
             **({"operator_wait_vehicle_h": self.op_wait_h, "operator_waits": self.op_waits} if self.operators_strict else {}),
             **({"blackout_strandings_never_linked": self.never_strandings} if self.never_linked == "strand" else {}),
+            **({"blackout_rescues_never_linked": self.rescues, "blackout_rescue_vehicle_h": self.rescue_h_booked}
+               if self.never_linked == "rescue" else {}),
             **(self.outcome_metrics(cargo) if cargo is not None else {}),
         }
 

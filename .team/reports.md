@@ -4420,3 +4420,50 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
 **How to test:** `.venv/Scripts/python -m pytest -q tests/test_comms_data.py tests/test_ci_budgets.py` -> 27 passed; `.venv/Scripts/python tools/ci/budgets.py schemas` -> 40 files, 0 problems. Rebuild: `earth_link.py outlines` (needs `.cache/comms` from B-40; 5 s, 198 MB).
 
 **Questions for LEAD:** none.
+
+## B-59 DONE 22:03 | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**Answer:** help at points that never see Earth must come within about a lunar month for the strategic fleet to beat strict in tonnage. For urgent completion it beats strict at every rescue time tested.
+- **Tonnage against strict** (paired, t/yr): +112 [18, 206] at 0 h, +112 at 24 h, +122 at 72 h, +97 [21, 172] at 168 h, **+3 [-37, 44] at 720 h**.
+  - Break-even: **beyond 720 h** as a point (the difference is still +3 t at 720 h).
+  - Bootstrap 95 %: **310 h .. beyond 720 h**; 58 % of the 2,000 draws cross beyond 720 h, 1 % start below 0.
+- **Urgent completion against strict:** +0.46 at 0 h down to +0.39 at 720 h. Break-even beyond 720 h in every draw.
+  - The censored p90 is far better than strict's at every level: GM ratio 0.13 (0 h) to 0.29 (720 h), Wilcoxon p ≤ 0.0002.
+- **Against strategic (redraw)**, rescue up to 168 h is indistinguishable:
+  - Tonnage -6 [-18, 6] at 0 h, +4 at 72 h, -22 [-48, 5] at 168 h. Completion within 0.03; censored GM 1.03 to 1.43, all Wilcoxon p > 0.38.
+  - At 720 h it is clearly worse: -115 [-180, -50] t, completion -0.08, censored GM 2.36 (p 0.016).
+- **Bounds for the paper's framing:** strand (no help) 42 t, rescue 720 h 310 t, strict 307 t, rescue 0-168 h 403-429 t, redraw (free help) 425 t.
+- **Rescues per run:** 81 (0 h) down to 33 (720 h). Rescue rover-hours inside the year: 0 / 1,713 / 4,727 / 9,306 / 22,078.
+- **2028 still collapses at every level:** 86 / 135 / 195 / 143 / 208 t, against about 460-540 t at rescue ≤ 168 h in the other years. Rescue helps only at never-linked points. The 2028 spot (#188) sees Earth eventually (July 2029), so its interventions are ordinary long waits.
+- **Optimism:** the helper's own time is not modelled. The real break-even is shorter.
+
+**4. Pool filtering before the 40-slot cap (from the code), one line each:**
+- **Strict: not filtered.** `CommsModel.filter_candidates` (called in `engine._dispatch` when every vehicle is restricted) drops only items whose delivery leg is never linked end to end. Items blocked now (a planned link wait above the deferral limit) keep their slots; the blocked check runs inside the auction, after the cap.
+- **Look-ahead: not filtered.** It drops only items whose delivery leg has a never-linked sample; items deferred now keep their slots.
+- **Measured:** under DTE, seed 0, start years 2028-31, sampled once a day (`bounded.pool_starvation.strict` and `.look_ahead`). **The pool is never full** (0 % of samples).
+  - Items blocked for every free rover hold 6-10 % of the 40 slots (47-75 % of the items actually in the pool).
+  - So for strict and the look-ahead the cap never binds and nothing is starved. The starvation needs the bounded rule's never-filtered ISRU backlog.
+- The diagnostic runs reproduce their E21 rows exactly (310.04 t), so measuring did not change them. I also found and fixed a flaw in my B-57 diagnostic: asked outside a dispatch call, the plan memo could have returned the previous call's answers. It now takes its own memo key (`_fresh_plans`). The B-57 numbers came out identical after the fix.
+
+**Policy** (`lunarsim/comms.py`)
+- `never_linked: "rescue"` with `rescue_h` (required with it, rejected otherwise, finite ≥ 0): the intervention waits rescue_h at the sample, then the rover drives on.
+- Counters in rescue runs only: `blackout_rescues_never_linked`, `blackout_rescue_vehicle_h` (inside the year).
+- The comment and the scenario-schema description say the helper's time is not modelled.
+- **Identity:** six E21 r2 cells, one A2 row, five Stage F rows (strand and bound) and the baseline md5 test are all unchanged.
+
+**Stage G:** `run_phase4.py e21g --round r2` -> `results/E21g_rescue_r2.csv` (5 cells × 20 seeds; 169 s single process, 152 MB).
+
+**Analysis:** `analyse_e21.py rescue` -> `results/table_E21g_rescue_r2.csv` (450 rows: each level against strategic, strict and look-ahead, overall and per start year; tonnage, bulk, lander cargo, completion, censored p90 with GM ratio, Wilcoxon and medians, waiting).
+- It also writes `E21_fit_r2.json["rescue"]`: `levels` (means, rescues and rescue hours per run, by-year means), `references`, `breakeven_vs_strict` for tonnage and completion (point, 95 % interval, median draw, shares beyond and below the range, means by level), and `breakeven_method`.
+- `analyse_e21.py bounded --diagnose` now adds `pool_starvation.filter_before_cap`, `.strict` and `.look_ahead`.
+- The rest of the JSON is unchanged.
+
+**Files:** `lunarsim/comms.py`, `lunarsim/schemas/scenario-v1.schema.json`, `experiments/phase4/run_phase4.py` (e21g), `experiments/phase4/analyse_e21.py` (rescue, `crossing_h`, `rescue_breakeven`, `pool_blocked_share`, `_fresh_plans`), `tests/test_comms_engine.py` (+1: rescue 0 vs redraw, 48 h, very long ≈ strand, validation), `tests/test_e21_rescue.py` (new, 3). **For LEAD to commit:** `results/E21g_rescue_r2.csv`, `results/table_E21g_rescue_r2.csv`, `results/E21_fit_r2.json`, `results/table_E21f_bounded_r2.csv` (rewritten identically by the rerun).
+
+**How to test:**
+- `.venv/Scripts/python -m pytest -q tests/test_e21_rescue.py tests/test_e21_bounded.py tests/test_comms_engine.py` -> 26 passed.
+- `.venv/Scripts/python experiments/phase4/analyse_e21.py rescue` (6 s); `... bounded --diagnose` (139 s).
+
+**FRONTEND:** nothing.
+
+**Questions for LEAD:** none.

@@ -331,3 +331,29 @@ def test_never_linked_redraw_or_strand(tmp_path):
     assert out is not None and len(waits) == 1 and waits[0][2] == pytest.approx(strand.horizon_h + 1.0)
     assert out[0][3] > strand.horizon_h and strand.never_strandings == 1
     assert "blackout_strandings_never_linked" in strand.summary(None) and "blackout_strandings_never_linked" not in redraw.summary(None)
+
+
+def test_never_linked_rescue(tmp_path):
+    """B-59: rescue_h hours of waiting at a never-linked sample, then the rover drives on; rescue 0 commits the job
+    with no wait where redraw refuses it; a very long rescue ends past the year like strand; validation."""
+    segs = [["DEPOT", "ISRU", 10.0, 14.0, 0.0]]
+    r0 = _bound_sim(tmp_path, supervised_policy="strategic", never_linked="rescue", rescue_h=0.0)
+    out, waits = r0._apply(veh("supervised"), copy.deepcopy(segs), [1], True)
+    assert out is not None and waits == [] and out[0][3] == pytest.approx(14.0) and r0.rescues == 1
+    assert _bound_sim(tmp_path, supervised_policy="strategic")._apply(veh("supervised"), copy.deepcopy(segs), [1], True)[0] is None
+    r48 = _bound_sim(tmp_path, supervised_policy="strategic", never_linked="rescue", rescue_h=48.0)
+    out, waits = r48._apply(veh("supervised"), copy.deepcopy(segs), [1], True)
+    assert len(waits) == 1 and waits[0][2] - waits[0][1] == pytest.approx(48.0) and out[0][3] == pytest.approx(14.0 + 48.0)
+    assert r48.summary(None)["blackout_rescue_vehicle_h"] == pytest.approx(48.0)
+    assert r48.summary(None)["blackout_rescues_never_linked"] == 1
+    big = _bound_sim(tmp_path, supervised_policy="strategic", never_linked="rescue", rescue_h=1e6)
+    strand = _bound_sim(tmp_path, supervised_policy="strategic", never_linked="strand")
+    ob = big._apply(veh("supervised"), copy.deepcopy(segs), [1], True)[0]
+    os_ = strand._apply(veh("supervised"), copy.deepcopy(segs), [1], True)[0]
+    assert ob[0][3] > big.horizon_h and os_[0][3] > strand.horizon_h                     # both: gone for the year
+    assert big.summary(None)["blackout_rescue_vehicle_h"] <= big.horizon_h
+    assert "blackout_rescues_never_linked" not in strand.summary(None)
+    for bad in ({"never_linked": "rescue"}, {"never_linked": "strand", "rescue_h": 5.0}, {"rescue_h": 5.0},
+                {"never_linked": "rescue", "rescue_h": -1.0}):
+        with pytest.raises(ValueError):
+            _bound_sim(tmp_path, supervised_policy="strategic", **bad)

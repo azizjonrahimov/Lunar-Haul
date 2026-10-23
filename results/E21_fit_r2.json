@@ -5250,7 +5250,412 @@
       "BASE->PAD_B": 1
      }
     }
+   ],
+   "filter_before_cap": {
+    "rule": "lunarsim.dispatch.marketplace caps its auction at MAX_POOL items after sorting by (priority, t_ready); the only comms filter before the cap is CommsModel.filter_candidates (engine._dispatch), which runs when every vehicle is restricted and drops items whose delivery leg can NEVER be served (could_serve); the per-pair check that a job is blocked now (_comms_blocked: job_plan infinite) runs inside the auction, after the cap",
+    "strict": "not filtered: only items whose delivery leg is never linked end to end are dropped; items blocked now (a planned link wait above the deferral limit) keep their slots",
+    "look-ahead": "not filtered: only items whose delivery leg has a never-linked sample are dropped; items deferred now (a forecast intervention wait above the limit) keep their slots"
+   },
+   "strict": [
+    {
+     "mix": "supervised_strict",
+     "seed": 0,
+     "start_year": 2028,
+     "samples": 273,
+     "step_h": 24.0,
+     "pool_cap": 40,
+     "pool_full_share": 0.0,
+     "blocked_share_of_slots": 0.1021062271062271,
+     "blocked_share_of_pool": 0.7224927360221478,
+     "delivered_t_in_year": 310.04251930649724
+    },
+    {
+     "mix": "supervised_strict",
+     "seed": 0,
+     "start_year": 2029,
+     "samples": 259,
+     "step_h": 24.0,
+     "pool_cap": 40,
+     "pool_full_share": 0.0,
+     "blocked_share_of_slots": 0.061196911196911195,
+     "blocked_share_of_pool": 0.470297013154156,
+     "delivered_t_in_year": 301.04251930649724
+    },
+    {
+     "mix": "supervised_strict",
+     "seed": 0,
+     "start_year": 2030,
+     "samples": 274,
+     "step_h": 24.0,
+     "pool_cap": 40,
+     "pool_full_share": 0.0,
+     "blocked_share_of_slots": 0.09105839416058394,
+     "blocked_share_of_pool": 0.7253487185968938,
+     "delivered_t_in_year": 309.77742587090574
+    },
+    {
+     "mix": "supervised_strict",
+     "seed": 0,
+     "start_year": 2031,
+     "samples": 272,
+     "step_h": 24.0,
+     "pool_cap": 40,
+     "pool_full_share": 0.0,
+     "blocked_share_of_slots": 0.08419117647058823,
+     "blocked_share_of_pool": 0.6932215456112515,
+     "delivered_t_in_year": 305.0425193064973
+    }
+   ],
+   "look_ahead": [
+    {
+     "mix": "supervised_strategic+avoid",
+     "seed": 0,
+     "start_year": 2028,
+     "samples": 274,
+     "step_h": 24.0,
+     "pool_cap": 40,
+     "pool_full_share": 0.0,
+     "blocked_share_of_slots": 0.10337591240875914,
+     "blocked_share_of_pool": 0.706863576926506,
+     "delivered_t_in_year": 310.04251930649724
+    },
+    {
+     "mix": "supervised_strategic+avoid",
+     "seed": 0,
+     "start_year": 2029,
+     "samples": 262,
+     "step_h": 24.0,
+     "pool_cap": 40,
+     "pool_full_share": 0.0,
+     "blocked_share_of_slots": 0.06145038167938932,
+     "blocked_share_of_pool": 0.4867337497108489,
+     "delivered_t_in_year": 298.5670803788604
+    },
+    {
+     "mix": "supervised_strategic+avoid",
+     "seed": 0,
+     "start_year": 2030,
+     "samples": 276,
+     "step_h": 24.0,
+     "pool_cap": 40,
+     "pool_full_share": 0.0,
+     "blocked_share_of_slots": 0.09456521739130436,
+     "blocked_share_of_pool": 0.752468429434542,
+     "delivered_t_in_year": 309.77742587090574
+    },
+    {
+     "mix": "supervised_strategic+avoid",
+     "seed": 0,
+     "start_year": 2031,
+     "samples": 259,
+     "step_h": 24.0,
+     "pool_cap": 40,
+     "pool_full_share": 0.0,
+     "blocked_share_of_slots": 0.07393822393822393,
+     "blocked_share_of_pool": 0.564623621766479,
+     "delivered_t_in_year": 302.56708037886045
+    }
    ]
   }
+ },
+ "rescue": {
+  "design": "Stage G (B-59): plain strategic, all-supervised, DTE only, 20 seeds, E21 year rule, common random numbers with Stage A; an intervention drawn on a never-linked sample is resolved after rescue_h {0, 24, 72, 168, 720} h and the rover drives on. The helper's own time is not modelled (optimistic). Bounds: redraw (free second draw, Stage A strategic) and strand (no help, Stage F).",
+  "levels": [
+   {
+    "rescue_h": 0.0,
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 418.3705714521219,
+     "delivered_bulk_t": 391.2,
+     "delivered_landed_t": 24.75295753087917,
+     "prio1_completion_share": 0.8912333578422509,
+     "delay_prio1_p90_censored_h": 1120.7529671710754,
+     "blackout_wait_vehicle_h": 30171.820192003048
+    },
+    "censored_p90_median_h": 494.3570057609651,
+    "rescues_per_run": 81.45,
+    "rescue_vehicle_h_per_run": 0.0,
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 86.36319840138884,
+      "delivered_landed_t": 4.821487565269087,
+      "prio1_completion_share": 0.7767736006683374
+     },
+     "2029": {
+      "delivered_t_in_year": 506.5498391426965,
+      "delivered_landed_t": 18.754170493967813,
+      "prio1_completion_share": 0.9088109161793373
+     },
+     "2030": {
+      "delivered_t_in_year": 538.8398772670201,
+      "delivered_landed_t": 36.95046773775361,
+      "prio1_completion_share": 0.9606359158083297
+     },
+     "2031": {
+      "delivered_t_in_year": 541.7293709973821,
+      "delivered_landed_t": 38.48570432652616,
+      "prio1_completion_share": 0.9187129987129987
+     }
+    }
+   },
+   {
+    "rescue_h": 24.0,
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 418.71866279898796,
+     "delivered_bulk_t": 391.85,
+     "delivered_landed_t": 24.323891398386078,
+     "prio1_completion_share": 0.8841993177387915,
+     "delay_prio1_p90_censored_h": 1376.409783492621,
+     "blackout_wait_vehicle_h": 31892.01232382104
+    },
+    "censored_p90_median_h": 481.35287577513776,
+    "rescues_per_run": 71.75,
+    "rescue_vehicle_h_per_run": 1713.033846809584,
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 135.18325357575517,
+      "delivered_landed_t": 6.407949619750499,
+      "prio1_completion_share": 0.6956332497911445
+     },
+     "2029": {
+      "delivered_t_in_year": 496.7408039691296,
+      "delivered_landed_t": 23.033369800984545,
+      "prio1_completion_share": 0.9125925925925925
+     },
+     "2030": {
+      "delivered_t_in_year": 536.260863435469,
+      "delivered_landed_t": 37.015535978881324,
+      "prio1_completion_share": 0.9571428571428571
+     },
+     "2031": {
+      "delivered_t_in_year": 506.68973021559805,
+      "delivered_landed_t": 30.838710193927966,
+      "prio1_completion_share": 0.9714285714285713
+     }
+    }
+   },
+   {
+    "rescue_h": 72.0,
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 428.90196677903725,
+     "delivered_bulk_t": 401.65,
+     "delivered_landed_t": 24.93352860255873,
+     "prio1_completion_share": 0.9059658808857893,
+     "delay_prio1_p90_censored_h": 1038.999396432781,
+     "blackout_wait_vehicle_h": 33088.07536239794
+    },
+    "censored_p90_median_h": 496.2094014492711,
+    "rescues_per_run": 66.55,
+    "rescue_vehicle_h_per_run": 4726.879317168559,
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 194.63685713931972,
+      "delivered_landed_t": 9.376655967358783,
+      "prio1_completion_share": 0.7854636591478696
+     },
+     "2029": {
+      "delivered_t_in_year": 490.42146491527836,
+      "delivered_landed_t": 21.393518723837573,
+      "prio1_completion_share": 0.9270955165692009
+     },
+     "2030": {
+      "delivered_t_in_year": 518.515830524821,
+      "delivered_landed_t": 34.777449479471144,
+      "prio1_completion_share": 0.9913043478260869
+     },
+     "2031": {
+      "delivered_t_in_year": 512.0337145367297,
+      "delivered_landed_t": 34.186490239567426,
+      "prio1_completion_share": 0.9200000000000002
+     }
+    }
+   },
+   {
+    "rescue_h": 168.0,
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 403.2079774286664,
+     "delivered_bulk_t": 379.95,
+     "delivered_landed_t": 21.334010549076517,
+     "prio1_completion_share": 0.8657553763093494,
+     "delay_prio1_p90_censored_h": 1785.7947726754696,
+     "blackout_wait_vehicle_h": 33752.97835921169
+    },
+    "censored_p90_median_h": 820.8919088551745,
+    "rescues_per_run": 57.15,
+    "rescue_vehicle_h_per_run": 9306.289119516437,
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 143.32014081979545,
+      "delivered_landed_t": 6.306814776951292,
+      "prio1_completion_share": 0.7670192147034253
+     },
+     "2029": {
+      "delivered_t_in_year": 459.0838016615027,
+      "delivered_landed_t": 20.0196463388071,
+      "prio1_completion_share": 0.9244834307992204
+     },
+     "2030": {
+      "delivered_t_in_year": 521.4515368245544,
+      "delivered_landed_t": 33.089780875558304,
+      "prio1_completion_share": 0.8302575984734905
+     },
+     "2031": {
+      "delivered_t_in_year": 488.9764304088132,
+      "delivered_landed_t": 25.91980020498939,
+      "prio1_completion_share": 0.9412612612612612
+     }
+    }
+   },
+   {
+    "rescue_h": 720.0,
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 309.7102579439388,
+     "delivered_bulk_t": 297.65,
+     "delivered_landed_t": 11.329475982868852,
+     "prio1_completion_share": 0.8165887653902528,
+     "delay_prio1_p90_censored_h": 2014.3340314750544,
+     "blackout_wait_vehicle_h": 38184.02439936933
+    },
+    "censored_p90_median_h": 1813.7199303643358,
+    "rescues_per_run": 33.15,
+    "rescue_vehicle_h_per_run": 22078.381901750377,
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 208.17778466815653,
+      "delivered_landed_t": 7.279569944446438,
+      "prio1_completion_share": 0.7088554720133666
+     },
+     "2029": {
+      "delivered_t_in_year": 310.6329134058882,
+      "delivered_landed_t": 9.243832976728061,
+      "prio1_completion_share": 0.8253118908382066
+     },
+     "2030": {
+      "delivered_t_in_year": 366.5041242085628,
+      "delivered_landed_t": 14.259743443628963,
+      "prio1_completion_share": 0.9179277244494635
+     },
+     "2031": {
+      "delivered_t_in_year": 353.5262094931478,
+      "delivered_landed_t": 14.534757566671937,
+      "prio1_completion_share": 0.8142599742599742
+     }
+    }
+   }
+  ],
+  "references": {
+   "strategic": {
+    "mean": {
+     "delivered_t_in_year": 424.69687843201007,
+     "delivered_bulk_t": 396.0,
+     "delivered_landed_t": 26.01478423817685,
+     "prio1_completion_share": 0.8939113635538123,
+     "delay_prio1_p90_censored_h": 1327.02033837013,
+     "blackout_wait_vehicle_h": 29926.72945011187
+    },
+    "n": 20,
+    "by_year": {
+     "2028": 112.55057392406047,
+     "2029": 508.01718818579974,
+     "2030": 535.6419252158692,
+     "2031": 542.5778264023111
+    }
+   },
+   "strict": {
+    "mean": {
+     "delivered_t_in_year": 306.5248047575556,
+     "delivered_bulk_t": 296.3,
+     "delivered_landed_t": 9.400280351873935,
+     "prio1_completion_share": 0.42735776730142705,
+     "delay_prio1_p90_censored_h": 5588.268003116429,
+     "blackout_wait_vehicle_h": 971.6935881257552
+    },
+    "n": 20,
+    "by_year": {
+     "2028": 311.0318621320174,
+     "2029": 300.42335637603384,
+     "2030": 315.01292958383647,
+     "2031": 299.6310709383345
+    }
+   },
+   "look-ahead": {
+    "mean": {
+     "delivered_t_in_year": 306.92743499783614,
+     "delivered_bulk_t": 296.3,
+     "delivered_landed_t": 9.759694121291092,
+     "prio1_completion_share": 0.49993077574628897,
+     "delay_prio1_p90_censored_h": 5658.4613905662845,
+     "blackout_wait_vehicle_h": 78.07279244138354
+    },
+    "n": 20,
+    "by_year": {
+     "2028": 311.6816325090032,
+     "2029": 300.6309585749057,
+     "2030": 315.12249162130377,
+     "2031": 300.27465728613197
+    }
+   }
+  },
+  "breakeven_vs_strict": {
+   "delivered_t_in_year": {
+    "metric": "delivered_t_in_year",
+    "levels_h": [
+     0.0,
+     24.0,
+     72.0,
+     168.0,
+     720.0
+    ],
+    "mean_diff_by_level": [
+     111.84576669456632,
+     112.19385804143242,
+     122.37716202148162,
+     96.6831726711109,
+     3.1854531863832563
+    ],
+    "n_seeds": 20,
+    "breakeven_h": "beyond 720 h",
+    "ci95": [
+     309.9,
+     "beyond 720 h"
+    ],
+    "median_draw": "beyond 720 h",
+    "share_beyond_range": 0.58,
+    "share_below_range": 0.0105,
+    "draws": 2000
+   },
+   "prio1_completion_share": {
+    "metric": "prio1_completion_share",
+    "levels_h": [
+     0.0,
+     24.0,
+     72.0,
+     168.0,
+     720.0
+    ],
+    "mean_diff_by_level": [
+     0.4638755905408238,
+     0.4568415504373643,
+     0.4786081135843623,
+     0.4383976090079223,
+     0.3892309980888257
+    ],
+    "n_seeds": 20,
+    "breakeven_h": "beyond 720 h",
+    "ci95": [
+     "beyond 720 h",
+     "beyond 720 h"
+    ],
+    "median_draw": "beyond 720 h",
+    "share_beyond_range": 1.0,
+    "share_below_range": 0.0,
+    "draws": 2000
+   }
+  },
+  "breakeven_method": "crossing of the paired mean differences (rescue level - strict) as rescue_h grows, linear in log(1 + rescue_h) between levels; seed bootstrap with the same draw for every level and the reference; 'beyond 720 h' when it stays above 0, 'below 0 h' when it starts at or below 0"
  }
 }

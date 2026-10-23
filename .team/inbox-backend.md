@@ -743,7 +743,7 @@ the 2028 dark sample (#188, its xy and the leg), for the 2.5 m antenna, from the
 plus the source sha256s. Also the monthly link fraction 2028-2031 of the ISRU->CONSTR leg (share of hours with every
 sample linked, and with the dark sample alone). Tell FRONTEND the keys.
 
-## B-59 [OPEN] (<= 1.5 h) How fast must help come where Earth never rises? (queued 22 Oct 21:55)
+## B-59 [DONE 22:03] How fast must help come where Earth never rises? (queued 22 Oct 21:55)
 B-57 showed plain strategic's DTE result rests on the free re-draw at never-linked samples (redraw 425 t/yr; strand
 42 t/yr; strict 307 t/yr). The real answer lies between, and depends on how long a rover that needs help at a point
 that never sees Earth waits for it (another rover parking within line of sight as a local relay, a crew, a tow).

@@ -45,6 +45,9 @@ model, pads at 1 km, Earth-link criterion any_part (lunarsim/comms.py; data/comm
         of the year instead of a re-draw) at the same three link regimes; common random numbers with Stage A (same
         seeds and start years); its twins are Stage A's strategic and look-ahead cells. Not in table_E21*.csv
         (analyse_e21.py bounded)                                                                 -> E21f_bounded.csv
+  e21g  (round 2, B-59) plain strategic at DTE only with never_linked "rescue": an intervention on a never-linked
+        sample is resolved after rescue_h {0, 24, 72, 168, 720} h (the helper's own time not modelled); twins: Stage A
+        strategic, strict and look-ahead at DTE (analyse_e21.py rescue)                          -> E21g_rescue.csv
 Every finished run is appended to its stage file at once; --max-seconds also stops starting runs that would end past
 the time budget, so a chunk ends cleanly and the next one resumes.
 Round 2 (--round r2): every stage writes results/<stage>_r2.csv and the tables table_E21_r2.csv,
@@ -104,6 +107,7 @@ E21C_DEFERS = (12.0, 72.0, None)  # with the default 24 h from the pads x criter
 STAGES = {"e21a": "E21a_comms_autonomy", "e21b": "E21b_breakeven", "e21c": "E21c_pads_criterion", "e21d": "E21d_sun",
           "e21a2": "E21a2_operators", "e21e": "E21e_sensitivity"}
 STAGE_F = "E21f_bounded"          # B-57; kept out of STAGES so table_E21*.csv stay as they are
+STAGE_G = "E21g_rescue"           # B-59; likewise
 ROUNDS = ("r1", "r2")
 R2_LEVELS = (("dte+relay", 0.05), ("dte+relay", 0.6), ("dte+relay", 0.7))       # referee M1 (round 2 only)
 R2_B_POLICY = "strategic+avoid"                                                   # referee M6
@@ -292,6 +296,20 @@ def e21f_cells():
         tag, sc = scenario("supervised_strategic", mode, p)
         sc = sc.with_(comms=dict(sc.comms, never_linked="strand"))
         tag.update(stage="F", never_linked="strand")
+        cells.append((tag, sc, MECH, *MECHS[MECH]))
+    return cells
+
+
+E21G_RESCUE_H = (0.0, 24.0, 72.0, 168.0, 720.0)
+
+
+def e21g_cells():
+    """Stage G (B-59): plain strategic, DTE only, an intervention on a never-linked sample resolved after rescue_h."""
+    cells = []
+    for h in E21G_RESCUE_H:
+        tag, sc = scenario("supervised_strategic", "dte")
+        sc = sc.with_(comms=dict(sc.comms, never_linked="rescue", rescue_h=h))
+        tag.update(stage="G", never_linked="rescue", rescue_h=h)
         cells.append((tag, sc, MECH, *MECHS[MECH]))
     return cells
 
@@ -568,7 +586,7 @@ def write_tables(results=None, rnd: str = "r1"):
 # ---------------------------------------------------------------------------
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    p.add_argument("stages", nargs="*", help="e21a e21b e21c e21d e21a2 e21e e21f table (default: e21a)")
+    p.add_argument("stages", nargs="*", help="e21a e21b e21c e21d e21a2 e21e e21f e21g table (default: e21a)")
     p.add_argument("--round", default="r1", choices=ROUNDS, help="r2 writes *_r2.csv (default r1: the round-1 files)")
     p.add_argument("--seeds", type=int, default=N_SEEDS)
     p.add_argument("--workers", type=int, default=WORKERS)
@@ -601,12 +619,14 @@ def main(argv=None):
             go(STAGES[n] + x, e21d_cells())
         elif n == "e21a2":
             go(STAGES[n] + x, e21a2_cells())
-        elif n in ("e21e", "e21f"):
+        elif n in ("e21e", "e21f", "e21g"):
             if rnd == "r1":
                 raise SystemExit(f"stage {n} is a round-2 stage: add --round r2")
-            go(STAGES[n] + x if n == "e21e" else STAGE_F + x, e21e_cells() if n == "e21e" else e21f_cells())
+            name, cells = {"e21e": (STAGES["e21e"], e21e_cells), "e21f": (STAGE_F, e21f_cells),
+                           "e21g": (STAGE_G, e21g_cells)}[n]
+            go(name + x, cells())
         elif n != "table":
-            raise SystemExit(f"unknown stage {n!r}; choose from e21a e21b e21c e21d e21a2 e21e e21f table")
+            raise SystemExit(f"unknown stage {n!r}; choose from e21a e21b e21c e21d e21a2 e21e e21f e21g table")
         write_tables(a.results, rnd)
     rss = None
     try:

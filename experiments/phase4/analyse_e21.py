@@ -1115,6 +1115,58 @@ def bounded_verdict(summary: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return out
 
 
+def _fresh_plans(sim) -> None:
+    """A diagnostic that asks dispatch questions outside a dispatch call must not read the plan memo of the previous
+    call (lunarsim.dispatch._plan_hours is keyed by the engine's dispatch serial): give it a serial of its own (a
+    half-step; the engine's next call adds 1, so every serial stays unique). Pure memo key; results unchanged."""
+    sim._dispatch_serial = getattr(sim, "_dispatch_serial", 0) + 0.5
+
+
+def pool_blocked_share(mix: str, seed: int, start_year: int, step_h: float = 24.0) -> Dict[str, Any]:
+    """Stage A cell (all-supervised `mix`, DTE) run with the given start year: at most once every step_h, the share of
+    the marketplace's MAX_POOL auction slots held by items blocked for every free rover (B-59 part 4)."""
+    from lunarsim import Simulation, dispatch
+    from experiments.phase4 import run_phase4 as R
+    tag, sc, mn, mf, kw = next(c for c in R.e21a_cells("r2") if c[0]["mix"] == mix and c[0]["comms"] == "dte")
+    sc = sc.with_(comms=dict(sc.comms, start_year=start_year))
+    sim = Simulation(sc, mf, seed=seed, mech_kwargs=dict(kw))
+    samples, nxt, orig = [], [0.0], sim._dispatch
+
+    def look():
+        free = sim.free_vehicles()
+        if sim.t >= nxt[0] and free:
+            nxt[0] = sim.t + step_h
+            _fresh_plans(sim)
+            cands = sim.comms.filter_candidates(sim, [c for c in sim.waiting if not c.stranded])
+            pool = sorted(cands, key=lambda c: (c.priority, c.t_ready))[:dispatch.MAX_POOL]
+            if pool:
+                blocked = sum(all(dispatch._comms_blocked(sim, v, c) for v in free) for c in pool)
+                samples.append((len(pool), blocked))
+        return orig()
+
+    sim._dispatch = look
+    out = sim.run()
+    n = np.array([s[0] for s in samples], float)
+    b = np.array([s[1] for s in samples], float)
+    return {"mix": mix, "seed": seed, "start_year": start_year, "samples": int(len(samples)), "step_h": step_h,
+            "pool_cap": dispatch.MAX_POOL, "pool_full_share": float(np.mean(n >= dispatch.MAX_POOL)) if len(n) else None,
+            "blocked_share_of_slots": float(np.mean(b / dispatch.MAX_POOL)) if len(n) else None,
+            "blocked_share_of_pool": float(np.mean(b / n)) if len(n) else None,
+            "delivered_t_in_year": out["delivered_kg_in_horizon"] / 1000.0}
+
+
+POOL_FILTER_NOTE = {
+    "rule": "lunarsim.dispatch.marketplace caps its auction at MAX_POOL items after sorting by (priority, t_ready); the "
+            "only comms filter before the cap is CommsModel.filter_candidates (engine._dispatch), which runs when every "
+            "vehicle is restricted and drops items whose delivery leg can NEVER be served (could_serve); the per-pair "
+            "check that a job is blocked now (_comms_blocked: job_plan infinite) runs inside the auction, after the cap",
+    "strict": "not filtered: only items whose delivery leg is never linked end to end are dropped; items blocked now "
+              "(a planned link wait above the deferral limit) keep their slots",
+    "look-ahead": "not filtered: only items whose delivery leg has a never-linked sample are dropped; items deferred "
+                  "now (a forecast intervention wait above the limit) keep their slots",
+}
+
+
 def pool_starvation(results: str = RESULTS, seed: int = 0, bound_h: float = 24.0,
                     moments: Sequence[float] = (1000.0, 3000.0, 6000.0)) -> Dict[str, Any]:
     """One Stage F run (DTE, bound_never 'strategic'; seed 0 starts in 2028): what the marketplace's auction pool
@@ -1133,6 +1185,7 @@ def pool_starvation(results: str = RESULTS, seed: int = 0, bound_h: float = 24.0
     def look():
         while todo and sim.t >= todo[0]:
             todo.pop(0)
+            _fresh_plans(sim)
             cands = sim.comms.filter_candidates(sim, [c for c in sim.waiting if not c.stranded])
             order = sorted(cands, key=lambda c: (c.priority, c.t_ready))
             pool, rest = order[:dispatch.MAX_POOL], order[dispatch.MAX_POOL:]
@@ -1168,6 +1221,9 @@ def cmd_bounded(a) -> None:
                 "never_linked_legs": never_linked_legs()})
     if a.diagnose:
         doc["pool_starvation"] = pool_starvation(a.results)
+        doc["pool_starvation"]["filter_before_cap"] = POOL_FILTER_NOTE
+        for key, mix in (("strict", "supervised_strict"), ("look_ahead", "supervised_strategic+avoid")):
+            doc["pool_starvation"][key] = [pool_blocked_share(mix, 0, y) for y in YEARS]
     path = os.path.join(a.results, "E21_fit_r2.json")
     with open(path, encoding="utf-8") as fh:
         fit = json.load(fh)
@@ -1179,6 +1235,105 @@ def cmd_bounded(a) -> None:
     for v in doc["verdict_dte"]:
         print(f"  DTE {v['variant']:45s} bulk {v['bulk_t']:6.1f} t ({v['bulk_share_of_strategic']:.0%} of strategic)  "
               f"2028 {v['t_2028']:6.1f} t vs {v['t_2029_2031']:6.1f} t  keeps ISRU {v['keeps_isru']}  avoids 2028 {v['avoids_2028_collapse']}")
+
+
+# ---------------------------------------------------------------------------------------------------------
+# Stage G (B-59): how fast must help come where Earth never rises?
+# ---------------------------------------------------------------------------------------------------------
+STAGE_G_FILE = "E21g_rescue_r2.csv"
+RESCUE_METRICS = ["delivered_t_in_year", "delivered_bulk_t", "delivered_landed_t", "prio1_completion_share",
+                  "delay_prio1_p90_censored_h", "blackout_wait_vehicle_h"]
+
+
+def load_stage_g(results: str = RESULTS) -> pd.DataFrame:
+    g = prepare(pd.read_csv(os.path.join(results, STAGE_G_FILE)))
+    for k in ("bulk", "landed"):
+        g[f"delivered_{k}_t"] = g[f"delivered_{k}_kg_in_horizon"] / 1000.0
+    return g
+
+
+def crossing_h(levels: Sequence[float], diffs: Sequence[float]) -> float:
+    """The rescue time where the mean difference (variant - reference) first falls to 0 as rescue_h grows, linear in
+    log(1 + rescue_h) between levels; -inf when it is <= 0 already at the first level, inf when it stays > 0."""
+    x = np.log1p(np.asarray(levels, float))
+    d = np.asarray(diffs, float)
+    if d[0] <= 0:
+        return -math.inf
+    for i in range(1, len(d)):
+        if d[i] <= 0:
+            return float(np.expm1(x[i - 1] + (x[i] - x[i - 1]) * d[i - 1] / (d[i - 1] - d[i])))
+    return math.inf
+
+
+def rescue_breakeven(g: pd.DataFrame, ref: pd.DataFrame, metric: str, boot: int = N_BOOT_R2, seed: int = 3) -> Dict[str, Any]:
+    """Break-even rescue time against a reference cell: the crossing of the paired mean differences over the rescue
+    levels; seed bootstrap (the same draw of seeds for every level and the reference); every draw kept."""
+    levels = sorted(g["rescue_h"].unique().tolist())
+    r = ref.drop_duplicates("seed").set_index("seed")[metric]
+    D = pd.DataFrame({h: g[g["rescue_h"] == h].drop_duplicates("seed").set_index("seed")[metric] - r for h in levels}).dropna()
+    seeds = D.index.to_numpy()
+    point = crossing_h(levels, D.mean().to_numpy())
+    rng = np.random.default_rng(seed)
+    draws = np.array([crossing_h(levels, D.loc[rng.choice(seeds, len(seeds))].mean().to_numpy()) for _ in range(boot)])
+    lab = lambda h: "beyond 720 h" if h == math.inf else "below 0 h" if h == -math.inf else round(float(h), 1)
+    return {"metric": metric, "levels_h": levels, "mean_diff_by_level": [float(v) for v in D.mean()],
+            "n_seeds": int(len(seeds)), "breakeven_h": lab(point),
+            "ci95": [lab(_q(draws, 0.025)), lab(_q(draws, 0.975))], "median_draw": lab(_q(draws, 0.5)),
+            "share_beyond_range": float(np.mean(draws == math.inf)), "share_below_range": float(np.mean(draws == -math.inf)),
+            "draws": int(boot)}
+
+
+def cmd_rescue(a) -> None:
+    t0 = time.time()
+    df = load_round(a.results, "r2")
+    g = load_stage_g(a.results)
+    A = df[(df["stage"] == "A") & (df["sensitivity"] == "none")]
+    refs = {"strategic": select(A, p=0.0, mix="supervised_strategic"), "strict": select(A, p=0.0, mix="supervised_strict"),
+            "look-ahead": select(A, p=0.0, mix="supervised_strategic+avoid")}
+    rows, levels = [], []
+    for h, cell in g.groupby("rescue_h"):
+        lab = f"rescue {h:g} h"
+        for rl, ref in refs.items():
+            rows += _rows("rescue", rl, lab, {"rescue_h": h, "start_year": "all"}, ref, cell, RESCUE_METRICS)
+            for y in YEARS:
+                rows += _rows("rescue_by_year", rl, lab, {"rescue_h": h, "start_year": y}, ref[ref["start_year"] == y],
+                              cell[cell["start_year"] == y], RESCUE_METRICS)
+        levels.append({"rescue_h": float(h), "n": int(len(cell)),
+                       "mean": {k: float(cell[k].mean()) for k in RESCUE_METRICS},
+                       "censored_p90_median_h": float(cell["delay_prio1_p90_censored_h"].median()),
+                       "rescues_per_run": float(cell["blackout_rescues_never_linked"].mean()),
+                       "rescue_vehicle_h_per_run": float(cell["blackout_rescue_vehicle_h"].mean()),
+                       "by_year": {str(y): {k: float(cell.loc[cell["start_year"] == y, k].mean()) for k in
+                                            ("delivered_t_in_year", "delivered_landed_t", "prio1_completion_share")}
+                                   for y in YEARS}})
+    table = pd.DataFrame(rows)
+    table.to_csv(os.path.join(a.results, "table_E21g_rescue_r2.csv"), index=False, lineterminator="\n")
+    doc = {"design": "Stage G (B-59): plain strategic, all-supervised, DTE only, 20 seeds, E21 year rule, common random "
+                     "numbers with Stage A; an intervention drawn on a never-linked sample is resolved after rescue_h "
+                     "{0, 24, 72, 168, 720} h and the rover drives on. The helper's own time is not modelled (optimistic). "
+                     "Bounds: redraw (free second draw, Stage A strategic) and strand (no help, Stage F).",
+           "levels": levels,
+           "references": {k: {"mean": {m: float(v[m].mean()) for m in RESCUE_METRICS}, "n": int(len(v)),
+                              "by_year": {str(y): float(v.loc[v["start_year"] == y, "delivered_t_in_year"].mean())
+                                          for y in YEARS}} for k, v in refs.items()},
+           "breakeven_vs_strict": {m: rescue_breakeven(g, refs["strict"], m, a.boot)
+                                   for m in ("delivered_t_in_year", "prio1_completion_share")},
+           "breakeven_method": "crossing of the paired mean differences (rescue level - strict) as rescue_h grows, "
+                               "linear in log(1 + rescue_h) between levels; seed bootstrap with the same draw for every "
+                               "level and the reference; 'beyond 720 h' when it stays above 0, 'below 0 h' when it "
+                               "starts at or below 0"}
+    path = os.path.join(a.results, "E21_fit_r2.json")
+    with open(path, encoding="utf-8") as fh:
+        fit = json.load(fh)
+    fit["rescue"] = _json(doc)
+    with open(path, "w", encoding="utf-8", newline="\n") as fh:
+        json.dump(fit, fh, indent=1)
+        fh.write("\n")
+    print(f"table_E21g_rescue_r2.csv ({len(table)} rows) and E21_fit_r2.json 'rescue' written ({time.time() - t0:.0f} s)")
+    for m, b in doc["breakeven_vs_strict"].items():
+        print(f"  break-even vs strict, {m}: {b['breakeven_h']} (95 % {b['ci95'][0]} .. {b['ci95'][1]}; beyond range "
+              f"{b['share_beyond_range']:.0%}, below {b['share_below_range']:.0%}); diffs by level "
+              + ", ".join(f"{v:.3g}" for v in b["mean_diff_by_level"]))
 
 
 def main(argv=None) -> None:
@@ -1200,12 +1355,15 @@ def main(argv=None) -> None:
     p = sub.add_parser("bounded", help="Stage F (B-57) -> table_E21f_bounded_r2.csv and E21_fit_r2.json 'bounded'")
     p.add_argument("--results", default=RESULTS)
     p.add_argument("--diagnose", action="store_true", help="also run one Stage F year to show the auction-pool starvation")
+    p = sub.add_parser("rescue", help="Stage G (B-59) -> table_E21g_rescue_r2.csv and E21_fit_r2.json 'rescue'")
+    p.add_argument("--results", default=RESULTS)
+    p.add_argument("--boot", type=int, default=N_BOOT_R2)
     a = ap.parse_args(argv)
     if a.cmd == "fit":
         a.boot = a.boot or (N_BOOT if a.round == "r1" else N_BOOT_R2)
         if a.round != "r1":
             return cmd_fit_r2(a)
-    {"demand": cmd_demand, "fit": cmd_fit, "rounds": cmd_rounds, "bounded": cmd_bounded}[a.cmd](a)
+    {"demand": cmd_demand, "fit": cmd_fit, "rounds": cmd_rounds, "bounded": cmd_bounded, "rescue": cmd_rescue}[a.cmd](a)
 
 
 if __name__ == "__main__":
