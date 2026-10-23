@@ -65,7 +65,7 @@ async function start3D() {
 // ---------- choosing a vehicle ----------
 function choose(id) {
   ui.id = id; vehicleChips?.set(id);
-  history.replaceState(null, '', `?v=${id}`);
+  { const u = new URL(location.href); u.searchParams.set('v', id); history.replaceState(null, '', u); }   // F-40: other parameters (?tier, ?gpumem) stay
   const e = catalog.entry(id);
   if (stage) { stage.clearSubject(); flows.clear(); }
   vehicle = buildVehicle(catalog, mats, id);

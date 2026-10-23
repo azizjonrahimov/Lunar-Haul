@@ -4247,3 +4247,37 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
 - **Checked in Chrome:** day 83 at the Base preset, orbited, copied → a fresh load opens paused at day 83, 08:00 with the same close camera on the base. No console errors.
 - **Checks:** tests 11/11; build OK; `budgets.py pages`: OK (trace JS 16.4 of 20 kB). Servers stopped; tab closed.
 - **Next in F-40:** GPU memory per tier.
+
+## F-40 PART 11 DONE 20:01 | GPU memory per tier, measured (F-40 stays IN PROGRESS)
+- **Every file in this part:**
+  - New: `site/src/stage/gpumem.js`.
+  - Modified: `site/src/stage/stage.js`, `site/src/world/main.js`, `site/src/vehicles/main.js`, `site/src/world/v2.js`.
+- **How it is measured:** add `?gpumem` to any 3D page's URL (`&tier=1|2|3` forces a tier).
+  - The stage wraps its WebGL2 context before three.js starts and adds up what it asks the GPU for: every texture level (mipmaps, cube faces, 3D layers), every buffer, every renderbuffer (times its samples), minus deletions. It adds the canvas's drawing buffer, counted per sample on the multisampled trace view.
+  - `window.__gpumem.report()` gives MB per kind, counts, and the five largest textures.
+  - The trace view gets the same through a context pre-created with three.js's attributes.
+  - The tracker is its own 2.5 kB chunk, loaded only with the flag.
+  - It is a floor: driver padding and overhead are invisible from WebGL.
+- **Results** (RTX 3050 Laptop, Chrome; canvas about 1440 × 630 device px on the labs, world and vehicles; 920 × 600 on stories; 990 × 600 on trace; 1575 × 706 on home), total MB:
+
+| Page | Tier 1 | Tier 2 | Tier 3 |
+|---|---|---|---|
+| /world/ | 82.4 | 126.2 | 164.7 |
+| / (hero, 3D only from tier 2) | – | 132.0 | 132.0 |
+| /lab/lander/ | 80.5 | 119.4 | 157.1 |
+| /lab/rover/ | 80.2 | 123.8 | 182.7 |
+| /vehicles/ | 52.2 | 84.1 | 122.4 |
+| /stories/?s=earth-horizon | 69.4 | 110.0 | 132.7 |
+| /world/trace/ (no tiers) | 39.4 | | |
+
+  - Split, e.g. /world/ tier 1 → 3: textures 54.6 → 125.0, buffers 4.4 → 16.3, render targets 16.2, canvas 7.2.
+  - Tier 3 adds full-resolution AO, bloom and SMAA, and the 2048² shadow maps (two at 16 MB each). The rest is screen-sized half-float post targets (6.9 MB each at this size), so it scales with the canvas.
+  - The hero caps itself at tier-2 settings, which is why tiers 2 and 3 match.
+- **Reading:** the heaviest view needs 183 MB (rover tier 3), under 5 % of the 3050's 4 GB. A tier-1 device (integrated GPU sharing system RAM, or a phone) needs about 80 MB, mostly fixed textures plus targets that shrink with a smaller canvas. Nothing needs changing for memory. Intel iGPU and phone runs still need the hardware.
+- **Fixed on the way:**
+  1. /vehicles/ rewrote its URL to `?v=MK1` at load, dropping every other parameter, so `?tier=` overrides were lost there.
+  2. /world/'s scene chips did the same with `?scene=`. Both now change only their own parameter; the scene change also clears a stale moment hash.
+- **Checks:** tests 11/11; build OK; `budgets.py pages`: OK (the tracker is never loaded without the flag). Servers stopped; tab closed.
+- **F-40 list status:**
+  - All the plan items are done: tiers and frame time, lander framing, rover streaks, world Earth link, simulator GitHub link, verification Phase 4, Tol contrast, stories, the accessibility walk, Lighthouse, deep links, GPU memory.
+  - Open only on hardware I don't have: an Intel iGPU and a phone. Tell me what else F-40 should take.

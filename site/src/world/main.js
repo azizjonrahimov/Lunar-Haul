@@ -117,6 +117,10 @@ async function ensureViewsAsync() {
   if (st.mode === '3d' && !st.scene) {
     try {
       sceneMod = sceneMod || await import('./scene.js');
+      if (/[?&]gpumem/.test(location.search) && !window.__gpumem) {   // F-40: GPU memory, measured on request (three.js then reuses this context)
+        const gl = $('w-canvas').getContext('webgl2', { alpha: false, depth: true, stencil: false, antialias: true, premultipliedAlpha: true, preserveDrawingBuffer: false, powerPreference: 'high-performance' });
+        if (gl) window.__gpumem = (await import('../stage/gpumem.js')).trackGpuMemory(gl, $('w-canvas'));
+      }
       const tierText = $('w-tier').textContent;
       st.scene = sceneMod.createScene({ canvas: $('w-canvas'), labelHost: $('w-labels'), terrain: st.terrain, layout: st.layout,
         onAssets: msg => { if (msg !== 'horizon') $('w-tier').textContent = `${tierText} Terrain light: ${msg}.`; draw(true); } });

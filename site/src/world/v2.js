@@ -68,7 +68,7 @@ function drawGallery() {
   for (const [g, label] of Object.entries(GROUP_LABEL)) {
     const scenes = gallery.scenes.filter(s => s.group === g); if (!scenes.length) continue;
     host.append(sceneChips({ label, scenes: scenes.map(s => ({ value: s.id, label: s.title })), value: scenes.some(s => s.id === ui.scene) ? ui.scene : null,
-      onChange: id => { ui.scene = id; history.replaceState(null, '', `?scene=${id}`); drawGallery(); headline(); if (sc) open(); } }).el);
+      onChange: id => { ui.scene = id; { const u = new URL(location.href); u.searchParams.set('scene', id); u.hash = ''; history.replaceState(null, '', u); } drawGallery(); headline(); if (sc) open(); } }).el);
   }
 }
 function headline() {

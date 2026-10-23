@@ -22,6 +22,7 @@ export async function createStage({ canvas, labelsHost, preset = 'exhibit', tier
   toneMapping = 'neutral', onStatus = () => {}, onPick = () => {}, onHover = () => {} }) {
   const gl = canvas.getContext('webgl2', { antialias: false, alpha: false, depth: true, stencil: true, powerPreference: 'high-performance' });
   if (!gl) throw new Error('WebGL2 is not available');
+  if (/[?&]gpumem/.test(location.search)) window.__gpumem = (await import('./gpumem.js')).trackGpuMemory(gl, canvas);   // F-40: GPU memory, measured on request
   const reversed = !!gl.getExtension('EXT_clip_control');
   const renderer = new THREE.WebGLRenderer({ canvas, context: gl, antialias: false, stencil: true, reversedDepthBuffer: reversed, powerPreference: 'high-performance' });
   renderer.localClippingEnabled = true;
