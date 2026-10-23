@@ -14,6 +14,7 @@
     python tools/comms/earth_link.py series2 --part 0 --parts 3 # their hourly windows (chunks)
     python tools/comms/earth_link.py samples2              # -> earth_link-v2-samples.json.gz (v1 file + lit routes)
                                                            #    and -lite.json.gz (any_part only, for the site)
+    python tools/comms/earth_link.py ties                  # engine vs routes-v1 night routes -> results/E21_route_ties.json
 
 Intermediate files (kernels, DEM window, routes, masks; ~100 MB) live in ``.cache/comms/`` (git-ignored); the
 output ``data/comms/connecting_ridge/earth_link-v1.json`` (format: lunarsim/comms.py) is < 1 MB.
@@ -966,6 +967,97 @@ def lite_samples(sdoc: Dict) -> Dict:
     return lite
 
 
+TIES_OUT = os.path.join(ROOT, "results", "E21_route_ties.json")
+
+
+def leg_linked_hours(sdoc: Dict, ids: Sequence[int], crit: int = 0) -> int:
+    """Hours of the sample series in which every listed sample is linked (direct, criterion index crit)."""
+    n = int(sdoc["time"]["n"])
+    m = np.ones(n, dtype=bool)
+    for i in ids:
+        m &= C.windows_to_mask(C.decode_windows(sdoc["series"][sdoc["samples"][i]["w"][crit]]), n)
+    return int(m.sum())
+
+
+def route_tie_linked(sdoc: Dict) -> Dict[str, Any]:
+    """Engine night lists (legs) against the routes-v1 night lists: share of hours with every sample linked
+    (any_part), per leg; differences in percentage points. Integer counts, so the same on every machine."""
+    n = int(sdoc["time"]["n"])
+    rows = []
+    for leg, ids in sdoc["legs"].items():
+        alt = sdoc["routes"][leg]["night"]
+        if not ids or not alt:
+            continue
+        a, b = leg_linked_hours(sdoc, ids), leg_linked_hours(sdoc, alt)
+        rows.append((abs(a - b), leg, a, b))
+    rows.sort(key=lambda r: (-r[0], r[1]))
+    d_pp = np.array([100.0 * r[0] / n for r in rows])
+    top = rows[0]
+    return {"definition": "share of the hours 2028-2031 in which every 100 m route sample of the leg sees Earth "
+                          "(direct, any part of the disc, hourly samples of earth_link-v2-samples.json.gz)",
+            "legs": len(rows), "max_abs_diff_pp": round(float(d_pp.max()), 2), "max_leg": top[1],
+            "max_leg_share_engine": round(top[2] / n, 4), "max_leg_share_routes_v1": round(top[3] / n, 4),
+            "median_abs_diff_pp": round(float(np.median(d_pp)), 2),
+            "legs_gt_1pp": int((d_pp > 1.0).sum()), "legs_gt_5pp": int((d_pp > 5.0).sum())}
+
+
+def step_ties(out: str = TIES_OUT, log=print) -> Dict:
+    """E21_route_ties.json: the engine's night routes (B-40, plan(..., None)) against the routes-v1 night routes
+    (plan(..., NIGHT)) - geometry, length and the leg link share - for the paper's limitation sentence."""
+    import gzip
+    from scipy.spatial import cKDTree
+    from lunarsim.rover.routes import decode_geom
+    old = json.load(open(os.path.join(CACHE, "routes.json")))
+    rdoc = json.load(open(ROUTES_V1))
+    sdoc = json.loads(gzip.decompress(open(SAMPLES_V2, "rb").read()))
+    hd, dl = {}, {}
+    for leg, per in rdoc["legs"].items():
+        e = per.get("night")
+        if e is None or old.get(leg) is None:
+            continue
+        g = decode_geom(rdoc["geoms"][e["geom"]])
+        P, Q = np.asarray(old[leg], float), np.stack([g["x"], g["y"]], axis=1)
+        Pd, Qd = resample(P, 1.0), resample(Q, 1.0)
+        hd[leg] = float(max(cKDTree(Qd).query(Pd)[0].max(), cKDTree(Pd).query(Qd)[0].max()))
+        dl[leg] = abs(float(np.hypot(*np.diff(P, axis=0).T).sum()) - float(g["s"][-1]))
+    h = np.array(list(hd.values()))
+    h_leg = max(hd, key=lambda k: (hd[k], k))
+    l_leg = max(dl, key=lambda k: (dl[k], k))
+    off = set(sdoc["night_legs_off_v1"])
+    doc = {
+        "description": "E21's rover routes for the Earth link (B-40: lunarsim.rover.expert.plan(terrain, a, b, None), the "
+                       "slope-only route) against the night routes of the driving tables and data/driving/routes-v1.json "
+                       "(plan(..., 'night')). Both are optimal and equally long; they differ in which of several "
+                       "equal-cost paths A* returns.",
+        "cause": "the night cost grid multiplies every cell cost by 1/SHADOW_SPEED_FACTOR while the A* heuristic "
+                 "(straight-line distance x 1 s/m) stays unscaled, so the search breaks ties between equal-cost paths "
+                 "differently",
+        "legs_compared": len(hd),
+        "geometry": {"metric": "symmetric Hausdorff distance (m) between the two polylines, each resampled at 1 m",
+                     "legs_differing_gt_2m": int((h > 2.0).sum()), "legs_differing_gt_20m": int((h > 20.0).sum()),
+                     "max_m": round(float(h.max()), 1), "max_leg": h_leg, "median_m": round(float(np.median(h)), 1)},
+        "length": {"max_abs_diff_m": round(max(dl.values()), 3), "max_leg": l_leg,
+                   "note": "routes-v1 stores positions in decimetres"},
+        "linked_share": route_tie_linked(sdoc),
+        "sample_lists_differing": len(off),
+        "sources": {"engine_routes": ".cache/comms/routes.json (tools/comms/earth_link.py routes; git-ignored)",
+                    "routes_v1": {"file": "data/driving/routes-v1.json", "sha256": sha256(ROUTES_V1)},
+                    "samples_v2": {"file": "data/comms/connecting_ridge/earth_link-v2-samples.json.gz",
+                                   "sha256": sha256(SAMPLES_V2)}},
+        "generated": {"tool": "tools/comms/earth_link.py ties"},
+    }
+    if doc["geometry"]["legs_differing_gt_20m"] > len(off) or h_leg not in off:
+        raise SystemExit("geometry and sample lists disagree; check the inputs")
+    with open(out, "wb") as f:
+        f.write((json.dumps(doc, indent=1) + "\n").encode("utf-8"))
+    ls = doc["linked_share"]
+    log(f"ties: {len(hd)} legs; geometry > 20 m on {doc['geometry']['legs_differing_gt_20m']} (max "
+        f"{doc['geometry']['max_m']} m, {h_leg}); length diff max {doc['length']['max_abs_diff_m']} m; linked share "
+        f"max {ls['max_abs_diff_pp']} pp ({ls['max_leg']}), > 1 pp {ls['legs_gt_1pp']}, > 5 pp {ls['legs_gt_5pp']} "
+        f"-> {_rel(out)}")
+    return doc
+
+
 def _git_sha() -> Optional[str]:
     from lunarsim.terrain import _git_sha as g
     return g()
@@ -1133,6 +1225,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         p.add_argument("--parts", type=int, default=1)
     p = sub.add_parser("samples2")
     p.add_argument("--recheck", type=int, default=40, help="v1 samples to recompute as a determinism check")
+    sub.add_parser("ties")
     for sp_ in sub.choices.values():
         sp_.add_argument("--max-seconds", type=float, default=540.0,
                          help="stop this process after so many seconds (Windows: `timeout` only kills the venv launcher)")
@@ -1167,6 +1260,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         step_series2(a.part, a.parts)
     elif a.cmd == "samples2":
         step_samples2(recheck=a.recheck)
+    elif a.cmd == "ties":
+        step_ties()
     rss = peak_rss_mb()
     if rss:
         print(f"peak RSS {rss:.0f} MB")

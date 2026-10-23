@@ -1,0 +1,44 @@
+{
+ "description": "E21's rover routes for the Earth link (B-40: lunarsim.rover.expert.plan(terrain, a, b, None), the slope-only route) against the night routes of the driving tables and data/driving/routes-v1.json (plan(..., 'night')). Both are optimal and equally long; they differ in which of several equal-cost paths A* returns.",
+ "cause": "the night cost grid multiplies every cell cost by 1/SHADOW_SPEED_FACTOR while the A* heuristic (straight-line distance x 1 s/m) stays unscaled, so the search breaks ties between equal-cost paths differently",
+ "legs_compared": 182,
+ "geometry": {
+  "metric": "symmetric Hausdorff distance (m) between the two polylines, each resampled at 1 m",
+  "legs_differing_gt_2m": 150,
+  "legs_differing_gt_20m": 140,
+  "max_m": 410.4,
+  "max_leg": "BASE->PAD_A@3",
+  "median_m": 56.6
+ },
+ "length": {
+  "max_abs_diff_m": 0.0,
+  "max_leg": "PSR->PAD_A@3",
+  "note": "routes-v1 stores positions in decimetres"
+ },
+ "linked_share": {
+  "definition": "share of the hours 2028-2031 in which every 100 m route sample of the leg sees Earth (direct, any part of the disc, hourly samples of earth_link-v2-samples.json.gz)",
+  "legs": 182,
+  "max_abs_diff_pp": 17.09,
+  "max_leg": "PAD_B@2->POWER",
+  "max_leg_share_engine": 0.487,
+  "max_leg_share_routes_v1": 0.3161,
+  "median_abs_diff_pp": 0.0,
+  "legs_gt_1pp": 22,
+  "legs_gt_5pp": 12
+ },
+ "sample_lists_differing": 143,
+ "sources": {
+  "engine_routes": ".cache/comms/routes.json (tools/comms/earth_link.py routes; git-ignored)",
+  "routes_v1": {
+   "file": "data/driving/routes-v1.json",
+   "sha256": "33bb3bebb4d483d203947700615669d0894f72023eb3b5dc1dafc6c8d28b4ab4"
+  },
+  "samples_v2": {
+   "file": "data/comms/connecting_ridge/earth_link-v2-samples.json.gz",
+   "sha256": "d9b3ddf023db54d0efcae8ab1c4f752723cacbb830f41c01a09761bb0d86a4eb"
+  }
+ },
+ "generated": {
+  "tool": "tools/comms/earth_link.py ties"
+ }
+}

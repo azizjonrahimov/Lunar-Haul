@@ -284,3 +284,27 @@ def test_samples_v2_lie_on_the_routes_v1_routes():
                 t = np.clip(((p - A) * AB).sum(1) / L2, 0.0, 1.0)
                 assert np.hypot(*(A + t[:, None] * AB - p).T).min() <= 10 * math.sqrt(2) + 0.1, (leg, L, i)
             assert v2["lengths_m"][leg][L] == pytest.approx(g["s"][-1], abs=0.1)
+
+
+def test_route_ties_summary_matches_the_data():
+    """results/E21_route_ties.json (earth_link.py ties): the link-share part is recomputed from the committed v2
+    samples (integer hour counts); the geometry needs the git-ignored B-40 routes, so it is checked for consistency."""
+    path = os.path.join(ROOT, "results", "E21_route_ties.json")
+    if not (os.path.isfile(path) and os.path.isfile(SAMPLES_V2)):
+        pytest.skip("E21_route_ties.json or the v2 samples not generated")
+    with open(path, encoding="utf-8") as f:
+        doc = json.load(f)
+    v2 = _gz(SAMPLES_V2)
+    assert doc["sources"]["samples_v2"]["sha256"] == E.sha256(SAMPLES_V2)
+    assert doc["sources"]["routes_v1"]["sha256"] == E.sha256(os.path.join(ROOT, "data", "driving", "routes-v1.json"))
+    assert doc["linked_share"] == E.route_tie_linked(v2)
+    g, n = doc["geometry"], doc["legs_compared"]
+    assert n == len(v2["legs"]) == 182
+    assert 0 <= g["legs_differing_gt_20m"] <= g["legs_differing_gt_2m"] <= n
+    assert g["legs_differing_gt_20m"] <= doc["sample_lists_differing"] == len(v2["night_legs_off_v1"])
+    assert g["max_leg"] in v2["night_legs_off_v1"] and g["max_m"] > 20.0
+    with open(DATA, encoding="utf-8") as f:
+        el = json.load(f)
+    worst = max(abs(el["legs"][k]["length_m"] - v2["lengths_m"][k]["night"]) for k in v2["legs"]
+                if el["legs"][k].get("length_m") is not None)                      # both rounded to 0.1 m
+    assert worst <= 0.15 and doc["length"]["max_abs_diff_m"] <= worst + 0.05
