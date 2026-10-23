@@ -70,7 +70,7 @@ knee, the restoration and completion shares at the lowest level and the strict-f
 | E14 | Sections 5.5 and 7: 45 M$/yr, 450 M$ over 10 years, Modelled in [33]. |
 | E15 | Table 8: Δp interval for every row, every draw kept; "beyond 1" where an option beats full coverage, with its share (strategic + 1 rover: 42 %). |
 | E16 | Section 5.3: "Most of the fall happens by coverage 0.2, and a slow tail follows". |
-| E17 | Section 5.4 paragraph 2 and Figure 4: tonnage 113 / 508 / 536 / 543 t by start year; 41,026 rover-hours waiting in 2028 against 21,362-34,201 in other years. |
+| E17 | Section 5.4 paragraphs 2-3 and Figure 4: tonnage 113 / 508 / 536 / 543 t by start year; 41,026 rover-hours waiting in 2028 against 21,362-34,201 in other years. The referee was right that it is the calendar, and we now show how: one route sample on the regolith haul from the oxygen plant sees Earth at no hour from January 2028 to July 2029 and holds 79 % of 2028's stranded rover-hours; a swap test (demand fixed, start year varied, eight seeds) makes every seed collapse in 2028; Earth's bearing at high elevation moves with the libration pattern (results/E21_strategic_years.json, experiments/phase4/strategic_years.py). Discussion and Conclusions state the consequence for the strategic rule. |
 | E18 | Section 5.4 cites the paired effects, not Table 7, for the delay claims. |
 | E19 | Section 5.2: "every fleet that needs a link to drive"; strategic loses 107 t (20 %). |
 | E20 | All tables: Student-t cell intervals (`table_E21_cells_r2.csv`). |

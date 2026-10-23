@@ -514,3 +514,12 @@ and that the throughput knee lies at or below 0.1; RESPONSE_round2.md says the s
 the 0.05 cells land" no longer apply unless the owner asks for the runs (they need a quiet machine and, likely,
 per-run row writes). Also added this evening: the route tie-break limitation (Section 7, from
 results/E21_route_ties.json, B-52b). Still open: the 2028 mechanism of the strategic fleet (B-55) for Section 5.4.
+
+### 22 Oct 2026, late (LEAD): the 2028 mechanism (B-55) and the plume's waits
+Section 5.4: the round-1/agent explanation (science site without a window) is replaced by the measured mechanism from
+results/E21_strategic_years.json (one dark route sample on ISRU->CONSTR, Jan 2028 - Jul 2029, 79 % of 2028's stranded
+rover-hours; swap test; Earth's bearing at high elevation by year). New placeholders R1-SY-*; the build asserts the
+facts the wording uses (first link after 2028, ISRU->CONSTR the top leg, every swap seed lowest in 2028, 2028's high
+Earth outside the sample's bearing window). Section 5.8: the plume keep-out raises DTE waits for Earth 977 -> 2,786
+rover-hours (ratio 2.43 [1.91, 3.08], E21e), with tonnage and urgent delay unchanged (R1-E-PLUME-DTE-WAIT). Discussion
+and Conclusions: the strategic rule's risk and the untested middle rule.

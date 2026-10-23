@@ -501,6 +501,38 @@ def values(r: R):
     V["R1-STRAT-WAIT-2028"] = num(sd.loc[bad])
     assert bad == 2028, "the worst strategic DTE year is no longer 2028; reword Section 5.4"
     V["R1-STRAT-WAIT-OTHER"] = rng_txt([sd.loc[y] for y in sd.index if y != bad], num)
+    # the 2028 mechanism (results/E21_strategic_years.json, experiments/phase4/strategic_years.py, B-55)
+    sy = json.load(open(os.path.join(RES, "E21_strategic_years.json"), encoding="utf-8"))
+    st28 = sy["stranding"]["2028"]
+    top = sy["stranding_2028_top_samples"][0]
+    MON = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
+           "November", "December"]
+    first = next(i for i, x in enumerate(top["monthly_linked_2028_2031"]) if x > 0)
+    y0, m0 = map(int, sy["calendar"]["months"][first].split("-"))
+    assert y0 > 2028, "Section 5.4 says the dark sample sees Earth at no hour in 2028"
+    V["R1-SY-FIRST-LINK"] = f"{MON[m0 - 1]} {y0}"
+    V["R1-SY-SHARE"] = sh(top["stranded_rover_hours"] / st28["runs"] / st28["stranded_rover_hours_per_run"])
+    legs = sy["stranded_rover_hours_per_run_by_leg"]
+    assert max(legs, key=lambda k: legs[k]["2028"]) == "ISRU->CONSTR", "Section 5.4 names the ISRU->CONSTR haul"
+    fs = st28["stranded_fleet_share_by_month"]
+    V["R1-SY-JAN"], V["R1-SY-LATE"] = sh(fs[0]), sh(sum(fs[4:]) / len(fs[4:]))
+    V["R1-SY-NOTRESUME"] = sh(st28["share_not_resuming_in_year"])
+    V["R1-SY-NOTRESUME-OTHER"] = rng_txt([100 * sy["stranding"][y]["share_not_resuming_in_year"]
+                                          for y in ("2029", "2030", "2031")], lambda v: num(v), PCT)
+    sw = sy["swap"]
+    assert sw["seeds_lowest_in_2028"] == len(sw["delivered_t_in_year"]["2028"]) and sw["landings_identical_across_years"]
+    V["R1-SY-SWAP-N"] = words(sw["seeds_lowest_in_2028"])
+    V["R1-SY-SWAP"] = listing([num(sw["delivered_t_in_year_mean"][y]) for y in ("2028", "2029", "2030", "2031")]) + NB + "t"
+    sk = sy["sky"]["earth_at_base"]
+    V["R1-SY-MAXEL"] = rng_txt([sk[y]["max_elevation_deg"] for y in sk], lambda v: f"{v:.1f}", "&deg;")
+    br = lambda r_: f"{num(r_[0], 1)}&deg; to {num(r_[1], 1)}&deg;"
+    V["R1-SY-BEAR-2028"] = br(sk["2028"]["bearing_range_when_above_5.5deg"])
+    V["R1-SY-BEAR-2030"] = br(sk["2030"]["bearing_range_when_above_5.5deg"])
+    smp = sy["sky"]["samples"][str(top["sample"])]
+    bd = smp["bearing_deg_when_linked"]
+    assert sk["2028"]["bearing_range_when_above_5.5deg"][1] < bd[0], "Section 5.4: in 2028 high Earth never reaches the sample's window"
+    V["R1-SY-SAMPLE-BEAR"] = br((bd[0], bd[-1]))
+    V["R1-SY-BOX-HOURS"] = listing([num(x) for x in smp["earth_in_its_sky_box_hours_by_year"]])
     ca = r.acell(AV, 0)
     V["R1-AVOID-COMP-DTE"] = sh(ca["prio1_completion_share"])
     V["R1-AVOID-CP90-GM"] = ratio(pe(AV, "delay_prio1_p90_censored_h", 0.0))
@@ -729,6 +761,8 @@ def values(r: R):
     V["R1-E-INTX2-STRAT-CP90-05"] = ratio(se("interventions_x2", ST, 0.5, "delay_prio1_p90_censored_h"))
     V["R1-E-PLUME-DTE-CP90"] = ratio(se("plume_1km_0.5h", D, 0.0, "delay_prio1_p90_censored_h"))
     V["R1-E-PLUME-05-P90"] = dci(se("plume_1km_0.5h", S, 0.5), 1, "h")
+    pw = se("plume_1km_0.5h", D, 0.0, "blackout_wait_vehicle_h")
+    V["R1-E-PLUME-DTE-WAIT"] = f"from {num(pw['ref_mean'])} to {num(pw['cell_mean'])} rover-hours a year (ratio {ratio(pw)})"
     lc = se("isru_local_feedstock", S, 0.0, "prio1_completion_share")
     V["R1-E-LOCAL-COMP-DTE"], V["R1-E-LOCAL-COMP-DIFF"] = sh(lc["cell_mean"]), pts(lc)
 
