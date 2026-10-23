@@ -7,7 +7,7 @@ Sections 1-4 and the appendices were revised first (see `NOTES.md`, "Changelog (
 file covers the whole report and says where each change is. Numbers below are those of the current build; every
 number in the paper is filled from the result files.
 
-Status at writing: all round-2 stages have run except Stage A's relay coverage 0.05 (six cells), which is running.
+Status at writing: all round-2 stages have run. Stage A's relay coverage 0.05 (six cells, not requested by the referee) was planned but did not finish: each run is slow because rovers wait long for a link, and the background job was stopped when the machine ran low on memory. The paper states the knee as at or below 0.1 (Section 4.2).
 The text is written so that it holds with or without those cells: the lowest relay level, the count of levels, the
 knee, the restoration and completion shares at the lowest level and the strict-fleet curve are read from the data.
 
@@ -32,7 +32,7 @@ knee, the restoration and completion shares at the lowest level and the strict-f
 
 | # | Item | What changed, and where |
 |---|---|---|
-| 11 | Relay levels 0.6, 0.7 | Run; Table 7 targets now fall between measured cells (strict 2×: 0.58 [0.36, 0.72]; 1.5×: 0.68 [0.58, 0.92]). Level 0.05 is running; the text adapts when it lands. |
+| 11 | Relay levels 0.6, 0.7 | Run; Table 7 targets now fall between measured cells (strict 2×: 0.58 [0.36, 0.72]; 1.5×: 0.68 [0.58, 0.92]). Level 0.05 did not finish (see the status note); the text says the knee is at or below 0.1. |
 | 12 | Stage B with look-ahead and a second coverage | Look-ahead in Stage B at DTE and 0.5; strict and strategic with 0 and 1 extra rover at 0.2 and 0.8 (Section 5.5, Table 8). One rover is not significant at 0.2 or 0.8 either; the strategic step shortens delivered-item delay at both. At 0.8 the strict cell lies above its 0.7 neighbour, so Δp there is flagged as not informative. |
 | 13 | Relay gap sensitivity; DRM-0 vs RC 3.1 | Stage E (Section 5.8): 2 h and 24 h mean gaps, periodic DRM-0 (784 min) and RC 3.1 (30 h). Gap pattern moves delay (e.g. ×0.71 with 2 h gaps, ×0.57 periodic DRM-0 at 0.1) but not throughput, except RC 3.1 at 0.1 for the teleoperated fleet (−20.6 t, −3.9 %); RC 3.1 at 0.5 lowers strict completion by 5.6 points. Why the DRM-0 gap stands in: part 3 (2.2, 3.7, Table 4). Section 7 repeats the limitation. |
 | 14 | Antenna height | 2.5 m tied to VIPER's mast in Section 3.3 (part 3). No other height was run (M10 not done); Section 7 says so. |
@@ -46,7 +46,7 @@ knee, the restoration and completion shares at the lowest level and the strict-f
 
 | # | Item | What changed, and where |
 |---|---|---|
-| 20 | Busy fleet, plume, local feedstock, lower relay bound at ISRU | Plume (M13) and local feedstock (M14) run and reported (Sections 5.2, 5.8). Busy fleet (M11) and a reduced relay at the plant (M9) not run; Section 7 says so. Relay 0.05 (part of M9) is running. |
+| 20 | Busy fleet, plume, local feedstock, lower relay bound at ISRU | Plume (M13) and local feedstock (M14) run and reported (Sections 5.2, 5.8). Busy fleet (M11) and a reduced relay at the plant (M9) not run; Section 7 says so. Relay 0.05 (part of M9) did not finish. |
 | 21 | Table 4 and registration to an appendix | Done in part 3 (Appendix A, Table A1); the build moves Appendices A and B after the references. |
 | 22 | Link budget | Not done. Section 7 states it, gives the geometric reason the real link should fall between our criteria, and discusses LCRNS's 17-43 % DTE figures against ours. |
 
@@ -78,7 +78,7 @@ knee, the restoration and completion shares at the lowest level and the strict-f
 | E22 | Section 5.5 last sentence; Section 4.4. |
 | E23 | Part 3; Section 5.8 reports the periodic DRM-0 and RC 3.1 cases. |
 | E24 | Part 3 and NOTES.md (references renumbered and completed). |
-| E25 | Abstract: "ten relay coverages from 0.1 to 1.0" now, "eleven ... from 0.05" when the 0.05 cells land (filled from the data). |
+| E25 | Abstract: "ten relay coverages from 0.1 to 1.0" (filled from the data). |
 | E26 | Parts 4-5 and the build: `&#8239;%`, M$, "Stage A". |
 
 ## Overclaims
@@ -127,7 +127,7 @@ knee, the restoration and completion shares at the lowest level and the strict-f
 
 | Code | Status |
 |---|---|
-| M1 | 0.6 and 0.7 done; 0.05 running. |
+| M1 | 0.6 and 0.7 done; 0.05 did not finish (Section 4.2). |
 | M2 | Done (Table 6, Figure 2, Section 5.2). |
 | M3 | Done (year-blocked intervals, Figure 4). |
 | M4 | Done (completion share, censored p90). |
@@ -135,7 +135,7 @@ knee, the restoration and completion shares at the lowest level and the strict-f
 | M6 | Done (look-ahead in Stage B; 0.2 and 0.8). |
 | M7 | Done (Stage A2). |
 | M8 | Done (Stage E relay cases). |
-| M9 | Partly: relay 0.05 running; no reduced availability at the plant. |
+| M9 | Partly: relay 0.05 did not finish; no reduced availability at the plant. |
 | M10 | Not done. |
 | M11 | Not done. |
 | M12 | Done (Stage E). |

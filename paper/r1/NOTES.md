@@ -505,3 +505,12 @@ in Section 7), not 2,000. (c) Part 3 already says "eleven coverage levels"; unti
 72 Stage A cells. (d) One extra rover's Δp interval excludes zero while its paired tests do not; the text says so.
 (e) The real Sun lengthens urgent delay about fivefold at p = 0.5 (Stage D); the coverage targets and the price
 are for the fixed night share, and the text says so.
+
+### 22 Oct 2026, evening (LEAD): the relay 0.05 cells are dropped from round 2
+Stage A's six relay-0.05 cells (cells 60-65) did not finish: no run completed inside a 540 s chunk, and the background
+job (2 workers, long limit) was stopped by the host when the 8 GB machine ran low on memory, with no row written.
+The referee did not ask for 0.05 (Should 11 asks for 0.6 and 0.7, both run). Part 3 now says ten coverage levels
+and that the throughput knee lies at or below 0.1; RESPONSE_round2.md says the same. The notes above about "when
+the 0.05 cells land" no longer apply unless the owner asks for the runs (they need a quiet machine and, likely,
+per-run row writes). Also added this evening: the route tie-break limitation (Section 7, from
+results/E21_route_ties.json, B-52b). Still open: the 2028 mechanism of the strategic fleet (B-55) for Section 5.4.
