@@ -513,3 +513,15 @@ and the stranding as measured, and do not add claims about which policy is best.
   strategic fleet delivers 42 t a year (30 to 58 t by start year)." Add a fourth chip for it. A rescue-time result
   follows from BACKEND (B-59); leave room for one more sentence.
 - Small (F-40 list): task IDs such as "(B-36)" in visible source text on /world/ chips: replace with the file name.
+
+## F-42 [OPEN] (<= 45 min) /research/earth-sky/ section 3: help for any long wait fixes 2028 (B-60) (queued 22 Oct 22:45)
+B-60 (`results/E21_fit_r2.json` -> `rescue_any`, same layout as `rescue`): when help comes for ANY strategic rover held
+longer than the rescue time, not only at points that never see Earth, 2028 recovers. Help within a week (168 h): 507 t
+in 2028, 516 t a year over all start years (always linked: about 532 t); help after a month: 302 t in 2028.
+- Replace "None of this changes 2028: ..." with two sentences, numbers from the data: help only at points that never
+  see Earth leaves 2028 as it is (the dark spot sees Earth again in July 2029, so a rover stopped there waits it out:
+  86-208 t); help for any rover held longer than a week fixes it (507 t in 2028; 516 t a year, close to the 532 t with
+  Earth always in view).
+- Say the cost: help would be needed about 148 times a year at 168 h (`rescue_any.levels[168].rescues_per_run`), and
+  the helper's own time is not counted.
+- One chip: "Help for any long wait, 2028 sky" (507 t). Stage `rescue_any` into rescue.json (only what is shown).
