@@ -330,6 +330,8 @@ def schema_targets(root: str = ROOT) -> List[Tuple[str, str]]:
          (j("data", "comms", "connecting_ridge", "earth_link-v2-samples-lite.json.gz"), "earth-link-samples-v2"),
          (j("data", "comms", "connecting_ridge", "horizons_dark_sample.json"), "horizons-v1"),
          (j("data", "comms", "connecting_ridge", "parking-v1.json"), "parking-v1"),
+         (j("data", "comms", "connecting_ridge", "earth_link-v3.json"), "earth-link-v1"),
+         (j("data", "comms", "connecting_ridge", "parking-v3.json"), "parking-v1"),
          (j("data", "illumination", "connecting_ridge", "sun_link-v1.json"), "sun-link-v1")]
     t += [(p, "scene-v1") for p in sorted(glob.glob(j("data", "scenes", "*", "scene.json")))]
     t += [(p, "scenario-v1") for p in sorted(glob.glob(j("data", "scenarios", "*.json")))]

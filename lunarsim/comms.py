@@ -220,6 +220,9 @@ class EarthLink:
         doc = json.loads(gzip.decompress(raw) if raw[:2] == b"\x1f\x8b" else raw)
         if doc.get("format") != EARTH_LINK_SAMPLES_FORMAT:
             raise ValueError(f"{path}: not a {EARTH_LINK_SAMPLES_FORMAT} document")
+        if doc["time"].get("start_utc", "2028-01-01 00:00") != self.doc["time"].get("start_utc", "2028-01-01 00:00"):
+            raise ValueError(f"{path}: the samples start at {doc['time'].get('start_utc')}, the link file at "
+                             f"{self.doc['time'].get('start_utc')}")
         self.samples = doc
         self._s_step_h = float(doc["time"]["step_min"]) / 60.0
         self._s_cache: Dict[int, np.ndarray] = {}
@@ -348,8 +351,10 @@ class EarthLink:
 #                      delivered_landed_kg_in_horizon
 #   mast               {"site": "BASE", "height_m": 10, "range_km": 10} or None (the mast the link file was built for)
 #   supervised_policy  "strict" (default) | "strategic" | "strategic+avoid"
-#   start_year         2028-2031 (the series year engine hour 0 maps to; default 2028), or start_h (hours from
-#                      2028-01-01 00:00 UTC); engine times past the series end wrap around it
+#   start_year         2028-2031 (the series year engine hour 0 maps to; default: the series' first year), or start_h
+#                      (hours from the series start, 2028-01-01 00:00 UTC for v1); engine times past the series end
+#                      wrap around it. B-63: with link_series earth_link-v3.json (2032-2046) start_year 2032-2046;
+#                      a year outside the link file's span is rejected
 #   defer_wait_h       a job whose planned blackout wait exceeds this is not committed now (the rover stays free
 #                      and dispatch wakes up when the link returns); default DEFAULT_DEFER_WAIT_H; null = commit
 #                      whatever the wait (the rover parks with the job until the link comes)
@@ -453,6 +458,20 @@ HAZARD_SUPERVISED_PER_KM = 0.10
 # predictable from the ephemeris, so the job is planned for the next link-up instead
 DEFAULT_DEFER_WAIT_H = 24.0
 _EPS = 1e-9
+
+
+def file_year_start_h(start_utc: str, horizon_h: float, year: int) -> float:
+    """Hours from a series start (a 1 January, 00:00 UTC) to 1 January of `year`; the year must start inside the
+    series (B-63: later link files)."""
+    import datetime as _dt
+    t0 = _dt.datetime.strptime(start_utc, "%Y-%m-%d %H:%M")
+    if (t0.month, t0.day, t0.hour, t0.minute) != (1, 1, 0, 0):
+        raise ValueError(f"link series start {start_utc} is not 1 January 00:00")
+    days = (_dt.date(int(year), 1, 1) - t0.date()).days
+    if days < 0 or 24.0 * days >= horizon_h:
+        last = (t0 + _dt.timedelta(hours=horizon_h - 1)).year
+        raise ValueError(f"comms start_year {year} is outside the link series ({t0.year}-{last})")
+    return 24.0 * days
 
 
 def year_start_h(year: int) -> float:
@@ -609,7 +628,13 @@ class CommsModel:
         self.never_strandings = 0
         self.rescues = 0
         self.rescue_h_booked = 0.0
-        self.start_h = float(cfg["start_h"]) if "start_h" in cfg else year_start_h(int(cfg.get("start_year", 2028)))
+        sy = cfg.get("start_year")
+        if "start_h" in cfg:
+            self.start_h: Optional[float] = float(cfg["start_h"])
+        elif sy is None or int(sy) in SERIES_YEARS:
+            self.start_h = year_start_h(int(sy or 2028))
+        else:
+            self.start_h = None                  # B-63: a later year, resolved against the link file below
         dw = cfg.get("defer_wait_h", DEFAULT_DEFER_WAIT_H)
         self.defer_wait_h = math.inf if dw is None else float(dw)
         self.wakes: set = set()
@@ -646,10 +671,14 @@ class CommsModel:
         self.jobs_avoided = 0
         self.delivered_in_horizon_kg = 0.0
         if not self.active:
+            if self.start_h is None:
+                raise ValueError(f"comms start_year {sy} needs a link_series file that covers it")
             return
         path = cfg.get("link_series") or DEFAULT_LINK_SERIES
         path = find(path) if find else path
         self.el = EarthLink.load(path, samples=True)
+        if sy is not None and "start_h" not in cfg:  # the start year against the file's own span (v1: unchanged)
+            self.start_h = file_year_start_h(self.el.doc["time"]["start_utc"], self.el.horizon_h, int(sy))
         if self.helpers is not None:
             self._load_parking(find)
         if self.mast:

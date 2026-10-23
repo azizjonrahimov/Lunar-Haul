@@ -4858,3 +4858,128 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
   - **What differs:** the 2029 loss is bulk regolith, -55.4 t [-93.0, -17.8] of -62.2 (landed -6.5 [-16.8, 3.8]). The same held hours cost more of the CONSTR->ISRU flow in 2029.
   - **Why: not shown.** The tally does not show why. The excess falls at different times (2029 peaks in Jul / Aug / Mar, 2028 in Nov / Mar / Apr); that is a candidate, not a tested cause, and testing it would need delivery-by-month or item-level runs.
   - **Files:** `experiments/phase4/analyse_e21.py` (`helper168`, `helper_call_log`); `results/E21_fit_r2.json`. Helper tests 6 passed.
+
+## B-63 DONE 13:36 | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**Answer: yes, the 2028 dark spell recurs, about every 6 years, and later spells are longer.** #188 (on ISRU<->CONSTR) is dark:
+
+| start | end | days |
+|---|---|---|
+| before 2028-01-01 | 2029-07-02 | 548 visible |
+| 2031-12-19 | 2035-07-15 | 1,304 |
+| 2037-09-13 | 2041-09-19 | 1,466 |
+| 2043-11-19 | past 2046 | 1,138 visible |
+
+- **Spacing:** spell starts 5.74 and 6.18 years apart, ends 6.03 and 6.18.
+- **Period:** fitted 5.94 yr, 95 % 5.72-6.18.
+- **Stage J:** plain strategic collapses exactly in #188's whole-dark years (2032-34, 2038-40: 110.6-184.7 t against 506.0 t in the other years). Help within a week holds in every year with the 24 h helper (95.85-99.89 % of always-linked). G2 168 h dips to 94.45 % (2038) and 94.79 % (2043).
+- **Artefact:** 2044-46 can't be judged from these files (end-of-file artefact, below).
+
+**1. Data**
+- **Ephemeris:** 2032-01-01 .. 2046-12-31, 10 min, 788,976 epochs. Same SPICE setup and observer (`ephem3`, 56 s, 173 MB); azlcpo check max |d az| 5.7e-14, |d el| 8.0e-15 deg.
+- **Wedge:** Earth's grid bearing -8.09 .. +8.06 deg (2028-31: -8.05 .. +8.03), inside the masks' wedge of +/- 12 deg, so no mask extension. Elevation -7.56 .. +6.24 deg.
+- **Files:** `link3` (3 chunks, 172-189 s, <= 215 MB) and `assemble3` (44 s, 279 MB) write:
+  - `earth_link-v3.json` (927 KB; points, legs and mast at 10 min, earth-link v1 format);
+  - `earth_link-v3-samples.json.gz` (1,653 KB; the v1 samples, order and legs, hourly, every criterion; 5,180 series).
+- **Checks:** both pass the validators; all 2,421 samples have the same state in the last hour of 2031 (v1) and the first of 2032 (v3); 12 hourly series recheck against their 10-min windows. The v1 files are unchanged.
+- **Never-linked samples:** 283 in 2028-31, 277 in 2032-46, 277 in all 19 years. Six v1 never-linked samples see Earth for 4-87 h in 2032-46 (#1145 87 h, #2198 48 h, #1520 20 h, #1740 12 h, #1430 6 h, #1330 4 h).
+
+**2. Prediction** (`predict`, 259 s, 277 MB -> `results/E21_later_years.json`, `results/E21_later_years_samples.csv` with linked hours per sample and year 2028-2046)
+- **#188, linked hours by year 2028-2046:** 0, 184, 820, 340, 0, 0, 0, 193, 765, 439, 0, 0, 0, 230, 768, 365, 0, 0, 0.
+- **Period of that series** (least-squares sinusoid, 0.01-yr grid, 2-19 yr):
+  - best 5.94 yr, 95 % 5.72-6.18 (residual bootstrap, 2,000 draws; all of them within 5.5-6.5 yr);
+  - amplitude 364 h; F test against a constant p = 1.2e-5;
+  - RSS 291,300 at 5.94 yr, 294,748 at 5.997 yr, 1,526,536 for a constant, so the beat period fits about as well;
+  - the monthly linked fraction (228 points) gives 5.93 yr.
+- **2028-like years:**
+  - The literal test ("a main-network sample dark from 1 January for >= 6 months", over the 70 legs among the seven sites and the two 1 km pads) fires in 18 of 19 years. Rarely linked pad-leg samples meet it, so it doesn't discriminate.
+  - On the regolith legs CONSTR<->ISRU instead (87 % of 2028's stranded rover-hours, `E21_strategic_years.json`): dark >= 6 months from January in 2028, 2029, 2032-35, 2038-41 and 2044-46; dark the whole year in 2028, 2032-34, 2038-40 and 2044-46, always #188 alone. The whole-dark runs start 6 years apart (2032, 2038, 2044).
+- **Earth at BASE barely changes from year to year:** maximum upper-limb elevation 7.07-7.18 deg; share of epochs above the level horizon 47.8-56.0 %. The spells come from #188's own horizon meeting the libration phase, not from a lower Earth.
+
+**3. Stage J**
+- **Engine** (`lunarsim/comms.py`): with `link_series` naming another file, `start_year` is resolved against that file's own span (`file_year_start_h`). Start years 2032-2046 work only with the v3 file; a year outside a file's span raises; a samples file must start where its link file does. Never-linked samples come from the file's own span (277 in v3). The v1 path gives identical start hours.
+- **Run:** `run_phase4.py e21j --round r2 --seeds 5` -> `results/E21j_years_r2.csv`; 300 runs in two chunks (512 s + 113 s, <= 210 MB).
+  - Policies (DTE): strict, strategic (redraw), G2 at 168 h, and Stage H's dedicated helper at 24 h.
+  - The helper uses `parking-v3.json`: parking-v1's points and ranking, with link fractions and grid windows recomputed for 2032-2046.
+  - Start years 2032-2046 x seeds 0-4, CRN by seed.
+- **Analysis:** `analyse_e21.py years` -> `table_E21j_years_r2.csv` (60 rows) and `E21_fit_r2.json["later_years"]` (only that key added). Reference: always-linked strategic, seeds 0-4, 525.0 t (no link rule, so the year doesn't enter).
+
+| policy | t/yr, 2032-2046 (5 seeds each) |
+|---|---|
+| strict | 305-313 every year (58.0-59.6 % of always-linked) |
+| strategic | 185 / 111 / 132 / 506 / 511 / 489 / 171 / 128 / 130 / 505 / 519 / 515 / 520 / 515 / 520 |
+| G2 168 h | 494-520 |
+| helper 24 h | 503-524 |
+
+- **The collapses come back where the dark spells do.**
+  - Plain strategic averages 142.7 t in the whole-dark years whose spell ends inside the file (2032-34, 2038-40; range 110.6-184.7) and 506.0 t in the other years.
+  - Spearman rho between yearly strategic tonnage and #188's linked hours: 0.88 (p = 0.0004; 12 years, the file-end years excluded).
+- **End-of-file artefact, 2044-46:** strategic shows 518.1 t, but #188's spell from 2043-11-19 runs past 2046-12-31.
+  - An intervention there has no link-up in the file, so the strategic rule counts it as never linked and redraws (refuses the job) instead of stranding the rover.
+  - Refusals: 232.8-242.4 a run, against 29.4-46.0 in the other dark years.
+  - Those three years are not a recovery; a longer file is needed (question 1). The same edge exists at the end of the v1 file (late 2031, #188 dark from 2031-12-19), affecting only the last 12 days of the 2031 runs.
+- **Does help within a week hold every year?**
+  - The 24 h helper does: 95.85-99.89 % of always-linked (worst 2041).
+  - G2 168 h does in 13 of 15 years. Exceptions: 2038 at 94.45 % (-29.1 t [-50.9, -7.4]) and 2043 at 94.79 % (-27.4 t [-45.8, -8.9]); both within ~0.5 pp of the line with 5 seeds.
+  - In the collapse years, help adds about 380-410 t over strategic: 2033 G2 +400.4 [343.6, 457.3], helper +411.8 [359.3, 464.3]; 2039 +379.5 [324.3, 434.6], +384.0 [340.5, 427.4].
+  - The helper is busy 48-57 % of the year, 94.0-95.6 % of that parked waiting for Earth.
+
+**Identity:** no existing E21 row changed. Recomputed equal in every column: six A cells, five Stage F rows, one A2 row and one Stage G row, after the comms change. The md5 test passes; the E21 tables are unchanged; one Stage J run reproduces its row.
+
+**Files:** `tools/comms/later_years.py` (new: ephem3, link3, assemble3, parking3, predict), `lunarsim/comms.py`, `lunarsim/schemas/scenario-v1.schema.json` (comms.start_year 2028-2046), `tools/ci/budgets.py` (+ earth_link-v3, parking-v3 targets), `experiments/phase4/run_phase4.py` (`e21j_cells`, `STAGE_J`), `experiments/phase4/analyse_e21.py` (`years`), `tests/test_later_years.py` (new, 6 tests).
+- **For LEAD to commit:**
+  - `data/comms/connecting_ridge/earth_link-v3.json` (+ `.sha256`), `earth_link-v3-samples.json.gz`, `parking-v3.json`;
+  - `results/E21_later_years.json`, `results/E21_later_years_samples.csv`, `results/E21j_years_r2.csv`, `results/table_E21j_years_r2.csv`, `results/E21_fit_r2.json`.
+
+**How to test:**
+- `.venv/Scripts/python -m pytest -q tests/test_later_years.py` (6) plus the comms / rescue / bounded / phase3 / budgets / parking / helper / strategic-years suites -> 95 passed.
+- `tools/ci/budgets.py schemas` -> 43 files, 0 problems.
+- Rebuild (needs `.cache/comms`; each step `--max-seconds 540`): `later_years.py ephem3` -> `link3 --part i --parts 3` -> `assemble3` -> `parking3` -> `predict`, then `run_phase4.py e21j --round r2 --seeds 5 --workers 1` (rerun once to finish), then `analyse_e21.py years`.
+
+**FRONTEND:** nothing required. If the site wants it, the per-year series at #188 and the spells are in `E21_later_years.json` (`dark_sample_188`, `dark_spells_188_over_180_days`).
+
+**Questions for LEAD:**
+1. Settling 2044-46 needs #188's spell end. Extend the v3 files to 2050 (ephemeris 2047-2050, `link3`, then rerun the 2044-46 strategic cells)? About 15-20 min in foreground chunks; the data span becomes 2032-2050 (or a separate v4 file if you prefer the v3 span fixed).
+2. Next up is your optional B-62 pool diagnostic (<= 15 min) unless you say otherwise.
+
+- **B-63 addendum 14:18** (LEAD's Q1: v3 extended to 2032-2050; replaces the 2044-46 caveat above). **The 2044-46 strategic years collapse too**; the earlier 518 t was the end-of-file artefact.
+  - **Data:**
+    - `ephem3` 999,360 epochs (69 s, 197 MB); Earth stays inside the wedge (-8.09 .. +8.06 deg).
+    - `link3` 4 chunks, 156-161 s; `assemble3` 55 s, 327 MB.
+    - `earth_link-v3.json` 1,130 KB; `earth_link-v3-samples.json.gz` 2,082 KB (5,187 series). Both validate; the 2031/2032 boundary is continuous for all 2,421 samples.
+    - `parking3` 79 s, 272 MB; `predict` 500 s, 313 MB (close to the 540 s cap; it is one pass, rerun-safe).
+  - **Never-linked over 2032-2050: still 277** (277 over 2028-2050; the same set as for 2032-2046). The same six v1 never-linked samples see Earth for 4-87 h. So no strategic redraw changed for that reason.
+  - **First spell** (`back188`: #188 alone, a 2025-2027 ephemeris, 11 s, 111 MB): linked 412 h in 2025, 0 in 2026-27. The spell ending 2029-07-02 began **2025-11-08 14:00**.
+  - **#188's dark spells over 180 days:**
+
+    | start | end | days |
+    |---|---|---|
+    | 2025-11-08 | 2029-07-02 | 1,331.7 |
+    | 2031-12-19 | 2035-07-15 | 1,303.9 |
+    | 2037-09-13 | 2041-09-19 | 1,466.4 |
+    | 2043-11-19 | 2047-06-16 | 1,304.1 |
+    | 2049-12-29 | past 2050 | censored |
+
+    - Start spacings 6.11 / 5.74 / 6.18 / 6.11 yr (four spacings); end spacings 6.03 / 6.18 / 5.74.
+    - **Correction to my B-63 report:** the spells are all about equally long (3.6-4.0 yr). 2028 only saw the last 18 months of one, so "later spells are longer" was wrong.
+  - **Period:** fit on 2028-2050 annual hours (23 points; this is the headline now): **5.95 yr, 95 % 5.79-6.11**, p vs constant 3.8e-7. The 2028-2046 fit (19 points) gives 5.94 yr [5.72, 6.16]; the monthly series 5.95 yr.
+  - **#188's linked hours 2047-2050:** 229 / 761 / 375 / 0.
+  - **Regolith-leg 2028-like years** (whole year dark): 2028, 2032-34, 2038-40, 2044-46, 2050 (#188 alone).
+  - **Stage J rerun in full:** 300 rows, 510 s + 138 s, <= 230 MB. **32 rows moved:**
+    - strategic 2043, all 5 seeds: -1.0 to -42.8 t (the spell from 2043-11-19 now strands instead of redrawing);
+    - strategic 2044-46, all 15 rows: -102.2 to -414.4 t. Refusals fall from 189-287 to 15-81 a run. Means: 2044 251.5 t (+/- 154.1), 2045 153.6 (+/- 60.5), 2046 177.7 (+/- 84.0);
+    - G2 168 h 2046 (5), helper 24 h 2046 (5), strict 2046 (seeds 0, 1): in-year tonnage unchanged. Only metrics running past 2046-12-31 moved (post-year delivery delays, utilisation; strict's linked_share_by_leg_mean in the 5th decimal), since those hours now see real 2047 links instead of wrapping to 2032.
+  - **Stage J results now:**
+    - Plain strategic collapses in all nine whole-dark years (2032-34, 2038-40, 2044-46): mean 159.9 t, range 110.6-251.5, against 505.0 t (489.0-518.7) in the other six years. Spearman rho with #188's linked hours 0.85 (p = 7.0e-5, all 15 years).
+    - Help within a week: the 24 h helper is within 5 % of always-linked in every year (95.85-99.89 %). G2 168 h is below 95 % in 2038 (94.45 %) and 2043 (94.79 %). Both unchanged by the extension.
+  - **Files:** `tools/comms/later_years.py` (span 2032-2050, `back188`, the 2028-2046 fit kept for comparison), `experiments/phase4/analyse_e21.py` (`years`: file-end detection), `lunarsim/schemas/scenario-v1.schema.json` (start_year up to 2050), `tests/test_later_years.py`.
+  - **Outputs regenerated:** the v3 data files, `parking-v3.json`, `E21_later_years.json` / `_samples.csv`, `E21j_years_r2.csv`, `table_E21j_years_r2.csv`, `E21_fit_r2.json` (`later_years`). Tests: later-years 6 passed; schemas 43/0.
+- **B-62 optional pool check 14:18** (`analyse_e21.py helperpool`, 34 s; 20 runs, each reproduces its row) -> `E21_fit_r2.json["helper"]["diagnosis_168h"]["pool_by_month"]`. Measured once a day: the 40-slot pool full or not, and the CONSTR->ISRU share of its slots, by twelfth of the year (means of 5 seeds).
+  - **2029, helper 168 h:** pool full 0 / 0 / 5 / 12 / 10 / 10 / 29 / 13 / 24 / 60 / 82 / 87 % of days (year 27.68 %). G2 168 h: never full (0 %). CONSTR->ISRU share of slots: helper 3-34 % (31-34 % in Oct-Dec), G2 3-14 %.
+  - **2028:** helper full 14.05 % of days (peak 30 % in month 4), G2 2.36 %.
+  - **Monthly bulk loss, helper minus G2, 2029:** -0.6 / -4.2 / -10.6 / -3.2 / +6.0 / -5.6 / -1.8 / +7.2 / -12.6 / -19.0 / -11.0 / 0.0 t (sum -55.4).
+  - **Partial alignment only:** the largest losses (months 9-11, -42.6 t) do coincide with the helper's pool filling (24 → 60 → 82 %). But month by month the loss doesn't track the pool-full excess: Spearman rho -0.19 (p = 0.56) in 2029, +0.27 (p = 0.39) in 2028; month 3 loses 10.6 t with the pool full on 5 % of days.
+  - **So:** the auction-pool mechanism is consistent with the autumn part of the 2029 loss; it is not a clean tie.
+- **On LEAD's two paper notes:**
+  1. "Six of the 283 never-linked samples (2028-31) see Earth for 4-87 h in 2032-46": correct (and still 4-87 h over 2032-2050).
+  2. "The 12-day end-of-file edge in the 2031 runs" needs a fix. #188's own tail is 12.8 days (from 2031-12-19), but the edge is per sample, from its last v1 window. Every linked sample has one before 2031-12-31 (median 232 h, p90 297 h), so most samples are affected in roughly the last 10-13 days of the 2031 runs. Rarely linked samples last link much earlier: 121 samples have a tail over 720 h, 110 over 2,000 h, 47 over a year and 7 over 20,000 h (up to 34,256 h: #1259, #1304). A wait there after that point counts as never linked (redraw) in any run, so earlier years are affected at those samples too. Suggested wording: "waits that run past a sample's last link-up in the file count as never linked; for most samples that is the last ~10-13 days of 2031, but 47 rarely linked samples have no link-up in the last year of the file, 7 none in its last 2.3 years".

@@ -842,7 +842,7 @@ test) and `results/E21_parking.json` (summary). New earth_link.py stage(s) `tall
    strategic: tonnage (overall and by start year; 2028!), urgent completion, censored p90, helper utilisation,
    helps per run, call -> release delay. One line: does a real helper keep the G2 headline, and in which years not?
 
-## B-63 [IN PROGRESS] Later years: does the 2028 dark spell recur? (data, then Stage J)
+## B-63 [DONE 13:36] Later years: does the 2028 dark spell recur? (data, then Stage J)
 1. **Data.** Ephemeris 2032-01-01 to 2046-12-31 (with 2028-2031 that is 19 years, more than the 18.6-year nodal
    cycle and three ~6-year beats), the same SPICE setup. Check that Earth's grid bearing stays inside the masks'
    wedge (b0 +/- 12 deg); if not, extend the masks and say by how much. Hourly DTE any_part series for every v1

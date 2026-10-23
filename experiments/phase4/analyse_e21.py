@@ -1666,6 +1666,199 @@ def cmd_helper168(a) -> None:
               + ", ".join(f"#{s['sample']} {s['excess_h_per_run']} h ({s['share_of_year_excess']:.0%})" for s in b["top_samples"]))
 
 
+def pool_by_month(cell, seed: int, step_h: float = 24.0) -> Dict[str, Any]:
+    """One run of a cell: once a day, is the 40-slot auction pool full and what share of its slots do CONSTR->ISRU
+    items hold (composition only, no plans), by calendar month of the simulated year; and the bulk tonnage delivered
+    per month."""
+    from lunarsim import Simulation, dispatch
+    from experiments.phase4 import run_phase4 as R
+    tag, sc, mn, mf, kw = cell
+    sc = sc.with_(comms=dict(sc.comms, start_year=R.start_year(seed)))
+    sim = Simulation(sc, mf, seed=seed, mech_kwargs=dict(kw))
+    H = float(sc.horizon_h)
+    samples, nxt, orig = [], [0.0], sim._dispatch
+
+    def look():
+        if sim.t >= nxt[0]:
+            nxt[0] = sim.t + step_h
+            cands = sim.comms.filter_candidates(sim, [c for c in sim.waiting if not c.stranded])
+            pool = sorted(cands, key=lambda c: (c.priority, c.t_ready))[:dispatch.MAX_POOL]
+            samples.append((min(11, int(sim.t // (H / 12.0))), len(pool),
+                            sum(1 for c in pool if (c.origin, c.dest) == ("CONSTR", "ISRU"))))
+        return orig()
+
+    sim._dispatch = look
+    out = sim.run()
+    s = np.array(samples, float).reshape(-1, 3)
+    full = [float(np.mean(s[s[:, 0] == m, 1] >= dispatch.MAX_POOL)) if (s[:, 0] == m).any() else None for m in range(12)]
+    ci = [float(np.mean(s[s[:, 0] == m, 2] / dispatch.MAX_POOL)) if (s[:, 0] == m).any() else None for m in range(12)]
+    bulk = np.zeros(12)
+    for c in sim.all_cargo:
+        if c.cls == "bulk" and c.t_delivered is not None and c.t_delivered <= H:
+            bulk[min(11, int(c.t_delivered // (H / 12.0)))] += c.mass_kg / 1000.0
+    return {"seed": seed, "pool_full": full, "constr_isru_share": ci, "bulk_t_by_month": bulk.tolist(),
+            "delivered_t_in_year": out["delivered_kg_in_horizon"] / 1000.0}
+
+
+def cmd_helperpool(a) -> None:
+    """LEAD's optional B-62 check: the auction pool by month in the 2028 and 2029 seeds of the 168 h helper and of G2
+    at 168 h; does the 2029 regolith loss line up with pool-full months?"""
+    from experiments.phase4 import run_phase4 as R
+    t0 = time.time()
+    hcell = next(c for c in R.e21h_cells() if c[0]["rescue_h"] == 168.0 and c[0]["helpers_n"] == 1
+                 and not c[0]["helpers_from_fleet"] and c[0]["helpers_service_h"] == 1.0)
+    gcell = next(c for c in R.e21g2_cells() if c[0]["rescue_h"] == 168.0)
+    hcsv = pd.read_csv(os.path.join(a.results, STAGE_H_FILE), float_precision="round_trip")
+    hcsv = hcsv[(hcsv["rescue_h"] == 168.0) & (hcsv["helpers_n"] == 1) & (~hcsv["helpers_from_fleet"].astype(bool))
+                & (hcsv["helpers_service_h"] == 1.0)].set_index("seed")
+    gcsv = pd.read_csv(os.path.join(a.results, STAGE_G2_FILE), float_precision="round_trip")
+    gcsv = gcsv[gcsv["rescue_h"] == 168.0].set_index("seed")
+    res: Dict[str, Any] = {}
+    for y in (2028, 2029):
+        seeds = [s for s in range(20) if R.start_year(s) == y]
+        res[str(y)] = {}
+        for lab, cell, csv in (("helper_168h", hcell, hcsv), ("g2_168h", gcell, gcsv)):
+            runs = [pool_by_month(cell, s) for s in seeds]
+            for r in runs:
+                if r["delivered_t_in_year"] != float(csv.loc[r["seed"], "delivered_t_in_year"]):
+                    raise SystemExit(f"helperpool: {lab} seed {r['seed']} does not reproduce its row")
+            mean = lambda k: [float(np.mean([r[k][m] for r in runs if r[k][m] is not None])) for m in range(12)]
+            res[str(y)][lab] = {"seeds": seeds, "pool_full_share_by_month": mean("pool_full"),
+                                "constr_isru_share_of_slots_by_month": mean("constr_isru_share"),
+                                "bulk_t_by_month": mean("bulk_t_by_month"),
+                                "pool_full_share_year": float(np.mean(mean("pool_full")))}
+        h, g = res[str(y)]["helper_168h"], res[str(y)]["g2_168h"]
+        loss = [a_ - b_ for a_, b_ in zip(h["bulk_t_by_month"], g["bulk_t_by_month"])]
+        dfull = [a_ - b_ for a_, b_ in zip(h["pool_full_share_by_month"], g["pool_full_share_by_month"])]
+        rho = stats.spearmanr(loss, dfull)
+        res[str(y)]["bulk_loss_t_by_month"] = loss
+        res[str(y)]["pool_full_excess_by_month"] = dfull
+        res[str(y)]["loss_vs_pool_full_excess_spearman"] = {"rho": float(rho.statistic), "p": float(rho.pvalue)}
+    path = os.path.join(a.results, "E21_fit_r2.json")
+    with open(path, encoding="utf-8") as fh:
+        fit = json.load(fh)
+    fit["helper"]["diagnosis_168h"]["pool_by_month"] = _json(
+        dict(res, method="once a day: the 40-slot auction pool (dispatch.MAX_POOL, after filter_candidates, sorted by "
+                          "priority and age) full or not, and the share of its slots held by CONSTR->ISRU items; month = "
+                          "twelfth of the simulated year; bulk = regolith delivered in that month; means over the five "
+                          "seeds of the start year; every run reproduces its CSV row"))
+    with open(path, "w", encoding="utf-8", newline="\n") as fh:
+        json.dump(fit, fh, indent=1)
+        fh.write("\n")
+    print(f"helper.diagnosis_168h.pool_by_month written ({time.time() - t0:.0f} s)")
+    for y in ("2028", "2029"):
+        for lab in ("helper_168h", "g2_168h"):
+            b = res[y][lab]
+            print(f"  {y} {lab:<11} full " + " ".join(f"{v:.2f}" for v in b["pool_full_share_by_month"])
+                  + f" | C->I " + " ".join(f"{v:.2f}" for v in b["constr_isru_share_of_slots_by_month"]))
+        print(f"  {y} bulk loss " + " ".join(f"{v:.1f}" for v in res[y]["bulk_loss_t_by_month"])
+              + f"; rho vs pool-full excess {res[y]['loss_vs_pool_full_excess_spearman']['rho']:.2f}")
+
+
+STAGE_J_FILE = "E21j_years_r2.csv"
+LATER_YEARS_FILE = "E21_later_years.json"
+J_POLICIES = ("strict", "strategic", "g2_168h", "helper_24h")
+
+
+def cmd_years(a) -> None:
+    """Stage J (B-63): tonnage by start year 2032-2046 per policy under the v3 link files; do the collapses come back
+    where #188's dark spells do, and does help within a week hold in every year?"""
+    t0 = time.time()
+    j = pd.read_csv(os.path.join(a.results, STAGE_J_FILE), float_precision="round_trip")
+    with open(os.path.join(a.results, LATER_YEARS_FILE), encoding="utf-8") as fh:
+        ly = json.load(fh)
+    df = load_round(a.results, "r2")
+    A = df[(df["stage"] == "A") & (df["sensitivity"] == "none")]
+    seeds = sorted(j["seed"].unique().tolist())
+    always = A[(A["mix"] == "supervised_strategic") & (A["comms"] == "always") & (A["seed"].isin(seeds))]
+    if len(always) != len(seeds):
+        raise SystemExit("always-linked strategic reference rows missing")
+    al = float(always["delivered_t_in_year"].mean())
+    years = sorted(j["start_year"].unique().tolist())
+    lin = {int(y): v for y, v in ly["dark_sample_188"]["linked_h_by_year"].items()}
+    whole = set(ly["like_2028_regolith_legs"]["dark_whole_year_years"])
+    half = set(ly["like_2028_regolith_legs"]["dark_from_jan_6_months_years"])
+    rows, by = [], {}
+    for p_ in J_POLICIES:
+        by[p_] = {}
+        for y in years:
+            c = j[(j["policy_j"] == p_) & (j["start_year"] == y)]
+            v = c["delivered_t_in_year"].to_numpy(float)
+            pr = paired(always, c, "delivered_t_in_year")
+            rec = {"policy": p_, "start_year": int(y), "n": int(len(v)), "mean_t": float(v.mean()), "ci_half_t": _tci(v),
+                   "min_t": float(v.min()), "share_of_always_linked": float(v.mean() / al),
+                   "diff_vs_always_t": pr["diff"], "diff_ci_lo": pr["ci_lo"], "diff_ci_hi": pr["ci_hi"],
+                   "prio1_completion": float(c["prio1_completion_share"].mean()),
+                   "dark_188_whole_year": int(y) in whole, "dark_188_from_jan_6_months": int(y) in half,
+                   "linked_h_188": lin.get(int(y))}
+            if p_ == "helper_24h":
+                rec.update(helps_per_run=float(c["helper_helps"].mean()), helper_utilisation=float(c["helper_utilisation"].mean()),
+                           parked_share=float(c["helper_park_h"].sum() / c["helper_busy_h"].sum()))
+            if p_ == "strategic":
+                rec["jobs_refused_per_run"] = float(c["blackout_jobs_refused"].mean())
+            rows.append(rec)
+            by[p_][str(y)] = rec
+    table = pd.DataFrame(rows)
+    table.to_csv(os.path.join(a.results, "table_E21j_years_r2.csv"), index=False, lineterminator="\n")
+    # #188's spell that runs past the file's end: no link-up in the file, so the strategic rule treats an intervention
+    # there as never linked and redraws (refuses) instead of stranding the rover
+    cens = set()
+    for sp_ in ly["dark_spells_188_over_180_days"]["spells"]:
+        if sp_["censored"] and not sp_["start"].startswith("2028-01-01"):   # runs past the file's end
+            cens |= {y for y in years if y >= int(sp_["start"][:4])}
+    st = table[table["policy"] == "strategic"]
+    st_in = st[~st["start_year"].isin(cens)]
+    dark, light = st_in[st_in["dark_188_whole_year"]], st_in[~st_in["dark_188_whole_year"]]
+    dark_end = st[st["start_year"].isin(cens) & st["dark_188_whole_year"]]
+    rho = stats.spearmanr(st_in["mean_t"], st_in["linked_h_188"])
+    paired_years = {}
+    for p_ in ("g2_168h", "helper_24h"):
+        paired_years[p_] = {}
+        for y in years:
+            r = paired(j[(j["policy_j"] == "strategic") & (j["start_year"] == y)],
+                       j[(j["policy_j"] == p_) & (j["start_year"] == y)], "delivered_t_in_year")
+            paired_years[p_][str(y)] = {k: r[k] for k in ("diff", "ci_lo", "ci_hi")}
+    holds = {p_: [int(y) for y in years if by[p_][str(y)]["share_of_always_linked"] < 0.95] for p_ in ("g2_168h", "helper_24h")}
+    doc = {"design": "Stage J (B-63): plain strategic all-supervised fleets and strict under DTE with the 2032-2050 link "
+                     "files (earth_link-v3, never-linked samples over that span: "
+                     f"{ly['never_linked']['v3_2032_2050']}); strict, strategic (redraw), Stage G2 at 168 h and Stage H's "
+                     "dedicated helper at 24 h (parking-v3: parking-v1's points with 2032-2050 windows); start years "
+                     "2032-2046 x seeds 0-4, common random numbers by seed. Reference: always-linked strategic, seeds 0-4 "
+                     "(Stage A; no link rule, so the start year does not enter).",
+           "always_linked_t": al, "by_policy_year": by,
+           "strategic_whole_dark_years": {"years": sorted(int(y) for y in dark["start_year"]),
+                                          "mean_t": float(dark["mean_t"].mean()), "range_t": [float(dark["mean_t"].min()), float(dark["mean_t"].max())]},
+           "strategic_other_years": {"years": sorted(int(y) for y in light["start_year"]),
+                                     "mean_t": float(light["mean_t"].mean()), "range_t": [float(light["mean_t"].min()), float(light["mean_t"].max())]},
+           "strategic_dark_to_file_end_years": {
+               "years": sorted(int(y) for y in dark_end["start_year"]), "mean_t": float(dark_end["mean_t"].mean()) if len(dark_end) else None,
+               "jobs_refused_per_run": [float(v) for v in dark_end["jobs_refused_per_run"]],
+               "jobs_refused_per_run_other_dark_years": [float(v) for v in dark["jobs_refused_per_run"]],
+               "note": "years in which #188's dark spell runs past the end of earth_link-v3: an intervention "
+                       "there has no link-up in the file, so the strategic rule counts it as never linked and redraws "
+                       "(refuses the job) instead of stranding the rover. These years' strategic tonnage is an artefact of "
+                       "the file's end, not a recovery; a longer file is needed to settle them."},
+           "strategic_vs_188_linked_h_spearman": {"rho": float(rho.statistic), "p": float(rho.pvalue),
+                                                  "years": "excluding the years dark to the file's end"},
+           "paired_vs_strategic_by_year": paired_years,
+           "years_below_95pct_of_always_linked": holds,
+           "help_within_a_week_holds_every_year": {p_: not v for p_, v in holds.items()}}
+    path = os.path.join(a.results, "E21_fit_r2.json")
+    with open(path, encoding="utf-8") as fh:
+        fit = json.load(fh)
+    fit["later_years"] = _json(doc)
+    with open(path, "w", encoding="utf-8", newline="\n") as fh:
+        json.dump(fit, fh, indent=1)
+        fh.write("\n")
+    print(f"table_E21j_years_r2.csv ({len(table)} rows) and E21_fit_r2.json 'later_years' written ({time.time() - t0:.0f} s)")
+    for p_ in J_POLICIES:
+        print(f"  {p_:<11} " + " ".join(f"{y % 100:02d}:{by[p_][str(y)]['mean_t']:.0f}" for y in years))
+    print(f"  strategic: whole-dark years {doc['strategic_whole_dark_years']}, dark to the file end "
+          f"{doc['strategic_dark_to_file_end_years']['years']} ({doc['strategic_dark_to_file_end_years']['mean_t']} t), "
+          f"others {doc['strategic_other_years']['mean_t']:.1f}; rho {doc['strategic_vs_188_linked_h_spearman']['rho']:.2f}; "
+          f"below 95 % of always-linked: {holds}")
+
+
 def windows_mask(code: Sequence[int], n: int) -> np.ndarray:
     from lunarsim.comms import decode_windows, windows_to_mask
     return windows_to_mask(decode_windows(code), n)
@@ -1716,6 +1909,11 @@ def main(argv=None) -> None:
     p.add_argument("--scope", default="never_linked", choices=tuple(RESCUE_RUNS))
     p = sub.add_parser("helper", help="Stage H (B-62) -> table_E21h_helper_r2.csv and E21_fit_r2.json 'helper'")
     p.add_argument("--results", default=RESULTS)
+    p = sub.add_parser("helperpool", help="optional B-62 check: the auction pool by month, 168 h helper vs G2 (20 runs)")
+    p.add_argument("--results", default=RESULTS)
+    p.add_argument("--max-seconds", type=float, default=540.0)
+    p = sub.add_parser("years", help="Stage J (B-63) -> table_E21j_years_r2.csv and E21_fit_r2.json 'later_years'")
+    p.add_argument("--results", default=RESULTS)
     p = sub.add_parser("helper168", help="B-62 addendum: the 168 h helper's losses by start year (20 tally reruns)")
     p.add_argument("--results", default=RESULTS)
     p.add_argument("--max-seconds", type=float, default=540.0)
@@ -1728,10 +1926,10 @@ def main(argv=None) -> None:
         a.boot = a.boot or (N_BOOT if a.round == "r1" else N_BOOT_R2)
         if a.round != "r1":
             return cmd_fit_r2(a)
-    if a.cmd in ("pool2028", "helper168") and a.max_seconds > 0:
+    if a.cmd in ("pool2028", "helper168", "helperpool") and a.max_seconds > 0:
         faulthandler.dump_traceback_later(a.max_seconds, exit=True)
     {"demand": cmd_demand, "fit": cmd_fit, "rounds": cmd_rounds, "bounded": cmd_bounded, "rescue": cmd_rescue,
-     "pool2028": cmd_pool2028, "helper": cmd_helper, "helper168": cmd_helper168}[a.cmd](a)
+     "pool2028": cmd_pool2028, "helper": cmd_helper, "helper168": cmd_helper168, "years": cmd_years, "helperpool": cmd_helperpool}[a.cmd](a)
 
 
 if __name__ == "__main__":
