@@ -704,7 +704,7 @@ glob patterns per page with "max" or "sum" semantics; (b) the stories page's ?s=
 story); (c) fonts (count the preloaded and @font-face files a page uses); (d) lazy CSS as its own field, not in data.
 Keep every current entry passing; tests.
 
-## B-57 [OPEN] (now) R-1 Stage F: a bounded-wait strategic rule (tests the paper's "middle rule", Section 6)
+## B-57 [IN PROGRESS] R-1 Stage F: a bounded-wait strategic rule (tests the paper's "middle rule", Section 6)
 B-55 showed the two ends: `strategic` waits wherever an intervention stops it (one route point dark Jan 2028 - Jul
 2029 captures the fleet), `strategic+avoid` (look-ahead) never commits a leg with a never-linked sample (so it never
 serves ISRU and loses ~200 t/yr). Test the rule in between:
@@ -723,3 +723,15 @@ serves ISRU and loses ~200 t/yr). Test the rule in between:
    (2028 matters most). Which bound, if any, keeps the ISRU cargo and avoids the 2028 collapse?
 Runs: foreground chunks `--max-seconds 540`, `--workers 2` at most (8 GB machine, three sessions). Tests for the
 policy on a tiny scenario (bound 0 = look-ahead-like on never-linked samples; bound infinite = strategic).
+
+### B-57 amendment (LEAD, after BACKEND's design question)
+- Run both bound variants: `bound_never: refuse` (never-linked samples count as an infinite wait: equals look-ahead
+  with deferral limit = bound) and `bound_never: strategic` (bound on finite forecast waits only; never-linked samples
+  handled as plain strategic does). 24 cells.
+- Plain strategic is clairvoyant only about never-linked samples (an infinite draw is refused and re-drawn at job
+  start; a long finite draw is accepted and waited out). Measure it: (1) a no-clairvoyance variant
+  `never_linked: strand` of plain strategic (an intervention on a never-linked sample strands the rover there for the
+  rest of the year), at DTE, 0.1 and 0.5 (3 cells); (2) from existing counters, refusals / re-draws caused by
+  infinite draws per run and by start year for strategic, look-ahead and strict; (3) the legs with at least one
+  never-linked sample (how many of the 70 main-network legs).
+- If anything changes an existing E21 r2 row, stop and tell LEAD first.
