@@ -2,7 +2,7 @@
 plus headline numbers (mean and 95 % CI over 20 seeds) in data/scenes/gallery.json, so the site needs no server.
 
     python experiments/phase4/gallery.py scenes   [--only ID,ID] [--force] [--max-seconds 540]  # missing packages
-    python experiments/phase4/gallery.py headline [--seeds 20] [--max-seconds 540]   # resumable -> results/gallery_runs.csv
+    python experiments/phase4/gallery.py headline [--seeds 20] [--only ID,ID [--redo]] [--max-seconds 540]   # resumable -> results/gallery_runs.csv
     python experiments/phase4/gallery.py index                                       # -> data/scenes/gallery.json
 
 Every cell runs with the settings of the committed sample packages, as `lunarsim.scene` was called for them:
@@ -88,23 +88,24 @@ CELLS: List[Dict[str, Any]] = [
          scenario="P2-default", mechanism="marketplace", standoff="3"),
     dict(id="p2-earth-direct", package="P2-comms-dte", group="earth", title="Direct links to Earth only",
          description="Supervised rovers drive only while Earth is in view of their whole route.",
-         scenario="P2-default", mechanism="marketplace", standoff="1", comms="dte"),
+         scenario="P2-default", mechanism="marketplace", standoff="1", comms="dte", e21=True),
     dict(id="p2-earth-relay", package="P2-comms-relay-0.8", group="earth", title="A relay most of the time",
          description="As with direct links, plus a relay satellite in view most of the time.",
-         scenario="P2-default", mechanism="marketplace", standoff="1", comms=RELAY_08),
+         scenario="P2-default", mechanism="marketplace", standoff="1", comms=RELAY_08, e21=True),
     dict(id="p2-earth-autonomous", package="P2-comms-dte-autonomous", group="earth", title="Autonomous rovers, direct links",
          description="Direct links only, but every rover drives itself and needs no link.",
-         scenario="P2-default", mechanism="marketplace", standoff="1", comms="dte", fleet_autonomy="autonomous"),
+         scenario="P2-default", mechanism="marketplace", standoff="1", comms="dte", fleet_autonomy="autonomous",
+         e21=True),
     dict(id="p2-earth-relay-0.1", package="P2-comms-relay-0.1", group="earth", title="A relay a tenth of the time",
          description="Every rover supervised from Earth; each drive starts only while Earth or the relay is in view "
                      "of the whole route, and the relay is up a tenth of the time.",
          scenario="P2-default", mechanism="marketplace", standoff="1", comms=RELAY_01_STRICT,
-         fleet_autonomy="supervised", start_year="e21"),
+         fleet_autonomy="supervised", e21=True),
     dict(id="p2-earth-strategic", package="P2-comms-dte-strategic", group="earth", title="Rovers that drive out of sight",
          description="Direct links only; every rover supervised from Earth sets off without a link and stops to wait "
                      "for Earth only where it needs an operator's help.",
          scenario="P2-default", mechanism="marketplace", standoff="1", comms=DTE_STRATEGIC,
-         fleet_autonomy="supervised", start_year="e21"),
+         fleet_autonomy="supervised", e21=True),
     dict(id="p2-small-fleet", package="P2V2", group="fleet", title="Second phase, four rovers",
          description="The second phase with four rovers instead of the usual fleet, shared.",
          scenario="P2-4-vehicles", mechanism="marketplace", standoff="1"),
@@ -133,15 +134,18 @@ def scenario_of(cell: Dict[str, Any]):
     sc = _with_phase3(sc, ap.parse_args(args))
     if cell.get("fleet_autonomy"):
         sc = sc.with_(fleet=[(o, c, cell["fleet_autonomy"], s) for (o, c, _, s) in sc.fleet])
+    if cell.get("e21"):                     # E21 runs without the plume (it doubles the DTE waits; B-55)
+        sc = sc.with_(plume=None)
     fn, kw = _mechanism(cell["mechanism"])
     return sc, fn, _with_file_opts(cell["mechanism"], kw, file_kw)
 
 
 def start_year_of(cell: Dict[str, Any], seed: int):
-    """Link-series year of a seed: E21's rule (run_phase4.start_year, 2028 + seed mod 4) for the cells that quote E21
-    (start_year="e21"), else None (the engine's default, 2028). B-54: strategic driving with direct links only
-    delivers about 110 t in 2028 and about 530 t in 2029-2031, so these cells keep E21's mix of years."""
-    return 2028 + int(seed) % 4 if cell.get("start_year") == "e21" else None
+    """Link-series year of a seed: E21's rule (run_phase4.start_year, 2028 + seed mod 4) for the cells that reproduce
+    an E21 cell (e21=True: every earth cell since B-55), else None (the engine's default, 2028). Strategic driving
+    with direct links only delivers about 120 t in 2028 and about 520 t in 2029-2031 (results/E21_strategic_years.json),
+    and urgent waits differ by year in other cells too, so the earth scenes keep E21's mix of years."""
+    return 2028 + int(seed) % 4 if cell.get("e21") else None
 
 
 def scenario_for_seed(cell: Dict[str, Any], seed: int):
@@ -160,12 +164,14 @@ def flags_of(cell: Dict[str, Any]) -> Dict[str, Any]:
     out = {"scenario": cell["scenario"], "phase": cell["scenario"].split("-")[0], "job_rule": cell["mechanism"],
            "pad_standoff_km": float(cell["standoff"]), "earth_link": comms,
            "fleet": f"all {cell['fleet_autonomy']}" if cell.get("fleet_autonomy") else "default",
-           "n_vehicles": len(sc.fleet), "landing_model": "classical", "plume": {"keepout_km": 1.0, "standdown_h": 0.5},
+           "n_vehicles": len(sc.fleet), "landing_model": "classical",
+           "plume": None if cell.get("e21") else {"keepout_km": 1.0, "standdown_h": 0.5},
            "autonomy_model": "driving-v1", "terrain": "connecting_ridge"}
     if isinstance(c, dict) and c.get("supervised_policy"):
         out["supervised_policy"] = c["supervised_policy"]
-    if cell.get("start_year") == "e21":
+    if cell.get("e21"):
         out["start_year"] = f"2028 + seed mod 4, as E21 (replay {start_year_of(cell, REPLAY_SEED)})"
+        out["matches"] = "an E21 r2 stage A cell: no plume, E21's start year per seed"
     return out
 
 
@@ -224,9 +230,16 @@ def _append(path: str, row: Dict[str, Any]) -> None:
 def cmd_headline(a) -> None:
     from lunarsim.engine import run
     stop = _deadline(a.max_seconds)
+    only = set(a.only.split(",")) if a.only else None
+    if a.redo and os.path.exists(a.runs):                  # drop the rows of the --only cells (settings changed)
+        if not only:
+            raise SystemExit("--redo needs --only")
+        d = pd.read_csv(a.runs, dtype=str, keep_default_na=False)       # as text: the other rows stay byte-identical
+        d[~d["cell"].isin(only)].to_csv(a.runs, index=False, lineterminator="\n")
     done = _done(a.runs)
-    todo = [(c, s) for c in CELLS for s in range(a.seeds) if (c["id"], s) not in done]
-    print(f"[headline] {len(CELLS)} cells x {a.seeds} seeds: {len(done)} rows in {os.path.relpath(a.runs, ROOT)}, "
+    cells = [c for c in CELLS if not only or c["id"] in only]
+    todo = [(c, s) for c in cells for s in range(a.seeds) if (c["id"], s) not in done]
+    print(f"[headline] {len(cells)} cells x {a.seeds} seeds: {len(done)} rows in {os.path.relpath(a.runs, ROOT)}, "
           f"{len(todo)} to run")
     t_all = time.time()
     for i, (cell, s) in enumerate(todo):
@@ -292,7 +305,9 @@ def build_index(root: str = ROOT, runs_path: str = None, seeds: int = N_SEEDS) -
                            "(a lunarsim-scene v1 package under data/scenes/<package>) with headline numbers over "
                            f"{seeds} seeds of the same settings.",
             "common": {"terrain": "connecting_ridge", "landing_model": "classical", "plume": {"keepout_km": 1.0, "standdown_h": 0.5},
-                       "autonomy_model": "driving-v1", "replay_seed": REPLAY_SEED, "seeds": seeds},
+                       "autonomy_model": "driving-v1", "replay_seed": REPLAY_SEED, "seeds": seeds,
+                       "note": "scenes with flags.matches reproduce an E21 cell: no plume (flags.plume null) and "
+                               "E21's link-series year per seed (flags.start_year)"},
             "metrics": [{"key": k, "label": lab, "unit": u, "digits": d, "flag": "Modelled"} for k, _, lab, u, _, d in METRICS],
             "groups": GROUPS, "scenes": scenes, "total_gz_bytes": total, "budget_gz_bytes": BUDGET_GZ_BYTES}
 
@@ -320,6 +335,8 @@ def main(argv=None) -> None:
     p = sub.add_parser("headline")
     p.add_argument("--seeds", type=int, default=N_SEEDS)
     p.add_argument("--runs", default=RUNS)
+    p.add_argument("--only", default=None, help="cell ids, comma separated")
+    p.add_argument("--redo", action="store_true", help="drop the existing rows of the --only cells first")
     p.add_argument("--max-seconds", type=float, default=540.0)
     p = sub.add_parser("index")
     p.add_argument("--seeds", type=int, default=N_SEEDS)

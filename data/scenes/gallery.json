@@ -11,7 +11,8 @@
   },
   "autonomy_model": "driving-v1",
   "replay_seed": 3,
-  "seeds": 20
+  "seeds": 20,
+  "note": "scenes with flags.matches reproduce an E21 cell: no plume (flags.plume null) and E21's link-series year per seed (flags.start_year)"
  },
  "metrics": [
   {
@@ -623,57 +624,56 @@
     "fleet": "default",
     "n_vehicles": 6,
     "landing_model": "classical",
-    "plume": {
-     "keepout_km": 1.0,
-     "standdown_h": 0.5
-    },
+    "plume": null,
     "autonomy_model": "driving-v1",
-    "terrain": "connecting_ridge"
+    "terrain": "connecting_ridge",
+    "start_year": "2028 + seed mod 4, as E21 (replay 2031)",
+    "matches": "an E21 r2 stage A cell: no plume, E21's start year per seed"
    },
    "replay": {
     "seed": 3,
     "summary": {
-     "delivered_kg": 302204.82320738345,
-     "jobs": 308,
-     "delay_prio1_p90_h": 22.43402477213641,
-     "delay_mean_h": 87.1978739113127,
-     "plume_standdowns": 1,
+     "delivered_kg": 303204.82320738345,
+     "jobs": 251,
+     "delay_prio1_p90_h": 273.28833022218447,
+     "delay_mean_h": 101.85969701300813,
+     "plume_standdowns": 0,
      "offpad_landings": 0,
-     "failed_landings": 1
+     "failed_landings": 0
     },
-    "gz_bytes": 141541,
+    "gz_bytes": 139309,
     "files": 15
    },
    "headline": {
     "n_seeds": 20,
     "delivered_t": {
-     "mean": 310.494646087,
-     "ci95": 3.65711036706,
+     "mean": 306.7396421,
+     "ci95": 4.43656329974,
      "n": 20
     },
     "delay_prio1_mean_h": {
-     "mean": 342.885742393,
-     "ci95": 171.92833892,
+     "mean": 185.479321169,
+     "ci95": 100.653897567,
      "n": 20
     },
     "delay_prio1_p90_h": {
-     "mean": 813.52031155,
-     "ci95": 491.675014585,
+     "mean": 379.843348374,
+     "ci95": 283.146155351,
      "n": 20
     },
     "sl24_prio1": {
-     "mean": 43.0669683258,
-     "ci95": 13.6569387003,
+     "mean": 54.6541305916,
+     "ci95": 13.7859285086,
      "n": 20
     },
     "cost_per_landed_kg_usd": {
-     "mean": 95173.6851465,
-     "ci95": 73197.1262391,
+     "mean": 97438.1921748,
+     "ci95": 72905.142247,
      "n": 20
     },
     "blackout_wait_vehicle_h": {
-     "mean": 5043.96740846,
-     "ci95": 1036.8639915,
+     "mean": 976.523771278,
+     "ci95": 128.530171476,
      "n": 20
     }
    },
@@ -694,57 +694,56 @@
     "fleet": "default",
     "n_vehicles": 6,
     "landing_model": "classical",
-    "plume": {
-     "keepout_km": 1.0,
-     "standdown_h": 0.5
-    },
+    "plume": null,
     "autonomy_model": "driving-v1",
-    "terrain": "connecting_ridge"
+    "terrain": "connecting_ridge",
+    "start_year": "2028 + seed mod 4, as E21 (replay 2031)",
+    "matches": "an E21 r2 stage A cell: no plume, E21's start year per seed"
    },
    "replay": {
     "seed": 3,
     "summary": {
      "delivered_kg": 530327.860284328,
-     "jobs": 536,
-     "delay_prio1_p90_h": 5.260409480579438,
-     "delay_mean_h": 23.954292821491485,
-     "plume_standdowns": 12,
+     "jobs": 537,
+     "delay_prio1_p90_h": 5.2046257509289715,
+     "delay_mean_h": 23.637537343553625,
+     "plume_standdowns": 0,
      "offpad_landings": 0,
      "failed_landings": 0
     },
-    "gz_bytes": 190117,
+    "gz_bytes": 186662,
     "files": 15
    },
    "headline": {
     "n_seeds": 20,
     "delivered_t": {
-     "mean": 532.315002134,
-     "ci95": 9.52315617128,
+     "mean": 531.528030964,
+     "ci95": 8.94318340527,
      "n": 20
     },
     "delay_prio1_mean_h": {
-     "mean": 7.96057692273,
-     "ci95": 2.94012842849,
+     "mean": 7.49059317084,
+     "ci95": 2.23236071695,
      "n": 20
     },
     "delay_prio1_p90_h": {
-     "mean": 21.6449721497,
-     "ci95": 12.5212953748,
+     "mean": 20.908563916,
+     "ci95": 10.6731873589,
      "n": 20
     },
     "sl24_prio1": {
-     "mean": 92.6951141889,
-     "ci95": 4.34752872384,
+     "mean": 92.3007153575,
+     "ci95": 3.70966609543,
      "n": 20
     },
     "cost_per_landed_kg_usd": {
-     "mean": 19341.2317501,
-     "ci95": 10301.5132926,
+     "mean": 17941.8139467,
+     "ci95": 9103.24655763,
      "n": 20
     },
     "blackout_wait_vehicle_h": {
-     "mean": 696.255498877,
-     "ci95": 53.1861364603,
+     "mean": 689.159952107,
+     "ci95": 49.903303041,
      "n": 20
     }
    },
@@ -765,12 +764,11 @@
     "fleet": "all autonomous",
     "n_vehicles": 6,
     "landing_model": "classical",
-    "plume": {
-     "keepout_km": 1.0,
-     "standdown_h": 0.5
-    },
+    "plume": null,
     "autonomy_model": "driving-v1",
-    "terrain": "connecting_ridge"
+    "terrain": "connecting_ridge",
+    "start_year": "2028 + seed mod 4, as E21 (replay 2031)",
+    "matches": "an E21 r2 stage A cell: no plume, E21's start year per seed"
    },
    "replay": {
     "seed": 3,
@@ -778,39 +776,39 @@
      "delivered_kg": 529853.5495767961,
      "jobs": 554,
      "delay_prio1_p90_h": 2.200632433872124,
-     "delay_mean_h": 20.914404866876893,
-     "plume_standdowns": 15,
+     "delay_mean_h": 20.913562731584467,
+     "plume_standdowns": 0,
      "offpad_landings": 0,
      "failed_landings": 1
     },
-    "gz_bytes": 182841,
+    "gz_bytes": 178064,
     "files": 15
    },
    "headline": {
     "n_seeds": 20,
     "delivered_t": {
-     "mean": 532.08636165,
-     "ci95": 9.31843685397,
+     "mean": 532.053750334,
+     "ci95": 9.44264683128,
      "n": 20
     },
     "delay_prio1_mean_h": {
-     "mean": 6.19038082253,
-     "ci95": 3.4657713268,
+     "mean": 5.5094490797,
+     "ci95": 2.4688511895,
      "n": 20
     },
     "delay_prio1_p90_h": {
-     "mean": 17.5862176256,
-     "ci95": 11.7250585979,
+     "mean": 16.7092051253,
+     "ci95": 10.7718331968,
      "n": 20
     },
     "sl24_prio1": {
-     "mean": 93.1957247376,
-     "ci95": 4.95547910319,
+     "mean": 93.2456836536,
+     "ci95": 4.54768298854,
      "n": 20
     },
     "cost_per_landed_kg_usd": {
-     "mean": 15693.8427001,
-     "ci95": 7033.16954131,
+     "mean": 15759.6127393,
+     "ci95": 7026.3888692,
      "n": 20
     },
     "blackout_wait_vehicle_h": {
@@ -836,59 +834,57 @@
     "fleet": "all supervised",
     "n_vehicles": 6,
     "landing_model": "classical",
-    "plume": {
-     "keepout_km": 1.0,
-     "standdown_h": 0.5
-    },
+    "plume": null,
     "autonomy_model": "driving-v1",
     "terrain": "connecting_ridge",
     "supervised_policy": "strict",
-    "start_year": "2028 + seed mod 4, as E21 (replay 2031)"
+    "start_year": "2028 + seed mod 4, as E21 (replay 2031)",
+    "matches": "an E21 r2 stage A cell: no plume, E21's start year per seed"
    },
    "replay": {
     "seed": 3,
     "summary": {
      "delivered_kg": 530327.860284328,
-     "jobs": 530,
-     "delay_prio1_p90_h": 77.62638797083146,
-     "delay_mean_h": 63.22337330182874,
-     "plume_standdowns": 12,
+     "jobs": 531,
+     "delay_prio1_p90_h": 141.37344595502523,
+     "delay_mean_h": 65.8137310397753,
+     "plume_standdowns": 0,
      "offpad_landings": 0,
      "failed_landings": 0
     },
-    "gz_bytes": 211033,
+    "gz_bytes": 209308,
     "files": 15
    },
    "headline": {
     "n_seeds": 20,
     "delivered_t": {
-     "mean": 530.390590535,
-     "ci95": 9.47831541358,
+     "mean": 530.167418135,
+     "ci95": 9.46986809398,
      "n": 20
     },
     "delay_prio1_mean_h": {
-     "mean": 56.6565913555,
-     "ci95": 12.7594423591,
+     "mean": 57.946156172,
+     "ci95": 14.1709510495,
      "n": 20
     },
     "delay_prio1_p90_h": {
-     "mean": 134.309003009,
-     "ci95": 33.3580197932,
+     "mean": 135.646107933,
+     "ci95": 34.41587095,
      "n": 20
     },
     "sl24_prio1": {
-     "mean": 48.5618037775,
-     "ci95": 6.25882876505,
+     "mean": 46.852128434,
+     "ci95": 6.31792456319,
      "n": 20
     },
     "cost_per_landed_kg_usd": {
-     "mean": 16662.4775784,
-     "ci95": 7153.45227431,
+     "mean": 16697.5641479,
+     "ci95": 7135.20326301,
      "n": 20
     },
     "blackout_wait_vehicle_h": {
-     "mean": 6118.06412911,
-     "ci95": 170.321393074,
+     "mean": 5974.182029,
+     "ci95": 153.851631849,
      "n": 20
     }
    },
@@ -909,59 +905,57 @@
     "fleet": "all supervised",
     "n_vehicles": 6,
     "landing_model": "classical",
-    "plume": {
-     "keepout_km": 1.0,
-     "standdown_h": 0.5
-    },
+    "plume": null,
     "autonomy_model": "driving-v1",
     "terrain": "connecting_ridge",
     "supervised_policy": "strategic",
-    "start_year": "2028 + seed mod 4, as E21 (replay 2031)"
+    "start_year": "2028 + seed mod 4, as E21 (replay 2031)",
+    "matches": "an E21 r2 stage A cell: no plume, E21's start year per seed"
    },
    "replay": {
     "seed": 3,
     "summary": {
      "delivered_kg": 529369.5763930491,
-     "jobs": 475,
-     "delay_prio1_p90_h": 55.53765764197379,
-     "delay_mean_h": 337.824884390142,
-     "plume_standdowns": 5,
+     "jobs": 479,
+     "delay_prio1_p90_h": 271.1114927444733,
+     "delay_mean_h": 351.5857696070977,
+     "plume_standdowns": 0,
      "offpad_landings": 0,
      "failed_landings": 0
     },
-    "gz_bytes": 181941,
+    "gz_bytes": 181161,
     "files": 15
    },
    "headline": {
     "n_seeds": 20,
     "delivered_t": {
-     "mean": 426.502843014,
-     "ci95": 79.3472140105,
+     "mean": 424.696878432,
+     "ci95": 82.112440405,
      "n": 20
     },
     "delay_prio1_mean_h": {
-     "mean": 319.332873883,
-     "ci95": 201.419698239,
+     "mean": 352.465270991,
+     "ci95": 203.495207539,
      "n": 20
     },
     "delay_prio1_p90_h": {
-     "mean": 666.6479365,
-     "ci95": 365.740827415,
+     "mean": 716.310169516,
+     "ci95": 385.745147246,
      "n": 20
     },
     "sl24_prio1": {
-     "mean": 40.5668087595,
-     "ci95": 7.75581245439,
+     "mean": 40.914446333,
+     "ci95": 8.30141112037,
      "n": 20
     },
     "cost_per_landed_kg_usd": {
-     "mean": 29024.5558332,
-     "ci95": 20175.893213,
+     "mean": 29479.7704902,
+     "ci95": 20155.8121549,
      "n": 20
     },
     "blackout_wait_vehicle_h": {
-     "mean": 30593.9720087,
-     "ci95": 3620.29023438,
+     "mean": 29926.7294501,
+     "ci95": 3793.98524743,
      "n": 20
     }
    },
@@ -1034,6 +1028,6 @@
    "source": "results/gallery_runs.csv, cell p2-small-fleet, seeds 0-19 (experiments/phase4/gallery.py headline)"
   }
  ],
- "total_gz_bytes": 2626058,
+ "total_gz_bytes": 2613089,
  "budget_gz_bytes": 4194304
 }

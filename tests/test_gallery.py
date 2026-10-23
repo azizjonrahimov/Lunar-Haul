@@ -94,7 +94,7 @@ def test_committed_index_is_current_and_valid():
 
 
 def test_earth_story_cells_use_the_e21_settings():
-    """B-54: the two cells the Earth story quotes have E21's comms settings and E21's year per seed."""
+    """B-54: the two cells the Earth story quotes have E21's comms settings; B-55: every earth cell has E21's year rule."""
     sys.path.insert(0, ROOT)
     from experiments.phase4.run_phase4 import comms_cfg, start_year
     cells = {c["id"]: c for c in G.CELLS}
@@ -105,4 +105,29 @@ def test_earth_story_cells_use_the_e21_settings():
         assert [G.start_year_of(cell, s) for s in range(8)] == [start_year(s) for s in range(8)]
         sc, _, _ = G.scenario_for_seed(cell, 5)
         assert sc.comms["start_year"] == 2029 and {a for _, _, a, _ in sc.fleet} == {"supervised"}
-    assert G.start_year_of(cells["p2-earth-relay"], 5) is None                # the older cells keep the default year
+    assert all(G.start_year_of(c, 5) == 2029 for c in G.CELLS if c["group"] == "earth")   # B-55: every earth cell
+    assert G.start_year_of(cells["p2-marketplace"], 5) is None                # the others keep the default year
+
+
+def test_earth_headlines_equal_the_e21_cells():
+    """B-55: every earth scene reproduces its E21 r2 stage A cell, so its 20-seed headline is E21's mean."""
+    if not os.path.isfile(GALLERY):
+        pytest.skip("gallery.json not built yet")
+    import pandas as pd
+    e21 = os.path.join(ROOT, "results", "E21a_comms_autonomy_r2.csv")
+    if not os.path.isfile(e21):
+        pytest.skip("E21 r2 table missing")
+    a = pd.read_csv(e21, float_precision="round_trip")
+    want = {"p2-earth-direct": ("default", "dte", None), "p2-earth-relay": ("default", "dte+relay", 0.8),
+            "p2-earth-autonomous": ("autonomous", "dte", None), "p2-earth-relay-0.1": ("supervised_strict", "dte+relay", 0.1),
+            "p2-earth-strategic": ("supervised_strategic", "dte", None)}
+    assert set(want) == {c["id"] for c in G.CELLS if c["group"] == "earth"}
+    with open(GALLERY, encoding="utf-8") as f:
+        scenes = {s["id"]: s for s in json.load(f)["scenes"]}
+    for cid, (mix, mode, p) in want.items():
+        t = a[(a["mix"] == mix) & (a["comms"] == mode) & ((a["coverage"] == p) if p else a["coverage"].isna())]
+        h = scenes[cid]["headline"]
+        assert scenes[cid]["flags"]["plume"] is None and h["n_seeds"] == len(t) == 20
+        for key, col, scale in (("delivered_t", "delivered_t_in_year", 1.0), ("delay_prio1_mean_h", "delay_prio1_mean_h", 1.0),
+                                ("blackout_wait_vehicle_h", "blackout_wait_vehicle_h", 1.0), ("sl24_prio1", "sl24_prio1", 100.0)):
+            assert h[key]["mean"] == pytest.approx(t[col].mean() * scale, rel=1e-9, abs=1e-9), (cid, key)
