@@ -513,9 +513,12 @@
         "research/earth-sky/strategic-years.json",
         "research/earth-sky/deliveries-by-year.json",
         "comms/horizons_dark_sample.json",
-        "research/earth-sky/rescue.json"
+        "research/earth-sky/rescue.json",
+        "research/earth-sky/years.json"
       ],
       "data_gzip_kb": 100,
+      "lazy": ["assets/research-earth-sky-helper-*.js"],
+      "lazy_gzip_kb": 6,
       "fonts": [
         "assets/sora-latin-wght-normal-*.woff2",
         "assets/jetbrains-mono-latin-wght-normal-*.woff2"

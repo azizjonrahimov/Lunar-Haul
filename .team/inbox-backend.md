@@ -858,3 +858,14 @@ test) and `results/E21_parking.json` (summary). New earth_link.py stage(s) `tall
    Output `results/E21j_years_r2.csv`; analysis `analyse_e21.py years` -> `E21_fit_r2.json["later_years"]`: tonnage
    by start year per policy; do the collapses come back where the dark spells do, and does help within a week hold
    in every year?
+
+## B-64 [DONE 14:48] How much does the link file's end move the 2028-2031 results? (robustness only)
+B-63's addendum found that a wait running past a sample's last link-up in the v1 file counts as never linked
+(re-draw). For most samples that is the last ~10-13 days of 2031; for five rarely linked samples it is most of the
+series. Measure it. Run the 2028-2031 start years with link windows that continue into 2032-2050 (v1 then v3). An
+engine option or a cached joined file is fine, but do not commit another large data file; record its sha256 in the
+results. Cells, DTE, 20 seeds, same CRN: Stage A strict, strategic and look-ahead (all-supervised); Stage G2 at 24
+and 168 h; Stage H dedicated k=1 at 24 h. Output `results/E21_edge_check_r2.json` only, with no rows replaced: per
+cell, the paired difference against the committed row in tonnage, urgent completion, censored p90 and re-draws
+per run, overall and by start year. One line: does any number the paper quotes move by more than its last printed
+digit? Single process, foreground, `--max-seconds 540`.

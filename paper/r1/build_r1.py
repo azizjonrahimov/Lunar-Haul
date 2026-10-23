@@ -823,6 +823,21 @@ def values(r: R):
     V["R1-J-NEVER-SOME-CAP"] = words(len(hrs)).capitalize()
     V["R1-J-NEVER-HOURS"] = rng_txt(hrs, num, NB + "h")
     V["R1-J-NEVER-N"] = f"{nl['all_2028_2050']}"
+    # the 2028-2031 link file's end (B-64): the quoted cells rerun with windows that run on to 2050
+    ed = json.load(open(os.path.join(RES, "E21_edge_check_r2.json"), encoding="utf-8"))
+    pv = ed["paper_values"]
+    assert pv["base_differs_from_committed_values_json"] == []
+    V["R1-EDGE-MOVED"], V["R1-EDGE-OF"] = f"{pv['n_moved']}", f"{pv['n_values']}"
+    es = ed["cells"]["A strategic"]["metrics"]
+    for k_, c_ in ed["cells"].items():           # only the 2031 runs change
+        for m_ in c_["metrics"].values():
+            assert all(m_["by_start_year"][y]["mean_diff"] == 0 for y in ("2028", "2029", "2030")), k_
+    s31 = es["delivered_t_in_year"]["by_start_year"]["2031"]
+    V["R1-EDGE-STRAT-2031"] = f"{num(s31['committed_mean'])} to {num(s31['joined_mean'])}{NB}t"
+    rd = es["blackout_jobs_refused"]["overall"]
+    V["R1-EDGE-REDRAWS"] = f"{num(rd['committed_mean'])} to {num(rd['joined_mean'])}"
+    st_ = es["delivered_t_in_year"]["overall"]
+    V["R1-EDGE-STRAT-T"] = f"{num(st_['committed_mean'])} to {num(st_['joined_mean'])}{NB}t"
     V["R1-J-HELPER-UTIL"] = rng_txt([100 * v["helper_utilisation"] for v in byp["helper_24h"].values()], num, PCT)
 
     # ---- 5.5 break-even -------------------------------------------------------------------------------------------

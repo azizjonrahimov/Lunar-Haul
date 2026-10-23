@@ -7,6 +7,7 @@
     python tools/comms/later_years.py parking3                # -> parking-v3.json: parking-v1's points, v3 windows
     python tools/comms/later_years.py back188                 # #188 alone, 2025-2027: when did the 2028 spell begin?
     python tools/comms/later_years.py predict                 # -> results/E21_later_years.json (+ _samples.csv)
+    python tools/comms/later_years.py join                    # B-64: v1 then v3 as one cached link file (not committed)
 
 Same geometry, kernels, masks and arithmetic as earth_link.py (the v1 files, 2028-2031, are unchanged); only the
 epochs differ: 2032-01-01 00:00 UTC to 2050-12-31 23:50 UTC (LEAD: 2032-2050 plus four years, so that
@@ -238,6 +239,118 @@ def step_assemble3(recheck: int = 12, log=print) -> Dict[str, Any]:
 
 def _site_los(v1: Dict[str, Any], p: Dict[str, Any]) -> bool:
     return bool(v1["points"][p["id"]]["mast_los"])
+
+
+JOINED_DIR = os.path.join(CACHE, "joined")
+JOINED = os.path.join(JOINED_DIR, "earth_link-joined.json")
+JOINED_SAMPLES = os.path.join(JOINED_DIR, "earth_link-joined-samples.json.gz")
+JOINED_PARKING = os.path.join(JOINED_DIR, "parking-joined.json")
+
+
+def join_windows(w1: np.ndarray, n1: int, w3: np.ndarray) -> np.ndarray:
+    """Windows of a series that runs on: v1's (inside [0, n1)) then v3's shifted by n1; a window ending at n1 and one
+    starting at 0 of v3 become one."""
+    w1 = np.asarray(w1, dtype=np.int64).reshape(-1, 2)
+    w3 = np.asarray(w3, dtype=np.int64).reshape(-1, 2) + n1
+    if len(w1) and len(w3) and w1[-1, 1] == n1 and w3[0, 0] == n1:
+        w1 = w1.copy()
+        w1[-1, 1] = w3[0, 1]
+        w3 = w3[1:]
+    return np.concatenate([w1, w3]) if len(w3) else w1
+
+
+def step_join(log=print) -> Dict[str, Any]:
+    """B-64: a cached (not committed) link file, samples file and parking file that run 2028-01-01 .. 2050-12-31: the
+    v1 windows, then the v3 windows. Inside 2028-2031 every window is v1's; only look-ups past 2031 differ."""
+    sys.path.insert(0, HERE)
+    import parking as PK
+    t0 = time.time()
+    v1, v3 = json.load(open(EL.OUT)), json.load(open(OUT3))
+    s1 = json.loads(gzip.decompress(open(EL.SAMPLES_V1, "rb").read()))
+    s3 = json.loads(gzip.decompress(open(SAMPLES3, "rb").read()))
+    n1, n3 = int(v1["time"]["n"]), int(v3["time"]["n"])
+    h1, h3 = int(s1["time"]["n"]), int(s3["time"]["n"])
+    step_h = EL.STEP_MIN / 60.0
+    enc = C.encode_windows
+    dec = C.decode_windows
+
+    def jn(c1, c3, n):
+        w = join_windows(dec(c1), n, dec(c3))
+        return enc(w), w
+
+    def entry(e1, e3):
+        e = dict(e1)
+        if "windows" not in e1:
+            return e
+        e["windows"], e["summary"] = {}, {}
+        for mode in e1["windows"]:
+            e["windows"][mode], e["summary"][mode] = {}, {}
+            for c in C.CRITERIA:
+                code, w = jn(e1["windows"][mode][c], e3["windows"][mode][c], n1)
+                e["windows"][mode][c] = code
+                e["summary"][mode][c] = C.summarize(w, n1 + n3, step_h)
+        return e
+
+    series_ix: Dict[tuple, int] = {}
+    series_list: List[List[int]] = []
+
+    def sid(code):
+        key = tuple(code)
+        if key not in series_ix:
+            series_ix[key] = len(series_list)
+            series_list.append(list(code))
+        return series_ix[key]
+
+    samples = []
+    for a, b in zip(s1["samples"], s3["samples"]):
+        if a["xy_m"] != b["xy_m"]:
+            raise SystemExit("v1 and v3 samples differ")
+        samples.append(dict(a, w=[sid(jn(s1["series"][i], s3["series"][j], h1)[0]) for i, j in zip(a["w"], b["w"])]))
+    sdoc = dict(s1, time={"start_utc": s1["time"]["start_utc"], "step_min": s1["time"]["step_min"], "n": h1 + h3},
+                samples=samples, series=series_list,
+                note="B-64 (cache only, not committed): earth_link-v1-samples then earth_link-v3-samples, 2028-01-01 .. "
+                     "2050-12-31; windows that meet at 2032-01-01 are joined")
+    os.makedirs(JOINED_DIR, exist_ok=True)
+    with open(JOINED_SAMPLES, "wb") as f:
+        f.write(gzip.compress(json.dumps(sdoc, separators=(",", ":")).encode("utf-8"), 9, mtime=0))
+    doc = dict(v1, time=dict(v1["time"], n=n1 + n3, end_utc_exclusive=v3["time"]["end_utc_exclusive"]),
+               points={k: entry(e, v3["points"][k]) for k, e in v1["points"].items()},
+               legs={k: entry(e, v3["legs"][k]) for k, e in v1["legs"].items()},
+               samples_file={"file": os.path.basename(JOINED_SAMPLES), "sha256": EL.sha256(JOINED_SAMPLES),
+                             "n_samples": len(samples), "n_series": len(series_list)},
+               span="B-64 (cache only): earth_link-v1 then earth_link-v3, 2028-01-01 .. 2050-12-31",
+               generated={"tool": "tools/comms/later_years.py join"})
+    mast = dict(v1["mast"])
+    mast["windows"], mast["summary"] = {}, {}
+    for c in C.CRITERIA:
+        code, w = jn(v1["mast"]["windows"][c], v3["mast"]["windows"][c], n1)
+        mast["windows"][c], mast["summary"][c] = code, C.summarize(w, n1 + n3, step_h)
+    doc["mast"] = mast
+    errs = C.validate(doc) + C.validate_samples(sdoc)
+    if errs:
+        raise SystemExit(f"joined files fail validation: {errs[:3]}")
+    with open(JOINED, "w", encoding="utf-8") as f:
+        json.dump(doc, f, separators=(",", ":"))
+    p1, p3 = json.load(open(PK.OUT, encoding="utf-8")), json.load(open(PARKING3, encoding="utf-8"))
+    pts = []
+    for a, b in zip(p1["points"], p3["points"]):
+        q = dict(a)
+        if a["kind"] == "grid":
+            q["windows"] = enc(join_windows(dec(a["windows"]), h1, dec(b["windows"])))
+        pts.append(q)
+    pdoc = dict(p1, points=pts, time={"start_utc": s1["time"]["start_utc"], "step_h": 1, "n": h1 + h3, "wrap": True},
+                samples_file={"file": os.path.basename(JOINED_SAMPLES), "sha256": doc["samples_file"]["sha256"],
+                              "n_samples": len(samples)},
+                generated={"tool": "tools/comms/later_years.py join (B-64, cache only)"})
+    with open(JOINED_PARKING, "w", encoding="utf-8") as f:
+        json.dump(pdoc, f, separators=(",", ":"))
+    out = {"link": {"file": EL._rel(JOINED), "sha256": EL.sha256(JOINED)},
+           "samples": {"file": EL._rel(JOINED_SAMPLES), "sha256": doc["samples_file"]["sha256"]},
+           "parking": {"file": EL._rel(JOINED_PARKING), "sha256": EL.sha256(JOINED_PARKING)},
+           "inputs": {EL._rel(p): EL.sha256(p) for p in (EL.OUT, EL.SAMPLES_V1, OUT3, SAMPLES3, PK.OUT, PARKING3)}}
+    log(f"join: {len(samples)} samples, {len(series_list)} series, n {n1 + n3} (10 min) / {h1 + h3} (h) -> "
+        f"{EL._rel(JOINED_DIR)} ({time.time() - t0:.0f} s)")
+    return out
 
 
 BACK188 = os.path.join(CACHE, "back188.json")
@@ -557,6 +670,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     sub.add_parser("assemble3")
     sub.add_parser("parking3")
     sub.add_parser("back188")
+    sub.add_parser("join")
     p = sub.add_parser("predict")
     p.add_argument("--boot", type=int, default=2000)
     for sp_ in sub.choices.values():
@@ -567,7 +681,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         import faulthandler
         faulthandler.dump_traceback_later(a.max_seconds, exit=True)
     {"ephem3": lambda: step_ephem3(), "link3": lambda: step_link3(a.part, a.parts),
-     "assemble3": lambda: step_assemble3(), "parking3": lambda: step_parking3(), "back188": lambda: step_back188(),
+     "assemble3": lambda: step_assemble3(), "parking3": lambda: step_parking3(), "back188": lambda: step_back188(), "join": lambda: step_join(),
      "predict": lambda: step_predict(a.boot)}[a.cmd]()
     rss = EL.peak_rss_mb()
     if rss:

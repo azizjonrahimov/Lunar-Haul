@@ -525,3 +525,34 @@ in 2028, 516 t a year over all start years (always linked: about 532 t); help af
 - Say the cost: help would be needed about 148 times a year at 168 h (`rescue_any.levels[168].rescues_per_run`), and
   the helper's own time is not counted.
 - One chip: "Help for any long wait, 2028 sky" (507 t). Stage `rescue_any` into rescue.json (only what is shown).
+
+## F-43 [REVIEW] (<= 60 min) /research/earth-sky/: a real helper, Earth's cycle, and the years ahead (B-61/62/63)
+Three new results are committed (paper 598bc15). The page's section 3 still says "help within a week (helper's time
+not counted)". Update it, and add a short section 4. Every number comes from staged data with its flag and source;
+no task IDs on the page; same light/dark, 390 px and budget checks as F-42.
+1. **Section 3, result text and chips** (replace the help-within-a-week sentences; keep the strand / never-linked
+   sentences):
+   - `results/E21_fit_r2.json` -> `helper.cells[label = "dedicated k=1, 24 h"]`: one helper rover, called once a rover
+     has been held a day, keeps the fleet within 5 % of always-linked tonnage in every start year (523 t a year; worst
+     year 97 % of always-linked). It spends most of its working time parked, waiting for its own view of Earth
+     (`helper.busy_split_share.parked_waiting_for_earth`, ~95 %). One more hauling rover adds under 1 t
+     (`helper.references`, "strict + 1 rover" minus "strict"). Called after a week instead, 2029 falls to 85 %.
+   - `results/E21_parking.json` -> `uncovered_calls["0|all"]`: a parking spot in sight of the stuck rover exists
+     everywhere, but ~29 % of calls still wait over a week, because Earth is below every nearby horizon for days at a
+     time (Earth's monthly cycle). One sentence; it is the page's own subject.
+   - Chips: replace "Help within a week" with "One helper, called after a day" (523 t); keep "No help" (42 t); keep
+     or drop the others as space allows (max four).
+2. **New section 4, "The years ahead"** (one figure + table twin + two sentences):
+   - Bars: the dark spot's (#188) linked hours per year, 2028-2050 (`results/E21_later_years.json` ->
+     `dark_sample_188.linked_h_by_year`), with its dark spells over 180 days shaded (`dark_spells_188_over_180_days`;
+     the last one is censored at the end of 2050; the first began Nov 2025, before the chart).
+   - A second small panel or overlay: tonnes a year by start year for strict, strategic (no help) and the one-helper
+     fleet: 2028-2031 from `results/E21_strategic_years.json` / the Stage A and Stage H rows you already stage, 2032-2046
+     from `E21_fit_r2.json` -> `later_years.by_policy_year` (`mean_t`; five seeds each, say so; 2028-2031 have 20).
+     If mixing seed counts on one axis looks misleading, draw 2032-2046 only and say 2028-2031 are in section 3.
+   - Text: the dark spells recur about every six years (`period_188.annual`: 5.95 years, 95 % 5.79-6.11), each 3.6-4.0
+     years long; without help the fleet collapses in 9 of the 15 start years 2032-2046; with one helper called after a
+     day it stays within 5 % of always-linked in every year.
+3. **Data:** prepare-data stages only what the page shows into `research/earth-sky/` (extend rescue.json or a new
+   `years.json`); add the new files to the page's source list. Budget: data stays under the page's 100 KB.
+Files you own as usual; report with the file list. LEAD updates the Earth story separately.

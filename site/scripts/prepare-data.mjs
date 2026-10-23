@@ -172,31 +172,53 @@ if (existsSync(e21years)) {
 const skylines = join(ROOT, 'data', 'comms', 'connecting_ridge', 'horizons_dark_sample.json');
 if (existsSync(skylines)) { mkdirSync(join(PUB, 'comms'), { recursive: true }); copyFileSync(skylines, join(PUB, 'comms', 'horizons_dark_sample.json')); console.log('prepare-data: skylines at the dark sample staged'); }
 // F-41 part 2: the strategic rule when help at a never-linked point is late (E21 Stage G rescue) or never comes (Stage F
-// strand), with the strict and strategic references; F-42: help for any long wait (Stage G2, rescue_any) and the fleet
-// with Earth always in view (table_E21_r2.csv); only what /research/earth-sky/ shows
-const fit = join(ROOT, 'results', 'E21_fit_r2.json');
-if (existsSync(fit)) {
+// strand), with the strict reference; F-43: one real helper rover (Stage H) with its references, and why some calls wait
+// over a week (E21_parking.json); only what /research/earth-sky/ shows
+const fit = join(ROOT, 'results', 'E21_fit_r2.json'), parking = join(ROOT, 'results', 'E21_parking.json');
+if (existsSync(fit) && existsSync(parking)) {
   const j = JSON.parse(readFileSync(fit, 'utf8')), strand = j.bounded?.cells?.find(c => c.link === 'DTE' && c.variant === 'strategic, strand on never-linked');
   const pick = m => ({ delivered_t_in_year: m.delivered_t_in_year, prio1_completion_share: m.prio1_completion_share });
   const t2028 = by => by?.['2028']?.delivered_t_in_year ?? by?.['2028'];
-  const e21 = join(ROOT, 'results', 'table_E21_r2.csv');
-  let always = null;
-  if (existsSync(e21)) {
-    const [head, ...rows] = readFileSync(e21, 'utf8').trim().split(String.fromCharCode(10)).map(l => l.trim()).map(l => l.split(','));
-    const c = k => head.indexOf(k), r = rows.find(r => r[c('stage')] === 'A' && r[c('comms')] === 'always' && r[c('mix')] === 'supervised_strategic' && r[c('sensitivity')] === 'none');
-    if (r) always = { source: 'results/table_E21_r2.csv', row: 'stage A, comms always, mix supervised_strategic', n: +r[c('n_valid')], delivered_t_in_year: +r[c('delivered_t_in_year')] };
-  }
-  if (j.rescue?.levels && strand) {
+  const tByYear = by => Object.fromEntries(Object.entries(by).map(([y, v]) => [y, v.delivered_t_in_year ?? v]));
+  const cell = label => j.helper?.cells?.find(c => c.label === label), day = cell('dedicated k=1, 24 h'), week = cell('dedicated k=1, 168 h');
+  const ref = k => ({ n: j.helper.references[k].n, delivered_t_in_year: j.helper.references[k].mean.delivered_t_in_year, by_year: j.helper.references[k].by_year });
+  const pk = JSON.parse(readFileSync(parking, 'utf8')), unc = pk.uncovered_calls['0|all'];
+  if (j.rescue?.levels && strand && day && week) {
     mkdirSync(join(PUB, 'research', 'earth-sky'), { recursive: true });
     writeFileSync(join(PUB, 'research', 'earth-sky', 'rescue.json'), JSON.stringify({ source: 'results/E21_fit_r2.json', link: 'DTE',
       rescue: j.rescue.levels.map(l => ({ rescue_h: l.rescue_h, n: l.n, ...pick(l.mean), t_2028: t2028(l.by_year) })),
       strand: { path: 'bounded.cells', variant: strand.variant, n: strand.n, ...pick(strand.mean), t_2028: t2028(strand.by_year) },
       strict: { n: j.rescue.references.strict.n, ...pick(j.rescue.references.strict.mean) },
-      strategic: { n: j.rescue.references.strategic.n, ...pick(j.rescue.references.strategic.mean) },
-      vs_strict: Object.fromEntries(Object.entries(j.rescue.breakeven_vs_strict).map(([k, v]) => [k, { levels_h: v.levels_h, mean_diff_by_level: v.mean_diff_by_level, breakeven_h: v.breakeven_h }])),
-      any: (j.rescue_any?.levels || []).map(l => ({ rescue_h: l.rescue_h, n: l.n, delivered_t_in_year: l.mean.delivered_t_in_year, t_2028: t2028(l.by_year), rescues_per_run: l.rescues_per_run })), always }));
-    console.log('prepare-data: rescue times staged');
+      helper: [day, week].map(c => ({ label: c.label, n: c.n, call_threshold_h: c.call_threshold_h, delivered_t_in_year: c.mean.delivered_t_in_year, by_year: tByYear(c.by_year),
+        share_of_always_linked_by_year: c.share_of_always_linked_by_year, within_5pct_every_year: c.within_5pct_of_always_linked_every_year,
+        parked_share: c.helper.busy_split_share.parked_waiting_for_earth, helps_per_run: c.helper.helps_per_run })),
+      helper_refs: { strict: ref('strict'), strict_plus_one: ref('strict + 1 rover'), always: ref('always-linked strategic') },
+      parking: { source: 'results/E21_parking.json', path: 'uncovered_calls["0|all"]', calls: unc.calls, uncovered_share: unc.uncovered_share,
+        earth_below_every_horizon_share: unc.earth_below_lowest_candidate_horizon_share, h_until_clear_median: unc.h_until_earth_clears_lowest_horizon_q10_50_90[1],
+        held_points_without_parking: pk.candidates.samples_without_working_route_point + pk.candidates.samples_without_working_grid_point } }));
+    console.log('prepare-data: rescue times and the helper staged');
   }
+}
+// F-43: the years ahead. The dark spot's linked hours and dark spells 2028-2050 (E21_later_years.json) and the tonnes by
+// start year for strict, strategic and one helper called after a day: 2028-2031 from Stage A / H (20 seeds, start year
+// 2028 + seed mod 4, so 5 runs a year), 2032-2046 from Stage J (seeds 0-4); only what /research/earth-sky/ shows
+const later = join(ROOT, 'results', 'E21_later_years.json');
+if (existsSync(fit) && existsSync(later)) {
+  const j = JSON.parse(readFileSync(fit, 'utf8')), L = JSON.parse(readFileSync(later, 'utf8')), ly = j.later_years, day = j.helper?.cells?.find(c => c.label === 'dedicated k=1, 24 h');
+  const early = { strict: j.helper.references.strict.by_year, strategic: j.rescue.references.strategic.by_year, helper_24h: Object.fromEntries(Object.entries(day.by_year).map(([y, v]) => [y, v.delivered_t_in_year])) };
+  const per = n => n / 4;   // the E21 year rule: start year 2028 + seed mod 4
+  const nEarly = { strict: per(j.helper.references.strict.n), strategic: per(j.rescue.references.strategic.n), helper_24h: per(day.n) };
+  const by = Object.fromEntries(['strict', 'strategic', 'helper_24h'].map(p => [p, {
+    ...Object.fromEntries(Object.entries(early[p]).map(([y, t]) => [y, { t, n: nEarly[p], ...(p === 'helper_24h' ? { share: day.share_of_always_linked_by_year[y] } : {}) }])),
+    ...Object.fromEntries(Object.entries(ly.by_policy_year[p]).map(([y, v]) => [y, { t: v.mean_t, n: v.n, ...(p === 'helper_24h' ? { share: v.share_of_always_linked } : {}) }])) }]));
+  const ap = L.period_188.annual;
+  mkdirSync(join(PUB, 'research', 'earth-sky'), { recursive: true });
+  writeFileSync(join(PUB, 'research', 'earth-sky', 'years.json'), JSON.stringify({ source: { links: 'results/E21_later_years.json', tonnes: 'results/E21_fit_r2.json' },
+    sample: 188, linked_h_by_year: L.dark_sample_188.linked_h_by_year, spells: L.dark_spells_188_over_180_days.spells,
+    period: { best_yr: ap.best_period_yr, ci95_yr: ap.ci95_yr, method: ap.method },
+    always: { by_year_2028_2031: j.helper.references['always-linked strategic'].by_year, t_2032_2046: ly.always_linked_t },
+    by_policy_year: by, whole_dark: ly.strategic_whole_dark_years, other: ly.strategic_other_years, helper_years_below_95pct: ly.years_below_95pct_of_always_linked.helper_24h }));
+  console.log('prepare-data: later years staged');
 }
 // F-35: hourly direct-to-Earth windows of points along every leg, for the rover lab's Earth-link posts; F-40: version 2
 // (B-52, the lite file) adds the samples along each lighting's route (routes[leg][lighting]); v1 is no longer staged

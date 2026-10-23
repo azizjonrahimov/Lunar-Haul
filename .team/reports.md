@@ -4983,3 +4983,124 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
 - **On LEAD's two paper notes:**
   1. "Six of the 283 never-linked samples (2028-31) see Earth for 4-87 h in 2032-46": correct (and still 4-87 h over 2032-2050).
   2. "The 12-day end-of-file edge in the 2031 runs" needs a fix. #188's own tail is 12.8 days (from 2031-12-19), but the edge is per sample, from its last v1 window. Every linked sample has one before 2031-12-31 (median 232 h, p90 297 h), so most samples are affected in roughly the last 10-13 days of the 2031 runs. Rarely linked samples last link much earlier: 121 samples have a tail over 720 h, 110 over 2,000 h, 47 over a year and 7 over 20,000 h (up to 34,256 h: #1259, #1304). A wait there after that point counts as never linked (redraw) in any run, so earlier years are affected at those samples too. Suggested wording: "waits that run past a sample's last link-up in the file count as never linked; for most samples that is the last ~10-13 days of 2031, but 47 rarely linked samples have no link-up in the last year of the file, 7 none in its last 2.3 years".
+
+## B-64 DONE 14:48 | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**Answer: yes. 18 of the paper's 404 quoted values change in their printed digits, all through the 2031 start-year runs. No sign or interval verdict flips.** The largest moves:
+- strategic 2031 tonnage, 543 → 530 t;
+- strategic's loss under DTE, 107 t [24, 191] → 111 t [28, 193], 20 → 21 %;
+- re-draws per run, 138 → 125 (2031: 209 → 156).
+
+Every effect measured against strategic shifts by ~3 t, and Stage H 24 h tonnage, 523 → 524 t. In 2028-2030 not a single row moves in any of the six cells.
+
+- **Method:**
+  - **Joined file:** `tools/comms/later_years.py join` (8 s, 306 MB) writes a cached, uncommitted link file, samples file and parking file covering 2028-01-01 .. 2050-12-31. It is v1's windows, then v3's (a window meeting at 2032-01-01 is joined). Inside 2028-2031 every window is v1's; only look-ups past 2031 differ. sha256s are in the JSON (link 8a941da5..., samples 16f8d8e2..., parking a5ea73dc...).
+  - **Never-linked samples:** 277 over that span, against 283 in v1.
+  - **Runs:** `experiments/phase4/edge_check.py run`: the six cells with `link_series` = the joined file (the helper also with the joined parking file), tags unchanged, so each run pairs with its committed row (same cell, seed, start year: same CRN). 120 runs, 401 s, single process, foreground, peak 241 MB. No row replaced.
+- **Per cell** (joined - committed; `results/E21_edge_check_r2.json` has every metric overall and by start year, with Student-t intervals, max per-seed change and changed seeds). Only seeds 3, 7, 11, 15 and 19 (start year 2031) ever change.
+
+| cell | tonnage | 2031 tonnage | other metrics |
+|---|---|---|---|
+| A strategic | -3.06 t [-6.23, 0.11] (424.70 → 421.64) | -12.25 t (542.6 → 530.3; worst seed -25.2) | urgent completion +0.0014; censored p90 unchanged; re-draws -13.35 a run (138.0 → 124.65), 2031 -53.4 (209.2 → 155.8) |
+| G2 24 h | 0 | 0 | one row (seed 19) differs in a column outside the four metrics |
+| G2 168 h | -0.05 t (515.61 → 515.56) | -0.20 t (worst seed 1.0) | none |
+| H dedicated k=1 24 h | +0.36 t (523.39 → 523.75) | +1.44 t (worst seed +11.2) | completion +0.0014; censored p90 +1.4 h (2031 +5.7 h) |
+| A strict | 0 | 0 | four 2031 rows change only in whole-run totals that count deliveries after the year ends (delivered_kg -2 to -6 t, backlog_kg) |
+| A look-ahead | 0 | 0 | no row changes |
+
+- **The paper's numbers** (`edge_check.py paper --variant base|joined`, 197 / 198 s, 142 MB; then `paper-diff`):
+  - `paper/r1/build_r1.values()` runs on two copies of the E21 results. In each, every derived table and CSV-derived fit block is regenerated: `write_tables`; `analyse_e21` fit --round r2, bounded, rescue, rescue --scope any, helper, years. The simulation-only blocks `bounded.pool_starvation` and `helper.diagnosis_168h` are carried over.
+  - **The method is exact:** the regenerated base reproduces all 404 values of `paper/r1/values.json`.
+  - **The 18 that move:**
+
+    | key | base | joined |
+    |---|---|---|
+    | R1-STRAT-T-BY-YEAR | 113, 508, 536 and 543 t | ... 530 t |
+    | R1-T-LOSS-STRAT | 107 t [24, 191], or 20 % | 111 t [28, 193], or 21 % |
+    | R1-F-REDRAWS | 138 | 125 |
+    | R1-F-REDRAWS-BY-YEAR | 45, 103, 195 and 209 | 45, 103, 195 and 156 |
+    | R1-WAIT-STRAT-DTE | 29,927 | 30,199 |
+    | R1-STRAT-COMP-MED | 97 % | 99 % |
+    | R1-F-STRAND-VS-STRAT | -383 t [-467, -298] | -380 [-463, -296] |
+    | R1-G-WEEK-VS-STRAT | -21 t [-48, 5] | -18 [-43, 7] |
+    | R1-G-MONTH-VS-STRAT | -115 t [-180, -50] | -112 [-176, -48] |
+    | R1-G-MONTH-COMP-VS-STRAT | 7.7 pp [0.2, 15.3] | 7.9 [0.2, 15.6] |
+    | R1-E-INTX05-STRAT-T | +25.6 t [6.1, 45.1] | +28.7 [9.9, 47.5] |
+    | R1-E-INTX2-STRAT-T | +5.7 t [-15.6, 27.0] | +8.8 [-12.5, 30.0] |
+    | R1-H-24-T | 523 t | 524 t |
+    | R1-H-24-VS-G2 | -6.7 t [-12.0, -1.3] | -6.3 [-11.3, -1.3] |
+    | R1-H-REL-MEAN | 85 h | 87 h |
+    | R1-H-DRIVE | 0.7-1.6 % | 0.7-1.5 % |
+    | R1-PICKED-DTE | 307.5 t | 306.5 t |
+    | R1-BACKLOG-DTE | 221.6 t | 222.6 t |
+
+    The last two move through strict's post-year deliveries.
+  - **No interval crosses 0 that didn't before**, and no sign changes.
+- **The rarely linked samples don't matter here:** the 47 samples with no link-up in v1's last year move no 2028-2030 row in these six cells.
+- **Not rerun:** only the six quoted cells were rerun. The 2031 rows of every other 2028-2031 cell (A2, B, C, D, E, F, G, the other H cells) carry the same edge; values built from those cells' own rows aren't covered, only those built against the six.
+
+**Files:** `tools/comms/later_years.py` (`join`, `join_windows`), `experiments/phase4/edge_check.py` (new: run, report, paper, paper-diff), `tests/test_edge_check.py` (new, 2 tests).
+- **For LEAD to commit:** `results/E21_edge_check_r2.json` only. The joined files stay in `.cache/comms/joined/` (sha256s recorded); no rows replaced.
+
+**How to test:**
+- `.venv/Scripts/python -m pytest -q tests/test_edge_check.py tests/test_later_years.py` -> 8 passed.
+- Rerun: `later_years.py join` -> `edge_check.py run` (401 s) -> `report` -> `paper --variant base` -> `paper --variant joined` -> `paper-diff`.
+
+**FRONTEND:** nothing.
+
+**Questions for LEAD:** none. If you want the paper on the joined numbers, adopting the joined rows means replacing the 2031 rows of all 2028-2031 cells, not just these six. Not done, per the task.
+
+## F-43 DONE 14:46 | /research/earth-sky/: a real helper, Earth's cycle, and the years ahead (B-61/62/63)
+
+**Section 3** (the never-linked and no-help sentences stay; every number has its flag and source)
+- Paragraph 1 now ends: "If that help takes a month … **310 t** … against the strict fleet's **307 t** … urgent **82 %** against **43 %**; only a rover left there for the rest of the year drags the fleet down to **42 t** a year. Help only at points that never see Earth leaves 2028 as it is … **86–208 t** … None of these figures counts the helper's own time." I removed the help-within-a-week sentence (403/425 t), the rescue_any sentences (507/516 t, 148 helps) and "These are best cases".
+- New paragraph 2 (helper.cells["dedicated k=1, 24 h"], helper.references, E21_parking.json uncovered_calls["0|all"]):
+  - "A real helper, with its own time counted, fixes 2028 and the other years." One extra rover, called once a rover has been held a day, drives to a spot that sees both the stuck rover and Earth, waits for Earth and frees the rover.
+  - The fleet then delivers **523 t** a year (**518 t** under the 2028 sky), within 5 % of the **532 t** with Earth always in view in every start year (worst **97 %**, 2029).
+  - It spends **95 %** of its working time parked, waiting for Earth. As one more hauler in the strict fleet, the same rover adds only **0.6 t**.
+  - Called only after a week, 2029 falls to **85 %**.
+  - "Such a spot exists for every point where rovers were held, yet **29 %** of calls would still wait more than a week for it to see Earth: for **99.6 %** of those, Earth is low in its monthly swing, below the horizon of every nearby spot, and takes a median of **235 h** to clear the lowest of them." The "exists for every point" clause is printed only when candidates.samples_without_working_route_point + …_grid_point is 0, which it is.
+- Chips (four): "One helper, called after a day" 523 t; "Helper's time spent parked" 95 %; "Same rover as one more hauler" +0.6 t; "No help" 42 t. I dropped "Help within a week" (403 t), "Help after a month" (310 t, urgent +39) and "Help for any long wait, 2028 sky" (507 t).
+
+**Section 4, "The years ahead"** (new: one figure, a table twin and two sentences)
+- Top panel: bars of the dark spot's linked hours by year, 2028–2050, in the calendar's blue (dark_sample_188.linked_h_by_year). The dark spells over 180 days are shaded in both panels and labelled with their dates on desktop. The first spell is clipped at 2028 and the caption says it began in Nov 2025. The last is censored, and the caption and table say it runs past 2050, where the link files end.
+- Bottom panel: tonnes by start year, 2028–2046, as three lines with direct labels: no help (strategic), one helper called after a day, and the strict fleet. "Earth always in view" is a dashed step: the by-year values for 2028–2031, then 525 t.
+  - **Seed counts:** your spec said 2028–2031 have 20 runs, but each start year there is the mean of 5. The E21 year rule is start year = 2028 + seed mod 4, so the 20 runs split 5 per year, and table_E21_years_r2.csv says n = 5. Every point on the axis is therefore the mean of 5 runs, so I drew 2028–2046 on one axis and the caption explains it.
+  - Colours: the helper and no-help lines are a new two-colour pair, passed by the dataviz validator for light (#2B8CB5 / #9a5200) and dark (#3A9AC6 / #D2733F). The strict fleet and always-in-view are neutral ink.
+- Text: "The dark spot's long dark spells come back about every **5.95** years (95 % interval **5.79** to **6.11**), and each lasts **3.6** to **4.0** years. Without help the strategic fleet collapses in 9 of the 15 start years 2032–2046, the years in which the dark spot sees no Earth at all (**160 t** a year on average, against **505 t** in the other 6); with one helper called after a day it stays within 5 % of the tonnage with Earth always in view in every one of them (worst **96 %**, 2041)." The clauses are conditional: "sees no Earth at all" is checked against linked hours = 0, and "within 5 %" against years_below_95pct_of_always_linked.helper_24h being empty.
+- Table twin: by year, the linked hours; strict, no-help and helper tonnes; the helper as a share of always-in-view; and the runs. A second table lists the spells.
+
+**Loading and budget**
+- With everything in the page module, earth-sky JS was 16.7 KB gz against a 15 KB budget. So the helper paragraph, the chips and section 4 now live in `src/research/earth-sky-helper.js`, which loads together with years.json once section 3's result block is within 800 px of the viewport or already scrolled past. It uses a passive scroll check, not an IntersectionObserver: an observer missed a jump straight to section 4.
+  - The lazy module imports nothing itself; the page passes num, esc, statChip and so on in.
+  - Height is reserved for section 4 (510 px on phones, 545 px on desktop), so the page below barely moves when it loads.
+- Budgets (`npm run build`, then `budgets.py pages`): earth-sky JS **14.4/15**, CSS 9.5/15, data 81.0/100, fonts 100.4/110.
+  - The lazy chunk `research-earth-sky-helper-*.js` is 4.65 KB gz, and years.json is 1.7 KB gz.
+  - Neither is counted yet, because the page's budgets.json entry has no `lazy` list and doesn't list years.json (see questions).
+
+**Data** (`site/scripts/prepare-data.mjs`; only what the page shows)
+- `research/earth-sky/rescue.json` (1.1 KB gz):
+  - keeps `rescue`, `strand` and `strict`;
+  - drops `strategic`, `vs_strict`, `any` and `always`, which are no longer shown, along with the table_E21_r2.csv parse;
+  - adds `helper` (the k=1 24 h and 168 h cells: tonnage, by_year, share_of_always_linked_by_year, within-5 % flag, parked share, helps), `helper_refs` (strict, strict + 1 rover, always-linked) and `parking` (uncovered_calls["0|all"] fields plus the held points without a parking spot).
+- New `research/earth-sky/years.json` (1.7 KB gz) holds:
+  - from E21_later_years.json: the linked hours by year, the spells, and period_188.annual (best, CI, method);
+  - by start year for strict, strategic and helper_24h: t and n, plus share for the helper. 2028–2031 come from helper.references / rescue.references / the helper cell, with n = runs / 4; 2032–2046 from later_years.by_policy_year;
+  - the always-linked values, whole_dark / other, and the helper's years below 95 %.
+- The sources list now names E21_fit_r2.json (rescue, bounded.cells, helper, later_years), E21_parking.json, and E21_later_years.json (added when section 4 loads). table_E21_r2.csv is no longer used, so its entry is gone.
+
+**Checks**
+- `npm run build` OK; `node --test tests/*.test.mjs` 11/11.
+- Desktop (1227 px) light and dark, and 390 px (iframe) light and dark: no horizontal overflow, direct labels inside the chart, no console errors.
+- A direct link to #es-years-h loads section 4 and section 3's helper text.
+- Server stopped, tab closed.
+
+**Files changed:** site/scripts/prepare-data.mjs, site/src/research/earth-sky.js, site/src/research/earth-sky-helper.js (new), site/src/research/earth-sky.css, site/research/earth-sky/index.html, .team/inbox-frontend.md, .team/reports.md
+
+**How to check:** `cd site && npm run build && npx vite preview`, open /research/earth-sky/ and scroll to the end of section 3 and to section 4. Toggle the theme. At phone width, check that the line labels (one helper / strict fleet / no help) sit inside the chart.
+
+**What I need from BACKEND:** nothing.
+
+**Questions for LEAD:**
+1. budgets.json, earth-sky entry: may I add `lazy: ["assets/research-earth-sky-helper-*.js"]` with `lazy_gzip_kb: 10` (4.65 measured; +25 % rounded up to 5 kB) and add `research/earth-sky/years.json` to its data list (1.7 KB gz, total about 83/100)? Or do you prefer to make that edit yourself?
+2. The seed-count note above: the spec's "2028-2031 have 20" is per cell, not per start year. The paper's Table 5 / 5.4 may want the same care if it compares per-year values.

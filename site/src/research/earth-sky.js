@@ -2,8 +2,9 @@
 // (1) Earth's path in the base's sky by month and year (data/comms/connecting_ridge/earth_track-v1.json.gz, SPICE) under
 // the terrain's skyline at the base and at the dark route point (horizons_dark_sample.json, B-58); (2) the monthly link
 // calendar of that point, the haul road it sits on and three sites; (3) the stranded share of the fleet by month, 2028
-// against 2030, the tonnage by start year (results/E21_strategic_years.json) and the strategic rule without its free
-// re-draw (results/E21_fit_r2.json → bounded, B-57). Every number is read from those files.
+// against 2030, the tonnage by start year (results/E21_strategic_years.json), the strategic rule without its free
+// re-draw (results/E21_fit_r2.json → bounded, B-57). The real helper rover that ends section 3 and (4) the years ahead
+// are in earth-sky-helper.js, loaded as the reader nears them (F-43). Every number is read from those files.
 import { statChip, segmented } from '../ui/index.js';
 import { upgradeFlags } from '../ui/tooltip.js';
 import { num, esc } from '../components/num.js';
@@ -51,15 +52,10 @@ const SRC = {
   ref: (k, m = 'delivered_t_in_year') => `${FIT} → rescue.references.${k}.mean.${m} (direct links only; mean of ${rs[k].n} runs)`,
   strand: `${FIT} → bounded.cells (link ${rs.link}, variant "${rs.strand.variant}"): mean.delivered_t_in_year, mean of ${rs.strand.n} runs`,
   y2028: `${FIT} → rescue.levels[*].by_year.2028.delivered_t_in_year, help after 0 h to 720 h`,
-  any: (h, k) => `${FIT} → rescue_any.levels[rescue_h = ${h}].${k} (all supervised, strategic, direct links only; help for any rover held longer than ${h} h; mean of ${anyLvl(h).n} runs)`,
-  always: `${rs.always.source}, row ${rs.always.row}: delivered_t_in_year (Earth always in view; mean of ${rs.always.n} runs)`,
 };
 // the strategic rule when help at a point that never sees Earth comes late (rescue after rescue_h) or never (the rover waits out the year)
-const lvl = h => rs.rescue.find(l => l.rescue_h === h), WEEK = 168, MONTH = 720;
-const urgentGain = rs.vs_strict.prio1_completion_share.mean_diff_by_level[rs.vs_strict.prio1_completion_share.levels_h.indexOf(MONTH)];
+const lvl = h => rs.rescue.find(l => l.rescue_h === h), MONTH = 720;
 const y28 = rs.rescue.map(l => l.t_2028), firstSeen = monthLabel(months[firstLink]);
-// help for any rover held longer than the rescue time, not only at never-linked points (so the 2028 dark spot too)
-const anyLvl = h => rs.any.find(l => l.rescue_h === h);
 $('es-lead').innerHTML = `The dark spot, route point ${spot.sample} on the haul between ${esc(legA)} and ${esc(legB)}, saw Earth at no hour from ${darkFrom} to ${darkTo}. ` +
   `In 2028 rovers waiting there held ${num({ value: 100 * shareAtSpot, unit: '%', flag: 'Modelled', digits: 0, source: SRC.share })} of the fleet's stranded rover-hours. ` +
   `With direct links only, rovers allowed to drive out of Earth's sight delivered ${num({ value: t(2028), unit: 't', flag: 'Modelled', digits: 0, source: SRC.tons(2028) })} in a year under the 2028 sky, against ${num({ value: t(2030), unit: 't', flag: 'Modelled', digits: 0, source: SRC.tons(2030) })} under the 2030 sky; ` +
@@ -71,22 +67,14 @@ $('es-chips').append(
   statChip({ label: 'Strategic fleet, 2028 sky', value: t(2028), unit: 't', digits: 0, flag: 'Modelled', source: SRC.tons(2028), tone: 'warm' }).el,
   statChip({ label: 'Strategic fleet, 2030 sky', value: t(2030), unit: 't', digits: 0, flag: 'Modelled', source: SRC.tons(2030), tone: 'cool' }).el,
   statChip({ label: 'Strict fleet, any of the four skies', text: `${Math.round(sLo)}–${Math.round(sHi)} t`, flag: 'Modelled', source: SRC.strict }).el);
+const T = (value, source) => num({ value, unit: 't', flag: 'Modelled', digits: 0, source }), P = (share, source, digits = 0) => num({ value: 100 * share, unit: '%', flag: 'Modelled', digits, source });
 $('es-result').innerHTML = 'The strategic rule assumes that a rover needing help at a point that never sees Earth gets it at once. ' +
-  `If help takes up to a week, the results barely change (${num({ value: lvl(WEEK).delivered_t_in_year, unit: 't', flag: 'Modelled', digits: 0, source: SRC.rescue(WEEK) })} a year, against ${num({ value: rs.strategic.delivered_t_in_year, unit: 't', flag: 'Modelled', digits: 0, source: SRC.ref('strategic') })} with help at once). ` +
-  `After a month the extra tonnage is gone (${num({ value: lvl(MONTH).delivered_t_in_year, unit: 't', flag: 'Modelled', digits: 0, source: SRC.rescue(MONTH) })} against the strict fleet's ${num({ value: rs.strict.delivered_t_in_year, unit: 't', flag: 'Modelled', digits: 0, source: SRC.ref('strict') })}), ` +
-  `but urgent items still arrive far more often than under the strict rule (${num({ value: 100 * lvl(MONTH).prio1_completion_share, unit: '%', flag: 'Modelled', digits: 0, source: SRC.rescue(MONTH, 'prio1_completion_share') })} delivered against ${num({ value: 100 * rs.strict.prio1_completion_share, unit: '%', flag: 'Modelled', digits: 0, source: SRC.ref('strict', 'prio1_completion_share') })}). ` +
-  `These are best cases: the helper's own time is not counted. Only a rover left there for the rest of the year drags the fleet down to ${num({ value: rs.strand.delivered_t_in_year, unit: 't', flag: 'Modelled', digits: 0, source: SRC.strand })} a year. ` +
-  `Help only at points that never see Earth leaves 2028 as it is: the dark spot does see Earth again, in ${firstSeen}, so a rover stopped there waits it out, and the 2028 sky stays at ${num({ value: Math.min(...y28), unit: 't', flag: 'Modelled', digits: 0, source: SRC.y2028 })} to ${num({ value: Math.max(...y28), unit: 't', flag: 'Modelled', digits: 0, source: SRC.y2028 })} whatever the help time. ` +
-  `Help for any rover held longer than a week fixes it: ${num({ value: anyLvl(WEEK).t_2028, unit: 't', flag: 'Modelled', digits: 0, source: SRC.any(WEEK, 'by_year.2028.delivered_t_in_year') })} under the 2028 sky and ` +
-  `${num({ value: anyLvl(WEEK).delivered_t_in_year, unit: 't', flag: 'Modelled', digits: 0, source: SRC.any(WEEK, 'mean.delivered_t_in_year') })} a year over all four skies, close to the ${num({ value: rs.always.delivered_t_in_year, unit: 't', flag: 'Modelled', digits: 0, source: SRC.always })} with Earth always in view. ` +
-  `That help would be needed about ${num({ value: anyLvl(WEEK).rescues_per_run, flag: 'Modelled', digits: 0, source: SRC.any(WEEK, 'rescues_per_run') })} times a year, and again the helper's own time is not counted.`;
+  `If that help takes a month, the extra tonnage is gone (${T(lvl(MONTH).delivered_t_in_year, SRC.rescue(MONTH))} a year against the strict fleet's ${T(rs.strict.delivered_t_in_year, SRC.ref('strict'))}), ` +
+  `but urgent items still arrive far more often than under the strict rule (${P(lvl(MONTH).prio1_completion_share, SRC.rescue(MONTH, 'prio1_completion_share'))} delivered against ${P(rs.strict.prio1_completion_share, SRC.ref('strict', 'prio1_completion_share'))}); ` +
+  `only a rover left there for the rest of the year drags the fleet down to ${T(rs.strand.delivered_t_in_year, SRC.strand)} a year. ` +
+  `Help only at points that never see Earth leaves 2028 as it is: the dark spot does see Earth again, in ${firstSeen}, so a rover stopped there waits it out, and the 2028 sky stays at ${T(Math.min(...y28), SRC.y2028)} to ${T(Math.max(...y28), SRC.y2028)} whatever the help time. ` +
+  "None of these figures counts the helper's own time.";
 upgradeFlags($('es-result'));
-$('es-rescue-chips').append(
-  statChip({ label: 'Help within a week', value: lvl(WEEK).delivered_t_in_year, unit: 't', digits: 0, flag: 'Modelled', source: SRC.rescue(WEEK), tone: 'cool' }).el,
-  statChip({ label: 'Help after a month', text: `${Math.round(lvl(MONTH).delivered_t_in_year)} t · urgent +${Math.round(100 * urgentGain)} points over strict`, flag: 'Modelled',
-    source: `${SRC.rescue(MONTH)}; urgent: the paired gain in the share of urgent items delivered over the strict fleet, ${FIT} → rescue.breakeven_vs_strict.prio1_completion_share.mean_diff_by_level` }).el,
-  statChip({ label: 'No help', value: rs.strand.delivered_t_in_year, unit: 't', digits: 0, flag: 'Modelled', source: SRC.strand, tone: 'warm' }).el,
-  statChip({ label: 'Help for any long wait, 2028 sky', value: anyLvl(WEEK).t_2028, unit: 't', digits: 0, flag: 'Modelled', source: SRC.any(WEEK, 'by_year.2028.delivered_t_in_year'), tone: 'cool' }).el);
 
 // ---------- 1. Earth's path in the sky ----------
 // the plotted height is the top of Earth's disc (a link needs only part of the disc); the skylines are the terrain's
@@ -238,16 +226,33 @@ function drawFleet() {
     `<table class="es-table"><thead><tr><th scope="col">Sky of the year</th><th scope="col">Strategic fleet</th><th scope="col">Strict fleet</th></tr></thead><tbody>${YEARS.map((yr, i) => `<tr><th scope="row">${yr}</th><td class="mono">${Math.round(t(yr))} t</td><td class="mono">${Math.round(strict[i])} t</td></tr>`).join('')}</tbody></table>`;
 }
 
+// ---------- the helper (end of 3) and 4. the years ahead ----------
+// the newest results: their own module (earth-sky-helper.js) and years.json, loaded once section 3's result is near or
+// already passed (a scroll check, not an observer: a jump past the block, to section 4 or the page's end, must load it too)
+let drawYears = () => {};
+const onScroll = async () => {
+  if ($('es-result').getBoundingClientRect().top > innerHeight + 800) return;
+  removeEventListener('scroll', onScroll);
+  try {
+    const [{ mountHelper, mountYears }, yr] = await Promise.all([import('./earth-sky-helper.js'), getJson(BASE + 'research/earth-sky/years.json')]);
+    mountHelper(rs, { $, num, upgradeFlags, statChip, FIT, T, P, strand: SRC.strand });
+    drawYears = mountYears(yr, { $, num, esc, upgradeFlags, spot, width, monthLabel, T, P });
+    drawYears();
+  } catch (err) { $('es-helper').textContent = $('es-years-text').textContent = `The data could not load (${err.message}).`; throw err; }
+};
+addEventListener('scroll', onScroll, { passive: true });
+onScroll();
+
 $('es-sources').innerHTML = [
   [TRACK, "Earth's centre seen from BASE, hourly 2028–2031 (SPICE: MOON_ME, LT+S; tools/comms/earth_link.py)"],
   [SY, `why the strategic cell differs by start year: link calendar, stranding, the swap of sky years (${esc(sy.generated.tool)}, ${sy.generated.seeds} seeds)`],
   ['results/E21_strategic_years_monthly.csv', 'the same calendar as a table'],
   [HZ, `the terrain's skyline at BASE and at route point ${spot.sample} across Earth's bearings for a ${hz.antenna_m} m antenna (LOLA), and the haul road's monthly link (${esc(hz.generated?.tool || 'tools/comms/earth_link.py outlines')})`],
   [YR, 'tonnes delivered in the year by start year, for the strict and the strategic fleet, direct links only'],
-  [FIT, `rescue, rescue_any and bounded.cells: the strategic fleet when help comes after a set time (at points that never see Earth, or for any long wait) or never (${rs.strand.n} runs each)`],
-  ['results/table_E21_r2.csv', 'the fleets with Earth always in view (stage A, comms always)'],
+  [FIT, `rescue and bounded.cells: the strategic fleet when help at points that never see Earth comes after a set time or never (${rs.strand.n} runs each); helper: one or two real helper rovers with their own time counted, against the strict fleet with one more rover and with Earth always in view (${rs.helper[0].n} runs each); later_years: the same fleets in later start years`],
+  [rs.parking.source, "where a helper can park in sight of a held rover and of Earth, and how long each call waits for Earth there (calls for help in the strategic fleet's runs)"],
 ].map(([f, d]) => `<li><code>${esc(f)}</code>: ${d}</li>`).join('');
 
-const draw = () => { drawSky(); drawCal(); drawFleet(); };
+const draw = () => { drawSky(); drawCal(); drawFleet(); drawYears(); };
 draw();
 let raf = 0; new ResizeObserver(() => { cancelAnimationFrame(raf); raf = requestAnimationFrame(draw); }).observe($('main'));

@@ -4,11 +4,12 @@
 :root {
   --y2028: #EE6677; --y2029: #998822; --y2030: #2D6FC7; --y2031: #228833;
   --cal-lo: #e8eef6; --cal-hi: #1d4f91; --board: #fbfbf8; --board-line: rgba(0, 0, 0, 0.045);
+  --pol-help: #2B8CB5; --pol-none: #9a5200;   /* section 4: one helper, no help (validated pair, light and dark) */
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { --y2028: #DD5B6E; --y2029: #A38F24; --y2030: #4F86D8; --y2031: #2F9A59; --cal-lo: #1f2a3a; --cal-hi: #8fc1ff; --board: #15171a; --board-line: rgba(255, 255, 255, 0.04); }
+  :root:not([data-theme="light"]) { --y2028: #DD5B6E; --y2029: #A38F24; --y2030: #4F86D8; --y2031: #2F9A59; --cal-lo: #1f2a3a; --cal-hi: #8fc1ff; --board: #15171a; --board-line: rgba(255, 255, 255, 0.04); --pol-help: #3A9AC6; --pol-none: #D2733F; }
 }
-:root[data-theme="dark"] { --y2028: #DD5B6E; --y2029: #A38F24; --y2030: #4F86D8; --y2031: #2F9A59; --cal-lo: #1f2a3a; --cal-hi: #8fc1ff; --board: #15171a; --board-line: rgba(255, 255, 255, 0.04); }
+:root[data-theme="dark"] { --y2028: #DD5B6E; --y2029: #A38F24; --y2030: #4F86D8; --y2031: #2F9A59; --cal-lo: #1f2a3a; --cal-hi: #8fc1ff; --board: #15171a; --board-line: rgba(255, 255, 255, 0.04); --pol-help: #3A9AC6; --pol-none: #D2733F; }
 
 .es-head .prose { max-width: 46rem; }
 .es-head .ui-label .nw { white-space: nowrap; }   /* the study title stays on one line; a phone breaks before it */
@@ -33,6 +34,8 @@
 .es-fig { margin: 0; }
 .es-chart { min-height: 220px; }
 #es-sky { min-height: 300px; }
+#es-years { min-height: 510px; }   /* section 4 loads late: about its height at phone width, so the page below barely moves */
+@media (min-width: 760px) { #es-years { min-height: 545px; } }
 .es-chart svg { display: block; width: 100%; height: auto; overflow: visible; font-family: var(--font-sans); }
 .es-cal-grid svg { width: auto; max-width: 100%; }
 .es-fig figcaption { margin-top: var(--s-2); overflow-wrap: anywhere; }   /* long file paths wrap on phones */
@@ -79,6 +82,20 @@
 .es-scroll { overflow-x: auto; max-height: 24rem; }
 .es-result { margin-top: var(--s-4); max-width: 46rem; border-left: 3px solid var(--accent); padding-left: var(--s-3); }
 .es-result p { margin: 0; }
+.es-result p + p { margin-top: var(--s-2); }
 .es-result .es-chips { grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr)); }   /* four chips: two by two on desktop, one column on phones */
+/* section 4: the years ahead. Dark spells shaded in both panels; linked hours in the calendar's blue; the two fleets that
+   change with the sky in the validated pair, the strict fleet and Earth always in view as neutral references */
+.es-chart .spell { fill: color-mix(in oklab, var(--ink) 7%, transparent); }
+.es-chart .spl { font-family: var(--font-sans); }
+.es-chart .hbar { fill: var(--cal-hi); }
+.es-chart .hit { fill: transparent; }
+.es-chart .ln { fill: none; stroke-width: 2; stroke-linejoin: round; }
+.es-chart .ln.help { stroke: var(--pol-help); } .es-chart .ln.none { stroke: var(--pol-none); } .es-chart .ln.strict { stroke: var(--ink-2); stroke-width: 1.5; }
+.es-chart .pt.help { fill: var(--pol-help); } .es-chart .pt.none { fill: var(--pol-none); } .es-chart .pt.strict { fill: var(--ink-2); }
+.es-chart .ref { fill: none; stroke: var(--ink-2); stroke-width: 1.25; stroke-dasharray: 5 4; }
+.es-legend i.hkey { background: var(--cal-hi); } .es-legend i.spellkey { background: color-mix(in oklab, var(--ink) 12%, transparent); }
+.es-legend i.lnkey { height: 0; border-radius: 0; border-top: 2px solid; } .es-legend i.lnkey.help { border-color: var(--pol-help); } .es-legend i.lnkey.none { border-color: var(--pol-none); }
+.es-legend i.lnkey.strict { border-top: 1.5px solid var(--ink-2); } .es-legend i.lnkey.ref { border-top: 1.25px dashed var(--ink-2); }
 .es-sources { margin-top: var(--s-6); }
 .es-sources code { font-size: 0.85em; overflow-wrap: anywhere; }
