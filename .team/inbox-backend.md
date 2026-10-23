@@ -703,3 +703,23 @@ cannot count: (a) computed URLs (the horizon map chosen by sun angle, the per-ve
 glob patterns per page with "max" or "sum" semantics; (b) the stories page's ?s= variants (budget the heaviest
 story); (c) fonts (count the preloaded and @font-face files a page uses); (d) lazy CSS as its own field, not in data.
 Keep every current entry passing; tests.
+
+## B-57 [OPEN] (now) R-1 Stage F: a bounded-wait strategic rule (tests the paper's "middle rule", Section 6)
+B-55 showed the two ends: `strategic` waits wherever an intervention stops it (one route point dark Jan 2028 - Jul
+2029 captures the fleet), `strategic+avoid` (look-ahead) never commits a leg with a never-linked sample (so it never
+serves ISRU and loses ~200 t/yr). Test the rule in between:
+1. **Policy `strategic+bound`** with parameter `bound_h`: as strategic, but before committing a leg, look at the
+   leg's route samples at the times the rover would pass them; if any sample's next link window (from the known
+   link series: Earth's geometry is predictable, so the operator has the forecast) starts more than `bound_h` after
+   the pass, do not commit (defer as look-ahead does). Same intervention model as strategic. Existing policies and
+   every E21 r2 row must stay byte-identical (recompute 3 cells incl. strategic DTE; baseline md5 unchanged).
+2. **Stage F** (`run_phase4.py e21f --round r2`): all-supervised fleet; DTE only, relay 0.1 and 0.5; bound_h in
+   {24, 72, 168, 720}; 20 seeds, E21 year rule, common random numbers with stage A. 12 cells, 240 runs. Write
+   `results/E21f_bounded_r2.csv`. Write each run's row as soon as it finishes (also for the other stages: a reaped
+   job must not lose finished runs).
+3. **Analysis** (`analyse_e21.py`, written into `E21_fit_r2.json` under "bounded" plus `table_E21f_bounded_r2.csv`):
+   paired against strategic and against look-ahead at the same link regime: tonnage, bulk, lander cargo, urgent
+   completion, censored p90 (geometric-mean ratio, Wilcoxon, median), rover-hours waiting for Earth, by start year
+   (2028 matters most). Which bound, if any, keeps the ISRU cargo and avoids the 2028 collapse?
+Runs: foreground chunks `--max-seconds 540`, `--workers 2` at most (8 GB machine, three sessions). Tests for the
+policy on a tiny scenario (bound 0 = look-ahead-like on never-linked samples; bound infinite = strategic).
