@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "note": "Per-page download budgets for the built site (tools/ci/budgets.py pages). JS/CSS = the files a page's HTML loads, gzip kB; data = files the page fetches at load (globs under site/dist, listed from the page code: FRONTEND keeps them current), gzip kB. Thresholds are 25 % above the sizes measured on 22 Oct 2026, rounded up to 5 kB; raise one only on purpose, in the same commit as the change. Classic <script src> files (the simulator's engine/*.js, copied in by copy-simulator.mjs) count with the page JS; 'lazy' lists the entry chunks a page imports later (their static imports are followed), budgeted as lazy_gzip_kb (simulator set on 22 Oct 2026 at today + 25 %). 3D pages (index, world, world/trace, lab/lander, lab/rover, vehicles, stories) count every file they load once 3D is entered, data and lazy chunks alike, as measured in Chrome on 22 Oct 2026 (F-40), at measured + 5 %: per-sun horizon maps and the per-vendor detect-gpu benchmark are listed as the one measured; stories counts the Earth story walked through all its steps; lazy chunks are named <src dir>-<name> (vite.config.js) so each glob matches one chunk. Since B-56 an entry can also use 'computed' ([{glob, count: max|sum, n}], for URLs chosen at run time, added to data), 'variants' ({\"?s=<id>\": {data, computed, lazy, lazy_css, fonts}}, every budget on the heaviest variant), 'lazy_css' + lazy_css_gzip_kb, and 'fonts' + fonts_kb (raw bytes; font preloads always count); unknown keys are errors (tools/ci/budgets.py docstring).",
+  "note": "Per-page download budgets for the built site (tools/ci/budgets.py pages). JS/CSS = the files a page's HTML loads, gzip kB; data = files the page fetches at load (globs under site/dist, listed from the page code: FRONTEND keeps them current), gzip kB. Thresholds are 25 % above the sizes measured on 22 Oct 2026, rounded up to 5 kB; raise one only on purpose, in the same commit as the change. Classic <script src> files (the simulator's engine/*.js, copied in by copy-simulator.mjs) count with the page JS; 'lazy' lists the entry chunks a page imports later (their static imports are followed), budgeted as lazy_gzip_kb (simulator set on 22 Oct 2026 at today + 25 %). 3D pages (index, world, world/trace, lab/lander, lab/rover, vehicles, stories) count every file they load once 3D is entered, data and lazy chunks alike, as measured in Chrome on 22 Oct 2026 (F-40), at measured + 5 %: per-sun horizon maps and the per-vendor detect-gpu benchmark are computed globs (the n heaviest matches, n = maps a page or story fetched); /stories/ has one variant per story, each walked through all its steps; lazy_css and fonts as fetched in Chrome on every page; lazy chunks are named <src dir>-<name> (vite.config.js) so each glob matches one chunk. Since B-56 an entry can also use 'computed' ([{glob, count: max|sum, n}], for URLs chosen at run time, added to data), 'variants' ({\"?s=<id>\": {data, computed, lazy, lazy_css, fonts}}, every budget on the heaviest variant), 'lazy_css' + lazy_css_gzip_kb, and 'fonts' + fonts_kb (raw bytes; font preloads always count); unknown keys are errors (tools/ci/budgets.py docstring).",
   "site_total_mb": 900,
   "defaults": {
     "js_gzip_kb": 60,
@@ -9,31 +9,66 @@
   "pages": {
     "404.html": {
       "js_gzip_kb": 5,
-      "css_gzip_kb": 10
+      "css_gzip_kb": 10,
+      "fonts": [
+        "assets/sora-latin-wght-normal-*.woff2",
+        "assets/jetbrains-mono-latin-wght-normal-*.woff2",
+        "assets/source-sans-3-greek-wght-normal-*.woff2",
+        "assets/source-sans-3-latin-wght-italic-*.woff2"
+      ],
+      "fonts_kb": 150
     },
     "about/index.html": {
       "js_gzip_kb": 5,
-      "css_gzip_kb": 10
+      "css_gzip_kb": 10,
+      "fonts": [
+        "assets/source-sans-3-latin-wght-italic-*.woff2"
+      ],
+      "fonts_kb": 60
     },
     "account/index.html": {
       "js_gzip_kb": 15,
-      "css_gzip_kb": 10
+      "css_gzip_kb": 10,
+      "fonts": [
+        "assets/source-sans-3-latin-wght-italic-*.woff2"
+      ],
+      "fonts_kb": 60
     },
     "changelog/index.html": {
       "js_gzip_kb": 5,
-      "css_gzip_kb": 10
+      "css_gzip_kb": 10,
+      "fonts": [
+        "assets/source-sans-3-latin-wght-italic-*.woff2"
+      ],
+      "fonts_kb": 60
     },
     "data/index.html": {
       "js_gzip_kb": 5,
-      "css_gzip_kb": 10
+      "css_gzip_kb": 10,
+      "fonts": [
+        "assets/source-sans-3-latin-wght-italic-*.woff2"
+      ],
+      "fonts_kb": 60
     },
     "design/index.html": {
       "js_gzip_kb": 20,
-      "css_gzip_kb": 15
+      "css_gzip_kb": 15,
+      "fonts": [
+        "assets/sora-latin-wght-normal-*.woff2",
+        "assets/jetbrains-mono-latin-wght-normal-*.woff2",
+        "assets/source-sans-3-latin-wght-italic-*.woff2"
+      ],
+      "fonts_kb": 135
     },
     "design/stage/index.html": {
       "js_gzip_kb": 280,
-      "css_gzip_kb": 15
+      "css_gzip_kb": 15,
+      "fonts": [
+        "assets/sora-latin-wght-normal-*.woff2",
+        "assets/jetbrains-mono-latin-wght-normal-*.woff2",
+        "assets/source-sans-3-latin-wght-italic-*.woff2"
+      ],
+      "fonts_kb": 135
     },
     "index.html": {
       "js_gzip_kb": 5,
@@ -47,21 +82,38 @@
         "terrain/hero/v2/normal_20m.png",
         "terrain/hero/v2/normal_5m_BASE.png",
         "terrain/hero/v2/height_5m_BASE.png",
-        "terrain/hero/v2/horizon_20m_02.png",
         "scenes/P2/scene.json",
         "scenes/P2/routes.bin",
-        "scenes/P2/chunk_*.bin",
-        "detect-gpu/benchmarks/d-nvidia.json",
-        "assets/ui-*.css"
+        "scenes/P2/chunk_*.bin"
       ],
-      "data_gzip_kb": 3225,
+      "data_gzip_kb": 3315,
       "lazy": [
         "assets/detect-gpu.esm-*.js",
         "assets/home-hero-3d-*.js",
         "assets/scene-data-????????.js",
         "assets/world-v2-scene-*.js"
       ],
-      "lazy_gzip_kb": 275
+      "lazy_gzip_kb": 275,
+      "fonts": [
+        "assets/sora-latin-wght-normal-*.woff2",
+        "assets/jetbrains-mono-latin-wght-normal-*.woff2"
+      ],
+      "fonts_kb": 110,
+      "computed": [
+        {
+          "glob": "terrain/hero/v2/horizon_20m_*.png",
+          "count": "max",
+          "n": 1
+        },
+        {
+          "glob": "detect-gpu/benchmarks/d-*.json",
+          "count": "max"
+        }
+      ],
+      "lazy_css": [
+        "assets/ui-*.css"
+      ],
+      "lazy_css_gzip_kb": 5
     },
     "lab/lander/index.html": {
       "js_gzip_kb": 130,
@@ -75,20 +127,35 @@
         "lab/policies/outcomes_*CLPS*.json",
         "lab/policies/trajectories-v1.json",
         "catalog/catalog-v1.json",
-        "detect-gpu/benchmarks/d-nvidia.json",
         "terrain/hero/v2/manifest.json",
         "terrain/hero/v2/normal_20m.png",
         "terrain/hero/v2/normal_5m_PAD_A.png",
-        "terrain/hero/v2/height_5m_PAD_A.png",
-        "terrain/hero/v2/horizon_20m_06.png",
-        "assets/ui-*.css"
+        "terrain/hero/v2/height_5m_PAD_A.png"
       ],
-      "data_gzip_kb": 5535,
+      "data_gzip_kb": 5665,
       "lazy": [
         "assets/detect-gpu.esm-*.js",
         "assets/lander-lab3d-scene-*.js"
       ],
-      "lazy_gzip_kb": 260
+      "lazy_gzip_kb": 260,
+      "fonts": [
+        "assets/sora-latin-wght-normal-*.woff2",
+        "assets/jetbrains-mono-latin-wght-normal-*.woff2",
+        "assets/source-sans-3-greek-wght-normal-*.woff2",
+        "assets/source-sans-3-latin-wght-italic-*.woff2"
+      ],
+      "fonts_kb": 150,
+      "computed": [
+        {
+          "glob": "terrain/hero/v2/horizon_20m_*.png",
+          "count": "max",
+          "n": 1
+        },
+        {
+          "glob": "detect-gpu/benchmarks/d-*.json",
+          "count": "max"
+        }
+      ]
     },
     "lab/rover/index.html": {
       "js_gzip_kb": 25,
@@ -109,15 +176,12 @@
         "comms/earth_link-v2-samples-lite.json.gz",
         "comms/earth_track-v1.json.gz",
         "catalog/catalog-v1.json",
-        "detect-gpu/benchmarks/d-nvidia.json",
         "terrain/hero/v2/manifest.json",
         "terrain/hero/v2/normal_20m.png",
         "terrain/hero/v2/normal_5m_BASE.png",
-        "terrain/hero/v2/height_5m_BASE.png",
-        "terrain/hero/v2/horizon_20m_12.png",
-        "assets/ui-*.css"
+        "terrain/hero/v2/height_5m_BASE.png"
       ],
-      "data_gzip_kb": 6890,
+      "data_gzip_kb": 7090,
       "lazy": [
         "assets/detect-gpu.esm-*.js",
         "assets/rover-lab3d-????????.js",
@@ -125,19 +189,60 @@
         "assets/stage-sky-*.js",
         "assets/terrain-worker-*.js"
       ],
-      "lazy_gzip_kb": 270
+      "lazy_gzip_kb": 270,
+      "fonts": [
+        "assets/sora-latin-wght-normal-*.woff2",
+        "assets/jetbrains-mono-latin-wght-normal-*.woff2",
+        "assets/source-sans-3-greek-wght-normal-*.woff2",
+        "assets/source-sans-3-latin-wght-italic-*.woff2"
+      ],
+      "fonts_kb": 150,
+      "computed": [
+        {
+          "glob": "terrain/hero/v2/horizon_20m_*.png",
+          "count": "max",
+          "n": 1
+        },
+        {
+          "glob": "detect-gpu/benchmarks/d-*.json",
+          "count": "max"
+        }
+      ],
+      "lazy_css": [
+        "assets/ui-*.css"
+      ],
+      "lazy_css_gzip_kb": 5
     },
     "method/index.html": {
       "js_gzip_kb": 5,
-      "css_gzip_kb": 10
+      "css_gzip_kb": 10,
+      "fonts": [
+        "assets/sora-latin-wght-normal-*.woff2",
+        "assets/jetbrains-mono-latin-wght-normal-*.woff2",
+        "assets/source-sans-3-latin-wght-italic-*.woff2"
+      ],
+      "fonts_kb": 135
     },
     "paper/index.html": {
       "js_gzip_kb": 5,
-      "css_gzip_kb": 10
+      "css_gzip_kb": 10,
+      "fonts": [
+        "assets/sora-latin-wght-normal-*.woff2",
+        "assets/jetbrains-mono-latin-wght-normal-*.woff2",
+        "assets/source-sans-3-latin-wght-italic-*.woff2"
+      ],
+      "fonts_kb": 135
     },
     "results/index.html": {
       "js_gzip_kb": 5,
-      "css_gzip_kb": 10
+      "css_gzip_kb": 10,
+      "fonts": [
+        "assets/sora-latin-wght-normal-*.woff2",
+        "assets/jetbrains-mono-latin-wght-normal-*.woff2",
+        "assets/source-sans-3-greek-wght-normal-*.woff2",
+        "assets/source-sans-3-latin-wght-italic-*.woff2"
+      ],
+      "fonts_kb": 150
     },
     "simulator/index.html": {
       "js_gzip_kb": 55,
@@ -145,21 +250,40 @@
       "lazy": [
         "assets/simulator-plot-marks-*.js"
       ],
-      "lazy_gzip_kb": 105
+      "lazy_gzip_kb": 105,
+      "fonts": [
+        "assets/sora-latin-wght-normal-*.woff2",
+        "assets/jetbrains-mono-latin-wght-normal-*.woff2",
+        "assets/source-sans-3-greek-wght-normal-*.woff2",
+        "assets/source-sans-3-latin-wght-italic-*.woff2"
+      ],
+      "fonts_kb": 150
     },
     "vehicles/index.html": {
       "js_gzip_kb": 100,
       "css_gzip_kb": 15,
       "data": [
-        "catalog/catalog-v1.json",
-        "detect-gpu/benchmarks/d-nvidia.json"
+        "catalog/catalog-v1.json"
       ],
       "data_gzip_kb": 25,
       "lazy": [
         "assets/detect-gpu.esm-*.js",
         "assets/stage-????????.js"
       ],
-      "lazy_gzip_kb": 170
+      "lazy_gzip_kb": 170,
+      "fonts": [
+        "assets/sora-latin-wght-normal-*.woff2",
+        "assets/jetbrains-mono-latin-wght-normal-*.woff2",
+        "assets/source-sans-3-greek-wght-normal-*.woff2",
+        "assets/source-sans-3-latin-wght-italic-*.woff2"
+      ],
+      "fonts_kb": 150,
+      "computed": [
+        {
+          "glob": "detect-gpu/benchmarks/d-*.json",
+          "count": "max"
+        }
+      ]
     },
     "verification/index.html": {
       "js_gzip_kb": 10,
@@ -167,7 +291,14 @@
       "data": [
         "verify/*.json"
       ],
-      "data_gzip_kb": 670
+      "data_gzip_kb": 670,
+      "fonts": [
+        "assets/sora-latin-wght-normal-*.woff2",
+        "assets/jetbrains-mono-latin-wght-normal-*.woff2",
+        "assets/source-sans-3-greek-wght-normal-*.woff2",
+        "assets/source-sans-3-latin-wght-italic-*.woff2"
+      ],
+      "fonts_kb": 150
     },
     "world/index.html": {
       "js_gzip_kb": 25,
@@ -182,18 +313,32 @@
         "terrain/hero/v2/normal_20m.png",
         "terrain/hero/v2/normal_5m_BASE.png",
         "terrain/hero/v2/height_5m_BASE.png",
-        "terrain/hero/v2/horizon_20m_02.png",
         "scenes/P2/scene.json",
         "scenes/P2/routes.bin",
-        "scenes/P2/chunk_*.bin",
-        "detect-gpu/benchmarks/d-nvidia.json"
+        "scenes/P2/chunk_*.bin"
       ],
-      "data_gzip_kb": 4330,
+      "data_gzip_kb": 4420,
       "lazy": [
         "assets/detect-gpu.esm-*.js",
         "assets/world-v2-scene-*.js"
       ],
-      "lazy_gzip_kb": 265
+      "lazy_gzip_kb": 265,
+      "fonts": [
+        "assets/sora-latin-wght-normal-*.woff2",
+        "assets/jetbrains-mono-latin-wght-normal-*.woff2"
+      ],
+      "fonts_kb": 110,
+      "computed": [
+        {
+          "glob": "terrain/hero/v2/horizon_20m_*.png",
+          "count": "max",
+          "n": 1
+        },
+        {
+          "glob": "detect-gpu/benchmarks/d-*.json",
+          "count": "max"
+        }
+      ]
     },
     "world/trace/index.html": {
       "js_gzip_kb": 20,
@@ -207,53 +352,158 @@
         "terrain/hero/v2/manifest.json",
         "terrain/hero/v2/normal_20m.png",
         "terrain/hero/v2/normal_5m_BASE.png",
-        "terrain/hero/v2/normal_5m_PAD_A.png",
-        "terrain/hero/v2/horizon_20m_06.png",
-        "detect-gpu/benchmarks/d-nvidia.json"
+        "terrain/hero/v2/normal_5m_PAD_A.png"
       ],
-      "data_gzip_kb": 3075,
+      "data_gzip_kb": 3210,
       "lazy": [
         "assets/detect-gpu.esm-*.js",
         "assets/world-scene-????????.js"
       ],
-      "lazy_gzip_kb": 165
+      "lazy_gzip_kb": 165,
+      "fonts": [
+        "assets/sora-latin-wght-normal-*.woff2",
+        "assets/jetbrains-mono-latin-wght-normal-*.woff2"
+      ],
+      "fonts_kb": 110,
+      "computed": [
+        {
+          "glob": "terrain/hero/v2/horizon_20m_*.png",
+          "count": "max",
+          "n": 1
+        },
+        {
+          "glob": "detect-gpu/benchmarks/d-*.json",
+          "count": "max"
+        }
+      ]
     },
     "stories/index.html": {
       "data": [
         "story-data/index.json",
-        "story-data/earth-horizon.json",
-        "scenes/gallery.json",
         "catalog/catalog-v1.json",
         "lab/policies/trajectories-v1.json",
         "terrain/hero/meta.json",
         "terrain/hero/height_20m.png",
         "terrain/hero/v2/manifest.json",
-        "terrain/hero/v2/normal_20m.png",
-        "terrain/hero/v2/normal_5m_BASE.png",
-        "terrain/hero/v2/height_5m_BASE.png",
-        "terrain/hero/v2/horizon_20m_02.png",
-        "terrain/hero/v2/horizon_20m_07.png",
-        "terrain/hero/v2/horizon_20m_09.png",
-        "scenes/P2-comms-dte/scene.json",
-        "scenes/P2-comms-dte/routes.bin",
-        "scenes/P2-comms-dte/chunk_*.bin",
-        "scenes/P2-comms-relay-0.1/scene.json",
-        "scenes/P2-comms-relay-0.1/routes.bin",
-        "scenes/P2-comms-relay-0.1/chunk_*.bin",
-        "scenes/P2-comms-dte-strategic/scene.json",
-        "scenes/P2-comms-dte-strategic/routes.bin",
-        "scenes/P2-comms-dte-strategic/chunk_*.bin",
-        "scenes/P2/scene.json",
-        "scenes/P2/routes.bin",
-        "detect-gpu/benchmarks/d-nvidia.json"
+        "terrain/hero/v2/normal_20m.png"
       ],
-      "data_gzip_kb": 7880,
+      "data_gzip_kb": 8920,
       "lazy": [
         "assets/detect-gpu.esm-*.js",
-        "assets/stories-stage-*.js",
-        "assets/world-v2-scene-*.js"
+        "assets/stories-stage-*.js"
       ],
-      "lazy_gzip_kb": 270
+      "lazy_gzip_kb": 270,
+      "fonts": [
+        "assets/sora-latin-wght-normal-*.woff2",
+        "assets/jetbrains-mono-latin-wght-normal-*.woff2"
+      ],
+      "fonts_kb": 110,
+      "computed": [
+        {
+          "glob": "detect-gpu/benchmarks/d-*.json",
+          "count": "max"
+        }
+      ],
+      "variants": {
+        "?s=earth-horizon": {
+          "data": [
+            "story-data/earth-horizon.json",
+            "scenes/gallery.json",
+            "terrain/hero/v2/normal_5m_BASE.png",
+            "terrain/hero/v2/height_5m_BASE.png",
+            "scenes/P2-comms-dte/scene.json",
+            "scenes/P2-comms-dte/routes.bin",
+            "scenes/P2-comms-dte/chunk_*.bin",
+            "scenes/P2-comms-relay-0.1/scene.json",
+            "scenes/P2-comms-relay-0.1/routes.bin",
+            "scenes/P2-comms-relay-0.1/chunk_*.bin",
+            "scenes/P2-comms-dte-strategic/scene.json",
+            "scenes/P2-comms-dte-strategic/routes.bin",
+            "scenes/P2-comms-dte-strategic/chunk_*.bin",
+            "scenes/P2/scene.json",
+            "scenes/P2/routes.bin"
+          ],
+          "computed": [
+            {
+              "glob": "terrain/hero/v2/horizon_20m_*.png",
+              "count": "max",
+              "n": 3
+            }
+          ],
+          "lazy": [
+            "assets/world-v2-scene-*.js"
+          ]
+        },
+        "?s=pads-distance": {
+          "data": [
+            "story-data/pads-distance.json",
+            "terrain/hero/v2/normal_5m_BASE.png",
+            "terrain/hero/v2/height_5m_BASE.png",
+            "scenes/P2/scene.json",
+            "scenes/P2/routes.bin",
+            "scenes/P2/chunk_*.bin",
+            "scenes/P2-pads-0.5km/scene.json",
+            "scenes/P2-pads-0.5km/routes.bin",
+            "scenes/P2-pads-0.5km/chunk_*.bin",
+            "scenes/P2-pads-3km/scene.json",
+            "scenes/P2-pads-3km/routes.bin",
+            "scenes/P2-pads-3km/chunk_*.bin"
+          ],
+          "computed": [
+            {
+              "glob": "terrain/hero/v2/horizon_20m_*.png",
+              "count": "max",
+              "n": 1
+            }
+          ],
+          "lazy": [
+            "assets/world-v2-scene-*.js"
+          ]
+        },
+        "?s=sharing-rovers": {
+          "data": [
+            "story-data/sharing-rovers.json",
+            "terrain/hero/v2/normal_5m_BASE.png",
+            "terrain/hero/v2/height_5m_BASE.png",
+            "scenes/P2-inhouse/scene.json",
+            "scenes/P2-inhouse/routes.bin",
+            "scenes/P2-inhouse/chunk_*.bin",
+            "scenes/P2/scene.json",
+            "scenes/P2/routes.bin",
+            "scenes/P2/chunk_*.bin",
+            "scenes/P2V2/scene.json",
+            "scenes/P2V2/routes.bin",
+            "scenes/P2V2/chunk_*.bin"
+          ],
+          "computed": [
+            {
+              "glob": "terrain/hero/v2/horizon_20m_*.png",
+              "count": "max",
+              "n": 3
+            }
+          ],
+          "lazy": [
+            "assets/world-v2-scene-*.js"
+          ]
+        },
+        "?s=learned-landing": {
+          "data": [
+            "story-data/learned-landing.json",
+            "terrain/hero/v2/normal_5m_PAD_A.png",
+            "terrain/hero/v2/height_5m_PAD_A.png"
+          ],
+          "computed": [
+            {
+              "glob": "terrain/hero/v2/horizon_20m_*.png",
+              "count": "max",
+              "n": 4
+            }
+          ],
+          "lazy": [
+            "assets/lander-lab3d-scene-*.js"
+          ]
+        }
+      }
     }
   }
 }

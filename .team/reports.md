@@ -4174,3 +4174,45 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
 **FRONTEND:** the keys above. Example migration for /stories/: move the Earth-story lists into `variants["?s=earth-horizon"]` and add the other three stories. Replace the measured `horizon_20m_NN.png` and `d-nvidia.json` with the two `computed` globs. Move `assets/ui-*.css` from `data` to `lazy_css`. Declare the woff2 files measured in Chrome under `fonts`. Then set limits from `--propose`, or at measured + 5 % as in F-40.
 
 **Questions for LEAD:** none.
+
+## F-40 PART 8 DONE 19:32 | Budgets migrated to B-56: computed globs, story variants, lazy CSS, fonts on every page (F-40 stays IN PROGRESS)
+- **Every file in this part:** `tools/ci/budgets.json`.
+- **Computed URLs:**
+  - On every 3D page the measured `horizon_20m_NN.png` and `d-nvidia.json` became `{"glob": "terrain/hero/v2/horizon_20m_*.png", "count": "max", "n": k}` and `{"glob": "detect-gpu/benchmarks/d-*.json", "count": "max"}`.
+  - k is the number of maps the page or story fetched in Chrome: 1 on /, /world/, /world/trace/ and both labs; 3 for the Earth story, 1 for the pads story, 3 for the sharing story, 4 for the learned-landing story.
+  - "max" counts the heaviest matches (horizon_20m_09, 01, 10, …; d-amd.json), a worst case over sun and vendor, so data is a little above the measured runs: rover +190 kB, lander +121, world +89, trace +125, home +86.
+- **/stories/ variants** (each story walked through all its steps in Chrome):
+  - Shared lists: story index, catalogue, descent recordings, base terrain, GPU benchmark, `detect-gpu.esm` and `stories-stage`.
+  - Earth story: 3 comms packages, the P2 twin's index and routes, 3 maps.
+  - Pads story: P2, P2-pads-0.5km and P2-pads-3km, 1 map.
+  - Sharing story: P2-inhouse, P2 and P2V2, 3 maps.
+  - Learned-landing story: the PAD_A patch, 4 maps, and `lander-lab3d-scene` (now counted; part 6 had to leave it out).
+  - Heaviest: learned-landing, at 8,494.5 kB data and 256.3 kB lazy.
+- **Lazy CSS:** `assets/ui-*.css` moved from data to `lazy_css` on / and /lab/rover/ (3.1 kB each). On /lab/lander/ ui.css is already page CSS, so it has no lazy CSS.
+- **Fonts on every page** (measured in Chrome; the Source Sans latin preload, 28.1 kB, always counts):
+
+| Fonts declared | Pages | kB |
+|---|---|---|
+| Source Sans italic | about, account, changelog, data | 55.9 |
+| Sora, JetBrains Mono, Source Sans italic | design, design/stage, method, paper | 128.2 |
+| Sora, JetBrains Mono, Source Sans Greek and italic | results, simulator, verification, 404, lander lab, rover lab, vehicles | 142.5 |
+| Sora, JetBrains Mono | /, world, trace, stories | 100.4 |
+
+  - simulator/v2 fetches no web fonts.
+- **Limits** at measured + 5 % for the new and changed metrics:
+
+| Page | Data | Lazy JS | Lazy CSS | Fonts |
+|---|---|---|---|---|
+| / | 3,315 | 275 | 5 | 110 |
+| /world/ | 4,420 | 265 | – | 110 |
+| /world/trace/ | 3,210 | 165 | – | 110 |
+| /lab/lander/ | 5,665 | 260 | – | 150 |
+| /lab/rover/ | 7,090 | 270 | 5 | 150 |
+| /vehicles/ | 25 | 170 | – | 150 |
+| /stories/ | 8,920 | 270 | – | 110 |
+
+  - Other pages: fonts only (60 / 135 / 150).
+  - The non-3D data and lazy limits are left as they were (simulator lazy 105, verification data 670).
+  - The note in budgets.json now describes computed, variants, lazy_css and fonts.
+- **Checks:** `budgets.py pages`: OK, no unknown keys or missing files. `pytest tests/test_ci_budgets.py`: 10 passed. The build was current (rebuilt at the start of this part). Servers stopped; tab closed.
+- **Next in F-40:** URL-hash deep links, GPU memory per tier.
