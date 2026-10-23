@@ -120,7 +120,14 @@ def run_one(seed: int, year: int) -> Dict[str, Any]:
     item_m = np.histogram([c.t_ready for c in items], bins=edges)[0]
     landings_key = tuple((round(t, 6), lt.name, pad) for t, lt, pad in sim.landing_schedule)
     items_key = tuple(sorted((round(c.t_landed, 6), c.dest, c.priority, round(c.mass_kg, 3)) for c in items))
+    urg = [c for c in items if c.priority == 1]
+    done = [c for c in urg if c.t_delivered is not None and c.t_delivered <= H]
+    hist = lambda ts: np.histogram(ts, bins=edges)[0].tolist()
     return {"seed": seed, "year": year, "delivered_t_in_year": out.get("delivered_kg_in_horizon", float("nan")) / 1000.0,
+            "urgent_ready_by_month": hist([c.t_ready for c in urg]),
+            "urgent_delivered_by_month": hist([c.t_delivered for c in done]),
+            "urgent_ready_and_delivered_by_month": hist([c.t_ready for c in done]),
+            "urgent_by_dest": dict(Counter(c.dest for c in urg)), "urgent_delivered_by_dest": dict(Counter(c.dest for c in done)),
             "blackout_wait_vehicle_h": out.get("blackout_wait_vehicle_h"), "delay_prio1_mean_h": out.get("delay_prio1_mean_h"),
             "n_rovers": len(rovers), "events": events, "stranded_share_by_month": stranded, "first_strand_h": first,
             "landings_by_month": land_m.tolist(), "items_by_month": item_m.tolist(),
@@ -184,6 +191,35 @@ def calendar_part(samples_of_interest: List[int]) -> Dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------------------------------------
+def urgent_2028(seeds=(0, 4, 8, 12, 16)) -> Dict[str, Any]:
+    """B-60 N3: E21's own 2028 seeds of the strategic DTE cell: urgent items made ready and delivered by month, and the
+    rovers not stranded by month (a stranding = an intervention wait > STRAND_H), to see how most urgent items arrive
+    while most of the fleet is stranded from May. Each run must reproduce its row of the E21 r2 table."""
+    e21 = pd.read_csv(E21_CSV, float_precision="round_trip")
+    e21 = e21[(e21["mix"] == "supervised_strategic") & (e21["comms"] == "dte")].set_index("seed")
+    runs = [run_one(s, 2028) for s in seeds]
+    same = all(abs(r["delivered_t_in_year"] - float(e21.loc[r["seed"], "delivered_t_in_year"])) < 1e-9 for r in runs)
+    mean = lambda k: np.mean([r[k] for r in runs], axis=0)
+    ready, deliv, rd = mean("urgent_ready_by_month"), mean("urgent_delivered_by_month"), mean("urgent_ready_and_delivered_by_month")
+    not_stranded = np.mean([r["n_rovers"] * (1.0 - np.array(r["stranded_share_by_month"])) for r in runs], axis=0)
+    by_dest = Counter()
+    by_dest_done = Counter()
+    for r in runs:
+        by_dest.update(r["urgent_by_dest"])
+        by_dest_done.update(r["urgent_delivered_by_dest"])
+    tot_ready, tot_done = float(ready.sum()), float(rd.sum())
+    return {"seeds": list(seeds), "start_year": 2028, "runs_reproduce_e21": bool(same),
+            "urgent_ready_by_month": [_r(v, 2) for v in ready], "urgent_delivered_by_month": [_r(v, 2) for v in deliv],
+            "urgent_ready_and_delivered_by_month": [_r(v, 2) for v in rd],
+            "urgent_completion": _r(tot_done / tot_ready, 3) if tot_ready else None,
+            "urgent_delivered_jan_apr_share": _r(float(deliv[:4].sum() / deliv.sum()), 3) if deliv.sum() else None,
+            "urgent_ready_jan_apr_share": _r(float(ready[:4].sum() / ready.sum()), 3) if ready.sum() else None,
+            "rovers_not_stranded_by_month": [_r(v, 2) for v in not_stranded], "n_rovers": runs[0]["n_rovers"],
+            "urgent_by_dest": dict(by_dest), "urgent_delivered_by_dest": dict(by_dest_done),
+            "note": "means per run over the five 2028 seeds; months are calendar months of 2028 (engine hour 0 = "
+                    "1 January); an urgent item counts as delivered when it arrives inside the simulated year"}
+
+
 def build(seeds: int = 8, log=print) -> Dict[str, Any]:
     t0 = time.time()
     runs = []
@@ -293,6 +329,7 @@ def build(seeds: int = 8, log=print) -> Dict[str, Any]:
         "demand_by_year_swap": dem,
         "demand_by_e21_year": dem_e21,
         "month_names": months_2028,
+        "strategic_2028_urgent": urgent_2028(),
         "generated": {"tool": "experiments/phase4/strategic_years.py", "seeds": seeds,
                       "link_file": "data/comms/connecting_ridge/earth_link-v1.json (+ its samples file)"},
     }

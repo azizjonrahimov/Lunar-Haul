@@ -357,3 +357,26 @@ def test_never_linked_rescue(tmp_path):
                 {"never_linked": "rescue", "rescue_h": -1.0}):
         with pytest.raises(ValueError):
             _bound_sim(tmp_path, supervised_policy="strategic", **bad)
+
+
+def test_rescue_scope_any(tmp_path):
+    """B-60: rescue_scope 'any' caps every strategic intervention wait at rescue_h. A large rescue_h behaves as the
+    never-linked-only rescue (finite waits untouched); rescue_h 0 leaves no intervention wait at all."""
+    segs = [["DEPOT", "BASE", 10.0, 14.0, 0.0], ["BASE", "DEPOT", 14.0, 18.0, 0.0], ["DEPOT", "ISRU", 18.0, 22.0, 0.0]]
+    ks = [2, 0, 1]
+    run = lambda **kw: _bound_sim(tmp_path, supervised_policy="strategic", never_linked="rescue", **kw)
+    big_any, big_nl = run(rescue_h=1e6, rescue_scope="any"), run(rescue_h=1e6)
+    a, wa = big_any._apply(veh("supervised"), copy.deepcopy(segs), ks, True)
+    b, wb = big_nl._apply(veh("supervised"), copy.deepcopy(segs), ks, True)
+    assert a == b and wa == wb and big_any.rescues == big_nl.rescues == 1          # only the never-linked one
+    assert wa[0][2] - wa[0][1] < 100.0                                            # DEPOT->BASE: its own finite wait
+    zero = run(rescue_h=0.0, rescue_scope="any")
+    out, waits = zero._apply(veh("supervised"), copy.deepcopy(segs), ks, True)
+    assert waits == [] and out[-1][3] == pytest.approx(22.0) and zero.rescues == 3   # all three waits ended at once
+    cap = run(rescue_h=12.0, rescue_scope="any")
+    out, waits = cap._apply(veh("supervised"), copy.deepcopy(segs), ks, True)
+    assert all(w[2] - w[1] <= 12.0 + 1e-9 for w in waits) and cap.summary(None)["blackout_rescues_never_linked"] == 3
+    for bad in ({"rescue_scope": "any"}, {"never_linked": "strand", "rescue_scope": "any"},
+                {"never_linked": "rescue", "rescue_h": 5.0, "rescue_scope": "all"}):
+        with pytest.raises(ValueError):
+            _bound_sim(tmp_path, supervised_policy="strategic", **bad)

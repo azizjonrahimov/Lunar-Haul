@@ -2021,6 +2021,86 @@
   "Nov",
   "Dec"
  ],
+ "strategic_2028_urgent": {
+  "seeds": [
+   0,
+   4,
+   8,
+   12,
+   16
+  ],
+  "start_year": 2028,
+  "runs_reproduce_e21": true,
+  "urgent_ready_by_month": [
+   1.8,
+   1.4,
+   2.4,
+   1.0,
+   1.4,
+   0.2,
+   1.0,
+   1.0,
+   3.8,
+   0.4,
+   2.0,
+   2.2
+  ],
+  "urgent_delivered_by_month": [
+   1.8,
+   0.6,
+   3.2,
+   0.8,
+   1.0,
+   0.6,
+   0.0,
+   0.6,
+   0.4,
+   0.2,
+   2.6,
+   2.0
+  ],
+  "urgent_ready_and_delivered_by_month": [
+   1.8,
+   1.4,
+   2.4,
+   1.0,
+   1.4,
+   0.2,
+   0.8,
+   1.0,
+   1.4,
+   0.2,
+   1.0,
+   1.2
+  ],
+  "urgent_completion": 0.742,
+  "urgent_delivered_jan_apr_share": 0.464,
+  "urgent_ready_jan_apr_share": 0.355,
+  "rovers_not_stranded_by_month": [
+   4.4,
+   2.5,
+   1.72,
+   1.37,
+   1.01,
+   0.88,
+   0.72,
+   0.6,
+   0.58,
+   0.54,
+   0.65,
+   0.84
+  ],
+  "n_rovers": 6,
+  "urgent_by_dest": {
+   "BASE": 76,
+   "DEPOT": 17
+  },
+  "urgent_delivered_by_dest": {
+   "BASE": 57,
+   "DEPOT": 12
+  },
+  "note": "means per run over the five 2028 seeds; months are calendar months of 2028 (engine hour 0 = 1 January); an urgent item counts as delivered when it arrives inside the simulated year"
+ },
  "generated": {
   "tool": "experiments/phase4/strategic_years.py",
   "seeds": 8,

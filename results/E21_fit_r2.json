@@ -5355,7 +5355,57 @@
      "blocked_share_of_pool": 0.564623621766479,
      "delivered_t_in_year": 302.56708037886045
     }
-   ]
+   ],
+   "all_2028_seeds": {
+    "runs": {
+     "0": {
+      "seed": 0,
+      "start_year": 2028,
+      "samples": 273,
+      "pool_full_share": 0.8168498168498168,
+      "constr_isru_share_of_slots": 0.7554945054945055,
+      "delivered_t_in_year": 73.1146061448043
+     },
+     "4": {
+      "seed": 4,
+      "start_year": 2028,
+      "samples": 275,
+      "pool_full_share": 0.8145454545454546,
+      "constr_isru_share_of_slots": 0.8273636363636365,
+      "delivered_t_in_year": 84.71220884327052
+     },
+     "8": {
+      "seed": 8,
+      "start_year": 2028,
+      "samples": 276,
+      "pool_full_share": 0.8260869565217391,
+      "constr_isru_share_of_slots": 0.7494565217391304,
+      "delivered_t_in_year": 76.35347623091234
+     },
+     "12": {
+      "seed": 12,
+      "start_year": 2028,
+      "samples": 282,
+      "pool_full_share": 0.7943262411347518,
+      "constr_isru_share_of_slots": 0.7984042553191488,
+      "delivered_t_in_year": 62.605098713301665
+     },
+     "16": {
+      "seed": 16,
+      "start_year": 2028,
+      "samples": 270,
+      "pool_full_share": 0.8,
+      "constr_isru_share_of_slots": 0.8669444444444444,
+      "delivered_t_in_year": 65.155277999089
+     }
+    },
+    "bound_h": 24.0,
+    "bound_never": "strategic",
+    "n_runs": 5,
+    "pool_full_share_mean": 0.8103616938103524,
+    "constr_isru_share_of_slots_mean": 0.7995326726721731,
+    "note": "daily samples of the auction pool in Stage F runs (bound 24 h, never-linked as strategic, DTE) of the 2028 seeds 0, 4, 8, 12, 16; each run must reproduce its Stage F row"
+   }
   }
  },
  "rescue": {
@@ -5643,6 +5693,306 @@
      0.4786081135843623,
      0.4383976090079223,
      0.3892309980888257
+    ],
+    "n_seeds": 20,
+    "breakeven_h": "beyond 720 h",
+    "ci95": [
+     "beyond 720 h",
+     "beyond 720 h"
+    ],
+    "median_draw": "beyond 720 h",
+    "share_beyond_range": 1.0,
+    "share_below_range": 0.0,
+    "draws": 2000
+   }
+  },
+  "breakeven_method": "crossing of the paired mean differences (rescue level - strict) as rescue_h grows, linear in log(1 + rescue_h) between levels; seed bootstrap with the same draw for every level and the reference; 'beyond 720 h' when it stays above 0, 'below 0 h' when it starts at or below 0"
+ },
+ "rescue_any": {
+  "design": "Stage G2 (B-60): as Stage G, but every strategic intervention wait longer than rescue_h ends after rescue_h (rescue_scope 'any'), never-linked or not, so the 2028 dark spot (#188) is helped too. Also paired against the Stage G level of the same rescue_h (help only where Earth never rises). The helper's own time is not modelled (optimistic).",
+  "levels": [
+   {
+    "rescue_h": 0.0,
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 532.1890613057118,
+     "delivered_bulk_t": 499.6,
+     "delivered_landed_t": 29.281580096595224,
+     "prio1_completion_share": 0.958712474296393,
+     "delay_prio1_p90_censored_h": 601.3983595509959,
+     "blackout_wait_vehicle_h": 0.0
+    },
+    "censored_p90_median_h": 9.003118686472517,
+    "rescues_per_run": 338.45,
+    "rescue_vehicle_h_per_run": 0.0,
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 518.6691767267714,
+      "delivered_landed_t": 16.67058552320201,
+      "prio1_completion_share": 1.0
+     },
+     "2029": {
+      "delivered_t_in_year": 526.3264056149941,
+      "delivered_landed_t": 24.855685469133526,
+      "prio1_completion_share": 0.9504873294346978
+     },
+     "2030": {
+      "delivered_t_in_year": 541.6696432889397,
+      "delivered_landed_t": 37.28649050074863,
+      "prio1_completion_share": 0.9545298779181838
+     },
+     "2031": {
+      "delivered_t_in_year": 542.091019592142,
+      "delivered_landed_t": 38.31355889329671,
+      "prio1_completion_share": 0.9298326898326899
+     }
+    }
+   },
+   {
+    "rescue_h": 24.0,
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 530.0489319205674,
+     "delivered_bulk_t": 499.0,
+     "delivered_landed_t": 27.978221785791174,
+     "prio1_completion_share": 0.9279656440386932,
+     "delay_prio1_p90_censored_h": 1243.821440805265,
+     "blackout_wait_vehicle_h": 8056.4376984434875
+    },
+    "censored_p90_median_h": 104.09524748368268,
+    "rescues_per_run": 330.6,
+    "rescue_vehicle_h_per_run": 7925.796107372383,
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 511.7461949014226,
+      "delivered_landed_t": 11.196512107716234,
+      "prio1_completion_share": 0.8405806182121973
+     },
+     "2029": {
+      "delivered_t_in_year": 525.3475933050006,
+      "delivered_landed_t": 24.793275077891582,
+      "prio1_completion_share": 0.9155945419103315
+     },
+     "2030": {
+      "delivered_t_in_year": 540.0882567535907,
+      "delivered_landed_t": 36.429791695130234,
+      "prio1_completion_share": 0.9556874160322437
+     },
+     "2031": {
+      "delivered_t_in_year": 543.0136827222553,
+      "delivered_landed_t": 39.49330826242665,
+      "prio1_completion_share": 1.0
+     }
+    }
+   },
+   {
+    "rescue_h": 72.0,
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 524.5210326401278,
+     "delivered_bulk_t": 493.7,
+     "delivered_landed_t": 27.593244778823003,
+     "prio1_completion_share": 0.9458790041662093,
+     "delay_prio1_p90_censored_h": 685.220199181674,
+     "blackout_wait_vehicle_h": 19176.091289559772
+    },
+    "censored_p90_median_h": 185.97091845394874,
+    "rescues_per_run": 254.65,
+    "rescue_vehicle_h_per_run": 18122.577822000287,
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 515.5663250236042,
+      "delivered_landed_t": 15.677978653792351,
+      "prio1_completion_share": 0.9273391812865498
+     },
+     "2029": {
+      "delivered_t_in_year": 515.8715556623235,
+      "delivered_landed_t": 25.32811634789578,
+      "prio1_completion_share": 0.9473684210526315
+     },
+     "2030": {
+      "delivered_t_in_year": 536.1644710509652,
+      "delivered_landed_t": 34.40147974981379,
+      "prio1_completion_share": 0.9650246305418719
+     },
+     "2031": {
+      "delivered_t_in_year": 530.4817788236188,
+      "delivered_landed_t": 34.965404363790086,
+      "prio1_completion_share": 0.9437837837837837
+     }
+    }
+   },
+   {
+    "rescue_h": 168.0,
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 515.6120112393468,
+     "delivered_bulk_t": 486.5,
+     "delivered_landed_t": 26.264110371037766,
+     "prio1_completion_share": 0.9412964283313647,
+     "delay_prio1_p90_censored_h": 974.4426418520685,
+     "blackout_wait_vehicle_h": 27098.063990482864
+    },
+    "censored_p90_median_h": 400.0207737992238,
+    "rescues_per_run": 147.8,
+    "rescue_vehicle_h_per_run": 24077.419292984057,
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 506.8787299901584,
+      "delivered_landed_t": 15.71650979705493,
+      "prio1_completion_share": 0.8989974937343359
+     },
+     "2029": {
+      "delivered_t_in_year": 508.6811429081528,
+      "delivered_landed_t": 21.955930734946794,
+      "prio1_completion_share": 0.9489961013645225
+     },
+     "2030": {
+      "delivered_t_in_year": 530.3717407199586,
+      "delivered_landed_t": 32.080223405169974,
+      "prio1_completion_share": 0.9229064039408866
+     },
+     "2031": {
+      "delivered_t_in_year": 516.5164313391172,
+      "delivered_landed_t": 35.30377754697934,
+      "prio1_completion_share": 0.9942857142857143
+     }
+    }
+   },
+   {
+    "rescue_h": 720.0,
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 351.4889320351889,
+     "delivered_bulk_t": 338.75,
+     "delivered_landed_t": 11.876811736495611,
+     "prio1_completion_share": 0.828172997710183,
+     "delay_prio1_p90_censored_h": 1841.2192348662131,
+     "blackout_wait_vehicle_h": 36573.32972020124
+    },
+    "censored_p90_median_h": 1293.0010177252434,
+    "rescues_per_run": 43.4,
+    "rescue_vehicle_h_per_run": 28706.15964185789,
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 302.035780300827,
+      "delivered_landed_t": 8.455476291422977,
+      "prio1_completion_share": 0.7151203007518797
+     },
+     "2029": {
+      "delivered_t_in_year": 370.53555745465746,
+      "delivered_landed_t": 8.775108505581082,
+      "prio1_completion_share": 0.849317738791423
+     },
+     "2030": {
+      "delivered_t_in_year": 372.9900590762421,
+      "delivered_landed_t": 13.327470707738092,
+      "prio1_completion_share": 0.9092320722755506
+     },
+     "2031": {
+      "delivered_t_in_year": 360.3943313090291,
+      "delivered_landed_t": 16.949191441240295,
+      "prio1_completion_share": 0.8390218790218789
+     }
+    }
+   }
+  ],
+  "references": {
+   "strategic": {
+    "mean": {
+     "delivered_t_in_year": 424.69687843201007,
+     "delivered_bulk_t": 396.0,
+     "delivered_landed_t": 26.01478423817685,
+     "prio1_completion_share": 0.8939113635538123,
+     "delay_prio1_p90_censored_h": 1327.02033837013,
+     "blackout_wait_vehicle_h": 29926.72945011187
+    },
+    "n": 20,
+    "by_year": {
+     "2028": 112.55057392406047,
+     "2029": 508.01718818579974,
+     "2030": 535.6419252158692,
+     "2031": 542.5778264023111
+    }
+   },
+   "strict": {
+    "mean": {
+     "delivered_t_in_year": 306.5248047575556,
+     "delivered_bulk_t": 296.3,
+     "delivered_landed_t": 9.400280351873935,
+     "prio1_completion_share": 0.42735776730142705,
+     "delay_prio1_p90_censored_h": 5588.268003116429,
+     "blackout_wait_vehicle_h": 971.6935881257552
+    },
+    "n": 20,
+    "by_year": {
+     "2028": 311.0318621320174,
+     "2029": 300.42335637603384,
+     "2030": 315.01292958383647,
+     "2031": 299.6310709383345
+    }
+   },
+   "look-ahead": {
+    "mean": {
+     "delivered_t_in_year": 306.92743499783614,
+     "delivered_bulk_t": 296.3,
+     "delivered_landed_t": 9.759694121291092,
+     "prio1_completion_share": 0.49993077574628897,
+     "delay_prio1_p90_censored_h": 5658.4613905662845,
+     "blackout_wait_vehicle_h": 78.07279244138354
+    },
+    "n": 20,
+    "by_year": {
+     "2028": 311.6816325090032,
+     "2029": 300.6309585749057,
+     "2030": 315.12249162130377,
+     "2031": 300.27465728613197
+    }
+   }
+  },
+  "breakeven_vs_strict": {
+   "delivered_t_in_year": {
+    "metric": "delivered_t_in_year",
+    "levels_h": [
+     0.0,
+     24.0,
+     72.0,
+     168.0,
+     720.0
+    ],
+    "mean_diff_by_level": [
+     225.6642565481562,
+     223.52412716301177,
+     217.99622788257238,
+     209.08720648179124,
+     44.96412727763336
+    ],
+    "n_seeds": 20,
+    "breakeven_h": "beyond 720 h",
+    "ci95": [
+     "beyond 720 h",
+     "beyond 720 h"
+    ],
+    "median_draw": "beyond 720 h",
+    "share_beyond_range": 0.9995,
+    "share_below_range": 0.0,
+    "draws": 2000
+   },
+   "prio1_completion_share": {
+    "metric": "prio1_completion_share",
+    "levels_h": [
+     0.0,
+     24.0,
+     72.0,
+     168.0,
+     720.0
+    ],
+    "mean_diff_by_level": [
+     0.5313547069949658,
+     0.500607876737266,
+     0.5185212368647822,
+     0.5139386610299378,
+     0.40081523040875605
     ],
     "n_seeds": 20,
     "breakeven_h": "beyond 720 h",

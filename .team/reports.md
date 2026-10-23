@@ -4586,3 +4586,55 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
 
 **Questions for LEAD**
 1. Step 7's `no_link`: list form, or remove it?
+
+## B-60 DONE 22:38 | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**Answer (1-3): yes, quick help fixes 2028. Help within a week (≤ 168 h) for any long intervention wait gives the strategic fleet always-linked tonnage in every start year.**
+- **Stage G2** (`rescue_scope: "any"`), DTE, t/yr by start year 2028 / 2029 / 2030 / 2031:
+  - 0 h: 519 / 526 / 542 / 542 (mean 532.2)
+  - 24 h: 512 / 525 / 540 / 543 (530.0)
+  - 72 h: 516 / 516 / 536 / 530 (524.5)
+  - 168 h: 507 / 509 / 530 / 517 (515.6)
+  - 720 h: 302 / 371 / 373 / 360 (351.5)
+  - For comparison, strategic gives 113 / 508 / 536 / 543 and always-linked about 530.
+- **Paired in 2028:** against strategic +406 t [357, 455] at 0 h, +394 [352, 437] at 168 h, +190 [118, 261] at 720 h. Against the B-59 level of the same rescue_h (never-linked only): +432 at 0 h, +364 [303, 424] at 168 h, +94 [-26, 214] at 720 h.
+- **All years:**
+  - Against strict: +226 t [217, 234] at 0 h down to +45 [16, 74] at 720 h. Urgent completion +0.53 to +0.40. Censored p90 GM 0.00-0.26 (Wilcoxon p ≤ 0.0002).
+  - Against strategic: +108 [24, 191] at 0 h, +91 [6, 176] at 168 h, -73 [-150, 4] at 720 h.
+- **Break-even against strict:** beyond 720 h for tonnage and for urgent completion, in every one of 2,000 draws.
+- **Effort:** rescues per run 338 / 331 / 255 / 148 / 43; rescue rover-hours 0 / 7,926 / 18,123 / 24,077 / 28,706. At 0 h there is no intervention wait at all (waiting = 0), an upper bound. The helper's time is not modelled, so this is optimistic.
+- So the 2028 collapse is the cost of leaving one rover to wait out an 18-month dark spot. Any operator rule that sends help within about a week removes it.
+
+**Policy:** `rescue_scope` (with `never_linked: "rescue"`): `"never_linked"` (default, = B-59) | `"any"`: every strategic intervention wait longer than rescue_h ends after rescue_h; the counters count every capped wait.
+- Schema updated. Test: `any` with a large rescue_h equals the never-linked-only rescue; rescue_h 0 leaves no intervention wait; a 12 h cap holds; validation.
+- **Identity:** six E21 r2 cells, one A2 row, five Stage F rows, one Stage G row and the md5 test are all unchanged. `analyse_e21.py rescue` regenerates the B-59 table and block byte-identically.
+
+**Stage G2:** `run_phase4.py e21g2 --round r2` -> `results/E21g2_rescue_any_r2.csv` (100 runs, 104 s, single process, foreground, 150 MB).
+
+**Analysis:** `analyse_e21.py rescue --scope any` -> `results/table_E21g2_rescue_any_r2.csv` (600 rows: against strategic, strict, look-ahead and the B-59 level of the same rescue_h; overall and per start year) and `E21_fit_r2.json["rescue_any"]` (same layout as `rescue`).
+
+**Diagnostics**
+- **a. N7** (`bounded.pool_starvation.all_2028_seeds`): bounded rule (24 h, never-linked as strategic), the five 2028 seeds.
+  - The 40-slot pool is full on **81 % of days** (79-83 % per seed), and CONSTR->ISRU items hold **80 % of the slots** (75-87 %).
+  - Each run reproduces its Stage F row exactly. So the starvation is the rule in 2028, not one seed.
+- **b. N3** (`strategic_2028_urgent` in `results/E21_strategic_years.json`; the rest of that file and its CSV are byte-identical): Stage A strategic, DTE, the five 2028 seeds (each reproduces its E21 row).
+  - **Urgent cargo is small:** 18.6 items per run-year (urgent_ready_by_month 1.8, 1.4, 2.4, 1.0, 1.4, 0.2, 1.0, 1.0, 3.8, 0.4, 2.0, 2.2). 82 % go to BASE and 18 % to DEPOT: short pad legs, nowhere near the ISRU dark spot.
+  - Rovers not stranded fall from 4.4 (January) to 1.0 (May) and 0.54-0.88 from June to December. Even half a rover clears about 1.5 urgent items a month.
+  - **74 % are delivered** (urgent_completion 0.742). The 36 % made ready in January-April are all delivered (46 % of all urgent deliveries fall in January-April). Later months lose some, e.g. September: 1.4 of 3.8 delivered in the year.
+  - So the stranded rovers are the regolith haulers; the urgent pad cargo needs little fleet and gets it.
+- **c.**
+  - **Swap test:** yes. It fixes the landings (times, lander types, pads; `landings_identical_across_years: true`) but redraws the manifests (`manifests_identical_across_years: false`). Each lander's manifest is drawn when it lands, from the engine's single random stream, which the run also consumes. So the items differ in detail but come from the same distribution (mean cargo 531 / 532 / 533 / 533 t by start year).
+  - **2,404 vs 2,421:** different things.
+    - 2,404 = the distinct 20 m route cells: the interior route samples after snapping and deduplication.
+    - 2,421 = all route samples in the samples file = those 2,404 cells + the 17 named end points that start and end every leg: 7 sites + 10 pads (PAD_A and PAD_B at 0.5 / 1 / 2 / 3 / 5 km).
+    - The 10 m mast at BASE is an observation point but not a sample (2,422 points). The 283 never-linked samples are among the 2,421; ISRU is the only named point among them.
+
+**Files:** `lunarsim/comms.py`, `lunarsim/schemas/scenario-v1.schema.json`, `experiments/phase4/run_phase4.py` (e21g2), `experiments/phase4/analyse_e21.py` (`rescue --scope`, `pool2028`, `pool_full_share`), `experiments/phase4/strategic_years.py` (urgent fields in `run_one`, `urgent_2028`), `tests/test_comms_engine.py` (+1), `tests/test_e21_rescue.py` (+3). **For LEAD to commit:** `results/E21g2_rescue_any_r2.csv`, `results/table_E21g2_rescue_any_r2.csv`, `results/E21_fit_r2.json` (adds `rescue_any` and `bounded.pool_starvation.all_2028_seeds`; nothing else changed), `results/E21_strategic_years.json` (adds `strategic_2028_urgent`).
+
+**How to test:**
+- `.venv/Scripts/python -m pytest -q tests/test_e21_rescue.py tests/test_e21_bounded.py tests/test_strategic_years.py tests/test_comms_engine.py` -> 33 passed; schemas 40/0.
+- Rerun: `run_phase4.py e21g2 --round r2 --workers 1` (104 s); `analyse_e21.py rescue --scope any` (6 s); `analyse_e21.py pool2028 --seeds 0,4,8` then `--seeds 12,16` (about 70 s per seed); `strategic_years.py --seeds 8` (53 s).
+
+**FRONTEND:** nothing.
+
+**Questions for LEAD:** none.

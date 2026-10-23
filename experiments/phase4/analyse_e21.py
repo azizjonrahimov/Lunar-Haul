@@ -1206,6 +1206,57 @@ def pool_starvation(results: str = RESULTS, seed: int = 0, bound_h: float = 24.0
             "delivered_t_in_year": out["delivered_kg_in_horizon"] / 1000.0, "moments": snaps}
 
 
+def pool_full_share(seed: int, bound_h: float = 24.0, step_h: float = 24.0) -> Dict[str, Any]:
+    """B-60 N7: one Stage F run (DTE, bound_never 'strategic'): at most once a day, is the 40-slot auction pool full,
+    and what share of the slots do CONSTR->ISRU items hold (composition only, no plans)."""
+    from lunarsim import Simulation, dispatch
+    from experiments.phase4 import run_phase4 as R
+    tag, sc, mn, mf, kw = next(c for c in R.e21f_cells() if c[0]["comms"] == "dte" and c[0].get("bound_h") == bound_h
+                               and c[0].get("bound_never") == "strategic")
+    sc = sc.with_(comms=dict(sc.comms, start_year=R.start_year(seed)))
+    sim = Simulation(sc, mf, seed=seed, mech_kwargs=dict(kw))
+    samples, nxt, orig = [], [0.0], sim._dispatch
+
+    def look():
+        if sim.t >= nxt[0]:
+            nxt[0] = sim.t + step_h
+            cands = sim.comms.filter_candidates(sim, [c for c in sim.waiting if not c.stranded])
+            pool = sorted(cands, key=lambda c: (c.priority, c.t_ready))[:dispatch.MAX_POOL]
+            samples.append((len(pool), sum(1 for c in pool if (c.origin, c.dest) == ("CONSTR", "ISRU"))))
+        return orig()
+
+    sim._dispatch = look
+    out = sim.run()
+    n = np.array([s[0] for s in samples], float)
+    k = np.array([s[1] for s in samples], float)
+    return {"seed": seed, "start_year": R.start_year(seed), "samples": int(len(n)),
+            "pool_full_share": float(np.mean(n >= dispatch.MAX_POOL)),
+            "constr_isru_share_of_slots": float(np.mean(k / dispatch.MAX_POOL)),
+            "delivered_t_in_year": out["delivered_kg_in_horizon"] / 1000.0}
+
+
+def cmd_pool2028(a) -> None:
+    """Adds bounded.pool_starvation.all_2028_seeds to E21_fit_r2.json, a few seeds per call (each run ~70 s)."""
+    path = os.path.join(a.results, "E21_fit_r2.json")
+    for s in (int(x) for x in a.seeds.split(",")):
+        r = pool_full_share(s)
+        with open(path, encoding="utf-8") as fh:
+            fit = json.load(fh)
+        blk = fit["bounded"]["pool_starvation"].setdefault("all_2028_seeds", {"runs": {}})
+        blk["runs"][str(s)] = _json(r)
+        runs = list(blk["runs"].values())
+        blk.update({"bound_h": 24.0, "bound_never": "strategic", "n_runs": len(runs),
+                    "pool_full_share_mean": float(np.mean([x["pool_full_share"] for x in runs])),
+                    "constr_isru_share_of_slots_mean": float(np.mean([x["constr_isru_share_of_slots"] for x in runs])),
+                    "note": "daily samples of the auction pool in Stage F runs (bound 24 h, never-linked as strategic, "
+                            "DTE) of the 2028 seeds 0, 4, 8, 12, 16; each run must reproduce its Stage F row"})
+        with open(path, "w", encoding="utf-8", newline="\n") as fh:
+            json.dump(fit, fh, indent=1)
+            fh.write("\n")
+        print(f"seed {s}: pool full {r['pool_full_share']:.0%} of {r['samples']} days, CONSTR->ISRU "
+              f"{r['constr_isru_share_of_slots']:.0%} of slots, {r['delivered_t_in_year']:.1f} t", flush=True)
+
+
 def cmd_bounded(a) -> None:
     t0 = time.time()
     df = load_round(a.results, "r2")
@@ -1245,8 +1296,23 @@ RESCUE_METRICS = ["delivered_t_in_year", "delivered_bulk_t", "delivered_landed_t
                   "delay_prio1_p90_censored_h", "blackout_wait_vehicle_h"]
 
 
-def load_stage_g(results: str = RESULTS) -> pd.DataFrame:
-    g = prepare(pd.read_csv(os.path.join(results, STAGE_G_FILE)))
+STAGE_G2_FILE = "E21g2_rescue_any_r2.csv"
+RESCUE_RUNS = {   # --scope: (stage file, fit-file key, table, design)
+    "never_linked": (STAGE_G_FILE, "rescue", "table_E21g_rescue_r2.csv",
+                     "Stage G (B-59): plain strategic, all-supervised, DTE only, 20 seeds, E21 year rule, common random "
+                     "numbers with Stage A; an intervention drawn on a never-linked sample is resolved after rescue_h "
+                     "{0, 24, 72, 168, 720} h and the rover drives on. The helper's own time is not modelled (optimistic). "
+                     "Bounds: redraw (free second draw, Stage A strategic) and strand (no help, Stage F)."),
+    "any": (STAGE_G2_FILE, "rescue_any", "table_E21g2_rescue_any_r2.csv",
+            "Stage G2 (B-60): as Stage G, but every strategic intervention wait longer than rescue_h ends after rescue_h "
+            "(rescue_scope 'any'), never-linked or not, so the 2028 dark spot (#188) is helped too. Also paired against "
+            "the Stage G level of the same rescue_h (help only where Earth never rises). The helper's own time is not "
+            "modelled (optimistic)."),
+}
+
+
+def load_stage_g(results: str = RESULTS, file: str = STAGE_G_FILE) -> pd.DataFrame:
+    g = prepare(pd.read_csv(os.path.join(results, file)))
     for k in ("bulk", "landed"):
         g[f"delivered_{k}_t"] = g[f"delivered_{k}_kg_in_horizon"] / 1000.0
     return g
@@ -1285,15 +1351,20 @@ def rescue_breakeven(g: pd.DataFrame, ref: pd.DataFrame, metric: str, boot: int 
 
 def cmd_rescue(a) -> None:
     t0 = time.time()
+    file, key, table_name, design = RESCUE_RUNS[a.scope]
     df = load_round(a.results, "r2")
-    g = load_stage_g(a.results)
+    g = load_stage_g(a.results, file)
+    g59 = load_stage_g(a.results) if a.scope == "any" else None
     A = df[(df["stage"] == "A") & (df["sensitivity"] == "none")]
     refs = {"strategic": select(A, p=0.0, mix="supervised_strategic"), "strict": select(A, p=0.0, mix="supervised_strict"),
             "look-ahead": select(A, p=0.0, mix="supervised_strategic+avoid")}
     rows, levels = [], []
     for h, cell in g.groupby("rescue_h"):
         lab = f"rescue {h:g} h"
-        for rl, ref in refs.items():
+        level_refs = dict(refs)
+        if g59 is not None:                       # B-60: the same help where Earth never rises only (Stage G)
+            level_refs["rescue never-linked only (B-59)"] = g59[g59["rescue_h"] == h]
+        for rl, ref in level_refs.items():
             rows += _rows("rescue", rl, lab, {"rescue_h": h, "start_year": "all"}, ref, cell, RESCUE_METRICS)
             for y in YEARS:
                 rows += _rows("rescue_by_year", rl, lab, {"rescue_h": h, "start_year": y}, ref[ref["start_year"] == y],
@@ -1307,11 +1378,8 @@ def cmd_rescue(a) -> None:
                                             ("delivered_t_in_year", "delivered_landed_t", "prio1_completion_share")}
                                    for y in YEARS}})
     table = pd.DataFrame(rows)
-    table.to_csv(os.path.join(a.results, "table_E21g_rescue_r2.csv"), index=False, lineterminator="\n")
-    doc = {"design": "Stage G (B-59): plain strategic, all-supervised, DTE only, 20 seeds, E21 year rule, common random "
-                     "numbers with Stage A; an intervention drawn on a never-linked sample is resolved after rescue_h "
-                     "{0, 24, 72, 168, 720} h and the rover drives on. The helper's own time is not modelled (optimistic). "
-                     "Bounds: redraw (free second draw, Stage A strategic) and strand (no help, Stage F).",
+    table.to_csv(os.path.join(a.results, table_name), index=False, lineterminator="\n")
+    doc = {"design": design,
            "levels": levels,
            "references": {k: {"mean": {m: float(v[m].mean()) for m in RESCUE_METRICS}, "n": int(len(v)),
                               "by_year": {str(y): float(v.loc[v["start_year"] == y, "delivered_t_in_year"].mean())
@@ -1325,11 +1393,11 @@ def cmd_rescue(a) -> None:
     path = os.path.join(a.results, "E21_fit_r2.json")
     with open(path, encoding="utf-8") as fh:
         fit = json.load(fh)
-    fit["rescue"] = _json(doc)
+    fit[key] = _json(doc)
     with open(path, "w", encoding="utf-8", newline="\n") as fh:
         json.dump(fit, fh, indent=1)
         fh.write("\n")
-    print(f"table_E21g_rescue_r2.csv ({len(table)} rows) and E21_fit_r2.json 'rescue' written ({time.time() - t0:.0f} s)")
+    print(f"{table_name} ({len(table)} rows) and E21_fit_r2.json '{key}' written ({time.time() - t0:.0f} s)")
     for m, b in doc["breakeven_vs_strict"].items():
         print(f"  break-even vs strict, {m}: {b['breakeven_h']} (95 % {b['ci95'][0]} .. {b['ci95'][1]}; beyond range "
               f"{b['share_beyond_range']:.0%}, below {b['share_below_range']:.0%}); diffs by level "
@@ -1355,15 +1423,24 @@ def main(argv=None) -> None:
     p = sub.add_parser("bounded", help="Stage F (B-57) -> table_E21f_bounded_r2.csv and E21_fit_r2.json 'bounded'")
     p.add_argument("--results", default=RESULTS)
     p.add_argument("--diagnose", action="store_true", help="also run one Stage F year to show the auction-pool starvation")
-    p = sub.add_parser("rescue", help="Stage G (B-59) -> table_E21g_rescue_r2.csv and E21_fit_r2.json 'rescue'")
+    p = sub.add_parser("rescue", help="Stage G (B-59) -> table_E21g_rescue_r2.csv and E21_fit_r2.json 'rescue'; "
+                                      "--scope any: Stage G2 (B-60) -> table_E21g2_rescue_any_r2.csv, 'rescue_any'")
     p.add_argument("--results", default=RESULTS)
     p.add_argument("--boot", type=int, default=N_BOOT_R2)
+    p.add_argument("--scope", default="never_linked", choices=tuple(RESCUE_RUNS))
+    p = sub.add_parser("pool2028", help="B-60 N7: pool-full share in the 2028 seeds of the bounded rule (a few per call)")
+    p.add_argument("--results", default=RESULTS)
+    p.add_argument("--seeds", default="0,4,8,12,16")
+    p.add_argument("--max-seconds", type=float, default=540.0)
     a = ap.parse_args(argv)
     if a.cmd == "fit":
         a.boot = a.boot or (N_BOOT if a.round == "r1" else N_BOOT_R2)
         if a.round != "r1":
             return cmd_fit_r2(a)
-    {"demand": cmd_demand, "fit": cmd_fit, "rounds": cmd_rounds, "bounded": cmd_bounded, "rescue": cmd_rescue}[a.cmd](a)
+    if a.cmd == "pool2028" and a.max_seconds > 0:
+        faulthandler.dump_traceback_later(a.max_seconds, exit=True)
+    {"demand": cmd_demand, "fit": cmd_fit, "rounds": cmd_rounds, "bounded": cmd_bounded, "rescue": cmd_rescue,
+     "pool2028": cmd_pool2028}[a.cmd](a)
 
 
 if __name__ == "__main__":

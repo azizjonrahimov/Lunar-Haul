@@ -768,7 +768,7 @@ that never sees Earth waits for it (another rover parking within line of sight a
    variant: the paper gets a limitation sentence.
 Runs: foreground chunks `--max-seconds 540`, `--workers 2` at most.
 
-## B-60 [IN PROGRESS] Round-2 referee check: help for any long wait, and three diagnostics (queued 22 Oct 22:25)
+## B-60 [DONE 22:38] Round-2 referee check: help for any long wait, and three diagnostics (queued 22 Oct 22:25)
 The internal round-2 referee (paper/r1/REVIEW_round2_internal.md) asks, as its first required change: Stage G rescues
 only at samples never linked in 2028-2031, but the 2028 dark sample (#188) is dark for 18 months and is waited out.
 No operator would help one rover within a week and leave another for 18 months.

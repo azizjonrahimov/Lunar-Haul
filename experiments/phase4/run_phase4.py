@@ -48,6 +48,8 @@ model, pads at 1 km, Earth-link criterion any_part (lunarsim/comms.py; data/comm
   e21g  (round 2, B-59) plain strategic at DTE only with never_linked "rescue": an intervention on a never-linked
         sample is resolved after rescue_h {0, 24, 72, 168, 720} h (the helper's own time not modelled); twins: Stage A
         strategic, strict and look-ahead at DTE (analyse_e21.py rescue)                          -> E21g_rescue.csv
+  e21g2 (round 2, B-60) as e21g with rescue_scope "any": every strategic intervention wait longer than rescue_h ends
+        after rescue_h (analyse_e21.py rescue --scope any)                                       -> E21g2_rescue_any.csv
 Every finished run is appended to its stage file at once; --max-seconds also stops starting runs that would end past
 the time budget, so a chunk ends cleanly and the next one resumes.
 Round 2 (--round r2): every stage writes results/<stage>_r2.csv and the tables table_E21_r2.csv,
@@ -108,6 +110,7 @@ STAGES = {"e21a": "E21a_comms_autonomy", "e21b": "E21b_breakeven", "e21c": "E21c
           "e21a2": "E21a2_operators", "e21e": "E21e_sensitivity"}
 STAGE_F = "E21f_bounded"          # B-57; kept out of STAGES so table_E21*.csv stay as they are
 STAGE_G = "E21g_rescue"           # B-59; likewise
+STAGE_G2 = "E21g2_rescue_any"     # B-60; likewise
 ROUNDS = ("r1", "r2")
 R2_LEVELS = (("dte+relay", 0.05), ("dte+relay", 0.6), ("dte+relay", 0.7))       # referee M1 (round 2 only)
 R2_B_POLICY = "strategic+avoid"                                                   # referee M6
@@ -310,6 +313,17 @@ def e21g_cells():
         tag, sc = scenario("supervised_strategic", "dte")
         sc = sc.with_(comms=dict(sc.comms, never_linked="rescue", rescue_h=h))
         tag.update(stage="G", never_linked="rescue", rescue_h=h)
+        cells.append((tag, sc, MECH, *MECHS[MECH]))
+    return cells
+
+
+def e21g2_cells():
+    """Stage G2 (B-60): as Stage G, but every strategic intervention wait longer than rescue_h ends after rescue_h."""
+    cells = []
+    for h in E21G_RESCUE_H:
+        tag, sc = scenario("supervised_strategic", "dte")
+        sc = sc.with_(comms=dict(sc.comms, never_linked="rescue", rescue_h=h, rescue_scope="any"))
+        tag.update(stage="G2", never_linked="rescue", rescue_h=h, rescue_scope="any")
         cells.append((tag, sc, MECH, *MECHS[MECH]))
     return cells
 
@@ -586,7 +600,7 @@ def write_tables(results=None, rnd: str = "r1"):
 # ---------------------------------------------------------------------------
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    p.add_argument("stages", nargs="*", help="e21a e21b e21c e21d e21a2 e21e e21f e21g table (default: e21a)")
+    p.add_argument("stages", nargs="*", help="e21a e21b e21c e21d e21a2 e21e e21f e21g e21g2 table (default: e21a)")
     p.add_argument("--round", default="r1", choices=ROUNDS, help="r2 writes *_r2.csv (default r1: the round-1 files)")
     p.add_argument("--seeds", type=int, default=N_SEEDS)
     p.add_argument("--workers", type=int, default=WORKERS)
@@ -619,14 +633,14 @@ def main(argv=None):
             go(STAGES[n] + x, e21d_cells())
         elif n == "e21a2":
             go(STAGES[n] + x, e21a2_cells())
-        elif n in ("e21e", "e21f", "e21g"):
+        elif n in ("e21e", "e21f", "e21g", "e21g2"):
             if rnd == "r1":
                 raise SystemExit(f"stage {n} is a round-2 stage: add --round r2")
             name, cells = {"e21e": (STAGES["e21e"], e21e_cells), "e21f": (STAGE_F, e21f_cells),
-                           "e21g": (STAGE_G, e21g_cells)}[n]
+                           "e21g": (STAGE_G, e21g_cells), "e21g2": (STAGE_G2, e21g2_cells)}[n]
             go(name + x, cells())
         elif n != "table":
-            raise SystemExit(f"unknown stage {n!r}; choose from e21a e21b e21c e21d e21a2 e21e e21f e21g table")
+            raise SystemExit(f"unknown stage {n!r}; choose from e21a e21b e21c e21d e21a2 e21e e21f e21g e21g2 table")
         write_tables(a.results, rnd)
     rss = None
     try:

@@ -382,6 +382,9 @@ class EarthLink:
 #                      rescue_h): help arrives after rescue_h hours (another rover parked as a local relay, a crew,
 #                      a tow) and the rover drives on; the helper's own time is not modelled, which is optimistic.
 #                      Rescue runs add blackout_rescues_never_linked and blackout_rescue_vehicle_h (inside the year).
+#   rescue_scope       with never_linked "rescue" (B-60): "never_linked" (default, B-59): help only at samples that
+#                      never see Earth; "any": every strategic intervention wait longer than rescue_h ends after
+#                      rescue_h (the counters then count every capped wait, never-linked or not).
 #   autonomous         unaffected
 #   relay              dte+relay: an alternating up/gap process independent of DTE, availability p, exponential gaps
 #                      of mean g (default DEFAULT_RELAY_GAP_H), from its own random stream; a point is linked when
@@ -406,7 +409,8 @@ COMMS_MODES = ("always", "dte", "dte+relay")
 SUPERVISED_POLICIES = ("strict", "strategic", "strategic+avoid", "strategic+bound")
 COMMS_KEYS = {"mode", "criterion", "link_series", "relay", "mast", "supervised_policy", "start_year", "start_h",
               "defer_wait_h", "operators_strict", "intervention_scale", "bound_h", "bound_never", "never_linked",
-              "rescue_h"}
+              "rescue_h", "rescue_scope"}
+RESCUE_SCOPES = ("never_linked", "any")    # never_linked "rescue": which intervention waits the help ends
 BOUND_NEVER = ("refuse", "strategic")      # strategic+bound: a never-linked sample refuses the leg, or is ignored
 NEVER_LINKED = ("redraw", "strand", "rescue")   # strategic: an intervention drawn on a never-linked sample
 # columns CommsModel.summary() adds to a run (comms set); checks of "always" against the baseline drop these
@@ -573,6 +577,11 @@ class CommsModel:
         self.rescue_h = float(cfg["rescue_h"]) if "rescue_h" in cfg else None
         if self.rescue_h is not None and not (self.rescue_h >= 0 and math.isfinite(self.rescue_h)):
             raise ValueError("comms rescue_h must be a finite number >= 0")
+        if "rescue_scope" in cfg and self.never_linked != "rescue":
+            raise ValueError("comms rescue_scope needs never_linked 'rescue'")
+        self.rescue_scope = cfg.get("rescue_scope", "never_linked")
+        if self.rescue_scope not in RESCUE_SCOPES:
+            raise ValueError(f"comms rescue_scope {self.rescue_scope!r} not in {RESCUE_SCOPES}")
         self.never_strandings = 0
         self.rescues = 0
         self.rescue_h_booked = 0.0
@@ -968,6 +977,10 @@ class CommsModel:
                             else:
                                 w = max(self.horizon_h - ti, 0.0) + 1.0   # strand: there until the year is over
                                 self.never_strandings += 1
+                        elif self.rescue_scope == "any" and w > self.rescue_h:   # B-60: help for any long wait
+                            w = self.rescue_h
+                            self.rescues += 1
+                            self.rescue_h_booked += max(0.0, min(ti + w, self.horizon_h) - ti)
                         if w > _EPS:
                             waits.append([v.id, ti, ti + w, f"{a}->{b}", "intervention"])
                             extra += w
