@@ -187,3 +187,25 @@ knee, the restoration and completion shares at the lowest level and the strict-f
   seeds), an explanation of why urgent cargo survives the 2028 stranding (about 19 urgent items a year, 82 % to the
   base on short pad legs), the helper-time caveat wherever the rescue result is used, and an abstract of at most 250
   words; all are in this version.
+- **Three checks the round-2 text named as open (23 Oct).** The previous version said that nobody had checked
+  whether a helper can park in sight of the dark points, that the helper's own time was not modelled, and that the
+  2028 dark spell "should recur". All three are now done and in the paper.
+  - *Parking points.* Every one of the 494 route samples where help is needed has a reachable point within 1.5 km that
+    sees the held rover and sometimes Earth. Yet any such point sees Earth within a week for only 71 % of the calls
+    for help. The other 29 % wait for Earth itself: it is below every nearby horizon for a median 234 h, which is
+    Earth's monthly cycle, not a lack of spots. A path through the base's 10 m mast does not close the gap.
+  - *Stage H, a real helper.* The helper drives to the best parking point, waits there for its own link and relays a
+    1 h session. Called once a rover has been held for 24 h, one helper keeps the fleet within 5 % of its
+    always-linked tonnage in every start year (523 t; 6.7 t below the ideal help of Stage G2). That holds for an
+    extra vehicle or one taken from the fleet, for two helpers, and for a 2 h session. The helper spends 92-98 % of
+    its busy time parked, waiting for Earth, and adds 217 t over strict, against 0.6 t for one more hauler. Called
+    after 168 h it loses 2029-2031 (2029: 84.8 %). The 2029 loss is regolith; held hours and parking points do not
+    explain it, and the auction pool explains it only in part.
+  - *Stage J, later years.* The link windows now run to 2050. The dark sample loses Earth for 3.6-4.0 years at a
+    time, in spells starting in November 2025, December 2031, September 2037, November 2043 and December 2049. Its
+    yearly linked hours fit a 5.95-year cycle (95 % 5.79-6.11), the anomalistic-draconic beat. Without help the
+    strategic fleet collapses in 9 of the 15 start years 2032-2046 (160 t against 505 t), so 2028 is the rule, not
+    the exception. The 24 h helper stays within 5 % of always-linked in every year; Stage G2's ideal week does so in
+    13 of 15.
+  - The abstract, Sections 4.2, 5.4, 6, 7 and 8 and Table 5 (rows H and J) are revised; Stages H and J are
+    exploratory.

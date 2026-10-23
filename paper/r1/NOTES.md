@@ -551,3 +551,15 @@ R1-G2-* placeholders; N3 (strategic_2028_urgent), N7 (pool_starvation.all_2028_s
 2,404 cells + 17 end points) answered. Headline now: under DTE most of what driving without a link loses is lost to
 waits without limit; help within a week for any held rover gives within 5 % of always-linked tonnage in every start
 year (optimistic: helper's time not modelled; 148 helps a run at 168 h). Abstract 248 words.
+Done 23 Oct (LEAD; owner's go-ahead): the three open checks. B-61 parking points (tools/comms/parking.py,
+data/comms/connecting_ridge/parking-v1.json, results/E21_parking.json) as R1-PK-* placeholders; B-62 Stage H, a real
+helper (comms `helpers`; results/E21h_helper_r2.csv, table_E21h_helper_r2.csv, E21_fit_r2.json["helper"], with
+`diagnosis_168h` and `pool_by_month`) as R1-H-*; B-63 Stage J, later years (tools/comms/later_years.py,
+earth_link-v3 2032-2050, parking-v3.json, results/E21_later_years.json, E21j_years_r2.csv, table_E21j_years_r2.csv,
+E21_fit_r2.json["later_years"]) as R1-J-*. Build asserts: every held sample has a working point; grid gain < 1 pp;
+uncovered calls are Earth below the level (> 90 %); the four 24 h cells keep the G2 headline and the two 168 h cells
+lose 2029-2031; the helper's busy time > 90 % parked; one more strict hauler < 1 t; same held hours 2028/2029; G2's
+2029 pool never full; the period's interval holds 5.997 yr; every whole-dark year below every other year; no Stage J
+year runs into the file's end. Headline now: one helper called after a day (not help within a week, which was the
+ideal-helper bound). Ten stages became eleven; Table 5 total is cells and years (Stage J has five seeds). Pending:
+B-64 (how much the v1 file's end moves the 2028-2031 numbers), then the PDF.
