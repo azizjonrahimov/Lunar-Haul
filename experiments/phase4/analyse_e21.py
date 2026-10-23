@@ -1007,6 +1007,180 @@ def cmd_rounds(a) -> None:
         raise SystemExit(1)
 
 
+# ---------------------------------------------------------------------------------------------------------
+# Stage F (B-57): the bounded-wait strategic rule and strategic without the re-draw
+# ---------------------------------------------------------------------------------------------------------
+BOUNDED_METRICS = ["delivered_t_in_year", "delivered_bulk_t", "delivered_landed_t", "prio1_completion_share",
+                   "delay_prio1_p90_censored_h", "blackout_wait_vehicle_h", "blackout_jobs_refused"]
+STAGE_F_FILE = "E21f_bounded_r2.csv"
+YEARS = (2028, 2029, 2030, 2031)
+
+
+def _f_label(r) -> str:
+    if r.get("never_linked") == "strand":
+        return "strategic, strand on never-linked"
+    return f"bound {r['bound_h']:g} h, never-linked {'refused' if r['bound_never'] == 'refuse' else 'as strategic'}"
+
+
+def load_stage_f(results: str = RESULTS) -> pd.DataFrame:
+    f = prepare(pd.read_csv(os.path.join(results, STAGE_F_FILE)))
+    for k in ("bulk", "landed"):
+        f[f"delivered_{k}_t"] = f[f"delivered_{k}_kg_in_horizon"] / 1000.0
+    f["variant"] = f.apply(_f_label, axis=1)
+    return f
+
+
+def never_linked_legs(path: str = LINK_FILE) -> Dict[str, Any]:
+    """Legs with at least one never-linked route sample (direct, any part of the disc): under DTE an intervention there
+    can never be cleared. Main network = the seven sites and the two pads at 1 km."""
+    from lunarsim import comms as C
+    el = C.EarthLink.load(path, samples=True)
+    s = el.samples
+    dark = {i for i, smp in enumerate(s["samples"]) if not s["series"][smp["w"][0]]}
+    legs = sorted(k for k, ids in s["legs"].items() if any(i in dark for i in ids))
+    sites = [p for p in el.doc["points"] if p.endswith("@1") or "@" not in p]
+    main = [f"{a}->{b}" for a in sites for b in sites if a != b and not (a.startswith("PAD") and b.startswith("PAD"))]
+    hit = [k for k in main if k in legs]
+    return {"criterion": "any_part, direct", "samples_never_linked": len(dark), "samples": len(s["samples"]),
+            "legs_with_never_linked_sample": len(legs), "legs": len(s["legs"]),
+            "main_network_legs": len(main), "main_network_legs_with_never_linked_sample": len(hit),
+            "main_network_list": hit}
+
+
+def redraw_counts(df: pd.DataFrame, f: pd.DataFrame) -> List[Dict[str, Any]]:
+    """blackout_jobs_refused per run by policy, link regime and start year. strategic: a committed job whose
+    intervention fell on a never-linked sample (refused, re-drawn at a later dispatch); look-ahead: its deferrals
+    (= blackout_jobs_avoided); strict: deferrals and never-linked legs; Stage F variants: both kinds."""
+    a = df[(df["stage"] == "A") & (df["sensitivity"] == "none")]
+    groups = [("strategic", a[a["mix"] == "supervised_strategic"]), ("look-ahead", a[a["mix"] == "supervised_strategic+avoid"]),
+              ("strict", a[a["mix"] == "supervised_strict"])] + [(v, g) for v, g in f.groupby("variant")]
+    out = []
+    for name, g in groups:
+        for p in (0.0, 0.1, 0.5):
+            gp = select(g, p=p)
+            if gp.empty:
+                continue
+            row = {"policy": name, "link": _plabel(p), "runs": int(len(gp)),
+                   "refused_per_run": float(gp["blackout_jobs_refused"].mean()),
+                   "avoided_per_run": float(gp["blackout_jobs_avoided"].mean()),
+                   "refused_not_avoided_per_run": float((gp["blackout_jobs_refused"] - gp["blackout_jobs_avoided"]).mean())}
+            for y in YEARS:
+                gy = gp[gp["start_year"] == y]
+                row[f"refused_per_run_{y}"] = float(gy["blackout_jobs_refused"].mean()) if len(gy) else None
+            out.append(row)
+    return out
+
+
+def bounded_tables(df: pd.DataFrame, f: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, Any]]:
+    a = df[(df["stage"] == "A") & (df["sensitivity"] == "none")]
+    rows, summary = [], []
+    for p in (0.0, 0.1, 0.5):
+        refs = {"strategic": select(a, p=p, mix="supervised_strategic"),
+                "look-ahead": select(a, p=p, mix="supervised_strategic+avoid")}
+        for var, cell in select(f, p=p).groupby("variant", sort=False):
+            ctx = {"p": p, "link": _plabel(p), "start_year": "all"}
+            for rl, ref in refs.items():
+                rows += _rows("bounded", rl, var, ctx, ref, cell, BOUNDED_METRICS)
+                for y in YEARS:
+                    rows += _rows("bounded_by_year", rl, var, {**ctx, "start_year": y}, ref[ref["start_year"] == y],
+                                  cell[cell["start_year"] == y], BOUNDED_METRICS)
+            m = {k: float(cell[k].mean()) for k in BOUNDED_METRICS}
+            m["delay_prio1_p90_censored_h_median"] = float(cell["delay_prio1_p90_censored_h"].median())
+            by = {str(y): {k: float(cell.loc[cell["start_year"] == y, k].mean()) for k in
+                           ("delivered_t_in_year", "delivered_bulk_t", "delivered_landed_t", "prio1_completion_share",
+                            "blackout_wait_vehicle_h")} for y in YEARS}
+            summary.append({"link": _plabel(p), "variant": var, "n": int(len(cell)), "mean": m, "by_year": by})
+        for rl, ref in refs.items():
+            summary.append({"link": _plabel(p), "variant": rl + " (Stage A)", "n": int(len(ref)),
+                            "mean": {k: float(ref[k].mean()) for k in BOUNDED_METRICS},
+                            "by_year": {str(y): {k: float(ref.loc[ref["start_year"] == y, k].mean()) for k in
+                                                 ("delivered_t_in_year", "delivered_bulk_t", "delivered_landed_t",
+                                                  "prio1_completion_share", "blackout_wait_vehicle_h")} for y in YEARS}})
+    return pd.DataFrame(rows), {"cells": summary}
+
+
+def bounded_verdict(summary: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Under DTE: does a variant keep the ISRU cargo (bulk >= 90 % of strategic's) and avoid the 2028 collapse
+    (2028 tonnage >= 90 % of its own 2029-2031 mean)?"""
+    dte = {s["variant"]: s for s in summary if s["link"] == "DTE"}
+    strat_bulk = dte["strategic (Stage A)"]["mean"]["delivered_bulk_t"]
+    out = []
+    for v, s in dte.items():
+        by = s["by_year"]
+        other = float(np.mean([by[str(y)]["delivered_t_in_year"] for y in YEARS[1:]]))
+        out.append({"variant": v, "bulk_t": s["mean"]["delivered_bulk_t"], "bulk_share_of_strategic": s["mean"]["delivered_bulk_t"] / strat_bulk,
+                    "t_2028": by["2028"]["delivered_t_in_year"], "t_2029_2031": other,
+                    "keeps_isru": bool(s["mean"]["delivered_bulk_t"] >= 0.9 * strat_bulk),
+                    "avoids_2028_collapse": bool(by["2028"]["delivered_t_in_year"] >= 0.9 * other)})
+    return out
+
+
+def pool_starvation(results: str = RESULTS, seed: int = 0, bound_h: float = 24.0,
+                    moments: Sequence[float] = (1000.0, 3000.0, 6000.0)) -> Dict[str, Any]:
+    """One Stage F run (DTE, bound_never 'strategic'; seed 0 starts in 2028): what the marketplace's auction pool
+    (dispatch.MAX_POOL oldest / most urgent items) holds at a few moments, how many of those items a free rover is
+    blocked from by the look-ahead, and how many servable items wait beyond the pool cap."""
+    from collections import Counter
+    from lunarsim import Simulation, dispatch
+    from experiments.phase4 import run_phase4 as R
+    cell = next(c for c in R.e21f_cells() if c[0]["comms"] == "dte" and c[0].get("bound_h") == bound_h
+                and c[0].get("bound_never") == "strategic")
+    tag, sc, mn, mf, kw = cell
+    sc = sc.with_(comms=dict(sc.comms, start_year=R.start_year(seed)))
+    sim = Simulation(sc, mf, seed=seed, mech_kwargs=dict(kw))
+    todo, snaps, orig = list(moments), [], sim._dispatch
+
+    def look():
+        while todo and sim.t >= todo[0]:
+            todo.pop(0)
+            cands = sim.comms.filter_candidates(sim, [c for c in sim.waiting if not c.stranded])
+            order = sorted(cands, key=lambda c: (c.priority, c.t_ready))
+            pool, rest = order[:dispatch.MAX_POOL], order[dispatch.MAX_POOL:]
+            free = sim.free_vehicles()
+            v = free[0] if free else None
+            blocked = [c for c in pool if v is not None and dispatch._comms_blocked(sim, v, c)]
+            servable = [c for c in rest if v is not None and not dispatch._comms_blocked(sim, v, c)]
+            lanes = Counter(f"{c.origin}->{c.dest}" for c in pool)
+            snaps.append({"t_h": round(float(sim.t), 1), "waiting": len(cands), "free_rovers": len(free),
+                          "pool": len(pool), "pool_blocked": len(blocked), "pool_lanes": dict(lanes.most_common(4)),
+                          "beyond_cap": len(rest), "beyond_cap_servable_now": len(servable),
+                          "beyond_cap_servable_lanes": dict(Counter(f"{c.origin}->{c.dest}" for c in servable).most_common(3))})
+        return orig()
+
+    sim._dispatch = look
+    out = sim.run()
+    return {"seed": seed, "start_year": R.start_year(seed), "bound_h": bound_h, "pool_cap": dispatch.MAX_POOL,
+            "delivered_t_in_year": out["delivered_kg_in_horizon"] / 1000.0, "moments": snaps}
+
+
+def cmd_bounded(a) -> None:
+    t0 = time.time()
+    df = load_round(a.results, "r2")
+    f = load_stage_f(a.results)
+    table, doc = bounded_tables(df, f)
+    table.to_csv(os.path.join(a.results, "table_E21f_bounded_r2.csv"), index=False, lineterminator="\n")
+    doc.update({"design": "Stage F (B-57), all-supervised fleet, 20 seeds, E21 year rule, common random numbers with Stage A: "
+                          "strategic+bound at bound_h {24, 72, 168, 720} x never-linked samples {refused, left out "
+                          "(as strategic)}, and strategic with stranding on never-linked samples, at DTE, relay 0.1 "
+                          "and 0.5; paired against Stage A strategic and look-ahead at the same link regime",
+                "verdict_dte": bounded_verdict(doc["cells"]),
+                "redraws": redraw_counts(df, f),
+                "never_linked_legs": never_linked_legs()})
+    if a.diagnose:
+        doc["pool_starvation"] = pool_starvation(a.results)
+    path = os.path.join(a.results, "E21_fit_r2.json")
+    with open(path, encoding="utf-8") as fh:
+        fit = json.load(fh)
+    fit["bounded"] = _json(doc)
+    with open(path, "w", encoding="utf-8", newline="\n") as fh:
+        json.dump(fit, fh, indent=1)
+        fh.write("\n")
+    print(f"table_E21f_bounded_r2.csv ({len(table)} rows) and E21_fit_r2.json 'bounded' written ({time.time() - t0:.0f} s)")
+    for v in doc["verdict_dte"]:
+        print(f"  DTE {v['variant']:45s} bulk {v['bulk_t']:6.1f} t ({v['bulk_share_of_strategic']:.0%} of strategic)  "
+              f"2028 {v['t_2028']:6.1f} t vs {v['t_2029_2031']:6.1f} t  keeps ISRU {v['keeps_isru']}  avoids 2028 {v['avoids_2028_collapse']}")
+
+
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -1023,12 +1197,15 @@ def main(argv=None) -> None:
     p.add_argument("--boot", type=int, default=None, help=f"break-even draws (default {N_BOOT}; round 2 {N_BOOT_R2})")
     p.add_argument("--boot-law", type=int, default=N_BOOT, help="law bootstrap draws (round 2)")
     p.add_argument("--results", default=RESULTS)
+    p = sub.add_parser("bounded", help="Stage F (B-57) -> table_E21f_bounded_r2.csv and E21_fit_r2.json 'bounded'")
+    p.add_argument("--results", default=RESULTS)
+    p.add_argument("--diagnose", action="store_true", help="also run one Stage F year to show the auction-pool starvation")
     a = ap.parse_args(argv)
     if a.cmd == "fit":
         a.boot = a.boot or (N_BOOT if a.round == "r1" else N_BOOT_R2)
         if a.round != "r1":
             return cmd_fit_r2(a)
-    {"demand": cmd_demand, "fit": cmd_fit, "rounds": cmd_rounds}[a.cmd](a)
+    {"demand": cmd_demand, "fit": cmd_fit, "rounds": cmd_rounds, "bounded": cmd_bounded}[a.cmd](a)
 
 
 if __name__ == "__main__":

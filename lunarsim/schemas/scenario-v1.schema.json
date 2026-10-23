@@ -389,7 +389,10 @@
               "type": ["object", "null"],
               "properties": {"site": {"type": "string"}, "height_m": {"type": "number"}, "range_km": {"type": "number"}}
             },
-            "supervised_policy": {"enum": ["strict", "strategic", "strategic+avoid"]},
+            "supervised_policy": {"enum": ["strict", "strategic", "strategic+avoid", "strategic+bound"]},
+            "bound_h": {"type": ["number", "null"], "minimum": 0, "description": "strategic+bound (B-57): defer a job when a route sample's forecast wait at the rover's pass exceeds this (h); null = no limit"},
+            "bound_never": {"enum": ["refuse", "strategic"], "description": "strategic+bound: a never-linked sample refuses its routes (default) or is left out of the check"},
+            "never_linked": {"enum": ["redraw", "strand"], "description": "strategic policies: an intervention on a never-linked sample makes the job impossible and dispatch tries again (default), or strands the rover for the rest of the year"},
             "defer_wait_h": {"type": ["number", "null"], "minimum": 0, "description": "jobs with a longer planned link wait are deferred (default 24 h, Assumed); null = never defer"},
             "start_year": {"enum": [2028, 2029, 2030, 2031]},
             "start_h": {"type": "number", "minimum": 0}

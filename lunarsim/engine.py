@@ -903,6 +903,7 @@ class Simulation:
             return
         if not candidates and not getattr(self.mechanism, "anticipates", False):
             return
+        self._dispatch_serial = getattr(self, "_dispatch_serial", 0) + 1   # dispatch's per-call plan memo (B-57)
         jobs: List[Job] = self.mechanism(self, candidates, free, **self.mech_kwargs)
         for job in jobs:
             self._start_job(job)

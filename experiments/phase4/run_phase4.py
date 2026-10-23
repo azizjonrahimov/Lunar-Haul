@@ -39,6 +39,14 @@ model, pads at 1 km, Earth-link criterion any_part (lunarsim/comms.py; data/comm
         intervention rate x0.5 and x2 for strategic and strategic+avoid at DTE and p = 0.5; plume keep-out 1 km /
         0.5 h at DTE (P2 default mix) and p = 0.5 (strict); ISRU with local feedstock (no CONSTR -> ISRU haul) at DTE
         and always for the default, strict and teleop fleets                                     -> E21e_sensitivity.csv
+  e21f  (round 2, B-57) the bounded-wait strategic rule on the all-supervised fleet: comms {dte, dte+relay 0.1, 0.5} x
+        bound_h {24, 72, 168, 720} x bound_never {refuse, strategic} (supervised_policy strategic+bound), plus plain
+        strategic with never_linked "strand" (an intervention on a never-linked sample strands the rover for the rest
+        of the year instead of a re-draw) at the same three link regimes; common random numbers with Stage A (same
+        seeds and start years); its twins are Stage A's strategic and look-ahead cells. Not in table_E21*.csv
+        (analyse_e21.py bounded)                                                                 -> E21f_bounded.csv
+Every finished run is appended to its stage file at once; --max-seconds also stops starting runs that would end past
+the time budget, so a chunk ends cleanly and the next one resumes.
 Round 2 (--round r2): every stage writes results/<stage>_r2.csv and the tables table_E21_r2.csv,
 table_E21_breakeven_r2.csv, so round-1 files stay as they were. The engine is unchanged, so a round-2 row equals its
 round-1 row in every round-1 column (analyse_e21.py checks it); round 2 adds the B-48 outcome columns (completion and
@@ -69,7 +77,7 @@ from lunarsim.config import split_rtt  # noqa: E402
 from lunarsim.entities import VEHICLE_CLASSES  # noqa: E402
 from lunarsim.phases import PHASES  # noqa: E402
 from experiments.phase3 import fit_law  # noqa: E402
-from experiments.phase3.run_phase3 import MECHS, append_rows, cell_key, phase3  # noqa: E402
+from experiments.phase3.run_phase3 import MECHS, cell_key, phase3  # noqa: E402
 
 N_SEEDS = 20
 WORKERS = 1
@@ -95,6 +103,7 @@ DEFER_DEFAULT_H = 24.0            # lunarsim.comms.DEFAULT_DEFER_WAIT_H (Assumed
 E21C_DEFERS = (12.0, 72.0, None)  # with the default 24 h from the pads x criterion grid; None = never defer
 STAGES = {"e21a": "E21a_comms_autonomy", "e21b": "E21b_breakeven", "e21c": "E21c_pads_criterion", "e21d": "E21d_sun",
           "e21a2": "E21a2_operators", "e21e": "E21e_sensitivity"}
+STAGE_F = "E21f_bounded"          # B-57; kept out of STAGES so table_E21*.csv stay as they are
 ROUNDS = ("r1", "r2")
 R2_LEVELS = (("dte+relay", 0.05), ("dte+relay", 0.6), ("dte+relay", 0.7))       # referee M1 (round 2 only)
 R2_B_POLICY = "strategic+avoid"                                                   # referee M6
@@ -264,6 +273,29 @@ def e21e_cells():
     return cells
 
 
+E21F_COMMS = (("dte", None), ("dte+relay", 0.1), ("dte+relay", 0.5))
+E21F_BOUNDS = (24.0, 72.0, 168.0, 720.0)
+E21F_NEVER = ("refuse", "strategic")
+
+
+def e21f_cells():
+    """Stage F (B-57): strategic+bound at four bounds and both never-linked rules, and strategic with stranding."""
+    cells = []
+    for mode, p in E21F_COMMS:
+        for bound in E21F_BOUNDS:
+            for never in E21F_NEVER:
+                tag, sc = scenario("supervised_strategic", mode, p)
+                sc = sc.with_(comms=dict(sc.comms, supervised_policy="strategic+bound", bound_h=bound, bound_never=never))
+                tag.update(stage="F", mix="supervised_strategic+bound", policy="strategic+bound", bound_h=bound,
+                           bound_never=never, never_linked="redraw")
+                cells.append((tag, sc, MECH, *MECHS[MECH]))
+        tag, sc = scenario("supervised_strategic", mode, p)
+        sc = sc.with_(comms=dict(sc.comms, never_linked="strand"))
+        tag.update(stage="F", never_linked="strand")
+        cells.append((tag, sc, MECH, *MECHS[MECH]))
+    return cells
+
+
 def e21a2_cells():
     cells = []
     for mode, p in E21A2_COMMS:
@@ -343,7 +375,25 @@ def parse_cells(spec, n):
     return list(range(lo, hi + 1))
 
 
-def run_stage(name, cells, seeds=N_SEEDS, workers=WORKERS, cells_spec=None, results=None):
+def append_rows(path, rows):
+    """Append rows keeping the file's column order; a new column rewrites the file, read with the exact float parser
+    (pandas' default parser can be one ULP off, which would change rows already written)."""
+    df = pd.DataFrame(rows)
+    if not os.path.exists(path):
+        df.to_csv(path, index=False)
+        return
+    cols = list(pd.read_csv(path, nrows=0).columns)
+    if set(df.columns) - set(cols):
+        old = pd.read_csv(path, float_precision="round_trip")
+        pd.concat([old, df], ignore_index=True, sort=False).to_csv(path, index=False)
+    else:
+        df.reindex(columns=cols).to_csv(path, mode="a", header=False, index=False)
+
+
+def run_stage(name, cells, seeds=N_SEEDS, workers=WORKERS, cells_spec=None, results=None, deadline=None):
+    """Run the missing (cell, seed) rows of a stage. Every finished run is appended at once (a job that is killed
+    keeps its finished rows; rerun to resume). deadline (time.time() value): no run is started that would, at the
+    mean run time so far, end after it, and a worker pool still busy 20 s past it is terminated."""
     results = results or RESULTS
     path = os.path.join(results, f"{name}.csv")
     os.makedirs(results, exist_ok=True)
@@ -358,23 +408,49 @@ def run_stage(name, cells, seeds=N_SEEDS, workers=WORKERS, cells_spec=None, resu
     print(f"[{name}] {len(sel)} of {len(cells)} cells x {seeds} seeds: {n_done} rows in the file, {len(jobs)} to run "
           f"on {workers} worker(s)", flush=True)
     t0 = time.time()
+    took = []                                              # seconds per finished run
+
+    def can_start():
+        return deadline is None or time.time() + (sum(took) / len(took) if took else 0.0) < deadline
+
+    def report(i):
+        if i % 10 == 0 or i == len(jobs):
+            el = time.time() - t0
+            print(f"[{name}] {i}/{len(jobs)} runs, {el:.0f}s, ETA {el / i * (len(jobs) - i):.0f}s", flush=True)
+
+    n_run = 0
     if jobs and workers <= 1:
-        for i, job in enumerate(jobs, 1):
+        for job in jobs:
+            if not can_start():
+                break
+            s = time.time()
             append_rows(path, [_job(job)])
-            if i % 10 == 0 or i == len(jobs):
-                el = time.time() - t0
-                print(f"[{name}] {i}/{len(jobs)} runs, {el:.0f}s, ETA {el / i * (len(jobs) - i):.0f}s", flush=True)
+            took.append(time.time() - s)
+            n_run += 1
+            report(n_run)
     elif jobs:
         from multiprocessing import Pool
+        pending, running = list(jobs), []
         with Pool(workers) as pool:
-            buf = []
-            for i, row in enumerate(pool.imap_unordered(_job, jobs, chunksize=1), 1):
-                buf.append(row)
-                if len(buf) >= 20 or i == len(jobs):
-                    append_rows(path, buf)
-                    buf = []
+            while pending or running:
+                while pending and len(running) < workers and can_start():
+                    running.append((pool.apply_async(_job, (pending.pop(0),)), time.time()))
+                if not running:
+                    break
+                for r in [r for r in running if r[0].ready()]:
+                    running.remove(r)
+                    append_rows(path, [r[0].get()])
+                    took.append(time.time() - r[1])
+                    n_run += 1
+                    report(n_run)
+                if deadline is not None and time.time() > deadline + 20.0:
+                    pool.terminate()
+                    break
+                time.sleep(0.2)
     if jobs:
-        print(f"[{name}] {len(jobs)} runs in {time.time() - t0:.0f}s -> {path}", flush=True)
+        left = len(jobs) - n_run
+        print(f"[{name}] {n_run} runs in {time.time() - t0:.0f}s -> {path}"
+              + (f"; {left} left for the next chunk (time budget)" if left else ""), flush=True)
     return pd.read_csv(path)
 
 
@@ -492,7 +568,7 @@ def write_tables(results=None, rnd: str = "r1"):
 # ---------------------------------------------------------------------------
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    p.add_argument("stages", nargs="*", help="e21a e21b e21c e21d e21a2 e21e table (default: e21a)")
+    p.add_argument("stages", nargs="*", help="e21a e21b e21c e21d e21a2 e21e e21f table (default: e21a)")
     p.add_argument("--round", default="r1", choices=ROUNDS, help="r2 writes *_r2.csv (default r1: the round-1 files)")
     p.add_argument("--seeds", type=int, default=N_SEEDS)
     p.add_argument("--workers", type=int, default=WORKERS)
@@ -505,29 +581,32 @@ def main(argv=None):
         faulthandler.dump_traceback_later(a.max_seconds, exit=True)
     names = [s.lower() for s in a.stages] or ["e21a"]
     t0 = time.time()
+    # soft budget: stop starting runs 30 s before the hard stop (which stays as the backstop)
+    dl = t0 + a.max_seconds - 30.0 if a.max_seconds and a.max_seconds > 60 else None
+    go = lambda name, cells: run_stage(name, cells, a.seeds, a.workers, a.cells, a.results, deadline=dl)
     rnd, x = a.round, sfx(a.round)
     for n in names:
         if n == "e21a":
-            run_stage(STAGES[n] + x, e21a_cells(rnd), a.seeds, a.workers, a.cells, a.results)
+            go(STAGES[n] + x, e21a_cells(rnd))
         elif n == "e21b":
             t = write_tables(a.results, rnd)
             if t is not None and ((t["stage"] == "A") & (t["mix"] == "supervised_strict")).any():
                 pk = knee_coverage(t)
                 print(f"[e21b] knee of the supervised-strict coverage curve: p = {pk:g} ({KNEE_SHARE:.0%} of full "
                       f"coverage); stage B runs at p = {STAGE_B_COVERAGE:g}")
-            run_stage(STAGES[n] + x, e21b_cells(STAGE_B_COVERAGE, rnd), a.seeds, a.workers, a.cells, a.results)
+            go(STAGES[n] + x, e21b_cells(STAGE_B_COVERAGE, rnd))
         elif n == "e21c":
-            run_stage(STAGES[n] + x, e21c_cells(), a.seeds, a.workers, a.cells, a.results)
+            go(STAGES[n] + x, e21c_cells())
         elif n == "e21d":
-            run_stage(STAGES[n] + x, e21d_cells(), a.seeds, a.workers, a.cells, a.results)
+            go(STAGES[n] + x, e21d_cells())
         elif n == "e21a2":
-            run_stage(STAGES[n] + x, e21a2_cells(), a.seeds, a.workers, a.cells, a.results)
-        elif n == "e21e":
+            go(STAGES[n] + x, e21a2_cells())
+        elif n in ("e21e", "e21f"):
             if rnd == "r1":
-                raise SystemExit("stage e21e is a round-2 stage: add --round r2")
-            run_stage(STAGES[n] + x, e21e_cells(), a.seeds, a.workers, a.cells, a.results)
+                raise SystemExit(f"stage {n} is a round-2 stage: add --round r2")
+            go(STAGES[n] + x if n == "e21e" else STAGE_F + x, e21e_cells() if n == "e21e" else e21f_cells())
         elif n != "table":
-            raise SystemExit(f"unknown stage {n!r}; choose from e21a e21b e21c e21d e21a2 e21e table")
+            raise SystemExit(f"unknown stage {n!r}; choose from e21a e21b e21c e21d e21a2 e21e e21f table")
         write_tables(a.results, rnd)
     rss = None
     try:

@@ -366,6 +366,19 @@ class EarthLink:
 #                      are never taken. (A static rule, each sample's long-run expected wait sum(g^2)/(2 sum g) against
 #                      defer_wait_h, is degenerate: 160-1270 h on every leg under DTE, <= the relay gap with any relay;
 #                      leg_worst_expected_wait() keeps it as a diagnostic.)
+#   supervised         B-57: the look-ahead with its own limit bound_h (hours) in place of defer_wait_h: a job is
+#     strategic+bound  deferred when some route sample's forecast wait at the rover's pass exceeds bound_h.
+#                      bound_never "refuse" (default): a never-linked sample counts as an infinite wait, so its routes
+#                      are never taken (bound_h = defer_wait_h is then the look-ahead exactly); "strategic": only
+#                      finite forecasts are checked, and an intervention drawn on a never-linked sample is handled as
+#                      under strategic. bound_h null = no limit = strategic. A deferred job's wake-up is rounded up to
+#                      the next whole hour (the look-ahead's exact wake times, t_start + w, are all distinct and, with
+#                      never-linked routes in play, multiply until dispatch stalls), so bound_h = defer_wait_h with
+#                      "refuse" is the look-ahead with hourly wake-ups.
+#   never_linked       strategic policies, B-57: "redraw" (default, every earlier run): an intervention drawn on a
+#                      never-linked sample makes the committed job impossible; the job is refused and dispatch tries
+#                      again later with a new draw (blackout_jobs_refused counts these). "strand": no such second
+#                      chance, the rover waits there until the end of the simulated year.
 #   autonomous         unaffected
 #   relay              dte+relay: an alternating up/gap process independent of DTE, availability p, exponential gaps
 #                      of mean g (default DEFAULT_RELAY_GAP_H), from its own random stream; a point is linked when
@@ -387,9 +400,11 @@ class EarthLink:
 import os as _os
 
 COMMS_MODES = ("always", "dte", "dte+relay")
-SUPERVISED_POLICIES = ("strict", "strategic", "strategic+avoid")
+SUPERVISED_POLICIES = ("strict", "strategic", "strategic+avoid", "strategic+bound")
 COMMS_KEYS = {"mode", "criterion", "link_series", "relay", "mast", "supervised_policy", "start_year", "start_h",
-              "defer_wait_h", "operators_strict", "intervention_scale"}
+              "defer_wait_h", "operators_strict", "intervention_scale", "bound_h", "bound_never", "never_linked"}
+BOUND_NEVER = ("refuse", "strategic")      # strategic+bound: a never-linked sample refuses the leg, or is ignored
+NEVER_LINKED = ("redraw", "strand")        # strategic: an intervention drawn on a never-linked sample
 # columns CommsModel.summary() adds to a run (comms set); checks of "always" against the baseline drop these
 SUMMARY_PREFIXES = ("blackout", "operator_peak", "operator_wait", "operator_waits", "linked_share",
                     "delivered_kg_in_horizon", "prio1_completion", "delay_prio1_p90_censored",
@@ -535,6 +550,21 @@ class CommsModel:
         self.policy = cfg.get("supervised_policy", "strict")
         if self.policy not in SUPERVISED_POLICIES:
             raise ValueError(f"comms supervised_policy {self.policy!r} not in {SUPERVISED_POLICIES}")
+        if ("bound_h" in cfg or "bound_never" in cfg) and self.policy != "strategic+bound":
+            raise ValueError("comms bound_h / bound_never need supervised_policy 'strategic+bound'")
+        bh = cfg.get("bound_h")
+        self.bound_h = math.inf if bh is None else float(bh)
+        if self.bound_h < 0:
+            raise ValueError("comms bound_h must be >= 0 (or null for no limit)")
+        self.bound_never = cfg.get("bound_never", "refuse")
+        if self.bound_never not in BOUND_NEVER:
+            raise ValueError(f"comms bound_never {self.bound_never!r} not in {BOUND_NEVER}")
+        self.never_linked = cfg.get("never_linked", "redraw")
+        if self.never_linked not in NEVER_LINKED:
+            raise ValueError(f"comms never_linked {self.never_linked!r} not in {NEVER_LINKED}")
+        if "never_linked" in cfg and not self.policy.startswith("strategic"):
+            raise ValueError("comms never_linked needs a strategic supervised_policy")
+        self.never_strandings = 0
         self.start_h = float(cfg["start_h"]) if "start_h" in cfg else year_start_h(int(cfg.get("start_year", 2028)))
         dw = cfg.get("defer_wait_h", DEFAULT_DEFER_WAIT_H)
         self.defer_wait_h = math.inf if dw is None else float(dw)
@@ -672,7 +702,16 @@ class CommsModel:
         return autonomy == "teleop" or (autonomy == "supervised" and self.policy == "strict")
 
     def avoids(self, autonomy: str) -> bool:
-        return autonomy == "supervised" and self.policy == "strategic+avoid"
+        """The look-ahead runs for this vehicle (strategic+avoid; strategic+bound with a finite bound)."""
+        return autonomy == "supervised" and (self.policy == "strategic+avoid" or
+                                             (self.policy == "strategic+bound" and math.isfinite(self.bound_h)))
+
+    def _look_limit(self) -> float:
+        return self.bound_h if self.policy == "strategic+bound" else self.defer_wait_h
+
+    def _skips_never(self) -> bool:
+        """strategic+bound with bound_never 'strategic': never-linked samples are left out of the look-ahead."""
+        return self.policy == "strategic+bound" and self.bound_never == "strategic"
 
     def restricted(self, autonomy: str) -> bool:
         """True when the link rule can make a job impossible for this vehicle (strict link or route avoidance)."""
@@ -730,6 +769,7 @@ class CommsModel:
         """Largest wait an intervention would face along the planned drives: each route sample is checked at the time
         the rover passes it (samples spread evenly over the drive); a leg without samples uses its own series."""
         worst = 0.0
+        finite_only = self._skips_never()
         for a, b, t0, t1, _ in segs:
             if a == b:
                 continue
@@ -738,18 +778,20 @@ class CommsModel:
             if w_leg is None:
                 if len(self._leg_pass) > 200000:
                     self._leg_pass.clear()
-                w_leg = self._leg_pass[lk] = self._leg_worst_pass(a, b, t0, t1)
+                w_leg = self._leg_pass[lk] = self._leg_worst_pass(a, b, t0, t1, finite_only)
             if w_leg > worst:
                 worst = w_leg
                 if not math.isfinite(worst):
                     return worst
         return worst
 
-    def _leg_worst_pass(self, a, b, t0, t1) -> float:
-        """Worst sample wait along one drive a -> b over [t0, t1] (samples spread evenly in time)."""
+    def _leg_worst_pass(self, a, b, t0, t1, finite_only: bool = False) -> float:
+        """Worst sample wait along one drive a -> b over [t0, t1] (samples spread evenly in time); finite_only leaves
+        never-linked samples out (strategic+bound, bound_never 'strategic')."""
         key = f"{self.name(a)}->{self.name(b)}"
         if key not in self.el.samples["legs"]:
-            return self.series(a, b).wait(t0)
+            w = self.series(a, b).wait(t0)
+            return 0.0 if finite_only and not math.isfinite(w) else w
         ids = self.el.leg_samples(key)
         n = len(ids)
         worst = 0.0
@@ -765,6 +807,8 @@ class CommsModel:
                 if self.relay is not None and w > 0:
                     w = min(w, self.relay.wait(tp))
                 self._pass_cache[ck] = w
+            if finite_only and not math.isfinite(w):
+                continue
             if w > worst:
                 worst = w
                 if not math.isfinite(w):
@@ -778,7 +822,7 @@ class CommsModel:
             if k not in self._never:
                 self._never[k] = not math.isfinite(self.series(a, b).wait(0.0))
             return not self._never[k]
-        if self.avoids(autonomy):                                 # some sample on the route never links
+        if self.avoids(autonomy) and not self._skips_never():     # some sample on the route never links
             return math.isfinite(self.leg_worst_expected_wait(a, b))
         return True
 
@@ -788,13 +832,16 @@ class CommsModel:
         link never comes (the job cannot be done)."""
         sim._last_segk = {}
         dur, km, km_empty, e_wh, night = sim._job_plan(job, t_start, realize)
-        for v in job.vehicles:                                    # strategic+avoid: look ahead along the route
+        for v in job.vehicles:                                    # strategic+avoid / +bound: look ahead along the route
             if self.avoids(v.autonomy):
                 w = self.route_worst_wait(sim._last_segments.get(v.id, []))
-                if w > self.defer_wait_h + _EPS:
+                if w > self._look_limit() + _EPS:
                     self._last = {}
                     if math.isfinite(w):
-                        self.wakes.add(round(t_start + w, 4))
+                        if self.policy == "strategic+bound":      # on the hour (the sample series are hourly):
+                            self.wakes.add(float(math.ceil(t_start + w - 1e-9)))   # one wake per hour at most
+                        else:
+                            self.wakes.add(round(t_start + w, 4))
                     if realize:
                         self.jobs_avoided += 1
                     return math.inf, km, km_empty, e_wh, night
@@ -841,7 +888,7 @@ class CommsModel:
 
     def _apply(self, v, segs, ks, realize):
         need = self.needs_link(v.autonomy)
-        strategic = v.autonomy == "supervised" and self.policy in ("strategic", "strategic+avoid")
+        strategic = v.autonomy == "supervised" and self.policy in ("strategic", "strategic+avoid", "strategic+bound")
         if not (need or (strategic and realize)):
             return segs, []
         out, waits, shift = [], [], 0.0
@@ -901,7 +948,10 @@ class CommsModel:
                         ti = t0 + u * dur + extra
                         w = self._sample_wait(a, b, float(u), ti)
                         if not math.isfinite(w):
-                            return None, waits
+                            if self.never_linked != "strand":
+                                return None, waits                # refused; dispatch tries again with a new draw
+                            w = max(self.horizon_h - ti, 0.0) + 1.0   # strand: there until the year is over
+                            self.never_strandings += 1
                         if w > _EPS:
                             waits.append([v.id, ti, ti + w, f"{a}->{b}", "intervention"])
                             extra += w
@@ -1145,6 +1195,7 @@ class CommsModel:
             "delivered_kg_in_horizon": self.delivered_in_horizon_kg,
             "linked_share_by_leg_mean": share,
             **({"operator_wait_vehicle_h": self.op_wait_h, "operator_waits": self.op_waits} if self.operators_strict else {}),
+            **({"blackout_strandings_never_linked": self.never_strandings} if self.never_linked == "strand" else {}),
             **(self.outcome_metrics(cargo) if cargo is not None else {}),
         }
 

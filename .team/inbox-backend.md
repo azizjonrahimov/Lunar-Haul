@@ -704,7 +704,7 @@ glob patterns per page with "max" or "sum" semantics; (b) the stories page's ?s=
 story); (c) fonts (count the preloaded and @font-face files a page uses); (d) lazy CSS as its own field, not in data.
 Keep every current entry passing; tests.
 
-## B-57 [IN PROGRESS] R-1 Stage F: a bounded-wait strategic rule (tests the paper's "middle rule", Section 6)
+## B-57 [DONE 21:37] R-1 Stage F: a bounded-wait strategic rule (tests the paper's "middle rule", Section 6)
 B-55 showed the two ends: `strategic` waits wherever an intervention stops it (one route point dark Jan 2028 - Jul
 2029 captures the fleet), `strategic+avoid` (look-ahead) never commits a leg with a never-linked sample (so it never
 serves ISRU and loses ~200 t/yr). Test the rule in between:
@@ -736,8 +736,9 @@ policy on a tiny scenario (bound 0 = look-ahead-like on never-linked samples; bo
   never-linked sample (how many of the 70 main-network legs).
 - If anything changes an existing E21 r2 row, stop and tell LEAD first.
 
-## B-58 [OPEN] (after B-57; small) Horizon outlines for the "Earth's sky" explorable (F-41)
+## B-58 [DONE 21:40] Horizon outlines for the "Earth's sky" explorable (F-41)
 Export `data/comms/connecting_ridge/horizons_dark_sample.json` (schema + test): the terrain horizon elevation by grid
 bearing (0.1° steps over the bearings Earth can occupy, about -12° to 12°, or the full circle if cheap) at BASE and at
 the 2028 dark sample (#188, its xy and the leg), for the 2.5 m antenna, from the same LOLA horizon masks B-40 used,
-plus the source sha256s. Tell FRONTEND the keys.
+plus the source sha256s. Also the monthly link fraction 2028-2031 of the ISRU->CONSTR leg (share of hours with every
+sample linked, and with the dark sample alone). Tell FRONTEND the keys.

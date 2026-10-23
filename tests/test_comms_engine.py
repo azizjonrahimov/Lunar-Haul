@@ -281,3 +281,53 @@ def test_strategic_avoid_engine_run_waits_less_than_strategic():
     avoid = run(sc.with_(comms={"mode": "dte", "supervised_policy": "strategic+avoid"}), dispatch.marketplace, seed=1)
     assert avoid["blackout_wait_supervised_h"] < plain["blackout_wait_supervised_h"]
     assert "blackout_jobs_avoided" in avoid
+
+
+# ------------------------------------------------------------------------------------------------ B-57 bounded rule
+def _bound_sim(tmp_path, **comms):
+    path = write_series(str(tmp_path), leg_windows={"DEPOT->BASE": [], "DEPOT->ISRU": []},
+                        sample_windows={"DEPOT->BASE": _windows([(100, N / 6)]), "DEPOT->ISRU": []})
+    sc = small(fleet=[("NASA", "LTV", "supervised", "A")], comms={"mode": "dte", "link_series": path, **comms})
+    return Simulation(sc, dispatch.marketplace, seed=0).comms
+
+
+def test_strategic_bound_limits_and_never_linked_handling(tmp_path):
+    """bound 0 refuses what is not linked at the pass and every never-linked route (look-ahead-like); a bound of 90 h
+    takes DEPOT->BASE at t = 10 (first sample waits 90 h) and a bound below that defers it; bound null = strategic;
+    bound_never 'strategic' leaves never-linked samples out of the check and keeps their routes servable."""
+    seg = lambda a, b, t: [[a, b, t, t + 4.0, 0.0]]
+    for bound, base_ok in ((0.0, False), (89.0, False), (91.0, True)):
+        cm = _bound_sim(tmp_path, supervised_policy="strategic+bound", bound_h=bound)
+        assert cm.avoids("supervised") and cm.restricted("supervised")
+        assert bool(cm.route_worst_wait(seg("DEPOT", "BASE", 10.0)) <= cm._look_limit()) == base_ok
+        assert cm.route_worst_wait(seg("DEPOT", "ISRU", 120.0)) == math.inf
+        assert not cm.could_serve("supervised", "DEPOT", "ISRU")
+    look = _bound_sim(tmp_path, supervised_policy="strategic+avoid")
+    b24 = _bound_sim(tmp_path, supervised_policy="strategic+bound", bound_h=24.0)
+    for s in (seg("DEPOT", "BASE", 10.0), seg("DEPOT", "BASE", 120.0), seg("DEPOT", "ISRU", 120.0)):
+        assert b24.route_worst_wait(s) == look.route_worst_wait(s) and b24._look_limit() == look.defer_wait_h
+    inf = _bound_sim(tmp_path, supervised_policy="strategic+bound", bound_h=None)
+    assert not inf.avoids("supervised") and not inf.restricted("supervised") and inf.could_serve("supervised", "DEPOT", "ISRU")
+    sk = _bound_sim(tmp_path, supervised_policy="strategic+bound", bound_h=24.0, bound_never="strategic")
+    assert sk.route_worst_wait(seg("DEPOT", "ISRU", 120.0)) == 0.0                     # never-linked samples skipped
+    assert sk.route_worst_wait(seg("DEPOT", "BASE", 10.0)) == pytest.approx(90.0)       # finite forecasts still count
+    assert sk.could_serve("supervised", "DEPOT", "ISRU")
+    with pytest.raises(ValueError):
+        _bound_sim(tmp_path, supervised_policy="strategic", bound_h=24.0)
+    with pytest.raises(ValueError):
+        _bound_sim(tmp_path, supervised_policy="strategic+bound", bound_never="maybe")
+    with pytest.raises(ValueError):
+        _bound_sim(tmp_path, supervised_policy="strict", never_linked="strand")
+
+
+def test_never_linked_redraw_or_strand(tmp_path):
+    """An intervention drawn on a never-linked sample: 'redraw' (default) makes the job impossible (refused, tried
+    again later); 'strand' keeps the rover there until the end of the year."""
+    segs = [["DEPOT", "ISRU", 10.0, 14.0, 0.0]]
+    redraw = _bound_sim(tmp_path, supervised_policy="strategic")
+    assert redraw._apply(veh("supervised"), copy.deepcopy(segs), [1], True)[0] is None
+    strand = _bound_sim(tmp_path, supervised_policy="strategic", never_linked="strand")
+    out, waits = strand._apply(veh("supervised"), copy.deepcopy(segs), [1], True)
+    assert out is not None and len(waits) == 1 and waits[0][2] == pytest.approx(strand.horizon_h + 1.0)
+    assert out[0][3] > strand.horizon_h and strand.never_strandings == 1
+    assert "blackout_strandings_never_linked" in strand.summary(None) and "blackout_strandings_never_linked" not in redraw.summary(None)

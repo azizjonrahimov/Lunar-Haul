@@ -3136,5 +3136,2121 @@
    "columns": 110,
    "differing": {}
   }
+ },
+ "bounded": {
+  "cells": [
+   {
+    "link": "DTE",
+    "variant": "bound 24 h, never-linked refused",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 306.68482618663086,
+     "delivered_bulk_t": 296.3,
+     "delivered_landed_t": 9.525236579517252,
+     "prio1_completion_share": 0.4862661794729971,
+     "delay_prio1_p90_censored_h": 5702.430976409565,
+     "blackout_wait_vehicle_h": 77.48688819085893,
+     "blackout_jobs_refused": 24.05,
+     "delay_prio1_p90_censored_h_median": 6386.2397326591345
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 311.6816325090032,
+      "delivered_bulk_t": 300.0,
+      "delivered_landed_t": 10.357564387532909,
+      "prio1_completion_share": 0.6359774436090225,
+      "blackout_wait_vehicle_h": 97.829681568849
+     },
+     "2029": {
+      "delivered_t_in_year": 300.6309585749057,
+      "delivered_bulk_t": 291.4,
+      "delivered_landed_t": 8.121248956520219,
+      "prio1_completion_share": 0.5999707602339182,
+      "blackout_wait_vehicle_h": 96.6244499501685
+     },
+     "2030": {
+      "delivered_t_in_year": 314.8428914399443,
+      "delivered_bulk_t": 299.6,
+      "delivered_landed_t": 14.74328886287961,
+      "prio1_completion_share": 0.329491423119609,
+      "blackout_wait_vehicle_h": 55.11212063971179
+     },
+     "2031": {
+      "delivered_t_in_year": 299.5838222226704,
+      "delivered_bulk_t": 294.2,
+      "delivered_landed_t": 4.8788441111362655,
+      "prio1_completion_share": 0.37962509092943875,
+      "blackout_wait_vehicle_h": 60.38130060470648
+     }
+    }
+   },
+   {
+    "link": "DTE",
+    "variant": "bound 24 h, never-linked as strategic",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 411.482646740213,
+     "delivered_bulk_t": 382.4,
+     "delivered_landed_t": 26.263332929171913,
+     "prio1_completion_share": 0.882004211496439,
+     "delay_prio1_p90_censored_h": 2480.5847018736254,
+     "blackout_wait_vehicle_h": 90.5033421344746,
+     "blackout_jobs_refused": 161.1,
+     "delay_prio1_p90_censored_h_median": 2164.573890803884
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 72.38813358627557,
+      "delivered_bulk_t": 57.8,
+      "delivered_landed_t": 13.689846799500756,
+      "prio1_completion_share": 0.9073684210526315,
+      "blackout_wait_vehicle_h": 52.28136409771175
+     },
+     "2029": {
+      "delivered_t_in_year": 492.50309989759637,
+      "delivered_bulk_t": 473.6,
+      "delivered_landed_t": 17.420089195431704,
+      "prio1_completion_share": 0.8512280701754387,
+      "blackout_wait_vehicle_h": 89.21001771883239
+     },
+     "2030": {
+      "delivered_t_in_year": 539.3153017511269,
+      "delivered_bulk_t": 498.8,
+      "delivered_landed_t": 36.07149163311034,
+      "prio1_completion_share": 0.8151346404719717,
+      "blackout_wait_vehicle_h": 116.9897558214805
+     },
+     "2031": {
+      "delivered_t_in_year": 541.7240517258532,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 37.87190408864484,
+      "prio1_completion_share": 0.9542857142857143,
+      "blackout_wait_vehicle_h": 103.53223089987368
+     }
+    }
+   },
+   {
+    "link": "DTE",
+    "variant": "bound 72 h, never-linked refused",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 308.93168028824306,
+     "delivered_bulk_t": 298.2,
+     "delivered_landed_t": 9.87127017155796,
+     "prio1_completion_share": 0.49231172812724144,
+     "delay_prio1_p90_censored_h": 5482.6627286714065,
+     "blackout_wait_vehicle_h": 371.10017611817284,
+     "blackout_jobs_refused": 14.2,
+     "delay_prio1_p90_censored_h_median": 5726.913881501809
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 311.57130198850155,
+      "delivered_bulk_t": 300.0,
+      "delivered_landed_t": 10.28127099363303,
+      "prio1_completion_share": 0.5788345864661654,
+      "blackout_wait_vehicle_h": 434.58655826911263
+     },
+     "2029": {
+      "delivered_t_in_year": 308.758270257035,
+      "delivered_bulk_t": 299.0,
+      "delivered_landed_t": 8.643846551487577,
+      "prio1_completion_share": 0.6266374269005848,
+      "blackout_wait_vehicle_h": 465.89390638962976
+     },
+     "2030": {
+      "delivered_t_in_year": 315.12249162130377,
+      "delivered_bulk_t": 299.6,
+      "delivered_landed_t": 15.022889044239065,
+      "prio1_completion_share": 0.329491423119609,
+      "blackout_wait_vehicle_h": 301.7262166821827
+     },
+     "2031": {
+      "delivered_t_in_year": 300.27465728613197,
+      "delivered_bulk_t": 294.2,
+      "delivered_landed_t": 5.5370740968721694,
+      "prio1_completion_share": 0.4342834760226064,
+      "blackout_wait_vehicle_h": 282.19402313176613
+     }
+    }
+   },
+   {
+    "link": "DTE",
+    "variant": "bound 72 h, never-linked as strategic",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 416.5184328121448,
+     "delivered_bulk_t": 385.4,
+     "delivered_landed_t": 28.27146231326214,
+     "prio1_completion_share": 0.9140768259828468,
+     "delay_prio1_p90_censored_h": 2034.9213686786916,
+     "blackout_wait_vehicle_h": 632.6498123569646,
+     "blackout_jobs_refused": 152.5,
+     "delay_prio1_p90_censored_h_median": 1578.2437792626715
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 72.49567634210139,
+      "delivered_bulk_t": 57.6,
+      "delivered_landed_t": 13.997389555326578,
+      "prio1_completion_share": 0.9362573099415205,
+      "blackout_wait_vehicle_h": 169.57954616970375
+     },
+     "2029": {
+      "delivered_t_in_year": 511.12567242206023,
+      "delivered_bulk_t": 486.0,
+      "delivered_landed_t": 23.59045685544942,
+      "prio1_completion_share": 0.9149317738791423,
+      "blackout_wait_vehicle_h": 586.5898866715373
+     },
+     "2030": {
+      "delivered_t_in_year": 539.327216763883,
+      "delivered_bulk_t": 498.8,
+      "delivered_landed_t": 36.08340664586651,
+      "prio1_completion_share": 0.8146420296345334,
+      "blackout_wait_vehicle_h": 968.224152047035
+     },
+     "2031": {
+      "delivered_t_in_year": 543.1251657205345,
+      "delivered_bulk_t": 499.2,
+      "delivered_landed_t": 39.41459619640604,
+      "prio1_completion_share": 0.9904761904761905,
+      "blackout_wait_vehicle_h": 806.2056645395824
+     }
+    }
+   },
+   {
+    "link": "DTE",
+    "variant": "bound 168 h, never-linked refused",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 308.6843269753523,
+     "delivered_bulk_t": 298.25,
+     "delivered_landed_t": 9.578672839890178,
+     "prio1_completion_share": 0.4614270669794225,
+     "delay_prio1_p90_censored_h": 5386.998326236099,
+     "blackout_wait_vehicle_h": 899.5583171950727,
+     "blackout_jobs_refused": 7.75,
+     "delay_prio1_p90_censored_h_median": 5028.627635014862
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 309.97814661494033,
+      "delivered_bulk_t": 300.0,
+      "delivered_landed_t": 8.930228251075453,
+      "prio1_completion_share": 0.5288721804511278,
+      "blackout_wait_vehicle_h": 1092.5596465575097
+     },
+     "2029": {
+      "delivered_t_in_year": 308.79422451411,
+      "delivered_bulk_t": 299.2,
+      "delivered_landed_t": 8.491148183574904,
+      "prio1_completion_share": 0.5442300194931773,
+      "blackout_wait_vehicle_h": 818.4074738958855
+     },
+     "2030": {
+      "delivered_t_in_year": 316.31930169420366,
+      "delivered_bulk_t": 299.6,
+      "delivered_landed_t": 15.897782228985466,
+      "prio1_completion_share": 0.3840368776650636,
+      "blackout_wait_vehicle_h": 778.574233386595
+     },
+     "2031": {
+      "delivered_t_in_year": 299.6456350781553,
+      "delivered_bulk_t": 294.2,
+      "delivered_landed_t": 4.995532695924888,
+      "prio1_completion_share": 0.3885691903083207,
+      "blackout_wait_vehicle_h": 908.6919149403009
+     }
+    }
+   },
+   {
+    "link": "DTE",
+    "variant": "bound 168 h, never-linked as strategic",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 414.521179818553,
+     "delivered_bulk_t": 386.1,
+     "delivered_landed_t": 25.922388012442177,
+     "prio1_completion_share": 0.8757883699602316,
+     "delay_prio1_p90_censored_h": 2340.105935435989,
+     "blackout_wait_vehicle_h": 2855.7589468137367,
+     "blackout_jobs_refused": 130.1,
+     "delay_prio1_p90_censored_h_median": 2016.4754669367746
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 73.2130419925511,
+      "delivered_bulk_t": 58.0,
+      "delivered_landed_t": 14.314755205776294,
+      "prio1_completion_share": 0.9473684210526315,
+      "blackout_wait_vehicle_h": 427.59175767638754
+     },
+     "2029": {
+      "delivered_t_in_year": 513.5411055906769,
+      "delivered_bulk_t": 488.4,
+      "delivered_landed_t": 23.73976210298715,
+      "prio1_completion_share": 0.8668615984405458,
+      "blackout_wait_vehicle_h": 2167.7477248363766
+     },
+     "2030": {
+      "delivered_t_in_year": 533.1006906072868,
+      "delivered_bulk_t": 498.6,
+      "delivered_landed_t": 31.14481842557807,
+      "prio1_completion_share": 0.760476255378804,
+      "blackout_wait_vehicle_h": 4434.123742892993
+     },
+     "2031": {
+      "delivered_t_in_year": 538.2298810836974,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 34.49021631542719,
+      "prio1_completion_share": 0.9284472049689441,
+      "blackout_wait_vehicle_h": 4393.572561849188
+     }
+    }
+   },
+   {
+    "link": "DTE",
+    "variant": "bound 720 h, never-linked refused",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 309.1508003304672,
+     "delivered_bulk_t": 298.15,
+     "delivered_landed_t": 10.066613055281323,
+     "prio1_completion_share": 0.5017417425572559,
+     "delay_prio1_p90_censored_h": 5305.89143046698,
+     "blackout_wait_vehicle_h": 1575.600285639332,
+     "blackout_jobs_refused": 0.0,
+     "delay_prio1_p90_censored_h_median": 5028.627635014862
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 311.4592867517591,
+      "delivered_bulk_t": 300.0,
+      "delivered_landed_t": 10.19606401104108,
+      "prio1_completion_share": 0.5677234753550542,
+      "blackout_wait_vehicle_h": 1349.88583681502
+     },
+     "2029": {
+      "delivered_t_in_year": 308.558270257035,
+      "delivered_bulk_t": 298.8,
+      "delivered_landed_t": 8.643846551487577,
+      "prio1_completion_share": 0.6266374269005848,
+      "blackout_wait_vehicle_h": 1661.3527550941621
+     },
+     "2030": {
+      "delivered_t_in_year": 316.31930169420366,
+      "delivered_bulk_t": 299.6,
+      "delivered_landed_t": 15.897782228985466,
+      "prio1_completion_share": 0.3840368776650636,
+      "blackout_wait_vehicle_h": 1306.7640976394337
+     },
+     "2031": {
+      "delivered_t_in_year": 300.2663426188709,
+      "delivered_bulk_t": 294.2,
+      "delivered_landed_t": 5.528759429611169,
+      "prio1_completion_share": 0.42856919030832075,
+      "blackout_wait_vehicle_h": 1984.3984530087116
+     }
+    }
+   },
+   {
+    "link": "DTE",
+    "variant": "bound 720 h, never-linked as strategic",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 415.55942408106495,
+     "delivered_bulk_t": 384.9,
+     "delivered_landed_t": 27.860282550712306,
+     "prio1_completion_share": 0.9170840938610212,
+     "delay_prio1_p90_censored_h": 1880.0625910835527,
+     "blackout_wait_vehicle_h": 12392.285549036093,
+     "blackout_jobs_refused": 126.25,
+     "delay_prio1_p90_censored_h_median": 1152.3966941443898
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 71.72483405756911,
+      "delivered_bulk_t": 58.0,
+      "delivered_landed_t": 12.79169808409387,
+      "prio1_completion_share": 0.9574736842105264,
+      "blackout_wait_vehicle_h": 1027.9517047774575
+     },
+     "2029": {
+      "delivered_t_in_year": 509.3648797856716,
+      "delivered_bulk_t": 483.6,
+      "delivered_landed_t": 24.145941118963428,
+      "prio1_completion_share": 0.9118128654970761,
+      "blackout_wait_vehicle_h": 11831.300378152362
+     },
+     "2030": {
+      "delivered_t_in_year": 537.9019302499976,
+      "delivered_bulk_t": 498.6,
+      "delivered_landed_t": 35.11700956663488,
+      "prio1_completion_share": 0.8077454779103954,
+      "blackout_wait_vehicle_h": 19097.137292646297
+     },
+     "2031": {
+      "delivered_t_in_year": 543.2460522310218,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 39.386481433157044,
+      "prio1_completion_share": 0.9913043478260869,
+      "blackout_wait_vehicle_h": 17612.752820568254
+     }
+    }
+   },
+   {
+    "link": "DTE",
+    "variant": "strategic, strand on never-linked",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 41.89340300911824,
+     "delivered_bulk_t": 38.55,
+     "delivered_landed_t": 3.307974319540506,
+     "prio1_completion_share": 0.3989249551245922,
+     "delay_prio1_p90_censored_h": 5132.52301626111,
+     "blackout_wait_vehicle_h": 46474.141345681855,
+     "blackout_jobs_refused": 0.0,
+     "delay_prio1_p90_censored_h_median": 5339.397847765772
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 30.092355955819222,
+      "delivered_bulk_t": 27.4,
+      "delivered_landed_t": 2.6420459739057884,
+      "prio1_completion_share": 0.5048847117794486,
+      "blackout_wait_vehicle_h": 45497.33733748096
+     },
+     "2029": {
+      "delivered_t_in_year": 33.500628084765154,
+      "delivered_bulk_t": 30.8,
+      "delivered_landed_t": 2.6707094745190476,
+      "prio1_completion_share": 0.37702729044834304,
+      "blackout_wait_vehicle_h": 46444.11413375408
+     },
+     "2030": {
+      "delivered_t_in_year": 58.00804863355929,
+      "delivered_bulk_t": 55.4,
+      "delivered_landed_t": 2.6080486335592945,
+      "prio1_completion_share": 0.42800190813684064,
+      "blackout_wait_vehicle_h": 46060.29512063922
+     },
+     "2031": {
+      "delivered_t_in_year": 45.972579362329284,
+      "delivered_bulk_t": 40.6,
+      "delivered_landed_t": 5.311093196177893,
+      "prio1_completion_share": 0.2857859101337362,
+      "blackout_wait_vehicle_h": 47894.81879085314
+     }
+    }
+   },
+   {
+    "link": "DTE",
+    "variant": "strategic (Stage A)",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 424.69687843201007,
+     "delivered_bulk_t": 396.0,
+     "delivered_landed_t": 26.01478423817685,
+     "prio1_completion_share": 0.8939113635538123,
+     "delay_prio1_p90_censored_h": 1327.02033837013,
+     "blackout_wait_vehicle_h": 29926.72945011187,
+     "blackout_jobs_refused": 138.0
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 112.55057392406047,
+      "delivered_bulk_t": 105.0,
+      "delivered_landed_t": 7.28495701027978,
+      "prio1_completion_share": 0.7493525480367585,
+      "blackout_wait_vehicle_h": 41026.32596934085
+     },
+     "2029": {
+      "delivered_t_in_year": 508.01718818579974,
+      "delivered_bulk_t": 485.6,
+      "delivered_landed_t": 20.978637185617938,
+      "prio1_completion_share": 0.9336842105263157,
+      "blackout_wait_vehicle_h": 34200.893154180274
+     },
+     "2030": {
+      "delivered_t_in_year": 535.6419252158692,
+      "delivered_bulk_t": 494.2,
+      "delivered_landed_t": 36.746434036071605,
+      "prio1_completion_share": 0.9040372670807454,
+      "blackout_wait_vehicle_h": 21362.261805147235
+     },
+     "2031": {
+      "delivered_t_in_year": 542.5778264023111,
+      "delivered_bulk_t": 499.2,
+      "delivered_landed_t": 39.04910872073806,
+      "prio1_completion_share": 0.9885714285714287,
+      "blackout_wait_vehicle_h": 23117.43687177913
+     }
+    }
+   },
+   {
+    "link": "DTE",
+    "variant": "look-ahead (Stage A)",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 306.92743499783614,
+     "delivered_bulk_t": 296.3,
+     "delivered_landed_t": 9.759694121291092,
+     "prio1_completion_share": 0.49993077574628897,
+     "delay_prio1_p90_censored_h": 5658.4613905662845,
+     "blackout_wait_vehicle_h": 78.07279244138354,
+     "blackout_jobs_refused": 30.15
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 311.6816325090032,
+      "delivered_bulk_t": 300.0,
+      "delivered_landed_t": 10.357564387532909,
+      "prio1_completion_share": 0.6359774436090225,
+      "blackout_wait_vehicle_h": 91.9212270904729
+     },
+     "2029": {
+      "delivered_t_in_year": 300.6309585749057,
+      "delivered_bulk_t": 291.4,
+      "delivered_landed_t": 8.121248956520219,
+      "prio1_completion_share": 0.5999707602339182,
+      "blackout_wait_vehicle_h": 99.29813115950928
+     },
+     "2030": {
+      "delivered_t_in_year": 315.12249162130377,
+      "delivered_bulk_t": 299.6,
+      "delivered_landed_t": 15.022889044239065,
+      "prio1_completion_share": 0.329491423119609,
+      "blackout_wait_vehicle_h": 67.60694939203968
+     },
+     "2031": {
+      "delivered_t_in_year": 300.27465728613197,
+      "delivered_bulk_t": 294.2,
+      "delivered_landed_t": 5.5370740968721694,
+      "prio1_completion_share": 0.4342834760226064,
+      "blackout_wait_vehicle_h": 53.46486212351228
+     }
+    }
+   },
+   {
+    "link": "relay 0.1",
+    "variant": "strategic, strand on never-linked",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 530.5875641918882,
+     "delivered_bulk_t": 499.5,
+     "delivered_landed_t": 27.846628015211014,
+     "prio1_completion_share": 0.9197213026736424,
+     "delay_prio1_p90_censored_h": 1169.3043493203973,
+     "blackout_wait_vehicle_h": 1487.6529217698258,
+     "blackout_jobs_refused": 0.0,
+     "delay_prio1_p90_censored_h_median": 38.00692431502846
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 517.568114175025,
+      "delivered_bulk_t": 500.0,
+      "delivered_landed_t": 15.682939850980299,
+      "prio1_completion_share": 0.887218045112782,
+      "blackout_wait_vehicle_h": 1347.8318363060832
+     },
+     "2029": {
+      "delivered_t_in_year": 520.1433954336358,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 18.96835229899155,
+      "prio1_completion_share": 0.8514230019493176,
+      "blackout_wait_vehicle_h": 1432.6141033244503
+     },
+     "2030": {
+      "delivered_t_in_year": 541.6250644366366,
+      "delivered_bulk_t": 499.6,
+      "delivered_landed_t": 37.24191164844554,
+      "prio1_completion_share": 0.9402441636324695,
+      "blackout_wait_vehicle_h": 1472.4642075632241
+     },
+     "2031": {
+      "delivered_t_in_year": 543.0136827222553,
+      "delivered_bulk_t": 499.0,
+      "delivered_landed_t": 39.49330826242665,
+      "prio1_completion_share": 1.0,
+      "blackout_wait_vehicle_h": 1697.7015398855451
+     }
+    }
+   },
+   {
+    "link": "relay 0.1",
+    "variant": "bound 24 h, never-linked refused",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 532.0046150106131,
+     "delivered_bulk_t": 499.55,
+     "delivered_landed_t": 29.215909869439184,
+     "prio1_completion_share": 0.9528762817782782,
+     "delay_prio1_p90_censored_h": 1166.8313656612245,
+     "blackout_wait_vehicle_h": 1365.3867809725527,
+     "blackout_jobs_refused": 0.15,
+     "delay_prio1_p90_censored_h_median": 41.93303186844189
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 517.8779754130379,
+      "delivered_bulk_t": 499.8,
+      "delivered_landed_t": 16.18962904322595,
+      "prio1_completion_share": 0.9578947368421054,
+      "blackout_wait_vehicle_h": 1268.7768682585117
+     },
+     "2029": {
+      "delivered_t_in_year": 525.6062993754905,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 24.34111564235646,
+      "prio1_completion_share": 0.9230019493177387,
+      "blackout_wait_vehicle_h": 1369.152002283553
+     },
+     "2030": {
+      "delivered_t_in_year": 541.7165272615259,
+      "delivered_bulk_t": 499.6,
+      "delivered_landed_t": 37.32045032586357,
+      "prio1_completion_share": 0.9576354679802955,
+      "blackout_wait_vehicle_h": 1373.4420135035884
+     },
+     "2031": {
+      "delivered_t_in_year": 542.8176579923977,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 39.01244446631074,
+      "prio1_completion_share": 0.972972972972973,
+      "blackout_wait_vehicle_h": 1450.1762398445576
+     }
+    }
+   },
+   {
+    "link": "relay 0.1",
+    "variant": "bound 24 h, never-linked as strategic",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 532.0046150106131,
+     "delivered_bulk_t": 499.55,
+     "delivered_landed_t": 29.215909869439184,
+     "prio1_completion_share": 0.9528762817782782,
+     "delay_prio1_p90_censored_h": 1166.8313656612245,
+     "blackout_wait_vehicle_h": 1365.386780972553,
+     "blackout_jobs_refused": 0.15,
+     "delay_prio1_p90_censored_h_median": 41.93303186844189
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 517.8779754130379,
+      "delivered_bulk_t": 499.8,
+      "delivered_landed_t": 16.18962904322595,
+      "prio1_completion_share": 0.9578947368421054,
+      "blackout_wait_vehicle_h": 1268.7768682585117
+     },
+     "2029": {
+      "delivered_t_in_year": 525.6062993754905,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 24.34111564235646,
+      "prio1_completion_share": 0.9230019493177387,
+      "blackout_wait_vehicle_h": 1369.152002283553
+     },
+     "2030": {
+      "delivered_t_in_year": 541.7165272615259,
+      "delivered_bulk_t": 499.6,
+      "delivered_landed_t": 37.32045032586357,
+      "prio1_completion_share": 0.9576354679802955,
+      "blackout_wait_vehicle_h": 1373.4420135035884
+     },
+     "2031": {
+      "delivered_t_in_year": 542.8176579923977,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 39.01244446631074,
+      "prio1_completion_share": 0.972972972972973,
+      "blackout_wait_vehicle_h": 1450.1762398445576
+     }
+    }
+   },
+   {
+    "link": "relay 0.1",
+    "variant": "bound 72 h, never-linked refused",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 530.5875641918882,
+     "delivered_bulk_t": 499.5,
+     "delivered_landed_t": 27.846628015211014,
+     "prio1_completion_share": 0.9197213026736424,
+     "delay_prio1_p90_censored_h": 1169.3043493203973,
+     "blackout_wait_vehicle_h": 1487.6529217698258,
+     "blackout_jobs_refused": 0.0,
+     "delay_prio1_p90_censored_h_median": 38.00692431502846
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 517.568114175025,
+      "delivered_bulk_t": 500.0,
+      "delivered_landed_t": 15.682939850980299,
+      "prio1_completion_share": 0.887218045112782,
+      "blackout_wait_vehicle_h": 1347.8318363060832
+     },
+     "2029": {
+      "delivered_t_in_year": 520.1433954336358,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 18.96835229899155,
+      "prio1_completion_share": 0.8514230019493176,
+      "blackout_wait_vehicle_h": 1432.6141033244503
+     },
+     "2030": {
+      "delivered_t_in_year": 541.6250644366366,
+      "delivered_bulk_t": 499.6,
+      "delivered_landed_t": 37.24191164844554,
+      "prio1_completion_share": 0.9402441636324695,
+      "blackout_wait_vehicle_h": 1472.4642075632241
+     },
+     "2031": {
+      "delivered_t_in_year": 543.0136827222553,
+      "delivered_bulk_t": 499.0,
+      "delivered_landed_t": 39.49330826242665,
+      "prio1_completion_share": 1.0,
+      "blackout_wait_vehicle_h": 1697.7015398855451
+     }
+    }
+   },
+   {
+    "link": "relay 0.1",
+    "variant": "bound 72 h, never-linked as strategic",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 530.5875641918882,
+     "delivered_bulk_t": 499.5,
+     "delivered_landed_t": 27.846628015211014,
+     "prio1_completion_share": 0.9197213026736424,
+     "delay_prio1_p90_censored_h": 1169.3043493203973,
+     "blackout_wait_vehicle_h": 1487.6529217698258,
+     "blackout_jobs_refused": 0.0,
+     "delay_prio1_p90_censored_h_median": 38.00692431502846
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 517.568114175025,
+      "delivered_bulk_t": 500.0,
+      "delivered_landed_t": 15.682939850980299,
+      "prio1_completion_share": 0.887218045112782,
+      "blackout_wait_vehicle_h": 1347.8318363060832
+     },
+     "2029": {
+      "delivered_t_in_year": 520.1433954336358,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 18.96835229899155,
+      "prio1_completion_share": 0.8514230019493176,
+      "blackout_wait_vehicle_h": 1432.6141033244503
+     },
+     "2030": {
+      "delivered_t_in_year": 541.6250644366366,
+      "delivered_bulk_t": 499.6,
+      "delivered_landed_t": 37.24191164844554,
+      "prio1_completion_share": 0.9402441636324695,
+      "blackout_wait_vehicle_h": 1472.4642075632241
+     },
+     "2031": {
+      "delivered_t_in_year": 543.0136827222553,
+      "delivered_bulk_t": 499.0,
+      "delivered_landed_t": 39.49330826242665,
+      "prio1_completion_share": 1.0,
+      "blackout_wait_vehicle_h": 1697.7015398855451
+     }
+    }
+   },
+   {
+    "link": "relay 0.1",
+    "variant": "bound 168 h, never-linked refused",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 530.5875641918883,
+     "delivered_bulk_t": 499.5,
+     "delivered_landed_t": 27.846628015211014,
+     "prio1_completion_share": 0.9197213026736424,
+     "delay_prio1_p90_censored_h": 1169.3043493203973,
+     "blackout_wait_vehicle_h": 1487.6529217698258,
+     "blackout_jobs_refused": 0.0,
+     "delay_prio1_p90_censored_h_median": 38.00692431502846
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 517.568114175025,
+      "delivered_bulk_t": 500.0,
+      "delivered_landed_t": 15.682939850980299,
+      "prio1_completion_share": 0.887218045112782,
+      "blackout_wait_vehicle_h": 1347.8318363060832
+     },
+     "2029": {
+      "delivered_t_in_year": 520.1433954336358,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 18.96835229899155,
+      "prio1_completion_share": 0.8514230019493176,
+      "blackout_wait_vehicle_h": 1432.6141033244503
+     },
+     "2030": {
+      "delivered_t_in_year": 541.6250644366366,
+      "delivered_bulk_t": 499.6,
+      "delivered_landed_t": 37.24191164844554,
+      "prio1_completion_share": 0.9402441636324695,
+      "blackout_wait_vehicle_h": 1472.4642075632241
+     },
+     "2031": {
+      "delivered_t_in_year": 543.0136827222553,
+      "delivered_bulk_t": 499.0,
+      "delivered_landed_t": 39.49330826242665,
+      "prio1_completion_share": 1.0,
+      "blackout_wait_vehicle_h": 1697.7015398855451
+     }
+    }
+   },
+   {
+    "link": "relay 0.1",
+    "variant": "bound 168 h, never-linked as strategic",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 530.5875641918882,
+     "delivered_bulk_t": 499.5,
+     "delivered_landed_t": 27.846628015211007,
+     "prio1_completion_share": 0.9197213026736424,
+     "delay_prio1_p90_censored_h": 1169.3043493203973,
+     "blackout_wait_vehicle_h": 1487.6529217698258,
+     "blackout_jobs_refused": 0.0,
+     "delay_prio1_p90_censored_h_median": 38.00692431502846
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 517.568114175025,
+      "delivered_bulk_t": 500.0,
+      "delivered_landed_t": 15.682939850980299,
+      "prio1_completion_share": 0.887218045112782,
+      "blackout_wait_vehicle_h": 1347.8318363060832
+     },
+     "2029": {
+      "delivered_t_in_year": 520.1433954336358,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 18.96835229899155,
+      "prio1_completion_share": 0.8514230019493176,
+      "blackout_wait_vehicle_h": 1432.6141033244503
+     },
+     "2030": {
+      "delivered_t_in_year": 541.6250644366366,
+      "delivered_bulk_t": 499.6,
+      "delivered_landed_t": 37.24191164844554,
+      "prio1_completion_share": 0.9402441636324695,
+      "blackout_wait_vehicle_h": 1472.4642075632241
+     },
+     "2031": {
+      "delivered_t_in_year": 543.0136827222553,
+      "delivered_bulk_t": 499.0,
+      "delivered_landed_t": 39.49330826242665,
+      "prio1_completion_share": 1.0,
+      "blackout_wait_vehicle_h": 1697.7015398855451
+     }
+    }
+   },
+   {
+    "link": "relay 0.1",
+    "variant": "bound 720 h, never-linked refused",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 530.5875641918882,
+     "delivered_bulk_t": 499.5,
+     "delivered_landed_t": 27.846628015211007,
+     "prio1_completion_share": 0.9197213026736424,
+     "delay_prio1_p90_censored_h": 1169.3043493203973,
+     "blackout_wait_vehicle_h": 1487.6529217698258,
+     "blackout_jobs_refused": 0.0,
+     "delay_prio1_p90_censored_h_median": 38.00692431502846
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 517.568114175025,
+      "delivered_bulk_t": 500.0,
+      "delivered_landed_t": 15.682939850980299,
+      "prio1_completion_share": 0.887218045112782,
+      "blackout_wait_vehicle_h": 1347.8318363060832
+     },
+     "2029": {
+      "delivered_t_in_year": 520.1433954336358,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 18.96835229899155,
+      "prio1_completion_share": 0.8514230019493176,
+      "blackout_wait_vehicle_h": 1432.6141033244503
+     },
+     "2030": {
+      "delivered_t_in_year": 541.6250644366366,
+      "delivered_bulk_t": 499.6,
+      "delivered_landed_t": 37.24191164844554,
+      "prio1_completion_share": 0.9402441636324695,
+      "blackout_wait_vehicle_h": 1472.4642075632241
+     },
+     "2031": {
+      "delivered_t_in_year": 543.0136827222553,
+      "delivered_bulk_t": 499.0,
+      "delivered_landed_t": 39.49330826242665,
+      "prio1_completion_share": 1.0,
+      "blackout_wait_vehicle_h": 1697.7015398855451
+     }
+    }
+   },
+   {
+    "link": "relay 0.1",
+    "variant": "bound 720 h, never-linked as strategic",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 530.5875641918882,
+     "delivered_bulk_t": 499.5,
+     "delivered_landed_t": 27.846628015211007,
+     "prio1_completion_share": 0.9197213026736424,
+     "delay_prio1_p90_censored_h": 1169.3043493203973,
+     "blackout_wait_vehicle_h": 1487.6529217698258,
+     "blackout_jobs_refused": 0.0,
+     "delay_prio1_p90_censored_h_median": 38.00692431502846
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 517.568114175025,
+      "delivered_bulk_t": 500.0,
+      "delivered_landed_t": 15.682939850980299,
+      "prio1_completion_share": 0.887218045112782,
+      "blackout_wait_vehicle_h": 1347.8318363060832
+     },
+     "2029": {
+      "delivered_t_in_year": 520.1433954336358,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 18.96835229899155,
+      "prio1_completion_share": 0.8514230019493176,
+      "blackout_wait_vehicle_h": 1432.6141033244503
+     },
+     "2030": {
+      "delivered_t_in_year": 541.6250644366366,
+      "delivered_bulk_t": 499.6,
+      "delivered_landed_t": 37.24191164844554,
+      "prio1_completion_share": 0.9402441636324695,
+      "blackout_wait_vehicle_h": 1472.4642075632241
+     },
+     "2031": {
+      "delivered_t_in_year": 543.0136827222553,
+      "delivered_bulk_t": 499.0,
+      "delivered_landed_t": 39.49330826242665,
+      "prio1_completion_share": 1.0,
+      "blackout_wait_vehicle_h": 1697.7015398855451
+     }
+    }
+   },
+   {
+    "link": "relay 0.1",
+    "variant": "strategic (Stage A)",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 530.5875641918882,
+     "delivered_bulk_t": 499.5,
+     "delivered_landed_t": 27.846628015211014,
+     "prio1_completion_share": 0.9197213026736424,
+     "delay_prio1_p90_censored_h": 1169.3043493203973,
+     "blackout_wait_vehicle_h": 1487.6529217698258,
+     "blackout_jobs_refused": 0.0
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 517.568114175025,
+      "delivered_bulk_t": 500.0,
+      "delivered_landed_t": 15.682939850980299,
+      "prio1_completion_share": 0.887218045112782,
+      "blackout_wait_vehicle_h": 1347.8318363060832
+     },
+     "2029": {
+      "delivered_t_in_year": 520.1433954336358,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 18.96835229899155,
+      "prio1_completion_share": 0.8514230019493176,
+      "blackout_wait_vehicle_h": 1432.6141033244503
+     },
+     "2030": {
+      "delivered_t_in_year": 541.6250644366366,
+      "delivered_bulk_t": 499.6,
+      "delivered_landed_t": 37.24191164844554,
+      "prio1_completion_share": 0.9402441636324695,
+      "blackout_wait_vehicle_h": 1472.4642075632241
+     },
+     "2031": {
+      "delivered_t_in_year": 543.0136827222553,
+      "delivered_bulk_t": 499.0,
+      "delivered_landed_t": 39.49330826242665,
+      "prio1_completion_share": 1.0,
+      "blackout_wait_vehicle_h": 1697.7015398855451
+     }
+    }
+   },
+   {
+    "link": "relay 0.1",
+    "variant": "look-ahead (Stage A)",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 532.0046150106131,
+     "delivered_bulk_t": 499.55,
+     "delivered_landed_t": 29.215909869439184,
+     "prio1_completion_share": 0.9528762817782782,
+     "delay_prio1_p90_censored_h": 1166.8313656612243,
+     "blackout_wait_vehicle_h": 1365.6715824515095,
+     "blackout_jobs_refused": 0.15
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 517.8779754130379,
+      "delivered_bulk_t": 499.8,
+      "delivered_landed_t": 16.18962904322595,
+      "prio1_completion_share": 0.9578947368421054,
+      "blackout_wait_vehicle_h": 1268.9731682585118
+     },
+     "2029": {
+      "delivered_t_in_year": 525.6062993754905,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 24.34111564235646,
+      "prio1_completion_share": 0.9230019493177387,
+      "blackout_wait_vehicle_h": 1369.7426481993793
+     },
+     "2030": {
+      "delivered_t_in_year": 541.7165272615259,
+      "delivered_bulk_t": 499.6,
+      "delivered_landed_t": 37.32045032586357,
+      "prio1_completion_share": 0.9576354679802955,
+      "blackout_wait_vehicle_h": 1373.4420135035884
+     },
+     "2031": {
+      "delivered_t_in_year": 542.8176579923977,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 39.01244446631074,
+      "prio1_completion_share": 0.972972972972973,
+      "blackout_wait_vehicle_h": 1450.5284998445575
+     }
+    }
+   },
+   {
+    "link": "relay 0.5",
+    "variant": "strategic, strand on never-linked",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 532.2263850427189,
+     "delivered_bulk_t": 499.6,
+     "delivered_landed_t": 29.389944475140346,
+     "prio1_completion_share": 0.9577362812305603,
+     "delay_prio1_p90_censored_h": 536.3896963749205,
+     "blackout_wait_vehicle_h": 691.5518101384822,
+     "blackout_jobs_refused": 0.0,
+     "delay_prio1_p90_censored_h_median": 24.509101414436884
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 517.7943221705071,
+      "delivered_bulk_t": 500.0,
+      "delivered_landed_t": 16.04228585438066,
+      "prio1_completion_share": 0.976,
+      "blackout_wait_vehicle_h": 698.727193525253
+     },
+     "2029": {
+      "delivered_t_in_year": 527.3392788966374,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 25.821910333210656,
+      "prio1_completion_share": 0.9739961013645224,
+      "blackout_wait_vehicle_h": 774.7518432415576
+     },
+     "2030": {
+      "delivered_t_in_year": 541.7629791879706,
+      "delivered_bulk_t": 499.6,
+      "delivered_landed_t": 37.366902252308265,
+      "prio1_completion_share": 0.9714285714285715,
+      "blackout_wait_vehicle_h": 605.9049000563434
+     },
+     "2031": {
+      "delivered_t_in_year": 542.0089599157598,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 38.3286794606618,
+      "prio1_completion_share": 0.9095204521291478,
+      "blackout_wait_vehicle_h": 686.8233037307749
+     }
+    }
+   },
+   {
+    "link": "relay 0.5",
+    "variant": "bound 24 h, never-linked refused",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 532.3792950954589,
+     "delivered_bulk_t": 499.55,
+     "delivered_landed_t": 29.54398815261722,
+     "prio1_completion_share": 0.9556865917895667,
+     "delay_prio1_p90_censored_h": 682.8735593556611,
+     "blackout_wait_vehicle_h": 659.1307524471151,
+     "blackout_jobs_refused": 0.3,
+     "delay_prio1_p90_censored_h_median": 24.985988300203516
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 517.5551801507634,
+      "delivered_bulk_t": 499.8,
+      "delivered_landed_t": 16.006315880404067,
+      "prio1_completion_share": 0.9474285714285713,
+      "blackout_wait_vehicle_h": 646.1493150250651
+     },
+     "2029": {
+      "delivered_t_in_year": 526.9326186651641,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 25.43003132309307,
+      "prio1_completion_share": 0.960662768031189,
+      "blackout_wait_vehicle_h": 727.2845407277878
+     },
+     "2030": {
+      "delivered_t_in_year": 541.6846102494144,
+      "delivered_bulk_t": 499.6,
+      "delivered_landed_t": 37.30692671000465,
+      "prio1_completion_share": 0.9254658385093169,
+      "blackout_wait_vehicle_h": 585.753183119859
+     },
+     "2031": {
+      "delivered_t_in_year": 543.3447713164933,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 39.43267869696708,
+      "prio1_completion_share": 0.9891891891891891,
+      "blackout_wait_vehicle_h": 677.3359709157482
+     }
+    }
+   },
+   {
+    "link": "relay 0.5",
+    "variant": "bound 24 h, never-linked as strategic",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 532.3792950954589,
+     "delivered_bulk_t": 499.55,
+     "delivered_landed_t": 29.54398815261722,
+     "prio1_completion_share": 0.9556865917895667,
+     "delay_prio1_p90_censored_h": 682.8735593556611,
+     "blackout_wait_vehicle_h": 659.130752447115,
+     "blackout_jobs_refused": 0.3,
+     "delay_prio1_p90_censored_h_median": 24.985988300203516
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 517.5551801507634,
+      "delivered_bulk_t": 499.8,
+      "delivered_landed_t": 16.006315880404067,
+      "prio1_completion_share": 0.9474285714285713,
+      "blackout_wait_vehicle_h": 646.1493150250651
+     },
+     "2029": {
+      "delivered_t_in_year": 526.9326186651641,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 25.43003132309307,
+      "prio1_completion_share": 0.960662768031189,
+      "blackout_wait_vehicle_h": 727.2845407277878
+     },
+     "2030": {
+      "delivered_t_in_year": 541.6846102494144,
+      "delivered_bulk_t": 499.6,
+      "delivered_landed_t": 37.30692671000465,
+      "prio1_completion_share": 0.9254658385093169,
+      "blackout_wait_vehicle_h": 585.753183119859
+     },
+     "2031": {
+      "delivered_t_in_year": 543.3447713164933,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 39.43267869696708,
+      "prio1_completion_share": 0.9891891891891891,
+      "blackout_wait_vehicle_h": 677.3359709157482
+     }
+    }
+   },
+   {
+    "link": "relay 0.5",
+    "variant": "bound 72 h, never-linked refused",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 532.2263850427187,
+     "delivered_bulk_t": 499.6,
+     "delivered_landed_t": 29.38994447514035,
+     "prio1_completion_share": 0.9577362812305605,
+     "delay_prio1_p90_censored_h": 536.3896963749205,
+     "blackout_wait_vehicle_h": 691.5518101384823,
+     "blackout_jobs_refused": 0.0,
+     "delay_prio1_p90_censored_h_median": 24.509101414436884
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 517.7943221705071,
+      "delivered_bulk_t": 500.0,
+      "delivered_landed_t": 16.04228585438066,
+      "prio1_completion_share": 0.976,
+      "blackout_wait_vehicle_h": 698.727193525253
+     },
+     "2029": {
+      "delivered_t_in_year": 527.3392788966374,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 25.821910333210656,
+      "prio1_completion_share": 0.9739961013645224,
+      "blackout_wait_vehicle_h": 774.7518432415576
+     },
+     "2030": {
+      "delivered_t_in_year": 541.7629791879706,
+      "delivered_bulk_t": 499.6,
+      "delivered_landed_t": 37.366902252308265,
+      "prio1_completion_share": 0.9714285714285715,
+      "blackout_wait_vehicle_h": 605.9049000563434
+     },
+     "2031": {
+      "delivered_t_in_year": 542.0089599157598,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 38.3286794606618,
+      "prio1_completion_share": 0.9095204521291478,
+      "blackout_wait_vehicle_h": 686.8233037307749
+     }
+    }
+   },
+   {
+    "link": "relay 0.5",
+    "variant": "bound 72 h, never-linked as strategic",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 532.2263850427189,
+     "delivered_bulk_t": 499.6,
+     "delivered_landed_t": 29.38994447514035,
+     "prio1_completion_share": 0.9577362812305603,
+     "delay_prio1_p90_censored_h": 536.3896963749204,
+     "blackout_wait_vehicle_h": 691.5518101384822,
+     "blackout_jobs_refused": 0.0,
+     "delay_prio1_p90_censored_h_median": 24.509101414436884
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 517.7943221705071,
+      "delivered_bulk_t": 500.0,
+      "delivered_landed_t": 16.04228585438066,
+      "prio1_completion_share": 0.976,
+      "blackout_wait_vehicle_h": 698.727193525253
+     },
+     "2029": {
+      "delivered_t_in_year": 527.3392788966374,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 25.821910333210656,
+      "prio1_completion_share": 0.9739961013645224,
+      "blackout_wait_vehicle_h": 774.7518432415576
+     },
+     "2030": {
+      "delivered_t_in_year": 541.7629791879706,
+      "delivered_bulk_t": 499.6,
+      "delivered_landed_t": 37.366902252308265,
+      "prio1_completion_share": 0.9714285714285715,
+      "blackout_wait_vehicle_h": 605.9049000563434
+     },
+     "2031": {
+      "delivered_t_in_year": 542.0089599157598,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 38.3286794606618,
+      "prio1_completion_share": 0.9095204521291478,
+      "blackout_wait_vehicle_h": 686.8233037307749
+     }
+    }
+   },
+   {
+    "link": "relay 0.5",
+    "variant": "bound 168 h, never-linked refused",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 532.2263850427189,
+     "delivered_bulk_t": 499.6,
+     "delivered_landed_t": 29.389944475140346,
+     "prio1_completion_share": 0.9577362812305603,
+     "delay_prio1_p90_censored_h": 536.3896963749205,
+     "blackout_wait_vehicle_h": 691.5518101384822,
+     "blackout_jobs_refused": 0.0,
+     "delay_prio1_p90_censored_h_median": 24.509101414436884
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 517.7943221705071,
+      "delivered_bulk_t": 500.0,
+      "delivered_landed_t": 16.04228585438066,
+      "prio1_completion_share": 0.976,
+      "blackout_wait_vehicle_h": 698.727193525253
+     },
+     "2029": {
+      "delivered_t_in_year": 527.3392788966374,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 25.821910333210656,
+      "prio1_completion_share": 0.9739961013645224,
+      "blackout_wait_vehicle_h": 774.7518432415576
+     },
+     "2030": {
+      "delivered_t_in_year": 541.7629791879706,
+      "delivered_bulk_t": 499.6,
+      "delivered_landed_t": 37.366902252308265,
+      "prio1_completion_share": 0.9714285714285715,
+      "blackout_wait_vehicle_h": 605.9049000563434
+     },
+     "2031": {
+      "delivered_t_in_year": 542.0089599157598,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 38.3286794606618,
+      "prio1_completion_share": 0.9095204521291478,
+      "blackout_wait_vehicle_h": 686.8233037307749
+     }
+    }
+   },
+   {
+    "link": "relay 0.5",
+    "variant": "bound 168 h, never-linked as strategic",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 532.2263850427187,
+     "delivered_bulk_t": 499.6,
+     "delivered_landed_t": 29.38994447514035,
+     "prio1_completion_share": 0.9577362812305605,
+     "delay_prio1_p90_censored_h": 536.3896963749205,
+     "blackout_wait_vehicle_h": 691.5518101384823,
+     "blackout_jobs_refused": 0.0,
+     "delay_prio1_p90_censored_h_median": 24.509101414436884
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 517.7943221705071,
+      "delivered_bulk_t": 500.0,
+      "delivered_landed_t": 16.04228585438066,
+      "prio1_completion_share": 0.976,
+      "blackout_wait_vehicle_h": 698.727193525253
+     },
+     "2029": {
+      "delivered_t_in_year": 527.3392788966374,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 25.821910333210656,
+      "prio1_completion_share": 0.9739961013645224,
+      "blackout_wait_vehicle_h": 774.7518432415576
+     },
+     "2030": {
+      "delivered_t_in_year": 541.7629791879706,
+      "delivered_bulk_t": 499.6,
+      "delivered_landed_t": 37.366902252308265,
+      "prio1_completion_share": 0.9714285714285715,
+      "blackout_wait_vehicle_h": 605.9049000563434
+     },
+     "2031": {
+      "delivered_t_in_year": 542.0089599157598,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 38.3286794606618,
+      "prio1_completion_share": 0.9095204521291478,
+      "blackout_wait_vehicle_h": 686.8233037307749
+     }
+    }
+   },
+   {
+    "link": "relay 0.5",
+    "variant": "bound 720 h, never-linked refused",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 532.2263850427189,
+     "delivered_bulk_t": 499.6,
+     "delivered_landed_t": 29.389944475140346,
+     "prio1_completion_share": 0.9577362812305603,
+     "delay_prio1_p90_censored_h": 536.3896963749205,
+     "blackout_wait_vehicle_h": 691.5518101384822,
+     "blackout_jobs_refused": 0.0,
+     "delay_prio1_p90_censored_h_median": 24.509101414436884
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 517.7943221705071,
+      "delivered_bulk_t": 500.0,
+      "delivered_landed_t": 16.04228585438066,
+      "prio1_completion_share": 0.976,
+      "blackout_wait_vehicle_h": 698.727193525253
+     },
+     "2029": {
+      "delivered_t_in_year": 527.3392788966374,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 25.821910333210656,
+      "prio1_completion_share": 0.9739961013645224,
+      "blackout_wait_vehicle_h": 774.7518432415576
+     },
+     "2030": {
+      "delivered_t_in_year": 541.7629791879706,
+      "delivered_bulk_t": 499.6,
+      "delivered_landed_t": 37.366902252308265,
+      "prio1_completion_share": 0.9714285714285715,
+      "blackout_wait_vehicle_h": 605.9049000563434
+     },
+     "2031": {
+      "delivered_t_in_year": 542.0089599157598,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 38.3286794606618,
+      "prio1_completion_share": 0.9095204521291478,
+      "blackout_wait_vehicle_h": 686.8233037307749
+     }
+    }
+   },
+   {
+    "link": "relay 0.5",
+    "variant": "bound 720 h, never-linked as strategic",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 532.2263850427189,
+     "delivered_bulk_t": 499.6,
+     "delivered_landed_t": 29.389944475140346,
+     "prio1_completion_share": 0.9577362812305603,
+     "delay_prio1_p90_censored_h": 536.3896963749205,
+     "blackout_wait_vehicle_h": 691.5518101384822,
+     "blackout_jobs_refused": 0.0,
+     "delay_prio1_p90_censored_h_median": 24.509101414436884
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 517.7943221705071,
+      "delivered_bulk_t": 500.0,
+      "delivered_landed_t": 16.04228585438066,
+      "prio1_completion_share": 0.976,
+      "blackout_wait_vehicle_h": 698.727193525253
+     },
+     "2029": {
+      "delivered_t_in_year": 527.3392788966374,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 25.821910333210656,
+      "prio1_completion_share": 0.9739961013645224,
+      "blackout_wait_vehicle_h": 774.7518432415576
+     },
+     "2030": {
+      "delivered_t_in_year": 541.7629791879706,
+      "delivered_bulk_t": 499.6,
+      "delivered_landed_t": 37.366902252308265,
+      "prio1_completion_share": 0.9714285714285715,
+      "blackout_wait_vehicle_h": 605.9049000563434
+     },
+     "2031": {
+      "delivered_t_in_year": 542.0089599157598,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 38.3286794606618,
+      "prio1_completion_share": 0.9095204521291478,
+      "blackout_wait_vehicle_h": 686.8233037307749
+     }
+    }
+   },
+   {
+    "link": "relay 0.5",
+    "variant": "strategic (Stage A)",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 532.2263850427189,
+     "delivered_bulk_t": 499.6,
+     "delivered_landed_t": 29.389944475140346,
+     "prio1_completion_share": 0.9577362812305603,
+     "delay_prio1_p90_censored_h": 536.3896963749205,
+     "blackout_wait_vehicle_h": 691.5518101384822,
+     "blackout_jobs_refused": 0.0
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 517.7943221705071,
+      "delivered_bulk_t": 500.0,
+      "delivered_landed_t": 16.04228585438066,
+      "prio1_completion_share": 0.976,
+      "blackout_wait_vehicle_h": 698.727193525253
+     },
+     "2029": {
+      "delivered_t_in_year": 527.3392788966374,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 25.821910333210656,
+      "prio1_completion_share": 0.9739961013645224,
+      "blackout_wait_vehicle_h": 774.7518432415576
+     },
+     "2030": {
+      "delivered_t_in_year": 541.7629791879706,
+      "delivered_bulk_t": 499.6,
+      "delivered_landed_t": 37.366902252308265,
+      "prio1_completion_share": 0.9714285714285715,
+      "blackout_wait_vehicle_h": 605.9049000563434
+     },
+     "2031": {
+      "delivered_t_in_year": 542.0089599157598,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 38.3286794606618,
+      "prio1_completion_share": 0.9095204521291478,
+      "blackout_wait_vehicle_h": 686.8233037307749
+     }
+    }
+   },
+   {
+    "link": "relay 0.5",
+    "variant": "look-ahead (Stage A)",
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 532.3792950954588,
+     "delivered_bulk_t": 499.55,
+     "delivered_landed_t": 29.54398815261722,
+     "prio1_completion_share": 0.9556865917895667,
+     "delay_prio1_p90_censored_h": 682.8735593556612,
+     "blackout_wait_vehicle_h": 659.0519584232404,
+     "blackout_jobs_refused": 0.3
+    },
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 517.5551801507634,
+      "delivered_bulk_t": 499.8,
+      "delivered_landed_t": 16.006315880404067,
+      "prio1_completion_share": 0.9474285714285713,
+      "blackout_wait_vehicle_h": 646.1493150250651
+     },
+     "2029": {
+      "delivered_t_in_year": 526.9326186651641,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 25.43003132309307,
+      "prio1_completion_share": 0.960662768031189,
+      "blackout_wait_vehicle_h": 726.9693646322896
+     },
+     "2030": {
+      "delivered_t_in_year": 541.6846102494144,
+      "delivered_bulk_t": 499.6,
+      "delivered_landed_t": 37.30692671000465,
+      "prio1_completion_share": 0.9254658385093169,
+      "blackout_wait_vehicle_h": 585.753183119859
+     },
+     "2031": {
+      "delivered_t_in_year": 543.3447713164933,
+      "delivered_bulk_t": 499.4,
+      "delivered_landed_t": 39.43267869696708,
+      "prio1_completion_share": 0.9891891891891891,
+      "blackout_wait_vehicle_h": 677.3359709157482
+     }
+    }
+   }
+  ],
+  "design": "Stage F (B-57), all-supervised fleet, 20 seeds, E21 year rule, common random numbers with Stage A: strategic+bound at bound_h {24, 72, 168, 720} x never-linked samples {refused, left out (as strategic)}, and strategic with stranding on never-linked samples, at DTE, relay 0.1 and 0.5; paired against Stage A strategic and look-ahead at the same link regime",
+  "verdict_dte": [
+   {
+    "variant": "bound 24 h, never-linked refused",
+    "bulk_t": 296.3,
+    "bulk_share_of_strategic": 0.7482323232323232,
+    "t_2028": 311.6816325090032,
+    "t_2029_2031": 305.0192240791735,
+    "keeps_isru": false,
+    "avoids_2028_collapse": true
+   },
+   {
+    "variant": "bound 24 h, never-linked as strategic",
+    "bulk_t": 382.4,
+    "bulk_share_of_strategic": 0.9656565656565655,
+    "t_2028": 72.38813358627557,
+    "t_2029_2031": 524.5141511248588,
+    "keeps_isru": true,
+    "avoids_2028_collapse": false
+   },
+   {
+    "variant": "bound 72 h, never-linked refused",
+    "bulk_t": 298.2,
+    "bulk_share_of_strategic": 0.753030303030303,
+    "t_2028": 311.57130198850155,
+    "t_2029_2031": 308.0518063881569,
+    "keeps_isru": false,
+    "avoids_2028_collapse": true
+   },
+   {
+    "variant": "bound 72 h, never-linked as strategic",
+    "bulk_t": 385.4,
+    "bulk_share_of_strategic": 0.9732323232323232,
+    "t_2028": 72.49567634210139,
+    "t_2029_2031": 531.1926849688258,
+    "keeps_isru": true,
+    "avoids_2028_collapse": false
+   },
+   {
+    "variant": "bound 168 h, never-linked refused",
+    "bulk_t": 298.25,
+    "bulk_share_of_strategic": 0.7531565656565656,
+    "t_2028": 309.97814661494033,
+    "t_2029_2031": 308.2530537621563,
+    "keeps_isru": false,
+    "avoids_2028_collapse": true
+   },
+   {
+    "variant": "bound 168 h, never-linked as strategic",
+    "bulk_t": 386.1,
+    "bulk_share_of_strategic": 0.9750000000000001,
+    "t_2028": 73.2130419925511,
+    "t_2029_2031": 528.290559093887,
+    "keeps_isru": true,
+    "avoids_2028_collapse": false
+   },
+   {
+    "variant": "bound 720 h, never-linked refused",
+    "bulk_t": 298.15,
+    "bulk_share_of_strategic": 0.7529040404040404,
+    "t_2028": 311.4592867517591,
+    "t_2029_2031": 308.3813048567032,
+    "keeps_isru": false,
+    "avoids_2028_collapse": true
+   },
+   {
+    "variant": "bound 720 h, never-linked as strategic",
+    "bulk_t": 384.9,
+    "bulk_share_of_strategic": 0.9719696969696969,
+    "t_2028": 71.72483405756911,
+    "t_2029_2031": 530.170954088897,
+    "keeps_isru": true,
+    "avoids_2028_collapse": false
+   },
+   {
+    "variant": "strategic, strand on never-linked",
+    "bulk_t": 38.55,
+    "bulk_share_of_strategic": 0.09734848484848484,
+    "t_2028": 30.092355955819222,
+    "t_2029_2031": 45.827085360217914,
+    "keeps_isru": false,
+    "avoids_2028_collapse": false
+   },
+   {
+    "variant": "strategic (Stage A)",
+    "bulk_t": 396.0,
+    "bulk_share_of_strategic": 1.0,
+    "t_2028": 112.55057392406047,
+    "t_2029_2031": 528.7456466013267,
+    "keeps_isru": true,
+    "avoids_2028_collapse": false
+   },
+   {
+    "variant": "look-ahead (Stage A)",
+    "bulk_t": 296.3,
+    "bulk_share_of_strategic": 0.7482323232323232,
+    "t_2028": 311.6816325090032,
+    "t_2029_2031": 305.34270249411384,
+    "keeps_isru": false,
+    "avoids_2028_collapse": true
+   }
+  ],
+  "redraws": [
+   {
+    "policy": "strategic",
+    "link": "DTE",
+    "runs": 20,
+    "refused_per_run": 138.0,
+    "avoided_per_run": 0.0,
+    "refused_not_avoided_per_run": 138.0,
+    "refused_per_run_2028": 45.2,
+    "refused_per_run_2029": 102.8,
+    "refused_per_run_2030": 194.8,
+    "refused_per_run_2031": 209.2
+   },
+   {
+    "policy": "strategic",
+    "link": "relay 0.1",
+    "runs": 20,
+    "refused_per_run": 0.0,
+    "avoided_per_run": 0.0,
+    "refused_not_avoided_per_run": 0.0,
+    "refused_per_run_2028": 0.0,
+    "refused_per_run_2029": 0.0,
+    "refused_per_run_2030": 0.0,
+    "refused_per_run_2031": 0.0
+   },
+   {
+    "policy": "strategic",
+    "link": "relay 0.5",
+    "runs": 20,
+    "refused_per_run": 0.0,
+    "avoided_per_run": 0.0,
+    "refused_not_avoided_per_run": 0.0,
+    "refused_per_run_2028": 0.0,
+    "refused_per_run_2029": 0.0,
+    "refused_per_run_2030": 0.0,
+    "refused_per_run_2031": 0.0
+   },
+   {
+    "policy": "look-ahead",
+    "link": "DTE",
+    "runs": 20,
+    "refused_per_run": 30.15,
+    "avoided_per_run": 30.15,
+    "refused_not_avoided_per_run": 0.0,
+    "refused_per_run_2028": 29.2,
+    "refused_per_run_2029": 26.8,
+    "refused_per_run_2030": 25.2,
+    "refused_per_run_2031": 39.4
+   },
+   {
+    "policy": "look-ahead",
+    "link": "relay 0.1",
+    "runs": 20,
+    "refused_per_run": 0.15,
+    "avoided_per_run": 0.15,
+    "refused_not_avoided_per_run": 0.0,
+    "refused_per_run_2028": 0.2,
+    "refused_per_run_2029": 0.0,
+    "refused_per_run_2030": 0.0,
+    "refused_per_run_2031": 0.4
+   },
+   {
+    "policy": "look-ahead",
+    "link": "relay 0.5",
+    "runs": 20,
+    "refused_per_run": 0.3,
+    "avoided_per_run": 0.3,
+    "refused_not_avoided_per_run": 0.0,
+    "refused_per_run_2028": 0.0,
+    "refused_per_run_2029": 0.2,
+    "refused_per_run_2030": 0.0,
+    "refused_per_run_2031": 1.0
+   },
+   {
+    "policy": "strict",
+    "link": "DTE",
+    "runs": 20,
+    "refused_per_run": 13.4,
+    "avoided_per_run": 0.0,
+    "refused_not_avoided_per_run": 13.4,
+    "refused_per_run_2028": 6.0,
+    "refused_per_run_2029": 9.6,
+    "refused_per_run_2030": 13.2,
+    "refused_per_run_2031": 24.8
+   },
+   {
+    "policy": "strict",
+    "link": "relay 0.1",
+    "runs": 20,
+    "refused_per_run": 45.95,
+    "avoided_per_run": 0.0,
+    "refused_not_avoided_per_run": 45.95,
+    "refused_per_run_2028": 47.6,
+    "refused_per_run_2029": 43.0,
+    "refused_per_run_2030": 43.6,
+    "refused_per_run_2031": 49.6
+   },
+   {
+    "policy": "strict",
+    "link": "relay 0.5",
+    "runs": 20,
+    "refused_per_run": 1.8,
+    "avoided_per_run": 0.0,
+    "refused_not_avoided_per_run": 1.8,
+    "refused_per_run_2028": 1.8,
+    "refused_per_run_2029": 1.0,
+    "refused_per_run_2030": 2.6,
+    "refused_per_run_2031": 1.8
+   },
+   {
+    "policy": "bound 168 h, never-linked as strategic",
+    "link": "DTE",
+    "runs": 20,
+    "refused_per_run": 130.1,
+    "avoided_per_run": 40.25,
+    "refused_not_avoided_per_run": 89.85,
+    "refused_per_run_2028": 8.8,
+    "refused_per_run_2029": 115.2,
+    "refused_per_run_2030": 180.0,
+    "refused_per_run_2031": 216.4
+   },
+   {
+    "policy": "bound 168 h, never-linked as strategic",
+    "link": "relay 0.1",
+    "runs": 20,
+    "refused_per_run": 0.0,
+    "avoided_per_run": 0.0,
+    "refused_not_avoided_per_run": 0.0,
+    "refused_per_run_2028": 0.0,
+    "refused_per_run_2029": 0.0,
+    "refused_per_run_2030": 0.0,
+    "refused_per_run_2031": 0.0
+   },
+   {
+    "policy": "bound 168 h, never-linked as strategic",
+    "link": "relay 0.5",
+    "runs": 20,
+    "refused_per_run": 0.0,
+    "avoided_per_run": 0.0,
+    "refused_not_avoided_per_run": 0.0,
+    "refused_per_run_2028": 0.0,
+    "refused_per_run_2029": 0.0,
+    "refused_per_run_2030": 0.0,
+    "refused_per_run_2031": 0.0
+   },
+   {
+    "policy": "bound 168 h, never-linked refused",
+    "link": "DTE",
+    "runs": 20,
+    "refused_per_run": 7.75,
+    "avoided_per_run": 7.75,
+    "refused_not_avoided_per_run": 0.0,
+    "refused_per_run_2028": 5.2,
+    "refused_per_run_2029": 6.8,
+    "refused_per_run_2030": 4.4,
+    "refused_per_run_2031": 14.6
+   },
+   {
+    "policy": "bound 168 h, never-linked refused",
+    "link": "relay 0.1",
+    "runs": 20,
+    "refused_per_run": 0.0,
+    "avoided_per_run": 0.0,
+    "refused_not_avoided_per_run": 0.0,
+    "refused_per_run_2028": 0.0,
+    "refused_per_run_2029": 0.0,
+    "refused_per_run_2030": 0.0,
+    "refused_per_run_2031": 0.0
+   },
+   {
+    "policy": "bound 168 h, never-linked refused",
+    "link": "relay 0.5",
+    "runs": 20,
+    "refused_per_run": 0.0,
+    "avoided_per_run": 0.0,
+    "refused_not_avoided_per_run": 0.0,
+    "refused_per_run_2028": 0.0,
+    "refused_per_run_2029": 0.0,
+    "refused_per_run_2030": 0.0,
+    "refused_per_run_2031": 0.0
+   },
+   {
+    "policy": "bound 24 h, never-linked as strategic",
+    "link": "DTE",
+    "runs": 20,
+    "refused_per_run": 161.1,
+    "avoided_per_run": 53.55,
+    "refused_not_avoided_per_run": 107.55,
+    "refused_per_run_2028": 15.2,
+    "refused_per_run_2029": 75.4,
+    "refused_per_run_2030": 236.8,
+    "refused_per_run_2031": 317.0
+   },
+   {
+    "policy": "bound 24 h, never-linked as strategic",
+    "link": "relay 0.1",
+    "runs": 20,
+    "refused_per_run": 0.15,
+    "avoided_per_run": 0.15,
+    "refused_not_avoided_per_run": 0.0,
+    "refused_per_run_2028": 0.2,
+    "refused_per_run_2029": 0.0,
+    "refused_per_run_2030": 0.0,
+    "refused_per_run_2031": 0.4
+   },
+   {
+    "policy": "bound 24 h, never-linked as strategic",
+    "link": "relay 0.5",
+    "runs": 20,
+    "refused_per_run": 0.3,
+    "avoided_per_run": 0.3,
+    "refused_not_avoided_per_run": 0.0,
+    "refused_per_run_2028": 0.0,
+    "refused_per_run_2029": 0.2,
+    "refused_per_run_2030": 0.0,
+    "refused_per_run_2031": 1.0
+   },
+   {
+    "policy": "bound 24 h, never-linked refused",
+    "link": "DTE",
+    "runs": 20,
+    "refused_per_run": 24.05,
+    "avoided_per_run": 24.05,
+    "refused_not_avoided_per_run": 0.0,
+    "refused_per_run_2028": 21.2,
+    "refused_per_run_2029": 21.4,
+    "refused_per_run_2030": 22.0,
+    "refused_per_run_2031": 31.6
+   },
+   {
+    "policy": "bound 24 h, never-linked refused",
+    "link": "relay 0.1",
+    "runs": 20,
+    "refused_per_run": 0.15,
+    "avoided_per_run": 0.15,
+    "refused_not_avoided_per_run": 0.0,
+    "refused_per_run_2028": 0.2,
+    "refused_per_run_2029": 0.0,
+    "refused_per_run_2030": 0.0,
+    "refused_per_run_2031": 0.4
+   },
+   {
+    "policy": "bound 24 h, never-linked refused",
+    "link": "relay 0.5",
+    "runs": 20,
+    "refused_per_run": 0.3,
+    "avoided_per_run": 0.3,
+    "refused_not_avoided_per_run": 0.0,
+    "refused_per_run_2028": 0.0,
+    "refused_per_run_2029": 0.2,
+    "refused_per_run_2030": 0.0,
+    "refused_per_run_2031": 1.0
+   },
+   {
+    "policy": "bound 72 h, never-linked as strategic",
+    "link": "DTE",
+    "runs": 20,
+    "refused_per_run": 152.5,
+    "avoided_per_run": 56.45,
+    "refused_not_avoided_per_run": 96.05,
+    "refused_per_run_2028": 20.6,
+    "refused_per_run_2029": 113.8,
+    "refused_per_run_2030": 265.4,
+    "refused_per_run_2031": 210.2
+   },
+   {
+    "policy": "bound 72 h, never-linked as strategic",
+    "link": "relay 0.1",
+    "runs": 20,
+    "refused_per_run": 0.0,
+    "avoided_per_run": 0.0,
+    "refused_not_avoided_per_run": 0.0,
+    "refused_per_run_2028": 0.0,
+    "refused_per_run_2029": 0.0,
+    "refused_per_run_2030": 0.0,
+    "refused_per_run_2031": 0.0
+   },
+   {
+    "policy": "bound 72 h, never-linked as strategic",
+    "link": "relay 0.5",
+    "runs": 20,
+    "refused_per_run": 0.0,
+    "avoided_per_run": 0.0,
+    "refused_not_avoided_per_run": 0.0,
+    "refused_per_run_2028": 0.0,
+    "refused_per_run_2029": 0.0,
+    "refused_per_run_2030": 0.0,
+    "refused_per_run_2031": 0.0
+   },
+   {
+    "policy": "bound 72 h, never-linked refused",
+    "link": "DTE",
+    "runs": 20,
+    "refused_per_run": 14.2,
+    "avoided_per_run": 14.2,
+    "refused_not_avoided_per_run": 0.0,
+    "refused_per_run_2028": 9.6,
+    "refused_per_run_2029": 16.4,
+    "refused_per_run_2030": 8.6,
+    "refused_per_run_2031": 22.2
+   },
+   {
+    "policy": "bound 72 h, never-linked refused",
+    "link": "relay 0.1",
+    "runs": 20,
+    "refused_per_run": 0.0,
+    "avoided_per_run": 0.0,
+    "refused_not_avoided_per_run": 0.0,
+    "refused_per_run_2028": 0.0,
+    "refused_per_run_2029": 0.0,
+    "refused_per_run_2030": 0.0,
+    "refused_per_run_2031": 0.0
+   },
+   {
+    "policy": "bound 72 h, never-linked refused",
+    "link": "relay 0.5",
+    "runs": 20,
+    "refused_per_run": 0.0,
+    "avoided_per_run": 0.0,
+    "refused_not_avoided_per_run": 0.0,
+    "refused_per_run_2028": 0.0,
+    "refused_per_run_2029": 0.0,
+    "refused_per_run_2030": 0.0,
+    "refused_per_run_2031": 0.0
+   },
+   {
+    "policy": "bound 720 h, never-linked as strategic",
+    "link": "DTE",
+    "runs": 20,
+    "refused_per_run": 126.25,
+    "avoided_per_run": 0.25,
+    "refused_not_avoided_per_run": 126.0,
+    "refused_per_run_2028": 1.4,
+    "refused_per_run_2029": 103.2,
+    "refused_per_run_2030": 186.2,
+    "refused_per_run_2031": 214.2
+   },
+   {
+    "policy": "bound 720 h, never-linked as strategic",
+    "link": "relay 0.1",
+    "runs": 20,
+    "refused_per_run": 0.0,
+    "avoided_per_run": 0.0,
+    "refused_not_avoided_per_run": 0.0,
+    "refused_per_run_2028": 0.0,
+    "refused_per_run_2029": 0.0,
+    "refused_per_run_2030": 0.0,
+    "refused_per_run_2031": 0.0
+   },
+   {
+    "policy": "bound 720 h, never-linked as strategic",
+    "link": "relay 0.5",
+    "runs": 20,
+    "refused_per_run": 0.0,
+    "avoided_per_run": 0.0,
+    "refused_not_avoided_per_run": 0.0,
+    "refused_per_run_2028": 0.0,
+    "refused_per_run_2029": 0.0,
+    "refused_per_run_2030": 0.0,
+    "refused_per_run_2031": 0.0
+   },
+   {
+    "policy": "bound 720 h, never-linked refused",
+    "link": "DTE",
+    "runs": 20,
+    "refused_per_run": 0.0,
+    "avoided_per_run": 0.0,
+    "refused_not_avoided_per_run": 0.0,
+    "refused_per_run_2028": 0.0,
+    "refused_per_run_2029": 0.0,
+    "refused_per_run_2030": 0.0,
+    "refused_per_run_2031": 0.0
+   },
+   {
+    "policy": "bound 720 h, never-linked refused",
+    "link": "relay 0.1",
+    "runs": 20,
+    "refused_per_run": 0.0,
+    "avoided_per_run": 0.0,
+    "refused_not_avoided_per_run": 0.0,
+    "refused_per_run_2028": 0.0,
+    "refused_per_run_2029": 0.0,
+    "refused_per_run_2030": 0.0,
+    "refused_per_run_2031": 0.0
+   },
+   {
+    "policy": "bound 720 h, never-linked refused",
+    "link": "relay 0.5",
+    "runs": 20,
+    "refused_per_run": 0.0,
+    "avoided_per_run": 0.0,
+    "refused_not_avoided_per_run": 0.0,
+    "refused_per_run_2028": 0.0,
+    "refused_per_run_2029": 0.0,
+    "refused_per_run_2030": 0.0,
+    "refused_per_run_2031": 0.0
+   },
+   {
+    "policy": "strategic, strand on never-linked",
+    "link": "DTE",
+    "runs": 20,
+    "refused_per_run": 0.0,
+    "avoided_per_run": 0.0,
+    "refused_not_avoided_per_run": 0.0,
+    "refused_per_run_2028": 0.0,
+    "refused_per_run_2029": 0.0,
+    "refused_per_run_2030": 0.0,
+    "refused_per_run_2031": 0.0
+   },
+   {
+    "policy": "strategic, strand on never-linked",
+    "link": "relay 0.1",
+    "runs": 20,
+    "refused_per_run": 0.0,
+    "avoided_per_run": 0.0,
+    "refused_not_avoided_per_run": 0.0,
+    "refused_per_run_2028": 0.0,
+    "refused_per_run_2029": 0.0,
+    "refused_per_run_2030": 0.0,
+    "refused_per_run_2031": 0.0
+   },
+   {
+    "policy": "strategic, strand on never-linked",
+    "link": "relay 0.5",
+    "runs": 20,
+    "refused_per_run": 0.0,
+    "avoided_per_run": 0.0,
+    "refused_not_avoided_per_run": 0.0,
+    "refused_per_run_2028": 0.0,
+    "refused_per_run_2029": 0.0,
+    "refused_per_run_2030": 0.0,
+    "refused_per_run_2031": 0.0
+   }
+  ],
+  "never_linked_legs": {
+   "criterion": "any_part, direct",
+   "samples_never_linked": 283,
+   "samples": 2421,
+   "legs_with_never_linked_sample": 101,
+   "legs": 182,
+   "main_network_legs": 70,
+   "main_network_legs_with_never_linked_sample": 28,
+   "main_network_list": [
+    "BASE->ISRU",
+    "BASE->PAD_B@1",
+    "DEPOT->ISRU",
+    "DEPOT->PAD_B@1",
+    "POWER->ISRU",
+    "POWER->PAD_B@1",
+    "CONSTR->ISRU",
+    "CONSTR->PAD_B@1",
+    "ISRU->BASE",
+    "ISRU->DEPOT",
+    "ISRU->POWER",
+    "ISRU->CONSTR",
+    "ISRU->SCI_1",
+    "ISRU->PSR",
+    "ISRU->PAD_A@1",
+    "ISRU->PAD_B@1",
+    "SCI_1->ISRU",
+    "SCI_1->PAD_B@1",
+    "PSR->POWER",
+    "PSR->ISRU",
+    "PSR->PAD_B@1",
+    "PAD_A@1->ISRU",
+    "PAD_B@1->BASE",
+    "PAD_B@1->POWER",
+    "PAD_B@1->CONSTR",
+    "PAD_B@1->ISRU",
+    "PAD_B@1->SCI_1",
+    "PAD_B@1->PSR"
+   ]
+  },
+  "pool_starvation": {
+   "seed": 0,
+   "start_year": 2028,
+   "bound_h": 24.0,
+   "pool_cap": 40,
+   "delivered_t_in_year": 73.1146061448043,
+   "moments": [
+    {
+     "t_h": 1012.3,
+     "waiting": 27,
+     "free_rovers": 5,
+     "pool": 27,
+     "pool_blocked": 27,
+     "pool_lanes": {
+      "CONSTR->ISRU": 24,
+      "CONSTR->BASE": 2,
+      "PAD_A->SCI_1": 1
+     },
+     "beyond_cap": 0,
+     "beyond_cap_servable_now": 0,
+     "beyond_cap_servable_lanes": {}
+    },
+    {
+     "t_h": 3000.6,
+     "waiting": 130,
+     "free_rovers": 2,
+     "pool": 40,
+     "pool_blocked": 40,
+     "pool_lanes": {
+      "CONSTR->ISRU": 30,
+      "PAD_B->BASE": 3,
+      "PAD_B->PSR": 2,
+      "PAD_B->SCI_1": 2
+     },
+     "beyond_cap": 90,
+     "beyond_cap_servable_now": 0,
+     "beyond_cap_servable_lanes": {}
+    },
+    {
+     "t_h": 6001.1,
+     "waiting": 294,
+     "free_rovers": 4,
+     "pool": 40,
+     "pool_blocked": 40,
+     "pool_lanes": {
+      "CONSTR->ISRU": 37,
+      "PAD_B->SCI_1": 2,
+      "PAD_A->SCI_1": 1
+     },
+     "beyond_cap": 254,
+     "beyond_cap_servable_now": 152,
+     "beyond_cap_servable_lanes": {
+      "CONSTR->BASE": 151,
+      "BASE->PAD_B": 1
+     }
+    }
+   ]
+  }
  }
 }

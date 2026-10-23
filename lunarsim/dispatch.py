@@ -39,8 +39,25 @@ def _approach_h(sim: Simulation, v: Vehicle, c: Cargo) -> float:
 
 
 def _single_job_hours(sim: Simulation, v: Vehicle, c: Cargo) -> float:
-    job = Job([v], [c], [c.dest])
-    return sim.job_plan(job, sim.t)[0]
+    """Planned hours of v carrying c alone. Memoised within one engine dispatch call: nothing is committed before the
+    mechanism returns, so the plan of a given vehicle and item cannot change, and the marketplace asks for the same
+    pair about twenty times per call under the look-ahead policies (B-57)."""
+    return _plan_hours(sim, v, [c], [c.dest])
+
+
+def _plan_hours(sim: Simulation, v: Vehicle, items: List[Cargo], route: List[str]) -> float:
+    """sim.job_plan(...)[0] of a one-vehicle job, memoised within one engine dispatch call (see _single_job_hours).
+    Only for callers that use the hours alone: a memo hit does not refresh sim._last_segments."""
+    serial = getattr(sim, "_dispatch_serial", None)
+    if serial is None:
+        return sim.job_plan(Job([v], list(items), list(route)), sim.t)[0]
+    memo = getattr(sim, "_plan_memo", None)
+    if memo is None or memo[0] != serial:
+        memo = sim._plan_memo = (serial, {})
+    k = (v.id, tuple(c.id for c in items), tuple(route))
+    if k not in memo[1]:
+        memo[1][k] = sim.job_plan(Job([v], list(items), list(route)), sim.t)[0]
+    return memo[1][k]
 
 
 def _comms_blocked(sim: Simulation, v: Vehicle, c: Cargo) -> bool:
@@ -163,7 +180,7 @@ def _try_bundle(sim: Simulation, v: Vehicle, seed_item: Cargo, pool: List[Cargo]
     pad while capacity allows and the marginal hours per added item stay small."""
     bundle = [seed_item]
     route = [seed_item.dest]
-    base_hours = sim.job_plan(Job([v], bundle, route), sim.t)[0]
+    base_hours = _plan_hours(sim, v, bundle, route)
     cands = [c for c in pool if c is not seed_item and c.origin == seed_item.origin
              and v.compatible(c)]
     cands.sort(key=lambda c: (c.dest != seed_item.dest, c.priority, c.t_ready))
@@ -175,7 +192,7 @@ def _try_bundle(sim: Simulation, v: Vehicle, seed_item: Cargo, pool: List[Cargo]
         new_route = _best_route(sim, seed_item.origin, route + [c.dest])
         if len(new_route) > 4:
             continue
-        new_hours = sim.job_plan(Job([v], bundle + [c], new_route), sim.t)[0]
+        new_hours = _plan_hours(sim, v, bundle + [c], new_route)
         # accept if the detour is cheaper than a separate trip would be
         separate = _single_job_hours(sim, v, c)
         if new_hours - base_hours < 0.8 * separate:
