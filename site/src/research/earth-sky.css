@@ -79,6 +79,6 @@
 .es-scroll { overflow-x: auto; max-height: 24rem; }
 .es-result { margin-top: var(--s-4); max-width: 46rem; border-left: 3px solid var(--accent); padding-left: var(--s-3); }
 .es-result p { margin: 0; }
-.es-result .es-chips { grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr)); }
+.es-result .es-chips { grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr)); }   /* four chips: two by two on desktop, one column on phones */
 .es-sources { margin-top: var(--s-6); }
 .es-sources code { font-size: 0.85em; overflow-wrap: anywhere; }

@@ -1400,7 +1400,7 @@ def cmd_rescue(a) -> None:
     print(f"{table_name} ({len(table)} rows) and E21_fit_r2.json '{key}' written ({time.time() - t0:.0f} s)")
     for m, b in doc["breakeven_vs_strict"].items():
         print(f"  break-even vs strict, {m}: {b['breakeven_h']} (95 % {b['ci95'][0]} .. {b['ci95'][1]}; beyond range "
-              f"{b['share_beyond_range']:.0%}, below {b['share_below_range']:.0%}); diffs by level "
+              f"{b['share_beyond_range']:.2%}, below {b['share_below_range']:.2%}); diffs by level "
               + ", ".join(f"{v:.3g}" for v in b["mean_diff_by_level"]))
 
 

@@ -4601,7 +4601,7 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
 - **All years:**
   - Against strict: +226 t [217, 234] at 0 h down to +45 [16, 74] at 720 h. Urgent completion +0.53 to +0.40. Censored p90 GM 0.00-0.26 (Wilcoxon p ≤ 0.0002).
   - Against strategic: +108 [24, 191] at 0 h, +91 [6, 176] at 168 h, -73 [-150, 4] at 720 h.
-- **Break-even against strict:** beyond 720 h for tonnage and for urgent completion, in every one of 2,000 draws.
+- **Break-even against strict:** beyond 720 h for tonnage in 99.95 % of the 2,000 draws (1,999; corrected 22:45, my console summary had rounded it to 100 %) and for urgent completion in every draw.
 - **Effort:** rescues per run 338 / 331 / 255 / 148 / 43; rescue rover-hours 0 / 7,926 / 18,123 / 24,077 / 28,706. At 0 h there is no intervention wait at all (waiting = 0), an upper bound. The helper's time is not modelled, so this is optimistic.
 - So the 2028 collapse is the cost of leaving one rover to wait out an 18-month dark spot. Any operator rule that sends help within about a week removes it.
 
@@ -4638,3 +4638,33 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
 **FRONTEND:** nothing.
 
 **Questions for LEAD:** none.
+
+## F-42 DONE 22:43 | /research/earth-sky/ section 3: help for any long wait fixes 2028 (B-60)
+
+**Section 3 text** (every number comes from the staged data, each with its flag and source)
+- I replaced "None of this changes 2028 …" with:
+  - "Help only at points that never see Earth leaves 2028 as it is: the dark spot does see Earth again, in Jul 2029, so a rover stopped there waits it out, and the 2028 sky stays at **86 t** to **208 t** whatever the help time."
+  - "Help for any rover held longer than a week fixes it: **507 t** under the 2028 sky and **516 t** a year over all four skies, close to the **532 t** with Earth always in view."
+  - "That help would be needed about **148** times a year, and again the helper's own time is not counted." Your sentence "These are best cases: the helper's own time is not counted." stays where it was; the new sentence says "again" rather than repeat it word for word.
+- New fourth chip: "Help for any long wait, 2028 sky", 507 t. With four chips, the grid shows two per row on desktop and tablet (it was 3 + 1) and one column on phones.
+
+**Data**
+- `prepare-data.mjs` adds two blocks to `research/earth-sky/rescue.json`:
+  - `any`: `rescue_any.levels`, keeping only rescue_h, n, tonnage, 2028 tonnage and rescues_per_run.
+  - `always`: the 532 t, which is not in `rescue_any`. It comes from `results/table_E21_r2.csv`, row stage A, comms always, mix supervised_strategic, sensitivity none (532.19 t, 20 runs). It equals rescue_any at 0 h (532.2): with help at once there is no wait at all.
+- The sources on the page:
+  - `E21_fit_r2.json` → `rescue_any.levels[rescue_h = 168]` (`.by_year.2028.delivered_t_in_year`, `.mean.delivered_t_in_year`, `.rescues_per_run`);
+  - the CSV row for the always-linked fleet.
+- The page's list of data files now also names `results/table_E21_r2.csv`.
+- Budget: data 80.8/100 KB, JS 13.6/15, CSS 9.3/15. Limits unchanged.
+
+**Checks**
+- Build OK; node tests 11/11; `budgets.py pages`: OK.
+- 390 px light and dark: no overflow. The chip layout was measured at 1280, 760 and 390 px.
+- No console errors. No 3D was opened. Server stopped; tab closed.
+
+**Files:** `site/scripts/prepare-data.mjs`, `site/src/research/earth-sky.js`, `site/src/research/earth-sky.css`, `.team/inbox-frontend.md` (status).
+
+**From BACKEND:** nothing. **Questions for LEAD:** none.
+
+- B-60 addendum 22:47: the break-even shares in my console summary were rounded with {:.0%}; experiments/phase4/analyse_e21.py now prints them with {:.2%} (display only, no data change; uncommitted). The B-60 line above is corrected to 99.95 %.

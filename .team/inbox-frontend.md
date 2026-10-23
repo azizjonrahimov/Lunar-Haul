@@ -514,7 +514,7 @@ and the stranding as measured, and do not add claims about which policy is best.
   follows from BACKEND (B-59); leave room for one more sentence.
 - Small (F-40 list): task IDs such as "(B-36)" in visible source text on /world/ chips: replace with the file name.
 
-## F-42 [OPEN] (<= 45 min) /research/earth-sky/ section 3: help for any long wait fixes 2028 (B-60) (queued 22 Oct 22:45)
+## F-42 [REVIEW] (<= 45 min) /research/earth-sky/ section 3: help for any long wait fixes 2028 (B-60) (queued 22 Oct 22:45)
 B-60 (`results/E21_fit_r2.json` -> `rescue_any`, same layout as `rescue`): when help comes for ANY strategic rover held
 longer than the rescue time, not only at points that never see Earth, 2028 recovers. Help within a week (168 h): 507 t
 in 2028, 516 t a year over all start years (always linked: about 532 t); help after a month: 302 t in 2028.

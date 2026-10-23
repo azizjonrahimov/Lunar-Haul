@@ -172,12 +172,20 @@ if (existsSync(e21years)) {
 const skylines = join(ROOT, 'data', 'comms', 'connecting_ridge', 'horizons_dark_sample.json');
 if (existsSync(skylines)) { mkdirSync(join(PUB, 'comms'), { recursive: true }); copyFileSync(skylines, join(PUB, 'comms', 'horizons_dark_sample.json')); console.log('prepare-data: skylines at the dark sample staged'); }
 // F-41 part 2: the strategic rule when help at a never-linked point is late (E21 Stage G rescue) or never comes (Stage F
-// strand), with the strict and strategic references; only what /research/earth-sky/ shows
+// strand), with the strict and strategic references; F-42: help for any long wait (Stage G2, rescue_any) and the fleet
+// with Earth always in view (table_E21_r2.csv); only what /research/earth-sky/ shows
 const fit = join(ROOT, 'results', 'E21_fit_r2.json');
 if (existsSync(fit)) {
   const j = JSON.parse(readFileSync(fit, 'utf8')), strand = j.bounded?.cells?.find(c => c.link === 'DTE' && c.variant === 'strategic, strand on never-linked');
   const pick = m => ({ delivered_t_in_year: m.delivered_t_in_year, prio1_completion_share: m.prio1_completion_share });
   const t2028 = by => by?.['2028']?.delivered_t_in_year ?? by?.['2028'];
+  const e21 = join(ROOT, 'results', 'table_E21_r2.csv');
+  let always = null;
+  if (existsSync(e21)) {
+    const [head, ...rows] = readFileSync(e21, 'utf8').trim().split(String.fromCharCode(10)).map(l => l.trim()).map(l => l.split(','));
+    const c = k => head.indexOf(k), r = rows.find(r => r[c('stage')] === 'A' && r[c('comms')] === 'always' && r[c('mix')] === 'supervised_strategic' && r[c('sensitivity')] === 'none');
+    if (r) always = { source: 'results/table_E21_r2.csv', row: 'stage A, comms always, mix supervised_strategic', n: +r[c('n_valid')], delivered_t_in_year: +r[c('delivered_t_in_year')] };
+  }
   if (j.rescue?.levels && strand) {
     mkdirSync(join(PUB, 'research', 'earth-sky'), { recursive: true });
     writeFileSync(join(PUB, 'research', 'earth-sky', 'rescue.json'), JSON.stringify({ source: 'results/E21_fit_r2.json', link: 'DTE',
@@ -185,7 +193,8 @@ if (existsSync(fit)) {
       strand: { path: 'bounded.cells', variant: strand.variant, n: strand.n, ...pick(strand.mean), t_2028: t2028(strand.by_year) },
       strict: { n: j.rescue.references.strict.n, ...pick(j.rescue.references.strict.mean) },
       strategic: { n: j.rescue.references.strategic.n, ...pick(j.rescue.references.strategic.mean) },
-      vs_strict: Object.fromEntries(Object.entries(j.rescue.breakeven_vs_strict).map(([k, v]) => [k, { levels_h: v.levels_h, mean_diff_by_level: v.mean_diff_by_level, breakeven_h: v.breakeven_h }])) }));
+      vs_strict: Object.fromEntries(Object.entries(j.rescue.breakeven_vs_strict).map(([k, v]) => [k, { levels_h: v.levels_h, mean_diff_by_level: v.mean_diff_by_level, breakeven_h: v.breakeven_h }])),
+      any: (j.rescue_any?.levels || []).map(l => ({ rescue_h: l.rescue_h, n: l.n, delivered_t_in_year: l.mean.delivered_t_in_year, t_2028: t2028(l.by_year), rescues_per_run: l.rescues_per_run })), always }));
     console.log('prepare-data: rescue times staged');
   }
 }
