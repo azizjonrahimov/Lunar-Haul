@@ -5,122 +5,162 @@
  "title": "What Earth's horizon costs",
  "title_plain": "What Earth's horizon costs",
  "status": "published",
- "summary": "At the south pole Earth sits low on the horizon and ridges hide it. With direct links only, the base delivers {{r:dte_loss}} less cargo a year, mostly because one work site never sees Earth. A part-time relay or more autonomy fixes it; more rovers do not.",
- "summary_plain": "At the south pole Earth sits low on the horizon and ridges hide it. With direct links only, the base delivers 42 % less cargo a year, mostly because one work site never sees Earth. A part-time relay or more autonomy fixes it; more rovers do not.",
+ "summary": "At the south pole Earth sits low on the horizon and ridges hide it. With direct links only, the base moves {{r:dte_loss}} less of the cargo that lands, and fewer than half of its urgent items arrive within the year. A relay in view a tenth of the time, or rovers allowed to drive out of Earth's sight, wins most of it back.",
+ "summary_plain": "At the south pole Earth sits low on the horizon and ridges hide it. With direct links only, the base moves 68 % less of the cargo that lands, and fewer than half of its urgent items arrive within the year. A relay in view a tenth of the time, or rovers allowed to drive out of Earth's sight, wins most of it back.",
  "scene": "world:P2-comms-dte",
- "notes": "E21 (experiments/phase4/run_phase4.py, analysis experiments/phase4/analyse_e21.py): P2 six-rover fleet, marketplace, pads 1 km, no plume, 20 seeds per cell, start years 2028-2031. Wording by LEAD, 22 Oct 2026.",
+ "notes": "E21 round 2 (experiments/phase4/run_phase4.py --round r2, analysis experiments/phase4/analyse_e21.py fit --round r2): P2 base, marketplace, pads 1 km unless stated, no plume, 20 seeds per cell, start years 2028-2031. Delays are censored at the year's end and shown as the median over seeds; shares and tonnes are means. Wording by LEAD, 22 Oct 2026 (round 2 replaces the round-1 total-throughput headline with the lander/bulk split).",
  "numbers": {
-  "always_t": {
-   "value": 532.189061306,
-   "text": "532 t per year",
-   "unit": "t per year",
-   "flag": "Modelled",
-   "source": "results/table_E21.csv, row stage = A, comms = always, mix = supervised_strict, column delivered_t_in_year; Earth always in view, all supervised rovers, strict policy (E21 stage A)",
-   "label": "Delivered with Earth always in view"
-  },
-  "dte_t": {
-   "value": 306.524804758,
-   "text": "307 t per year",
-   "unit": "t per year",
-   "flag": "Modelled",
-   "source": "results/table_E21.csv, row stage = A, comms = dte, mix = supervised_strict, column delivered_t_in_year; direct-to-Earth links only (E21 stage A)",
-   "label": "Delivered with direct links only"
-  },
-  "dte_loss": {
-   "value": 42.4030242174,
-   "text": "42 %",
-   "unit": "%",
-   "flag": "Modelled",
-   "source": "pct_change of always_t and dte_t (unrounded); neg",
-   "label": "Lost against Earth always in view"
-  },
   "base_link": {
    "value": 59.267,
    "text": "59 %",
    "unit": "%",
    "flag": "Modelled",
-   "source": "results/E21_fit.json: throughput/site_link_fraction_dte_any_part/BASE; x 100; share of 2028-2031 in which any part of Earth's disc is above the terrain horizon at the base, 2.5 m antenna (B-40)",
+   "source": "results/E21_fit_r2.json: throughput_bound/site_link_fraction_dte_any_part/BASE; x 100; share of 2028-2031 in which any part of Earth's disc is above the terrain horizon at the base, 2.5 m antenna",
    "label": "Time Earth is in view at the base"
-  },
-  "isru_lost": {
-   "value": 204.15036,
-   "text": "204 t per year",
-   "unit": "t per year",
-   "flag": "Modelled",
-   "source": "results/E21_fit.json: throughput/lost_at_never_linked_t/mean; cargo bound for the ISRU plant that is never delivered under direct links only (E21 analysis)",
-   "label": "ISRU cargo never delivered"
   },
   "dte_wait": {
    "value": 971.693588126,
    "text": "972 rover-hours",
    "unit": "rover-hours",
    "flag": "Modelled",
-   "source": "results/table_E21.csv, row stage = A, comms = dte, mix = supervised_strict, column blackout_wait_vehicle_h; rover time spent waiting for Earth in the year",
+   "source": "results/table_E21_cells_r2.csv, row stage = A, comms = dte, mix = supervised_strict, column blackout_wait_vehicle_h; rover time spent waiting for Earth in the year, direct links only, supervised rovers, strict policy (mean of 20 seeds)",
    "label": "Rover time spent waiting for Earth"
   },
-  "relay_t": {
-   "value": 530.167418135,
-   "text": "530 t per year",
+  "landed_always": {
+   "value": 29.2815800966,
+   "text": "29 t per year",
    "unit": "t per year",
    "flag": "Modelled",
-   "source": "results/table_E21.csv, row stage = A, comms = dte+relay, coverage = 0.1, mix = supervised_strict, column delivered_t_in_year; a relay satellite in view a tenth of the time, besides direct links",
-   "label": "Delivered, relay a tenth of the time"
+   "source": "results/table_E21_cells_r2.csv, row stage = A, comms = always, mix = supervised_strict, column delivered_landed_t; cargo brought down by landers and delivered inside the year (not regolith, not returns), Earth always in view",
+   "label": "Lander cargo moved, Earth always in view"
   },
-  "auto_t": {
-   "value": 532.053750334,
-   "text": "532 t per year",
+  "landed_dte": {
+   "value": 9.40028035187,
+   "text": "9 t per year",
    "unit": "t per year",
    "flag": "Modelled",
-   "source": "results/table_E21.csv, row stage = A, comms = dte, mix = autonomous, column delivered_t_in_year; direct links only, fully autonomous rovers",
-   "label": "Delivered by autonomous rovers"
+   "source": "results/table_E21_cells_r2.csv, row stage = A, comms = dte, mix = supervised_strict, column delivered_landed_t; the same with direct-to-Earth links only",
+   "label": "Lander cargo moved, direct links only"
   },
-  "rover_gain": {
-   "value": 0.633689122923,
-   "text": "0.6 t per year",
+  "dte_loss": {
+   "value": 67.8969498201,
+   "text": "68 %",
+   "unit": "%",
+   "flag": "Modelled",
+   "source": "pct_change of landed_always and landed_dte (unrounded); neg",
+   "label": "Lander cargo lost with direct links"
+  },
+  "done_always": {
+   "value": 95.8712474296,
+   "text": "96 %",
+   "unit": "%",
+   "flag": "Modelled",
+   "source": "results/table_E21_cells_r2.csv, row stage = A, comms = always, mix = supervised_strict, column prio1_completion_share; x 100; share of urgent (priority-1) items ready in the year that are delivered in the year, Earth always in view",
+   "label": "Urgent items delivered, Earth in view"
+  },
+  "done_dte": {
+   "value": 42.7357767301,
+   "text": "43 %",
+   "unit": "%",
+   "flag": "Modelled",
+   "source": "results/table_E21_cells_r2.csv, row stage = A, comms = dte, mix = supervised_strict, column prio1_completion_share; x 100; the same with direct-to-Earth links only",
+   "label": "Urgent items delivered, direct links"
+  },
+  "isru_lost": {
+   "value": 204.15036,
+   "text": "204 t per year",
    "unit": "t per year",
    "flag": "Modelled",
-   "source": "results/table_E21_breakeven.csv, row option = +1 supervised LTV, column gain_vs_dte; gain of one extra supervised LTV over direct links only (E21 stage B)",
-   "label": "Gain from one extra supervised rover"
+   "source": "results/E21_fit_r2.json: throughput_bound/lost_at_never_linked_t/mean; regolith feedstock bound for the ISRU plant, which never sees Earth, that is not delivered under direct links only (the demand model hauls about two hundred tonnes a year there)",
+   "label": "Regolith for the oxygen plant lost"
   },
-  "half_strict": {
-   "value": 40.17412598,
-   "text": "40 h",
+  "pads_one_t": {
+   "value": 9.55286354598,
+   "text": "10 t per year",
+   "unit": "t per year",
+   "flag": "Modelled",
+   "source": "results/table_E21_cells_r2.csv, row stage = A, comms = dte, mix = default, column delivered_landed_t; Phase 2 fleet, direct links only, pads 1 km from the base",
+   "label": "Lander cargo, pads a kilometre out"
+  },
+  "pads_half_t": {
+   "value": 23.0601024058,
+   "text": "23 t per year",
+   "unit": "t per year",
+   "flag": "Modelled",
+   "source": "results/table_E21_cells_r2.csv, row stage = C, comms = dte, mix = default, pad_standoff_km = 0.5, criterion = any_part, column delivered_landed_t; the same with the pads 0.5 km from the base",
+   "label": "Lander cargo, pads half a kilometre out"
+  },
+  "pads_three_t": {
+   "value": 0.0,
+   "text": "0 t per year",
+   "unit": "t per year",
+   "flag": "Modelled",
+   "source": "results/table_E21_cells_r2.csv, row stage = C, comms = dte, mix = default, pad_standoff_km = 3.0, criterion = any_part, column delivered_landed_t; the same with the pads 3 km from the base: no seed moves any lander cargo",
+   "label": "Lander cargo, pads three kilometres out"
+  },
+  "relay_done": {
+   "value": 95.3840195111,
+   "text": "95 %",
+   "unit": "%",
+   "flag": "Modelled",
+   "source": "results/table_E21_cells_r2.csv, row stage = A, comms = dte+relay, p = 0.1, mix = supervised_strict, column prio1_completion_share; x 100; a relay satellite in view a tenth of the time, besides direct links",
+   "label": "Urgent items delivered, relay a tenth"
+  },
+  "relay_p90": {
+   "value": 134.060323614,
+   "text": "134 h",
    "unit": "h",
    "flag": "Modelled",
-   "source": "results/table_E21_breakeven_delay.csv, row option = +1 rover, column base_value; urgent cargo: hours within which 90 % is delivered, relay in view half the time, strict supervision (E21 stage B)",
-   "label": "Half relay: one in ten urgent waits over"
+   "source": "results/table_E21_cells_r2.csv, row stage = A, comms = dte+relay, p = 0.1, mix = supervised_strict, column delay_prio1_p90_censored_h_median; hours within which nine in ten urgent items are delivered (items still waiting at the year's end count with their wait so far), median over 20 seeds",
+   "label": "Typical urgent wait, relay a tenth"
   },
-  "half_plus1": {
-   "value": 31.0840153677,
-   "text": "31 h",
+  "always_p90": {
+   "value": 9.00311868647,
+   "text": "9 h",
    "unit": "h",
    "flag": "Modelled",
-   "source": "results/table_E21_breakeven_delay.csv, row option = +1 rover, column value; the same with one extra rover",
-   "label": "The same with one extra rover"
+   "source": "results/table_E21_cells_r2.csv, row stage = A, comms = always, mix = supervised_strict, column delay_prio1_p90_censored_h_median; the same with Earth always in view",
+   "label": "Typical urgent wait, Earth in view"
   },
-  "half_strategic": {
-   "value": 26.5062498987,
-   "text": "27 h",
-   "unit": "h",
+  "strategic_done": {
+   "value": 89.3911363554,
+   "text": "89 %",
+   "unit": "%",
    "flag": "Modelled",
-   "source": "results/table_E21_breakeven_delay.csv, row option = strategic step, column value; the same with supervised rovers that drive between check-ins on their own (strategic policy)",
-   "label": "The same with strategic driving"
+   "source": "results/table_E21_cells_r2.csv, row stage = A, comms = dte, mix = supervised_strategic, column prio1_completion_share; x 100; direct links only; supervised rovers that may drive without a link (strategic policy)",
+   "label": "Urgent items, rovers drive out of sight"
+  },
+  "strategic_landed": {
+   "value": 26.0147842382,
+   "text": "26 t per year",
+   "unit": "t per year",
+   "flag": "Modelled",
+   "source": "results/table_E21_cells_r2.csv, row stage = A, comms = dte, mix = supervised_strategic, column delivered_landed_t; the same policy: lander cargo delivered inside the year",
+   "label": "Lander cargo, rovers drive out of sight"
+  },
+  "avoid_done": {
+   "value": 49.9930775746,
+   "text": "50 %",
+   "unit": "%",
+   "flag": "Modelled",
+   "source": "results/table_E21_cells_r2.csv, row stage = A, comms = dte, mix = supervised_strategic+avoid, column prio1_completion_share; x 100; direct links only; the strategic policy with a look-ahead that avoids starting drives that would lose the link",
+   "label": "Urgent items, cautious autonomy"
   },
   "rover_dp": {
-   "value": 17.5912743748,
-   "text": "18 percentage points of relay coverage",
+   "value": 11.7077503032,
+   "text": "12 percentage points of relay coverage",
    "unit": "percentage points of relay coverage",
    "flag": "Modelled",
-   "source": "results/table_E21_breakeven_delay.csv, row option = +1 rover, column delta_p; x 100; relay coverage that gives the same urgent delay as one extra rover, at half coverage (bootstrap over seeds)",
+   "source": "results/table_E21_breakeven_delay_r2.csv, row option = +1 rover, column delta_p; x 100; relay coverage that gives the same urgent delay as one extra rover, at half coverage, strict policy (bootstrap over seeds, 2,000 draws)",
    "label": "Relay coverage worth one extra rover"
   },
   "strategic_dp": {
-   "value": 28.5160301652,
-   "text": "29 percentage points of relay coverage",
+   "value": 17.0390615093,
+   "text": "17 percentage points of relay coverage",
    "unit": "percentage points of relay coverage",
    "flag": "Modelled",
-   "source": "results/table_E21_breakeven_delay.csv, row option = strategic step, column delta_p; x 100; relay coverage that gives the same urgent delay as the strategic policy, at half coverage",
-   "label": "Relay coverage worth strategic driving"
+   "source": "results/table_E21_breakeven_delay_r2.csv, row option = strategic step, column delta_p; x 100; relay coverage that gives the same urgent delay as the strategic policy, at half coverage",
+   "label": "Relay coverage worth the autonomy step"
   }
  },
  "steps": [
@@ -169,23 +209,27 @@
   {
    "id": "cost",
    "title": "The cargo it costs",
-   "text": "The base delivers {{r:dte_t}} instead of {{r:always_t}}: {{r:dte_loss}} less.",
+   "text": "Cargo that comes down on landers suffers most. With direct links only the base moves {{r:landed_dte}} of it instead of {{r:landed_always}}: {{r:dte_loss}} less. Only {{r:done_dte}} of urgent items arrive within the year, against {{r:done_always}} with Earth always in view.",
    "visual": "The delivery counter of the year, with and without the horizon.",
    "camera": {
     "shot": "overview"
    },
+   "modes": {
+    "earth_link": true
+   },
    "chips": [
-    "dte_t",
-    "dte_loss"
+    "landed_dte",
+    "dte_loss",
+    "done_dte"
    ],
    "title_plain": "The cargo it costs",
-   "text_plain": "The base delivers 307 t per year instead of 532 t per year: 42 % less.",
+   "text_plain": "Cargo that comes down on landers suffers most. With direct links only the base moves 9 t per year of it instead of 29 t per year: 68 % less. Only 43 % of urgent items arrive within the year, against 96 % with Earth always in view.",
    "visual_plain": "The delivery counter of the year, with and without the horizon."
   },
   {
    "id": "never",
    "title": "One site never sees Earth",
-   "text": "Most of that loss is one place. The plant that makes oxygen from regolith sits where Earth is never in view, so {{r:isru_lost}} of cargo for it never arrives. No rover driven from Earth can work there.",
+   "text": "The plant that makes oxygen from regolith sits where Earth is never in view, so the {{r:isru_lost}} of regolith hauled to it never arrives. That is nearly all the regolith lost, but it is not why urgent cargo is late.",
    "visual": "The ISRU site highlighted; its route drawn in the colour for no link.",
    "camera": {
     "shot": "overview"
@@ -194,20 +238,46 @@
     "ISRU"
    ],
    "modes": {
-    "earth_link": true
+    "earth_link": true,
+    "no_link": true
    },
    "chips": [
     "isru_lost"
    ],
    "title_plain": "One site never sees Earth",
-   "text_plain": "Most of that loss is one place. The plant that makes oxygen from regolith sits where Earth is never in view, so 204 t per year of cargo for it never arrives. No rover driven from Earth can work there.",
+   "text_plain": "The plant that makes oxygen from regolith sits where Earth is never in view, so the 204 t per year of regolith hauled to it never arrives. That is nearly all the regolith lost, but it is not why urgent cargo is late.",
    "visual_plain": "The ISRU site highlighted; its route drawn in the colour for no link."
+  },
+  {
+   "id": "pads",
+   "title": "Where the pads sit decides it",
+   "text": "Take the base's usual mixed fleet. Landing pads half a kilometre from the base see Earth about as often as the base does, and lander cargo comes back to {{r:pads_half_t}}. At a kilometre it is {{r:pads_one_t}}. At three kilometres, where ridges hide Earth from the pads most of the time, it is {{r:pads_three_t}}: no lander cargo moves at all.",
+   "visual": "The two pads highlighted; legs from them drawn in the colour for no link.",
+   "camera": {
+    "shot": "overview"
+   },
+   "highlight": [
+    "PAD_A",
+    "PAD_B"
+   ],
+   "modes": {
+    "earth_link": true,
+    "no_link": true
+   },
+   "chips": [
+    "pads_half_t",
+    "pads_one_t",
+    "pads_three_t"
+   ],
+   "title_plain": "Where the pads sit decides it",
+   "text_plain": "Take the base's usual mixed fleet. Landing pads half a kilometre from the base see Earth about as often as the base does, and lander cargo comes back to 23 t per year. At a kilometre it is 10 t per year. At three kilometres, where ridges hide Earth from the pads most of the time, it is 0 t per year: no lander cargo moves at all.",
+   "visual_plain": "The two pads highlighted; legs from them drawn in the colour for no link."
   },
   {
    "id": "relay",
    "scene": "world:P2-comms-relay-0.8",
-   "title": "A relay, or autonomy",
-   "text": "A relay satellite in view only a tenth of the time brings deliveries back to {{r:relay_t}}. Fully autonomous rovers reach {{r:auto_t}} with no relay at all.",
+   "title": "A relay brings the cargo back, not the speed",
+   "text": "A relay satellite in view only a tenth of the time brings urgent deliveries back to {{r:relay_done}}. But in a typical year nine in ten urgent items arrive only within {{r:relay_p90}}, against {{r:always_p90}} with Earth always in view, and waits shrink slowly as the relay is in view more.",
    "visual": "A relay link drawn from the rovers to a satellite passing over.",
    "camera": {
     "shot": "horizon"
@@ -217,51 +287,56 @@
     "relay": true
    },
    "chips": [
-    "relay_t",
-    "auto_t"
+    "relay_done",
+    "relay_p90",
+    "always_p90"
    ],
-   "title_plain": "A relay, or autonomy",
-   "text_plain": "A relay satellite in view only a tenth of the time brings deliveries back to 530 t per year. Fully autonomous rovers reach 532 t per year with no relay at all.",
+   "title_plain": "A relay brings the cargo back, not the speed",
+   "text_plain": "A relay satellite in view only a tenth of the time brings urgent deliveries back to 95 %. But in a typical year nine in ten urgent items arrive only within 134 h, against 9 h with Earth always in view, and waits shrink slowly as the relay is in view more.",
    "visual_plain": "A relay link drawn from the rovers to a satellite passing over."
   },
   {
-   "id": "rovers",
-   "title": "More rovers cannot buy it back",
-   "text": "One more supervised rover adds {{r:rover_gain}}: it waits for Earth like the others.",
-   "visual": "The fleet with an extra rover, parked in the waiting colour.",
+   "id": "autonomy",
+   "title": "Or let rovers drive out of sight",
+   "text": "With no relay at all, supervised rovers allowed to drive on their own out of Earth's sight deliver {{r:strategic_done}} of urgent items and {{r:strategic_landed}} of lander cargo. A cautious version that never starts a drive it cannot finish in sight gets only {{r:avoid_done}}: the cargo is where Earth cannot see.",
+   "visual": "Supervised rovers driving on through the stretch where the link is lost.",
    "camera": {
     "shot": "overview"
    },
+   "modes": {
+    "earth_link": true,
+    "no_link": true
+   },
    "chips": [
-    "rover_gain"
+    "strategic_done",
+    "strategic_landed",
+    "avoid_done"
    ],
-   "title_plain": "More rovers cannot buy it back",
-   "text_plain": "One more supervised rover adds 0.6 t per year: it waits for Earth like the others.",
-   "visual_plain": "The fleet with an extra rover, parked in the waiting colour."
+   "title_plain": "Or let rovers drive out of sight",
+   "text_plain": "With no relay at all, supervised rovers allowed to drive on their own out of Earth's sight deliver 89 % of urgent items and 26 t per year of lander cargo. A cautious version that never starts a drive it cannot finish in sight gets only 50 %: the cargo is where Earth cannot see.",
+   "visual_plain": "Supervised rovers driving on through the stretch where the link is lost."
   },
   {
-   "id": "autonomy",
-   "title": "Autonomy is worth more than a rover",
-   "text": "With a relay in view half the time, nine in ten urgent items arrive within {{r:half_strict}}. One more rover brings that to {{r:half_plus1}}. Letting supervised rovers drive on their own between check-ins brings it to {{r:half_strategic}}. In relay terms the rover is worth {{r:rover_dp}} and the autonomy step {{r:strategic_dp}}.",
-   "visual": "Three bars: the fleet as it is, one more rover, and the autonomy step.",
+   "id": "rovers",
+   "title": "A rover or autonomy: too close to call",
+   "text": "With a relay in view half the time, one more rover is worth {{r:rover_dp}} and the autonomy step {{r:strategic_dp}}. The gap between them is smaller than the uncertainty, so this model cannot rank them.",
+   "visual": "Two bars, one extra rover and the autonomy step, each with its uncertainty.",
    "camera": {
     "shot": "overview"
    },
    "chips": [
-    "half_strict",
-    "half_plus1",
-    "half_strategic"
+    "rover_dp",
+    "strategic_dp"
    ],
-   "title_plain": "Autonomy is worth more than a rover",
-   "text_plain": "With a relay in view half the time, nine in ten urgent items arrive within 40 h. One more rover brings that to 31 h. Letting supervised rovers drive on their own between check-ins brings it to 27 h. In relay terms the rover is worth 18 percentage points of relay coverage and the autonomy step 29 percentage points of relay coverage.",
-   "visual_plain": "Three bars: the fleet as it is, one more rover, and the autonomy step."
+   "title_plain": "A rover or autonomy: too close to call",
+   "text_plain": "With a relay in view half the time, one more rover is worth 12 percentage points of relay coverage and the autonomy step 17 percentage points of relay coverage. The gap between them is smaller than the uncertainty, so this model cannot rank them.",
+   "visual_plain": "Two bars, one extra rover and the autonomy step, each with its uncertainty."
   }
  ],
  "pending": [],
  "sources": {
-  "results/E21_fit.json": "6c3a06cea95ce94119f2e9ed9670b5eab96c84c83058c55c7fa0066ebd54e707",
-  "results/table_E21.csv": "ff038580fbc96d01d0d7181f099f3b773f5fe6642ff0d8f89c8d74967f75a06f",
-  "results/table_E21_breakeven.csv": "afa5a8efac6baa04b60b01981aa14bf7ba8acfc3ca30ac23f8be9d78c61c1d9d",
-  "results/table_E21_breakeven_delay.csv": "885f7667285291d053d01084f544cde425f6d1e3a49e98866cfbe707a8a5bfb8"
+  "results/E21_fit_r2.json": "40dbea29aee5c6d7e41a7bea4b6fd830297e65d51e937c081a6e9bf9a9942a17",
+  "results/table_E21_breakeven_delay_r2.csv": "93a7e18b318c752aaf2f165bb476c811ebb9ce80fae104f64533963a6b5aa461",
+  "results/table_E21_cells_r2.csv": "c70242a7ef423588895bb8f01fb7c64374ef88451b11a52da6f7f1fe52bf755e"
  }
 }
