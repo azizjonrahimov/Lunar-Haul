@@ -4216,3 +4216,23 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
   - The note in budgets.json now describes computed, variants, lazy_css and fonts.
 - **Checks:** `budgets.py pages`: OK, no unknown keys or missing files. `pytest tests/test_ci_budgets.py`: 10 passed. The build was current (rebuilt at the start of this part). Servers stopped; tab closed.
 - **Next in F-40:** URL-hash deep links, GPU memory per tier.
+
+## F-40 PART 9 DONE 19:40 | URL-hash deep links: "Copy link to this moment" on /world/ and /lab/lander/ (F-40 stays IN PROGRESS)
+- **Every file in this part (all modified):** `site/src/world/v2.js`, `site/src/lander/lab3d.js`.
+- **/world/:**
+  - The scene or run stays in the query (`?scene=` / `?run=`); the moment goes in the hash: `#t=824.5532&view=base&follow=rovers&compare=p2-inhouse&cam=x,y,z,tx,ty,tz`. Time is in hours (4 decimals, so the minute shown matches); camera position and target in metres (0.1 m).
+  - A **"Copy link to this moment"** button sits in the controls row. It writes the URL to the address bar, says so in the status line, and copies it to the clipboard when the browser allows ("Link to day 34, 08:33 copied."). The address-bar message is shown first, so a refused or silent clipboard still leaves the link visible.
+  - **Opening a link:** after Enter, the year opens paused at that hour, with that view chip, follow mode, comparison and the exact camera, instead of the first landing and autoplay. The status says "The moment from the link: day 34, 08:33. Press Play to go on."
+  - Pasting another hash on the open page (`hashchange`) applies it too.
+  - Checked in Chrome: copy → fresh load → same hour, "Base" chip, same camera; a pasted `#t=4000.25&view=pads&follow=rovers` went to day 166, 16:15, following LTV 0.
+- **/lab/lander/:**
+  - The lander and pilot stay in the query (`?lander=MK1&pilot=classical`); the hash holds `#pick=p50&view=side&t=47.10&cam=…` (seconds into the replay; camera in metres, 0.01 m). Same button and behaviour.
+  - A linked camera counts as the visitor's move, so the approach framing does not take it back.
+  - Checked: copy at the Hover phase → fresh load → paused at T+47.1 s with the status line; no console errors.
+- **Fixed on the way (both pages):** the timeline readout did not move when a chip seeked while paused ("Pads", "Night", the lander's phase chips). It updated only during play. `seek()` now sets it.
+- **Not given a moment link:**
+  - The rover lab: its drive is simulated live, so there is no time to jump to; the leg and lighting are already in its controls.
+  - /stories/ already links a step (`?s=…&step=n`) and /vehicles/ a vehicle (`?v=`).
+  - /world/trace/ is left for later if you want it (`#t=` on its timeline would be a small change).
+- **Checks:** tests 11/11; build OK; `budgets.py pages`: OK. Servers stopped; tab closed.
+- **Next in F-40:** GPU memory per tier.

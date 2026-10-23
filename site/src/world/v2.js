@@ -24,6 +24,17 @@ const GROUP_LABEL = { phases: 'Base size and job rule', pads: 'Pad distance', ea
 const SPEEDS = [{ value: '1', label: '1 h/s' }, { value: '6', label: '6 h/s' }, { value: '24', label: '1 day/s' }, { value: '72', label: '3 days/s' }, { value: '240', label: '10 days/s' }];
 
 const ui = { scene: q.get('scene') || 'p2-marketplace', run: q.get('run'), speed: 24, shot: 'overview', icons: true, follow: 'none', compare: '' };
+// F-40: a moment of the year in the URL hash, written by "Copy link to this moment" (the scene or run stays in the query):
+// #t=812.5021&view=pads&follow=rovers&compare=p2-inhouse&cam=x,y,z,tx,ty,tz (hours; camera position and target in metres)
+const SHOTS = ['overview', 'pads', 'legs', 'base', 'night'], FOLLOWS = ['none', 'cargo', 'rovers', 'landers', 'night'];
+function readHash() {
+  const h = new URLSearchParams(location.hash.slice(1)), t = parseFloat(h.get('t')), cam = (h.get('cam') || '').split(',').map(Number);
+  return { t: Number.isFinite(t) ? t : null, view: SHOTS.includes(h.get('view')) ? h.get('view') : null, follow: FOLLOWS.includes(h.get('follow')) ? h.get('follow') : null,
+    compare: h.get('compare') || '', cam: cam.length === 6 && cam.every(Number.isFinite) ? cam : null };
+}
+let moment = readHash();
+if (moment.follow) ui.follow = moment.follow;
+if (moment.compare) ui.compare = moment.compare;
 const story = narrative({ label: 'What is happening' });
 $('w2-story').append(story.el);
 story.set({ eyebrow: 'A year at the base', title: 'Rovers, landers, night and Earth', html: '<p>Press Enter to load the terrain and the year (about 4 MB), then play it.</p>' });
@@ -36,7 +47,7 @@ if (gallery && !ui.run) drawGallery();
 headline();
 
 const tierInfo = await detectTier();
-let sc = null, pkg = null, chunks = [], traj = null, tl = null, shotChips = null, chips = {}, pkgB = null, chunksB = [], chipsB = null, linkChip = null, linkText = '', followStart = false;
+let sc = null, pkg = null, chunks = [], traj = null, tl = null, shotChips = null, followSeg = null, chips = {}, pkgB = null, chunksB = [], chipsB = null, linkChip = null, linkText = '', followStart = false;
 let lastSlow = 0, lastStory = '';   // module state is declared before the tier-0 path runs open() at load
 const time = { t: 0, playing: false };
 if (tierInfo.tier === 0 && !tierInfo.forced || q.get('view2d') === '1') {
@@ -101,6 +112,7 @@ async function open(fetchFn = fetch) {
   const idx0 = pkg.index, L0 = idx0.landings.find(L => L.ok && !nightAt(L.t_h)) || idx0.landings[0];
   time.t = L0 ? Math.max(0, L0.t_h - 0.1) : 0;
   update(true);
+  if (moment.t !== null) { await applyMoment(moment); moment.t = null; drawTimeline(); update(true); status(`The moment from the link: ${day(time.t)}. Press Play to go on.`); return; }
   if (L0 && sc.frameAt) { ui.shot = 'pads'; shotChips?.set('pads'); await sc.frameAt(sc.sitePos(L0.pad), 600, 22, 35, true); }
   else await sc.go(ui.shot, true);
   drawTimeline(); update(true); status('');
@@ -122,9 +134,9 @@ function controls(plan = false) {
         status(`True scale: vehicles at their real size (an LTV is ${fmt(sc.catalog.entry('LTV').dims.length_m.value, 1)} m long); from the overview they would be dots.`); }
       else { sc.go(ui.shot); status(''); }
     } }).el,
-    plan ? '' : segmented({ legend: 'Follow', options: [{ value: 'none', label: 'Free' }, { value: 'cargo', label: 'Cargo' }, { value: 'rovers', label: 'Rovers' }, { value: 'landers', label: 'Landers' }, { value: 'night', label: 'Night' }],
-      value: ui.follow, onChange: v => { ui.follow = v; sc.clearFollow?.(); followStart = true; if (v === 'night') nextNight(); if (v === 'none') status(''); update(true); } }).el,
-    compareSelect());
+    plan ? '' : (followSeg = segmented({ legend: 'Follow', options: [{ value: 'none', label: 'Free' }, { value: 'cargo', label: 'Cargo' }, { value: 'rovers', label: 'Rovers' }, { value: 'landers', label: 'Landers' }, { value: 'night', label: 'Night' }],
+      value: ui.follow, onChange: v => { ui.follow = v; sc.clearFollow?.(); followStart = true; if (v === 'night') nextNight(); if (v === 'none') status(''); update(true); } })).el,
+    compareSelect(), h('button', { class: 'ui-btn', type: 'button', id: 'w2-copy', onclick: copyMoment }, 'Copy link to this moment'));
   const host = $('w2-chips');
   chips = {
     delivered: statChip({ label: 'Delivered so far', value: 0, unit: 't', digits: 1, flag: 'Modelled', source: 'Sum of the deliveries up to this moment (scene package, B-31)', tone: 'cool' }),
@@ -211,7 +223,33 @@ function tick(dt) {
   if (time.t >= pkg.horizon - 1e-3) setPlaying(false);
   return time.playing;
 }
-function seek(t) { time.t = Math.max(0, Math.min(pkg.horizon - 1e-3, t)); update(true); }
+// a moment from the hash: that hour, view, follow mode and camera, paused (a shared link shows what was shared)
+async function applyMoment(m) {
+  time.t = Math.max(0, Math.min(pkg.horizon - 1e-3, m.t)); tl?.set(time.t);
+  if (m.view) { ui.shot = m.view; shotChips?.set(m.view); }
+  if (m.follow) { ui.follow = m.follow; followSeg?.set(m.follow); followStart = !m.cam; }
+  update(true);
+  const c = sc.stage.director.controls;
+  if (m.cam && c) c.setLookAt(...m.cam, false); else await sc.go(ui.shot, true);
+  update(true);
+}
+async function copyMoment() {
+  if (!pkg) return;
+  const c = sc.stage.director.controls, r = v => Math.round(v * 10) / 10;
+  let hash = `t=${time.t.toFixed(4)}&view=${ui.shot}${ui.follow !== 'none' ? '&follow=' + ui.follow : ''}${ui.compare ? '&compare=' + encodeURIComponent(ui.compare) : ''}`;
+  if (c) { const v = sc.stage.camera.position, p = c.getPosition(v.clone()), g = c.getTarget(v.clone()); hash += '&cam=' + [p.x, p.y, p.z, g.x, g.y, g.z].map(r).join(','); }
+  const url = `${location.origin}${location.pathname}${ui.run ? '?run=' + encodeURIComponent(ui.run) : '?scene=' + ui.scene}#${hash}`;
+  history.replaceState(null, '', url);
+  status(`The link to ${day(time.t)} is in the address bar.`);   // stays if the clipboard is refused or never answers
+  try { await navigator.clipboard.writeText(url); status(`Link to ${day(time.t)} copied.`); } catch { /* the address bar has it */ }
+}
+addEventListener('hashchange', () => {   // a pasted link on the open page
+  const m = readHash(); if (m.t === null || !pkg) return;
+  setPlaying(false);
+  if (m.compare !== ui.compare) { ui.compare = m.compare; compareSelect.fill?.(); openCompare(); }
+  applyMoment(m);
+});
+function seek(t) { time.t = Math.max(0, Math.min(pkg.horizon - 1e-3, t)); tl?.set(time.t); update(true); }   // F-40: the timeline follows a seek while paused
 
 // ---------- timeline: landings, nights (bands), Earth set and rise, Earth-link waits ----------
 function drawTimeline() {

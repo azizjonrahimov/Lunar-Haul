@@ -22,6 +22,17 @@ const FAIL = {
 const params = new URLSearchParams(location.search);
 const ui = { cls: CLASSES.some(c => c.value === params.get('lander')) ? params.get('lander') : 'CLPS', kind: params.get('pilot') || 'network', pick: 'p50',
   view: 'side', speed: 2, show: { guidance: true, thrust: false, sensors: false } };
+// F-40: a moment of a descent in the URL hash, written by "Copy link to this moment" (lander and pilot stay in the query):
+// #pick=p50&view=side&t=23.40&cam=x,y,z,tx,ty,tz (seconds into the replay; camera position and target in metres)
+const VIEWS = ['chase', 'side', 'pad', 'sun'];
+function readHash() {
+  const h = new URLSearchParams(location.hash.slice(1)), t = parseFloat(h.get('t')), cam = (h.get('cam') || '').split(',').map(Number);
+  return { t: Number.isFinite(t) ? t : null, pick: PICKS[h.get('pick')] ? h.get('pick') : null, view: VIEWS.includes(h.get('view')) ? h.get('view') : null,
+    cam: cam.length === 6 && cam.every(Number.isFinite) ? cam : null };
+}
+let moment = readHash();
+if (moment.pick) ui.pick = moment.pick;
+if (moment.view) ui.view = moment.view;
 const story = narrative({ label: 'Descent story' }), score = counter({ label: 'Score', digits: 1 });
 $('l3-story').append(story.el); $('l3-score').append(score.el);
 story.set({ eyebrow: 'The last 500 metres', title: 'A recorded landing, at true scale', html: '<p>Press Enter to load the terrain, the recorded descents and the lander models (about 6 MB).</p>' });
@@ -58,13 +69,13 @@ async function start(gate) {
 }
 
 // ---------- controls ----------
-let pilotSeg = null, pickSeg = null, phaseChips = null;
+let pilotSeg = null, pickSeg = null, phaseChips = null, viewSeg = null;
 function controls() {
   const r1 = $('l3-row1'), r2 = $('l3-row2');
   r1.append(segmented({ legend: 'Lander', options: CLASSES, value: ui.cls, onChange: v => { ui.cls = v; drawPilots(); choose(); } }).el);
   drawPilots();
-  r2.append(segmented({ legend: 'View', options: [{ value: 'chase', label: 'Chase' }, { value: 'side', label: 'Side' }, { value: 'pad', label: 'Pad camera' }, { value: 'sun', label: 'Into the sun' }],
-    value: ui.view, onChange: v => { ui.view = v; sc.setView(v); update(true); } }).el);
+  r2.append((viewSeg = segmented({ legend: 'View', options: [{ value: 'chase', label: 'Chase' }, { value: 'side', label: 'Side' }, { value: 'pad', label: 'Pad camera' }, { value: 'sun', label: 'Into the sun' }],
+    value: ui.view, onChange: v => { ui.view = v; sc.setView(v); update(true); } })).el);
   const showSet = h('fieldset', { class: 'l3-show' }, h('legend', { class: 'ui-label' }, 'Show'));
   for (const [k, label] of [['guidance', 'Guidance'], ['thrust', 'Thrust'], ['sensors', 'Sensors']]) {
     const input = h('input', { type: 'checkbox', checked: ui.show[k] });
@@ -74,7 +85,7 @@ function controls() {
   r2.append(showSet, segmented({ legend: 'Speed', options: [{ value: '1', label: '1×' }, { value: '2', label: '2×' }, { value: '4', label: '4×' }], value: String(ui.speed), onChange: v => { ui.speed = +v; } }).el);
   const play = h('button', { class: 'ui-btn primary', type: 'button', id: 'l3-play', 'aria-pressed': 'false' }, 'Play');
   play.addEventListener('click', () => setPlaying(!time.playing));
-  r2.append(play);
+  r2.append(play, h('button', { class: 'ui-btn', type: 'button', id: 'l3-copy', onclick: copyMoment }, 'Copy link to this moment'));
   phaseChips = sceneChips({ label: 'Phase', scenes: [{ value: 'approach', label: 'Approach' }, { value: 'hover', label: 'Hover' }, { value: 'touchdown', label: 'Touchdown' }],
     value: 'approach', onChange: p => { seek(Math.max(0, view.phases[p] - (p === 'approach' ? 0 : 2))); } });
   $('l3-phases').append(phaseChips.el);
@@ -102,7 +113,29 @@ function tick(dt) {
   if (time.t >= view.tEnd + 6) { setPlaying(false); score.commit(`Final score ${fmt(view.scoreFinal, 1)}`); }
   return time.playing;
 }
-function seek(t) { setPlaying(false); time.t = t; update(true); }
+function seek(t) { setPlaying(false); time.t = t; tl?.set(t); update(true); }   // F-40: the timeline follows a seek while paused
+// a moment from the hash: that second of the descent and that camera, paused (a shared link shows what was shared)
+function applyMoment(m) {
+  setPlaying(false); time.t = Math.max(0, Math.min(view.tEnd + 6, m.t)); tl?.set(time.t); update(true);
+  const c = sc.stage.director.controls;
+  if (m.cam) { c.dispatchEvent({ type: 'controlstart' }); c.setLookAt(...m.cam, false); }   // the shared camera: the approach framing gives way
+  update(true); status(`The moment from the link: ${fmt(time.t, 1)} s into the descent. Press Play to go on.`);
+}
+async function copyMoment() {
+  if (!view) return;
+  const c = sc.stage.director.controls, v = sc.stage.camera.position, p = c.getPosition(v.clone()), g = c.getTarget(v.clone()), r = x => Math.round(x * 100) / 100;
+  const url = `${location.origin}${location.pathname}?lander=${ui.cls}&pilot=${ui.kind}#pick=${ui.pick}&view=${ui.view}&t=${time.t.toFixed(2)}&cam=${[p.x, p.y, p.z, g.x, g.y, g.z].map(r).join(',')}`;
+  history.replaceState(null, '', url);
+  status(`The link to ${fmt(time.t, 1)} s is in the address bar.`);   // stays if the clipboard is refused or never answers
+  try { await navigator.clipboard.writeText(url); status(`Link to ${fmt(time.t, 1)} s into the descent copied.`); } catch { /* the address bar has it */ }
+}
+addEventListener('hashchange', () => {   // a pasted link on the open page
+  const m = readHash(); if (m.t === null || !view) return;
+  moment = m;
+  if (m.view) { ui.view = m.view; viewSeg?.set(m.view); }
+  if (m.pick && m.pick !== ui.pick) { ui.pick = m.pick; pickSeg?.set(m.pick); choose(); }
+  else { sc.setView(ui.view, true); applyMoment(m); moment.t = null; }
+});
 
 // ---------- one episode ----------
 async function getOutcomes(p) {
@@ -120,6 +153,7 @@ async function choose() {
   time.t = 0; lastPhase = '';
   sc.setShow(ui.show); update(true); sc.setView(ui.view, true); update(true);
   drawTimeline();
+  if (moment.t !== null) { applyMoment(moment); moment.t = null; return; }
   setPlaying(!reducedMotion());
 }
 function legend(mc, s) {
