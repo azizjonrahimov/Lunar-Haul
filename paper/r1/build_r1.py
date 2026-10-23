@@ -47,7 +47,8 @@ PDF = os.path.join(HERE, "what_earths_horizon_costs_r1.pdf")
 CHROME = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 RAW = {"A": "E21a_comms_autonomy_r2.csv", "A2": "E21a2_operators_r2.csv", "B": "E21b_breakeven_r2.csv",
        "C": "E21c_pads_criterion_r2.csv", "D": "E21d_sun_r2.csv", "E": "E21e_sensitivity_r2.csv",
-       "F": "E21f_bounded_r2.csv", "G": "E21g_rescue_r2.csv", "G2": "E21g2_rescue_any_r2.csv"}
+       "F": "E21f_bounded_r2.csv", "G": "E21g_rescue_r2.csv", "G2": "E21g2_rescue_any_r2.csv",
+       "H": "E21h_helper_r2.csv"}
 MINUS, NB, PCT = "&minus;", "&nbsp;", "&#8239;%"
 MIX_LABEL = {"teleop_4s": "Teleoperated (4&nbsp;s round trip)", "default": "Reference mix",
              "supervised_strict": "Supervised, strict", "supervised_strategic": "Supervised, strategic",
@@ -319,9 +320,10 @@ def values(r: R):
 
     # ---- counts, compute, design ------------------------------------------------------------------------------
     cells = {k: int(v["cell"].nunique()) for k, v in raw.items()}
-    for k in ("A", "A2", "B", "C", "D", "E", "F", "G", "G2"):
+    for k in RAW:
         V[f"R1-CELLS-{k}"] = f"{cells[k]}"
     V["R1-N-CELLS"] = f"{sum(cells.values())}"
+    V["R1-N-STAGES"] = words(len(RAW))
     V["R1-N-YEARS"] = f"{sum(len(v) for v in raw.values()):,}"
     a, b, c = raw["A"], raw["B"], raw["C"]
     dup, checked = 0, 0
@@ -692,6 +694,78 @@ def values(r: R):
     V["R1-SY-URG-COMP"] = sh(su["urgent_completion"])
     V["R1-SY-FREE-LATE"] = rng_txt(su["rovers_not_stranded_by_month"][5:], lambda v: num(v, 1))
     assert sy["swap"]["landings_identical_across_years"] and not sy["swap"]["manifests_identical_across_years"]
+
+    # can a helper park where it sees Earth and the held rover? (B-61, parking-v1.json)
+    pk = json.load(open(os.path.join(RES, "E21_parking.json"), encoding="utf-8"))
+    assert pk["no_working_point"] == [], "5.4: every held sample has a working parking point"
+    V["R1-PK-H-N"] = f"{pk['set_h']['n']}"
+    c0 = pk["help_delay"]["call"]["0"]["all"]
+    V["R1-PK-ANY-0"], V["R1-PK-ANY-168"] = sh(c0["all"][0]), sh(c0["all"][2])
+    V["R1-PK-MARGIN-168"] = sh(c0["all_margin_1m"][2])
+    ga = max(max(pk["grid_adds"]["call"][k]["gain_pp"]) for k in ("0", "168"))
+    assert ga < 1.0, "5.4: the grid adds under one percentage point"
+    V["R1-PK-GRID-GAIN"] = f"at most {num(ga, 1)} percentage points"
+    u0 = pk["uncovered_calls"]["0|all"]
+    assert u0["earth_below_level_share"] > 0.9 and u0["earth_below_lowest_candidate_horizon_share"] > 0.99
+    V["R1-PK-UNCOV"] = sh(u0["uncovered_share"])
+    V["R1-PK-UNCOV-BELOW"] = sh(u0["earth_below_level_share"])
+    V["R1-PK-UNCOV-BELOW-CAND"] = sh(u0["earth_below_lowest_candidate_horizon_share"], 1)
+    V["R1-PK-UNCOV-LIMB"] = f"{num(u0['earth_upper_limb_deg_q10_50_90'][1], 1)}&deg;"
+    V["R1-PK-UNCOV-HOR"] = f"{num(u0['lowest_candidate_horizon_deg_q10_50_90'][1], 1)}&deg;"
+    V["R1-PK-UNCOV-CLEAR"] = h_(u0["h_until_earth_clears_lowest_horizon_q10_50_90"][1])
+    V["R1-PK-2HOP"] = sh(u0["two_hop_candidate_share"])
+    V["R1-PK-2HOP-MAST"] = sh(u0["two_hop_mast_linked_within_0_24_168h_share"][2])
+    s188, sis = pk["spotlights"]["dark_sample_188"], pk["spotlights"]["isru"]
+    V["R1-PK-188-DIST"] = f"{num(s188['best']['dist_m'] / 1000, 2)}{NB}km"
+    V["R1-PK-188-LINK"] = sh(s188["best"]["link_fraction"])
+    V["R1-PK-188-DARK"] = sh(s188["dark_spell_jan2028_jun2029"]["best"][2])
+    V["R1-PK-188-CLEAR"] = f"{num(100 * s188['best']['clear_m'])}{NB}cm"
+    assert sis["never_linked"]
+    V["R1-PK-ISRU-DIST"] = f"{num(sis['best']['dist_m'] / 1000, 2)}{NB}km"
+    V["R1-PK-ISRU-168"] = sh(sis["best"]["share"][2])
+
+    # a real helper (Stage H, B-62)
+    hz = f["helper"]
+    hc = {x["label"]: x for x in hz["cells"]}
+    H24 = ["dedicated k=1, 24 h", "dedicated k=2, 24 h", "from fleet k=1, 24 h", "dedicated k=1, 24 h, S=2 h"]
+    H168 = ["dedicated k=1, 168 h", "from fleet k=1, 168 h"]
+    assert set(hc) == set(H24 + H168) and sorted(hz["g2_headline_kept_by"]) == sorted(H24)
+    assert all(hz["g2_headline_lost_by"][k] == ["2029", "2030", "2031"] for k in H168), "5.4: 168 h keeps 2028 only"
+    worst = lambda k: min(hc[k]["share_of_always_linked_by_year"].values())
+    d1, d168 = hc["dedicated k=1, 24 h"], hc["dedicated k=1, 168 h"]
+    V["R1-H-24-T"] = t_(d1["mean"]["delivered_t_in_year"])
+    V["R1-H-24-WORST"] = sh(worst("dedicated k=1, 24 h"))
+    V["R1-H-24-WORST-ALL"] = rng_txt([100 * worst(k) for k in H24], num, PCT)
+    V["R1-H-24-VS-G2"] = dci(d1["tonnage_vs"]["G2 same threshold (ideal helper)"], 1)
+    V["R1-H-24-VS-STRICT"] = dci(d1["tonnage_vs"]["strict"])
+    V["R1-H-24-COMP"] = sh(d1["mean"]["prio1_completion_share"])
+    V["R1-H-FLEET-24-T"] = t_(hc["from fleet k=1, 24 h"]["mean"]["delivered_t_in_year"])
+    h1 = d1["helper"]
+    V["R1-H-CALLS"], V["R1-H-HELPS"] = num(h1["calls_per_run"]), num(h1["helps_per_run"])
+    V["R1-H-REL-MEAN"] = h_(h1["call_to_release_mean_h"])
+    V["R1-H-REL-P90"] = h_(h1["call_to_release_p90_h_median_of_runs"])
+    V["R1-H-UTIL"] = sh(h1["utilisation"])
+    pk_ = [hc[k]["helper"]["busy_split_share"]["parked_waiting_for_earth"] for k in hc]
+    assert min(pk_) > 0.9, "5.4: the helper's busy time is mostly parked"
+    V["R1-H-PARKED"] = rng_txt([100 * v for v in pk_], lambda v: num(v), PCT)
+    V["R1-H-DRIVE"] = rng_txt([100 * hc[k]["helper"]["busy_split_share"]["driving"] for k in hc], lambda v: num(v, 1), PCT)
+    V["R1-H-UNSERVED"] = rng_txt([hc[k]["helper"]["unserved_per_run"] for k in hc], lambda v: num(v, 1))
+    rs_ = hz["references"]
+    g1 = rs_["strict + 1 rover"]["mean"]["delivered_t_in_year"] - rs_["strict"]["mean"]["delivered_t_in_year"]
+    assert 0 <= g1 < 1, "5.4: one more hauler adds under a tonne under strict DTE"
+    V["R1-H-ROVER-GAIN"] = t_(g1, 1)
+    V["R1-H-168-T"] = t_(d168["mean"]["delivered_t_in_year"])
+    V["R1-H-168-2028"] = sh(d168["share_of_always_linked_by_year"]["2028"])
+    V["R1-H-168-WORST"] = sh(d168["share_of_always_linked_by_year"]["2029"], 1)
+    V["R1-H-168-FLEET-WORST"] = sh(hc["from fleet k=1, 168 h"]["share_of_always_linked_by_year"]["2029"], 1)
+    assert min(d168["share_of_always_linked_by_year"], key=d168["share_of_always_linked_by_year"].get) == "2029"
+    dg = hz["diagnosis_168h"]
+    p29 = dg["paired_by_start_year"]["2029"]
+    V["R1-H-168-2029-VS-G2"] = dci(p29["delivered_t_in_year"], 1)
+    V["R1-H-168-2029-BULK"] = t_(p29["delivered_bulk_t"]["diff"], 1)
+    ex = [dg["by_year"][y]["excess_h_per_run"] for y in ("2028", "2029")]
+    assert abs(ex[0] - ex[1]) / ex[0] < 0.01, "5.4: the same held hours in 2028 and 2029"
+    V["R1-H-168-HELD"] = listing([num(v) for v in ex])
 
     # ---- 5.5 break-even -------------------------------------------------------------------------------------------
     bc = lambda p, pol, n, mast="none": _match(r.c[r.c["stage"] == "B"], p=p, policy=pol, extra_rovers=n, mast=mast).iloc[0]
