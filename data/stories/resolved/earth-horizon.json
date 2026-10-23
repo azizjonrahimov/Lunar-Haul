@@ -122,21 +122,21 @@
    "source": "results/table_E21_cells_r2.csv, row stage = A, comms = always, mix = supervised_strict, column delay_prio1_p90_censored_h_median; the same with Earth always in view",
    "label": "Typical urgent wait, Earth in view"
   },
-  "strategic_done": {
-   "value": 89.3911363554,
-   "text": "89 %",
+  "helper_done": {
+   "value": 94.5718006703,
+   "text": "95 %",
    "unit": "%",
    "flag": "Modelled",
-   "source": "results/table_E21_cells_r2.csv, row stage = A, comms = dte, mix = supervised_strategic, column prio1_completion_share; x 100; direct links only; supervised rovers that may drive without a link (strategic policy)",
-   "label": "Urgent items, rovers drive out of sight"
+   "source": "results/table_E21h_helper_r2.csv, row family = helper, rescue_h = 24, start_year = all, reference = strict, cell = dedicated k=1, 24 h, metric = prio1_completion_share, column cell_mean; x 100; direct links only; supervised rovers that may drive out of Earth's sight, and one extra helper rover that, once a rover has been held a day, drives to a spot in its line of sight, waits there for Earth and relays a one-hour session; mean of 20 runs",
+   "label": "Urgent items, one helper after a day"
   },
-  "rescue_month_done": {
-   "value": 81.658876539,
-   "text": "82 %",
-   "unit": "%",
+  "helper_t": {
+   "value": 523.385690658,
+   "text": "523 t per year",
+   "unit": "t per year",
    "flag": "Modelled",
-   "source": "results/table_E21g_rescue_r2.csv, row family = rescue, rescue_h = 720, start_year = all, reference = strict, metric = prio1_completion_share, column cell_mean; x 100; the same rovers when one that needs help at a point that never sees Earth waits 720 hours for it (Stage G of the Earth-link experiment; the helper's own time is not modelled)",
-   "label": "Urgent items, help after a month"
+   "source": "results/table_E21h_helper_r2.csv, row family = helper, rescue_h = 24, start_year = all, reference = strict, cell = dedicated k=1, 24 h, metric = delivered_t_in_year, column cell_mean; the same fleet and helper; within 5 % of the fleet with Earth always in view in every start year, 2028-2031 (20 runs) and 2032-2046 (five runs a year)",
+   "label": "Cargo a year, one helper after a day"
   },
   "strand_t": {
    "value": 41.8934030091,
@@ -339,7 +339,7 @@
    "id": "autonomy",
    "scene": "world:P2-comms-dte-strategic",
    "title": "Or let rovers drive out of sight",
-   "text": "With no relay at all, supervised rovers allowed to drive out of Earth's sight deliver {{r:strategic_done}} of urgent items, if a rover that needs help at a point that never sees Earth gets it within a week. With help after a month they still deliver {{r:rescue_month_done}}; with no help at all the fleet moves only {{r:strand_t}} in a whole year. In 2028 one spot that stays dark well into the next year strands most of them, unless help comes for any rover held that long. A cautious version that never starts a drive it cannot finish in sight gets {{r:avoid_done}} of urgent items.",
+   "text": "With no relay at all, supervised rovers allowed to drive out of Earth's sight move {{r:helper_t}} and deliver {{r:helper_done}} of urgent items, if one helper rover comes to any rover held for a day and parks where it can see both Earth and the stuck rover. The helper spends most of its time just parked, waiting for Earth to rise over that spot. With no help at all the fleet moves only {{r:strand_t}}. The spot that stays dark through 2028 goes dark again about every six years, so without help most of those years would be lost too. A cautious version that never starts a drive it cannot finish in sight gets {{r:avoid_done}} of urgent items.",
    "visual": "Supervised rovers driving on through the stretch where the link is lost.",
    "camera": {
     "shot": "overview"
@@ -352,8 +352,8 @@
     "no_link": true
    },
    "chips": [
-    "strategic_done",
-    "rescue_month_done",
+    "helper_t",
+    "helper_done",
     "strand_t",
     "avoid_done"
    ],
@@ -364,7 +364,7 @@
     }
    ],
    "title_plain": "Or let rovers drive out of sight",
-   "text_plain": "With no relay at all, supervised rovers allowed to drive out of Earth's sight deliver 89 % of urgent items, if a rover that needs help at a point that never sees Earth gets it within a week. With help after a month they still deliver 82 %; with no help at all the fleet moves only 42 t per year in a whole year. In 2028 one spot that stays dark well into the next year strands most of them, unless help comes for any rover held that long. A cautious version that never starts a drive it cannot finish in sight gets 50 % of urgent items.",
+   "text_plain": "With no relay at all, supervised rovers allowed to drive out of Earth's sight move 523 t per year and deliver 95 % of urgent items, if one helper rover comes to any rover held for a day and parks where it can see both Earth and the stuck rover. The helper spends most of its time just parked, waiting for Earth to rise over that spot. With no help at all the fleet moves only 42 t per year. The spot that stays dark through 2028 goes dark again about every six years, so without help most of those years would be lost too. A cautious version that never starts a drive it cannot finish in sight gets 50 % of urgent items.",
    "visual_plain": "Supervised rovers driving on through the stretch where the link is lost."
   },
   {
@@ -386,10 +386,10 @@
  ],
  "pending": [],
  "sources": {
-  "results/E21_fit_r2.json": "359779282fdd200adfcaad17258d4f67bc924a6e43b979e16657ac02330acf21",
+  "results/E21_fit_r2.json": "4773a50615a6512b28665228406677fab5191ab172f04570331d4e61741c9c8d",
   "results/table_E21_breakeven_delay_r2.csv": "93a7e18b318c752aaf2f165bb476c811ebb9ce80fae104f64533963a6b5aa461",
   "results/table_E21_cells_r2.csv": "c70242a7ef423588895bb8f01fb7c64374ef88451b11a52da6f7f1fe52bf755e",
   "results/table_E21f_bounded_r2.csv": "de1a4bf17310563932c65cea847c38f62438dab1d5a54595f38474e89f1e5cf8",
-  "results/table_E21g_rescue_r2.csv": "a93e6fd6d03ccc58ed554fca8c1372bb247cdb8b32d8347973c2bff8124f94ed"
+  "results/table_E21h_helper_r2.csv": "3b887b73616a814707d6d59994d7d4a7257bb93e52a456d98d90dd8400ddd12a"
  }
 }
