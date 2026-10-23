@@ -4236,3 +4236,14 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
   - /world/trace/ is left for later if you want it (`#t=` on its timeline would be a small change).
 - **Checks:** tests 11/11; build OK; `budgets.py pages`: OK. Servers stopped; tab closed.
 - **Next in F-40:** GPU memory per tier.
+
+## F-40 PART 10 DONE 19:45 | Trace viewer moment link (#t=) (F-40 stays IN PROGRESS)
+- **Every file in this part (both modified):** `site/src/world/main.js`, `site/world/trace/index.html`.
+- **The link:** `/world/trace/?sample=P2#t=2000.0000&follow=3&cam=x,y,z,tx,ty,tz`. That is the bundled sample in the query, then the hour, the followed vehicle and the camera (position and target, 0.1 m).
+  - A "Copy link to this moment" button sits in the camera row. It behaves as on /world/: the address bar first, then the clipboard where the browser allows.
+- **Opening a link:** the sample loads, then the replay sits paused at that hour with the camera or followed vehicle. The status says "The moment from the link: day 83, 08:00. Press Play to go on." A hash pasted on the open page applies too.
+  - The 3D scene is built after the trace loads, so a linked camera waits for it.
+- **Traces from a file or the simulator** can't travel in a URL. For those the link keeps the query as it is and says so: "It reopens this moment only where this trace is loaded (a file or a simulator run is not in the link)."
+- **Checked in Chrome:** day 83 at the Base preset, orbited, copied → a fresh load opens paused at day 83, 08:00 with the same close camera on the base. No console errors.
+- **Checks:** tests 11/11; build OK; `budgets.py pages`: OK (trace JS 16.4 of 20 kB). Servers stopped; tab closed.
+- **Next in F-40:** GPU memory per tier.

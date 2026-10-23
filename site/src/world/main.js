@@ -53,7 +53,7 @@ async function pickMode() {
 // ---------- loading ----------
 async function loadSample(key) {
   status(`Loading the bundled ${key} sample…`);
-  try { setTrace(await (await fetch(BASE + 'world/samples/' + SAMPLES[key])).text(), `bundled sample ${SAMPLES[key]}`); }
+  try { setTrace(await (await fetch(BASE + 'world/samples/' + SAMPLES[key])).text(), `bundled sample ${SAMPLES[key]}`); st.sampleKey = key; applyMoment(); }
   catch (err) { status(`Could not load the ${key} sample: ${err.message}.`); }
 }
 function loadFromSimulator(label) {   // the simulator and the Account page hand a trace over through localStorage
@@ -62,6 +62,7 @@ function loadFromSimulator(label) {   // the simulator and the Account page hand
   setTrace(raw, label || 'the simulator’s last run');
 }
 function setTrace(text, source) {
+  st.sampleKey = null;   // set again by loadSample: only a bundled sample can be reopened from a link
   let tr;
   try { tr = readTrace(text, new Set(st.graph.sites.map(s => s.name))); }
   catch (err) { status(`Could not read ${source}: ${err.message}. The previous replay is unchanged.`); return; }
@@ -81,6 +82,35 @@ function setTrace(text, source) {
   draw(true);
 }
 
+// ---------- F-40: a moment in the URL hash (#t=812.5021&follow=3&cam=x,y,z,tx,ty,tz), the bundled sample in the query ----------
+let moment = null, pendingCam = null;   // pendingCam: a linked camera waiting for the 3D scene (built after the trace loads)
+const setCam = c => { st.scene.camera.position.set(c[0], c[1], c[2]); st.scene.controls.target.set(c[3], c[4], c[5]); st.scene.controls.update(); };
+function readHash() {
+  const h = new URLSearchParams(location.hash.slice(1)), t = parseFloat(h.get('t')), cam = (h.get('cam') || '').split(',').map(Number);
+  return Number.isFinite(t) ? { t, follow: h.get('follow') || '', cam: cam.length === 6 && cam.every(Number.isFinite) ? cam : null } : null;
+}
+moment = readHash();
+// the pending moment, once a trace is loaded: that hour, that vehicle followed and that camera, paused
+function applyMoment() {
+  const m = moment; moment = null; if (!m || !st.tr) return;
+  setPlaying(false); st.t = Math.max(0, Math.min(st.tr.horizon, m.t));
+  const f = $('w-follow'); if (m.follow && [...f.options].some(o => o.value === m.follow)) { f.value = m.follow; st.scene && st.scene.followVehicle(+m.follow); }
+  if (m.cam) { if (!st.scene) pendingCam = m.cam; else if (!st.scene.isFollowing()) setCam(m.cam); }
+  draw(true); status(`The moment from the link: ${clock(st.t)}. Press Play to go on.`);
+}
+async function copyMoment() {
+  if (!st.tr) return;
+  const r = v => Math.round(v * 10) / 10, f = $('w-follow').value;
+  let hash = `t=${st.t.toFixed(4)}${f ? '&follow=' + f : ''}`;
+  if (st.scene && st.mode === '3d') { const p = st.scene.camera.position, g = st.scene.controls.target; hash += '&cam=' + [p.x, p.y, p.z, g.x, g.y, g.z].map(r).join(','); }
+  const url = `${location.origin}${location.pathname}${st.sampleKey ? '?sample=' + st.sampleKey : location.search}#${hash}`;
+  history.replaceState(null, '', url);
+  const note = st.sampleKey ? '' : ' It reopens this moment only where this trace is loaded (a file or a simulator run is not in the link).';
+  status(`The link to ${clock(st.t)} is in the address bar.${note}`);   // stays if the clipboard is refused or never answers
+  try { await navigator.clipboard.writeText(url); status(`Link to ${clock(st.t)} copied.${note}`); } catch { /* the address bar has it */ }
+}
+addEventListener('hashchange', () => { moment = readHash(); applyMoment(); });
+
 // ---------- views ----------
 let sceneMod = null;
 async function ensureViewsAsync() {
@@ -93,6 +123,8 @@ async function ensureViewsAsync() {
       st.sceneRO && st.sceneRO.disconnect();
       st.sceneRO = new ResizeObserver(() => { if (st.scene) { st.scene.resize(); draw(true); } }); st.sceneRO.observe($('w-canvas'));
       st.scene.resize(); if (st.tr) st.scene.setTrace(st.tr); st.scene.preset('overview', false);
+      if ($('w-follow').value) st.scene.followVehicle(+$('w-follow').value); else if (pendingCam) setCam(pendingCam);   // a linked moment's view
+      pendingCam = null;
       // F-40: orbit and zoom without a drag (top right: the inset map holds the bottom corner)
       if (!document.querySelector('#w-stage .ui-viewpad')) $('w-stage').append(viewPad({ nudge: (a, p) => { st.scene?.nudge(a, p); draw(true); }, zoom: f => { st.scene?.zoom(f); draw(true); } }, { place: 'top' }));
     } catch (err) { st.mode = '2d'; $('w-tier').textContent = `3D view unavailable (${err.message}): showing the 2D plan view.`; }
@@ -145,6 +177,7 @@ function wireControls() {
   for (const b of document.querySelectorAll('[data-preset]')) b.addEventListener('click', () => { if (st.scene) { st.scene.preset(b.dataset.preset, !reduced.matches); kick(); } });
   $('w-follow').addEventListener('change', e => { if (!st.scene) return; const v = e.target.value; if (v === '') st.scene.followVehicle(null); else { st.scene.followVehicle(+v); } kick(); });
   $('w-labels-on').addEventListener('change', () => draw(true));
+  $('w-copy').addEventListener('click', copyMoment);
   $('w-view2d').addEventListener('change', e => { st.mode = e.target.checked ? '2d' : (st.scene ? '3d' : '2d'); document.body.classList.toggle('w-2d', st.mode === '2d'); st.plan && st.plan.resize(); draw(true); kick(); });
   document.addEventListener('keydown', e => {
     if (e.target.closest('input, select, textarea, button')) return;
