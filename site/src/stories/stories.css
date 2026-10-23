@@ -33,6 +33,20 @@
 .st-chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 10rem), 1fr)); gap: var(--s-2); }
 .st-chips:empty { display: none; }
 .st-chips .ui-chip-value, .st-chips .ui-chip-value * { white-space: normal; overflow-wrap: anywhere; }
+/* F-40: the dot-and-interval chart for numbers with likely ranges (one measure, one colour, recessive grid) */
+.st-chart:empty { display: none; }
+.st-chart svg { display: block; width: 100%; height: auto; overflow: visible; font-family: var(--font-sans); }
+.st-chart .g { stroke: var(--panel-line); stroke-width: 1; }
+.st-chart .t { fill: var(--ink-2); font-size: 11px; font-family: var(--font-num); }
+.st-chart .u { font-family: var(--font-sans); }
+.st-chart .l, .st-chart .v { paint-order: stroke; stroke: var(--panel); stroke-width: 4px; stroke-linejoin: round; }   /* a halo over the grid */
+.st-chart .l { fill: var(--ink); font-size: 13px; font-weight: 600; }
+.st-chart .v { fill: var(--ink); font-size: 12px; font-family: var(--font-num); font-weight: 600; }
+.st-chart .v .r { fill: var(--ink-2); font-weight: 400; }
+.st-chart .i, .st-chart .e { stroke: var(--accent); stroke-width: 2; stroke-linecap: round; }
+.st-chart .d { fill: var(--accent); stroke: var(--panel); stroke-width: 2; }
+.st-chart .hit { fill: transparent; }
+.st-chart .st-chart-key { margin: var(--s-1) 0 0; }
 .st-visual { margin: 0; color: var(--ink-2); border-left: 3px solid var(--panel-line); padding-left: var(--s-2); }
 .st-visual .ui-label { display: block; margin-bottom: 2px; }
 .st-nav { display: flex; gap: var(--s-2); justify-content: space-between; }

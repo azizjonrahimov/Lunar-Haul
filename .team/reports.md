@@ -3886,3 +3886,26 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
   3. **Step 8 "rovers"**: the visual "two bars … each with its uncertainty" is not drawn. If the two numbers carry intervals, I can draw a small dot-and-interval chart in the step panel (say which fields to use), or the visual line can be reworded.
   4. **Step 5 "pads"** might read better with `"camera": {"shot": "pads"}`. On the overview, the base cluster sits at the right edge of the frame.
 - **Next in F-40:** a keyboard, screen-reader and reduced-motion walk of every page; on-screen orbit and zoom buttons on the 3D views (WCAG 2.5.7); URL-hash deep links; GPU memory per tier.
+
+## F-40 PART 4 DONE 18:27 | Earth story step 8: dot-and-interval chart from the _lo/_hi numbers (F-40 stays IN PROGRESS)
+- **Every file in this part (all modified):** `site/src/stories/stories.js`, `site/src/stories/stories.css`, `site/stories/index.html`.
+- **The rule, from the data:** a step whose chip number `K` also has `K_lo` and `K_hi` gets a dot-and-interval chart in the panel, under the chips. Any story can use it; nothing is keyed on step ids.
+  - One row per number. The row name is the `_lo` label minus ", low end" ("One extra rover", "Autonomy step").
+  - The dot is at the estimate and the line runs across the range, with end ticks. Each row shows "12 (1–42)" on the right.
+  - All rows share one axis from 0, rounded up to the next 10. The axis title is the number's `unit`.
+  - A one-line key sits under it: "Dot: the estimate. Line: the likely range (95 % interval)."
+  - The `_lo`/`_hi` numbers get no chips of their own, since the chart shows them; their sources stay in "Result files behind these numbers". Step 8 shows 2 chips instead of 6.
+- **Drawing:** inline SVG, no library.
+  - One measure in one colour (`--accent`); the grid in `--panel-line`; text in ink tokens, never the mark colour.
+  - Light and dark come from the tokens. The labels have a halo in the panel colour so the 0 gridline doesn't cross them.
+  - The chart is drawn at the panel's own pixel width, so text keeps its size: 366 px on desktop, 308 px at 390. It redraws when the panel resizes.
+- **Accessibility:**
+  - `role="img"` with a spoken summary: "One extra rover: 12 percentage points of relay coverage, likely between 1 and 42. Autonomy step: …".
+  - Each row has a `<title>` hover tooltip with the same sentence, and the hit area covers the whole row.
+  - The step text quotes every number, so the chart is never the only place a value appears.
+- **Checks:**
+  - Desktop (1280 iframe) and 390 px (iframe), light and dark: no sideways scroll, and the chart sits inside the panel.
+  - Stepping to 7 and back removes and redraws the chart. No console errors.
+  - Tests 11/11; build OK; `budgets.py pages`: OK (stories 11.2 of 60 kB JS). Servers stopped by PID; tab closed.
+- **Your other decisions (relay visual, B-54 scenes, pads shot):** these are data only. The pads shot and the reworded relay visual are live through the rebuilt resolved file. When B-54 lands, the step's `scene` switch needs nothing from me.
+- **Next:** the F-40 accessibility walk (keyboard, screen-reader mirror, reduced motion, contrast on every page).
