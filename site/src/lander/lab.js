@@ -17,7 +17,7 @@ const $ = id => document.getElementById(id);
 const BASE = import.meta.env.BASE_URL, POL = BASE + 'lab/policies/';
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 const TOL = { policy: '#4477AA', classical: '#EE6677' };
-const TOL_TAG = { bc_v3: '#AA3377', bcv3: '#AA3377', bcml: '#4477AA', bc: '#66CCEE', baseline: '#228833', hover_bonus: '#CCBB44', no_eta: '#BBBBBB', hover_bonus_v1: '#BBBBBB' };   // Tol bright, per policy tag
+const TOL_TAG = { bc_v3: '#AA3377', bcv3: '#AA3377', bcml: '#4477AA', bc: 'var(--tol-cyan)', baseline: '#228833', hover_bonus: 'var(--tol-yellow)', no_eta: 'var(--tol-grey)', hover_bonus_v1: 'var(--tol-grey)' };   // Tol bright per policy tag; yellow, cyan and grey as theme tokens (3:1 on the light page)
 const st = { index: null, policies: {}, checks: {}, terrain: null, pad: null, ep: null, ghost: null, frame: 0, playing: false, last: 0, raf: 0, outcomes: {} };
 
 async function getJson(url) { const r = await fetch(url); if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`); return r.json(); }

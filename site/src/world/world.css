@@ -37,7 +37,7 @@ body:not(.w-playing) .w-controls .i-pause, body.w-playing .w-controls .i-play { 
 .w-legend i { display: inline-block; width: 0.75em; height: 0.75em; border-radius: 50%; margin-right: 0.4em; vertical-align: -0.05em; }
 .w-legend i.sq { border-radius: 2px; }
 .w-legend i.ring { background: transparent; border: 2px solid var(--ink); }
-.w-legend i.ring.y { border-color: #CCBB44; }
+.w-legend i.ring.y { border-color: var(--tol-yellow); }
 .w-notes p { margin: var(--s-2) 0 0; }
 
 .w-rail { border-left: 1px solid var(--hairline); padding-left: var(--s-5); }

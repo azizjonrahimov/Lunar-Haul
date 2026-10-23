@@ -8,7 +8,7 @@ import { readTrace } from './trace.js';
 import { buildLayout } from './layout.js';
 import { indexTrace, snapshot, steps, descentH } from './state.js';
 import { createPlan } from './plan2d.js';
-import { OWNER_COLOURS } from './colours.js';
+import { OWNER_COLOURS, themedVar } from './colours.js';
 import { viewPad } from '../ui/viewpad.js';
 
 const $ = id => document.getElementById(id);
@@ -209,8 +209,8 @@ function renderSteps() {
 }
 function renderLegend() {
   const owners = [...new Set(st.tr.vehicles.map(v => v.owner))];
-  $('w-legend').innerHTML = owners.map(o => `<span><i style="background:${OWNER_COLOURS[o] || '#AA3377'}"></i>${esc(o)}</span>`).join('') +
-    '<span><i class="sq" style="background:#66CCEE"></i>landing pad</span><span><i class="ring"></i>cargo waiting (ring size = items)</span><span><i class="ring y"></i>plume keep-out</span>';
+  $('w-legend').innerHTML = owners.map(o => `<span><i style="background:${themedVar(OWNER_COLOURS[o] || '#AA3377')}"></i>${esc(o)}</span>`).join('') +
+    '<span><i class="sq" style="background:var(--tol-cyan)"></i>landing pad</span><span><i class="ring"></i>cargo waiting (ring size = items)</span><span><i class="ring y"></i>plume keep-out</span>';
 }
 function renderFollow() {
   $('w-follow').innerHTML = '<option value="">Follow vehicle…</option>' + st.tr.vehicles.map(v => `<option value="${v.id}">${esc(v.cls)} ${v.id} · ${esc(v.owner)}</option>`).join('');

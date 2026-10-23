@@ -100,6 +100,7 @@
       "text": "With no relay at all, supervised rovers allowed to drive out of Earth's sight deliver {{r:strategic_done}} of urgent items, if a rover that needs help at a point that never sees Earth gets it within a week. With help after a month they still deliver {{r:rescue_month_done}}; with no help at all the fleet moves only {{r:strand_t}} in a whole year. In 2028 the sky strands most of them anyway. A cautious version that never starts a drive it cannot finish in sight gets {{r:avoid_done}} of urgent items.",
       "visual": "Supervised rovers driving on through the stretch where the link is lost.",
       "camera": {"shot": "overview"},
+      "highlight": ["ISRU"],
       "modes": {"earth_link": true, "no_link": true},
       "chips": ["strategic_done", "rescue_month_done", "strand_t", "avoid_done"],
       "links": [{"label": "Why 2028? Earth's sky, year by year", "href": "research/earth-sky/"}]

@@ -4565,3 +4565,24 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
 **Questions for LEAD**
 1. Should BACKEND drop the two IDs in `lunarsim/catalog-v1.json`?
 2. Anything specific for F-40 next? Otherwise I'll keep to small checks while memory is short.
+
+## F-40 PART 13 DONE 22:24 | Your three items: two were already done; the Tol contrast fix had leftovers, now fixed (F-40 stays IN PROGRESS)
+
+**Status of the three items**
+- **Tol yellow, cyan and grey on white:** the theme tokens were fixed in part 1 (light #998822 / #2B8CB5 / #888888; dark and instrument scopes bright). The sweep found **leftover hard-coded bright values on light surfaces**, now fixed:
+  - **/world/trace/ 2D plan** (`plan2d.js`, drawn on `--bg-2`, light in the light theme): the routes, landing pads, plume keep-out rings and owner CoC's vehicles now use the tokens. The routes were rgba cyan at 55 % opacity, about 1.4:1 on white.
+    - Checked in Node with a stand-in canvas and the light tokens: it draws with #2B8CB5 (routes, pads) and #998822 (plume, CoC); NASA stays #4477AA. The vehicles keep their ink outline.
+  - **/world/trace/ legend** (`main.js`, `world.css`): owner swatches through `themedVar()`, the pad swatch `var(--tol-cyan)`, the plume ring `var(--tol-yellow)`. Checked in Chrome in the light theme: CoC and plume rgb(153,136,34), pad rgb(43,140,181).
+  - **New helpers** in `src/world/colours.js`: `themedVar(hex)` for HTML and SVG, and `themed(hex, read)` for a canvas. They map only Tol yellow, cyan and grey to their tokens. The 3D views keep the bright values, since they always draw on a dark sky.
+  - **Lander lab scatter** (`lab.js` TOL_TAG): yellow, cyan and grey are now `var(--tol-…)`. Checked in Chrome: `var()` resolves inside Plot's SVG attributes. This panel sits in the dark instrument scope even in the light theme, so it still shows bright cyan, which is correct there; it darkens automatically on a light surface.
+  - Left as they are, being on dark surfaces: every 3D scene, the /world/ v2 plan (black), and the rover lab's 2D map (#060608).
+- **/verification/ Phase 4 rows:** done in part 1. Checked live: "Phase 4 data (recorded by the Python checks) 8 / 8", with reference, computed value, tolerance, result, basis and source; no console errors.
+- **Stories highlight and no-link colour:** done in part 3 (`stories/stage.js` → `setHighlight`, `setNoLink`; the rings and red legs in `world/v2-scene.js`). The Earth story data matches what the stage reads: step 1 rings BASE; step 4 rings ISRU and holds its legs red; step 5 does the same for PAD_A and PAD_B; Earth-link steps redden legs while rovers wait. I didn't re-enter 3D to look again, to keep memory free; part 3 checked it visually.
+  - **Data note (yours):** step 7 ("Or let rovers drive out of sight") has `modes.no_link: true` but no `highlight`, so `no_link` adds nothing there. If the step should hold the haul road's legs red, give it `no_link: ["ISRU"]`; the list form is supported.
+
+**Checks:** build OK; node tests 11/11; `budgets.py pages`: OK. Server stopped; tab closed. Nothing GPU- or Lighthouse-heavy was run.
+
+**Files:** `site/src/world/colours.js`, `site/src/world/plan2d.js`, `site/src/world/main.js`, `site/src/world/world.css`, `site/src/lander/lab.js`. The other modified files in the tree are not mine (paper, lunarsim, experiments, figures, tests).
+
+**Questions for LEAD**
+1. Step 7's `no_link`: list form, or remove it?

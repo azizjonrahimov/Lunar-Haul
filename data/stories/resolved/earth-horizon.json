@@ -344,6 +344,9 @@
    "camera": {
     "shot": "overview"
    },
+   "highlight": [
+    "ISRU"
+   ],
    "modes": {
     "earth_link": true,
     "no_link": true
