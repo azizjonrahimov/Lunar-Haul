@@ -63,7 +63,7 @@
    "text": "63 %",
    "unit": "%",
    "flag": "Modelled",
-   "source": "pct_change of inhouse_mean and market_mean (unrounded); neg",
+   "source": "percentage change from “Own rovers: mean urgent wait” to “Shared rovers: mean urgent wait” (from the unrounded values); sign reversed",
    "label": "Cut in the mean urgent wait"
   },
   "vs_greedy": {
@@ -71,7 +71,7 @@
    "text": "22 %",
    "unit": "%",
    "flag": "Modelled",
-   "source": "results/table_paired_E1.csv, row phase = P2, metric = delay_prio1_mean_h, column rel_%; neg; marketplace minus pooled greedy, paired over common seeds, relative to greedy (experiment E1)",
+   "source": "results/table_paired_E1.csv, row phase = P2, metric = delay_prio1_mean_h, column rel_%; sign reversed; marketplace minus pooled greedy, paired over common seeds, relative to greedy (experiment E1)",
    "label": "Auction against nearest free rover"
   },
   "e19_rovers": {

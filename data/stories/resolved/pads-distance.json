@@ -23,7 +23,7 @@
    "text": "32.6 %",
    "unit": "%",
    "flag": "Modelled",
-   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = standoff, column ci_lo; 100 (e^v - 1); lower end of the 95 % bootstrap interval over seeds",
+   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = standoff, column ci_lo; as a percentage, 100 (e^v - 1); lower end of the 95 % bootstrap interval over seeds",
    "label": "Lower end of its interval"
   },
   "standoff_hi": {
@@ -31,7 +31,7 @@
    "text": "37.6 %",
    "unit": "%",
    "flag": "Modelled",
-   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = standoff, column ci_hi; 100 (e^v - 1); upper end of the 95 % bootstrap interval over seeds",
+   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = standoff, column ci_hi; as a percentage, 100 (e^v - 1); upper end of the 95 % bootstrap interval over seeds",
    "label": "Upper end of its interval"
   },
   "fit_years": {
@@ -63,7 +63,7 @@
    "text": "−1.5 %",
    "unit": "%",
    "flag": "Modelled",
-   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = keepout, column ci_lo; 100 (e^v - 1); 95 % bootstrap interval, lower end",
+   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = keepout, column ci_lo; as a percentage, 100 (e^v - 1); 95 % bootstrap interval, lower end",
    "label": "Lower end of its interval"
   },
   "keepout_hi": {
@@ -71,7 +71,7 @@
    "text": "0.8 %",
    "unit": "%",
    "flag": "Modelled",
-   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = keepout, column ci_hi; 100 (e^v - 1); 95 % bootstrap interval, upper end",
+   "source": "results/table_E20.csv, row response = log_delay_prio1_mean_h, subset = pooled, term = keepout, column ci_hi; as a percentage, 100 (e^v - 1); 95 % bootstrap interval, upper end",
    "label": "Upper end of its interval"
   },
   "miss_pct": {

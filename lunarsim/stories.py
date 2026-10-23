@@ -210,7 +210,10 @@ def _raw_number(key: str, spec: Dict[str, Any], src: Sources, numbers: Dict[str,
         else:
             raise StoryError(f"unknown derive {op}")
         flag = spec.get("flag") or max((x["flag"] for x in vals), key=lambda f: FLAG_RANK.get(f, 2))
-        return v, f"{op} of {a_key} and {b_key} (unrounded)", flag
+        na, nb = (f"“{r['label']}”" if r.get("label") else k for k, r in zip((a_key, b_key), vals))
+        how = {"diff": f"{nb} minus {na}", "ratio": f"{nb} divided by {na}",
+               "pct_change": f"percentage change from {na} to {nb}"}[op]
+        return v, f"{how} (from the unrounded values)", flag
     raise StoryError("a number needs one of table, json, catalog, derive")
 
 
@@ -247,7 +250,7 @@ def _resolve_one(key: str, numbers: Dict[str, Any], src: Sources, done: Dict[str
         raise StoryError("value is not finite")
     v = float(f"{v:.12g}")          # 12 significant digits: platform libm last-bit noise stays out of the files
     if t:
-        source += f"; {'100 (e^v - 1)' if t == 'exp_pct' else t}"
+        source += "; " + {"exp_pct": "as a percentage, 100 (e^v - 1)", "neg": "sign reversed", "abs": "absolute value"}[t]
     if spec.get("scale", 1.0) != 1.0:
         source += f"; x {spec['scale']:g}"
     if spec.get("note"):

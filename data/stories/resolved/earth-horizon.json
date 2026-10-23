@@ -47,7 +47,7 @@
    "text": "68 %",
    "unit": "%",
    "flag": "Modelled",
-   "source": "pct_change of landed_always and landed_dte (unrounded); neg",
+   "source": "percentage change from “Lander cargo moved, Earth always in view” to “Lander cargo moved, direct links only” (from the unrounded values); sign reversed",
    "label": "Lander cargo lost with direct links"
   },
   "done_always": {

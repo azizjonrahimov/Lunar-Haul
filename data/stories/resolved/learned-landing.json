@@ -87,7 +87,7 @@
    "text": "4.8 percentage points",
    "unit": "percentage points",
    "flag": "Modelled",
-   "source": "results/table_E15.csv, row policy = lander_CLPS_bc_v3_s0, column d_pass_rate; neg; x 100; classical minus learned success, paired on the same seeds",
+   "source": "results/table_E15.csv, row policy = lander_CLPS_bc_v3_s0, column d_pass_rate; sign reversed; x 100; classical minus learned success, paired on the same seeds",
    "label": "Classical minus imitation network"
   },
   "gap_ci": {
