@@ -4001,3 +4001,62 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
 - **Checks:** tests 11/11; build OK; `budgets.py pages`: OK. Servers stopped by PID; tab closed.
 - **Seen, not fixed (small):** on /vehicles/ the "Hull" label sits under "Liquid hydrogen tank" on the MK1 lander.
 - **Next in F-40 (walk part 2):** a keyboard tab-through of every page, reduced motion (playback, autorotate, camera moves) per page, the screen-reader text versions of the 3D views; then URL-hash deep links and GPU memory per tier.
+
+## F-40 BUDGET NOTE 18:58 | Rover lab data list (your request) — file: `tools/ci/budgets.json` (rover entry only)
+- **Added to `lab/rover/index.html` → data:** `lab/rover/routes-index.json`, `lab/rover/routes/BASE__PSR.json` (the leg the page opens on) and `comms/earth_link-v2-samples-lite.json.gz`. Measured **4,048 of 4,260 kB**; `budgets.py pages`: OK. The limit is unchanged.
+- **The honest full count is higher.** I measured every fetch in Chrome after entering 3D. These are still not in the list (gzip kB):
+
+| File | kB |
+|---|---|
+| `terrain/hero/v2/horizon_20m_12.png` (one per sun angle) | 1,357.5 |
+| `terrain/hero/v2/normal_20m.png` | 762.6 |
+| `terrain/hero/v2/normal_5m_PAD_A.png` | 178.4 |
+| `terrain/hero/v2/normal_5m_BASE.png` | 170.0 |
+| `terrain/hero/v2/height_5m_BASE.png` | 107.5 |
+| `comms/earth_track-v1.json.gz` | 71.0 |
+| `detect-gpu/benchmarks/d-nvidia.json` | 11.6 |
+| `catalog/catalog-v1.json` | 8.9 |
+| `lab/rover/learned/BASE__PSR.json` | 5.5 |
+| `lab/rover/legs/BASE__PSR.json` | 5.4 |
+| `terrain/hero/v2/manifest.json` | 3.9 |
+| `lab/rover/learned-index.json` | 2.2 |
+| **Total** | **≈ 2,684** |
+
+- With those counted the page is **≈ 6,733 kB**, which needs a limit of about 6,800. Your call: add the list and raise the limit, or keep 4,260 for the 2D lab plus samples and routes.
+- **A saving I can make (FRONTEND):** the rover scene loads PAD_A's 5 m normal map although the rover lab sits at BASE (`createLunarTerrain` loads every patch's normals). Skipping it saves 178 kB.
+
+## F-40 PART 6 DONE 19:00 | 3D pages budgeted on what they load (measured in Chrome), one 5 m normal map less per view (F-40 stays IN PROGRESS)
+- **Every file in this part (all modified):** `site/src/horizon.js`, `site/src/stage/terrain.js`, `site/vite.config.js`, `tools/ci/budgets.json`. Commit-ready as one set.
+- **One normal map less:**
+  - `loadTerrainV2(base, { sites })` loads only the 5 m patches asked for. The shared terrain (`createLunarTerrain`) asks for its own site's patch only.
+  - Saved per 3D view: PAD_A's map (178 kB) on the rover lab, world, stories and home hero; BASE's map (170 kB) on the lander lab.
+  - The trace view still loads both: it uses both.
+- **Measured in Chrome after entering 3D** (and, for /stories/?s=earth-horizon, after walking all 8 steps). Every data file, lazy JS chunk and lazy CSS file is now in its page entry, with the limit at measured + 5 %:
+
+| Page | Data counted before | Data measured = counted now | Limit (was) | Lazy JS measured | Lazy limit |
+|---|---|---|---|---|---|
+| / (after "Watch it in 3D") | 26.0 | 3,069.9 | 3,225 (35) | 257.6 | 275 |
+| /world/ | 4,266.1 | 4,119.6 | 4,330 (5,335) | 247.8 | 265 |
+| /world/trace/ | 2,936.4 | 2,928.4 | 3,075 (3,675) | 154.8 | 165 |
+| /lab/lander/ | 1,186.8 | 5,271.3 | 5,535 (1,485) | 243.6 | 260 |
+| /lab/rover/ | 4,048.3 | 6,558.2 | 6,890 (4,260) | 256.7 | 270 |
+| /vehicles/ | 8.9 | 20.6 | 25 (15) | 161.6 | 170 |
+| /stories/ (Earth story, all steps) | 0 | 7,501.2 | 7,880 (none) | 253.8 | 270 |
+
+  - Data the lists had missed: on every 3D page, the detect-gpu benchmark (12 kB) and the measured horizon map (1.36–1.55 MB). On the lander lab, the descent recordings (1,074 kB) and the outcome tables (≈ 570 kB). On the home page, the whole P2 year with its terrain. On /stories/, everything.
+  - Listed but not loaded, now removed: `horizon_20m_00.png` and PAD_A's normal map on /world/; `P2_marketplace_seed3_v2.json` on the trace view.
+  - The lazy CSS (`assets/ui-*.css`, on the rover lab, lander lab and home page) is listed under data. budgets.py has no lazy-CSS key, but the glob measures it the same way.
+- **Lazy globs that match one chunk each:**
+  - Several chunks shared a name: `lab3d-scene` ×2, `stage` ×3, `scene` ×3, `scene-data` ×2.
+  - `vite.config.js` now names a chunk built from one module under `src/<dir>/` as `<dir>-<name>`: `rover-lab3d-scene-*`, `lander-lab3d-scene-*`, `stories-stage-*`, `world-v2-scene-*`, `world-scene-*`, `stage-sky-*`, `simulator-plot-marks-*`.
+  - Where one name prefixes another, the glob uses `????????` for the 8-character hash (`rover-lab3d-????????.js`, `world-scene-????????.js`, `stage-????????.js`). Each glob was checked to match exactly one file.
+  - The simulator's lazy glob moved to `assets/simulator-plot-marks-*.js` with it.
+- **What budgets.py can't express (for BACKEND, if you want the tool changed):**
+  1. **Computed URLs.** The horizon map index follows the sun's bearing at the shown moment (24 files of 1.33–1.59 MB raw), and the detect-gpu benchmark is per GPU vendor (`d-<vendor>.json`). Each is listed as the one measured; another sun or vendor differs by a few percent.
+  2. **Query-string variants.** /stories/ counts the Earth story, which has the most packages. The other three load other packages; the learned-landing story also loads `lander-lab3d-scene`, which is not in /stories/' lazy list. The rover lab counts the leg it opens on.
+  3. **Fonts are not counted at all.** 3D pages also load the Sora, JetBrains Mono and Source Sans Greek woff2 files.
+  4. **Lazy CSS** has no key of its own; I used the data list.
+  - Worker-fetched files are expressible (they are plain globs, e.g. the rover terrain worker's height and slope maps).
+- **Checks:**
+  - `budgets.py pages`: OK; the note in budgets.json now states the 3D rule. Build OK. Servers stopped; tab closed.
+  - **Tests 10/11.** `scene-data.test.mjs` fails on P2-comms-dte: vehicle 3 at 1448.9 h is "idle" where the fixture expects "waiting_for_earth". The test reads `data/scenes/` directly, and P2-comms-dte, P2-comms-dte-autonomous and P2-comms-relay-0.8 are rebuilt there but uncommitted (BACKEND's B-54 work), against the F-36 fixture `site/tests/fixtures/scene_positions.json`. None of my files touch it. It needs the fixture regenerated with the rebuilt packages.

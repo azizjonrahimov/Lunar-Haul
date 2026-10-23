@@ -164,7 +164,7 @@ function grid(nx, ny, posAt, skirt) {
 /* createLunarTerrain({base: BASE + 'terrain/hero/', renderer, site, tier}) -> {group, origin, heightAt(x, z), setSun(az, el),
    setScour(o), profileAt(x, z, eyeM), material, dispose}. Throws when the v2 assets are missing (pages fall back). */
 export async function createLunarTerrain({ base, renderer, site = 'PAD_A', tier = 2, farStride = 0, onAssets = () => {} }) {
-  const [tile, v2] = await Promise.all([loadTerrain(base), loadTerrainV2(base + 'v2/')]);
+  const [tile, v2] = await Promise.all([loadTerrain(base), loadTerrainV2(base + 'v2/', { sites: [site] })]);   // only this site's 5 m patch
   const patch = v2.patches.find(p => p.site === site);
   if (!patch || !patch.height) throw new Error(`terrain v2: no 5 m patch for ${site}`);
   const r = await fetch(base + 'v2/' + patch.height.file);

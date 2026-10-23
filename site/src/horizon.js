@@ -26,12 +26,13 @@ function normalTexture(p) {
   return t;
 }
 
-export async function loadTerrainV2(base) {
+// sites: the 5 m patches to load (F-40: a view at one site skips the other's normal map); all of them when omitted
+export async function loadTerrainV2(base, { sites = null } = {}) {
   const manifest = await (await fetch(base + 'manifest.json')).json();
   if (manifest.format !== 'lunarsim-terrain-assets' || manifest.version !== 1) throw new Error('terrain v2: unexpected manifest');
   const files = manifest.files, byRole = r => files.filter(f => f.role === r);
   const n20 = byRole('normals').find(f => f.px_m === 20);
-  const patches = await Promise.all(byRole('normals').filter(f => f.site).map(async f => ({ site: f.site, bounds: f.bounds_m, tex: normalTexture(await png(base + f.file)),
+  const patches = await Promise.all(byRole('normals').filter(f => f.site && (!sites || sites.includes(f.site))).map(async f => ({ site: f.site, bounds: f.bounds_m, tex: normalTexture(await png(base + f.file)),
     height: byRole('height').find(g => g.site === f.site) || null })));
   const normal = normalTexture(await png(base + n20.file));
   const hz = byRole('horizon').sort((a, b) => a.sectors[0] - b.sectors[0]);

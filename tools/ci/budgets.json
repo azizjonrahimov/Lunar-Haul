@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "note": "Per-page download budgets for the built site (tools/ci/budgets.py pages). JS/CSS = the files a page's HTML loads, gzip kB; data = files the page fetches at load (globs under site/dist, listed from the page code: FRONTEND keeps them current), gzip kB. Thresholds are 25 % above the sizes measured on 22 Oct 2026, rounded up to 5 kB; raise one only on purpose, in the same commit as the change. Classic <script src> files (the simulator's engine/*.js, copied in by copy-simulator.mjs) count with the page JS; 'lazy' lists the entry chunks a page imports later (their static imports are followed), budgeted as lazy_gzip_kb (simulator set on 22 Oct 2026 at today + 25 %).",
+  "note": "Per-page download budgets for the built site (tools/ci/budgets.py pages). JS/CSS = the files a page's HTML loads, gzip kB; data = files the page fetches at load (globs under site/dist, listed from the page code: FRONTEND keeps them current), gzip kB. Thresholds are 25 % above the sizes measured on 22 Oct 2026, rounded up to 5 kB; raise one only on purpose, in the same commit as the change. Classic <script src> files (the simulator's engine/*.js, copied in by copy-simulator.mjs) count with the page JS; 'lazy' lists the entry chunks a page imports later (their static imports are followed), budgeted as lazy_gzip_kb (simulator set on 22 Oct 2026 at today + 25 %). 3D pages (index, world, world/trace, lab/lander, lab/rover, vehicles, stories) count every file they load once 3D is entered, data and lazy chunks alike, as measured in Chrome on 22 Oct 2026 (F-40), at measured + 5 %: per-sun horizon maps and the per-vendor detect-gpu benchmark are listed as the one measured; stories counts the Earth story walked through all its steps; lazy chunks are named <src dir>-<name> (vite.config.js) so each glob matches one chunk.",
   "site_total_mb": 900,
   "defaults": {
     "js_gzip_kb": 60,
@@ -39,9 +39,29 @@
       "js_gzip_kb": 5,
       "css_gzip_kb": 10,
       "data": [
-        "hero/base-p2-1280.webp"
+        "hero/base-p2-1280.webp",
+        "catalog/catalog-v1.json",
+        "terrain/hero/meta.json",
+        "terrain/hero/height_20m.png",
+        "terrain/hero/v2/manifest.json",
+        "terrain/hero/v2/normal_20m.png",
+        "terrain/hero/v2/normal_5m_BASE.png",
+        "terrain/hero/v2/height_5m_BASE.png",
+        "terrain/hero/v2/horizon_20m_02.png",
+        "scenes/P2/scene.json",
+        "scenes/P2/routes.bin",
+        "scenes/P2/chunk_*.bin",
+        "detect-gpu/benchmarks/d-nvidia.json",
+        "assets/ui-*.css"
       ],
-      "data_gzip_kb": 35
+      "data_gzip_kb": 3225,
+      "lazy": [
+        "assets/detect-gpu.esm-*.js",
+        "assets/home-hero-3d-*.js",
+        "assets/scene-data-????????.js",
+        "assets/world-v2-scene-*.js"
+      ],
+      "lazy_gzip_kb": 275
     },
     "lab/lander/index.html": {
       "js_gzip_kb": 130,
@@ -51,9 +71,24 @@
         "terrain/hero/meta.json",
         "terrain/hero/sites.json",
         "lab/policies/index.json",
-        "lab/policies/lander_CLPS_*.json"
+        "lab/policies/lander_CLPS_*.json",
+        "lab/policies/outcomes_*CLPS*.json",
+        "lab/policies/trajectories-v1.json",
+        "catalog/catalog-v1.json",
+        "detect-gpu/benchmarks/d-nvidia.json",
+        "terrain/hero/v2/manifest.json",
+        "terrain/hero/v2/normal_20m.png",
+        "terrain/hero/v2/normal_5m_PAD_A.png",
+        "terrain/hero/v2/height_5m_PAD_A.png",
+        "terrain/hero/v2/horizon_20m_06.png",
+        "assets/ui-*.css"
       ],
-      "data_gzip_kb": 1485
+      "data_gzip_kb": 5535,
+      "lazy": [
+        "assets/detect-gpu.esm-*.js",
+        "assets/lander-lab3d-scene-*.js"
+      ],
+      "lazy_gzip_kb": 260
     },
     "lab/rover/index.html": {
       "js_gzip_kb": 25,
@@ -65,9 +100,32 @@
         "terrain/hero/slope_20m.png",
         "terrain/hero/sites.json",
         "lab/rover/driving-index.json",
-        "lab/rover/shadow_*.bin"
+        "lab/rover/shadow_*.bin",
+        "lab/rover/routes-index.json",
+        "lab/rover/routes/BASE__PSR.json",
+        "lab/rover/legs/BASE__PSR.json",
+        "lab/rover/learned-index.json",
+        "lab/rover/learned/BASE__PSR.json",
+        "comms/earth_link-v2-samples-lite.json.gz",
+        "comms/earth_track-v1.json.gz",
+        "catalog/catalog-v1.json",
+        "detect-gpu/benchmarks/d-nvidia.json",
+        "terrain/hero/v2/manifest.json",
+        "terrain/hero/v2/normal_20m.png",
+        "terrain/hero/v2/normal_5m_BASE.png",
+        "terrain/hero/v2/height_5m_BASE.png",
+        "terrain/hero/v2/horizon_20m_12.png",
+        "assets/ui-*.css"
       ],
-      "data_gzip_kb": 4260
+      "data_gzip_kb": 6890,
+      "lazy": [
+        "assets/detect-gpu.esm-*.js",
+        "assets/rover-lab3d-????????.js",
+        "assets/rover-lab3d-scene-*.js",
+        "assets/stage-sky-*.js",
+        "assets/terrain-worker-*.js"
+      ],
+      "lazy_gzip_kb": 270
     },
     "method/index.html": {
       "js_gzip_kb": 5,
@@ -85,7 +143,7 @@
       "js_gzip_kb": 55,
       "css_gzip_kb": 15,
       "lazy": [
-        "assets/plot-marks-*.js"
+        "assets/simulator-plot-marks-*.js"
       ],
       "lazy_gzip_kb": 105
     },
@@ -93,9 +151,15 @@
       "js_gzip_kb": 100,
       "css_gzip_kb": 15,
       "data": [
-        "catalog/catalog-v1.json"
+        "catalog/catalog-v1.json",
+        "detect-gpu/benchmarks/d-nvidia.json"
       ],
-      "data_gzip_kb": 15
+      "data_gzip_kb": 25,
+      "lazy": [
+        "assets/detect-gpu.esm-*.js",
+        "assets/stage-????????.js"
+      ],
+      "lazy_gzip_kb": 170
     },
     "verification/index.html": {
       "js_gzip_kb": 10,
@@ -117,30 +181,79 @@
         "terrain/hero/v2/manifest.json",
         "terrain/hero/v2/normal_20m.png",
         "terrain/hero/v2/normal_5m_BASE.png",
-        "terrain/hero/v2/normal_5m_PAD_A.png",
         "terrain/hero/v2/height_5m_BASE.png",
-        "terrain/hero/v2/horizon_20m_00.png",
+        "terrain/hero/v2/horizon_20m_02.png",
         "scenes/P2/scene.json",
         "scenes/P2/routes.bin",
-        "scenes/P2/chunk_*.bin"
+        "scenes/P2/chunk_*.bin",
+        "detect-gpu/benchmarks/d-nvidia.json"
       ],
-      "data_gzip_kb": 5335
+      "data_gzip_kb": 4330,
+      "lazy": [
+        "assets/detect-gpu.esm-*.js",
+        "assets/world-v2-scene-*.js"
+      ],
+      "lazy_gzip_kb": 265
     },
     "world/trace/index.html": {
       "js_gzip_kb": 20,
       "css_gzip_kb": 10,
       "data": [
-        "terrain/hero/height_20m.png",
         "terrain/hero/meta.json",
+        "terrain/hero/height_20m.png",
+        "terrain/hero/sites.json",
         "world/site_graph.json",
-        "world/samples/P2_marketplace_seed3_v2.json",
+        "world/samples/P2_marketplace_seed3.json",
         "terrain/hero/v2/manifest.json",
         "terrain/hero/v2/normal_20m.png",
         "terrain/hero/v2/normal_5m_BASE.png",
         "terrain/hero/v2/normal_5m_PAD_A.png",
-        "terrain/hero/v2/horizon_20m_00.png"
+        "terrain/hero/v2/horizon_20m_06.png",
+        "detect-gpu/benchmarks/d-nvidia.json"
       ],
-      "data_gzip_kb": 3675
+      "data_gzip_kb": 3075,
+      "lazy": [
+        "assets/detect-gpu.esm-*.js",
+        "assets/world-scene-????????.js"
+      ],
+      "lazy_gzip_kb": 165
+    },
+    "stories/index.html": {
+      "data": [
+        "story-data/index.json",
+        "story-data/earth-horizon.json",
+        "scenes/gallery.json",
+        "catalog/catalog-v1.json",
+        "lab/policies/trajectories-v1.json",
+        "terrain/hero/meta.json",
+        "terrain/hero/height_20m.png",
+        "terrain/hero/v2/manifest.json",
+        "terrain/hero/v2/normal_20m.png",
+        "terrain/hero/v2/normal_5m_BASE.png",
+        "terrain/hero/v2/height_5m_BASE.png",
+        "terrain/hero/v2/horizon_20m_02.png",
+        "terrain/hero/v2/horizon_20m_07.png",
+        "terrain/hero/v2/horizon_20m_09.png",
+        "scenes/P2-comms-dte/scene.json",
+        "scenes/P2-comms-dte/routes.bin",
+        "scenes/P2-comms-dte/chunk_*.bin",
+        "scenes/P2-comms-relay-0.1/scene.json",
+        "scenes/P2-comms-relay-0.1/routes.bin",
+        "scenes/P2-comms-relay-0.1/chunk_*.bin",
+        "scenes/P2-comms-dte-strategic/scene.json",
+        "scenes/P2-comms-dte-strategic/routes.bin",
+        "scenes/P2-comms-dte-strategic/chunk_*.bin",
+        "scenes/P2/scene.json",
+        "scenes/P2/routes.bin",
+        "detect-gpu/benchmarks/d-nvidia.json"
+      ],
+      "data_gzip_kb": 7880,
+      "lazy": [
+        "assets/detect-gpu.esm-*.js",
+        "assets/stories-stage-*.js",
+        "assets/world-v2-scene-*.js"
+      ],
+      "lazy_gzip_kb": 270
     }
   }
 }

@@ -79,6 +79,9 @@ export default defineConfig({
     rollupOptions: {
       input: { ...Object.fromEntries(PAGES.map(p => [p.replace(/\/$/, '').replace(/\//g, '-') || 'index', join(SITE, p, 'index.html')])),
         '404': join(SITE, '404.html') },   // GitHub Pages serves 404.html for unknown paths
+      // F-40: a chunk made from one module under src/<dir>/ is named <dir>-<name> (rover-lab3d-scene, stories-stage), so
+      // the budgets' lazy globs (tools/ci/budgets.json) match one chunk each; shared and vendor chunks keep their names
+      output: { chunkFileNames: c => { const d = c.facadeModuleId && /[\\/]src[\\/]([^\\/]+)[\\/][^\\/]+$/.exec(c.facadeModuleId); return `assets/${d ? d[1] + '-' : ''}[name]-[hash].js`; } },
     },
   },
   server: { port: 5173 },
