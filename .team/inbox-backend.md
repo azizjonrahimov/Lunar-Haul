@@ -735,3 +735,9 @@ policy on a tiny scenario (bound 0 = look-ahead-like on never-linked samples; bo
   infinite draws per run and by start year for strategic, look-ahead and strict; (3) the legs with at least one
   never-linked sample (how many of the 70 main-network legs).
 - If anything changes an existing E21 r2 row, stop and tell LEAD first.
+
+## B-58 [OPEN] (after B-57; small) Horizon outlines for the "Earth's sky" explorable (F-41)
+Export `data/comms/connecting_ridge/horizons_dark_sample.json` (schema + test): the terrain horizon elevation by grid
+bearing (0.1° steps over the bearings Earth can occupy, about -12° to 12°, or the full circle if cheap) at BASE and at
+the 2028 dark sample (#188, its xy and the leg), for the 2.5 m antenna, from the same LOLA horizon masks B-40 used,
+plus the source sha256s. Tell FRONTEND the keys.

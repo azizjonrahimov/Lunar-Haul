@@ -479,3 +479,21 @@ numbers), and entry chips to World, Vehicles, Labs, Simulator and Stories. Keep 
   in story views (show only the vehicles a step talks about); after B-53 use the data's `label` field.
 - Keyboard, screen-reader mirror, reduced motion, contrast on every page; Lighthouse table for every page;
   a screenshot set (desktop + 390 px) committed under `site/design/shots/` is NOT wanted — keep them out of git.
+
+## F-41 [OPEN] (<= 4 h) "Earth's sky, year by year": an explorable for R-1's 2028 finding (light reading page)
+The finding (B-55, paper §5.4): one 100 m route point on the regolith haul ISRU->CONSTR sees Earth at no hour from
+Jan 2028 to Jul 2029; strategic rovers stopped there wait, and in 2028 the fleet is captured (113 t vs ~530 t in
+2029-31). The cause is where Earth stands when it is high: west of grid north in 2028, east of it in 2030.
+New page `/research/earth-sky/` (chalkboard explainer style, light theme, Plot/SVG, no 3D needed):
+1. **Earth's track in the sky from the base**, grid bearing (x) vs elevation (y), one curve per year 2028-2031
+   (`data/comms/connecting_ridge/earth_track-v1.json.gz`: elevation_cdeg, grid_bearing_cdeg, hourly), a year
+   picker and a month scrubber; overlay the terrain horizon at BASE and at the dark sample (B-58 exports them).
+2. **The dark spot's calendar**: monthly link fraction 2028-2031 for the dark sample, BASE, ISRU, CONSTR and the
+   ISRU->CONSTR leg (`results/E21_strategic_years.json` → stranding_2028_top_samples[0].monthly_linked_2028_2031,
+   calendar.places_linked_fraction; `results/E21_strategic_years_monthly.csv`).
+3. **The fleet captured**: stranded fleet share by month, 2028 against 2030 (stranding.<year>.stranded_fleet_share_by_month),
+   and tonnage by start year (e21_by_start_year).
+Every number a stat chip with flag and source (Modelled; SPICE + LOLA), text twin for each chart, keyboard, 390 px.
+Link it from the Earth story's step 7 (a "Why 2028?" link; tell LEAD the URL so the story data can carry it) and
+from /research/ or Results. NOTE: the strategic policy's results are being re-examined (B-57); show the geometry
+and the stranding as measured, and do not add claims about which policy is best. Budget entry for the page.
