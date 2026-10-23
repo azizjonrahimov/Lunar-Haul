@@ -26,7 +26,11 @@
     "strategic_landed": {"label": "Lander cargo, rovers drive out of sight", "table": "results/table_E21_cells_r2.csv", "where": {"stage": "A", "comms": "dte", "mix": "supervised_strategic"}, "column": "delivered_landed_t", "digits": 0, "unit": "t per year", "note": "the same policy: lander cargo delivered inside the year"},
     "avoid_done": {"label": "Urgent items, cautious autonomy", "table": "results/table_E21_cells_r2.csv", "where": {"stage": "A", "comms": "dte", "mix": "supervised_strategic+avoid"}, "column": "prio1_completion_share", "scale": 100, "digits": 0, "unit": "%", "note": "direct links only; the strategic policy with a look-ahead that avoids starting drives that would lose the link"},
     "rover_dp": {"label": "Relay coverage worth one extra rover", "table": "results/table_E21_breakeven_delay_r2.csv", "where": {"option": "+1 rover"}, "column": "delta_p", "scale": 100, "digits": 0, "unit": "percentage points of relay coverage", "note": "relay coverage that gives the same urgent delay as one extra rover, at half coverage, strict policy (bootstrap over seeds, 2,000 draws)"},
-    "strategic_dp": {"label": "Relay coverage worth the autonomy step", "table": "results/table_E21_breakeven_delay_r2.csv", "where": {"option": "strategic step"}, "column": "delta_p", "scale": 100, "digits": 0, "unit": "percentage points of relay coverage", "note": "relay coverage that gives the same urgent delay as the strategic policy, at half coverage"}
+    "strategic_dp": {"label": "Relay coverage worth the autonomy step", "table": "results/table_E21_breakeven_delay_r2.csv", "where": {"option": "strategic step"}, "column": "delta_p", "scale": 100, "digits": 0, "unit": "percentage points of relay coverage", "note": "relay coverage that gives the same urgent delay as the strategic policy, at half coverage"},
+    "rover_dp_lo": {"label": "One extra rover, low end", "table": "results/table_E21_breakeven_delay_r2.csv", "where": {"option": "+1 rover"}, "column": "delta_p_ci95_lo", "scale": 100, "digits": 0, "note": "lower end of the 95 % bootstrap interval (2,000 draws), percentage points of relay coverage"},
+    "rover_dp_hi": {"label": "One extra rover, high end", "table": "results/table_E21_breakeven_delay_r2.csv", "where": {"option": "+1 rover"}, "column": "delta_p_ci95_hi", "scale": 100, "digits": 0, "note": "upper end of the same interval"},
+    "strategic_dp_lo": {"label": "Autonomy step, low end", "table": "results/table_E21_breakeven_delay_r2.csv", "where": {"option": "strategic step"}, "column": "delta_p_ci95_lo", "scale": 100, "digits": 0, "note": "lower end of the 95 % bootstrap interval (2,000 draws), percentage points of relay coverage"},
+    "strategic_dp_hi": {"label": "Autonomy step, high end", "table": "results/table_E21_breakeven_delay_r2.csv", "where": {"option": "strategic step"}, "column": "delta_p_ci95_hi", "scale": 100, "digits": 0, "note": "upper end of the same interval"}
   },
   "steps": [
     {
@@ -73,7 +77,7 @@
       "title": "Where the pads sit decides it",
       "text": "Take the base's usual mixed fleet. Landing pads half a kilometre from the base see Earth about as often as the base does, and lander cargo comes back to {{r:pads_half_t}}. At a kilometre it is {{r:pads_one_t}}. At three kilometres, where ridges hide Earth from the pads most of the time, it is {{r:pads_three_t}}: no lander cargo moves at all.",
       "visual": "The two pads highlighted; legs from them drawn in the colour for no link.",
-      "camera": {"shot": "overview"},
+      "camera": {"shot": "pads"},
       "highlight": ["PAD_A", "PAD_B"],
       "modes": {"earth_link": true, "no_link": true},
       "chips": ["pads_half_t", "pads_one_t", "pads_three_t"]
@@ -83,7 +87,7 @@
       "scene": "world:P2-comms-relay-0.8",
       "title": "A relay brings the cargo back, not the speed",
       "text": "A relay satellite in view only a tenth of the time brings urgent deliveries back to {{r:relay_done}}. But in a typical year nine in ten urgent items arrive only within {{r:relay_p90}}, against {{r:always_p90}} with Earth always in view, and waits shrink slowly as the relay is in view more.",
-      "visual": "A relay link drawn from the rovers to a satellite passing over.",
+      "visual": "The base with a relay in view part of the time: rovers wait in the waiting colour between passes.",
       "camera": {"shot": "horizon"},
       "modes": {"earth_link": true, "relay": true},
       "chips": ["relay_done", "relay_p90", "always_p90"]
@@ -100,8 +104,8 @@
     {
       "id": "rovers",
       "title": "A rover or autonomy: too close to call",
-      "text": "With a relay in view half the time, one more rover is worth {{r:rover_dp}} and the autonomy step {{r:strategic_dp}}. The gap between them is smaller than the uncertainty, so this model cannot rank them.",
-      "visual": "Two bars, one extra rover and the autonomy step, each with its uncertainty.",
+      "text": "With a relay in view half the time, one more rover is worth {{r:rover_dp}} (likely between {{r:rover_dp_lo}} and {{r:rover_dp_hi}}) and the autonomy step {{r:strategic_dp}} (likely between {{r:strategic_dp_lo}} and {{r:strategic_dp_hi}}). The ranges overlap widely, so this model cannot rank them.",
+      "visual": "A dot for each option, one extra rover and the autonomy step, with a line across its likely range.",
       "camera": {"shot": "overview"},
       "chips": ["rover_dp", "strategic_dp"]
     }

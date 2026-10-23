@@ -13,8 +13,9 @@ const params = new URLSearchParams(location.search), sid = params.get('s');
 async function getJson(u) { const r = await fetch(u); if (!r.ok) throw new Error(`${u}: HTTP ${r.status}`); return r.json(); }
 const status = m => { $('st-status').textContent = m; };
 
-// text with {{r:key}} numbers emphasised (the chips below carry their flags and sources)
-const withNumbers = (s, numbers) => esc(s).replace(/\{\{r:(\w+)\}\}/g, (_, k) => numbers[k] ? `<b class="st-num">${esc(numbers[k].text)}</b>` : '–');
+// text with {{r:key}} numbers emphasised (the chips below carry their flags and sources); a number keeps its value and
+// first unit word together ("204 t"), a long unit ("percentage points of relay coverage") wraps
+const withNumbers = (s, numbers) => esc(s).replace(/\{\{r:(\w+)\}\}/g, (_, k) => numbers[k] ? `<b class="st-num">${esc(numbers[k].text.replace(' ', ' '))}</b>` : '–');
 const keysIn = s => [...s.matchAll(/\{\{r:(\w+)\}\}/g)].map(m => m[1]);
 
 const index = await getJson(DATA + 'index.json').catch(e => { $('st-list').textContent = `The stories could not load (${e.message}).`; return null; });

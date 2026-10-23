@@ -213,8 +213,8 @@ export function headline() {
 // simulated years behind the distance law (the pads story), the paper's surface cost per landed kg (results/
 // table_cost_landed_kg.csv, P2 / 4 vehicles / marketplace) and the Earth's-horizon story's headline number (the first number of
 // its summary, so a rewritten story carries the counter with it); every one flagged and sourced
-// the words under the Earth counter: the known headline gets a sentence, any other the data's own label
-const earthLabel = (key, n) => (key === 'dte_loss' ? 'less cargo when rovers must see Earth' : n.label || key);
+// the words under the Earth counter: the number's own label (B-53), lower-cased to read on from the number
+const earthLabel = (key, n) => { const l = n.label || key; return l.charAt(0).toLowerCase() + l.slice(1); };
 export function heroCounters() {
   const story = id => JSON.parse(readFileSync(join(ROOT, 'data', 'stories', 'resolved', `${id}.json`), 'utf8'));
   const pads = story('pads-distance').numbers.fit_years, es = story('earth-horizon'), en = es.numbers;

@@ -6,7 +6,8 @@
 // descent and touchdown (lander). Modes shown: play, keepout (a keep-out window), touchdowns and ejecta (a landing at
 // the pad), queues (the busiest hour at the target), earth / earth_link (Earth low over the horizon). Modes the stage
 // does not draw (routes are always drawn; job_rule follows the scene; colour_by, bids, relay) leave the view as is.
-// Every step: rings round its highlight sites, legs without an Earth link in red (earth_link steps), no vehicle labels.
+// Every step: rings round its highlight sites, legs without an Earth link in red (earth_link steps; no_link holds the
+// highlight sites' legs red), no vehicle labels.
 import { reducedMotion } from '../ui/dom.js';
 import { loadTrajectories, episodeView } from '../lander/trajectories.js';
 import { loadScene } from '../world/scene-data.js';
@@ -25,7 +26,21 @@ async function worldStage({ canvas, labelsHost, tier, fetchFn, onStatus }) {
   sc.stage.director.bindKeys(canvas);
   sc.stage.director.limits({ minDistance: 20, maxDistance: 22000, maxPolar: 88 });
   const cache = new Map(), time = { t: 0, playing: false, gen: 0 };
-  let cur = null;   // {id, pkg, chunks}
+  let cur = null, gallery = null;   // cur: {id, pkg, chunks}
+  // no-link sites this package never drives to (no rover starts there without Earth): their legs come from the package's
+  // twin with Earth always in view (scenes/gallery.json: the same flags but earth_link "always"), one route per leg
+  async function twinLegs(sites) {
+    const miss = sites.filter(s => !sc.hasLegs(s)); if (!miss.length) return [];
+    gallery ||= fetchFn('the scene list')(`${BASE}scenes/gallery.json`).then(r => r.json()).catch(() => null);
+    const g = await gallery, me = g?.scenes.find(s => s.package === cur.id); if (!me) return [];
+    const same = s => JSON.stringify({ ...s.flags, earth_link: 'always' }) === JSON.stringify({ ...me.flags, earth_link: 'always' });
+    const twin = g.scenes.find(s => s.flags.earth_link === 'always' && same(s)); if (!twin) return [];
+    const T = await (twinCache[twin.package] ||= loadScene(`${BASE}scenes/${twin.package}/`, { fetchFn: fetchFn('the routes') }).catch(() => null)); if (!T) return [];
+    const seen = new Map();
+    for (const r of T.routes) { const k = sc.legKey(r.leg); if (k.split('~').some(n => miss.includes(n)) && (!seen.has(k) || r.lighting === 'night')) seen.set(k, r); }
+    return [...seen.values()];
+  }
+  const twinCache = {};
   async function open(id) {
     if (!cache.has(id)) cache.set(id, (async () => {
       const pkg = await loadScene(`${BASE}scenes/${id}/`, { fetchFn: fetchFn('the year') });
@@ -95,7 +110,10 @@ async function worldStage({ canvas, labelsHost, tier, fetchFn, onStatus }) {
       await open((step.scene || story.scene).split(':')[1]);
       const instant = cut || reducedMotion(), m = step.modes || {};
       sc.setVehicleLabels(false);   // story views: the steps name sites, not vehicles
-      sc.setHighlight(step.highlight || []); sc.setNoLink(!!(m.earth_link || m.earth), Array.isArray(m.no_link) ? m.no_link : []);   // modes.no_link: [sites]: their legs held red
+      // modes.no_link: true holds the legs of the step's highlight sites red (sites out of Earth's sight), or a list names the sites
+      const noLinkSites = m.no_link === true ? (step.highlight || []) : Array.isArray(m.no_link) ? m.no_link : [];
+      const extra = noLinkSites.length ? await twinLegs(noLinkSites) : [];
+      sc.setHighlight(step.highlight || []); sc.setNoLink(!!(m.earth_link || m.earth), noLinkSites, extra);
       setTime(moment(step)); shot(step.camera, instant); setTime(time.t);   // the camera glides on its own; the first step cuts (the door is still shut)
       if ((step.modes || {}).play && !instant) play();
       return { t: time.t, night: nightAt(time.t) };

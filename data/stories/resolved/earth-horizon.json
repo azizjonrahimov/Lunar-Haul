@@ -161,6 +161,38 @@
    "flag": "Modelled",
    "source": "results/table_E21_breakeven_delay_r2.csv, row option = strategic step, column delta_p; x 100; relay coverage that gives the same urgent delay as the strategic policy, at half coverage",
    "label": "Relay coverage worth the autonomy step"
+  },
+  "rover_dp_lo": {
+   "value": 1.21744952374,
+   "text": "1",
+   "unit": "",
+   "flag": "Modelled",
+   "source": "results/table_E21_breakeven_delay_r2.csv, row option = +1 rover, column delta_p_ci95_lo; x 100; lower end of the 95 % bootstrap interval (2,000 draws), percentage points of relay coverage",
+   "label": "One extra rover, low end"
+  },
+  "rover_dp_hi": {
+   "value": 42.3919417017,
+   "text": "42",
+   "unit": "",
+   "flag": "Modelled",
+   "source": "results/table_E21_breakeven_delay_r2.csv, row option = +1 rover, column delta_p_ci95_hi; x 100; upper end of the same interval",
+   "label": "One extra rover, high end"
+  },
+  "strategic_dp_lo": {
+   "value": 11.2429506327,
+   "text": "11",
+   "unit": "",
+   "flag": "Modelled",
+   "source": "results/table_E21_breakeven_delay_r2.csv, row option = strategic step, column delta_p_ci95_lo; x 100; lower end of the 95 % bootstrap interval (2,000 draws), percentage points of relay coverage",
+   "label": "Autonomy step, low end"
+  },
+  "strategic_dp_hi": {
+   "value": 40.4546102203,
+   "text": "40",
+   "unit": "",
+   "flag": "Modelled",
+   "source": "results/table_E21_breakeven_delay_r2.csv, row option = strategic step, column delta_p_ci95_hi; x 100; upper end of the same interval",
+   "label": "Autonomy step, high end"
   }
  },
  "steps": [
@@ -254,7 +286,7 @@
    "text": "Take the base's usual mixed fleet. Landing pads half a kilometre from the base see Earth about as often as the base does, and lander cargo comes back to {{r:pads_half_t}}. At a kilometre it is {{r:pads_one_t}}. At three kilometres, where ridges hide Earth from the pads most of the time, it is {{r:pads_three_t}}: no lander cargo moves at all.",
    "visual": "The two pads highlighted; legs from them drawn in the colour for no link.",
    "camera": {
-    "shot": "overview"
+    "shot": "pads"
    },
    "highlight": [
     "PAD_A",
@@ -278,7 +310,7 @@
    "scene": "world:P2-comms-relay-0.8",
    "title": "A relay brings the cargo back, not the speed",
    "text": "A relay satellite in view only a tenth of the time brings urgent deliveries back to {{r:relay_done}}. But in a typical year nine in ten urgent items arrive only within {{r:relay_p90}}, against {{r:always_p90}} with Earth always in view, and waits shrink slowly as the relay is in view more.",
-   "visual": "A relay link drawn from the rovers to a satellite passing over.",
+   "visual": "The base with a relay in view part of the time: rovers wait in the waiting colour between passes.",
    "camera": {
     "shot": "horizon"
    },
@@ -293,7 +325,7 @@
    ],
    "title_plain": "A relay brings the cargo back, not the speed",
    "text_plain": "A relay satellite in view only a tenth of the time brings urgent deliveries back to 95 %. But in a typical year nine in ten urgent items arrive only within 134 h, against 9 h with Earth always in view, and waits shrink slowly as the relay is in view more.",
-   "visual_plain": "A relay link drawn from the rovers to a satellite passing over."
+   "visual_plain": "The base with a relay in view part of the time: rovers wait in the waiting colour between passes."
   },
   {
    "id": "autonomy",
@@ -319,8 +351,8 @@
   {
    "id": "rovers",
    "title": "A rover or autonomy: too close to call",
-   "text": "With a relay in view half the time, one more rover is worth {{r:rover_dp}} and the autonomy step {{r:strategic_dp}}. The gap between them is smaller than the uncertainty, so this model cannot rank them.",
-   "visual": "Two bars, one extra rover and the autonomy step, each with its uncertainty.",
+   "text": "With a relay in view half the time, one more rover is worth {{r:rover_dp}} (likely between {{r:rover_dp_lo}} and {{r:rover_dp_hi}}) and the autonomy step {{r:strategic_dp}} (likely between {{r:strategic_dp_lo}} and {{r:strategic_dp_hi}}). The ranges overlap widely, so this model cannot rank them.",
+   "visual": "A dot for each option, one extra rover and the autonomy step, with a line across its likely range.",
    "camera": {
     "shot": "overview"
    },
@@ -329,8 +361,8 @@
     "strategic_dp"
    ],
    "title_plain": "A rover or autonomy: too close to call",
-   "text_plain": "With a relay in view half the time, one more rover is worth 12 percentage points of relay coverage and the autonomy step 17 percentage points of relay coverage. The gap between them is smaller than the uncertainty, so this model cannot rank them.",
-   "visual_plain": "Two bars, one extra rover and the autonomy step, each with its uncertainty."
+   "text_plain": "With a relay in view half the time, one more rover is worth 12 percentage points of relay coverage (likely between 1 and 42) and the autonomy step 17 percentage points of relay coverage (likely between 11 and 40). The ranges overlap widely, so this model cannot rank them.",
+   "visual_plain": "A dot for each option, one extra rover and the autonomy step, with a line across its likely range."
   }
  ],
  "pending": [],

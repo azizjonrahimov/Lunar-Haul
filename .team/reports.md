@@ -3859,3 +3859,30 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
   3. URL-hash deep links.
   4. GPU memory per tier.
   5. The /account/ console error (not mine; tell me if I should look).
+
+## F-40 PART 3 DONE 18:21 | Earth's-horizon story on round 2: hero caption, no-link legs that actually draw, eight steps checked (F-40 stays IN PROGRESS)
+- **Every file in this part (all modified):** `site/lib/pages.mjs`, `site/src/stories/stage.js`, `site/src/stories/stories.js`, `site/src/stories/stories.css`, `site/src/world/v2-scene.js`.
+- **Home hero (your point 1):**
+  - The Earth counter's caption is now the number's own `label`, lower-cased to read on from the number: "68 % lander cargo lost with direct links".
+  - The typed sentence keyed on `dte_loss` is gone, so a rewritten story carries both number and words.
+- **`modes.no_link: true` (your point 2):**
+  - It now means "hold the legs of this step's highlight sites red". A list of site ids still works.
+  - **Bug found and fixed:** red legs never showed for pads. Route legs name pads with their standoff (`PAD_A@1`) but comms waits and sites don't (`PAD_A`). That also hid pad legs among the comms-wait red legs since F-40 part 1. Leg keys now drop the `@…` suffix.
+  - **Gap found and filled:** `P2-comms-dte` has no ISRU legs and no PAD_B legs, because no rover ever starts them without Earth. "never" would have drawn nothing red.
+    - The stage now takes those legs from the package's Earth-always twin: the gallery scene with the same flags but `earth_link: "always"`. For `P2-comms-dte` that is `P2`; the gallery flags differ only in `earth_link`.
+    - It loads only that package's `scene.json` and `routes.bin` (about 66 kB), and only on steps that need it.
+- **/stories/?s=earth-horizon, end to end (point 3):**
+  - Eight steps, "Step n of 8", "The end" on the last; Back and Next work; no console errors.
+  - Step 4 "never": the ISRU ring, and every ISRU route red.
+  - Step 5 "pads": rings on PAD A and PAD B, and all their legs red.
+  - Step 6: the relay scene with Earth on the horizon. Steps 7 and 8: the overview.
+- **Layout fix:** step 8's inline numbers ("17 percentage points of relay coverage") would not wrap and ran past the panel.
+  - A story number now keeps only its value and first unit word together ("204 t", "68 %"); the rest wraps.
+  - Checked at desktop and 390 px (same-origin iframe), light and dark: no number past its panel, no sideways scroll on any step.
+- **Checks:** tests 11/11; `npm run build` OK; `budgets.py pages`: OK (stories 10.4 of 60 kB JS). Servers stopped by PID; tab closed.
+- **Questions for LEAD (story data, yours to decide):**
+  1. **Step 6 "relay"** uses `P2-comms-relay-0.8`, which the gallery calls "a relay most of the time". The text talks about a relay in view a tenth of the time. Its visual says "a relay link drawn … to a satellite passing over", which the stage does not draw (`relay` is not a supported mode). Options: a relay-0.1 package (BACKEND), or reword the visual.
+  2. **Step 7 "autonomy"** still shows `P2-comms-dte`, with rovers waiting in red. `P2-comms-dte-autonomous` already exists (gallery `p2-earth-autonomous`, 0 comms waits). Setting `"scene": "world:P2-comms-dte-autonomous"` on that step would show rovers driving on. With no highlight, `no_link: true` adds nothing there.
+  3. **Step 8 "rovers"**: the visual "two bars … each with its uncertainty" is not drawn. If the two numbers carry intervals, I can draw a small dot-and-interval chart in the step panel (say which fields to use), or the visual line can be reworded.
+  4. **Step 5 "pads"** might read better with `"camera": {"shot": "pads"}`. On the overview, the base cluster sits at the right edge of the frame.
+- **Next in F-40:** a keyboard, screen-reader and reduced-motion walk of every page; on-screen orbit and zoom buttons on the 3D views (WCAG 2.5.7); URL-hash deep links; GPU memory per tier.

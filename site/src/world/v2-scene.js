@@ -43,8 +43,10 @@ export async function createWorldScene({ canvas, labelsHost, tier, fetchFn = fet
   let pkg = null, sitesG = null, routesL = null, vehicles = [], pallets = new Map(), rings = [], landers = [], traj = null, iconMode = true, followId = null;
   let isNight = false, pkgB = null, ghosts = [], legs = new Map(), legOf = [], activeL = null, lastReal = 0;
   // story views (F-40): legs without an Earth link drawn red, vehicle labels off, highlight rings round named sites
-  let noLink = false, vehLabels = true, hiRings = [], noLinkSites = [];
-  const legKey = leg => leg.split('->').sort().join('~');
+  let noLink = false, vehLabels = true, hiRings = [], noLinkSites = [], noLinkL = null;
+  // a leg's key: both directions together, pads without their standoff ("PAD_A@1" in routes, "PAD_A" in comms waits and sites)
+  const legKey = leg => leg.split('->').map(n => n.split('@')[0]).sort().join('~');
+  const noLinkMat = new THREE.LineBasicMaterial({ color: '#EE6677', transparent: true, opacity: 0.9, depthWrite: false, toneMapped: false });
   const hiMat = new THREE.MeshBasicMaterial({ color: '#f0a54a', transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false, toneMapped: false });
   const pinGeo = new THREE.CylinderGeometry(0.06, 0.06, 1, 6).translate(0, 0.5, 0), headGeo = new THREE.SphereGeometry(0.42, 16, 10), TRAIL = 30;
   // headlight cone: apex at the rover's nose, 30 m forward, additive (no lighting cost)
@@ -57,7 +59,7 @@ export async function createWorldScene({ canvas, labelsHost, tier, fetchFn = fet
     stage.labels.clear();
     for (const o of [...dyn.children]) { dyn.remove(o); o.traverse(m => { m.geometry?.dispose(); }); }
     for (const l of landers) { l.dust?.dispose(); l.glow?.dispose(); }
-    vehicles = []; pallets = new Map(); rings = []; landers = []; ghosts = []; pkgB = null;
+    vehicles = []; pallets = new Map(); rings = []; landers = []; ghosts = []; pkgB = null; noLinkL = null;
   }
 
   // ---------- one package ----------
@@ -85,10 +87,10 @@ export async function createWorldScene({ canvas, labelsHost, tier, fetchFn = fet
     // one line per leg, A->B and B->A together, the night variant when the package has it (the most cautious route)
     legs = new Map();
     p.routes.forEach((r, i) => {
-      const key = r.leg.split('->').sort().join('~'), have = legs.get(key);
+      const key = legKey(r.leg), have = legs.get(key);
       if (!have || (r.lighting === 'night' && have.lighting !== 'night')) legs.set(key, { route: i, lighting: r.lighting, b: 0 });
     });
-    legOf = p.routes.map(r => r.leg.split('->').sort().join('~'));
+    legOf = p.routes.map(r => legKey(r.leg));
     const pts = [];
     for (const [key, L] of legs) {
       const r = p.routes[L.route]; L.from = pts.length / 3;
@@ -319,7 +321,19 @@ export async function createWorldScene({ canvas, labelsHost, tier, fetchFn = fet
     stage, terrain, catalog, STATE_STYLE,
     setPackage, setTime, shots, followTarget, setCompare, frameAt, activeLegs,
     // story views: red legs while rovers wait for Earth; vehicle labels on or off; rings round the named sites
-    setNoLink(v, sites = []) { noLink = !!v; noLinkSites = sites; stage.invalidate(); },
+    // extra: routes ({n, block}) of legs this package never drives (no rover starts them without Earth), drawn red as well
+    setNoLink(v, sites = [], extra = []) {
+      noLink = !!v; noLinkSites = sites;
+      if (noLinkL) { dyn.remove(noLinkL); noLinkL.geometry.dispose(); noLinkL = null; }
+      if (extra.length) {
+        const pts = [];
+        for (const r of extra) for (let i = 0; i + 1 < r.n; i++) { const a = at(r.block[4 * i], r.block[4 * i + 1], 1.5), b = at(r.block[4 * i + 4], r.block[4 * i + 5], 1.5); pts.push(a.x, a.y, a.z, b.x, b.y, b.z); }
+        const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+        noLinkL = new THREE.LineSegments(g, noLinkMat); noLinkL.userData.noAO = true; noLinkL.renderOrder = 5; dyn.add(noLinkL);
+      }
+      stage.invalidate();
+    },
+    hasLegs: name => [...legs.keys()].some(k => k.split('~').includes(name)), legKey,
     setVehicleLabels(v) { vehLabels = !!v; stage.invalidate(); },
     setHighlight(names = []) {
       for (const r of hiRings) { dyn.remove(r); r.geometry.dispose(); }
