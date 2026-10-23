@@ -679,7 +679,7 @@ The Earth's-horizon story (data/stories/earth-horizon.json, round 2) needs scene
   policy (the story's autonomy step).
 Keep budgets (world data) honest. Tell LEAD the package ids when published; LEAD switches the story's step scenes.
 
-## B-55 [OPEN] (now; single process, light) Why strategic driving under DTE collapses in 2028 (paper R-1, referee E17)
+## B-55 [IN PROGRESS] Why strategic driving under DTE collapses in 2028 (paper R-1, referee E17)
 E21 r2 stage A, supervised strategic, DTE only, by start year: delivered 113 / 508 / 536 / 543 t (2028-31) and
 rover-hours waiting for Earth 41,026 / 34,201 / 21,362 / 23,117 (strict: ~1,000 every year; always-linked ~519-542 t).
 So strategic rovers strand (wait for Earth where it never or rarely rises) every year, the spare fleet absorbs it
@@ -696,3 +696,10 @@ in 2029-31, and in 2028 it does not. Find the mechanism with data, no new suite:
 4. While at it: rebuild the older earth gallery cells (P2-comms-dte, P2-comms-relay-0.8, P2-comms-dte-autonomous)
    with E21's start-year rule (2028 + seed mod 4) so every earth scene's headline matches the paper; one
    commit-ready set, budgets checked.
+
+## B-56 [OPEN] (after B-55; small) budgets.py covers what F-40 part 6 could not express
+FRONTEND measured every 3D page after entering 3D (report "F-40 PART 6 DONE 19:00") and found four cases the tool
+cannot count: (a) computed URLs (the horizon map chosen by sun angle, the per-vendor GPU benchmark): allow declared
+glob patterns per page with "max" or "sum" semantics; (b) the stories page's ?s= variants (budget the heaviest
+story); (c) fonts (count the preloaded and @font-face files a page uses); (d) lazy CSS as its own field, not in data.
+Keep every current entry passing; tests.
