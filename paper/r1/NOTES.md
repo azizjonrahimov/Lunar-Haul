@@ -436,3 +436,72 @@ Still not verified (unchanged from round 1 unless noted):
   numbers, cell, stage, mix, knee, pooled dispatch auction, bootstrap, cross-validation) and in the glossary
   (Table B1), which also covers the paired difference, Student-t interval, interventions per km, priority-1,
   deferral, look-ahead, completion share, censored delay, geometric-mean ratio and Wilcoxon test.
+
+## Changelog, round 2: back half (parts 4-5), abstract result sentences and build (2026-10-22)
+
+Written after all round-2 runs except Stage A's relay 0.05 cells, and after the round-2 `analyse_e21.py fit`. The
+reply to the referee, item by item, is `paper/r1/RESPONSE_round2.md`. Nothing was committed.
+
+**What changed**
+- `part4_results.html` (Section 5) rewritten: 5.1 map; 5.2 throughput split (bulk / lander / returns), the feedstock
+  bound, what the rest of the gap is (E4), relay restoration with its two conditions, rovers and mast; 5.3 completion
+  share, censored 90th percentile (medians, geometric-mean ratios, Wilcoxon, year-blocked), relay curve, coverage
+  targets (Table 7), law descriptive only; 5.4 strategic and look-ahead policies, the 2028 calendar (Figure 4);
+  5.5 Stage B with all draws kept, the price, the strategic-minus-rover difference, p = 0.2 and 0.8; 5.6 operator
+  demand as absolute peaks and seeds over staff, Stage A2, full relay against always (E5); 5.7 pads x comms,
+  criterion re-read with censoring, deferral (Table 9); 5.8 Stage D (real Sun) and Stage E against their twins.
+- `part5_back.html`: Discussion openings rewritten as findings with conditions (W2); Limitations updated (Stage D
+  result, Stage E, A2, censoring, calendar, never-linked filter, untested busy fleet / antenna height / relay masks);
+  Conclusions with conditions; Availability as a list with file names, md5 and "byte for byte" (W4).
+- `part1_front.html`: abstract shortened (~240 words; the map-validation numbers moved out, W1) and its result
+  sentences rewritten; the relay-level count and range are placeholders.
+- **Results tables are 6-9** (6 DTE vs always by fleet; 7 coverage targets; 8 break-evens; 9 Stage C). **Figures
+  are numbered by first mention**: Figure 4 is `r1_fig6_years.png`, Figure 5 `r1_fig4_breakeven.png`, Figure 6
+  `r1_fig5_operators.png` (Figures 1-3 unchanged). Renaming the PNGs to match would be tidier; the captions in
+  part 4 are the record.
+- `build_r1.py` rewritten for the `_r2` files: Student-t cell intervals from `table_E21_cells_r2.csv`; medians,
+  geometric-mean ratios and Wilcoxon p from `table_E21_effects_r2.csv`; year-blocked intervals from
+  `E21_fit_r2.json`; the appendices are moved after the references; the build fails on an unfilled placeholder and
+  on nan/inf in any value or in the assembled text, and asserts the data facts the wording depends on (for example
+  the 2028 calendar effect, the reference mix's identity under the hard limit, the strict 0.8 cell above 0.7, no
+  urgent item at 3 km pads, 72 h = no limit at relay 0.8). It prints a WARNING if a relay level restores less than
+  95 % of the lost tonnage (then reword "Any relay restores" in 5.2, Discussion paragraph 2, the Conclusions and the
+  abstract).
+- **Computed in the build, not by the analysis** (light, ~15 s): Stage D paired effects (real Sun against fixed
+  night, pairs by start year and seed, from `E21d_sun_r2.csv`); the local-feedstock DTE-vs-always loss (from
+  `E21e_sensitivity_r2.csv`); the model-free break-evens for the look-ahead step and the mast at p = 0.5 and for one
+  rover and the strategic step at p = 0.2 and 0.8, with the analysis's own bootstrap (`analyse_e21` functions,
+  seed 1, 2,000 draws, every draw kept). The p = 0.5 rows are recomputed and asserted equal to `E21_fit_r2.json`.
+  The analysis could own these later.
+- Sunlit shares (Stage D) are read from `data/illumination/connecting_ridge/sun_link-v1.json`.
+
+**Placeholders.** Removed: `R1-ABS-OPERATORS`, `R1-ISRU-BOUND-T`, `R1-LOST-ISRU-T`, `R1-LOSS-SHARE-ISRU`,
+`R1-P90-ALWAYS`, `R1-P90-DTE`, `R1-PADS-05-GAIN`, `R1-PADS-3-LOSS`, `R1-PTM-DTE`, `R1-PTM-FULL`,
+`R1-RELAY01-RESTORE-PCT`, `R1-T-LANDED-LOSS-PCT`, `R1-T-STRATEGIC-DTE`, `R1-WAIT-STRATEGIC-DTE`,
+`R1-WAIT-STRICT-DTE`. Redefined: `R1-T-DTE` / `R1-T-ALWAYS` / `R1-T-LOSS-PCT` / `R1-P1-COMPLETION-DTE` are now the
+supervised-strict fleet (the analysis's primary row; the reference mix differs by under 1 %), and
+`R1-OP-PEAK-TELEOP-DTE` is the absolute peak, not the peak/mean ratio. About 220 were added, in groups:
+counts and compute (`R1-N-*`, `R1-CELLS-*`, `R1-COMPUTE-*`, `R1-UTIL-*`, `R1-BOOT-DRAWS`, `R1-LAW-BOOT`,
+`R1-A-RELAY-COUNT`, `R1-P-LOW`), 5.1 (`R1-FRAC-*`), 5.2 (`R1-T-*`, `R1-BULK-*`, `R1-LANDED-*`, `R1-BOUND-T`,
+`R1-LOST-NEVER-T`, `R1-LOSS-SHARE-NEVER`, `R1-LOCAL-*`, `R1-PICKED/DROPPED/BACKLOG-DTE`, `R1-READY-GAP`,
+`R1-RESTORE-*`, `R1-KNEE-REMARK`), 5.3 (`R1-COMP-*`, `R1-CP90-*`, `R1-STRICT-CP90-CURVE`, `R1-REL05-*`,
+`R1-P-2X-*`, `R1-P-15X-STRICT`, `R1-NONMONO`, `R1-CV-STRICT`, `R1-INS-STRICT`), 5.4 (`R1-STRAT-*`, `R1-AVOID-*`,
+`R1-WAIT-*`), 5.5 (`R1-B-*`, `R1-DP-*`, `R1-SHARE-*`, `R1-MUSD-PER-01-ABS`, `R1-PRICE-UPPER-NOTE`), 5.6
+(`R1-OP-*`, `R1-A2-*`, `R1-FR-*`), 5.7 (`R1-C-*`, `R1-CRIT-*`, `R1-DEFER*`, `R1-NODEFER-*`), 5.8 (`R1-SUN-*`,
+`R1-D-*`, `R1-E-*`), Discussion (`R1-LCRNS-RATIO`). `paper/r1/values.json` lists every filled value.
+
+**When Stage A's relay 0.05 cells land** (re-run `analyse_e21.py fit --round r2`, then this build): the abstract,
+Sections 5.2, 5.3, 6 and 8 and Table 5 switch to "eleven relay coverages from 0.05", the lowest level, its
+restoration and completion shares, the knee, the strict curve phrase and the "≤ lowest level" targets by
+themselves. Check by hand: (1) the WARNING above; (2) whether the strategic and look-ahead 2x targets are still
+below the lowest level (Table 7, Section 5.3); (3) that the price and Δp rows still match `E21_fit_r2.json` (the
+build asserts it); (4) Section 5.2's sentence "a relay that is up a few hours at a time opens every route" (the
+mean up period at 0.05 is 0.40 h).
+
+**Open points for the lead.** (a) Part 3's list of six primary comparisons (4.4) and the analysis's
+`primary_comparisons` (E21_fit_r2.json) differ in detail; the text follows part 3 and reports the analysis's six
+rows within it. (b) Table 7's target intervals come from the law bootstrap, 400 draws (stated in its caption and
+in Section 7), not 2,000. (c) Part 3 already says "eleven coverage levels"; until the 0.05 cells land Table 5 reads
+72 Stage A cells. (d) One extra rover's Δp interval excludes zero while its paired tests do not; the text says so.
+(e) The real Sun lengthens urgent delay about fivefold at p = 0.5 (Stage D); the coverage targets and the price
+are for the fixed night share, and the text says so.
