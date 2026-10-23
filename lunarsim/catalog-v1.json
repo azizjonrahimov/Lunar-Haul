@@ -1,7 +1,7 @@
 {
   "format": "lunarsim-catalog",
   "version": 1,
-  "description": "LunarHaul vehicle and site catalogue: the single source of every vehicle number on screen and of the real dimensions the 3D models are built from. Every number is a quantity {value, unit, flag, source}. The engine's own constants (rover capacity, speed and night operation; lander payloads and descent constants) are mirrored here and checked equal by tests/test_catalog.py; the engine does not read this file. Loader: lunarsim/catalog.py. Schema: lunarsim/schemas/catalog-v1.schema.json. Written 22 Oct 2026 (B-30).",
+  "description": "LunarHaul vehicle and site catalogue: the single source of every vehicle number on screen and of the real dimensions the 3D models are built from. Every number is a quantity {value, unit, flag, source}. The engine's own constants (rover capacity, speed and night operation; lander payloads and descent constants) are mirrored here and checked equal by tests/test_catalog.py; the engine does not read this file. Loader: lunarsim/catalog.py. Schema: lunarsim/schemas/catalog-v1.schema.json. Written 22 Oct 2026.",
   "flags": {
     "Spec": "a published specification or design value (URL in source)",
     "Measured": "measured in flight or test (URL in source)",
@@ -281,7 +281,7 @@
       "representative": false,
       "representative_note": "Published design dimensions; the berm was sized by NASA KSC for CLPS-class landers.",
       "dims": {
-        "diameter_m": {"value": 54, "unit": "m", "flag": "Spec", "source": "Artemis-era two-zone pad of 27 m radius (Metzger & Autry 2022): https://arxiv.org/abs/2205.00378. Default for every class; the Artemis HLS-class pad requirement is 100-200 m (200 m, being negotiated to 100 m: https://ntrs.nasa.gov/api/citations/20220000334/downloads/In%20situ%20Lunar%20Launch%20and%20Landing%20Pad%20Construction%20with%20Regolith%20and%20Thermoset%20Polymers%20ASCE%20Earth%20and%20Space%202022%20Paper%20SUBMITTED.pdf), to revisit when a LARGE lander lands on it (F-36)"},
+        "diameter_m": {"value": 54, "unit": "m", "flag": "Spec", "source": "Artemis-era two-zone pad of 27 m radius (Metzger & Autry 2022): https://arxiv.org/abs/2205.00378. Default for every class; the Artemis HLS-class pad requirement is 100-200 m (200 m, being negotiated to 100 m: https://ntrs.nasa.gov/api/citations/20220000334/downloads/In%20situ%20Lunar%20Launch%20and%20Landing%20Pad%20Construction%20with%20Regolith%20and%20Thermoset%20Polymers%20ASCE%20Earth%20and%20Space%202022%20Paper%20SUBMITTED.pdf), to revisit when a LARGE lander lands on it"},
         "berm_height_m": {"value": 2.5, "unit": "m", "flag": "Spec", "source": "2.5 m berm (lander height with VSAT stowed), NASA KSC Lunar Innovation Park: https://ntrs.nasa.gov/api/citations/20260002816/downloads/329%20-%20Site%20Plan%20and%20Bulk%20Presentation.pdf"},
         "berm_crest_m": {"value": 1.0, "unit": "m", "flag": "Spec", "source": "1 m crest: https://ntrs.nasa.gov/api/citations/20260002816/downloads/329%20-%20Site%20Plan%20and%20Bulk%20Presentation.pdf"},
         "berm_slope_deg": {"value": 52, "unit": "deg", "flag": "Spec", "source": "52 deg side slopes: https://ntrs.nasa.gov/api/citations/20260002816/downloads/329%20-%20Site%20Plan%20and%20Bulk%20Presentation.pdf"},

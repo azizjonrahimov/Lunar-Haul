@@ -767,3 +767,26 @@ that never sees Earth waits for it (another rover parking within line of sight a
    slots held by blocked items under DTE (seed 0, each start year) into `bounded.pool_starvation.strict`. No pool
    variant: the paper gets a limitation sentence.
 Runs: foreground chunks `--max-seconds 540`, `--workers 2` at most.
+
+## B-60 [IN PROGRESS] Round-2 referee check: help for any long wait, and three diagnostics (queued 22 Oct 22:25)
+The internal round-2 referee (paper/r1/REVIEW_round2_internal.md) asks, as its first required change: Stage G rescues
+only at samples never linked in 2028-2031, but the 2028 dark sample (#188) is dark for 18 months and is waited out.
+No operator would help one rover within a week and leave another for 18 months.
+1. **Policy:** `rescue_scope` with `never_linked: "rescue"`: `"never_linked"` (default, = B-59) | `"any"`: every
+   strategic intervention wait longer than rescue_h ends after rescue_h (never-linked ones too). Same counters (count
+   every capped wait). Schema + test (scope any, rescue_h large = plain strategic with rescue at never-linked only;
+   rescue_h 0 = no intervention waits at all). No existing row may change (same identity checks).
+2. **Stage G2** (`e21g2 --round r2` -> `results/E21g2_rescue_any_r2.csv`): plain strategic, all-supervised, DTE,
+   rescue_scope any, rescue_h {0, 24, 72, 168, 720}, 20 seeds, common random numbers with Stage A. Single process,
+   foreground, `--max-seconds 540` (memory is short: the system killed a background pytest tonight).
+3. **Analysis:** as `rescue`, into `E21_fit_r2.json["rescue_any"]` + `results/table_E21g2_rescue_any_r2.csv`: against
+   strategic, strict, look-ahead and the B-59 level of the same rescue_h; by start year (does quick help fix 2028?);
+   break-even against strict for tonnage and urgent completion.
+4. **Diagnostics** (into `E21_fit_r2.json` next to the blocks they support; no new stages):
+   a. N7: bounded rule (bound 24 h, never-linked as strategic), all five 2028 seeds: share of daily samples with the
+      40-slot pool full, and the share of slots held by CONSTR->ISRU items (`bounded.pool_starvation.all_2028_seeds`).
+   b. N3: Stage A strategic under DTE, 2028 seeds: urgent items made ready and delivered by month, and the mean number
+      of rovers not stranded by month (how do 75 % of urgent items arrive while 89 % of the fleet is stranded
+      May-December?) (`strategic_2028_urgent` in `E21_strategic_years.json` or the fit file, your choice).
+   c. One line each: does the swap test (B-55) fix the landings but redraw the manifests? Why does the paper say
+      2,404 route cells (Sections 1, 3.1) and 283 of 2,421 route samples (5.4); are they different things?
