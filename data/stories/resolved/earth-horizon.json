@@ -130,13 +130,13 @@
    "source": "results/table_E21_cells_r2.csv, row stage = A, comms = dte, mix = supervised_strategic, column prio1_completion_share; x 100; direct links only; supervised rovers that may drive without a link (strategic policy)",
    "label": "Urgent items, rovers drive out of sight"
   },
-  "strategic_landed": {
-   "value": 26.0147842382,
-   "text": "26 t per year",
+  "strand_t": {
+   "value": 41.8934030091,
+   "text": "42 t per year",
    "unit": "t per year",
    "flag": "Modelled",
-   "source": "results/table_E21_cells_r2.csv, row stage = A, comms = dte, mix = supervised_strategic, column delivered_landed_t; the same policy: lander cargo delivered inside the year",
-   "label": "Lander cargo, rovers drive out of sight"
+   "source": "results/table_E21f_bounded_r2.csv, row family = bounded, link = DTE, start_year = all, reference = strategic, cell = strategic, strand on never-linked, metric = delivered_t_in_year, column cell_mean; the same rovers when one that needs help where Earth never rises waits there for the rest of the year (Stage F of the Earth-link experiment)",
+   "label": "Cargo a year, no free second try"
   },
   "avoid_done": {
    "value": 49.9930775746,
@@ -331,7 +331,7 @@
    "id": "autonomy",
    "scene": "world:P2-comms-dte-strategic",
    "title": "Or let rovers drive out of sight",
-   "text": "With no relay at all, supervised rovers allowed to drive on their own out of Earth's sight deliver {{r:strategic_done}} of urgent items and {{r:strategic_landed}} of lander cargo. A cautious version that never starts a drive it cannot finish in sight gets only {{r:avoid_done}}: the cargo is where Earth cannot see.",
+   "text": "With no relay at all, supervised rovers allowed to drive out of Earth's sight deliver {{r:strategic_done}} of urgent items, but only because the model gives them a free second try when help would be needed where Earth never rises. Left waiting there instead, they deliver {{r:strand_t}} in a whole year. Even with the free try, 2028's sky strands most of them. A cautious version that never starts a drive it cannot finish in sight gets {{r:avoid_done}} of urgent items.",
    "visual": "Supervised rovers driving on through the stretch where the link is lost.",
    "camera": {
     "shot": "overview"
@@ -342,7 +342,7 @@
    },
    "chips": [
     "strategic_done",
-    "strategic_landed",
+    "strand_t",
     "avoid_done"
    ],
    "links": [
@@ -352,7 +352,7 @@
     }
    ],
    "title_plain": "Or let rovers drive out of sight",
-   "text_plain": "With no relay at all, supervised rovers allowed to drive on their own out of Earth's sight deliver 89 % of urgent items and 26 t per year of lander cargo. A cautious version that never starts a drive it cannot finish in sight gets only 50 %: the cargo is where Earth cannot see.",
+   "text_plain": "With no relay at all, supervised rovers allowed to drive out of Earth's sight deliver 89 % of urgent items, but only because the model gives them a free second try when help would be needed where Earth never rises. Left waiting there instead, they deliver 42 t per year in a whole year. Even with the free try, 2028's sky strands most of them. A cautious version that never starts a drive it cannot finish in sight gets 50 % of urgent items.",
    "visual_plain": "Supervised rovers driving on through the stretch where the link is lost."
   },
   {
@@ -376,6 +376,7 @@
  "sources": {
   "results/E21_fit_r2.json": "80e3caff4c6948709964e9d307bd2540cb540744827c63d98f87fe302b5b5d84",
   "results/table_E21_breakeven_delay_r2.csv": "93a7e18b318c752aaf2f165bb476c811ebb9ce80fae104f64533963a6b5aa461",
-  "results/table_E21_cells_r2.csv": "c70242a7ef423588895bb8f01fb7c64374ef88451b11a52da6f7f1fe52bf755e"
+  "results/table_E21_cells_r2.csv": "c70242a7ef423588895bb8f01fb7c64374ef88451b11a52da6f7f1fe52bf755e",
+  "results/table_E21f_bounded_r2.csv": "de1a4bf17310563932c65cea847c38f62438dab1d5a54595f38474e89f1e5cf8"
  }
 }
