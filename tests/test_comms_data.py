@@ -308,3 +308,34 @@ def test_route_ties_summary_matches_the_data():
     worst = max(abs(el["legs"][k]["length_m"] - v2["lengths_m"][k]["night"]) for k in v2["legs"]
                 if el["legs"][k].get("length_m") is not None)                      # both rounded to 0.1 m
     assert worst <= 0.15 and doc["length"]["max_abs_diff_m"] <= worst + 0.05
+
+
+def test_horizon_outlines_agree_with_the_link_files():
+    """B-58: data/comms/connecting_ridge/horizons_dark_sample.json (earth_link.py outlines)."""
+    path = os.path.join(ROOT, "data", "comms", "connecting_ridge", "horizons_dark_sample.json")
+    if not os.path.isfile(path):
+        pytest.skip("horizons_dark_sample.json not generated")
+    with open(path, encoding="utf-8") as f:
+        doc = json.load(f)
+    jsonschema = pytest.importorskip("jsonschema")
+    from lunarsim.formats import load_schema
+    jsonschema.validate(doc, load_schema("horizons-v1"))
+    b = doc["bearing"]
+    assert all(len(p["horizon_deg"]) == b["n"] for p in doc["points"].values())
+    with open(DATA, encoding="utf-8") as f:
+        el = json.load(f)
+    lo, hi, step = el["earth"]["mask_wedge_deg"]
+    assert b["start_deg"] == pytest.approx(lo) and b["step_deg"] == pytest.approx(step)
+    k = int(round((0.5 * (lo + hi) - lo) / step))                    # the link file's own horizon at the mean bearing
+    assert doc["points"]["BASE"]["horizon_deg"][k] == pytest.approx(el["points"]["BASE"]["horizon_at_mean_bearing_deg"], abs=1e-3)
+    v1 = _gz(os.path.join(os.path.dirname(DATA), "earth_link-v1-samples.json.gz"))
+    d = doc["points"]["DARK_SAMPLE"]
+    assert v1["samples"][d["sample"]]["xy_m"] == d["xy_m"]
+    assert d["legs"] == sorted(k for k, ids in v1["legs"].items() if d["sample"] in ids)
+    assert doc["sources"]["samples"]["sha256"] == E.sha256(os.path.join(os.path.dirname(DATA), "earth_link-v1-samples.json.gz"))
+    m, n = doc["isru_constr_monthly"], v1["time"]["n"]
+    edges = E.month_edges_hourly()
+    dark = C.windows_to_mask(C.decode_windows(v1["series"][v1["samples"][d["sample"]]["w"][0]]), n)
+    assert m["dark_sample"] == [round(float(dark[a:b_].mean()), 4) for a, b_ in zip(edges[:-1], edges[1:])]
+    assert max(m["dark_sample"][:18]) == 0.0 and m["dark_sample"][18] > 0              # dark Jan 2028 - Jun 2029
+    assert max(m["all_samples"]) == 0.0 and m["never_linked_samples"] >= 1           # ISRU itself never sees Earth

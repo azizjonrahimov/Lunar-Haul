@@ -15,6 +15,7 @@
     python tools/comms/earth_link.py samples2              # -> earth_link-v2-samples.json.gz (v1 file + lit routes)
                                                            #    and -lite.json.gz (any_part only, for the site)
     python tools/comms/earth_link.py ties                  # engine vs routes-v1 night routes -> results/E21_route_ties.json
+    python tools/comms/earth_link.py outlines              # horizons at BASE and the 2028 dark sample (B-58)
 
 Intermediate files (kernels, DEM window, routes, masks; ~100 MB) live in ``.cache/comms/`` (git-ignored); the
 output ``data/comms/connecting_ridge/earth_link-v1.json`` (format: lunarsim/comms.py) is < 1 MB.
@@ -967,6 +968,96 @@ def lite_samples(sdoc: Dict) -> Dict:
     return lite
 
 
+OUTLINES_OUT = os.path.join(ROOT, "data", "comms", "connecting_ridge", "horizons_dark_sample.json")
+DARK_SAMPLE = 188                 # B-55: the route sample on ISRU->CONSTR dark from January 2028 to June 2029
+
+
+def month_edges_hourly() -> List[int]:
+    """Hour indices of every month start 2028-01 .. 2031-12 (and the end) in the hourly sample series."""
+    import calendar
+    out, h = [], 0
+    for y in range(2028, 2032):
+        for m in range(1, 13):
+            out.append(h)
+            h += 24 * calendar.monthrange(y, m)[1]
+    return out + [h]
+
+
+def step_outlines(out: str = OUTLINES_OUT, log=print) -> Dict:
+    """B-58: the terrain horizon by grid bearing at BASE and at the 2028 dark sample (the B-40 masks, 2.5 m antenna,
+    Earth's wedge only) and the monthly link fractions of the ISRU->CONSTR leg, for the 'Earth's sky' explorable."""
+    import gzip
+    meta, _ = load_pack()
+    pdoc = json.load(open(os.path.join(CACHE, "points.json")))
+    pts = pdoc["points"]
+    M, bearings = load_masks()
+    s = json.loads(gzip.decompress(open(SAMPLES_V1, "rb").read()))
+    used = sorted({k for ids in pdoc["legs"].values() for k in ids})
+    if len(used) != len(s["samples"]):
+        raise SystemExit("points.json does not match the samples file")
+    i_dark = used[DARK_SAMPLE]
+    if [pts[i_dark]["x"], pts[i_dark]["y"]] != s["samples"][DARK_SAMPLE]["xy_m"]:
+        raise SystemExit("sample / point mismatch")
+    i_base = next(i for i, p in enumerate(pts) if p["id"] == "BASE")
+    hz = lambda i: [round(float(v), 3) for v in M[i]]
+    legs_dark = sorted(k for k, ids in s["legs"].items() if DARK_SAMPLE in ids)
+    n = int(s["time"]["n"])
+    mask = lambda sid: C.windows_to_mask(C.decode_windows(s["series"][s["samples"][sid]["w"][0]]), n)
+    ids = s["legs"]["ISRU->CONSTR"]
+    ever = [i for i in ids if mask(i).any()]
+    allm, everm = np.ones(n, bool), np.ones(n, bool)
+    for i in ids:
+        allm &= mask(i)
+    for i in ever:
+        everm &= mask(i)
+    dark = mask(DARK_SAMPLE)
+    edges = month_edges_hourly()
+    monthly = lambda m: [round(float(m[a:b].mean()), 4) for a, b in zip(edges[:-1], edges[1:])]
+    dem = json.load(open(os.path.join(CACHE, "dem.json")))
+    _, nsrc = near_sampler(meta)
+    doc = {
+        "format": "lunarsim-horizons", "version": 1, "terrain": meta["site_id"],
+        "description": "Terrain horizon (elevation of the skyline above the local horizontal at the antenna, degrees; "
+                       "exact on the 1,737.4 km sphere) by grid bearing over the part of the sky Earth can occupy, at "
+                       "BASE and at the route sample that is dark from January 2028 to June 2029 (B-55), from the "
+                       "horizon masks of tools/comms/earth_link.py (B-40); and the monthly link fractions of the "
+                       "ISRU->CONSTR leg. Only Earth's wedge is computed: the 80 m far-field terrain was read for that "
+                       "wedge only.",
+        "bearing": {"start_deg": round(float(bearings[0]), 4), "step_deg": WEDGE_STEP_DEG, "n": int(len(bearings)),
+                    "convention": "grid bearing: 0 = +y (grid north), 90 = +x (grid east), the terrain pack's frame; "
+                                  "grid bearing = local azimuth + east longitude"},
+        "antenna_m": ANT_ROVER_M,
+        "points": {
+            "BASE": {"kind": "site", "xy_m": [pts[i_base]["x"], pts[i_base]["y"]], "z_m": pts[i_base]["z"],
+                     "horizon_deg": hz(i_base)},
+            "DARK_SAMPLE": {"kind": "route sample", "sample": DARK_SAMPLE, "xy_m": [pts[i_dark]["x"], pts[i_dark]["y"]],
+                            "z_m": pts[i_dark]["z"], "legs": legs_dark, "horizon_deg": hz(i_dark)},
+        },
+        "isru_constr_monthly": {
+            "months": [f"{y}-{m:02d}" for y in range(2028, 2032) for m in range(1, 13)],
+            "leg": "ISRU->CONSTR", "n_samples": len(ids), "never_linked_samples": len(ids) - len(ever),
+            "all_samples": monthly(allm), "all_samples_that_ever_link": monthly(everm), "dark_sample": monthly(dark),
+            "note": "share of the month's hours in which every listed sample sees Earth (direct, any part of the disc, "
+                    "hourly samples of earth_link-v1-samples.json.gz). all_samples is 0 throughout: ISRU's own sample "
+                    "never sees Earth.",
+        },
+        "sources": {"earth_link": {"file": "data/comms/connecting_ridge/earth_link-v1.json", "sha256": sha256(OUT)},
+                    "samples": {"file": "data/comms/connecting_ridge/earth_link-v1-samples.json.gz",
+                                "sha256": sha256(SAMPLES_V1)},
+                    "near_dem": nsrc, "far_dem": {k: dem[k] for k in ("url", "doi", "file_sha256", "sha256_window_float32")
+                                                  if k in dem},
+                    "masks_sha256_float32": {"BASE": hashlib.sha256(M[i_base].astype("<f4").tobytes()).hexdigest(),
+                                             "DARK_SAMPLE": hashlib.sha256(M[i_dark].astype("<f4").tobytes()).hexdigest()}},
+        "generated": {"tool": "tools/comms/earth_link.py outlines"},
+    }
+    with open(out, "wb") as f:
+        f.write((json.dumps(doc, indent=1) + "\n").encode("utf-8"))
+    log(f"outlines: BASE and sample {DARK_SAMPLE} ({len(bearings)} bearings) -> {_rel(out)} "
+        f"({os.path.getsize(out) / 1024:.0f} KB); dark sample linked in "
+        f"{sum(v > 0 for v in doc['isru_constr_monthly']['dark_sample'])} of 48 months")
+    return doc
+
+
 TIES_OUT = os.path.join(ROOT, "results", "E21_route_ties.json")
 
 
@@ -1226,6 +1317,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     p = sub.add_parser("samples2")
     p.add_argument("--recheck", type=int, default=40, help="v1 samples to recompute as a determinism check")
     sub.add_parser("ties")
+    sub.add_parser("outlines")
     for sp_ in sub.choices.values():
         sp_.add_argument("--max-seconds", type=float, default=540.0,
                          help="stop this process after so many seconds (Windows: `timeout` only kills the venv launcher)")
@@ -1262,6 +1354,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         step_samples2(recheck=a.recheck)
     elif a.cmd == "ties":
         step_ties()
+    elif a.cmd == "outlines":
+        step_outlines()
     rss = peak_rss_mb()
     if rss:
         print(f"peak RSS {rss:.0f} MB")

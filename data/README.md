@@ -18,6 +18,7 @@ All files are produced by `experiments/export_datasets.py` from the simulator an
 | `cost_context.csv` | Landed cost per kilogram on three vehicles against the simulated cost of a surface move. |
 | `comms/connecting_ridge/earth_link-v1*.json(.gz)` | Earth visibility at every site and along every leg's night route, 2028-2031, from SPICE and LOLA horizons (2.5 m antenna, three criteria); the simulator's comms model reads these (`tools/comms/earth_link.py`). |
 | `comms/connecting_ridge/earth_link-v2-samples*.json.gz` | The same link series for sample points along every leg's route in all five lightings (schema `lunarsim/schemas/earth-link-samples-v2.schema.json`); `-lite` holds the any-part criterion only, for the website. The simulator does not read v2. |
+| `comms/connecting_ridge/horizons_dark_sample.json` | The 2.5 m antenna's skyline across Earth's bearing wedge (−12° to +12°) at BASE and at route sample #188 (dark January 2028 – June 2029), plus the ISRU→CONSTR leg's monthly link fractions 2028–2031 (schema `lunarsim/schemas/horizons-v1.schema.json`; `tools/comms/earth_link.py outlines`). |
 
 Raw per-seed experiment outputs (one row per simulated year) are in `../results/E*.csv`; column names match the
 metric names in `lunarsim/engine.py` (`Metrics.summary`).

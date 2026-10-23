@@ -4281,3 +4281,142 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
 - **F-40 list status:**
   - All the plan items are done: tiers and frame time, lander framing, rover streaks, world Earth link, simulator GitHub link, verification Phase 4, Tol contrast, stories, the accessibility walk, Lighthouse, deep links, GPU memory.
   - Open only on hardware I don't have: an Intel iGPU and a phone. Tell me what else F-40 should take.
+
+## F-41 DONE (first version) 20:15 | "Earth's sky, year by year" at /research/earth-sky/ (B-58 horizons to follow)
+- **Every file in this task:**
+  - New: `site/research/earth-sky/index.html`, `site/src/research/earth-sky.js`, `site/src/research/earth-sky.css`.
+  - Modified: `site/vite.config.js` (page list), `site/scripts/prepare-data.mjs` (stages `results/E21_strategic_years.json` → `public/research/earth-sky/strategic-years.json`), `site/.gitignore` (`public/research/`), `site/results/index.html` (link), `tools/ci/budgets.json` (page entry), `.team/inbox-frontend.md` (F-41 marked IN PROGRESS).
+- **The page:** a light explainer. The figures sit on a soft squared "board"; no 3D, no Plot (hand-drawn SVG, 10.9 kB JS).
+  - **Header:** a lead sentence and 4 stat chips, all computed from the data, nothing typed: no link at the dark spot Jan 2028 – Jun 2029; 79 % of 2028's stranded rover-hours at that spot; 113 t delivered with the 2028 sky against 536 t with the 2030 sky. Every number is Modelled, with its source path.
+  - **1. Earth's path in the base's sky:** bearing against height, one loop per year for the chosen month. There is a year picker (brings one year forward) and a month slider. The dashed patch is where Earth stood every hour the dark spot saw it (bearing 2.7–7.9°, height 5.48–6.17°, from `sky.samples.188`).
+    - It shows the finding directly: Jan 2028 peaks at −7° (west of grid north), 2030 and 2031 enter the patch.
+    - The caption says being in the patch is needed, not enough, because the terrain decides. June 2029 has 45 h in the patch but no link. B-58's outlines will make it exact.
+    - The table twin gives the highest point, its bearing, hours above the horizontal and hours in the patch, per year for the chosen month.
+  - **2. The dark spot's calendar:** 12 × 4 month grids for the dark spot, BASE, CONSTR and ISRU (link share; outlined = no link). It uses a sqrt ramp with a legend, plus a 48-month table twin.
+  - **3. The fleet it caught:** stranded fleet share by month, 2028 against 2030 sky (8 seeds, same demand), next to tonnes by start year (E21, 5 runs), with table twins. A note says the rule is being re-examined (B-57) and that the page makes no claim about which rule is best.
+- **Colours:** years keep one colour on all figures, always with direct labels. Light set #EE6677 #998822 #2D6FC7 #228833, dark set #DD5B6E #A38F24 #4F86D8 #2F9A59; both pass the dataviz validator. Tol blue failed its chroma floor, so I used a deeper blue.
+- **Checks:**
+  - Desktop and 390 px (no overflow), light and dark, controls by keyboard (radio group, range), no console errors.
+  - Lighthouse desktop 100 / 100 / 100, mobile 96 / 100 / 100, CLS 0.
+  - Tests 11/11; `budgets.py pages`: OK (JS 10.9/15, CSS 9.1/15, data 76.5/100, fonts 100.4/110); pytest budgets 10 passed. Servers stopped; tab closed.
+- **For LEAD:**
+  1. The page URL for the Earth story's step 7 "Why 2028?" link is `research/earth-sky/` (relative to the site base).
+  2. There is no ISRU→CONSTR leg series in `E21_strategic_years.json`, so the calendar shows the places only and says the leg follows with BACKEND's next export. Could B-58 add a monthly link fraction for the leg, plus the horizon outlines at BASE and point 188?
+  3. Fixed on the way: `.json.gz` files are decoded by the browser on `vite preview` (Content-Encoding) but served raw on Pages. The page checks the gzip magic bytes, as the rover lab does.
+
+## F-41 FIX 20:22 | Fleets named on /research/earth-sky/; story step links on /stories/ (commit with F-41)
+- **Every file of F-41 now:**
+  - New: `site/research/earth-sky/index.html`, `site/src/research/earth-sky.js`, `site/src/research/earth-sky.css`.
+  - Modified: `site/vite.config.js`, `site/scripts/prepare-data.mjs`, `site/.gitignore`, `site/results/index.html`, `site/src/stories/stories.js`, `site/src/stories/stories.css`, `site/stories/index.html`, `tools/ci/budgets.json`, `.team/inbox-frontend.md`.
+  - Not mine: your `data/stories/resolved/earth-horizon.json` with the step link.
+- **The fleets are named** (your fix):
+  - The lead now reads: "With direct links only, rovers allowed to drive out of Earth's sight delivered 113 t in a year under the 2028 sky, against 536 t under the 2030 sky; rovers that drive only while linked delivered 300 t to 315 t whatever the year."
+  - The chips are now "Strategic fleet, 2028 sky", "Strategic fleet, 2030 sky" and a new "Strict fleet, any of the four skies" (300–315 t).
+  - The strict numbers come from data. prepare-data writes `public/research/earth-sky/deliveries-by-year.json` from `results/table_E21_years_r2.csv` (comms = dte, delivered_t_in_year, supervised_strict and supervised_strategic, by start year): strict 311 / 300 / 315 / 300 t, strategic 113 / 508 / 536 / 543 t. The latter match `E21_strategic_years.json`.
+  - I used the per-year range rather than the 306.5 t pooled mean from `table_E21_cells_r2.csv`, because the sentence is about every year.
+  - The tonnage chart now draws the strict fleet's range as a dashed band behind the strategic bars, and the twin table has both fleets. The section 3 intro also names the fleet.
+  - Budget data list +`deliveries-by-year.json` (76.7 of 100 kB).
+- **Step links on /stories/:**
+  - A step's `links` render under the step text as "label →" links at `BASE + href`, so they follow the site base.
+  - Only site-relative paths are accepted: no scheme, no leading `/`, no `..`, ending in `/` with an optional ?query / #hash. Anything else is skipped.
+  - The row is hidden when a step has no links; links are 44 px targets.
+  - Checked: Earth story step 7 shows "Why 2028? Earth's sky, year by year →" to `/research/earth-sky/`; step 8 shows none.
+- **Checks:** tests 11/11; build OK; `budgets.py pages`: OK; no console errors on either page. Servers stopped; tab closed.
+- **F-41 stays IN PROGRESS** only for B-58: the horizon outlines at BASE and point 188, and the ISRU→CONSTR leg's monthly link fraction. I'll add both to figures 1 and 2 when they land.
+
+## B-57 DONE 21:37 | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**Answer (DTE; with a relay none of this matters):** no bound keeps the ISRU cargo *and* avoids the 2028 collapse.
+- **Never-linked samples refused:** about 307-309 t at every bound, the look-ahead exactly. No ISRU haul. 2028 is fine (312 t). The bound only trades waiting (77 -> 1,576 rover-h) for nothing.
+- **Never-linked samples left to strategic:** strategic's tonnage, ISRU bulk (97-98 % of strategic's) and lander cargo in 2029-31 (493-543 t). But **2028 collapses harder than strategic: 72 t at every bound (strategic 113 t)**.
+  - The cause is new: auction-pool starvation, not stranding (point 3).
+  - Paired against strategic: -13 t [-26, -0.2] at bound 24 (-9 t [-23, 4] at 720).
+  - Censored p90 is worse: GM ratio 2.40 (Wilcoxon p 0.03) at bound 24, 1.56 at 720. Rover-hours waiting fall by 29,800 at bound 24.
+- **Strategic without the free re-draw (`never_linked: strand`): 42 t/yr, every year** (30-58 t by start year).
+  - Paired: -383 t [-467, -298] against strategic; -265 t against the look-ahead. Waiting 46,474 rover-h.
+  - So plain strategic's advantage rests on the clairvoyant re-roll LEAD suspected.
+- **Re-roll counts (existing counter `blackout_jobs_refused`; for strategic it counts exactly these):** plain strategic re-draws 138 jobs/run under DTE, 45 / 103 / 195 / 209 by start year 2028-31 (fewer in 2028, because the fleet is stranded). With a relay it is 0 (no wait is infinite).
+  - Look-ahead: 30.1/run, all of them its own deferrals (refused = avoided).
+  - Strict: 13.4/run under DTE, 46/run at relay 0.1 (deferrals).
+- **Legs with at least one never-linked sample (any part, direct):** 101 of 182, and **28 of the 70 main-network legs**.
+  - The 28: every leg to or from ISRU (16, pads included).
+  - 11 legs touching PAD_B@1: BASE / DEPOT / POWER / CONSTR / SCI_1 / PSR -> PAD_B@1, and PAD_B@1 -> BASE / POWER / CONSTR / SCI_1 / PSR.
+  - PSR->POWER.
+  - The full list is in the JSON.
+- **With a relay (0.1, 0.5):** every bound ≥ 72 h and the strand variant give exactly strategic's rows. Bound 24 h gives the look-ahead's values (0.1: 532.0 t vs 530.6 t). The relay caps every wait, and nothing is never-linked.
+
+**1. Policy** (`lunarsim/comms.py`)
+- New comms keys:
+  - `supervised_policy: "strategic+bound"`
+  - `bound_h` (h; null = no limit = strategic)
+  - `bound_never` (`"refuse"` default | `"strategic"`)
+  - `never_linked` (`"redraw"` default, every earlier run | `"strand"`: the rover waits until the year's end; adds the column `blackout_strandings_never_linked` in strand runs only)
+- `strategic+bound` is the look-ahead with its own limit. With `refuse`, routes with never-linked samples are never taken. With `strategic`, only finite forecasts are checked and intervention draws behave as under strategic.
+- **Wake-ups are rounded up to the whole hour for this policy only.** The look-ahead's exact wake times (t + w) are all distinct. With never-linked routes in play they multiplied, to 10,000 wakes by 7,927 h, and one run never finished.
+  - The sample series are hourly, so a wake is at most 1 h late.
+  - As a result, bound 24 h + refuse is the look-ahead with hourly wakes: DTE 306.7 vs 306.9 t, censored GM 1.01 (Wilcoxon p 0.18).
+- Scenario schema updated.
+
+**2. Identity:** existing policies are untouched.
+- Six E21 r2 cells recomputed after every engine change (strategic DTE and 0.1, look-ahead DTE and 0.5, strict 0.1, default 0.1): 0 differing columns.
+- One A2 row (strict operators): equal. Baseline md5 test: passes.
+- 239 tests pass. `table_E21_r2.csv` and the other derived tables are unchanged (Stage F is kept out of the stage list).
+
+**3. The 2028 mechanism under the bounded rule** (`E21_fit_r2.json` -> `bounded.pool_starvation`; one run, seed 0, bound 24 h, never-linked as strategic).
+- The marketplace auctions only the 40 oldest / most urgent waiting items (`dispatch.MAX_POOL`). In 2028 the look-ahead blocks CONSTR->ISRU feedstock jobs all year: their routes pass points dark for months, the 18-month spot of B-55 among them.
+- In refuse mode those items are filtered out before the cap. Here they are not (the ISRU legs count as servable), so they fill the pool. At 1,012 / 3,001 / 6,001 h, 24 / 30 / 37 of the 40 slots are CONSTR->ISRU items, and all 40 are blocked for the free rover.
+- At 6,001 h, 152 items that are servable now (151 CONSTR->BASE) wait beyond the cap. The rovers sit idle (4-5 of 6, mostly at BASE), and rover-hours waiting for Earth stay tiny (44 h at bound 24).
+- So the collapse moves from stranded rovers to a clogged dispatcher. A pool that skipped currently blocked items would change existing E21 rows, so I have not touched it (question 1).
+
+**4. Runner** (`experiments/phase4/run_phase4.py`)
+- Every finished run is appended at once, in serial and pool mode alike (the pool used to buffer 20).
+- `--max-seconds` also sets a soft budget: no run starts that would end past it at the mean run time so far, and a pool still busy 20 s after it is terminated. This avoids orphaned workers on Windows; the hard stop stays as a backstop.
+- `append_rows` now lives in run_phase4 and rewrites a file (new column) with the exact float parser.
+- Stage `e21f --round r2` (27 cells) -> `results/E21f_bounded_r2.csv` (540 rows).
+- **Speed (`lunarsim/dispatch.py`, byte-identical):** `_single_job_hours` and the bundle search's plans are memoised within one dispatch call. Nothing is committed before the mechanism returns, and the marketplace asked for the same vehicle-item pair about 22 times per call. Look-ahead DTE runs: 26 -> 17 s.
+- Peak RSS 115-164 MB, `--workers 2`; Stage F took about 50 min in chunks.
+
+**5. Analysis:** `analyse_e21.py bounded [--diagnose]` writes `results/table_E21f_bounded_r2.csv` (1,890 rows).
+- Every variant against Stage A strategic and look-ahead, at DTE / 0.1 / 0.5, overall and per start year.
+- Metrics: tonnage, bulk, lander cargo, urgent completion, censored p90, waiting, refused jobs. Each with the paired difference and t interval, medians, GM ratio and Wilcoxon p.
+- It also writes `E21_fit_r2.json["bounded"]`: `cells` (means and by-year means), `verdict_dte`, `redraws`, `never_linked_legs`, `pool_starvation`, `design`. The rest of the JSON is unchanged.
+
+**Files:** `lunarsim/comms.py`, `lunarsim/dispatch.py`, `lunarsim/engine.py` (one line: the dispatch serial), `lunarsim/schemas/scenario-v1.schema.json`, `experiments/phase4/run_phase4.py`, `experiments/phase4/analyse_e21.py`, `tests/test_comms_engine.py` (+2: bound limits and never-linked handling, bound 24 = look-ahead's check, null = strategic, validation; redraw vs strand), `tests/test_e21_bounded.py` (new, 4). **For LEAD to commit:** `results/E21f_bounded_r2.csv`, `results/table_E21f_bounded_r2.csv`, `results/E21_fit_r2.json`.
+- Not mine (modified in the tree by other sessions): `data/stories/*`, `lunarsim/schemas/story-v1.schema.json`, `tools/ci/budgets.json`, `.team/inbox-frontend.md`.
+
+**How to test:**
+- `.venv/Scripts/python -m pytest -q tests/test_comms_engine.py tests/test_e21_bounded.py tests/test_phase3_engine.py` -> all pass.
+- Rerun: `run_phase4.py e21f --round r2 --workers 2 --max-seconds 540` (resumes), then `analyse_e21.py bounded --diagnose` (77 s).
+
+**FRONTEND:** nothing (no site data changed).
+
+**Questions for LEAD**
+1. The pool starvation is a dispatcher property that probably also touches the look-ahead elsewhere: items blocked by deferral occupy the 40 auction slots. Should I test a pool that skips items blocked for every free rover, as a Stage F variant only (no existing row changes)? Or do you prefer a limitation sentence?
+2. For the paper: strategic's DTE tonnage depends on the free re-draw at never-linked points (strand: 42 t/yr). That is a modelling choice that flatters the strategic policy. Suggested wording: "Without a second chance at points that never see Earth, the strategic fleet delivers 42 t a year." The numbers are in `bounded.cells` and `verdict_dte`.
+
+## B-58 DONE 21:40 | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**What:** `data/comms/connecting_ridge/horizons_dark_sample.json` (10 KB, format `lunarsim-horizons` v1, schema `lunarsim/schemas/horizons-v1.schema.json`), written by `python tools/comms/earth_link.py outlines` from the B-40 horizon masks (2.5 m antenna, LOLA 5 m tile out to 8 km, the 80 m polar model to 300 km).
+- Earth's wedge only: grid bearings -12° to +12° in 0.1° steps (241 values). A full circle is not cheap: the 80 m far-field terrain was read for that wedge only, so other bearings would have the near 8 km alone.
+
+**Content**
+- **BASE:** skyline -1.88° to -0.87° across the wedge.
+- **The dark sample #188** at (8,270, 7,490) m, z 1,869.6 m, on both CONSTR->ISRU and ISRU->CONSTR: skyline **5.9° to 8.6°**. Earth peaks near 6.2°, so it clears this ridge only at its highest and only at bearings where the ridge dips.
+- **ISRU->CONSTR monthly link fractions, 2028-01 .. 2031-12 (48 values):**
+  - `all_samples` is 0 throughout (ISRU's own sample never sees Earth; 4 of the leg's 13 samples are never linked).
+  - `all_samples_that_ever_link` and `dark_sample` are 0 for January 2028 - June 2029, first 0.023 in July 2029, and the dark sample sees Earth in 25 of 48 months.
+- **Sources:** sha256 of earth_link-v1.json and its samples file; the near DEM (file and sha256); the far DEM (URL, DOI, file and window sha256); a sha256 of each exported mask row.
+
+**FRONTEND keys:**
+- `bearing.{start_deg, step_deg, n, convention}`: grid bearing 0 = +y, 90 = +x, the terrain frame; Earth's `grid_bearing_cdeg` in earth_track-v1.json uses the same convention.
+- `antenna_m` (2.5).
+- `points.BASE` and `points.DARK_SAMPLE`: `{kind, xy_m, z_m, horizon_deg[n]}`; DARK_SAMPLE also has `sample` (188) and `legs`.
+- `isru_constr_monthly.{months[48], leg, n_samples, never_linked_samples, all_samples[48], all_samples_that_ever_link[48], dark_sample[48], note}`.
+- Note: earth_track-v1 gives Earth at BASE at ground level, while the horizons are at a 2.5 m antenna. At the dark sample, 0.8 km east of BASE, Earth's direction differs from BASE's by well under 0.1°.
+- The file needs staging by prepare-data (FRONTEND's script) under `comms/`.
+
+**Files:** `tools/comms/earth_link.py` (step `outlines`, `month_edges_hourly`), `lunarsim/schemas/horizons-v1.schema.json` (new), `tools/ci/budgets.py` (schema target), `tests/test_comms_data.py` (+1: schema; BASE's horizon at the mean bearing equals earth_link-v1.json's own value; sample xy and legs; monthly fractions recomputed exactly; dark January 2028 - June 2029). **For LEAD to commit:** `data/comms/connecting_ridge/horizons_dark_sample.json`.
+
+**How to test:** `.venv/Scripts/python -m pytest -q tests/test_comms_data.py tests/test_ci_budgets.py` -> 27 passed; `.venv/Scripts/python tools/ci/budgets.py schemas` -> 40 files, 0 problems. Rebuild: `earth_link.py outlines` (needs `.cache/comms` from B-40; 5 s, 198 MB).
+
+**Questions for LEAD:** none.
