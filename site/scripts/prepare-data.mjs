@@ -155,6 +155,19 @@ if (existsSync(join(v2, 'manifest.json'))) {
 // R-1 (B-40): Earth's hourly position seen from BASE (SPICE), for the sky on on-site 3D views; gzip, decoded in the page
 const earth = join(ROOT, 'data', 'comms', 'connecting_ridge', 'earth_track-v1.json.gz');
 if (existsSync(earth)) { mkdirSync(join(PUB, 'comms'), { recursive: true }); copyFileSync(earth, join(PUB, 'comms', 'earth_track-v1.json.gz')); console.log('prepare-data: Earth track staged'); }
+// F-41: /research/earth-sky/ reads why the strategic cell differs by start year (B-55)
+const syears = join(ROOT, 'results', 'E21_strategic_years.json');
+if (existsSync(syears)) { mkdirSync(join(PUB, 'research', 'earth-sky'), { recursive: true }); copyFileSync(syears, join(PUB, 'research', 'earth-sky', 'strategic-years.json')); console.log('prepare-data: strategic years staged'); }
+// F-41: deliveries in the year by start year with direct links only, for the strict and the strategic fleet (E21 round 2)
+const e21years = join(ROOT, 'results', 'table_E21_years_r2.csv');
+if (existsSync(e21years)) {
+  const [head, ...rows] = readFileSync(e21years, 'utf8').trim().split(String.fromCharCode(10)).map(l => l.trim().split(','));
+  const c = k => head.indexOf(k), byMix = {};
+  for (const r of rows) if (r[c('comms')] === 'dte' && r[c('metric')] === 'delivered_t_in_year' && (r[c('mix')] === 'supervised_strict' || r[c('mix')] === 'supervised_strategic')) (byMix[r[c('mix')]] ||= {})[r[c('start_year')]] = { mean: +r[c('mean')], n: +r[c('n')] };
+  mkdirSync(join(PUB, 'research', 'earth-sky'), { recursive: true });
+  writeFileSync(join(PUB, 'research', 'earth-sky', 'deliveries-by-year.json'), JSON.stringify({ source: 'results/table_E21_years_r2.csv', comms: 'dte', metric: 'delivered_t_in_year', by_mix: byMix }));
+  console.log('prepare-data: E21 deliveries by start year staged');
+}
 // F-35: hourly direct-to-Earth windows of points along every leg, for the rover lab's Earth-link posts; F-40: version 2
 // (B-52, the lite file) adds the samples along each lighting's route (routes[leg][lighting]); v1 is no longer staged
 const links = join(ROOT, 'data', 'comms', 'connecting_ridge', 'earth_link-v2-samples-lite.json.gz');

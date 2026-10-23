@@ -480,7 +480,7 @@ numbers), and entry chips to World, Vehicles, Labs, Simulator and Stories. Keep 
 - Keyboard, screen-reader mirror, reduced motion, contrast on every page; Lighthouse table for every page;
   a screenshot set (desktop + 390 px) committed under `site/design/shots/` is NOT wanted — keep them out of git.
 
-## F-41 [OPEN] (<= 4 h) "Earth's sky, year by year": an explorable for R-1's 2028 finding (light reading page)
+## F-41 [IN PROGRESS] (<= 4 h) "Earth's sky, year by year": an explorable for R-1's 2028 finding (light reading page)
 The finding (B-55, paper §5.4): one 100 m route point on the regolith haul ISRU->CONSTR sees Earth at no hour from
 Jan 2028 to Jul 2029; strategic rovers stopped there wait, and in 2028 the fleet is captured (113 t vs ~530 t in
 2029-31). The cause is where Earth stands when it is high: west of grid north in 2028, east of it in 2030.

@@ -100,7 +100,8 @@
       "visual": "Supervised rovers driving on through the stretch where the link is lost.",
       "camera": {"shot": "overview"},
       "modes": {"earth_link": true, "no_link": true},
-      "chips": ["strategic_done", "strategic_landed", "avoid_done"]
+      "chips": ["strategic_done", "strategic_landed", "avoid_done"],
+      "links": [{"label": "Why 2028? Earth's sky, year by year", "href": "research/earth-sky/"}]
     },
     {
       "id": "rovers",

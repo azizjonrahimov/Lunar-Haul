@@ -31,6 +31,9 @@
 .st-step-title { margin: 0; font-size: 1.3rem; font-family: var(--font-display); }
 .st-text, .st-text:focus, .st-text:focus-visible { outline: none; }
 .st-text p { margin: 0; line-height: 1.55; }
+.st-links { margin: 0; display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-3); }
+.st-links:empty { display: none; }
+.st-links a { font-weight: 600; min-height: var(--target); display: inline-flex; align-items: center; }
 .st-chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 10rem), 1fr)); gap: var(--s-2); }
 .st-chips:empty { display: none; }
 .st-chips .ui-chip-value, .st-chips .ui-chip-value * { white-space: normal; overflow-wrap: anywhere; }

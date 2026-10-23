@@ -345,6 +345,12 @@
     "strategic_landed",
     "avoid_done"
    ],
+   "links": [
+    {
+     "label": "Why 2028? Earth's sky, year by year",
+     "href": "research/earth-sky/"
+    }
+   ],
    "title_plain": "Or let rovers drive out of sight",
    "text_plain": "With no relay at all, supervised rovers allowed to drive on their own out of Earth's sight deliver 89 % of urgent items and 26 t per year of lander cargo. A cautious version that never starts a drive it cannot finish in sight gets only 50 %: the cargo is where Earth cannot see.",
    "visual_plain": "Supervised rovers driving on through the stretch where the link is lost."
@@ -368,7 +374,7 @@
  ],
  "pending": [],
  "sources": {
-  "results/E21_fit_r2.json": "40dbea29aee5c6d7e41a7bea4b6fd830297e65d51e937c081a6e9bf9a9942a17",
+  "results/E21_fit_r2.json": "80e3caff4c6948709964e9d307bd2540cb540744827c63d98f87fe302b5b5d84",
   "results/table_E21_breakeven_delay_r2.csv": "93a7e18b318c752aaf2f165bb476c811ebb9ce80fae104f64533963a6b5aa461",
   "results/table_E21_cells_r2.csv": "c70242a7ef423588895bb8f01fb7c64374ef88451b11a52da6f7f1fe52bf755e"
  }

@@ -94,6 +94,9 @@ async function play(entry) {
     $('st-count').textContent = `Step ${i + 1} of ${steps.length}`;
     $('st-step-title').textContent = s.title;
     $('st-text').innerHTML = `<p>${withNumbers(s.text, doc.numbers)}</p>`;
+    // step links (story-v1 `links`): site-relative pages under the site base; anything else (a scheme, a leading /, ..) is skipped
+    $('st-links').replaceChildren(...(s.links || []).filter(l => /^(?!.*\.\.)[a-z0-9][a-z0-9/_.-]*\/(\?[^#]*)?(#.*)?$/i.test(l.href || ''))
+      .map(l => h('a', { href: BASE + l.href }, `${l.label} →`)));
     $('st-visual').textContent = s.visual_plain || s.visual || '';
     // every number of the step as a stat chip: its chips first, then the others its text quotes; range ends go in the chart
     const rows = ranges(s, doc.numbers), ends = new Set(rows.flatMap(r => [r.k + '_lo', r.k + '_hi']));

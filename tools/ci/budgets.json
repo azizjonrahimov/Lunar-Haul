@@ -504,6 +504,21 @@
           ]
         }
       }
+    },
+    "research/earth-sky/index.html": {
+      "js_gzip_kb": 15,
+      "css_gzip_kb": 15,
+      "data": [
+        "comms/earth_track-v1.json.gz",
+        "research/earth-sky/strategic-years.json",
+        "research/earth-sky/deliveries-by-year.json"
+      ],
+      "data_gzip_kb": 100,
+      "fonts": [
+        "assets/sora-latin-wght-normal-*.woff2",
+        "assets/jetbrains-mono-latin-wght-normal-*.woff2"
+      ],
+      "fonts_kb": 110
     }
   }
 }

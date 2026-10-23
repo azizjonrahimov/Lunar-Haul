@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Earth's sky, year by year · LunarHaul</title>
+<meta name="description" content="Why 2028 is different at the south-pole base: where Earth stands when it is high, a 100 m stretch of route that saw no Earth for a year and a half, and the rover fleet it caught.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="<!--@base-->favicon.svg" type="image/svg+xml">
+<script>try { var t = localStorage.getItem('lunarsim.theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<script type="module" src="/src/main.js"></script>
+<script type="module" src="/src/research/earth-sky.js"></script>
+</head>
+<body>
+<!--@header-->
+<main id="main"><div class="wrap">
+  <header class="page-head es-head">
+    <p class="ui-label">Explainer · R-1, round 2</p>
+    <h1>Earth's sky, year by year</h1>
+    <p class="prose">From the south pole Earth never climbs more than a few degrees, and ridges hide it much of the time.
+      One short stretch of the regolith haul from the oxygen plant (ISRU) to the construction site (CONSTR) sees Earth
+      only when Earth stands high and a little east of grid north. Which way Earth leans when it is high changes from
+      year to year, and in 2028 it leans the wrong way.</p>
+    <p class="prose es-lead" id="es-lead" aria-live="polite">Loading the numbers…</p>
+    <div class="es-chips" id="es-chips"></div>
+  </header>
+
+  <section class="es-section" aria-labelledby="es-sky-h">
+    <h2 id="es-sky-h">1. Where Earth stands in the base's sky</h2>
+    <p class="prose">Each loop is a month of Earth's path seen from the base: left and right is the grid bearing
+      (0° is grid north), up is the height above the horizontal. The dashed box is the patch of sky where Earth stood
+      every time the dark spot saw it: Earth has to be there, though the terrain can still hide it. Pick a month and compare the years.</p>
+    <div class="es-board">
+      <div class="es-controls">
+        <div id="es-year"></div>
+        <label class="es-month"><span class="ui-label">Month</span>
+          <input type="range" id="es-month" min="1" max="12" step="1" value="1" aria-describedby="es-month-out">
+          <output id="es-month-out" class="mono">Jan</output></label>
+      </div>
+      <figure class="es-fig" id="es-sky-fig"><div id="es-sky" class="es-chart"></div>
+        <figcaption class="small muted" id="es-sky-cap"></figcaption></figure>
+      <details class="es-twin"><summary>The same as a table</summary><div id="es-sky-table"></div></details>
+    </div>
+  </section>
+
+  <section class="es-section" aria-labelledby="es-cal-h">
+    <h2 id="es-cal-h">2. The dark spot's calendar</h2>
+    <p class="prose">The share of each month's hours in which some of Earth's disc clears the terrain, for the dark
+      spot and three sites, 2028 to 2031. An outlined cell is a month with no link at all.</p>
+    <div class="es-board">
+      <figure class="es-fig"><div id="es-cal" class="es-chart"></div><figcaption class="small muted" id="es-cal-cap"></figcaption></figure>
+      <details class="es-twin"><summary>The same as a table</summary><div id="es-cal-table"></div></details>
+    </div>
+  </section>
+
+  <section class="es-section" aria-labelledby="es-fleet-h">
+    <h2 id="es-fleet-h">3. The fleet it caught</h2>
+    <p class="prose">With supervised rovers allowed to drive out of Earth's sight, a rover that needs help stops where
+      it is and waits for Earth. The same year of demand was run against each year of the sky: the share of the fleet
+      stuck waiting more than a day, month by month, and what that fleet delivered that year (the band shows the strict fleet, which drives only while linked).</p>
+    <div class="es-board es-two">
+      <figure class="es-fig"><div id="es-fleet" class="es-chart"></div><figcaption class="small muted" id="es-fleet-cap"></figcaption></figure>
+      <figure class="es-fig"><div id="es-tons" class="es-chart"></div><figcaption class="small muted" id="es-tons-cap"></figcaption></figure>
+    </div>
+    <details class="es-twin"><summary>The same as a table</summary><div id="es-fleet-table"></div></details>
+    <p class="small muted es-note">The rover rule behind section 3 is being re-examined (B-57). This page shows the
+      sky's geometry and the stranding as measured; it does not say which rule is best.</p>
+  </section>
+
+  <details class="es-sources"><summary>Data behind this page</summary><ul id="es-sources"></ul></details>
+</div></main>
+<!--@footer-->
+</body>
+</html>

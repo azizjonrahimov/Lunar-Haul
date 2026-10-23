@@ -54,6 +54,19 @@
           "description": "view switches the page applies on entering the step"
         },
         "chips": {"type": "array", "items": {"type": "string"}, "uniqueItems": true, "description": "number keys shown as stat chips beside the text"},
+        "links": {
+          "type": "array",
+          "description": "further reading on the site for this step, shown under the text",
+          "items": {
+            "type": "object",
+            "required": ["label", "href"],
+            "additionalProperties": false,
+            "properties": {
+              "label": {"type": "string", "minLength": 1, "maxLength": 40},
+              "href": {"type": "string", "pattern": "^[a-z0-9][a-z0-9/_.-]*/([?][^#]*)?(#.*)?$", "description": "a page of this site, relative to the site root, ending in /"}
+            }
+          }
+        },
         "scene": {"$ref": "#/$defs/sceneRef"}
       }
     },
