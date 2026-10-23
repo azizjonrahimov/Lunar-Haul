@@ -545,3 +545,9 @@ as R1-G-* placeholders (asserts: help <= 168 h indistinguishable from the re-dra
 at 720 h = strict tonnage but more urgent completion; completion break-even beyond 720 h in every draw; 2028 still
 collapses). The framing is now rescue time: within a week = free re-draw, a month = strict tonnage but the urgent gain
 kept, none = 42 t. Limitations: the strict/look-ahead pools never fill (R1-F-POOL-STRICT).
+Done 22 Oct (night): internal referee check (REVIEW_round2_internal.md, minor revision) and B-60 Stage G2 (help for
+any long wait; results/E21g2_rescue_any_r2.csv, table_E21g2_rescue_any_r2.csv, E21_fit_r2.json["rescue_any"]) as
+R1-G2-* placeholders; N3 (strategic_2028_urgent), N7 (pool_starvation.all_2028_seeds), N11 (swap manifests, 2,421 =
+2,404 cells + 17 end points) answered. Headline now: under DTE most of what driving without a link loses is lost to
+waits without limit; help within a week for any held rover gives within 5 % of always-linked tonnage in every start
+year (optimistic: helper's time not modelled; 148 helps a run at 168 h). Abstract 248 words.

@@ -176,7 +176,14 @@ knee, the restoration and completion shares at the lowest level and the strict-f
   New Stage G puts a delay on help at those points (an optimistic fixed rescue time; the helper's own time is not
   modelled). Help within a week (0–168 h) is as good as the free re-draw (403–429 t). Help after a month (720 h) gives
   strict's tonnage (+3 t [−37, 44]) but still 39 points more urgent completion. The tonnage break-even against strict
-  lies beyond 720 h (bootstrap 95 % from 310 h). 2028 collapses at every rescue time, because its dark point sees
-  Earth again in July 2029. The abstract, Sections 5.4, 6 and 8, Table 4 and Table 5 are revised, and Section 7
+  lies at about 720 h or beyond (bootstrap 95 % from 310 h). Help only at never-linked points leaves 2028 collapsed,
+  because its dark point sees Earth again in July 2029; Stage G2 sends help to any rover held longer than the rescue
+  time, and with help within a week the fleet comes within 5 % of its always-linked tonnage in every start year,
+  2028 included (507-519 t), at 148-338 helps a run. Stages F, G and G2 are labelled exploratory. The abstract, Sections 5.4, 6 and 8, Table 4 and Table 5 are revised, and Section 7
   states both features of the rule and the pool limit (which never binds for the strict and look-ahead fleets). The
   relay results are unaffected: with a relay no point is never linked.
+- **An internal round-2 check (REVIEW_round2_internal.md)** before resubmission asked for Stage G2 (help for any
+  long wait), all-seed support for the auction-pool mechanism (the pool is full on 81 % of days in all five 2028
+  seeds), an explanation of why urgent cargo survives the 2028 stranding (about 19 urgent items a year, 82 % to the
+  base on short pad legs), the helper-time caveat wherever the rescue result is used, and an abstract of at most 250
+  words; all are in this version.

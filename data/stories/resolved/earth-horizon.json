@@ -339,7 +339,7 @@
    "id": "autonomy",
    "scene": "world:P2-comms-dte-strategic",
    "title": "Or let rovers drive out of sight",
-   "text": "With no relay at all, supervised rovers allowed to drive out of Earth's sight deliver {{r:strategic_done}} of urgent items, if a rover that needs help at a point that never sees Earth gets it within a week. With help after a month they still deliver {{r:rescue_month_done}}; with no help at all the fleet moves only {{r:strand_t}} in a whole year. In 2028 the sky strands most of them anyway. A cautious version that never starts a drive it cannot finish in sight gets {{r:avoid_done}} of urgent items.",
+   "text": "With no relay at all, supervised rovers allowed to drive out of Earth's sight deliver {{r:strategic_done}} of urgent items, if a rover that needs help at a point that never sees Earth gets it within a week. With help after a month they still deliver {{r:rescue_month_done}}; with no help at all the fleet moves only {{r:strand_t}} in a whole year. In 2028 one spot that stays dark well into the next year strands most of them, unless help comes for any rover held that long. A cautious version that never starts a drive it cannot finish in sight gets {{r:avoid_done}} of urgent items.",
    "visual": "Supervised rovers driving on through the stretch where the link is lost.",
    "camera": {
     "shot": "overview"
@@ -364,7 +364,7 @@
     }
    ],
    "title_plain": "Or let rovers drive out of sight",
-   "text_plain": "With no relay at all, supervised rovers allowed to drive out of Earth's sight deliver 89 % of urgent items, if a rover that needs help at a point that never sees Earth gets it within a week. With help after a month they still deliver 82 %; with no help at all the fleet moves only 42 t per year in a whole year. In 2028 the sky strands most of them anyway. A cautious version that never starts a drive it cannot finish in sight gets 50 % of urgent items.",
+   "text_plain": "With no relay at all, supervised rovers allowed to drive out of Earth's sight deliver 89 % of urgent items, if a rover that needs help at a point that never sees Earth gets it within a week. With help after a month they still deliver 82 %; with no help at all the fleet moves only 42 t per year in a whole year. In 2028 one spot that stays dark well into the next year strands most of them, unless help comes for any rover held that long. A cautious version that never starts a drive it cannot finish in sight gets 50 % of urgent items.",
    "visual_plain": "Supervised rovers driving on through the stretch where the link is lost."
   },
   {
