@@ -4668,3 +4668,77 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
 **From BACKEND:** nothing. **Questions for LEAD:** none.
 
 - B-60 addendum 22:47: the break-even shares in my console summary were rounded with {:.0%}; experiments/phase4/analyse_e21.py now prints them with {:.2%} (display only, no data change; uncommitted). The B-60 line above is corrected to 99.95 %.
+
+## B-61 DONE 12:10 | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**Answer: yes, a helper can park where it sees both Earth and the held rover at every sample, but no parking spot beats Earth's own monthly cycle. Any working point gives a link within a week for only ~71 % of Stage G2's calls. In the other ~29 % Earth itself stays below every nearby horizon for more than a week (median ~10 days). So G2's "help within a week ends every capped wait" is optimistic for ~29 % of calls (B-62 prices it).**
+
+- **Step 1, tally:** Stage G2's 0 h and 168 h cells, 20 seeds each, rerun with every committed intervention logged at its route sample (not written to any results CSV).
+  - Every run reproduces its Stage G2 row exactly (delivered_t_in_year, rescues), and the logged capped waits equal its rescue count.
+  - 0 h: 6,769 capped waits (338.45 a run) at 232 samples. 168 h: 2,956 (147.8 a run) at 135 samples. Calls per start year are even (0 h: 1,720 / 1,726 / 1,624 / 1,699).
+  - "Held rover-hours before the cap" are 0 in the 0 h cell by construction (469,935 h in the 168 h cell). The hour-weighted basis therefore uses the natural wait: hours the rover would be held without help, inside the year (13.06 M h / 8.43 M h, mostly never-linked samples).
+  - Main basis, per your refinement: the calls, one per capped wait at its call hour (wait start + rescue_h).
+- **Set H:** 494 samples = 265 tallied (54 of them never-linked, #188 among them) + 229 untallied never-linked (283 never-linked in all).
+- **Candidates:**
+  - Route samples within 3 km: 948,533 pairs, 144,431 with line of sight, 96,831 working.
+  - 40 m grid for all of H (no trigger): 15,290 reachable points see at least one H sample (422,095 line-of-sight pairs, 248,323 working). Masks and hourly series follow the B-40 way; 12 v1 route samples recomputed with the grid code reproduce their v1 series exactly.
+  - The expert A* reaches every grid point from its nearest route sample. No sample lacks a working point: all 494 have working route samples and working grid points.
+- **Effective help delay** (hours until a working point is linked; the helper's drive is not included), share of calls linked within 0 / 24 / 168 h:
+  - **0 h cell:** best point 35.49 / 41.28 / 70.84 %; any working point 35.96 / 41.28 / 70.84 %; route samples only 35.49 / 40.88 / 70.45 %; any point <= 1.5 km 35.88 / 41.17 / 70.79 %; 1 m clearance margin 34.85 / 40.14 / 69.80 %.
+  - **168 h cell:** best 33.97 / 39.34 / 70.70 %; any 34.17 / 39.34 / 70.74 %; route only 33.56 / 38.84 / 69.96 %; 1 m margin 32.61 / 37.96 / 69.08 %.
+  - **Per natural held hour:** any point 42.45 / 46.54 / 70.36 % (0 h cell), 42.41 / 46.26 / 69.56 % (168 h cell).
+  - **By start year** (0 h, any point within 168 h): 72.73 / 72.83 / 70.94 / 66.80 % (2028 / 2029 / 2030 / 2031). 2028's calls are no harder to cover than other years'.
+  - The best point alone matches the union of all working points within 168 h. The grid adds +0.38 to +0.78 pp over route samples alone.
+- **Why ~29 % stay uncovered** (your diagnostic). Uncovered: 1,974 of 6,769 calls (29.16 %) at 0 h and 865 of 2,956 (29.26 %) at 168 h.
+  - Earth's upper limb is below the lowest candidate horizon at the call in 99.60 % / 99.65 %, and below the level horizon (0 deg) in 92.50 % / 85.20 %.
+  - Medians: upper limb -4.11 / -4.01 deg against a lowest candidate horizon of +0.73 / +2.16 deg (gap 3.63 / 5.34 deg).
+  - Earth stays below the level for the whole following week in 85.97 % / 75.49 %, and clears the lowest candidate horizon after a median 234.5 h / 266 h (0 h q10-q90: 181-332 h).
+  - Context: 52.93 % of covered calls also start with Earth below the level, but Earth rises within the week.
+  - **Finding:** the uncovered ~29 % is Earth's monthly cycle (below the local level for ~10 days at a stretch), not a lack of parking spots.
+  - Elevations are at s; candidates within 3 km differ by <= 0.1 deg.
+- **Two hops through the base:** for 99.19 % of uncovered calls (0 h) some candidate sees both s and the 10 m BASE mast. But the mast itself links within 168 h in only 27.00 % of them (168 h cell: 47.17 %). Its gaps follow the same cycle: linked 59.57 % of hours, median gap 260 h, no gap <= 24 h.
+- **Spotlights**
+  - **#188:** best point is a grid point 638.9 m away (drive 1.185 km from #188, 1.245 km from BASE), linked 47.45 % of hours, clearance 0.06 m.
+    - Its 278 calls in 2028 runs: 46.04 / 48.56 / 73.38 % within 0 / 24 / 168 h (route samples alone 70.86 %; 1 m margin 69.78 %).
+    - Over its dark spell (13,128 dark hours, Jan 2028 - Jun 2029), a parked helper links 49.44 / 53.09 / 75.03 %.
+    - So the 18-month darkness is #188's own horizon: a helper 0.6 km away sees Earth about half of that time.
+  - **ISRU** (never sees Earth): the best point seeing both is route sample #282 (on SCI_1->BASE/DEPOT/PAD_A@3), 520 m away, drive 1.273 km (1.337 km from BASE), linked 39.77 % of hours, clearance 0.26 m.
+    - It covers ISRU's 980 calls at 36.43 / 39.90 / 62.14 %.
+    - The nearest working point is a grid point 291.5 m away, but it links only 0.04 % of hours.
+    - ISRU has 135 working route samples and 376 working grid points.
+  - **Legs with never-linked samples:** 101 directed legs (32 of them ISRU legs, where ISRU is the end point). The leg's worst sample, any point within 168 h: median 61.06 %.
+    - Three legs reach 0 (ISRU->SCI_1, PSR->PAD_A@3, PSR->PAD_B@1); each has a sample with 1-3 tallied calls, all in an uncovered week (question 1).
+    - Best-point drives <= 7.6 km. Per-leg rows are in `spotlights.never_linked_legs`.
+- **Outputs**
+  - `data/comms/connecting_ridge/parking-v1.json` (828 KB; schema `lunarsim/schemas/parking-v1.schema.json`), per H sample:
+    - counts of candidates and working points;
+    - top 5, ranked by your rule: share of calls within 24 h, then 168 h, then drive (untallied samples rank on their dark hours);
+    - union coverage (best / route / grid / all / <= 1.5 km / 1 m margin) and dark-hour coverage.
+  - The same file holds a table of the 938 ranked points (571 grid points carrying their hourly windows; route points refer to their sample), plus the sha256s of its inputs. Reassembly from the caches is byte-identical.
+  - `results/E21_parking.json`: summary with the tally, help delays by cell, basis and start year, grid gain, uncovered-call diagnostic, two-hop check and spotlights.
+- **Effort** (single process, foreground):
+
+  | step | time | peak RSS |
+  |---|---|---|
+  | tally | 43 s | 328 MB |
+  | candidates | 126 s | 359 MB |
+  | gridpre | 191 s | 336 MB |
+  | grid (6 chunks) | 288-355 s each | <= 198 MB |
+  | astar | 331 s | 235 MB |
+  | parking | 423 s | 616 MB |
+
+  - Reassembling `parking` from the cache takes 5 s at 524 MB. The summary's `peak_rss_mb` is the writing process's peak, so it shows 524.
+- **Identity:** no engine change, no results CSV touched, md5 test passes, and the 40 tally reruns equal their Stage G2 rows.
+
+**Files:** `tools/comms/parking.py` (new; stages tally, candidates, gridpre, grid, astar, parking), `lunarsim/schemas/parking-v1.schema.json` (new), `tools/ci/budgets.py` (+ parking-v1 schema target), `tests/test_parking.py` (new, 7 tests). **For LEAD to commit:** `data/comms/connecting_ridge/parking-v1.json`, `results/E21_parking.json`.
+
+**How to test:**
+- `.venv/Scripts/python -m pytest -q tests/test_parking.py tests/test_ci_budgets.py` -> 17 passed.
+- `tools/ci/budgets.py schemas` -> 41 files, 0 problems.
+- Rebuild (needs `.cache/comms` from B-40; each step with `--max-seconds 540`): `tools/comms/parking.py tally` -> `candidates` -> `gridpre` -> `grid --part i --parts 6` (i = 0-5) -> `astar` -> `parking`.
+
+**FRONTEND:** nothing (new data file, not used by the site yet).
+
+**Questions for LEAD:**
+1. 36 samples (42 calls, at most 3 each) have no call covered by any point. Under the agreed rule their top 5 is therefore ordered by drive alone, and the best point can be poor on dark hours: #737's best links 11.07 % of its dark hours within 168 h, against 75.37 % for any working point. For B-62, should ties go to dark-hour coverage before drive? It's a one-line change and moves only these 36.
+2. Expect Stage H well below G2: ~29 % of calls wait more than a week for Earth at any parking point, so a real helper will often sit parked for days (B-62 measures it).

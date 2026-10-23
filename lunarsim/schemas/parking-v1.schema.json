@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://azizjonrahimov.github.io/Lunar-Haul/schemas/parking-v1.schema.json",
+  "title": "lunarsim-parking v1",
+  "description": "Parking points for a helper that must see both Earth (direct, any_part, hourly) and a rover held at a route sample of the engine's samples file (writer tools/comms/parking.py, B-61). samples[s].top ranks the working points of sample s (line of sight, reachable, linked in some hour when s is not) by the share of s's basis hours linked within 24 h, then 168 h, then the shortest drive; top[0] is the best parking point. Shares are [within 0 h, within 24 h, within 168 h]. points[] holds every ranked point once: route points refer to their sample (whose windows are in the samples file), grid points carry their own hourly windows ([s0, l0, g1, l1, ...] hour indices from time.start_utc).",
+  "type": "object",
+  "required": ["format", "version", "terrain", "description", "time", "criterion", "mode", "antenna_m", "delays_h",
+               "rules", "samples_file", "inputs", "set_h", "points", "samples", "no_working_point", "generated"],
+  "$defs": {
+    "share": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number", "minimum": 0, "maximum": 1}},
+    "xy": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "number"}},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "properties": {
+    "format": {"const": "lunarsim-parking"},
+    "version": {"const": 1},
+    "terrain": {"type": "string"},
+    "description": {"type": "string"},
+    "time": {
+      "type": "object",
+      "required": ["start_utc", "step_h", "n", "wrap"],
+      "properties": {"start_utc": {"type": "string"}, "step_h": {"const": 1}, "n": {"type": "integer", "minimum": 1},
+                     "wrap": {"type": "boolean"}}
+    },
+    "criterion": {"const": "any_part"},
+    "mode": {"const": "dte"},
+    "antenna_m": {"type": "number", "exclusiveMinimum": 0},
+    "delays_h": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number", "minimum": 0}},
+    "rules": {
+      "type": "object",
+      "required": ["route_radius_m", "grid_radius_m", "grid_step_m", "margin_m", "top_k", "measures"],
+      "properties": {"route_radius_m": {"type": "number"}, "grid_radius_m": {"type": "number"},
+                     "grid_step_m": {"type": "number"}, "margin_m": {"type": "number"},
+                     "top_k": {"type": "integer", "minimum": 1}, "measures": {"type": "object"}}
+    },
+    "samples_file": {
+      "type": "object",
+      "required": ["file", "sha256", "n_samples"],
+      "properties": {"file": {"type": "string"}, "sha256": {"$ref": "#/$defs/sha256"},
+                     "n_samples": {"type": "integer", "minimum": 1}}
+    },
+    "inputs": {"type": "object", "minProperties": 1, "additionalProperties": {"$ref": "#/$defs/sha256"}},
+    "set_h": {
+      "type": "object",
+      "required": ["n", "never_linked", "tallied", "dark_sample"],
+      "properties": {"n": {"type": "integer"}, "never_linked": {"type": "integer"}, "tallied": {"type": "integer"},
+                     "dark_sample": {"type": "integer"}}
+    },
+    "points": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "xy_m", "base_drive_km", "link_fraction"],
+        "properties": {
+          "kind": {"enum": ["route", "grid"]},
+          "sample": {"type": "integer", "minimum": 0},
+          "xy_m": {"$ref": "#/$defs/xy"},
+          "z_m": {"type": "number"},
+          "near_sample": {"type": "integer", "minimum": 0},
+          "access_m": {"type": "number", "minimum": 0},
+          "base_drive_km": {"type": "number", "minimum": 0},
+          "link_fraction": {"type": "number", "minimum": 0, "maximum": 1},
+          "windows": {"type": "array", "items": {"type": "integer", "minimum": 0}}
+        },
+        "if": {"properties": {"kind": {"const": "grid"}}},
+        "then": {"required": ["z_m", "near_sample", "access_m", "windows"]},
+        "else": {"required": ["sample"]}
+      }
+    },
+    "samples": {
+      "type": "object",
+      "propertyNames": {"pattern": "^[0-9]+$"},
+      "additionalProperties": {
+        "type": "object",
+        "required": ["id", "xy_m", "never_linked", "link_fraction", "basis", "n_basis", "candidates", "working", "top",
+                     "coverage", "dark_hours"],
+        "properties": {
+          "id": {"type": ["string", "null"]},
+          "xy_m": {"$ref": "#/$defs/xy"},
+          "never_linked": {"type": "boolean"},
+          "link_fraction": {"type": "number", "minimum": 0, "maximum": 1},
+          "basis": {"enum": ["calls", "dark_hours"]},
+          "n_basis": {"type": "integer", "minimum": 1},
+          "candidates": {"type": "object", "required": ["route_3km", "route_los", "grid_los"],
+                         "additionalProperties": {"type": "integer", "minimum": 0}},
+          "working": {"type": "object", "required": ["route", "grid", "margin_1m"],
+                      "additionalProperties": {"type": "integer", "minimum": 0}},
+          "top": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "type": "object",
+              "required": ["point", "share", "drive_km", "dist_m", "clear_m"],
+              "properties": {"point": {"type": "integer", "minimum": 0}, "share": {"$ref": "#/$defs/share"},
+                             "drive_km": {"type": "number", "minimum": 0}, "dist_m": {"type": "number", "minimum": 0},
+                             "clear_m": {"type": "number", "minimum": 0, "description": "line-of-sight clearance (m, rounded to mm; > 0 before rounding)"}}
+            }
+          },
+          "coverage": {
+            "type": "object",
+            "required": ["best", "route", "grid", "all", "all_1500m", "all_margin_1m"],
+            "additionalProperties": {"$ref": "#/$defs/share"}
+          },
+          "dark_hours": {
+            "type": "object",
+            "required": ["n", "best", "all"],
+            "properties": {"n": {"type": "integer", "minimum": 0}, "best": {"$ref": "#/$defs/share"},
+                           "all": {"$ref": "#/$defs/share"}}
+          }
+        }
+      }
+    },
+    "no_working_point": {"type": "array", "items": {"type": "integer", "minimum": 0}},
+    "generated": {"type": "object"}
+  }
+}

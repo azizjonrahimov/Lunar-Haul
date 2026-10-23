@@ -799,7 +799,7 @@ spell "should recur" with the ~6-year beat of the anomalistic and draconic month
 one report each. Rules as always: no existing E21 row may change (identity checks as B-57); every new constant
 carries a flag and source; single process, foreground chunks with `--max-seconds 540`; peak RSS in every report.
 
-## B-61 [QUEUED] Can a helper park where it sees both Earth and the held rover? (data only, no engine change)
+## B-61 [DONE 12:10] Can a helper park where it sees both Earth and the held rover? (data only, no engine change)
 1. **Where help is needed.** Rerun Stage G2's 168 h cell and its 0 h cell (DTE, 20 seeds, same CRN; not written to
    any results CSV) with a per-sample tally of capped waits: sample id, count, held rover-hours before the cap, by
    start year. Plus the 283 never-linked samples and the 2028 dark sample #188 even if untallied. This is the set H.
@@ -821,7 +821,7 @@ carries a flag and source; single process, foreground chunks with `--max-seconds
 Output: `data/comms/connecting_ridge/parking-v1.json` (schema in `lunarsim/schemas/`, sha256s of its inputs, a
 test) and `results/E21_parking.json` (summary). New earth_link.py stage(s) `tally`/`parking` as you see fit.
 
-## B-62 [QUEUED after B-61] The helper's own time (engine + Stage H)
+## B-62 [IN PROGRESS] The helper's own time (engine + Stage H)
 1. **Policy** (comms, with `never_linked: "rescue"`, `rescue_scope: "any"`): `helpers: {"n": k, "home": "BASE",
    "service_h": S, "parking": "parking-v1.json", "from_fleet": bool}`. When a strategic intervention wait exceeds
    rescue_h (now the call threshold), a helper is called at the stop; the wait ends at the earliest of its natural
