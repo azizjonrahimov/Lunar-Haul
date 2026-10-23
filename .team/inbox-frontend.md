@@ -556,3 +556,13 @@ no task IDs on the page; same light/dark, 390 px and budget checks as F-42.
 3. **Data:** prepare-data stages only what the page shows into `research/earth-sky/` (extend rescue.json or a new
    `years.json`); add the new files to the page's source list. Budget: data stays under the page's 100 KB.
 Files you own as usual; report with the file list. LEAD updates the Earth story separately.
+
+## F-40 part 15 [QUEUED 15:25] The 3D items, one page at a time (owner asked to continue; ~0.58 GB free)
+Memory rules for this part: one 3D page open at a time; before opening each, check free RAM
+(`(Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory`) and stop and report if it is under 0.4 GB; close the
+tab and stop the preview server after each page; never two dev servers. Order, each its own short report line:
+1. Lander lab: the Approach phase's first frame shows the ground (no black first frame).
+2. Rover lab: the stretched brown streak on the ground near the camera (chase view, first frame).
+3. World: the Earth-link scenes show "waiting for Earth" clearly; the urgent chip's live value updates.
+4. Stories: in story views show only the vehicles a step talks about (declutter labels), using the data's `label`.
+Skip the tier measurements and Lighthouse for now. Report with the file list as usual.
