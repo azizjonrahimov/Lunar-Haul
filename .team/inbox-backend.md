@@ -670,7 +670,7 @@ optional `label` (≤ 40 characters, plain words) to `numbers.*` in story-v1 (sc
 `resolved/*.json`), draft labels for the four stories' numbers, rebuild resolved files, tests. Tell FRONTEND (via
 LEAD) when done so the page drops its map.
 
-## B-54 [IN PROGRESS] Two gallery scenes for the Earth story
+## B-54 [DONE 18:46] Two gallery scenes for the Earth story
 The Earth's-horizon story (data/stories/earth-horizon.json, round 2) needs scenes that match its text. Add to
 `experiments/phase4/gallery.py` (group "earth"), build and export them like the others, 20-seed headlines included:
 - `P2-comms-relay-0.1`: "A relay a tenth of the time" — dte+relay at p = 0.1, all supervised rovers, strict policy

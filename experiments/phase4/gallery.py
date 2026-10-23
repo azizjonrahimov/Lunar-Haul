@@ -1,4 +1,4 @@
-"""Static scenario gallery for the 3D world (B-36): 12 curated cells, each a seed-3 scene package (lunarsim-scene v1)
+"""Static scenario gallery for the 3D world (B-36; B-54 +2 Earth cells): 14 curated cells, each a seed-3 scene package (lunarsim-scene v1)
 plus headline numbers (mean and 95 % CI over 20 seeds) in data/scenes/gallery.json, so the site needs no server.
 
     python experiments/phase4/gallery.py scenes   [--only ID,ID] [--force] [--max-seconds 540]  # missing packages
@@ -44,6 +44,10 @@ BUDGET_GZ_BYTES = 4 * 2**20
 COMMON_ARGS = ["--terrain", "connecting_ridge", "--landing-model", "classical", "--plume", "1,0.5",
                "--autonomy", "driving-v1"]
 RELAY_08 = {"mode": "dte+relay", "relay": {"coverage": 0.8, "gap_model": "parametric"}}
+# the E21 comms settings of the cells the Earth story quotes (run_phase4.comms_cfg; B-54)
+RELAY_01_STRICT = {"mode": "dte+relay", "criterion": "any_part", "supervised_policy": "strict", "defer_wait_h": 24.0,
+                   "relay": {"coverage": 0.1, "gap_model": "parametric"}}
+DTE_STRATEGIC = {"mode": "dte", "criterion": "any_part", "supervised_policy": "strategic", "defer_wait_h": 24.0}
 
 GROUPS = [
     {"id": "phases", "title": "Three phases, two job rules",
@@ -91,6 +95,16 @@ CELLS: List[Dict[str, Any]] = [
     dict(id="p2-earth-autonomous", package="P2-comms-dte-autonomous", group="earth", title="Autonomous rovers, direct links",
          description="Direct links only, but every rover drives itself and needs no link.",
          scenario="P2-default", mechanism="marketplace", standoff="1", comms="dte", fleet_autonomy="autonomous"),
+    dict(id="p2-earth-relay-0.1", package="P2-comms-relay-0.1", group="earth", title="A relay a tenth of the time",
+         description="Every rover supervised from Earth; each drive starts only while Earth or the relay is in view "
+                     "of the whole route, and the relay is up a tenth of the time.",
+         scenario="P2-default", mechanism="marketplace", standoff="1", comms=RELAY_01_STRICT,
+         fleet_autonomy="supervised", start_year="e21"),
+    dict(id="p2-earth-strategic", package="P2-comms-dte-strategic", group="earth", title="Rovers that drive out of sight",
+         description="Direct links only; every rover supervised from Earth sets off without a link and stops to wait "
+                     "for Earth only where it needs an operator's help.",
+         scenario="P2-default", mechanism="marketplace", standoff="1", comms=DTE_STRATEGIC,
+         fleet_autonomy="supervised", start_year="e21"),
     dict(id="p2-small-fleet", package="P2V2", group="fleet", title="Second phase, four rovers",
          description="The second phase with four rovers instead of the usual fleet, shared.",
          scenario="P2-4-vehicles", mechanism="marketplace", standoff="1"),
@@ -123,15 +137,36 @@ def scenario_of(cell: Dict[str, Any]):
     return sc, fn, _with_file_opts(cell["mechanism"], kw, file_kw)
 
 
+def start_year_of(cell: Dict[str, Any], seed: int):
+    """Link-series year of a seed: E21's rule (run_phase4.start_year, 2028 + seed mod 4) for the cells that quote E21
+    (start_year="e21"), else None (the engine's default, 2028). B-54: strategic driving with direct links only
+    delivers about 110 t in 2028 and about 530 t in 2029-2031, so these cells keep E21's mix of years."""
+    return 2028 + int(seed) % 4 if cell.get("start_year") == "e21" else None
+
+
+def scenario_for_seed(cell: Dict[str, Any], seed: int):
+    sc, fn, kw = scenario_of(cell)
+    yr = start_year_of(cell, seed)
+    if yr is not None:
+        sc = sc.with_(comms=dict(sc.comms, start_year=yr))
+    return sc, fn, kw
+
+
 def flags_of(cell: Dict[str, Any]) -> Dict[str, Any]:
     sc, _, _ = scenario_of(cell)
     c = cell.get("comms")
-    comms = "always" if not c else (c if isinstance(c, str) else f"{c['mode']} {c['relay']['coverage']:g}")
-    return {"scenario": cell["scenario"], "phase": cell["scenario"].split("-")[0], "job_rule": cell["mechanism"],
-            "pad_standoff_km": float(cell["standoff"]), "earth_link": comms,
-            "fleet": "all autonomous" if cell.get("fleet_autonomy") else "default",
-            "n_vehicles": len(sc.fleet), "landing_model": "classical", "plume": {"keepout_km": 1.0, "standdown_h": 0.5},
-            "autonomy_model": "driving-v1", "terrain": "connecting_ridge"}
+    comms = ("always" if not c else c if isinstance(c, str)
+             else f"{c['mode']} {c['relay']['coverage']:g}" if "relay" in c else c["mode"])
+    out = {"scenario": cell["scenario"], "phase": cell["scenario"].split("-")[0], "job_rule": cell["mechanism"],
+           "pad_standoff_km": float(cell["standoff"]), "earth_link": comms,
+           "fleet": f"all {cell['fleet_autonomy']}" if cell.get("fleet_autonomy") else "default",
+           "n_vehicles": len(sc.fleet), "landing_model": "classical", "plume": {"keepout_km": 1.0, "standdown_h": 0.5},
+           "autonomy_model": "driving-v1", "terrain": "connecting_ridge"}
+    if isinstance(c, dict) and c.get("supervised_policy"):
+        out["supervised_policy"] = c["supervised_policy"]
+    if cell.get("start_year") == "e21":
+        out["start_year"] = f"2028 + seed mod 4, as E21 (replay {start_year_of(cell, REPLAY_SEED)})"
+    return out
 
 
 def _deadline(max_s: float):
@@ -157,7 +192,7 @@ def cmd_scenes(a) -> None:
             print("time budget reached; run again to continue")
             return
         t0 = time.time()
-        sc, fn, kw = scenario_of(cell)
+        sc, fn, kw = scenario_for_seed(cell, REPLAY_SEED)
         sim = Simulation(sc, fn, seed=REPLAY_SEED, mech_kwargs=dict(kw, trace=True))
         sim.run()
         trace = json.loads(json.dumps(sim.trace_export(mechanism=cell["mechanism"])))
@@ -198,7 +233,7 @@ def cmd_headline(a) -> None:
         if time.time() > stop:
             print(f"time budget reached after {i} runs; run again to continue")
             return
-        sc, fn, kw = scenario_of(cell)
+        sc, fn, kw = scenario_for_seed(cell, s)
         t0 = time.time()
         r = run(sc, fn, seed=s, **kw)
         r = {"cell": cell["id"], **{k: v for k, v in r.items() if k != "seed"}, "seed": s, "run_s": round(time.time() - t0, 2)}

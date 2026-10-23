@@ -307,7 +307,7 @@
   },
   {
    "id": "relay",
-   "scene": "world:P2-comms-relay-0.8",
+   "scene": "world:P2-comms-relay-0.1",
    "title": "A relay brings the cargo back, not the speed",
    "text": "A relay satellite in view only a tenth of the time brings urgent deliveries back to {{r:relay_done}}. But in a typical year nine in ten urgent items arrive only within {{r:relay_p90}}, against {{r:always_p90}} with Earth always in view, and waits shrink slowly as the relay is in view more.",
    "visual": "The base with a relay in view part of the time: rovers wait in the waiting colour between passes.",
@@ -329,6 +329,7 @@
   },
   {
    "id": "autonomy",
+   "scene": "world:P2-comms-dte-strategic",
    "title": "Or let rovers drive out of sight",
    "text": "With no relay at all, supervised rovers allowed to drive on their own out of Earth's sight deliver {{r:strategic_done}} of urgent items and {{r:strategic_landed}} of lander cargo. A cautious version that never starts a drive it cannot finish in sight gets only {{r:avoid_done}}: the cargo is where Earth cannot see.",
    "visual": "Supervised rovers driving on through the stretch where the link is lost.",

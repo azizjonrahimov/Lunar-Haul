@@ -822,6 +822,152 @@
    "source": "results/gallery_runs.csv, cell p2-earth-autonomous, seeds 0-19 (experiments/phase4/gallery.py headline)"
   },
   {
+   "id": "p2-earth-relay-0.1",
+   "package": "P2-comms-relay-0.1",
+   "group": "earth",
+   "title": "A relay a tenth of the time",
+   "description": "Every rover supervised from Earth; each drive starts only while Earth or the relay is in view of the whole route, and the relay is up a tenth of the time.",
+   "flags": {
+    "scenario": "P2-default",
+    "phase": "P2",
+    "job_rule": "marketplace",
+    "pad_standoff_km": 1.0,
+    "earth_link": "dte+relay 0.1",
+    "fleet": "all supervised",
+    "n_vehicles": 6,
+    "landing_model": "classical",
+    "plume": {
+     "keepout_km": 1.0,
+     "standdown_h": 0.5
+    },
+    "autonomy_model": "driving-v1",
+    "terrain": "connecting_ridge",
+    "supervised_policy": "strict",
+    "start_year": "2028 + seed mod 4, as E21 (replay 2031)"
+   },
+   "replay": {
+    "seed": 3,
+    "summary": {
+     "delivered_kg": 530327.860284328,
+     "jobs": 530,
+     "delay_prio1_p90_h": 77.62638797083146,
+     "delay_mean_h": 63.22337330182874,
+     "plume_standdowns": 12,
+     "offpad_landings": 0,
+     "failed_landings": 0
+    },
+    "gz_bytes": 211033,
+    "files": 15
+   },
+   "headline": {
+    "n_seeds": 20,
+    "delivered_t": {
+     "mean": 530.390590535,
+     "ci95": 9.47831541358,
+     "n": 20
+    },
+    "delay_prio1_mean_h": {
+     "mean": 56.6565913555,
+     "ci95": 12.7594423591,
+     "n": 20
+    },
+    "delay_prio1_p90_h": {
+     "mean": 134.309003009,
+     "ci95": 33.3580197932,
+     "n": 20
+    },
+    "sl24_prio1": {
+     "mean": 48.5618037775,
+     "ci95": 6.25882876505,
+     "n": 20
+    },
+    "cost_per_landed_kg_usd": {
+     "mean": 16662.4775784,
+     "ci95": 7153.45227431,
+     "n": 20
+    },
+    "blackout_wait_vehicle_h": {
+     "mean": 6118.06412911,
+     "ci95": 170.321393074,
+     "n": 20
+    }
+   },
+   "source": "results/gallery_runs.csv, cell p2-earth-relay-0.1, seeds 0-19 (experiments/phase4/gallery.py headline)"
+  },
+  {
+   "id": "p2-earth-strategic",
+   "package": "P2-comms-dte-strategic",
+   "group": "earth",
+   "title": "Rovers that drive out of sight",
+   "description": "Direct links only; every rover supervised from Earth sets off without a link and stops to wait for Earth only where it needs an operator's help.",
+   "flags": {
+    "scenario": "P2-default",
+    "phase": "P2",
+    "job_rule": "marketplace",
+    "pad_standoff_km": 1.0,
+    "earth_link": "dte",
+    "fleet": "all supervised",
+    "n_vehicles": 6,
+    "landing_model": "classical",
+    "plume": {
+     "keepout_km": 1.0,
+     "standdown_h": 0.5
+    },
+    "autonomy_model": "driving-v1",
+    "terrain": "connecting_ridge",
+    "supervised_policy": "strategic",
+    "start_year": "2028 + seed mod 4, as E21 (replay 2031)"
+   },
+   "replay": {
+    "seed": 3,
+    "summary": {
+     "delivered_kg": 529369.5763930491,
+     "jobs": 475,
+     "delay_prio1_p90_h": 55.53765764197379,
+     "delay_mean_h": 337.824884390142,
+     "plume_standdowns": 5,
+     "offpad_landings": 0,
+     "failed_landings": 0
+    },
+    "gz_bytes": 181941,
+    "files": 15
+   },
+   "headline": {
+    "n_seeds": 20,
+    "delivered_t": {
+     "mean": 426.502843014,
+     "ci95": 79.3472140105,
+     "n": 20
+    },
+    "delay_prio1_mean_h": {
+     "mean": 319.332873883,
+     "ci95": 201.419698239,
+     "n": 20
+    },
+    "delay_prio1_p90_h": {
+     "mean": 666.6479365,
+     "ci95": 365.740827415,
+     "n": 20
+    },
+    "sl24_prio1": {
+     "mean": 40.5668087595,
+     "ci95": 7.75581245439,
+     "n": 20
+    },
+    "cost_per_landed_kg_usd": {
+     "mean": 29024.5558332,
+     "ci95": 20175.893213,
+     "n": 20
+    },
+    "blackout_wait_vehicle_h": {
+     "mean": 30593.9720087,
+     "ci95": 3620.29023438,
+     "n": 20
+    }
+   },
+   "source": "results/gallery_runs.csv, cell p2-earth-strategic, seeds 0-19 (experiments/phase4/gallery.py headline)"
+  },
+  {
    "id": "p2-small-fleet",
    "package": "P2V2",
    "group": "fleet",
@@ -888,6 +1034,6 @@
    "source": "results/gallery_runs.csv, cell p2-small-fleet, seeds 0-19 (experiments/phase4/gallery.py headline)"
   }
  ],
- "total_gz_bytes": 2233084,
+ "total_gz_bytes": 2626058,
  "budget_gz_bytes": 4194304
 }

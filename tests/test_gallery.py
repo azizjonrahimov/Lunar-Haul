@@ -13,7 +13,7 @@ GALLERY = os.path.join(ROOT, "data", "scenes", "gallery.json")
 def test_cells_are_unique_and_grouped():
     ids = [c["id"] for c in G.CELLS]
     pkgs = [c["package"] for c in G.CELLS]
-    assert len(G.CELLS) == 12 and len(set(ids)) == 12 and len(set(pkgs)) == 12
+    assert len(G.CELLS) == 14 and len(set(ids)) == 14 and len(set(pkgs)) == 14
     assert {c["group"] for c in G.CELLS} <= {g["id"] for g in G.GROUPS}
 
 
@@ -31,6 +31,12 @@ def test_package_matches_its_cell(cell):
     assert want.split()[0] == got
     if cell.get("fleet_autonomy"):
         assert {v["autonomy"] for v in idx["vehicles"]} == {cell["fleet_autonomy"]}
+    c = cell.get("comms")
+    if isinstance(c, dict) and c.get("supervised_policy"):
+        assert idx["comms"]["supervised_policy"] == c["supervised_policy"]
+    yr = G.start_year_of(cell, G.REPLAY_SEED)                       # B-54: E21's year of the replay seed
+    if yr is not None:
+        assert idx["comms"]["start_h"] == sum(8784 if y % 4 == 0 else 8760 for y in range(2028, yr))
     assert len(idx["vehicles"]) == len(sc.fleet)
     c = idx["checks"]
     assert c["trips"] == c["trips_summary"] and abs(c["delivered_kg_cargo_table"] - c["delivered_kg_summary"]) < 1.0
@@ -85,3 +91,18 @@ def test_committed_index_is_current_and_valid():
     jsonschema = pytest.importorskip("jsonschema")
     from lunarsim.formats import load_schema
     assert list(jsonschema.Draft202012Validator(load_schema("scene-gallery-v1")).iter_errors(doc)) == []
+
+
+def test_earth_story_cells_use_the_e21_settings():
+    """B-54: the two cells the Earth story quotes have E21's comms settings and E21's year per seed."""
+    sys.path.insert(0, ROOT)
+    from experiments.phase4.run_phase4 import comms_cfg, start_year
+    cells = {c["id"]: c for c in G.CELLS}
+    assert cells["p2-earth-relay-0.1"]["comms"] == comms_cfg("dte+relay", 0.1, "strict")
+    assert cells["p2-earth-strategic"]["comms"] == comms_cfg("dte", None, "strategic")
+    for cid in ("p2-earth-relay-0.1", "p2-earth-strategic"):
+        cell = cells[cid]
+        assert [G.start_year_of(cell, s) for s in range(8)] == [start_year(s) for s in range(8)]
+        sc, _, _ = G.scenario_for_seed(cell, 5)
+        assert sc.comms["start_year"] == 2029 and {a for _, _, a, _ in sc.fleet} == {"supervised"}
+    assert G.start_year_of(cells["p2-earth-relay"], 5) is None                # the older cells keep the default year
