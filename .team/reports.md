@@ -4742,3 +4742,103 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
 **Questions for LEAD:**
 1. 36 samples (42 calls, at most 3 each) have no call covered by any point. Under the agreed rule their top 5 is therefore ordered by drive alone, and the best point can be poor on dark hours: #737's best links 11.07 % of its dark hours within 168 h, against 75.37 % for any working point. For B-62, should ties go to dark-hour coverage before drive? It's a one-line change and moves only these 36.
 2. Expect Stage H well below G2: ~29 % of calls wait more than a week for Earth at any parking point, so a real helper will often sit parked for days (B-62 measures it).
+
+- **B-61 addendum 12:18** (LEAD's Q1 and docstring fix; for LEAD to commit with B-62):
+  - **New tie-break:** the ranking is now share of calls within 24 h, then 168 h, then share of dark hours within 168 h (new per-point `dark_share` in `top[]`), then drive.
+  - **Changes:** the best point moved for 238 of 494 samples (calls tie at both shares). Points table: 557 (352 grid); file 786 KB.
+    - Best point per call: 0 h cell 35.94 / 41.28 / 70.84 % (was 35.49 / 41.28 / 70.84), 168 h cell 34.17 / 39.34 / 70.70 % (was 33.97 / 39.34 / 70.70).
+    - Best point per natural held hour: 0 h 42.40 / 46.49 / 70.32 %, 168 h 42.35 / 46.21 / 69.51 %.
+    - Union coverage, the uncovered-call diagnostic and the #188 / ISRU best points are unchanged (only their table index and clearance rounding to mm).
+    - #737's best point now links 75.36 % of its dark hours within 168 h (was 11.07 %).
+  - **Docstring** describes the rule as used, the grid for all of H, and the six stages.
+  - **Run:** the per-sample pass took two chunks (481 s + 101 s; peak 591 / 622 MB).
+  - **Tests:** `tests/test_parking.py` checks the four-key order; 17 passed, schemas 41/0.
+  - **Changed files:** `tools/comms/parking.py`, `lunarsim/schemas/parking-v1.schema.json`, `tests/test_parking.py`, `data/comms/connecting_ridge/parking-v1.json`, `results/E21_parking.json`.
+
+## B-62 DONE 12:40 | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**Answer: a real helper keeps the G2 headline when it is called after a day, not after a week.** With the 24 h call threshold, Stage H stays within 5 % of the always-linked strategic tonnage in every start year (worst year 96.51-97.02 % across the four 24 h cells). That holds for a dedicated helper or one taken from the fleet, one or two helpers, S = 1 or 2 h; it costs ~7 t a year against the ideal helper. Called after 168 h it loses the headline in 2029, 2030 and 2031 (worst year 2029 at 84.84 % / 83.27 %; 2028 holds at 95.1 %). **The helper's busy time is 91.54-97.62 % parked waiting for Earth**; driving 0.70-1.55 %, service 1.68-7.02 %.
+
+**Policy** (`lunarsim/comms.py`, comms key `helpers`, with never_linked "rescue" + rescue_scope "any"; DTE, any_part, no mast): `{"n": k, "home": "BASE", "service_h": S, "parking": file, "from_fleet": bool, "class": "LTV"}`.
+- **Call:** a strategic intervention wait longer than rescue_h calls a helper at t_call = wait start + rescue_h.
+- **Booking:** first fit over k per-helper interval lists. The trip is drive (parking file `base_drive_km` at the class's nominal speed, LTV 6 km/h), then the parking point's own hourly DTE link wait, then S, then drive home. The trip end never shrinks with a later start, so the search jumps past each blocking booking.
+- **Release:** the rover is released when the service ends (`top[0]` of parking-v1.json).
+- **Assumed:**
+  - operators foresee both the natural end and the release (ephemeris and terrain are known), so a helper is sent only when it ends the wait sooner;
+  - the helper's driving needs no link and ignores the dark;
+  - S = 1 h (`DEFAULT_HELPER_SERVICE_H`: one session through the relay, 12x the engine's 300 s intervention recovery), with S x 2 as a sensitivity.
+- **No parking point:** natural wait; a never-linked sample strands to the year end.
+- **`from_fleet`:** the engine drops the last k vehicles of the helper's class from `Scenario.fleet` (P2: the CoC LTV). Otherwise the helpers are extra vehicles.
+- **Trips:** booked when the job commits (uncommitted plans drop theirs).
+- **Columns:** `helper_calls`, `_helps`, `_unserved`, `_natural_first`, `_strandings`, `_busy_h` = `_drive_h` + `_park_h` + `_service_h`, `_utilisation` (in-year busy / k x 8,760 h), `_call_to_release_mean_h` / `_p90_h`. `blackout_rescues_never_linked` counts helps and `blackout_rescue_vehicle_h` the rover-hours held until release.
+- **Schema:** scenario-v1 gains `comms.helpers`.
+
+**Stage H** (`run_phase4.py e21h --round r2` -> `results/E21h_helper_r2.csv`; 120 runs, 198 s, single process, foreground, peak 154 MB): plain strategic, all-supervised, DTE, 20 seeds, CRN with Stage A.
+- **Cells:** dedicated k = 1 at 24 / 168 h, k = 2 at 24 h, from the fleet k = 1 at 24 / 168 h, S = 2 h at 24 h dedicated.
+- **References:**
+  - strict: 306.5 t;
+  - strict + 1 rover (existing Stage B r2 cell, DTE, no mast): 307.2 t, an extra hauler adds 0.7 t under strict DTE;
+  - G2 at the same threshold (the ideal helper): 24 h 530.0 t, 168 h 515.6 t;
+  - always-linked strategic: 532.2 t (518.7 / 526.3 / 541.7 / 542.1 by start year).
+
+**Results** (t/yr by start year 2028 / 2029 / 2030 / 2031; paired mean differences with Student-t 95 % CI):
+
+| cell | t/yr | by start year | worst year vs always-linked |
+|---|---|---|---|
+| dedicated k=1, 24 h | 523.4 | 518.0 / 510.6 / 537.5 / 527.5 | 97.02 % |
+| dedicated k=1, 168 h | 486.5 | 493.5 / 446.5 / 508.3 / 497.7 | 84.84 % (2029) |
+| dedicated k=2, 24 h | 523.4 | 517.4 / 507.9 / 538.4 / 529.9 | 96.51 % |
+| from fleet k=1, 24 h | 522.7 | 516.5 / 510.2 / 535.9 / 528.1 | 96.93 % |
+| from fleet k=1, 168 h | 476.5 | 493.4 / 438.3 / 504.8 / 469.7 | 83.27 % (2029) |
+| dedicated k=1, 24 h, S = 2 h | 523.5 | 518.3 / 508.2 / 537.5 / 530.2 | 96.56 % |
+
+- **Dedicated k=1, 24 h:**
+  - Paired: vs strict +216.9 [208.5, 225.2]; vs strict + 1 rover +216.2 [207.8, 224.6]; vs G2 24 h -6.7 [-12.0, -1.3]; vs always-linked -8.8 [-12.8, -4.8].
+  - 2028: vs G2 +6.2 [-6.9, 19.4]; vs always-linked -0.7 [-2.0, 0.6].
+  - Urgent completion 0.946 (always-linked 0.959, strict 0.427); censored p90 median 285.6 h.
+  - Helps 169.2 a run of 182.7 calls (natural first 12.3, unserved 1.25); utilisation 50.26 %.
+  - Busy 4,463.9 h a run: driving 69.2 h (1.55 %), parked 4,225.5 h (94.66 %), service 169.2 h (3.79 %).
+  - Call -> release: mean 85.1 h, p90 297.6 h (median over runs).
+- **Dedicated k=1, 168 h:**
+  - Paired: vs G2 168 h -29.1 [-41.6, -16.6]; vs always-linked -45.7 [-59.8, -31.6]; vs strict +180.0 [166.0, 194.0].
+  - Urgent 0.911; censored p90 median 742.7 h; helps 87.2; utilisation 47.63 %; parked 97.25 %; call -> release mean 173.2 h.
+- **Dedicated k=2, 24 h:** no gain over k = 1 (vs G2 -6.7 [-12.3, -1.0]). Utilisation 44.78 % each, parked 96.84 %.
+- **From fleet k=1, 24 h:** five haulers plus a helper. Paired: vs strict +216.1 [207.7, 224.6]; vs G2 -7.4 [-12.8, -2.0]; vs strict + 1 rover +215.5 [206.9, 224.1]. Urgent 0.939.
+- **From fleet k=1, 168 h:** vs G2 -39.1 [-54.9, -23.2].
+- **S = 2 h:** no tonnage cost (vs G2 -6.5 [-12.2, -0.8]); service share rises to 7.02 %, parked 91.54 %.
+
+**Busy-time split** (LEAD's Q2), share driving / parked waiting for Earth / service:
+
+| cell | driving | parked | service |
+|---|---|---|---|
+| dedicated k=1, 24 h | 1.55 % | 94.66 % | 3.79 % |
+| dedicated k=1, 168 h | 0.81 % | 97.25 % | 1.94 % |
+| dedicated k=2, 24 h | 0.91 % | 96.84 % | 2.25 % |
+| from fleet k=1, 24 h | 1.41 % | 95.14 % | 3.45 % |
+| from fleet k=1, 168 h | 0.70 % | 97.62 % | 1.68 % |
+| dedicated k=1, 24 h, S = 2 h | 1.44 % | 91.54 % | 7.02 % |
+
+**Analysis:** `analyse_e21.py helper` writes:
+- `results/table_E21h_helper_r2.csv` (720 rows): every cell against strict, strict + 1 rover, G2 at the same threshold and always-linked strategic, overall and by start year, for tonnage (bulk, landed), urgent completion, censored p90 and wait;
+- `E21_fit_r2.json["helper"]`: per cell means, by-year shares of always-linked, the paired tonnage (overall, 2028), the helper block (helps, utilisation, busy split in hours and shares, call -> release), plus `g2_headline_kept_by` / `g2_headline_lost_by`. Nothing else in the fit file changed (checked key by key).
+
+**Caveats:**
+- **Unserved calls** (0.6-2.1 a run) fall on samples outside parking-v1's set H, which is built from G2's 0 h / 168 h tallies, the never-linked samples and #188. Those calls get the natural wait. Extending H to all 2,421 samples is ~40 min plus grid points if wanted.
+- **The 168 h loss falls in 2029-2031, not 2028:** 2028 holds at 95.1 % in both 168 h cells. I have not diagnosed why.
+
+**Identity:**
+- No existing E21 row changed: six A cells, five Stage F rows, one A2 row and one Stage G row recomputed equal in every column; the md5 test passes; tables E21 r2 unchanged.
+- The ideal-helper test (zero drive, S = 0, always-linked parking) equals G2 24 h seed 1 in every column.
+
+**Files:** `lunarsim/comms.py` (helpers), `lunarsim/engine.py` (`_build_fleet`: from_fleet), `lunarsim/schemas/scenario-v1.schema.json`, `experiments/phase4/run_phase4.py` (`e21h_cells`, `STAGE_H`, `E21H_CELLS`), `experiments/phase4/analyse_e21.py` (`helper`), `tests/test_e21_helper.py` (new, 6 tests).
+- **For LEAD to commit:** `results/E21h_helper_r2.csv`, `results/table_E21h_helper_r2.csv`, `results/E21_fit_r2.json`.
+- **Also the B-61 regeneration** (addendum above): `tools/comms/parking.py`, `lunarsim/schemas/parking-v1.schema.json`, `tests/test_parking.py`, `data/comms/connecting_ridge/parking-v1.json`, `results/E21_parking.json`.
+
+**How to test:**
+- `.venv/Scripts/python -m pytest -q tests/test_comms_engine.py tests/test_comms_data.py tests/test_e21_rescue.py tests/test_e21_bounded.py tests/test_phase3_engine.py tests/test_ci_budgets.py tests/test_parking.py tests/test_e21_helper.py` -> 86 passed.
+- `tools/ci/budgets.py schemas` -> 41 files, 0 problems.
+- Rerun: `run_phase4.py e21h --round r2 --workers 1` (198 s), then `analyse_e21.py helper` (5 s).
+
+**FRONTEND:** nothing required. New result files only. Column names, if the site wants them: `helper_*` in E21h; `E21_fit_r2.json["helper"]`.
+
+**Questions for LEAD:** none.

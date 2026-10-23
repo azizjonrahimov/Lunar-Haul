@@ -385,6 +385,23 @@ class EarthLink:
 #   rescue_scope       with never_linked "rescue" (B-60): "never_linked" (default, B-59): help only at samples that
 #                      never see Earth; "any": every strategic intervention wait longer than rescue_h ends after
 #                      rescue_h (the counters then count every capped wait, never-linked or not).
+#   helpers            B-62, with never_linked "rescue" and rescue_scope "any" (DTE, any_part, no mast): the help of
+#                      B-59/B-60 becomes a modelled vehicle. {"n": k, "home": "BASE", "service_h": S, "parking":
+#                      file, "from_fleet": bool, "class": "LTV"}. When a strategic intervention wait exceeds rescue_h
+#                      (the call threshold), a helper is called at the stop: it leaves home at the first time one of
+#                      the k helpers is free for the whole trip (first fit in per-helper interval lists), drives to
+#                      the held sample's best parking point (data/comms/connecting_ridge/parking-v1.json, top[0]:
+#                      network distance + A* leg from BASE, at the class's nominal speed), waits there for the
+#                      point's own hourly DTE link, serves S hours and drives home; the rover is released when the
+#                      service ends. Assumed: operators foresee both the natural end of the wait and the release
+#                      (ephemeris and terrain are known), so a helper is sent only when it ends the wait sooner;
+#                      the helper's own driving needs no link and ignores the dark (still optimistic, much less
+#                      so). No working parking point: no help (the natural wait; never-linked samples strand until
+#                      the year ends). from_fleet true: the k helpers are taken out of the hauling fleet (the last
+#                      k vehicles of their class in Scenario.fleet); false: they are extra vehicles. Adds
+#                      helper_* columns (calls, helps, unserved, busy hours split into driving, parked waiting for
+#                      Earth and service, utilisation, call -> release delay); blackout_rescues_never_linked then
+#                      counts the helps and blackout_rescue_vehicle_h the rover-hours held until release.
 #   autonomous         unaffected
 #   relay              dte+relay: an alternating up/gap process independent of DTE, availability p, exponential gaps
 #                      of mean g (default DEFAULT_RELAY_GAP_H), from its own random stream; a point is linked when
@@ -409,10 +426,15 @@ COMMS_MODES = ("always", "dte", "dte+relay")
 SUPERVISED_POLICIES = ("strict", "strategic", "strategic+avoid", "strategic+bound")
 COMMS_KEYS = {"mode", "criterion", "link_series", "relay", "mast", "supervised_policy", "start_year", "start_h",
               "defer_wait_h", "operators_strict", "intervention_scale", "bound_h", "bound_never", "never_linked",
-              "rescue_h", "rescue_scope"}
+              "rescue_h", "rescue_scope", "helpers"}
 RESCUE_SCOPES = ("never_linked", "any")    # never_linked "rescue": which intervention waits the help ends
 BOUND_NEVER = ("refuse", "strategic")      # strategic+bound: a never-linked sample refuses the leg, or is ignored
 NEVER_LINKED = ("redraw", "strand", "rescue")   # strategic: an intervention drawn on a never-linked sample
+HELPER_KEYS = {"n", "home", "service_h", "parking", "from_fleet", "class"}
+HELPER_HOMES = ("BASE",)                   # parking-v1.json gives the drive from BASE
+# Assumed (B-62): one intervention session through the parked helper (set up the relay, diagnose, resolve) takes an
+# hour, twelve times the engine's per-intervention recovery (INTERVENTION_RECOVERY_S = 300 s, Assumed)
+DEFAULT_HELPER_SERVICE_H = 1.0
 # columns CommsModel.summary() adds to a run (comms set); checks of "always" against the baseline drop these
 SUMMARY_PREFIXES = ("blackout", "operator_peak", "operator_wait", "operator_waits", "linked_share",
                     "delivered_kg_in_horizon", "prio1_completion", "delay_prio1_p90_censored",
@@ -420,6 +442,7 @@ SUMMARY_PREFIXES = ("blackout", "operator_peak", "operator_wait", "operator_wait
                     "delivered_landed_kg_in_horizon")
 _BIG_H = 1e12
 DEFAULT_LINK_SERIES = _os.path.join("data", "comms", "connecting_ridge", "earth_link-v1.json")
+DEFAULT_PARKING = _os.path.join("data", "comms", "connecting_ridge", "parking-v1.json")
 SERIES_YEARS = (2028, 2029, 2030, 2031)
 # Modelled: one LCRNS reference relay sees the south pole 324 of every 784 min (DRM-0), i.e. a 460 min gap per orbit;
 # Esper et al., NTRS 20250003321, https://ntrs.nasa.gov/api/citations/20250003321/downloads/LCRNS_Esper_257.pdf
@@ -582,6 +605,7 @@ class CommsModel:
         self.rescue_scope = cfg.get("rescue_scope", "never_linked")
         if self.rescue_scope not in RESCUE_SCOPES:
             raise ValueError(f"comms rescue_scope {self.rescue_scope!r} not in {RESCUE_SCOPES}")
+        self.helpers = self._parse_helpers(cfg)
         self.never_strandings = 0
         self.rescues = 0
         self.rescue_h_booked = 0.0
@@ -626,6 +650,8 @@ class CommsModel:
         path = cfg.get("link_series") or DEFAULT_LINK_SERIES
         path = find(path) if find else path
         self.el = EarthLink.load(path, samples=True)
+        if self.helpers is not None:
+            self._load_parking(find)
         if self.mast:
             fm = self.el.doc.get("mast") or {}
             want = (fm.get("site"), float(fm.get("height_m", -1)), float(fm.get("range_km", -1)))
@@ -654,6 +680,145 @@ class CommsModel:
                     raise ValueError("relay coverage must be in [0, 1] and mean_gap_h > 0")
                 self._relay_p, self._relay_g = p, g
                 self.relay = _Intervals(self._relay_intervals(p, g, rng_r))
+
+    # ---- helpers (B-62) ------------------------------------------------------------------------------------
+    def _parse_helpers(self, cfg: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        h = cfg.get("helpers")
+        if h is None:
+            return None
+        if not isinstance(h, dict):
+            raise ValueError("comms helpers must be an object")
+        unknown = set(h) - HELPER_KEYS
+        if unknown:
+            raise ValueError(f"unknown comms helpers keys {sorted(unknown)}; known: {sorted(HELPER_KEYS)}")
+        if self.never_linked != "rescue" or self.rescue_scope != "any":
+            raise ValueError("comms helpers need never_linked 'rescue' and rescue_scope 'any'")
+        if cfg.get("mode", "dte") != "dte" or self.criterion != "any_part" or cfg.get("mast"):
+            raise ValueError("comms helpers need mode 'dte', criterion 'any_part' and no mast (the parking file's links)")
+        from .entities import VEHICLE_CLASSES
+        n = h.get("n", 1)
+        if not isinstance(n, int) or isinstance(n, bool) or n < 1:
+            raise ValueError("comms helpers n must be an integer >= 1")
+        if h.get("home", "BASE") not in HELPER_HOMES:
+            raise ValueError(f"comms helpers home must be one of {HELPER_HOMES}")
+        cls = h.get("class", "LTV")
+        if cls not in VEHICLE_CLASSES:
+            raise ValueError(f"comms helpers class {cls!r} not in {sorted(VEHICLE_CLASSES)}")
+        s = float(h.get("service_h", DEFAULT_HELPER_SERVICE_H))
+        if not (s >= 0 and math.isfinite(s)):
+            raise ValueError("comms helpers service_h must be a finite number >= 0")
+        return {"n": n, "home": h.get("home", "BASE"), "service_h": s, "class": cls,
+                "speed_kmh": float(VEHICLE_CLASSES[cls].speed_kmh), "from_fleet": bool(h.get("from_fleet", False)),
+                "parking": h.get("parking") or DEFAULT_PARKING}
+
+    def _load_parking(self, find) -> None:
+        """Each sample's best parking point (top[0]): hourly DTE windows and the drive from BASE (km)."""
+        path = find(self.helpers["parking"]) if find else self.helpers["parking"]
+        with open(path, encoding="utf-8") as f:
+            doc = json.load(f)
+        if doc.get("format") != "lunarsim-parking" or doc.get("version") != 1:
+            raise ValueError(f"{path}: not a lunarsim-parking v1 document")
+        sf = self.el.doc["samples_file"]
+        if (doc["samples_file"]["file"], doc["samples_file"]["sha256"]) != (sf["file"], sf["sha256"]):
+            raise ValueError(f"{path} was built for another samples file than the link file's {sf['file']}")
+        self._park: Dict[int, Tuple[np.ndarray, float]] = {}
+        k = CRITERIA.index("any_part")
+        for s, rec in doc["samples"].items():
+            if not rec["top"]:
+                continue
+            p = doc["points"][rec["top"][0]["point"]]
+            w = (self.el._series(self.el.samples["samples"][p["sample"]]["w"][k]) if p["kind"] == "route"
+                 else decode_windows(p["windows"]))
+            self._park[int(s)] = (w, float(p["base_drive_km"]))
+        self._helper_segs: List[List[Tuple[float, float]]] = [[] for _ in range(self.helpers["n"])]
+        self._hp_pend: List[Dict[str, Any]] = []
+        self.hstat = {"calls": 0, "helps": 0, "unserved": 0, "natural_first": 0, "strandings": 0, "drive_h": 0.0,
+                      "park_h": 0.0, "service_h": 0.0, "busy_in_year_h": 0.0, "delays": []}
+        self.helper_held_h = 0.0
+
+    def _point_wait(self, w: np.ndarray, t: float) -> float:
+        """Hours from engine time t until an hourly window series (2028-2031, repeated) is linked; inf if never."""
+        if not len(w):
+            return math.inf
+        n_s = int(self.el.samples["time"]["n"])
+        x = ((self.start_h + t) / self.el._s_step_h) % n_s
+        i = int(math.floor(x + 1e-9))
+        j = int(np.searchsorted(w[:, 0], i, side="right")) - 1
+        if j >= 0 and i < w[j, 1]:
+            return 0.0
+        nxt = w[j + 1, 0] if j + 1 < len(w) else w[0, 0] + n_s
+        return max(0.0, (nxt - x) * self.el._s_step_h)
+
+    def _helper_wait(self, sid: Optional[int], ti: float, w_nat: float) -> float:
+        """The held rover's wait at time ti (natural wait w_nat > rescue_h, inf = never linked) with the helpers: books
+        the trip (pending until the job commits) and returns the wait."""
+        hp = self.helpers
+        t_call = ti + self.rescue_h
+        rec = {"kind": "call", "ti": ti}
+        self._hp_pend.append(rec)
+        park = self._park.get(sid) if sid is not None else None
+        if park is None:                                          # no working parking point: no help
+            rec["kind"] = "unserved"
+            if math.isfinite(w_nat):
+                return w_nat
+            rec["strand"] = True
+            return max(self.horizon_h - ti, 0.0) + 1.0
+        w, km = park
+        drive = km / hp["speed_kmh"]
+        busy = [b for b in self._hp_pend if b.get("kind") == "help"]
+        best = None
+        for h in range(hp["n"]):
+            segs = sorted(self._helper_segs[h] + [(b["t0"], b["t1"]) for b in busy if b["helper"] == h])
+            t = t_call
+            for _ in range(len(segs) + 1):
+                lw = self._point_wait(w, t + drive)
+                if not math.isfinite(lw):
+                    break
+                release = t + drive + lw + hp["service_h"]
+                end = release + drive
+                hit = next(((a, b) for a, b in segs if a < end - _EPS and b > t + _EPS), None)
+                if hit is None:
+                    if best is None or release < best["release"] - _EPS:
+                        best = {"helper": h, "t0": t, "t1": end, "release": release, "drive": 2 * drive, "park": lw}
+                    break
+                t = hit[1]                    # the trip end never shrinks with a later start: jump past the booking
+        if best is None or best["release"] >= ti + w_nat - _EPS:  # the link comes first by itself
+            rec["kind"] = "natural_first"
+            return w_nat
+        rec.update(kind="help", delay=best["release"] - t_call, **best)
+        return best["release"] - ti
+
+    def _commit_helpers(self) -> None:
+        st, H = self.hstat, self.horizon_h
+        for r in self._hp_pend:
+            st["calls"] += 1
+            if r["kind"] == "unserved":
+                st["unserved"] += 1
+                st["strandings"] += int(bool(r.get("strand")))
+            elif r["kind"] == "natural_first":
+                st["natural_first"] += 1
+            elif r["kind"] == "help":
+                st["helps"] += 1
+                self._helper_segs[r["helper"]].append((r["t0"], r["t1"]))
+                st["drive_h"] += r["drive"]
+                st["park_h"] += r["park"]
+                st["service_h"] += self.helpers["service_h"]
+                st["busy_in_year_h"] += max(0.0, min(r["t1"], H) - min(r["t0"], H))
+                st["delays"].append(r["delay"])
+                self.helper_held_h += max(0.0, min(r["release"], H) - r["ti"])
+        self._hp_pend = []
+
+    def _helper_summary(self) -> Dict[str, float]:
+        st = self.hstat
+        d = np.array(st["delays"], dtype=float)
+        busy = st["drive_h"] + st["park_h"] + st["service_h"]
+        return {"helper_calls": st["calls"], "helper_helps": st["helps"], "helper_unserved": st["unserved"],
+                "helper_natural_first": st["natural_first"], "helper_strandings": st["strandings"],
+                "helper_busy_h": float(busy), "helper_drive_h": float(st["drive_h"]), "helper_park_h": float(st["park_h"]),
+                "helper_service_h": float(st["service_h"]),
+                "helper_utilisation": float(st["busy_in_year_h"] / (self.helpers["n"] * self.horizon_h)),
+                "helper_call_to_release_mean_h": float(d.mean()) if len(d) else float("nan"),
+                "helper_call_to_release_p90_h": float(np.percentile(d, 90)) if len(d) else float("nan")}
 
     # ---- link series -------------------------------------------------------------------------------------
     def _relay_intervals(self, p: float, g: float, rng) -> np.ndarray:
@@ -708,11 +873,12 @@ class CommsModel:
     def _sample_wait(self, a: str, b: str, u: float, t: float) -> float:
         """Wait (h) at engine time t for the route sample at fraction u of leg a -> b (relay counts)."""
         key = f"{self.name(a)}->{self.name(b)}"
+        self._last_sid = None
         try:
             ids = self.el.leg_samples(key)
         except KeyError:
             return self.series(a, b).wait(t)
-        sid = ids[min(len(ids) - 1, int(u * len(ids)))]
+        sid = self._last_sid = ids[min(len(ids) - 1, int(u * len(ids)))]
         w = self.el.sample_wait_h(sid, (self.start_h + t) % self.el.horizon_h, self.criterion, self.link_mode, wrap=True)
         if self.relay is not None and w > 0:
             w = min(w, self.relay.wait(t))
@@ -851,6 +1017,8 @@ class CommsModel:
         """sim._job_plan with the link rules applied to every vehicle's segment list; inf duration if a needed
         link never comes (the job cannot be done)."""
         sim._last_segk = {}
+        if self.helpers is not None:
+            self._hp_pend = []                    # helper trips of an uncommitted plan are dropped
         dur, km, km_empty, e_wh, night = sim._job_plan(job, t_start, realize)
         for v in job.vehicles:                                    # strategic+avoid / +bound: look ahead along the route
             if self.avoids(v.autonomy):
@@ -970,13 +1138,17 @@ class CommsModel:
                         if not math.isfinite(w):
                             if self.never_linked == "redraw":
                                 return None, waits                # refused; dispatch tries again with a new draw
-                            if self.never_linked == "rescue":     # help arrives after rescue_h, then it drives on
+                            if self.never_linked == "rescue" and self.helpers is not None:   # B-62: a helper
+                                w = self._helper_wait(self._last_sid, ti, w)
+                            elif self.never_linked == "rescue":   # help arrives after rescue_h, then it drives on
                                 w = self.rescue_h
                                 self.rescues += 1
                                 self.rescue_h_booked += max(0.0, min(ti + w, self.horizon_h) - ti)
                             else:
                                 w = max(self.horizon_h - ti, 0.0) + 1.0   # strand: there until the year is over
                                 self.never_strandings += 1
+                        elif self.rescue_scope == "any" and w > self.rescue_h and self.helpers is not None:
+                            w = self._helper_wait(self._last_sid, ti, w)          # B-62: a modelled helper
                         elif self.rescue_scope == "any" and w > self.rescue_h:   # B-60: help for any long wait
                             w = self.rescue_h
                             self.rescues += 1
@@ -1122,6 +1294,8 @@ class CommsModel:
 
     def commit(self, sim, job, t0: float, t_end: float) -> float:
         """Book the committed job's waits, linked operator demand and leg use; returns linked demand-hours."""
+        if self.helpers is not None:
+            self._commit_helpers()
         delayed = False
         dh = 0.0
         for v in job.vehicles:
@@ -1226,7 +1400,9 @@ class CommsModel:
             **({"operator_wait_vehicle_h": self.op_wait_h, "operator_waits": self.op_waits} if self.operators_strict else {}),
             **({"blackout_strandings_never_linked": self.never_strandings} if self.never_linked == "strand" else {}),
             **({"blackout_rescues_never_linked": self.rescues, "blackout_rescue_vehicle_h": self.rescue_h_booked}
-               if self.never_linked == "rescue" else {}),
+               if self.never_linked == "rescue" and self.helpers is None else {}),
+            **({"blackout_rescues_never_linked": self.hstat["helps"], "blackout_rescue_vehicle_h": self.helper_held_h,
+                **self._helper_summary()} if self.helpers is not None else {}),
             **(self.outcome_metrics(cargo) if cargo is not None else {}),
         }
 

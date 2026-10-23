@@ -395,6 +395,19 @@
             "never_linked": {"enum": ["redraw", "strand", "rescue"], "description": "strategic policies: an intervention on a never-linked sample makes the job impossible and dispatch tries again (default), strands the rover for the rest of the year, or (rescue) is resolved after rescue_h"},
             "rescue_scope": {"enum": ["never_linked", "any"], "description": "with never_linked 'rescue' (B-60): help only at never-linked samples (default) or for every strategic intervention wait longer than rescue_h"},
             "rescue_h": {"type": "number", "minimum": 0, "description": "never_linked 'rescue' (B-59, required with it): hours until help arrives at a never-linked point (a rover parked as a local relay, a crew, a tow); the helper's own time is not modelled, which is optimistic"},
+            "helpers": {
+              "type": "object",
+              "description": "B-62, with never_linked 'rescue' and rescue_scope 'any' (mode dte, criterion any_part, no mast): k modelled helpers. A strategic intervention wait longer than rescue_h calls one; it drives from home to the held sample's best parking point (parking file), waits for that point's DTE link, serves service_h and drives home (first-fit booking); the rover is released when the service ends, if that is before the wait's natural end. from_fleet true takes the helpers out of the hauling fleet (last vehicles of their class)",
+              "additionalProperties": false,
+              "properties": {
+                "n": {"type": "integer", "minimum": 1},
+                "home": {"enum": ["BASE"]},
+                "service_h": {"type": "number", "minimum": 0, "description": "hours of one intervention session through the parked helper (default 1, Assumed)"},
+                "parking": {"type": "string", "description": "parking-v1 file (default data/comms/connecting_ridge/parking-v1.json)"},
+                "from_fleet": {"type": "boolean"},
+                "class": {"enum": ["LTV", "HAUL", "MICRO"], "description": "the helper's vehicle class (speed; from_fleet removes one of this class); default LTV"}
+              }
+            },
             "defer_wait_h": {"type": ["number", "null"], "minimum": 0, "description": "jobs with a longer planned link wait are deferred (default 24 h, Assumed); null = never defer"},
             "start_year": {"enum": [2028, 2029, 2030, 2031]},
             "start_h": {"type": "number", "minimum": 0}

@@ -215,7 +215,7 @@
       0.7186
      ],
      "best": [
-      0.3657,
+      0.36744,
       0.42384,
       0.72733
      ],
@@ -248,7 +248,7 @@
       0.71727
      ],
      "best": [
-      0.36211,
+      0.3679,
       0.41309,
       0.72827
      ],
@@ -281,7 +281,7 @@
       0.69828
      ],
      "best": [
-      0.36515,
+      0.36761,
       0.42734,
       0.70936
      ],
@@ -314,7 +314,7 @@
       0.65745
      ],
      "best": [
-      0.32666,
+      0.3349,
       0.38729,
       0.66804
      ],
@@ -347,7 +347,7 @@
       0.69804
      ],
      "best": [
-      0.35485,
+      0.35943,
       0.41276,
       0.70838
      ],
@@ -382,7 +382,7 @@
       0.68824
      ],
      "best": [
-      0.34742,
+      0.35007,
       0.39498,
       0.70674
      ],
@@ -415,7 +415,7 @@
       0.71063
      ],
      "best": [
-      0.35935,
+      0.3607,
       0.40915,
       0.72948
      ],
@@ -448,7 +448,7 @@
       0.6685
      ],
      "best": [
-      0.31637,
+      0.31912,
       0.38239,
       0.68226
      ],
@@ -481,7 +481,7 @@
       0.69547
      ],
      "best": [
-      0.33471,
+      0.33608,
       0.38683,
       0.70919
      ],
@@ -514,7 +514,7 @@
       0.6908
      ],
      "best": [
-      0.33965,
+      0.34168,
       0.39344,
       0.70704
      ],
@@ -551,9 +551,9 @@
       0.70986
      ],
      "best": [
-      0.45681,
-      0.49661,
-      0.72377
+      0.45931,
+      0.49911,
+      0.7262
      ],
      "grid": [
       0.45425,
@@ -584,9 +584,9 @@
       0.68882
      ],
      "best": [
-      0.42241,
-      0.46066,
-      0.69947
+      0.42489,
+      0.46309,
+      0.70202
      ],
      "grid": [
       0.41959,
@@ -617,9 +617,9 @@
       0.68235
      ],
      "best": [
-      0.41438,
-      0.45582,
-      0.69162
+      0.419,
+      0.4604,
+      0.69595
      ],
      "grid": [
       0.41275,
@@ -650,9 +650,9 @@
       0.67084
      ],
      "best": [
-      0.37205,
-      0.41695,
-      0.67244
+      0.38018,
+      0.42524,
+      0.681
      ],
      "grid": [
       0.37572,
@@ -683,9 +683,9 @@
       0.68964
      ],
      "best": [
-      0.41978,
-      0.46069,
-      0.69896
+      0.424,
+      0.46492,
+      0.7032
      ],
      "grid": [
       0.41873,
@@ -718,9 +718,9 @@
       0.70203
      ],
      "best": [
-      0.45424,
-      0.49205,
-      0.7152
+      0.45734,
+      0.49513,
+      0.71821
      ],
      "grid": [
       0.45184,
@@ -751,9 +751,9 @@
       0.68197
      ],
      "best": [
-      0.42445,
-      0.46016,
-      0.69214
+      0.4277,
+      0.46342,
+      0.69558
      ],
      "grid": [
       0.42272,
@@ -784,9 +784,9 @@
       0.67324
      ],
      "best": [
-      0.41498,
-      0.45384,
-      0.68338
+      0.418,
+      0.45687,
+      0.68637
      ],
      "grid": [
       0.41188,
@@ -817,9 +817,9 @@
       0.6651
      ],
      "best": [
-      0.37856,
-      0.42098,
-      0.67055
+      0.38341,
+      0.42598,
+      0.67556
      ],
      "grid": [
       0.37827,
@@ -850,9 +850,9 @@
       0.68158
      ],
      "best": [
-      0.42002,
-      0.45858,
-      0.6915
+      0.42354,
+      0.46213,
+      0.69507
      ],
      "grid": [
       0.4181,
@@ -1352,7 +1352,7 @@
  "spotlights": {
   "dark_sample_188": {
    "best": {
-    "point": 244,
+    "point": 72,
     "kind": "grid",
     "dist_m": 638.9,
     "drive_km": 1.185,
@@ -1415,7 +1415,7 @@
   "isru": {
    "never_linked": true,
    "best": {
-    "point": 15,
+    "point": 13,
     "kind": "route",
     "dist_m": 520.0,
     "drive_km": 1.273,
@@ -1513,7 +1513,7 @@
     "interior": 1,
     "worst_any_point_within_168h": 0.78947,
     "worst_best_point_within_168h": 0.78947,
-    "max_best_drive_km": 0.605
+    "max_best_drive_km": 1.958
    },
    {
     "leg": "BASE->PAD_B@3",
@@ -1625,7 +1625,7 @@
     "interior": 1,
     "worst_any_point_within_168h": 0.78947,
     "worst_best_point_within_168h": 0.78947,
-    "max_best_drive_km": 0.605
+    "max_best_drive_km": 1.958
    },
    {
     "leg": "DEPOT->PAD_B@3",
@@ -1649,7 +1649,7 @@
     "interior": 3,
     "worst_any_point_within_168h": 0.60957,
     "worst_best_point_within_168h": 0.60957,
-    "max_best_drive_km": 1.273
+    "max_best_drive_km": 1.63
    },
    {
     "leg": "ISRU->CONSTR",
@@ -1665,7 +1665,7 @@
     "interior": 3,
     "worst_any_point_within_168h": 0.60957,
     "worst_best_point_within_168h": 0.60957,
-    "max_best_drive_km": 1.273
+    "max_best_drive_km": 1.63
    },
    {
     "leg": "ISRU->PAD_A@0.5",
@@ -1681,7 +1681,7 @@
     "interior": 6,
     "worst_any_point_within_168h": 0.62245,
     "worst_best_point_within_168h": 0.62143,
-    "max_best_drive_km": 1.297
+    "max_best_drive_km": 1.401
    },
    {
     "leg": "ISRU->PAD_A@2",
@@ -1713,7 +1713,7 @@
     "interior": 3,
     "worst_any_point_within_168h": 0.60957,
     "worst_best_point_within_168h": 0.60957,
-    "max_best_drive_km": 1.273
+    "max_best_drive_km": 1.63
    },
    {
     "leg": "ISRU->PAD_B@1",
@@ -1721,7 +1721,7 @@
     "interior": 3,
     "worst_any_point_within_168h": 0.6,
     "worst_best_point_within_168h": 0.6,
-    "max_best_drive_km": 1.273
+    "max_best_drive_km": 1.732
    },
    {
     "leg": "ISRU->PAD_B@2",
@@ -1753,7 +1753,7 @@
     "interior": 3,
     "worst_any_point_within_168h": 0.6,
     "worst_best_point_within_168h": 0.6,
-    "max_best_drive_km": 1.273
+    "max_best_drive_km": 1.456
    },
    {
     "leg": "ISRU->PSR",
@@ -1761,7 +1761,7 @@
     "interior": 8,
     "worst_any_point_within_168h": 0.5,
     "worst_best_point_within_168h": 0.5,
-    "max_best_drive_km": 1.844
+    "max_best_drive_km": 2.126
    },
    {
     "leg": "ISRU->SCI_1",
@@ -1769,7 +1769,7 @@
     "interior": 5,
     "worst_any_point_within_168h": 0.0,
     "worst_best_point_within_168h": 0.0,
-    "max_best_drive_km": 1.396
+    "max_best_drive_km": 1.653
    },
    {
     "leg": "PAD_A@0.5->ISRU",
@@ -1785,7 +1785,7 @@
     "interior": 6,
     "worst_any_point_within_168h": 0.62245,
     "worst_best_point_within_168h": 0.62143,
-    "max_best_drive_km": 1.297
+    "max_best_drive_km": 1.401
    },
    {
     "leg": "PAD_A@2->BASE",
@@ -1961,7 +1961,7 @@
     "interior": 2,
     "worst_any_point_within_168h": 0.66667,
     "worst_best_point_within_168h": 0.66667,
-    "max_best_drive_km": 0.605
+    "max_best_drive_km": 1.958
    },
    {
     "leg": "PAD_B@1->CONSTR",
@@ -1977,7 +1977,7 @@
     "interior": 3,
     "worst_any_point_within_168h": 0.62245,
     "worst_best_point_within_168h": 0.62143,
-    "max_best_drive_km": 1.273
+    "max_best_drive_km": 1.747
    },
    {
     "leg": "PAD_B@1->POWER",
@@ -1993,7 +1993,7 @@
     "interior": 11,
     "worst_any_point_within_168h": 0.5,
     "worst_best_point_within_168h": 0.5,
-    "max_best_drive_km": 2.14
+    "max_best_drive_km": 2.148
    },
    {
     "leg": "PAD_B@1->SCI_1",
@@ -2001,7 +2001,7 @@
     "interior": 8,
     "worst_any_point_within_168h": 0.5,
     "worst_best_point_within_168h": 0.5,
-    "max_best_drive_km": 1.998
+    "max_best_drive_km": 2.302
    },
    {
     "leg": "PAD_B@2->ISRU",
@@ -2129,7 +2129,7 @@
     "interior": 3,
     "worst_any_point_within_168h": 0.6,
     "worst_best_point_within_168h": 0.6,
-    "max_best_drive_km": 1.358
+    "max_best_drive_km": 1.456
    },
    {
     "leg": "POWER->PAD_A@2",
@@ -2185,7 +2185,7 @@
     "interior": 8,
     "worst_any_point_within_168h": 0.5,
     "worst_best_point_within_168h": 0.5,
-    "max_best_drive_km": 1.844
+    "max_best_drive_km": 2.126
    },
    {
     "leg": "PSR->PAD_A@3",
@@ -2201,7 +2201,7 @@
     "interior": 10,
     "worst_any_point_within_168h": 0.0,
     "worst_best_point_within_168h": 0.0,
-    "max_best_drive_km": 2.01
+    "max_best_drive_km": 2.126
    },
    {
     "leg": "PSR->PAD_B@3",
@@ -2265,7 +2265,7 @@
     "interior": 8,
     "worst_any_point_within_168h": 0.4,
     "worst_best_point_within_168h": 0.4,
-    "max_best_drive_km": 1.998
+    "max_best_drive_km": 2.302
    },
    {
     "leg": "SCI_1->PAD_B@3",
@@ -2285,9 +2285,9 @@
    }
   ]
  },
- "peak_rss_mb": 524,
+ "peak_rss_mb": 525,
  "parking_file": {
   "file": "data/comms/connecting_ridge/parking-v1.json",
-  "sha256": "48bede571ab45fc13bdd44c42a3b12213d39b98b168bfae71e49b4448d59d423"
+  "sha256": "113e32f47a84d8941d589d22b3b954b0b1ad236e6fe8890fb33db42a0348c74d"
  }
 }

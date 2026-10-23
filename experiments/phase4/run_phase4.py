@@ -111,6 +111,7 @@ STAGES = {"e21a": "E21a_comms_autonomy", "e21b": "E21b_breakeven", "e21c": "E21c
 STAGE_F = "E21f_bounded"          # B-57; kept out of STAGES so table_E21*.csv stay as they are
 STAGE_G = "E21g_rescue"           # B-59; likewise
 STAGE_G2 = "E21g2_rescue_any"     # B-60; likewise
+STAGE_H = "E21h_helper"           # B-62; likewise
 ROUNDS = ("r1", "r2")
 R2_LEVELS = (("dte+relay", 0.05), ("dte+relay", 0.6), ("dte+relay", 0.7))       # referee M1 (round 2 only)
 R2_B_POLICY = "strategic+avoid"                                                   # referee M6
@@ -324,6 +325,28 @@ def e21g2_cells():
         tag, sc = scenario("supervised_strategic", "dte")
         sc = sc.with_(comms=dict(sc.comms, never_linked="rescue", rescue_h=h, rescue_scope="any"))
         tag.update(stage="G2", never_linked="rescue", rescue_h=h, rescue_scope="any")
+        cells.append((tag, sc, MECH, *MECHS[MECH]))
+    return cells
+
+
+E21H_SERVICE_H = 1.0              # lunarsim.comms.DEFAULT_HELPER_SERVICE_H (Assumed: one intervention session)
+E21H_CELLS = ((1, False, 24.0, 1.0), (1, False, 168.0, 1.0), (2, False, 24.0, 1.0), (1, True, 24.0, 1.0),
+              (1, True, 168.0, 1.0), (1, False, 24.0, 2.0))      # (helpers, from the fleet, call threshold h, service h)
+
+
+def e21h_cells():
+    """Stage H (B-62): Stage G2 with the helper's own time: k helpers at BASE drive to the held sample's best parking
+    point, wait for its link, serve and drive home (lunarsim/comms.py 'helpers'); dedicated (extra vehicles) or taken
+    from the hauling fleet."""
+    cells = []
+    for k, fleet, h, svc in E21H_CELLS:
+        tag, sc = scenario("supervised_strategic", "dte")
+        sc = sc.with_(comms=dict(sc.comms, never_linked="rescue", rescue_h=h, rescue_scope="any",
+                                 helpers={"n": k, "home": "BASE", "service_h": svc, "from_fleet": fleet}))
+        n_fleet = tag["n_vehicles"]
+        tag.update(stage="H", never_linked="rescue", rescue_h=h, rescue_scope="any", helpers_n=k,
+                   helpers_from_fleet=bool(fleet), helpers_service_h=svc,
+                   n_haulers=n_fleet - k if fleet else n_fleet, n_vehicles=n_fleet if fleet else n_fleet + k)
         cells.append((tag, sc, MECH, *MECHS[MECH]))
     return cells
 
@@ -600,7 +623,7 @@ def write_tables(results=None, rnd: str = "r1"):
 # ---------------------------------------------------------------------------
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    p.add_argument("stages", nargs="*", help="e21a e21b e21c e21d e21a2 e21e e21f e21g e21g2 table (default: e21a)")
+    p.add_argument("stages", nargs="*", help="e21a e21b e21c e21d e21a2 e21e e21f e21g e21g2 e21h table (default: e21a)")
     p.add_argument("--round", default="r1", choices=ROUNDS, help="r2 writes *_r2.csv (default r1: the round-1 files)")
     p.add_argument("--seeds", type=int, default=N_SEEDS)
     p.add_argument("--workers", type=int, default=WORKERS)
@@ -633,14 +656,14 @@ def main(argv=None):
             go(STAGES[n] + x, e21d_cells())
         elif n == "e21a2":
             go(STAGES[n] + x, e21a2_cells())
-        elif n in ("e21e", "e21f", "e21g", "e21g2"):
+        elif n in ("e21e", "e21f", "e21g", "e21g2", "e21h"):
             if rnd == "r1":
                 raise SystemExit(f"stage {n} is a round-2 stage: add --round r2")
             name, cells = {"e21e": (STAGES["e21e"], e21e_cells), "e21f": (STAGE_F, e21f_cells),
-                           "e21g": (STAGE_G, e21g_cells), "e21g2": (STAGE_G2, e21g2_cells)}[n]
+                           "e21g": (STAGE_G, e21g_cells), "e21g2": (STAGE_G2, e21g2_cells), "e21h": (STAGE_H, e21h_cells)}[n]
             go(name + x, cells())
         elif n != "table":
-            raise SystemExit(f"unknown stage {n!r}; choose from e21a e21b e21c e21d e21a2 e21e e21f e21g e21g2 table")
+            raise SystemExit(f"unknown stage {n!r}; choose from e21a e21b e21c e21d e21a2 e21e e21f e21g e21g2 e21h table")
         write_tables(a.results, rnd)
     rss = None
     try:

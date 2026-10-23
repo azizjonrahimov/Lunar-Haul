@@ -87,7 +87,7 @@ def test_ranking_and_coverage_are_consistent(doc, sdoc):
     pts = doc["points"]
     for s, r in doc["samples"].items():
         top = r["top"]
-        keys = [(-t["share"][1], -t["share"][2], t["drive_km"]) for t in top]
+        keys = [(-t["share"][1], -t["share"][2], -t["dark_share"][2], t["drive_km"]) for t in top]
         assert keys == sorted(keys), s
         assert top[0]["share"] == r["coverage"]["best"]
         for m, v in r["coverage"].items():

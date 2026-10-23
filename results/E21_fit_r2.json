@@ -6007,5 +6007,846 @@
    }
   },
   "breakeven_method": "crossing of the paired mean differences (rescue level - strict) as rescue_h grows, linear in log(1 + rescue_h) between levels; seed bootstrap with the same draw for every level and the reference; 'beyond 720 h' when it stays above 0, 'below 0 h' when it starts at or below 0"
+ },
+ "helper": {
+  "design": "Stage H (B-62): Stage G2 with the helper's own time (lunarsim/comms.py 'helpers'). Plain strategic, all-supervised, DTE, 20 seeds, E21 year rule, common random numbers with Stage A. A strategic intervention wait longer than the call threshold calls a helper at BASE; it drives to the held sample's best parking point (parking-v1.json), waits there for that point's DTE link, serves S hours and drives home (first-fit booking; sent only when it ends the wait before its natural end). Dedicated helpers are extra vehicles; 'from fleet' takes one LTV out of the hauling fleet. References: strict (Stage A), strict with one extra rover (Stage B, no mast: the same vehicle count as a dedicated helper), Stage G2 at the same threshold (the ideal helper) and always-linked strategic (Stage A).",
+  "cells": [
+   {
+    "label": "dedicated k=1, 24 h",
+    "helpers": 1,
+    "from_fleet": false,
+    "call_threshold_h": 24.0,
+    "service_h": 1.0,
+    "n_haulers": 6,
+    "n_vehicles": 7,
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 523.3856906581819,
+     "delivered_bulk_t": 492.0,
+     "delivered_landed_t": 28.1968538623582,
+     "prio1_completion_share": 0.9457180067025803,
+     "delay_prio1_p90_censored_h": 1352.8583069194287,
+     "blackout_wait_vehicle_h": 21119.364705210806
+    },
+    "censored_p90_median_h": 285.5643990332568,
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 517.987739074073,
+      "delivered_landed_t": 16.589147870503737,
+      "prio1_completion_share": 1.0
+     },
+     "2029": {
+      "delivered_t_in_year": 510.6367389762678,
+      "delivered_landed_t": 23.309081673545784,
+      "prio1_completion_share": 0.8449902534113061
+     },
+     "2030": {
+      "delivered_t_in_year": 537.462889272812,
+      "delivered_landed_t": 37.34228412819372,
+      "prio1_completion_share": 0.9435960591133004
+     },
+     "2031": {
+      "delivered_t_in_year": 527.4553953095748,
+      "delivered_landed_t": 35.546901777189575,
+      "prio1_completion_share": 0.9942857142857143
+     }
+    },
+    "share_of_always_linked_by_year": {
+     "2028": 0.9986861805496158,
+     "2029": 0.9701902346693142,
+     "2030": 0.9922337275713203,
+     "2031": 0.9730015370968906
+    },
+    "within_5pct_of_always_linked_every_year": true,
+    "years_below_95pct_of_always_linked": [],
+    "tonnage_vs": {
+     "strict": {
+      "diff": 216.86088590062636,
+      "ci_lo": 208.54086408014885,
+      "ci_hi": 225.18090772110386,
+      "rel_pct": 70.74823392258628,
+      "wilcoxon_p": 1.9073486328125e-06
+     },
+     "strict + 1 rover": {
+      "diff": 216.22719677770337,
+      "ci_lo": 207.80996284894513,
+      "ci_hi": 224.6444307064616,
+      "rel_pct": 70.39596855877333,
+      "wilcoxon_p": 1.9073486328125e-06
+     },
+     "always-linked strategic": {
+      "diff": -8.803370647529874,
+      "ci_lo": -12.758681782381911,
+      "ci_hi": -4.848059512677837,
+      "rel_pct": -1.6541810585003451,
+      "wilcoxon_p": 0.0002930525201924893
+     },
+     "G2 same threshold (ideal helper)": {
+      "diff": -6.663241262385418,
+      "ci_lo": -12.043204220669445,
+      "ci_hi": -1.2832783041013913,
+      "rel_pct": -1.257099271616675,
+      "wilcoxon_p": 0.015231184023652616
+     }
+    },
+    "tonnage_2028_vs": {
+     "strict": {
+      "diff": 206.95587694205568,
+      "ci_lo": 202.44724852346505,
+      "ci_hi": 211.4645053606463,
+      "rel_pct": 66.53848114577191
+     },
+     "strict + 1 rover": {
+      "diff": 206.30610656506988,
+      "ci_lo": 201.35427472840962,
+      "ci_hi": 211.25793840173014,
+      "rel_pct": 66.19129427176321
+     },
+     "always-linked strategic": {
+      "diff": -0.6814376526983097,
+      "ci_lo": -1.994430397138705,
+      "ci_hi": 0.6315550917420856,
+      "rel_pct": -0.13138194503840406
+     },
+     "G2 same threshold (ideal helper)": {
+      "diff": 6.241544172650447,
+      "ci_lo": -6.93976323497268,
+      "ci_hi": 19.422851580273573,
+      "rel_pct": 1.2196561957539815
+     }
+    },
+    "helper": {
+     "calls_per_run": 182.7,
+     "helps_per_run": 169.15,
+     "unserved_per_run": 1.25,
+     "natural_first_per_run": 12.3,
+     "strandings_per_run": 0.05,
+     "utilisation": 0.5026211710637699,
+     "busy_h_per_run": 4463.83775851861,
+     "busy_split_h_per_run": {
+      "driving": 69.19686666666668,
+      "parked_waiting_for_earth": 4225.490891851941,
+      "service": 169.15
+     },
+     "busy_split_share": {
+      "driving": 0.015501653601682574,
+      "parked_waiting_for_earth": 0.9466049440950633,
+      "service": 0.03789340230325371
+     },
+     "call_to_release_mean_h": 85.07891072232776,
+     "call_to_release_p90_h_median_of_runs": 297.6042444313551
+    }
+   },
+   {
+    "label": "dedicated k=1, 168 h",
+    "helpers": 1,
+    "from_fleet": false,
+    "call_threshold_h": 168.0,
+    "service_h": 1.0,
+    "n_haulers": 6,
+    "n_vehicles": 7,
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 486.5060448829678,
+     "delivered_bulk_t": 462.35,
+     "delivered_landed_t": 22.12456740361218,
+     "prio1_completion_share": 0.9107537125338749,
+     "delay_prio1_p90_censored_h": 1531.172242406002,
+     "blackout_wait_vehicle_h": 31059.982422115318
+    },
+    "censored_p90_median_h": 742.7290209315648,
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 493.47284432079084,
+      "delivered_landed_t": 12.9989779971215,
+      "prio1_completion_share": 0.902923976608187
+     },
+     "2029": {
+      "delivered_t_in_year": 446.5184305579819,
+      "delivered_landed_t": 15.43428399637241,
+      "prio1_completion_share": 0.8946978557504872
+     },
+     "2030": {
+      "delivered_t_in_year": 508.3377191682351,
+      "delivered_landed_t": 30.15603568945678,
+      "prio1_completion_share": 0.942535874919683
+     },
+     "2031": {
+      "delivered_t_in_year": 497.6951854848632,
+      "delivered_landed_t": 29.908971931498023,
+      "prio1_completion_share": 0.9028571428571428
+     }
+    },
+    "share_of_always_linked_by_year": {
+     "2028": 0.9514211880393778,
+     "2029": 0.848367905912379,
+     "2030": 0.9384644782411693,
+     "2031": 0.9181026202192369
+    },
+    "within_5pct_of_always_linked_every_year": false,
+    "years_below_95pct_of_always_linked": [
+     "2029",
+     "2030",
+     "2031"
+    ],
+    "tonnage_vs": {
+     "strict": {
+      "diff": 179.9812401254122,
+      "ci_lo": 165.95173904295757,
+      "ci_hi": 194.01074120786683,
+      "rel_pct": 58.71669676709117,
+      "wilcoxon_p": 1.9073486328125e-06
+     },
+     "strict + 1 rover": {
+      "diff": 179.3475510024893,
+      "ci_lo": 165.52410219346783,
+      "ci_hi": 193.17099981151077,
+      "rel_pct": 58.38925329288697,
+      "wilcoxon_p": 1.9073486328125e-06
+     },
+     "always-linked strategic": {
+      "diff": -45.68301642274399,
+      "ci_lo": -59.8002332161622,
+      "ci_hi": -31.565799629325785,
+      "rel_pct": -8.583982600217658,
+      "wilcoxon_p": 1.9073486328125e-06
+     },
+     "G2 same threshold (ideal helper)": {
+      "diff": -29.10596635637895,
+      "ci_lo": -41.6197678758552,
+      "ci_hi": -16.592164836902697,
+      "rel_pct": -5.64493567293334,
+      "wilcoxon_p": 9.5367431640625e-06
+     }
+    },
+    "tonnage_2028_vs": {
+     "strict": {
+      "diff": 182.44098218877352,
+      "ci_lo": 158.4557165476632,
+      "ci_hi": 206.42624782988383,
+      "rel_pct": 58.656685825755204
+     },
+     "strict + 1 rover": {
+      "diff": 181.79121181178775,
+      "ci_lo": 158.122822323257,
+      "ci_hi": 205.4596013003185,
+      "rel_pct": 58.32593032460345
+     },
+     "always-linked strategic": {
+      "diff": -25.196332405980478,
+      "ci_lo": -50.23110268084598,
+      "ci_hi": -0.16156213111497664,
+      "rel_pct": -4.8578811960622055
+     },
+     "G2 same threshold (ideal helper)": {
+      "diff": -13.405885669367432,
+      "ci_lo": -35.52004787192621,
+      "ci_hi": 8.708276533191345,
+      "rel_pct": -2.644791520375638
+     }
+    },
+    "helper": {
+     "calls_per_run": 92.85,
+     "helps_per_run": 87.15,
+     "unserved_per_run": 0.6,
+     "natural_first_per_run": 5.1,
+     "strandings_per_run": 0.0,
+     "utilisation": 0.47627840391708764,
+     "busy_h_per_run": 4485.137950118633,
+     "busy_split_h_per_run": {
+      "driving": 36.40501666666668,
+      "parked_waiting_for_earth": 4361.582933451968,
+      "service": 87.15
+     },
+     "busy_split_share": {
+      "driving": 0.008116810914523546,
+      "parked_waiting_for_earth": 0.9724523486142944,
+      "service": 0.01943084047118213
+     },
+     "call_to_release_mean_h": 173.2189179457609,
+     "call_to_release_p90_h_median_of_runs": 323.2403254724253
+    }
+   },
+   {
+    "label": "dedicated k=2, 24 h",
+    "helpers": 2,
+    "from_fleet": false,
+    "call_threshold_h": 24.0,
+    "service_h": 1.0,
+    "n_haulers": 6,
+    "n_vehicles": 8,
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 523.3978598122513,
+     "delivered_bulk_t": 492.9,
+     "delivered_landed_t": 27.394459432911464,
+     "prio1_completion_share": 0.9518208040576461,
+     "delay_prio1_p90_censored_h": 817.3587268305321,
+     "blackout_wait_vehicle_h": 20431.69928851539
+    },
+    "censored_p90_median_h": 233.00277251432863,
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 517.3773846413615,
+      "delivered_landed_t": 15.99296330328568,
+      "prio1_completion_share": 0.9603174603174605
+     },
+     "2029": {
+      "delivered_t_in_year": 507.93145482265317,
+      "delivered_landed_t": 20.849896408676017,
+      "prio1_completion_share": 0.9445614035087718
+     },
+     "2030": {
+      "delivered_t_in_year": 538.4321980719096,
+      "delivered_landed_t": 36.1580380244006,
+      "prio1_completion_share": 0.9240259740259742
+     },
+     "2031": {
+      "delivered_t_in_year": 529.8504017130812,
+      "delivered_landed_t": 36.57693999528354,
+      "prio1_completion_share": 0.9783783783783784
+     }
+    },
+    "share_of_always_linked_by_year": {
+     "2028": 0.9975094103459893,
+     "2029": 0.965050298453396,
+     "2030": 0.9940232109051326,
+     "2031": 0.9774196261574848
+    },
+    "within_5pct_of_always_linked_every_year": true,
+    "years_below_95pct_of_always_linked": [],
+    "tonnage_vs": {
+     "strict": {
+      "diff": 216.87305505469584,
+      "ci_lo": 208.20405857537475,
+      "ci_hi": 225.54205153401693,
+      "rel_pct": 70.75220396151319,
+      "wilcoxon_p": 1.9073486328125e-06
+     },
+     "strict + 1 rover": {
+      "diff": 216.23936593177285,
+      "ci_lo": 207.48148961337318,
+      "ci_hi": 224.99724225017252,
+      "rel_pct": 70.39993040723657,
+      "wilcoxon_p": 1.9073486328125e-06
+     },
+     "always-linked strategic": {
+      "diff": -8.79120149346042,
+      "ci_lo": -13.462513297991102,
+      "ci_hi": -4.119889688929738,
+      "rel_pct": -1.6518944361410661,
+      "wilcoxon_p": 0.0007239534999888531
+     },
+     "G2 same threshold (ideal helper)": {
+      "diff": -6.651072108315963,
+      "ci_lo": -12.293959751897598,
+      "ci_hi": -1.0081844647343292,
+      "rel_pct": -1.2548034167744888,
+      "wilcoxon_p": 0.02422372469374016
+     }
+    },
+    "tonnage_2028_vs": {
+     "strict": {
+      "diff": 206.3455225093441,
+      "ci_lo": 200.83030618877106,
+      "ci_hi": 211.86073882991715,
+      "rel_pct": 66.34224580559557
+     },
+     "strict + 1 rover": {
+      "diff": 205.69575213235834,
+      "ci_lo": 199.7545163856561,
+      "ci_hi": 211.63698787906057,
+      "rel_pct": 65.99546802823443
+     },
+     "always-linked strategic": {
+      "diff": -1.2917920854098726,
+      "ci_lo": -3.809172795060899,
+      "ci_hi": 1.225588624241154,
+      "rel_pct": -0.24905896540105615
+     },
+     "G2 same threshold (ideal helper)": {
+      "diff": 5.631189739938884,
+      "ci_lo": -4.472102912213412,
+      "ci_hi": 15.73448239209118,
+      "rel_pct": 1.1003872224245101
+     }
+    },
+    "helper": {
+     "calls_per_run": 187.4,
+     "helps_per_run": 177.9,
+     "unserved_per_run": 2.1,
+     "natural_first_per_run": 7.4,
+     "strandings_per_run": 0.1,
+     "utilisation": 0.44781641915231785,
+     "busy_h_per_run": 7919.407979257155,
+     "busy_split_h_per_run": {
+      "driving": 72.20356666666669,
+      "parked_waiting_for_earth": 7669.304412590487,
+      "service": 177.9
+     },
+     "busy_split_share": {
+      "driving": 0.009117293471404088,
+      "parked_waiting_for_earth": 0.9684189061452889,
+      "service": 0.022463800383306826
+     },
+     "call_to_release_mean_h": 80.64329106655137,
+     "call_to_release_p90_h_median_of_runs": 278.8057427914448
+    }
+   },
+   {
+    "label": "from fleet k=1, 24 h",
+    "helpers": 1,
+    "from_fleet": true,
+    "call_threshold_h": 24.0,
+    "service_h": 1.0,
+    "n_haulers": 5,
+    "n_vehicles": 6,
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 522.6704967572153,
+     "delivered_bulk_t": 491.45,
+     "delivered_landed_t": 28.042413770677058,
+     "prio1_completion_share": 0.9385302144249513,
+     "delay_prio1_p90_censored_h": 1077.7621690529463,
+     "blackout_wait_vehicle_h": 18154.917233856067
+    },
+    "censored_p90_median_h": 385.51869443638486,
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 516.5382597188593,
+      "delivered_landed_t": 15.715194145003613,
+      "prio1_completion_share": 0.9374444444444444
+     },
+     "2029": {
+      "delivered_t_in_year": 510.15447959740305,
+      "delivered_landed_t": 23.658128098520848,
+      "prio1_completion_share": 0.8700097465886939
+     },
+     "2030": {
+      "delivered_t_in_year": 535.9011650969702,
+      "delivered_landed_t": 37.505088161307675,
+      "prio1_completion_share": 1.0
+     },
+     "2031": {
+      "delivered_t_in_year": 528.0880826156287,
+      "delivered_landed_t": 35.29124467787609,
+      "prio1_completion_share": 0.9466666666666667
+     }
+    },
+    "share_of_always_linked_by_year": {
+     "2028": 0.9958915680678001,
+     "2029": 0.9692739603313372,
+     "2030": 0.9893505603213351,
+     "2031": 0.9741686608513662
+    },
+    "within_5pct_of_always_linked_every_year": true,
+    "years_below_95pct_of_always_linked": [],
+    "tonnage_vs": {
+     "strict": {
+      "diff": 216.14569199965973,
+      "ci_lo": 207.73482803478936,
+      "ci_hi": 224.5565559645301,
+      "rel_pct": 70.51491058631264,
+      "wilcoxon_p": 1.9073486328125e-06
+     },
+     "strict + 1 rover": {
+      "diff": 215.51200287673674,
+      "ci_lo": 206.94812985502935,
+      "ci_hi": 224.07587589844414,
+      "rel_pct": 70.16312658460839,
+      "wilcoxon_p": 1.9073486328125e-06
+     },
+     "always-linked strategic": {
+      "diff": -9.518564548496533,
+      "ci_lo": -13.702387797243452,
+      "ci_hi": -5.334741299749615,
+      "rel_pct": -1.7885682439888912,
+      "wilcoxon_p": 0.00015485725743722618
+     },
+     "G2 same threshold (ideal helper)": {
+      "diff": -7.378435163352077,
+      "ci_lo": -12.782512823170478,
+      "ci_hi": -1.9743575035336765,
+      "rel_pct": -1.3920290597732592,
+      "wilcoxon_p": 0.015231184023652616
+     }
+    },
+    "tonnage_2028_vs": {
+     "strict": {
+      "diff": 205.50639758684193,
+      "ci_lo": 201.1394654358679,
+      "ci_hi": 209.87332973781596,
+      "rel_pct": 66.0724583578562
+     },
+     "strict + 1 rover": {
+      "diff": 204.8566272098561,
+      "ci_lo": 200.12503619300747,
+      "ci_hi": 209.58821822670473,
+      "rel_pct": 65.72624301303306
+     },
+     "always-linked strategic": {
+      "diff": -2.1309170079120805,
+      "ci_lo": -3.5141449771377795,
+      "ci_hi": -0.7476890386863815,
+      "rel_pct": -0.4108431932199861
+     },
+     "G2 same threshold (ideal helper)": {
+      "diff": 4.7920648174366764,
+      "ci_lo": -7.251096020316659,
+      "ci_hi": 16.835225655190012,
+      "rel_pct": 0.9364143525013937
+     }
+    },
+    "helper": {
+     "calls_per_run": 166.05,
+     "helps_per_run": 155.55,
+     "unserved_per_run": 1.55,
+     "natural_first_per_run": 8.95,
+     "strandings_per_run": 0.0,
+     "utilisation": 0.5034476469905662,
+     "busy_h_per_run": 4505.33952034408,
+     "busy_split_h_per_run": {
+      "driving": 63.62385000000002,
+      "parked_waiting_for_earth": 4286.165670344079,
+      "service": 155.55
+     },
+     "busy_split_share": {
+      "driving": 0.01412187687802516,
+      "parked_waiting_for_earth": 0.9513524232723617,
+      "service": 0.034525699849613206
+     },
+     "call_to_release_mean_h": 79.381103290447,
+     "call_to_release_p90_h_median_of_runs": 307.5084402847766
+    }
+   },
+   {
+    "label": "from fleet k=1, 168 h",
+    "helpers": 1,
+    "from_fleet": true,
+    "call_threshold_h": 168.0,
+    "service_h": 1.0,
+    "n_haulers": 5,
+    "n_vehicles": 6,
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 476.53951531549353,
+     "delivered_bulk_t": 454.35,
+     "delivered_landed_t": 20.377787992563718,
+     "prio1_completion_share": 0.9124297656382009,
+     "delay_prio1_p90_censored_h": 1499.7819042532142,
+     "blackout_wait_vehicle_h": 25439.891410432792
+    },
+    "censored_p90_median_h": 764.1325326023974,
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 493.3637782397295,
+      "delivered_landed_t": 12.645099126743096,
+      "prio1_completion_share": 0.918251461988304
+     },
+     "2029": {
+      "delivered_t_in_year": 438.254470277212,
+      "delivered_landed_t": 14.14389386719019,
+      "prio1_completion_share": 0.9009649122807017
+     },
+     "2030": {
+      "delivered_t_in_year": 504.8445650969103,
+      "delivered_landed_t": 31.652802588075854,
+      "prio1_completion_share": 0.9476489028213166
+     },
+     "2031": {
+      "delivered_t_in_year": 469.6952476481227,
+      "delivered_landed_t": 23.069356388245755,
+      "prio1_completion_share": 0.882853785462481
+     }
+    },
+    "share_of_always_linked_by_year": {
+     "2028": 0.9512109074097294,
+     "2029": 0.8326666980827742,
+     "2030": 0.9320156138556467,
+     "2031": 0.8664508923271071
+    },
+    "within_5pct_of_always_linked_every_year": false,
+    "years_below_95pct_of_always_linked": [
+     "2029",
+     "2030",
+     "2031"
+    ],
+    "tonnage_vs": {
+     "strict": {
+      "diff": 170.01471055793803,
+      "ci_lo": 155.68520138863886,
+      "ci_hi": 184.3442197272372,
+      "rel_pct": 55.46523737040152,
+      "wilcoxon_p": 1.9073486328125e-06
+     },
+     "strict + 1 rover": {
+      "diff": 169.38102143501513,
+      "ci_lo": 154.92573224650206,
+      "ci_hi": 183.8363106235282,
+      "rel_pct": 55.144501880818794,
+      "wilcoxon_p": 1.9073486328125e-06
+     },
+     "always-linked strategic": {
+      "diff": -55.649545990218186,
+      "ci_lo": -73.0609236173217,
+      "ci_hi": -38.23816836311467,
+      "rel_pct": -10.456724881507991,
+      "wilcoxon_p": 1.9073486328125e-06
+     },
+     "G2 same threshold (ideal helper)": {
+      "diff": -39.07249592385315,
+      "ci_lo": -54.930591370736416,
+      "ci_hi": -23.214400476969878,
+      "rel_pct": -7.577887068599672,
+      "wilcoxon_p": 0.0001049041748046875
+     }
+    },
+    "tonnage_2028_vs": {
+     "strict": {
+      "diff": 182.33191610771217,
+      "ci_lo": 142.9561608115515,
+      "ci_hi": 221.70767140387284,
+      "rel_pct": 58.62161993883489
+     },
+     "strict + 1 rover": {
+      "diff": 181.6821457307264,
+      "ci_lo": 142.60416998948094,
+      "ci_hi": 220.76012147197187,
+      "rel_pct": 58.29093754040138
+     },
+     "always-linked strategic": {
+      "diff": -25.30539848704184,
+      "ci_lo": -64.20031241563662,
+      "ci_hi": 13.589515441552944,
+      "rel_pct": -4.878909259027053
+     },
+     "G2 same threshold (ideal helper)": {
+      "diff": -13.514951750428793,
+      "ci_lo": -48.852281050774785,
+      "ci_hi": 21.8223775499172,
+      "rel_pct": -2.6663087146488076
+     }
+    },
+    "helper": {
+     "calls_per_run": 76.25,
+     "helps_per_run": 71.45,
+     "unserved_per_run": 1.3,
+     "natural_first_per_run": 3.5,
+     "strandings_per_run": 0.0,
+     "utilisation": 0.45616221208506885,
+     "busy_h_per_run": 4256.182642533964,
+     "busy_split_h_per_run": {
+      "driving": 29.915650000000007,
+      "parked_waiting_for_earth": 4154.8169925339635,
+      "service": 71.45
+     },
+     "busy_split_share": {
+      "driving": 0.007028751468754969,
+      "parked_waiting_for_earth": 0.9761839050356985,
+      "service": 0.016787343495546392
+     },
+     "call_to_release_mean_h": 172.4635922012692,
+     "call_to_release_p90_h_median_of_runs": 316.30698805202644
+    }
+   },
+   {
+    "label": "dedicated k=1, 24 h, S=2 h",
+    "helpers": 1,
+    "from_fleet": false,
+    "call_threshold_h": 24.0,
+    "service_h": 2.0,
+    "n_haulers": 6,
+    "n_vehicles": 7,
+    "n": 20,
+    "mean": {
+     "delivered_t_in_year": 523.5411395607289,
+     "delivered_bulk_t": 493.0,
+     "delivered_landed_t": 27.374170201643704,
+     "prio1_completion_share": 0.9454000004061157,
+     "delay_prio1_p90_censored_h": 1194.578701930535,
+     "blackout_wait_vehicle_h": 20949.321865540627
+    },
+    "censored_p90_median_h": 268.5486141110492,
+    "by_year": {
+     "2028": {
+      "delivered_t_in_year": 518.2691767267713,
+      "delivered_landed_t": 16.67058552320201,
+      "prio1_completion_share": 1.0
+     },
+     "2029": {
+      "delivered_t_in_year": 508.2104778343113,
+      "delivered_landed_t": 19.835400750000673,
+      "prio1_completion_share": 0.8966861598440545
+     },
+     "2030": {
+      "delivered_t_in_year": 537.4594721779599,
+      "delivered_landed_t": 35.857696752114904,
+      "prio1_completion_share": 0.8963424132089799
+     },
+     "2031": {
+      "delivered_t_in_year": 530.2254315038729,
+      "delivered_landed_t": 37.13299778125726,
+      "prio1_completion_share": 0.9885714285714287
+     }
+    },
+    "share_of_always_linked_by_year": {
+     "2028": 0.9992287955059824,
+     "2029": 0.9655804314824088,
+     "2030": 0.9922274191231832,
+     "2031": 0.9781114468614579
+    },
+    "within_5pct_of_always_linked_every_year": true,
+    "years_below_95pct_of_always_linked": [],
+    "tonnage_vs": {
+     "strict": {
+      "diff": 217.01633480317332,
+      "ci_lo": 209.03538216985862,
+      "ci_hi": 224.99728743648802,
+      "rel_pct": 70.79894724174814,
+      "wilcoxon_p": 1.9073486328125e-06
+     },
+     "strict + 1 rover": {
+      "diff": 216.3826456802504,
+      "ci_lo": 208.28096664035206,
+      "ci_hi": 224.48432472014872,
+      "rel_pct": 70.44657725286581,
+      "wilcoxon_p": 1.9073486328125e-06
+     },
+     "always-linked strategic": {
+      "diff": -8.647921744982886,
+      "ci_lo": -13.050694153615531,
+      "ci_hi": -4.245149336350242,
+      "rel_pct": -1.6249717203441647,
+      "wilcoxon_p": 0.0005312427827532942
+     },
+     "G2 same threshold (ideal helper)": {
+      "diff": -6.50779235983843,
+      "ci_lo": -12.192656323747546,
+      "ci_hi": -0.8229283959293161,
+      "rel_pct": -1.227771997626378,
+      "wilcoxon_p": 0.014097354120504295
+     }
+    },
+    "tonnage_2028_vs": {
+     "strict": {
+      "diff": 207.23731459475403,
+      "ci_lo": 201.17336592470272,
+      "ci_hi": 213.30126326480533,
+      "rel_pct": 66.62896629760465
+     },
+     "strict + 1 rover": {
+      "diff": 206.5875442177682,
+      "ci_lo": 200.09292657435378,
+      "ci_hi": 213.0821618611826,
+      "rel_pct": 66.28159078697098
+     },
+     "always-linked strategic": {
+      "diff": -0.4,
+      "ci_lo": -1.5105780420791173,
+      "ci_hi": 0.7105780420791173,
+      "rel_pct": -0.0771204494017417
+     },
+     "G2 same threshold (ideal helper)": {
+      "diff": 6.522981825348756,
+      "ci_lo": -6.466570729625737,
+      "ci_hi": 19.51253438032325,
+      "rel_pct": 1.2746517493120344
+     }
+    },
+    "helper": {
+     "calls_per_run": 176.35,
+     "helps_per_run": 162.35,
+     "unserved_per_run": 1.45,
+     "natural_first_per_run": 12.55,
+     "strandings_per_run": 0.1,
+     "utilisation": 0.5248883764423111,
+     "busy_h_per_run": 4626.958599049159,
+     "busy_split_h_per_run": {
+      "driving": 66.73653333333336,
+      "parked_waiting_for_earth": 4235.522065715825,
+      "service": 324.7
+     },
+     "busy_split_share": {
+      "driving": 0.014423412681290845,
+      "parked_waiting_for_earth": 0.9154008999748184,
+      "service": 0.07017568734389064
+     },
+     "call_to_release_mean_h": 88.84963469856112,
+     "call_to_release_p90_h_median_of_runs": 307.3107980712315
+    }
+   }
+  ],
+  "references": {
+   "strict": {
+    "mean": {
+     "delivered_t_in_year": 306.5248047575556,
+     "delivered_bulk_t": 296.3,
+     "delivered_landed_t": 9.400280351873935,
+     "prio1_completion_share": 0.42735776730142705,
+     "delay_prio1_p90_censored_h": 5588.268003116429,
+     "blackout_wait_vehicle_h": 971.6935881257552
+    },
+    "n": 20,
+    "by_year": {
+     "2028": 311.0318621320174,
+     "2029": 300.42335637603384,
+     "2030": 315.01292958383647,
+     "2031": 299.6310709383345
+    }
+   },
+   "strict + 1 rover": {
+    "mean": {
+     "delivered_t_in_year": 307.1584938804785,
+     "delivered_bulk_t": 296.3,
+     "delivered_landed_t": 9.912560783778172,
+     "prio1_completion_share": 0.481810382625896,
+     "delay_prio1_p90_censored_h": 5315.303125617016,
+     "blackout_wait_vehicle_h": 1040.4952613464257
+    },
+    "n": 20,
+    "by_year": {
+     "2028": 311.6816325090032,
+     "2029": 301.06182307132775,
+     "2030": 316.20973965673636,
+     "2031": 299.6807802848468
+    }
+   },
+   "always-linked strategic": {
+    "mean": {
+     "delivered_t_in_year": 532.1890613057118,
+     "delivered_bulk_t": 499.6,
+     "delivered_landed_t": 29.281580096595217,
+     "prio1_completion_share": 0.958712474296393,
+     "delay_prio1_p90_censored_h": 601.398359550996,
+     "blackout_wait_vehicle_h": 0.0
+    },
+    "n": 20,
+    "by_year": {
+     "2028": 518.6691767267714,
+     "2029": 526.3264056149941,
+     "2030": 541.6696432889397,
+     "2031": 542.091019592142
+    }
+   }
+  },
+  "g2_headline_kept_by": [
+   "dedicated k=1, 24 h",
+   "dedicated k=2, 24 h",
+   "from fleet k=1, 24 h",
+   "dedicated k=1, 24 h, S=2 h"
+  ],
+  "g2_headline_lost_by": {
+   "dedicated k=1, 168 h": [
+    "2029",
+    "2030",
+    "2031"
+   ],
+   "from fleet k=1, 168 h": [
+    "2029",
+    "2030",
+    "2031"
+   ]
+  },
+  "g2_headline": "within 5 % of the always-linked strategic tonnage in every start year (Stage G2)"
  }
 }

@@ -1404,6 +1404,107 @@ def cmd_rescue(a) -> None:
               + ", ".join(f"{v:.3g}" for v in b["mean_diff_by_level"]))
 
 
+STAGE_H_FILE = "E21h_helper_r2.csv"
+HELPER_DESIGN = ("Stage H (B-62): Stage G2 with the helper's own time (lunarsim/comms.py 'helpers'). Plain strategic, "
+                 "all-supervised, DTE, 20 seeds, E21 year rule, common random numbers with Stage A. A strategic "
+                 "intervention wait longer than the call threshold calls a helper at BASE; it drives to the held "
+                 "sample's best parking point (parking-v1.json), waits there for that point's DTE link, serves S hours "
+                 "and drives home (first-fit booking; sent only when it ends the wait before its natural end). "
+                 "Dedicated helpers are extra vehicles; 'from fleet' takes one LTV out of the hauling fleet. References: "
+                 "strict (Stage A), strict with one extra rover (Stage B, no mast: the same vehicle count as a dedicated "
+                 "helper), Stage G2 at the same threshold (the ideal helper) and always-linked strategic (Stage A).")
+
+
+def _h_label(r) -> str:
+    who = "from fleet" if bool(r["helpers_from_fleet"]) else "dedicated"
+    s = f"{who} k={int(r['helpers_n'])}, {r['rescue_h']:g} h"
+    return s + (f", S={r['helpers_service_h']:g} h" if float(r["helpers_service_h"]) != 1.0 else "")
+
+
+def cmd_helper(a) -> None:
+    t0 = time.time()
+    df = load_round(a.results, "r2")
+    h = load_stage_g(a.results, STAGE_H_FILE)
+    g2 = load_stage_g(a.results, STAGE_G2_FILE)
+    A = df[(df["stage"] == "A") & (df["sensitivity"] == "none")]
+    B = df[(df["stage"] == "B") & (df["comms"] == "dte") & (df["policy"] == "strict") & (df["mast"] == "none")]
+    always = A[(A["mix"] == "supervised_strategic") & (A["comms"] == "always")]
+    refs = {"strict": select(A, p=0.0, mix="supervised_strict"), "strict + 1 rover": select(B, extra_rovers=1),
+            "always-linked strategic": always}
+    for k, v in refs.items():
+        if len(v) != 20:
+            raise SystemExit(f"reference {k!r}: {len(v)} rows, expected 20")
+    h["label"] = h.apply(_h_label, axis=1)
+    rows, cells = [], []
+    for lab, cell in h.groupby("label", sort=False):
+        th = float(cell["rescue_h"].iloc[0])
+        cref = dict(refs, **{"G2 same threshold (ideal helper)": g2[g2["rescue_h"] == th]})
+        for rl, ref in cref.items():
+            rows += _rows("helper", rl, lab, {"rescue_h": th, "start_year": "all"}, ref, cell, RESCUE_METRICS)
+            for y in YEARS:
+                rows += _rows("helper_by_year", rl, lab, {"rescue_h": th, "start_year": y}, ref[ref["start_year"] == y],
+                              cell[cell["start_year"] == y], RESCUE_METRICS)
+        busy = cell["helper_busy_h"]
+        al_y = {y: float(always.loc[always["start_year"] == y, "delivered_t_in_year"].mean()) for y in YEARS}
+        by_y = {y: float(cell.loc[cell["start_year"] == y, "delivered_t_in_year"].mean()) for y in YEARS}
+        ratio = {str(y): by_y[y] / al_y[y] for y in YEARS}
+        d = {rl: paired(ref, cell, "delivered_t_in_year") for rl, ref in cref.items()}
+        d28 = {rl: paired(ref[ref["start_year"] == 2028], cell[cell["start_year"] == 2028], "delivered_t_in_year")
+               for rl, ref in cref.items()}
+        cells.append({
+            "label": lab, "helpers": int(cell["helpers_n"].iloc[0]), "from_fleet": bool(cell["helpers_from_fleet"].iloc[0]),
+            "call_threshold_h": th, "service_h": float(cell["helpers_service_h"].iloc[0]),
+            "n_haulers": int(cell["n_haulers"].iloc[0]), "n_vehicles": int(cell["n_vehicles"].iloc[0]), "n": int(len(cell)),
+            "mean": {k: float(cell[k].mean()) for k in RESCUE_METRICS},
+            "censored_p90_median_h": float(cell["delay_prio1_p90_censored_h"].median()),
+            "by_year": {str(y): {k: float(cell.loc[cell["start_year"] == y, k].mean()) for k in
+                                 ("delivered_t_in_year", "delivered_landed_t", "prio1_completion_share")} for y in YEARS},
+            "share_of_always_linked_by_year": ratio,
+            "within_5pct_of_always_linked_every_year": bool(min(ratio.values()) >= 0.95),
+            "years_below_95pct_of_always_linked": [y for y, r in ratio.items() if r < 0.95],
+            "tonnage_vs": {rl: {k: v[k] for k in ("diff", "ci_lo", "ci_hi", "rel_pct", "wilcoxon_p")} for rl, v in d.items()},
+            "tonnage_2028_vs": {rl: {k: v[k] for k in ("diff", "ci_lo", "ci_hi", "rel_pct")} for rl, v in d28.items()},
+            "helper": {"calls_per_run": float(cell["helper_calls"].mean()), "helps_per_run": float(cell["helper_helps"].mean()),
+                       "unserved_per_run": float(cell["helper_unserved"].mean()),
+                       "natural_first_per_run": float(cell["helper_natural_first"].mean()),
+                       "strandings_per_run": float(cell["helper_strandings"].mean()),
+                       "utilisation": float(cell["helper_utilisation"].mean()),
+                       "busy_h_per_run": float(busy.mean()),
+                       "busy_split_h_per_run": {"driving": float(cell["helper_drive_h"].mean()),
+                                                "parked_waiting_for_earth": float(cell["helper_park_h"].mean()),
+                                                "service": float(cell["helper_service_h"].mean())},
+                       "busy_split_share": {"driving": float(cell["helper_drive_h"].sum() / busy.sum()),
+                                            "parked_waiting_for_earth": float(cell["helper_park_h"].sum() / busy.sum()),
+                                            "service": float(cell["helper_service_h"].sum() / busy.sum())},
+                       "call_to_release_mean_h": float(cell["helper_call_to_release_mean_h"].mean()),
+                       "call_to_release_p90_h_median_of_runs": float(cell["helper_call_to_release_p90_h"].median())},
+        })
+    table = pd.DataFrame(rows)
+    table.to_csv(os.path.join(a.results, "table_E21h_helper_r2.csv"), index=False, lineterminator="\n")
+    keep = [c["label"] for c in cells if c["within_5pct_of_always_linked_every_year"]]
+    lost = {c["label"]: c["years_below_95pct_of_always_linked"] for c in cells if not c["within_5pct_of_always_linked_every_year"]}
+    doc = {"design": HELPER_DESIGN, "cells": cells,
+           "references": {k: {"mean": {m: float(v[m].mean()) for m in RESCUE_METRICS if m in v}, "n": int(len(v)),
+                              "by_year": {str(y): float(v.loc[v["start_year"] == y, "delivered_t_in_year"].mean())
+                                          for y in YEARS}} for k, v in refs.items()},
+           "g2_headline_kept_by": keep, "g2_headline_lost_by": lost,
+           "g2_headline": "within 5 % of the always-linked strategic tonnage in every start year (Stage G2)"}
+    path = os.path.join(a.results, "E21_fit_r2.json")
+    with open(path, encoding="utf-8") as fh:
+        fit = json.load(fh)
+    fit["helper"] = _json(doc)
+    with open(path, "w", encoding="utf-8", newline="\n") as fh:
+        json.dump(fit, fh, indent=1)
+        fh.write("\n")
+    print(f"table_E21h_helper_r2.csv ({len(table)} rows) and E21_fit_r2.json 'helper' written ({time.time() - t0:.0f} s)")
+    for c in cells:
+        hp = c["helper"]
+        print(f"  {c['label']:<32} {c['mean']['delivered_t_in_year']:.1f} t; by year "
+              + " / ".join(f"{c['by_year'][str(y)]['delivered_t_in_year']:.1f}" for y in YEARS)
+              + f"; min share of always-linked {min(c['share_of_always_linked_by_year'].values()):.2%}; helps "
+              f"{hp['helps_per_run']:.1f}/run, utilisation {hp['utilisation']:.2%}, parked {hp['busy_split_share']['parked_waiting_for_earth']:.2%}")
+
+
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -1428,6 +1529,8 @@ def main(argv=None) -> None:
     p.add_argument("--results", default=RESULTS)
     p.add_argument("--boot", type=int, default=N_BOOT_R2)
     p.add_argument("--scope", default="never_linked", choices=tuple(RESCUE_RUNS))
+    p = sub.add_parser("helper", help="Stage H (B-62) -> table_E21h_helper_r2.csv and E21_fit_r2.json 'helper'")
+    p.add_argument("--results", default=RESULTS)
     p = sub.add_parser("pool2028", help="B-60 N7: pool-full share in the 2028 seeds of the bounded rule (a few per call)")
     p.add_argument("--results", default=RESULTS)
     p.add_argument("--seeds", default="0,4,8,12,16")
@@ -1440,7 +1543,7 @@ def main(argv=None) -> None:
     if a.cmd == "pool2028" and a.max_seconds > 0:
         faulthandler.dump_traceback_later(a.max_seconds, exit=True)
     {"demand": cmd_demand, "fit": cmd_fit, "rounds": cmd_rounds, "bounded": cmd_bounded, "rescue": cmd_rescue,
-     "pool2028": cmd_pool2028}[a.cmd](a)
+     "pool2028": cmd_pool2028, "helper": cmd_helper}[a.cmd](a)
 
 
 if __name__ == "__main__":

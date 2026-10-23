@@ -283,7 +283,15 @@ class Simulation:
 
     def _build_fleet(self):
         owners_with_fleet = []
-        for i, (owner, cls, autonomy, stds) in enumerate(self.sc.fleet):
+        fleet = list(self.sc.fleet)
+        hp = self.comms.helpers if self.comms is not None else None
+        if hp is not None and hp["from_fleet"]:     # B-62: the helpers leave the hauling fleet (last ones of their class)
+            idx = [i for i, f in enumerate(fleet) if f[1] == hp["class"]]
+            if len(idx) < hp["n"]:
+                raise ValueError(f"comms helpers from_fleet: the fleet has {len(idx)} {hp['class']} vehicles, needs {hp['n']}")
+            drop = set(idx[-hp["n"]:])
+            fleet = [f for i, f in enumerate(fleet) if i not in drop]
+        for i, (owner, cls, autonomy, stds) in enumerate(fleet):
             v = Vehicle(i, owner, VEHICLE_CLASSES[cls], "DEPOT", set(stds.split("|")), autonomy)
             v.next_fault_h = self.rng_ops.exponential(v.cls.mtbf_h * self.sc.mtbf_mult)
             self.vehicles.append(v)

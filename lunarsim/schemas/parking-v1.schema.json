@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://azizjonrahimov.github.io/Lunar-Haul/schemas/parking-v1.schema.json",
   "title": "lunarsim-parking v1",
-  "description": "Parking points for a helper that must see both Earth (direct, any_part, hourly) and a rover held at a route sample of the engine's samples file (writer tools/comms/parking.py, B-61). samples[s].top ranks the working points of sample s (line of sight, reachable, linked in some hour when s is not) by the share of s's basis hours linked within 24 h, then 168 h, then the shortest drive; top[0] is the best parking point. Shares are [within 0 h, within 24 h, within 168 h]. points[] holds every ranked point once: route points refer to their sample (whose windows are in the samples file), grid points carry their own hourly windows ([s0, l0, g1, l1, ...] hour indices from time.start_utc).",
+  "description": "Parking points for a helper that must see both Earth (direct, any_part, hourly) and a rover held at a route sample of the engine's samples file (writer tools/comms/parking.py, B-61). samples[s].top ranks the working points of sample s (line of sight, reachable, linked in some hour when s is not) by the share of s's basis hours (tallied calls, else dark hours) linked within 24 h, then 168 h, then the share of its dark hours linked within 168 h (dark_share), then the shortest drive; top[0] is the best parking point. Shares are [within 0 h, within 24 h, within 168 h]. points[] holds every ranked point once: route points refer to their sample (whose windows are in the samples file), grid points carry their own hourly windows ([s0, l0, g1, l1, ...] hour indices from time.start_utc).",
   "type": "object",
   "required": ["format", "version", "terrain", "description", "time", "criterion", "mode", "antenna_m", "delays_h",
                "rules", "samples_file", "inputs", "set_h", "points", "samples", "no_working_point", "generated"],
@@ -90,8 +90,9 @@
             "maxItems": 5,
             "items": {
               "type": "object",
-              "required": ["point", "share", "drive_km", "dist_m", "clear_m"],
+              "required": ["point", "share", "dark_share", "drive_km", "dist_m", "clear_m"],
               "properties": {"point": {"type": "integer", "minimum": 0}, "share": {"$ref": "#/$defs/share"},
+                             "dark_share": {"$ref": "#/$defs/share"},
                              "drive_km": {"type": "number", "minimum": 0}, "dist_m": {"type": "number", "minimum": 0},
                              "clear_m": {"type": "number", "minimum": 0, "description": "line-of-sight clearance (m, rounded to mm; > 0 before rounding)"}}
             }

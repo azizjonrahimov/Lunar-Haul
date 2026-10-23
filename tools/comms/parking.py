@@ -3,13 +3,20 @@
     python tools/comms/parking.py tally         # Stage G2's 0 h and 168 h cells rerun with a per-sample tally of the
                                                 # capped intervention waits (cached; nothing written to results CSVs)
     python tools/comms/parking.py candidates    # every set-H sample: route samples within 3 km (line of sight, link,
-                                                # network drive); the samples left without a route-sample solution
-    python tools/comms/parking.py grid --part 0 --parts 4   # off-route 40 m grid points within 1.5 km of those
-                                                # samples: line of sight, reachability, horizon masks, hourly series
+                                                # network drive)
+    python tools/comms/parking.py gridpre       # 40 m grid points within 1.5 km of every set-H sample: line of sight
+                                                # to each, reachability (A* component of BASE)
+    python tools/comms/parking.py grid --part i --parts 6   # their horizon masks and hourly series (i = 0..5, ~5 min each)
+    python tools/comms/parking.py astar         # A* route length from each grid point's nearest route sample
     python tools/comms/parking.py parking       # -> data/comms/connecting_ridge/parking-v1.json, results/E21_parking.json
+                                                # (resumable: rerun until it writes the files)
+
+Each step is single process with --max-seconds 540 (default); every step caches in .cache/comms/parking_*.
 
 Set H (the samples where help is needed): every route sample of the engine's samples file (earth_link-v1-samples,
 2,421 samples) where a capped wait was tallied, plus the never-linked samples and the 2028 dark sample #188.
+Candidates for every sample of H: the route samples within 3 km and the 40 m grid points within 1.5 km (all of H,
+no trigger).
 
 A parking point p works for a held sample s when
 - terrain line of sight from p to s, both antennas 2.5 m above the ground: Terrain.los_clearance_m > 0 (also
@@ -19,9 +26,11 @@ A parking point p works for a held sample s when
 - it sees Earth when s does not: DTE-linked (any_part, hourly) in at least one hour 2028-2031 in which s is unlinked
   (the task's question is a point that sees both Earth and the held rover).
 Drive distances: on the route network, the engine's leg routes (consecutive samples, each leg scaled to its A*
-route length); off-route points add the A* leg from their nearest route sample. Ranking (LEAD, B-61): the share of
-s's calls linked within 24 h, then within 168 h, then the share of s's dark hours linked within 168 h, then the
-shortest drive from s; the first is the best parking point.
+route length); off-route points add the A* leg from their nearest route sample. Ranking of the working points (LEAD,
+B-61): the share of s's calls (tallied capped waits at their call hour = wait start + rescue_h; untallied samples:
+s's dark hours 2028-2031) linked within 24 h, then within 168 h, then the share of s's dark hours linked within
+168 h, then the shortest drive from s; the first is the best parking point, the file keeps the top 5 and the union
+coverage of all working points.
 """
 from __future__ import annotations
 
