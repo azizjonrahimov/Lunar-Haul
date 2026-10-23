@@ -48,7 +48,7 @@ CHROME = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 RAW = {"A": "E21a_comms_autonomy_r2.csv", "A2": "E21a2_operators_r2.csv", "B": "E21b_breakeven_r2.csv",
        "C": "E21c_pads_criterion_r2.csv", "D": "E21d_sun_r2.csv", "E": "E21e_sensitivity_r2.csv",
        "F": "E21f_bounded_r2.csv", "G": "E21g_rescue_r2.csv", "G2": "E21g2_rescue_any_r2.csv",
-       "H": "E21h_helper_r2.csv"}
+       "H": "E21h_helper_r2.csv", "J": "E21j_years_r2.csv"}
 MINUS, NB, PCT = "&minus;", "&nbsp;", "&#8239;%"
 MIX_LABEL = {"teleop_4s": "Teleoperated (4&nbsp;s round trip)", "default": "Reference mix",
              "supervised_strict": "Supervised, strict", "supervised_strategic": "Supervised, strategic",
@@ -766,6 +766,64 @@ def values(r: R):
     ex = [dg["by_year"][y]["excess_h_per_run"] for y in ("2028", "2029")]
     assert abs(ex[0] - ex[1]) / ex[0] < 0.01, "5.4: the same held hours in 2028 and 2029"
     V["R1-H-168-HELD"] = listing([num(v) for v in ex])
+    pm = dg["pool_by_month"]["2029"]
+    V["R1-H-168-POOL-AUT"] = rng_txt([100 * v for v in pm["helper_168h"]["pool_full_share_by_month"][9:]], lambda v: num(v), PCT)
+    assert max(pm["g2_168h"]["pool_full_share_by_month"]) == 0, "5.4: Stage G2's pool is never full in 2029"
+    V["R1-H-168-POOL-RHO"] = num(pm["loss_vs_pool_full_excess_spearman"]["rho"], 2)
+    V["R1-H-168-POOL-P"] = num(pm["loss_vs_pool_full_excess_spearman"]["p"], 2)
+
+    # later years (Stage J, B-63)
+    LY = json.load(open(os.path.join(RES, "E21_later_years.json"), encoding="utf-8"))
+    ly = f["later_years"]
+    MON = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
+           "November", "December"]
+    spells = LY["dark_spells_188_over_180_days"]["spells"]
+    full = [s_ for s_ in spells if not s_["censored"]]
+    V["R1-J-SPELL-STARTS"] = listing([f"{MON[int(s_['start'][5:7]) - 1]} {s_['start'][:4]}" for s_ in spells])
+    V["R1-J-SPACING"] = listing([num(v, 2) for v in LY["dark_spells_188_over_180_days"]["start_spacing_yr"]])
+    V["R1-J-SPELL-LEN"] = rng_txt([s_["days"] / 365.25 for s_ in full], lambda v: num(v, 1), f"{NB}years")
+    pa = LY["period_188"]["annual"]
+    assert pa["ci95_yr"][0] < 5.997 < pa["ci95_yr"][1], "5.4: the period's interval holds the 6.0-year beat"
+    V["R1-J-PERIOD"] = f"{num(pa['best_period_yr'], 2)}{NB}years"
+    V["R1-J-PERIOD-CI"] = f"{num(pa['ci95_yr'][0], 2)}&ndash;{num(pa['ci95_yr'][1], 2)}{NB}years"
+    yrs_all = sorted(LY["dark_sample_188"]["linked_h_by_year"])
+    V["R1-J-SPAN"] = f"{yrs_all[-1]}"
+    V["R1-J-BASE-MAXEL"] = rng_txt([v["max_upper_limb_deg"] for v in LY["earth_at_base_by_year"].values()],
+                                   lambda v: num(v, 2), "&deg;")
+    dk, ot = ly["strategic_whole_dark_years"], ly["strategic_other_years"]
+    assert not ly["strategic_dark_to_file_end_years"]["years"], "Stage J: no year runs into the file's end"
+    runs = []
+    for y in dk["years"]:
+        if runs and y == runs[-1][-1] + 1:
+            runs[-1].append(y)
+        else:
+            runs.append([y])
+    V["R1-J-DARK-YEARS"] = listing([f"{r_[0]}&ndash;{r_[-1]}" if len(r_) > 1 else f"{r_[0]}" for r_ in runs])
+    V["R1-J-DARK-N"] = f"{len(dk['years'])}"
+    V["R1-J-OTHER-N"] = words(len(ot["years"]))
+    n_j = len(dk["years"]) + len(ot["years"])
+    V["R1-J-N-YEARS"] = words(n_j)
+    V["R1-J-DARK-T"], V["R1-J-OTHER-T"] = t_(dk["mean_t"]), t_(ot["mean_t"])
+    V["R1-J-DARK-RANGE"] = rng_txt(dk["range_t"], num, NB + "t")
+    assert max(dk["range_t"]) < min(ot["range_t"]), "5.4: every whole-dark year is below every other year"
+    V["R1-J-RHO"] = num(ly["strategic_vs_188_linked_h_spearman"]["rho"], 2)
+    byp = ly["by_policy_year"]
+    V["R1-J-STRICT-T"] = rng_txt([v["mean_t"] for v in byp["strict"].values()], num, NB + "t")
+    V["R1-J-ALWAYS-T"] = t_(ly["always_linked_t"])
+    assert ly["help_within_a_week_holds_every_year"]["helper_24h"] and not ly["years_below_95pct_of_always_linked"]["helper_24h"]
+    V["R1-J-HELPER-RANGE"] = rng_txt([100 * v["share_of_always_linked"] for v in byp["helper_24h"].values()],
+                                     lambda v: num(v, 1), PCT)
+    gain = [ly["paired_vs_strategic_by_year"]["helper_24h"][str(y)]["diff"] for y in dk["years"]]
+    V["R1-J-HELP-GAIN"] = rng_txt(gain, num, NB + "t")
+    g2b = ly["years_below_95pct_of_always_linked"]["g2_168h"]
+    V["R1-J-G2-OK"] = f"{n_j - len(g2b)}"
+    V["R1-J-G2-BELOW"] = listing([f"{sh(byp['g2_168h'][str(y)]['share_of_always_linked'], 1)} in {y}" for y in g2b])
+    nl = LY["never_linked"]
+    hrs = list(nl["v1_never_link_hours_2032_2050"].values())
+    V["R1-J-NEVER-SOME-CAP"] = words(len(hrs)).capitalize()
+    V["R1-J-NEVER-HOURS"] = rng_txt(hrs, num, NB + "h")
+    V["R1-J-NEVER-N"] = f"{nl['all_2028_2050']}"
+    V["R1-J-HELPER-UTIL"] = rng_txt([100 * v["helper_utilisation"] for v in byp["helper_24h"].values()], num, PCT)
 
     # ---- 5.5 break-even -------------------------------------------------------------------------------------------
     bc = lambda p, pol, n, mast="none": _match(r.c[r.c["stage"] == "B"], p=p, policy=pol, extra_rovers=n, mast=mast).iloc[0]
