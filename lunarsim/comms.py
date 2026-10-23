@@ -134,6 +134,58 @@ def validate(doc: Dict[str, Any]) -> List[str]:
     return errs
 
 
+def validate_samples(doc: Dict[str, Any]) -> List[str]:
+    """Structural check of a samples file, v1 or v2 ([] = valid): every series decodes to sorted windows inside the
+    series, every sample names one series per criterion, every leg (and in v2 every route per lighting) lists valid
+    sample ids from the leg's first site to its last."""
+    errs: List[str] = []
+    if doc.get("format") != EARTH_LINK_SAMPLES_FORMAT or doc.get("version") not in (1, 2):
+        return [f"format/version must be {EARTH_LINK_SAMPLES_FORMAT} v1 or v2"]
+    try:
+        n = int(doc["time"]["n"])
+        crit = list(doc["criteria"])
+        samples, series = doc["samples"], doc["series"]
+    except (KeyError, TypeError, ValueError):
+        return ["time.n, criteria, samples and series are required"]
+    if not crit or crit != list(CRITERIA[:len(crit)]):
+        errs.append(f"criteria must be a prefix of {list(CRITERIA)}")
+    for k, code in enumerate(series):
+        if not isinstance(code, list) or len(code) % 2 or any(not isinstance(v, int) or v < 0 for v in code):
+            errs.append(f"series[{k}]: window code must be an even-length list of non-negative integers")
+            continue
+        w = decode_windows(code)
+        if len(w) and (w[-1, 1] > n or np.any(w[:, 1] <= w[:, 0]) or np.any(w[1:, 0] < w[:-1, 1])):
+            errs.append(f"series[{k}]: windows must be sorted, non-empty, non-overlapping and inside [0, {n}]")
+    for i, s in enumerate(samples):
+        w = s.get("w")
+        if not isinstance(w, list) or len(w) != len(crit) or any(not isinstance(v, int) or not 0 <= v < len(series)
+                                                                 for v in w):
+            errs.append(f"samples[{i}].w: one series index per criterion")
+
+    def check_ids(where, leg, ids):
+        if not isinstance(ids, list) or any(not isinstance(v, int) or not 0 <= v < len(samples) for v in ids):
+            errs.append(f"{where}: sample ids out of range")
+            return
+        a, _, b = leg.partition("->")
+        if ids and (samples[ids[0]].get("id") != a or samples[ids[-1]].get("id") != b):
+            errs.append(f"{where}: must run from sample {a} to sample {b}")
+
+    for leg, ids in doc.get("legs", {}).items():
+        check_ids(f"legs.{leg}", leg, ids)
+    if doc["version"] == 2:
+        lights = doc.get("lighting") or []
+        routes = doc.get("routes") or {}
+        if set(routes) != set(doc.get("legs", {})):
+            errs.append("routes must list the same legs as legs")
+        for leg, per in routes.items():
+            if set(per) != set(lights):
+                errs.append(f"routes.{leg}: one list per lighting {lights}")
+                continue
+            for L, ids in per.items():
+                check_ids(f"routes.{leg}.{L}", leg, ids)
+    return errs
+
+
 # ---------------------------------------------------------------------------------------------------------
 # reader
 # ---------------------------------------------------------------------------------------------------------

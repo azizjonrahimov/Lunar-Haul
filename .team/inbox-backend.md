@@ -659,7 +659,7 @@ FRONTEND's F-37 page loads the engine as classic scripts (`simulator/engine/*.js
 first load). Teach `tools/ci/budgets.py pages` to count classic `<script src>` files and declared lazy chunks for a
 page (a `lazy` list in budgets.json, reported separately, budgeted at today + 25 %), set the simulator entry, test.
 
-## B-52 [IN PROGRESS] Earth-link samples per lighting route
+## B-52 [DONE 18:32] Earth-link samples per lighting route
 F-35 draws Earth-link posts from the night (slope-only) route samples; lighting routes differ (BASE→PSR at 270°). Add
 samples for every B-32 route (all five lightings) to the link pipeline (masks + link stages), a samples file v2 or an
 extra block, keep the engine's night-route rule unchanged (byte-identical E21), and tell FRONTEND the keys.
@@ -670,7 +670,7 @@ optional `label` (≤ 40 characters, plain words) to `numbers.*` in story-v1 (sc
 `resolved/*.json`), draft labels for the four stories' numbers, rebuild resolved files, tests. Tell FRONTEND (via
 LEAD) when done so the page drops its map.
 
-## B-54 [OPEN] (after B-52; light, one-year runs) Two gallery scenes for the Earth story
+## B-54 [IN PROGRESS] Two gallery scenes for the Earth story
 The Earth's-horizon story (data/stories/earth-horizon.json, round 2) needs scenes that match its text. Add to
 `experiments/phase4/gallery.py` (group "earth"), build and export them like the others, 20-seed headlines included:
 - `P2-comms-relay-0.1`: "A relay a tenth of the time" — dte+relay at p = 0.1, all supervised rovers, strict policy

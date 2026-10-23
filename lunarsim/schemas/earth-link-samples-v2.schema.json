@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://azizjonrahimov.github.io/Lunar-Haul/schemas/earth-link-samples-v2.schema.json",
+  "title": "lunarsim-earth-link-samples v2",
+  "description": "Hourly direct-to-Earth windows at points about 100 m apart along every rover route of a terrain pack, for every lighting route of routes-v1.json (writer tools/comms/earth_link.py samples2, B-52; reader lunarsim/comms.py EarthLink.load_samples, whose validate_samples() also checks that every series decodes inside the time axis and every route runs from its first site's sample to its last). Version 2 is the v1 file (samples, series and legs unchanged) with the lighting routes appended; the -lite variant keeps the first criterion only. Windows: [s0, l0, g1, l1, ...] hour indices, start0 = s0, end0 = start0 + l0 (exclusive), start1 = end0 + g1.",
+  "type": "object",
+  "required": ["format", "version", "terrain", "time", "criteria", "lighting", "samples", "series", "legs", "routes"],
+  "properties": {
+    "format": {"const": "lunarsim-earth-link-samples"},
+    "version": {"const": 2},
+    "terrain": {"type": "string"},
+    "time": {
+      "type": "object",
+      "required": ["start_utc", "step_min", "n"],
+      "properties": {"start_utc": {"type": "string"}, "step_min": {"type": "number", "exclusiveMinimum": 0}, "n": {"type": "integer", "minimum": 1}}
+    },
+    "criteria": {"type": "array", "minItems": 1, "items": {"enum": ["any_part", "centre+0.5deg", "centre+2deg"]}},
+    "lighting": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+    "samples": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["xy_m", "id", "mast_los", "w"],
+        "additionalProperties": false,
+        "properties": {
+          "xy_m": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "number"}, "description": "terrain pack local frame (m); route samples sit on 20 m post centres"},
+          "id": {"type": ["string", "null"], "description": "site or pad id for a leg's end point, null for a route sample"},
+          "mast_los": {"type": "boolean", "description": "line of sight to the 10 m mast at BASE within 10 km"},
+          "w": {"type": "array", "minItems": 1, "items": {"type": "integer", "minimum": 0}, "description": "series index per criterion"}
+        }
+      }
+    },
+    "series": {"type": "array", "items": {"$ref": "#/$defs/windows"}},
+    "legs": {"type": "object", "additionalProperties": {"$ref": "#/$defs/ids"}, "description": "the engine's lists (v1, B-40 routes)"},
+    "routes": {
+      "type": "object",
+      "additionalProperties": {"type": "object", "additionalProperties": {"$ref": "#/$defs/ids"}},
+      "description": "routes[leg][lighting]: sample ids along the routes-v1.json route, in route order, end points included; [] when the leg has no route in that lighting"
+    },
+    "lengths_m": {"type": "object"},
+    "night_legs_off_v1": {"type": "array", "items": {"type": "string"}},
+    "v1_prefix": {"type": "object", "required": ["file", "sha256", "n_samples", "n_series"]},
+    "routes_file": {"type": "object", "required": ["file", "sha256"]},
+    "variant": {"type": "string"},
+    "note": {"type": "string"},
+    "generated": {"type": "object"}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "windows": {"type": "array", "items": {"type": "integer", "minimum": 0}},
+    "ids": {"type": "array", "items": {"type": "integer", "minimum": 0}}
+  }
+}

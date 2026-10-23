@@ -190,3 +190,97 @@ def test_samples_file_agrees_with_the_leg_windows():
                 checked += 1
     assert checked > 10
     assert el.sample_wait_h(el.leg_samples("BASE->ISRU")[-1], 10.0) == math.inf     # ISRU never sees Earth
+
+
+# ------------------------------------------------------------------------------------------------ B-52 lighting routes
+SAMPLES_V2 = os.path.join(ROOT, "data", "comms", "connecting_ridge", "earth_link-v2-samples.json.gz")
+LITE_V2 = SAMPLES_V2.replace(".json.gz", "-lite.json.gz")
+
+
+def _gz(path):
+    import gzip
+    with open(path, "rb") as f:
+        return json.loads(gzip.decompress(f.read()))
+
+
+def test_route_ids_snap_dedupe_and_keep_the_sites():
+    cells = {}
+
+    def add(cx, cy):
+        return cells.setdefault((cx, cy), 100 + len(cells))
+
+    poly = np.array([[5.0, 5.0], [5.0, 405.0], [255.0, 405.0]])     # 650 m, one corner
+    ids = E.route_ids(poly, 0, 1, add)
+    assert ids[0] == 0 and ids[-1] == 1 and len(ids) == 8          # 7 steps of ~93 m: 6 interior samples
+    assert all(a != b for a, b in zip(ids, ids[1:]))
+    assert all(cx % 20 == 10 and cy % 20 == 10 for cx, cy in cells)
+    assert E.cell_of(0.0, 19.999) == (10.0, 10.0) and E.cell_of(-0.1, 20.0) == (-10.0, 30.0)
+    assert E.route_ids(np.array([[5.0, 5.0], [5.0, 6.0]]), 0, 1, add) == [0, 1]
+
+
+def test_validate_samples_catches_bad_routes():
+    doc = {"format": C.EARTH_LINK_SAMPLES_FORMAT, "version": 2, "time": {"n": 10}, "criteria": ["any_part"],
+           "lighting": ["0", "night"], "series": [[0, 4], [2, 3]],
+           "samples": [{"xy_m": [0, 0], "id": "A", "mast_los": True, "w": [0]},
+                       {"xy_m": [10, 10], "id": None, "mast_los": False, "w": [1]},
+                       {"xy_m": [20, 20], "id": "B", "mast_los": False, "w": [0]}],
+           "legs": {"A->B": [0, 1, 2]}, "routes": {"A->B": {"0": [0, 2], "night": [0, 1, 2]}}}
+    assert C.validate_samples(doc) == []
+    bad = json.loads(json.dumps(doc))
+    bad["routes"]["A->B"]["0"] = [1, 2]
+    assert any("from sample A" in e for e in C.validate_samples(bad))
+    bad = json.loads(json.dumps(doc))
+    bad["routes"]["A->B"].pop("night")
+    assert any("one list per lighting" in e for e in C.validate_samples(bad))
+    bad = json.loads(json.dumps(doc))
+    bad["series"][1] = [8, 5]
+    assert any("series[1]" in e for e in C.validate_samples(bad))
+    bad = json.loads(json.dumps(doc))
+    bad["samples"][1]["w"] = [7]
+    assert any("samples[1].w" in e for e in C.validate_samples(bad))
+
+
+def test_samples_v2_extends_v1_unchanged():
+    """v2 = the v1 samples file as a prefix (the engine's ids, series and leg lists) + the lighting routes."""
+    if not os.path.isfile(SAMPLES_V2):
+        pytest.skip("earth_link-v2-samples.json.gz not generated")
+    v1_path = os.path.join(os.path.dirname(SAMPLES_V2), "earth_link-v1-samples.json.gz")
+    v1, v2 = _gz(v1_path), _gz(SAMPLES_V2)
+    assert C.validate_samples(v2) == []
+    assert v2["v1_prefix"]["sha256"] == E.sha256(v1_path)
+    n1, s1 = len(v1["samples"]), len(v1["series"])
+    assert v2["samples"][:n1] == v1["samples"] and v2["series"][:s1] == v1["series"]
+    assert v2["legs"] == v1["legs"] and v2["time"] == v1["time"] and v2["criteria"] == v1["criteria"]
+    assert v2["lighting"] == ["0", "90", "180", "270", "night"]
+    assert all(all(per[L] for L in v2["lighting"]) for per in v2["routes"].values())
+    assert set(v2["night_legs_off_v1"]) == {k for k, per in v2["routes"].items() if per["night"] != v2["legs"][k]}
+    lite = _gz(LITE_V2)
+    assert C.validate_samples(lite) == [] and lite["criteria"] == ["any_part"]
+    assert lite["routes"] == v2["routes"] and lite["legs"] == v2["legs"]
+    for i in range(0, len(v2["samples"]), 97):
+        assert lite["series"][lite["samples"][i]["w"][0]] == v2["series"][v2["samples"][i]["w"][0]]
+
+
+def test_samples_v2_lie_on_the_routes_v1_routes():
+    """Interior samples sit on the 20 m cell centre nearest the routes-v1 route (<= 10 sqrt 2 m off it)."""
+    if not os.path.isfile(SAMPLES_V2):
+        pytest.skip("earth_link-v2-samples.json.gz not generated")
+    from lunarsim.rover.routes import decode_geom
+    v2 = _gz(SAMPLES_V2)
+    rpath = os.path.join(ROOT, v2["routes_file"]["file"])
+    rdoc = json.load(open(rpath, encoding="utf-8"))
+    assert v2["routes_file"]["sha256"] == E.sha256(rpath)            # rebuild samples2 after routes-v1 changes
+    for leg in ("BASE->PSR", "PSR->BASE", "BASE->POWER", "PAD_A@1->DEPOT", "SCI_1->ISRU"):
+        for L in v2["lighting"]:
+            g = decode_geom(rdoc["geoms"][rdoc["legs"][leg][L]["geom"]])
+            A = np.stack([g["x"][:-1], g["y"][:-1]], 1)
+            AB = np.stack([np.diff(g["x"]), np.diff(g["y"])], 1)
+            L2 = np.maximum((AB ** 2).sum(1), 1e-12)
+            ids = v2["routes"][leg][L]
+            a, b = leg.split("->")
+            assert v2["samples"][ids[0]]["id"] == a and v2["samples"][ids[-1]]["id"] == b
+            for i in ids[1:-1]:
+                p = np.asarray(v2["samples"][i]["xy_m"], float)
+                t = np.clip(((p - A) * AB).sum(1) / L2, 0.0, 1.0)
+                assert np.hypot(*(A + t[:, None] * AB - p).T).min() <= 10 * math.sqrt(2) + 0.1, (leg, L, i)
+            assert v2["lengths_m"][leg][L] == pytest.approx(g["s"][-1], abs=0.1)

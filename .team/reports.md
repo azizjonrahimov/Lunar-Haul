@@ -3909,3 +3909,35 @@ memoryless_LARGE pass 0.972 box 0.972 {'none': 486, 'sensor': 11, 'timeout': 3} 
   - Tests 11/11; build OK; `budgets.py pages`: OK (stories 11.2 of 60 kB JS). Servers stopped by PID; tab closed.
 - **Your other decisions (relay visual, B-54 scenes, pads shot):** these are data only. The pads shot and the reworded relay visual are live through the rebuilt resolved file. When B-54 lands, the step's `scene` switch needs nothing from me.
 - **Next:** the F-40 accessibility walk (keyboard, screen-reader mirror, reduced motion, contrast on every page).
+
+## B-52 DONE 18:32 | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**What:** Earth-link samples along every B-32 route (all five lightings) -> `earth_link-v2-samples.json.gz` (v2), plus a lite copy for the site. The engine still reads the v1 files (untouched), so E21 is byte-identical.
+
+**Files**
+- `tools/comms/earth_link.py`: new steps `points2`, `masks2`, `series2`, `samples2`; helpers `cell_of`, `route_ids`, `point_link`, `sees_mast` (step_link now calls the last two with the same arithmetic; v1 outputs not regenerated); docstring corrected (see question 1).
+- `lunarsim/comms.py`: `validate_samples()` only (v1 and v2 samples files); no run path touched.
+- `lunarsim/schemas/earth-link-samples-v2.schema.json` (new); `tools/ci/budgets.py`: schema targets for both new files.
+- `tests/test_comms_data.py`: +4 tests (synthetic snapping/dedupe; validator catches bad routes; v2 = v1 prefix unchanged + lite consistent; interior samples lie <= 10 sqrt 2 m from the routes-v1 polyline, end points are the leg's sites, `routes_file` sha matches).
+- **Data for LEAD to commit:** `data/comms/connecting_ridge/earth_link-v2-samples.json.gz` (1,389 KB; 3 criteria) and `earth_link-v2-samples-lite.json.gz` (638 KB; any_part only, for the site).
+
+**Numbers:** 7,016 samples (the 2,421 v1 samples + 4,595 new 20 m cells), 13,959 distinct series (lite 5,866); 910 routes = 182 legs x 5 lightings, none empty; median 28 samples per route.
+
+**How to test**
+- `.venv/Scripts/python -m pytest -q tests/test_comms_data.py tests/test_comms_engine.py tests/test_ci_budgets.py` -> 38 passed.
+- `.venv/Scripts/python tools/ci/budgets.py schemas` -> 37 files, 0 problems.
+- Rebuild (single process, needs `.cache/comms` from B-40): `points2` (1 min) -> `masks2 --part 0|1 --parts 2` (155 s each) -> `series2 --part 0|1 --parts 2` (133 s each) -> `samples2` (7 s; recomputes 40 random v1 samples, identical). A second `samples2` gives byte-identical files. Peak RSS 297 MB.
+- E21 identity: v1 link files unchanged (`git status data/comms` shows only the two new files); 3 r2 cells recomputed (supervised_strict dte, supervised_strategic dte, default dte+relay 0.1) -> 0 differing columns.
+
+**FRONTEND (F-35) must know**
+- Stage `earth_link-v2-samples-lite.json.gz` instead of v1 (prepare-data). Same shape as v1, plus:
+  - `lighting`: `["0","90","180","270","night"]` (the routes-v1 keys).
+  - `routes[leg][lighting]`: sample ids in route order, end points included (the leg's site/pad samples); use `routes[api.tableKey(a, b)][lightKey]` where the code now reads `legs[...]`.
+  - `samples[i]` = `{xy_m, id, mast_los, w}` as in v1; lite has one criterion, so `series[s.w[0]]` works as now.
+  - `legs` = the v1 lists (the engine's; same ids), so the current code keeps working unchanged.
+  - `lengths_m[leg][lighting]`, `night_legs_off_v1` (legs where the engine's night list differs from the drawn night route).
+- `routes[leg].night` follows the routes-v1 night route the page draws, so every lighting's samples sit on the drawn route (<= 14.2 m: the 20 m cell centre). The caveat "computed along the leg's night route ... m from the route planned for this lighting" can go.
+
+**Questions for LEAD**
+1. **A* tie-break (affects the engine's comms inputs, not changed here).** B-40's routes (`plan(..., None)`, which the engine uses) and the tables' / routes-v1 night routes (`plan(..., NIGHT)`) have identical lengths on all 182 legs (difference 0.00 m), but differ in geometry on 140 legs by more than 20 m (max 410 m, BASE->PAD_A@3). Cause: NIGHT multiplies every cell cost by 1/SHADOW_SPEED_FACTOR while the A* heuristic stays unscaled, so the search breaks the ties between equal-cost paths differently. For the link it matters on a few legs: the share of hours with every sample linked differs by > 1 pp on 22 legs, > 5 pp on 12, at most 17 pp (BASE->POWER 0.44 vs 0.59, POWER->BASE swapped; BASE->PAD_B@1 0.00 vs 0.12). E21's comms results therefore carry an arbitrary choice among equally short routes on those legs. Recommendation: keep E21 as is and add one limitation sentence (the route among equal-cost alternatives is arbitrary; a leg's linked share moves by up to 17 pp); switching the engine to the routes-v1 night lists would be a new round.
+2. Commit the two data files (2.0 MB) and add a `data/README.md` line; the site needs only the lite file.

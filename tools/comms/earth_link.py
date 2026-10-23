@@ -9,6 +9,11 @@
     python tools/comms/earth_link.py horizons              # cross-check one month at BASE against JPL Horizons
     python tools/comms/earth_link.py avgvisib              # compare with the PDS average Earth-visibility map
     python tools/comms/earth_link.py track                 # hourly Earth track at BASE -> earth_track-v1.json.gz
+    python tools/comms/earth_link.py points2               # B-52: + samples on every lighting route (routes-v1)
+    python tools/comms/earth_link.py masks2 --part 0 --parts 3  # horizon masks of the new samples (chunks)
+    python tools/comms/earth_link.py series2 --part 0 --parts 3 # their hourly windows (chunks)
+    python tools/comms/earth_link.py samples2              # -> earth_link-v2-samples.json.gz (v1 file + lit routes)
+                                                           #    and -lite.json.gz (any_part only, for the site)
 
 Intermediate files (kernels, DEM window, routes, masks; ~100 MB) live in ``.cache/comms/`` (git-ignored); the
 output ``data/comms/connecting_ridge/earth_link-v1.json`` (format: lunarsim/comms.py) is < 1 MB.
@@ -30,8 +35,11 @@ Geometry and conventions:
   5 m tile (float GeoTIFF) out to 8 km, 80 m LDEM_80S_80MPP_ADJ (PGDA product 90) from 8 to 300 km (and where
   the tile ends earlier). Antenna 2.5 m (rover, at sites, pads and route samples), 10 m (mast at BASE).
 - Route samples: the expert A* route of each leg (lunarsim.rover.expert.plan with no lighting term: the
-  slope-only route, which is also the night route), resampled every 100 m and snapped to 20 m post centres
-  (dedupes shared corridors); the leg's end points are the site positions themselves.
+  slope-only route, as costly as the night route), resampled every 100 m and snapped to 20 m post centres
+  (dedupes shared corridors); the leg's end points are the site positions themselves. The engine uses these.
+  B-52 (points2 ... samples2) adds the same samples along every route of data/driving/routes-v1.json, the five
+  lightings; its night route (plan(..., NIGHT): every cost scaled by the shadow factor) is equally long but A*
+  breaks the ties between equal-cost paths differently, so on many legs it runs elsewhere.
 """
 from __future__ import annotations
 
@@ -362,6 +370,11 @@ def resample(poly: np.ndarray, step: float) -> np.ndarray:
     return np.stack([np.interp(q, s, poly[:, 0]), np.interp(q, s, poly[:, 1])], axis=1)
 
 
+def cell_of(x: float, y: float) -> Tuple[float, float]:
+    """Centre of the 20 m post cell that holds (x, y): route samples snap here (dedupes shared corridors)."""
+    return (math.floor(x / 20.0) + 0.5) * 20.0, (math.floor(y / 20.0) + 0.5) * 20.0
+
+
 def step_points(log=print) -> Dict:
     """Unique observation points: sites, pads, the mast, and route samples snapped to 20 m post centres."""
     from lunarsim.rover.tables import legs_from_sites
@@ -406,7 +419,7 @@ def step_points(log=print) -> Dict:
             if j in (0, len(smp) - 1):
                 ids.append(index[xy_to_name[(round(float(x), 2), round(float(y), 2))]])
             else:
-                cx, cy = (math.floor(x / 20.0) + 0.5) * 20.0, (math.floor(y / 20.0) + 0.5) * 20.0
+                cx, cy = cell_of(x, y)
                 ids.append(add(("cell", cx, cy), cx, cy, "route", ANT_ROVER_M))
         leg_pts[name] = [k for j, k in enumerate(ids) if j == 0 or k != ids[j - 1]]   # route order
     doc = {"points": pts, "legs": leg_pts, "lengths_m": lengths}
@@ -526,6 +539,26 @@ def load_masks() -> Tuple[np.ndarray, np.ndarray]:
     return M, bearings
 
 
+def point_link(p: Dict, mask_row: np.ndarray, E: np.ndarray, P_base: np.ndarray, x0: float, y0: float,
+               bearings: np.ndarray, label: Any = "") -> Dict[str, np.ndarray]:
+    """10-min direct link states of one observation point (its antenna on the terrain) for every criterion."""
+    X, Y = p["x"] + x0, p["y"] + y0
+    lat, lon = latlon_deg(X, Y)
+    P = stereo_unit(X, Y) * (R_MOON_M + p["z"] + p["h_ant"]) / 1000.0
+    _, el, brg, rad = earth_topo(E, P_base, P, float(lat), float(lon))
+    if brg.min() < bearings[0] or brg.max() > bearings[-1]:
+        raise ValueError(f"point {label}: Earth bearing {brg.min():.2f}..{brg.max():.2f} leaves the mask wedge")
+    return link_state(el, rad, np.interp(brg, bearings, mask_row))
+
+
+def sees_mast(terrain, p: Dict, bx: float, by: float) -> bool:
+    """Line of sight from a 2.5 m antenna at p to the 10 m mast at BASE, within the mast's range."""
+    d_km = math.hypot(p["x"] - bx, p["y"] - by) / 1000.0
+    if d_km > MAST_RANGE_KM:
+        return False
+    return d_km < 0.01 or terrain.los_clearance_m((p["x"], p["y"]), (bx, by), h_a=ANT_ROVER_M, h_b=ANT_MAST_M) >= 0
+
+
 def step_link(out: str = OUT, log=print) -> Dict:
     from lunarsim.terrain import Terrain
     t0 = time.time()
@@ -542,14 +575,7 @@ def step_link(out: str = OUT, log=print) -> Dict:
     bx, by = sites["base_xy_m"]
 
     def series(i):
-        p = pts[i]
-        X, Y = p["x"] + x0, p["y"] + y0
-        lat, lon = latlon_deg(X, Y)
-        P = stereo_unit(X, Y) * (R_MOON_M + p["z"] + p["h_ant"]) / 1000.0
-        _, el, brg, rad = earth_topo(E, P_base, P, float(lat), float(lon))
-        if brg.min() < bearings[0] or brg.max() > bearings[-1]:
-            raise ValueError(f"point {i}: Earth bearing {brg.min():.2f}..{brg.max():.2f} leaves the mask wedge")
-        return link_state(el, rad, np.interp(brg, bearings, M[i]))
+        return point_link(pts[i], M[i], E, P_base, x0, y0, bearings, i)
 
     mast_i = next(i for i, p in enumerate(pts) if p["id"] == "BASE_MAST")
     mast = series(mast_i)
@@ -557,9 +583,8 @@ def step_link(out: str = OUT, log=print) -> Dict:
     dist = np.zeros(len(pts))
     for i, p in enumerate(pts):
         dist[i] = math.hypot(p["x"] - bx, p["y"] - by) / 1000.0
-        if i != mast_i and dist[i] <= MAST_RANGE_KM:
-            los[i] = dist[i] < 0.01 or terrain.los_clearance_m((p["x"], p["y"]), (bx, by), h_a=ANT_ROVER_M,
-                                                               h_b=ANT_MAST_M) >= 0
+        if i != mast_i:
+            los[i] = sees_mast(terrain, p, bx, by)
     enc = lambda m: C.encode_windows(C.runs(m))
 
     def pack(direct, with_mast):
@@ -687,6 +712,258 @@ def step_link(out: str = OUT, log=print) -> Dict:
     log(f"link: {len(points_out)} points, {len(legs_out)} legs -> {_rel(out)} ({os.path.getsize(out) / 1024:.0f} KB) "
         f"in {time.time() - t0:.0f} s" + (f"; peak RSS {rss:.0f} MB" if rss else ""))
     return doc
+
+
+# ---------------------------------------------------------------------------------------------------------
+# B-52: samples along every lighting route of routes-v1.json -> earth_link-v2-samples.json.gz
+# ---------------------------------------------------------------------------------------------------------
+ROUTES_V1 = os.path.join(ROOT, "data", "driving", "routes-v1.json")
+LIGHTS = ("0", "90", "180", "270", "night")
+SAMPLES_V1 = os.path.join(ROOT, "data", "comms", "connecting_ridge", "earth_link-v1-samples.json.gz")
+SAMPLES_V2 = os.path.join(ROOT, "data", "comms", "connecting_ridge", "earth_link-v2-samples.json.gz")
+
+
+def route_ids(poly: np.ndarray, a_id: int, b_id: int, add) -> List[int]:
+    """Point ids of one route in route order: samples every ROUTE_STEP_M, the end points the leg's sites, the
+    others snapped to 20 m cells (add(cx, cy) -> id); consecutive repeats dropped (the rule of step_points)."""
+    smp = resample(np.asarray(poly, float), ROUTE_STEP_M)
+    ids = [a_id if j == 0 else b_id if j == len(smp) - 1 else add(*cell_of(x, y)) for j, (x, y) in enumerate(smp)]
+    return [k for j, k in enumerate(ids) if j == 0 or k != ids[j - 1]]
+
+
+def step_points2(routes_file: str = ROUTES_V1, log=print) -> Dict:
+    """The v1 points (indices kept) plus the new 20 m cells of the routes of routes-v1.json; per leg and lighting
+    the point ids in route order. The night case follows routes-v1's night route too: it is as long as the B-40
+    route (plan(..., None)) the engine uses, but A* breaks the ties between equal-cost paths differently when every
+    cost is scaled by the shadow factor (plan(..., NIGHT)), so on many legs it runs elsewhere; those legs are listed."""
+    from lunarsim.rover.routes import decode_geom
+    meta, _ = load_pack()
+    v1 = json.load(open(os.path.join(CACHE, "points.json")))
+    rdoc = json.load(open(routes_file))
+    near, _ = near_sampler(meta)
+    x0, y0 = meta["origin_xy_m"]
+    pts = [dict(p) for p in v1["points"]]
+    index = {(p["id"] if p["id"] is not None else ("cell", p["x"], p["y"])): i for i, p in enumerate(pts)}
+
+    def add(cx, cy):
+        key = ("cell", cx, cy)
+        if key not in index:
+            z = float(near(np.array([cx + x0]), np.array([cy + y0]))[0])
+            index[key] = len(pts)
+            pts.append({"id": None, "x": round(cx, 2), "y": round(cy, 2), "z": round(z, 3), "h_ant": ANT_ROVER_M,
+                        "kind": "route"})
+        return index[key]
+
+    routes: Dict[str, Dict[str, List[int]]] = {}
+    lengths: Dict[str, Dict[str, float]] = {}
+    night_diff: List[str] = []
+    for leg, per in rdoc["legs"].items():
+        a, b = leg.split("->")
+        routes[leg], lengths[leg] = {}, {}
+        for L in LIGHTS:
+            e = per.get(L)
+            ids = []
+            if e is not None:
+                g = decode_geom(rdoc["geoms"][e["geom"]])
+                ids = route_ids(np.stack([g["x"], g["y"]], axis=1), index[a], index[b], add)
+                lengths[leg][L] = round(float(g["s"][-1]), 1)
+            if L == "night" and ids != v1["legs"].get(leg, []):
+                night_diff.append(leg)
+            routes[leg][L] = ids
+    n_new = len(pts) - len(v1["points"])
+    doc = {"n_v1": len(v1["points"]), "points": pts, "routes": routes, "lengths_m": lengths,
+           "routes_file": {"file": os.path.relpath(routes_file, ROOT).replace(os.sep, "/"), "sha256": sha256(routes_file)},
+           "night_legs_off_v1": night_diff}
+    with open(os.path.join(CACHE, "points2.json"), "w") as f:
+        json.dump(doc, f)
+    n_routes = sum(bool(v) for per in routes.values() for v in per.values())
+    log(f"points2: {len(pts)} points ({n_new} new cells); {n_routes} routes over {len(routes)} legs; "
+        f"the routes-v1 night samples differ from the engine's v1 list on {len(night_diff)} legs")
+    return doc
+
+
+def step_masks2(part: int = 0, parts: int = 1, batch: int = 250, log=print) -> None:
+    """Horizon masks of the new points of points2.json only (the v1 points keep their masks_*.npz)."""
+    meta, _ = load_pack()
+    doc = json.load(open(os.path.join(CACHE, "points2.json")))
+    pts, n1 = doc["points"], doc["n_v1"]
+    bearings, _ = wedge_bearings()
+    near, _ = near_sampler(meta)
+    far = far_sampler()
+    x0, y0 = meta["origin_xy_m"]
+    idx = np.array_split(np.arange(n1, len(pts)), parts)[part]
+    out = np.full((len(idx), len(bearings)), np.nan, dtype=np.float32)
+    t0 = time.time()
+    for k in range(0, len(idx), batch):
+        sl = idx[k:k + batch]
+        P = [pts[i] for i in sl]
+        out[k:k + len(sl)] = horizon_wedge(np.array([p["x"] + x0 for p in P]), np.array([p["y"] + y0 for p in P]),
+                                           np.array([p["z"] for p in P]), np.array([p["h_ant"] for p in P]),
+                                           bearings, near, far)
+        log(f"masks2 part {part}/{parts}: {k + len(sl)}/{len(idx)} points ({time.time() - t0:.0f} s)")
+    np.savez(os.path.join(CACHE, f"masks2_{part:02d}of{parts:02d}.npz"), idx=idx, mask=out, bearings=bearings)
+
+
+def load_masks2() -> Tuple[np.ndarray, np.ndarray]:
+    doc = json.load(open(os.path.join(CACHE, "points2.json")))
+    M1, bearings = load_masks()
+    n1, n = doc["n_v1"], len(doc["points"])
+    if len(M1) != n1:
+        raise SystemExit("points.json changed since points2; rerun points2")
+    M = np.full((n, len(bearings)), np.nan, dtype=np.float32)
+    M[:n1] = M1
+    files = sorted(f for f in os.listdir(CACHE) if f.startswith("masks2_") and f.endswith(".npz"))
+    if len({int(f.split("of")[1][:2]) for f in files}) > 1:
+        raise SystemExit(f"masks2 files from different --parts runs: {files}; delete the stale ones")
+    for f in files:
+        d = np.load(os.path.join(CACHE, f))
+        if not np.array_equal(d["bearings"], bearings):
+            raise SystemExit(f"{f}: mask bearings differ from the v1 masks")
+        M[d["idx"]] = d["mask"]
+    miss = ~np.isfinite(M).any(axis=1)
+    if miss.any():
+        raise SystemExit(f"{int(miss.sum())} points have no mask; run the missing `masks2 --part` chunks")
+    return M, bearings
+
+
+def _v2_used(doc: Dict, v1s: Dict) -> Tuple[List[int], List[int]]:
+    """(v1 point ids of the v1 samples in v1 sample order, new point ids in sorted order) of points2.json."""
+    v1_pts = json.load(open(os.path.join(CACHE, "points.json")))
+    used_v1 = sorted({k for ids in v1_pts["legs"].values() for k in ids})
+    if len(used_v1) != len(v1s["samples"]):
+        raise SystemExit("the v1 samples file does not match points.json")
+    have = set(used_v1)
+    new = sorted({k for per in doc["routes"].values() for ids in per.values() for k in ids} - have)
+    return used_v1, new
+
+
+def step_series2(part: int = 0, parts: int = 1, log=print) -> None:
+    """Hourly direct windows (and mast line of sight) of the new samples, one chunk of them (cached)."""
+    import gzip
+    from lunarsim.terrain import Terrain
+    t0 = time.time()
+    meta, sites = load_pack()
+    doc = json.load(open(os.path.join(CACHE, "points2.json")))
+    v1s = json.loads(gzip.decompress(open(SAMPLES_V1, "rb").read()))
+    _, new = _v2_used(doc, v1s)
+    sel = np.array_split(np.array(new, dtype=int), parts)[part]
+    M, bearings = load_masks2()
+    e = np.load(ephem_path())
+    E, P_base = e["E_base_km"], e["P_base_km"]
+    n, k_h = len(E), SAMPLE_STEP_MIN // STEP_MIN
+    x0, y0 = meta["origin_xy_m"]
+    terrain = Terrain(PACK)
+    bx, by = sites["base_xy_m"]
+    out = {}
+    for j, i in enumerate(sel.tolist()):
+        p = doc["points"][i]
+        s = point_link(p, M[i], E, P_base, x0, y0, bearings, i)
+        out[str(i)] = {"mast_los": sees_mast(terrain, p, bx, by),
+                       "w": [C.encode_windows(C.runs(s[c][: n - n % k_h].reshape(-1, k_h).all(axis=1)))
+                             for c in C.CRITERIA]}
+        if (j + 1) % 250 == 0:
+            log(f"series2 part {part}/{parts}: {j + 1}/{len(sel)} samples ({time.time() - t0:.0f} s)")
+    with open(os.path.join(CACHE, f"series2_{part:02d}of{parts:02d}.json"), "w") as f:
+        json.dump(out, f)
+    log(f"series2 part {part}/{parts}: {len(sel)} samples in {time.time() - t0:.0f} s")
+
+
+def step_samples2(out: str = SAMPLES_V2, recheck: int = 40, log=print) -> Dict:
+    """Assemble earth_link-v2-samples.json.gz: the v1 samples file unchanged as a prefix (samples, series, legs),
+    the new samples appended, and per leg and lighting the sample ids of its route. `recheck` v1 samples are
+    recomputed and must reproduce their v1 series exactly."""
+    import gzip
+    from lunarsim.terrain import Terrain
+    t0 = time.time()
+    meta, sites = load_pack()
+    doc = json.load(open(os.path.join(CACHE, "points2.json")))
+    v1s = json.loads(gzip.decompress(open(SAMPLES_V1, "rb").read()))
+    used_v1, new = _v2_used(doc, v1s)
+    got: Dict[str, Any] = {}
+    files = sorted(f for f in os.listdir(CACHE) if f.startswith("series2_") and f.endswith(".json"))
+    if len({int(f.split("of")[1][:2]) for f in files}) > 1:
+        raise SystemExit(f"series2 files from different --parts runs: {files}; delete the stale ones")
+    for f in files:
+        got.update(json.load(open(os.path.join(CACHE, f))))
+    miss = [i for i in new if str(i) not in got]
+    if miss:
+        raise SystemExit(f"{len(miss)} new samples have no series; run the missing `series2 --part` chunks")
+    # determinism check: a few v1 samples recomputed with the same code reproduce their v1 hourly series
+    pts = doc["points"]
+    if recheck:
+        M, bearings = load_masks2()
+        e = np.load(ephem_path())
+        E, P_base = e["E_base_km"], e["P_base_km"]
+        n, k_h = len(E), SAMPLE_STEP_MIN // STEP_MIN
+        x0, y0 = meta["origin_xy_m"]
+        terrain = Terrain(PACK)
+        bx, by = sites["base_xy_m"]
+        rng = np.random.default_rng(52)
+        for j in sorted(rng.choice(len(used_v1), size=min(recheck, len(used_v1)), replace=False).tolist()):
+            i, rec = used_v1[j], v1s["samples"][j]
+            s = point_link(pts[i], M[i], E, P_base, x0, y0, bearings, i)
+            w = [C.encode_windows(C.runs(s[c][: n - n % k_h].reshape(-1, k_h).all(axis=1))) for c in C.CRITERIA]
+            if w != [v1s["series"][k] for k in rec["w"]] or sees_mast(terrain, pts[i], bx, by) != rec["mast_los"]:
+                raise SystemExit(f"v1 sample {j} (point {i}) does not reproduce its v1 series")
+        log(f"samples2: {min(recheck, len(used_v1))} v1 samples recomputed, identical")
+    series_list = [list(c) for c in v1s["series"]]
+    series_ix = {tuple(c): k for k, c in reversed(list(enumerate(series_list)))}
+
+    def sid(code):
+        key = tuple(code)
+        if key not in series_ix:
+            series_ix[key] = len(series_list)
+            series_list.append(list(code))
+        return series_ix[key]
+
+    samples = [dict(s) for s in v1s["samples"]]
+    for i in new:
+        r = got[str(i)]
+        samples.append({"xy_m": [pts[i]["x"], pts[i]["y"]], "id": pts[i]["id"], "mast_los": bool(r["mast_los"]),
+                        "w": [sid(c) for c in r["w"]]})
+    new_ix = {i: k for k, i in enumerate(used_v1 + new)}
+    routes = {leg: {L: [new_ix[i] for i in per[L]] for L in LIGHTS} for leg, per in doc["routes"].items()}
+    sdoc = {
+        "format": C.EARTH_LINK_SAMPLES_FORMAT, "version": 2, "terrain": meta["site_id"],
+        "time": v1s["time"], "criteria": v1s["criteria"],
+        "lighting": list(LIGHTS),
+        "samples": samples, "series": series_list,
+        "legs": v1s["legs"],
+        "routes": routes,
+        "lengths_m": doc["lengths_m"],
+        "v1_prefix": {"file": os.path.basename(SAMPLES_V1), "sha256": sha256(SAMPLES_V1),
+                      "n_samples": len(v1s["samples"]), "n_series": len(v1s["series"])},
+        "routes_file": doc["routes_file"],
+        "night_legs_off_v1": doc["night_legs_off_v1"],
+        "note": "version 2 = the v1 samples file (samples, series and legs unchanged, so v1 sample ids stay valid) plus "
+                "the samples of every route of routes-v1.json (B-32): routes[leg][lighting] lists sample ids in route "
+                "order, end points included ([] when the leg has no route in that lighting). legs[leg] is the "
+                "engine's list (B-40 route, plan(..., None)); routes[leg]['night'] follows routes-v1's night route "
+                "(plan(..., NIGHT)), equally long but a different tie between equal-cost paths on the legs in "
+                "night_legs_off_v1. Samples every 100 m along the route, snapped to 20 m post centres; windows direct "
+                "(dte), hourly, an hour linked only when all six 10-min epochs are; mast_los as in v1. The engine "
+                "reads the v1 file.",
+        "generated": {"tool": "tools/comms/earth_link.py points2 / masks2 / series2 / samples2"},
+    }
+    lite_out = out.replace(".json.gz", "-lite.json.gz")
+    for path, d in ((out, sdoc), (lite_out, lite_samples(sdoc))):
+        with open(path, "wb") as f:                           # deterministic gzip (no name, mtime 0)
+            f.write(gzip.compress(json.dumps(d, separators=(",", ":")).encode("utf-8"), 9, mtime=0))
+    log(f"samples2: {len(samples)} samples ({len(new)} new), {len(series_list)} distinct series "
+        f"({len(series_list) - len(v1s['series'])} new) -> {_rel(out)} ({os.path.getsize(out) / 1024:.0f} KB), "
+        f"lite {_rel(lite_out)} ({os.path.getsize(lite_out) / 1024:.0f} KB) in {time.time() - t0:.0f} s")
+    return sdoc
+
+
+def lite_samples(sdoc: Dict) -> Dict:
+    """The site's copy: the first criterion (any_part) only; sample ids, legs and routes unchanged."""
+    used = sorted({s["w"][0] for s in sdoc["samples"]})
+    remap = {k: j for j, k in enumerate(used)}
+    lite = dict(sdoc, criteria=sdoc["criteria"][:1], series=[sdoc["series"][k] for k in used],
+                samples=[dict(s, w=[remap[s["w"][0]]]) for s in sdoc["samples"]])
+    lite["variant"] = "lite: criterion any_part only (series re-indexed; sample ids, legs and routes as in the full file)"
+    lite.pop("v1_prefix")
+    return lite
 
 
 def _git_sha() -> Optional[str]:
@@ -849,6 +1126,13 @@ def main(argv: Optional[List[str]] = None) -> int:
     sub.add_parser("horizons")
     sub.add_parser("avgvisib")
     sub.add_parser("track")
+    sub.add_parser("points2")
+    for name in ("masks2", "series2"):
+        p = sub.add_parser(name)
+        p.add_argument("--part", type=int, default=0)
+        p.add_argument("--parts", type=int, default=1)
+    p = sub.add_parser("samples2")
+    p.add_argument("--recheck", type=int, default=40, help="v1 samples to recompute as a determinism check")
     for sp_ in sub.choices.values():
         sp_.add_argument("--max-seconds", type=float, default=540.0,
                          help="stop this process after so many seconds (Windows: `timeout` only kills the venv launcher)")
@@ -875,6 +1159,14 @@ def main(argv: Optional[List[str]] = None) -> int:
         step_avgvisib()
     elif a.cmd == "track":
         step_track()
+    elif a.cmd == "points2":
+        step_points2()
+    elif a.cmd == "masks2":
+        step_masks2(a.part, a.parts)
+    elif a.cmd == "series2":
+        step_series2(a.part, a.parts)
+    elif a.cmd == "samples2":
+        step_samples2(recheck=a.recheck)
     rss = peak_rss_mb()
     if rss:
         print(f"peak RSS {rss:.0f} MB")
