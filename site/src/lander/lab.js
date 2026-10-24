@@ -12,6 +12,7 @@ import { MlpPolicy, checkPolicy } from '../policy.js';
 import { loadTerrain } from '../terrain.js';
 import { num, esc, fmt } from '../components/num.js';
 import { mountFigures } from '../components/figure.js';
+import { afterFirstPaint } from '../ui/after-paint.js';
 
 const $ = id => document.getElementById(id);
 const BASE = import.meta.env.BASE_URL, POL = BASE + 'lab/policies/';
@@ -286,4 +287,4 @@ function wire() {
 }
 
 if (import.meta.env.DEV) window.__lab = { st, runEpisode, termSums, draw };  // dev-only probe for checks
-boot();
+afterFirstPaint(boot);   // F-40: policies and terrain after the text (mobile LCP)

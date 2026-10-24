@@ -10,6 +10,7 @@ import { indexTrace, snapshot, steps, descentH } from './state.js';
 import { createPlan } from './plan2d.js';
 import { OWNER_COLOURS, themedVar } from './colours.js';
 import { viewPad } from '../ui/viewpad.js';
+import { afterFirstPaint } from '../ui/after-paint.js';
 
 const $ = id => document.getElementById(id);
 const BASE = import.meta.env.BASE_URL;
@@ -240,4 +241,4 @@ function renderRail(s) {
 function clock(t) { const d = Math.floor(t / 24), h = Math.floor(t % 24), m = Math.floor((t * 60) % 60); return `day ${d}, ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; }
 
 if (import.meta.env.DEV) window.__world = { st, draw };  // dev-only probe for checks
-boot();
+afterFirstPaint(boot);   // F-40: the 3 MB of terrain after the text (mobile LCP)

@@ -5171,3 +5171,76 @@ Every effect measured against strategic shifts by ~3 t, and Stage H 24 h tonnage
 **What I need from BACKEND:** nothing.
 
 **Questions for LEAD:** should mobile Lighthouse get a target (for example ≥ 70 on 3D pages, ≥ 90 on reading pages) before the re-run, or stay report-only?
+
+## F-40 PART 17 DONE 10:22 | Fresh Lighthouse table on the live site; two mobile misses fixed; /world/trace/ frame cost on this machine (F-40: nothing left that this machine can do)
+
+**Files changed:**
+- New: `site/src/ui/after-paint.js`.
+- Modified: `site/src/world/main.js`, `site/src/lander/lab.js`, `.team/inbox-frontend.md` (F-40 block: Lighthouse [DONE part 17]; tiers [DONE on this machine], with the Intel iGPU and the phone marked owner-only), `.team/reports.md`.
+- Nothing committed (my prompt; LEAD agreed).
+
+**How it was measured:**
+- Lighthouse 13.5.0 CLI, headless Chrome, one page and one run at a time, on https://azizjonrahimov.github.io/Lunar-Haul/.
+- The live deploy is the 5fc4e84 Pages run; no site files have changed since.
+- Mobile uses Lighthouse's default simulated throttling (slow 4G, 4x CPU); desktop uses `--preset=desktop`.
+- Free RAM was 0.68 to 1.36 GB before every run, so no run was skipped.
+- Each row is a single run, so allow a few points of noise. Lighthouse warned that this laptop's CPU is slower than it expects. In the mobile runs, observed first paint fell at about 0.2, 1.2 or 2.2 s regardless of page; that is the machine, not the pages.
+
+**Table** (performance / accessibility / best practices; target misses in bold; * = after this part's fix, re-measured on the local production build because the fix is not deployed yet):
+
+| page | type | desktop | mobile | mobile LCP, TBT | notes |
+|---|---|---|---|---|---|
+| / | 3D | 100/100/100 | 98/100/100 | 1.4 s, 88 ms | |
+| /world/ | 3D | 94/100/100 | 97/100/100 | 1.8 s, 103 ms | |
+| /world/trace/ | 3D | 93/100/100 | **47**/100/100 -> 73/100/100* | 17.7 s -> 1.5 s*, 1.26 s | fixed; TBT is the scene build |
+| /stories/ | 3D | 97/100/100 | 100/100/100 | 1.5 s, 0 | desktop CLS 0.104 |
+| /vehicles/ | 3D | 88/100/100 | 93/100/100 | 2.0 s, 217 ms | |
+| /lab/lander/ | 3D | 91/100/100 (97*) | **65**/100/100 -> 92/100/100* | 10.7 s -> 2.8 s*, 0* | fixed |
+| /lab/rover/ | 3D | 100/100/100 | 83/100/100 | 1.2 s, 615 ms | |
+| /simulator/ | 3D | 96/100/100 | 93/100/100 | 2.2 s, 173 ms | desktop CLS 0.130 |
+| /results/ | reading | 100/100/100 | 99/100/100 | 1.2 s, 14 ms | |
+| /research/earth-sky/ | reading | 100/100/100 | 99/100/100 | 1.7 s, 124 ms | first measurement |
+| /method/ | reading | 100/100/100 | 100/100/100 | 1.2 s, 0 | |
+| /paper/ | reading | 100/100/100 | 100/100/100 | 1.1 s, 0 | |
+| /data/ | reading | 100/100/100 | 99/100/100 | 1.1 s, 0 | |
+| /verification/ | reading | 100/100/100 | 100/100/100 | 1.1 s, 0 | was 82: no longer a miss |
+| /about/ | reading | 100/100/100 | 100/100/100 | 1.2 s, 0 | |
+| /changelog/ | reading | 100/100/100 | 99/100/100 | 1.1 s, 0 | |
+| /account/ | reading | 100/100/100 | 100/100/100 | 1.2 s, 0 | best practices was 96, now 100 |
+
+**Misses, starting with the two we knew about:**
+1. **/verification/ mobile 82:** now 100 (LCP 1.1 s, TBT 0, CLS 0.001). No change needed; the F-40 part 1 reservation for the check rows holds.
+2. **/world/trace/ mobile 67:** 47 on the live site.
+   - Cause: LCP 17.7 s. The LCP element is the header paragraph, which is in the HTML. But the page started its 3 MB of terrain downloads (horizon 1.4 MB, normal map 0.76 MB, height 0.33 MB, two pad maps) before that paragraph had painted. Lighthouse's mobile simulation then counts all of them, at slow 4G, before the paint.
+   - Fix: `boot()` now starts after the browser's own `first-contentful-paint` entry, through the new `afterFirstPaint()` in `site/src/ui/after-paint.js`; without paint timing it waits one frame. On real devices the text paints first anyway, so visitors see no delay.
+   - Result: **mobile 73** (LCP 1.5 s, TBT 1.26 s), desktop 93.
+   - A first try that waited only for one animation frame was not enough (49). Here, Chrome ran frames before it counted the text as painted.
+3. **/lab/lander/ mobile 65 (new):** the same cause, with four policies (180 kB each), the outcome tables and the height map. Same fix: **mobile 92** (LCP 2.8 s, TBT 0), desktop 97.
+
+**Bigger, not fixed (for you to decide):**
+- /world/trace/ passes by only 3 points. Its mobile TBT of 1.26 s is one long task of about 1 s: building the scene in the world-scene chunk. Splitting the build across frames, or moving the terrain decode into a worker as the rover lab does since part 2, would give a margin. That's about an hour's work, and the page is the older trace viewer.
+- Desktop CLS: /simulator/ 0.130 and /stories/ 0.104 are above Google's 0.1 "good" line, though both pages pass their targets (96 and 97). Not chased.
+
+**/world/trace/ on this machine:**
+- **Tier:** detect-gpu reports "GPU tier 3 (nvidia geforce rtx 3050 laptop gpu)", so the page shows 3D. The page has no quality tiers: tier 0 or no WebGL2 gets the 2D plan view.
+- **Method:** the Chrome window was covered by another window and got about 1.5 frames a second, so frame intervals could not be read. Instead I timed back-to-back renders: each scrubber input runs the page's full `draw(true)`, which updates the scene, renders 3D, draws the inset and refreshes the telemetry rail. That's 40 warm-up renders, then 150 timed, with GPU timer queries around each; canvas 990×620 device px at 1.25 dpr; production build.
+- **3D** (two passes): CPU p50 3.3–3.4 ms, p95 4.2–6.0 ms; GPU p50 2.3–2.6 ms, p95 6.8–7.0 ms. So about 6 ms a frame against 8.3 ms at 120 Hz.
+- **2D plan view** (`?view=2d`, what tier 0 gets): CPU 1.1 ms p50, 1.6 ms p95 over 300 draws. Raster time isn't measured.
+- **GPU memory:** 39.4 MB (part 11).
+- **Owner-only:** the Intel-integrated laptop and the phone.
+
+**Checks:**
+- `npm run build` OK; node tests 11/11; `budgets.py pages` OK (world/trace 17.0 of 20 kB JS, lab/lander 120.6 of 130 kB).
+- In the browser on the production build:
+  - /world/trace/ 3D and `?view=2d` load the sample and terrain lighting with no console errors.
+  - /lab/lander/ boots: first contentful paint at 412 ms, first policy request at 464 ms, an episode runs, no console errors.
+- Light/dark and 390 px were not re-checked: the change only moves when loading starts, not what renders.
+- Preview server stopped by PID; tab closed.
+
+**How to check:** after your push and the Pages deploy, re-run Lighthouse on /world/trace/ and /lab/lander/ (mobile). Expect about 73 and 92.
+
+**What I need from BACKEND:** nothing.
+
+**Questions for LEAD:**
+1. Should F-40 close? What's left needs the Intel laptop or the phone (owner-only), plus the optional /world/trace/ TBT margin above.
+2. Do you want the /world/trace/ scene-build split?

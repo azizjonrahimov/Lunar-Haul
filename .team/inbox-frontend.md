@@ -468,9 +468,9 @@ numbers), and entry chips to World, Vehicles, Labs, Simulator and Stories. Keep 
 
 ## F-40 [IN PROGRESS] (<= 4 h, then continuous) Quality pass, plan §5 F-40, plus the notes collected in reviews
 Status pruned 23 Oct 15:50 (FRONTEND, from the reports and commits; LEAD's call in part 15):
-- [OPEN] Tier measurements: RTX 3050 foreground frame intervals done for /world/, /lab/lander/, /lab/rover/, /vehicles/,
-  home hero and /stories/ (part 1, 596fcfc); GPU memory per tier (part 11, e707865). Left: /world/trace/ not measured;
-  an Intel-integrated laptop and a phone (no such hardware here). On hold for memory.
+- [DONE on this machine] Tier measurements: RTX 3050 foreground frame intervals for /world/, /lab/lander/, /lab/rover/,
+  /vehicles/, home hero and /stories/ (part 1, 596fcfc); GPU memory per tier (part 11, e707865); /world/trace/ frame cost,
+  3D and 2D plan (part 17, 24 Oct). OWNER-ONLY: an Intel-integrated laptop and a phone (no such hardware here).
 - [DONE] Lander lab: Approach framed with the lit pad in view (part 1, 596fcfc; code re-read in part 15, no change).
 - [DONE] Rover lab: brown streak = the glare wedge's fill, now off (part 1, 596fcfc; re-read in part 15, no change).
 - [DONE] World: Earth-link legs red while rovers wait, "waiting for Earth" card; urgent chip live, "none delivered yet"
@@ -483,16 +483,15 @@ Status pruned 23 Oct 15:50 (FRONTEND, from the reports and commits; LEAD's call 
   off in story views, no step names a vehicle; chips use B-53's `label` (part 1, 596fcfc; re-read in part 15).
 - [DONE] Keyboard, screen-reader mirror, reduced motion, contrast: walks of every page (part 5, 9c11572: Lighthouse
   accessibility 100 on all 18 pages; part 7, d8e38f1). /research/earth-sky/ came later and was checked in F-41-F-43.
-- [OPEN] Lighthouse table. Targets (LEAD, 23 Oct):
+- [DONE part 17, 24 Oct] Lighthouse table. Targets (LEAD, 23 Oct):
   - Performance, desktop (as before): >= 85 on 3D pages, >= 95 on reading pages.
   - Performance, mobile: >= 70 on 3D pages (/, /world/, /world/trace/, /vehicles/, /lab/lander/, /lab/rover/,
     /simulator/, /stories/), >= 90 on reading pages (/results/, /research/*, /verification/, /about/ and the like).
   - Accessibility and best practices: >= 95 on every page, desktop and mobile.
-  Status: every page measured in part 1 (596fcfc), rover lab and /world/trace/ re-measured in part 2 (f7be256).
-  Left: re-run the whole table (it predates parts 3-14), including /research/earth-sky/ (never measured); on the old
-  numbers two pages miss: /verification/ mobile 82 (target 90) and /world/trace/ mobile 67 (target 70; part 2: TBT
-  1.5 s from building the scene); /vehicles/ and /lab/lander/ mobile 70 pass; /account/ best practices 96 passes.
-  On hold until free RAM is >= 0.4 GB.
+  Status: fresh table on the live site, all 17 pages, desktop and mobile (part 17 in reports.md). Two misses, both
+  fixed and re-measured on the production build: /world/trace/ mobile 47 -> 73 and /lab/lander/ mobile 65 -> 92 (the
+  terrain and policy downloads now start after the text's first paint). /verification/ mobile is now 100 (was 82).
+  Accessibility and best practices 100 on every page. Margin left: /world/trace/ mobile TBT 1.26 s (the scene build).
 - Screenshot set under `site/design/shots/`: NOT wanted, keep them out of git (standing rule).
 
 ## F-41 [DONE cdb4c58] (<= 4 h) "Earth's sky, year by year": an explorable for R-1's 2028 finding (light reading page)
