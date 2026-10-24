@@ -466,11 +466,11 @@ in the law fit, cost per landed kg at the marketplace, and the Earth's-horizon h
 numbers), and entry chips to World, Vehicles, Labs, Simulator and Stories. Keep LCP ≤ 2.5 s on mobile: the hero
 3D starts after first paint and only on capable tiers; tier 0 shows a still image.
 
-## F-40 [IN PROGRESS] (<= 4 h, then continuous) Quality pass, plan §5 F-40, plus the notes collected in reviews
-Status pruned 23 Oct 15:50 (FRONTEND, from the reports and commits; LEAD's call in part 15):
-- [DONE on this machine] Tier measurements: RTX 3050 foreground frame intervals for /world/, /lab/lander/, /lab/rover/,
-  /vehicles/, home hero and /stories/ (part 1, 596fcfc); GPU memory per tier (part 11, e707865); /world/trace/ frame cost,
-  3D and 2D plan (part 17, 24 Oct). OWNER-ONLY: an Intel-integrated laptop and a phone (no such hardware here).
+## F-40 [DONE 6f30967] (<= 4 h, then continuous) Quality pass, plan §5 F-40, plus the notes collected in reviews
+Closed 24 Oct by LEAD after part 17. Status pruned 23 Oct 15:50 (FRONTEND, from the reports and commits; LEAD's call in part 15):
+- [DONE] Tier measurements: RTX 3050 foreground frame intervals for /world/, /lab/lander/, /lab/rover/, /vehicles/,
+  home hero and /stories/ (part 1, 596fcfc); GPU memory per tier (part 11, e707865); /world/trace/ frame cost, 3D and
+  2D plan (part 17, 6f30967). The owner tested on a phone (23 Oct) and is happy.
 - [DONE] Lander lab: Approach framed with the lit pad in view (part 1, 596fcfc; code re-read in part 15, no change).
 - [DONE] Rover lab: brown streak = the glare wedge's fill, now off (part 1, 596fcfc; re-read in part 15, no change).
 - [DONE] World: Earth-link legs red while rovers wait, "waiting for Earth" card; urgent chip live, "none delivered yet"
@@ -483,7 +483,7 @@ Status pruned 23 Oct 15:50 (FRONTEND, from the reports and commits; LEAD's call 
   off in story views, no step names a vehicle; chips use B-53's `label` (part 1, 596fcfc; re-read in part 15).
 - [DONE] Keyboard, screen-reader mirror, reduced motion, contrast: walks of every page (part 5, 9c11572: Lighthouse
   accessibility 100 on all 18 pages; part 7, d8e38f1). /research/earth-sky/ came later and was checked in F-41-F-43.
-- [DONE part 17, 24 Oct] Lighthouse table. Targets (LEAD, 23 Oct):
+- [DONE part 17, 6f30967] Lighthouse table. Targets (LEAD, 23 Oct):
   - Performance, desktop (as before): >= 85 on 3D pages, >= 95 on reading pages.
   - Performance, mobile: >= 70 on 3D pages (/, /world/, /world/trace/, /vehicles/, /lab/lander/, /lab/rover/,
     /simulator/, /stories/), >= 90 on reading pages (/results/, /research/*, /verification/, /about/ and the like).
@@ -491,7 +491,11 @@ Status pruned 23 Oct 15:50 (FRONTEND, from the reports and commits; LEAD's call 
   Status: fresh table on the live site, all 17 pages, desktop and mobile (part 17 in reports.md). Two misses, both
   fixed and re-measured on the production build: /world/trace/ mobile 47 -> 73 and /lab/lander/ mobile 65 -> 92 (the
   terrain and policy downloads now start after the text's first paint). /verification/ mobile is now 100 (was 82).
-  Accessibility and best practices 100 on every page. Margin left: /world/trace/ mobile TBT 1.26 s (the scene build).
+  Accessibility and best practices 100 on every page.
+- Known items (LEAD, 24 Oct: recorded, not to be fixed):
+  - /world/trace/ mobile performance 73 passes the 70 target by 3 points; its TBT of 1.26 s is the scene build (one
+    ~1 s task). Not split: the owner is happy on a phone, and the page is the older viewer.
+  - Desktop CLS above 0.1 on /simulator/ (0.130) and /stories/ (0.104); both pages pass their targets (96 and 97).
 - Screenshot set under `site/design/shots/`: NOT wanted, keep them out of git (standing rule).
 
 ## F-41 [DONE cdb4c58] (<= 4 h) "Earth's sky, year by year": an explorable for R-1's 2028 finding (light reading page)
