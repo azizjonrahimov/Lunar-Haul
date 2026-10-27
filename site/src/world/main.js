@@ -11,13 +11,12 @@ import { createPlan } from './plan2d.js';
 import { OWNER_COLOURS, themedVar } from './colours.js';
 import { viewPad } from '../ui/viewpad.js';
 import { afterFirstPaint } from '../ui/after-paint.js';
-import { createTimescale } from '../ui/timescale.js';
+import { createTimescale, landingX, landingPrefix } from '../ui/timescale.js';
 
 const $ = id => document.getElementById(id);
 const BASE = import.meta.env.BASE_URL;
 const SIM_KEY = 'lunarsim.worldTrace';
 const SAMPLES = { P1: 'P1_marketplace_seed3.json', P2: 'P2_marketplace_seed3.json', P3: 'P3_marketplace_seed3.json', P2V2: 'P2_marketplace_seed3_v2.json' };
-const DESCENT_RATE_H = 10 / 3600;      // during a descent, play at most 10 sim-seconds per second
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 // F-50: the shared time scale, 5 min a second to start; space plays and pauses, [ and ] step the speed
 const ts = createTimescale({ speeds: [60, 300, 900, 3600, 21600, 86400, 259200], value: 300, id: 'w-speed', onPlayPause: () => { if (st.tr) $('w-play').click(); } });
@@ -164,12 +163,13 @@ function tick(now) {
   st.raf = 0;
   if (st.playing && st.tr) {
     const dt = st.last ? Math.min(0.1, (now - st.last) / 1000) : 0; st.last = now;
-    let rate = ts.h, next = st.t + rate * dt, slowed = false;
+    let rate = ts.h, next = st.t + rate * dt, slowed = null;
     if ($('w-slow').checked) {
-      if (st.tr.landings.some(l => st.t >= l.t - descentH(l) && st.t < l.t)) { next = st.t + Math.min(rate, DESCENT_RATE_H) * dt; slowed = true; }   // inside a descent
+      const d = st.tr.landings.find(l => st.t >= l.t - descentH(l) && st.t < l.t);   // inside a descent: the shared landing rule
+      if (d) { const toTd = (d.t - st.t) * 3600; slowed = { x: landingX(toTd, ts.x), toTd }; next = st.t + slowed.x / 3600 * dt; }
       else { const l = st.tr.landings.find(x => st.t < x.t - descentH(x) && next >= x.t - descentH(x)); if (l) next = l.t - descentH(l); }  // stop at its start
     }
-    ts.override(slowed ? Math.min(ts.x, DESCENT_RATE_H * 3600) : null);
+    ts.override(slowed ? slowed.x : null, slowed ? landingPrefix(slowed.toTd) : undefined);
     st.t = Math.min(st.tr.horizon, next); if (st.t >= st.tr.horizon) setPlaying(false);
   }
   draw(false);

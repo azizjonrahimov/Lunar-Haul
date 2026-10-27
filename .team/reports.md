@@ -5323,7 +5323,7 @@ Every effect measured against strategic shifts by ~3 t, and Stage H 24 h tonnage
 1. **File size: 10.4 MB, the largest data file** (the others are ≤ 2.1 MB). Before the delta and byte-shuffle encoding it was 27.4 MB. The rest is clearance (≈ 3.3 MB + 2.7 MB of deltas), Fresnel (3.9 MB) and the `los` bits (0.4 MB, redundant with clearance).
    - If you want it smaller: drop the `los` bits, or store 400 MHz Fresnel at 0.05 resolution. Or keep it uncommitted in `.cache` with the sha256 recorded, as for B-64.
 
-## F-50 DONE 10:25 | Slower, easier-to-follow motion: one shared time scale on every animated page, close shots at 5 min/s, Skip quiet time on /world/, eased drives, limited turn rate, rolling wheels, 2 h trails
+## F-50 DONE 10:21 | Slower, easier-to-follow motion: one shared time scale on every animated page, close shots at 5 min/s, Skip quiet time on /world/, eased drives, limited turn rate, rolling wheels, 2 h trails
 
 **Files changed (nothing committed):**
 - New:
@@ -5435,3 +5435,28 @@ Every effect measured against strategic shifts by ~3 t, and Stage H 24 h tonnage
 **Questions for LEAD:**
 1. The inbox asks for a "landing: real time" note. /world/'s existing slow-motion is 10 s a second, not real time, so the label says exactly that ("Landing: slowed to 1 s on screen = 10 s on the Moon"). It reads "real time" only when the visitor's speed is real time. Should /world/ landings play at real time instead (about 1 minute or more per descent)?
 2. /stories/ (43 s/s) and the home hero (36 s/s) keep their own landing slow-motion. Should they share /world/'s 10 s a second?
+
+## F-50 LANDING RULE DONE 10:25 | Landings follow one shared rule on every page (LEAD's answer): a descent at 10 s a second, its last 60 s at real time
+
+**Files changed (uncommitted):**
+- `site/src/ui/speeds.js`: `landingX`, `landingPrefix`, `LANDING_SLOW_X = 10`, `LANDING_REAL_S = 60`.
+- `site/src/world/v2.js` (/world/ 3D and 2D plan).
+- `site/src/stories/stage.js` (stories; was 43 s a second).
+- `site/src/home-hero-3d.js` (hero; was 36 s a second).
+- `site/src/world/main.js` (/world/trace/ with "slow down for landings" ticked; was 10 s a second throughout).
+- `site/tests/timescale.test.mjs`.
+
+**What it does:**
+- A landing never plays faster than the page's own speed, so at "real time" the whole descent is real time.
+- The label says which part is playing: "Landing: slowed to 1 s on screen = 10 s on the Moon", then "Landing, last 60 s: real time, 1 s on screen = 1 s on the Moon".
+- The hero keeps looping. Six landings a year at about 1 min each don't make the loop too long, because quiet time is skipped.
+
+**Checks:**
+- Build OK; node tests 16/16, with 1 new test for the rule; `budgets.py pages` OK (/world/ 23.9 of 25 kB, /world/trace/ 18.9 of 20).
+- /world/ (2D plan, production build), around the 824.57 h landing:
+  - 150 s before touchdown, the label reads 10 s a second.
+  - 40 s before touchdown, it reads "last 60 s: real time".
+  - After touchdown, it is back to the page speed.
+  - No console errors.
+- Server stopped and tab closed.
+- Correction: the F-50 header above said 10:25; the real time was 10:21.

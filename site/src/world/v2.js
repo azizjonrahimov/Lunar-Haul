@@ -6,13 +6,13 @@
 // "Compare with" adds a second scene of the same seed as ghost rovers with its own chips. Without 3D (tier 0) the same
 // controls drive a 2D plan of the package (plan-v2.js). Traces from the browser simulator, the service and trace files
 // open in the trace viewer (/world/trace/). Speed (F-50): the shared time scale; overview 1 h/s, close shots and Follow
-// 5 min/s until the visitor picks a speed, landings slowed to 10 s a second (or real time), quiet time skipped.
+// 5 min/s until the visitor picks a speed, landings at 10 s a second with their last 60 s at real time, quiet time skipped.
 import './v2.css';
 import { door, segmented, sceneChips, narrative, statChip, timeline, h, reducedMotion, viewPad } from '../ui/index.js';
 import { detectTier } from '../stage/tier.js';
 import { loadScene } from './scene-data.js';
 import { loadTrajectories } from '../lander/trajectories.js';
-import { createTimescale, hoursText } from '../ui/timescale.js';
+import { createTimescale, hoursText, landingX, landingPrefix } from '../ui/timescale.js';
 import { motionIndex, quietJump } from './quiet.js';
 
 const $ = id => document.getElementById(id);
@@ -24,8 +24,8 @@ if (q.has('from') || q.has('sample') || q.get('view') === '2d') location.replace
 const fmt = (v, d = 0) => (Number.isFinite(v) ? v.toLocaleString('en-GB', { minimumFractionDigits: d, maximumFractionDigits: d }) : '–');
 const day = t => `day ${Math.floor(t / 24)}, ${String(Math.floor(t % 24)).padStart(2, '0')}:${String(Math.floor((t % 1) * 60)).padStart(2, '0')}`;
 const GROUP_LABEL = { phases: 'Base size and job rule', pads: 'Pad distance', earth: 'Earth link', fleet: 'Fleet' };
-// F-50: the default speed per shot (simulated seconds per second) until the visitor picks one; landings at most 10 s a second
-const SHOT_SPEED = { overview: 3600, pads: 300, legs: 300, base: 300, night: 300 }, CLOSE = 300, LANDING_X = 10;
+// F-50: the default speed per shot (simulated seconds per second) until the visitor picks one
+const SHOT_SPEED = { overview: 3600, pads: 300, legs: 300, base: 300, night: 300 }, CLOSE = 300;
 
 const ui = { scene: q.get('scene') || 'p2-marketplace', run: q.get('run'), shot: 'overview', icons: true, follow: 'none', compare: '' };
 // F-40: a moment of the year in the URL hash, written by "Copy link to this moment" (the scene or run stays in the query):
@@ -223,9 +223,10 @@ function setPlaying(v) {
 }
 function tick(dt) {
   if (!time.playing) return false;
-  // slow to 10 sim-seconds per second (or real time, if slower) while a lander descends, so the landing is seen
-  const landing = sc.activeLandings.length > 0, rate = landing ? Math.min(ts.x, LANDING_X) / 3600 : ts.h;
-  ts.override(landing ? Math.min(ts.x, LANDING_X) : null);
+  // a descent at 10 sim-seconds per second, its last 60 s at real time (the shared landing rule), so the landing is seen
+  const act = sc.activeLandings[0], landing = !!act, toTd = act ? (act.t_h - time.t) * 3600 : Infinity, lx = act ? landingX(toTd, ts.x) : 0;
+  const rate = landing ? lx / 3600 : ts.h;
+  ts.override(landing ? lx : null, landingPrefix(toTd));
   // one frame at 1 day/s is ~0.4 h and a descent ~0.05 h: stop at the next descent's start instead of stepping over it
   let next = time.t + dt * rate;
   const s0 = !landing && sc.nextLandingStart ? sc.nextLandingStart(time.t) : Infinity;

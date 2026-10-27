@@ -3,7 +3,7 @@
 // (F-50: the close shot's speed, shown by the shared time-scale label), quiet stretches skipped.
 import { door, reducedMotion } from './ui/index.js';
 import { detectTier } from './stage/tier.js';
-import { createTimescale, hoursText } from './ui/timescale.js';
+import { createTimescale, hoursText, landingX, landingPrefix } from './ui/timescale.js';
 
 const BASE = import.meta.env.BASE_URL;
 let root = null;
@@ -41,10 +41,11 @@ async function build(gate, tier) {
     const fx = tg.x - p.x, fz = tg.z - p.z, fl = Math.hypot(fx, fz) || 1, rx = -fz / fl, rz = fx / fl, s = 120;
     ctl.setLookAt(p.x - rx * s, p.y, p.z - rz * s, tg.x - rx * s, tg.y, tg.z - rz * s, false); }
   sc.stage.director.autoRotate(1.2);   // a full turn in five minutes
-  // the year plays at 5 min a second, slowed to 36 s a second through each descent so no frame steps over a landing
+  // the year plays at 5 min a second; each descent by the shared rule (10 s a second, the last 60 s at real time), and
+  // playback stops at a descent's start so no frame steps over a landing
   sc.stage.animate(dt => {
-    const landing = sc.activeLandings.length > 0, rate = landing ? 0.01 : ts.h;
-    ts.override(landing ? 36 : null);
+    const act = sc.activeLandings[0], landing = !!act, toTd = act ? (act.t_h - time) * 3600 : Infinity, lx = act ? landingX(toTd, ts.x) : 0, rate = landing ? lx / 3600 : ts.h;
+    ts.override(landing ? lx : null, landingPrefix(toTd));
     let next = time + dt * rate;
     const s0 = !landing && sc.nextLandingStart ? sc.nextLandingStart(time) : Infinity;
     if (s0 <= next) next = s0 + 1e-4;

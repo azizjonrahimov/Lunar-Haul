@@ -8,12 +8,12 @@
 // does not draw (routes are always drawn; job_rule follows the scene; colour_by, bids, relay) leave the view as is.
 // Every step: rings round its highlight sites, legs without an Earth link in red (earth_link steps; no_link holds the
 // highlight sites' legs red), no vehicle labels. Speed (F-50): world steps play at 5 min a second (the shared time
-// scale over the view, 1 min/s to 6 h/s), landings slowed to 43 s a second; the lander's descents play at real time.
+// scale over the view, 1 min/s to 6 h/s), landings by the shared rule (10 s a second, the last 60 s at real time); the lander's descents play at real time.
 import { reducedMotion } from '../ui/dom.js';
 import { viewPad } from '../ui/viewpad.js';
 import { loadTrajectories, episodeView } from '../lander/trajectories.js';
 import { loadScene } from '../world/scene-data.js';
-import { createTimescale } from '../ui/timescale.js';
+import { createTimescale, landingX, landingPrefix } from '../ui/timescale.js';
 
 const BASE = import.meta.env.BASE_URL, TRAJ = BASE + 'lab/policies/trajectories-v1.json';
 export const SUPPORTED_MODES = ['play', 'keepout', 'touchdowns', 'ejecta', 'queues', 'earth', 'earth_link', 'routes', 'job_rule'];
@@ -97,13 +97,14 @@ async function worldStage({ canvas, labelsHost, tier, fetchFn, onStatus }) {
     if (cam?.target && idx.sites[cam.target] && name !== 'overview') return sc.frameAt(sc.sitePos(cam.target), 700, 25, 35, instant);
     return sc.go(['overview', 'base', 'legs', 'night'].includes(name) ? name : 'overview', instant);
   }
-  // playing: 5 min a second (the time scale), slowed to the descent's pace while a lander comes down (a frame must not step over it)
+  // playing: 5 min a second (the time scale), landings by the shared rule (a frame must not step over a descent's start)
   function play() {
     const gen = ++time.gen; time.playing = true;
     sc.stage.animate(dt => {
       if (gen !== time.gen || !time.playing) return false;
-      const landing = sc.activeLandings.length > 0; ts.override(landing ? 43 : null);
-      let next = time.t + dt * (landing ? 0.012 : ts.h);
+      const act = sc.activeLandings[0], toTd = act ? (act.t_h - time.t) * 3600 : Infinity, lx = act ? landingX(toTd, ts.x) : 0;
+      ts.override(act ? lx : null, landingPrefix(toTd));
+      let next = time.t + dt * (act ? lx / 3600 : ts.h);
       if (!sc.activeLandings.length && sc.nextLandingStart) { const s0 = sc.nextLandingStart(time.t); if (s0 <= next) next = s0 + 1e-4; }
       setTime(next);
       return time.t < cur.pkg.index.horizon_h - 0.02;

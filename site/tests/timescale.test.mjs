@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { SPEEDS, speedName, speedText, parseSpeed, nearest, hoursText, simSpan } from '../src/ui/speeds.js';
+import { SPEEDS, speedName, speedText, parseSpeed, nearest, hoursText, simSpan, landingX, landingPrefix } from '../src/ui/speeds.js';
 import { loadScene, easeLeg } from '../src/world/scene-data.js';
 import { motionIndex, quietJump } from '../src/world/quiet.js';
 
@@ -36,6 +36,16 @@ test('?speed= values', () => {
   assert.equal(parseSpeed(''), null);
   assert.equal(nearest(Object.values(SPEEDS), 250), 300);
   assert.equal(nearest([1, 2, 5, 0], 3), 2);
+});
+
+test('the shared landing rule: 10 s a second, the last 60 s at real time, never faster than the page', () => {
+  assert.equal(landingX(300, 300), 10);
+  assert.equal(landingX(60, 300), 1);
+  assert.equal(landingX(5, 86400), 1);
+  assert.equal(landingX(300, 1), 1);
+  assert.equal(landingX(300, 2), 2);
+  assert.equal(landingPrefix(30), 'Landing, last 60 s');
+  assert.equal(landingPrefix(90), 'Landing');
 });
 
 test('easeLeg: starts and ends at rest, arrives on time, never faster than 1/(1-a)', () => {

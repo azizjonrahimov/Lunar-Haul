@@ -33,3 +33,10 @@ export function parseSpeed(s) {
 }
 // the available speed nearest to x (by ratio)
 export const nearest = (speeds, x) => speeds.filter(v => v > 0).reduce((a, b) => Math.abs(Math.log(b / x)) < Math.abs(Math.log(a / x)) ? b : a);
+
+// Landings, the same on every page (LEAD, 27 Oct): a descent plays at 10 s a second, its last 60 s (from about 150 m
+// up to touchdown, the burn and the dust) at real time; never faster than the page's own speed x.
+export const LANDING_SLOW_X = 10, LANDING_REAL_S = 60;
+export const landingX = (toTouchdownS, x = Infinity) => Math.min(x, toTouchdownS <= LANDING_REAL_S ? 1 : LANDING_SLOW_X);
+// the label prefix for the override: which part of the descent is playing
+export const landingPrefix = toTouchdownS => toTouchdownS <= LANDING_REAL_S ? `Landing, last ${LANDING_REAL_S} s` : 'Landing';
