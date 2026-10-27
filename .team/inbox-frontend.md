@@ -651,7 +651,7 @@ Steps:
 Done when: every vehicle above has all four modes, a part list with sources, and a deep link; no console errors;
 budgets pass; screenshots kept out of git; the report lists any part you had to invent and how it is labelled.
 
-## F-52 [QUEUED] 3D audit and upgrade of every page
+## F-52 [IN PROGRESS] 3D audit and upgrade of every page
 For each 3D page (/, /world/, /world/trace/, /stories/, /vehicles/, /lab/lander/, /lab/rover/, /simulator/, and
 any new page): a checklist with before/after notes: lighting (sun at the true low south-pole elevation, long
 shadows, earthshine), terrain detail near the camera (normal map, small rocks), materials (foil, regolith dust on

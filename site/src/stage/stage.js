@@ -229,5 +229,6 @@ export async function createStage({ canvas, labelsHost, preset = 'exhibit', tier
       renderer.dispose();
     },
   };
+  if (new URLSearchParams(location.search).has('bench')) window.__stage = api;   // F-52: ?bench exposes the stage for frame-time checks on the production build
   return api;
 }

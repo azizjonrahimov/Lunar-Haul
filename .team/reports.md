@@ -6109,3 +6109,60 @@ All are under 16.7 ms at p50. The tier-2 p95 spikes are probably one-off GC or t
    - Your call. I report all three numbers either way.
 2. **The lost-link rally rule is an Assumed behaviour that makes C_LEADER work on this terrain.** Keep it as the default, with `rally=False` as a sensitivity in E41?
 3. **E40 cell list:** I'll add the hopper_refuel sensitivity cell at 30 % (your answer to B-71 Q1) when I build the runner in B-75.
+
+## F-52 PART 4 DONE 12:43 | 3D audit of /world/trace/, the lander and rover labs, /simulator/; a ?bench hook; F-52 summary
+
+**Files changed (uncommitted):**
+- `site/src/stage/stage.js`: `?bench` puts the shared stage on `window.__stage`. With it, `stage.benchmark()` runs on the production build, no dev server needed: the dev server's ~0.3 GB pushed this machine under the RAM floor twice.
+
+**Checklist:**
+
+| page | lighting | near-camera detail | legend / labels | motion, tiers, keyboard | action |
+|---|---|---|---|---|---|
+| /lab/lander/ (and the lander-recording stories, same scene) | Sun 1.5° up; "Into the sun" view; long shadows. | Seeded rocks (1,500 / 4,000 / 8,000 by tier); dust sheet; plume follows throttle. | Phase chips, the Monte Carlo legend line, overlay labels; guidance (cyan) against actual (white) described in the story card. | Real time with the landing note (F-50); tier 0 2D; view pad and keys. | OK, no change |
+| /lab/rover/ | Sun 1.5° up, settable azimuth; the glare cone; night with headlights. | The rover lab's own instanced ground detail; the same blotchy close-up detail texture as /world/ (the big item below). | Story card, chips (speed, slip, light, Earth), callouts on the command point. | Speed control 10× in 3D (F-50); view pad; keys; tier 0 2D. | OK, no change |
+| /world/trace/ (the older viewer) | Its own horizon-map sun shader, 1.5° up; night with faint earthshine. | No rocks, unlike /world/ v2. This is the older viewer; adding them is not worth it. | Legend present (`renderLegend`). | Speed control (F-50); arrow keys; 2D plan fallback. | OK (listed: no rocks, older viewer) |
+| /simulator/ | — the replay is a 2D canvas map, no 3D | — | Map legend; the replay line as text. | Speed control (F-50); keys only while the Replay tab is open. | Not a 3D page; no change |
+
+**Frame time:** production build with `?bench&tier=N`, `stage.benchmark()` (150 frames after a warm-up); RTX 3050; buffer ~1440 × 625. The trace viewer has no shared stage, so it's F-40's method: 150 back-to-back scrubber redraws, each followed by `gl.finish()`.
+
+| page | tier | GPU p50 / p95 (ms) | CPU p50 / p95 (ms) | draw calls |
+|---|---|---|---|---|
+| /lab/lander/ | 3 | 3.9 / 4.2 | 1.6 / 2.7 | 143 (dev build) |
+| /lab/lander/ | 1 | 1.6 / 3.0 | 1.0 / 1.5 | 68 |
+| /lab/rover/ | 3 | 3.2 / 3.5 | 2.4 / 3.1 | 188 |
+| /lab/rover/ | 1 | 2.3 / 3.1 | 1.4 / 2.1 | 103 |
+| /world/trace/ (no tiers) | — | full redraw incl. GPU: 3.7 / 6.2 | | |
+
+Tier 2 isn't measured on the labs: free RAM stayed at 0.28-0.71 GB through this part, so I ran only the two ends.
+
+**Checks:**
+- `npm run build` OK; node tests 16/16; `budgets.py pages` OK.
+- No console errors on the pages loaded.
+- Each server stopped and each tab closed.
+- Free RAM was checked before every page. The first dev-server run read 0.37 GB, but the check ran in the same batch as the server start and the page load: both had already launched. I stopped them straight away, before any 3D view opened. A second run read 0.28 GB after its page loaded, and I stopped again. That's why I added `?bench` and used the light preview server.
+
+### F-52 summary (parts 1-4)
+
+**Fixed:**
+- /world/:
+  - initial JS 24.2 -> 21.4 kB, from lazy chunks;
+  - rocks round the base and pads;
+  - the rover-state legend;
+  - minutes instead of "in 0.0 h".
+- /vehicles/:
+  - box-fitted shots;
+  - Compare drawn in 63 calls instead of 1,811 (13.5 -> 1.7 ms GPU);
+  - a Lunar sun (1.5°) light.
+- The shared callout layer: no overlapping pills.
+- /stories/: `colour_by: owner` drawn as the text says, with an owner legend.
+- `?bench` for production frame-time checks.
+
+**Frame time:** every page is under 16.7 ms at p50 on every tier measured. The heaviest is /world/ at tier 3: 4.6 ms GPU, 4.5 ms CPU.
+
+**Big items for you (not fixed):**
+1. The close-up terrain detail on /world/ and the rover lab reads as a blotchy, repeating pattern. Your proposal: a tiling detail normal map that fades with distance, tier 2+ only. Not done: there wasn't enough free RAM for the browser rounds it needs. It's the next thing if you want it in F-52, or it can go to F-57.
+2. /world/trace/ has no rocks. It's the older viewer: I suggest leaving it.
+3. Tier 2 frame times for the two labs, when RAM allows.
+
+**What I need from BACKEND:** nothing.
