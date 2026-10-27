@@ -10,10 +10,11 @@
 import './v2.css';
 import { door, segmented, sceneChips, narrative, statChip, timeline, h, reducedMotion, viewPad } from '../ui/index.js';
 import { detectTier } from '../stage/tier.js';
-import { loadScene } from './scene-data.js';
-import { loadTrajectories } from '../lander/trajectories.js';
+import { STATE_STYLE } from './states.js';
 import { createTimescale, hoursText, landingX, landingPrefix } from '../ui/timescale.js';
-import { motionIndex, quietJump } from './quiet.js';
+// F-52: the scene reader, the landing recordings and Skip quiet time load with the year (lazy chunks), not with the page
+const lazy = { scene: () => import('./scene-data.js'), quiet: () => import('./quiet.js') };
+let Q = null;   // quiet.js once loaded
 
 const $ = id => document.getElementById(id);
 const BASE = import.meta.env.BASE_URL;
@@ -88,7 +89,7 @@ function headline() {
 // ---------- start: the 3D scene, the trajectories, the package ----------
 async function start(gate) {
   const fetchFn = label => url => gate.fetch(url, { label });
-  const [mod, tj] = await Promise.all([import('./v2-scene.js'), loadTrajectories(BASE + 'lab/policies/trajectories-v1.json', { fetchFn: fetchFn('landing recordings') }).catch(() => null)]);
+  const [mod, tj] = await Promise.all([import('./v2-scene.js'), import('../lander/trajectories.js').then(m => m.loadTrajectories(BASE + 'lab/policies/trajectories-v1.json', { fetchFn: fetchFn('landing recordings') })).catch(() => null)]);
   traj = tj;
   sc = await mod.createWorldScene({ canvas: $('w2-canvas'), labelsHost: $('w2-labels'), tier: Math.max(1, tierInfo.tier), fetchFn: fetchFn('catalogue'),
     onStatus: s => status(s === 'lost' ? 'The graphics context was lost; it will come back by itself.' : '') });
@@ -107,11 +108,12 @@ async function open(fetchFn = fetch) {
   const base = ui.run ? `${BASE}runs/${encodeURIComponent(ui.run)}/scene/` : `${BASE}scenes/${entry().package}/`;
   status('Loading the year…');
   try {
+    const [{ loadScene }, q] = await Promise.all([lazy.scene(), lazy.quiet()]); Q = q;
     pkg = await loadScene(base, { fetchFn });
     chunks = await Promise.all(pkg.index.chunks.map((_, k) => pkg.chunk(k)));
   } catch (e) { status(`Could not load ${ui.run ? 'run ' + ui.run : 'the scene'} (${e.message}).`); return; }
   pkg.index.landings.sort((a, b) => a.t_h - b.t_h);   // the code below takes the next landing in array order
-  motion = motionIndex(pkg, chunks);
+  motion = Q.motionIndex(pkg, chunks);
   sc.setPackage(pkg, traj); sc.shots();
   sc.setNoLink(!!pkg.index.comms && pkg.index.comms.mode !== 'off');   // F-40: legs a rover waits to start for want of an Earth link turn red
   linkChip?.el.remove(); linkChip = null; linkText = '';
@@ -157,6 +159,9 @@ function controls(plan = false) {
     urgent: statChip({ label: 'Urgent: 90 % delivered within', value: NaN, unit: 'h', digits: 1, flag: 'Modelled', source: "90th percentile of the wait (ready to delivered) of the priority-1 deliveries so far (the scene package's scene.json → deliveries)", tone: 'warm' }),
   };
   host.append(...Object.values(chips).map(c => c.el));
+  // F-52: what the rings round the rovers mean (the 3D view and the plan use the same colours)
+  $('w2-controls').append(h('ul', { class: 'w2-legend', 'aria-label': 'Ring colour under each rover' },
+    Object.values(STATE_STYLE).map(([col, words]) => h('li', {}, h('span', { class: 'w2-swatch', style: `background:${col}`, 'aria-hidden': 'true' }), words))));
 }
 // F-50: overview 1 h/s, close shots and Follow 5 min/s, unless the visitor (or ?speed=) chose a speed
 function shotSpeed() { if (ts && !ts.touched) ts.set(ui.follow !== 'none' ? CLOSE : SHOT_SPEED[ui.shot] ?? CLOSE); }
@@ -199,7 +204,7 @@ async function openCompare() {
   const e = gallery?.scenes.find(x => x.id === ui.compare);
   if (!e) { update(true); return; }
   status(`Loading ${e.title} to compare…`);
-  try { pkgB = await loadScene(`${BASE}scenes/${e.package}/`); chunksB = await Promise.all(pkgB.index.chunks.map((_, k) => pkgB.chunk(k))); }
+  try { const { loadScene } = await lazy.scene(); pkgB = await loadScene(`${BASE}scenes/${e.package}/`); chunksB = await Promise.all(pkgB.index.chunks.map((_, k) => pkgB.chunk(k))); }
   catch (err) { status(`Could not load ${e.title} (${err.message}).`); pkgB = null; return; }
   if (pkgB.index.seed !== pkg.index.seed) status(`Note: ${e.title} is seed ${pkgB.index.seed}, this scene seed ${pkg.index.seed}.`); else status('');
   sc.setCompare?.(pkgB);
@@ -241,7 +246,7 @@ function tick(dt) {
   const s0 = !landing && sc.nextLandingStart ? sc.nextLandingStart(time.t) : Infinity;
   if (s0 <= next) next = s0 + 1e-4;
   // F-50: nothing driving and no landing near: jump to a second before the next drive or landing
-  else if (!landing && ts.skip && motion) { const j = quietJump(time.t, rate, motion, s0); if (j !== null && j > next) { ts.toast(`Skipped ${hoursText(j - time.t)}, nothing moving`); next = j; } }
+  else if (!landing && ts.skip && motion) { const j = Q.quietJump(time.t, rate, motion, s0); if (j !== null && j > next) { ts.toast(`Skipped ${hoursText(j - time.t)}, nothing moving`); next = j; } }
   time.t = Math.min(pkg.horizon - 1e-3, next);
   update();
   if (time.t >= pkg.horizon - 1e-3) setPlaying(false);
@@ -346,7 +351,7 @@ function narrate(t, hr) {
 }
 
 function chipStory(t, hr, count) {
-  const idx = pkg.index, place = p => p.replace('_', ' '), inH = h => h > 48 ? `${fmt(h / 24)} days` : `${fmt(h, 1)} h`;
+  const idx = pkg.index, place = p => p.replace('_', ' '), inH = h => h > 48 ? `${fmt(h / 24)} days` : h >= 1 ? `${fmt(h, 1)} h` : `${fmt(Math.max(1, h * 60))} min`;   // F-52: minutes under an hour (was "0.0 h")
   if (ui.shot === 'pads') {
     const n = idx.landings.find(L => L.t_h > t), w = n && idx.keepout_windows.find(k => k[2] === n.pad && k[1] >= n.t_h);
     return n ? { eyebrow: 'Pads & keep-out', title: `Next landing: a ${n.cls}-class lander at ${place(n.pad)} in ${inH(n.t_h - t)}`,

@@ -5864,3 +5864,51 @@ Base elements keep their old list: no sources, tag from the model's representati
 2. /world/ is at 24.2 of 25 kB JS. The next /world/ work (F-53) will need either a raise or moving something into a lazy chunk.
 
 **What I need from BACKEND:** nothing.
+
+## F-52 PART 1 DONE 12:25 | 3D audit of /world/: headroom freed (24.2 -> 21.3 kB), rocks near the sites, a rover-state legend, the "0.0 h" story fixed, frame time per tier
+
+**Files changed (uncommitted):**
+- `site/src/world/v2.js`, `v2-scene.js`, `v2.css`
+- `tools/ci/budgets.json`: three lazy globs added to /world/, no limit changed.
+- `.team/inbox-frontend.md` (F-52 marked IN PROGRESS), `.team/reports.md`
+
+**Headroom (your item 2):**
+- The scene reader (`scene-data`), the landing recordings (`trajectories`) and Skip quiet time (`quiet`) now load with the year, as dynamic imports, not with the page.
+- /world/ initial JS: 24.2 -> 20.9 kB, then 21.3 with the legend, of 25.
+- Their entry chunks (`assets/world-scene-data-*`, `world-quiet-*`, `lander-trajectories-*`) are in /world/'s "lazy" list: lazy is 252.4 of 265.
+- Look inside was already a lazy chunk (0.55 kB).
+
+**/world/ checklist** (before -> after):
+
+| item | finding | action |
+|---|---|---|
+| Lighting | Sun at the scenario's hourly azimuth and 1.5° up (true south-pole low sun); long shadows through the horizon map; night: the sun off, environment at 0.06 for faint earthshine. | OK, no change |
+| Terrain near the camera | LOLA tile with the normal map and the 5 m patch round the base. No small rocks, so close shots looked bare. Very close (25 m) the detail normal map reads as a blotchy, repeating pattern. | **Fixed:** seeded stones and boulders (the lander lab's `scatterRocks`, power-law sizes, labelled representative in its code) round the base and both pads: 220 m radius, the 40 m round each pad and the habitat kept clear. Tier 1: none; tier 2: 2,500 per site; tier 3: 5,000 (15,000 in all). **Big, listed:** the close-up blotchy pattern needs a better detail texture, not a small fix. |
+| Materials | Foil (gold and silver MLI), white paint, stainless; regolith dust on the lower bodies of every kit material (`addDust`). | OK |
+| Labels | The callout layer pushes overlapping pills apart; vehicle labels only within 2.5 km; site labels clean in the screenshots. | OK here (overlaps are on /vehicles/, part 2) |
+| Camera presets | Overview, Pads & keep-out, Rover legs, Base, Night all frame what the story card names; Follow keeps the subject. | OK |
+| Legend | The timeline had one (event, landing, lunar night), but the rover ring colours had none. | **Fixed:** a legend of the 8 ring colours in words (idle, driving, loading or unloading, …), the same colours as the 3D view and the plan. |
+| Motion (F-50) | 5 min/s close, 1 h/s overview, landing rule, Skip quiet time, eased drives, turn limit, rolling wheels, 2 h trails. | done in F-50 |
+| Story text | "Next landing … in 0.0 h" while the landing was minutes away. | **Fixed:** minutes under an hour ("in 3 min"). |
+| Mobile / tiers | Tier 0 gets the 2D plan (its setNoLink crash fixed in F-50); tiers 1-3 differ in shadows, dust particles and now rocks; the controls wrap at 390 px (F-50 check). | OK |
+| Keyboard and screen reader | Canvas arrow/zoom keys and the view pad (F-40); `[`, `]` and space; the "Look inside a vehicle" button; the text mirror ("At this moment") and the story card as live text; the legend is a labelled list. | OK |
+
+**Frame time:** F-40 part 1 method, `stage.benchmark()`: 150 back-to-back frames after a warm-up, GPU timer queries. RTX 3050 laptop, the pads shot paused at the first landing, new rocks included. The dev build, because only it exposes the stage (its CPU times run a little high, unminified). Free RAM was 0.83 GB.
+
+| tier | GPU p50 / p95 (ms) | CPU p50 / p95 (ms) | draw calls | drawing buffer |
+|---|---|---|---|---|
+| 3 | 4.6 / 9.8 | 4.5 / 8.6 | 337 | 1267 × 572 |
+| 2 | 4.1 / 14.6 | 8.0 / 23.5 | 335 | 1440 × 650 |
+| 1 | 2.4 / 2.4 | 2.6 / 4.4 | 170 | 1440 × 650 |
+
+All are under 16.7 ms at p50. The tier-2 p95 spikes are probably one-off GC or the dev server; each tier is a single run.
+
+**Checks:**
+- `npm run build` OK; node tests 16/16; `budgets.py pages` OK.
+- In the browser (dev build): the legend shows all 8 states; there are 15,000 rocks round the three sites; no console errors at tiers 1-3.
+- Dev server stopped and tab closed.
+
+**Big items for you (not fixed):**
+1. The close-up terrain detail pattern on /world/: a new detail texture, or a different blend.
+
+**Next (part 2):** /vehicles/ (framing for wide and tall vehicles, callout overlaps), then /, /stories/, /world/trace/, the two labs and /simulator/.

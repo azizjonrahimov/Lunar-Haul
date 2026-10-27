@@ -324,7 +324,10 @@
       "data_gzip_kb": 4420,
       "lazy": [
         "assets/detect-gpu.esm-*.js",
-        "assets/world-v2-scene-*.js"
+        "assets/world-v2-scene-*.js",
+        "assets/world-scene-data-*.js",
+        "assets/world-quiet-*.js",
+        "assets/lander-trajectories-*.js"
       ],
       "lazy_gzip_kb": 265,
       "fonts": [

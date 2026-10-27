@@ -70,6 +70,12 @@ export async function createWorldScene({ canvas, labelsHost, tier, fetchFn = fet
   function setPackage(p, trajectories) {
     clear(); pkg = p; traj = trajectories;
     const idx = p.index;
+    // F-52: seeded stones and boulders round the base and the pads, for detail near the camera (representative: LOLA
+    // cannot resolve them); the pads themselves and the habitat stay clear; fewer on lower tiers
+    const rocks = [0, 1200, 2500, 5000][tier] || 2500;
+    Object.entries(idx.sites).filter(([name]) => name === 'BASE' || name.startsWith('PAD')).forEach(([, [x, y]], k) => {
+      const s = at(x, y); dyn.add(terrain.scatterRocks({ count: rocks, x: s.x, z: s.z, radius: 220, clearM: 40, seed: 11 + k }));
+    });
     // sites
     sitesG = new THREE.Group(); dyn.add(sitesG);
     for (const [name, [x, y]] of Object.entries(idx.sites)) {
