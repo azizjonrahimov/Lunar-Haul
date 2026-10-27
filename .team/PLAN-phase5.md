@@ -21,7 +21,23 @@ and keep working when Earth is out of sight ("the AI suggests, the safety progra
 - Results of hand-built rules (no published lunar standard exists) are labelled as assumptions with sweeps.
 - Vehicle internals: published layouts where they exist; everything else labelled "schematic".
 
-## 3. The three papers (LEAD writes; build scripts like R-1's; style: `paper_writing_guide.md`)
+## 3. The three papers (REVISED 27 Oct by the owner; supersedes the list below it)
+- **P1 "Working together without Earth"**: how robots and rovers of different companies share jobs, team up on
+  heavy and complex tasks and talk to each other directly on the Moon, including the learned ("neural") job
+  matching; whether the pooling gain survives when decisions move from Earth onto the robots. (Old P-A, whole.)
+  Experiments E40-E42 (B-72 to B-75).
+- **P2 "Rules of the road on the Moon and Mars"**: traffic rules and the safety layer for multi-owner surface
+  operations, proven on a discrete model, tested in 1.2 million encounters, priced in delay in the logistics
+  model, and carried to Mars (3.71 m/s2 gravity, 6-44 min round trips, ~2-week solar-conjunction blackouts, no
+  relay at first). (Old P-B plus a Mars part.) Experiments E43-E45 (B-77, B-78) and E47 Mars (B-82).
+- **P3 "The vehicles, the network and the market"**: the real lunar vehicles of 2028-2032 and what they can carry
+  (B-71's capacity plateau), the lunar radio network (LunaNet, DTE windows, the robot mesh of B-70), what Lunar
+  ATC puts inside each vehicle (safety program, planner, radio unit, base computer: compute, memory, bandwidth,
+  power, failover, measured on our implementation) and how its marketplace works (bids, payments, settlement on
+  Earth, audits; old B-76 reduced to the parts P3 needs). Experiments E46 market (B-76) and E48 sizing (B-81).
+- Dropped as a stand-alone paper: "owners who cheat" (its market mechanics move into P3).
+
+## 3a. Original paper list (27 Oct morning; kept for the record)
 - **P-A "Without Earth in the loop"**: does the pooling gain survive when decisions move onto the robots?
   Fleets without the network (owners alone, coordinated from Earth; one pooled dispatcher on Earth that acts only
   while Earth is in view, strict or plan-ahead) against fleets with it (elected leader on the Moon; decentralised

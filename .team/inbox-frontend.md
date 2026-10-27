@@ -691,3 +691,14 @@ Lunar ATC section with the headline numbers (from the papers' values files, neve
 ## F-57 [QUEUED, last] Quality pass
 Lighthouse table for every page (targets as recorded in F-40), budgets, accessibility, link check, and the
 Pages deploy check.
+
+## LEAD 27 Oct: the owner regrouped the papers (PLAN-phase5.md §3): P1 job sharing, team-ups, direct talk and
+## learned matching; P2 rules of the road and safety on the Moon and Mars; P3 the real vehicles, the radio network,
+## what Lunar ATC puts inside each vehicle, and its market. Effects on your queue:
+## - F-51 part 3: the ATC parts (base computer, plug-in radio unit) get their own cutaways, and every rover and
+##   lander viewer gains a "Lunar ATC inside" layer that highlights where the safety program, planner and radio
+##   unit sit (labelled as our design, not the maker's).
+## - F-54 (/atc/) gains a section "inside each vehicle" fed by B-81's table, a "how the market works" walk-through
+##   (a job posted, bids, the winner, payment, settlement on Earth later) fed by B-76, and a Mars toggle in the
+##   encounter sandbox once B-82 lands.
+## - F-56 lists the papers as P1, P2, P3 with the new titles.

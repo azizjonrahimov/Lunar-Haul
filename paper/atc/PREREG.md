@@ -63,3 +63,15 @@ learned bids are described as no better than hand-built bids.
 
 ## Changes after the first main-run row
 (none yet)
+
+### Change 1, 27 Oct 2026 (before any main run): papers regrouped by the owner
+The owner set the three papers: P1 job sharing, team-ups and direct communication with learned matching
+(hypotheses H1-H4, H6 unchanged); P2 traffic rules and safety layers on the Moon and Mars (H7, H8 unchanged; a Mars
+part is added as exploratory, H9 below); P3 the real vehicles, the radio network, what Lunar ATC puts inside each
+vehicle and how its market works (H5 unchanged and moved here; H10 below, exploratory).
+- **H9 (Mars, exploratory).** The same rules keep zero violations under Mars gravity and braking; the delay cost
+  of the rules is similar to the Moon's; Earth-dependent coordination loses more on Mars than on the Moon because
+  of 6-44 min round trips and conjunction blackouts.
+- **H10 (sizing, exploratory).** The safety check, the bidding and the radio traffic of Lunar ATC fit a
+  flight-class computer (reported as measured CPU time, memory and bytes per robot-hour, scaled to a reference
+  radiation-tolerant processor with a stated factor) and a 16 kbit/s-class link for 20 robots.

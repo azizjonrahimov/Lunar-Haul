@@ -1081,3 +1081,38 @@ A "with vs without" trace pair (same seed, 30 % load, a dark month of 2028) with
 whom, hops to BASE), reservations, landing closures, crew zones, team lifts and each regime's decisions:
 `site/public/data/atc/*.json` within budgets (agree limits with FRONTEND); the policy JSON for the browser; the
 encounter fixtures from B-78.
+
+## LEAD 27 Oct: the owner regrouped the papers (PLAN-phase5.md §3). P1 = old P-A (B-72..B-75 unchanged); P2 = rules
+## of the road + safety layer on the Moon AND Mars (B-77, B-78, new B-82); P3 = real vehicles, radio network, what
+## Lunar ATC puts inside each vehicle, and how its market works (B-76 reduced, new B-81). Order after B-75:
+## B-77, B-78, B-82, B-81, B-76, with B-79 batches as before.
+
+## B-76 [REVISED] The market for P3 (smaller than before)
+Keep: payment rules none / per-item second price / posted price per tonne-km with Shapley sharing; the money flow
+(what each owner earns and pays, what Earth settles afterwards, the operator's budget); individual rationality per
+owner against working alone; one manipulation test (bid scaling 0.8-1.25) and audits at q = 0, 5, 20 %. Drop:
+McAfee, charger hogging, false availability, cherry-picking. E46 at 3 owners (equal and 50/35/15), 30 seeds.
+
+## B-81 [QUEUED] What Lunar ATC puts inside each vehicle: measured sizing (P3, E48)
+1. Instrument our own implementation: CPU time per safety_check call and per auction round (median, p99), peak
+   memory of the on-robot part (planner + safety check + reservation table + ledger copy), bytes per message
+   type and messages per robot-hour from the E40/E43 runs at 1x, 4x and 8x fleet size; the base computer's
+   ledger size per year.
+2. Scale to flight hardware with an explicit, sourced factor (e.g. a radiation-tolerant processor's published
+   benchmark vs this laptop's; flag it ASSUMED with a range), and compare with the proposal's estimates (20 zones
+   x robots at 10 Hz; 16 kbit/s for 20 robots at 100 B/s; < 1 MB/day of market messages).
+3. Radio link budget per vehicle class (antenna height, frequency, power) against B-70's mesh: data rate at the
+   worst hop, latency budget for a 1 s decision, and what share of the time each class is reachable.
+4. Failover: base computer failure and recovery (MTBF sweep), leader re-election time, ledger consistency after
+   a partition merges (no job assigned twice; checked).
+Output `results/E48_sizing.json` + a table per vehicle class ("what's inside": software parts, CPU, memory,
+radio, power estimate, each value measured / derived / assumed).
+
+## B-82 [QUEUED] Mars part of P2 (E47)
+Same rules, safety check and encounter types with Mars parameters: g = 3.71 m/s2 in braking and slope terms;
+round trip 6-44 min (sweep 6, 20, 44); solar-conjunction blackout ~14 days a year (no Earth contact at all); no
+relay in the base case, one relay as a variant; dust storms as comms-loss bursts (assumed). Terrain: reuse the
+Connecting Ridge road geometry with Mars parameters as the controlled case; if a public HiRISE DTM of a candidate
+site (e.g. Jezero) can be read with the existing terrain code in under a day, add it as a second geometry,
+otherwise say why not. Outputs: encounter bounds per type on Mars, the delay cost of the rules, and E43's
+uncoordinated-vs-ATC comparison with Mars round trips (Earth hand-resolution becomes 6-44 min plus staff time).
