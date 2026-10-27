@@ -112,7 +112,11 @@ class P5State:
     def team_for(self, c, cands: List[Any]) -> Optional[List[Any]]:
         """The first pair (largest capacities first, as dispatch._team_for) that can lift c."""
         cands = sorted(cands, key=lambda v: -v.cls.capacity_kg)
+        atc = getattr(self.sim, "atc", None)
+        same = atc is not None and atc.cfg.get("team_scope") == "same_owner"
         for a, b in itertools.combinations(cands, 2):
+            if same and a.owner != b.owner:
+                continue
             if pair_capacity(a, b, self.rule, self.frac) >= c.mass_kg:
                 return [a, b]
         return None

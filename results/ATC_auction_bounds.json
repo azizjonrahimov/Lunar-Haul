@@ -1,0 +1,30 @@
+{
+ "instances": 200,
+ "seed": 73,
+ "ssi_vs_hungarian": {
+  "ratio_mean": 1.0233,
+  "ratio_max": 1.2549,
+  "share_optimal": 0.65,
+  "above_factor_2": []
+ },
+ "cbba_lite_vs_optimum": {
+  "1": {
+   "score_share_mean": 0.9882,
+   "score_share_min": 0.8513,
+   "below_half": []
+  },
+  "2": {
+   "score_share_mean": 0.9884,
+   "score_share_min": 0.8531,
+   "below_half": []
+  },
+  "3": {
+   "score_share_mean": 0.9895,
+   "score_share_min": 0.8531,
+   "below_half": []
+  }
+ },
+ "items_assigned_twice": 0,
+ "model": "positions uniform in a 10 x 10 square; SSI cost = robot->item + item->destination, one item per robot; CBBA-lite score = sum over a robot's items of max(0, 12 - distance travelled to it)",
+ "task": "B-73"
+}

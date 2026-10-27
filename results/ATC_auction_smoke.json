@@ -1,0 +1,1064 @@
+{
+ "task": "B-73",
+ "scenario": "data/scenarios/p5/p5-3eq-L30-T10.json",
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "note": "Scenario: p5 3 equal owners, k for 30 % FLEX + Eagle busy (data/scenarios/p5/p5-3eq-L30-T10.json), team share\n0.10. C_LEADER at message loss 0.10 (E40's level). Single process, --max-seconds 540.",
+ "years": {
+  "2028": {
+   "O_ORACLE": {
+    "atc_urgent_wait_mean_cens_h": [
+     15.5013,
+     7.5278
+    ],
+    "atc_urgent_wait_mean_h": [
+     15.5013,
+     7.5278
+    ],
+    "atc_urgent_wait_p95_cens_h": [
+     58.1462,
+     20.7045
+    ],
+    "atc_urgent_within24_share": [
+     0.7648,
+     0.1014
+    ],
+    "delivered_kg": [
+     1482464.6564,
+     31435.9141
+    ],
+    "atc_deadhead_share": [
+     0.4972,
+     0.0027
+    ],
+    "p5_cargo_util": [
+     0.2957,
+     0.0069
+    ],
+    "utilisation": [
+     0.0765,
+     0.0018
+    ],
+    "atc_decider_down_share": [
+     0.0,
+     0.0
+    ],
+    "atc_backlog_end_blackout_t_mean": [
+     2.7423,
+     0.5021
+    ],
+    "atc_backlog_end_blackout_t_max": [
+     10.8194,
+     6.4023
+    ],
+    "atc_msgs_per_robot_h": [
+     0.0,
+     0.0
+    ],
+    "atc_robots_out_share": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_conflicts": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_wait_h": [
+     0.0,
+     0.0
+    ],
+    "atc_rallies": [
+     0.0,
+     0.0
+    ],
+    "atc_queue_jobs": [
+     0.0,
+     0.0
+    ],
+    "atc_standing_jobs": [
+     0.0,
+     0.0
+    ],
+    "team_lifts": [
+     17.6,
+     6.6558
+    ],
+    "backlog_kg": [
+     2000.0,
+     1541.1035
+    ],
+    "stranded_kg": [
+     0.0,
+     0.0
+    ],
+    "atc_blackouts": [
+     13.0,
+     0.0
+    ],
+    "atc_conflicts": [
+     0.0,
+     0.0
+    ],
+    "atc_parallel_winners": [
+     0.0,
+     0.0
+    ],
+    "atc_wasted_trips": [
+     0.0,
+     0.0
+    ],
+    "atc_claims_won": [
+     0.0,
+     0.0
+    ],
+    "atc_claims_run": [
+     0.0,
+     0.0
+    ],
+    "atc_claims_stale": [
+     0.0,
+     0.0
+    ],
+    "atc_failed_meetings": [
+     0.0,
+     0.0
+    ],
+    "atc_team_no_agreement": [
+     0.0,
+     0.0
+    ],
+    "atc_meeting_wait_h": [
+     0.0,
+     0.0
+    ],
+    "urgent_minus_oracle_h": [
+     0.0,
+     0.0
+    ],
+    "wall_s_mean": 4.0
+   },
+   "C_AUCTION loss 0": {
+    "atc_urgent_wait_mean_cens_h": [
+     16.0774,
+     8.5612
+    ],
+    "atc_urgent_wait_mean_h": [
+     16.0774,
+     8.5612
+    ],
+    "atc_urgent_wait_p95_cens_h": [
+     58.6206,
+     22.5354
+    ],
+    "atc_urgent_within24_share": [
+     0.7724,
+     0.0908
+    ],
+    "delivered_kg": [
+     1486291.1725,
+     31425.1097
+    ],
+    "atc_deadhead_share": [
+     0.7099,
+     0.0038
+    ],
+    "p5_cargo_util": [
+     0.2957,
+     0.0073
+    ],
+    "utilisation": [
+     0.0765,
+     0.0014
+    ],
+    "atc_decider_down_share": [
+     0.0,
+     0.0
+    ],
+    "atc_backlog_end_blackout_t_mean": [
+     3.3318,
+     0.6186
+    ],
+    "atc_backlog_end_blackout_t_max": [
+     13.692,
+     6.4727
+    ],
+    "atc_msgs_per_robot_h": [
+     0.3093,
+     0.0125
+    ],
+    "atc_robots_out_share": [
+     0.0156,
+     0.0039
+    ],
+    "atc_hand_conflicts": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_wait_h": [
+     0.0,
+     0.0
+    ],
+    "atc_rallies": [
+     818.2,
+     14.5155
+    ],
+    "atc_queue_jobs": [
+     0.0,
+     0.0
+    ],
+    "atc_standing_jobs": [
+     0.0,
+     0.0
+    ],
+    "team_lifts": [
+     18.0,
+     5.3385
+    ],
+    "backlog_kg": [
+     2400.0,
+     2073.6441
+    ],
+    "stranded_kg": [
+     0.0,
+     0.0
+    ],
+    "atc_blackouts": [
+     13.0,
+     0.0
+    ],
+    "atc_conflicts": [
+     0.0,
+     0.0
+    ],
+    "atc_parallel_winners": [
+     0.0,
+     0.0
+    ],
+    "atc_wasted_trips": [
+     0.0,
+     0.0
+    ],
+    "atc_claims_won": [
+     0.0,
+     0.0
+    ],
+    "atc_claims_run": [
+     0.0,
+     0.0
+    ],
+    "atc_claims_stale": [
+     0.0,
+     0.0
+    ],
+    "atc_failed_meetings": [
+     0.0,
+     0.0
+    ],
+    "atc_team_no_agreement": [
+     0.0,
+     0.0
+    ],
+    "atc_meeting_wait_h": [
+     0.0,
+     0.0
+    ],
+    "urgent_minus_oracle_h": [
+     0.576,
+     1.368
+    ],
+    "wall_s_mean": 14.8
+   },
+   "C_AUCTION loss 0.10": {
+    "atc_urgent_wait_mean_cens_h": [
+     16.1944,
+     7.0905
+    ],
+    "atc_urgent_wait_mean_h": [
+     16.1944,
+     7.0905
+    ],
+    "atc_urgent_wait_p95_cens_h": [
+     64.5596,
+     23.3856
+    ],
+    "atc_urgent_within24_share": [
+     0.7839,
+     0.081
+    ],
+    "delivered_kg": [
+     1490479.8408,
+     29517.9781
+    ],
+    "atc_deadhead_share": [
+     0.7098,
+     0.003
+    ],
+    "p5_cargo_util": [
+     0.2969,
+     0.0042
+    ],
+    "utilisation": [
+     0.077,
+     0.0008
+    ],
+    "atc_decider_down_share": [
+     0.0,
+     0.0
+    ],
+    "atc_backlog_end_blackout_t_mean": [
+     3.2556,
+     0.6943
+    ],
+    "atc_backlog_end_blackout_t_max": [
+     13.0024,
+     6.5899
+    ],
+    "atc_msgs_per_robot_h": [
+     0.2964,
+     0.0096
+    ],
+    "atc_robots_out_share": [
+     0.0189,
+     0.0074
+    ],
+    "atc_hand_conflicts": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_wait_h": [
+     0.0,
+     0.0
+    ],
+    "atc_rallies": [
+     813.6,
+     17.2714
+    ],
+    "atc_queue_jobs": [
+     0.0,
+     0.0
+    ],
+    "atc_standing_jobs": [
+     0.0,
+     0.0
+    ],
+    "team_lifts": [
+     19.0,
+     5.3852
+    ],
+    "backlog_kg": [
+     1900.0,
+     2302.1729
+    ],
+    "stranded_kg": [
+     0.0,
+     0.0
+    ],
+    "atc_blackouts": [
+     13.0,
+     0.0
+    ],
+    "atc_conflicts": [
+     47.4,
+     6.3482
+    ],
+    "atc_parallel_winners": [
+     0.4,
+     0.5477
+    ],
+    "atc_wasted_trips": [
+     0.0,
+     0.0
+    ],
+    "atc_claims_won": [
+     0.0,
+     0.0
+    ],
+    "atc_claims_run": [
+     0.0,
+     0.0
+    ],
+    "atc_claims_stale": [
+     0.0,
+     0.0
+    ],
+    "atc_failed_meetings": [
+     2.8,
+     1.6432
+    ],
+    "atc_team_no_agreement": [
+     8.4,
+     3.5777
+    ],
+    "atc_meeting_wait_h": [
+     2.8,
+     1.6432
+    ],
+    "urgent_minus_oracle_h": [
+     0.693,
+     1.838
+    ],
+    "wall_s_mean": 13.2
+   },
+   "C_AUCTION loss 0.25": {
+    "atc_urgent_wait_mean_cens_h": [
+     17.3429,
+     7.2243
+    ],
+    "atc_urgent_wait_mean_h": [
+     17.3429,
+     7.2243
+    ],
+    "atc_urgent_wait_p95_cens_h": [
+     67.3843,
+     24.7745
+    ],
+    "atc_urgent_within24_share": [
+     0.7803,
+     0.0929
+    ],
+    "delivered_kg": [
+     1485294.4279,
+     31359.7461
+    ],
+    "atc_deadhead_share": [
+     0.7121,
+     0.0026
+    ],
+    "p5_cargo_util": [
+     0.2963,
+     0.0068
+    ],
+    "utilisation": [
+     0.0766,
+     0.0021
+    ],
+    "atc_decider_down_share": [
+     0.0,
+     0.0
+    ],
+    "atc_backlog_end_blackout_t_mean": [
+     2.9714,
+     0.4836
+    ],
+    "atc_backlog_end_blackout_t_max": [
+     11.5449,
+     5.9423
+    ],
+    "atc_msgs_per_robot_h": [
+     0.2836,
+     0.0098
+    ],
+    "atc_robots_out_share": [
+     0.0163,
+     0.0028
+    ],
+    "atc_hand_conflicts": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_wait_h": [
+     0.0,
+     0.0
+    ],
+    "atc_rallies": [
+     824.8,
+     22.698
+    ],
+    "atc_queue_jobs": [
+     0.0,
+     0.0
+    ],
+    "atc_standing_jobs": [
+     0.0,
+     0.0
+    ],
+    "team_lifts": [
+     17.4,
+     5.9414
+    ],
+    "backlog_kg": [
+     2700.0,
+     2729.4688
+    ],
+    "stranded_kg": [
+     0.0,
+     0.0
+    ],
+    "atc_blackouts": [
+     13.0,
+     0.0
+    ],
+    "atc_conflicts": [
+     121.2,
+     13.5904
+    ],
+    "atc_parallel_winners": [
+     1.2,
+     0.4472
+    ],
+    "atc_wasted_trips": [
+     0.0,
+     0.0
+    ],
+    "atc_claims_won": [
+     0.0,
+     0.0
+    ],
+    "atc_claims_run": [
+     0.0,
+     0.0
+    ],
+    "atc_claims_stale": [
+     0.0,
+     0.0
+    ],
+    "atc_failed_meetings": [
+     10.6,
+     8.0187
+    ],
+    "atc_team_no_agreement": [
+     39.2,
+     16.3463
+    ],
+    "atc_meeting_wait_h": [
+     10.6,
+     8.0187
+    ],
+    "urgent_minus_oracle_h": [
+     1.842,
+     2.003
+    ],
+    "wall_s_mean": 15.0
+   },
+   "C_AUCTION loss 0.40": {
+    "atc_urgent_wait_mean_cens_h": [
+     19.5718,
+     7.7527
+    ],
+    "atc_urgent_wait_mean_h": [
+     19.5718,
+     7.7527
+    ],
+    "atc_urgent_wait_p95_cens_h": [
+     80.3775,
+     40.6393
+    ],
+    "atc_urgent_within24_share": [
+     0.7716,
+     0.0901
+    ],
+    "delivered_kg": [
+     1485717.8052,
+     26457.893
+    ],
+    "atc_deadhead_share": [
+     0.7134,
+     0.0029
+    ],
+    "p5_cargo_util": [
+     0.2975,
+     0.0074
+    ],
+    "utilisation": [
+     0.0769,
+     0.0016
+    ],
+    "atc_decider_down_share": [
+     0.0,
+     0.0
+    ],
+    "atc_backlog_end_blackout_t_mean": [
+     3.1245,
+     0.4555
+    ],
+    "atc_backlog_end_blackout_t_max": [
+     11.6342,
+     5.5847
+    ],
+    "atc_msgs_per_robot_h": [
+     0.2734,
+     0.0094
+    ],
+    "atc_robots_out_share": [
+     0.0174,
+     0.0037
+    ],
+    "atc_hand_conflicts": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_wait_h": [
+     0.0,
+     0.0
+    ],
+    "atc_rallies": [
+     829.6,
+     17.358
+    ],
+    "atc_queue_jobs": [
+     0.0,
+     0.0
+    ],
+    "atc_standing_jobs": [
+     0.0,
+     0.0
+    ],
+    "team_lifts": [
+     16.8,
+     5.1672
+    ],
+    "backlog_kg": [
+     1900.0,
+     1816.5902
+    ],
+    "stranded_kg": [
+     0.0,
+     0.0
+    ],
+    "atc_blackouts": [
+     13.0,
+     0.0
+    ],
+    "atc_conflicts": [
+     194.6,
+     24.8455
+    ],
+    "atc_parallel_winners": [
+     1.4,
+     0.5477
+    ],
+    "atc_wasted_trips": [
+     1.6,
+     1.1402
+    ],
+    "atc_claims_won": [
+     0.0,
+     0.0
+    ],
+    "atc_claims_run": [
+     0.0,
+     0.0
+    ],
+    "atc_claims_stale": [
+     0.0,
+     0.0
+    ],
+    "atc_failed_meetings": [
+     15.4,
+     8.6776
+    ],
+    "atc_team_no_agreement": [
+     165.8,
+     100.1159
+    ],
+    "atc_meeting_wait_h": [
+     15.4,
+     8.6776
+    ],
+    "urgent_minus_oracle_h": [
+     4.071,
+     3.922
+    ],
+    "wall_s_mean": 13.5
+   },
+   "C_AUCTION depth 5 loss 0": {
+    "atc_urgent_wait_mean_cens_h": [
+     21.0656,
+     7.4266
+    ],
+    "atc_urgent_wait_mean_h": [
+     21.0656,
+     7.4266
+    ],
+    "atc_urgent_wait_p95_cens_h": [
+     91.6133,
+     24.7247
+    ],
+    "atc_urgent_within24_share": [
+     0.7411,
+     0.0796
+    ],
+    "delivered_kg": [
+     1484403.7035,
+     31478.5352
+    ],
+    "atc_deadhead_share": [
+     0.6545,
+     0.0067
+    ],
+    "p5_cargo_util": [
+     0.3468,
+     0.0115
+    ],
+    "utilisation": [
+     0.0891,
+     0.0031
+    ],
+    "atc_decider_down_share": [
+     0.0,
+     0.0
+    ],
+    "atc_backlog_end_blackout_t_mean": [
+     2.8227,
+     0.4756
+    ],
+    "atc_backlog_end_blackout_t_max": [
+     12.2762,
+     5.4005
+    ],
+    "atc_msgs_per_robot_h": [
+     0.4933,
+     0.0171
+    ],
+    "atc_robots_out_share": [
+     0.0429,
+     0.0024
+    ],
+    "atc_hand_conflicts": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_wait_h": [
+     0.0,
+     0.0
+    ],
+    "atc_rallies": [
+     651.0,
+     22.2823
+    ],
+    "atc_queue_jobs": [
+     0.0,
+     0.0
+    ],
+    "atc_standing_jobs": [
+     0.0,
+     0.0
+    ],
+    "team_lifts": [
+     16.2,
+     7.225
+    ],
+    "backlog_kg": [
+     1600.0,
+     2073.6441
+    ],
+    "stranded_kg": [
+     0.0,
+     0.0
+    ],
+    "atc_blackouts": [
+     13.0,
+     0.0
+    ],
+    "atc_conflicts": [
+     0.0,
+     0.0
+    ],
+    "atc_parallel_winners": [
+     0.0,
+     0.0
+    ],
+    "atc_wasted_trips": [
+     0.0,
+     0.0
+    ],
+    "atc_claims_won": [
+     2926.8,
+     33.0787
+    ],
+    "atc_claims_run": [
+     2629.4,
+     16.1957
+    ],
+    "atc_claims_stale": [
+     294.8,
+     27.5536
+    ],
+    "atc_failed_meetings": [
+     0.0,
+     0.0
+    ],
+    "atc_team_no_agreement": [
+     0.0,
+     0.0
+    ],
+    "atc_meeting_wait_h": [
+     0.0,
+     0.0
+    ],
+    "urgent_minus_oracle_h": [
+     5.564,
+     1.797
+    ],
+    "wall_s_mean": 4.3
+   },
+   "C_AUCTION depth 5 loss 0.25": {
+    "atc_urgent_wait_mean_cens_h": [
+     25.9804,
+     10.8427
+    ],
+    "atc_urgent_wait_mean_h": [
+     25.9804,
+     10.8427
+    ],
+    "atc_urgent_wait_p95_cens_h": [
+     109.2029,
+     47.7763
+    ],
+    "atc_urgent_within24_share": [
+     0.6958,
+     0.0844
+    ],
+    "delivered_kg": [
+     1489372.4762,
+     29433.3002
+    ],
+    "atc_deadhead_share": [
+     0.6537,
+     0.0062
+    ],
+    "p5_cargo_util": [
+     0.3559,
+     0.0155
+    ],
+    "utilisation": [
+     0.0916,
+     0.0041
+    ],
+    "atc_decider_down_share": [
+     0.0,
+     0.0
+    ],
+    "atc_backlog_end_blackout_t_mean": [
+     3.1263,
+     0.4918
+    ],
+    "atc_backlog_end_blackout_t_max": [
+     13.7792,
+     4.9942
+    ],
+    "atc_msgs_per_robot_h": [
+     0.4557,
+     0.0119
+    ],
+    "atc_robots_out_share": [
+     0.0424,
+     0.0022
+    ],
+    "atc_hand_conflicts": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_wait_h": [
+     0.0,
+     0.0
+    ],
+    "atc_rallies": [
+     641.8,
+     19.7155
+    ],
+    "atc_queue_jobs": [
+     0.0,
+     0.0
+    ],
+    "atc_standing_jobs": [
+     0.0,
+     0.0
+    ],
+    "team_lifts": [
+     17.2,
+     7.3959
+    ],
+    "backlog_kg": [
+     1600.0,
+     2073.6441
+    ],
+    "stranded_kg": [
+     0.0,
+     0.0
+    ],
+    "atc_blackouts": [
+     13.0,
+     0.0
+    ],
+    "atc_conflicts": [
+     442.0,
+     33.3542
+    ],
+    "atc_parallel_winners": [
+     3.8,
+     2.1679
+    ],
+    "atc_wasted_trips": [
+     0.4,
+     0.5477
+    ],
+    "atc_claims_won": [
+     2926.8,
+     24.7225
+    ],
+    "atc_claims_run": [
+     2625.0,
+     13.435
+    ],
+    "atc_claims_stale": [
+     298.8,
+     20.6083
+    ],
+    "atc_failed_meetings": [
+     9.2,
+     4.4944
+    ],
+    "atc_team_no_agreement": [
+     38.0,
+     10.7703
+    ],
+    "atc_meeting_wait_h": [
+     9.2,
+     4.4944
+    ],
+    "urgent_minus_oracle_h": [
+     10.479,
+     4.199
+    ],
+    "wall_s_mean": 4.6
+   },
+   "C_AUCTION no commit loss 0.25": {
+    "atc_urgent_wait_mean_cens_h": [
+     15.7098,
+     6.4597
+    ],
+    "atc_urgent_wait_mean_h": [
+     15.7098,
+     6.4597
+    ],
+    "atc_urgent_wait_p95_cens_h": [
+     58.6159,
+     22.0941
+    ],
+    "atc_urgent_within24_share": [
+     0.7876,
+     0.0834
+    ],
+    "delivered_kg": [
+     1487261.1256,
+     31918.1252
+    ],
+    "atc_deadhead_share": [
+     0.7108,
+     0.004
+    ],
+    "p5_cargo_util": [
+     0.2985,
+     0.0068
+    ],
+    "utilisation": [
+     0.0773,
+     0.0011
+    ],
+    "atc_decider_down_share": [
+     0.0,
+     0.0
+    ],
+    "atc_backlog_end_blackout_t_mean": [
+     3.1796,
+     0.6179
+    ],
+    "atc_backlog_end_blackout_t_max": [
+     13.3147,
+     4.4813
+    ],
+    "atc_msgs_per_robot_h": [
+     0.28,
+     0.0097
+    ],
+    "atc_robots_out_share": [
+     0.0198,
+     0.0063
+    ],
+    "atc_hand_conflicts": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_wait_h": [
+     0.0,
+     0.0
+    ],
+    "atc_rallies": [
+     819.4,
+     21.8243
+    ],
+    "atc_queue_jobs": [
+     0.0,
+     0.0
+    ],
+    "atc_standing_jobs": [
+     0.0,
+     0.0
+    ],
+    "team_lifts": [
+     17.2,
+     6.5345
+    ],
+    "backlog_kg": [
+     2100.0,
+     2247.2205
+    ],
+    "stranded_kg": [
+     0.0,
+     0.0
+    ],
+    "atc_blackouts": [
+     13.0,
+     0.0
+    ],
+    "atc_conflicts": [
+     120.0,
+     16.5076
+    ],
+    "atc_parallel_winners": [
+     0.6,
+     0.8944
+    ],
+    "atc_wasted_trips": [
+     0.0,
+     0.0
+    ],
+    "atc_claims_won": [
+     0.0,
+     0.0
+    ],
+    "atc_claims_run": [
+     0.0,
+     0.0
+    ],
+    "atc_claims_stale": [
+     0.0,
+     0.0
+    ],
+    "atc_failed_meetings": [
+     8.0,
+     4.0
+    ],
+    "atc_team_no_agreement": [
+     0.0,
+     0.0
+    ],
+    "atc_meeting_wait_h": [
+     8.0,
+     4.0
+    ],
+    "urgent_minus_oracle_h": [
+     0.209,
+     2.335
+    ],
+    "wall_s_mean": 14.4
+   }
+  }
+ }
+}

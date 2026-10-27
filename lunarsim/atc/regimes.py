@@ -14,6 +14,8 @@ Regimes
 - A_MOON        each owner alone, decided on the Moon by its own robots: the owner's robots that hear each other
                 over the owner's own mesh (its robots only, multi-hop) decide; robots outside that partition act on
                 their last instructions. Cross-owner apron conflicts still go by hand through Earth (t_hand).
+- C_AUCTION     pooled and decentralised: the robots auction among themselves over the mesh (lunarsim/atc/auction.py;
+                bundle depth, team-lift commit and rendezvous timeout, team scope).
 - C_LEADER      pooled; an elected leader on the Moon (the base computer on the BASE mast; when it fails, after a
                 re-election delay, the robot that reaches the most robots) runs the marketplace for the robots it
                 reaches through the mesh (B-70 radio, multi-hop through robots and the mast). Robots outside its
@@ -55,7 +57,7 @@ LINK_V1 = os.path.join(ROOT, "data", "comms", "connecting_ridge", "earth_link-v1
 LINK_V3 = os.path.join(ROOT, "data", "comms", "connecting_ridge", "earth_link-v3.json")
 SAMPLES_V1 = os.path.join(ROOT, "data", "comms", "connecting_ridge", "earth_link-v1-samples.json.gz")
 
-REGIMES = ("O_ORACLE", "B_EARTH", "B_EARTH_RELAY", "A_EARTH", "A_MOON", "C_LEADER")
+REGIMES = ("O_ORACLE", "B_EARTH", "B_EARTH_RELAY", "A_EARTH", "A_MOON", "C_LEADER", "C_AUCTION")
 A_REGIMES = ("A_EARTH", "A_MOON")
 EARTH_REGIMES = ("A_EARTH", "B_EARTH", "B_EARTH_RELAY")
 DEFAULTS: Dict[str, Any] = {
@@ -73,6 +75,11 @@ DEFAULTS: Dict[str, Any] = {
     "base_repair_h": 24.0,           # Assumed (B-72 task)
     "reelect_h": 0.5,                # Assumed (B-72 task; CADRE wakes about every 30 min)
     "rally": True,                   # Assumed: lost-link procedure (drive to a rally point when unheard)
+    # C_AUCTION (B-73, lunarsim/atc/auction.py)
+    "depth": 1,                      # bundle depth (jobs a robot may hold: 1 now + depth - 1 claims), 1 / 2 / 5
+    "commit": True,                  # team lifts: two-phase commit (False: go on the proposal alone)
+    "timeout_h": 1.0,                # Assumed (B-73 task): rendezvous timeout, sweep 0.5-2 h
+    "team_scope": "any",             # any | same_owner (pairs of one owner only)
 }
 REGIME_KEYS = set(DEFAULTS)
 RETRY_H = 0.05                       # Assumed: a robot whose message was lost is reconsidered 3 min later
@@ -185,7 +192,7 @@ class ATCState:
         self._earth_t = [t for t, _ in self.earth_ch]
         # base computer (C_LEADER): failure intervals from its own stream
         self.base_down: List[Tuple[float, float]] = []
-        if regime == "C_LEADER" and math.isfinite(float(c["base_mtbf_h"])):
+        if regime in ("C_LEADER", "C_AUCTION") and math.isfinite(float(c["base_mtbf_h"])):
             rng = np.random.default_rng([int(sim.seed), 72, 1])
             t = 0.0
             while True:
@@ -211,7 +218,11 @@ class ATCState:
         self.queue_for: Optional[float] = None
         self._covered: Dict[float, List[str]] = {}
         self._retry_at = -1.0
-        self.m = {"rallies": 0, "calls": 0, "gated_calls": 0, "blocked_calls": 0, "queue_jobs": 0, "standing_jobs": 0,
+        self.claims: Dict[int, List[Tuple[List[Any], List[str]]]] = {}
+        self.claim_end: Dict[int, float] = {}
+        self.m = {"claims_run": 0, "claims_stale": 0, "claims_won": 0, "wasted_trips": 0, "parallel_winners": 0,
+                  "conflicts": 0, "team_no_agreement": 0, "failed_meetings": 0, "meeting_wait_h": 0.0,
+                  "rallies": 0, "calls": 0, "gated_calls": 0, "blocked_calls": 0, "queue_jobs": 0, "standing_jobs": 0,
                   "hand_conflicts": 0, "hand_wait_h": 0.0, "robots_out_sum": 0.0, "robots_seen": 0,
                   "dropped_jobs": 0, "status_lost": 0}
         # wake-ups: dispatch resumes when the decision maker comes back
@@ -219,7 +230,7 @@ class ATCState:
         if regime in EARTH_REGIMES:
             wakes += [t for t, up in self.earth_ch if up and t > sim.t]
         for a, b in self.base_down:
-            wakes += [a + float(c["reelect_h"]), b]
+            wakes += [a + float(c["reelect_h"]), b] if regime == "C_LEADER" else [b]
         for t in sorted(set(wakes)):
             if sim.t < t < self.H:
                 sim._push(t + 1e-6, "WAKE", None)
@@ -331,6 +342,9 @@ class ATCState:
             jobs = _inner_fn("inhouse")(sim, waiting, ok) if ok else []
             jobs = self._deliver(sim, jobs, t)
             return self._hand(sim, jobs, t)
+        if r == "C_AUCTION":
+            from . import auction
+            return auction.dispatch(self, sim, waiting, free, inner_kw)
         if r == "C_LEADER":
             ok = self._leader_partition(sim, free, t)
             if ok is None:
@@ -588,6 +602,11 @@ class ATCState:
             "atc_msgs_per_robot_h": self.channel.sent / (nveh * H),
             "atc_msgs_lost": self.channel.lost, "atc_msg_latency_s_mean": self.channel.latency_s / max(1, self.channel.messages - self.channel.lost),
             "atc_base_failures": len(self.base_down), "atc_rallies": self.m["rallies"],
+            "atc_claims_won": self.m["claims_won"], "atc_claims_run": self.m["claims_run"],
+            "atc_claims_stale": self.m["claims_stale"], "atc_wasted_trips": self.m["wasted_trips"],
+            "atc_parallel_winners": self.m["parallel_winners"], "atc_conflicts": self.m["conflicts"],
+            "atc_team_no_agreement": self.m["team_no_agreement"], "atc_failed_meetings": self.m["failed_meetings"],
+            "atc_meeting_wait_h": self.m["meeting_wait_h"],
             "atc_urgent_items": len(urg),
             "atc_urgent_wait_mean_h": float(waits.mean()) if len(waits) else float("nan"),
             "atc_urgent_wait_mean_cens_h": float(cens.mean()) if len(cens) else float("nan"),

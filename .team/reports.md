@@ -6317,3 +6317,105 @@ Tier 2 isn't measured on the labs: free RAM stayed at 0.28-0.71 GB through this 
 **What I need from BACKEND:** nothing.
 
 Idle until BACKEND's data for F-53 lands.
+
+## B-73 DONE 13:15 | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**Headline**
+
+- **Checks.** Perfect links with depth 1 give the pooled marketplace's event trace and summary exactly.
+  - On 200 random small instances:
+    - SSI's total cost is at most 1.255× the Hungarian optimum (mean 1.023; optimal in 65 %; no case above factor 2);
+    - CBBA-lite's score is at least 85.1 % of the brute-force optimum at depths 1, 2 and 3 (means 98.8-99.0 %; no case below 50 %).
+  - So the 2025 failure mode didn't show up in this instance family; the report says so rather than claiming a proof.
+  - No item is assigned twice, either in the small instances or in the lossy depth-5 simulation.
+- **Smoke table: C_AUCTION vs O_ORACLE.** p5 3eq at 30 % load, 2028, 5 seeds, CRN. Mean urgent wait (h, censored), paired minus O ± sd:
+
+  | cell | urgent wait | minus O | p95 | within 24 h |
+  |---|---|---|---|---|
+  | O_ORACLE | 15.5 | - | 58.1 | 0.765 |
+  | C_AUCTION, loss 0 | 16.1 | +0.58 ± 1.37 | 58.6 | 0.772 |
+  | C_AUCTION, loss 0.10 | 16.2 | +0.69 ± 1.84 | 64.6 | 0.784 |
+  | C_AUCTION, loss 0.25 | 17.3 | +1.84 ± 2.00 | 67.4 | 0.780 |
+  | C_AUCTION, loss 0.40 | 19.6 | +4.07 ± 3.92 | 80.4 | 0.772 |
+  | depth 5, loss 0 | 21.1 | +5.56 ± 1.80 | 91.6 | 0.741 |
+  | depth 5, loss 0.25 | 26.0 | +10.48 ± 4.20 | 109.2 | 0.696 |
+  | no commit, loss 0.25 | 15.7 | +0.21 ± 2.34 | 58.6 | 0.788 |
+
+  - Delivered tonnage is flat: 1,482-1,490 t.
+  - **H3a looks likely:** at loss ≤ 0.10 the auction is within 4.5 % of O.
+  - **H3b's direction holds:** depth 5 is worse than depth 1, at loss 0 and more so at 0.25.
+    - Depth-5 robots win ~2,927 claims per run and ~295 go stale.
+    - Claims tie items to robots that free up later, which raises FLEX + Eagle busy share from 0.296 to 0.347-0.356.
+  - **Loss mechanics:**
+    - Conflicts settled by the CBBA rule grow with loss: 47 per run at 0.10, 121 at 0.25, 195 at 0.40.
+    - Wasted trips (unsettled conflicts) are rare: 0, 0, 1.6 per run.
+    - Parallel winners (non-overlapping robots that missed the best bid): 0.4-1.4 per run.
+- **H6 finding (pre-registered expectation does not hold here):** the two-phase commit does not reduce failed meetings. At loss 0.25:
+
+  | | commit | no commit |
+  |---|---|---|
+  | failed meetings per run | 10.6 | 8.0 |
+  | proposals that end without agreement | 39.2 | - |
+  | team lifts per run | 17.4 | 17.2 |
+
+  - At loss 0.10 with commit: 2.8 failed meetings and 8.4 without agreement. At loss 0.40: 15.4 and 165.8.
+  - **Why:** some message is always last (the Two Generals problem). With commit, a lost final commit sends the proposer alone. Retrying after "no agreement" adds attempts, each with a (1-p)² p chance of that failure. Without commit, each attempt fails with chance p but there are fewer attempts.
+  - The cost is small either way: the meeting timeout (1 h) per failure, and the item returns to the pool.
+  - I did not tune the protocol to make H6 pass.
+
+**What was built**
+
+- **`lunarsim/atc/auction.py`, regime `C_AUCTION`** (`regimes.mechanism("C_AUCTION")`).
+  - **Settings:** depth 1/2/5, commit (default True), timeout_h (1 h, Assumed, sweep 0.5-2), team_scope (any | same_owner), loss / loss_model, radio, and base failures as C_LEADER (here nothing waits for a leader; the mast and its item knowledge go away while the base is down).
+  - **Mesh components:** robots plus the BASE mast while the base is up.
+  - **Item knowledge:**
+    - a component with the mast knows every waiting item;
+    - otherwise it knows only the items at sites where one of its robots stands.
+  - **Each component runs the marketplace's own rounds through two new hooks**, `dispatch.marketplace(selector=..., team_hook=..., round_limit=...)`. They are None by default, giving the v2 marketplace (old results byte-identical, see below).
+    - **The selector:** each robot's best bid (the marketplace's marginal insertion cost) is flooded to the others with per-hop loss.
+      - The true best bid always wins.
+      - A robot that missed it and sees its own bid as the best it heard is a parallel winner if its items don't overlap. If they do, the CBBA rule settles it when the winner's rebroadcast reaches it within the remaining rounds; otherwise it makes a wasted trip to the pad.
+    - **Round limit:** max(N_items, N_robots) × mesh diameter.
+      - The spec says N_items × diameter. I raised it to cover N_robots so that a perfect mesh never cuts the auction short, which keeps the marketplace equality exact.
+- **Depth > 1 (CBBA-lite):** after the immediate round, robots bid for up to depth - 1 future jobs from the end of their commitments.
+  - Bids use a shadow vehicle with its own id, so the plan memo can't collide.
+  - Claims are hidden from robots in the same component.
+  - A claim starts when the robot is free, if its items are still waiting; otherwise it is dropped and counted as stale.
+- **Team lifts:**
+  - **Two-phase commit:** proposal, yes, commit. A lost proposal or yes means no team this epoch.
+  - **A lost commit (or a lost one-shot proposal):** the proposer drives to the pad, waits timeout_h and gives up. The failed meeting and its wait hours are counted, and the item returns to the pool.
+  - **team_scope same_owner:** pairs only robots of one owner (P5State.team_for; the test checks the trace).
+  - **Owners-alone regimes (A_*):** still use dispatch.inhouse, which has no team step.
+- **Lost-link rally** as in B-72, for free robots in a component without the mast.
+- **Small instances:** `ssi_assign`, `cbba_lite`, `optimum_score` and `bounds_check` (in `results/ATC_auction_bounds.json`).
+  - SSI cost = robot→item + item→destination, one item per robot.
+  - CBBA-lite score = sum over a robot's items of max(0, 12 - distance travelled).
+- **New summary keys:** `atc_conflicts`, `atc_parallel_winners`, `atc_wasted_trips`, `atc_claims_won/run/stale`, `atc_failed_meetings`, `atc_team_no_agreement`, `atc_meeting_wait_h`.
+
+**Unchanged:** full pytest, file by file: 41 files, 541 passed, 0 failed (`tests/test_atc_auction.py` is new, 5 tests). Reran:
+- the 20 committed E21 / E19 rows: 0 differences;
+- the overloaded p5 marketplace / inhouse / central_assign comparison against the pre-hook dispatch: identical.
+
+**Runtime:** C_AUCTION takes 13-17 s per year at depth 1 and ~4.5 s at depth 5 (fewer auction calls). The smoke set was 40 runs in one chunk under 540 s, peak 363 MB.
+
+**Files**
+
+- New: `lunarsim/atc/auction.py`, `tests/test_atc_auction.py`.
+- Changed:
+  - `lunarsim/dispatch.py` (marketplace hooks; None by default);
+  - `lunarsim/atc/regimes.py` (C_AUCTION registered, settings, counters);
+  - `lunarsim/atc/p5.py` (team_scope);
+  - `tools/atc/smoke_regimes.py` (`--set auction`, `bounds`).
+- For LEAD to commit: `results/ATC_auction_smoke.json`, `results/ATC_auction_bounds.json`.
+
+**How to test:**
+- `.venv/Scripts/python -m pytest -q tests/test_atc_auction.py` → 5 passed (18 s).
+- To regenerate: `python tools/atc/smoke_regimes.py bounds`, then `python tools/atc/smoke_regimes.py run --set auction`, then `python tools/atc/smoke_regimes.py table --set auction`.
+
+**FRONTEND:** nothing.
+
+**Questions for LEAD**
+
+1. **Same-owner team lifts for the A regimes.** B-73 says owners-alone regimes "may pair only their own robots", but they use inhouse, which has no team step (B-72's A_EARTH = inhouse check depends on that).
+   - **Proposal:** an `own_teams` flag for A regimes (default off, so the degenerate check stays exact), switched on in E40/E42 so A regimes get FLEX + CLV-1 pairs (team items up to 2,080 kg). OK?
+2. **E41 network-design variant** (your B-72 answer): I'll pick the second 10 m mast site with B-70's data when I build the E41 runner in B-75, and give the reason there.

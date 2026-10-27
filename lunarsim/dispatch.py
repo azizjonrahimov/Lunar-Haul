@@ -265,7 +265,8 @@ def _anticipate(sim: Simulation, free: List[Vehicle], used: set, pool: List[Carg
 def marketplace(sim, waiting, free, bundling=True, team_lift=True, backhaul=True,
                 night_aware=True, priority=True, consolidate=True, anticipate=True, max_items=10,
                 batch_h=0.0, w_p1=None, w_p2=None, w_age=None, fill=None, max_wait=None,
-                vot_scale=None, **kw):
+                vot_scale=None, selector=None, team_hook=None, round_limit=None, **kw):
+    """selector, team_hook and round_limit (Phase 5, lunarsim.atc.auction) are None here: the v2 marketplace."""
     jobs: List[Job] = []
     used = set()
     pool = list(waiting)
@@ -313,6 +314,12 @@ def marketplace(sim, waiting, free, bundling=True, team_lift=True, backhaul=True
             job = Job(team, [c], [c.dest], note="team")
             if night_aware and not all(_night_ok(sim, v, job) for v in team):
                 continue
+            if team_hook is not None:           # Phase 5 (B-73): commit protocol and rendezvous between robots
+                ok, busy = team_hook(sim, job)
+                if not ok:
+                    used |= busy
+                    no_team.clear()
+                    continue
             for v in team:
                 used.add(v.id)
             no_team.clear()
@@ -324,52 +331,77 @@ def marketplace(sim, waiting, free, bundling=True, team_lift=True, backhaul=True
     if len(pool) > MAX_POOL:
         pool.sort(key=lambda c: (c.priority, c.t_ready))
         pool = pool[:MAX_POOL]
+    rounds = 0
     while True:
         vehicles = [v for v in free if v.id not in used]
         if not vehicles or not pool:
             break
-        best = None  # (bid, v, bundle, route)
-        for v in vehicles:
-            for c in pool:
-                if not _feasible_single(v, c):
-                    continue
-                if bundling:
-                    bundle, route, bid = _try_bundle(sim, v, c, pool, max_items, priority, w)
-                else:
-                    bundle, route = [c], [c.dest]
-                    bid = _bid(sim, v, bundle, route, priority, w)
-                if not math.isfinite(bid):         # Phase 4 comms: a needed Earth link never comes
-                    continue
-                if best is None or bid < best[0]:
-                    best = (bid, v, bundle, route)
-        if best is None:
+        if round_limit is not None and rounds >= round_limit:
             break
-        bid, v, bundle, route = best
-        job = Job([v], bundle, route, note="auction")
-        if night_aware and not _night_ok(sim, v, job):
-            # try to shrink the bundle to finish before dark; else leave the vehicle idle
+        rounds += 1
+        if selector is None:
+            best = None  # (bid, v, bundle, route)
+            for v in vehicles:
+                for c in pool:
+                    if not _feasible_single(v, c):
+                        continue
+                    if bundling:
+                        bundle, route, bid = _try_bundle(sim, v, c, pool, max_items, priority, w)
+                    else:
+                        bundle, route = [c], [c.dest]
+                        bid = _bid(sim, v, bundle, route, priority, w)
+                    if not math.isfinite(bid):         # Phase 4 comms: a needed Earth link never comes
+                        continue
+                    if best is None or bid < best[0]:
+                        best = (bid, v, bundle, route)
+            winners = [best] if best is not None else []
+        else:                                   # Phase 5 (B-73): each robot's best bid, winners chosen by the selector
+            offers = []
+            for v in vehicles:
+                mine = None
+                for c in pool:
+                    if not _feasible_single(v, c):
+                        continue
+                    if bundling:
+                        bundle, route, bid = _try_bundle(sim, v, c, pool, max_items, priority, w)
+                    else:
+                        bundle, route = [c], [c.dest]
+                        bid = _bid(sim, v, bundle, route, priority, w)
+                    if math.isfinite(bid) and (mine is None or bid < mine[0]):
+                        mine = (bid, v, bundle, route)
+                if mine is not None:
+                    offers.append(mine)
+            winners = selector(sim, offers) if offers else []
+        if not winners:
+            break
+        for bid, v, bundle, route in winners:
+            if v.id in used or any(c not in pool for c in bundle):
+                continue                        # a parallel winner already took one of its items
+            job = Job([v], bundle, route, note="auction")
+            if night_aware and not _night_ok(sim, v, job):
+                # try to shrink the bundle to finish before dark; else leave the vehicle idle
+                used.add(v.id)
+                continue
+            # 3. backhaul: return cargo waiting at the last stop that fits on this vehicle
+            if backhaul:
+                last = route[-1]
+                ret = [c for c in pool if c.origin == last and c not in bundle and v.compatible(c)
+                       and c.dest in sim.world.pads]
+                ret.sort(key=lambda c: c.t_ready)
+                bh, m = [], 0.0
+                for c in ret:
+                    if m + c.mass_kg <= v.cls.capacity_kg:
+                        bh.append(c)
+                        m += c.mass_kg
+                if bh:
+                    # all backhaul items must go to the same pad in this simple version
+                    pad = bh[0].dest
+                    bh = [c for c in bh if c.dest == pad]
+                    job.backhaul = bh
             used.add(v.id)
-            continue
-        # 3. backhaul: return cargo waiting at the last stop that fits on this vehicle
-        if backhaul:
-            last = route[-1]
-            ret = [c for c in pool if c.origin == last and c not in bundle and v.compatible(c)
-                   and c.dest in sim.world.pads]
-            ret.sort(key=lambda c: c.t_ready)
-            bh, m = [], 0.0
-            for c in ret:
-                if m + c.mass_kg <= v.cls.capacity_kg:
-                    bh.append(c)
-                    m += c.mass_kg
-            if bh:
-                # all backhaul items must go to the same pad in this simple version
-                pad = bh[0].dest
-                bh = [c for c in bh if c.dest == pad]
-                job.backhaul = bh
-        used.add(v.id)
-        jobs.append(job)
-        for c in bundle + job.backhaul:
-            pool.remove(c)
+            jobs.append(job)
+            for c in bundle + job.backhaul:
+                pool.remove(c)
     # 4. anticipatory staging with whatever is still idle
     if anticipate:
         _anticipate(sim, free, used, pool)

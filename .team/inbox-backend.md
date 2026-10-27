@@ -911,7 +911,7 @@ connected the route network is at 2, 5 and 10 km; how many samples are radio-iso
 ## report and a message to LEAD, who commits. New code lives in `lunarsim/atc/`. Old scenarios, results and tests
 ## must not change (run the full pytest file by file at the end of each task and say so).
 
-## B-71 [QUEUED after B-70] Real vehicle classes, hoppers and the "p5" scenario family
+## B-71 [DONE] Real vehicle classes, hoppers and the "p5" scenario family
 Why: the research found the repo's LTV (1,500 kg, ~114 km per charge) matches neither NASA's chosen Phase-1 LTVs
 (Astrolab CLV-1 ~907 kg, >9.7 km/h; Lunar Outpost Pegasus >14.5 km/h, no arm; NASA: 80 kg payload, 10 km per
 charge, 6 km/day remote) nor the cargo class (Astrolab FLEX 1,500-2,000 kg). Table A of
@@ -936,7 +936,7 @@ Steps:
 Done when: classes, scenarios and tests exist; the report gives the measured utilisation per load variant and a
 table of every new parameter with its source.
 
-## B-72 [QUEUED] Where decisions are made: Earth gating, robot radio, messages, an elected leader
+## B-72 [DONE] Where decisions are made: Earth gating, robot radio, messages, an elected leader
 Why: this is the "without vs with the network" machinery for paper P-A.
 Steps:
 1. `lunarsim/atc/regimes.py`: decision places, each a wrapper around an existing allocator:
@@ -968,7 +968,7 @@ Steps:
 Done when: regimes run on the p5 scenarios for a 2028 and a 2038 start year; degenerate checks pass; a smoke table
 (5 seeds) of every regime at 30 % load shows the expected ordering or explains why not.
 
-## B-73 [QUEUED] The on-Moon auction and cross-owner team lifts
+## B-73 [DONE] The on-Moon auction and cross-owner team lifts
 Steps:
 1. `lunarsim/atc/auction.py`: `C_AUCTION`, a decentralised sequential single-item auction with rebroadcast of
    the previous winners each round (Otte et al.), or a CBBA-lite with bundle depth 1, 2 or 5. Bids are the
