@@ -584,3 +584,38 @@ tab and stop the preview server after each page; never two dev servers. Order, e
 3. World: the Earth-link scenes show "waiting for Earth" clearly; the urgent chip's live value updates.
 4. Stories: in story views show only the vehicles a step talks about (declutter labels), using the data's `label`.
 Skip the tier measurements and Lighthouse for now. Report with the file list as usual.
+
+# ── Phase 5: Lunar ATC (owner's request 27 Oct; PLAN-phase5.md follows once the research notes are in) ─────────
+The owner's direction: LunarHaul becomes the test bed for "Lunar ATC", an on-Moon traffic network that lets
+rovers, hopper drones and robots of different companies talk directly, team up on heavy jobs, share jobs, roads
+and chargers, and keep working when Earth is out of sight. The owner also asked for (1) slower motion, so people
+can follow each vehicle, (2) clear "inside" and "on its own" views of every vehicle, rocket and rover, (3) every
+part of the 3D site improved. F-50 needs no research and starts now; F-51 onward follow with the plan.
+Rules unchanged: do not git add/commit (LEAD commits; list your files), report in .team/reports.md with the real
+clock time, check free RAM >= 0.4 GB before any browser or build, one page at a time.
+
+## F-50 [IN PROGRESS] Slower, easier-to-follow motion on every animated page
+Why: at today's default (/world/ 1 day/s) a rover crosses a 2 km leg in well under a second. The owner wants to
+see clearly how each vehicle and rocket moves.
+Steps:
+1. Inventory: list every place that turns real seconds into simulated time (grep speed/rate/replay.t in
+   site/src/world/v2.js, world/main.js (trace), simulator/v3.js, stories/*, home-hero-3d.js, vehicles/*,
+   lander and rover labs). Put the list in your report with the current default of each.
+2. One shared time-scale helper (site/src/ui/timescale.js): named speeds
+   real time (1x), 1 min/s (60x), 5 min/s (300x), 15 min/s, 1 h/s, 6 h/s, 1 day/s, 3 days/s; a label that always
+   reads "1 s on screen = 5 min on the Moon" style text; ?speed= in the URL; keyboard: [ and ] step slower/faster,
+   space pauses.
+3. Defaults: overview shots 1 h/s; any close shot, "follow vehicle" or story step 5 min/s; landings keep the
+   existing slow-motion and get a "landing: real time" note on screen. /simulator/ and /world/trace/ replays start
+   at 5 min/s with the same control.
+4. "Skip quiet time": when no vehicle is moving and no landing is due within the next screen-minute, jump ahead
+   to the next event with a short visible "skipped 6 h 20 min, nothing moving" toast, so slow speeds are not dull.
+   A checkbox turns it off.
+5. Motion quality at slow speeds: ease in/out at the start and end of each leg (no instant full speed), heading
+   turns at a limited yaw rate, wheels turn with ground speed, hoppers climb, cruise and descend on a visible arc,
+   landers' engine plume follows throttle. Fading trail of the last 2 sim-hours behind each moving vehicle (toggle).
+6. Respect prefers-reduced-motion (no camera glides; vehicles still move) and keep the tier limits.
+Files: site/src/ui/timescale.js (new) and the pages from step 1.
+Done when: at the close-shot default a 2 km rover leg takes 10-25 s on screen; every animated page uses the
+helper and shows the speed label; skip-quiet-time works on /world/; build, node tests and budgets.py pages pass;
+no console errors on the pages you touched; report lists files, defaults before/after and how you checked.

@@ -869,3 +869,39 @@ and 168 h; Stage H dedicated k=1 at 24 h. Output `results/E21_edge_check_r2.json
 cell, the paired difference against the committed row in tonnage, urgent completion, censored p90 and re-draws
 per run, overall and by start year. One line: does any number the paper quotes move by more than its last printed
 digit? Single process, foreground, `--max-seconds 540`.
+
+# ── Phase 5: Lunar ATC (owner's request 27 Oct; PLAN-phase5.md follows once the research notes are in) ─────────
+The owner's direction: LunarHaul becomes the test bed for "Lunar ATC", an on-Moon traffic network that lets
+rovers, hopper drones and robots of different companies talk directly (robot to robot, multi-hop through each
+other and a base computer), team up on heavy jobs, share jobs, roads and chargers, and keep working when Earth is
+out of sight. The core experiment will compare fleets WITHOUT the network (owners alone, coordinated by hand
+from Earth; or one pooled dispatcher on Earth that works only while Earth is in view) against fleets WITH it
+(decentralised bidding on the Moon by a learned bidding policy, over a terrain-limited robot radio mesh), over
+2028-2046 with R-1's Earth-link windows. B-70 needs no research input and starts now; B-71 onward follow with
+the plan. Rules unchanged: single process, foreground, --max-seconds 540 chunks, cache in .cache/, no git.
+
+## B-70 [QUEUED, start now] Robot-to-robot radio visibility on the Connecting Ridge (data product)
+Why: every "with the network" result depends on which robots can hear each other, and that depends on terrain.
+Steps:
+1. `tools/atc/mesh.py` (pattern: tools/comms/parking.py, reuse `los_batch` and Terrain.los_clearance_m).
+   Points: every route sample of earth_link-v1-samples (2,421), every site and pad point, and the base computer
+   (the BASE site, antenna on the 10 m mast). Antenna heights: rovers 2.5 m, small robots 1.0 m, base 10 m.
+   For every pair within 10 km and each height combination (2.5-2.5, 2.5-1.0, 1.0-1.0, 2.5-10, 1.0-10): straight-
+   line distance, terrain clearance of the ray (m), LOS yes/no at 0 m and at 1 m margin, and the first-Fresnel-zone
+   clearance ratio at 2.4 GHz and at 400 MHz (h_clear / r_F1 at the worst point). Steps `pairs --part i --parts N`
+   (cached, resumable) and `build`.
+2. Output `data/atc/connecting_ridge/mesh-v1.json.gz` (compact: index-pair arrays, uint8/int16 encodings, a
+   `.sha256`), schema `lunarsim/schemas/mesh-v1.schema.json`, and a summary `results/ATC_mesh.json`: share of
+   pairs in LOS by distance band (0-0.5, 0.5-1, 1-2, 2-5, 5-10 km) per height combination; the route network's
+   connectivity if a link needs LOS and d <= R for R = 1, 2, 5, 10 km (number of components, share of samples
+   that reach BASE in 1, 2, 3+ hops); samples with no LOS neighbour within 2 km (list them; they are where a robot
+   is radio-isolated); the same for "LOS to BASE mast directly".
+3. `lunarsim/atc/__init__.py`, `lunarsim/atc/radio.py`: a link model that reads the file: link(a, b, h_a, h_b,
+   d_max, margin_m, fresnel_min) -> bool, and neighbours/hops queries on positions given as sample indices. Range
+   and margins are parameters (defaults will come from the research note; use 5 km and 0 m for now and flag them
+   as provisional in the docstring).
+4. Tests `tests/test_mesh.py`: symmetry; a synthetic smooth sphere of the Moon's radius reproduces the horizon
+   formula d = sqrt(2 R h1) + sqrt(2 R h2) (R = 1737.4 km; 2.5 m both ends -> 5.89 km) within one DEM cell; a flat
+   synthetic DEM gives LOS for every pair; a synthetic ridge blocks the pair across it; the file's sha256 matches.
+Done when: file, schema, summary and tests exist; tests pass; the report gives the headline numbers (how
+connected the route network is at 2, 5 and 10 km; how many samples are radio-isolated) and the runtime/memory.
