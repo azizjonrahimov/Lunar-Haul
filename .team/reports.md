@@ -6228,3 +6228,51 @@ Tier 2 isn't measured on the labs: free RAM stayed at 0.28-0.71 GB through this 
 **Questions for LEAD:**
 1. Should I give /atc/ its own budgets.json entry with a data limit? It fetches one 25 kB file; the defaults apply now.
 2. Do you want "Lunar ATC" in the main nav, as now, or only linked from /world/ and the stories?
+
+## F-55 FRAME DONE 12:57 | /verification/ phase-5 section reading results/vv_phase5.json (agreed format); /atc/ budget; Lunar ATC first in the nav
+
+**Files changed (uncommitted):**
+- New:
+  - `site/src/verify/phase5.js`: reader and validator, no DOM.
+  - `site/tests/vv-phase5.test.mjs`.
+- Modified:
+  - `site/src/verify/main.js`, `verify.css`, `site/verification/index.html`
+  - `site/scripts/prepare-data.mjs`: stages `results/vv_phase5.json` to `verify/` when it exists.
+  - `site/lib/pages.mjs`: "Lunar ATC" first in the nav.
+  - `tools/ci/budgets.json`: the /atc/ entry, as you granted.
+  - `.team/inbox-frontend.md`: F-55 header.
+- Not mine: `.team/inbox-backend.md`, `tools/atc/smoke_regimes.py`.
+
+**Your items:**
+1. **/atc/ budget**, at today's size + 25 %, rounded up to 5 kB:
+   - JS 15 (8.7 now), CSS 15 (8.6), data 5 (3.2: `atc/ATC_regimes_smoke.json`);
+   - fonts 165 (128.2: Sora, JetBrains Mono, Source Sans italic).
+2. **Nav:** "Lunar ATC" is first, before World. The logo is the home link; there's no "Home" item. 12 items; it fitted one line at 1232 px with Lunar ATC in it (F-54 check).
+
+**F-55 frame:**
+- **Format.** Proposed to BACKEND through you and confirmed: `lunarsim-vv-phase5` v1.
+  - Components: engine, auction, radio, safety, traffic, energy, learned, replay, cross.
+  - Per check: id, component, name, kind (V / Val / Cal), technique, credibility, formula, reference {value, unit, text}, measured {value, unit, ci95, n}, tolerance {type rel / abs / exact / zero_events / pvalue, value}, zero_events {exposure, unit, upper95}, status (pass / fail / not_run), source, paper, test, batch, and the optional run {seeds, wall_s}.
+  - Sub-cases are separate rows (D3a, D3b).
+  - BACKEND writes `lunarsim/schemas/vv-phase5.schema.json` with batch 1.
+- **Reader (`phase5.js`).**
+  - It checks the format and version, then validates every row: id, a known component, kind, status, tolerance type and value, zero-event exposure and bound, the measured value unless not_run, and a source.
+  - A row that breaks the format becomes a red "format error" row naming the fields, never a pass.
+  - It groups rows by component in page order (a component only the file names goes at the end) and counts pass / fail / not run / errors.
+- **Page.**
+  - A "Phase 5: Lunar ATC checks" section after the existing rows, which stay unchanged.
+  - Its own badge: "k of n recorded checks pass, m not run yet". These run in Python and are recorded, so they're kept apart from the browser-run count.
+  - One table per component: Check (id, name, kind · technique · credibility; "reproduces calibration data" on Cal rows), Formula or reference, Measured (CI, n, and seeds and seconds when given), Tolerance (zero-event exposure and the 95 % upper bound), Result, Source (paper, pytest id).
+  - Ends with the commit and time.
+  - Until the file exists: "No phase-5 checks are published yet…" and the badge "not published yet".
+  - An unreadable file: "unreadable" with the reason.
+
+**Checks:**
+- `npm run build` OK.
+- Node tests 20/20, 4 new: the agreed format, counts, sub-case rows, calibration, zero-event and not-run rows, a broken row becoming an error, a wrong format or version refused, number wording.
+- `budgets.py pages` OK: /verification/ 8.9 of 10 kB JS, which is tight; /atc/ within its new entry.
+- **Not checked in the browser:** free RAM read 0.34 GB after the build, under the floor. The first batch will be the real check; or I'll run it when RAM allows, with a sample file placed in dist only.
+
+**For later:** /verification/ JS has 1.1 kB headroom. If batch 3 makes the section heavier, I'll move it to a lazy chunk rather than raise the limit.
+
+**What I need from BACKEND:** the file, when batch 1 is ready.

@@ -26,6 +26,14 @@
   </div>
   <p class="status-line" id="v-status"></p>
   <div id="v-results"></div>
+  <section class="v-phase5" id="v-phase5" aria-labelledby="v5-h">
+    <h2 id="v5-h">Phase 5: Lunar ATC checks <span class="v-badge idle" id="v5-badge">loading</span></h2>
+    <p class="prose small">These run in the Python engine, not in your browser: each row shows the formula or reference, the
+      tolerance fixed before the run, what was measured, the result and the source, grouped by part of the system. Rows
+      marked <em>reproduces calibration data</em> check that the model gives back the data it was tuned on, which is a
+      weaker test than a check against independent data.</p>
+    <div id="v5-results"></div>
+  </section>
   <section class="prose small muted">
     <h2>How to read this</h2>
     <p>“Reference” is the value the check is held to and where it comes from; “computed here” is what this browser just produced; the tolerance is fixed in the code, not tuned after the fact. Rows marked “documented” are known differences that are explained rather than scored.</p>

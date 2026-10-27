@@ -259,6 +259,20 @@
       ],
       "fonts_kb": 150
     },
+    "atc/index.html": {
+      "js_gzip_kb": 15,
+      "css_gzip_kb": 15,
+      "data": [
+        "atc/ATC_regimes_smoke.json"
+      ],
+      "data_gzip_kb": 5,
+      "fonts": [
+        "assets/sora-latin-wght-normal-*.woff2",
+        "assets/jetbrains-mono-latin-wght-normal-*.woff2",
+        "assets/source-sans-3-latin-wght-italic-*.woff2"
+      ],
+      "fonts_kb": 165
+    },
     "vehicles/index.html": {
       "js_gzip_kb": 100,
       "css_gzip_kb": 15,

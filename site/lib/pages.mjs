@@ -21,8 +21,9 @@ export function icon(name, cls = 'icon') {
 }
 
 // ---------- navigation ----------
+// Lunar ATC first: the company's direction (LEAD, 27 Oct)
 export const NAV = [
-  ['world/', 'World'], ['stories/', 'Stories'], ['vehicles/', 'Vehicles'], ['atc/', 'Lunar ATC'], ['results/', 'Results'], ['lab/lander/', 'Lander lab'], ['lab/rover/', 'Rover lab'], ['simulator/', 'Simulator'],
+  ['atc/', 'Lunar ATC'], ['world/', 'World'], ['stories/', 'Stories'], ['vehicles/', 'Vehicles'], ['results/', 'Results'], ['lab/lander/', 'Lander lab'], ['lab/rover/', 'Rover lab'], ['simulator/', 'Simulator'],
   ['method/', 'Method'], ['paper/', 'Paper'], ['data/', 'Data'], ['about/', 'About'],
 ];
 export const FOOT = [['verification/', 'Verification'], ['changelog/', 'Changelog'], ['account/', 'Account'], ['simulator/', 'Simulator (v2)']];

@@ -20,3 +20,13 @@
 /* F-40: the checks arrive one by one; the area is reserved so the text below does not jump (Lighthouse CLS 0.65) */
 #v-results { min-height: 140rem; }
 #v-results.done { min-height: 0; }
+/* F-55: phase-5 recorded checks */
+.v-phase5 { margin-top: var(--s-7); }
+.v-phase5 > h2 { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); }
+.v-phase5 .v-group h3 { font-size: var(--fs-h3); margin-top: var(--s-5); }
+.v5-res { font-weight: 650; font-size: var(--fs-small); }
+.v5-res.ok { color: var(--flag-measured); }
+.v5-res.bad { color: var(--tol-red); }
+.v5-res.idle { color: var(--ink-3); }
+.v5-cal { font: 600 0.6875rem/1 var(--font-display); padding: 0.15rem 0.4rem; border: 1px dashed var(--ink-2); border-radius: 999px; color: var(--ink-2); white-space: nowrap; }
+.v5-err { color: var(--tol-red); }

@@ -678,7 +678,7 @@ from the existing Tol palette; every counter traceable to the trace file. Defaul
 3. The learned bid policy runs in the browser from `data/policies/atc_bid_v1.json` (pattern: site/src/policy.js)
    with its check file.
 
-## F-55 [QUEUED, as B-79 batches land] Verification page, phase 5
+## F-55 [FRAME DONE (uncommitted); fills in as B-79 batches land] Verification page, phase 5
 Show the new checks from `results/vv_phase5.json` grouped by component (engine, auction, radio, safety, traffic,
 energy, learned policy, 3D replay), each with formula, tolerance, measured value, pass/fail and source; label the
 calibration-reproduction checks as such; keep the existing 37 rows.

@@ -122,6 +122,10 @@ if (existsSync(join(src, 'height_5m.png')) && !meta.dev_standin) {
     console.log(`prepare-data: rover shadow grids computed in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
   }
 }
+// /verification/ phase 5 (F-55): B-79's recorded Python checks, when the file exists
+const vv5 = join(ROOT, 'results', 'vv_phase5.json');
+if (existsSync(vv5)) { mkdirSync(join(PUB, 'verify'), { recursive: true }); copyFileSync(vv5, join(PUB, 'verify', 'vv_phase5.json')); console.log('prepare-data: phase-5 checks staged'); }
+
 // /atc/ (F-54): B-72's smoke run of the decision places, read by the market walk-through
 const atcSmoke = join(ROOT, 'results', 'ATC_regimes_smoke.json');
 if (existsSync(atcSmoke)) { mkdirSync(join(PUB, 'atc'), { recursive: true }); copyFileSync(atcSmoke, join(PUB, 'atc', 'ATC_regimes_smoke.json')); console.log('prepare-data: ATC smoke run staged'); }
