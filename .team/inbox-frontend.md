@@ -619,3 +619,75 @@ Files: site/src/ui/timescale.js (new) and the pages from step 1.
 Done when: at the close-shot default a 2 km rover leg takes 10-25 s on screen; every animated page uses the
 helper and shows the speed label; skip-quiet-time works on /world/; build, node tests and budgets.py pages pass;
 no console errors on the pages you touched; report lists files, defaults before/after and how you checked.
+
+## Phase 5 plan is in `.team/PLAN-phase5.md`; read it and the research note relevant to each task. Tasks in order
+## after F-50. Each ends with a report (files, how checked, before/after numbers) and a message to LEAD.
+
+## F-51 [QUEUED after F-50] Every vehicle "on its own" and "inside"
+Why: the owner wants to see each vehicle, rocket and rover clearly, separately and from inside. The existing
+`site/src/stage/cutaway.js` (stencil caps) and `explode.js` are the base; use them everywhere.
+Source of parts: `research_notes/Lunar ATC/vehicles_comms_internals.md` Table B (part, position, size, source,
+confidence). Anything not High there is drawn but labelled "schematic" in the part list.
+Steps:
+1. Vehicle set (new models in `site/src/models/`, reuse `parts.js` and `materials.js`): Astrolab CLV-1 and
+   Lunar Outpost Pegasus (Phase-1 LTVs, crew seats, no arm on Pegasus), Astrolab FLEX cargo rover (2 top decks,
+   underslung bay, 6-axis arm), Lunar Outpost Eagle, a small MAPP-class rover, VIPER (reference, best documented),
+   Apollo LRV (historic reference), MoonFall hopper drone, Micro-Nova hopper, landers Blue Moon MK1, Griffin,
+   Nova-C, Blue Ghost, Starship HLS cargo, plus the Lunar ATC parts: the base computer box and a plug-in radio
+   unit with antenna. Keep the existing models; replace a model only if the new one is better, and say which.
+2. A viewer at `/vehicles/` with deep links `?v=<id>&view=<mode>`: modes
+   - **On its own**: the vehicle alone on a neutral lunar pad, turntable, orbit, a 1.8 m astronaut silhouette and
+     a 1 m scale bar, key dimensions drawn as measured lines (from the table, e.g. MK1 8.05 x 3.08 m).
+   - **Inside (cutaway)**: a movable section plane with solid caps (existing method) and preset cuts per vehicle
+     (lander: vertical through tanks and engine; rover: horizontal through the warm box).
+   - **Exploded**: parts slide along their own axes (legs out, tanks up, engine down), labelled with leader lines.
+   - **X-ray**: shell at low opacity, internals solid, so the layout reads at a glance.
+   - A part list beside the view: name, what it does in one plain sentence, size, source link, confidence
+     ("published" or "schematic"); hovering a part highlights it and vice versa; keyboard accessible.
+3. "Compare sizes": all vehicles side by side on one line at true scale (a Starship HLS next to a VIPER).
+4. In /world/ and the stories, clicking a vehicle opens the same viewer in a side panel ("look inside").
+5. Performance: lazy-load models per vehicle (one chunk each), instancing where useful; tier 1 shows On its
+   own + part list and a static cutaway image; budgets.py entries for the new chunks.
+Done when: every vehicle above has all four modes, a part list with sources, and a deep link; no console errors;
+budgets pass; screenshots kept out of git; the report lists any part you had to invent and how it is labelled.
+
+## F-52 [QUEUED] 3D audit and upgrade of every page
+For each 3D page (/, /world/, /world/trace/, /stories/, /vehicles/, /lab/lander/, /lab/rover/, /simulator/, and
+any new page): a checklist with before/after notes: lighting (sun at the true low south-pole elevation, long
+shadows, earthshine), terrain detail near the camera (normal map, small rocks), materials (foil, regolith dust on
+lower bodies), labels that never overlap, camera presets that frame what the text talks about, a legend, motion
+per F-50, mobile tier behaviour, keyboard and screen-reader paths, and the frame time per tier (part 1 method).
+Fix what is small; list what is big for LEAD. One page at a time with the memory guard.
+
+## F-53 [QUEUED, needs B-80] Lunar ATC on /world/: "with vs without the network"
+Scenes from B-80's trace pair: radio links between robots as thin lines (solid = linked, dashed = lost), hops to
+the base computer, the Earth link chip (in view / hidden for N more days), road reservations as coloured
+segments, single-lane roads and passing bays, landing-zone closures as domes with a countdown, crew EVA zones,
+cross-owner team lifts (two owner-coloured rovers under one crate, the meeting point and its timeout), and a
+split screen "without the network" | "with the network" on the same seed and clock, with counters underneath
+(urgent items waiting, hours robots sat idle, messages per hour, hand-coordination hours on Earth). Owner colours
+from the existing Tol palette; every counter traceable to the trace file. Default speed per F-50.
+
+## F-54 [QUEUED, needs B-78 fixtures and B-74 policy] /atc/ page: what Lunar ATC is, and an encounter sandbox
+1. Plain explainer: the three parts (safety program on each robot, the robots' shared job market with learned
+   bids, the base computer with failover), "the AI suggests, the safety program decides", what Earth still does.
+   A diagram (inline SVG, both themes).
+2. Encounter sandbox (3D, small scene): pick one of the 12 encounter types, play it with and without the safety
+   layer, see the closest approach, the rule that fired and the delay it cost. Port `safety_check` to JS from
+   Python and pass B-78's 20 replay fixtures within the stated tolerance (show the parity result on the page).
+3. The learned bid policy runs in the browser from `data/policies/atc_bid_v1.json` (pattern: site/src/policy.js)
+   with its check file.
+
+## F-55 [QUEUED, as B-79 batches land] Verification page, phase 5
+Show the new checks from `results/vv_phase5.json` grouped by component (engine, auction, radio, safety, traffic,
+energy, learned policy, 3D replay), each with formula, tolerance, measured value, pass/fail and source; label the
+calibration-reproduction checks as such; keep the existing 37 rows.
+
+## F-56 [QUEUED, as papers land] The three paper pages, results and a new story
+/paper/ lists v2, v3, R-1 and the three new papers (P-A, P-B, P-C) with PDF links and abstracts; /results/ gains a
+Lunar ATC section with the headline numbers (from the papers' values files, never typed); a fifth story,
+"A month without Earth" (story-v1 format, numbers by `{{r:key}}`), following the with/without pair.
+
+## F-57 [QUEUED, last] Quality pass
+Lighthouse table for every page (targets as recorded in F-40), budgets, accessibility, link check, and the
+Pages deploy check.

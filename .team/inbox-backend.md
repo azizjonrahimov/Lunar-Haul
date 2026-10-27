@@ -880,7 +880,7 @@ from Earth; or one pooled dispatcher on Earth that works only while Earth is in 
 2028-2046 with R-1's Earth-link windows. B-70 needs no research input and starts now; B-71 onward follow with
 the plan. Rules unchanged: single process, foreground, --max-seconds 540 chunks, cache in .cache/, no git.
 
-## B-70 [QUEUED, start now] Robot-to-robot radio visibility on the Connecting Ridge (data product)
+## B-70 [IN PROGRESS] Robot-to-robot radio visibility on the Connecting Ridge (data product)
 Why: every "with the network" result depends on which robots can hear each other, and that depends on terrain.
 Steps:
 1. `tools/atc/mesh.py` (pattern: tools/comms/parking.py, reuse `los_batch` and Terrain.los_clearance_m).
@@ -905,3 +905,179 @@ Steps:
    synthetic DEM gives LOS for every pair; a synthetic ridge blocks the pair across it; the file's sha256 matches.
 Done when: file, schema, summary and tests exist; tests pass; the report gives the headline numbers (how
 connected the route network is at 2, 5 and 10 km; how many samples are radio-isolated) and the runtime/memory.
+
+## Phase 5 plan is in `.team/PLAN-phase5.md`. Read it, then §6 of `research_notes/Lunar ATC/multi_owner_allocation.md`
+## and "What this means for our simulation" in `traffic_and_safety.md`. Tasks below run in order; each ends with a
+## report and a message to LEAD, who commits. New code lives in `lunarsim/atc/`. Old scenarios, results and tests
+## must not change (run the full pytest file by file at the end of each task and say so).
+
+## B-71 [QUEUED after B-70] Real vehicle classes, hoppers and the "p5" scenario family
+Why: the research found the repo's LTV (1,500 kg, ~114 km per charge) matches neither NASA's chosen Phase-1 LTVs
+(Astrolab CLV-1 ~907 kg, >9.7 km/h; Lunar Outpost Pegasus >14.5 km/h, no arm; NASA: 80 kg payload, 10 km per
+charge, 6 km/day remote) nor the cargo class (Astrolab FLEX 1,500-2,000 kg). Table A of
+`vehicles_comms_internals.md` has every value with its source.
+Steps:
+1. Add classes to the catalogue (do not edit existing ones): `LTV1_CLV1`, `LTV1_PEGASUS` (Phase-1 crew-sortie
+   rovers that can carry small cargo when not on a crew sortie: payload 80 kg nominal, sweep 80-300), `CARGO_FLEX`
+   (2,000 kg, 2 decks), `CARGO_EAGLE`, `MAPP_SMALL` (250 kg vehicle, 200 kg payload), `HOPPER_MOONFALL` (~250 kg
+   wet; 50 km total over 14 days of hops; payload small, sweep 5-20 kg; flies over terrain, so it ignores roads
+   and road rules but not landing closures), `HOPPER_MICRONOVA` (8-10 kg, 25 km total). Each value carries a
+   source string and a confidence; unknowns (battery kWh of the LTVs) are marked ASSUMED with a sweep. Energy:
+   reuse the existing Wh/km model; the 10 km per charge of Phase-1 LTVs is the binding fact.
+2. Owners: each vehicle has an `owner` id. A "p5" scenario family (`scenarios/p5/*.json`): the Moon Base
+   2029-2032 manifest (v2's Phase-2 demand), 3 owners by default (e.g. owner A: CLV-1 + FLEX; owner B: Pegasus +
+   Eagle; owner C: MAPP + 2 MoonFall hoppers + a utility robot), variants with 2 and 5 owners and a 50/35/15
+   split; load variants at about 10, 30 and 60 % fleet utilisation (scale demand; print the measured utilisation).
+3. Team lifts: an item heavier than every single vehicle's capacity but not a pair's (payload about 0.3 of the
+   pair's combined vehicle mass is the one measured case, Krawciw et al.) needs two vehicles; `team_lift_share`
+   0, 10, 25 % of items (re-draw item masses with the same seed).
+4. Tests: classes load and validate; p5 scenarios run one year under `marketplace` and `inhouse`; mass
+   conservation holds; old catalogue ids and old scenario results are byte-identical.
+Done when: classes, scenarios and tests exist; the report gives the measured utilisation per load variant and a
+table of every new parameter with its source.
+
+## B-72 [QUEUED] Where decisions are made: Earth gating, robot radio, messages, an elected leader
+Why: this is the "without vs with the network" machinery for paper P-A.
+Steps:
+1. `lunarsim/atc/regimes.py`: decision places, each a wrapper around an existing allocator:
+   - `A_EARTH`: each owner's control room on Earth decides only while its gateway (BASE) is linked to Earth (R-1
+     `earth_link-v1/v3`, `any_part`). Two fallbacks, both run: `strict` (no new assignment while dark) and
+     `plan_ahead` (before loss of signal, upload a queue for the expected blackout, built from the published
+     landing schedule). Cross-owner conflicts (shared pad apron, charger; single-lane road once B-77 exists) are
+     settled by hand: a delay `t_hand` (default 2 h, sweep 0.5-8 h), possible only while Earth is in view. No
+     cross-owner team lifts.
+   - `A_MOON`: each owner alone, but its robots coordinate among themselves on the Moon (the owner's own mesh).
+   - `B_EARTH`: one pooled dispatcher on Earth (marketplace; central_assign as an alternative), active only while
+     Earth is in view, `strict` and `plan_ahead`; `B_EARTH_RELAY` with relay coverage 0.8 and 1.0 (R-1's model).
+   - `C_LEADER`: pooled; an elected leader on the Moon (the base computer; any robot if it fails) runs the
+     marketplace for the robots it reaches through the mesh (B-70 radio, multi-hop); robots outside its
+     partition act on their last instructions. Base computer failure as a process (MTBF sweep, default 2,000 h,
+     repair 24 h); leader re-election delay 30 min (assumed; CADRE wakes about every 30 min).
+   - `O_ORACLE`: pooled marketplace with perfect, instant information (the v2 marketplace as is).
+2. Positions: at each decision epoch compute every vehicle's position as a route-sample index, interpolated
+   along its current leg from the job plan's segments, so B-70's link model answers "who hears whom". Evaluate
+   the mesh at dispatch epochs and message events only, not every simulated minute.
+3. `lunarsim/atc/messages.py`: delivery between robots: hop latency 10 ms (assumed); per-message loss
+   Bernoulli p in {0, 0.10, 0.25, 0.40} and a Gilbert-Elliott burst variant (mean burst ~10 messages, assumed);
+   multi-hop relay through any robot or the base mast; a counter of messages per robot-hour.
+4. Degenerate checks (must pass before B-73), in `tests/test_atc_regimes.py`: `B_EARTH` with coverage 1.0
+   equals the pooled marketplace on the same seeds (identical event trace); `A_EARTH` with coverage 1.0 and
+   t_hand 0 equals `inhouse`; `C_LEADER` with perfect radio equals `O_ORACLE`.
+5. Metrics added to the run summary: urgent delay mean and p95, on-time share, deadhead share, utilisation,
+   share of time each regime could not assign, backlog at the end of each blackout, messages per robot-hour.
+Done when: regimes run on the p5 scenarios for a 2028 and a 2038 start year; degenerate checks pass; a smoke table
+(5 seeds) of every regime at 30 % load shows the expected ordering or explains why not.
+
+## B-73 [QUEUED] The on-Moon auction and cross-owner team lifts
+Steps:
+1. `lunarsim/atc/auction.py`: `C_AUCTION`, a decentralised sequential single-item auction with rebroadcast of
+   the previous winners each round (Otte et al.), or a CBBA-lite with bundle depth 1, 2 or 5. Bids are the
+   marginal insertion cost the marketplace already computes. Each robot knows only the items and bids that reached
+   it through the mesh. Conflicts follow the CBBA rules (higher bid, then lower id); round limit N_items x mesh
+   diameter.
+2. Team lifts across owners: a two-phase commit (both robots confirm) with a rendezvous timeout (default 1 h,
+   sweep 0.5-2 h). If the partner does not arrive, the item returns to the pool and the event is counted (failed
+   meetings, wait hours). Owners-alone regimes may pair only their own robots.
+3. Checks: perfect links + depth 1 equals the pooled marketplace's assignments on the same seeds; on 200 random
+   small instances the total cost is within a factor 2 of the Hungarian optimum (SSI bound) and the score >= 50 %
+   of optimal (CBBA bound; a 2025 paper says it can fail, so a failing case is a finding: report it); no item is
+   assigned twice after convergence.
+Done when: tests pass; a smoke table of C_AUCTION vs O_ORACLE at loss 0 / 0.10 / 0.25 / 0.40.
+
+## B-74 [QUEUED] The learned bidding policy (the "neural" part, honestly sized)
+Steps:
+1. Features per (robot, item) pair, only what the robot could know locally (12 or fewer): its marginal insertion
+   cost, item age, priority, mass / capacity, distance to origin, battery state, hours to the next night, link
+   state to BASE, number of robots it hears, its queue length, whether a team partner is needed, deadline slack.
+2. Model: MLP 12-32-32-1 (~1.5k parameters, torch CPU) whose output is a correction added to the hand-built bid;
+   and a linear model on the same features as the honest baseline.
+3. Training: imitation of `O_ORACLE` with DAgger (5 iterations: roll out the current policy, label each auction
+   state with the oracle's choice, aggregate, retrain). Train on seeds 1000+, tune on 2000+, evaluate on 1-30
+   (never seen). Optional: a short cross-entropy-method fine-tune on total urgent delay, only after timing one
+   sim-year; drop it if it does not help on the tuning seeds.
+4. Out-of-distribution tests: other fleet sizes, owner mixes, loss rates, loads and start years. Guards: starved
+   items (age > 7 days), refused team lifts, deadline gaming.
+5. Export `data/policies/atc_bid_v1.json` + `.check.json` (the lander-policy pattern, so the site can run it),
+   with the training record (data size, epochs, losses, wall time).
+Single process, `--max-seconds 540` chunks; tell LEAD if training would need more than ~1 GB.
+Done when: the policy file and check exist; held-out agreement with the teacher, and regret vs the teacher and
+vs hand-built bids on seeds 1-30, are reported with the linear model's numbers next to them.
+
+## B-75 [QUEUED] Paper P-A experiments (E40 main, E41 radio and messages, E42 team lifts)
+30 paired seeds per cell, common random numbers across regimes:
+- E40: regime (A_EARTH strict/plan-ahead, A_MOON, B_EARTH strict/plan-ahead, B_EARTH_RELAY 0.8/1.0, C_LEADER,
+  C_AUCTION, C_LEARNED, O_ORACLE) x load (10/30/60 %) x start year (2028-2031 from v1; 2032, 2035, 2038, 2041,
+  2044 from v3 with 10 seeds) at 3 equal owners, loss 0.10, team-lift share 10 %.
+- E41: C_LEADER / C_AUCTION / C_LEARNED x loss (0, .10, .25, .40, burst) x bundle depth (1, 2, 5) x radio range
+  (2, 5, 10 km, perfect) at 30 % load.
+- E42: team-lift share (0, 10, 25 %) x cross-owner allowed (no/yes) x loss x timeout (0.5, 1, 2 h).
+Runner `experiments/phase5/run_phase5.py` (resumable chunks, CSV rows as in phase 4); analysis
+`experiments/phase5/analyse_e40.py` -> `results/E40_*.csv`, `results/table_E40_*.csv`, `results/E40_fit.json`:
+paired differences with bootstrap 95 % CIs (20,000 resamples), Holm correction across H1-H4 and H6, TOST where we
+claim "no difference", per-owner results. LEAD commits `paper/atc/PREREG.md` first; do not start E40 before it.
+Time one cell first and propose a schedule (the machine is shared; LEAD may run chunks in the background).
+
+## B-77 [QUEUED] Roads and rules of the road inside the logistics engine (P-B, logistics level)
+Steps:
+1. Road graph from the route network: mark single-lane segments where the drivable corridor (slope below the
+   class limit on the 5 m DEM) is narrower than 2 vehicle widths + 2 x lateral margin (~10 m for LTV class);
+   passing bays every 0.5-2 km (sweep); junction tiles; charger and pad apron slots. Report the single-lane km.
+2. Rules R1-R10 of `traffic_and_safety.md` table B at logistics resolution: exclusive reservations with the
+   exit-bay rule (R3), priority ladder (R4, R8), landing-zone closure R5 (reuse `keepout_km`/`standdown_h`), crew
+   zones R6 from an EVA schedule (assumed: 2 EVAs a week, 6 h, near the habitat), comms-loss holds R7,
+   charger/apron slots R10.
+3. Two coordination modes under the same rules: `uncoordinated` (each owner plans alone; a conflict stops both
+   vehicles and is settled by hand from Earth, t_hand, only while Earth is in view) and `atc` (reservations over
+   the mesh, granted in milliseconds when linked; an unconfirmed reservation is never assumed).
+4. E43: mode x fleet density (1x, 2x, 4x, 8x the p5 fleet) x start year (2028, 2038) x 30 seeds: delay per
+   delivery, throughput, conflicts per day, hand-resolution hours, deadlocks, per-owner fairness.
+Done when: E43 tables, plus a check that a single vehicle sees zero added delay from the road layer.
+
+## B-78 [QUEUED] Encounter simulator, safety layer and exhaustive check (P-B core)
+Steps:
+1. `lunarsim/atc/encounter.py`: continuous 2D kinematics at 10 Hz on a small local road geometry; class speeds
+   and braking (b_min 0.5 m/s2 on the flat, minus g sin(theta) downhill; friction sweep 0.3/0.45/0.6); planners
+   that propose (segment, speed, wait/go): nominal, the learned policy where relevant, and a random/adversarial
+   fuzzer; `safety_check(state, proposal)` accepts or substitutes the safe fallback (Simplex). One `safety_check`
+   is the single source of truth for the logistics engine (B-77), the encounter simulator and the model checker.
+2. The 12 encounter types of `traffic_and_safety.md` §C with randomised parameters: 10^5 per type (1.2 million),
+   one encounter per seed, exact closest approach between steps, importance sampling for rare types with the
+   weights reported; the metrics of §D; bounds 1 - 0.05^(1/n) per type and the Bonferroni joint bound.
+3. `lunarsim/atc/modelcheck.py`: the explicit-state checker of §F (packed integer states, symmetry reduction, hard
+   cap 3 million states; BFS invariants, deadlock, bounded liveness, livelock via Tarjan), planner fully
+   nondeterministic. Mutation tests: remove R3's exit reservation, R5's entry check and R7's hold one at a time;
+   each must yield a counterexample (save the traces).
+4. Outputs: `results/E44_encounters.csv`, `results/E44_bounds.json`, `results/E45_modelcheck.json`, and 20 replay
+   fixtures (initial state + proposals + states) for the site's encounter sandbox (F-54), with a Python-vs-JS
+   parity tolerance.
+Done when: zero violations, or a precise list of what failed (a failure is a result: report it); every mutation
+test produces a counterexample; run time and peak memory recorded.
+
+## B-76 [QUEUED] Owners, payments and cheating (P-C)
+Steps:
+1. Private costs per owner (energy, wear, opportunity; assumed distributions with sweeps). Payment rules on the
+   pooled regimes: none (cooperative), first-price, per-item second-price, McAfee trade reduction, posted price
+   per tonne-km + Shapley gain sharing (exact for <= 5 owners: 2^5 coalition runs per seed).
+2. Strategic owners: bid scaling k in {0.8, 0.9, 1.1, 1.25} while the others are honest; charger hogging; false
+   availability; cherry-picking easy items. Audits: the base computer's log lets Earth audit a random share q of
+   jobs afterwards (q 0-20 %) with penalty multiple m; measure what audits recover.
+3. E46: owners (2/3/5; equal and 50/35/15) x payment rule x deviation x audit, 30 seeds: each owner's profit vs
+   working alone (individual rationality), the operator's budget surplus or deficit per year, efficiency loss vs
+   the oracle, the largest gain from any deviation and its cost to the system, money left to settle on Earth.
+Done when: tables, plus a plain one-line answer for hypothesis H5.
+
+## B-79 [QUEUED; batch 1 may start right after B-71] Verification: from 13 checks to about 110
+Source: `research_notes/Lunar ATC/verification_plan.md` (60 checks, ~110 rows with sub-cases, each with formula,
+tolerance and source). Batch 1 (14 checks on the current engine: Little's law, P-K at three loads + M/D/1, Erlang C
+and M/D/c, Cobham priorities, extreme conditions, one-owner case, time-scale invariance, trace invariants,
+Hungarian brute force, CRN for new rules, input distributions, horizon formula, energy hand calculation 58.4 Wh/km)
+after B-71; batch 2 (auction, radio, messages, regimes, learned policy) after B-74; batch 3 (safety, model checker,
+traffic, payments, 3D replay) after B-78/B-76. Each check in `lunarsim/vv.py` (new `run_phase5_checks()`), a test in
+`tests/`, and `results/vv_phase5.json` in the format the verification page reads (agree it with FRONTEND). Label
+the teleoperation and night checks "reproduces calibration data", as the research note recommends.
+
+## B-80 [QUEUED, as pieces land] Data for the site
+A "with vs without" trace pair (same seed, 30 % load, a dark month of 2028) with positions, radio links (who hears
+whom, hops to BASE), reservations, landing closures, crew zones, team lifts and each regime's decisions:
+`site/public/data/atc/*.json` within budgets (agree limits with FRONTEND); the policy JSON for the browser; the
+encounter fixtures from B-78.
