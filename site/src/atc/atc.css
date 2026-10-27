@@ -1,0 +1,53 @@
+/* /atc/ (F-54): the explainer, its diagram (theme tokens, so it reads in both themes), the inside-each-vehicle table
+   with its placeholders, and the market walk-through. */
+.atc-head { padding-bottom: var(--s-3); }
+.atc-section { margin-top: var(--s-7); }
+.atc-section h2 { margin-bottom: var(--s-3); }
+.atc-split { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: var(--s-6); align-items: start; }
+.atc-split h3 { margin: var(--s-4) 0 var(--s-1); font-size: 1.05rem; }
+.atc-split h3:first-child { margin-top: 0; }
+.atc-fig { margin: 0; position: sticky; top: var(--s-6); }
+.atc-fig svg { display: block; width: 100%; max-width: 30rem; height: auto; margin: 0 auto; }
+@media (max-width: 900px) { .atc-split { grid-template-columns: minmax(0, 1fr); } .atc-fig { position: static; } }
+
+/* the diagram */
+.atc-d text { fill: var(--ink); font-family: var(--font-sans); }
+.atc-d .d-title { font: 600 16px var(--font-display); fill: var(--ink); }
+.atc-d .d-small { font-size: 13px; }
+.atc-d .d-tiny { font-size: 11.5px; fill: var(--ink-2); }
+.atc-d .d-muted { fill: var(--ink-2); }
+.atc-d .d-strong { font-weight: 600; }
+.atc-d .d-box { fill: var(--bg-2); stroke: var(--hairline); stroke-width: 1.5; }
+.atc-d .d-base { stroke: var(--ink-2); }
+.atc-d .d-chip { fill: var(--bg); stroke: var(--hairline); stroke-width: 1.2; }
+.atc-d .d-spare { stroke-dasharray: 4 3; }
+.atc-d .d-safety { stroke: var(--accent); stroke-width: 2.2; }
+.atc-d .d-earth { fill: var(--tol-blue); stroke: var(--ink-2); stroke-width: 1; }
+.atc-d .d-link { fill: none; stroke: var(--ink-2); stroke-width: 1.6; }
+.atc-d .d-link-earth { stroke: var(--tol-blue); stroke-width: 2; stroke-dasharray: 7 5; }
+.atc-d .d-flow { stroke: var(--ink-2); stroke-width: 1.5; }
+.atc-d .d-arrowhead { fill: var(--ink-2); }
+@media (forced-colors: active) { .atc-d .d-box, .atc-d .d-chip, .atc-d .d-link, .atc-d .d-flow { stroke: CanvasText; } .atc-d text { fill: CanvasText; } }
+
+.atc-list li { margin-bottom: var(--s-2); }
+
+/* inside each vehicle */
+.atc-table-wrap { overflow-x: auto; margin-top: var(--s-3); position: relative; }   /* contains the cells' visually-hidden spans (absolutely placed), which otherwise widen the page */
+.atc-table { border-collapse: collapse; font-size: 0.875rem; min-width: 46rem; }
+.atc-table th, .atc-table td { border-bottom: 1px solid var(--hairline); padding: var(--s-2) var(--s-3); text-align: left; vertical-align: top; }
+.atc-table thead th { font-family: var(--font-display); font-weight: 600; }
+.atc-table tbody th { font-weight: 500; color: var(--ink-2); max-width: 14rem; }
+.atc-pending { color: var(--ink-2); }
+.atc-tag { display: inline-block; font: 600 0.6875rem/1 var(--font-display); letter-spacing: 0.03em; padding: 0.2rem 0.45rem; border-radius: 999px;
+  border: 1px dashed var(--ink-2); color: var(--ink-2); white-space: nowrap; }
+.atc-tag.atc-design { border-style: solid; border-color: var(--accent); color: var(--ink); }
+
+/* the market walk-through */
+.atc-steps { list-style: none; margin: var(--s-4) 0 0; padding: 0; display: grid; gap: var(--s-3); counter-reset: none; }
+.atc-step { border: 1px solid var(--hairline); border-radius: var(--radius); padding: var(--s-3) var(--s-4); background: var(--bg-2); max-width: var(--measure, 46rem); }
+.atc-step h3 { margin: 0 0 var(--s-1); font-size: 1.05rem; }
+.atc-step p { margin: 0 0 var(--s-2); }
+.atc-step-n { margin: 0; }
+.atc-num { border-left: 3px solid var(--accent); padding-left: var(--s-3); }
+.atc-num .ui-label { display: block; margin-bottom: 0.15rem; }
+.atc-pending-line { color: var(--ink-2); }

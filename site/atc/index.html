@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lunar ATC · LunarHaul</title>
+<meta name="description" content="Lunar ATC: rovers, hoppers and robots of different companies on the Moon share jobs and roads and keep working when Earth is out of sight. The AI suggests, the safety program decides.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="<!--@base-->favicon.svg" type="image/svg+xml">
+<script>try { var t = localStorage.getItem('lunarsim.theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<script type="module" src="/src/main.js"></script>
+<script type="module" src="/src/atc/main.js"></script>
+</head>
+<body>
+<!--@header-->
+<main id="main"><div class="wrap">
+  <header class="page-head atc-head">
+    <p class="ui-label">Phase 5 · our design, being tested in the simulation</p>
+    <h1>Lunar ATC</h1>
+    <p class="prose">Around 2030 a south-pole base will have rovers, hopper drones and robots from several companies at
+      work at once. Today each company drives its own vehicles from its own control room on Earth, and Earth sinks
+      below the ridges for days at a time. Lunar ATC is a network on the Moon itself: the robots talk to each other
+      directly, share jobs, roads and chargers, team up on loads too heavy for one, and keep working when Earth is out
+      of sight. One rule holds it together: <strong>the AI suggests, the safety program decides.</strong></p>
+    <p class="small muted">Lunar ATC is a design this project is testing, not a system any agency or company runs. Where a
+      number below comes from the simulation it says so, with its source file; parts still being measured are marked
+      as such.</p>
+  </header>
+
+  <section class="atc-section" aria-labelledby="atc-parts-h">
+    <h2 id="atc-parts-h">1. Three parts</h2>
+    <div class="atc-split">
+      <div class="prose">
+        <h3>The safety program, on every robot</h3>
+        <p>A small program that checks every move before the robot makes it: keep your distance, never enter a
+          one-lane stretch without a reservation, stay out of a landing zone while a lander comes down, give crew on foot
+          the right of way, stop safely if the radio goes quiet. It is deliberately simple, so that it can be checked
+          exhaustively, and it has the last word.</p>
+        <h3>The job market, shared by every company</h3>
+        <p>When cargo arrives, the job goes on one board for all the companies' robots. Each robot offers a price: its
+          cost to do the job, from its distance, battery and other work. A small learned policy (a network of about
+          1,500 numbers, being trained now) nudges those offers, and the cheapest offer wins. Heavy loads can go to a team of two robots
+          from different companies.</p>
+        <h3>The base computer, with a spare</h3>
+        <p>A computer at the base runs the board and keeps the ledger of who did what. It has two boards, so either
+          can take over; if the whole computer fails, the robots elect one of themselves to run the board until it is
+          back, the way NASA's CADRE rovers pick a leader.</p>
+        <h3>The AI suggests, the safety program decides</h3>
+        <p>The planner and the learned bids are fast and clever, but nothing proves they are always right. So they
+          only <em>suggest</em>: a route, a speed, a job to take. The safety program on the robot <em>decides</em>: it
+          lets the move through, trims it, or holds the robot where it is. Whatever the AI says, the rules hold.</p>
+      </div>
+      <figure class="atc-fig">
+        <svg class="atc-d" viewBox="0 0 420 640" role="img" aria-labelledby="atc-d-t atc-d-d">
+          <title id="atc-d-t">How Lunar ATC fits together</title>
+          <desc id="atc-d-d">Earth at the top, linked to the base only while Earth is in view. The base computer runs the
+            job market and has a spare board. Below it, three robots of companies A, B and C talk to the base and to each
+            other directly. Inside each robot the planner suggests and the safety program decides before the radio and
+            wheels act.</desc>
+          <defs>
+            <marker id="atc-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="d-arrowhead"/></marker>
+          </defs>
+          <!-- Earth -->
+          <circle cx="70" cy="56" r="30" class="d-earth"/>
+          <text x="118" y="44" class="d-title">Earth</text>
+          <text x="118" y="64" class="d-small">sets the rules and prices, publishes landings,</text>
+          <text x="118" y="81" class="d-small">settles payments and audits, later</text>
+          <!-- intermittent link -->
+          <line x1="70" y1="88" x2="200" y2="168" class="d-link-earth"/>
+          <text x="148" y="122" class="d-small d-muted">link only while Earth is in view</text>
+          <!-- base computer -->
+          <rect x="110" y="170" width="200" height="86" rx="10" class="d-box d-base"/>
+          <text x="210" y="196" text-anchor="middle" class="d-title">Base computer</text>
+          <text x="210" y="216" text-anchor="middle" class="d-small">runs the job market and the ledger</text>
+          <rect x="150" y="226" width="54" height="20" rx="4" class="d-chip"/><text x="177" y="240" text-anchor="middle" class="d-tiny">board A</text>
+          <rect x="216" y="226" width="54" height="20" rx="4" class="d-chip d-spare"/><text x="243" y="240" text-anchor="middle" class="d-tiny">board B</text>
+          <!-- links base to robots -->
+          <line x1="150" y1="256" x2="75" y2="330" class="d-link"/>
+          <line x1="210" y1="256" x2="210" y2="330" class="d-link"/>
+          <line x1="270" y1="256" x2="345" y2="330" class="d-link"/>
+          <text x="226" y="298" class="d-small d-muted">radio mesh</text>
+          <!-- robots -->
+          <g class="d-robot">
+            <rect x="12" y="330" width="126" height="250" rx="10" class="d-box"/>
+            <text x="75" y="352" text-anchor="middle" class="d-title">Robot</text><text x="75" y="370" text-anchor="middle" class="d-small">company A</text>
+          </g>
+          <g class="d-robot">
+            <rect x="147" y="330" width="126" height="250" rx="10" class="d-box"/>
+            <text x="210" y="352" text-anchor="middle" class="d-title">Robot</text><text x="210" y="370" text-anchor="middle" class="d-small">company B</text>
+          </g>
+          <g class="d-robot">
+            <rect x="282" y="330" width="126" height="250" rx="10" class="d-box"/>
+            <text x="345" y="352" text-anchor="middle" class="d-title">Robot</text><text x="345" y="370" text-anchor="middle" class="d-small">company C</text>
+          </g>
+          <!-- inside each robot: planner suggests -> safety decides -> radio and wheels (written out three times: page CSS does not reach into <use> copies) -->
+          <g>
+            <rect x="24" y="384" width="102" height="44" rx="6" class="d-chip"/>
+            <text x="75" y="402" text-anchor="middle" class="d-small">planner</text><text x="75" y="419" text-anchor="middle" class="d-tiny">suggests</text>
+            <line x1="75" y1="428" x2="75" y2="452" class="d-flow" marker-end="url(#atc-arrow)"/>
+            <rect x="24" y="456" width="102" height="44" rx="6" class="d-chip d-safety"/>
+            <text x="75" y="474" text-anchor="middle" class="d-small d-strong">safety program</text><text x="75" y="491" text-anchor="middle" class="d-tiny">decides</text>
+            <line x1="75" y1="500" x2="75" y2="524" class="d-flow" marker-end="url(#atc-arrow)"/>
+            <rect x="24" y="528" width="102" height="38" rx="6" class="d-chip"/>
+            <text x="75" y="551" text-anchor="middle" class="d-small">radio · wheels</text>
+          </g>
+          <g transform="translate(135 0)">
+            <rect x="24" y="384" width="102" height="44" rx="6" class="d-chip"/>
+            <text x="75" y="402" text-anchor="middle" class="d-small">planner</text><text x="75" y="419" text-anchor="middle" class="d-tiny">suggests</text>
+            <line x1="75" y1="428" x2="75" y2="452" class="d-flow" marker-end="url(#atc-arrow)"/>
+            <rect x="24" y="456" width="102" height="44" rx="6" class="d-chip d-safety"/>
+            <text x="75" y="474" text-anchor="middle" class="d-small d-strong">safety program</text><text x="75" y="491" text-anchor="middle" class="d-tiny">decides</text>
+            <line x1="75" y1="500" x2="75" y2="524" class="d-flow" marker-end="url(#atc-arrow)"/>
+            <rect x="24" y="528" width="102" height="38" rx="6" class="d-chip"/>
+            <text x="75" y="551" text-anchor="middle" class="d-small">radio · wheels</text>
+          </g>
+          <g transform="translate(270 0)">
+            <rect x="24" y="384" width="102" height="44" rx="6" class="d-chip"/>
+            <text x="75" y="402" text-anchor="middle" class="d-small">planner</text><text x="75" y="419" text-anchor="middle" class="d-tiny">suggests</text>
+            <line x1="75" y1="428" x2="75" y2="452" class="d-flow" marker-end="url(#atc-arrow)"/>
+            <rect x="24" y="456" width="102" height="44" rx="6" class="d-chip d-safety"/>
+            <text x="75" y="474" text-anchor="middle" class="d-small d-strong">safety program</text><text x="75" y="491" text-anchor="middle" class="d-tiny">decides</text>
+            <line x1="75" y1="500" x2="75" y2="524" class="d-flow" marker-end="url(#atc-arrow)"/>
+            <rect x="24" y="528" width="102" height="38" rx="6" class="d-chip"/>
+            <text x="75" y="551" text-anchor="middle" class="d-small">radio · wheels</text>
+          </g>
+          <!-- direct robot-to-robot talk -->
+          <path d="M138 470 Q142 455 147 470" class="d-link"/>
+          <path d="M273 470 Q277 455 282 470" class="d-link"/>
+          <text x="210" y="610" text-anchor="middle" class="d-small d-muted">robots also talk to each other directly</text>
+        </svg>
+        <figcaption class="small muted">The parts of Lunar ATC. The same picture in words is the text beside it.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="atc-section" aria-labelledby="atc-earth-h">
+    <h2 id="atc-earth-h">2. What Earth still does</h2>
+    <ul class="prose atc-list">
+      <li><strong>Sets the rules and the prices.</strong> The rules of the road and the price list are agreed on Earth
+        and uploaded; the robots apply them, they do not invent them.</li>
+      <li><strong>Publishes the landings.</strong> Landing times close the pads and their surroundings; the schedule
+        comes from Earth well in advance.</li>
+      <li><strong>Settles the money later.</strong> The base computer keeps the ledger; when Earth is back in view,
+        the companies' payments are settled and the ledger is audited.</li>
+      <li><strong>Handles what robots should not.</strong> Disputes between companies, faults that need a person, and
+        anything involving crew.</li>
+      <li>What Earth no longer has to do is <strong>pick who carries each load, minute by minute</strong>, which is
+        exactly what stops when Earth sinks below the ridges.</li>
+    </ul>
+  </section>
+
+  <section class="atc-section" aria-labelledby="atc-inside-h">
+    <h2 id="atc-inside-h">3. Inside each vehicle</h2>
+    <p class="prose">What Lunar ATC adds to each kind of vehicle: the software parts, and the computing, memory, radio
+      and power they need. The sizing is being measured on our implementation (task B-81) and scaled to flight
+      hardware with a stated factor; until then the cells below say so. The 3D viewer shows where the parts sit:
+      open a vehicle with <em>Lunar ATC inside</em>.</p>
+    <div class="atc-table-wrap" id="atc-inside"></div>
+  </section>
+
+  <section class="atc-section" aria-labelledby="atc-market-h">
+    <h2 id="atc-market-h">4. How the market works, step by step</h2>
+    <p class="prose">One job from start to finish. Where the simulation already has a number for a step it is shown,
+      from a first test run (<span id="atc-run-desc">loading…</span>); the full experiments come later and will
+      replace them.</p>
+    <div id="atc-year"></div>
+    <ol class="atc-steps" id="atc-steps"><li class="muted">Loading the numbers…</li></ol>
+  </section>
+</div></main>
+<!--@footer-->
+</body>
+</html>

@@ -651,7 +651,7 @@ Steps:
 Done when: every vehicle above has all four modes, a part list with sources, and a deep link; no console errors;
 budgets pass; screenshots kept out of git; the report lists any part you had to invent and how it is labelled.
 
-## F-52 [IN PROGRESS] 3D audit and upgrade of every page
+## F-52 [DONE, d00140b; the terrain detail texture moved to F-57] 3D audit and upgrade of every page
 For each 3D page (/, /world/, /world/trace/, /stories/, /vehicles/, /lab/lander/, /lab/rover/, /simulator/, and
 any new page): a checklist with before/after notes: lighting (sun at the true low south-pole elevation, long
 shadows, earthshine), terrain detail near the camera (normal map, small rocks), materials (foil, regolith dust on
@@ -668,7 +668,7 @@ split screen "without the network" | "with the network" on the same seed and clo
 (urgent items waiting, hours robots sat idle, messages per hour, hand-coordination hours on Earth). Owner colours
 from the existing Tol palette; every counter traceable to the trace file. Default speed per F-50.
 
-## F-54 [QUEUED, needs B-78 fixtures and B-74 policy] /atc/ page: what Lunar ATC is, and an encounter sandbox
+## F-54 [IN PROGRESS: explainer, inside-each-vehicle placeholders, market walk-through; sandbox waits for B-78/B-82] /atc/ page: what Lunar ATC is, and an encounter sandbox
 1. Plain explainer: the three parts (safety program on each robot, the robots' shared job market with learned
    bids, the base computer with failover), "the AI suggests, the safety program decides", what Earth still does.
    A diagram (inline SVG, both themes).
@@ -691,6 +691,8 @@ Lunar ATC section with the headline numbers (from the papers' values files, neve
 ## F-57 [QUEUED, last] Quality pass
 Lighthouse table for every page (targets as recorded in F-40), budgets, accessibility, link check, and the
 Pages deploy check.
+- (from F-52, LEAD 27 Oct) The close-up terrain detail on /world/ and the rover lab: a tiling detail normal map that
+  fades with distance, tier 2+ only.
 
 ## LEAD 27 Oct: the owner regrouped the papers (PLAN-phase5.md §3): P1 job sharing, team-ups, direct talk and
 ## learned matching; P2 rules of the road and safety on the Moon and Mars; P3 the real vehicles, the radio network,

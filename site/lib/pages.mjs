@@ -22,7 +22,7 @@ export function icon(name, cls = 'icon') {
 
 // ---------- navigation ----------
 export const NAV = [
-  ['world/', 'World'], ['stories/', 'Stories'], ['vehicles/', 'Vehicles'], ['results/', 'Results'], ['lab/lander/', 'Lander lab'], ['lab/rover/', 'Rover lab'], ['simulator/', 'Simulator'],
+  ['world/', 'World'], ['stories/', 'Stories'], ['vehicles/', 'Vehicles'], ['atc/', 'Lunar ATC'], ['results/', 'Results'], ['lab/lander/', 'Lander lab'], ['lab/rover/', 'Rover lab'], ['simulator/', 'Simulator'],
   ['method/', 'Method'], ['paper/', 'Paper'], ['data/', 'Data'], ['about/', 'About'],
 ];
 export const FOOT = [['verification/', 'Verification'], ['changelog/', 'Changelog'], ['account/', 'Account'], ['simulator/', 'Simulator (v2)']];

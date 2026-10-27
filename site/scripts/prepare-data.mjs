@@ -122,6 +122,10 @@ if (existsSync(join(src, 'height_5m.png')) && !meta.dev_standin) {
     console.log(`prepare-data: rover shadow grids computed in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
   }
 }
+// /atc/ (F-54): B-72's smoke run of the decision places, read by the market walk-through
+const atcSmoke = join(ROOT, 'results', 'ATC_regimes_smoke.json');
+if (existsSync(atcSmoke)) { mkdirSync(join(PUB, 'atc'), { recursive: true }); copyFileSync(atcSmoke, join(PUB, 'atc', 'ATC_regimes_smoke.json')); console.log('prepare-data: ATC smoke run staged'); }
+
 // /results: figure PNGs (PDFs link to the repository) and the small summary tables; whatever exists is staged
 const figs = join(ROOT, 'figures'), resOut = join(PUB, 'results');
 mkdirSync(join(resOut, 'figures'), { recursive: true }); mkdirSync(join(resOut, 'data'), { recursive: true });

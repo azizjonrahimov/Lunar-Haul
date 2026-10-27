@@ -6166,3 +6166,65 @@ Tier 2 isn't measured on the labs: free RAM stayed at 0.28-0.71 GB through this 
 3. Tier 2 frame times for the two labs, when RAM allows.
 
 **What I need from BACKEND:** nothing.
+
+## F-54 PART 1 DONE 12:52 | The /atc/ page: explainer with a diagram, inside-each-vehicle placeholders for B-81, the market walk-through with B-72's numbers
+
+**Files changed (uncommitted):**
+- New:
+  - `site/atc/index.html` (the page, with the inline SVG diagram);
+  - `site/src/atc/main.js`, `site/src/atc/atc.css`.
+- Modified:
+  - `site/vite.config.js`: 'atc/' in PAGES.
+  - `site/lib/pages.mjs`: "Lunar ATC" in the nav, after Vehicles.
+  - `site/scripts/prepare-data.mjs`: stages `results/ATC_regimes_smoke.json` to `public/atc/`.
+  - `site/.gitignore`: `public/atc/`, like the other staged data.
+  - `.team/inbox-frontend.md`: F-52 marked DONE with the terrain texture moved to F-57; F-54 marked IN PROGRESS, parts listed.
+- `.team/inbox-backend.md` is modified but not by me.
+
+**What /atc/ has:**
+1. **Explainer.**
+   - What Lunar ATC is, and that it is our design being tested, not a system anyone runs.
+   - The three parts:
+     - the safety program on every robot;
+     - the shared job market with learned bids ("a network of about 1,500 numbers, being trained now", per §2 of the plan);
+     - the base computer with a spare board, and the robots electing a leader, CADRE-style, if it fails.
+   - "The AI suggests, the safety program decides": suggest / trim / hold.
+   - What Earth still does: rules and prices, landing schedules, settling and auditing later, disputes and crew. What it no longer does: pick who carries each load, minute by minute.
+2. **Diagram.** An inline SVG in portrait, readable at 390 px (343 px wide there).
+   - It shows Earth with an intermittent link, the base computer (boards A and B), and three robots of companies A, B and C, each with planner (suggests) -> safety program (decides) -> radio and wheels. Robots talk directly.
+   - Drawn with theme tokens (and `forced-colors` rules), so it reads in light and dark.
+   - It has a title and description, and the text beside it says the same.
+3. **Inside each vehicle.** A table laid out for B-81: six classes (Phase 1 LTV, cargo LTV, small rover, hopper, lander, base computer) by eight rows.
+   - "Software parts" and "If it fails" are the design, tagged "our design".
+   - Every measured value is a dashed "B-81 · measured / derived / assumed" placeholder, saying how it will be obtained.
+   - Each class links to its viewer with `&atc=1`.
+4. **Market walk-through.** Five steps: posted -> offers -> the cheapest wins -> paid -> Earth settles later.
+   - Each step has a plain paragraph and, where B-72's smoke run has a number, an "In the test run" line.
+   - Every number is read from `ATC_regimes_smoke.json` and shown as mean ± sd, flagged Modelled, with the file, regime and key as its source.
+   - Start years 2028 / 2038 can be switched. The run description, including "cargo rovers about 30 % busy", is read from the scenario's name.
+   - The numbers used:
+     - share of time the board was out of reach (B_EARTH strict, C_LEADER);
+     - messages per robot-hour (C_LEADER);
+     - cross-company team lifts (C_LEADER against A_EARTH);
+     - urgent wait (O_ORACLE, C_LEADER, B_EARTH strict, A_EARTH strict);
+     - cargo still waiting at the end of a blackout.
+   - Payment and settlement are marked "coming" (B-76); the learned bids are marked "not in this run yet" (B-74).
+
+**Checks:**
+- `npm run build` OK; node tests 16/16; `budgets.py pages` OK. /atc/ falls under the defaults: 8.7 of 60 kB JS, 8.6 of 20 kB CSS. I added no budgets.json entry; the default limits apply.
+- In the browser (production preview; free RAM 0.99 GB):
+  - The nav still fits one line at 1232 px.
+  - Dark and light both read well.
+  - The diagram had two bugs, both fixed:
+    - the `<use>` copies of the robot internals came out as black boxes, because page CSS does not reach into `<use>` shadow trees, so they're now written out;
+    - a label sat on a line.
+  - The walk-through numbers match the file: 2028 urgent wait 15.5 / 16.5 / 94.1 / 107.6 h; switching to 2038 gives 15.5 / 16.5 / 124.9 / 132.5 h.
+  - At 390 px the page first overflowed to 909 px: the table cells' visually-hidden spans escaped the scroll box. With the box made `position: relative`, it's 375 = 375.
+  - No console errors.
+- Server stopped and tab closed.
+
+**Not done (as you said):** the encounter sandbox (B-78) and the Mars toggle (B-82). B-81's real values replace the placeholders when `results/E48_sizing.json` lands; B-76's fill in steps 4-5.
+
+**Questions for LEAD:**
+1. Should I give /atc/ its own budgets.json entry with a data limit? It fetches one 25 kB file; the defaults apply now.
+2. Do you want "Lunar ATC" in the main nav, as now, or only linked from /world/ and the stories?
