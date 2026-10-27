@@ -5,7 +5,8 @@
 // Shots: overview, pads (camera.target or the next landing's pad), base, horizon (low at the base, looking at Earth),
 // descent and touchdown (lander). Modes shown: play, keepout (a keep-out window), touchdowns and ejecta (a landing at
 // the pad), queues (the busiest hour at the target), earth / earth_link (Earth low over the horizon). Modes the stage
-// does not draw (routes are always drawn; job_rule follows the scene; colour_by, bids, relay) leave the view as is.
+// does not draw (routes are always drawn; job_rule follows the scene; bids, relay) leave the view as is. colour_by: owner
+// (F-52) colours each rover's ring, pin and trail by its owner, with a small legend over the view.
 // Every step: rings round its highlight sites, legs without an Earth link in red (earth_link steps; no_link holds the
 // highlight sites' legs red), no vehicle labels. Speed (F-50): world steps play at 5 min a second (the shared time
 // scale over the view, 1 min/s to 6 h/s), landings by the shared rule (10 s a second, the last 60 s at real time); the lander's descents play at real time.
@@ -16,7 +17,7 @@ import { loadScene } from '../world/scene-data.js';
 import { createTimescale, landingX, landingPrefix } from '../ui/timescale.js';
 
 const BASE = import.meta.env.BASE_URL, TRAJ = BASE + 'lab/policies/trajectories-v1.json';
-export const SUPPORTED_MODES = ['play', 'keepout', 'touchdowns', 'ejecta', 'queues', 'earth', 'earth_link', 'routes', 'job_rule'];
+export const SUPPORTED_MODES = ['play', 'keepout', 'touchdowns', 'ejecta', 'queues', 'earth', 'earth_link', 'routes', 'job_rule', 'colour_by'];
 
 export async function createStoryStage({ kind, canvas, labelsHost, tier, fetchFn = fetch, onStatus = () => {} }) {
   return kind === 'lander' ? landerStage({ canvas, labelsHost, tier, fetchFn, onStatus }) : worldStage({ canvas, labelsHost, tier, fetchFn, onStatus });
@@ -37,6 +38,9 @@ async function worldStage({ canvas, labelsHost, tier, fetchFn, onStatus }) {
     }); }
   const cache = new Map(), time = { t: 0, playing: false, gen: 0 };
   const ts = createTimescale({ speeds: [60, 300, 900, 3600, 21600], value: 300, label: 'Speed' });
+  // the owner legend for colour_by: owner steps
+  const key = document.createElement('ul'); key.className = 'st-owners'; key.setAttribute('aria-label', 'Rover owners'); key.hidden = true; canvas.parentElement.append(key);
+  const ownerKey = on => { key.hidden = !on; if (on) key.replaceChildren(...sc.owners().map(([o, col]) => { const li = document.createElement('li'), sw = document.createElement('span'); sw.className = 'st-swatch'; sw.style.background = col; li.append(sw, o === 'NASA' ? 'NASA' : `Company ${o.replace('Co', '')}`); return li; })); };
   ts.el.classList.add('st-speed'); canvas.parentElement.append(ts.el);
   let cur = null, gallery = null;   // cur: {id, pkg, chunks}
   // no-link sites this package never drives to (no rover starts there without Earth): their legs come from the package's
@@ -128,6 +132,7 @@ async function worldStage({ canvas, labelsHost, tier, fetchFn, onStatus }) {
       const noLinkSites = m.no_link === true ? (step.highlight || []) : Array.isArray(m.no_link) ? m.no_link : [];
       const extra = noLinkSites.length ? await twinLegs(noLinkSites) : [];
       sc.setHighlight(step.highlight || []); sc.setNoLink(!!(m.earth_link || m.earth), noLinkSites, extra);
+      sc.setColourBy(m.colour_by); ownerKey(m.colour_by === 'owner');
       setTime(moment(step)); shot(step.camera, instant); setTime(time.t);   // the camera glides on its own; the first step cuts (the door is still shut)
       if ((step.modes || {}).play && !instant) play();
       return { t: time.t, night: nightAt(time.t) };

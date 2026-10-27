@@ -5958,3 +5958,53 @@ All are under 16.7 ms at p50. The tier-2 p95 spikes are probably one-off GC or t
 **Big items (not fixed):** none new on /vehicles/.
 
 **Next (part 3):** the home hero and /stories/, then /world/trace/, the two labs and /simulator/.
+
+## F-52 PART 3 DONE 12:36 | 3D audit of the home hero and /stories/: owner colours as the story text promises, frame time per tier
+
+**Files changed (uncommitted):**
+- `site/src/world/v2-scene.js`: `setColourBy('owner')` and `owners()`.
+- `site/src/stories/stage.js`: the `colour_by` mode and an owner legend over the view.
+- `site/src/stories/stories.css`.
+
+**Home hero checklist:**
+
+| item | finding | action |
+|---|---|---|
+| Lighting | The scenario sun 1.5° up, long shadows; the /world/ scene at true scale. | OK |
+| Terrain near the camera | The pad from 520 m; part 1's rocks now show round the pads and base (2,500 a site at the hero's tier-2 cap). | OK |
+| Materials and labels | The kit materials with dust; labels off in this cinematic view. | OK |
+| Camera | Framed on the first daylight landing's pad, shifted right of the copy, slow orbit. | OK |
+| Legend | None, on purpose: the copy below describes the view, and the full controls are on /world/. | OK |
+| Motion | 5 min/s with the speed label under Pause, the landing rule, quiet time skipped (F-50). | OK |
+| Tiers / mobile / reduced motion | Tiers 0-1 and reduced motion keep the still image; the 3D runs at tier 2 at most and starts only on "Watch it in 3D". | OK |
+| Keyboard | The door button and Pause are buttons; the canvas is aria-hidden; the copy carries the content. | OK |
+
+**/stories/ checklist:**
+
+| item | finding | action |
+|---|---|---|
+| Lighting, terrain, materials | As /world/ (the same scene), rocks included. | OK |
+| Labels | Site labels only (vehicle labels off), highlight rings; part 2's shared callout fix applies. | OK |
+| Camera presets | Each step's shot frames the sites its text names (pads, base, horizon at Earth); steps 1-2 checked. | OK |
+| Story text vs view | "sharing-rovers" step 1 says "each rover is coloured by the company that owns it", but the stage did not draw `colour_by` (listed as not drawn), so the rings showed rover states. | **Fixed:** `colour_by: owner` now colours each rover's ring, pin and trail by owner (the Tol owner colours shared with the plan and the trace legend). A small legend over the view (NASA, Company A, B, C) shows only on those steps; step 2 hides it again. |
+| Motion | 5 min/s, the speed control over the view, the landing rule (F-50). | OK |
+| Tiers / keyboard | Tier 0: the text only; the view pad, step buttons and arrow keys; Look inside on click (F-51). | OK |
+| The lander-recording stories | The lander lab's scene. | audited with the labs (next part) |
+
+**Frame time:** `stage.benchmark()`, 150 frames after a warm-up; dev build; RTX 3050; free RAM 1.05 GB.
+
+| page | tier | GPU p50 / p95 (ms) | CPU p50 / p95 (ms) | draw calls | buffer |
+|---|---|---|---|---|---|
+| home hero (capped at tier 2) | 2 | 3.4 / 3.7 | 4.0 / 6.1 | 332 | 1521 × 730 |
+| /stories/ sharing-rovers step 1 | 3 | 4.5 / 5.0 | 5.1 / 7.1 | 532 | 920 × 620 |
+| same | 2 | 2.9 / 3.5 | 5.7 / 7.6 | 530 | 920 × 620 |
+| same | 1 | 1.6 / 1.7 | 3.8 / 6.1 | 271 | 920 × 620 |
+
+**Checks:**
+- `npm run build` OK; node tests 16/16; `budgets.py pages` OK (home 3.0 of 5, /stories/ 11.5 of 60, /world/ 21.4 of 25 kB JS).
+- In the browser (dev build): the hero's speed label; the stories owner legend on step 1 and hidden on step 2; the rovers in their owner colours; no console errors.
+- Dev server stopped and tab closed.
+
+**Big items:** none new.
+
+**Next (part 4):** /world/trace/, the lander lab and its stories, the rover lab, /simulator/; then the terrain detail pattern if time allows.

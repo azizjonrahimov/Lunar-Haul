@@ -69,3 +69,8 @@
 .st-view .st-speed { position: absolute; left: 12px; bottom: 12px; z-index: 2; max-width: calc(100% - 10rem); padding: 0.3rem 0.6rem; border-radius: 8px; background: rgba(10, 12, 16, 0.72); }
 .st-view .st-speed .ts-name, .st-view .st-speed .ts-text, .st-view .st-speed .ts-toast { color: #e9eef5; }
 .st-view .st-speed .ts-toast:not(.on) { display: none; }
+/* F-52: the owner legend for colour_by: owner steps, top right of the view */
+.st-view .st-owners { position: absolute; right: 12px; top: 12px; z-index: 2; margin: 0; padding: 0.35rem 0.6rem; list-style: none; display: flex; flex-direction: column; gap: 0.2rem; border-radius: 8px; background: rgba(10, 12, 16, 0.72); color: #e9eef5; font-size: 0.8125rem; }
+.st-view .st-owners[hidden] { display: none; }
+.st-view .st-owners li { display: flex; align-items: center; gap: 0.4rem; }
+.st-swatch { width: 0.75rem; height: 0.75rem; border-radius: 50%; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35); }

@@ -27,6 +27,7 @@ import { reducedMotion } from '../ui/dom.js';
 const BASE = import.meta.env.BASE_URL;
 export { STATE_STYLE } from './states.js';
 import { STATE_STYLE } from './states.js';
+import { OWNER_COLOURS, EXTRA_COLOURS } from './colours.js';
 const SITE_MODEL = { BASE: 'habitat', PAD_A: 'pad', PAD_B: 'pad', POWER: 'solar_tower' };
 
 export async function createWorldScene({ canvas, labelsHost, tier, fetchFn = fetch, onStatus = () => {} }) {
@@ -52,7 +53,8 @@ export async function createWorldScene({ canvas, labelsHost, tier, fetchFn = fet
   const hiMat = new THREE.MeshBasicMaterial({ color: '#f0a54a', transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false, toneMapped: false });
   const pinGeo = new THREE.CylinderGeometry(0.06, 0.06, 1, 6).translate(0, 0.5, 0), headGeo = new THREE.SphereGeometry(0.42, 16, 10), TRAIL = 100;
   const MOTION = { ease: 2 / 60, turnM: 12 }, YAW_RATE = 150 * Math.PI / 180;   // F-50: eased drives, smoothed heading, yaw rate per real second
-  let trailsOn = true;
+  let trailsOn = true, colourBy = null;   // F-52: 'owner' colours rings, pins and trails by the rover's owner (stories)
+  const ownerColour = o => OWNER_COLOURS[o] || EXTRA_COLOURS[Object.keys(OWNER_COLOURS).length % EXTRA_COLOURS.length];
   // headlight cone: apex at the rover's nose, 30 m forward, additive (no lighting cost)
   const coneGeo = new THREE.ConeGeometry(9, 30, 24, 1, true).rotateX(-Math.PI / 2);
   const coneMat = new THREE.MeshBasicMaterial({ color: '#fff1d0', transparent: true, opacity: 0.09, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
@@ -205,8 +207,8 @@ export async function createWorldScene({ canvas, labelsHost, tier, fetchFn = fet
         if (ds) for (const w of v.wheels) w.rotation.x += ds / v.wheelR;
       }
       v.lastT = t; v.lastXY = [p.x, p.y];
-      v.ring.material.color.set((STATE_STYLE[p.state] || STATE_STYLE.idle)[0]);
-      const col = (STATE_STYLE[p.state] || STATE_STYLE.idle)[0];
+      const col = colourBy === 'owner' ? ownerColour(v.owner) : (STATE_STYLE[p.state] || STATE_STYLE.idle)[0];
+      v.ring.material.color.set(col);
       v.pinMat.color.set(col); iconFor(v);
       // trail: a point every 0.02 h of simulated time, the last 2 h, fading towards its tail; cleared after a jump
       if (v.lastHistT < 0 || t < v.lastHistT || t - v.lastHistT > 2) v.hist = [];
@@ -390,6 +392,8 @@ export async function createWorldScene({ canvas, labelsHost, tier, fetchFn = fet
     setIcons(v) { iconMode = v; if (pkg) iconsForCamera(); stage.invalidate(); },
     get vehicles() { return vehicles; }, get activeLandings() { return active; },
     setRoutes(v) { if (routesL) routesL.visible = v; },
+    setColourBy(v) { colourBy = v === 'owner' ? 'owner' : null; stage.invalidate(); },
+    owners: () => [...new Set(vehicles.map(v => v.owner))].map(o => [o, ownerColour(o)]),
     setTrails(v) { trailsOn = !!v; for (const q of vehicles) q.trail.visible = trailsOn && q.hist.length > 1; stage.invalidate(); },
     setTier(t) { for (const L of landers) L.dust?.setCount(TIERS[t].particles); },
     dispose() { clear(); stage.dispose(); terrain.dispose(); },
