@@ -75,3 +75,19 @@ vehicle and how its market works (H5 unchanged and moved here; H10 below, explor
 - **H10 (sizing, exploratory).** The safety check, the bidding and the radio traffic of Lunar ATC fit a
   flight-class computer (reported as measured CPU time, memory and bytes per robot-hour, scaled to a reference
   radiation-tolerant processor with a stated factor) and a 16 kbit/s-class link for 20 robots.
+
+### Change 2, 27 Oct 2026 (before any main run; after a 5-seed smoke run, disclosed): H2's yardstick
+What we saw: B-72's smoke table (`results/ATC_regimes_smoke.json`, 5 seeds, 2028 and 2038, 30 % load). It showed
+that the A-vs-O gap in censored urgent wait (~1,250 h) is almost all cargo that owners working alone can never
+move (owner C's fleet cannot lift it and owners alone get no team lifts). So "half the A-vs-O gap" measures fleet
+capacity, not Earth availability, and H2 as written could not test what it was meant to test. We saw the smoke
+numbers before writing this change; the revision is stated so that it does not depend on them.
+- **H2 (revised), confirmatory.** Availability is measured inside the pooled fleet, where capacity is equal:
+  B_EARTH strict versus O_ORACLE (identical to B_EARTH at coverage 1.0, checked by a degenerate test). Supported if
+  the paired difference in the primary outcome excludes zero and its lower CI bound exceeds 10 % of O's mean (the
+  same margin as our TOST rule), in each start year whose BASE visibility is below 60 %, and in the pooled years.
+  Secondary, as before: plan_ahead recovers part; relay 0.8 within 10 % of O by TOST.
+- Reported but not tested: the original yardstick, and the delivered-only version of the A-vs-O gap, with a note
+  that delivered-only waits are conditioned on delivery and so differ in which items they contain.
+- H1 is unchanged; the smoke run suggests most of the sharing gain at this fleet is capacity (team lifts across
+  owners), which the paper will separate from dispatch quality using E42.
