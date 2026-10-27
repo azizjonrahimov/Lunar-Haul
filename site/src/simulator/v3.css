@@ -101,3 +101,4 @@
   .sim-grid { grid-template-columns: minmax(0, 1fr); }
   .sim-rail { position: static; max-height: none; overflow: visible; }
 }
+.replay-controls .ts { flex: 1 1 16rem; }

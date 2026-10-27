@@ -7,11 +7,13 @@
 // the pad), queues (the busiest hour at the target), earth / earth_link (Earth low over the horizon). Modes the stage
 // does not draw (routes are always drawn; job_rule follows the scene; colour_by, bids, relay) leave the view as is.
 // Every step: rings round its highlight sites, legs without an Earth link in red (earth_link steps; no_link holds the
-// highlight sites' legs red), no vehicle labels.
+// highlight sites' legs red), no vehicle labels. Speed (F-50): world steps play at 5 min a second (the shared time
+// scale over the view, 1 min/s to 6 h/s), landings slowed to 43 s a second; the lander's descents play at real time.
 import { reducedMotion } from '../ui/dom.js';
 import { viewPad } from '../ui/viewpad.js';
 import { loadTrajectories, episodeView } from '../lander/trajectories.js';
 import { loadScene } from '../world/scene-data.js';
+import { createTimescale } from '../ui/timescale.js';
 
 const BASE = import.meta.env.BASE_URL, TRAJ = BASE + 'lab/policies/trajectories-v1.json';
 export const SUPPORTED_MODES = ['play', 'keepout', 'touchdowns', 'ejecta', 'queues', 'earth', 'earth_link', 'routes', 'job_rule'];
@@ -27,6 +29,8 @@ async function worldStage({ canvas, labelsHost, tier, fetchFn, onStatus }) {
   sc.stage.director.bindKeys(canvas); canvas.parentElement.append(viewPad(sc.stage.director));   // F-40: orbit and zoom without a drag
   sc.stage.director.limits({ minDistance: 20, maxDistance: 22000, maxPolar: 88 });
   const cache = new Map(), time = { t: 0, playing: false, gen: 0 };
+  const ts = createTimescale({ speeds: [60, 300, 900, 3600, 21600], value: 300, label: 'Speed' });
+  ts.el.classList.add('st-speed'); canvas.parentElement.append(ts.el);
   let cur = null, gallery = null;   // cur: {id, pkg, chunks}
   // no-link sites this package never drives to (no rover starts there without Earth): their legs come from the package's
   // twin with Earth always in view (scenes/gallery.json: the same flags but earth_link "always"), one route per leg
@@ -93,12 +97,13 @@ async function worldStage({ canvas, labelsHost, tier, fetchFn, onStatus }) {
     if (cam?.target && idx.sites[cam.target] && name !== 'overview') return sc.frameAt(sc.sitePos(cam.target), 700, 25, 35, instant);
     return sc.go(['overview', 'base', 'legs', 'night'].includes(name) ? name : 'overview', instant);
   }
-  // playing: 6 h a second, slowed to the descent's pace while a lander comes down (a frame must not step over it)
+  // playing: 5 min a second (the time scale), slowed to the descent's pace while a lander comes down (a frame must not step over it)
   function play() {
     const gen = ++time.gen; time.playing = true;
     sc.stage.animate(dt => {
       if (gen !== time.gen || !time.playing) return false;
-      let next = time.t + dt * (sc.activeLandings.length ? 0.012 : 6);
+      const landing = sc.activeLandings.length > 0; ts.override(landing ? 43 : null);
+      let next = time.t + dt * (landing ? 0.012 : ts.h);
       if (!sc.activeLandings.length && sc.nextLandingStart) { const s0 = sc.nextLandingStart(time.t); if (s0 <= next) next = s0 + 1e-4; }
       setTime(next);
       return time.t < cur.pkg.index.horizon_h - 0.02;
@@ -119,7 +124,7 @@ async function worldStage({ canvas, labelsHost, tier, fetchFn, onStatus }) {
       if ((step.modes || {}).play && !instant) play();
       return { t: time.t, night: nightAt(time.t) };
     },
-    stop, dispose() { stop(); sc.dispose?.(); },
+    stop, dispose() { stop(); ts.dispose(); sc.dispose?.(); },
   };
   function stop() { time.playing = false; time.gen++; }
 }
@@ -132,6 +137,8 @@ async function landerStage({ canvas, labelsHost, tier, fetchFn, onStatus }) {
   sc.stage.director.limits({ minDistance: 3, maxDistance: 2500, maxPolar: 95 });
   const time = { t: 0, gen: 0 };
   let key = '', view = null;
+  const ts = createTimescale({ speeds: [1], value: 1, picker: false, keys: false, url: false });   // F-50: the descent at real time, said on screen
+  ts.el.classList.add('st-speed'); canvas.parentElement.append(ts.el); ts.override(1);
   function stop() { time.gen++; }
   return {
     sc, kind: 'lander',

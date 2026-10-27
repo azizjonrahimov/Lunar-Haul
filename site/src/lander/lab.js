@@ -13,10 +13,14 @@ import { loadTerrain } from '../terrain.js';
 import { num, esc, fmt } from '../components/num.js';
 import { mountFigures } from '../components/figure.js';
 import { afterFirstPaint } from '../ui/after-paint.js';
+import { createTimescale } from '../ui/timescale.js';
 
 const $ = id => document.getElementById(id);
 const BASE = import.meta.env.BASE_URL, POL = BASE + 'lab/policies/';
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+// F-50: the shared time scale for the replay (real time to start); the 3D view above has the keys and the URL
+const speed = createTimescale({ speeds: [1, 2, 5, 0], value: 1, label: 'Playback', id: 'l-speed', keys: false, url: false });
+document.getElementById('l-speed-host').replaceWith(speed.el);
 const TOL = { policy: '#4477AA', classical: '#EE6677' };
 const TOL_TAG = { bc_v3: '#AA3377', bcv3: '#AA3377', bcml: '#4477AA', bc: 'var(--tol-cyan)', baseline: '#228833', hover_bonus: 'var(--tol-yellow)', no_eta: 'var(--tol-grey)', hover_bonus_v1: 'var(--tol-grey)' };   // Tol bright per policy tag; yellow, cyan and grey as theme tokens (3:1 on the light page)
 const st = { index: null, policies: {}, checks: {}, terrain: null, pad: null, ep: null, ghost: null, frame: 0, playing: false, last: 0, raf: 0, outcomes: {} };
@@ -102,7 +106,7 @@ function run(policyOverride) {
   const o = st.ep.outcome;
   status(`${cls} · ${ctrl === 'policy' ? st.ep.policyId : 'classical law'} · episode ${seed}${opts.randomize ? '' : ' (no dispersion)'}${opts.sensor ? '' : ' (perfect sensors)'}: ${o.ok ? 'landed in the SPLICE box' : 'failed: ' + o.failure_kind}, miss ${fmt(Math.hypot(...o.miss_m), 1)} m, ${st.ep.frames.length - 1} steps, scored with the env v${st.ep.envVersion} reward.` +
     (st.ghost ? ` Same seed with the ${st.ghost.ctrl === 'policy' ? 'policy' : 'classical law'}: ${st.ghost.outcome.ok ? 'in the box' : st.ghost.outcome.failure_kind}, miss ${fmt(Math.hypot(...st.ghost.outcome.miss_m), 1)} m.` : ''));
-  st.frame = reduced.matches || $('l-speed').value === '0' ? st.ep.frames.length - 1 : 0;
+  st.frame = reduced.matches || speed.x === 0 ? st.ep.frames.length - 1 : 0;
   setPlaying(st.frame < st.ep.frames.length - 1); rescore(); draw();
 }
 
@@ -111,7 +115,7 @@ function setPlaying(p) { st.playing = p; $('l-play').textContent = p ? 'Pause' :
 function tick(now) {
   st.raf = 0; if (!st.playing || !st.ep) return;
   const dt = st.last ? Math.min(0.1, (now - st.last) / 1000) : 0; st.last = now;
-  st.frame = Math.min(st.ep.frames.length - 1, st.frame + dt * (+$('l-speed').value || 1) / DT_S);
+  st.frame = Math.min(st.ep.frames.length - 1, st.frame + dt * (speed.x || 1) / DT_S);
   if (st.frame >= st.ep.frames.length - 1) { setPlaying(false); draw(); return; } draw();
   st.raf = requestAnimationFrame(tick);
 }

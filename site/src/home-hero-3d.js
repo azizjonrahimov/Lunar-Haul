@@ -1,7 +1,9 @@
 // Home hero, the 3D part (F-39), loaded by home-hero.js after first paint: on capable tiers the /world/ scene of the gallery's
-// second-phase year behind a small door ("Watch it in 3D"), then a slow orbit and the year playing.
+// second-phase year behind a small door ("Watch it in 3D"), then a slow orbit and the year playing at 5 min a second
+// (F-50: the close shot's speed, shown by the shared time-scale label), quiet stretches skipped.
 import { door, reducedMotion } from './ui/index.js';
 import { detectTier } from './stage/tier.js';
+import { createTimescale, hoursText } from './ui/timescale.js';
 
 const BASE = import.meta.env.BASE_URL;
 let root = null;
@@ -19,12 +21,14 @@ export async function start(el) {
 
 async function build(gate, tier) {
   const fetchFn = label => url => gate.fetch(url, { label });
-  const [{ createWorldScene }, { loadScene }] = await Promise.all([import('./world/v2-scene.js'), import('./world/scene-data.js')]);
+  const [{ createWorldScene }, { loadScene }, { motionIndex, quietJump }] = await Promise.all([import('./world/v2-scene.js'), import('./world/scene-data.js'), import('./world/quiet.js')]);
   const canvas = root.querySelector('.hero-canvas');
   const sc = await createWorldScene({ canvas, labelsHost: root.querySelector('.hero-labels'), tier, fetchFn: fetchFn('the 3D scene') });
   const pkg = await loadScene(`${BASE}scenes/P2/`, { fetchFn: fetchFn('one simulated year') });
   const chunks = await Promise.all(pkg.index.chunks.map((_, k) => pkg.chunk(k)));
   pkg.index.landings.sort((a, b) => a.t_h - b.t_h);
+  const motion = motionIndex(pkg, chunks), ts = createTimescale({ value: 300, picker: false, keys: false, url: false });
+  ts.el.classList.add('hero-speed'); root.querySelector('.hero-pause').after(ts.el);
   sc.setPackage(pkg, null); sc.shots(); sc.stage.labels.show(false); sc.setIcons(false);   // true scale: no markers in a cinematic view
   const idx = pkg.index, night = t => idx.nights.some(([a, b]) => t >= a && t < b);
   const set = t => { time = Math.max(0, Math.min(idx.horizon_h - 0.01, t)); sc.setTime(time, chunks[pkg.chunkIndex(time)]); };
@@ -37,10 +41,14 @@ async function build(gate, tier) {
     const fx = tg.x - p.x, fz = tg.z - p.z, fl = Math.hypot(fx, fz) || 1, rx = -fz / fl, rz = fx / fl, s = 120;
     ctl.setLookAt(p.x - rx * s, p.y, p.z - rz * s, tg.x - rx * s, tg.y, tg.z - rz * s, false); }
   sc.stage.director.autoRotate(1.2);   // a full turn in five minutes
-  // the year plays at 0.4 h a second, slowed through each descent so no frame steps over a landing
+  // the year plays at 5 min a second, slowed to 36 s a second through each descent so no frame steps over a landing
   sc.stage.animate(dt => {
-    let next = time + dt * (sc.activeLandings.length ? 0.01 : 0.4);
-    if (!sc.activeLandings.length && sc.nextLandingStart) { const s0 = sc.nextLandingStart(time); if (s0 <= next) next = s0 + 1e-4; }
+    const landing = sc.activeLandings.length > 0, rate = landing ? 0.01 : ts.h;
+    ts.override(landing ? 36 : null);
+    let next = time + dt * rate;
+    const s0 = !landing && sc.nextLandingStart ? sc.nextLandingStart(time) : Infinity;
+    if (s0 <= next) next = s0 + 1e-4;
+    else if (!landing) { const j = quietJump(time, rate, motion, s0); if (j !== null && j > next) { ts.toast(`Skipped ${hoursText(j - time)}, nothing moving`); next = j; } }
     set(next >= idx.horizon_h - 0.02 ? 0 : next);
     return true;
   });

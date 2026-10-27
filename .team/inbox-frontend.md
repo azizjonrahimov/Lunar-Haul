@@ -594,7 +594,7 @@ part of the 3D site improved. F-50 needs no research and starts now; F-51 onward
 Rules unchanged: do not git add/commit (LEAD commits; list your files), report in .team/reports.md with the real
 clock time, check free RAM >= 0.4 GB before any browser or build, one page at a time.
 
-## F-50 [IN PROGRESS] Slower, easier-to-follow motion on every animated page
+## F-50 [DONE, uncommitted 27 Oct 10:25] Slower, easier-to-follow motion on every animated page
 Why: at today's default (/world/ 1 day/s) a rover crosses a 2 km leg in well under a second. The owner wants to
 see clearly how each vehicle and rocket moves.
 Steps:
@@ -623,7 +623,7 @@ no console errors on the pages you touched; report lists files, defaults before/
 ## Phase 5 plan is in `.team/PLAN-phase5.md`; read it and the research note relevant to each task. Tasks in order
 ## after F-50. Each ends with a report (files, how checked, before/after numbers) and a message to LEAD.
 
-## F-51 [QUEUED after F-50] Every vehicle "on its own" and "inside"
+## F-51 [IN PROGRESS] Every vehicle "on its own" and "inside"
 Why: the owner wants to see each vehicle, rocket and rover clearly, separately and from inside. The existing
 `site/src/stage/cutaway.js` (stencil caps) and `explode.js` are the base; use them everywhere.
 Source of parts: `research_notes/Lunar ATC/vehicles_comms_internals.md` Table B (part, position, size, source,

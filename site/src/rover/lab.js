@@ -9,10 +9,15 @@ import { plan } from './expert.js';
 import { DriveEnv, expertController, PATCH, ENV_ID, ENV_VERSION } from './env.js';
 import { legProfile, driveProfile, SPEED_SIGMA } from './tables.js';
 import { num, esc, fmt } from '../components/num.js';
+import { createTimescale } from '../ui/timescale.js';
 
 const $ = id => document.getElementById(id);
 const BASE = import.meta.env.BASE_URL, TERR = BASE + 'terrain/hero/', LAB = BASE + 'lab/rover/';
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+// F-50: the shared time scale (1 min a second to start; the 3D view drops it to 10× at chase distance); space drives
+// and pauses, [ and ] step the speed
+const speed = createTimescale({ speeds: [1, 10, 60, 300, 0], value: 60, id: 'r-speed', onPlayPause: () => { if (st.running) stop(); else drive(); } });
+document.getElementById('r-speed-host').replaceWith(speed.el);
 const st = { t: null, sites: null, index: null, hill: null, route: null, routeKey: '', env: null, ctl: null, obs: null, running: false, raf: 0, last: 0, acc: 0, trail: [], events: [], keys: {}, rec: null, sent: [0, 0], legTable: null, prof: null };
 const status = m => { $('r-status').textContent = m; };
 async function getJson(u) { const r = await fetch(u); if (!r.ok) throw new Error(`${u}: HTTP ${r.status}`); return r.json(); }
@@ -32,7 +37,7 @@ async function boot() {
   $('r-tele-title').insertAdjacentHTML('beforeend', ` <span class="small muted">${ENV_ID}, env v${ENV_VERSION}</span>`);
   fillSelectors(); wire(); renderConstants();
   // the 3D view's page side loads after the lab is ready (its door, HUD and controls; the scene itself waits for Enter)
-  import('./lab3d.js').then(m => { v3 = m.mount3d({ st, points, tableKey, level, lighting, status, drive: () => drive(), human: () => $('r-ctrl').value === 'human',
+  import('./lab3d.js').then(m => { v3 = m.mount3d({ st, speed, points, tableKey, level, lighting, status, drive: () => drive(), human: () => $('r-ctrl').value === 'human',
     // run the drive on (the same drive, at once) while pred() holds: the 3D view opens where the leg is sunlit
     skip: (pred, max = 4000) => { let n = 0; if (st.ctl.actAsync || st.env2) return 0; while (!st.done && n < max && pred()) { if (!stepOnce()) break; n++; } drawAll(true); return n; },
     driverName: () => ({ expert: 'The scripted expert', human: 'You', learned: 'The neural network', race: 'The expert' })[$('r-ctrl').value],
@@ -140,7 +145,7 @@ async function stepAsync() {
 }
 async function drive() {
   if (!st.route || st.busy) return; if (st.done || !st.env || st.env.steps === 0) reset();
-  const rate = +$('r-speed').value;
+  const rate = speed.x;
   if (rate === 0 || reduced.matches && $('r-ctrl').value !== 'human') {
     const t0 = performance.now(), gen = st.gen; st.busy = true; $('r-drive').disabled = true;
     try { while (gen === st.gen && await stepAsync()) { if (performance.now() - t0 > (st.ctl.actAsync || st.env2 ? 20000 : 4000)) break; } } finally { st.busy = false; $('r-drive').disabled = false; }
@@ -151,7 +156,7 @@ async function drive() {
 function stop() { st.running = false; $('r-drive').textContent = 'Drive'; $('r-drive').setAttribute('aria-pressed', 'false'); }
 async function tick(now) {
   st.raf = 0; if (!st.running) return;
-  const dt = st.last ? Math.min(0.1, (now - st.last) / 1000) : 0; st.last = now; st.acc += dt * +$('r-speed').value;
+  const dt = st.last ? Math.min(0.1, (now - st.last) / 1000) : 0; st.last = now; st.acc += dt * speed.x;
   let going = true;
   if (st.ctl.actAsync || st.env2) { const gen = st.gen; while (st.acc >= R_DT && going && gen === st.gen) { st.acc -= R_DT; going = (await stepAsync()) !== false; } }
   else while (st.acc >= R_DT && going) { st.acc -= R_DT; going = stepOnce(); }
@@ -295,7 +300,7 @@ function wire() {
     catch (e) { status(`The learned driver could not be loaded (${e.message}); the scripted expert drives.`); $('r-ctrl').value = 'expert'; if (st.route) reset(); }
     finally { $('r-drive').disabled = false; }
   });
-  for (const id of ['r-level', 'r-ctrl', 'r-soil']) $(id).addEventListener('change', () => { stop(); if (st.route) { reset(); renderComparison(); } $('r-keys').hidden = $('r-ctrl').value !== 'human'; if ($('r-ctrl').value === 'human') $('r-speed').value = '1'; });
+  for (const id of ['r-level', 'r-ctrl', 'r-soil']) $(id).addEventListener('change', () => { stop(); if (st.route) { reset(); renderComparison(); } $('r-keys').hidden = $('r-ctrl').value !== 'human'; if ($('r-ctrl').value === 'human') speed.set(1); });
   $('r-drive').addEventListener('click', () => { if (st.running) stop(); else drive(); });
   $('r-reset').addEventListener('click', () => { stop(); if (st.route) reset(); });
   $('r-ch').addEventListener('change', () => patchView());

@@ -6,6 +6,7 @@
 // Compare as one answer card per job rule, and "Watch this year in 3D". v2 stays at /simulator/v2/ for one release.
 import './v3.css';
 import { segmented, statChip, sceneChips, h } from '../ui/index.js';
+import { createTimescale } from '../ui/timescale.js';
 
 const $ = id => document.getElementById(id);
 const BASE = import.meta.env.BASE_URL, ENGINE = BASE + 'simulator/engine/';
@@ -289,11 +290,14 @@ $('exportTrace').addEventListener('click', () => {
   const name = ['lunarsim-trace', m.scenario, m.mechanism, m.seed === null || m.seed === undefined ? null : 'seed' + m.seed].filter(x => x !== null && x !== undefined && x !== '').join('_').replace(/[^\w.-]+/g, '-') + '.json';
   download(name, JSON.stringify(traceToJson(replay.tr)), 'application/json'); $('rstatus').textContent = `Exported ${name}.`;
 });
+// F-50: the shared time scale, 5 min a second to start; keys work while the Replay tab is open
+const ts = createTimescale({ speeds: [60, 300, 900, 3600, 21600, 86400, 259200], value: 300, id: 'speed', active: () => !$('tab-replay').hidden, onPlayPause: () => { if (replay.tr) $('play').click(); } });
+$('speed-host').replaceWith(ts.el);
 $('tslider').addEventListener('input', e => { replay.t = +e.target.value; drawMap(); });
 $('play').addEventListener('click', () => { replay.playing = !replay.playing; $('play').textContent = replay.playing ? 'Pause' : 'Play'; if (replay.playing) { replay.last = performance.now(); requestAnimationFrame(tick); } });
 function tick(now) {
   if (!replay.playing || !replay.tr) return;
-  replay.t += (now - replay.last) / 1000 * +$('speed').value; replay.last = now;
+  replay.t += (now - replay.last) / 1000 * ts.h; replay.last = now;
   if (replay.t >= replay.tr.horizon) { replay.t = replay.tr.horizon; replay.playing = false; $('play').textContent = 'Play'; }
   $('tslider').value = Math.floor(replay.t); drawMap(); if (replay.playing) requestAnimationFrame(tick);
 }

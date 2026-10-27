@@ -1,0 +1,21 @@
+/* The shared time-scale control (F-50): the speed picker, the "1 s on screen = …" label, Skip quiet time and the
+   toast. Tokens only, so it works in the instrument scope and both reading themes. */
+.ts { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; min-width: 0; font-size: 0.8125rem; color: var(--ink); }
+.ts-pick { display: inline-flex; align-items: center; gap: 0.4rem; }
+.ts-name { font-family: var(--font-display); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
+.ts-select {
+  min-height: 2rem; padding: 0.2em 0.5em; border-radius: 6px; border: 1px solid var(--hairline); background: var(--bg); color: var(--ink);
+  font: 600 0.8125rem/1.2 var(--font-display);
+}
+.ts-select:focus-visible, .ts-skip input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.ts-text { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.ts-text.ts-over { color: var(--ink); font-weight: 600; }
+.ts-skip { display: inline-flex; align-items: center; gap: 0.3rem; min-height: 1.5rem; cursor: pointer; color: var(--ink-2); }
+.ts-skip input { width: 1rem; height: 1rem; margin: 0; accent-color: var(--accent); }
+.ts-toast {
+  flex-basis: 100%; min-height: 1.2em; color: var(--ink); font-weight: 600; opacity: 0;
+}
+.ts-toast.on { opacity: 1; }
+@media (prefers-reduced-motion: no-preference) { .ts-toast { transition: opacity 0.4s; } }
+/* the toast line is kept only where the page skips (so a toast does not move the layout); elsewhere it shows when used */
+.ts:not(.ts-has-skip) .ts-toast:not(.on) { display: none; }

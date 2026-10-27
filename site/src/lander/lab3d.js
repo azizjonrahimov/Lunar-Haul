@@ -7,6 +7,7 @@ import { door, segmented, sceneChips, narrative, counter, timeline, h, reducedMo
 import { detectTier } from '../stage/tier.js';
 import { loadTrajectories, pilotsFor, episodeView, PICKS } from './trajectories.js';
 import { TOUCHDOWN } from './classes.js';
+import { createTimescale } from '../ui/timescale.js';
 
 const $ = id => document.getElementById(id);
 const BASE = import.meta.env.BASE_URL, POL = BASE + 'lab/policies/';
@@ -21,7 +22,7 @@ const FAIL = {
 
 const params = new URLSearchParams(location.search);
 const ui = { cls: CLASSES.some(c => c.value === params.get('lander')) ? params.get('lander') : 'CLPS', kind: params.get('pilot') || 'network', pick: 'p50',
-  view: 'side', speed: 2, show: { guidance: true, thrust: false, sensors: false } };
+  view: 'side', show: { guidance: true, thrust: false, sensors: false } };
 // F-40: a moment of a descent in the URL hash, written by "Copy link to this moment" (lander and pilot stay in the query):
 // #pick=p50&view=side&t=23.40&cam=x,y,z,tx,ty,tz (seconds into the replay; camera position and target in metres)
 const VIEWS = ['chase', 'side', 'pad', 'sun'];
@@ -69,7 +70,7 @@ async function start(gate) {
 }
 
 // ---------- controls ----------
-let pilotSeg = null, pickSeg = null, phaseChips = null, viewSeg = null;
+let pilotSeg = null, pickSeg = null, phaseChips = null, viewSeg = null, ts = null;
 function controls() {
   const r1 = $('l3-row1'), r2 = $('l3-row2');
   r1.append(segmented({ legend: 'Lander', options: CLASSES, value: ui.cls, onChange: v => { ui.cls = v; drawPilots(); choose(); } }).el);
@@ -82,7 +83,9 @@ function controls() {
     input.addEventListener('change', () => { ui.show[k] = input.checked; sc.setShow(ui.show); update(true); });
     showSet.append(h('label', { class: 's-check' }, input, ' ' + label));
   }
-  r2.append(showSet, segmented({ legend: 'Speed', options: [{ value: '1', label: '1×' }, { value: '2', label: '2×' }, { value: '4', label: '4×' }], value: String(ui.speed), onChange: v => { ui.speed = +v; } }).el);
+  // F-50: the shared time scale; a descent plays at real time unless the visitor speeds it up (space plays, [ and ] step)
+  ts = createTimescale({ speeds: [1, 2, 4], value: 1, onPlayPause: () => setPlaying(!time.playing) });
+  r2.append(showSet, ts.el);
   const play = h('button', { class: 'ui-btn primary', type: 'button', id: 'l3-play', 'aria-pressed': 'false' }, 'Play');
   play.addEventListener('click', () => setPlaying(!time.playing));
   r2.append(play, h('button', { class: 'ui-btn', type: 'button', id: 'l3-copy', onclick: copyMoment }, 'Copy link to this moment'));
@@ -108,7 +111,7 @@ function setPlaying(v) {
 }
 function tick(dt) {
   if (!time.playing) return false;
-  time.t = Math.min(view.tEnd + 6, time.t + dt * ui.speed);
+  time.t = Math.min(view.tEnd + 6, time.t + dt * ts.x);
   update();
   if (time.t >= view.tEnd + 6) { setPlaying(false); score.commit(`Final score ${fmt(view.scoreFinal, 1)}`); }
   return time.playing;

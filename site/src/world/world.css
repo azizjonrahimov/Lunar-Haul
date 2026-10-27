@@ -62,3 +62,4 @@ body:not(.w-playing) .w-controls .i-pause, body.w-playing .w-controls .i-play { 
 .w-stage .ui-viewpad { position: absolute; right: 10px; top: 10px; z-index: 2; display: grid; grid-template-columns: repeat(3, 2rem); gap: 4px; padding: 6px; background: rgba(5,5,6,.6); border-radius: var(--radius); }
 .w-stage .ui-viewpad button { width: 2rem; height: 2rem; border-radius: 999px; border: 1px solid rgba(255,255,255,.3); background: transparent; color: #fff; font: 600 1rem/1 var(--font-sans); cursor: pointer; padding: 0; }
 .w-stage .ui-viewpad button:hover { background: rgba(255,255,255,.14); }
+.w-controls .ts { flex: 1 1 16rem; }

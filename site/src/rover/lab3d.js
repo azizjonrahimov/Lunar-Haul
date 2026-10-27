@@ -53,7 +53,7 @@ function textChip(label) {
 export function mount3d(api) {
   const { st } = api;
   const ui = { view: 'chase', show: { ghost: true, glare: true, earth: true } };
-  let sc = null, earth = null, track = null, samples = null, h0 = 0, tl = null, entered = false, speedTouched = false;
+  let sc = null, earth = null, track = null, samples = null, h0 = 0, tl = null, entered = false;
   const story = narrative({ label: 'Drive story' });
   const speed = statChip({ label: 'Ground speed', value: 0, unit: 'km/h', flag: 'Modelled', digits: 1, source: 'this drive (JS port of lunar/Drive-v0)' });
   const slip = statChip({ label: 'Wheel slip', value: 0, unit: '%', flag: 'Modelled', digits: 0, source: 'slip curve for this drive’s soil (Modelled; the constants table below gives the source)' });
@@ -63,7 +63,6 @@ export function mount3d(api) {
   $('r3-story').append(story.el); $('r3-chips').append(speed.el, slip.el, light.el, link.el, race.el);
   link.set(null); race.set(null);
   story.set({ eyebrow: 'Rover lab in 3D', title: 'Drive the leg on the real terrain', html: '<p>Press Enter to load the terrain, the rover and the Earth-link samples (about 3.7 MB). The drive is the same one the plan view below shows.</p>' });
-  $('r-speed').addEventListener('change', () => { speedTouched = true; });
 
   (async () => {
     const tierInfo = await detectTier(), tier = tierInfo.tier;
@@ -96,7 +95,7 @@ export function mount3d(api) {
     });
     controls();
     entered = true;
-    if (!speedTouched && $('r-speed').value === '60') $('r-speed').value = '10';   // 10x reads at chase distance; the plan view keeps up
+    if (!api.speed.touched && api.speed.x === 60) api.speed.set(10);   // 10x reads at chase distance; the plan view keeps up
     leg();
     // open on a sunlit stretch: the first route point lit both in the model (its 20 m shadow grid) and in the view (the
     // horizon map, which also sees terrain beyond the tile); the drive runs on at once to it, if it is in the first 70 %

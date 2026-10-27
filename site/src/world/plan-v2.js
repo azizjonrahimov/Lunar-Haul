@@ -77,11 +77,11 @@ export function createPlanScene({ host, canvas: old }) {
     setPackage(p) { pkg = p; vehicles = p.index.vehicles.map(v => ({ ...v })); fit(); },
     setTime(time, chunk) {
       t = time; ch = chunk;
-      for (const v of vehicles) { const p = pkg.position(ch, v.id, t); v.pos = p; v.state = p?.state; v.load = p?.load || 0; }
+      for (const v of vehicles) { const p = pkg.position(ch, v.id, t, { ease: 2 / 60 }); v.pos = p; v.state = p?.state; v.load = p?.load || 0; }
       active = pkg.index.landings.filter(L => t >= L.t_h - 0.05 && t < L.t_h);
       draw();
     },
-    shots() {}, go() { return Promise.resolve(); }, setIcons() {},
+    shots() {}, go() { return Promise.resolve(); }, setIcons() {}, setNoLink() {},   // the plan has no route overlay (F-40 red legs are 3D only)
     get vehicles() { return vehicles; }, get activeLandings() { return active; },
   };
 }

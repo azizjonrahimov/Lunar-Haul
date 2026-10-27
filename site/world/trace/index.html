@@ -50,10 +50,7 @@
         <label class="visually-hidden" for="w-scrub">Sim time (hours)</label>
         <input id="w-scrub" type="range" min="0" max="8760" step="1" value="0">
         <span class="mono w-clock" id="w-clock">day 0, 00:00</span>
-        <label class="visually-hidden" for="w-speed">Playback speed</label>
-        <select id="w-speed">
-          <option value="1">1 h / s</option><option value="6">6 h / s</option><option value="24" selected>1 day / s</option><option value="72">3 days / s</option><option value="240">10 days / s</option>
-        </select>
+        <span id="w-speed-host"></span>
       </div>
       <div class="w-controls" role="group" aria-label="Camera and display">
         <button class="btn" type="button" data-preset="overview">Overview</button>

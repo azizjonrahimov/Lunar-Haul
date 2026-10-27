@@ -880,7 +880,7 @@ from Earth; or one pooled dispatcher on Earth that works only while Earth is in 
 2028-2046 with R-1's Earth-link windows. B-70 needs no research input and starts now; B-71 onward follow with
 the plan. Rules unchanged: single process, foreground, --max-seconds 540 chunks, cache in .cache/, no git.
 
-## B-70 [IN PROGRESS] Robot-to-robot radio visibility on the Connecting Ridge (data product)
+## B-70 [DONE 10:22] Robot-to-robot radio visibility on the Connecting Ridge (data product)
 Why: every "with the network" result depends on which robots can hear each other, and that depends on terrain.
 Steps:
 1. `tools/atc/mesh.py` (pattern: tools/comms/parking.py, reuse `los_batch` and Terrain.los_clearance_m).

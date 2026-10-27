@@ -11,6 +11,7 @@ import { createPlan } from './plan2d.js';
 import { OWNER_COLOURS, themedVar } from './colours.js';
 import { viewPad } from '../ui/viewpad.js';
 import { afterFirstPaint } from '../ui/after-paint.js';
+import { createTimescale } from '../ui/timescale.js';
 
 const $ = id => document.getElementById(id);
 const BASE = import.meta.env.BASE_URL;
@@ -18,6 +19,9 @@ const SIM_KEY = 'lunarsim.worldTrace';
 const SAMPLES = { P1: 'P1_marketplace_seed3.json', P2: 'P2_marketplace_seed3.json', P3: 'P3_marketplace_seed3.json', P2V2: 'P2_marketplace_seed3_v2.json' };
 const DESCENT_RATE_H = 10 / 3600;      // during a descent, play at most 10 sim-seconds per second
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+// F-50: the shared time scale, 5 min a second to start; space plays and pauses, [ and ] step the speed
+const ts = createTimescale({ speeds: [60, 300, 900, 3600, 21600, 86400, 259200], value: 300, id: 'w-speed', onPlayPause: () => { if (st.tr) $('w-play').click(); } });
+document.getElementById('w-speed-host').replaceWith(ts.el);
 
 const st = { terrain: null, sites: null, graph: null, layout: null, tr: null, ix: null, scene: null, plan: null, inset: null,
   t: 0, playing: false, last: 0, mode: '3d', lastRail: 0, raf: 0, source: '' };
@@ -160,11 +164,12 @@ function tick(now) {
   st.raf = 0;
   if (st.playing && st.tr) {
     const dt = st.last ? Math.min(0.1, (now - st.last) / 1000) : 0; st.last = now;
-    let rate = +$('w-speed').value, next = st.t + rate * dt;
+    let rate = ts.h, next = st.t + rate * dt, slowed = false;
     if ($('w-slow').checked) {
-      if (st.tr.landings.some(l => st.t >= l.t - descentH(l) && st.t < l.t)) next = st.t + Math.min(rate, DESCENT_RATE_H) * dt;   // inside a descent
+      if (st.tr.landings.some(l => st.t >= l.t - descentH(l) && st.t < l.t)) { next = st.t + Math.min(rate, DESCENT_RATE_H) * dt; slowed = true; }   // inside a descent
       else { const l = st.tr.landings.find(x => st.t < x.t - descentH(x) && next >= x.t - descentH(x)); if (l) next = l.t - descentH(l); }  // stop at its start
     }
+    ts.override(slowed ? Math.min(ts.x, DESCENT_RATE_H * 3600) : null);
     st.t = Math.min(st.tr.horizon, next); if (st.t >= st.tr.horizon) setPlaying(false);
   }
   draw(false);
@@ -186,8 +191,7 @@ function wireControls() {
   $('w-view2d').addEventListener('change', e => { st.mode = e.target.checked ? '2d' : (st.scene ? '3d' : '2d'); document.body.classList.toggle('w-2d', st.mode === '2d'); st.plan && st.plan.resize(); draw(true); kick(); });
   document.addEventListener('keydown', e => {
     if (e.target.closest('input, select, textarea, button')) return;
-    if (e.key === ' ') { e.preventDefault(); setPlaying(!st.playing); }
-    else if (e.key === 'ArrowRight') { st.t = Math.min(st.tr.horizon, st.t + 24); draw(true); } else if (e.key === 'ArrowLeft') { st.t = Math.max(0, st.t - 24); draw(true); }
+    if (e.key === 'ArrowRight') { st.t = Math.min(st.tr.horizon, st.t + 24); draw(true); } else if (e.key === 'ArrowLeft') { st.t = Math.max(0, st.t - 24); draw(true); }
   });
   document.addEventListener('visibilitychange', () => { if (document.hidden) setPlaying(false); });
 }

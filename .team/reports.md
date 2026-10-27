@@ -5244,3 +5244,194 @@ Every effect measured against strategic shifts by ~3 t, and Stage H 24 h tonnage
 **Questions for LEAD:**
 1. Should F-40 close? What's left needs the Intel laptop or the phone (owner-only), plus the optional /world/trace/ TBT margin above.
 2. Do you want the /world/trace/ scene-build split?
+
+## B-70 DONE 10:22 | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**Headline:**
+- **Rovers (2.5 m) form one connected network from 2 km range up.** Every route sample reaches the BASE mast:
+  - at 5 km (and 10 km): 23.31 % in 1 hop, 58.14 % in 2, 18.55 % in 3+, at most 4 hops;
+  - at 2 km: 23.31 / 39.38 / 37.31 %, at most 4 hops;
+  - at 1 km: 2 components, and only sample 13 (PAD_A@3) can't reach the mast; 17.64 / 27.64 / 54.67 % in 1 / 2 / 3+ hops, at most 7.
+- **Small robots (1.0 m):** at 2, 5 and 10 km there are 5 components. Four samples never reach the mast: 15 and 16 (the 5 km pads PAD_A@5, PAD_B@5), 2075 and 2339. At 5 km: 19.13 / 50.99 / 29.71 % in 1 / 2 / 3+ hops, at most 5. At 1 km there are 6 components (13 also cut off).
+- **Radio-isolated** (no line-of-sight neighbour within 2 km, the mast counting as one): rovers none; small robots 4 (samples 15, 16, 2075, 2339).
+- **Line of sight is rare, even over short distances (rough ridge terrain).**
+
+  | combination | 0-0.5 km | 0.5-1 km | 1-2 km | 2-5 km | 5-10 km |
+  |---|---|---|---|---|---|
+  | 2.5-2.5 | 50.54 % | 20.10 % | 15.29 % | 9.31 % | 3.00 % |
+  | 2.5-1.0 | 38.87 % | 16.02 % | 12.43 % | 7.66 % | 2.19 % |
+  | 1.0-1.0 | 28.23 % | 12.66 % | 9.99 % | 6.29 % | 1.54 % |
+  | 2.5-10 (mast) | 88.28 % | 19.95 % | 21.68 % | 0 % | no points |
+  | 1.0-10 (mast) | 77.08 % | 13.15 % | 17.25 % | 0 % | no points |
+
+  - With a 1 m margin and with the first Fresnel zone 60 % clear, the shares are lower; all are in the summary. Example, 2.5-2.5 at 0-0.5 km: 36.58 % (1 m margin), 30.73 % (Fresnel at 2.4 GHz), 9.52 % (Fresnel at 400 MHz).
+  - 400 MHz needs a lot of clearance. At 2-5 km only 1.76 % of rover pairs clear 60 % of its first Fresnel zone.
+- **Direct line of sight to the BASE mast:**
+  - rovers: 564 points (23.31 %), all within 2 km; none beyond 2 km sees it;
+  - small robots: 463 points (19.13 %).
+  - This is why 2 hops are the norm.
+
+**Method:**
+- **Points:** the 2,421 samples of earth_link-v1-samples. Samples 0-16 are the sites and pads, so every site and pad is a point, and the point index equals the sample index. BASE is sample 0, with the base computer on the 10 m mast.
+- **Pairs:** every pair is within 10 km here, so 2,929,410 pairs (2 of them coincident, d = 0).
+- **Height combinations:** (2.5, 2.5), (2.5, 1.0), (1.0, 2.5), (1.0, 1.0), so 2.5-1.0 is kept in both orientations. Mast pairs (BASE, j) use (10, 2.5) and (10, 1.0).
+- **Profiles** use the arithmetic of `Terrain.los_clearance_m` / `parking.los_batch`: 5 m stations, bilinear 5 m heights, chord bulge s(L-s)/2R.
+  - Clearance is the minimum over the inner stations. LOS means clearance > margin (`Terrain.line_of_sight`).
+  - The Fresnel ratio is min over stations of clearance / sqrt(λ s (L-s)/L). The 400 MHz value is the 2.4 GHz ratio × sqrt(1/6), which is exact because r_F scales with sqrt(λ).
+  - A pair with d ≤ 5 m has clearance min(h_i, h_j). For d = 0, `los_clearance_m` returns h_a; I made that symmetric.
+- **Cross-checks** (recorded in the file):
+  - 300 random pairs × 4 combinations against `Terrain.los_clearance_m`: 0 fall outside the encoded 0.1 m interval;
+  - the mast pairs against the samples file's `mast_los` (2.5 m → 10 m, ≥ 0 within 10 km): 2,420 of 2,420 agree.
+- **Runtime:** `pairs` in 3 parts took 149 + 153 + 158 s (peak 517 MB); `build` 21 s (peak 677 MB). Single process, foreground, `--max-seconds 540`.
+
+**Files:**
+- New code: `tools/atc/mesh.py` (pairs --part i --parts N, build), `lunarsim/atc/__init__.py`, `lunarsim/atc/radio.py` (RadioMesh), `lunarsim/schemas/mesh-v1.schema.json`, `tests/test_mesh.py` (10 tests).
+- `tools/ci/budgets.py`: schema target added for mesh-v1.
+- **For LEAD to commit:**
+  - `data/atc/connecting_ridge/mesh-v1.json.gz` (10.4 MB) and `mesh-v1.json.gz.sha256` (sha256 12960687fec4...);
+  - `results/ATC_mesh.json`.
+
+**Format** (in the schema and the file's `encoding` block):
+- JSON gzip; arrays are little-endian base64.
+- `pairs.i` / `pairs.j` are uint16, ordered by i then j.
+- `clear_dm0` (int16, byte-shuffled) holds combination 0. `clear_dm_delta` (int8, 3 × n) holds the other combinations minus combination 0, and reconstructs exactly.
+  - Clearance is encoded as ceil(10c) - 1, so LOS at any whole-decimetre margin m is exact: `clear_dm >= 10m`.
+- `fresnel` is uint8 (4 × 2 × n), floor(100r) + 1 clipped to 0..255, so r ≥ k/100 ⟺ q ≥ k+1 exactly.
+- `los` is a bit field (0 m and 1 m per combination).
+- `mast` holds the same arrays for (BASE mast, j).
+- Distance is not stored; it comes exactly from `points.xy_m`.
+
+**API:**
+- `RadioMesh(path=None).link(a, b, h_a=2.5, h_b=2.5, d_max_m=5000, margin_m=0, fresnel_min=None, freq_hz=2.4e9)`.
+  - Heights are 2.5 or 1.0 at any point, and 10 only at BASE.
+  - margin_m must be a multiple of 0.1 and fresnel_min a multiple of 0.01, or a ValueError is raised.
+  - The defaults are flagged Provisional in the docstring.
+- `pair_links(h, ...)`, `graph(h, ...)`, `neighbours(a, h, ...)`, `neighbour_counts(h, ...)` and `hops(src, h, ...)` take h as one height or one height per point (mixed fleets). With `base_mast=True` (default), pairs touching BASE use the mast.
+
+**How to test:**
+- `.venv/Scripts/python -m pytest -q tests/test_mesh.py` → 10 passed (10 s). It checks:
+  - the smooth Moon sphere, both as a DEM in a tangent frame and as the chord bulge, against d = sqrt(2Rh1) + sqrt(2Rh2) within one 5 m cell (2.5-2.5 → 5.89 km; also 2.5-1.0 and 1.0-10);
+  - a flat DEM gives LOS for every pair;
+  - a 30 m ridge blocks the pair across it;
+  - encoding thresholds, link symmetry, file vs `Terrain.los_clearance_m`, hops, and that the sha256 matches.
+- `tools/ci/budgets.py` `check_schemas()` → 0 errors (mesh-v1 included).
+- To rebuild: `python tools/atc/mesh.py pairs --part i --parts 3` for i = 0, 1, 2 (~150 s each), then `python tools/atc/mesh.py build`.
+
+**FRONTEND:** nothing yet. The file is a data product for the engine and is not loaded by the site.
+
+**Questions for LEAD:**
+1. **File size: 10.4 MB, the largest data file** (the others are ≤ 2.1 MB). Before the delta and byte-shuffle encoding it was 27.4 MB. The rest is clearance (≈ 3.3 MB + 2.7 MB of deltas), Fresnel (3.9 MB) and the `los` bits (0.4 MB, redundant with clearance).
+   - If you want it smaller: drop the `los` bits, or store 400 MHz Fresnel at 0.05 resolution. Or keep it uncommitted in `.cache` with the sha256 recorded, as for B-64.
+
+## F-50 DONE 10:25 | Slower, easier-to-follow motion: one shared time scale on every animated page, close shots at 5 min/s, Skip quiet time on /world/, eased drives, limited turn rate, rolling wheels, 2 h trails
+
+**Files changed (nothing committed):**
+- New:
+  - `site/src/ui/timescale.js`: the control.
+  - `site/src/ui/speeds.js`: the names, wording and ?speed= parsing, with no DOM so Node can test it.
+  - `site/src/ui/timescale.css`.
+  - `site/src/world/quiet.js`: Skip quiet time.
+  - `site/tests/timescale.test.mjs`.
+- Modified:
+  - `site/src/world/v2.js`, `v2-scene.js`, `v2.css`, `scene-data.js`, `plan-v2.js`, `main.js` (trace), `world.css`
+  - `site/world/trace/index.html`
+  - `site/src/simulator/v3.js`, `v3.css`, `site/simulator/index.html`
+  - `site/src/stories/stage.js`, `stories.css`
+  - `site/src/home-hero-3d.js`, `home-hero.css`
+  - `site/src/lander/lab.js`, `lab3d.js`, `site/lab/lander/index.html`
+  - `site/src/rover/lab.js`, `lab3d.js`, `site/lab/rover/index.html`
+  - `site/src/ui/ui.css`
+  - `.team/inbox-frontend.md` (F-50 marked done)
+  - `.team/reports.md`
+- Not mine, in the working tree: `.team/inbox-backend.md`, `tools/ci/budgets.py`, `data/atc/`, `lunarsim/atc/`, `lunarsim/schemas/mesh-v1.schema.json`, `results/ATC_mesh.json`, `tests/test_mesh.py`, `tools/atc/`.
+
+**1. Inventory: every place that turns real seconds into simulated time, with defaults before → after**
+
+| page / file | before | after |
+|---|---|---|
+| /world/ (`world/v2.js`) | segmented 1 h/s … 10 days/s, default **1 day/s**; landings 10 s/s | shared control real time … 3 days/s. Default **5 min/s** (the opening pads shot); Overview 1 h/s; Rover legs, Base, Night and any Follow 5 min/s, until the visitor or ?speed= picks a speed. Landings at min(speed, 10 s/s). Skip quiet time on. |
+| /world/ 2D plan (tier 0, `plan-v2.js`) | same controls | same control; the plan opens on the overview, so 1 h/s |
+| /world/trace/ (`world/main.js`) | select 1 h/s … 10 days/s, default **1 day/s**; descents 10 s/s ("slow down for landings") | shared control 1 min/s … 3 days/s, default **5 min/s**; descent note on screen |
+| /simulator/ replay (`simulator/v3.js`) | select 6 h/s … 10 days/s, default **1 day/s** | shared control 1 min/s … 3 days/s, default **5 min/s** |
+| /stories/ world steps (`stories/stage.js`) | **6 h/s**; landings 43 s/s | shared control 1 min/s … 6 h/s over the view, default **5 min/s**; landings 43 s/s, said on screen |
+| /stories/ lander steps | real time | real time, with the "Landing: real time" note |
+| home hero (`home-hero-3d.js`) | **0.4 h/s** (24 min/s); landings 36 s/s | **5 min/s**, label only under Pause; landings 36 s/s, said on screen; quiet time skipped |
+| /lab/lander/ 3D (`lander/lab3d.js`) | 1×/2×/4×, default **2×** | shared control, default **real time**; keys and ?speed= belong to this view |
+| /lab/lander/ replay (`lander/lab.js`) | real time/2×/5×/instant, default real time | the same speeds in the shared control (no keys or URL, so the 3D view keeps them) |
+| /lab/rover/ (`rover/lab.js`, `lab3d.js`) | real time/10×/60×/300×/instant, default 60×; 3D switches to 10× | the same speeds in the shared control; default 1 min/s (60×); the 3D chase view still drops to 10× until the visitor picks a speed |
+| /vehicles/ (`vehicles/flows.js`) | animated flow dashes, no simulated time | unchanged: there is no clock to scale |
+
+**2. The helper (`site/src/ui/timescale.js`)**
+- Named speeds: real time, 1 min/s, 5 min/s, 15 min/s, 1 h/s, 6 h/s, 1 day/s, 3 days/s. A page may add multipliers (the labs' 2×, 5×, 10× and instant).
+- The label always reads "1 s on screen = 5 min on the Moon"; real time reads "Real time: 1 s on screen = 1 s on the Moon".
+- During a landing the label reads "Landing: slowed to 1 s on screen = 10 s on the Moon", or "Landing: real time, …".
+- `?speed=` takes 5min, 1h, 1d, 3days, 60x, 300 or real; picking a speed writes it back to the URL.
+- Keys: `[` and `]` step slower and faster; space plays and pauses. Keys are ignored in form fields and buttons, and on the simulator only while the Replay tab is open.
+- Optional "Skip quiet time" box and toast.
+
+**3. Defaults:** as in the table. /world/ landings keep the existing 10 s a second, or real time when the visitor's speed is slower.
+
+**4. Skip quiet time (`site/src/world/quiet.js`, /world/; the home hero skips silently)**
+- It skips when no rover drives, no landing starts within the next screen-minute, and the next drive or landing is more than 3 screen-seconds away.
+- It jumps to one screen-second before that event and toasts "Skipped 2 days 15 h, nothing moving". A checkbox turns it off.
+- On P2 at 5 min/s it makes 810 skips, covering 93 % of the year: the year plays in 1.9 h on screen instead of 29.2 h.
+
+**5. Motion quality (`v2-scene.js`, so /world/, /stories/ and the home hero)**
+- **Eased drives:** each drive speeds up over its first 2 simulated minutes and slows over its last 2 (at most a quarter of the drive each). It still arrives at the package's time.
+  - This is valid because drives never run back to back in a package: I checked P2, 0 of 1,117.
+  - The option is `position(…, {ease})` in `scene-data.js`. Without options the reader is unchanged, and the Python-parity test still passes.
+- **Heading:** follows the road 12 m behind and ahead, and turns at most 150° per second on screen.
+- **Wheels:** roll with the distance driven (LTV, HAUL and MICRO wheel groups).
+- **Trails:** cover the last 2 sim-hours (a point every 0.02 h, fading), with a "Trails (last 2 h)" toggle on /world/.
+- **Lander plumes:** already follow throttle (`glow.setThrottle`) on /world/ and in the labs; unchanged.
+- **Hoppers:** not done. No hopper class exists in the catalogue or the scene packages yet. The arc belongs with the Phase 5 vehicles (F-51 and after).
+- **/world/trace/** (the older viewer) got the speed control but not the motion work.
+
+**6. Reduced motion**
+- Unchanged: /world/ opens paused, the hero keeps its still, and stories cut.
+- Camera moves already respect it, and vehicles move when the visitor presses Play.
+- Tier limits are unchanged.
+
+**Fixed along the way:**
+- **/world/ 2D plan (tier 0 or `?view2d=1`):** it threw "setNoLink is not a function" and stuck at "Loading the year…". That came from F-40's red legs calling a function the plan lacks; the plan now has an empty `setNoLink`.
+- **Year timeline on /world/:** it now spans the controls row. It sat at about 19 rem.
+- **Pause button contrast:** a pressed primary button (Pause) now uses the ink colour; it was dark text on a translucent tint.
+
+**Done-when check: a 2 km rover leg at the close-shot default (5 min/s)**
+- P2 drive speeds: median 2.27 km/h, 10th to 90th percentile 0.94–3.40 km/h.
+- On screen, 2 km takes 10.6 s at the median and 7.1–25.5 s across that range.
+- The eased ends add about 0.4 s.
+
+**How I checked:**
+- `npm run build` OK.
+- Node tests 15/15, 4 new: wording and ?speed=, the easing profile, eased and smoothed positions on P2, and Skip quiet time on P2.
+- `budgets.py pages` OK:
+  - /world/ 23.9 of 25 kB JS
+  - /world/trace/ 18.8 of 20
+  - /lab/rover/ 23.8 of 25
+  - /lab/lander/ 122.5 of 130
+  - /stories/ 11.5 of 60
+  - home 3.0 of 5
+- Free RAM was 0.52–0.93 GB before the builds and browser runs.
+- **/world/ (3D, production build):**
+  - Opens at 5 min/s. Overview → 1 h/s; Follow rovers → 5 min/s; Free → back to the shot's speed.
+  - `]` and `[` step the speed; space pauses and plays; `?speed=` is written to the URL.
+  - The landing label shows during a descent.
+  - Per frame the clock advances speed × dt (0.0083 h a frame at 5 min/s with the stage's 0.1 s cap).
+  - Seeking to 847 h, in the 846.7–910.1 h gap, jumped to 910.06 h with "Skipped 2 days 15 h, nothing moving". With the box off, the clock crept from 847 h instead.
+  - No console errors.
+- **390 px** (an iframe on /404.html): no horizontal overflow on /world/ (2D plan), /world/trace/, /simulator/, /lab/lander/ or /lab/rover/; each shows its label.
+- **Stories** (sharing-rovers, steps 1–2): the control sits bottom left over the view at 5 min/s; no errors.
+- **Home hero:** the label sits under Pause.
+- **Lander lab:** both controls show; the keys reach only the 3D one.
+- **Themes:** /world/ and the 3D views use the dark instrument scope. The labs and simulator use page tokens only (no hard-coded colours), but I didn't re-check them in light mode in the browser.
+- **Not checked by eye:**
+  - The covered Chrome window ran at 1 frame a second, so I couldn't watch the wheel roll and the turn limit. The tests cover the easing and headings.
+  - Worth a look on a real screen: /world/ → Rover legs at 5 min/s.
+- Each server was stopped and each tab closed. The first preview server outlived TaskStop (npx left its node child), so I stopped it by PID.
+
+**What I need from BACKEND:** nothing.
+
+**Questions for LEAD:**
+1. The inbox asks for a "landing: real time" note. /world/'s existing slow-motion is 10 s a second, not real time, so the label says exactly that ("Landing: slowed to 1 s on screen = 10 s on the Moon"). It reads "real time" only when the visitor's speed is real time. Should /world/ landings play at real time instead (about 1 minute or more per descent)?
+2. /stories/ (43 s/s) and the home hero (36 s/s) keep their own landing slow-motion. Should they share /world/'s 10 s a second?

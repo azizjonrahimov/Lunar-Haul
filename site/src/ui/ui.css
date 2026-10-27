@@ -219,3 +219,5 @@ button.ui-callout-pill:hover, .ui-callout-pill[aria-pressed="true"] { border-col
 .ui-viewpad.top { top: 16px; bottom: auto; }
 .ui-viewpad .ui-iconbtn { font: 600 1rem/1 var(--font-sans); }
 @media (max-width: 640px) { .ui-viewpad { right: 8px; bottom: 8px; } .ui-viewpad.top { top: 8px; bottom: auto; } }
+/* F-50: a primary button while pressed (Pause) keeps readable ink on its tinted background */
+.ui-btn.primary[aria-pressed="true"] { color: var(--ink); }

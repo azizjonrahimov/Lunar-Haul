@@ -5,12 +5,15 @@
 // scene loads on Enter (v2-scene.js); Follow keeps the camera on cargo, a rover, the next lander or the base at night;
 // "Compare with" adds a second scene of the same seed as ghost rovers with its own chips. Without 3D (tier 0) the same
 // controls drive a 2D plan of the package (plan-v2.js). Traces from the browser simulator, the service and trace files
-// open in the trace viewer (/world/trace/).
+// open in the trace viewer (/world/trace/). Speed (F-50): the shared time scale; overview 1 h/s, close shots and Follow
+// 5 min/s until the visitor picks a speed, landings slowed to 10 s a second (or real time), quiet time skipped.
 import './v2.css';
 import { door, segmented, sceneChips, narrative, statChip, timeline, h, reducedMotion, viewPad } from '../ui/index.js';
 import { detectTier } from '../stage/tier.js';
 import { loadScene } from './scene-data.js';
 import { loadTrajectories } from '../lander/trajectories.js';
+import { createTimescale, hoursText } from '../ui/timescale.js';
+import { motionIndex, quietJump } from './quiet.js';
 
 const $ = id => document.getElementById(id);
 const BASE = import.meta.env.BASE_URL;
@@ -21,9 +24,10 @@ if (q.has('from') || q.has('sample') || q.get('view') === '2d') location.replace
 const fmt = (v, d = 0) => (Number.isFinite(v) ? v.toLocaleString('en-GB', { minimumFractionDigits: d, maximumFractionDigits: d }) : '–');
 const day = t => `day ${Math.floor(t / 24)}, ${String(Math.floor(t % 24)).padStart(2, '0')}:${String(Math.floor((t % 1) * 60)).padStart(2, '0')}`;
 const GROUP_LABEL = { phases: 'Base size and job rule', pads: 'Pad distance', earth: 'Earth link', fleet: 'Fleet' };
-const SPEEDS = [{ value: '1', label: '1 h/s' }, { value: '6', label: '6 h/s' }, { value: '24', label: '1 day/s' }, { value: '72', label: '3 days/s' }, { value: '240', label: '10 days/s' }];
+// F-50: the default speed per shot (simulated seconds per second) until the visitor picks one; landings at most 10 s a second
+const SHOT_SPEED = { overview: 3600, pads: 300, legs: 300, base: 300, night: 300 }, CLOSE = 300, LANDING_X = 10;
 
-const ui = { scene: q.get('scene') || 'p2-marketplace', run: q.get('run'), speed: 24, shot: 'overview', icons: true, follow: 'none', compare: '' };
+const ui = { scene: q.get('scene') || 'p2-marketplace', run: q.get('run'), shot: 'overview', icons: true, follow: 'none', compare: '' };
 // F-40: a moment of the year in the URL hash, written by "Copy link to this moment" (the scene or run stays in the query):
 // #t=812.5021&view=pads&follow=rovers&compare=p2-inhouse&cam=x,y,z,tx,ty,tz (hours; camera position and target in metres)
 const SHOTS = ['overview', 'pads', 'legs', 'base', 'night'], FOLLOWS = ['none', 'cargo', 'rovers', 'landers', 'night'];
@@ -48,7 +52,7 @@ headline();
 
 const tierInfo = await detectTier();
 let sc = null, pkg = null, chunks = [], traj = null, tl = null, shotChips = null, followSeg = null, chips = {}, pkgB = null, chunksB = [], chipsB = null, linkChip = null, linkText = '', followStart = false;
-let lastSlow = 0, lastStory = '';   // module state is declared before the tier-0 path runs open() at load
+let lastSlow = 0, lastStory = '', ts = null, motion = null;   // module state is declared before the tier-0 path runs open() at load
 const time = { t: 0, playing: false };
 if (tierInfo.tier === 0 && !tierInfo.forced || q.get('view2d') === '1') {
   const mod = await import('./plan-v2.js');
@@ -104,6 +108,7 @@ async function open(fetchFn = fetch) {
     chunks = await Promise.all(pkg.index.chunks.map((_, k) => pkg.chunk(k)));
   } catch (e) { status(`Could not load ${ui.run ? 'run ' + ui.run : 'the scene'} (${e.message}).`); return; }
   pkg.index.landings.sort((a, b) => a.t_h - b.t_h);   // the code below takes the next landing in array order
+  motion = motionIndex(pkg, chunks);
   sc.setPackage(pkg, traj); sc.shots();
   sc.setNoLink(!!pkg.index.comms && pkg.index.comms.mode !== 'off');   // F-40: legs a rover waits to start for want of an Earth link turn red
   linkChip?.el.remove(); linkChip = null; linkText = '';
@@ -115,6 +120,7 @@ async function open(fetchFn = fetch) {
   if (moment.t !== null) { await applyMoment(moment); moment.t = null; drawTimeline(); update(true); status(`The moment from the link: ${day(time.t)}. Press Play to go on.`); return; }
   if (L0 && sc.frameAt) { ui.shot = 'pads'; shotChips?.set('pads'); await sc.frameAt(sc.sitePos(L0.pad), 600, 22, 35, true); }
   else await sc.go(ui.shot, true);
+  shotSpeed();
   drawTimeline(); update(true); status('');
   if (!reducedMotion()) setPlaying(true);
 }
@@ -127,7 +133,8 @@ function controls(plan = false) {
   const r1 = $('w2-row1');
   const play = h('button', { class: 'ui-btn primary', type: 'button', id: 'w2-play', 'aria-pressed': 'false' }, 'Play');
   play.addEventListener('click', () => setPlaying(!time.playing));
-  r1.append(play, segmented({ legend: 'Speed', options: SPEEDS, value: String(ui.speed), onChange: v => { ui.speed = +v; } }).el,
+  ts = createTimescale({ value: CLOSE, skip: true, onPlayPause: () => { if (pkg) setPlaying(!time.playing); } });
+  r1.append(play, ts.el,
     plan ? '' : segmented({ legend: 'Vehicles', options: [{ value: 'icons', label: 'Icons' }, { value: 'true', label: 'True scale' }], value: 'icons', onChange: v => {
       ui.icons = v === 'icons'; sc.setIcons(ui.icons); update(true);
       if (!ui.icons) { const f = sc.followTarget?.('rovers', time.t, pkg.hourly(chunks[pkg.chunkIndex(time.t)], time.t)); if (f) sc.frameAt(f.pos, 45, 18, 35);
@@ -135,7 +142,8 @@ function controls(plan = false) {
       else { sc.go(ui.shot); status(''); }
     } }).el,
     plan ? '' : (followSeg = segmented({ legend: 'Follow', options: [{ value: 'none', label: 'Free' }, { value: 'cargo', label: 'Cargo' }, { value: 'rovers', label: 'Rovers' }, { value: 'landers', label: 'Landers' }, { value: 'night', label: 'Night' }],
-      value: ui.follow, onChange: v => { ui.follow = v; sc.clearFollow?.(); followStart = true; if (v === 'night') nextNight(); if (v === 'none') status(''); update(true); } })).el,
+      value: ui.follow, onChange: v => { ui.follow = v; sc.clearFollow?.(); followStart = true; if (v === 'night') nextNight(); if (v === 'none') status(''); shotSpeed(); update(true); } })).el,
+    plan ? '' : h('label', { class: 'w2-check' }, h('input', { type: 'checkbox', checked: true, onchange: e => sc.setTrails?.(e.target.checked) }), ' Trails (last 2 h)'),
     compareSelect(), h('button', { class: 'ui-btn', type: 'button', id: 'w2-copy', onclick: copyMoment }, 'Copy link to this moment'));
   const host = $('w2-chips');
   chips = {
@@ -146,6 +154,8 @@ function controls(plan = false) {
   };
   host.append(...Object.values(chips).map(c => c.el));
 }
+// F-50: overview 1 h/s, close shots and Follow 5 min/s, unless the visitor (or ?speed=) chose a speed
+function shotSpeed() { if (ts && !ts.touched) ts.set(ui.follow !== 'none' ? CLOSE : SHOT_SPEED[ui.shot] ?? CLOSE); }
 function nightAt(t) { return pkg.index.nights.some(([a, b]) => t >= a && t < b); }   // hoisted: the tier-0 path calls open() at load
 // Pads: play up to the next landing and frame the pads with their rings; Rover legs: a driving rover at rover scale;
 // Base: the base cluster; Night: the next night, framed on a rover that works in the dark (its headlights) or the base
@@ -164,7 +174,7 @@ function chooseShot(v) {
     const hn = sc.vehicles.find(q => q.night_ops && q.group?.visible);
     if (sc.frameAt) sc.frameAt(hn ? hn.group.position : sc.sitePos('BASE'), hn ? 320 : 800, 20, 35); else sc.go('night');
   } else sc.go(v);
-  update(true);
+  shotSpeed(); update(true);
 }
 function nextNight() { const n = pkg.index.nights.find(([, b]) => b > time.t) || pkg.index.nights[0]; if (n && !(time.t >= n[0] && time.t < n[1])) seek(n[0] + 2); }
 function compareSelect() {
@@ -213,11 +223,15 @@ function setPlaying(v) {
 }
 function tick(dt) {
   if (!time.playing) return false;
-  // slow to 10 sim-seconds per second while a lander descends, so the landing is seen
-  const rate = sc.activeLandings.length ? 10 / 3600 : ui.speed;
+  // slow to 10 sim-seconds per second (or real time, if slower) while a lander descends, so the landing is seen
+  const landing = sc.activeLandings.length > 0, rate = landing ? Math.min(ts.x, LANDING_X) / 3600 : ts.h;
+  ts.override(landing ? Math.min(ts.x, LANDING_X) : null);
   // one frame at 1 day/s is ~0.4 h and a descent ~0.05 h: stop at the next descent's start instead of stepping over it
   let next = time.t + dt * rate;
-  if (!sc.activeLandings.length && sc.nextLandingStart) { const s0 = sc.nextLandingStart(time.t); if (s0 <= next) next = s0 + 1e-4; }
+  const s0 = !landing && sc.nextLandingStart ? sc.nextLandingStart(time.t) : Infinity;
+  if (s0 <= next) next = s0 + 1e-4;
+  // F-50: nothing driving and no landing near: jump to a second before the next drive or landing
+  else if (!landing && ts.skip && motion) { const j = quietJump(time.t, rate, motion, s0); if (j !== null && j > next) { ts.toast(`Skipped ${hoursText(j - time.t)}, nothing moving`); next = j; } }
   time.t = Math.min(pkg.horizon - 1e-3, next);
   update();
   if (time.t >= pkg.horizon - 1e-3) setPlaying(false);

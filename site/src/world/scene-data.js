@@ -26,6 +26,14 @@ function interp(block, n, f, col) {
 }
 
 /* loadScene(base, {fetchFn}) -> scene; base ends with '/' (e.g. BASE + 'scenes/P2/') */
+// F-50: a drive's distance fraction at time fraction g with a trapezoid speed profile: it speeds up over the first a of the
+// drive and slows over the last a (a <= 0.5), so it never starts or stops at full speed and still arrives on time
+export function easeLeg(g, a) {
+  if (!(a > 0)) return g;
+  const vp = 1 / (1 - a);
+  return g < a ? vp * g * g / (2 * a) : g > 1 - a ? 1 - vp * (1 - g) * (1 - g) / (2 * a) : vp * (g - a / 2);
+}
+
 export async function loadScene(base, { fetchFn = fetch } = {}) {
   const get = async (file, how) => { const r = await fetchFn(base + file); if (!r.ok) throw new Error(`${base + file}: HTTP ${r.status}`); return r[how](); };
   const index = await get('scene.json', 'json');
@@ -62,15 +70,24 @@ export async function loadScene(base, { fetchFn = fetch } = {}) {
     index, routes, columns: C, hourlyColumns: H, horizon: index.horizon_h, chunk, chunkIndex,
     // load what time t needs (and the next chunk, so playback does not stall)
     async ready(t) { const k = chunkIndex(t); await chunk(k); if (k + 1 < index.chunks.length) chunk(k + 1); return k; },
-    /* position(ch, veh, t) -> {x, y, z, state, heading, load, job, driving, route} from a loaded chunk; null if no segment */
-    position(ch, veh, t) {
+    /* position(ch, veh, t, {ease, turnM}) -> {x, y, z, state, heading, load, job, driving, route} from a loaded chunk; null if no
+       segment. Display options (F-50; the defaults give lunarsim.scene.position exactly): ease (h) eases each drive in and
+       out over that long (at most a quarter of the drive at each end; drives never run back to back in a package);
+       turnM (m) takes the heading between the route points turnM behind and ahead, so a turn spreads over 2 turnM of road. */
+    position(ch, veh, t, { ease = 0, turnM = 0 } = {}) {
       const r = segmentRow(ch, veh, t); if (r < 0) return null;
-      const s = ch.seg, o = r * nCol, t0 = s[o + C.t0], t1 = s[o + C.t1], g = (t - t0) / Math.max(t1 - t0, 1e-12), ri = s[o + C.route];
+      const s = ch.seg, o = r * nCol, t0 = s[o + C.t0], t1 = s[o + C.t1], ri = s[o + C.route];
+      let g = (t - t0) / Math.max(t1 - t0, 1e-12);
+      if (ease > 0 && (ri >= 0 ? s[o + C.f1] !== s[o + C.f0] : s[o + C.x1] !== s[o + C.x0] || s[o + C.y1] !== s[o + C.y0])) g = easeLeg(g, Math.min(0.25, ease / Math.max(t1 - t0, 1e-12)));
       const out = { state: index.states[s[o + C.state]], load: s[o + C.load_kg], job: s[o + C.job], heading: s[o + C.heading_deg], driving: false, route: ri, x: 0, y: 0, z: 0 };
       if (ri >= 0) {
         const R = routes[ri], f = s[o + C.f0] + (s[o + C.f1] - s[o + C.f0]) * g;
         out.x = interp(R.block, R.n, f, 0); out.y = interp(R.block, R.n, f, 1); out.z = interp(R.block, R.n, f, 2);
         out.heading = routeHeading(R.block, R.n, f); out.driving = s[o + C.f1] !== s[o + C.f0];
+        if (turnM > 0 && out.driving && R.length_m > 0) {
+          const df = turnM / R.length_m * Math.sign(s[o + C.f1] - s[o + C.f0]), dx = interp(R.block, R.n, f + df, 0) - interp(R.block, R.n, f - df, 0), dy = interp(R.block, R.n, f + df, 1) - interp(R.block, R.n, f - df, 1);
+          if (dx || dy) out.heading = ((Math.atan2(dx, dy) * 180 / Math.PI) % 360 + 360) % 360;
+        }
       } else {
         out.x = s[o + C.x0] + (s[o + C.x1] - s[o + C.x0]) * g; out.y = s[o + C.y0] + (s[o + C.y1] - s[o + C.y0]) * g; out.z = s[o + C.z0] + (s[o + C.z1] - s[o + C.z0]) * g;
         out.driving = s[o + C.x1] !== s[o + C.x0] || s[o + C.y1] !== s[o + C.y0];
