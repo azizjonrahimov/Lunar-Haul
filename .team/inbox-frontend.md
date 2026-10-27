@@ -691,7 +691,7 @@ Lunar ATC section with the headline numbers (from the papers' values files, neve
 ## F-57 [QUEUED, last] Quality pass
 Lighthouse table for every page (targets as recorded in F-40), budgets, accessibility, link check, and the
 Pages deploy check.
-- (from F-52, LEAD 27 Oct) The close-up terrain detail on /world/ and the rover lab: a tiling detail normal map that
+- [DONE 27 Oct 13:06, uncommitted] (from F-52, LEAD 27 Oct) The close-up terrain detail on /world/ and the rover lab: a tiling detail normal map that
   fades with distance, tier 2+ only.
 
 ## LEAD 27 Oct: the owner regrouped the papers (PLAN-phase5.md §3): P1 job sharing, team-ups, direct talk and

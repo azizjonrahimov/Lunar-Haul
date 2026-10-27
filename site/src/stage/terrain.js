@@ -45,7 +45,7 @@ uniform vec4 uTile;                     // site x, y in the tile (m), tile width
 uniform sampler2D uN20; uniform sampler2D uN5; uniform vec4 uPatch; uniform float uUsePatch;
 uniform sampler2D uHorizon; uniform float uUseHz; uniform float uHzW; uniform float uSunElDeg; uniform float uSunRadDeg;
 uniform float uAlbedo; uniform vec3 uAmbient;
-uniform vec4 uScour; uniform float uScourAmt; uniform float uScourSeed; uniform float uDetail; uniform float uCraterVar;
+uniform vec4 uScour; uniform float uScourAmt; uniform float uScourSeed; uniform float uDetail; uniform float uCraterVar; uniform float uFine;
 varying vec3 vWorld; varying vec3 vViewPosition;
 float hh1(vec2 p) { return fract(sin(dot(p, vec2(41.31, 289.17))) * 13758.5453); }
 vec2 hh2(vec2 p) { return fract(sin(vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)))) * 43758.5453); }
@@ -54,6 +54,17 @@ vec3 noised(vec2 x) {
   vec2 i = floor(x), f = fract(x), u = f * f * (3.0 - 2.0 * f), du = 6.0 * f * (1.0 - f);
   float a = hh1(i), b = hh1(i + vec2(1.0, 0.0)), c = hh1(i + vec2(0.0, 1.0)), d = hh1(i + vec2(1.0, 1.0));
   return vec3(a + (b - a) * u.x + (c - a) * u.y + (a - b - c + d) * u.x * u.y, du * (vec2(b - a, c - a) + (a - b - c + d) * u.yx));
+}
+// F-57: gradient noise with its analytic derivative (quintic fade) on a sin-free hash (Dave Hoskins' hash12), for the
+// fine detail normal: value noise's derivative has cell-shaped plateaus that the 1.5° sun lit as square tiles
+float hk(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
+vec2 gk(vec2 i) { float h = 6.2831853 * hk(i); return vec2(cos(h), sin(h)); }
+vec3 gnoised(vec2 x) {
+  vec2 i = floor(x), f = fract(x), u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0), du = 30.0 * f * f * (f * (f - 2.0) + 1.0);
+  vec2 ga = gk(i), gb = gk(i + vec2(1.0, 0.0)), gc = gk(i + vec2(0.0, 1.0)), gd = gk(i + vec2(1.0, 1.0));
+  float va = dot(ga, f), vb = dot(gb, f - vec2(1.0, 0.0)), vc = dot(gc, f - vec2(0.0, 1.0)), vd = dot(gd, f - vec2(1.0, 1.0));
+  return vec3(va + u.x * (vb - va) + u.y * (vc - va) + u.x * u.y * (va - vb - vc + vd),
+    ga + u.x * (gb - ga) + u.y * (gc - ga) + u.x * u.y * (ga - gb - gc + gd) + du * (u.yx * (va - vb - vc + vd) + vec2(vb, vc) - va));
 }
 // a crater field with cells of s metres: a share of the cells (prob) holds a worn bowl with a low rim, wall slope k
 // at the rim (0.25 ~ depth/diameter 0.06, a degraded small crater); returns the slope (dh/dx, dh/dz). vary (0..1, F-35d):
@@ -93,8 +104,25 @@ void main() {
     vec2 p = vWorld.xz; float fw = length(fwidth(p));
     float nearFade = mix(1.0, smoothstep(8.0, 60.0, length(vViewPosition)), uCraterVar);   // fewer small bowls right in front of the camera
     vec2 g = craters(p, 9.0, 3.0, 0.09, 0.18, uCraterVar) * (1.0 - smoothstep(0.6, 2.0, fw)) + craters(p, 2.6, 11.0, mix(0.12, 0.06, uCraterVar), 0.22, uCraterVar) * (1.0 - smoothstep(0.2, 0.6, fw)) * nearFade;
-    vec3 c1 = noised(p / 0.4), c2 = noised(p / 0.12);
-    g += c1.yz / 0.4 * 0.05 * mix(1.0, 0.3, uCraterVar) * (1.0 - smoothstep(0.04, 0.12, fw)) + c2.yz / 0.12 * 0.012 * (1.0 - smoothstep(0.012, 0.04, fw));
+    if (uFine > 0.5) {
+      // F-57 (tier 2+): a fine detail normal of three octaves of gradient noise (0.55, 0.24, 0.1 m), each turned by a different
+      // angle so no grid shows (the single 0.4 m octave read as regular ripples in the low sun), strongest near the camera
+      // and gone by 60 m; each octave also fades below a pixel
+      float near = 1.0 - smoothstep(10.0, 60.0, length(vViewPosition));
+      vec2 gf = vec2(0.0); float sc = 0.55, amp = 0.025;
+      for (int o = 0; o < 3; o++) {
+        float a = 0.7 + 1.9 * float(o), ca = cos(a), sa = sin(a);
+        vec2 q = vec2(ca * p.x - sa * p.y, sa * p.x + ca * p.y) + 17.3 * float(o);
+        vec3 nn = gnoised(q / sc);
+        vec2 gq = nn.yz / sc * amp * (1.0 - smoothstep(sc * 0.1, sc * 0.3, fw));
+        gf += vec2(ca * gq.x + sa * gq.y, -sa * gq.x + ca * gq.y);   // back to world axes
+        sc *= 0.44; amp *= 0.6;
+      }
+      g += gf * near;
+    } else {
+      vec3 c1 = noised(p / 0.4), c2 = noised(p / 0.12);
+      g += c1.yz / 0.4 * 0.05 * mix(1.0, 0.3, uCraterVar) * (1.0 - smoothstep(0.04, 0.12, fw)) + c2.yz / 0.12 * 0.012 * (1.0 - smoothstep(0.012, 0.04, fw));
+    }
     nW = normalize(nW + vec3(-g.x, 0.0, -g.y));
     detailAlb = 0.88 + 0.12 * noised(p / 3.0).x + 0.12 * noised(p / 0.9).x * (1.0 - smoothstep(0.1, 0.3, fw));
   }
@@ -190,7 +218,7 @@ export async function createLunarTerrain({ base, renderer, site = 'PAD_A', tier 
     uHorizon: { value: v2.tex }, uUseHz: { value: 0 }, uHzW: { value: 0 }, uSunElDeg: { value: 1.5 }, uSunRadDeg: { value: SUN_RADIUS_DEG },
     uAlbedo: { value: 0.12 }, uAmbient: { value: new THREE.Color(0.06, 0.06, 0.063) },   // shadows: bounce from sunlit slopes
     uScour: { value: new THREE.Vector4(0, 0, 5, 50) }, uScourAmt: { value: 0 }, uScourSeed: { value: 1 }, uDetail: { value: 1 },
-    uHzOn: { value: 1 }, uCraterVar: { value: 0 },
+    uHzOn: { value: 1 }, uCraterVar: { value: 0 }, uFine: { value: tier >= 2 ? 1 : 0 },   // F-57: the fine detail normal on tier 2+
   });
   const material = new THREE.ShaderMaterial({ vertexShader: vert, fragmentShader: frag, uniforms, lights: true, side: THREE.DoubleSide });
   material.name = 'lunar-terrain';

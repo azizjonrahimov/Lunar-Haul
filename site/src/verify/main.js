@@ -102,7 +102,8 @@ async function phase5() {
   const host = $('v5-results'), badge = $('v5-badge');
   let r;
   try { r = await fetch(BASE + 'verify/vv_phase5.json'); } catch { r = null; }
-  if (!r || r.status === 404 || !r.ok) {
+  // missing file: a 404 on Pages, an HTML fallback page on some servers (vite preview answers 200 with index.html)
+  if (!r || !r.ok || !/json/.test(r.headers.get('content-type') || '')) {
     badge.textContent = 'not published yet'; badge.className = 'v-badge idle';
     host.innerHTML = '<p class="small muted">No phase-5 checks are published yet. They come in three batches with task B-79 (about 110 rows: the engine, the auction and team lifts, radio, the safety program, traffic, energy, the learned bidding policy and the 3D replay).</p>';
     return;
@@ -112,7 +113,7 @@ async function phase5() {
   const t = doc.totals, scored = t.pass + t.fail + t.errors;
   badge.textContent = `${t.pass} of ${scored} recorded checks pass${t.notRun ? `, ${t.notRun} not run yet` : ''}`;
   badge.className = 'v-badge ' + (!scored ? 'idle' : t.pass === scored ? 'ok' : 'bad');
-  host.innerHTML = doc.groups.map(g => `<section class="v-group" aria-label="${esc(g.label)}"><h3>${esc(g.label)} <span class="v-count">${g.pass} / ${g.pass + g.fail + g.errors}</span></h3>
+  host.innerHTML = doc.groups.map(g => `<section class="v-group" aria-label="${esc(g.label)}"><h3>${esc(g.label)} <span class="v-count">${g.pass + g.fail + g.errors ? `${g.pass} / ${g.pass + g.fail + g.errors}` : 'not run yet'}</span></h3>
     <div class="v-scroll"><table class="w-table"><thead><tr><th>Check</th><th>Formula or reference</th><th>Measured</th><th>Tolerance</th><th>Result</th><th>Source</th></tr></thead><tbody>` +
     g.rows.map(c => `<tr><td><span class="mono">${esc(c.id)}</span> ${esc(c.name)}${c.calibration ? ' <span class="v5-cal">reproduces calibration data</span>' : ''}<div class="small muted">${esc([c.kindText, c.technique, c.credibility].filter(Boolean).join(' · '))}</div>${c.error ? `<div class="small v5-err">${esc(c.error)}</div>` : ''}</td>` +
       `<td class="small">${esc(c.formula)}<div class="mono small">${esc(c.reference)}</div></td><td class="mono small">${esc(c.measured)}${c.run ? `<div class="muted">${esc(c.run)}</div>` : ''}</td><td class="small">${esc(c.tolerance)}</td>` +

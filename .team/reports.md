@@ -6276,3 +6276,44 @@ Tier 2 isn't measured on the labs: free RAM stayed at 0.28-0.71 GB through this 
 **For later:** /verification/ JS has 1.1 kB headroom. If batch 3 makes the section heavier, I'll move it to a lazy chunk rather than raise the limit.
 
 **What I need from BACKEND:** the file, when batch 1 is ready.
+
+## F-55 / F-57 ITEMS DONE 13:06 | Browser checks of /verification/ and /atc/ (one fix); the terrain detail texture (F-57 item)
+
+**Files changed (uncommitted):**
+- `site/src/verify/main.js`: two small fixes.
+- `site/src/stage/terrain.js`: the fine detail normal.
+- `site/src/world/v2-scene.js`: crater variety on.
+- `.team/inbox-frontend.md`: the F-57 terrain line marked done.
+- `.team/inbox-backend.md` is modified but not by me.
+
+**1. Browser checks** (production preview; free RAM 0.54-0.86 GB):
+- **/verification/, file missing.**
+  - It said "unreadable" instead of "not published yet": vite preview answers a missing file with its HTML page and status 200 (Pages would 404).
+  - **Fixed:** a non-JSON answer now counts as "not published yet".
+- **/verification/, with a sample file** placed in `dist/` only and removed afterwards.
+  - Badge "4 of 6 recorded checks pass, 1 not run yet".
+  - Groups: Dispatch engine 2/3, Radio 0/1 (the broken row shows its format error), Safety 1/1 (zero-event wording with exposure and bound), Energy 1/1 (the "reproduces calibration data" tag), Learned "not run yet".
+  - That last label needed a small fix: a component with only not-run rows said "0 / 0".
+  - Light theme good; no console errors.
+- **390 px:** /verification/ and /atc/ both 375 = 375; "Lunar ATC" is first in the nav on both.
+
+**2. Terrain detail texture (the F-57 item):**
+- **Cause, found by switching the shader's layers live with `?bench`:**
+  - On /world/, the ground used the stamped crater set (`uCraterVar` 0): many identical 2.6 m bowls read as blotches.
+  - With variety on (as on the rover lab), what remained was a regular ripple from the single 0.4 m value-noise octave.
+- **Fix:**
+  - /world/'s scene (also the hero and the world stories) now turns crater variety on.
+  - On tier 2+ (`uFine`), the old clod term is replaced by a fine detail normal: three octaves of gradient noise (0.55, 0.24, 0.1 m), each turned by a different angle so no grid shows. It fades between 10 and 60 m from the camera, and each octave below a pixel. It's procedural, so there's no texture file to download.
+  - Tier 1 keeps the old, cheaper term.
+- **Two dead ends on the way, both fixed:**
+  - Value noise still showed square tiles in the 1.5° sun, because its derivative has cell-shaped plateaus. Gradient noise with an analytic derivative and quintic fade has none.
+  - The fine octaves use a sin-free hash (Dave Hoskins' hash12): sin() of large cell indices loses float32 precision far from the origin.
+- **Result:** the close ground reads as fine, irregular regolith texture, with no blotches, tiles or grid.
+- **Frame time,** /world/ tier 3 with `?bench` (production, RTX 3050): pads shot 5.2 / 8.0 ms GPU (p50 / p95), CPU 6.4 ms; close view (60 m) 3.0 / 4.9 ms. Part 1 measured the pads shot at 4.6 / 9.8 ms on the dev build, so the difference is within single-run noise.
+- **Not re-checked visually:** the rover lab and the lander lab, which share the shader. They get the same tier-2+ detail; the rover lab already had crater variety on.
+
+**Checks:** `npm run build` OK; node tests 20/20; `budgets.py pages` OK; no console errors. Server stopped and tab closed.
+
+**What I need from BACKEND:** nothing.
+
+Idle until BACKEND's data for F-53 lands.

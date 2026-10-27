@@ -36,7 +36,7 @@ export async function createWorldScene({ canvas, labelsHost, tier, fetchFn = fet
   await stage.setPreset('onsite', { sun: { az: 135, el: 1.5 }, ground: false });
   stage.setToneMapping('neutral', 2);
   const scene = stage.scene, lighting = stage.lighting, mats = createMaterials(catalog.doc.materials);
-  scene.add(terrain.group);
+  scene.add(terrain.group); terrain.setCraterVariety?.(1);   // F-57: varied crater depths and shapes, as the rover lab (the stamped set read as blotches up close)
   const shade = root => root.traverse(o => { if (o.isMesh && o.material?.isMeshStandardMaterial) terrain.shadeWithHorizon(o.material); });
   const at = (x, y, lift = 0) => { const [X, , Z] = terrain.toScene(x, y, 0); return new THREE.Vector3(X, terrain.surfaceAt(X, Z) + lift, Z); };
   const camera = stage.camera, tmp = new THREE.Vector3();
