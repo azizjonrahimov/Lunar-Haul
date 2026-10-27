@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://azizjonrahimov.github.io/Lunar-Haul/schemas/mesh-v1.schema.json",
+  "title": "lunarsim-mesh v1",
+  "description": "Robot-to-robot radio visibility between the route samples of the engine's samples file (writer tools/atc/mesh.py, B-70; reader lunarsim.atc.radio.RadioMesh). Point k is sample k; points.base carries the base computer's mast. pairs: every (i < j) within rules.max_d_m, per antenna combination (h at i, h at j): terrain clearance of the ray (clear_dm0 for combo 0, clear_dm_delta for the others relative to it) and the first-Fresnel-zone ratio at the worst point (fresnel, axis 1 = rules.freqs_hz); mast: (base mast, j). Arrays are little-endian base64 (encoding).",
+  "type": "object",
+  "required": ["format", "version", "terrain", "description", "samples_file", "inputs", "points", "antenna_m", "rules",
+               "encoding", "pairs", "mast", "checks", "generated"],
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "array": {
+      "type": "object",
+      "required": ["dtype", "shape", "b64"],
+      "properties": {"dtype": {"enum": ["<u2", "<i2", "|u1", "|i1"]},
+                     "shape": {"type": "array", "minItems": 1, "items": {"type": "integer", "minimum": 0}},
+                     "b64": {"type": "string", "contentEncoding": "base64"},
+                     "shuffle": {"type": "boolean"}},
+      "additionalProperties": false
+    },
+    "combos": {"type": "array", "minItems": 1,
+               "items": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "number", "exclusiveMinimum": 0}}}
+  },
+  "properties": {
+    "format": {"const": "lunarsim-mesh"},
+    "version": {"const": 1},
+    "terrain": {"type": "string"},
+    "description": {"type": "string"},
+    "samples_file": {
+      "type": "object",
+      "required": ["file", "sha256", "n_samples"],
+      "properties": {"file": {"type": "string"}, "sha256": {"$ref": "#/$defs/sha256"},
+                     "n_samples": {"type": "integer", "minimum": 2}}
+    },
+    "inputs": {"type": "object", "minProperties": 1, "additionalProperties": {"$ref": "#/$defs/sha256"}},
+    "points": {
+      "type": "object",
+      "required": ["n", "xy_m", "ids", "base"],
+      "properties": {"n": {"type": "integer", "minimum": 2},
+                     "xy_m": {"type": "array", "items": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "number"}}},
+                     "ids": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}},
+                     "base": {"type": "integer", "minimum": 0}}
+    },
+    "antenna_m": {
+      "type": "object",
+      "required": ["rover", "small", "mast", "flag"],
+      "properties": {"rover": {"type": "number", "exclusiveMinimum": 0}, "small": {"type": "number", "exclusiveMinimum": 0},
+                     "mast": {"type": "number", "exclusiveMinimum": 0}, "flag": {"type": "string"}}
+    },
+    "rules": {
+      "type": "object",
+      "required": ["max_d_m", "step_m", "radius_m", "margins_m", "freqs_hz", "wavelengths_m", "clearance", "los", "fresnel"],
+      "properties": {"max_d_m": {"type": "number", "exclusiveMinimum": 0}, "step_m": {"type": "number", "exclusiveMinimum": 0},
+                     "radius_m": {"type": "number", "exclusiveMinimum": 0},
+                     "margins_m": {"type": "array", "items": {"type": "number"}},
+                     "freqs_hz": {"type": "array", "minItems": 1, "items": {"type": "number", "exclusiveMinimum": 0}},
+                     "wavelengths_m": {"type": "array", "minItems": 1, "items": {"type": "number", "exclusiveMinimum": 0}}}
+    },
+    "encoding": {"type": "object"},
+    "pairs": {
+      "type": "object",
+      "required": ["n", "combos", "i", "j", "clear_dm0", "clear_dm_delta", "fresnel", "los"],
+      "properties": {"n": {"type": "integer", "minimum": 0}, "combos": {"$ref": "#/$defs/combos"},
+                     "i": {"$ref": "#/$defs/array"}, "j": {"$ref": "#/$defs/array"},
+                     "clear_dm0": {"$ref": "#/$defs/array"}, "clear_dm_delta": {"$ref": "#/$defs/array"},
+                     "fresnel": {"$ref": "#/$defs/array"}, "los": {"$ref": "#/$defs/array"}}
+    },
+    "mast": {
+      "type": "object",
+      "required": ["n", "point", "combos", "j", "clear_dm", "fresnel", "los"],
+      "properties": {"n": {"type": "integer", "minimum": 0}, "point": {"type": "integer", "minimum": 0},
+                     "combos": {"$ref": "#/$defs/combos"}, "j": {"$ref": "#/$defs/array"},
+                     "clear_dm": {"$ref": "#/$defs/array"}, "fresnel": {"$ref": "#/$defs/array"},
+                     "los": {"$ref": "#/$defs/array"}}
+    },
+    "checks": {"type": "object"},
+    "generated": {"type": "object", "required": ["tool", "time"]}
+  }
+}
