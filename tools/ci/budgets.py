@@ -170,10 +170,10 @@ def _computed(dist: str, items: List[Dict[str, Any]], missing: List[str], proble
     return files, notes
 
 
-LISTS = ("data", "computed", "lazy", "lazy_css", "fonts")
-LIMITS = ("js_gzip_kb", "css_gzip_kb", "data_gzip_kb", "lazy_gzip_kb", "lazy_css_gzip_kb", "fonts_kb")
+LISTS = ("data", "computed", "lazy", "lazy_each", "lazy_css", "fonts")
+LIMITS = ("js_gzip_kb", "css_gzip_kb", "data_gzip_kb", "lazy_gzip_kb", "lazy_each_gzip_kb", "lazy_css_gzip_kb", "fonts_kb")
 KEYS = set(LISTS) | set(LIMITS) | {"variants", "note"}
-METRICS = ("data_gzip_kb", "lazy_gzip_kb", "lazy_css_gzip_kb", "fonts_kb")
+METRICS = ("data_gzip_kb", "lazy_gzip_kb", "lazy_each_gzip_kb", "lazy_css_gzip_kb", "fonts_kb")
 
 
 def _evaluate(dist: str, spec: Dict[str, Any], initial_js: set, initial_css: List[str], preload_fonts: List[str],
@@ -183,6 +183,11 @@ def _evaluate(dist: str, spec: Dict[str, Any], initial_js: set, initial_css: Lis
     comp_files, comp_notes = _computed(dist, spec.get("computed", []), missing, problems)
     data_files |= set(comp_files)
     lazy_files = [f for f in static_closure(_globs(dist, spec.get("lazy", []), missing)) if f not in initial_js]
+    # lazy_each: chunks a visitor loads one at a time (e.g. one vehicle model per click), budgeted per chunk: each
+    # matched file's own closure minus the initial JS and the shared "lazy" closure; the heaviest one is reported
+    shared = set(initial_js) | set(lazy_files)
+    each = [sum(gz(g) for g in static_closure([f]) if g not in shared) / 1024
+            for f in _globs(dist, spec.get("lazy_each", []), missing)]
     lazy_css = sorted(set(_globs(dist, spec.get("lazy_css", []), missing)) - set(initial_css))
     faces = set(font_faces(initial_css + lazy_css, dist))
     declared = _globs(dist, spec.get("fonts", []), missing)
@@ -193,6 +198,7 @@ def _evaluate(dist: str, spec: Dict[str, Any], initial_js: set, initial_css: Lis
     fonts = sorted(set(declared) | set(preload_fonts))
     return {"data_gzip_kb": sum(gz(f) for f in sorted(data_files)) / 1024, "n_data": len(data_files),
             "lazy_gzip_kb": sum(gz(f) for f in lazy_files) / 1024, "n_lazy": len(lazy_files), "lazy_files": lazy_files,
+            "lazy_each_gzip_kb": max(each, default=0.0), "n_lazy_each": len(each),
             "lazy_css_gzip_kb": sum(gz(f) for f in lazy_css) / 1024, "n_lazy_css": len(lazy_css), "lazy_css": lazy_css,
             "fonts_kb": sum(os.path.getsize(f) for f in fonts if os.path.isfile(f)) / 1024, "n_fonts": len(fonts),
             "fonts_available_kb": sum(os.path.getsize(f) for f in faces if os.path.isfile(f)) / 1024,
