@@ -420,14 +420,15 @@ def main(argv=None) -> int:
             budgets = json.load(f)
         rows, errs = check_pages(a.dist, budgets)
         print(f"{'page':28s} {'JS gz kB':>9s} {'CSS gz kB':>9s} {'data gz kB':>10s} {'lazy gz kB':>10s} "
-              f"{'lazy CSS':>9s} {'fonts kB':>9s}   budgets (JS / CSS / data / lazy / lazy CSS / fonts)")
+              f"{'each kB':>8s} {'lazy CSS':>9s} {'fonts kB':>9s}   budgets (JS / CSS / data / lazy / each / lazy CSS / "
+              "fonts)")
         for r in rows:
             if r["page"].startswith("("):
                 print(f"{r['page']:28s} {r['total_mb']:.1f} MB (limit {r['spec']['site_total_mb']} MB)")
                 continue
             s = r["spec"]
             print(f"{r['page']:28s} {r['js_gzip_kb']:9.1f} {r['css_gzip_kb']:9.1f} {r['data_gzip_kb']:10.1f} "
-                  f"{r['lazy_gzip_kb']:10.1f} {r['lazy_css_gzip_kb']:9.1f} {r['fonts_kb']:9.1f}   "
+                  f"{r['lazy_gzip_kb']:10.1f} {r.get('lazy_each_gzip_kb', 0.0):8.1f} {r['lazy_css_gzip_kb']:9.1f} {r['fonts_kb']:9.1f}   "
                   + " / ".join(str(s.get(k, "-")) for k in LIMITS))
             if r.get("heaviest_variant"):
                 print(f"{'':28s} heaviest variant: " + ", ".join(f"{k} {v}" for k, v in r["heaviest_variant"].items()))
