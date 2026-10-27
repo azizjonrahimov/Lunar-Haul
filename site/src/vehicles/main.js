@@ -16,16 +16,18 @@ import { buildVehicle, createMaterials, GROUPS, astronaut } from '../models/inde
 import { STORIES, CHIPS, render, para, nightText } from './stories.js';
 import { createFlows } from './flows.js';
 import { num } from '../components/num.js';
-import { KIT, SOURCES, published } from './kit-data.js';
+import { KIT, SOURCES, ATC_LAYER, published, tagOf } from './kit-data.js';
 
 const $ = id => document.getElementById(id);
 const BASE = import.meta.env.BASE_URL;
 const VIEWS = ['own', 'cutaway', 'exploded', 'xray'];
-const ui = { group: 'landers', id: 'MK1', view: 'own', follow: 'none', scale: false, section: 0 };
+const ui = { group: 'landers', id: 'MK1', view: 'own', follow: 'none', scale: false, section: 0, atc: false };
 const q = new URLSearchParams(location.search);
-{ const v = q.get('view') === 'whole' ? 'own' : q.get('view'); if (VIEWS.includes(v)) ui.view = v; }
+{ const v = q.get('view') === 'whole' ? 'own' : q.get('view'); if (VIEWS.includes(v)) ui.view = v; ui.atc = q.get('atc') === '1'; }
 // F-51: the kit's own models join the catalogue's (each a lazy chunk, kit-data.js load()); rockets get a group
-const VGROUPS = { landers: [...GROUPS.landers, 'griffin', 'blue_ghost'], rockets: ['centaur_v'], rovers: GROUPS.rovers, base: GROUPS.base };
+const VGROUPS = { landers: [...GROUPS.landers, 'griffin', 'blue_ghost'], rockets: ['centaur_v'], rovers: [...GROUPS.rovers, 'clv1', 'pegasus', 'flex', 'eagle', 'viper', 'lrv', 'mapp'],
+  hoppers: ['moonfall', 'micro_nova'], atc: ['atc_computer', 'atc_radio'], base: GROUPS.base };
+const ATC_GROUPS = ['landers', 'rockets', 'rovers', 'hoppers'];   // the vehicles the "Lunar ATC inside" layer applies to
 if (q.get('v')) { const g = Object.keys(VGROUPS).find(k => VGROUPS[k].includes(q.get('v'))); if (g) Object.assign(ui, { group: g, id: q.get('v') }); }
 
 const gate = door({ title: 'The LunarHaul fleet', subtitle: 'Vehicle catalogue and 3D models, built in your browser at true scale.', skip: { href: '#v-tree-h', label: 'Skip to the parts list' },
@@ -44,8 +46,8 @@ mats = createMaterials(catalog.doc.materials);
 // a kit-only vehicle has no catalogue entry: a stand-in with its title (no stat chips; its numbers are in the part list)
 const entryOf = id => KIT[id]?.load ? { id, name: KIT[id].title, kind: 'kit', dims: {} } : catalog.entry(id);
 const nameOf = id => entryOf(id).name.replace(/\s*\(.*\)\s*$/, '');
-const count = g => `${VGROUPS[g].length} ${g === 'base' ? 'elements' : VGROUPS[g].length === 1 ? 'stage' : 'vehicles'}`;
-const groupChips = sceneChips({ label: 'Vehicle groups', scenes: [['landers', 'Landers'], ['rockets', 'Rockets'], ['rovers', 'Rovers'], ['base', 'Base']].map(([value, label]) => ({ value, label, note: count(value) })),
+const count = g => `${VGROUPS[g].length} ${g === 'base' ? 'elements' : g === 'atc' ? 'parts, our design' : VGROUPS[g].length === 1 ? 'stage' : 'vehicles'}`;
+const groupChips = sceneChips({ label: 'Vehicle groups', scenes: [['landers', 'Landers'], ['rockets', 'Rockets'], ['rovers', 'Rovers'], ['hoppers', 'Hoppers'], ['atc', 'Lunar ATC'], ['base', 'Base']].map(([value, label]) => ({ value, label, note: count(value) })),
   value: ui.group, onChange: g => { ui.group = g; drawVehicleChips(); choose(VGROUPS[g][0]); } });
 $('v-groups').append(groupChips.el);
 let vehicleChips;
@@ -89,9 +91,10 @@ async function chooseNow(id) {
   const e = entryOf(id), mod = KIT[id]?.load ? await KIT[id].load() : null;
   if (gen !== chooseGen) return;
   if (stage) { setXray(false); clearExtras(); stage.clearSubject(); flows.clear(); }
-  if (mod) { vehicle = mod.build(mats); vehicle.entry = e; vehicle.root.userData.representative = vehicle.representative; }
+  if (mod) { if (mod.kit) Object.assign(KIT[id], mod.kit); vehicle = mod.build(mats); vehicle.entry = e; vehicle.root.userData.representative = vehicle.representative; }
   else vehicle = buildVehicle(catalog, mats, id);
-  if (stage) mount();
+  atcParts = [];   // the old vehicle's layer went with its subject
+  if (stage) mount(); else atcLayer();
   drawChips(e); drawTree(); drawProps(null);
   const rep = $('v-rep'); rep.hidden = !vehicle.root.userData.representative;
   applyView(true); applyFollow();
@@ -101,7 +104,7 @@ function mount() {
   stage.setSubject(vehicle.root, { cutTargets: vehicle.cutTargets });
   explode = stage.explode(vehicle.explode);
   for (const p of pickLabels(vehicle.parts)) stage.labels.add({ id: p.name, text: p.label.replace(/ \(.*\)$/, ''), object: p.object, anchor: p.anchor, onSelect: select });
-  frame(); placeRefs();
+  frame(); placeRefs(); atcLayer();
 }
 // 4-6 callouts: one per distinct part group, biggest first
 function pickLabels(parts) {
@@ -124,6 +127,7 @@ const XRAY_TEXT = '<p>X-ray: the outer shell is drawn see-through and everything
 function writeUrl() {   // F-40: other parameters (?tier, ?gpumem) stay
   const u = new URL(location.href); u.searchParams.set('v', ui.id);
   if (ui.view === 'own') u.searchParams.delete('view'); else u.searchParams.set('view', ui.view);
+  if (ui.atc) u.searchParams.set('atc', '1'); else u.searchParams.delete('atc');
   history.replaceState(null, '', u);
 }
 function applyView(instant = false) {
@@ -196,7 +200,7 @@ function showExtras() {
     const ln = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints([A, B, A.clone().sub(tick), A.clone().add(tick), B.clone().sub(tick), B.clone().add(tick)]), lineMat);
     ln.userData.noPick = true; g.add(ln);
     const mid = new THREE.Object3D(); mid.position.copy(A).add(B).multiplyScalar(0.5); g.add(mid);
-    addLabel(g, `dim-${i}`, `${d.label} ${d.text}${published(d.conf) ? '' : ' (schematic)'}`, mid);
+    addLabel(g, `dim-${i}`, `${d.label} ${d.text}${published(d.conf) || d.conf === 'Design' ? '' : ' (schematic)'}`, mid);
   });
   extras = g; stage.scene.add(g); stage.invalidate();
 }
@@ -221,15 +225,15 @@ function drawChips(e) {
   }
   if (e.kind === 'base') for (const [k, qv] of Object.entries(e.dims).slice(0, 3)) box.append(statChip({ label: k.replace(/_m$|_deg$/, '').replace(/_/g, ' '), ...catalog.q(e.id, `dims.${k}`, { digits: 1 }) }).el);
 }
-// F-51: one row per part or part group: its name with a published/schematic tag (a button that selects it), what it
-// does, its size and sources; hovering or focusing a row outlines the part in the view
+// F-51: one row per part or part group: its name with a published / schematic / our design tag (a button that selects
+// it), what it does, its size and sources; hovering or focusing a row outlines the part in the view
 function drawTree() {
-  const groups = new Map(), kit = KIT[ui.id]?.parts || {};
-  for (const p of vehicle.parts) { const g = p.object.userData.group || p.name; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(p); }
+  const groups = new Map(), kit = { ...KIT[ui.id]?.parts, ...ATC_LAYER };
+  for (const p of [...vehicle.parts, ...atcParts]) { const g = p.object.userData.group || p.name; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(p); }
   $('v-tree').replaceChildren(...[...groups.entries()].map(([key, list]) => {
     const p = list[0], label = list.length > 1 ? `${p.label} × ${list.length}` : p.label, k = kit[key];
-    const pub = k ? published(k.conf) : !p.representative;
-    const tag = h('span', { class: pub ? 'v-tag pub' : 'v-tag', title: k ? `Confidence: ${k.conf}` : null }, pub ? 'published' : 'schematic');
+    const tagText = k ? tagOf(k.conf) : p.representative ? 'schematic' : 'published';
+    const tag = h('span', { class: `v-tag${tagText === 'published' ? ' pub' : tagText === 'our design' ? ' ours' : ''}`, title: k ? `Confidence: ${k.conf === 'Design' ? 'our design' : k.conf}` : null }, tagText);
     const hot = on => () => stage?.highlightPart(on ? key : null);
     const src = (k?.src || []).map(id => SOURCES[id]).filter(Boolean).map(x => x.url ? h('a', { href: x.url, rel: 'noopener', target: '_blank' }, x.label) : h('span', {}, x.label));
     return h('li', { class: 'v-row-part', 'data-key': key, onmouseenter: hot(true), onmouseleave: hot(false) },
@@ -238,13 +242,36 @@ function drawTree() {
       k ? h('p', { class: 'v-meta small' }, `Size: ${k.size} · `, ...src.flatMap((x, i) => i ? ['; ', x] : [x])) : null);
   }));
 }
+// F-51 part 3, "Lunar ATC inside": our design's base computer and radio unit (teal) on the vehicle's KIT atc part,
+// or on its top; their rows in the part list say "our design", and the callouts name them
+let atcParts = [], atcMat = null;
+function atcLayer() {
+  for (const p of atcParts) { p.object.removeFromParent(); p.object.traverse(o => o.geometry?.dispose()); stage?.labels.remove(p.name); }
+  atcParts = [];
+  $('v-atc').hidden = !ATC_GROUPS.includes(ui.group);
+  if (!vehicle || !ui.atc || !ATC_GROUPS.includes(ui.group)) { stage?.invalidate(); return; }
+  atcMat ||= new THREE.MeshStandardMaterial({ color: '#27b3a0', emissive: '#0b4d45', roughness: 0.5, metalness: 0.3, name: 'Lunar ATC (our design)' });
+  vehicle.root.updateMatrixWorld(true);
+  const at = KIT[ui.id]?.atc, anchor = at && vehicle.parts.find(p => p.name === at || p.object.userData.group === at)?.object;
+  const box = new THREE.Box3().setFromObject(anchor || vehicle.root), top = new THREE.Vector3((box.min.x + box.max.x) / 2, box.max.y, (box.min.z + box.max.z) / 2);
+  const add = (name, dx, meshes) => {
+    const g = new THREE.Group(); g.name = name; g.userData = { part: name, label: ATC_LAYER[name].label };
+    g.position.copy(top).add(new THREE.Vector3(dx, 0, 0)); for (const m of meshes) g.add(m);
+    vehicle.root.add(g); atcParts.push({ name, label: ATC_LAYER[name].label, object: g });
+    stage?.labels.add({ id: name, text: ATC_LAYER[name].label, object: g, anchor: new THREE.Vector3(0, 0.12, 0), onSelect: select, tone: 'cool' });
+  };
+  const mesh = (geo, y) => { const m = new THREE.Mesh(geo, atcMat); m.position.y = y; m.castShadow = true; return m; };
+  add('atc_computer', -0.16, [mesh(new THREE.BoxGeometry(0.22, 0.12, 0.3), 0.06)]);
+  add('atc_radio', 0.16, [mesh(new THREE.BoxGeometry(0.12, 0.06, 0.18), 0.03), mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.3, 8), 0.21)]);
+  stage?.invalidate();
+}
 // a hover in the view marks the row of that part (or of its group)
 function hotRow(name) {
-  const p = name && vehicle?.parts.find(x => x.name === name), key = p ? p.object.userData.group || p.name : null;
+  const p = name && [...(vehicle?.parts || []), ...atcParts].find(x => x.name === name), key = p ? p.object.userData.group || p.name : null;
   for (const li of document.querySelectorAll('.v-row-part')) li.classList.toggle('is-hot', li.dataset.key === key);
 }
 function select(name) {
-  const p = vehicle.parts.find(x => x.name === name); if (!p) return;
+  const p = [...vehicle.parts, ...atcParts].find(x => x.name === name); if (!p) return;
   stage?.labels.setPressed(name);
   for (const b of document.querySelectorAll('.v-part')) b.setAttribute('aria-pressed', String(b.dataset.part === name || (vehicle.parts.find(x => x.name === b.dataset.part)?.object.userData.group || '#') === (p.object.userData.group || '-')));
   drawProps(p);
@@ -269,6 +296,8 @@ function placeRefs() {
   lrv.root.position.set(box.max.x + 2.6 + lrv.size.x / 2, 0, box.max.z * 0.2 - 2.5);   // the astronaut stands by every vehicle On its own (F-51)
   refs = [lrv]; refs.forEach(r => stage.scene.add(r.root)); stage.invalidate();
 }
+// F-51 part 3: the Lunar ATC layer, for rovers, landers, rockets and hoppers (deep link &atc=1)
+$('v-scale').after(h('button', { class: 'ui-btn', type: 'button', id: 'v-atc', 'aria-pressed': String(ui.atc), onclick: e => { ui.atc = !ui.atc; e.currentTarget.setAttribute('aria-pressed', String(ui.atc)); writeUrl(); atcLayer(); drawTree(); } }, 'Lunar ATC inside (our design)'));
 $('v-scale').addEventListener('click', e => { ui.scale = !ui.scale; e.currentTarget.setAttribute('aria-pressed', String(ui.scale)); placeRefs(); });
 $('v-pause').addEventListener('click', e => { const v = e.currentTarget.getAttribute('aria-pressed') !== 'true'; e.currentTarget.setAttribute('aria-pressed', String(v)); stage?.pause(v); });
 for (const b of document.querySelectorAll('[data-cam]')) b.addEventListener('click', () => {

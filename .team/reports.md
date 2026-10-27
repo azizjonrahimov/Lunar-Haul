@@ -5577,3 +5577,57 @@ Base elements keep their old list: no sources, tag from the model's representati
 **What I need from BACKEND:** only the budgets question above, if you want it.
 
 **Next (part 3):** rovers (CLV-1, Pegasus, FLEX, Eagle, MAPP; VIPER and the LRV get their own detailed models), the hoppers (MoonFall, Micro-Nova) and the Lunar ATC parts.
+
+## F-51 PART 3 DONE 11:48 | Rovers, hoppers and the Lunar ATC parts: 9 new vehicle models, two ATC cutaways, and a "Lunar ATC inside (our design)" layer on every rover, lander, rocket and hopper
+
+**Files changed (uncommitted):**
+- Renamed (plain mv, no git mv): `site/src/models/kit/griffin.js` to `kit-griffin.js`, `blue-ghost.js` to `kit-blue-ghost.js`, `centaur-v.js` to `kit-centaur-v.js`. Git shows them as D plus ??. This makes the chunks come out as `assets/kit-<name>-<hash>.js`.
+- New, in `site/src/models/kit/`:
+  - rovers: `kit-clv1.js`, `kit-pegasus.js`, `kit-flex.js`, `kit-eagle.js`, `kit-viper.js`, `kit-lrv.js`, `kit-mapp.js`;
+  - hoppers: `kit-moonfall.js`, `kit-micro-nova.js`;
+  - Lunar ATC: `kit-atc-computer.js`, `kit-atc-radio.js`;
+  - shared: `kit-common.js` (wheels, box shells, seats, masts).
+- Modified: `site/src/vehicles/kit-data.js`, `main.js`, `vehicles.css`.
+- `tools/ci/budgets.json`: /vehicles/ gets `"lazy_each": ["assets/kit-*-????????.js"]` and `"lazy_each_gzip_kb": 4`, as you granted; lazy_gzip_kb stays 170.
+- `tools/atc/p5_scenarios.py` is untracked and not mine.
+
+**What /vehicles/ has now** (groups: Landers 5, Rockets 1, Rovers 10, Hoppers 2, Lunar ATC 2, Base 5):
+- **Rovers:**
+  - Astrolab CLV-1 and Lunar Outpost Pegasus (the Phase 1 LTVs);
+  - Astrolab FLEX: two top decks, a 3 m³ underslung bay drawn at 1.6 × 0.75 × 2.5 m, and a six-axis arm;
+  - Lunar Outpost Eagle;
+  - NASA VIPER: mast cameras at 2.0 m and HGA at 2.3 m, solar on three sides, 2 batteries, the warm box, top radiators, the TRIDENT drill, 0.5 m wheel modules;
+  - the Apollo LRV: three chassis sections, forward batteries, the dish mast, seats with the T-handle, aft payload, mesh wheels with hub motors;
+  - Lunar Outpost MAPP, at its published 45 × 38 × 40 cm.
+  - The old LTV, HAUL and MICRO stay. VIPER and the LRV get detailed models of their own; the LRV scale reference stays as it was.
+- **Hoppers:** MoonFall (2.1 × 1.2 m, 10 rim cameras) and Micro-Nova (about 1 m; the published sensor list).
+- **Lunar ATC parts, each with its own four views and part list, all tagged "our design":**
+  - the base computer: two compute boards (A runs the safety program and the planner; B the same, in step, for failover), memory and storage with the decision log for audits, the power supply, the watchdog and a finned lid;
+  - the plug-in radio unit: the radio board, power amplifier, RF shield, plug and a hinged whip antenna.
+- **"Lunar ATC inside (our design)" button**, on every lander, rocket, rover and hopper; deep link `&atc=1`:
+  - It places the teal computer and radio on each vehicle's anchor part: the warm box or battery on rovers, the top deck or avionics on landers.
+  - Their callouts and their part-list rows say "our design". The button is hidden for the Base and Lunar ATC groups.
+- **Part texts:** from part 3 on, each vehicle's texts travel in its own chunk, so the page JS grew only from 88.4 to 89.8 kB of 100.
+
+**Invented, all labelled schematic (Low) unless stated:**
+- CLV-1, Pegasus, Eagle and FLEX bodies: the sizes are unpublished, so the dimension lines say "as drawn". The CLV-1 arm is FLEX's; whether CLV-1 keeps it is not stated.
+- The MAPP inside layout, the MoonFall tanks, thrusters and legs, and all of Micro-Nova except its sensors and payload (unpublished).
+- The two ATC parts are our design ("Design", not schematic). Their sizes are drawing sizes until B-81 measures them, and the part list says so.
+
+**Checks:**
+- `npm run build` OK; node tests 16/16; `budgets.py pages` OK.
+  - /vehicles/ is 89.8 of 100 kB JS.
+  - The kit chunks are 0.8-1.7 kB gzip each. The heaviest one counted on its own, VIPER plus kit-common, is 2.4 of 4 kB.
+  - I confirmed the per-chunk check is enforced: a scratch budgets.json with a 1 kB limit failed with "lazy_each_gzip_kb 2.4 > budget 1".
+  - The table doesn't print a lazy_each column. The limit string shows "4", but there's no value next to it.
+- In the browser (production build; free RAM 0.67 GB; the Chrome window was ~846 px wide, so this is the stacked layout):
+  - VIPER Inside with &atc=1: 10 rows, including the 2 "our design" rows, and the teal parts on the warm box.
+  - The Lunar ATC base computer Inside: the boards, memory and case. Its finned lid floated above the cut; the fins are now cut targets (rebuilt, not re-screenshotted).
+  - MoonFall On its own with the layer: width and height lines, the astronaut, the 1 m bar.
+  - MK1 X-ray with the layer.
+  - No horizontal overflow and no console errors.
+- Server stopped and tab closed.
+
+**Questions for LEAD:**
+1. Do you want the budgets.py table to print lazy_each? That's your file, a one-line change; the check itself works.
+2. Part 4 is "Compare sizes", "look inside" from /world/ and the stories, tier 1 (On its own, the part list and a static cutaway image) and the last budgets. Shall I start it?

@@ -43,6 +43,7 @@
 .v-meta { margin: 0.15rem 0.6rem 0; color: var(--ink-2); overflow-wrap: anywhere; }
 .v-meta a { color: var(--link); }
 .v-tag.pub { color: var(--ink-2); border-style: solid; }
+.v-tag.ours { color: #3cc4b0; border-style: solid; }   /* our design (Lunar ATC): the layer's teal */
 @media (max-width: 900px) {
   .v-stage { height: auto; overflow: visible; background: none; }
   .v-view { position: relative; height: 380px; border-radius: var(--radius-panel); overflow: hidden; background: #06090f; }

@@ -30,19 +30,42 @@ export const SOURCES = {
   // computed or assumed here, no outside page: the part list says so instead of linking
   computed: { label: 'Computed from published propellant masses (project research notes, §3)', url: null },
   assumed: { label: 'Assumed for the drawing: no published layout', url: null },
+  design: { label: 'Lunar ATC: our design, not the maker’s (sizes until B-81 measures them)', url: null },
 };
 
-// confidence -> what the part list shows
+// confidence -> what the part list shows: High "published", Design (Lunar ATC) "our design", the rest "schematic"
 export const published = conf => conf === 'High';
+export const tagOf = conf => conf === 'High' ? 'published' : conf === 'Design' ? 'our design' : 'schematic';
+
+// the "Lunar ATC inside" layer every rover and lander can show: what our design adds, placed on the KIT entry's atc part
+export const ATC_LAYER = {
+  atc_computer: { label: 'Lunar ATC computer (our design)', what: 'Runs the safety program (the rules of the road) and the planner on two boards, so either can take over.', size: '0.30 × 0.12 × 0.22 m (drawing)', src: ['design'], conf: 'Design' },
+  atc_radio: { label: 'Lunar ATC radio unit (our design)', what: 'Links the vehicle to the other robots and the base on its own antenna, with or without Earth in view.', size: '0.18 × 0.06 × 0.12 m, 0.3 m antenna (drawing)', src: ['design'], conf: 'Design' },
+};
 
 /* KIT[id]: {
-     title, cut: {dir: 'side' | 'down', at: 0..1 of the height (down cuts)}, shell: [part names drawn see-through in X-ray],
+     title, short, load (models of their own: a lazy chunk exporting build(mats) and, from part 3, kit with the rest),
+     cut: {dir: 'side' | 'down', at: 0..1 of the height (down cuts)}, shell: [part names drawn see-through in X-ray],
+     atc: the part the Lunar ATC layer sits on (default: the top of the vehicle),
      dims: [{label, text, part?: part name to measure (default: the whole vehicle), axis: 'x' | 'y' | 'z', src, conf}],
-     parts: {partName | groupName: {what, size, src: [source keys], conf}} } */
+     parts: {partName | groupName: {what, size, src: [source keys], conf}}, story: {whole, cutaway, exploded} } */
+const own = (title, short, load) => ({ title, short, load });
 export const KIT = {
+  // ---- part 3: models whose texts travel in their own chunk (the module's kit) ----
+  clv1: own('Astrolab CLV-1 (Phase 1 LTV)', 'CLV-1', () => import('../models/kit/kit-clv1.js')),
+  pegasus: own('Lunar Outpost Pegasus (Phase 1 LTV)', 'Pegasus', () => import('../models/kit/kit-pegasus.js')),
+  flex: own('Astrolab FLEX cargo rover', 'FLEX', () => import('../models/kit/kit-flex.js')),
+  eagle: own('Lunar Outpost Eagle', 'Eagle', () => import('../models/kit/kit-eagle.js')),
+  viper: own('NASA VIPER', 'VIPER', () => import('../models/kit/kit-viper.js')),
+  lrv: own('Apollo Lunar Roving Vehicle (1971)', 'Apollo LRV', () => import('../models/kit/kit-lrv.js')),
+  mapp: own('Lunar Outpost MAPP', 'MAPP', () => import('../models/kit/kit-mapp.js')),
+  moonfall: own('NASA/JPL MoonFall hopper', 'MoonFall', () => import('../models/kit/kit-moonfall.js')),
+  micro_nova: own('Intuitive Machines Micro-Nova', 'Micro-Nova', () => import('../models/kit/kit-micro-nova.js')),
+  atc_computer: own('Lunar ATC base computer (our design)', 'Base computer', () => import('../models/kit/kit-atc-computer.js')),
+  atc_radio: own('Lunar ATC radio unit (our design)', 'Radio unit', () => import('../models/kit/kit-atc-radio.js')),
   CLPS: {
     title: 'Nova-C class lander',
-    cut: { dir: 'side' }, shell: ['body'],
+    cut: { dir: 'side' }, shell: ['body'], atc: 'solar',
     dims: [
       { label: 'Height', text: '3.94 m (4.3 m by IM)', axis: 'y', src: ['novac'], conf: 'Medium' },
       { label: 'Body width', text: '1.57-2 m', part: 'body', axis: 'x', src: ['novac'], conf: 'Medium' },
@@ -57,7 +80,7 @@ export const KIT = {
   },
   MK1: {
     title: 'Blue Moon MK1',
-    cut: { dir: 'side' }, shell: ['hull'],
+    cut: { dir: 'side' }, shell: ['hull'], atc: 'deck',
     dims: [
       { label: 'Height', text: '8.05 m', axis: 'y', src: ['gunter'], conf: 'High' },
       { label: 'Diameter', text: '3.08 m', part: 'hull', axis: 'x', src: ['gunter'], conf: 'High' },
@@ -74,7 +97,7 @@ export const KIT = {
   },
   LARGE: {
     title: 'Starship HLS (cargo)',
-    cut: { dir: 'side' }, shell: ['hull'],
+    cut: { dir: 'side' }, shell: ['hull'], atc: 'airlock',
     dims: [
       { label: 'Height', text: '52 m', axis: 'y', src: ['hls'], conf: 'Medium' },
       { label: 'Diameter', text: '9 m', part: 'hull', axis: 'x', src: ['hls'], conf: 'Medium' },
@@ -92,7 +115,7 @@ export const KIT = {
   },
   LTV: {
     title: 'Phase 1 LTV (CLV-1 / FLEX class)',
-    cut: { dir: 'down', at: 0.48 }, shell: ['chassis'],
+    cut: { dir: 'down', at: 0.48 }, shell: ['chassis'], atc: 'battery',
     dims: [
       { label: 'Length', text: '4.0 m (catalogue)', axis: 'z', src: ['assumed'], conf: 'Low' },
       { label: 'Wheel', text: '0.93 m', part: 'wheels', axis: 'y', src: ['assumed'], conf: 'Low' },
@@ -108,7 +131,7 @@ export const KIT = {
   },
   HAUL: {
     title: 'Heavy hauler (concept)',
-    cut: { dir: 'down', at: 0.5 }, shell: ['bed'],
+    cut: { dir: 'down', at: 0.5 }, shell: ['bed'], atc: 'battery',
     dims: [{ label: 'Length', text: '7 m (concept)', axis: 'z', src: ['assumed'], conf: 'Low' }],
     parts: {
       bed: { what: 'A low flat bed for 10 t of cargo; no such vehicle is flown or contracted, so the whole shape is a concept.', size: '7 × 4 m', src: ['assumed'], conf: 'Low' },
@@ -122,7 +145,7 @@ export const KIT = {
   },
   MICRO: {
     title: 'Small rover (VIPER class)',
-    cut: { dir: 'down', at: 0.3 }, shell: ['body'],
+    cut: { dir: 'down', at: 0.3 }, shell: ['body'], atc: 'battery',
     dims: [
       { label: 'Height', text: '2.5 m', axis: 'y', src: ['viper'], conf: 'High' },
       { label: 'Width', text: '1.7 m', axis: 'x', src: ['viper'], conf: 'High' },
@@ -137,13 +160,13 @@ export const KIT = {
   },
   // ---- part 2: models of their own (site/src/models/kit/, one lazy chunk each); story: the text per view ----
   griffin: {
-    title: 'Astrobotic Griffin', short: 'Griffin', load: () => import('../models/kit/griffin.js'),
+    title: 'Astrobotic Griffin', short: 'Griffin', load: () => import('../models/kit/kit-griffin.js'),
     story: {
       whole: 'Astrobotic’s Griffin, now built by Voyager: a square bus that carries more than 455 kg of cargo, first to Nobile Crater. Its outer size is unpublished, so the envelope here is schematic.',
       cutaway: 'The cut shows the launch-vehicle adapter cone with the main engines inside it, and the fuel and oxidiser tanks spaced round it.',
       exploded: 'Tanks out and up, engines down out of the cone, legs out: the 2021 payload user’s guide layout.',
     },
-    cut: { dir: 'side' }, shell: ['bus', 'cone', 'solar'],
+    cut: { dir: 'side' }, shell: ['bus', 'cone', 'solar'], atc: 'avionics',
     dims: [
       { label: 'Bus', text: 'about 3 m as drawn', part: 'bus', axis: 'x', src: ['assumed'], conf: 'Low' },
       { label: 'Deck height', text: 'about 2 m as drawn', part: 'bus', axis: 'y', src: ['assumed'], conf: 'Low' },
@@ -163,13 +186,13 @@ export const KIT = {
     },
   },
   blue_ghost: {
-    title: 'Firefly Blue Ghost', short: 'Blue Ghost', load: () => import('../models/kit/blue-ghost.js'),
+    title: 'Firefly Blue Ghost', short: 'Blue Ghost', load: () => import('../models/kit/kit-blue-ghost.js'),
     story: {
       whole: 'Firefly’s Blue Ghost: 2 m tall and 3.5 m across, 150 kg of cargo. Mission 1 landed in Mare Crisium on 2 March 2025 and worked about 14 days, into the night.',
       cutaway: 'A box frame of 49 composite struts with three decks: the top one looks at the sky, the middle one carries rovers, the bottom one reaches the surface. The tank layout is unpublished, so the tanks are schematic.',
       exploded: 'Decks up, engine down, legs and solar panels out.',
     },
-    cut: { dir: 'side' }, shell: ['body', 'solar'],
+    cut: { dir: 'side' }, shell: ['body', 'solar'], atc: 'decks',
     dims: [
       { label: 'Height', text: '2 m', axis: 'y', src: ['bgFirefly', 'bgNsf'], conf: 'High' },
       { label: 'Width', text: '3.5 m', axis: 'x', src: ['bgFirefly', 'bgNsf'], conf: 'High' },
@@ -186,13 +209,13 @@ export const KIT = {
     },
   },
   centaur_v: {
-    title: 'ULA Centaur V upper stage', short: 'Centaur V', load: () => import('../models/kit/centaur-v.js'),
+    title: 'ULA Centaur V upper stage', short: 'Centaur V', load: () => import('../models/kit/kit-centaur-v.js'),
     story: {
       whole: 'Centaur V, the hydrogen-oxygen upper stage of ULA’s Vulcan: 5.4 m across and 12.6 m tall (the long version). It pushes landers and payloads out of Earth orbit.',
       cutaway: 'Liquid hydrogen fills the big forward tank; liquid oxygen, much denser, the short aft one. A common bulkhead (two steel skins round a fibreglass honeycomb) is all that separates them.',
       exploded: 'Hydrogen tank up, oxygen tank and engines down, the avionics adapter off the top.',
     },
-    cut: { dir: 'side' }, shell: ['skin'],
+    cut: { dir: 'side' }, shell: ['skin'], atc: 'avionics',
     dims: [
       { label: 'Height', text: '12.6 m (CV-HE)', axis: 'y', src: ['centaur'], conf: 'High' },
       { label: 'Diameter', text: '5.4 m', part: 'skin', axis: 'x', src: ['centaur'], conf: 'High' },
