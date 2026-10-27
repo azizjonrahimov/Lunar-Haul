@@ -66,9 +66,10 @@ export function createCutaway(scene) {
       build();
     },
     // mode 'off' | 'plane' | 'wedge'; facing: the horizontal direction the cut opens towards (unit Vector3);
-    // origin: a point on the cut's vertical axis (default: the subject's box centre, which may be off the part's axis)
-    set(mode, { facing = new THREE.Vector3(0, 0, 1), halfAngle = 45, origin } = {}) {
-      const f = new THREE.Vector3(facing.x, 0, facing.z).normalize(), up = new THREE.Vector3(0, 1, 0), o = origin || centre;
+    // origin: a point on the cut's vertical axis (default: the subject's box centre, which may be off the part's axis);
+    // dir (F-51, 'plane' only): any direction the cut opens towards, e.g. up for a horizontal cut through a rover
+    set(mode, { facing = new THREE.Vector3(0, 0, 1), halfAngle = 45, origin, dir } = {}) {
+      const f = mode === 'plane' && dir ? dir.clone().normalize() : new THREE.Vector3(facing.x, 0, facing.z).normalize(), up = new THREE.Vector3(0, 1, 0), o = origin || centre;
       if (mode === 'plane') {
         planes = [new THREE.Plane().setFromNormalAndCoplanarPoint(f.clone().negate(), o)]; intersect = false;
       } else if (mode === 'wedge') {

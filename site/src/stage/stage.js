@@ -169,6 +169,12 @@ export async function createStage({ canvas, labelsHost, preset = 'exhibit', tier
       subject.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) [].concat(o.material).forEach(m => m.dispose()); });
       subject = null; pickList = []; invalidate();
     },
+    // F-51: outline the named part, or every part of a group (userData.group), as a hover does; null clears
+    highlightPart(name) {
+      const list = [];
+      if (name && subject) subject.traverse(o => { if (o.userData.part && (o.userData.part === name || o.userData.group === name)) list.push(o); });
+      picker?.highlight(list.length ? list : null);
+    },
     setCut(mode, opts) { return compiled(() => { const planes = cutaway.set(mode, opts); post.setClipping(planes, o => !!o.userData.cutHelper); }); },
     explode(parts) { return createExplode(parts, { animate: fn => api.animate(fn), onChange: invalidate }); },
     // animate(fn): fn(dt, now) is called every frame until it returns false; frozen while paused

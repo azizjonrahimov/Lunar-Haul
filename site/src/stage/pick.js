@@ -16,14 +16,16 @@ export function createPicker(canvas, camera, { targets, isClipped, outline, onHo
     const h = ray.intersectObjects(targets(), false).find(x => !x.object.userData.cutHelper && !isClipped(x.point));
     return h ? partOf(h.object) : null;
   }
+  // part: a part Group, a list of them (a group such as the legs, from the page's part list) or null
   function highlight(part) {
-    if (part === hovered) return;
+    if (part === hovered || (Array.isArray(part) && Array.isArray(hovered) && part.length === hovered.length && part.every((q, i) => q === hovered[i]))) return;
     for (const [m, c] of saved) m.emissive.copy(c);
     saved.clear();
     hovered = part;
-    const meshes = [];
-    part?.traverse(o => { if (o.isMesh && !o.userData.cutHelper) meshes.push(o); });
-    if (!outline(part ? meshes : [])) for (const m of meshes) {
+    const meshes = [], list = Array.isArray(part) ? part : part ? [part] : [];
+    for (const q of list) q.traverse(o => { if (o.isMesh && !o.userData.cutHelper) meshes.push(o); });
+    part = list[0] || null;
+    if (!outline(meshes)) for (const m of meshes) {
       const mat = m.material; if (!mat.emissive || saved.has(mat)) continue;
       saved.set(mat, mat.emissive.clone()); mat.emissive.add(tint);
     }

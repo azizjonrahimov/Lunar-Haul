@@ -33,6 +33,16 @@
 .v-dl dt { color: var(--ink-2); }
 .v-dl dd { margin: 0; }
 .v-dl .num .v { font-family: var(--font-num); }
+/* F-51: the Section slider (Inside view) and the part list rows: what the part does, size, sources, the tag */
+.v-section { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); }
+.v-section[hidden] { display: none; }
+.v-section input { width: min(14rem, 60vw); accent-color: var(--accent); }
+.v-row-part { border-radius: 8px; padding-bottom: var(--s-1); }
+.v-row-part.is-hot { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.v-what { margin: 0 0.6rem; font-size: 0.875rem; color: var(--ink); }
+.v-meta { margin: 0.15rem 0.6rem 0; color: var(--ink-2); overflow-wrap: anywhere; }
+.v-meta a { color: var(--link); }
+.v-tag.pub { color: var(--ink-2); border-style: solid; }
 @media (max-width: 900px) {
   .v-stage { height: auto; overflow: visible; background: none; }
   .v-view { position: relative; height: 380px; border-radius: var(--radius-panel); overflow: hidden; background: #06090f; }

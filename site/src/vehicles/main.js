@@ -3,6 +3,10 @@
 // card, stat chips, callouts, part list and properties all read the catalogue. A loading door covers the stage until
 // the catalogue is in; Enter then starts the 3D view (WebGL set-up and shader compiles are the heavy part, so they
 // wait for the visitor) and the door opens when the scene is ready. Tier 0 shows the numbers and parts without 3D.
+// F-51: four views with deep links (?v=<id>&view=own|cutaway|exploded|xray): On its own (a pad, a slow turntable, an
+// astronaut, a 1 m bar and the key dimensions as measured lines), Inside (the vehicle's preset cut, with a movable
+// section), Exploded and X-ray (the shell see-through); the part list says what each part does, its size, source and
+// whether it is published or schematic (kit-data.js), and hovering a row outlines the part, and the other way round.
 import './vehicles.css';
 import * as THREE from 'three';
 import { segmented, sceneChips, narrative, statChip, door, tooltip, h, reducedMotion } from '../ui/index.js';
@@ -12,11 +16,14 @@ import { buildVehicle, createMaterials, GROUPS, astronaut } from '../models/inde
 import { STORIES, CHIPS, render, para, nightText } from './stories.js';
 import { createFlows } from './flows.js';
 import { num } from '../components/num.js';
+import { KIT, SOURCES, published } from './kit-data.js';
 
 const $ = id => document.getElementById(id);
 const BASE = import.meta.env.BASE_URL;
-const ui = { group: 'landers', id: 'MK1', view: 'whole', follow: 'none', scale: false };
+const VIEWS = ['own', 'cutaway', 'exploded', 'xray'];
+const ui = { group: 'landers', id: 'MK1', view: 'own', follow: 'none', scale: false, section: 0 };
 const q = new URLSearchParams(location.search);
+{ const v = q.get('view') === 'whole' ? 'own' : q.get('view'); if (VIEWS.includes(v)) ui.view = v; }
 if (q.get('v')) { const g = Object.keys(GROUPS).find(k => GROUPS[k].includes(q.get('v'))); if (g) Object.assign(ui, { group: g, id: q.get('v') }); }
 
 const gate = door({ title: 'The LunarHaul fleet', subtitle: 'Vehicle catalogue and 3D models, built in your browser at true scale.', skip: { href: '#v-tree-h', label: 'Skip to the parts list' },
@@ -46,14 +53,17 @@ const shortName = id => SHORT[id] || id;
 drawVehicleChips();
 
 $('v-modes').append(
-  segmented({ legend: 'View', options: [{ value: 'whole', label: 'Whole' }, { value: 'cutaway', label: 'Cutaway' }, { value: 'exploded', label: 'Exploded' }], value: ui.view, onChange: v => { ui.view = v; applyView(); } }).el,
+  segmented({ legend: 'View', options: [{ value: 'own', label: 'On its own' }, { value: 'cutaway', label: 'Inside' }, { value: 'exploded', label: 'Exploded' }, { value: 'xray', label: 'X-ray' }], value: ui.view, onChange: v => { ui.view = v; ui.section = 0; $('v-section').value = '0'; applyView(); } }).el,
+  h('label', { class: 'v-section', id: 'v-section-l', hidden: ui.view !== 'cutaway' }, h('span', { class: 'ui-label' }, 'Section'),
+    h('input', { type: 'range', id: 'v-section', min: '-0.45', max: '0.45', step: '0.01', value: '0', 'aria-describedby': 'v-section-h', oninput: e => { ui.section = +e.target.value; cut(); } }),
+    h('span', { id: 'v-section-h', class: 'small muted' }, 'moves the cut through the vehicle')),
   segmented({ legend: 'Follow', options: [{ value: 'none', label: 'Nothing' }, { value: 'propellant', label: 'Propellant' }, { value: 'power', label: 'Power' }, { value: 'cargo', label: 'Cargo' }], value: ui.follow, onChange: v => { ui.follow = v; applyFollow(); } }).el);
 
 // ---------- stage (started by the door's Enter button) ----------
 const tier = tierInfo.tier;
 async function start3D() {
   const { createStage } = await import('../stage/index.js');
-  stage = await createStage({ canvas: $('v-canvas'), labelsHost: $('v-labels'), preset: 'exhibit', tier, onPick: select,
+  stage = await createStage({ canvas: $('v-canvas'), labelsHost: $('v-labels'), preset: 'exhibit', tier, onPick: select, onHover: name => hotRow(name),
     onStatus: st => { if (st === 'lost') story.set({ eyebrow: 'WebGL', title: 'The 3D view paused', html: '<p>The graphics context was lost; it will come back by itself.</p>' }); } });
   flows = createFlows(stage.scene);
   if (import.meta.env.DEV) window.__stage = stage;   // console access while developing
@@ -65,9 +75,9 @@ async function start3D() {
 // ---------- choosing a vehicle ----------
 function choose(id) {
   ui.id = id; vehicleChips?.set(id);
-  { const u = new URL(location.href); u.searchParams.set('v', id); history.replaceState(null, '', u); }   // F-40: other parameters (?tier, ?gpumem) stay
+  writeUrl();
   const e = catalog.entry(id);
-  if (stage) { stage.clearSubject(); flows.clear(); }
+  if (stage) { setXray(false); clearExtras(); stage.clearSubject(); flows.clear(); }
   vehicle = buildVehicle(catalog, mats, id);
   if (stage) mount();
   drawChips(e); drawTree(); drawProps(null);
@@ -96,16 +106,89 @@ function frame() {
   shot('home', 0.6, 0.28, 1); shot('cutaway', 0.25, 0.22, 1); shot('exploded', 0.6, 0.32, 1.35);
   stage.director.limits({ minDistance: r * 0.4, maxDistance: d * 4 });
 }
+// F-51: the four views; the story text of the old Whole view serves On its own, Cutaway's serves Inside
+const VIEW_NAME = { own: 'on its own', cutaway: 'inside', exploded: 'exploded', xray: 'X-ray' };
+const XRAY_TEXT = '<p>X-ray: the outer shell is drawn see-through and everything inside stays solid, so the layout reads at a glance. Hover a part in the list to find it.</p>';
+function writeUrl() {   // F-40: other parameters (?tier, ?gpumem) stay
+  const u = new URL(location.href); u.searchParams.set('v', ui.id);
+  if (ui.view === 'own') u.searchParams.delete('view'); else u.searchParams.set('view', ui.view);
+  history.replaceState(null, '', u);
+}
 function applyView(instant = false) {
   if (!vehicle) return;
-  const v = ui.view, e = catalog.entry(ui.id), s = STORIES[ui.id] || {};
-  story.set({ eyebrow: `${shortName(ui.id)} · ${v}`, title: nameOf(ui.id), html: para(render(s[v] || s.whole || '', catalog, ui.id)) + (e.representative && v === 'whole' ? `<p class="small">${e.representative_note || ''}</p>` : '') });
+  const v = ui.view, e = catalog.entry(ui.id), s = STORIES[ui.id] || {}, key = v === 'own' ? 'whole' : v;
+  writeUrl(); $('v-section-l').hidden = v !== 'cutaway';
+  story.set({ eyebrow: `${shortName(ui.id)} · ${VIEW_NAME[v]}`, title: KIT[ui.id]?.title || nameOf(ui.id),
+    html: (v === 'xray' ? XRAY_TEXT : para(render(s[key] || s.whole || '', catalog, ui.id))) + (e.representative && v === 'own' ? `<p class="small">${e.representative_note || ''}</p>` : '') });
   if (!stage) return;
-  const facing = new THREE.Vector3(Math.sin(0.25), 0, Math.cos(0.25));
-  stage.setCut(v === 'cutaway' ? 'plane' : 'off', { facing, origin: new THREE.Box3().setFromObject(vehicle.root).getCenter(new THREE.Vector3()).setY(0) });
-  explode.to(v === 'exploded' ? 1 : 0);
-  stage.director.go(v === 'whole' ? 'home' : v, { instant });
+  cut(); explode.to(v === 'exploded' ? 1 : 0); setXray(v === 'xray');
+  if (v === 'own') showExtras(); else clearExtras();
+  stage.director.autoRotate(v === 'own' && !reducedMotion() ? 4 : 0);   // a slow turntable on its own (a turn in 90 s)
+  stage.director.go(v === 'cutaway' || v === 'exploded' ? v : 'home', { instant });
 }
+// the preset cut: 'side' a vertical plane through the axis (landers: tanks and engine), 'down' a horizontal one at a
+// fraction of the height (rovers: through the warm box); the Section slider moves it by up to 45 % of the vehicle
+function cut() {
+  if (!stage || !vehicle) return;
+  if (ui.view !== 'cutaway') { stage.setCut('off'); return; }
+  const box = new THREE.Box3().setFromObject(vehicle.root), c = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3()), k = KIT[ui.id]?.cut || { dir: 'side' };
+  if (k.dir === 'down') stage.setCut('plane', { dir: new THREE.Vector3(0, 1, 0), origin: c.clone().setY(box.min.y + size.y * Math.min(0.95, Math.max(0.05, (k.at ?? 0.5) + ui.section))) });
+  else { const facing = new THREE.Vector3(Math.sin(0.25), 0, Math.cos(0.25)); stage.setCut('plane', { facing, origin: c.clone().setY(0).addScaledVector(facing, ui.section * Math.max(size.x, size.z)) }); }
+}
+// X-ray: the kit's shell parts get see-through copies of their materials (the kit's materials are shared)
+let xray = [];
+function setXray(on) {
+  for (const [m, mat, sh] of xray) { m.material.dispose(); m.material = mat; m.castShadow = sh; }
+  xray = [];
+  if (on && vehicle) for (const name of KIT[ui.id]?.shell || []) vehicle.root.traverse(o => {
+    if (!o.isMesh || o.userData.cutHelper || !partOf(o, name)) return;
+    const c = o.material.clone(); c.transparent = true; c.opacity = 0.14; c.depthWrite = false;
+    xray.push([o, o.material, o.castShadow]); o.material = c; o.castShadow = false;
+  });
+  stage?.invalidate();
+}
+const partOf = (o, name) => { for (let p = o; p; p = p.parent) if (p.userData.part) return p.userData.part === name || p.userData.group === name; return false; };
+// On its own: a sintered pad, an astronaut, a 1 m bar and the key dimensions drawn as measured lines
+let extras = null;
+function clearExtras() {
+  if (!extras || !stage) return;
+  stage.scene.remove(extras);
+  extras.traverse(o => { o.geometry?.dispose(); if (o.material && !o.userData.sharedMat) o.material.dispose(); });
+  for (const id of extras.userData.labels) stage.labels.remove(id);
+  extras = null; stage.invalidate();
+}
+function showExtras() {
+  clearExtras();
+  const g = new THREE.Group(), box = new THREE.Box3().setFromObject(vehicle.root), size = box.getSize(new THREE.Vector3()), span = Math.max(size.x, size.z);
+  g.userData.labels = [];
+  const padMat = mats.get('sintered_regolith').clone(); padMat.polygonOffset = true; padMat.polygonOffsetFactor = -1; padMat.polygonOffsetUnits = -1;
+  const pad = new THREE.Mesh(new THREE.CircleGeometry(span * 0.85 + 1, 72).rotateX(-Math.PI / 2), padMat);
+  pad.position.y = 0.004; pad.receiveShadow = true; pad.userData.noPick = true; g.add(pad);
+  const a = astronaut(mats); a.root.position.set(box.min.x - 0.9, 0, box.max.z * 0.3);   // left: the height line stands on the right
+  a.root.traverse(o => { o.userData.noPick = true; if (o.isMesh) o.userData.sharedMat = true; }); g.add(a.root);
+  // a 1 m bar of two 0.5 m halves, light and dark, on the ground in front
+  const bar = new THREE.Group(); bar.position.set(box.min.x, 0.03, box.max.z + 0.6);
+  for (const [i, col] of [[0, '#f2f2f2'], [1, '#2b2f36']]) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.04, 0.08), new THREE.MeshBasicMaterial({ color: col })); m.position.x = 0.25 + i * 0.5; m.userData.noPick = true; bar.add(m);
+  }
+  g.add(bar); addLabel(g, 'dim-bar', '1 m', bar, new THREE.Vector3(0.5, 0.05, 0));
+  // dimension lines along the measured box edge of the vehicle or of one part, offset out of the way, with end ticks
+  const lineMat = new THREE.LineBasicMaterial({ color: '#e7c66a', toneMapped: false });
+  (KIT[ui.id]?.dims || []).forEach((d, i) => {
+    const target = d.part ? vehicle.parts.find(p => p.name === d.part || p.object.userData.group === d.part)?.object : vehicle.root; if (!target) return;
+    const b = new THREE.Box3().setFromObject(target), off = span * 0.12 + 0.3, A = new THREE.Vector3(), B = new THREE.Vector3();
+    if (d.axis === 'y') { A.set(box.max.x + off, b.min.y, box.max.z); B.set(box.max.x + off, b.max.y, box.max.z); }   // right: the story card covers the top left
+    else if (d.axis === 'x') { A.set(b.min.x, (b.min.y + b.max.y) / 2, box.max.z + off); B.set(b.max.x, A.y, A.z); }
+    else { A.set(box.max.x + off, Math.max(0.05, (b.min.y + b.max.y) / 2), b.min.z); B.set(A.x, A.y, b.max.z); }
+    const tick = d.axis === 'y' ? new THREE.Vector3(off * 0.25, 0, 0) : new THREE.Vector3(0, off * 0.25, 0);
+    const ln = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints([A, B, A.clone().sub(tick), A.clone().add(tick), B.clone().sub(tick), B.clone().add(tick)]), lineMat);
+    ln.userData.noPick = true; g.add(ln);
+    const mid = new THREE.Object3D(); mid.position.copy(A).add(B).multiplyScalar(0.5); g.add(mid);
+    addLabel(g, `dim-${i}`, `${d.label} ${d.text}${published(d.conf) ? '' : ' (schematic)'}`, mid);
+  });
+  extras = g; stage.scene.add(g); stage.invalidate();
+}
+function addLabel(g, id, text, object, anchor = new THREE.Vector3()) { stage.labels.add({ id, text, object, anchor, tone: 'warm' }); g.userData.labels.push(id); }
 function applyFollow() {
   if (!stage || !vehicle) return;
   const n = ui.follow === 'none' ? (flows.clear(), 0) : flows.show(vehicle.flows[ui.follow], ui.follow, Math.max(vehicle.size.x, vehicle.size.y, vehicle.size.z));
@@ -126,13 +209,27 @@ function drawChips(e) {
   }
   if (e.kind === 'base') for (const [k, qv] of Object.entries(e.dims).slice(0, 3)) box.append(statChip({ label: k.replace(/_m$|_deg$/, '').replace(/_/g, ' '), ...catalog.q(e.id, `dims.${k}`, { digits: 1 }) }).el);
 }
+// F-51: one row per part or part group: its name with a published/schematic tag (a button that selects it), what it
+// does, its size and sources; hovering or focusing a row outlines the part in the view
 function drawTree() {
-  const groups = new Map();
+  const groups = new Map(), kit = KIT[ui.id]?.parts || {};
   for (const p of vehicle.parts) { const g = p.object.userData.group || p.name; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(p); }
-  $('v-tree').replaceChildren(...[...groups.values()].map(list => {
-    const p = list[0], label = list.length > 1 ? `${p.label} × ${list.length}` : p.label;
-    return h('li', {}, h('button', { type: 'button', class: 'v-part', 'data-part': p.name, onclick: () => select(p.name) }, label, p.representative ? h('span', { class: 'v-tag' }, 'representative') : null));
+  $('v-tree').replaceChildren(...[...groups.entries()].map(([key, list]) => {
+    const p = list[0], label = list.length > 1 ? `${p.label} × ${list.length}` : p.label, k = kit[key];
+    const pub = k ? published(k.conf) : !p.representative;
+    const tag = h('span', { class: pub ? 'v-tag pub' : 'v-tag', title: k ? `Confidence: ${k.conf}` : null }, pub ? 'published' : 'schematic');
+    const hot = on => () => stage?.highlightPart(on ? key : null);
+    const src = (k?.src || []).map(id => SOURCES[id]).filter(Boolean).map(x => x.url ? h('a', { href: x.url, rel: 'noopener', target: '_blank' }, x.label) : h('span', {}, x.label));
+    return h('li', { class: 'v-row-part', 'data-key': key, onmouseenter: hot(true), onmouseleave: hot(false) },
+      h('button', { type: 'button', class: 'v-part', 'data-part': p.name, onclick: () => select(p.name), onfocus: hot(true), onblur: hot(false) }, label, tag),
+      k ? h('p', { class: 'v-what' }, k.what) : null,
+      k ? h('p', { class: 'v-meta small' }, `Size: ${k.size} · `, ...src.flatMap((x, i) => i ? ['; ', x] : [x])) : null);
   }));
+}
+// a hover in the view marks the row of that part (or of its group)
+function hotRow(name) {
+  const p = name && vehicle?.parts.find(x => x.name === name), key = p ? p.object.userData.group || p.name : null;
+  for (const li of document.querySelectorAll('.v-row-part')) li.classList.toggle('is-hot', li.dataset.key === key);
 }
 function select(name) {
   const p = vehicle.parts.find(x => x.name === name); if (!p) return;
@@ -155,10 +252,10 @@ function drawProps(p) {
 function placeRefs() {
   if (!stage) return;
   if (refs) { refs.forEach(r => { stage.scene.remove(r.root); r.root.traverse(o => o.geometry?.dispose()); }); refs = null; }
-  if (!ui.scale) return stage.invalidate();
-  const box = new THREE.Box3().setFromObject(vehicle.root), a = astronaut(mats), lrv = buildVehicle(catalog, mats, 'apollo_lrv', { lod: 'simple' });
-  a.root.position.set(box.max.x + 1.2, 0, box.max.z * 0.2); lrv.root.position.set(box.max.x + 2.2 + lrv.size.x / 2, 0, box.max.z * 0.2 - 2.5);
-  refs = [a, lrv]; refs.forEach(r => stage.scene.add(r.root)); stage.invalidate();
+  if (!ui.scale || ui.id === 'apollo_lrv') return stage.invalidate();
+  const box = new THREE.Box3().setFromObject(vehicle.root), lrv = buildVehicle(catalog, mats, 'apollo_lrv', { lod: 'simple' });
+  lrv.root.position.set(box.max.x + 2.6 + lrv.size.x / 2, 0, box.max.z * 0.2 - 2.5);   // the astronaut stands by every vehicle On its own (F-51)
+  refs = [lrv]; refs.forEach(r => stage.scene.add(r.root)); stage.invalidate();
 }
 $('v-scale').addEventListener('click', e => { ui.scale = !ui.scale; e.currentTarget.setAttribute('aria-pressed', String(ui.scale)); placeRefs(); });
 $('v-pause').addEventListener('click', e => { const v = e.currentTarget.getAttribute('aria-pressed') !== 'true'; e.currentTarget.setAttribute('aria-pressed', String(v)); stage?.pause(v); });

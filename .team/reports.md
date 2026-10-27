@@ -5460,3 +5460,69 @@ Every effect measured against strategic shifts by ~3 t, and Stage H 24 h tonnage
   - No console errors.
 - Server stopped and tab closed.
 - Correction: the F-50 header above said 10:25; the real time was 10:21.
+
+## F-51 PART 1 DONE 11:28 | The vehicle viewer: On its own / Inside / Exploded / X-ray with deep links, measured dimensions, and a part list with sources and confidence (on today's models)
+
+**Files changed (uncommitted):**
+- New: `site/src/vehicles/kit-data.js` (Table B drawing data with source URLs and confidence; the catalogue is untouched, as agreed).
+- Modified:
+  - `site/src/vehicles/main.js`, `vehicles.css`
+  - `site/src/stage/pick.js`: highlights a whole part group, such as all the legs.
+  - `site/src/stage/stage.js`: `highlightPart(name)`.
+  - `site/src/stage/cutaway.js`: a `dir` option for horizontal cuts.
+  - `site/src/stage/labels.js`: `remove(id)`.
+
+**What /vehicles/ does now:**
+- **Deep links:** `?v=<id>&view=own|cutaway|exploded|xray`. The old `view=whole` still works and opens On its own.
+- **On its own:**
+  - The vehicle stands alone on a sintered pad with a slow turntable (4° a second; off under reduced motion).
+  - A 1.8 m astronaut stands on the left, with a 1 m bar of two half-metre halves.
+  - The key dimensions from Table B are drawn as measured lines with end ticks and labels, e.g. MK1 "Height 8.05 m" and "Diameter 3.08 m". Values that aren't High are labelled "(schematic)".
+  - The "Scale" button now adds only the Apollo LRV, since the astronaut is always there.
+- **Inside:**
+  - Each vehicle has a preset cut: landers get a vertical cut through the tanks and engine; rovers a horizontal one through the warm box (LTV at 48 % of the height, MICRO 30 %).
+  - A Section slider moves the cut by ±45 % of the vehicle.
+  - The caps use the existing stencil method. Only closed meshes are cut, so a rover's mast and side panels stay whole above a horizontal cut.
+- **Exploded:** as before, with the callouts' leader lines.
+- **X-ray:**
+  - The kit's shell parts (hull, body, chassis or bed) are drawn at 14 % opacity, with no depth write and no shadow, using cloned materials so the shared kit materials are unchanged.
+  - Everything inside stays solid.
+- **Part list:** one row per part or part group shows:
+  - the name, with a "published" (High) or "schematic" tag, and the confidence on hover;
+  - one plain sentence on what the part does;
+  - the size, and the sources as links (the computed and assumed sources say so instead).
+  Hovering or focusing a row outlines the part in the view (all six legs together); hovering a part in the view highlights its row. The rows are buttons, so the list works by keyboard.
+
+**Vehicles covered in this part:** the existing models, mapped to Table B.
+- CLPS → Nova-C class
+- MK1 → Blue Moon MK1
+- LARGE → Starship HLS
+- LTV → Phase 1 LTV (CLV-1/FLEX)
+- MICRO → VIPER class
+- apollo_lrv
+- HAUL (concept)
+Base elements keep their old list: no sources, tag from the model's representative flag.
+
+**Parts with no published source, all drawn and labelled "schematic":**
+- MK1 and HLS legs: assumed shapes, kept from before.
+- MK1 tank sizes, and the Nova-C tank positions: computed.
+- The LTV battery box: Low.
+- The whole HAUL concept: Assumed.
+- The LTV's 4.0 m length and 0.93 m wheel: catalogue values, labelled schematic.
+
+**Checks:**
+- `npm run build` OK; node tests 16/16; `budgets.py pages` OK (/vehicles/ 86.0 of 100 kB JS).
+- In the browser (production build):
+  - MK1: On its own shows the pad, astronaut, 1 m bar and both dimension lines. Inside opens the hull with the tank caps and the slider. X-ray shows both tanks through the hull.
+  - MICRO: the Inside horizontal cut opens the body down to the battery box.
+  - 390 px (an iframe): /vehicles/?v=LTV&view=cutaway has no horizontal overflow, with 6 part rows and the slider.
+  - No console errors.
+  - /vehicles/ is a dark-only instrument page (no theme toggle), so there is no light mode to check.
+- Free RAM was 0.58-0.85 GB. Server stopped and tab closed.
+- The first browser session lost the Chrome extension after two screenshot timeouts, while the page itself kept responding. The re-run after the owner reconnected had no timeouts.
+
+**Next (part 2):** the lander models from Table B (Griffin, Nova-C as its own model, Blue Ghost, MK1 kept or improved, Starship HLS kept or improved, Centaur V), each a lazy chunk.
+
+**What I need from BACKEND:** nothing.
+
+**Questions for LEAD:** none.

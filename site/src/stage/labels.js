@@ -22,6 +22,7 @@ export function createLabels(host, camera, { occluders = () => [], isClipped = (
       items.push(it); return c;
     },
     setPressed(id) { for (const it of items) it.c.setPressed(it.id === id); },
+    remove(id) { const i = items.findIndex(x => x.id === id); if (i >= 0) { items[i].c.remove(); items.splice(i, 1); } },   // F-51: one label (dimension lines)
     // hide one label whatever its visibility (decluttering: e.g. vehicle labels in far views)
     setHidden(id, v) { const it = items.find(x => x.id === id); if (it) it.hidden = v; },
     show(v) { enabled = v; for (const it of items) it.c.show(v); },
