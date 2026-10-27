@@ -1,0 +1,1728 @@
+{
+ "task": "B-72",
+ "scenario": "data/scenarios/p5/p5-3eq-L30-T10.json",
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "note": "Scenario: p5 3 equal owners, k for 30 % FLEX + Eagle busy (data/scenarios/p5/p5-3eq-L30-T10.json), team share\n0.10. C_LEADER at message loss 0.10 (E40's level). Single process, --max-seconds 540.",
+ "years": {
+  "2028": {
+   "O_ORACLE": {
+    "atc_urgent_wait_mean_cens_h": [
+     15.5013,
+     7.5278
+    ],
+    "atc_urgent_wait_mean_h": [
+     15.5013,
+     7.5278
+    ],
+    "atc_urgent_wait_p95_cens_h": [
+     58.1462,
+     20.7045
+    ],
+    "atc_urgent_within24_share": [
+     0.7648,
+     0.1014
+    ],
+    "delivered_kg": [
+     1482464.6564,
+     31435.9141
+    ],
+    "atc_deadhead_share": [
+     0.4972,
+     0.0027
+    ],
+    "p5_cargo_util": [
+     0.2957,
+     0.0069
+    ],
+    "utilisation": [
+     0.0765,
+     0.0018
+    ],
+    "atc_decider_down_share": [
+     0.0,
+     0.0
+    ],
+    "atc_backlog_end_blackout_t_mean": [
+     2.7423,
+     0.5021
+    ],
+    "atc_backlog_end_blackout_t_max": [
+     10.8194,
+     6.4023
+    ],
+    "atc_msgs_per_robot_h": [
+     0.0,
+     0.0
+    ],
+    "atc_robots_out_share": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_conflicts": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_wait_h": [
+     0.0,
+     0.0
+    ],
+    "atc_rallies": [
+     0.0,
+     0.0
+    ],
+    "atc_queue_jobs": [
+     0.0,
+     0.0
+    ],
+    "atc_standing_jobs": [
+     0.0,
+     0.0
+    ],
+    "team_lifts": [
+     17.6,
+     6.6558
+    ],
+    "backlog_kg": [
+     2000.0,
+     1541.1035
+    ],
+    "stranded_kg": [
+     0.0,
+     0.0
+    ],
+    "atc_blackouts": [
+     13.0,
+     0.0
+    ],
+    "urgent_minus_oracle_h": [
+     0.0,
+     0.0
+    ],
+    "wall_s_mean": 3.9
+   },
+   "B_EARTH strict": {
+    "atc_urgent_wait_mean_cens_h": [
+     94.0811,
+     18.177
+    ],
+    "atc_urgent_wait_mean_h": [
+     94.0811,
+     18.177
+    ],
+    "atc_urgent_wait_p95_cens_h": [
+     249.812,
+     39.032
+    ],
+    "atc_urgent_within24_share": [
+     0.3258,
+     0.0711
+    ],
+    "delivered_kg": [
+     1483992.8691,
+     31797.037
+    ],
+    "atc_deadhead_share": [
+     0.4945,
+     0.0024
+    ],
+    "p5_cargo_util": [
+     0.2755,
+     0.0067
+    ],
+    "utilisation": [
+     0.0727,
+     0.0029
+    ],
+    "atc_decider_down_share": [
+     0.3849,
+     0.0
+    ],
+    "atc_backlog_end_blackout_t_mean": [
+     46.092,
+     0.9823
+    ],
+    "atc_backlog_end_blackout_t_max": [
+     58.3366,
+     4.6594
+    ],
+    "atc_msgs_per_robot_h": [
+     0.0,
+     0.0
+    ],
+    "atc_robots_out_share": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_conflicts": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_wait_h": [
+     0.0,
+     0.0
+    ],
+    "atc_rallies": [
+     0.0,
+     0.0
+    ],
+    "atc_queue_jobs": [
+     0.0,
+     0.0
+    ],
+    "atc_standing_jobs": [
+     0.0,
+     0.0
+    ],
+    "team_lifts": [
+     18.4,
+     6.5803
+    ],
+    "backlog_kg": [
+     2200.0,
+     2196.5883
+    ],
+    "stranded_kg": [
+     0.0,
+     0.0
+    ],
+    "atc_blackouts": [
+     13.0,
+     0.0
+    ],
+    "urgent_minus_oracle_h": [
+     78.58,
+     20.403
+    ],
+    "wall_s_mean": 10.9
+   },
+   "B_EARTH plan_ahead": {
+    "atc_urgent_wait_mean_cens_h": [
+     22.4833,
+     7.9521
+    ],
+    "atc_urgent_wait_mean_h": [
+     22.4833,
+     7.9521
+    ],
+    "atc_urgent_wait_p95_cens_h": [
+     92.4042,
+     66.7989
+    ],
+    "atc_urgent_within24_share": [
+     0.7901,
+     0.0884
+    ],
+    "delivered_kg": [
+     1485672.2435,
+     33096.1362
+    ],
+    "atc_deadhead_share": [
+     0.4976,
+     0.0013
+    ],
+    "p5_cargo_util": [
+     0.3243,
+     0.0086
+    ],
+    "utilisation": [
+     0.0838,
+     0.0024
+    ],
+    "atc_decider_down_share": [
+     0.3849,
+     0.0
+    ],
+    "atc_backlog_end_blackout_t_mean": [
+     3.5824,
+     0.7595
+    ],
+    "atc_backlog_end_blackout_t_max": [
+     13.774,
+     5.8008
+    ],
+    "atc_msgs_per_robot_h": [
+     0.0,
+     0.0
+    ],
+    "atc_robots_out_share": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_conflicts": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_wait_h": [
+     0.0,
+     0.0
+    ],
+    "atc_rallies": [
+     0.0,
+     0.0
+    ],
+    "atc_queue_jobs": [
+     38.4,
+     13.4276
+    ],
+    "atc_standing_jobs": [
+     1077.4,
+     27.2452
+    ],
+    "team_lifts": [
+     16.8,
+     7.5961
+    ],
+    "backlog_kg": [
+     2600.0,
+     2815.1377
+    ],
+    "stranded_kg": [
+     0.0,
+     0.0
+    ],
+    "atc_blackouts": [
+     13.0,
+     0.0
+    ],
+    "urgent_minus_oracle_h": [
+     6.982,
+     8.106
+    ],
+    "wall_s_mean": 2.7
+   },
+   "B_EARTH_RELAY 0.8": {
+    "atc_urgent_wait_mean_cens_h": [
+     17.3126,
+     8.9346
+    ],
+    "atc_urgent_wait_mean_h": [
+     17.3126,
+     8.9346
+    ],
+    "atc_urgent_wait_p95_cens_h": [
+     61.0639,
+     26.1301
+    ],
+    "atc_urgent_within24_share": [
+     0.757,
+     0.0973
+    ],
+    "delivered_kg": [
+     1482183.4149,
+     30001.4864
+    ],
+    "atc_deadhead_share": [
+     0.4979,
+     0.0027
+    ],
+    "p5_cargo_util": [
+     0.2941,
+     0.0064
+    ],
+    "utilisation": [
+     0.0761,
+     0.0017
+    ],
+    "atc_decider_down_share": [
+     0.0706,
+     0.0057
+    ],
+    "atc_backlog_end_blackout_t_mean": [
+     3.4976,
+     0.6509
+    ],
+    "atc_backlog_end_blackout_t_max": [
+     14.0636,
+     6.4592
+    ],
+    "atc_msgs_per_robot_h": [
+     0.0,
+     0.0
+    ],
+    "atc_robots_out_share": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_conflicts": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_wait_h": [
+     0.0,
+     0.0
+    ],
+    "atc_rallies": [
+     0.0,
+     0.0
+    ],
+    "atc_queue_jobs": [
+     0.0,
+     0.0
+    ],
+    "atc_standing_jobs": [
+     0.0,
+     0.0
+    ],
+    "team_lifts": [
+     18.0,
+     6.892
+    ],
+    "backlog_kg": [
+     1700.0,
+     1680.7736
+    ],
+    "stranded_kg": [
+     0.0,
+     0.0
+    ],
+    "atc_blackouts": [
+     13.0,
+     0.0
+    ],
+    "urgent_minus_oracle_h": [
+     1.811,
+     2.226
+    ],
+    "wall_s_mean": 4.1
+   },
+   "B_EARTH_RELAY 1.0": {
+    "atc_urgent_wait_mean_cens_h": [
+     15.5013,
+     7.5278
+    ],
+    "atc_urgent_wait_mean_h": [
+     15.5013,
+     7.5278
+    ],
+    "atc_urgent_wait_p95_cens_h": [
+     58.1462,
+     20.7045
+    ],
+    "atc_urgent_within24_share": [
+     0.7648,
+     0.1014
+    ],
+    "delivered_kg": [
+     1482464.6564,
+     31435.9141
+    ],
+    "atc_deadhead_share": [
+     0.4972,
+     0.0027
+    ],
+    "p5_cargo_util": [
+     0.2957,
+     0.0069
+    ],
+    "utilisation": [
+     0.0765,
+     0.0018
+    ],
+    "atc_decider_down_share": [
+     0.0,
+     0.0
+    ],
+    "atc_backlog_end_blackout_t_mean": [
+     2.7423,
+     0.5021
+    ],
+    "atc_backlog_end_blackout_t_max": [
+     10.8194,
+     6.4023
+    ],
+    "atc_msgs_per_robot_h": [
+     0.0,
+     0.0
+    ],
+    "atc_robots_out_share": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_conflicts": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_wait_h": [
+     0.0,
+     0.0
+    ],
+    "atc_rallies": [
+     0.0,
+     0.0
+    ],
+    "atc_queue_jobs": [
+     0.0,
+     0.0
+    ],
+    "atc_standing_jobs": [
+     0.0,
+     0.0
+    ],
+    "team_lifts": [
+     17.6,
+     6.6558
+    ],
+    "backlog_kg": [
+     2000.0,
+     1541.1035
+    ],
+    "stranded_kg": [
+     0.0,
+     0.0
+    ],
+    "atc_blackouts": [
+     13.0,
+     0.0
+    ],
+    "urgent_minus_oracle_h": [
+     0.0,
+     0.0
+    ],
+    "wall_s_mean": 4.0
+   },
+   "A_EARTH strict": {
+    "atc_urgent_wait_mean_cens_h": [
+     1261.2992,
+     171.0874
+    ],
+    "atc_urgent_wait_mean_h": [
+     107.6468,
+     27.2011
+    ],
+    "atc_urgent_wait_p95_cens_h": [
+     6638.7436,
+     1096.3623
+    ],
+    "atc_urgent_within24_share": [
+     0.2093,
+     0.0747
+    ],
+    "delivered_kg": [
+     958314.8841,
+     8230.2357
+    ],
+    "atc_deadhead_share": [
+     0.4969,
+     0.0014
+    ],
+    "p5_cargo_util": [
+     0.2417,
+     0.0145
+    ],
+    "utilisation": [
+     0.063,
+     0.004
+    ],
+    "atc_decider_down_share": [
+     0.3849,
+     0.0
+    ],
+    "atc_backlog_end_blackout_t_mean": [
+     280.7315,
+     1.9137
+    ],
+    "atc_backlog_end_blackout_t_max": [
+     497.3431,
+     2.6129
+    ],
+    "atc_msgs_per_robot_h": [
+     0.0,
+     0.0
+    ],
+    "atc_robots_out_share": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_conflicts": [
+     2.8,
+     1.0954
+    ],
+    "atc_hand_wait_h": [
+     5.6,
+     2.1909
+    ],
+    "atc_rallies": [
+     0.0,
+     0.0
+    ],
+    "atc_queue_jobs": [
+     0.0,
+     0.0
+    ],
+    "atc_standing_jobs": [
+     0.0,
+     0.0
+    ],
+    "team_lifts": [
+     0.0,
+     0.0
+    ],
+    "backlog_kg": [
+     488055.7362,
+     2596.3739
+    ],
+    "stranded_kg": [
+     38103.1552,
+     13866.0831
+    ],
+    "atc_blackouts": [
+     13.0,
+     0.0
+    ],
+    "urgent_minus_oracle_h": [
+     1245.798,
+     166.597
+    ],
+    "wall_s_mean": 6.4
+   },
+   "A_EARTH plan_ahead": {
+    "atc_urgent_wait_mean_cens_h": [
+     1264.0691,
+     232.7305
+    ],
+    "atc_urgent_wait_mean_h": [
+     27.9396,
+     10.8923
+    ],
+    "atc_urgent_wait_p95_cens_h": [
+     6713.4408,
+     1177.8651
+    ],
+    "atc_urgent_within24_share": [
+     0.4466,
+     0.1089
+    ],
+    "delivered_kg": [
+     955973.7707,
+     8363.7134
+    ],
+    "atc_deadhead_share": [
+     0.4968,
+     0.0023
+    ],
+    "p5_cargo_util": [
+     0.2386,
+     0.014
+    ],
+    "utilisation": [
+     0.0612,
+     0.0034
+    ],
+    "atc_decider_down_share": [
+     0.3849,
+     0.0
+    ],
+    "atc_backlog_end_blackout_t_mean": [
+     253.5702,
+     3.0464
+    ],
+    "atc_backlog_end_blackout_t_max": [
+     470.4699,
+     3.7954
+    ],
+    "atc_msgs_per_robot_h": [
+     0.0,
+     0.0
+    ],
+    "atc_robots_out_share": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_conflicts": [
+     2.0,
+     1.2247
+    ],
+    "atc_hand_wait_h": [
+     211.0906,
+     225.382
+    ],
+    "atc_rallies": [
+     0.0,
+     0.0
+    ],
+    "atc_queue_jobs": [
+     42.4,
+     9.8641
+    ],
+    "atc_standing_jobs": [
+     666.0,
+     29.129
+    ],
+    "team_lifts": [
+     0.0,
+     0.0
+    ],
+    "backlog_kg": [
+     487726.2545,
+     3442.8816
+    ],
+    "stranded_kg": [
+     37237.8401,
+     13478.7715
+    ],
+    "atc_blackouts": [
+     13.0,
+     0.0
+    ],
+    "urgent_minus_oracle_h": [
+     1248.568,
+     228.24
+    ],
+    "wall_s_mean": 8.7
+   },
+   "A_MOON": {
+    "atc_urgent_wait_mean_cens_h": [
+     1227.9466,
+     287.9597
+    ],
+    "atc_urgent_wait_mean_h": [
+     25.4176,
+     10.1193
+    ],
+    "atc_urgent_wait_p95_cens_h": [
+     6330.7831,
+     1867.3241
+    ],
+    "atc_urgent_within24_share": [
+     0.4849,
+     0.1159
+    ],
+    "delivered_kg": [
+     956905.7671,
+     8991.3175
+    ],
+    "atc_deadhead_share": [
+     0.5961,
+     0.0025
+    ],
+    "p5_cargo_util": [
+     0.2297,
+     0.009
+    ],
+    "utilisation": [
+     0.0591,
+     0.0023
+    ],
+    "atc_decider_down_share": [
+     0.0,
+     0.0
+    ],
+    "atc_backlog_end_blackout_t_mean": [
+     253.0914,
+     2.6936
+    ],
+    "atc_backlog_end_blackout_t_max": [
+     470.1317,
+     3.5356
+    ],
+    "atc_msgs_per_robot_h": [
+     0.2286,
+     0.0042
+    ],
+    "atc_robots_out_share": [
+     0.0488,
+     0.0008
+    ],
+    "atc_hand_conflicts": [
+     2.8,
+     0.8367
+    ],
+    "atc_hand_wait_h": [
+     190.8464,
+     166.2634
+    ],
+    "atc_rallies": [
+     809.6,
+     7.3007
+    ],
+    "atc_queue_jobs": [
+     0.0,
+     0.0
+    ],
+    "atc_standing_jobs": [
+     0.0,
+     0.0
+    ],
+    "team_lifts": [
+     0.0,
+     0.0
+    ],
+    "backlog_kg": [
+     488845.8118,
+     4691.998
+    ],
+    "stranded_kg": [
+     36750.948,
+     13637.398
+    ],
+    "atc_blackouts": [
+     13.0,
+     0.0
+    ],
+    "urgent_minus_oracle_h": [
+     1212.445,
+     283.524
+    ],
+    "wall_s_mean": 10.9
+   },
+   "C_LEADER loss 0.10": {
+    "atc_urgent_wait_mean_cens_h": [
+     16.5366,
+     10.218
+    ],
+    "atc_urgent_wait_mean_h": [
+     16.5366,
+     10.218
+    ],
+    "atc_urgent_wait_p95_cens_h": [
+     55.0671,
+     27.8255
+    ],
+    "atc_urgent_within24_share": [
+     0.7837,
+     0.1071
+    ],
+    "delivered_kg": [
+     1488680.8215,
+     29913.3334
+    ],
+    "atc_deadhead_share": [
+     0.7085,
+     0.0041
+    ],
+    "p5_cargo_util": [
+     0.297,
+     0.0064
+    ],
+    "utilisation": [
+     0.0772,
+     0.0022
+    ],
+    "atc_decider_down_share": [
+     0.0002,
+     0.0
+    ],
+    "atc_backlog_end_blackout_t_mean": [
+     2.9178,
+     0.5462
+    ],
+    "atc_backlog_end_blackout_t_max": [
+     11.9308,
+     7.0928
+    ],
+    "atc_msgs_per_robot_h": [
+     5.4374,
+     1.6358
+    ],
+    "atc_robots_out_share": [
+     0.0125,
+     0.0133
+    ],
+    "atc_hand_conflicts": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_wait_h": [
+     0.0,
+     0.0
+    ],
+    "atc_rallies": [
+     814.2,
+     16.9027
+    ],
+    "atc_queue_jobs": [
+     0.0,
+     0.0
+    ],
+    "atc_standing_jobs": [
+     0.0,
+     0.0
+    ],
+    "team_lifts": [
+     18.6,
+     5.6391
+    ],
+    "backlog_kg": [
+     2000.0,
+     2549.5098
+    ],
+    "stranded_kg": [
+     0.0,
+     0.0
+    ],
+    "atc_blackouts": [
+     13.0,
+     0.0
+    ],
+    "urgent_minus_oracle_h": [
+     1.035,
+     3.698
+    ],
+    "wall_s_mean": 18.2
+   }
+  },
+  "2038": {
+   "O_ORACLE": {
+    "atc_urgent_wait_mean_cens_h": [
+     15.5013,
+     7.5278
+    ],
+    "atc_urgent_wait_mean_h": [
+     15.5013,
+     7.5278
+    ],
+    "atc_urgent_wait_p95_cens_h": [
+     58.1462,
+     20.7045
+    ],
+    "atc_urgent_within24_share": [
+     0.7648,
+     0.1014
+    ],
+    "delivered_kg": [
+     1482464.6564,
+     31435.9141
+    ],
+    "atc_deadhead_share": [
+     0.4972,
+     0.0027
+    ],
+    "p5_cargo_util": [
+     0.2957,
+     0.0069
+    ],
+    "utilisation": [
+     0.0765,
+     0.0018
+    ],
+    "atc_decider_down_share": [
+     0.0,
+     0.0
+    ],
+    "atc_backlog_end_blackout_t_mean": [
+     2.0663,
+     0.9204
+    ],
+    "atc_backlog_end_blackout_t_max": [
+     5.899,
+     2.9393
+    ],
+    "atc_msgs_per_robot_h": [
+     0.0,
+     0.0
+    ],
+    "atc_robots_out_share": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_conflicts": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_wait_h": [
+     0.0,
+     0.0
+    ],
+    "atc_rallies": [
+     0.0,
+     0.0
+    ],
+    "atc_queue_jobs": [
+     0.0,
+     0.0
+    ],
+    "atc_standing_jobs": [
+     0.0,
+     0.0
+    ],
+    "team_lifts": [
+     17.6,
+     6.6558
+    ],
+    "backlog_kg": [
+     2000.0,
+     1541.1035
+    ],
+    "stranded_kg": [
+     0.0,
+     0.0
+    ],
+    "atc_blackouts": [
+     13.0,
+     0.0
+    ],
+    "urgent_minus_oracle_h": [
+     0.0,
+     0.0
+    ],
+    "wall_s_mean": 3.9
+   },
+   "B_EARTH strict": {
+    "atc_urgent_wait_mean_cens_h": [
+     124.8338,
+     56.4324
+    ],
+    "atc_urgent_wait_mean_h": [
+     124.8754,
+     56.586
+    ],
+    "atc_urgent_wait_p95_cens_h": [
+     405.3325,
+     233.3786
+    ],
+    "atc_urgent_within24_share": [
+     0.3528,
+     0.0889
+    ],
+    "delivered_kg": [
+     1465754.3988,
+     26224.3701
+    ],
+    "atc_deadhead_share": [
+     0.4933,
+     0.004
+    ],
+    "p5_cargo_util": [
+     0.2698,
+     0.0029
+    ],
+    "utilisation": [
+     0.0709,
+     0.0019
+    ],
+    "atc_decider_down_share": [
+     0.4528,
+     0.0
+    ],
+    "atc_backlog_end_blackout_t_mean": [
+     55.5676,
+     5.9304
+    ],
+    "atc_backlog_end_blackout_t_max": [
+     82.0094,
+     30.0431
+    ],
+    "atc_msgs_per_robot_h": [
+     0.0,
+     0.0
+    ],
+    "atc_robots_out_share": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_conflicts": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_wait_h": [
+     0.0,
+     0.0
+    ],
+    "atc_rallies": [
+     0.0,
+     0.0
+    ],
+    "atc_queue_jobs": [
+     0.0,
+     0.0
+    ],
+    "atc_standing_jobs": [
+     0.0,
+     0.0
+    ],
+    "team_lifts": [
+     21.8,
+     7.5631
+    ],
+    "backlog_kg": [
+     22295.1435,
+     4231.1384
+    ],
+    "stranded_kg": [
+     0.0,
+     0.0
+    ],
+    "atc_blackouts": [
+     13.0,
+     0.0
+    ],
+    "urgent_minus_oracle_h": [
+     109.333,
+     55.769
+    ],
+    "wall_s_mean": 12.2
+   },
+   "B_EARTH plan_ahead": {
+    "atc_urgent_wait_mean_cens_h": [
+     25.7597,
+     16.0055
+    ],
+    "atc_urgent_wait_mean_h": [
+     25.7597,
+     16.0055
+    ],
+    "atc_urgent_wait_p95_cens_h": [
+     134.2751,
+     107.0565
+    ],
+    "atc_urgent_within24_share": [
+     0.7576,
+     0.1178
+    ],
+    "delivered_kg": [
+     1482317.7933,
+     33511.6252
+    ],
+    "atc_deadhead_share": [
+     0.496,
+     0.002
+    ],
+    "p5_cargo_util": [
+     0.327,
+     0.0147
+    ],
+    "utilisation": [
+     0.0839,
+     0.004
+    ],
+    "atc_decider_down_share": [
+     0.4528,
+     0.0
+    ],
+    "atc_backlog_end_blackout_t_mean": [
+     2.917,
+     0.8337
+    ],
+    "atc_backlog_end_blackout_t_max": [
+     9.7822,
+     2.1027
+    ],
+    "atc_msgs_per_robot_h": [
+     0.0,
+     0.0
+    ],
+    "atc_robots_out_share": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_conflicts": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_wait_h": [
+     0.0,
+     0.0
+    ],
+    "atc_rallies": [
+     0.0,
+     0.0
+    ],
+    "atc_queue_jobs": [
+     51.4,
+     12.7984
+    ],
+    "atc_standing_jobs": [
+     1281.0,
+     24.3002
+    ],
+    "team_lifts": [
+     16.4,
+     8.1731
+    ],
+    "backlog_kg": [
+     822.717,
+     1776.836
+    ],
+    "stranded_kg": [
+     0.0,
+     0.0
+    ],
+    "atc_blackouts": [
+     13.0,
+     0.0
+    ],
+    "urgent_minus_oracle_h": [
+     10.258,
+     10.749
+    ],
+    "wall_s_mean": 2.3
+   },
+   "B_EARTH_RELAY 0.8": {
+    "atc_urgent_wait_mean_cens_h": [
+     15.7392,
+     7.4595
+    ],
+    "atc_urgent_wait_mean_h": [
+     15.7392,
+     7.4595
+    ],
+    "atc_urgent_wait_p95_cens_h": [
+     58.3482,
+     22.7903
+    ],
+    "atc_urgent_within24_share": [
+     0.7768,
+     0.0728
+    ],
+    "delivered_kg": [
+     1488003.0807,
+     29554.0509
+    ],
+    "atc_deadhead_share": [
+     0.496,
+     0.0019
+    ],
+    "p5_cargo_util": [
+     0.293,
+     0.0048
+    ],
+    "utilisation": [
+     0.076,
+     0.0012
+    ],
+    "atc_decider_down_share": [
+     0.0855,
+     0.008
+    ],
+    "atc_backlog_end_blackout_t_mean": [
+     2.7065,
+     0.4887
+    ],
+    "atc_backlog_end_blackout_t_max": [
+     10.1274,
+     5.031
+    ],
+    "atc_msgs_per_robot_h": [
+     0.0,
+     0.0
+    ],
+    "atc_robots_out_share": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_conflicts": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_wait_h": [
+     0.0,
+     0.0
+    ],
+    "atc_rallies": [
+     0.0,
+     0.0
+    ],
+    "atc_queue_jobs": [
+     0.0,
+     0.0
+    ],
+    "atc_standing_jobs": [
+     0.0,
+     0.0
+    ],
+    "team_lifts": [
+     19.8,
+     5.8907
+    ],
+    "backlog_kg": [
+     1700.0,
+     1987.4607
+    ],
+    "stranded_kg": [
+     0.0,
+     0.0
+    ],
+    "atc_blackouts": [
+     13.0,
+     0.0
+    ],
+    "urgent_minus_oracle_h": [
+     0.238,
+     1.755
+    ],
+    "wall_s_mean": 3.6
+   },
+   "B_EARTH_RELAY 1.0": {
+    "atc_urgent_wait_mean_cens_h": [
+     15.5013,
+     7.5278
+    ],
+    "atc_urgent_wait_mean_h": [
+     15.5013,
+     7.5278
+    ],
+    "atc_urgent_wait_p95_cens_h": [
+     58.1462,
+     20.7045
+    ],
+    "atc_urgent_within24_share": [
+     0.7648,
+     0.1014
+    ],
+    "delivered_kg": [
+     1482464.6564,
+     31435.9141
+    ],
+    "atc_deadhead_share": [
+     0.4972,
+     0.0027
+    ],
+    "p5_cargo_util": [
+     0.2957,
+     0.0069
+    ],
+    "utilisation": [
+     0.0765,
+     0.0018
+    ],
+    "atc_decider_down_share": [
+     0.0,
+     0.0
+    ],
+    "atc_backlog_end_blackout_t_mean": [
+     2.0663,
+     0.9204
+    ],
+    "atc_backlog_end_blackout_t_max": [
+     5.899,
+     2.9393
+    ],
+    "atc_msgs_per_robot_h": [
+     0.0,
+     0.0
+    ],
+    "atc_robots_out_share": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_conflicts": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_wait_h": [
+     0.0,
+     0.0
+    ],
+    "atc_rallies": [
+     0.0,
+     0.0
+    ],
+    "atc_queue_jobs": [
+     0.0,
+     0.0
+    ],
+    "atc_standing_jobs": [
+     0.0,
+     0.0
+    ],
+    "team_lifts": [
+     17.6,
+     6.6558
+    ],
+    "backlog_kg": [
+     2000.0,
+     1541.1035
+    ],
+    "stranded_kg": [
+     0.0,
+     0.0
+    ],
+    "atc_blackouts": [
+     13.0,
+     0.0
+    ],
+    "urgent_minus_oracle_h": [
+     0.0,
+     0.0
+    ],
+    "wall_s_mean": 3.9
+   },
+   "A_EARTH strict": {
+    "atc_urgent_wait_mean_cens_h": [
+     1273.4501,
+     242.0242
+    ],
+    "atc_urgent_wait_mean_h": [
+     132.5379,
+     69.8582
+    ],
+    "atc_urgent_wait_p95_cens_h": [
+     6647.6217,
+     1086.8358
+    ],
+    "atc_urgent_within24_share": [
+     0.2341,
+     0.0955
+    ],
+    "delivered_kg": [
+     941756.3222,
+     6370.2831
+    ],
+    "atc_deadhead_share": [
+     0.4951,
+     0.0036
+    ],
+    "p5_cargo_util": [
+     0.2354,
+     0.0136
+    ],
+    "utilisation": [
+     0.0614,
+     0.0036
+    ],
+    "atc_decider_down_share": [
+     0.4528,
+     0.0
+    ],
+    "atc_backlog_end_blackout_t_mean": [
+     277.6372,
+     2.1229
+    ],
+    "atc_backlog_end_blackout_t_max": [
+     501.9645,
+     11.7688
+    ],
+    "atc_msgs_per_robot_h": [
+     0.0,
+     0.0
+    ],
+    "atc_robots_out_share": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_conflicts": [
+     2.6,
+     1.8166
+    ],
+    "atc_hand_wait_h": [
+     5.2,
+     3.6332
+    ],
+    "atc_rallies": [
+     0.0,
+     0.0
+    ],
+    "atc_queue_jobs": [
+     0.0,
+     0.0
+    ],
+    "atc_standing_jobs": [
+     0.0,
+     0.0
+    ],
+    "team_lifts": [
+     0.0,
+     0.0
+    ],
+    "backlog_kg": [
+     504526.9038,
+     6794.5027
+    ],
+    "stranded_kg": [
+     36248.5323,
+     14933.0142
+    ],
+    "atc_blackouts": [
+     13.0,
+     0.0
+    ],
+    "urgent_minus_oracle_h": [
+     1257.949,
+     237.219
+    ],
+    "wall_s_mean": 6.1
+   },
+   "A_EARTH plan_ahead": {
+    "atc_urgent_wait_mean_cens_h": [
+     1236.681,
+     237.4153
+    ],
+    "atc_urgent_wait_mean_h": [
+     24.0223,
+     9.9384
+    ],
+    "atc_urgent_wait_p95_cens_h": [
+     6699.3096,
+     1095.6532
+    ],
+    "atc_urgent_within24_share": [
+     0.4701,
+     0.1238
+    ],
+    "delivered_kg": [
+     958051.0765,
+     8299.5358
+    ],
+    "atc_deadhead_share": [
+     0.4955,
+     0.0033
+    ],
+    "p5_cargo_util": [
+     0.2425,
+     0.0195
+    ],
+    "utilisation": [
+     0.062,
+     0.0047
+    ],
+    "atc_decider_down_share": [
+     0.4528,
+     0.0
+    ],
+    "atc_backlog_end_blackout_t_mean": [
+     243.8053,
+     2.2697
+    ],
+    "atc_backlog_end_blackout_t_max": [
+     462.4153,
+     4.099
+    ],
+    "atc_msgs_per_robot_h": [
+     0.0,
+     0.0
+    ],
+    "atc_robots_out_share": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_conflicts": [
+     1.8,
+     1.3038
+    ],
+    "atc_hand_wait_h": [
+     153.353,
+     113.872
+    ],
+    "atc_rallies": [
+     0.0,
+     0.0
+    ],
+    "atc_queue_jobs": [
+     61.2,
+     12.1943
+    ],
+    "atc_standing_jobs": [
+     818.4,
+     19.718
+    ],
+    "team_lifts": [
+     0.0,
+     0.0
+    ],
+    "backlog_kg": [
+     487511.3273,
+     3801.8826
+    ],
+    "stranded_kg": [
+     37036.2653,
+     14985.7053
+    ],
+    "atc_blackouts": [
+     13.0,
+     0.0
+    ],
+    "urgent_minus_oracle_h": [
+     1221.18,
+     233.176
+    ],
+    "wall_s_mean": 8.6
+   },
+   "A_MOON": {
+    "atc_urgent_wait_mean_cens_h": [
+     1206.9117,
+     218.7305
+    ],
+    "atc_urgent_wait_mean_h": [
+     25.0745,
+     10.9478
+    ],
+    "atc_urgent_wait_p95_cens_h": [
+     6712.7915,
+     1163.1621
+    ],
+    "atc_urgent_within24_share": [
+     0.4654,
+     0.1288
+    ],
+    "delivered_kg": [
+     957765.279,
+     7188.9316
+    ],
+    "atc_deadhead_share": [
+     0.596,
+     0.0026
+    ],
+    "p5_cargo_util": [
+     0.2331,
+     0.0076
+    ],
+    "utilisation": [
+     0.06,
+     0.0023
+    ],
+    "atc_decider_down_share": [
+     0.0,
+     0.0
+    ],
+    "atc_backlog_end_blackout_t_mean": [
+     243.6491,
+     2.269
+    ],
+    "atc_backlog_end_blackout_t_max": [
+     461.9939,
+     3.538
+    ],
+    "atc_msgs_per_robot_h": [
+     0.2296,
+     0.0039
+    ],
+    "atc_robots_out_share": [
+     0.0488,
+     0.0008
+    ],
+    "atc_hand_conflicts": [
+     2.4,
+     0.8944
+    ],
+    "atc_hand_wait_h": [
+     100.5279,
+     100.4654
+    ],
+    "atc_rallies": [
+     811.6,
+     10.5024
+    ],
+    "atc_queue_jobs": [
+     0.0,
+     0.0
+    ],
+    "atc_standing_jobs": [
+     0.0,
+     0.0
+    ],
+    "team_lifts": [
+     0.0,
+     0.0
+    ],
+    "backlog_kg": [
+     488085.3102,
+     3647.8207
+    ],
+    "stranded_kg": [
+     37652.5545,
+     13150.3922
+    ],
+    "atc_blackouts": [
+     13.0,
+     0.0
+    ],
+    "urgent_minus_oracle_h": [
+     1191.41,
+     216.441
+    ],
+    "wall_s_mean": 11.7
+   },
+   "C_LEADER loss 0.10": {
+    "atc_urgent_wait_mean_cens_h": [
+     16.5366,
+     10.218
+    ],
+    "atc_urgent_wait_mean_h": [
+     16.5366,
+     10.218
+    ],
+    "atc_urgent_wait_p95_cens_h": [
+     55.0671,
+     27.8255
+    ],
+    "atc_urgent_within24_share": [
+     0.7837,
+     0.1071
+    ],
+    "delivered_kg": [
+     1488680.8215,
+     29913.3334
+    ],
+    "atc_deadhead_share": [
+     0.7085,
+     0.0041
+    ],
+    "p5_cargo_util": [
+     0.297,
+     0.0064
+    ],
+    "utilisation": [
+     0.0772,
+     0.0022
+    ],
+    "atc_decider_down_share": [
+     0.0002,
+     0.0
+    ],
+    "atc_backlog_end_blackout_t_mean": [
+     2.2827,
+     0.8042
+    ],
+    "atc_backlog_end_blackout_t_max": [
+     9.4905,
+     7.0318
+    ],
+    "atc_msgs_per_robot_h": [
+     5.4374,
+     1.6358
+    ],
+    "atc_robots_out_share": [
+     0.0125,
+     0.0133
+    ],
+    "atc_hand_conflicts": [
+     0.0,
+     0.0
+    ],
+    "atc_hand_wait_h": [
+     0.0,
+     0.0
+    ],
+    "atc_rallies": [
+     814.2,
+     16.9027
+    ],
+    "atc_queue_jobs": [
+     0.0,
+     0.0
+    ],
+    "atc_standing_jobs": [
+     0.0,
+     0.0
+    ],
+    "team_lifts": [
+     18.6,
+     5.6391
+    ],
+    "backlog_kg": [
+     2000.0,
+     2549.5098
+    ],
+    "stranded_kg": [
+     0.0,
+     0.0
+    ],
+    "atc_blackouts": [
+     13.0,
+     0.0
+    ],
+    "urgent_minus_oracle_h": [
+     1.035,
+     3.698
+    ],
+    "wall_s_mean": 18.7
+   }
+  }
+ }
+}

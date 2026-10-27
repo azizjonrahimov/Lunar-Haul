@@ -261,6 +261,7 @@ class Simulation:
             self.illum = Illumination(sc.illumination, standoff, sc.horizon_h, self.world.pads, comms_start_year=cy,
                                       find=_find)
         self._build_fleet()
+        self.atc = None                     # Phase 5 (B-72): set by a lunarsim.atc.regimes mechanism on its first call
         self.p5 = None
         if sc.p5 is not None:               # Phase 5 (B-71), opt-in: real vehicle classes, reach, team share, hoppers
             from .atc.p5 import P5State
@@ -757,9 +758,13 @@ class Simulation:
         out = self.metrics.summary()
         if self.p5 is not None:
             out.update(self.p5.summary())
+        if self.atc is not None:
+            out.update(self.atc.summary(self))
         return out
 
     def _advance_to(self, t: float):
+        if self.atc is not None:
+            self.atc.on_advance(self, self.t, t)
         # accumulate waiting tonne-days
         dt = t - self.t
         if dt > 0:
@@ -927,6 +932,8 @@ class Simulation:
         if not v.cls.night_ops and self.t + h > self.next_dark(self.t, v.location, pad):
             return False
         t_end = self.t + h
+        if self.atc is not None:
+            self.atc.note_reposition(v, segs_c if segs_c is not None else [[v.location, pad, self.t, t_end, 0.0]])
         if segs_c is not None:
             self.comms.book_waits(v, waits_c)
         if self.record_trace:
@@ -1066,6 +1073,8 @@ class Simulation:
                         self.metrics.night_strandings += 1
                         break
         t_end = self.t + dur
+        if self.atc is not None:
+            self.atc.note_job(self, job, t_end)
         op_linked_h = None
         if comms_on:
             op_linked_h = self.comms.commit(self, job, self.t, t_end)

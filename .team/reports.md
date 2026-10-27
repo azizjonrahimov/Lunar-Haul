@@ -6008,3 +6008,104 @@ All are under 16.7 ms at p50. The tier-2 p95 spikes are probably one-off GC or t
 **Big items:** none new.
 
 **Next (part 4):** /world/trace/, the lander lab and its stories, the rover lab, /simulator/; then the terrain detail pattern if time allows.
+
+## B-72 DONE 12:40 | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**Headline**
+
+- **The degenerate checks pass, with identical event traces and engine summaries.**
+  - B_EARTH at coverage 1.0 equals the pooled marketplace.
+  - A_EARTH at coverage 1.0 with t_hand 0 equals inhouse.
+  - C_LEADER with perfect radio (and no base failures) equals O_ORACLE, which equals the marketplace.
+- **The 5-seed smoke table orders as expected in both start years.** p5 3eq at 30 % load, team share 0.10, C_LEADER at message loss 0.10, CRN across regimes. Primary outcome first: mean urgent wait (h), censored at year end, lost cargo excluded.
+
+  | regime | 2028: urgent wait (minus O) | 2038: urgent wait (minus O) | p95 2028 / 2038 | within 24 h 2028 / 2038 | delivered 2028 | decider down 2028 / 2038 | backlog at blackout end 2028 / 2038 |
+  |---|---|---|---|---|---|---|---|
+  | O_ORACLE | 15.5 | 15.5 | 58.1 / 58.1 | 0.765 / 0.765 | 1,482 t | 0 / 0 | 2.7 / 2.1 t |
+  | B_EARTH_RELAY 1.0 | 15.5 (0) | 15.5 (0) | 58.1 / 58.1 | 0.765 / 0.765 | 1,482 t | 0 / 0 | 2.7 / 2.1 t |
+  | C_LEADER, loss 0.10 | 16.5 (+1.0 ± 3.7) | 16.5 (+1.0) | 55.1 / 55.1 | 0.784 / 0.784 | 1,489 t | 0 / 0 | 2.9 / 2.3 t |
+  | B_EARTH_RELAY 0.8 | 17.3 (+1.8 ± 2.2) | 15.7 (+0.2 ± 1.8) | 61.1 / 58.3 | 0.757 / 0.777 | 1,482 t | 0.071 / 0.086 | 3.5 / 2.7 t |
+  | B_EARTH plan_ahead | 22.5 (+7.0 ± 8.1) | 25.8 (+10.3 ± 10.7) | 92.4 / 134.3 | 0.790 / 0.758 | 1,486 t | 0.385 / 0.453 | 3.6 / 2.9 t |
+  | B_EARTH strict | 94.1 (+78.6 ± 20.4) | 124.8 (+109.3 ± 55.8) | 249.8 / 405.3 | 0.326 / 0.353 | 1,484 t | 0.385 / 0.453 | 46.1 / 55.6 t |
+  | A_MOON | 1,227.9 (+1,212) | 1,206.9 (+1,191) | 6,331 / 6,713 | 0.485 / 0.465 | 957 t | 0 / 0 | 253.1 / 243.6 t |
+  | A_EARTH plan_ahead | 1,264.1 (+1,249) | 1,236.7 (+1,221) | 6,713 / 6,699 | 0.447 / 0.470 | 956 t | 0.385 / 0.453 | 253.6 / 243.8 t |
+  | A_EARTH strict | 1,261.3 (+1,246) | 1,273.5 (+1,258) | 6,639 / 6,648 | 0.209 / 0.234 | 958 t | 0.385 / 0.453 | 280.7 / 277.6 t |
+
+  - **Why the ordering looks this way:**
+    - O_ORACLE, C_LEADER and the A_MOON rows are identical across years because they never wait for Earth.
+    - BASE's direct-to-Earth visibility is 61.5 % in 2028 and 54.7 % in 2038, so strict loses more in 2038.
+    - plan_ahead recovers about 90 % of strict's loss: 7 of 79 h remain in 2028 and 10 of 109 h in 2038.
+    - Relay 0.8 recovers almost all of it.
+  - **The A regimes' huge urgent wait is structural, not about Earth.**
+    - About 488 t is still waiting at year end, mostly owner C's cargo. C's fleet (MAPPs at 200 kg, hoppers) can't lift its urgent crates above 200 kg or its regolith lots, and owners alone get no team lifts (37 t stranded).
+    - Their delivered-only urgent mean is much lower (all regimes, 2028 / 2038): A_EARTH strict 107.6 / 132.5 h, A_EARTH plan_ahead 27.9 / 24.0 h, A_MOON 25.4 / 25.1 h; O 15.5 h.
+  - **Messages:** 5.44 per robot-hour for C_LEADER at loss 0.10, 0.23 for A_MOON.
+  - **Rallies:** robots outside the partition rally 814 times per run (C_LEADER), which raises the deadhead share from 0.497 (O) to 0.709.
+  - **Hand conflicts** (A regimes):
+    - 2-3 per run;
+    - 5.6 h of waiting per run under strict, where they are resolved while linked;
+    - 100-211 h under plan_ahead and A_MOON, where conflicts that arise in the dark wait for the next Earth contact.
+
+**What was built**
+
+- **`lunarsim/atc/regimes.py`:** `mechanism(regime)` returns an engine mechanism, with settings passed as mech_kwargs. The regimes are O_ORACLE, B_EARTH, B_EARTH_RELAY, A_EARTH, A_MOON and C_LEADER. Shared settings:
+  - Earth link: BASE direct, any_part, from earth_link v1 for 2028-31 and v3 from 2032. Relay coverage is OR'd in, with R-1's parametric gaps and the same seeded stream.
+  - Fallbacks: strict, or plan_ahead.
+- **plan_ahead:** at loss of signal, the upload is:
+  - a per-vehicle queue of the items waiting then (greedy, least planned hours first);
+  - a standing rule for the published blackout arrivals (landings and bulk lots), oldest first, nearest vehicle, one item per trip;
+  - return items, which are created on the Moon, wait for Earth.
+- **A_EARTH:** dispatch.inhouse, gated by Earth. Cross-owner apron conflicts compare the planned loading window at the pickup pad with the other owners' bookings; the newcomer waits t_hand (default 2 h), and only once Earth is in view. No team lifts.
+- **A_MOON:** inhouse over each owner's own mesh partition (its robots only, multi-hop; the partition with a robot at BASE counts as the main one). Apron conflicts still go through Earth.
+- **C_LEADER:**
+  - The leader is the base computer on the 10 m BASE mast.
+  - Its failures run on their own stream: MTBF 2,000 h, repair 24 h, then a 30 min re-election, after which the robot reaching the most robots leads.
+  - The marketplace runs over the leader's mesh partition (B-70 RadioMesh, provisional 5 km and 0 m defaults).
+  - Status and assignment messages go through the channel. A lost one is retried 3 min later, with at most one retry wake pending.
+- **Lost-link procedure (Assumed; LEAD please confirm).** An idle robot nobody hears drives to a rally point: for C_LEADER the nearest site that sees the BASE mast at its antenna height, for A_MOON BASE.
+  - **Why it's needed:** the mast sees only DEPOT, POWER, CONSTR and PAD_A among the sites, and robot-to-robot links between sites are rare. ISRU, SCI_1, PSR and PAD_B are radio-shadowed. Without the rule a robot that ends a delivery there is never reached again.
+  - Measured with `rally` False: C_LEADER delivers 58 t instead of 1,487 t, and 82 % of free robots sit outside the partition.
+- **Positions:** a route-sample index (B-70 point index), interpolated along the committed plan's legs (engine hook `note_job`, `note_reposition`). Idle vehicles sit at their site's sample. The mesh is evaluated only at dispatch epochs.
+- **`lunarsim/atc/messages.py`:** `Channel`:
+  - per-hop loss: Bernoulli, or Gilbert-Elliott bursts (mean burst 10, stationary loss p);
+  - multi-hop through robots or the mast;
+  - 10 ms per hop;
+  - counters for transmissions, messages, lost and latency.
+- **Metrics** (`atc_*` keys in the run summary):
+  - urgent wait mean (delivered, and censored), urgent p95 (censored), share of urgent items delivered within 24 h (PREREG);
+  - deadhead share;
+  - decider-down share, i.e. the share of the year the regime could not assign: Earth out of view, or no leader;
+  - backlog at the end of each BASE direct blackout (mean and max), recorded exactly by a `_advance_to` hook;
+  - messages per robot-hour, robots outside the partition, rallies, hand conflicts and hours, queue and standing jobs, base failures.
+  - Utilisation is reported both ways (LEAD Q2): `p5_cargo_util` and whole-fleet `utilisation`.
+- **Engine:** `sim.atc` is None unless a regime mechanism sets it. Four gated hooks: `_advance_to`, `_start_job`, `_reposition`, and the summary.
+
+**Unchanged:** full pytest, file by file: 40 files, 536 passed, 0 failed (`tests/test_atc_regimes.py` is new, 12 tests). The 20 committed E21 (A, G2, H, J) and E19 rows rerun with 0 differences.
+
+**Runtime:** one regime-year takes 2-19 s (C_LEADER at loss 0.10 is slowest). The smoke table was 90 runs in two chunks under 540 s, peak 370 MB.
+
+**Files**
+
+- New: `lunarsim/atc/regimes.py`, `lunarsim/atc/messages.py`, `tools/atc/smoke_regimes.py` (run / table; resumable, cached in `.cache/atc/`), `tests/test_atc_regimes.py`.
+- Changed: `lunarsim/engine.py` (gated hooks).
+- For LEAD to commit: `results/ATC_regimes_smoke.json`.
+
+**How to test:**
+- `.venv/Scripts/python -m pytest -q tests/test_atc_regimes.py` → 12 passed (25 s).
+- To regenerate the smoke table: `python tools/atc/smoke_regimes.py run` (twice), then `python tools/atc/smoke_regimes.py table`.
+
+**FRONTEND:** nothing yet. B-80 will export a with/without trace.
+
+**Questions for LEAD**
+
+1. **H2 as pre-registered will very likely fail for a structural reason, so it may be worth a PREREG change before any main row exists.**
+   - **What H2 says:** B_EARTH strict must be worse than O by at least half the A-vs-O gap.
+   - **What the A-vs-O gap is:** at 30 % load it is ~1,250 h of censored urgent wait. Almost all of it is owner C's cargo that owners-alone can never move, so it is about capacity, not Earth availability.
+   - **What B_EARTH strict actually loses:** 79-109 h.
+   - **Possible fixes:**
+     - (a) measure H2 against O alone, e.g. "B_EARTH strict's urgent wait is at least X times O's in low-visibility years" (here 6.1x in 2028, 8.1x in 2038);
+     - (b) use the gap between B_EARTH with coverage 1.0 and strict;
+     - (c) compute the A-vs-O gap on delivered-only urgent waits: 92 h in 2028, 117 h in 2038, so strict would pass at 0.85 and 0.93 of it.
+   - Your call. I report all three numbers either way.
+2. **The lost-link rally rule is an Assumed behaviour that makes C_LEADER work on this terrain.** Keep it as the default, with `rally=False` as a sensitivity in E41?
+3. **E40 cell list:** I'll add the hopper_refuel sensitivity cell at 30 % (your answer to B-71 Q1) when I build the runner in B-75.
