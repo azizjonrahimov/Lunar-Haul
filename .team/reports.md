@@ -5912,3 +5912,49 @@ All are under 16.7 ms at p50. The tier-2 p95 spikes are probably one-off GC or t
 1. The close-up terrain detail pattern on /world/: a new detail texture, or a different blend.
 
 **Next (part 2):** /vehicles/ (framing for wide and tall vehicles, callout overlaps), then /, /stories/, /world/trace/, the two labs and /simulator/.
+
+## F-52 PART 2 DONE 12:32 | 3D audit of /vehicles/: box-fitted shots, callouts that no longer overlap, Compare drawn in 63 calls instead of 1,811, a lunar-sun light, frame time per tier
+
+**Files changed (uncommitted):**
+- `site/src/vehicles/main.js`.
+- `site/src/ui/callout.js`: the shared callout layer, so the fix reaches every page with callouts.
+
+**/vehicles/ checklist** (before -> after):
+
+| item | finding | action |
+|---|---|---|
+| Lighting | Studio exhibit light only: a key from ~49° up. Shapes read well, but there is no true polar sun and no long shadows. | **Added** a Light control: Studio (default) or "Lunar sun (1.5°)". The latter switches the stage to its on-site preset (sun 1.5° up, long shadows, the rolling regolith ground with its flat apron under the vehicle, exposure 2). Deep link `&light=lunar`. |
+| Terrain near the camera | Not a terrain page: the studio floor, or the on-site regolith ground and the sintered pad On its own. | OK |
+| Materials | Foil, paint, stainless, solar cells, tyre mesh; dust on lower bodies (`addDust`). | OK |
+| Labels | Callouts overlapped: MK1 "Hull" was hidden under "Liquid hydrogen tank". The layer stacked the pills, then moved a pill off another callout's dot, which could land it on a pill again. | **Fixed (shared callout.js):** stack, move off dots, stack again. MK1's labels now stack clear. |
+| Camera presets | The shots were fitted to the bounding sphere: low, wide Griffin small; tall MK1 and Centaur V cut at the top. | **Fixed:** fitted to the box. The height against the vertical field of view, the plan diagonal against the horizontal, plus the near half-diagonal, ×1.15. Griffin, MK1 and VIPER now fill the view, without cropping. |
+| Legend | Part list, tags and dimension lines (F-51); Compare's size table. | OK |
+| Motion | Turntable 4°/s On its own (off under reduced motion and on tier 1), eased explode (instant on tier 1). | OK |
+| Mobile / tiers | Stacked HUD under 900 px; 390 px no overflow (F-51); tier 0 numbers and part list; tier 1 still frames. | OK |
+| Keyboard / screen reader | Canvas keys, the camera buttons, the part list as buttons (focus outlines the part), Compare's table as buttons, the look-inside panel as a labelled dialog. | OK |
+| Draw calls in Compare | 18 models of ~100 meshes each: 1,811 draw calls, 13.5 ms GPU / 12.7 ms CPU at tier 3. | **Fixed:** the line-up never moves, so after layout it is merged into one mesh per catalogue material: 11 meshes, 63 calls, 1.7 / 0.8 ms. Each vehicle keeps an empty marker for its callout. |
+
+**Frame time:** `stage.benchmark()`, 150 frames after a warm-up; dev build; RTX 3050; drawing buffer ~1440 × 656; free RAM 1.14 GB.
+
+| case | tier | GPU p50 / p95 (ms) | CPU p50 / p95 (ms) | draw calls |
+|---|---|---|---|---|
+| Starship HLS, full detail, On its own | 3 | 1.8 / 2.3 | 1.5 / 2.3 | 211 |
+| same | 2 | 0.9 / 0.9 | 1.3 / 1.8 | 209 |
+| same | 1 | 1.4 / 3.7 | 1.2 / 1.9 | 98 |
+| Compare sizes (18 vehicles), before the merge | 3 | 13.5 / 16.0 | 12.7 / 16.1 | 1,811 |
+| Compare sizes, after the merge | 3 | 1.7 / 2.1 | 0.8 / 1.3 | 63 |
+
+**Checks:**
+- `npm run build` OK; node tests 16/16; `budgets.py pages` OK (/vehicles/ 92.1 of 100 kB JS; the merge helper is +1.4 kB).
+- In the browser (dev build):
+  - MK1 On its own: the callouts stack and the vehicle fits.
+  - Griffin fills the view.
+  - Compare: 18 callouts, 11 meshes.
+  - VIPER with `&light=lunar`: long shadows, and it fits.
+  - No console errors.
+- I didn't re-check the callout change on /world/ and /stories/, which share callout.js. That comes in their parts.
+- Dev server stopped and tab closed.
+
+**Big items (not fixed):** none new on /vehicles/.
+
+**Next (part 3):** the home hero and /stories/, then /world/trace/, the two labs and /simulator/.

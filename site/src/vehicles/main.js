@@ -9,6 +9,7 @@
 // whether it is published or schematic (kit-data.js), and hovering a row outlines the part, and the other way round.
 import './vehicles.css';
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { segmented, sceneChips, narrative, statChip, door, tooltip, h, reducedMotion } from '../ui/index.js';
 import { detectTier } from '../stage/tier.js';
 import { loadCatalog } from '../catalog.js';
@@ -23,7 +24,7 @@ const BASE = import.meta.env.BASE_URL;
 const VIEWS = ['own', 'cutaway', 'exploded', 'xray'];
 const ui = { group: 'landers', id: 'MK1', view: 'own', follow: 'none', scale: false, section: 0, atc: false };
 const q = new URLSearchParams(location.search);
-{ const v = q.get('view') === 'whole' ? 'own' : q.get('view'); if (VIEWS.includes(v)) ui.view = v; ui.atc = q.get('atc') === '1'; ui.compare = q.get('compare') === '1'; }
+{ const v = q.get('view') === 'whole' ? 'own' : q.get('view'); if (VIEWS.includes(v)) ui.view = v; ui.atc = q.get('atc') === '1'; ui.compare = q.get('compare') === '1'; ui.light = q.get('light') === 'lunar' ? 'lunar' : 'studio'; }
 // F-51 part 4: ?embed=1 is the look-inside panel of /world/ and the stories: no site chrome or pickers, 3D starts itself
 const EMBED = q.get('embed') === '1';
 if (EMBED) document.documentElement.classList.add('v-embed');
@@ -67,6 +68,8 @@ $('v-modes').append(
   h('label', { class: 'v-section', id: 'v-section-l', hidden: ui.view !== 'cutaway' }, h('span', { class: 'ui-label' }, 'Section'),
     h('input', { type: 'range', id: 'v-section', min: '-0.45', max: '0.45', step: '0.01', value: '0', 'aria-describedby': 'v-section-h', oninput: e => { ui.section = +e.target.value; cut(); } }),
     h('span', { id: 'v-section-h', class: 'small muted' }, 'moves the cut through the vehicle')),
+  // F-52: the studio light reads shapes best; the lunar sun shows them as they would look at the pole (1.5° up, long shadows)
+  segmented({ legend: 'Light', options: [{ value: 'studio', label: 'Studio' }, { value: 'lunar', label: 'Lunar sun (1.5°)' }], value: ui.light, onChange: v => { ui.light = v; writeUrl(); setLight(); } }).el,
   segmented({ legend: 'Follow', options: [{ value: 'none', label: 'Nothing' }, { value: 'propellant', label: 'Propellant' }, { value: 'power', label: 'Power' }, { value: 'cargo', label: 'Cargo' }], value: ui.follow, onChange: v => { ui.follow = v; applyFollow(); } }).el);
 
 // ---------- stage (started by the door's Enter button) ----------
@@ -81,6 +84,7 @@ async function start3D() {
   stage.director.limits({ maxPolar: 88 });
   await choosing;   // a kit model (or the whole line-up) may still be loading
   if (ui.compare) mountCompare(); else { mount(); applyView(true); applyFollow(); }
+  if (ui.light === 'lunar') setLight();
 }
 
 // ---------- choosing a vehicle ----------
@@ -126,20 +130,39 @@ async function compareNow() {
   for (const { id, v } of list.map(q => ({ ...q, b: new THREE.Box3().setFromObject(q.v.root) })).sort((a, b) => a.b.max.y - b.b.max.y).map(q => ({ id: q.id, v: q.v }))) {
     const b = new THREE.Box3().setFromObject(v.root), w = b.max.x - b.min.x;
     v.root.position.set(x - b.min.x, 0, -(b.min.z + b.max.z) / 2); row.add(v.root);
-    placed.push({ id, v, h: b.max.y, w, l: b.max.z - b.min.z, anchor: new THREE.Vector3((b.min.x + b.max.x) / 2, b.max.y + 0.2, (b.min.z + b.max.z) / 2) });
+    placed.push({ id, v, h: b.max.y, w, l: b.max.z - b.min.z, anchor: new THREE.Vector3((b.min.x + b.max.x) / 2, b.max.y + 0.2, (b.min.z + b.max.z) / 2).add(v.root.position) });
     x += w + Math.max(1, w * 0.15);
   }
   const a = astronaut(mats); a.root.position.x = -1.2; row.add(a.root);
-  lineup = { row, placed };
+  const merged = mergeByMaterial(row);
+  for (const p of placed) { p.mark = new THREE.Object3D(); p.mark.position.copy(p.anchor); merged.add(p.mark); }
+  lineup = { row: merged, placed };
   if (stage) mountCompare();
   story.set({ eyebrow: 'Compare sizes', title: 'Every vehicle at true scale', html: `<p>${placed.length} vehicles on one line, smallest first, with a 1.8 m astronaut at the small end. A ${fmtM(placed.at(-1).h)} ${shortName(placed.at(-1).id)} stands next to a ${fmtM(placed[0].h)} ${shortName(placed[0].id)}. Zoom in on the small end; pick a vehicle in the list to open it.</p>` });
   drawCompareTable(); drawProps(null); $('v-chips').replaceChildren(); $('v-rep').hidden = true;
+}
+// F-52: the line-up never moves, so it is drawn as one mesh per material (1,811 draw calls -> a few dozen); each
+// vehicle keeps an empty marker at its callout point
+function mergeByMaterial(row) {
+  row.updateMatrixWorld(true);
+  const byMat = new Map(), out = new THREE.Group();
+  row.traverse(o => {
+    if (!o.isMesh || o.isInstancedMesh) return;
+    const g = (o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone()).applyMatrix4(o.matrixWorld);
+    for (const k of Object.keys(g.attributes)) if (k !== 'position' && k !== 'normal') g.deleteAttribute(k);
+    const key = o.material.userData.catalogMaterial || o.material.uuid;   // every part has its own clone (createMaterials): group by kind
+    if (!byMat.has(key)) byMat.set(key, { mat: o.material, list: [] });
+    byMat.get(key).list.push(g);
+  });
+  row.traverse(o => o.geometry?.dispose());
+  for (const { mat, list } of byMat.values()) { const m = new THREE.Mesh(mergeGeometries(list), mat); m.castShadow = m.receiveShadow = true; out.add(m); list.forEach(g => g.dispose()); }
+  return out;
 }
 const fmtM = v => `${v < 10 ? v.toFixed(v < 1 ? 2 : 1) : Math.round(v)} m`;
 function mountCompare() {
   if (!lineup) return;
   stage.setSubject(lineup.row);
-  for (const p of lineup.placed) stage.labels.add({ id: `cmp-${p.id}`, text: shortName(p.id), object: p.v.root, anchor: p.anchor, onSelect: () => choose(p.id) });
+  for (const p of lineup.placed) stage.labels.add({ id: `cmp-${p.id}`, text: shortName(p.id), object: p.mark, onSelect: () => choose(p.id) });
   // the whole line from the front, a little above, filling the width
   const box = new THREE.Box3().setFromObject(lineup.row), c = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3()), cam = stage.camera;
   const hfov = 2 * Math.atan(Math.tan(cam.fov * Math.PI / 360) * cam.aspect), d = Math.max(size.x / 2 / Math.tan(hfov / 2), size.y / 2 / Math.tan(cam.fov * Math.PI / 360)) * 1.08;
@@ -167,11 +190,13 @@ function pickLabels(parts) {
   for (const p of parts) { const g = p.object.userData.group || p.name; if (seen.has(g)) continue; seen.add(g); out.push(p); }
   return out.slice(0, 6);
 }
-// camera shots from the vehicle's bounding sphere, so a 1.7 m rover and a 52 m lander both fill the view
+// camera shots fitted to the vehicle's box (F-52: the bounding sphere left a low, wide Griffin small and a tall MK1 cut
+// at the top): the height against the vertical field of view, the plan diagonal against the horizontal one, plus half
+// the diagonal so the near side fits too, so a 0.45 m MAPP and a 52 m HLS both fill the view
 function frame() {
-  const box = new THREE.Box3().setFromObject(vehicle.root), c = box.getCenter(new THREE.Vector3()), r = box.getBoundingSphere(new THREE.Sphere()).radius;
-  const cam = stage.camera, fov = Math.min(cam.fov, 2 * Math.atan(Math.tan(cam.fov * Math.PI / 360) * cam.aspect) * 180 / Math.PI) * Math.PI / 180;
-  const d = r / Math.sin(fov / 2) * 1.05, dir = (az, el) => new THREE.Vector3(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el));
+  const box = new THREE.Box3().setFromObject(vehicle.root), c = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3()), r = box.getBoundingSphere(new THREE.Sphere()).radius;
+  const cam = stage.camera, vf = cam.fov * Math.PI / 360, hf = Math.atan(Math.tan(vf) * cam.aspect), hx = Math.hypot(size.x, size.z) / 2;
+  const d = (Math.max(size.y / 2 / Math.tan(vf), hx / Math.tan(hf)) + hx) * 1.15, dir = (az, el) => new THREE.Vector3(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el));
   const shot = (name, az, el, k) => { const p = c.clone().addScaledVector(dir(az, el), d * k); stage.director.shot(name, { position: p.toArray(), target: c.toArray() }); };
   shot('home', 0.6, 0.28, 1); shot('cutaway', 0.25, 0.22, 1); shot('exploded', 0.6, 0.32, 1.35);
   stage.director.limits({ minDistance: r * 0.4, maxDistance: d * 4 });
@@ -179,11 +204,17 @@ function frame() {
 // F-51: the four views; the story text of the old Whole view serves On its own, Cutaway's serves Inside
 const VIEW_NAME = { own: 'on its own', cutaway: 'inside', exploded: 'exploded', xray: 'X-ray' };
 const XRAY_TEXT = '<p>X-ray: the outer shell is drawn see-through and everything inside stays solid, so the layout reads at a glance. Hover a part in the list to find it.</p>';
+const LUNAR_SUN = { az: 200, el: 1.5 };
+function setLight() {
+  if (!stage) return;
+  stage.setPreset(ui.light === 'lunar' ? 'onsite' : 'exhibit', { sun: LUNAR_SUN }); stage.setToneMapping('neutral', ui.light === 'lunar' ? 2 : 1);
+}
 function writeUrl() {   // F-40: other parameters (?tier, ?gpumem) stay
   const u = new URL(location.href); u.searchParams.set('v', ui.id);
   if (ui.view === 'own') u.searchParams.delete('view'); else u.searchParams.set('view', ui.view);
   if (ui.atc) u.searchParams.set('atc', '1'); else u.searchParams.delete('atc');
   if (ui.compare) { u.searchParams.set('compare', '1'); u.searchParams.delete('view'); } else u.searchParams.delete('compare');
+  if (ui.light === 'lunar') u.searchParams.set('light', 'lunar'); else u.searchParams.delete('light');
   history.replaceState(null, '', u);
 }
 function applyView(instant = false) {

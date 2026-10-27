@@ -57,8 +57,10 @@ export function callouts(container) {
   }
 
   // Resolve vertical overlaps between visible pills on the same side (greedy, top to bottom), then move any pill that
-  // covers another callout's dot to just below that dot.
-  function layout() {
+  // covers another callout's dot to just below that dot, then stack again: moving off a dot can land a pill on another
+  // pill (F-52: "Hull" under "Liquid hydrogen tank" on /vehicles/)
+  function layout() { stack(); offDots(); stack(); }
+  function stack() {
     for (const side of [1, -1]) {
       const list = [...items.values()].map(i => i.c).filter(c => c.visible && c.side === side).sort((a, b) => a.py - b.py);
       for (let i = 1; i < list.length; i++) {
@@ -69,6 +71,8 @@ export function callouts(container) {
         if (overlapX && b.py < need) { b.py = need; b.draw(); }
       }
     }
+  }
+  function offDots() {
     const vis = [...items.values()].map(i => i.c).filter(c => c.visible);
     for (const c of vis) {
       const ex = c.x + c.side * RUN, px = Math.max(PAD, Math.min(c.W - c.w - PAD, c.side > 0 ? ex + TAIL : ex - TAIL - c.w));
