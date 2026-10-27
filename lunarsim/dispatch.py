@@ -87,6 +87,9 @@ def _greedy(sim: Simulation, waiting: List[Cargo], free: List[Vehicle], pooled: 
                 continue
             if _comms_blocked(sim, v, c):
                 continue
+            if (getattr(sim, "p5", None) is not None and sim.p5.limited(v)
+                    and not math.isfinite(_single_job_hours(sim, v, c))):
+                continue                                # Phase 5: beyond a hopper's budget or window
             h = _approach_h(sim, v, c)
             if best is None or h < best_h:
                 best, best_h = v, h
@@ -214,6 +217,8 @@ def _night_ok(sim: Simulation, v: Vehicle, job: Job) -> bool:
 
 def _team_for(sim: Simulation, c: Cargo, free: List[Vehicle], used: set) -> Optional[List[Vehicle]]:
     cands = [v for v in free if v.id not in used and v.cls.can_team_lift and v.compatible(c)]
+    if getattr(sim, "p5", None) is not None:           # Phase 5: pairs only, under the scenario's team rule
+        return sim.p5.team_for(c, cands)
     cands.sort(key=lambda v: -v.cls.capacity_kg)
     for k in (2, 3):
         for combo in itertools.combinations(cands, k):
@@ -276,29 +281,41 @@ def marketplace(sim, waiting, free, bundling=True, team_lift=True, backhaul=True
             by_lane = {}
             for c in bulk:
                 by_lane.setdefault((c.origin, c.dest), []).append(c)
-            cap_ref = max((v.cls.capacity_kg for v in free if any(_feasible_single(v, c) for c in bulk)), default=0)
+            # a vehicle can carry some lot iff the lightest lot of a standard it takes fits (= any(_feasible_single))
+            lightest: Dict[str, float] = {}
+            for c in bulk:
+                lightest[c.standard] = min(lightest.get(c.standard, math.inf), c.mass_kg)
+            cap_ref = max((v.cls.capacity_kg for v in free
+                           if any(std in v.standards and m <= v.cls.capacity_kg for std, m in lightest.items())), default=0)
+            held = set()
             for lane, lots in by_lane.items():
                 mass = sum(c.mass_kg for c in lots)
                 age = sim.t - min(c.t_ready for c in lots)
                 if cap_ref > 0 and mass < fill * cap_ref and age < max_wait:
-                    for c in lots:
-                        pool.remove(c)
+                    held.update(id(c) for c in lots)
                     # wake the dispatcher when the oldest lot reaches the maximum wait
                     sim._push(sim.t + (max_wait - age) + 1e-6, "WAKE", None)
+            if held:
+                pool = [c for c in pool if id(c) not in held]
     # 1. oversize items first (they need teams, and teams need several free vehicles)
     if team_lift:
         single_max = max((v.cls.capacity_kg for v in free), default=0)
         oversize = [c for c in pool if c.mass_kg > single_max]
         oversize.sort(key=lambda c: (c.priority, c.t_ready))
+        no_team: Dict[str, float] = {}      # per cargo standard: lightest mass with no team for the current `used`
         for c in oversize:
+            if c.mass_kg >= no_team.get(c.standard, math.inf):
+                continue                    # a heavier item than one that found no team: none either (same candidates)
             team = _team_for(sim, c, free, used)
             if team is None:
+                no_team[c.standard] = min(no_team.get(c.standard, math.inf), c.mass_kg)
                 continue
             job = Job(team, [c], [c.dest], note="team")
             if night_aware and not all(_night_ok(sim, v, job) for v in team):
                 continue
             for v in team:
                 used.add(v.id)
+            no_team.clear()
             jobs.append(job)
             pool.remove(c)
     # 2. sequential single-item auction with bundling. To keep each dispatch call

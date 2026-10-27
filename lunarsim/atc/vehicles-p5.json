@@ -1,0 +1,175 @@
+{
+  "format": "lunarsim-atc-vehicles",
+  "version": 1,
+  "description": "Phase 5 (Lunar ATC, B-71) vehicle classes: the real 2028-2032 south-pole vehicles of research_notes/Lunar ATC/vehicles_comms_internals.md (Table A). Every parameter is {value, unit, flag, confidence, source} and, where unknown or swept, a sweep [lo, hi]. Flags as the catalogue: Spec (a published figure), Modelled (derived from published figures by a stated rule), Assumed (no source; swept). Confidence: High / Medium / Low as the research note grades the source, '-' for Assumed values. Loader: lunarsim/atc/vehicles.py; the engine resolves these ids after lunarsim.entities.VEHICLE_CLASSES (which is unchanged). Energy: the repo's traction model (lunarsim.rover.physics: E = C_RR_EFF m g / (1 - slip), 0.0836 Wh/km per kg on flat ground, calibrated on the Apollo LRV) at the vehicle's mass; the engine's load factor (1 + 0.6 load / capacity) on top. Speeds: where only a top speed is published, the modelled average is 0.6 of it (the repo LTV's 6 km/h modelled vs 10 km/h design speed).",
+  "rules": {
+    "energy_wh_per_km": {"value": 0.08357142857142857, "unit": "Wh/km per kg", "flag": "Modelled", "confidence": "Medium",
+                         "source": "lunarsim.rover.physics.C_RR_EFF * G_MOON / (1 - FLAT_SLIP_REF) / 3.6 (Apollo LRV 58.5 Wh/km at 700 kg)"},
+    "speed_from_top": {"value": 0.6, "unit": "1", "flag": "Modelled", "confidence": "Low",
+                       "source": "repo LTV: 6 km/h modelled autonomous average vs 10 km/h design speed (lunarsim/entities.py)"}
+  },
+  "classes": {
+    "LTV1_CLV1": {
+      "name": "Astrolab CLV-1 (Phase-1 LTV)", "status": "contracted (NASA LTV Phase 1, 26 May 2026)",
+      "note": "Crew-sortie rover that carries small cargo when not on a crew sortie (the scenario's other_duty_share).",
+      "params": {
+        "mass_kg": {"value": 907, "unit": "kg", "flag": "Spec", "confidence": "High", "source": "NASA release 26-27 May 2026: about 2,000 lb"},
+        "capacity_kg": {"value": 80, "unit": "kg", "flag": "Spec", "confidence": "High", "source": "NASA LTV progress update 20-21 Oct 2026: up to 176 lb (80 kg) of samples and tools", "sweep": [80, 300]},
+        "top_speed_kmh": {"value": 9.7, "unit": "km/h", "flag": "Spec", "confidence": "High", "source": "NASA release 26 May 2026: more than 6 mph on level terrain"},
+        "speed_kmh": {"value": 5.8, "unit": "km/h", "flag": "Modelled", "confidence": "Low", "source": "0.6 x top speed (rules.speed_from_top)"},
+        "empty_speed_mult": {"value": 1.2, "unit": "1", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV"},
+        "energy_wh_per_km": {"value": 75.8, "unit": "Wh/km", "flag": "Modelled", "confidence": "Medium", "source": "traction model at 907 kg (rules.energy_wh_per_km)"},
+        "range_km_per_charge": {"value": 10, "unit": "km", "flag": "Spec", "confidence": "High", "source": "NASA LTV progress update 20-21 Oct 2026: up to 6 miles (10 km) on a single battery charge (the binding fact)", "sweep": [5, 20]},
+        "battery_wh": {"value": 758, "unit": "Wh", "flag": "Assumed", "confidence": "-", "source": "no published kWh; set so that the flat empty range is 10 km (range x energy_wh_per_km); swept with the range", "sweep": [379, 1516]},
+        "charge_kw": {"value": 1.0, "unit": "kW", "flag": "Assumed", "confidence": "-", "source": "no published figure", "sweep": [0.5, 5.0]},
+        "km_per_day": {"value": 6, "unit": "km/day", "flag": "Spec", "confidence": "High", "source": "NASA LTV progress update 20-21 Oct 2026: up to 3.7 miles (6 km) a day when remotely operated"},
+        "night_ops": {"value": false, "unit": "", "flag": "Assumed", "confidence": "-", "source": "night driving not stated; as the repo LTV"},
+        "can_team_lift": {"value": true, "unit": "", "flag": "Assumed", "confidence": "-", "source": "FLEX heritage payload interfaces; two-rover coupling as Krawciw et al. (arXiv 2510.18766)"},
+        "unit_cost_musd": {"value": 313, "unit": "M$", "flag": "Modelled", "confidence": "Medium", "source": "NASA 26 May 2026: Astrolab task order $219 M + half of Blue Origin's $188 M for the two deliveries"},
+        "life_hours": {"value": 21900, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV (10 yr x 25 % of hours)"},
+        "life_years": {"value": 10, "unit": "yr", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV"},
+        "mtbf_h": {"value": 500, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV"},
+        "mttr_h": {"value": 24, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV"},
+        "load_h": {"value": 0.5, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV"},
+        "unload_h": {"value": 0.5, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV"}
+      }
+    },
+    "LTV1_PEGASUS": {
+      "name": "Lunar Outpost Pegasus (Phase-1 LTV)", "status": "contracted (NASA LTV Phase 1, 26 May 2026)",
+      "note": "Lighter evolution of Eagle, no robotic arm. Carries small cargo when not on a crew sortie.",
+      "params": {
+        "mass_kg": {"value": 700, "unit": "kg", "flag": "Assumed", "confidence": "-", "source": "not stated; 'less than half the size of Eagle' (Payload Space, 8 May 2026)", "sweep": [500, 907]},
+        "capacity_kg": {"value": 80, "unit": "kg", "flag": "Spec", "confidence": "High", "source": "NASA LTV progress update 20-21 Oct 2026: up to 80 kg of samples and tools", "sweep": [80, 300]},
+        "top_speed_kmh": {"value": 14.5, "unit": "km/h", "flag": "Spec", "confidence": "High", "source": "NASA release 26 May 2026: more than 9 mph"},
+        "speed_kmh": {"value": 8.7, "unit": "km/h", "flag": "Modelled", "confidence": "Low", "source": "0.6 x top speed (rules.speed_from_top)"},
+        "empty_speed_mult": {"value": 1.2, "unit": "1", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV"},
+        "energy_wh_per_km": {"value": 58.5, "unit": "Wh/km", "flag": "Modelled", "confidence": "Low", "source": "traction model at the assumed 700 kg (rules.energy_wh_per_km)"},
+        "range_km_per_charge": {"value": 10, "unit": "km", "flag": "Spec", "confidence": "High", "source": "NASA LTV progress update 20-21 Oct 2026: 10 km on a single charge", "sweep": [5, 20]},
+        "battery_wh": {"value": 585, "unit": "Wh", "flag": "Assumed", "confidence": "-", "source": "no published kWh; flat empty range 10 km", "sweep": [293, 1170]},
+        "charge_kw": {"value": 1.0, "unit": "kW", "flag": "Assumed", "confidence": "-", "source": "no published figure (two solar arrays: NASA Oct 2026 captions)", "sweep": [0.5, 5.0]},
+        "km_per_day": {"value": 6, "unit": "km/day", "flag": "Spec", "confidence": "High", "source": "NASA LTV progress update 20-21 Oct 2026: 6 km a day when remotely operated"},
+        "night_ops": {"value": false, "unit": "", "flag": "Assumed", "confidence": "-", "source": "'operational up to a year' (survives nights); night driving not stated"},
+        "can_team_lift": {"value": true, "unit": "", "flag": "Assumed", "confidence": "-", "source": "two-rover coupling as Krawciw et al."},
+        "unit_cost_musd": {"value": 314, "unit": "M$", "flag": "Modelled", "confidence": "Medium", "source": "NASA 26 May 2026: Lunar Outpost task order $220 M + half of $188 M delivery"},
+        "life_hours": {"value": 21900, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV"},
+        "life_years": {"value": 10, "unit": "yr", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV"},
+        "mtbf_h": {"value": 500, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV"},
+        "mttr_h": {"value": 24, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV"},
+        "load_h": {"value": 1.0, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "no arm (Payload Space 2026): twice the repo LTV's 0.5 h"},
+        "unload_h": {"value": 1.0, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "no arm: twice the repo LTV's 0.5 h"}
+      }
+    },
+    "CARGO_FLEX": {
+      "name": "Astrolab FLEX (cargo class)", "status": "not contracted",
+      "params": {
+        "mass_kg": {"value": 1600, "unit": "kg", "flag": "Assumed", "confidence": "-", "source": "not published; the repo's cargo-rover mass (lunarsim.rover.physics.ROVER)", "sweep": [1200, 2500]},
+        "capacity_kg": {"value": 2000, "unit": "kg", "flag": "Spec", "confidence": "High", "source": "astrolab.space: total payload capacity of 2000 kg on two top-deck interfaces (company claim)"},
+        "speed_kmh": {"value": 6.0, "unit": "km/h", "flag": "Assumed", "confidence": "-", "source": "no published speed; as the repo LTV"},
+        "empty_speed_mult": {"value": 1.2, "unit": "1", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV"},
+        "energy_wh_per_km": {"value": 133.71, "unit": "Wh/km", "flag": "Modelled", "confidence": "Low", "source": "traction model at the assumed 1,600 kg"},
+        "battery_wh": {"value": 40000, "unit": "Wh", "flag": "Assumed", "confidence": "-", "source": "no published kWh; as the repo LTV", "sweep": [10000, 40000]},
+        "charge_kw": {"value": 5.0, "unit": "kW", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV"},
+        "night_ops": {"value": false, "unit": "", "flag": "Assumed", "confidence": "-", "source": "not stated"},
+        "can_team_lift": {"value": true, "unit": "", "flag": "Assumed", "confidence": "-", "source": "6-DOF arm and payload interfaces (astrolab.space); coupling as Krawciw et al."},
+        "unit_cost_musd": {"value": 450, "unit": "M$", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV"},
+        "life_hours": {"value": 21900, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV"},
+        "life_years": {"value": 10, "unit": "yr", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV"},
+        "mtbf_h": {"value": 500, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV"},
+        "mttr_h": {"value": 24, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV"},
+        "load_h": {"value": 0.5, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV (semi-autonomous pick-up, astrolab.space)"},
+        "unload_h": {"value": 0.5, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV"}
+      }
+    },
+    "CARGO_EAGLE": {
+      "name": "Lunar Outpost Eagle (cargo class)", "status": "not contracted",
+      "params": {
+        "mass_kg": {"value": 1500, "unit": "kg", "flag": "Assumed", "confidence": "-", "source": "not published; Pegasus is 'less than half the size of Eagle'", "sweep": [1200, 2000]},
+        "capacity_kg": {"value": 800, "unit": "kg", "flag": "Assumed", "confidence": "-", "source": "not published; the LTV RFP's uncrewed payload (at least 800 kg; ACR24 Mobility) that Eagle was built to bid", "sweep": [800, 1600]},
+        "speed_kmh": {"value": 6.0, "unit": "km/h", "flag": "Assumed", "confidence": "-", "source": "no published speed; as the repo LTV"},
+        "empty_speed_mult": {"value": 1.2, "unit": "1", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV"},
+        "energy_wh_per_km": {"value": 125.36, "unit": "Wh/km", "flag": "Modelled", "confidence": "Low", "source": "traction model at the assumed 1,500 kg"},
+        "battery_wh": {"value": 40000, "unit": "Wh", "flag": "Assumed", "confidence": "-", "source": "no published kWh; as the repo LTV", "sweep": [10000, 40000]},
+        "charge_kw": {"value": 5.0, "unit": "kW", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV"},
+        "night_ops": {"value": true, "unit": "", "flag": "Spec", "confidence": "Medium", "source": "Lunar Outpost 2025: designed to operate through two-week nights at about -280 F"},
+        "can_team_lift": {"value": true, "unit": "", "flag": "Assumed", "confidence": "-", "source": "arm and cargo bed (Lunar Outpost); coupling as Krawciw et al."},
+        "unit_cost_musd": {"value": 450, "unit": "M$", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV"},
+        "life_hours": {"value": 21900, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV"},
+        "life_years": {"value": 10, "unit": "yr", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV"},
+        "mtbf_h": {"value": 500, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV"},
+        "mttr_h": {"value": 24, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV"},
+        "load_h": {"value": 0.5, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV (arm)"},
+        "unload_h": {"value": 0.5, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "as the repo LTV"}
+      }
+    },
+    "MAPP_SMALL": {
+      "name": "Lunar Outpost HL-MAPP (small cargo rover)", "status": "company product",
+      "params": {
+        "mass_kg": {"value": 250, "unit": "kg", "flag": "Spec", "confidence": "High", "source": "lunaroutpost.com/rovers: HL-MAPP 250 kg (company claim)"},
+        "capacity_kg": {"value": 200, "unit": "kg", "flag": "Spec", "confidence": "High", "source": "lunaroutpost.com/rovers: HL-MAPP payload 200 kg (company claim)"},
+        "top_speed_kmh": {"value": 10.8, "unit": "km/h", "flag": "Spec", "confidence": "High", "source": "lunaroutpost.com/rovers: up to 3 m/s"},
+        "speed_kmh": {"value": 6.5, "unit": "km/h", "flag": "Modelled", "confidence": "Low", "source": "0.6 x top speed (rules.speed_from_top)"},
+        "empty_speed_mult": {"value": 1.3, "unit": "1", "flag": "Assumed", "confidence": "-", "source": "as the repo MICRO"},
+        "energy_wh_per_km": {"value": 20.89, "unit": "Wh/km", "flag": "Modelled", "confidence": "Medium", "source": "traction model at 250 kg"},
+        "battery_wh": {"value": 2000, "unit": "Wh", "flag": "Assumed", "confidence": "-", "source": "no published kWh", "sweep": [1000, 5000]},
+        "charge_kw": {"value": 0.5, "unit": "kW", "flag": "Assumed", "confidence": "-", "source": "no published figure"},
+        "night_ops": {"value": false, "unit": "", "flag": "Assumed", "confidence": "-", "source": "night survival is claimed, night driving is not"},
+        "can_team_lift": {"value": false, "unit": "", "flag": "Assumed", "confidence": "-", "source": "as the repo MICRO"},
+        "unit_cost_musd": {"value": 60, "unit": "M$", "flag": "Assumed", "confidence": "-", "source": "as the repo MICRO"},
+        "life_hours": {"value": 10950, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "as the repo MICRO"},
+        "life_years": {"value": 5, "unit": "yr", "flag": "Assumed", "confidence": "-", "source": "as the repo MICRO"},
+        "mtbf_h": {"value": 300, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "as the repo MICRO"},
+        "mttr_h": {"value": 12, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "as the repo MICRO"},
+        "load_h": {"value": 0.3, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "as the repo MICRO"},
+        "unload_h": {"value": 0.3, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "as the repo MICRO"}
+      }
+    },
+    "HOPPER_MOONFALL": {
+      "name": "NASA/JPL MoonFall hopper", "flies": true, "status": "in development (Firefly delivery 2028)",
+      "note": "Flies over terrain: straight-line hops, ignores roads and road rules, obeys landing closures. 50 km and 14 days of hops from deployment, then retired (a fixed payload).",
+      "params": {
+        "mass_kg": {"value": 250, "unit": "kg", "flag": "Spec", "confidence": "Medium", "source": "press (Satnews, DroneXL May 2026): about 550 lb including propellant"},
+        "capacity_kg": {"value": 10, "unit": "kg", "flag": "Assumed", "confidence": "-", "source": "a survey drone; no cargo figure published", "sweep": [5, 20]},
+        "speed_kmh": {"value": 20.0, "unit": "km/h", "flag": "Assumed", "confidence": "-", "source": "effective speed over a sequence of hops incl. preparation; not published", "sweep": [10, 40]},
+        "empty_speed_mult": {"value": 1.0, "unit": "1", "flag": "Assumed", "confidence": "-", "source": "flight"},
+        "energy_wh_per_km": {"value": 0, "unit": "Wh/km", "flag": "Modelled", "confidence": "-", "source": "propellant, modelled as the km budget below, not battery energy"},
+        "battery_wh": {"value": 1000, "unit": "Wh", "flag": "Assumed", "confidence": "-", "source": "avionics only; never limits a hop"},
+        "charge_kw": {"value": 0.1, "unit": "kW", "flag": "Assumed", "confidence": "-", "source": "avionics only"},
+        "km_budget": {"value": 50, "unit": "km", "flag": "Spec", "confidence": "Medium", "source": "JPL project lead via press (May 2026): about 30 miles of coverage per drone"},
+        "active_days": {"value": 14, "unit": "d", "flag": "Spec", "confidence": "Medium", "source": "press (May 2026): 14 days of hopping"},
+        "night_ops": {"value": false, "unit": "", "flag": "Assumed", "confidence": "-", "source": "not stated"},
+        "can_team_lift": {"value": false, "unit": "", "flag": "Assumed", "confidence": "-", "source": "flies alone"},
+        "unit_cost_musd": {"value": 20, "unit": "M$", "flag": "Assumed", "confidence": "-", "source": "not published (Firefly's $75 M covers the transport spacecraft for four)", "sweep": [10, 50]},
+        "life_hours": {"value": 336, "unit": "h", "flag": "Modelled", "confidence": "Medium", "source": "14 days of hopping"},
+        "life_years": {"value": 0.0384, "unit": "yr", "flag": "Modelled", "confidence": "Medium", "source": "14 days"},
+        "mtbf_h": {"value": 1000000, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "faults not modelled for hoppers"},
+        "mttr_h": {"value": 0, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "faults not modelled for hoppers"},
+        "load_h": {"value": 0.25, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "small item, no arm"},
+        "unload_h": {"value": 0.25, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "small item, no arm"}
+      }
+    },
+    "HOPPER_MICRONOVA": {
+      "name": "Intuitive Machines Micro-Nova hopper", "flies": true, "status": "built (not deployed on IM-2)",
+      "note": "Flies over terrain like MoonFall; 25 km total on its tanks.",
+      "params": {
+        "mass_kg": {"value": 40, "unit": "kg", "flag": "Assumed", "confidence": "-", "source": "not published (about 1 m tall; LPSC 2024)", "sweep": [20, 80]},
+        "capacity_kg": {"value": 8, "unit": "kg", "flag": "Spec", "confidence": "High", "source": "LPSC 2024 abstract 1931: up to 8 kg over more than 25 km (IM page: up to 10 kg)", "sweep": [8, 10]},
+        "speed_kmh": {"value": 20.0, "unit": "km/h", "flag": "Assumed", "confidence": "-", "source": "effective speed over hops; not published", "sweep": [10, 40]},
+        "empty_speed_mult": {"value": 1.0, "unit": "1", "flag": "Assumed", "confidence": "-", "source": "flight"},
+        "energy_wh_per_km": {"value": 0, "unit": "Wh/km", "flag": "Modelled", "confidence": "-", "source": "propellant, modelled as the km budget"},
+        "battery_wh": {"value": 500, "unit": "Wh", "flag": "Assumed", "confidence": "-", "source": "avionics only"},
+        "charge_kw": {"value": 0.1, "unit": "kW", "flag": "Assumed", "confidence": "-", "source": "avionics only"},
+        "km_budget": {"value": 25, "unit": "km", "flag": "Spec", "confidence": "High", "source": "LPSC 2024 abstract 1931 (more than 25 km); IM page: up to 25 km on the current tanks"},
+        "active_days": {"value": 14, "unit": "d", "flag": "Assumed", "confidence": "-", "source": "not stated; one lunar day, as MoonFall"},
+        "night_ops": {"value": false, "unit": "", "flag": "Assumed", "confidence": "-", "source": "not stated"},
+        "can_team_lift": {"value": false, "unit": "", "flag": "Assumed", "confidence": "-", "source": "flies alone"},
+        "unit_cost_musd": {"value": 10, "unit": "M$", "flag": "Assumed", "confidence": "-", "source": "not published", "sweep": [5, 30]},
+        "life_hours": {"value": 336, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "14 days, as MoonFall"},
+        "life_years": {"value": 0.0384, "unit": "yr", "flag": "Assumed", "confidence": "-", "source": "14 days"},
+        "mtbf_h": {"value": 1000000, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "faults not modelled for hoppers"},
+        "mttr_h": {"value": 0, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "faults not modelled for hoppers"},
+        "load_h": {"value": 0.25, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "small item"},
+        "unload_h": {"value": 0.25, "unit": "h", "flag": "Assumed", "confidence": "-", "source": "small item"}
+      }
+    }
+  }
+}

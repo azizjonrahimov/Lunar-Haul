@@ -5631,3 +5631,170 @@ Base elements keep their old list: no sources, tag from the model's representati
 **Questions for LEAD:**
 1. Do you want the budgets.py table to print lazy_each? That's your file, a one-line change; the check itself works.
 2. Part 4 is "Compare sizes", "look inside" from /world/ and the stories, tier 1 (On its own, the part list and a static cutaway image) and the last budgets. Shall I start it?
+
+## B-71 DONE 11:50 | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**Headline**
+
+- **The vehicles are in.**
+  - Seven real 2028-32 classes are in a sourced table, and the "p5" family has 37 scenario files: 4 owner mixes × 3 loads × 3 team shares, plus a 200 kg-lot sensitivity.
+  - Each class runs a year under marketplace and inhouse.
+  - Old results reproduce byte for byte (see "Unchanged" below).
+- **Finding: scaling demand on the real fleet levels off at about 17 % whole-fleet utilisation.** The backlog keeps growing, because only two vehicles can lift the cargo.
+
+  3eq, marketplace, team share 0.10; mean of seeds 1-3 for k ≤ 8, seed 1 for k 11 and 14:
+
+  | k | fleet utilisation | FLEX + Eagle busy | backlog at year end |
+  |---|---|---|---|
+  | 1 | 2.91 % | 11.39 % | 0 t |
+  | 2 | 5.62 % | 21.71 % | 1.0 t |
+  | 4 | 10.32 % | 40.31 % | 3.5 t |
+  | 8 | 17.37 % | 65.5 % | 417.6 t |
+  | 11 | 17.18 % | 64.49 % | 2,072 t |
+  | 14 | 17.56 % | 63.89 % | 4,092 t |
+
+  - At k 14, FLEX is 61.9 % busy and Eagle 65.9 %. Their ceiling is about 70 % with other_duty 0.3.
+  - Everything else barely moves: CLV-1 3.8 %, Pegasus 3.4 %, MAPPs 3.4 % and 2.2 %, MoonFall hoppers 0 %.
+  - The small vehicles have almost nothing they can lift:
+    - the Phase-1 LTVs carry 80 kg;
+    - MAPP carries 200 kg;
+    - a hopper carries 10 kg and works only 14 days.
+- **Measured utilisation per load variant.** Loads are defined on FLEX + Eagle (LEAD, Q6). k was calibrated on the in-reach items: seeds 1-5, marketplace, 3eq, team share 0.10, within 0.5 pp of the target. Means of seeds 1-5 (full spread in `results/ATC_p5_load.json`):
+
+  | load | k | mechanism | FLEX + Eagle busy | whole fleet | delivered | backlog | stranded |
+  |---|---|---|---|---|---|---|---|
+  | 10 % | 0.857 | marketplace | 9.93 % | 2.54 % | 453.8 t | 0 t | 0 t |
+  | 10 % | 0.857 | inhouse | 7.58 % | 1.93 % | 292.1 t | 147.6 t | 13.5 t |
+  | 30 % | 2.806 | marketplace | 29.57 % | 7.65 % | 1,482.5 t | 2.0 t | 0 t |
+  | 30 % | 2.806 | inhouse | 24.32 % | 6.22 % | 957.1 t | 487.7 t | 37.0 t |
+  | 60 % | 6.22 | marketplace | 59.60 % | 15.50 % | 3,254.7 t | 10.3 t | 0 t |
+  | 60 % | 6.22 | inhouse | 50.76 % | 13.10 % | 2,110.9 t | 1,083.2 t | 59.6 t |
+  | 30 %, 200 kg lots (ASSUMED sensitivity) | 2.598 | marketplace | 30.05 % | 13.85 % | 1,366.0 t | 1.5 t | 0 t |
+  | 30 %, 200 kg lots (ASSUMED sensitivity) | 2.598 | inhouse | 52.53 % | 18.49 % | 1,313.7 t | 17.6 t | 26.9 t |
+
+  - **Owner mixes at 30 %** (same k), fleet utilisation and delivered tonnage:
+
+    | mix | marketplace | inhouse |
+    |---|---|---|
+    | 2 equal owners | 7.77 %, 1,488.1 t | 8.83 %, 1,431.7 t |
+    | 3 owners 50/35/15 | 7.72 %, 1,488.2 t | 7.79 %, 1,222.2 t |
+    | 5 equal owners | 7.77 %, 1,491.2 t | 3.74 %, 575.4 t |
+
+  - **Why inhouse falls apart with more owners:** every owner without a cargo rover leaves its cargo waiting. That is owner C in 3eq, and C, D and E in 5eq. Marketplace is flat across owner mixes. This is H1's shape.
+  - **Heavy-lift list:** these items exceed the largest pair (2,800 kg), are never offered to the robots, and are labelled "needs heavy-lift equipment, outside this fleet". Per run:
+    - 2.6 items / 14.7 t at 10 %;
+    - 8.0 items / 45.0 t at 30 %;
+    - 18.2 items / 117.1 t at 60 %.
+  - **Team items (2,000-2,800 kg) per run:**
+    - 10 %: 5.6, of which marketplace delivers 5.2;
+    - 30 %: 16.4, of which marketplace delivers 15.0;
+    - 60 %: 28.2, of which marketplace delivers 25.6;
+    - inhouse delivers none at any load.
+  - **Same-owner pairs (Q2):** only owner A's FLEX + CLV-1 (2,080 kg) can lift any team item.
+    - Liftable share: 7.14 % of team items at 10 %, 15.85 % at 30 %, 15.60 % at 60 % (3eq).
+    - B's Eagle + Pegasus reach only 880 kg.
+    - So owners-alone regimes fail on 84-93 % of team items by construction. That feeds into H6.
+  - **Hoppers:** at most 0.45 km flown per run on average. Both MoonFalls retire at day 14 having carried almost nothing.
+  - **Daily 6 km cap** on the Phase-1 LTVs: it adds 2-33 h per run.
+
+**What was built**
+
+- **`lunarsim/atc/vehicles-p5.json` + `vehicles.py`:** the seven classes below.
+  - Every parameter is {value, unit, flag, confidence, source}, with a sweep where it is unknown or swept.
+  - The engine resolves a fleet class id in VEHICLE_CLASSES first, then here (`Simulation._vclass`, with the scenario's `class_overrides`).
+  - VEHICLE_CLASSES, catalog-v1.json and vv.py's counts are untouched (Q1).
+  - Energy uses the repo traction model at the vehicle's mass: 0.0836 Wh/km per kg, LRV-calibrated.
+  - Where only a top speed is published, the modelled speed is 0.6 × top speed (the repo LTV's ratio).
+- **`lunarsim/atc/p5.py`:** `Scenario.p5`, opt-in; None gives the old path. It adds:
+  - **Reach and the heavy-lift list:** reach is the larger of the largest single capacity and the largest pair (Q3).
+  - **Team-share re-draw:** from its own stream, seed + 500,009, two uniforms per landed item, always drawn. Every other draw stays identical across shares; the test checks this.
+  - **Team lifts:** pairs only. Team rule `sum`, or `krawciw` (0.3 × the two vehicle masses) as a sweep. Under `krawciw` no pair beats FLEX alone, so there are no team items.
+  - **Hoppers:**
+    - straight-line hops at 20 km/h (Assumed), no driving tables or roads;
+    - a 50 km budget and a 14 d window from t = 0, then retired;
+    - `hopper_refuel` (Assumed variant) refills the budget each synodic month and drops the window.
+  - **Daily km token bucket**, applied at commit like faults.
+  - **Summary keys:** `p5_*`, among them `p5_cargo_util`, `p5_utilisation_active`, `p5_heavy_items/t`, `p5_team_items*`, `p5_hopper_km`, `p5_day_cap_h`.
+- **Owner mixes:** the same eight vehicles every time.
+  - **3eq:**
+    - A: CLV-1 + FLEX;
+    - B: Pegasus + Eagle;
+    - C: 2 MAPP + 2 MoonFall.
+  - **3uneq:** the same fleet, with cargo split 50/35/15.
+  - **2eq:**
+    - A: CLV-1, FLEX, MAPP, MoonFall;
+    - B: Pegasus, Eagle, MAPP, MoonFall.
+  - **5eq:**
+    - A: CLV-1 + FLEX;
+    - B: Pegasus + Eagle;
+    - C: MAPP + MoonFall;
+    - D: MAPP;
+    - E: MoonFall.
+  - **Demand:** P2's landings × k. P2's bulk flows are split by owner share, × k, in 500 kg lots (Assumed; Eagle carries 800 kg).
+  - **Terrain fields as R-1 uses them:** Connecting Ridge, 1 km pads, driving-v1, classical landings. No Earth-link rule; B-72 adds it.
+- **Engine and dispatch hooks:** all gated on `sim.p5` or the class's own fields, so old classes and old scenarios take the old path.
+- **Two exact marketplace speedups for big backlogs:**
+  - the bulk-consolidation check uses the lightest lot per standard;
+  - the oversize-team loop skips items heavier than one that already found no team, under the same `used`.
+  - A k=20 run went from 81 s to 49 s.
+  - Checked against HEAD's dispatch.py plus only the p5 hooks on nine overloaded p5 runs (backlogs up to 1,240 t; marketplace, inhouse, central_assign): all byte-identical summaries.
+
+**New parameters**
+
+| class | mass | payload | speed (modelled) | energy, battery, charge | limits | night | team | source of the key figures |
+|---|---|---|---|---|---|---|---|---|
+| LTV1_CLV1 | 907 kg Spec (High) | 80 kg Spec (High), sweep 80-300 | 5.8 km/h (top >9.7 Spec) | 75.8 Wh/km Modelled; 758 Wh Assumed (= 10 km/charge Spec, High), sweep 379-1,516; 1 kW Assumed | 6 km/day Spec (High) | no (Assumed) | yes (Assumed) | NASA 26 May and 20 Oct 2026; cost 313 M$ Modelled (219 + 188/2) |
+| LTV1_PEGASUS | 700 kg Assumed, sweep 500-907 | 80 kg Spec (High) | 8.7 km/h (top >14.5 Spec) | 58.5 Wh/km; 585 Wh (10 km/charge); 1 kW Assumed | 6 km/day Spec | no | yes | NASA 26 May and 20 Oct 2026; no arm, so load/unload 1 h Assumed (Payload Space) |
+| CARGO_FLEX | 1,600 kg Assumed, sweep 1,200-2,500 | 2,000 kg Spec (High, company claim) | 6 km/h Assumed | 133.71 Wh/km; 40 kWh Assumed, sweep 10-40 kWh; 5 kW | - | no | yes | astrolab.space |
+| CARGO_EAGLE | 1,500 kg Assumed, sweep 1,200-2,000 | 800 kg Assumed, sweep 800-1,600 (LTV RFP) | 6 km/h Assumed | 125.36 Wh/km; 40 kWh Assumed; 5 kW | - | yes, Spec (Medium) | yes | Lunar Outpost 2025 (night ops); ACR24 Mobility (800 kg) |
+| MAPP_SMALL | 250 kg Spec (High) | 200 kg Spec (High) | 6.5 km/h (top 3 m/s Spec) | 20.89 Wh/km; 2 kWh Assumed, sweep 1-5 kWh; 0.5 kW | - | no (Assumed) | no | lunaroutpost.com (HL-MAPP) |
+| HOPPER_MOONFALL | 250 kg wet Spec (Medium) | 10 kg Assumed, sweep 5-20 | 20 km/h effective, Assumed, sweep 10-40 | none (propellant as km budget) | 50 km Spec (Medium); 14 d Spec (Medium) | no | no | NASA May 2026; press (Satnews, DroneXL); cost 20 M$ Assumed |
+| HOPPER_MICRONOVA | 40 kg Assumed | 8 kg Spec (High), sweep 8-10 | 20 km/h Assumed | none | 25 km Spec (High); 14 d Assumed | no | no | LPSC 2024 abstract 1931; IM page |
+
+- Life, MTBF, MTTR and load times are Assumed: as the repo LTV for the LTV and cargo classes, as MICRO for MAPP. Hopper faults are not modelled.
+- The full table with every source string is `lunarsim/atc/vehicles-p5.json`; `vehicles.validate()` returns [].
+
+**Unchanged (old results)**
+
+- **Full pytest, file by file:** 39 files, 524 passed, 0 failed (`tests/test_p5.py` is new, 10 tests).
+- **Reruns of committed rows:**
+  - The v2 baseline digest `739e9ba7...` reruns (`test_phase3_engine`, `test_comms_engine`).
+  - I reran 20 committed rows and compared every numeric column: 0 differences.
+    - E21a strict, strategic and look-ahead, seeds 0-3 (all four start years);
+    - E21a relay;
+    - E21g2 24 h, 2 seeds;
+    - E21h 24 h k=1;
+    - E21j first and last cell;
+    - two v3 E19 rows.
+    - That is 98-117 numeric columns per E21 row and 70 per E19 row.
+- **Untouched files:** VEHICLE_CLASSES, catalog-v1.json and the catalogue ids. `catalog.engine_mismatches()` returns [].
+
+**Files**
+
+- New:
+  - `lunarsim/atc/vehicles-p5.json`, `lunarsim/atc/vehicles.py`, `lunarsim/atc/p5.py`;
+  - `tools/atc/p5_scenarios.py` (plateau / calibrate / measure / write; resumable, cached in `.cache/atc/`);
+  - `tests/test_p5.py`.
+- Changed:
+  - `lunarsim/engine.py` (gated hooks);
+  - `lunarsim/dispatch.py` (p5 pair hook, hopper check in `_greedy`, two exact speedups);
+  - `lunarsim/scenario.py` (`p5` field, None by default);
+  - `lunarsim/config.py` (`p5` dropped when None, so saved v2 files are unchanged);
+  - `lunarsim/formats.py` (fleet classes include the p5 ids);
+  - `lunarsim/schemas/scenario-v1.schema.json` (p5 class ids in the fleet enum, `p5` object).
+- **For LEAD to commit** (data/results): `data/scenarios/p5/*.json` (37 files) and `results/ATC_p5_load.json`.
+
+**How to test**
+
+- `.venv/Scripts/python -m pytest -q tests/test_p5.py` → 10 passed (5 s).
+- To regenerate: `python tools/atc/p5_scenarios.py plateau | calibrate | measure | write`, each run until it says done.
+  - Calibrate took 2 chunks, plateau 1, measure 1.
+  - Peak 232 MB.
+  - A one-year p5 run takes 1-35 s (k 0.86-6.2).
+
+**FRONTEND:** nothing needed. The scenario schema now also accepts the seven p5 class ids and a `p5` object; the site's v2 scenarios are unaffected.
+
+**Questions for LEAD**
+
+1. Hoppers barely matter here: 10 kg, 14 days, ~0.3 km flown per run. Keep them as is, honest and negligible, or give B-72/E40 the `hopper_refuel` variant as a sweep?
+2. Utilisation in E40 tables: I'd report `p5_cargo_util` (the load definition) and whole-fleet `utilisation` side by side. OK?

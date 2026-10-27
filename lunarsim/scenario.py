@@ -109,6 +109,9 @@ class Scenario:
     # Phase 4 (B-44), opt-in: real sun per site and leg ({file, criterion, leg_rule, start_year, start_h}); None = the
     # night_fraction rule. See lunarsim/illumination.py
     illumination: Optional[dict] = None
+    # Phase 5 (B-71), opt-in: real vehicle classes, heavy-lift list, team-lift share, hoppers ({team_lift_share,
+    # team_rule, krawciw_fraction, class_overrides, hopper_refuel, owners, k}); None = unchanged. See lunarsim/atc/p5.py
+    p5: Optional[dict] = None
 
     def with_(self, **kw) -> "Scenario":
         return replace(self, **kw)

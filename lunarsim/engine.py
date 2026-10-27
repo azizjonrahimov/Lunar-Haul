@@ -261,6 +261,10 @@ class Simulation:
             self.illum = Illumination(sc.illumination, standoff, sc.horizon_h, self.world.pads, comms_start_year=cy,
                                       find=_find)
         self._build_fleet()
+        self.p5 = None
+        if sc.p5 is not None:               # Phase 5 (B-71), opt-in: real vehicle classes, reach, team share, hoppers
+            from .atc.p5 import P5State
+            self.p5 = P5State(self)
         self._schedule_demand()
         self.batch_h = self.mech_kwargs.get("batch_h", 0.0)
         if self.batch_h > 0:
@@ -292,7 +296,7 @@ class Simulation:
             drop = set(idx[-hp["n"]:])
             fleet = [f for i, f in enumerate(fleet) if i not in drop]
         for i, (owner, cls, autonomy, stds) in enumerate(fleet):
-            v = Vehicle(i, owner, VEHICLE_CLASSES[cls], "DEPOT", set(stds.split("|")), autonomy)
+            v = Vehicle(i, owner, self._vclass(cls), "DEPOT", set(stds.split("|")), autonomy)
             v.next_fault_h = self.rng_ops.exponential(v.cls.mtbf_h * self.sc.mtbf_mult)
             self.vehicles.append(v)
             owners_with_fleet.append(owner)
@@ -307,6 +311,23 @@ class Simulation:
             else:
                 self.carrier_of[o] = carriers[k % len(carriers)]
                 k += 1
+
+    def _vclass(self, cls: str):
+        """VEHICLE_CLASSES first; then the Phase 5 table (lunarsim/atc/vehicles-p5.json, with the scenario's sweeps)."""
+        if cls in VEHICLE_CLASSES:
+            return VEHICLE_CLASSES[cls]
+        from .atc import p5 as P5
+        return P5.vehicle_class(cls, self.sc)
+
+    def _fly_km(self, a: str, b: str) -> float:
+        """Straight-line km between two sites (a hopper's flight)."""
+        if self.sites is not None:
+            (xa, ya), (xb, yb) = self.sites.xy_km[a], self.sites.xy_km[b]
+            return math.hypot(xb - xa, yb - ya)
+        return self.world._euclid(a, b)
+
+    def _leg_km(self, v: Vehicle, a: str, b: str) -> float:
+        return self._fly_km(a, b) if getattr(v.cls, "flies", False) else self.world.distance_km(a, b)
 
     def _schedule_demand(self):
         self.landing_schedule = sample_landings(self.rng, self.sc, self.world.pads)
@@ -411,6 +432,8 @@ class Simulation:
 
     # ------------------------------------------------------------- job maths
     def travel_h(self, v: Vehicle, a: str, b: str, loaded: bool, team: bool, t: float) -> float:
+        if getattr(v.cls, "flies", False):          # Phase 5 hoppers: straight-line hops, no roads or driving tables
+            return self._fly_km(a, b) / max(v.cls.speed_kmh, 1e-6)
         if self.drive is not None:
             leg = self._p3_leg(v, a, b, loaded, team, t, False)
             if leg is not None:
@@ -430,6 +453,9 @@ class Simulation:
         interventions; a committed job (realize=True) draws time, energy and interventions from the ops stream."""
         if a == b:
             return 0.0, 0.0, 0.0, 0
+        if getattr(v.cls, "flies", False):
+            km = self._fly_km(a, b)
+            return km / max(v.cls.speed_kmh, 1e-6), 0.0, km, 0
         light = self.drive.light_bin(t, self.dark(t, a, b) if self.illum is not None
                                      else (self.sc.night_fraction > 0 and self.is_night(t)))
         e = self.drive.entry(a, b, self.world.pads, v.autonomy, self.drive.rtt_bin(self.rtt_s), light)
@@ -551,8 +577,12 @@ class Simulation:
         """_job_plan, with the Earth-link waits of Scenario.comms inserted when that rule is on (Phase 4);
         the duration is inf when a needed link never comes."""
         if self.comms is not None and self.comms.active:
-            return self.comms.plan(self, job, t_start, realize)
-        return self._job_plan(job, t_start, realize)
+            r = self.comms.plan(self, job, t_start, realize)
+        else:
+            r = self._job_plan(job, t_start, realize)
+        if self.p5 is not None and math.isfinite(r[0]) and not self.p5.job_ok(job, t_start, r[0], r[1]):
+            return (math.inf,) + tuple(r[1:])     # Phase 5: beyond a hopper's km budget or active window
+        return r
 
     def _job_plan(self, job: Job, t_start: float, realize: bool = False) -> Tuple[float, float, float, float, bool]:
         """Return (duration_h, km, km_empty, energy_wh, needs_night) for the job
@@ -571,7 +601,7 @@ class Simulation:
             t = t_start
             segs = []
             # empty approach
-            d0 = self.world.distance_km(v.location, pad)
+            d0 = self._leg_km(v, v.location, pad)
             h = self.travel_h(v, v.location, pad, False, False, t)
             e = self.world.energy_km(v.location, pad) * v.cls.energy_wh_per_km
             segs.append([v.location, pad, t, t + h, 0.0])
@@ -595,7 +625,7 @@ class Simulation:
             load_kg = sum(c.mass_kg for c in job.items) / len(job.vehicles)
             onboard = load_kg
             for stop in job.route:
-                dk = self.world.distance_km(prev, stop)
+                dk = self._leg_km(v, prev, stop)
                 h = self.travel_h(v, prev, stop, True, team, t)
                 segs.append([prev, stop, t, t + h, onboard])
                 t += h
@@ -611,7 +641,7 @@ class Simulation:
                 segs.append([prev, prev, t, t + t_l, 0.0])
                 t += t_l
                 dest = job.backhaul[0].dest
-                dk = self.world.distance_km(prev, dest)
+                dk = self._leg_km(v, prev, dest)
                 h = self.travel_h(v, prev, dest, True, False, t)
                 bh_kg = sum(c.mass_kg for c in job.backhaul)
                 segs.append([prev, dest, t, t + h, bh_kg])
@@ -652,6 +682,8 @@ class Simulation:
         out = []
         for v in self.vehicles:
             if not v.alive or v.busy_until > self.t + 1e-9:
+                continue
+            if self.p5 is not None and not self.p5.check_window(v, self.t):
                 continue
             if v.duty_pending:
                 self._start_duty(v)
@@ -722,7 +754,10 @@ class Simulation:
             self._dispatch()
         self._advance_to(H)
         self._finalise()
-        return self.metrics.summary()
+        out = self.metrics.summary()
+        if self.p5 is not None:
+            out.update(self.p5.summary())
+        return out
 
     def _advance_to(self, t: float):
         # accumulate waiting tonne-days
@@ -740,6 +775,8 @@ class Simulation:
         items, self._cid = sample_cargo_manifest(self.rng, lt, self.sc.cargo_owners,
                                                  self.world.pads, self.t,
                                                  self.sc.common_standard_share, self._cid, pad=pad)
+        if self.p5 is not None:             # Phase 5: heavy-lift list, team-share re-draw
+            items = self.p5.on_landing(items)
         if self.p3:
             self._landing_p3(lt, pad, items)
             return
@@ -840,6 +877,13 @@ class Simulation:
 
     def _mark_stranded(self, items: List[Cargo]):
         """Items no vehicle or team in the whole fleet could ever move."""
+        if self.p5 is not None:             # Phase 5: pairs only, under the scenario's team rule
+            allow = self.mech_kwargs.get("team_lift", getattr(self.mechanism, "supports_team", False))
+            lim = self.p5.reach if allow else self.p5.single_max
+            for c in items:
+                if c.mass_kg > lim or not any(c.standard in v.standards for v in self.vehicles):
+                    c.stranded = True
+            return
         team_ok = sorted((v.cls.capacity_kg for v in self.vehicles if v.cls.can_team_lift), reverse=True)
         single_max = max((v.cls.capacity_kg for v in self.vehicles), default=0.0)
         team_max = sum(team_ok[:3])
@@ -869,7 +913,10 @@ class Simulation:
 
     def _reposition(self, v: Vehicle, pad: str):
         h = self.travel_h(v, v.location, pad, False, False, self.t)
-        d = self.world.distance_km(v.location, pad)
+        d = self._leg_km(v, v.location, pad)
+        if self.p5 is not None and self.p5.limited(v) and (d > self.p5.km_left(v, self.t) + 1e-9
+                                                           or self.t + h > self.p5.active_until(v)):
+            return False
         segs_c = None
         if self.comms is not None and self.comms.active and self.comms.needs_link(v.autonomy):
             segs_c, waits_c = self.comms.reposition(v, v.location, pad, self.t, h)
@@ -890,6 +937,8 @@ class Simulation:
         v.location = pad
         v.km_total += d
         v.km_empty += d
+        if self.p5 is not None:
+            self.p5.note_km(v, d, self.t)
         v.hours_driving += h
         v.hours_busy += h
         self.repositions += 1
@@ -946,6 +995,9 @@ class Simulation:
                 dur, km, km_empty, e_wh, _ = self.job_plan(job, self.t, realize=True)
             else:
                 dur, km, km_empty, e_wh, _ = self.job_plan(job, self.t)
+            if self.p5 is not None and not math.isfinite(dur):
+                self.p5.refused += 1
+                return
         else:
             dur, km, km_empty, e_wh, _ = self.job_plan(job, self.t, realize=True)
             hold = 0.0
@@ -967,6 +1019,9 @@ class Simulation:
             if comms_on and not math.isfinite(dur):
                 self.comms.jobs_refused += 1    # a needed Earth link never comes on this job's legs
                 return
+            if self.p5 is not None and not math.isfinite(dur):
+                self.p5.refused += 1            # Phase 5: beyond a hopper's budget or window
+                return
             off = self._offpad_km(job) if self.landing is not None else 0.0
             self.metrics.km_offpad_extra += 2.0 * off * len(job.vehicles)
             self.metrics.interventions += self._last_interventions
@@ -983,6 +1038,8 @@ class Simulation:
                 v.battery_wh = v.cls.battery_wh
             v.battery_wh = max(0.0, v.battery_wh - need)
         driving_h = dur
+        if self.p5 is not None:             # Phase 5: daily km budget (Phase-1 LTVs remote, 6 km/day)
+            dur += self.p5.day_cap_delay(job, km, self.t)
         # faults
         for v in job.vehicles:
             if self.sc.failures and v.hours_driving + driving_h > v.next_fault_h:
@@ -1041,6 +1098,8 @@ class Simulation:
             v.hours_busy += dur
             v.hours_operator += dur * self.operator_demand(v)
             v.jobs += 1
+            if self.p5 is not None:
+                self.p5.note_km(v, km / len(job.vehicles), self.t)
         price = self.job_cost_usd(job, dur)
         for v in job.vehicles:
             share = price / len(job.vehicles) / 1e6

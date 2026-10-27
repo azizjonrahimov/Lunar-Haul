@@ -227,6 +227,12 @@ _CLASSES = ("LTV", "HAUL", "MICRO")
 _AUTONOMY = ("teleop", "supervised", "autonomous")
 
 
+def _p5_classes() -> tuple:
+    """Phase 5 class ids (lunarsim/atc/vehicles-p5.json)."""
+    from .atc.vehicles import load_table
+    return tuple(load_table()["classes"])
+
+
 def _fleet_errors(errs: List[str], fleet) -> None:
     if not isinstance(fleet, list):
         errs.append("fleet: expected a list")
@@ -245,8 +251,8 @@ def _fleet_errors(errs: List[str], fleet) -> None:
             continue
         if not isinstance(owner, str):
             errs.append(f"fleet[{i}].owner: expected string")
-        if cls not in _CLASSES:
-            errs.append(f"fleet[{i}].cls: expected one of {_CLASSES}, got {cls!r}")
+        if cls not in _CLASSES and cls not in _p5_classes():
+            errs.append(f"fleet[{i}].cls: expected one of {_CLASSES + _p5_classes()}, got {cls!r}")
         if aut not in _AUTONOMY:
             errs.append(f"fleet[{i}].autonomy: expected one of {_AUTONOMY}, got {aut!r}")
         if not isinstance(std, str):

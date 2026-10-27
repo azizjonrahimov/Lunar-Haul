@@ -1,0 +1,1594 @@
+{
+ "task": "B-71",
+ "description": "Load variants (LEAD, B-71 Q6): the demand multiplier k (P2's landing rates and bulk tonnes) at which the cargo-class\nvehicles (CARGO_FLEX, CARGO_EAGLE) are busy 10, 30 and 60 % of the year (mean of seeds 1-5, marketplace, 3 equal\nowners, team-lift share 0.10); whole-fleet utilisation is reported next to it, because scaling demand on this fleet\nlevels off at about 17 % whole-fleet utilisation (only the two cargo rovers can lift most of the cargo). A 200 kg\nbulk-lot variant at the 30 % level is an ASSUMED sensitivity.",
+ "calibration": {
+  "mix": "3eq",
+  "mechanism": "marketplace",
+  "team_lift_share": 0.1,
+  "seeds": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "tolerance": 0.005,
+  "metric": "p5_cargo_util (busy hours of CARGO_FLEX + CARGO_EAGLE / their hours in the year)",
+  "variants": {
+   "10": {
+    "target": 0.1,
+    "bulk_lot_kg": 500.0,
+    "hist": [
+     [
+      1.0,
+      0.11674305328595505
+     ],
+     [
+      0.857,
+      0.09930431663471609
+     ]
+    ],
+    "k": 0.857,
+    "cargo_util": 0.09930431663471609,
+    "converged": true
+   },
+   "30": {
+    "target": 0.3,
+    "bulk_lot_kg": 500.0,
+    "hist": [
+     [
+      1.0,
+      0.11674305328595505
+     ],
+     [
+      2.57,
+      0.27673756036370045
+     ],
+     [
+      2.948,
+      0.3129982107208196
+     ],
+     [
+      2.806,
+      0.295708707415404
+     ]
+    ],
+    "k": 2.806,
+    "cargo_util": 0.295708707415404,
+    "converged": true
+   },
+   "60": {
+    "target": 0.6,
+    "bulk_lot_kg": 500.0,
+    "hist": [
+     [
+      1.0,
+      0.11674305328595505
+     ],
+     [
+      5.139,
+      0.5086931629095428
+     ],
+     [
+      7.525,
+      0.6562838083605982
+     ],
+     [
+      6.506,
+      0.6221594758144031
+     ],
+     [
+      5.919,
+      0.5755905982998031
+     ],
+     [
+      6.22,
+      0.5960071192194354
+     ]
+    ],
+    "k": 6.22,
+    "cargo_util": 0.5960071192194354,
+    "converged": true
+   },
+   "30-lot200": {
+    "target": 0.3,
+    "bulk_lot_kg": 200.0,
+    "hist": [
+     [
+      1.0,
+      0.12485353695181037
+     ],
+     [
+      2.403,
+      0.2779777220830256
+     ],
+     [
+      2.726,
+      0.31362772765617675
+     ],
+     [
+      2.598,
+      0.30046526078016333
+     ]
+    ],
+    "k": 2.598,
+    "cargo_util": 0.30046526078016333,
+    "converged": true
+   }
+  }
+ },
+ "measured": {
+  "10|3eq": {
+   "marketplace": {
+    "seeds": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "cargo_class_busy": [
+     0.0993,
+     0.0061
+    ],
+    "fleet_utilisation": [
+     0.0254,
+     0.0017
+    ],
+    "fleet_utilisation_active_h": [
+     0.0335,
+     0.0022
+    ],
+    "delivered_t": [
+     453.7872,
+     13.5477
+    ],
+    "backlog_t": [
+     0.0,
+     0.0
+    ],
+    "stranded_t": [
+     0.0,
+     0.0
+    ],
+    "heavy_lift_items": [
+     2.6,
+     2.6077
+    ],
+    "heavy_lift_t": [
+     14.6941,
+     11.3257
+    ],
+    "team_items": [
+     5.6,
+     3.2094
+    ],
+    "team_items_delivered": [
+     5.2,
+     2.9496
+    ],
+    "team_items_same_owner_liftable_share": 0.0714,
+    "hopper_km": [
+     0.0,
+     0.0
+    ],
+    "day_cap_h": [
+     1.9861,
+     4.441
+    ],
+    "busy_share_by_class_seed1": {
+     "LTV1_CLV1": [
+      0.003
+     ],
+     "CARGO_FLEX": [
+      0.0866
+     ],
+     "LTV1_PEGASUS": [
+      0.0023
+     ],
+     "CARGO_EAGLE": [
+      0.1093
+     ],
+     "MAPP_SMALL": [
+      0.0017,
+      0.0023
+     ],
+     "HOPPER_MOONFALL": [
+      0.0,
+      0.0
+     ]
+    }
+   },
+   "inhouse": {
+    "seeds": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "cargo_class_busy": [
+     0.0758,
+     0.0071
+    ],
+    "fleet_utilisation": [
+     0.0193,
+     0.0018
+    ],
+    "fleet_utilisation_active_h": [
+     0.0255,
+     0.0024
+    ],
+    "delivered_t": [
+     292.0628,
+     3.5562
+    ],
+    "backlog_t": [
+     147.6482,
+     3.5767
+    ],
+    "stranded_t": [
+     13.4865,
+     7.8482
+    ],
+    "heavy_lift_items": [
+     2.6,
+     2.6077
+    ],
+    "heavy_lift_t": [
+     14.6941,
+     11.3257
+    ],
+    "team_items": [
+     5.6,
+     3.2094
+    ],
+    "team_items_delivered": [
+     0.0,
+     0.0
+    ],
+    "team_items_same_owner_liftable_share": 0.0714,
+    "hopper_km": [
+     0.0,
+     0.0
+    ],
+    "day_cap_h": [
+     0.0,
+     0.0
+    ],
+    "busy_share_by_class_seed1": {
+     "LTV1_CLV1": [
+      0.0036
+     ],
+     "CARGO_FLEX": [
+      0.0808
+     ],
+     "LTV1_PEGASUS": [
+      0.0003
+     ],
+     "CARGO_EAGLE": [
+      0.0715
+     ],
+     "MAPP_SMALL": [
+      0.0005,
+      0.0007
+     ],
+     "HOPPER_MOONFALL": [
+      0.0,
+      0.0
+     ]
+    }
+   }
+  },
+  "30|3eq": {
+   "marketplace": {
+    "seeds": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "cargo_class_busy": [
+     0.2957,
+     0.0069
+    ],
+    "fleet_utilisation": [
+     0.0765,
+     0.0018
+    ],
+    "fleet_utilisation_active_h": [
+     0.1007,
+     0.0024
+    ],
+    "delivered_t": [
+     1482.4647,
+     31.4359
+    ],
+    "backlog_t": [
+     2.0,
+     1.5411
+    ],
+    "stranded_t": [
+     0.0,
+     0.0
+    ],
+    "heavy_lift_items": [
+     8.0,
+     5.244
+    ],
+    "heavy_lift_t": [
+     44.9902,
+     21.0163
+    ],
+    "team_items": [
+     16.4,
+     6.229
+    ],
+    "team_items_delivered": [
+     15.0,
+     6.8191
+    ],
+    "team_items_same_owner_liftable_share": 0.1585,
+    "hopper_km": [
+     0.2744,
+     0.6135
+    ],
+    "day_cap_h": [
+     4.8464,
+     7.9766
+    ],
+    "busy_share_by_class_seed1": {
+     "LTV1_CLV1": [
+      0.0046
+     ],
+     "CARGO_FLEX": [
+      0.2625
+     ],
+     "LTV1_PEGASUS": [
+      0.0016
+     ],
+     "CARGO_EAGLE": [
+      0.3273
+     ],
+     "MAPP_SMALL": [
+      0.0112,
+      0.0061
+     ],
+     "HOPPER_MOONFALL": [
+      0.0,
+      0.0
+     ]
+    }
+   },
+   "inhouse": {
+    "seeds": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "cargo_class_busy": [
+     0.2432,
+     0.0168
+    ],
+    "fleet_utilisation": [
+     0.0622,
+     0.0044
+    ],
+    "fleet_utilisation_active_h": [
+     0.0819,
+     0.0058
+    ],
+    "delivered_t": [
+     957.1494,
+     8.9288
+    ],
+    "backlog_t": [
+     487.7197,
+     3.2924
+    ],
+    "stranded_t": [
+     37.0473,
+     14.2816
+    ],
+    "heavy_lift_items": [
+     8.0,
+     5.244
+    ],
+    "heavy_lift_t": [
+     44.9902,
+     21.0163
+    ],
+    "team_items": [
+     16.4,
+     6.229
+    ],
+    "team_items_delivered": [
+     0.0,
+     0.0
+    ],
+    "team_items_same_owner_liftable_share": 0.1585,
+    "hopper_km": [
+     0.0,
+     0.0
+    ],
+    "day_cap_h": [
+     14.3279,
+     20.1352
+    ],
+    "busy_share_by_class_seed1": {
+     "LTV1_CLV1": [
+      0.0084
+     ],
+     "CARGO_FLEX": [
+      0.285
+     ],
+     "LTV1_PEGASUS": [
+      0.0056
+     ],
+     "CARGO_EAGLE": [
+      0.228
+     ],
+     "MAPP_SMALL": [
+      0.0021,
+      0.0005
+     ],
+     "HOPPER_MOONFALL": [
+      0.0,
+      0.0
+     ]
+    }
+   }
+  },
+  "30|2eq": {
+   "marketplace": {
+    "seeds": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "cargo_class_busy": [
+     0.2998,
+     0.0104
+    ],
+    "fleet_utilisation": [
+     0.0777,
+     0.0039
+    ],
+    "fleet_utilisation_active_h": [
+     0.1024,
+     0.0052
+    ],
+    "delivered_t": [
+     1488.1012,
+     29.1512
+    ],
+    "backlog_t": [
+     2.5,
+     3.3727
+    ],
+    "stranded_t": [
+     0.0,
+     0.0
+    ],
+    "heavy_lift_items": [
+     8.2,
+     4.9193
+    ],
+    "heavy_lift_t": [
+     43.0504,
+     20.3628
+    ],
+    "team_items": [
+     15.6,
+     6.8044
+    ],
+    "team_items_delivered": [
+     14.4,
+     5.8992
+    ],
+    "team_items_same_owner_liftable_share": 0.1282,
+    "hopper_km": [
+     0.452,
+     0.6422
+    ],
+    "day_cap_h": [
+     13.1825,
+     19.5788
+    ],
+    "busy_share_by_class_seed1": {
+     "LTV1_CLV1": [
+      0.0121
+     ],
+     "CARGO_FLEX": [
+      0.2677
+     ],
+     "MAPP_SMALL": [
+      0.0137,
+      0.0082
+     ],
+     "HOPPER_MOONFALL": [
+      0.0,
+      0.0
+     ],
+     "LTV1_PEGASUS": [
+      0.0093
+     ],
+     "CARGO_EAGLE": [
+      0.3586
+     ]
+    }
+   },
+   "inhouse": {
+    "seeds": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "cargo_class_busy": [
+     0.3456,
+     0.0103
+    ],
+    "fleet_utilisation": [
+     0.0883,
+     0.0031
+    ],
+    "fleet_utilisation_active_h": [
+     0.1162,
+     0.0041
+    ],
+    "delivered_t": [
+     1431.7105,
+     11.7038
+    ],
+    "backlog_t": [
+     15.2403,
+     4.0032
+    ],
+    "stranded_t": [
+     32.0564,
+     13.3723
+    ],
+    "heavy_lift_items": [
+     8.2,
+     4.9193
+    ],
+    "heavy_lift_t": [
+     43.0504,
+     20.3628
+    ],
+    "team_items": [
+     15.6,
+     6.8044
+    ],
+    "team_items_delivered": [
+     0.0,
+     0.0
+    ],
+    "team_items_same_owner_liftable_share": 0.1282,
+    "hopper_km": [
+     0.0,
+     0.0
+    ],
+    "day_cap_h": [
+     4.6317,
+     4.1636
+    ],
+    "busy_share_by_class_seed1": {
+     "LTV1_CLV1": [
+      0.0047
+     ],
+     "CARGO_FLEX": [
+      0.3657
+     ],
+     "MAPP_SMALL": [
+      0.0064,
+      0.0056
+     ],
+     "HOPPER_MOONFALL": [
+      0.0,
+      0.0
+     ],
+     "LTV1_PEGASUS": [
+      0.0035
+     ],
+     "CARGO_EAGLE": [
+      0.3298
+     ]
+    }
+   }
+  },
+  "30|3uneq": {
+   "marketplace": {
+    "seeds": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "cargo_class_busy": [
+     0.2978,
+     0.009
+    ],
+    "fleet_utilisation": [
+     0.0772,
+     0.0027
+    ],
+    "fleet_utilisation_active_h": [
+     0.1016,
+     0.0035
+    ],
+    "delivered_t": [
+     1488.196,
+     31.9563
+    ],
+    "backlog_t": [
+     2.0,
+     1.7678
+    ],
+    "stranded_t": [
+     0.0,
+     0.0
+    ],
+    "heavy_lift_items": [
+     8.2,
+     4.9193
+    ],
+    "heavy_lift_t": [
+     43.0504,
+     20.3628
+    ],
+    "team_items": [
+     15.6,
+     6.8044
+    ],
+    "team_items_delivered": [
+     14.0,
+     7.0356
+    ],
+    "team_items_same_owner_liftable_share": 0.1282,
+    "hopper_km": [
+     0.2744,
+     0.6135
+    ],
+    "day_cap_h": [
+     18.3033,
+     17.0675
+    ],
+    "busy_share_by_class_seed1": {
+     "LTV1_CLV1": [
+      0.0089
+     ],
+     "CARGO_FLEX": [
+      0.2669
+     ],
+     "LTV1_PEGASUS": [
+      0.0075
+     ],
+     "CARGO_EAGLE": [
+      0.3353
+     ],
+     "MAPP_SMALL": [
+      0.0123,
+      0.005
+     ],
+     "HOPPER_MOONFALL": [
+      0.0,
+      0.0
+     ]
+    }
+   },
+   "inhouse": {
+    "seeds": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "cargo_class_busy": [
+     0.3057,
+     0.0137
+    ],
+    "fleet_utilisation": [
+     0.0779,
+     0.0036
+    ],
+    "fleet_utilisation_active_h": [
+     0.1026,
+     0.0047
+    ],
+    "delivered_t": [
+     1222.2094,
+     15.1542
+    ],
+    "backlog_t": [
+     228.0325,
+     4.3402
+    ],
+    "stranded_t": [
+     35.8261,
+     14.7303
+    ],
+    "heavy_lift_items": [
+     8.2,
+     4.9193
+    ],
+    "heavy_lift_t": [
+     43.0504,
+     20.3628
+    ],
+    "team_items": [
+     15.6,
+     6.8044
+    ],
+    "team_items_delivered": [
+     0.0,
+     0.0
+    ],
+    "team_items_same_owner_liftable_share": 0.1282,
+    "hopper_km": [
+     0.0,
+     0.0
+    ],
+    "day_cap_h": [
+     21.7389,
+     12.5318
+    ],
+    "busy_share_by_class_seed1": {
+     "LTV1_CLV1": [
+      0.011
+     ],
+     "CARGO_FLEX": [
+      0.3808
+     ],
+     "LTV1_PEGASUS": [
+      0.0034
+     ],
+     "CARGO_EAGLE": [
+      0.2328
+     ],
+     "MAPP_SMALL": [
+      0.0037,
+      0.0014
+     ],
+     "HOPPER_MOONFALL": [
+      0.0,
+      0.0
+     ]
+    }
+   }
+  },
+  "30|5eq": {
+   "marketplace": {
+    "seeds": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "cargo_class_busy": [
+     0.3008,
+     0.0093
+    ],
+    "fleet_utilisation": [
+     0.0777,
+     0.0024
+    ],
+    "fleet_utilisation_active_h": [
+     0.1023,
+     0.0031
+    ],
+    "delivered_t": [
+     1491.1968,
+     27.0455
+    ],
+    "backlog_t": [
+     1.3,
+     1.255
+    ],
+    "stranded_t": [
+     0.0,
+     0.0
+    ],
+    "heavy_lift_items": [
+     8.0,
+     5.244
+    ],
+    "heavy_lift_t": [
+     44.9902,
+     21.0163
+    ],
+    "team_items": [
+     16.4,
+     6.229
+    ],
+    "team_items_delivered": [
+     16.0,
+     6.2048
+    ],
+    "team_items_same_owner_liftable_share": 0.1585,
+    "hopper_km": [
+     0.2744,
+     0.6135
+    ],
+    "day_cap_h": [
+     5.3783,
+     6.4865
+    ],
+    "busy_share_by_class_seed1": {
+     "LTV1_CLV1": [
+      0.0048
+     ],
+     "CARGO_FLEX": [
+      0.2654
+     ],
+     "LTV1_PEGASUS": [
+      0.0014
+     ],
+     "CARGO_EAGLE": [
+      0.3317
+     ],
+     "MAPP_SMALL": [
+      0.0112,
+      0.0068
+     ],
+     "HOPPER_MOONFALL": [
+      0.0,
+      0.0
+     ]
+    }
+   },
+   "inhouse": {
+    "seeds": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "cargo_class_busy": [
+     0.1451,
+     0.0098
+    ],
+    "fleet_utilisation": [
+     0.0374,
+     0.0025
+    ],
+    "fleet_utilisation_active_h": [
+     0.0492,
+     0.0033
+    ],
+    "delivered_t": [
+     575.4269,
+     6.7994
+    ],
+    "backlog_t": [
+     866.8415,
+     5.7962
+    ],
+    "stranded_t": [
+     34.2293,
+     14.4003
+    ],
+    "heavy_lift_items": [
+     8.0,
+     5.244
+    ],
+    "heavy_lift_t": [
+     44.9902,
+     21.0163
+    ],
+    "team_items": [
+     16.4,
+     6.229
+    ],
+    "team_items_delivered": [
+     0.0,
+     0.0
+    ],
+    "team_items_same_owner_liftable_share": 0.1585,
+    "hopper_km": [
+     0.0,
+     0.0
+    ],
+    "day_cap_h": [
+     4.6806,
+     6.4092
+    ],
+    "busy_share_by_class_seed1": {
+     "LTV1_CLV1": [
+      0.0029
+     ],
+     "CARGO_FLEX": [
+      0.1442
+     ],
+     "LTV1_PEGASUS": [
+      0.0035
+     ],
+     "CARGO_EAGLE": [
+      0.1331
+     ],
+     "MAPP_SMALL": [
+      0.004,
+      0.0012
+     ],
+     "HOPPER_MOONFALL": [
+      0.0,
+      0.0
+     ]
+    }
+   }
+  },
+  "60|3eq": {
+   "marketplace": {
+    "seeds": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "cargo_class_busy": [
+     0.596,
+     0.0062
+    ],
+    "fleet_utilisation": [
+     0.155,
+     0.0027
+    ],
+    "fleet_utilisation_active_h": [
+     0.2041,
+     0.0035
+    ],
+    "delivered_t": [
+     3254.732,
+     19.1503
+    ],
+    "backlog_t": [
+     10.3339,
+     10.0968
+    ],
+    "stranded_t": [
+     0.0,
+     0.0
+    ],
+    "heavy_lift_items": [
+     18.2,
+     3.2711
+    ],
+    "heavy_lift_t": [
+     117.1236,
+     22.6074
+    ],
+    "team_items": [
+     28.2,
+     8.167
+    ],
+    "team_items_delivered": [
+     25.6,
+     5.8992
+    ],
+    "team_items_same_owner_liftable_share": 0.156,
+    "hopper_km": [
+     0.3553,
+     0.4866
+    ],
+    "day_cap_h": [
+     9.6246,
+     9.5435
+    ],
+    "busy_share_by_class_seed1": {
+     "LTV1_CLV1": [
+      0.0149
+     ],
+     "CARGO_FLEX": [
+      0.5648
+     ],
+     "LTV1_PEGASUS": [
+      0.0117
+     ],
+     "CARGO_EAGLE": [
+      0.6185
+     ],
+     "MAPP_SMALL": [
+      0.0223,
+      0.013
+     ],
+     "HOPPER_MOONFALL": [
+      0.0,
+      0.0
+     ]
+    }
+   },
+   "inhouse": {
+    "seeds": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "cargo_class_busy": [
+     0.5076,
+     0.0233
+    ],
+    "fleet_utilisation": [
+     0.131,
+     0.0068
+    ],
+    "fleet_utilisation_active_h": [
+     0.1724,
+     0.009
+    ],
+    "delivered_t": [
+     2110.8965,
+     14.1397
+    ],
+    "backlog_t": [
+     1083.2335,
+     11.2907
+    ],
+    "stranded_t": [
+     59.5683,
+     14.0695
+    ],
+    "heavy_lift_items": [
+     18.2,
+     3.2711
+    ],
+    "heavy_lift_t": [
+     117.1236,
+     22.6074
+    ],
+    "team_items": [
+     28.2,
+     8.167
+    ],
+    "team_items_delivered": [
+     0.0,
+     0.0
+    ],
+    "team_items_same_owner_liftable_share": 0.156,
+    "hopper_km": [
+     0.0,
+     0.0
+    ],
+    "day_cap_h": [
+     33.3682,
+     17.4241
+    ],
+    "busy_share_by_class_seed1": {
+     "LTV1_CLV1": [
+      0.0116
+     ],
+     "CARGO_FLEX": [
+      0.5426
+     ],
+     "LTV1_PEGASUS": [
+      0.0139
+     ],
+     "CARGO_EAGLE": [
+      0.4903
+     ],
+     "MAPP_SMALL": [
+      0.0068,
+      0.0061
+     ],
+     "HOPPER_MOONFALL": [
+      0.0,
+      0.0
+     ]
+    }
+   }
+  },
+  "30-lot200|3eq": {
+   "marketplace": {
+    "seeds": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "cargo_class_busy": [
+     0.3005,
+     0.0015
+    ],
+    "fleet_utilisation": [
+     0.1385,
+     0.0023
+    ],
+    "fleet_utilisation_active_h": [
+     0.1823,
+     0.003
+    ],
+    "delivered_t": [
+     1365.961,
+     18.0203
+    ],
+    "backlog_t": [
+     1.48,
+     1.2931
+    ],
+    "stranded_t": [
+     0.0,
+     0.0
+    ],
+    "heavy_lift_items": [
+     6.4,
+     3.5071
+    ],
+    "heavy_lift_t": [
+     41.9938,
+     23.4111
+    ],
+    "team_items": [
+     13.4,
+     5.0299
+    ],
+    "team_items_delivered": [
+     12.8,
+     4.3243
+    ],
+    "team_items_same_owner_liftable_share": 0.1343,
+    "hopper_km": [
+     0.2744,
+     0.6135
+    ],
+    "day_cap_h": [
+     10.1327,
+     17.3615
+    ],
+    "busy_share_by_class_seed1": {
+     "LTV1_CLV1": [
+      0.0092
+     ],
+     "CARGO_FLEX": [
+      0.2414
+     ],
+     "LTV1_PEGASUS": [
+      0.0107
+     ],
+     "CARGO_EAGLE": [
+      0.3582
+     ],
+     "MAPP_SMALL": [
+      0.2606,
+      0.2532
+     ],
+     "HOPPER_MOONFALL": [
+      0.0,
+      0.0
+     ]
+    }
+   },
+   "inhouse": {
+    "seeds": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "cargo_class_busy": [
+     0.5253,
+     0.0162
+    ],
+    "fleet_utilisation": [
+     0.1849,
+     0.0051
+    ],
+    "fleet_utilisation_active_h": [
+     0.2435,
+     0.0067
+    ],
+    "delivered_t": [
+     1313.7314,
+     3.994
+    ],
+    "backlog_t": [
+     17.6125,
+     7.4129
+    ],
+    "stranded_t": [
+     26.9479,
+     6.7938
+    ],
+    "heavy_lift_items": [
+     6.4,
+     3.5071
+    ],
+    "heavy_lift_t": [
+     41.9938,
+     23.4111
+    ],
+    "team_items": [
+     13.4,
+     5.0299
+    ],
+    "team_items_delivered": [
+     0.0,
+     0.0
+    ],
+    "team_items_same_owner_liftable_share": 0.1343,
+    "hopper_km": [
+     0.0,
+     0.0
+    ],
+    "day_cap_h": [
+     21.8177,
+     28.9714
+    ],
+    "busy_share_by_class_seed1": {
+     "LTV1_CLV1": [
+      0.0062
+     ],
+     "CARGO_FLEX": [
+      0.5514
+     ],
+     "LTV1_PEGASUS": [
+      0.0038
+     ],
+     "CARGO_EAGLE": [
+      0.5101
+     ],
+     "MAPP_SMALL": [
+      0.2626,
+      0.1705
+     ],
+     "HOPPER_MOONFALL": [
+      0.0,
+      0.0
+     ]
+    }
+   }
+  }
+ },
+ "plateau": [
+  {
+   "k": 1.0,
+   "seeds": [
+    1,
+    2,
+    3
+   ],
+   "fleet_utilisation": [
+    0.0291,
+    0.0005
+   ],
+   "fleet_utilisation_active_h": [
+    0.0384,
+    0.0007
+   ],
+   "cargo_class_busy": [
+    0.1139,
+    0.0016
+   ],
+   "delivered_t": [
+    529.5194,
+    9.6821
+   ],
+   "backlog_t": [
+    0.0,
+    0.0
+   ],
+   "busy_share_by_class_seed1": {
+    "LTV1_CLV1": [
+     0.0036
+    ],
+    "CARGO_FLEX": [
+     0.1071
+    ],
+    "LTV1_PEGASUS": [
+     0.0001
+    ],
+    "CARGO_EAGLE": [
+     0.1244
+    ],
+    "MAPP_SMALL": [
+     0.0013,
+     0.0014
+    ],
+    "HOPPER_MOONFALL": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "k": 2.0,
+   "seeds": [
+    1,
+    2,
+    3
+   ],
+   "fleet_utilisation": [
+    0.0562,
+    0.0022
+   ],
+   "fleet_utilisation_active_h": [
+    0.074,
+    0.0029
+   ],
+   "cargo_class_busy": [
+    0.2171,
+    0.0048
+   ],
+   "delivered_t": [
+    1060.2426,
+    29.8703
+   ],
+   "backlog_t": [
+    1.0,
+    0.5
+   ],
+   "busy_share_by_class_seed1": {
+    "LTV1_CLV1": [
+     0.0039
+    ],
+    "CARGO_FLEX": [
+     0.1783
+    ],
+    "LTV1_PEGASUS": [
+     0.0
+    ],
+    "CARGO_EAGLE": [
+     0.2467
+    ],
+    "MAPP_SMALL": [
+     0.0021,
+     0.003
+    ],
+    "HOPPER_MOONFALL": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "k": 4.0,
+   "seeds": [
+    1,
+    2,
+    3
+   ],
+   "fleet_utilisation": [
+    0.1032,
+    0.0008
+   ],
+   "fleet_utilisation_active_h": [
+    0.1359,
+    0.0011
+   ],
+   "cargo_class_busy": [
+    0.4031,
+    0.0033
+   ],
+   "delivered_t": [
+    2087.453,
+    11.0435
+   ],
+   "backlog_t": [
+    3.5,
+    5.2202
+   ],
+   "busy_share_by_class_seed1": {
+    "LTV1_CLV1": [
+     0.006
+    ],
+    "CARGO_FLEX": [
+     0.3678
+    ],
+    "LTV1_PEGASUS": [
+     0.0015
+    ],
+    "CARGO_EAGLE": [
+     0.4331
+    ],
+    "MAPP_SMALL": [
+     0.0067,
+     0.0072
+    ],
+    "HOPPER_MOONFALL": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "k": 8.0,
+   "seeds": [
+    1,
+    2,
+    3
+   ],
+   "fleet_utilisation": [
+    0.1737,
+    0.0024
+   ],
+   "fleet_utilisation_active_h": [
+    0.2287,
+    0.0032
+   ],
+   "cargo_class_busy": [
+    0.655,
+    0.0131
+   ],
+   "delivered_t": [
+    3779.5789,
+    52.1289
+   ],
+   "backlog_t": [
+    417.6105,
+    107.0774
+   ],
+   "busy_share_by_class_seed1": {
+    "LTV1_CLV1": [
+     0.0262
+    ],
+    "CARGO_FLEX": [
+     0.6182
+    ],
+    "LTV1_PEGASUS": [
+     0.0257
+    ],
+    "CARGO_EAGLE": [
+     0.671
+    ],
+    "MAPP_SMALL": [
+     0.0187,
+     0.011
+    ],
+    "HOPPER_MOONFALL": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "k": 11.0,
+   "seeds": [
+    1
+   ],
+   "fleet_utilisation": [
+    0.1718,
+    0.0
+   ],
+   "fleet_utilisation_active_h": [
+    0.2261,
+    0.0
+   ],
+   "cargo_class_busy": [
+    0.6449,
+    0.0
+   ],
+   "delivered_t": [
+    3611.6455,
+    0.0
+   ],
+   "backlog_t": [
+    2072.2215,
+    0.0
+   ],
+   "busy_share_by_class_seed1": {
+    "LTV1_CLV1": [
+     0.0305
+    ],
+    "CARGO_FLEX": [
+     0.6186
+    ],
+    "LTV1_PEGASUS": [
+     0.0192
+    ],
+    "CARGO_EAGLE": [
+     0.6713
+    ],
+    "MAPP_SMALL": [
+     0.0167,
+     0.0179
+    ],
+    "HOPPER_MOONFALL": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "k": 14.0,
+   "seeds": [
+    1
+   ],
+   "fleet_utilisation": [
+    0.1756,
+    0.0
+   ],
+   "fleet_utilisation_active_h": [
+    0.2312,
+    0.0
+   ],
+   "cargo_class_busy": [
+    0.6389,
+    0.0
+   ],
+   "delivered_t": [
+    3310.1303,
+    0.0
+   ],
+   "backlog_t": [
+    4091.8038,
+    0.0
+   ],
+   "busy_share_by_class_seed1": {
+    "LTV1_CLV1": [
+     0.0378
+    ],
+    "CARGO_FLEX": [
+     0.6189
+    ],
+    "LTV1_PEGASUS": [
+     0.0342
+    ],
+    "CARGO_EAGLE": [
+     0.6589
+    ],
+    "MAPP_SMALL": [
+     0.0336,
+     0.0215
+    ],
+    "HOPPER_MOONFALL": [
+     0.0,
+     0.0
+    ]
+   }
+  }
+ ],
+ "files": [
+  "data/scenarios/p5/p5-3eq-L10-T00.json",
+  "data/scenarios/p5/p5-3eq-L10-T10.json",
+  "data/scenarios/p5/p5-3eq-L10-T25.json",
+  "data/scenarios/p5/p5-3eq-L30-T00.json",
+  "data/scenarios/p5/p5-3eq-L30-T10.json",
+  "data/scenarios/p5/p5-3eq-L30-T25.json",
+  "data/scenarios/p5/p5-3eq-L60-T00.json",
+  "data/scenarios/p5/p5-3eq-L60-T10.json",
+  "data/scenarios/p5/p5-3eq-L60-T25.json",
+  "data/scenarios/p5/p5-3uneq-L10-T00.json",
+  "data/scenarios/p5/p5-3uneq-L10-T10.json",
+  "data/scenarios/p5/p5-3uneq-L10-T25.json",
+  "data/scenarios/p5/p5-3uneq-L30-T00.json",
+  "data/scenarios/p5/p5-3uneq-L30-T10.json",
+  "data/scenarios/p5/p5-3uneq-L30-T25.json",
+  "data/scenarios/p5/p5-3uneq-L60-T00.json",
+  "data/scenarios/p5/p5-3uneq-L60-T10.json",
+  "data/scenarios/p5/p5-3uneq-L60-T25.json",
+  "data/scenarios/p5/p5-2eq-L10-T00.json",
+  "data/scenarios/p5/p5-2eq-L10-T10.json",
+  "data/scenarios/p5/p5-2eq-L10-T25.json",
+  "data/scenarios/p5/p5-2eq-L30-T00.json",
+  "data/scenarios/p5/p5-2eq-L30-T10.json",
+  "data/scenarios/p5/p5-2eq-L30-T25.json",
+  "data/scenarios/p5/p5-2eq-L60-T00.json",
+  "data/scenarios/p5/p5-2eq-L60-T10.json",
+  "data/scenarios/p5/p5-2eq-L60-T25.json",
+  "data/scenarios/p5/p5-5eq-L10-T00.json",
+  "data/scenarios/p5/p5-5eq-L10-T10.json",
+  "data/scenarios/p5/p5-5eq-L10-T25.json",
+  "data/scenarios/p5/p5-5eq-L30-T00.json",
+  "data/scenarios/p5/p5-5eq-L30-T10.json",
+  "data/scenarios/p5/p5-5eq-L30-T25.json",
+  "data/scenarios/p5/p5-5eq-L60-T00.json",
+  "data/scenarios/p5/p5-5eq-L60-T10.json",
+  "data/scenarios/p5/p5-5eq-L60-T25.json",
+  "data/scenarios/p5/p5-3eq-L30-lot200-T10.json"
+ ],
+ "generated": "2026-10-27T18:26:03Z"
+}

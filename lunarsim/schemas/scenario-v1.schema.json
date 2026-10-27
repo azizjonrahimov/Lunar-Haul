@@ -62,7 +62,14 @@
               "enum": [
                 "LTV",
                 "HAUL",
-                "MICRO"
+                "MICRO",
+                "LTV1_CLV1",
+                "LTV1_PEGASUS",
+                "CARGO_FLEX",
+                "CARGO_EAGLE",
+                "MAPP_SMALL",
+                "HOPPER_MOONFALL",
+                "HOPPER_MICRONOVA"
               ]
             },
             {
@@ -94,7 +101,14 @@
               "enum": [
                 "LTV",
                 "HAUL",
-                "MICRO"
+                "MICRO",
+                "LTV1_CLV1",
+                "LTV1_PEGASUS",
+                "CARGO_FLEX",
+                "CARGO_EAGLE",
+                "MAPP_SMALL",
+                "HOPPER_MOONFALL",
+                "HOPPER_MICRONOVA"
               ]
             },
             "autonomy": {
@@ -351,6 +365,22 @@
             "null"
           ],
           "description": "Phase 3: \"driving-v1\" or a path to a lunarsim-driving table"
+        },
+        "p5": {
+          "type": ["object", "null"],
+          "description": "Phase 5 (B-71): the p5 family (lunarsim/atc/p5.py): real vehicle classes (lunarsim/atc/vehicles-p5.json), items beyond the fleet's largest pair kept on a heavy-lift list, a team-lift share re-drawn from its own stream, hoppers with a km budget and an active window. Absent or null = unchanged results.",
+          "additionalProperties": false,
+          "properties": {
+            "team_lift_share": {"type": "number", "minimum": 0, "maximum": 1, "description": "share of in-reach landed items whose mass is re-drawn into (largest single, largest pair]"},
+            "team_rule": {"enum": ["sum", "krawciw"], "description": "pair capacity: the two capacities (default) or krawciw_fraction x the two vehicle masses"},
+            "krawciw_fraction": {"type": "number", "exclusiveMinimum": 0, "description": "default 0.3 (Krawciw et al.: 475 kg on 2 x 800 kg)"},
+            "class_overrides": {"type": "object", "description": "{class id: {parameter: value}} sweeps of vehicles-p5.json", "additionalProperties": {"type": "object"}},
+            "hopper_refuel": {"type": "boolean", "description": "Assumed variant: a hopper's km budget refills each synodic month and it never retires"},
+            "owners": {"type": "string", "description": "owner mix label (informational)"},
+            "k": {"type": "number", "minimum": 0, "description": "demand multiplier the file was built with (informational)"},
+            "load": {"type": "object", "description": "load variant and its calibration (informational)"},
+            "label": {"type": "string", "description": "variant label, e.g. an ASSUMED sensitivity (informational)"}
+          }
         },
         "illumination": {
           "type": ["object", "null"],
