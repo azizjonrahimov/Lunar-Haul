@@ -24,7 +24,9 @@ const VIEWS = ['own', 'cutaway', 'exploded', 'xray'];
 const ui = { group: 'landers', id: 'MK1', view: 'own', follow: 'none', scale: false, section: 0 };
 const q = new URLSearchParams(location.search);
 { const v = q.get('view') === 'whole' ? 'own' : q.get('view'); if (VIEWS.includes(v)) ui.view = v; }
-if (q.get('v')) { const g = Object.keys(GROUPS).find(k => GROUPS[k].includes(q.get('v'))); if (g) Object.assign(ui, { group: g, id: q.get('v') }); }
+// F-51: the kit's own models join the catalogue's (each a lazy chunk, kit-data.js load()); rockets get a group
+const VGROUPS = { landers: [...GROUPS.landers, 'griffin', 'blue_ghost'], rockets: ['centaur_v'], rovers: GROUPS.rovers, base: GROUPS.base };
+if (q.get('v')) { const g = Object.keys(VGROUPS).find(k => VGROUPS[k].includes(q.get('v'))); if (g) Object.assign(ui, { group: g, id: q.get('v') }); }
 
 const gate = door({ title: 'The LunarHaul fleet', subtitle: 'Vehicle catalogue and 3D models, built in your browser at true scale.', skip: { href: '#v-tree-h', label: 'Skip to the parts list' },
   enterLabel: 'Enter the 3D view', beforeOpen: () => start3D() });
@@ -39,17 +41,20 @@ try {
 mats = createMaterials(catalog.doc.materials);
 
 // ---------- pickers ----------
-const nameOf = id => catalog.entry(id).name.replace(/\s*\(.*\)\s*$/, '');
-const groupChips = sceneChips({ label: 'Vehicle groups', scenes: [{ value: 'landers', label: 'Landers', note: '3 classes' }, { value: 'rovers', label: 'Rovers', note: '3 classes' }, { value: 'base', label: 'Base', note: '5 elements' }],
-  value: ui.group, onChange: g => { ui.group = g; drawVehicleChips(); choose(GROUPS[g][0]); } });
+// a kit-only vehicle has no catalogue entry: a stand-in with its title (no stat chips; its numbers are in the part list)
+const entryOf = id => KIT[id]?.load ? { id, name: KIT[id].title, kind: 'kit', dims: {} } : catalog.entry(id);
+const nameOf = id => entryOf(id).name.replace(/\s*\(.*\)\s*$/, '');
+const count = g => `${VGROUPS[g].length} ${g === 'base' ? 'elements' : VGROUPS[g].length === 1 ? 'stage' : 'vehicles'}`;
+const groupChips = sceneChips({ label: 'Vehicle groups', scenes: [['landers', 'Landers'], ['rockets', 'Rockets'], ['rovers', 'Rovers'], ['base', 'Base']].map(([value, label]) => ({ value, label, note: count(value) })),
+  value: ui.group, onChange: g => { ui.group = g; drawVehicleChips(); choose(VGROUPS[g][0]); } });
 $('v-groups').append(groupChips.el);
 let vehicleChips;
 function drawVehicleChips() {
-  vehicleChips = sceneChips({ label: 'Vehicles', scenes: GROUPS[ui.group].map(id => ({ value: id, label: shortName(id) })), value: ui.id, onChange: id => choose(id) });
+  vehicleChips = sceneChips({ label: 'Vehicles', scenes: VGROUPS[ui.group].map(id => ({ value: id, label: shortName(id) })), value: ui.id, onChange: id => choose(id) });
   $('v-vehicles').replaceChildren(vehicleChips.el);
 }
-const SHORT = { CLPS: 'CLPS class', MK1: 'MK1 class', LARGE: 'Large cargo', LTV: 'LTV', HAUL: 'HAUL (concept)', MICRO: 'MICRO', habitat: 'Habitat', pad: 'Landing pad', solar_tower: 'Solar tower', comms_mast: 'Comms mast', cargo_pallet: 'Cargo pallet' };
-const shortName = id => SHORT[id] || id;
+const SHORT = { CLPS: 'Nova-C (CLPS class)', MK1: 'Blue Moon MK1', LARGE: 'Starship HLS', LTV: 'LTV', HAUL: 'HAUL (concept)', MICRO: 'MICRO', habitat: 'Habitat', pad: 'Landing pad', solar_tower: 'Solar tower', comms_mast: 'Comms mast', cargo_pallet: 'Cargo pallet' };
+const shortName = id => SHORT[id] || KIT[id]?.short || id;
 drawVehicleChips();
 
 $('v-modes').append(
@@ -69,16 +74,23 @@ async function start3D() {
   if (import.meta.env.DEV) window.__stage = stage;   // console access while developing
   stage.director.bindKeys($('v-canvas'));
   stage.director.limits({ maxPolar: 88 });
+  await choosing;   // a kit model may still be loading
   mount(); applyView(true); applyFollow();
 }
 
 // ---------- choosing a vehicle ----------
-function choose(id) {
+// the catalogue's models build at once; the kit's own load their chunk first (a newer choice wins)
+let choosing = null, chooseGen = 0;
+function choose(id) { return (choosing = chooseNow(id)); }
+async function chooseNow(id) {
+  const gen = ++chooseGen;
   ui.id = id; vehicleChips?.set(id);
   writeUrl();
-  const e = catalog.entry(id);
+  const e = entryOf(id), mod = KIT[id]?.load ? await KIT[id].load() : null;
+  if (gen !== chooseGen) return;
   if (stage) { setXray(false); clearExtras(); stage.clearSubject(); flows.clear(); }
-  vehicle = buildVehicle(catalog, mats, id);
+  if (mod) { vehicle = mod.build(mats); vehicle.entry = e; vehicle.root.userData.representative = vehicle.representative; }
+  else vehicle = buildVehicle(catalog, mats, id);
   if (stage) mount();
   drawChips(e); drawTree(); drawProps(null);
   const rep = $('v-rep'); rep.hidden = !vehicle.root.userData.representative;
@@ -116,7 +128,7 @@ function writeUrl() {   // F-40: other parameters (?tier, ?gpumem) stay
 }
 function applyView(instant = false) {
   if (!vehicle) return;
-  const v = ui.view, e = catalog.entry(ui.id), s = STORIES[ui.id] || {}, key = v === 'own' ? 'whole' : v;
+  const v = ui.view, e = entryOf(ui.id), s = STORIES[ui.id] || KIT[ui.id]?.story || {}, key = v === 'own' ? 'whole' : v;
   writeUrl(); $('v-section-l').hidden = v !== 'cutaway';
   story.set({ eyebrow: `${shortName(ui.id)} · ${VIEW_NAME[v]}`, title: KIT[ui.id]?.title || nameOf(ui.id),
     html: (v === 'xray' ? XRAY_TEXT : para(render(s[key] || s.whole || '', catalog, ui.id))) + (e.representative && v === 'own' ? `<p class="small">${e.representative_note || ''}</p>` : '') });

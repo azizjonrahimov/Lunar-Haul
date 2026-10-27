@@ -5526,3 +5526,54 @@ Base elements keep their old list: no sources, tag from the model's representati
 **What I need from BACKEND:** nothing.
 
 **Questions for LEAD:** none.
+
+## F-51 PART 2 DONE 11:35 | Lander and rocket models: Griffin, Blue Ghost and Centaur V new (one lazy chunk each); Nova-C, Blue Moon MK1 and Starship HLS kept
+
+**Files changed (uncommitted):**
+- New: `site/src/models/kit/griffin.js`, `blue-ghost.js`, `centaur-v.js`.
+- Modified: `site/src/vehicles/kit-data.js`, `site/src/vehicles/main.js`.
+
+**Vehicles:**
+- **Kept, now named after the vehicles they model:** CLPS as "Nova-C (CLPS class)", MK1 as "Blue Moon MK1", LARGE as "Starship HLS". They are already built from Table B's layout. I didn't replace them: a new model would not be better, since their internals are just as unpublished.
+- **New: Astrobotic Griffin** (2021 payload user's guide layout):
+  - a square bus of deck and radiator panels with the avionics underneath;
+  - the adapter cone with 5 main engines inside;
+  - 2 fuel and 2 oxidiser tanks round the cone;
+  - 4 clusters of 3 attitude thrusters, a side solar panel, a dish and mast, 4 legs, and a payload on the deck.
+- **New: Firefly Blue Ghost:**
+  - a box body with 3 decks and 4 composite legs with crush-core sections;
+  - the LEROS main engine, RCS thrusters, an X-band dish and 3 S-band antennas, and 3 solar panels;
+  - 2 tanks drawn inside.
+- **New: ULA Centaur V** (CV-HE, in a new "Rockets" group):
+  - stainless balloon-tank walls;
+  - the LH2 tank forward and the LOX tank aft, split by the common bulkhead;
+  - the forward avionics adapter and 2 RL10 engines.
+- Each new model is its own lazy chunk (gzip): Griffin 1.4 kB, Blue Ghost 1.2 kB, Centaur V 0.9 kB. They load on choosing the vehicle; a newer choice wins if the visitor switches while one is loading.
+- All three have the four views, a preset cut (vertical through the tanks and engines), an X-ray shell (Griffin and Blue Ghost include their side panels), measured dimension lines, a part list with sources, and Follow propellant/power/cargo paths.
+- **Deep links:** `/vehicles/?v=griffin`, `?v=blue_ghost`, `?v=centaur_v`, each with `&view=…`.
+
+**Parts or sizes I had to invent, all labelled "schematic":**
+- **Griffin's whole envelope** (Low): the size is unpublished, so the bus is 3 m square and 2 m to the deck. The dimension lines say "as drawn".
+- **Blue Ghost's tanks** (Low): count and positions are unpublished.
+- **Centaur V barrel lengths:** computed (Medium), and shortened a little so the domes fit in 12.6 m.
+- Leg geometry and engine bell shapes on all three are drawn shapes (legs on the published count).
+
+**Checks:**
+- `npm run build` OK; node tests 16/16; `budgets.py pages` OK (/vehicles/ 88.4 of 100 kB JS; the part texts are most of the +2.4 kB).
+- In the browser (production build; free RAM 0.98 GB):
+  - Griffin Inside: the cone opens on the engines, with the tanks round it and 11 part rows.
+  - Blue Ghost X-ray: 8 part rows. That run showed the side panels hiding the tanks, so they are now see-through in X-ray too (rebuilt; not re-screenshotted).
+  - Centaur V On its own: "Height 12.6 m (CV-HE)" and "Diameter 5.4 m", the astronaut and the 1 m bar.
+  - Switching groups and vehicles in the page loads each chunk. No console errors.
+- Server stopped and tab closed.
+
+**For later (the F-52 audit):**
+- Wide, low vehicles (Griffin) sit small in the frame, because the shots fit a bounding sphere.
+- The tall ones (Centaur V, MK1) lose their top under the story card.
+- Some callouts overlap, e.g. "Hull" under "Liquid hydrogen tank".
+
+**Budgets:** the inbox asks for budgets.py entries for the new chunks. `tools/ci/budgets.py` is BACKEND's, and it counts no lazy chunks today. Should BACKEND add a per-chunk limit (say 15 kB gzip per vehicle model), or is the page total enough?
+
+**What I need from BACKEND:** only the budgets question above, if you want it.
+
+**Next (part 3):** rovers (CLV-1, Pegasus, FLEX, Eagle, MAPP; VIPER and the LRV get their own detailed models), the hoppers (MoonFall, Micro-Nova) and the Lunar ATC parts.

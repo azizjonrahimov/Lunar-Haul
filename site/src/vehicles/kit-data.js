@@ -135,6 +135,77 @@ export const KIT = {
       wheels: { what: 'Four wheel modules with steering and active suspension.', size: '50 cm, 7-43 cm clearance', src: ['viper'], conf: 'High' },
     },
   },
+  // ---- part 2: models of their own (site/src/models/kit/, one lazy chunk each); story: the text per view ----
+  griffin: {
+    title: 'Astrobotic Griffin', short: 'Griffin', load: () => import('../models/kit/griffin.js'),
+    story: {
+      whole: 'Astrobotic’s Griffin, now built by Voyager: a square bus that carries more than 455 kg of cargo, first to Nobile Crater. Its outer size is unpublished, so the envelope here is schematic.',
+      cutaway: 'The cut shows the launch-vehicle adapter cone with the main engines inside it, and the fuel and oxidiser tanks spaced round it.',
+      exploded: 'Tanks out and up, engines down out of the cone, legs out: the 2021 payload user’s guide layout.',
+    },
+    cut: { dir: 'side' }, shell: ['bus', 'cone', 'solar'],
+    dims: [
+      { label: 'Bus', text: 'about 3 m as drawn', part: 'bus', axis: 'x', src: ['assumed'], conf: 'Low' },
+      { label: 'Deck height', text: 'about 2 m as drawn', part: 'bus', axis: 'y', src: ['assumed'], conf: 'Low' },
+    ],
+    parts: {
+      bus: { what: 'Deck panels and four radiator panels; the lander’s avionics mount on their undersides.', size: 'not published', src: ['pug'], conf: 'Low' },
+      cone: { what: 'The launch-vehicle adapter at the bottom centre; the main engines sit inside it.', size: 'not published', src: ['pug'], conf: 'High' },
+      engines: { what: 'Pulsed main engines inside the cone: five 3.1 kN engines in 2021, seven in the Mission One design.', size: '5 × 3.1 kN (2021)', src: ['pug', 'griffin'], conf: 'High' },
+      fuel: { what: 'Two fuel tanks (an MMH-type fuel), spaced evenly round the cone.', size: '2 tanks (4 COPV tanks in GM1)', src: ['pug', 'gm1'], conf: 'High' },
+      oxidiser: { what: 'Two oxidiser tanks (MON-3) between the fuel tanks.', size: '2 tanks', src: ['pug'], conf: 'High' },
+      avionics: { what: 'Flight computers and radios on the undersides of the radiator panels that form the decks.', size: 'not published', src: ['pug'], conf: 'High' },
+      payload: { what: 'Payloads bolt on above the deck (sky view) or below it (near the surface), on M5 inserts every 75 mm.', size: '~0.5 m² per side', src: ['pug'], conf: 'High' },
+      solar: { what: 'Side-mounted solar panels, the polar configuration for a sun that stays low.', size: 'not published', src: ['pug'], conf: 'High' },
+      antennas: { what: 'Low-gain antennas plus an actuated medium/high-gain dish; a 2.4 GHz WLAN links the payloads.', size: 'not published', src: ['pug'], conf: 'High' },
+      acs: { what: 'Twelve 111 N attitude thrusters in four clusters of three turn and steady the lander.', size: '12 × 111 N', src: ['pug'], conf: 'High' },
+      legs: { what: 'Four landing legs.', size: '4 legs', src: ['griffin'], conf: 'High' },
+    },
+  },
+  blue_ghost: {
+    title: 'Firefly Blue Ghost', short: 'Blue Ghost', load: () => import('../models/kit/blue-ghost.js'),
+    story: {
+      whole: 'Firefly’s Blue Ghost: 2 m tall and 3.5 m across, 150 kg of cargo. Mission 1 landed in Mare Crisium on 2 March 2025 and worked about 14 days, into the night.',
+      cutaway: 'A box frame of 49 composite struts with three decks: the top one looks at the sky, the middle one carries rovers, the bottom one reaches the surface. The tank layout is unpublished, so the tanks are schematic.',
+      exploded: 'Decks up, engine down, legs and solar panels out.',
+    },
+    cut: { dir: 'side' }, shell: ['body', 'solar'],
+    dims: [
+      { label: 'Height', text: '2 m', axis: 'y', src: ['bgFirefly', 'bgNsf'], conf: 'High' },
+      { label: 'Width', text: '3.5 m', axis: 'x', src: ['bgFirefly', 'bgNsf'], conf: 'High' },
+    ],
+    parts: {
+      body: { what: 'A box-shaped body of 49 composite struts.', size: '2 m tall × 3.5 m wide (with legs)', src: ['bgNsf', 'bgFirefly'], conf: 'High' },
+      decks: { what: 'Three decks: the top one with a view of the sky, the middle one with rover mounts, the bottom one with access to the surface.', size: '3 decks', src: ['bgNsf'], conf: 'High' },
+      tanks: { what: 'Propellant for the main engine and thrusters; their number and place are not published.', size: 'not published', src: ['assumed'], conf: 'Low' },
+      engine: { what: 'One LEROS 4-ET main engine at the bottom centre.', size: 'more than 1 kN', src: ['bgNsf', 'bgWiki'], conf: 'High' },
+      rcs: { what: 'Eight Spectre thrusters and twelve cold-gas thrusters steer the descent.', size: '8 + 12', src: ['bgNsf'], conf: 'High' },
+      antennas: { what: 'One X-band and three S-band antennas talk to Earth.', size: '1 + 3', src: ['bgWiki'], conf: 'Medium' },
+      solar: { what: 'Three solar panels give about 400 W.', size: '~400 W', src: ['bgNsf'], conf: 'High' },
+      legs: { what: 'Four composite legs; honeycomb crush cores absorb the landing.', size: '4 legs', src: ['bgNsf'], conf: 'High' },
+    },
+  },
+  centaur_v: {
+    title: 'ULA Centaur V upper stage', short: 'Centaur V', load: () => import('../models/kit/centaur-v.js'),
+    story: {
+      whole: 'Centaur V, the hydrogen-oxygen upper stage of ULA’s Vulcan: 5.4 m across and 12.6 m tall (the long version). It pushes landers and payloads out of Earth orbit.',
+      cutaway: 'Liquid hydrogen fills the big forward tank; liquid oxygen, much denser, the short aft one. A common bulkhead (two steel skins round a fibreglass honeycomb) is all that separates them.',
+      exploded: 'Hydrogen tank up, oxygen tank and engines down, the avionics adapter off the top.',
+    },
+    cut: { dir: 'side' }, shell: ['skin'],
+    dims: [
+      { label: 'Height', text: '12.6 m (CV-HE)', axis: 'y', src: ['centaur'], conf: 'High' },
+      { label: 'Diameter', text: '5.4 m', part: 'skin', axis: 'x', src: ['centaur'], conf: 'High' },
+    ],
+    parts: {
+      skin: { what: 'Stainless-steel “balloon” tanks with 0.51 mm walls, held in shape by their own pressure.', size: '5.4 m × 12.6 m', src: ['centaur'], conf: 'High' },
+      lh2: { what: 'Liquid hydrogen, forward: light, so it takes most of the volume.', size: '~111 m³ (~4.9 m of barrel)', src: ['computed', 'centaur'], conf: 'Medium' },
+      bulkhead: { what: 'The common bulkhead between the tanks: two steel skins round a fibreglass honeycomb core.', size: 'one bulkhead', src: ['centaur'], conf: 'High' },
+      lox: { what: 'Liquid oxygen, aft: about six times the hydrogen’s mass in a third of its volume.', size: '~40 m³ (~1.8 m)', src: ['computed', 'centaur'], conf: 'Medium' },
+      avionics: { what: 'Flight computers and batteries on the forward adapter.', size: 'not published', src: ['centaur'], conf: 'Medium' },
+      engines: { what: 'Two RL10 engines burn the hydrogen and oxygen.', size: '2 × (2.46 × 1.57 m)', src: ['centaur'], conf: 'High' },
+    },
+  },
   apollo_lrv: {
     title: 'Apollo LRV (1971)',
     cut: { dir: 'down', at: 0.5 }, shell: [],
