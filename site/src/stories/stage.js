@@ -28,6 +28,13 @@ async function worldStage({ canvas, labelsHost, tier, fetchFn, onStatus }) {
   const sc = await createWorldScene({ canvas, labelsHost, tier, fetchFn: fetchFn('catalogue'), onStatus });
   sc.stage.director.bindKeys(canvas); canvas.parentElement.append(viewPad(sc.stage.director));   // F-40: orbit and zoom without a drag
   sc.stage.director.limits({ minDistance: 20, maxDistance: 22000, maxPolar: 88 });
+  { let down = null;   // F-51: a click (not a drag) on a rover or lander opens Look inside (the vehicle viewer in a side panel)
+    canvas.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; });
+    canvas.addEventListener('click', async e => {
+      if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 5) return;
+      const hit = sc.pickAt(e.clientX, e.clientY); if (!hit) return;
+      stop(); const { lookInside } = await import('../ui/look-inside.js'); lookInside(hit.cls, { name: hit.what });
+    }); }
   const cache = new Map(), time = { t: 0, playing: false, gen: 0 };
   const ts = createTimescale({ speeds: [60, 300, 900, 3600, 21600], value: 300, label: 'Speed' });
   ts.el.classList.add('st-speed'); canvas.parentElement.append(ts.el);

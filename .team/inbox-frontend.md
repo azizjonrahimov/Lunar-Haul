@@ -623,7 +623,7 @@ no console errors on the pages you touched; report lists files, defaults before/
 ## Phase 5 plan is in `.team/PLAN-phase5.md`; read it and the research note relevant to each task. Tasks in order
 ## after F-50. Each ends with a report (files, how checked, before/after numbers) and a message to LEAD.
 
-## F-51 [IN PROGRESS] Every vehicle "on its own" and "inside"
+## F-51 [DONE, parts 1-3 committed; part 4 uncommitted 27 Oct 12:19] Every vehicle "on its own" and "inside"
 Why: the owner wants to see each vehicle, rocket and rover clearly, separately and from inside. The existing
 `site/src/stage/cutaway.js` (stencil caps) and `explode.js` are the base; use them everywhere.
 Source of parts: `research_notes/Lunar ATC/vehicles_comms_internals.md` Table B (part, position, size, source,

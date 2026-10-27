@@ -324,6 +324,17 @@ export async function createWorldScene({ canvas, labelsHost, tier, fetchFn = fet
     return stage.director.controls.setLookAt(pos.x + d.x * dist, pos.y + d.y * dist, pos.z + d.z * dist, pos.x, pos.y, pos.z, !(instant || reducedMotion()));
   }
   const activeLegs = () => [...legs.entries()].filter(([, L]) => L.b > 0.95).map(([k]) => k.replace('~', ' and '));
+  // F-51 part 4: the rover or lander under a screen point, for "look inside": {cls, what} or null
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+  function pickAt(cx, cy) {
+    const r = canvas.getBoundingClientRect(); ndc.set((cx - r.left) / r.width * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    const objs = [...vehicles.filter(v => v.group.visible).map(v => v.group), ...landers.filter(L => L.holder.visible).map(L => L.holder)];
+    const hit = ray.intersectObjects(objs, true).find(x => x.object.isMesh); if (!hit) return null;
+    let o = hit.object; while (o && !objs.includes(o)) o = o.parent;
+    const v = vehicles.find(q => q.group === o); if (v) return { cls: v.cls, what: `${v.cls} ${v.id}` };
+    const L = landers.find(q => q.holder === o); return L ? { cls: L.cls, what: `the ${L.cls}-class lander` } : null;
+  }
   function setCompare(p2) {
     for (const g of ghosts) dyn.remove(g.mesh);
     ghosts = []; pkgB = p2;
@@ -338,7 +349,7 @@ export async function createWorldScene({ canvas, labelsHost, tier, fetchFn = fet
 
   return {
     stage, terrain, catalog, STATE_STYLE,
-    setPackage, setTime, shots, followTarget, setCompare, frameAt, activeLegs,
+    setPackage, setTime, shots, followTarget, setCompare, frameAt, activeLegs, pickAt,
     // story views: red legs while rovers wait for Earth; vehicle labels on or off; rings round the named sites
     // extra: routes ({n, block}) of legs this package never drives (no rover starts them without Earth), drawn red as well
     setNoLink(v, sites = [], extra = []) {

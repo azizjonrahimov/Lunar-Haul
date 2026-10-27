@@ -23,7 +23,10 @@ const BASE = import.meta.env.BASE_URL;
 const VIEWS = ['own', 'cutaway', 'exploded', 'xray'];
 const ui = { group: 'landers', id: 'MK1', view: 'own', follow: 'none', scale: false, section: 0, atc: false };
 const q = new URLSearchParams(location.search);
-{ const v = q.get('view') === 'whole' ? 'own' : q.get('view'); if (VIEWS.includes(v)) ui.view = v; ui.atc = q.get('atc') === '1'; }
+{ const v = q.get('view') === 'whole' ? 'own' : q.get('view'); if (VIEWS.includes(v)) ui.view = v; ui.atc = q.get('atc') === '1'; ui.compare = q.get('compare') === '1'; }
+// F-51 part 4: ?embed=1 is the look-inside panel of /world/ and the stories: no site chrome or pickers, 3D starts itself
+const EMBED = q.get('embed') === '1';
+if (EMBED) document.documentElement.classList.add('v-embed');
 // F-51: the kit's own models join the catalogue's (each a lazy chunk, kit-data.js load()); rockets get a group
 const VGROUPS = { landers: [...GROUPS.landers, 'griffin', 'blue_ghost'], rockets: ['centaur_v'], rovers: [...GROUPS.rovers, 'clv1', 'pegasus', 'flex', 'eagle', 'viper', 'lrv', 'mapp'],
   hoppers: ['moonfall', 'micro_nova'], atc: ['atc_computer', 'atc_radio'], base: GROUPS.base };
@@ -31,7 +34,7 @@ const ATC_GROUPS = ['landers', 'rockets', 'rovers', 'hoppers'];   // the vehicle
 if (q.get('v')) { const g = Object.keys(VGROUPS).find(k => VGROUPS[k].includes(q.get('v'))); if (g) Object.assign(ui, { group: g, id: q.get('v') }); }
 
 const gate = door({ title: 'The LunarHaul fleet', subtitle: 'Vehicle catalogue and 3D models, built in your browser at true scale.', skip: { href: '#v-tree-h', label: 'Skip to the parts list' },
-  enterLabel: 'Enter the 3D view', beforeOpen: () => start3D() });
+  enterLabel: 'Enter the 3D view', autoEnter: EMBED, beforeOpen: () => start3D() });
 $('v-view').append(gate.el);
 const story = narrative({ label: 'Vehicle story' });
 $('v-story').append(story.el);
@@ -60,7 +63,7 @@ const shortName = id => SHORT[id] || KIT[id]?.short || id;
 drawVehicleChips();
 
 $('v-modes').append(
-  segmented({ legend: 'View', options: [{ value: 'own', label: 'On its own' }, { value: 'cutaway', label: 'Inside' }, { value: 'exploded', label: 'Exploded' }, { value: 'xray', label: 'X-ray' }], value: ui.view, onChange: v => { ui.view = v; ui.section = 0; $('v-section').value = '0'; applyView(); } }).el,
+  segmented({ legend: 'View', options: [{ value: 'own', label: 'On its own' }, { value: 'cutaway', label: 'Inside' }, { value: 'exploded', label: 'Exploded' }, { value: 'xray', label: 'X-ray' }], value: ui.view, onChange: v => { ui.view = v; ui.section = 0; $('v-section').value = '0'; if (ui.compare) choose(ui.id); else applyView(); } }).el,
   h('label', { class: 'v-section', id: 'v-section-l', hidden: ui.view !== 'cutaway' }, h('span', { class: 'ui-label' }, 'Section'),
     h('input', { type: 'range', id: 'v-section', min: '-0.45', max: '0.45', step: '0.01', value: '0', 'aria-describedby': 'v-section-h', oninput: e => { ui.section = +e.target.value; cut(); } }),
     h('span', { id: 'v-section-h', class: 'small muted' }, 'moves the cut through the vehicle')),
@@ -76,29 +79,81 @@ async function start3D() {
   if (import.meta.env.DEV) window.__stage = stage;   // console access while developing
   stage.director.bindKeys($('v-canvas'));
   stage.director.limits({ maxPolar: 88 });
-  await choosing;   // a kit model may still be loading
-  mount(); applyView(true); applyFollow();
+  await choosing;   // a kit model (or the whole line-up) may still be loading
+  if (ui.compare) mountCompare(); else { mount(); applyView(true); applyFollow(); }
 }
 
 // ---------- choosing a vehicle ----------
 // the catalogue's models build at once; the kit's own load their chunk first (a newer choice wins)
 let choosing = null, chooseGen = 0;
 function choose(id) { return (choosing = chooseNow(id)); }
+async function make(id, lod = 'full') {
+  const mod = KIT[id]?.load ? await KIT[id].load() : null;
+  if (!mod) return buildVehicle(catalog, mats, id, { lod });
+  if (mod.kit) Object.assign(KIT[id], mod.kit);
+  const v = mod.build(mats, { lod }); v.entry = entryOf(id); v.root.userData.representative = v.representative; return v;
+}
 async function chooseNow(id) {
   const gen = ++chooseGen;
-  ui.id = id; vehicleChips?.set(id);
+  ui.id = id; vehicleChips?.set(id); ui.compare = false; $('v-compare').setAttribute('aria-pressed', 'false');
   writeUrl();
-  const e = entryOf(id), mod = KIT[id]?.load ? await KIT[id].load() : null;
+  const e = entryOf(id), next = await make(id);
   if (gen !== chooseGen) return;
   if (stage) { setXray(false); clearExtras(); stage.clearSubject(); flows.clear(); }
-  if (mod) { if (mod.kit) Object.assign(KIT[id], mod.kit); vehicle = mod.build(mats); vehicle.entry = e; vehicle.root.userData.representative = vehicle.representative; }
-  else vehicle = buildVehicle(catalog, mats, id);
-  atcParts = [];   // the old vehicle's layer went with its subject
+  vehicle = next;
+  atcParts = []; lineup = null;   // the old vehicle's layer (or the line-up) went with its subject
   if (stage) mount(); else atcLayer();
   drawChips(e); drawTree(); drawProps(null);
   const rep = $('v-rep'); rep.hidden = !vehicle.root.userData.representative;
   applyView(true); applyFollow();
 }
+// ---------- Compare sizes (F-51 part 4): every lander, rocket, rover and hopper on one line at true scale ----------
+// smallest first, 1 m apart (or 15 % of the width), an astronaut at the small end; a name callout on each; the part
+// list becomes a size table whose buttons open each vehicle (deep link ?compare=1)
+const COMPARE = [...VGROUPS.landers, ...VGROUPS.rockets, ...VGROUPS.rovers, ...VGROUPS.hoppers];
+let lineup = null;
+function compare() { return (choosing = compareNow()); }
+async function compareNow() {
+  const gen = ++chooseGen;
+  ui.compare = true; $('v-compare').setAttribute('aria-pressed', 'true'); writeUrl();
+  story.set({ eyebrow: 'Compare sizes', title: 'Every vehicle at true scale', html: '<p>Loading the models…</p>' });
+  const list = await Promise.all(COMPARE.map(async id => ({ id, v: await make(id, 'simple') })));
+  if (gen !== chooseGen) return;
+  if (stage) { setXray(false); clearExtras(); stage.setCut('off'); stage.clearSubject(); flows.clear(); stage.director.autoRotate(0); }
+  if (refs) { refs.forEach(r => { stage?.scene.remove(r.root); r.root.traverse(o => o.geometry?.dispose()); }); refs = null; }
+  atcParts = [];
+  const row = new THREE.Group(), placed = []; let x = 0;
+  for (const { id, v } of list.map(q => ({ ...q, b: new THREE.Box3().setFromObject(q.v.root) })).sort((a, b) => a.b.max.y - b.b.max.y).map(q => ({ id: q.id, v: q.v }))) {
+    const b = new THREE.Box3().setFromObject(v.root), w = b.max.x - b.min.x;
+    v.root.position.set(x - b.min.x, 0, -(b.min.z + b.max.z) / 2); row.add(v.root);
+    placed.push({ id, v, h: b.max.y, w, l: b.max.z - b.min.z, anchor: new THREE.Vector3((b.min.x + b.max.x) / 2, b.max.y + 0.2, (b.min.z + b.max.z) / 2) });
+    x += w + Math.max(1, w * 0.15);
+  }
+  const a = astronaut(mats); a.root.position.x = -1.2; row.add(a.root);
+  lineup = { row, placed };
+  if (stage) mountCompare();
+  story.set({ eyebrow: 'Compare sizes', title: 'Every vehicle at true scale', html: `<p>${placed.length} vehicles on one line, smallest first, with a 1.8 m astronaut at the small end. A ${fmtM(placed.at(-1).h)} ${shortName(placed.at(-1).id)} stands next to a ${fmtM(placed[0].h)} ${shortName(placed[0].id)}. Zoom in on the small end; pick a vehicle in the list to open it.</p>` });
+  drawCompareTable(); drawProps(null); $('v-chips').replaceChildren(); $('v-rep').hidden = true;
+}
+const fmtM = v => `${v < 10 ? v.toFixed(v < 1 ? 2 : 1) : Math.round(v)} m`;
+function mountCompare() {
+  if (!lineup) return;
+  stage.setSubject(lineup.row);
+  for (const p of lineup.placed) stage.labels.add({ id: `cmp-${p.id}`, text: shortName(p.id), object: p.v.root, anchor: p.anchor, onSelect: () => choose(p.id) });
+  // the whole line from the front, a little above, filling the width
+  const box = new THREE.Box3().setFromObject(lineup.row), c = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3()), cam = stage.camera;
+  const hfov = 2 * Math.atan(Math.tan(cam.fov * Math.PI / 360) * cam.aspect), d = Math.max(size.x / 2 / Math.tan(hfov / 2), size.y / 2 / Math.tan(cam.fov * Math.PI / 360)) * 1.08;
+  stage.director.shot('compare', { position: [c.x, c.y + size.y * 0.15, c.z + d], target: c.toArray() });
+  stage.director.limits({ minDistance: 1, maxDistance: d * 3 });
+  stage.director.go('compare', { instant: true });
+}
+function drawCompareTable() {
+  $('v-tree').replaceChildren(...lineup.placed.map(p => h('li', { class: 'v-row-part' },
+    h('button', { type: 'button', class: 'v-part', onclick: () => choose(p.id) }, shortName(p.id), h('span', { class: 'v-tag pub' }, 'open')),
+    h('p', { class: 'v-meta small' }, `Height ${fmtM(p.h)} · width ${fmtM(p.w)} · length ${fmtM(p.l)}, as drawn${p.v.root.userData.representative ? ' (parts schematic)' : ''}`))));
+}
+$('v-scale').before(h('button', { class: 'ui-btn', type: 'button', id: 'v-compare', 'aria-pressed': 'false', onclick: () => (ui.compare ? choose(ui.id) : compare()) }, 'Compare sizes'));
+
 // put the current vehicle on the stage: subject, explode, callouts, camera shots, scale references
 function mount() {
   stage.setSubject(vehicle.root, { cutTargets: vehicle.cutTargets });
@@ -128,6 +183,7 @@ function writeUrl() {   // F-40: other parameters (?tier, ?gpumem) stay
   const u = new URL(location.href); u.searchParams.set('v', ui.id);
   if (ui.view === 'own') u.searchParams.delete('view'); else u.searchParams.set('view', ui.view);
   if (ui.atc) u.searchParams.set('atc', '1'); else u.searchParams.delete('atc');
+  if (ui.compare) { u.searchParams.set('compare', '1'); u.searchParams.delete('view'); } else u.searchParams.delete('compare');
   history.replaceState(null, '', u);
 }
 function applyView(instant = false) {
@@ -137,9 +193,10 @@ function applyView(instant = false) {
   story.set({ eyebrow: `${shortName(ui.id)} · ${VIEW_NAME[v]}`, title: KIT[ui.id]?.title || nameOf(ui.id),
     html: (v === 'xray' ? XRAY_TEXT : para(render(s[key] || s.whole || '', catalog, ui.id))) + (e.representative && v === 'own' ? `<p class="small">${e.representative_note || ''}</p>` : '') });
   if (!stage) return;
-  cut(); explode.to(v === 'exploded' ? 1 : 0); setXray(v === 'xray');
+  // tier 1 (F-51 part 4): no turntable and no explode animation; the cut is drawn on demand, so it costs a still frame
+  cut(); if (tier === 1) explode.set(v === 'exploded' ? 1 : 0); else explode.to(v === 'exploded' ? 1 : 0); setXray(v === 'xray');
   if (v === 'own') showExtras(); else clearExtras();
-  stage.director.autoRotate(v === 'own' && !reducedMotion() ? 4 : 0);   // a slow turntable on its own (a turn in 90 s)
+  stage.director.autoRotate(v === 'own' && !reducedMotion() && tier >= 2 ? 4 : 0);   // a slow turntable on its own (a turn in 90 s)
   stage.director.go(v === 'cutaway' || v === 'exploded' ? v : 'home', { instant });
 }
 // the preset cut: 'side' a vertical plane through the axis (landers: tanks and engine), 'down' a horizontal one at a
@@ -206,7 +263,7 @@ function showExtras() {
 }
 function addLabel(g, id, text, object, anchor = new THREE.Vector3()) { stage.labels.add({ id, text, object, anchor, tone: 'warm' }); g.userData.labels.push(id); }
 function applyFollow() {
-  if (!stage || !vehicle) return;
+  if (!stage || !vehicle || ui.compare) return;
   const n = ui.follow === 'none' ? (flows.clear(), 0) : flows.show(vehicle.flows[ui.follow], ui.follow, Math.max(vehicle.size.x, vehicle.size.y, vehicle.size.z));
   stopFlow?.(); stopFlow = null;
   if (n && !reducedMotion()) stopFlow = stage.animate(dt => flows.tick(dt));   // dashes move; static under reduced motion
@@ -228,6 +285,7 @@ function drawChips(e) {
 // F-51: one row per part or part group: its name with a published / schematic / our design tag (a button that selects
 // it), what it does, its size and sources; hovering or focusing a row outlines the part in the view
 function drawTree() {
+  if (ui.compare) { drawCompareTable(); return; }
   const groups = new Map(), kit = { ...KIT[ui.id]?.parts, ...ATC_LAYER };
   for (const p of [...vehicle.parts, ...atcParts]) { const g = p.object.userData.group || p.name; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(p); }
   $('v-tree').replaceChildren(...[...groups.entries()].map(([key, list]) => {
@@ -249,6 +307,7 @@ function atcLayer() {
   for (const p of atcParts) { p.object.removeFromParent(); p.object.traverse(o => o.geometry?.dispose()); stage?.labels.remove(p.name); }
   atcParts = [];
   $('v-atc').hidden = !ATC_GROUPS.includes(ui.group);
+  if (ui.compare) return;
   if (!vehicle || !ui.atc || !ATC_GROUPS.includes(ui.group)) { stage?.invalidate(); return; }
   atcMat ||= new THREE.MeshStandardMaterial({ color: '#27b3a0', emissive: '#0b4d45', roughness: 0.5, metalness: 0.3, name: 'Lunar ATC (our design)' });
   vehicle.root.updateMatrixWorld(true);
@@ -271,6 +330,7 @@ function hotRow(name) {
   for (const li of document.querySelectorAll('.v-row-part')) li.classList.toggle('is-hot', li.dataset.key === key);
 }
 function select(name) {
+  if (ui.compare) return;
   const p = [...vehicle.parts, ...atcParts].find(x => x.name === name); if (!p) return;
   stage?.labels.setPressed(name);
   for (const b of document.querySelectorAll('.v-part')) b.setAttribute('aria-pressed', String(b.dataset.part === name || (vehicle.parts.find(x => x.name === b.dataset.part)?.object.userData.group || '#') === (p.object.userData.group || '-')));
@@ -289,7 +349,7 @@ function drawProps(p) {
 
 // ---------- scale references, pause, camera, representative label ----------
 function placeRefs() {
-  if (!stage) return;
+  if (!stage || ui.compare) return;
   if (refs) { refs.forEach(r => { stage.scene.remove(r.root); r.root.traverse(o => o.geometry?.dispose()); }); refs = null; }
   if (!ui.scale || ui.id === 'apollo_lrv') return stage.invalidate();
   const box = new THREE.Box3().setFromObject(vehicle.root), lrv = buildVehicle(catalog, mats, 'apollo_lrv', { lod: 'simple' });
@@ -306,7 +366,7 @@ for (const b of document.querySelectorAll('[data-cam]')) b.addEventListener('cli
 });
 tooltip($('v-rep'), 'Where the real shape is unpublished (legs, an elevator, a concept vehicle), the model shows a labelled representative shape at the catalogue’s dimensions. The part list marks which parts.');
 
-choose(ui.id);
+if (ui.compare) compare(); else choose(ui.id);
 if (tier === 0 && !tierInfo.forced) {
   $('v-fallback').hidden = false; $('v-fallback').textContent = `No 3D view on this device (${tierInfo.gpu}); the numbers and parts list below describe each vehicle.`;
   gate.open();

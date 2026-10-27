@@ -53,3 +53,7 @@
   .v-hud .ui-story { max-width: none; }
   .v-panels { grid-template-columns: minmax(0, 1fr); }
 }
+/* F-51 part 4: the look-inside panel (?embed=1): only the vehicle, its views and its part list */
+.v-embed .site-header, .v-embed .site-footer, .v-embed .skip, .v-embed .v-head, .v-embed .v-pick { display: none; }
+.v-embed main { padding-top: var(--s-3); }
+.v-embed .v-stage { height: clamp(360px, 62vh, 620px); }

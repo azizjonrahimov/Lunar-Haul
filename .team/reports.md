@@ -5798,3 +5798,69 @@ Base elements keep their old list: no sources, tag from the model's representati
 
 1. Hoppers barely matter here: 10 kg, 14 days, ~0.3 km flown per run. Keep them as is, honest and negligible, or give B-72/E40 the `hopper_refuel` variant as a sweep?
 2. Utilisation in E40 tables: I'd report `p5_cargo_util` (the load definition) and whole-fleet `utilisation` side by side. OK?
+
+## F-51 PART 4 DONE 12:19 | Compare sizes, Look inside from /world/ and the stories, tier 1; F-51 complete
+
+**Files changed (uncommitted):**
+- New: `site/src/ui/look-inside.js` and `look-inside.css`, the side panel. It is a lazy chunk (0.55 kB gzip), loaded on the first click.
+- Modified:
+  - `site/src/vehicles/main.js`, `vehicles.css`
+  - `site/src/world/v2.js`, `v2-scene.js` (adds `pickAt`)
+  - `site/src/stories/stage.js`
+  - `.team/inbox-frontend.md` (F-51 marked done), `.team/reports.md`
+- Not mine: `.team/inbox-backend.md`, `tools/atc/smoke_regimes.py`.
+
+**What it does:**
+- **Compare sizes** (a button on /vehicles/, or `?compare=1`):
+  - All 18 landers, rockets, rovers and hoppers stand on one line at true scale, smallest first, 1 m apart (or 15 % of the width). A 1.8 m astronaut stands at the small end.
+  - The models load at the light level of detail, and each has a name callout. The camera fits the whole line; zoom in on the small end.
+  - The story says "A 52 m Starship HLS stands next to a 0.43 m MAPP".
+  - The part list becomes a size table (height, width and length as drawn, with "(parts schematic)" where it applies). Its buttons open each vehicle.
+  - Picking a view or a vehicle leaves Compare.
+- **Look inside:**
+  - On /world/ and in the stories' world scenes, a click (not a drag) on a rover or lander opens that class in the vehicle viewer, in a side panel: an iframe of `/vehicles/?v=<class>&embed=1&view=cutaway`.
+  - Embed mode hides the site chrome and pickers, and the 3D view starts by itself.
+  - /world/ also has a "Look inside a vehicle" button for keyboards, which opens the last clicked vehicle or a driving rover.
+  - The year pauses while the panel is open, since two 3D views at once are heavy.
+  - The panel is a labelled dialog: Close or Escape shuts it and returns focus. It also has an "Open in the vehicle viewer" link.
+  - The lander-recording stories use another scene, and they have no Look inside yet.
+- **Tier 1:**
+  - No turntable and no explode animation (instant).
+  - The cutaway is drawn once on demand and nothing animates, so a tier-1 GPU pays for a still frame. I didn't make pre-rendered cutaway image files, because each would need a capture run and a file per vehicle and view, about 80 images.
+  - Tier 0 keeps the existing numbers and part list without 3D.
+
+**F-51 done-when, checked:**
+- **All four views, a part list with sources and a deep link:** every vehicle has them.
+  - landers: Nova-C, MK1, HLS, Griffin, Blue Ghost
+  - rocket: Centaur V
+  - rovers: LTV, HAUL, MICRO, CLV-1, Pegasus, FLEX, Eagle, VIPER, Apollo LRV, MAPP
+  - hoppers: MoonFall, Micro-Nova
+  - Lunar ATC: base computer, radio unit
+- **Lunar ATC:** our design's layer on every lander, rocket, rover and hopper.
+- **Budgets pass:**
+  - /vehicles/ 90.7 of 100 kB JS; the heaviest model chunk is 2.4 of 4 kB.
+  - /world/ 24.2 of 25 kB: tight, +0.3 kB for the click and the button.
+  - /stories/ 11.5 of 60.
+- **No console errors** on the pages checked.
+- **Screenshots:** none were saved to disk.
+- **Invented parts:** listed in the part 1-3 reports.
+
+**Checks:**
+- Free RAM was 0.70 then 0.66 GB. Part 4 waited from about 11:55 until the owner freed memory; it had dropped to 0.18 GB.
+- `npm run build` OK; node tests 16/16; `budgets.py pages` OK.
+- In the browser (production build):
+  - `/vehicles/?compare=1`: 18 vehicles on one line, 18 callouts, 18 size rows.
+  - /world/: the "Look inside a vehicle" button opened "Look inside: LTV 0". The panel had no site header, the viewer entered 3D by itself in Inside view, and the year paused.
+  - Escape closed the panel.
+  - A real mouse click on the HAUL 3 rover in the 3D view opened "Look inside: HAUL 3".
+  - No console errors.
+- Not checked in the browser:
+  - the stories' click: the same code as /world/, through the scene's shared `pickAt`;
+  - Compare and the panel at 390 px. The panel is full width under 46 rem.
+- Server stopped and tab closed.
+
+**Questions for LEAD:**
+1. Tier 1: is a cutaway drawn once on demand enough, or do you want pre-rendered image files?
+2. /world/ is at 24.2 of 25 kB JS. The next /world/ work (F-53) will need either a raise or moving something into a lazy chunk.
+
+**What I need from BACKEND:** nothing.

@@ -94,6 +94,9 @@ async function start(gate) {
     onStatus: s => status(s === 'lost' ? 'The graphics context was lost; it will come back by itself.' : '') });
   if (import.meta.env.DEV) window.__w2 = { sc, ui, time, get pkg() { return pkg; } };
   sc.stage.director.bindKeys($('w2-canvas')); $('w2-view').append(viewPad(sc.stage.director));   // F-40: orbit and zoom without a drag
+  { let down = null; const cv = $('w2-canvas');   // F-51: a click (not a drag) on a rover or lander opens Look inside
+    cv.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; });
+    cv.addEventListener('click', e => { if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 5) return; const hit = sc.pickAt?.(e.clientX, e.clientY); if (hit) { picked = hit; openInside(hit); } }); }
   sc.stage.director.limits({ minDistance: 20, maxDistance: 22000, maxPolar: 88 });
   controls();
   await open(fetchFn('the year'));
@@ -144,7 +147,8 @@ function controls(plan = false) {
     plan ? '' : (followSeg = segmented({ legend: 'Follow', options: [{ value: 'none', label: 'Free' }, { value: 'cargo', label: 'Cargo' }, { value: 'rovers', label: 'Rovers' }, { value: 'landers', label: 'Landers' }, { value: 'night', label: 'Night' }],
       value: ui.follow, onChange: v => { ui.follow = v; sc.clearFollow?.(); followStart = true; if (v === 'night') nextNight(); if (v === 'none') status(''); shotSpeed(); update(true); } })).el,
     plan ? '' : h('label', { class: 'w2-check' }, h('input', { type: 'checkbox', checked: true, onchange: e => sc.setTrails?.(e.target.checked) }), ' Trails (last 2 h)'),
-    compareSelect(), h('button', { class: 'ui-btn', type: 'button', id: 'w2-copy', onclick: copyMoment }, 'Copy link to this moment'));
+    compareSelect(), h('button', { class: 'ui-btn', type: 'button', id: 'w2-copy', onclick: copyMoment }, 'Copy link to this moment'),
+    plan ? '' : h('button', { class: 'ui-btn', type: 'button', id: 'w2-inside', onclick: () => openInside(picked || insideDefault()) }, 'Look inside a vehicle'));
   const host = $('w2-chips');
   chips = {
     delivered: statChip({ label: 'Delivered so far', value: 0, unit: 't', digits: 1, flag: 'Modelled', source: "Sum of the deliveries up to this moment (the scene package's scene.json → deliveries)", tone: 'cool' }),
@@ -156,6 +160,11 @@ function controls(plan = false) {
 }
 // F-50: overview 1 h/s, close shots and Follow 5 min/s, unless the visitor (or ?speed=) chose a speed
 function shotSpeed() { if (ts && !ts.touched) ts.set(ui.follow !== 'none' ? CLOSE : SHOT_SPEED[ui.shot] ?? CLOSE); }
+// F-51 part 4: Look inside: the vehicle viewer in a side panel (lazy), for the clicked vehicle, else a driving rover;
+// the year pauses while it is open (two 3D views at once are heavy)
+let picked = null;
+const insideDefault = () => { const v = sc.vehicles.find(q => q.state === 'driving') || sc.vehicles[0]; return v ? { cls: v.cls, what: `${v.cls} ${v.id}` } : { cls: 'LTV', what: 'LTV' }; };
+async function openInside(hit) { setPlaying(false); const { lookInside } = await import('../ui/look-inside.js'); lookInside(hit.cls, { name: hit.what }); }
 function nightAt(t) { return pkg.index.nights.some(([a, b]) => t >= a && t < b); }   // hoisted: the tier-0 path calls open() at load
 // Pads: play up to the next landing and frame the pads with their rings; Rover legs: a driving rover at rover scale;
 // Base: the base cluster; Night: the next night, framed on a rover that works in the dark (its headlights) or the base
