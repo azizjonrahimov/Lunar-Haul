@@ -675,7 +675,7 @@ from the existing Tol palette; every counter traceable to the trace file. Defaul
 2. Encounter sandbox (3D, small scene): pick one of the 12 encounter types, play it with and without the safety
    layer, see the closest approach, the rule that fired and the delay it cost. Port `safety_check` to JS from
    Python and pass B-78's 20 replay fixtures within the stated tolerance (show the parity result on the page).
-3. The learned bid policy runs in the browser from `data/policies/atc_bid_v1.json` (pattern: site/src/policy.js)
+3. The learned bid policy runs in the browser from `data/policies/atc_bid_linear_v1.json` (LEAD 27 Oct: the linear model is the one that helps; the MLP file atc_bid_v1.json stays as the record and is not shown as the method) (pattern: site/src/policy.js)
    with its check file.
 
 ## F-55 [FRAME DONE (uncommitted); fills in as B-79 batches land] Verification page, phase 5
