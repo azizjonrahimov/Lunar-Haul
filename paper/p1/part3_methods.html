@@ -1,0 +1,141 @@
+
+<h2 id="p1-sec-model">3. Model</h2>
+
+<p>The model extends the discrete-event simulation of [40, 41, 42]: time jumps from one event, such as a landing, the end of a drive or a lost message being sent again, to the next. Everything that was in those papers and is not described here is unchanged, and with the new features switched off the engine reproduces their results exactly (Section 3.11). Every input carries a flag at first use, as in [41, 42]: <b>Measured</b> (flight, laboratory or survey data), <b>Spec</b> (a published design value or company claim), <b>Modelled</b> (produced by a model, including ours) or <b>Assumed</b> (our choice, varied where it matters). Results produced by this study are never flagged; they come from the result files listed under Availability.</p>
+
+<h3>3.1 Base, terrain and demand</h3>
+
+<p>The base is the one of [41, 42], on the Connecting Ridge between Shackleton and de Gerlache craters, on NASA Goddard's 5&nbsp;m terrain tile from the Lunar Orbiter Laser Altimeter (Measured). Its sites are the habitat and control centre (BASE), a cargo depot, a power plant, a construction site, an oxygen pilot plant, a science site and a permanently shadowed crater; landers use two pads 1&nbsp;km from the base. Driving times, energy and routes come from the driving tables of [41].</p>
+
+<p>Demand follows the landings and bulk flows of [40], scaled by a factor <i>k</i> so that the two cargo-class vehicles are busy a set share of the time: about 10, 30 and 60&#8239;% (<i>k</i> = 0.857, 2.806 and 6.22, Assumed; calibrated on five seeds to within half a percentage point of the target). We call these the three loads. The two cargo-class vehicles are the only ones that can lift most of the cargo, so the share of the whole fleet's time spent working is much lower: {{P1-UTIL-FLEET-30}} at the middle load (Section 5.1). Landed cargo belongs to the owner who ordered it, a third each. Bulk regolith moves in 500&nbsp;kg lots (Assumed), split among owners in the same shares. A landed item becomes a team item with probability 0.10 (Assumed; 0, 0.10 and 0.25 in Section 4.2), drawn from its own random stream, and then weighs between the largest single vehicle's capacity and the largest pair's, 2,000&ndash;2,800&nbsp;kg. Items heavier than any pair can lift go on a separate list, &ldquo;needs heavy-lift equipment&rdquo;, and are never offered to the robots; they are reported and excluded from every delay. Each run simulates one year from an empty base.</p>
+
+<h3>3.2 Vehicles and owners</h3>
+
+<p>Table 2 lists the six vehicle classes in the simulated fleets. They are the two rovers NASA ordered in May 2026 for its Lunar Terrain Vehicle service [37], two cargo-class rovers offered by the same companies, a small rover and a propulsive hopper; a seventh class, a smaller hopper, is in the vehicle table but in none of the fleets simulated here. The crew rovers carry little cargo: 80&nbsp;kg each, and 10&nbsp;km on a charge. The cargo rovers carry 2,000 and 800&nbsp;kg. The small rover carries 200&nbsp;kg and the hopper 10&nbsp;kg. Three owners share eight vehicles: owner A has the crew rover CLV-1 and the cargo rover FLEX, owner B the crew rover Pegasus and the cargo rover Eagle, and owner C two small rovers and two hoppers. Owner C therefore cannot carry most of its own cargo, and of the pairs one owner can field only A's FLEX with CLV-1 (2,080&nbsp;kg) can lift any team item. Hoppers fly straight hops at 20&nbsp;km/h on a 50&nbsp;km propellant budget over 14 days and then retire (Spec for the budget and window, Assumed for speed); a variant refuels them every month. The full table, with every source, is in the repository.</p>
+
+<table class="wide" id="p1-tab-vehicles">
+<caption>Table 2. Vehicle classes in the simulated fleets. Speed is the modelled average, 0.6 of the published top speed where only that is given (Assumed, as in [41]). Energy per kilometre comes from the traction model of [41] at the vehicle's mass (Modelled). Battery capacities are Assumed except where a range per charge is published.</caption>
+<thead><tr><th>Class</th><th>Owner</th><th>Mass (kg)</th><th>Payload (kg)</th><th>Speed (km/h)</th><th>Energy (Wh/km)</th><th>Battery</th><th>Works at night</th><th>Can join a team lift</th></tr></thead>
+<tbody>
+<tr><td>Astrolab CLV-1 (crew rover)</td><td>A</td><td>907, Spec</td><td>80, Spec</td><td>5.8</td><td>75.8</td><td>758&nbsp;Wh (10&nbsp;km per charge, Spec); 6&nbsp;km a day, Spec</td><td>No, Assumed</td><td>Yes, Assumed</td></tr>
+<tr><td>Astrolab FLEX (cargo)</td><td>A</td><td>1,600, Assumed</td><td>2,000, Spec (company claim)</td><td>6, Assumed</td><td>133.7</td><td>40&nbsp;kWh, Assumed</td><td>No</td><td>Yes</td></tr>
+<tr><td>Lunar Outpost Pegasus (crew rover)</td><td>B</td><td>700, Assumed</td><td>80, Spec</td><td>8.7</td><td>58.5</td><td>585&nbsp;Wh (10&nbsp;km per charge); 6&nbsp;km a day, Spec</td><td>No</td><td>Yes</td></tr>
+<tr><td>Lunar Outpost Eagle (cargo)</td><td>B</td><td>1,500, Assumed</td><td>800, Assumed</td><td>6, Assumed</td><td>125.4</td><td>40&nbsp;kWh, Assumed</td><td>Yes, Spec</td><td>Yes</td></tr>
+<tr><td>Small rover (MAPP class), two</td><td>C</td><td>250, Spec</td><td>200, Spec</td><td>6.5</td><td>20.9</td><td>2&nbsp;kWh, Assumed</td><td>No, Assumed</td><td>No</td></tr>
+<tr><td>Hopper (MoonFall class), two</td><td>C</td><td>250 wet, Spec</td><td>10, Assumed</td><td>20, Assumed</td><td>propellant: 50&nbsp;km in 14 days, Spec</td><td>&ndash;</td><td>No</td><td>No</td></tr>
+</tbody>
+</table>
+
+<h3>3.3 The link to Earth</h3>
+
+<p>Earth is in view of the base when any part of Earth's disc is above the terrain horizon of a 2.5&nbsp;m antenna at BASE, the criterion of the published visibility maps [42]. The windows for 2028&ndash;2031 are those of [42]; for start years from 2032 we use the same pipeline's windows extended to 2046 (Modelled). A relay, where a regime has one, adds link time as an on&ndash;off process with a stated coverage, independent of the direct link, with the gap pattern of [42] (Assumed). Earth's visibility from the base differs by year: in the start years we simulate it ranges from {{P1-VIS-MIN}} to {{P1-VIS-MAX}} of the year, and in {{P1-H2-N-LOWVIS-YEARS}} of them it is below 60&#8239;%, the threshold we fixed for the availability test (Section 4.5).</p>
+
+<h3>3.4 The robots' radio network</h3>
+
+<p>Two robots can talk directly when their antennas see each other over the terrain and are within range. We computed line of sight for every pair of 2,421 points (the sites, the pads and samples along every route) on the 5&nbsp;m terrain with the Moon's curvature, the same arithmetic as [41], for antennas 2.5&nbsp;m high on rovers and 1.0&nbsp;m on small robots and hoppers (Assumed), and for a 10&nbsp;m mast at BASE that carries the base computer (Assumed, after NASA Glenn's surface relay concept as in [42]). The range is 5&nbsp;km and the clearance margin 0&nbsp;m (both Assumed; 2, 10&nbsp;km and unlimited range in Section 4.2). A message can travel over several hops through robots or the mast.</p>
+
+<p>Line of sight is rare on this ridge. Two rover antennas 2&ndash;5&nbsp;km apart see each other in {{P1-MESH-LOS-25-2TO5}} of point pairs, and the mast sees rovers directly only within {{P1-MESH-MAST-MAX-KM}} of the base. Rovers nevertheless form one connected network from 2&nbsp;km range upward, and every point reaches the mast in at most {{P1-MESH-MAX-HOPS-5KM}} hops at 5&nbsp;km range; small robots leave {{P1-MESH-SMALL-ISOLATED}} points cut off. The robots' positions are interpolated along their committed drives, and the network is evaluated whenever a decision is made.</p>
+
+<h3>3.5 Messages</h3>
+
+<p>Every hop of a message is lost independently with probability <i>p</i> (Bernoulli loss, Assumed) or in bursts (a two-state Gilbert&ndash;Elliott channel with mean burst length 10 messages and the same long-run loss, Assumed), and takes 10&nbsp;ms (Assumed). The on-Moon regimes run at <i>p</i> = 0.10 unless stated; Section 4.2 varies it from 0 to 0.40. A robot whose message was lost is reconsidered 3 minutes later (Assumed), with at most one such retry pending at a time. We count transmissions, messages delivered and lost, and messages per robot-hour.</p>
+
+<h3>3.6 Decision regimes</h3>
+
+<p>A regime says who decides which vehicle takes which job, where that decision is made, and when it can be made. Table 3 lists them. The owners-alone regimes use the in-house dispatcher of [40]: each owner assigns only its own cargo to its own vehicles, and its own pairs may lift together. When two owners' vehicles want the same apron at the same time, the newcomer waits 2&nbsp;h of hand coordination (Assumed; varied from 0.5 to 8&nbsp;h), and only while Earth is in view. The pooled regimes use the marketplace of [40], which offers every job to every vehicle in auction rounds and forms team lifts from any pair; they differ in where it runs.</p>
+
+<p>A dispatcher on Earth acts only while Earth is in view of the base. Under <b>strict</b> fallback, vehicles finish their current job and wait when Earth sets. Under <b>plan ahead</b>, the dispatcher uploads at loss of signal a queue per vehicle for the items already waiting, and a standing rule for cargo that will land during the blackout: oldest first, nearest free vehicle, one item per trip. Items created on the Moon during a blackout, such as returns, wait for Earth.</p>
+
+<p>On the Moon, the <b>elected leader</b> regime runs the same marketplace on the base computer at the mast, over the robots in its part of the network. The base computer fails at random (mean time between failures 2,000&nbsp;h, repair 24&nbsp;h, both Assumed); then, after a 30-minute election (Assumed, after CADRE's wake cycle [31]), the robot that reaches most others leads until the base computer returns. Status and assignment messages travel over the lossy network. The <b>auction</b> and <b>learned</b> regimes are described next.</p>
+
+<table class="wide" id="p1-tab-regimes">
+<caption>Table 3. Decision regimes. &ldquo;When&rdquo; is when assignments can be made. The full-information marketplace is the reference: the same bid rule as the pooled regimes, with perfect knowledge and no dependence on Earth or on the radio network. It is not an optimal dispatcher.</caption>
+<thead><tr><th>Regime</th><th>Jobs shared across owners</th><th>Who decides, and where</th><th>When</th><th>Team lifts</th></tr></thead>
+<tbody>
+<tr><td>Owners alone, from Earth, strict</td><td>No</td><td>Each owner's control room on Earth</td><td>Earth in view</td><td>Own pairs</td></tr>
+<tr><td>Owners alone, from Earth, plan ahead</td><td>No</td><td>Each owner, with uploads before blackouts</td><td>Always (plans age)</td><td>Own pairs</td></tr>
+<tr><td>Owners alone, from Earth, full coverage</td><td>No</td><td>Each owner, with Earth always in view</td><td>Always</td><td>Own pairs</td></tr>
+<tr><td>Owners alone, on the Moon</td><td>No</td><td>Each owner's robots, within its part of the network; apron conflicts still go to Earth</td><td>Always</td><td>Own pairs</td></tr>
+<tr><td>Pooled, from Earth, strict</td><td>Yes</td><td>One dispatcher on Earth</td><td>Earth in view</td><td>Any pair</td></tr>
+<tr><td>Pooled, from Earth, plan ahead</td><td>Yes</td><td>One dispatcher, with uploads before blackouts</td><td>Always (plans age)</td><td>Any pair</td></tr>
+<tr><td>Pooled, from Earth, relay 0.8 / 1.0</td><td>Yes</td><td>One dispatcher, through a relay of coverage 0.8 or 1.0</td><td>Earth or relay in view</td><td>Any pair</td></tr>
+<tr><td>Elected leader on the Moon</td><td>Yes</td><td>Base computer, or a robot when it is down</td><td>Always, within the leader's part of the network</td><td>Any pair</td></tr>
+<tr><td>Auction on the Moon</td><td>Yes</td><td>Every robot, by bidding</td><td>Always, within each part of the network</td><td>Any pair, with commit and timeout</td></tr>
+<tr><td>Learned bids (network or linear)</td><td>Yes</td><td>As the auction, with a learned bid correction</td><td>As the auction</td><td>As the auction</td></tr>
+<tr><td>Full-information marketplace</td><td>Yes</td><td>One dispatcher that sees everything</td><td>Always</td><td>Any pair</td></tr>
+</tbody>
+</table>
+
+<h3>3.7 The auction among the robots</h3>
+
+<p>Each connected part of the network runs the marketplace's own rounds. A part that contains the mast knows every waiting item; any other part knows only the items at sites where one of its robots stands. In a round, each robot computes its best bid, the marginal cost in hours of adding the job to its plan, weighted by the item's urgency as in [40], and floods it to the robots it can reach, losing it hop by hop with the channel's probability. The true best bid always wins its item. A robot that did not hear the best bid and believes its own is best wins in parallel if its items do not overlap with the winner's; if they do, CBBA's rule settles the conflict when the winner's rebroadcast reaches it within the remaining rounds [4], and otherwise the robot drives to the pad for nothing. The number of rounds is at most the larger of the number of items and of robots, times the network's diameter in hops, so that a perfect network never cuts the auction short.</p>
+
+<p>With bundle depth greater than one, a CBBA-like variant, robots also bid for up to depth&nbsp;&minus;&nbsp;1 later jobs from the end of their commitments. A claim starts when the robot comes free if its items are still waiting, and is dropped otherwise. Claims are hidden from robots in the same part of the network. With perfect links and depth 1, the auction reproduces the marketplace's event trace exactly (Section 3.11).</p>
+
+<h3>3.8 Team lifts across owners</h3>
+
+<p>A team item is lifted by two vehicles together. In the pooled regimes, the auction pairs any two vehicles that can join a team lift and together can carry the item; under the owners-alone regimes the pair must have one owner. The pair agrees by a two-phase commit over the radio: the proposer sends a proposal, the partner answers yes, and the proposer sends a commit. A lost proposal or answer means no team in this round. A lost commit sends the proposer alone to the pad, where it waits the timeout, 1&nbsp;h (Assumed; 0.5 and 2&nbsp;h in Section 4.2), and gives up; the item returns to the pool and the failed meeting is counted with its waiting time. Coupling at the pad takes 1&nbsp;h, as in [40]. Some message is always the last one, so no protocol over a lossy channel can guarantee that both robots know the other will come (the Two Generals problem); the commit step trades failures of one kind for another, and Section 5.7 measures the balance. An exploratory variant lets the base computer arbitrate meetings within its part of the network.</p>
+
+<h3>3.9 Robots that nobody hears</h3>
+
+<p>Line of sight on the ridge is so sparse that a robot finishing a delivery at the oxygen plant, the science site, the shadowed crater or pad B can end up where no other robot and no mast hears it. Without a rule it is never reached again. Our lost-link rule (Assumed) sends an idle robot that nobody hears to the nearest site that sees the mast at its antenna height (to BASE for owners alone on the Moon), where it waits to be heard. Without the rule, the elected-leader regime delivered {{P1-RALLY-OFF-SMOKE-T}} of cargo in a year against {{P1-RALLY-ON-SMOKE-T}} with it, in a development run (Section 4.6). Section 4.2 includes the rule switched off, and a second 10&nbsp;m mast at pad B, as network-design variants.</p>
+
+<h3>3.10 Learned bids</h3>
+
+<p>The learned regimes keep the auction unchanged and add a correction to each bid: the robot bids <i>b</i>&prime; = <i>b</i> &minus; <i>u</i>&middot;<i>g</i>(<i>x</i>), where <i>b</i> is the hand-built bid, <i>u</i> converts hours of urgent wait into the bid's units as in [40], and <i>g</i> is a learned function of 13 features that a robot knows locally: the planned hours of the job, the item's age, priority and slack to its target time (24&nbsp;h for urgent items, as pre-registered), the load as a share of capacity, the hours to drive to the pad, the battery's state of charge, the hours until the robot's next dark period or until its battery would run out (whichever comes first), whether it is in the mast's part of the network, how many robots it hears, how many claims it holds, the number of items in the bundle, and the hours until the next published landing at the item's pad or the robot's site. The last two time features let a robot anticipate what the hand-built bid ignores. The network never assigns anything, so it cannot create a conflict or an infeasible plan that the auction would not.</p>
+
+<p>We trained two forms of <i>g</i>: a multilayer perceptron with two hidden layers of 32 units (1,537 parameters), and a linear model with 13 weights. Training used seeds 1000 and up, selection used tuning seeds 2000 and up, and the evaluation seeds 1&ndash;30 were used once (Section 4.3). The first stage imitated the full-information marketplace by dataset aggregation [24]: each auction round on {{P1-IMIT-N-ROUNDS}} training rounds was labelled with the item the marketplace would give each robot. That stage taught nothing. The hand-built bids already chose the marketplace's item in {{P1-IMIT-AGREE}} of held-out rounds, and every disagreement we examined ({{P1-IMIT-DISAGREE-30}} at 30&#8239;% load and {{P1-IMIT-DISAGREE-60}} at 60&#8239;%) was an item the marketplace gave to another robot in the same round. The marketplace uses the same bid rule with full information, so imitating it reproduces the hand-built bid, and both models reached their best agreement with no correction at all.</p>
+
+<p>The second stage searched for <i>g</i> on the objective itself with the cross-entropy method: candidates were scored by mean urgent wait at the middle load and message loss 0.10 on four training seeds, with common random numbers across candidates, and each generation's best was scored on three tuning seeds; the generation with the best tuning score was kept. The linear model searched its 13 weights over 6 generations of 10 candidates; the network searched only its 32 output weights over 5 generations of 12, with its hidden layers left at their initial values because imitation never moved them. The network's best tuning score came in its first generation; the linear model's came in its last. Every candidate's score is recorded in the policy files. We decided before the main runs to carry both models into every experiment (Section 4.6).</p>
+
+<h3>3.11 Checks</h3>
+
+<p>Each regime was checked against cases whose answer is known. The pooled dispatcher on Earth with coverage 1.0 reproduces the full-information marketplace's event trace and summary exactly; so does the elected leader with perfect radio and no base failures; so does the auction with perfect links and depth 1; and owners alone with full coverage, no hand-coordination time and no own-pair lifts reproduce the in-house dispatcher of [40]. With every new feature off, {{P1-CHECK-N-ROWS}} result rows of [41, 42] rerun with no difference in any numeric column, and the test suite ({{P1-CHECK-N-TESTS}} tests) passes. On {{P1-BOUNDS-N}} small random instances the sequential auction's total cost was at most {{P1-BOUNDS-SSI-MAX}} times the optimum from the Hungarian method (worst-case bound 2 [2]), and the CBBA-like variant's score at least {{P1-BOUNDS-CBBA-MIN}} of the brute-force optimum (bound 50&#8239;% [4]); no item was ever assigned twice. These instances satisfy the bounds' assumptions, so the result checks the implementation and says nothing new about the algorithms.</p>
+
+<h2 id="p1-sec-design">4. Experiment design</h2>
+
+<h3>4.1 Questions and hypotheses</h3>
+
+<p>We registered the hypotheses in a dated file in the repository before the main runs [43]. The confirmatory family, tested at the middle load with Holm's correction, is:</p>
+<ul>
+<li><b>H1, sharing.</b> Pooled regimes with full Earth coverage cut the mean urgent wait relative to owners alone with full coverage, at 30 and 60&#8239;% load.</li>
+<li><b>H2, availability.</b> A pooled dispatcher on Earth with strict fallback keeps urgent cargo waiting longer than the full-information marketplace, by more than 10&#8239;% of the marketplace's mean (the lower end of the 95&#8239;% interval must clear that margin), in each start year whose base visibility is below 60&#8239;% and pooled over years. Secondary: planning ahead recovers part; relay 0.8 comes within 10&#8239;% of the marketplace by an equivalence test.</li>
+<li><b>H3a, decentralisation.</b> At message loss up to 0.10, the robots' auction is within &plusmn;10&#8239;% of the full-information marketplace (two one-sided tests [46, 47]). Exploratory: deeper bundles do worse at loss 0.25&ndash;0.40 (H3b); the elected leader matches the auction unless the network splits (H3c).</li>
+<li><b>H4, learning.</b> At 30&ndash;60&#8239;% load, learned bids beat hand-built bids on the held-out seeds; at 10&#8239;% load the difference is within &plusmn;2&#8239;%. The linear model and every test outside the training range are reported whichever way they come out.</li>
+<li><b>H6, team lifts.</b> Allowing cross-owner pairs raises the share of team items delivered; at loss 0.25 and above, failed meetings rise without the commit-and-timeout step.</li>
+</ul>
+<p>H5 (payments) and H7&ndash;H10 (safety, Mars, sizing) belong to the companion papers [44, 45].</p>
+
+<h3>4.2 Experiments</h3>
+
+<p>Table 4 lists the three experiments. All use three equal owners, team share 0.10 and message loss 0.10 for the on-Moon regimes unless the experiment varies them. E40 crosses the regimes with the three loads. E41 varies one factor at a time around the auction at the middle load: message loss, bundle depth under loss, radio range, the lost-link rule and a second mast. E42 varies the team-lift share, whether pairs may cross owners, the loss rate and the meeting protocol, and runs the owners-alone regime at each team share so that H1 can be split into the part that comes from capacity and the part that comes from dispatch.</p>
+
+<table class="wide" id="p1-tab-design">
+<caption>Table 4. Experiments. Runs are simulated years. Seeds are crossed with start years as described in Section 4.3.</caption>
+<thead><tr><th>Experiment</th><th>Factors and levels</th><th>Seeds per cell</th><th>Cells</th><th>Runs</th></tr></thead>
+<tbody>
+<tr><td>E40, main comparison</td><td>12 regimes &times; load 10, 30, 60&#8239;%; owners alone with full coverage at 30 and 60&#8239;%; hopper refuelling for the full-information marketplace and the auction at 30&#8239;%</td><td>80 (30 + 50); refuelling 30</td><td>{{P1-E40-N-CELLS}}</td><td>{{P1-E40-N-RUNS}}</td></tr>
+<tr><td>E41, network and messages</td><td>Around the auction, elected leader and both learned regimes at 30&#8239;%: loss 0, 0.10, 0.25, 0.40 and bursty 0.25; depth 1, 2, 5 &times; loss 0.25, 0.40; range 2, 5, 10&nbsp;km and unlimited; lost-link rule off; second mast at pad B</td><td>30</td><td>{{P1-E41-N-CELLS}}</td><td>{{P1-E41-N-RUNS}}</td></tr>
+<tr><td>E42, team lifts</td><td>Auction at 30&#8239;%: team share 0, 0.10, 0.25 &times; cross-owner pairs no/yes &times; loss 0, 0.10, 0.25, 0.40, with commit and a 1&nbsp;h timeout; at share 0.25: timeout 0.5 and 2&nbsp;h, no commit, base-arbitrated meetings (exploratory); owners alone at each share</td><td>30</td><td>{{P1-E42-N-CELLS}}</td><td>{{P1-E42-N-RUNS}}</td></tr>
+</tbody>
+</table>
+
+<h3>4.3 Seeds, start years and common random numbers</h3>
+
+<p>A seed fixes the landings, the manifests, the item masses, the team draws, the base computer's failures and the message losses, so all regimes face the same year when they share a seed. Evaluation uses two blocks. Block one is seeds 1&ndash;30 with start years 2028 to 2031 in rotation (start year 2028 plus the seed modulo 4), on the link windows of [42]. Block two is start years 2032, 2035, 2038, 2041 and 2044, each with seeds 1&ndash;10, on the extended windows. E40 uses both blocks, 80 runs per cell; E41 and E42 use block one. Training used seeds 1000 and up and tuning seeds 2000 and up; no evaluation seed was used for either.</p>
+
+<h3>4.4 Outcomes</h3>
+
+<p>The primary outcome is the mean waiting time of urgent cargo in a run, in hours, from the moment the item is ready to its pickup. Items still waiting at the end of the year count with their wait so far (censored at the horizon); cargo on the heavy-lift list is excluded. The secondary outcomes are the 95th percentile of urgent wait, the share of urgent items picked up within 24&nbsp;h, tonnes delivered, the share of driving done empty, messages per robot-hour, failed team-lift meetings and the share of the year in which nobody could assign work. Because censored means mix waiting with not moving at all, we also report the mean over delivered items only, labelled as such.</p>
+
+<h3>4.5 Statistics</h3>
+
+<p>Every comparison is paired by seed and start year. We report the mean paired difference with a percentile bootstrap 95&#8239;% interval from 20,000 resamples of the pairs. The confirmatory family {H1, H2, H3a, H4, H6} at the middle load is corrected with Holm's procedure; all other intervals are per comparison and unadjusted. A claim of no practical difference needs two one-sided tests at a margin of &plusmn;10&#8239;% of the full-information marketplace's mean (&plusmn;2&#8239;% for H4 at light load), using the 90&#8239;% interval [46, 47]. For H2 the comparison is made in each start year below 60&#8239;% visibility and pooled; the block of start years is reported, and the pooled interval includes the variation between years. The rule for adding seeds (blocks of 10 up to 60 if the half-width exceeded 10&#8239;% of the mean) was fixed in advance; {{P1-SEEDS-ADDED}}.</p>
+
+<h3>4.6 Choices made after looking at results</h3>
+
+<p>Three changes were made to the registered plan, each recorded with its date and reason in the file before the runs it affects [43]. First, the owner of the study regrouped the planned papers; the hypotheses of this paper were unchanged. Second, after a five-seed development run showed that the gap between owners alone and the full-information marketplace was almost all cargo that owners alone cannot move, we replaced H2's yardstick (&ldquo;half that gap&rdquo;) with the comparison inside the pooled fleet given above; the original yardstick is still reported. Third, after the learned models had been evaluated once on seeds 1&ndash;30, we decided to run both in every experiment instead of choosing one, and froze both. The lost-link rule (Section 3.9), the hopper refuelling variant, the decision to let owners alone pair their own robots, and the owners-alone regime with full coverage (which H1 names but the first cell list lacked) were set during development, before any main run of the cells they affect.</p>
+
+<h3>4.7 Compute</h3>
+
+<p>Runs were made on one laptop with 8&nbsp;GB of memory, one process at a time per experiment, in chunks of at most 540&nbsp;s that resume from the last finished run. A simulated year took {{P1-RUNTIME-RANGE}} depending on the regime and load, with at most {{P1-PEAK-MB}} of memory. The learned models' training took {{P1-TRAIN-WALL-H}} in all.</p>

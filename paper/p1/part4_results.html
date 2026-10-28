@@ -1,0 +1,73 @@
+
+<h2 id="p1-sec-results">5. Results</h2>
+<!-- Draft 1 skeleton. Prose follows the interim E40 results at 10 and 30 % load (commit 197a574). Every number is a
+     placeholder. Sections marked PENDING wait for E40 at 60 %, E41 or E42; their prose states the question and the
+     comparison and must be rewritten around the data when it lands. -->
+
+<h3 id="p1-sec-res-overview">5.1 What each regime delivers</h3>
+
+<p>At every load the regimes fall into three groups (Table 5). Owners working alone keep urgent cargo waiting longest, whether they are coordinated from Earth or on the Moon: {{P1-A-URGENT-RANGE-30}} on average at the middle load. Pooled regimes that lose contact with Earth part of the time come next, from {{P1-RELAY08-URGENT-30}} with an 80&#8239;% relay to {{P1-B-STRICT-URGENT-30}} with strict fallback. The regimes that decide on the Moon, the full-information marketplace and the dispatcher on Earth with a relay that is always up sit together at the bottom, from {{P1-LIN-URGENT-30}} with learned linear bids to {{P1-LEADER-URGENT-30}} with the elected leader. Tonnes delivered are almost the same within the pooled group ({{P1-POOLED-T-RANGE-30}}) and much lower for owners alone ({{P1-A-T-RANGE-30}}), so most of what separates the pooled regimes is when cargo moves, while what separates them from owners alone is whether it moves at all.</p>
+
+<p>The fleet is lightly used even at the middle load. The two cargo rovers are busy {{P1-CARGO-UTIL-30}} of the year, the whole fleet {{P1-UTIL-FLEET-30}}, because the crew rovers, small rovers and hoppers can lift almost none of the cargo. At light load every pooled regime keeps urgent waits within {{P1-POOLED-SPREAD-10}} of one another except the strict dispatcher on Earth ({{P1-B-STRICT-URGENT-10}}). <!-- PENDING E40 60 %: one sentence on how the ordering changes at 60 %. --></p>
+
+{{P1-TABLE-REGIMES}}
+<!-- Table 5, built from results/table_E40_regimes.csv: rows = regimes, columns = load; cells = mean urgent wait
+     (censored), delivered-only mean, share within 24 h, tonnes delivered, n. Caption states n, censoring and the
+     heavy-lift exclusion. -->
+
+<h3 id="p1-sec-res-h1">5.2 Sharing: capacity and dispatch (H1)</h3>
+
+<p>Pooling cut the mean urgent wait by {{P1-H1-DIFF-30}} at the middle load (95&#8239;% CI {{P1-H1-DIFF-30-CI}}, paired, n = {{P1-H1-N-30}}), comparing the pooled dispatcher and owners alone, both with Earth always in view. H1 is supported (Holm-adjusted p = {{P1-H1-PHOLM}}). <!-- PENDING E40 60 %: the same at 60 %. --></p>
+
+<p>That difference is mostly capacity. Owner C's small rovers and hoppers cannot lift its crates or its regolith lots, and without cross-owner pairs no owner can lift most team items; by the end of a year owners alone leave {{P1-A-BACKLOG-T-30}} waiting. Counting delivered items only, which conditions on delivery and so compares different sets of items, owners alone with strict fallback wait {{P1-A-DELIV-MINUS-O-30}} longer than the full-information marketplace. <!-- PENDING E42: the capacity/dispatch split from the owners-alone cells at team share 0, 0.10 and 0.25 against the auction with and without cross-owner pairs; one sentence with the two shares and their intervals. --> <!-- PENDING per-owner backfill (do not claim which owner bears most until then): per-owner urgent wait and tonnes under owners alone and pooled; compare the direction with Kondor et al. [28]. --></p>
+
+<h3 id="p1-sec-res-h2">5.3 A dispatcher on Earth (H2)</h3>
+
+<p>A pooled dispatcher on Earth that stops when Earth sets kept urgent cargo waiting {{P1-H2-STRICT-MINUS-O}} longer than the full-information marketplace, pooled over all start years (95&#8239;% CI {{P1-H2-STRICT-MINUS-O-CI}}, n = {{P1-H2-N}}): {{P1-B-STRICT-URGENT-30}} against {{P1-O-URGENT-30}}. The pre-registered margin was 10&#8239;% of the marketplace's mean, {{P1-H2-MARGIN}}; the lower end of the interval clears it by a wide distance in each of the {{P1-H2-N-LOWVIS-YEARS}} start years whose base visibility is below 60&#8239;% ({{P1-H2-LOWVIS-YEARS}}), where the year means of the difference range from {{P1-H2-YEAR-MIN}} to {{P1-H2-YEAR-MAX}} (Figure 1). H2 is supported (Holm-adjusted p = {{P1-H2-PHOLM}}).</p>
+
+<p>The loss comes from the blackouts. While Earth is down, nothing is assigned; vehicles finish their current job and wait, and cargo that lands in the meantime queues at the pads. The backlog at the end of a blackout averages {{P1-B-STRICT-BACKLOG-30}} under strict fallback against {{P1-O-BACKLOG-30}} for the marketplace, and the share of urgent items picked up within a day falls from {{P1-O-WITHIN24-30}} to {{P1-B-STRICT-WITHIN24-30}}. Planning ahead recovers most of it: uploading per-vehicle queues and a standing rule for blackout landings leaves {{P1-PLAN-MINUS-O}} of extra wait (95&#8239;% CI {{P1-PLAN-MINUS-O-CI}}). A relay that is up 80&#8239;% of the time leaves {{P1-RELAY08-MINUS-O}} ({{P1-RELAY08-MINUS-O-CI}}). That is outside the 10&#8239;% margin we set for it, so the secondary expectation that an 80&#8239;% relay comes within 10&#8239;% of the marketplace fails. <!-- Check with data: relay 0.8 interval vs margin; rephrase if TOST passes at 60 %. --></p>
+
+<p>The original yardstick of H2, half the gap between owners alone and the marketplace, would have been {{P1-H2-OLD-YARDSTICK-HALF}}, larger than anything Earth's availability could cost a pooled fleet; we report it as registered but do not test it (Section 4.6).</p>
+
+{{P1-FIG-H2-YEARS}}
+<!-- Figure 1: paired difference (B strict minus marketplace) by start year with 95 % CIs, base visibility of each year
+     on the second axis; plan-ahead and relay 0.8 as second and third series. Source: table_E40_pairs.csv + windows. -->
+
+<h3 id="p1-sec-res-h3">5.4 Deciding on the Moon (H3a, H3c)</h3>
+
+<p>The robots' own auction, at message loss 0.10 over the terrain-limited network, kept urgent cargo waiting {{P1-H3A-DIFF}} relative to the full-information marketplace ({{P1-H3A-PCT}}; 90&#8239;% CI {{P1-H3A-CI90}}, n = {{P1-H3A-N}}). We had registered the expectation that it would come within &plusmn;10&#8239;% of the marketplace, &plusmn;{{P1-H2-MARGIN}}. The interval reaches past the lower margin, so equivalence is not shown: H3a is not supported as stated, because the auction may be better than the marketplace by more than 10&#8239;%. The interval excludes any loss relative to the marketplace.</p>
+
+<p>The marketplace is the auction's own bid rule given perfect information, which is why we call it a reference and not a bound. <!-- PENDING B-75 mechanism paragraph: what the auction does differently from the marketplace (round structure, rebroadcast, item knowledge per part of the network, retry epochs) and a test of it if one is run. Do not state a mechanism until BACKEND's analysis supports it. --> The elected leader, which runs the marketplace itself on the base computer and loses messages on the way, came within {{P1-LEADER-MINUS-O}} of it ({{P1-LEADER-MINUS-O-CI}}). <!-- PENDING E41: H3c, the leader against the auction when the network splits (range 2 km, rally off). --></p>
+
+<h3 id="p1-sec-res-net">5.5 Message loss, bundle depth and radio range (H3b) <!-- PENDING E41 --></h3>
+
+<p>{{P1-E41-LOSS-SENTENCE}} <!-- PENDING E41: urgent wait of the auction, leader and both learned regimes against loss 0-0.40 and bursty 0.25 (Figure 2), with the loss at which each crosses the full-information marketplace. Compare the slope with Lott and Honary's ~0.3 % of makespan per point of loss [11]. --></p>
+
+<p>{{P1-E41-DEPTH-SENTENCE}} <!-- PENDING E41: H3b, depth 5 vs depth 1 at loss 0.25 and 0.40, with stale claims; development runs showed depth 5 worse even at loss 0. Compare with [10]. --></p>
+
+<p>{{P1-E41-RANGE-SENTENCE}} <!-- PENDING E41: range 2/5/10 km and unlimited; rally off; second mast at pad B, with the share of robots outside the mast's part of the network. --></p>
+
+<h3 id="p1-sec-res-h4">5.6 Learned bids (H4)</h3>
+
+<p>The learned linear correction cut the mean urgent wait relative to the hand-built auction by {{P1-H4-LIN-DIFF-30}} at the middle load ({{P1-H4-LIN-PCT-30}}; 95&#8239;% CI {{P1-H4-LIN-CI-30}}, n = {{P1-H4-N}}) and by {{P1-H4-LIN-DIFF-10}} at light load ({{P1-H4-LIN-PCT-10}}; {{P1-H4-LIN-CI-10}}). For the linear model H4's first part is supported (Holm-adjusted p = {{P1-H4-LIN-PHOLM}}); its second part, no difference beyond &plusmn;2&#8239;% at light load, fails. <!-- PENDING E40 60 %: the 60 % row; B-74's single evaluation found the largest gain there. --></p>
+
+<p>The network did not improve on the hand-built bids. At the middle load it kept urgent cargo waiting {{P1-H4-MLP-DIFF-30}} longer than the auction ({{P1-H4-MLP-CI-30}}), and at light load the difference was {{P1-H4-MLP-DIFF-10}} ({{P1-H4-MLP-CI-10}}). H4 as registered names the learned policy without saying which model; for the network it is not supported. Its training gave it less chance than the linear model: imitation left its hidden layers at their initial values and the search adjusted only its output layer (Section 3.10), so this is a result about the network as trained here, not about networks in general.</p>
+
+<p>The linear weights say what the hand-built bid misses. <!-- Fill from data/policies/atc_bid_linear_v1.json: the signs and sizes of the largest weights in plain units (urgency and slack, approach hours, full loads, a weaker age credit, a softer penalty on long jobs, preference for pads with no landing due soon). --> {{P1-LIN-WEIGHTS-SENTENCE}} The gain does not come from other cargo: in the guard runs at 60&#8239;% load, delays of normal-priority and bulk cargo and tonne-days waiting all fell with the learned bids ({{P1-GUARD-TONNEDAYS-PCT}} for tonne-days), and tonnes delivered did not change. Outside its training range, at two and five owners, message loss 0.25 and 0.40, light load and start year 2038, the linear model kept the same sign in all {{P1-OOD-N-CELLS}} cells, with intervals clear of zero in {{P1-OOD-N-SIG}} of them (Table 6). A fleet twice as large could not be run in our time budget.</p>
+
+{{P1-TABLE-OOD}}
+<!-- Table 6, from results/ATC_learned_eval.json "ood": cell, linear minus hand (h), 95 % CI, n. -->
+
+<h3 id="p1-sec-res-h6">5.7 Team lifts across owners (H6) <!-- PENDING E42 --></h3>
+
+<p>{{P1-H6-SHARE-SENTENCE}} <!-- PENDING E42: share of team items delivered with and without cross-owner pairs at team share 0.10 and 0.25 (H6 part 1, paired CI, Holm). --></p>
+
+<p>{{P1-H6-MEETINGS-SENTENCE}} <!-- PENDING E42: failed meetings and their waiting hours with and without the commit step at loss 0.25 and 0.40 (H6 part 2). The development runs showed the commit step did not reduce failed meetings (Two Generals, Section 3.8); report the E42 result whichever way it falls, with timeouts 0.5 and 2 h and the base-arbitrated variant as exploratory. --></p>
+
+<h3 id="p1-sec-res-sens">5.8 Sensitivities</h3>
+
+<p>Letting the hoppers refuel every month changed nothing that matters: the full-information marketplace's urgent wait moved by {{P1-HOPPER-O-DIFF}} ({{P1-HOPPER-O-CI}}), because a hopper carries 10&nbsp;kg and the cargo that waits is heavy. <!-- PENDING E41: the lost-link rule off and the second mast, if not covered in 5.5. --></p>
+
+<h3 id="p1-sec-res-negative">5.9 What did not work</h3>
+
+<p>Imitating the full-information marketplace taught the bidding models nothing, because the marketplace uses the same bid rule; we could have seen this from the definitions before collecting {{P1-IMIT-N-ROWS}} labelled examples, and report it so others do not repeat it. The network trained by search on its output layer did not beat the hand-built bids. The relay at 80&#8239;% coverage missed its equivalence margin. Bundle depth 5 made the auction worse in both development cells we ran, at message loss 0 and 0.25. <!-- PENDING E41/E42: confirm the last sentence and add the commit-step result. --></p>
