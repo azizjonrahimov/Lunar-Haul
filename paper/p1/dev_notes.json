@@ -1,0 +1,19 @@
+{
+ "note": "Numbers quoted in P1 that no results file holds: development-run values and run-log counts, each with its source. build_p1.py reads them from here so that nothing is typed into the text. Update the 'to update at submission' entries from the final run log.",
+ "rally_dev_run": {
+  "source": ".team/reports.md, B-72 (five-seed development run, C_LEADER at 30 % load, 2028, before the lost-link rally rule was added)",
+  "leader_delivered_t_without_rule": 58,
+  "leader_delivered_t_with_rule": 1487
+ },
+ "regression_check": {
+  "source": ".team/reports.md, B-71 to B-74 (rows of v2/v3/R-1 results rerun with every phase-5 feature off; pytest count at B-74)",
+  "status": "to update at submission from the final run log",
+  "rows_rerun_identical": 20,
+  "pytest_tests": 547
+ },
+ "runtime": {
+  "source": "BACKEND's B-75 timing message, 27 Oct 2026 (working set of one run_phase5.py process)",
+  "status": "to update at submission from a measured peak",
+  "peak_memory_mb": 360
+ }
+}

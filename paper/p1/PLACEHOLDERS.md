@@ -104,3 +104,13 @@ checked against `paper/r1/values.json`.
 
 | P1-H3A-SENTENCE | table_E40_pairs.csv H3a v1-only row: tost_equivalent / CI sign | composed by build_p1.py: "it did" / "the interval was too wide to show it" / "it fell short"; never typed |
 | P1-H3A-VERDICT | same row | composed sentence stating equivalence shown or not, with the direction if the CI excludes 0 |
+| P1-H3A-ABSTRACT-CLAUSE | abstract: "matched the full-information marketplace" when the 95 % CI includes zero, else "was better/worse ... by X %" | composed by build_p1.py from the H3a v1 row |
+| P1-H3A-INTRO-CLAUSE | introduction: the auction against the marketplace, with the 90 % interval in percent when it includes zero | composed, same row |
+| P1-H4-LIGHT-CLAUSE | introduction: the light-load learning outcome ("helped there too" only if the 95 % CI excludes zero) | composed from the H4 linear row at 10 % |
+| P1-REFERENCES | reference list from NOTES.md `[n]` lines (the research-note grade in parentheses is dropped) | HTML list; not a key of the 122 |
+
+**Table markers.** `<!-- TABLE:pairs -->` (Table 7, the confirmatory family with Holm's p) sits after Table 6 in 5.6;
+`<!-- TABLE:e42 -->` (Table 8, every E42 cell) ends 5.7. `build_p1.py` fails if either marker is missing.
+
+**Key list after the 28 Oct edits:** the 122 above plus `P1-H3A-ABSTRACT-CLAUSE`, `P1-H3A-INTRO-CLAUSE`, `P1-H4-LIGHT-CLAUSE`
+and `P1-REFERENCES`; `P1-H3A-PCT-ABS` is no longer used in the text (the build notes it) and may be dropped.

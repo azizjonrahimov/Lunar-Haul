@@ -5,3 +5,6 @@
 <h2 id="p1-sec-limits">7. Limitations</h2>
 
 <p><b>The network was given a narrow test.</b> Imitation left the network's two hidden layers at their random initial values, and the search on the objective adjusted only its {{P1-CEM-MLP-N-SEARCHED}} output weights, while the linear model's search covered all {{P1-LIN-N-WEIGHTS}} of its weights (Section 3.10). The network was therefore a linear model on fixed random features of the inputs, searched with fewer candidates per weight than the linear model. Its failure to beat the hand-built bids is no evidence that a network helps as trained here; it is no evidence that a network cannot help. Two tests would settle it: training all {{P1-MLP-N-PARAMS}} weights end to end on the simulated objective, with a gradient-free method such as an evolution strategy or with a policy-gradient method, and starting the network from the learned linear policy, so that it begins at the linear model's result and can only add what nonlinearity buys. Neither was run, and the pre-registration froze both models before the main runs (Section 4.6).</p>
+
+<h2 id="p1-sec-refs">References</h2>
+{{P1-REFERENCES}}
