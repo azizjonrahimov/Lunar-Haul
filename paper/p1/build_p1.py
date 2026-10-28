@@ -460,6 +460,10 @@ def values(r: R, allow_pending: bool):
                                    f"by {pc(abs(100 * h3['share_of_b']), 1)}")
     check(h3["mean"] <= 0 and h3["hi"] <= m3, "deciding on the Moon recovers all of the strict dispatcher's loss")
     check(h3["lo"] < 0 < h3["hi"], "the auction-marketplace difference is not distinguishable from zero")
+    check(abs(h3["mean"]) < 0.1 * h2["mean"] and abs(h3["hi"]) < 0.1 * h2["mean"],
+          "the auction's difference from the marketplace is a small fraction of the strict dispatcher's loss (6.1)")
+    check(relay["mean"] < h2["mean"] and relay["lo"] > margin,
+          "the relay's loss is small next to the strict dispatcher's and still above a tenth of O's mean (6.1)")
     ld = r.pair("leader_minus_O", LOAD_MAIN)
     V["P1-LEADER-MINUS-O"], V["P1-LEADER-MINUS-O-CI"] = h_(ld["mean"], 2, sign=True), ci_h(ld["lo"], ld["hi"])
 
@@ -638,6 +642,14 @@ def values(r: R, allow_pending: bool):
         f"and {num(to['2'], 1)} with 2&nbsp;h. The exploratory variant in which the base computer arbitrates each "
         f"meeting had {num(arb['0.25'], 1)} and {num(arb['0.4'], 1)} failed meetings at loss 0.25 and 0.40.")
     check(to["0.5"] < to1 < to["2"], "meeting wait grows with the timeout")
+    # one clause for the abstract, 6.1 and the conclusion: the team-share-0.10 lift in team items and the commit step's
+    # effect, with the same rule as the meetings sentence (supported if failures without the step exceed 1.1x)
+    t10 = r.pair("H6_team_items", LOAD_MAIN, team="10", loss="0.1")
+    commit_helped = all(noc[l] > 1.1 * base[l] for l in noc)
+    V["P1-H6-ABSTRACT-CLAUSE"] = (
+        f"Letting robots of different owners lift heavy crates together raised the share of team items delivered "
+        f"from {sh(t10['b_mean'])} to {sh(t10['b_mean'] + t10['mean'])}, and a commit step before each meeting "
+        f"{'reduced' if commit_helped else 'did not reduce'} failed meetings under message loss")
 
     # --- tables and the figure ---------------------------------------------------------------------------
     V["P1-TABLE-REGIMES"] = table_regimes(r)
@@ -817,6 +829,26 @@ def build(no_pdf: bool, allow_pending: bool):
     unused = sorted(k for k in V if k not in used)
     if unused:
         print("note: values not used in the text:", ", ".join(unused))
+    # the abstract has four parts and 250-300 words (writing guide §7); with pending markers the count is only noted
+    m = re.search(r'<div class="abstract"[^>]*>(.*?)<p class="kw">', doc, re.S)
+    if not m:
+        raise SystemExit("abstract block not found")
+    abs_text = html.unescape(re.sub(r"<[^>]+>", " ", re.sub(r"<!--.*?-->", "", m.group(1), flags=re.S)))
+    n_abs = len(abs_text.replace("Abstract.", "").split())
+    if not 250 <= n_abs <= 300:
+        msg = f"abstract has {n_abs} words; the target is 250-300"
+        if pending:
+            print("note:", msg, "(pending markers change the count)")
+        else:
+            raise SystemExit(msg)
+    else:
+        print(f"abstract: {n_abs} words")
+    # the conclusion has 150-250 words
+    m = re.search(r'<h2 id="p1-sec-conclusion">.*?</h2>(.*?)<h2', doc, re.S)
+    n_con = len(html.unescape(re.sub(r"<[^>]+>", " ", re.sub(r"<!--.*?-->", "", m.group(1), flags=re.S))).split())
+    if not 150 <= n_con <= 250:
+        raise SystemExit(f"conclusion has {n_con} words; the target is 150-250")
+    print(f"conclusion: {n_con} words")
     out = os.path.join(HERE, "paper.html")
     open(out, "w", encoding="utf-8", newline="\n").write(doc)
     json.dump({k: v for k, v in V.items() if not k.startswith("P1-TABLE") and k not in ("P1-REFERENCES", "P1-FIG-H2-YEARS")},

@@ -77,6 +77,7 @@ counts = integer. "ABS" keys print the absolute value (the sentence carries the 
 | P1-CEM-MLP-GENS / -MLP-POP / -MLP-N-SEARCHED | MLP CEM generations / population / parameters searched | L `policies.mlp.cem.generations` / `population` / `parameters_searched` | integer |
 | P1-CEM-N-TRAIN-SEEDS / -N-TUNE-SEEDS | seeds per candidate / per generation's selection | L `policies.*.cem.fitness` and `selection` strings list the seeds; prefer structured fields if BACKEND adds them | word |
 | P1-HOPPER-O-DIFF (+ -CI) | O hopper_refuel minus O, 30 % | P hopper row (being added by BACKEND; match the exact label). BACKEND also adds C_AUCTION - O and learned - O rows; H3a keeps its own row | h, CI |
+| P1-H6-ABSTRACT-CLAUSE | one clause for the abstract, 6.1 and the conclusion: team items delivered with and without cross-owner pairs at team share 0.10, and whether the commit step reduced failed meetings (same rule as P1-H6-MEETINGS-SENTENCE) | P "H6_team_items" row at team 0.10, loss 0.1; F `meetings` | sentence built in script |
 | P1-MESH-LOS-25-2TO5 | LOS share 2.5-2.5 m at 2-5 km | `results/ATC_mesh.json` | % 2 dp |
 | P1-MESH-MAST-MAX-KM | farthest direct mast LOS | `results/ATC_mesh.json` | km |
 | P1-MESH-MAX-HOPS-5KM | max hops to mast, rovers, 5 km | `results/ATC_mesh.json` | integer |

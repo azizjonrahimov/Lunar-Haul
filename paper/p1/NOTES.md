@@ -60,3 +60,10 @@ research note's (High / Medium / Low). Numbers in brackets are the ones used in 
 
 Missing from the research notes and needed:
 - The Hungarian method (Kuhn 1955) is named in 2.1 and 3.11 and is cited only through [1].
+
+## Reference statistics (LEAD, 28 Oct 2026; writing guide §7: mostly recent, low self-citation)
+53 entries. Dated 2021 or later: 26 by the year in the entry, plus [33] (IAC-24, 2024) and the two companion papers
+[44, 45] (2026) = 29 of 53 (55 %). Undated: [49] (NASA web page). Own work: [40]-[45] = 6 of 53 (11 %), of which
+[43] is the pre-registration file and [44, 45] the companion papers. Entries marked "title to confirm" or "to add"
+([24], [29], [46], [47], [51]) must be checked against the publisher's record before submission; the AI-use statement
+in part5 says so.
