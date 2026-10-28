@@ -428,3 +428,40 @@ doi:10.1111/ijcs.13049). Where they differ from §5, these are the stricter rule
 - Their tool list (AnswerThis, Paperpal, Overleaf, Zotero, ...) is optional for us: our build scripts do the number
   checks, and the HTML-to-PDF pipeline replaces LaTeX. Their warning holds: no citation, DOI or statistic from
   an AI tool enters a paper unverified against the source.
+
+### 7.1 From the linked posts and the Paul (2024) source (fetched 28 Oct 2026)
+Per-section rules from the channel's "information map" posts (179, 183, 185, 186, 190, 193, 205, 419, 415, 535,
+412). The "sample" posts (321, 435, 472, 457, 374) carry their samples as images, which could not be read; the
+Paul (2024) full text is paywalled, so only its abstract, the owner's summary and two secondary accounts were used.
+- **Choosing the problem** (419): narrow, researchable, tied to a real problem, in the current literature's
+  conversation; check page/word limits and what data and tools exist before committing.
+- **Introduction** (183, 415): topic and why it matters; the problem or question; the related work with its gap;
+  the aim and, briefly, what was achieved. Seven-step build: relevance, context, problem, gap ("every story has a
+  twist"), evidence, specific setting, objectives. **No subsections in the Introduction**: a run of paragraphs.
+- **Literature review** (535): a conversation among studies, not a list; group by idea, compare views X and Y and
+  say why the difference matters, add your position with evidence, name the gaps that justify the work.
+- **Methodology** (185): research type; subjects or sample (how many, how chosen); materials and instruments;
+  procedure; data analysis. **No results in the Methodology**: a frequent reason editors return papers. For a
+  simulation study: engine, scenario and vehicles, factors and levels, seeds and blocks, the statistics.
+- **Analysis types** (412): descriptive, diagnostic, predictive, prescriptive, exploratory, inferential, causal,
+  mechanistic. Ours are descriptive (cell means), inferential (paired bootstrap CIs, Holm, TOST), causal by
+  design (same seeds, one factor changed) and mechanistic (the model itself); say which is which.
+- **Results** (186): show the data in tables and figures, state the main findings and their precision, **no
+  interpretation** (that is the Discussion's job); table titles above the table, figure captions below; every
+  value in a table is also described in the text; keep Results and Discussion as separate sections.
+- **Discussion** (190): five parts in order: what the results say about the question and how much they matter;
+  comparison with earlier studies (agreements, differences, contradictions); theoretical, practical or policy
+  implications; limitations outside the authors' control; directions for future work.
+- **Conclusion** (193): the main findings against the objectives; their effect on future research and practice;
+  limitations in brief; a closing statement linking results to contribution.
+- **Paul (2024)**, Int. J. Consumer Studies 48(3) e13049, from the abstract and secondary accounts: premier
+  journals desk-reject most submissions (secondary sources say 70-80 %); rejection comes from lack of novelty,
+  little generalisable impact, a single small or convenient sample, outdated methods, poor readability, and
+  mismatch with the journal; favoured: a table that summarises prior studies' findings, generalised lessons for
+  a global audience, a contemporary topic, mixed or experimental designs, a co-author with a track record, and
+  rewriting the introduction and abstract until they are polished. Don't put the country in the title, don't try
+  to do too many things in one paper, don't cite only regional journals.
+- **What this changes for us**: a prior-studies table in each Related work section (P1 has Table 1); the
+  Introduction stays unsectioned; Methods state no results; Results state no mechanisms; Discussion and
+  Conclusion are separate sections with the five and four parts above; the abstract and introduction get a
+  dedicated rewrite pass last.
