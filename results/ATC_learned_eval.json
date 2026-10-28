@@ -1,0 +1,501 @@
+{
+ "task": "B-74",
+ "note": "DAgger: iteration 0 rolls out the hand-built bids (C_AUCTION); iteration i >= 1 rolls out the MLP of iteration i - 1\n(C_LEARNED); every auction round of every rollout is labelled with the oracle's choice for each robot (the full-\ninformation pooled marketplace on the same state, lunarsim.atc.learned.oracle_assignment); rows are aggregated over\niterations. Seeds: training 1000-1009 (loads 30 % and 60 % alternating, start years 2028-2031 by seed), tuning\n2000-2004 (early stopping and model choice), evaluation 1-30 (never seen). Message loss 0.10, terrain radio, depth 1.\nNo cross-entropy-method fine-tune was run (optional in the task; see the report). Single process, --max-seconds 540.",
+ "eval": {
+  "30": {
+   "O_ORACLE": {
+    "urgent_mean_h": 14.468,
+    "p5_cargo_util": 0.2941,
+    "utilisation": 0.0756,
+    "delivered_kg": 1469348.6639,
+    "atc_starved_items": 0.6,
+    "atc_urgent_within24_share": 0.8209,
+    "atc_urgent_wait_p95_cens_h": 64.0682
+   },
+   "hand": {
+    "urgent_mean_h": 14.212,
+    "regret_vs_teacher_h": {
+     "mean": -0.256,
+     "ci95": [
+      -1.663,
+      1.151
+     ],
+     "n": 30
+    },
+    "p5_cargo_util": 0.2946,
+    "utilisation": 0.0757,
+    "delivered_kg": 1470018.6832,
+    "atc_starved_items": 0.8333,
+    "atc_urgent_within24_share": 0.8313,
+    "atc_urgent_wait_p95_cens_h": 58.8766,
+    "heldout_agreement": 0.8837,
+    "heldout_groups": 79069
+   },
+   "mlp": {
+    "urgent_mean_h": 14.092,
+    "regret_vs_teacher_h": {
+     "mean": -0.376,
+     "ci95": [
+      -1.875,
+      1.122
+     ],
+     "n": 30
+    },
+    "vs_hand_h": {
+     "mean": -0.12,
+     "ci95": [
+      -1.43,
+      1.19
+     ],
+     "n": 30
+    },
+    "vs_hand_share": -0.0085,
+    "p5_cargo_util": 0.2957,
+    "utilisation": 0.0761,
+    "delivered_kg": 1472050.8243,
+    "atc_starved_items": 0.9,
+    "atc_urgent_within24_share": 0.8259,
+    "atc_urgent_wait_p95_cens_h": 59.183,
+    "heldout_agreement": 0.8628,
+    "heldout_groups": 79215
+   },
+   "linear": {
+    "urgent_mean_h": 11.822,
+    "regret_vs_teacher_h": {
+     "mean": -2.647,
+     "ci95": [
+      -4.431,
+      -0.863
+     ],
+     "n": 30
+    },
+    "vs_hand_h": {
+     "mean": -2.391,
+     "ci95": [
+      -3.867,
+      -0.914
+     ],
+     "n": 30
+    },
+    "vs_hand_share": -0.1682,
+    "p5_cargo_util": 0.2947,
+    "utilisation": 0.0758,
+    "delivered_kg": 1471246.8546,
+    "atc_starved_items": 0.8333,
+    "atc_urgent_within24_share": 0.8628,
+    "atc_urgent_wait_p95_cens_h": 51.5253,
+    "heldout_agreement": 0.7071,
+    "heldout_groups": 75760
+   }
+  },
+  "60": {
+   "O_ORACLE": {
+    "urgent_mean_h": 63.915,
+    "p5_cargo_util": 0.5991,
+    "utilisation": 0.1561,
+    "delivered_kg": 3251006.712,
+    "atc_starved_items": 117.5333,
+    "atc_urgent_within24_share": 0.5683,
+    "atc_urgent_wait_p95_cens_h": 220.0974
+   },
+   "hand": {
+    "urgent_mean_h": 75.711,
+    "regret_vs_teacher_h": {
+     "mean": 11.797,
+     "ci95": [
+      4.034,
+      19.559
+     ],
+     "n": 30
+    },
+    "p5_cargo_util": 0.6031,
+    "utilisation": 0.1571,
+    "delivered_kg": 3251544.1788,
+    "atc_starved_items": 128.6,
+    "atc_urgent_within24_share": 0.553,
+    "atc_urgent_wait_p95_cens_h": 284.8248
+   },
+   "mlp": {
+    "urgent_mean_h": 76.84,
+    "regret_vs_teacher_h": {
+     "mean": 12.926,
+     "ci95": [
+      2.363,
+      23.489
+     ],
+     "n": 30
+    },
+    "vs_hand_h": {
+     "mean": 1.129,
+     "ci95": [
+      -7.902,
+      10.161
+     ],
+     "n": 30
+    },
+    "vs_hand_share": 0.0149,
+    "p5_cargo_util": 0.6038,
+    "utilisation": 0.1572,
+    "delivered_kg": 3249659.7505,
+    "atc_starved_items": 128.3333,
+    "atc_urgent_within24_share": 0.5694,
+    "atc_urgent_wait_p95_cens_h": 348.4038
+   },
+   "linear": {
+    "urgent_mean_h": 43.95,
+    "regret_vs_teacher_h": {
+     "mean": -19.964,
+     "ci95": [
+      -26.216,
+      -13.713
+     ],
+     "n": 30
+    },
+    "vs_hand_h": {
+     "mean": -31.761,
+     "ci95": [
+      -38.132,
+      -25.39
+     ],
+     "n": 30
+    },
+    "vs_hand_share": -0.4195,
+    "p5_cargo_util": 0.5902,
+    "utilisation": 0.1535,
+    "delivered_kg": 3257128.3595,
+    "atc_starved_items": 137.3667,
+    "atc_urgent_within24_share": 0.7304,
+    "atc_urgent_wait_p95_cens_h": 202.6788
+   }
+  }
+ },
+ "ood": {
+  "2eq": {
+   "hand": {
+    "urgent_mean_h": 15.997,
+    "starved_items": 1.2
+   },
+   "linear": {
+    "urgent_mean_h": 11.403,
+    "starved_items": 1.0,
+    "vs_hand_h": {
+     "mean": -4.594,
+     "ci95": [
+      -8.239,
+      -0.95
+     ],
+     "n": 10
+    }
+   }
+  },
+  "5eq": {
+   "hand": {
+    "urgent_mean_h": 13.954,
+    "starved_items": 0.9
+   },
+   "linear": {
+    "urgent_mean_h": 12.626,
+    "starved_items": 0.9,
+    "vs_hand_h": {
+     "mean": -1.328,
+     "ci95": [
+      -3.497,
+      0.841
+     ],
+     "n": 10
+    }
+   }
+  },
+  "loss 0.25": {
+   "hand": {
+    "urgent_mean_h": 16.424,
+    "starved_items": 1.0
+   },
+   "linear": {
+    "urgent_mean_h": 13.356,
+    "starved_items": 1.3,
+    "vs_hand_h": {
+     "mean": -3.069,
+     "ci95": [
+      -4.415,
+      -1.722
+     ],
+     "n": 10
+    }
+   }
+  },
+  "loss 0.40": {
+   "hand": {
+    "urgent_mean_h": 18.0,
+    "starved_items": 1.7
+   },
+   "linear": {
+    "urgent_mean_h": 16.383,
+    "starved_items": 1.6,
+    "vs_hand_h": {
+     "mean": -1.617,
+     "ci95": [
+      -4.909,
+      1.675
+     ],
+     "n": 10
+    }
+   }
+  },
+  "load 10 %": {
+   "hand": {
+    "urgent_mean_h": 11.518,
+    "starved_items": 0.2
+   },
+   "linear": {
+    "urgent_mean_h": 10.301,
+    "starved_items": 0.3,
+    "vs_hand_h": {
+     "mean": -1.216,
+     "ci95": [
+      -2.123,
+      -0.31
+     ],
+     "n": 10
+    }
+   }
+  },
+  "year 2038": {
+   "hand": {
+    "urgent_mean_h": 13.261,
+    "starved_items": 0.7
+   },
+   "linear": {
+    "urgent_mean_h": 12.029,
+    "starved_items": 0.8,
+    "vs_hand_h": {
+     "mean": -1.232,
+     "ci95": [
+      -3.91,
+      1.445
+     ],
+     "n": 10
+    }
+   }
+  }
+ },
+ "policies": {
+  "mlp": {
+   "file": "data/policies/atc_bid_v1.json",
+   "cem": {
+    "parameters_searched": 32,
+    "population": 12,
+    "elite": 3,
+    "generations": 5,
+    "sigma0": 0.5,
+    "smoothing": 0.7,
+    "fitness": "mean urgent wait (censored, h), C_LEARNED, loss 0.10, 30 % load, common random numbers: seeds [1000, 1002, 1004, 1006] for every candidate",
+    "selection": "mean of each generation on tuning seeds [2000, 2002, 2004]; the best one is exported",
+    "hand_tune_h": 10.0918,
+    "selected_generation": 0,
+    "selected_tune_h": 9.1767,
+    "wall_s": 3432.7
+   }
+  },
+  "linear": {
+   "file": "data/policies/atc_bid_linear_v1.json",
+   "cem": {
+    "parameters_searched": 13,
+    "population": 10,
+    "elite": 3,
+    "generations": 6,
+    "sigma0": 1.5,
+    "smoothing": 0.7,
+    "fitness": "mean urgent wait (censored, h), C_LEARNED, loss 0.10, 30 % load, common random numbers: seeds [1000, 1002, 1004, 1006] for every candidate",
+    "selection": "mean of each generation on tuning seeds [2000, 2002, 2004]; the best one is exported",
+    "hand_tune_h": 10.0918,
+    "selected_generation": 5,
+    "selected_tune_h": 8.7304,
+    "wall_s": 3181.5
+   }
+  }
+ },
+ "imitation": {
+  "teacher": "O_ORACLE: the full-information pooled marketplace on the same auction state",
+  "rows": 624640,
+  "groups": 37941,
+  "val_groups_tuning_seeds": "2000-2004",
+  "hand_agreement_val": 0.92881,
+  "best_epoch": -1,
+  "finding": "imitation reproduces the hand-built bids: their top item is the oracle's item for the robot in 92.9 % of held-out rounds, and every disagreement is an item the oracle gives another robot in the same round (318 of 318 at 30 % load, 404 of 404 at 60 %, seeds 2000/2001); both the MLP and the linear model reach their best held-out agreement with no correction (g = 0), so DAgger iterations 1-4 were not run"
+ },
+ "guards": {
+  "30": {
+   "atc_urgent_wait_mean_cens_h": {
+    "hand": 15.119,
+    "linear": 12.653,
+    "linear_minus_hand": {
+     "mean": -2.466,
+     "ci95": [
+      -4.745,
+      -0.186
+     ],
+     "n": 10
+    }
+   },
+   "delay_prio2_mean_h": {
+    "hand": 16.645,
+    "linear": 14.217,
+    "linear_minus_hand": {
+     "mean": -2.429,
+     "ci95": [
+      -5.701,
+      0.843
+     ],
+     "n": 10
+    }
+   },
+   "delay_mean_bulk": {
+    "hand": 15.504,
+    "linear": 15.49,
+    "linear_minus_hand": {
+     "mean": -0.014,
+     "ci95": [
+      -0.244,
+      0.215
+     ],
+     "n": 10
+    }
+   },
+   "delay_mean_h": {
+    "hand": 15.451,
+    "linear": 15.355,
+    "linear_minus_hand": {
+     "mean": -0.096,
+     "ci95": [
+      -0.319,
+      0.127
+     ],
+     "n": 10
+    }
+   },
+   "tonne_days_waiting": {
+    "hand": 842.972,
+    "linear": 835.205,
+    "linear_minus_hand": {
+     "mean": -7.767,
+     "ci95": [
+      -23.032,
+      7.499
+     ],
+     "n": 10
+    }
+   },
+   "atc_starved_items": {
+    "hand": 0.7,
+    "linear": 0.8,
+    "linear_minus_hand": {
+     "mean": 0.1,
+     "ci95": [
+      -0.267,
+      0.467
+     ],
+     "n": 10
+    }
+   },
+   "delivered_kg": {
+    "hand": 1469108.416,
+    "linear": 1470473.658,
+    "linear_minus_hand": {
+     "mean": 1365.241,
+     "ci95": [
+      -2666.911,
+      5397.393
+     ],
+     "n": 10
+    }
+   }
+  },
+  "60": {
+   "atc_urgent_wait_mean_cens_h": {
+    "hand": 67.546,
+    "linear": 43.634,
+    "linear_minus_hand": {
+     "mean": -23.911,
+     "ci95": [
+      -32.349,
+      -15.473
+     ],
+     "n": 10
+    }
+   },
+   "delay_prio2_mean_h": {
+    "hand": 83.673,
+    "linear": 57.241,
+    "linear_minus_hand": {
+     "mean": -26.432,
+     "ci95": [
+      -43.664,
+      -9.199
+     ],
+     "n": 10
+    }
+   },
+   "delay_mean_bulk": {
+    "hand": 46.247,
+    "linear": 40.536,
+    "linear_minus_hand": {
+     "mean": -5.711,
+     "ci95": [
+      -9.584,
+      -1.838
+     ],
+     "n": 10
+    }
+   },
+   "delay_mean_h": {
+    "hand": 47.062,
+    "linear": 40.745,
+    "linear_minus_hand": {
+     "mean": -6.317,
+     "ci95": [
+      -10.374,
+      -2.26
+     ],
+     "n": 10
+    }
+   },
+   "tonne_days_waiting": {
+    "hand": 6837.427,
+    "linear": 5781.814,
+    "linear_minus_hand": {
+     "mean": -1055.613,
+     "ci95": [
+      -1764.59,
+      -346.635
+     ],
+     "n": 10
+    }
+   },
+   "atc_starved_items": {
+    "hand": 98.7,
+    "linear": 91.6,
+    "linear_minus_hand": {
+     "mean": -7.1,
+     "ci95": [
+      -52.465,
+      38.265
+     ],
+     "n": 10
+    }
+   },
+   "delivered_kg": {
+    "hand": 3233242.425,
+    "linear": 3235780.787,
+    "linear_minus_hand": {
+     "mean": 2538.363,
+     "ci95": [
+      -13125.18,
+      18201.906
+     ],
+     "n": 10
+    }
+   }
+  }
+ }
+}

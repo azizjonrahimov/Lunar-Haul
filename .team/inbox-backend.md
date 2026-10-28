@@ -984,7 +984,7 @@ Steps:
    assigned twice after convergence.
 Done when: tests pass; a smoke table of C_AUCTION vs O_ORACLE at loss 0 / 0.10 / 0.25 / 0.40.
 
-## B-74 [QUEUED] The learned bidding policy (the "neural" part, honestly sized)
+## B-74 [DONE] The learned bidding policy (the "neural" part, honestly sized)
 Steps:
 1. Features per (robot, item) pair, only what the robot could know locally (12 or fewer): its marginal insertion
    cost, item age, priority, mass / capacity, distance to origin, battery state, hours to the next night, link
@@ -1003,7 +1003,7 @@ Single process, `--max-seconds 540` chunks; tell LEAD if training would need mor
 Done when: the policy file and check exist; held-out agreement with the teacher, and regret vs the teacher and
 vs hand-built bids on seeds 1-30, are reported with the linear model's numbers next to them.
 
-## B-75 [QUEUED] Paper P-A experiments (E40 main, E41 radio and messages, E42 team lifts)
+## B-75 [IN PROGRESS] Paper P-A experiments (E40 main, E41 radio and messages, E42 team lifts)
 30 paired seeds per cell, common random numbers across regimes:
 - E40: regime (A_EARTH strict/plan-ahead, A_MOON, B_EARTH strict/plan-ahead, B_EARTH_RELAY 0.8/1.0, C_LEADER,
   C_AUCTION, C_LEARNED, O_ORACLE) x load (10/30/60 %) x start year (2028-2031 from v1; 2032, 2035, 2038, 2041,

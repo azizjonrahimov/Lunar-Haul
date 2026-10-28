@@ -91,3 +91,13 @@ numbers before writing this change; the revision is stated so that it does not d
   that delivered-only waits are conditioned on delivery and so differ in which items they contain.
 - H1 is unchanged; the smoke run suggests most of the sharing gain at this fleet is capacity (team lifts across
   owners), which the paper will separate from dispatch quality using E42.
+
+### Change 3, 27 Oct 2026 (after B-74's evaluation on seeds 1-30, before any E40 run): which learned policy E40 uses
+What we saw: B-74 (`results/ATC_learned_eval.json`). The MLP (imitation, then CEM on its output weights) is no better
+than the hand-built bids; the linear correction (13 weights, CEM) cuts the primary outcome by 16.8 % at 30 % load and
+42 % at 60 %, and by 10.6 % at 10 % load, so H4's "within +-2 % at 10 % load" part fails. H4 is reported exactly so:
+not supported for the MLP (the pre-registered C_LEARNED), supported for the linear model at 30-60 % load.
+- Because we have now seen both policies on seeds 1-30, E40 does not pick one: it runs both, as C_LEARNED_MLP and
+  C_LEARNED_LIN, in every cell where C_LEARNED appears, and the paper reports both. No new training or tuning of
+  either policy happens after this point (no distillation of the linear policy into the MLP for E40).
+- Any headline about learned bids in P1 names the linear model and says it was the secondary model in this plan.

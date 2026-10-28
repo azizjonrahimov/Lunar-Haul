@@ -57,7 +57,7 @@ LINK_V1 = os.path.join(ROOT, "data", "comms", "connecting_ridge", "earth_link-v1
 LINK_V3 = os.path.join(ROOT, "data", "comms", "connecting_ridge", "earth_link-v3.json")
 SAMPLES_V1 = os.path.join(ROOT, "data", "comms", "connecting_ridge", "earth_link-v1-samples.json.gz")
 
-REGIMES = ("O_ORACLE", "B_EARTH", "B_EARTH_RELAY", "A_EARTH", "A_MOON", "C_LEADER", "C_AUCTION")
+REGIMES = ("O_ORACLE", "B_EARTH", "B_EARTH_RELAY", "A_EARTH", "A_MOON", "C_LEADER", "C_AUCTION", "C_LEARNED")
 A_REGIMES = ("A_EARTH", "A_MOON")
 EARTH_REGIMES = ("A_EARTH", "B_EARTH", "B_EARTH_RELAY")
 DEFAULTS: Dict[str, Any] = {
@@ -80,10 +80,14 @@ DEFAULTS: Dict[str, Any] = {
     "commit": True,                  # team lifts: two-phase commit (False: go on the proposal alone)
     "timeout_h": 1.0,                # Assumed (B-73 task): rendezvous timeout, sweep 0.5-2 h
     "team_scope": "any",             # any | same_owner (pairs of one owner only)
+    # C_LEARNED (B-74, lunarsim/atc/learned.py): C_AUCTION with a learned bid correction
+    "policy": None,                  # policy file (default data/policies/atc_bid_v1.json for C_LEARNED)
+    "collect": False,                # record DAgger rows with oracle labels (tools/atc/train_bid.py)
 }
 REGIME_KEYS = set(DEFAULTS)
 RETRY_H = 0.05                       # Assumed: a robot whose message was lost is reconsidered 3 min later
 URGENT_TARGET_H = 24.0               # PREREG: share of urgent items delivered within 24 h
+STARVED_H = 168.0                    # B-74 guard: an item waiting more than 7 days is starved
 SMALL_ANTENNA_PREFIXES = ("MAPP", "HOPPER", "MICRO")
 ANT_ROVER_M, ANT_SMALL_M, ANT_MAST_M = 2.5, 1.0, 10.0
 
@@ -192,7 +196,7 @@ class ATCState:
         self._earth_t = [t for t, _ in self.earth_ch]
         # base computer (C_LEADER): failure intervals from its own stream
         self.base_down: List[Tuple[float, float]] = []
-        if regime in ("C_LEADER", "C_AUCTION") and math.isfinite(float(c["base_mtbf_h"])):
+        if regime in ("C_LEADER", "C_AUCTION", "C_LEARNED") and math.isfinite(float(c["base_mtbf_h"])):
             rng = np.random.default_rng([int(sim.seed), 72, 1])
             t = 0.0
             while True:
@@ -218,6 +222,14 @@ class ATCState:
         self.queue_for: Optional[float] = None
         self._covered: Dict[float, List[str]] = {}
         self._retry_at = -1.0
+        self.policy = None
+        if regime == "C_LEARNED" or c["policy"] is not None:
+            from .learned import Policy
+            self.policy = Policy(c["policy"]) if c["policy"] else Policy()
+        self.collector = None
+        if c["collect"]:
+            from .learned import Collector
+            self.collector = Collector()
         self.claims: Dict[int, List[Tuple[List[Any], List[str]]]] = {}
         self.claim_end: Dict[int, float] = {}
         self.m = {"claims_run": 0, "claims_stale": 0, "claims_won": 0, "wasted_trips": 0, "parallel_winners": 0,
@@ -342,7 +354,7 @@ class ATCState:
             jobs = _inner_fn("inhouse")(sim, waiting, ok) if ok else []
             jobs = self._deliver(sim, jobs, t)
             return self._hand(sim, jobs, t)
-        if r == "C_AUCTION":
+        if r in ("C_AUCTION", "C_LEARNED"):
             from . import auction
             return auction.dispatch(self, sim, waiting, free, inner_kw)
         if r == "C_LEADER":
@@ -614,6 +626,9 @@ class ATCState:
             "atc_urgent_within24_share": float(np.mean([c.t_delivered is not None and c.t_delivered - c.t_ready
                                                         <= URGENT_TARGET_H for c in urg])) if urg else float("nan"),
             "atc_deadhead_share": m.km_empty / m.km_total if m.km_total > 0 else float("nan"),
+            "atc_starved_items": sum(1 for c in sim.all_cargo if c.t_ready < H and not getattr(c, "lost", False)
+                                     and not c.stranded and ((c.t_delivered if c.t_delivered is not None else H)
+                                                             - c.t_ready) > STARVED_H),
             "atc_blackouts": len(self.backlog_at_aos),
             "atc_backlog_end_blackout_t_mean": float(np.nanmean(bl)),
             "atc_backlog_end_blackout_t_max": float(np.nanmax(bl)),

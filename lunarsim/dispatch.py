@@ -265,8 +265,9 @@ def _anticipate(sim: Simulation, free: List[Vehicle], used: set, pool: List[Carg
 def marketplace(sim, waiting, free, bundling=True, team_lift=True, backhaul=True,
                 night_aware=True, priority=True, consolidate=True, anticipate=True, max_items=10,
                 batch_h=0.0, w_p1=None, w_p2=None, w_age=None, fill=None, max_wait=None,
-                vot_scale=None, selector=None, team_hook=None, round_limit=None, **kw):
-    """selector, team_hook and round_limit (Phase 5, lunarsim.atc.auction) are None here: the v2 marketplace."""
+                vot_scale=None, selector=None, team_hook=None, round_limit=None, bid_adjust=None, **kw):
+    """selector, team_hook, round_limit and bid_adjust (Phase 5, lunarsim.atc.auction / learned) are None here: the
+    v2 marketplace. bid_adjust is used only with a selector."""
     jobs: List[Job] = []
     used = set()
     pool = list(waiting)
@@ -367,6 +368,8 @@ def marketplace(sim, waiting, free, bundling=True, team_lift=True, backhaul=True
                     else:
                         bundle, route = [c], [c.dest]
                         bid = _bid(sim, v, bundle, route, priority, w)
+                    if math.isfinite(bid) and bid_adjust is not None:
+                        bid = bid_adjust(sim, v, bundle, route, bid)
                     if math.isfinite(bid) and (mine is None or bid < mine[0]):
                         mine = (bid, v, bundle, route)
                 if mine is not None:

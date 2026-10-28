@@ -6419,3 +6419,123 @@ Idle until BACKEND's data for F-53 lands.
 1. **Same-owner team lifts for the A regimes.** B-73 says owners-alone regimes "may pair only their own robots", but they use inhouse, which has no team step (B-72's A_EARTH = inhouse check depends on that).
    - **Proposal:** an `own_teams` flag for A regimes (default off, so the degenerate check stays exact), switched on in E40/E42 so A regimes get FLEX + CLV-1 pairs (team items up to 2,080 kg). OK?
 2. **E41 network-design variant** (your B-72 answer): I'll pick the second 10 m mast site with B-70's data when I build the E41 runner in B-75, and give the reason there.
+
+## B-74 DONE 20:28 | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**Headline**
+
+- **1. Imitating O_ORACLE gives back the hand-built bids, by construction.**
+  - DAgger iteration 0 used 624,640 rows (37,941 auction rounds) on training seeds 1000-1009 and tuning seeds 2000-2004.
+  - The hand bids' top item is the oracle's item for that robot in **92.9 %** of held-out rounds.
+  - **Every** disagreement is an item the oracle gives another robot in the same round: **318 of 318** at 30 % load (seed 2000) and **404 of 404** at 60 % (seed 2001).
+  - Both the MLP and the linear model reach their best held-out agreement with no correction (g = 0); cross-entropy improves only through calibration (temperature ≈ 11). DAgger iterations 1-4 would add nothing, so they were not run.
+- **2. Trained on the objective with the cross-entropy method, the linear correction beats the hand bids, and the teacher.**
+  - **Setup (LEAD's conditions):**
+    - common random numbers: every candidate ran training seeds 1000/1002/1004/1006;
+    - selection on tuning seeds 2000/2002/2004 only;
+    - the anticipation features asked for (time to the next published landing; time to the next dark period or until the battery runs out);
+    - seeds 1-30 were evaluated once.
+  - **Results on seeds 1-30** (mean urgent wait, h, censored; paired vs hand bids; t-based 95 % CI, n = 30):
+
+    | load | O_ORACLE | hand (C_AUCTION) | MLP | linear | linear - hand | MLP - hand |
+    |---|---|---|---|---|---|---|
+    | 30 % | 14.47 | 14.21 | 14.09 | **11.82** | **-2.39 [-3.87, -0.91] (-16.8 %)** | -0.12 [-1.43, 1.19] |
+    | 60 % | 63.92 | 75.71 | 76.84 | **43.95** | **-31.76 [-38.13, -25.39] (-42.0 %)** | +1.13 [-7.90, 10.16] |
+
+  - **Regret vs the teacher (minus O):**
+
+    | load | hand | MLP | linear |
+    |---|---|---|---|
+    | 30 % | -0.26 [-1.66, 1.15] | -0.38 [-1.88, 1.12] | -2.65 [-4.43, -0.86] |
+    | 60 % | +11.80 [4.03, 19.56] | +12.93 [2.36, 23.49] | -19.96 [-26.22, -13.71] |
+
+  - **Held-out agreement with the teacher** (30 %): hand 0.884, MLP 0.863, linear 0.707. The linear policy leaves the teacher on purpose.
+  - **At 60 %, linear vs hand:**
+    - urgent items within 24 h: 0.730 vs 0.553;
+    - urgent p95: 202.7 vs 284.8 h;
+    - delivered: unchanged (3,257 vs 3,252 t).
+  - **The MLP isn't better than the hand bids at either load.** Its hidden layers are fixed random features; CEM searched only its 32 output weights, while the linear model searched 13 weights directly. So the "neural" file as trained here is not an improvement; the linear model holds the whole gain.
+- **3. Guards: the urgent gain does not come at the other cargo's expense.** 60 % load, seeds 1-10, linear minus hand:
+  - normal-priority delay: -26.4 h [-43.7, -9.2];
+  - bulk delay: -5.7 h [-9.6, -1.8];
+  - all items: -6.3 h [-10.4, -2.3];
+  - tonne-days waiting: -1,056 [-1,765, -347], i.e. -15.4 %;
+  - delivered: unchanged.
+  - At 30 %, every delay difference is within noise apart from urgent (-2.5 h [-4.7, -0.2]).
+  - **Starved items** (any priority, waiting more than 7 days) are mixed: 128.6 hand vs 137.4 linear on seeds 1-30 at 60 %, but 98.7 vs 91.6 on seeds 1-10 (not significant). I report both.
+  - **Refused team lifts:** team items delivered are the same, because team lifts are not bid singly.
+- **4. Out of distribution** (linear minus hand, 10 seeds each, 30 % load unless stated). The sign holds in all six cells:
+
+  | cell | change | 95 % CI |
+  |---|---|---|
+  | 2 owners | -4.59 h | [-8.24, -0.95] |
+  | 5 owners | -1.33 h | [-3.50, 0.84] |
+  | loss 0.25 | -3.07 h | [-4.42, -1.72] |
+  | loss 0.40 | -1.62 h | [-4.91, 1.68] |
+  | 10 % load | -1.22 h | [-2.12, -0.31] |
+  | start year 2038 (v3 links) | -1.23 h | [-3.91, 1.45] |
+
+  - **Dropped: double fleet (16 robots).** A year takes 90-520 s or more, because every lost message triggers a 3-minute retry epoch and an epoch with 16 robots is expensive. It can't be run reliably in single-process 540 s chunks. Run it in the background in B-75 if you want it.
+- **What the linear correction learned.** Score per unit (higher score = lower bid):
+  - urgency (prio -0.62 h per level; slack -0.20 h per day);
+  - proximity (approach -1.41 h per hour);
+  - full loads (mass_frac +1.28);
+  - a weaker age credit than the hand rule (-1.10 h per day) and a softer penalty on long jobs (job_h +0.64 h per hour);
+  - landing +1.03, i.e. it prefers pads with no landing due soon.
+  - The full weights are in the policy file.
+- **H4 as pre-registered:**
+  - "Learned bids beat hand-built bids at 30-60 %": supported for the linear model, not for the MLP as trained here.
+  - "Nothing at 10 % load (TOST ±2 %)": not supported; the linear model gains 10.6 % at 10 %.
+  - "A linear model may capture most of the gain": here it captures all of it.
+
+**What was built**
+
+- **`lunarsim/atc/learned.py`:**
+  - 13 local features: the spec's 12, with "night" replaced by dark_or_low, "team partner" replaced by bundle_n (team lifts aren't bid singly), plus landing;
+  - the float64 policy runtime (`Policy`);
+  - `oracle_assignment`, the teacher: the full-information marketplace without staging or wake-ups;
+  - `Collector`.
+- **Regime `C_LEARNED`** = C_AUCTION with `bid' = bid - urgency_usd_per_h × g(features)`.
+  - The new marketplace hook `bid_adjust` is used only with a selector, i.e. None for the v2 marketplace.
+  - `collect: True` records DAgger rows with oracle labels. Collection has no side effects; the test checks this.
+- **`tools/atc/train_bid.py`:** collect / train (listwise softmax over each robot's candidates, learned temperature, selection by held-out agreement) / cem / export / evaluate / ood / guard / table. Everything is resumable and cached in `.cache/atc/bid/`.
+- **Policy files** (the lander pattern: kind mlp/linear with weights in the JSON, plus a `.check.json` of 50 input/output vectors at 1e-9):
+  - `atc_bid_v1.json` (MLP 13-32-32-1, 1,537 parameters, CEM generation 0);
+  - `atc_bid_linear_v1.json` (13 weights, CEM generation 5).
+  - Each training record holds the imitation finding and the CEM trace: per-generation fitness of every candidate, elite, tuning mean, wall time. Linear: 3,182 s; MLP: 3,433 s.
+- **New summary key** `atc_starved_items` (> 7 days).
+
+**Unchanged:** full pytest, file by file: 42 files, 547 passed, 0 failed (`tests/test_atc_learned.py` is new, 6 tests). The 20 committed E21 / E19 rows rerun with 0 differences.
+
+**Runtime and memory:**
+- imitation: collection ~15 min, training < 2 min at 586 MB peak (the largest);
+- CEM: 53 min (linear) + 57 min (MLP);
+- evaluation: 240 runs in 16 chunks;
+- guards: 40 runs;
+- out of distribution: 120 runs;
+- every chunk single process, foreground, ≤ 540 s; simulations peak at ≤ 361 MB.
+
+**Files**
+
+- New: `lunarsim/atc/learned.py`, `tools/atc/train_bid.py`, `tests/test_atc_learned.py`.
+- Changed: `lunarsim/atc/auction.py` (learned hooks), `lunarsim/atc/regimes.py` (C_LEARNED, `atc_starved_items`), `lunarsim/dispatch.py` (`bid_adjust` hook).
+- For LEAD to commit:
+  - `data/policies/atc_bid_v1.json` + `.check.json`;
+  - `data/policies/atc_bid_linear_v1.json` + `.check.json`;
+  - `results/ATC_learned_eval.json`.
+
+**How to test:**
+- `.venv/Scripts/python -m pytest -q tests/test_atc_learned.py` → 6 passed (12 s).
+
+**FRONTEND:**
+- The browser can run either policy: (x - offset) / scale, then the layers (tanh, linear output), checked against the `.check.json` vectors at 1e-9.
+- Feature definitions are in `lunarsim/atc/learned.py`.
+- Note for the site's wording: the gain is in the linear model.
+
+**Questions for LEAD**
+
+1. **Which policy is C_LEARNED in E40?**
+   - **My recommendation:** report both. The linear policy carries the effect, and the MLP as trained isn't better than the hand bids.
+   - **If the papers need the "neural" policy to carry the gain:** I can distil the linear policy into the MLP (initialise the network to reproduce it) and refine it with CEM on the tuning seeds, ~1 h. Your call; I'd label that clearly.
+2. **atc_bid_v1.json is currently the MLP.** Rename so the site's default is the linear policy?
+3. **B-75 is next.** E40 at 30 seeds is heavy (C_AUCTION / C_LEARNED years at 60 % take ~45 s each). I'll time one cell and propose a schedule before starting, as the task asks.

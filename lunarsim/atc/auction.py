@@ -117,8 +117,10 @@ def dispatch(st, sim, waiting, free, inner_kw) -> List[Any]:
         robots = [k for k in comp if k != "BASE"]
         limit = max(len(known), len(fc)) * max(1, hops.diameter(comp))
         sel = _Selector(st, hops, robots, limit)
+        adj_fn, flush = _learned_hooks(st, sim, waiting, free, inner_kw, adj, comps, sel)
         jc = D.marketplace(sim, known, fc, selector=sel, team_hook=_team_hook(st, sim, hops), round_limit=limit,
-                           **inner_kw)
+                           bid_adjust=adj_fn, **inner_kw)
+        flush()
         busy_now = {v.id for j in jc for v in j.vehicles}
         for v, pad in sel.wasted:
             if v.id not in busy_now and v.repos_target is None:
@@ -131,6 +133,44 @@ def dispatch(st, sim, waiting, free, inner_kw) -> List[Any]:
             _future_rounds(st, sim, [x for x in known if id(x) not in taken], comp, jc, hops, robots, inner_kw)
             claimed_by = {id(x): vid for vid, q in st.claims.items() for items, _ in q for x in items}
     return jobs
+
+
+def _learned_hooks(st, sim, waiting, free, inner_kw, adj, comps, sel):
+    """(bid_adjust, flush) for C_LEARNED (the policy's correction) and DAgger collection (oracle labels)."""
+    if st.policy is None and st.collector is None:
+        return None, (lambda: None)
+    from .learned import features, next_landings, oracle_assignment
+    base = next((cp for cp in comps if "BASE" in cp), set())
+    ctx = {"base_comp": base, "degree": {k: len(v) for k, v in adj.items()}, "claims": st.claims,
+           "next_landing": next_landings(sim)}
+    urg = float(sim.sc.urgency_usd_per_h)
+    teacher = None
+    if st.collector is not None:
+        key = ("teacher", sim.t, getattr(sim, "_dispatch_serial", 0))
+        if getattr(st, "_teacher_key", None) != key:
+            st._teacher, st._teacher_key = oracle_assignment(sim, waiting, free, inner_kw), key
+        teacher = st._teacher
+    buf: Dict[Tuple[int, int], List[Any]] = {}
+
+    def adjust(sim, v, bundle, route, bid):
+        x = features(sim, v, bundle, route, ctx)
+        if teacher is not None:
+            buf.setdefault((sel.round, v.id), []).append((x, -bid / urg, id(bundle[0]) in teacher.get(v.id, ())))
+        if st.policy is None:
+            return bid
+        return bid - urg * float(st.policy(x))
+
+    def flush():
+        if teacher is None:
+            return
+        for rows in buf.values():
+            pos = [i for i, r in enumerate(rows) if r[2]]
+            if not pos:
+                continue
+            tgt = max(pos, key=lambda i: rows[i][1])               # the best-scoring oracle item (lowest hand bid)
+            st.collector.add_group([r[0] for r in rows], [r[1] for r in rows], [int(i == tgt) for i in range(len(rows))])
+        buf.clear()
+    return adjust, flush
 
 
 def _ant(v):
