@@ -101,3 +101,19 @@ not supported for the MLP (the pre-registered C_LEARNED), supported for the line
   C_LEARNED_LIN, in every cell where C_LEARNED appears, and the paper reports both. No new training or tuning of
   either policy happens after this point (no distillation of the linear policy into the MLP for E40).
 - Any headline about learned bids in P1 names the linear model and says it was the secondary model in this plan.
+
+### Change 4, 28 Oct 2026 (before the final E40/E42 analysis): two defects found in the runs, and how they are handled
+1. Pseudo-replication. In the p5 runs, a regime that never waits for Earth (O, B_EARTH_RELAY 1.0, A_EARTH full
+   coverage, C_LEADER, C_AUCTION, both learned regimes) gives the same run for a seed whatever the start year, so
+   its v3 block repeats seeds 1-10 five times. Every comparison between two such regimes therefore uses the v1
+   block only (n = 30, the design written above). Comparisons involving an Earth-dependent regime (H2,
+   plan_ahead, relay 0.8, A_EARTH with Earth windows, A_MOON) use both blocks, as planned. The 60 % cells of the
+   Earth-independent regimes are run on v1 only. The interim statement in commit 197a574 that the on-Moon auction
+   beats the full-information marketplace by 8.7 % came from this defect. On v1 the difference is
+   -0.38 h [-1.99, 1.16], and that statement is withdrawn.
+2. Run-to-run nondeterminism. The auction ordered robots by Python's per-process string hash, so the random
+   draws under message loss differed between processes. Each such run is still a valid draw, but not
+   bit-reproducible. The order is now sorted. The affected rows (C_AUCTION and the learned regimes at loss > 0 in
+   E40, and C_AUCTION at loss > 0 in E42) are rerun with the fix and replace the old rows. The old rows are kept
+   in results/archive/ and compared with the new ones in the B-75 report. B-73's smoke run and B-74's evaluation
+   were made before the fix and are reported as statistically valid but not bit-exact.
