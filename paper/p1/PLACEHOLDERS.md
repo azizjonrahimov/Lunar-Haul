@@ -1,13 +1,13 @@
 # P1 placeholders (draft 1, 28 Oct 2026)
 
-`build_p1.py` (not written yet; R-1 pattern, `paper/r1/build_r1.py`) fills every `{{P1-...}}` in `part1`-`part4`.
-It must fail on any unfilled placeholder and on any nan/inf. 104 distinct keys.
+`build_p1.py` (not written yet; R-1 pattern, `paper/r1/build_r1.py`) fills every `{{P1-...}}` in `part1`-`part5`.
+It must fail on any unfilled placeholder and on any nan/inf.
 
-**What is typed and what is a placeholder.** Results of this study are always placeholders. Model inputs
-(vehicle specs, seeds, loss rates, timeouts, MTBF, the 10 % / 60 % / ±2 % pre-registered thresholds, CEM
-population sizes) are typed with their provenance flag, as R-1 did. Numbers quoted from the literature and from our
-earlier papers [40-42] are typed with the citation. If LEAD wants inputs drawn from files too, the candidates are
-listed at the end.
+**What is typed and what is a placeholder** (LEAD, 28 Oct). Results of this study are always placeholders. Inputs
+that a file holds (the load factors k, the policies' feature, weight and parameter counts, the CEM settings) are
+placeholders read from that file. Other model inputs (vehicle specs, seeds, loss rates, timeouts, MTBF, retry and
+hop times, the 10 % / 60 % / ±2 % pre-registered thresholds) are typed with their provenance flag, as R-1 does.
+Numbers quoted from the literature and from our earlier papers [40-42] are typed with the citation.
 
 **Abbreviations.** P = `results/table_E40_pairs.csv` (row = `comparison` + `load`; columns `mean`, `lo`, `hi`,
 `lo90`, `hi90`, `n`, `b_mean`, `share_of_b`, `threshold_10pct_of_O`). R = `results/table_E40_regimes.csv` (row =
@@ -55,7 +55,7 @@ counts = integer. "ABS" keys print the absolute value (the sentence carries the 
 | P1-POOLED-SPREAD-10 | max-min of pooled regimes except B strict, 10 % | R load 10 | h 1 dp |
 | P1-LIN-URGENT-30 / P1-LEADER-URGENT-30 | means | R | h 1 dp |
 | P1-H3A-DIFF / -PCT / -PCT-ABS / -CI90 / -N | auction minus O | P "H3a: C_AUCTION - O_ORACLE (TOST +-10 % of O)", `mean`, `share_of_b`, `lo90`/`hi90`, `n` | h, % |
-| P1-LEADER-MINUS-O (+ -CI) | C_LEADER minus O | NOT IN P YET: ask BACKEND to add the row (value +0.45 [-0.29, 1.14] was quoted in the message) | h, CI |
+| P1-LEADER-MINUS-O (+ -CI) | C_LEADER minus O, 30 % | P "C_LEADER - O_ORACLE" (row being added by BACKEND; match the exact label when it lands) | h, CI |
 | P1-H4-LIN-DIFF-30/-10, -PCT-30/-10, -PCT-30-ABS, -CI-30/-10 | LIN minus auction | P "H4: C_LEARNED_LIN - C_AUCTION" 30 and 10 | h, %, CI |
 | P1-H4-MLP-DIFF-30/-10, -CI-30/-10 | MLP minus auction | P "H4: C_LEARNED_MLP - C_AUCTION" | h, CI |
 | P1-H4-N | n | P `n` | integer |
@@ -68,12 +68,22 @@ counts = integer. "ABS" keys print the absolute value (the sentence carries the 
 | P1-IMIT-DISAGREE-30 / -60 | "318 of 318" / "404 of 404" | L `imitation.finding` or the policy files' training record (structured field to add) | "n of n" |
 | P1-IMIT-N-ROUNDS / -N-ROWS | groups / rows collected | L `imitation.groups` / `rows` | integer |
 | P1-TRAIN-WALL-H | CEM wall time, both models | L `policies.*.cem.wall_s` sum /3600 | h 1 dp |
-| P1-HOPPER-O-DIFF (+ -CI) | O hopper_refuel minus O | NOT IN P YET (quoted +0.40 [-0.35, 1.19]); ask BACKEND for the row | h, CI |
+| P1-K-10 / -30 / -60 | demand factors of the three loads | `results/ATC_p5_load.json` `calibration` (or the scenario files `data/scenarios/p5/p5-3eq-L{10,30,60}-T10.json`; assert they agree) | 3 dp as stored |
+| P1-N-FEATURES | inputs of the learned bid | `data/policies/atc_bid_linear_v1.json` `obs.names` length; assert equal in the MLP file | word or integer |
+| P1-LIN-N-WEIGHTS | linear model's weights | linear policy file `layers` (count weights, excluding any fixed scale) | integer |
+| P1-MLP-N-PARAMS | network parameters | `data/policies/atc_bid_v1.json` `layers` (sum of weights and biases; expect 1,537) | integer with comma |
+| P1-MLP-HIDDEN | hidden units per layer | MLP file `layers` shapes | integer |
+| P1-CEM-LIN-GENS / -LIN-POP | linear CEM generations / population | L `policies.linear.cem.generations` / `population` | integer |
+| P1-CEM-MLP-GENS / -MLP-POP / -MLP-N-SEARCHED | MLP CEM generations / population / parameters searched | L `policies.mlp.cem.generations` / `population` / `parameters_searched` | integer |
+| P1-CEM-N-TRAIN-SEEDS / -N-TUNE-SEEDS | seeds per candidate / per generation's selection | L `policies.*.cem.fitness` and `selection` strings list the seeds; prefer structured fields if BACKEND adds them | word |
+| P1-HOPPER-O-DIFF (+ -CI) | O hopper_refuel minus O, 30 % | P hopper row (being added by BACKEND; match the exact label). BACKEND also adds C_AUCTION - O and learned - O rows; H3a keeps its own row | h, CI |
 | P1-MESH-LOS-25-2TO5 | LOS share 2.5-2.5 m at 2-5 km | `results/ATC_mesh.json` | % 2 dp |
 | P1-MESH-MAST-MAX-KM | farthest direct mast LOS | `results/ATC_mesh.json` | km |
 | P1-MESH-MAX-HOPS-5KM | max hops to mast, rovers, 5 km | `results/ATC_mesh.json` | integer |
 | P1-MESH-SMALL-ISOLATED | small-robot points that never reach the mast | `results/ATC_mesh.json` | integer |
-| P1-RALLY-OFF-SMOKE-T / -ON-SMOKE-T | C_LEADER delivered t, rally off / on (development run) | B-72 report quotes 58 t / 1,487 t; check whether `results/ATC_regimes_smoke.json` holds the rally-off run, else replace with the E41 rally-off cell | t |
+| P1-E41-RALLY-ON-URGENT / -OFF-URGENT | auction mean urgent wait, rally on (E41 base cell) / off | PENDING E41: `results/E41_runs*.csv`, cells "C_AUCTION loss 0.1" and "C_AUCTION rally off" (match labels) | h 1 dp |
+| P1-E41-RALLY-ON-T / -OFF-T | auction delivered tonnes, same cells | PENDING E41, `delivered_kg`/1000 | t 0 dp |
+| P1-RALLY-OFF-DEV-T / -ON-DEV-T | C_LEADER delivered t without / with the rule in the B-72 development run (development-run note only) | B-72 report: 58 t / 1,487 t. If `results/ATC_regimes_smoke.json` does not hold the rally-off run, the script reads them from a small checked-in note file rather than typing them | t 0 dp |
 | P1-BOUNDS-N / -SSI-MAX / -CBBA-MIN | small-instance checks | `results/ATC_auction_bounds.json` | integer, 3 dp, % 1 dp |
 | P1-CHECK-N-ROWS / -N-TESTS | regression rows and pytest count | B-7x reports (20 rows; 547 tests at B-74, rising): take from the final run log at submission | integer |
 | P1-SEEDS-ADDED | sentence on the seed-adding rule | F `n_per_cell` vs 30/80 | sentence |
@@ -83,9 +93,11 @@ counts = integer. "ABS" keys print the absolute value (the sentence carries the 
 | P1-E41-LOSS/DEPTH/RANGE-SENTENCE | E41 results | PENDING E41 | prose, to be rewritten by hand with placeholders |
 | P1-H6-SHARE/MEETINGS-SENTENCE | E42 results | PENDING E42 | prose, as above |
 
-**Typed inputs that could become placeholders** (if LEAD wants them file-driven): k = 0.857 / 2.806 / 6.22 (scenario
-files); vehicle table (`lunarsim/atc/vehicles-p5.json`); 1,537 parameters and 13 weights (policy files); CEM
-population and generations (L `policies.*.cem`); MTBF 2,000 h, repair 24 h, re-election 0.5 h, t_hand 2 h, retry
-3 min, 10 ms per hop (`lunarsim/atc/regimes.py` and `messages.py` defaults); 2,421 mesh points (`ATC_mesh.json`).
-The R-1 numbers typed in the introduction (59 %, ~16-day windows, ~11-day gaps, 1.2 km) should be checked against
-`paper/r1/values.json`.
+**Typed inputs that stay typed** (with flags, as R-1): MTBF 2,000 h, repair 24 h, re-election 0.5 h, t_hand 2 h,
+retry 3 min, 10 ms per hop (`lunarsim/atc/regimes.py`, `messages.py`); the vehicle table (`lunarsim/atc/vehicles-p5.json`);
+2,421 mesh points. The R-1 numbers typed in the introduction (59 %, ~16-day windows, ~11-day gaps, 1.2 km) should be
+checked against `paper/r1/values.json`.
+
+**Full key list** (122 keys, generated from `part1`-`part5`; grouped rows above such as "(+ -CI)" and "/ -60" expand to these; `build_p1.py` should assert this list equals the keys it fills):
+
+`P1-A-BACKLOG-T-30`, `P1-A-DELIV-MINUS-O-30`, `P1-A-T-RANGE-30`, `P1-A-URGENT-RANGE-30`, `P1-B-STRICT-BACKLOG-30`, `P1-B-STRICT-URGENT-10`, `P1-B-STRICT-URGENT-30`, `P1-B-STRICT-WITHIN24-30`, `P1-BOUNDS-CBBA-MIN`, `P1-BOUNDS-N`, `P1-BOUNDS-SSI-MAX`, `P1-CARGO-UTIL-30`, `P1-CEM-LIN-GENS`, `P1-CEM-LIN-POP`, `P1-CEM-MLP-GENS`, `P1-CEM-MLP-N-SEARCHED`, `P1-CEM-MLP-POP`, `P1-CEM-N-TRAIN-SEEDS`, `P1-CEM-N-TUNE-SEEDS`, `P1-CHECK-N-ROWS`, `P1-CHECK-N-TESTS`, `P1-E40-N-CELLS`, `P1-E40-N-RUNS`, `P1-E41-DEPTH-SENTENCE`, `P1-E41-LOSS-SENTENCE`, `P1-E41-N-CELLS`, `P1-E41-N-RUNS`, `P1-E41-RALLY-OFF-T`, `P1-E41-RALLY-OFF-URGENT`, `P1-E41-RALLY-ON-T`, `P1-E41-RALLY-ON-URGENT`, `P1-E41-RANGE-SENTENCE`, `P1-E42-N-CELLS`, `P1-E42-N-RUNS`, `P1-FIG-H2-YEARS`, `P1-GUARD-TONNEDAYS-PCT`, `P1-H1-CAPACITY-SHARE`, `P1-H1-DIFF-30`, `P1-H1-DIFF-30-CI`, `P1-H1-N-30`, `P1-H1-PHOLM`, `P1-H2-LOWVIS-YEARS`, `P1-H2-MARGIN`, `P1-H2-N`, `P1-H2-N-LOWVIS-YEARS`, `P1-H2-OLD-YARDSTICK-HALF`, `P1-H2-PHOLM`, `P1-H2-STRICT-MINUS-O`, `P1-H2-STRICT-MINUS-O-CI`, `P1-H2-STRICT-OVER-O-RATIO`, `P1-H2-YEAR-MAX`, `P1-H2-YEAR-MIN`, `P1-H3A-CI90`, `P1-H3A-DIFF`, `P1-H3A-N`, `P1-H3A-PCT`, `P1-H3A-PCT-ABS`, `P1-H4-LIN-CI-10`, `P1-H4-LIN-CI-30`, `P1-H4-LIN-DIFF-10`, `P1-H4-LIN-DIFF-30`, `P1-H4-LIN-PCT-10`, `P1-H4-LIN-PCT-30`, `P1-H4-LIN-PCT-30-ABS`, `P1-H4-LIN-PHOLM`, `P1-H4-MLP-CI-10`, `P1-H4-MLP-CI-30`, `P1-H4-MLP-DIFF-10`, `P1-H4-MLP-DIFF-30`, `P1-H4-N`, `P1-H6-MEETINGS-SENTENCE`, `P1-H6-SHARE-SENTENCE`, `P1-HOPPER-O-CI`, `P1-HOPPER-O-DIFF`, `P1-IMIT-AGREE`, `P1-IMIT-DISAGREE-30`, `P1-IMIT-DISAGREE-60`, `P1-IMIT-N-ROUNDS`, `P1-IMIT-N-ROWS`, `P1-K-10`, `P1-K-30`, `P1-K-60`, `P1-LEADER-MINUS-O`, `P1-LEADER-MINUS-O-CI`, `P1-LEADER-URGENT-30`, `P1-LIN-N-WEIGHTS`, `P1-LIN-URGENT-30`, `P1-LIN-WEIGHTS-SENTENCE`, `P1-LOAD-MAIN`, `P1-LOSS-MAIN`, `P1-MESH-LOS-25-2TO5`, `P1-MESH-MAST-MAX-KM`, `P1-MESH-MAX-HOPS-5KM`, `P1-MESH-SMALL-ISOLATED`, `P1-MLP-HIDDEN`, `P1-MLP-N-PARAMS`, `P1-N-FEATURES`, `P1-N-REGIMES`, `P1-N-RUNS-ALL`, `P1-O-BACKLOG-30`, `P1-O-URGENT-30`, `P1-O-WITHIN24-30`, `P1-OOD-N-CELLS`, `P1-OOD-N-SIG`, `P1-PEAK-MB`, `P1-PLAN-MINUS-O`, `P1-PLAN-MINUS-O-CI`, `P1-POOLED-SPREAD-10`, `P1-POOLED-T-RANGE-30`, `P1-RALLY-OFF-DEV-T`, `P1-RALLY-ON-DEV-T`, `P1-RELAY08-MINUS-O`, `P1-RELAY08-MINUS-O-CI`, `P1-RELAY08-URGENT-30`, `P1-RUNTIME-RANGE`, `P1-SEEDS-ADDED`, `P1-TABLE-OOD`, `P1-TABLE-REGIMES`, `P1-TRAIN-WALL-H`, `P1-UTIL-FLEET-30`, `P1-VIS-MAX`, `P1-VIS-MIN`

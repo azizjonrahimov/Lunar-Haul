@@ -49,13 +49,14 @@ research note's (High / Medium / Low). Numbers in brackets are the ones used in 
 [43] Pre-registration: `paper/atc/PREREG.md` in the repository, written 27 October 2026, changes 1-3 dated (commits 4bb0b0b, 0deb61d, 31c8ceb, c90676f). Cite by repository tag when tagged.
 [44] Companion paper P3 (vehicles, network, what Lunar ATC puts inside each vehicle, and the market). Title to be fixed.
 [45] Companion paper P2 (rules of the road and the safety layer on the Moon and Mars). Title to be fixed.
-[46] D. J. Schuirmann. *J. Pharmacokinetics and Biopharmaceutics* 15(6):657-680, 1987 (two one-sided tests). (PWG; title to add)
+[46] D. J. Schuirmann. "A comparison of the two one-sided tests procedure and the power approach for assessing the equivalence of average bioavailability." *Journal of Pharmacokinetics and Biopharmaceutics* 15(6):657-680, 1987. (PWG; journal details confirmed by LEAD 28 Oct; title to check against the journal page)
 [47] D. Lakens. *Social Psychological and Personality Science* 8(4):355-362, 2017 (equivalence testing). (PWG; title to add)
 [48] B. A. Nosek et al. "The preregistration revolution." *PNAS* 115(11):2600-2606, 2018. (PWG) Not cited in the text yet; cite in 4.1 if kept.
 [49] NASA. Delay/Disruption Tolerant Networking page, https://www.nasa.gov/communicating-with-missions/delay-disruption-tolerant-networking/ (VCI, High)
 [50] Kim, Li, Wang. "Lunar Surface Space Traffic Management: Considerations for Future Regulations." GLEX-2025, 11, IP, 15, x93808. (MOA, Medium)
 [51] F. Cruijssen et al. Joint route planning savings, *IJPDLM* 37(4):287-304, 2007. (MOA via notes/03, Medium-High; full title to add)
+[52] S. Holm. "A simple sequentially rejective multiple test procedure." *Scandinavian Journal of Statistics* 6(2):65-70, 1979. (added by LEAD, 28 Oct)
+[53] B. Efron, R. J. Tibshirani. *An Introduction to the Bootstrap*. Chapman & Hall, 1993. (added by LEAD, 28 Oct)
 
 Missing from the research notes and needed:
-- Holm's procedure (S. Holm, *Scand. J. Statist.* 6:65-70, 1979) is used in 4.5 and 5.2-5.6 but is not in any research note. Add after checking.
 - The Hungarian method (Kuhn 1955) is named in 2.1 and 3.11 and is cited only through [1].
