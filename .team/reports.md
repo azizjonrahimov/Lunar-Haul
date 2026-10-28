@@ -6539,3 +6539,120 @@ Idle until BACKEND's data for F-53 lands.
    - **If the papers need the "neural" policy to carry the gain:** I can distil the linear policy into the MLP (initialise the network to reproduce it) and refine it with CEM on the tuning seeds, ~1 h. Your call; I'd label that clearly.
 2. **atc_bid_v1.json is currently the MLP.** Rename so the site's default is the linear policy?
 3. **B-75 is next.** E40 at 30 seeds is heavy (C_AUCTION / C_LEARNED years at 60 % take ~45 s each). I'll time one cell and propose a schedule before starting, as the task asks.
+
+## B-75 PART 1 DONE 14:40 (E40 10 % and 30 %, E42, analysis; the E40 60 % cells and E41 are LEAD's background job) | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**Results at 30 % load**
+- Values come from `results/E40_fit.json` and `results/table_E40_pairs.csv`.
+- Bootstrap 95 % CI, 20,000 resamples.
+- Primary outcome: mean urgent wait (h), censored at year end, lost cargo excluded.
+- Comparisons between two Earth-independent regimes use block v1 (n = 30; see "Two corrections" below).
+
+- **H1 (sharing): supported.**
+  - B_EARTH_RELAY 1.0 minus A_EARTH full coverage = **-1,233 h [-1,402, -1,076]** (v1, n = 30).
+  - By owner: A -405 h, B -631 h, C -2,576 h. Owner C has no cargo rover.
+  - Delivered-only (reported, not tested; conditions on delivery): **-6.2 h [-7.8, -4.7]**.
+  - **H1 split** (LEAD's definition; full coverage, v1, E42 team share 0.10, loss 0.10, paired with E40 cell 38 by seed):
+
+    | part | definition | difference | share of the parts |
+    |---|---|---|---|
+    | dispatch | C_AUCTION same-owner teams minus A_EARTH full coverage | **-844 h [-954, -734]** | **68.5 %** |
+    | capacity | C_AUCTION cross-owner minus same-owner teams | **-389 h [-484, -301]** | **31.5 %** |
+
+    - The parts sum to -1,233 h, the H1 total.
+    - The pooled side is the on-Moon auction (E42 has no B regime), so the dispatch part includes any auction-vs-marketplace difference. The v1 C_AUCTION minus O row is -0.38 [-1.99, 1.16], not distinguishable from zero.
+    - **Caution for P1's wording:** the "dispatch part" also contains owner C's cargo moved by A's and B's cargo rovers. That is capacity sharing too; only cross-owner team lifts are in the "capacity part".
+- **H2 (availability; PREREG change 2): supported.**
+  - B_EARTH strict minus O = **+91.3 h [83.3, 100.0]** pooled (n = 80; Earth-dependent, so v3 counts), against a threshold of 1.49 h (10 % of O).
+  - It passes in every low-visibility year. BASE visibility: 2029 59.9 %, 2031 55.1 %, 2032 54.7 %, 2038 54.7 %, 2041 59.7 %, 2044 55.3 %. Per-year means: 72.1, 119.7, 108.0, 111.3, 78.9, 108.7 h; all lower bounds ≥ 48 h.
+  - **plan_ahead:** +7.2 h [5.5, 8.9]. **Relay 0.8:** +3.1 h [2.1, 4.2]. Both are **worse than O and outside ±10 % of O, so "within 10 %" is not supported as stated** (relay 0.8: margin 1.49 h).
+  - Not tested: the original yardstick (half the A-vs-O gap) would be 621 h; delivered-only A minus O = 100 h.
+- **H3a (decentralisation): not supported as stated.**
+  - C_AUCTION minus O = -0.38 h [-1.99, 1.16] (v1). The 90 % CI [-1.73, 0.92] extends past the ±1.45 h margin on the low side, so equivalence can't be shown. The point estimate is slightly better than O.
+  - **C_LEADER minus O** = -0.18 [-1.64, 1.25].
+- **H4 (learning; PREREG change 3):**
+
+  | | 30 % (CI below 0 needed) | 10 % (TOST ±2 % needed) |
+  |---|---|---|
+  | **LIN minus C_AUCTION** | **-2.49 h [-4.13, -1.01]: supported** | -0.83 [-1.93, 0.20]: TOST fails |
+  | **MLP minus C_AUCTION** | -0.16 [-1.57, 1.22]: not supported | -0.96 [-2.67, 0.14]: TOST fails |
+
+  - **Minus O at 30 %:** LIN -2.87 [-4.63, -1.10]; MLP -0.54 [-1.98, 0.81].
+- **H6 (team lifts): supported.**
+  - Cross-owner minus same-owner pairs (team share 0.25, loss 0.10): the share of mass delivered rises **+4.18 pp [+3.40, +5.11]**.
+  - The rise holds at every share and loss: +1.7 pp at share 0.10, +4.2 to +5.6 pp at 0.25. Team items delivered share: +81 to +85 pp.
+  - **"Failed meetings rise without a commit-and-timeout step": not supported.** Failed meetings per run (commit vs no commit):
+    - loss 0.10: 4.8 vs 4.5;
+    - loss 0.25: 14.4 vs 13.3;
+    - loss 0.40: 28.3 vs 32.1.
+    - Commit adds proposals that end without agreement (10 / 59 / 235 per run) and raises urgent wait (21.8 vs 20.2 h at 0.10). That's the Two Generals effect again.
+  - **Exploratory base-arbitrated meetings: 0 failed meetings at every loss**, and the lowest urgent wait of the team-25 cells (19.6-20.0 h).
+  - **Rendezvous timeout:** 0.5 h halves meeting wait hours compared with 1 h (2.4 vs 4.8 h at loss 0.10). 2 h doubles it.
+- **Holm** across {H1, H2, H4_MLP, H4_LIN, H6} at 30 % (adjusted p): H1 0.00025, H2 0.00025, H6 0.00025, H4_LIN 0.001, H4_MLP 0.82. H3a (equivalence) is outside the family.
+- **Hopper refuel** (sensitivity): O hopper_refuel minus O = +0.40 [-0.35, 1.19]; C_AUCTION hopper_refuel minus C_AUCTION is in the pairs table. Refuelled hoppers change nothing measurable.
+- **At 10 %:** every on-Moon and relay regime is within 1.6 h of O. B strict +64.6 h, plan_ahead +7.0, relay 0.8 +1.6, A regimes ~+1,140 h.
+
+**Why the full-information marketplace (O) is not beaten by the hand-built bids** (LEAD's ask 2)
+- The interim "auction beats O by 1.30 h" was an artefact of pseudo-replication (see "Two corrections" below).
+- On the pre-registered seeds 1-30 (v1), no hand-weighted regime differs measurably from O:
+  - C_AUCTION -0.38 [-1.99, 1.16];
+  - C_LEADER -0.18 [-1.64, 1.25];
+  - C_AUCTION at loss 0: +0.46 [-1.00, 1.93] (diagnostic, `results/ATC_oracle_diag.json`).
+- The lost-link rally isn't a hidden staging advantage: adding it to O gives O + rally minus O = +0.36 [-0.68, 1.55], even though deadhead rises from 0.50 to 0.64.
+- So with the same hand-weighted bid rule, decentralising the decision on this terrain costs nothing measurable at 30 % load and doesn't gain anything either.
+- **LIN beats O (-2.87 h)** only because CEM optimised the urgent wait itself. O's bids weight vehicle cost, shippers' value of time and an age credit by hand (PRIORITY_WEIGHT_H, AGE_WEIGHT, VOT), and that weighting is not the urgent-wait optimum. "Full-information marketplace" is the right name, as you say: it's not an upper bound.
+
+**Two corrections found and fixed during B-75** (PREREG change 4)
+1. **Pseudo-replication.**
+   - The p5 runs have no engine Earth-link rule, so an Earth-independent regime gives the same run for a seed in any start year. O_ORACLE, B_EARTH_RELAY 1.0, A_EARTH full coverage and C_LEADER (and the auction family after fix 2) are 50/50 identical between v3 and v1 seeds 1-10.
+   - Comparisons between two such regimes use v1 only (n = 30). `table_E40_pairs.csv` carries both versions per comparison, with `pseudo_replicated` and `valid` flags.
+   - The unrun 60 % cells of the 7 Earth-independent regimes now run v1 only (`list` shows 30 runs). A test asserts that every existing row keeps its cell key.
+   - **Block derivation:** `run_block` = v1 iff start_year == 2028 + seed % 4, derived in the analysis. The runner's `block` column is the cell spec.
+2. **Hash-order nondeterminism** (auction.py: robot list built from a set holding "BASE"; now sorted, and identical across PYTHONHASHSEED values). Also fixed: a latent crash when the second mast is present.
+   - Old files are archived as `results/archive/E40_runs.csv.prefix` and `E42_runs.csv.prefix`. The affected rows were rerun and replaced; `results/E40_rerun_check.json` and `E42_rerun_check.json` hold the old-vs-new comparison.
+   - **E40** (210 rows: C_AUCTION, MLP, LIN at 10 / 30 % v1, plus the C_AUCTION hopper cell): 194 bit-identical. Only LIN at 30 % changed, in 14 rows: mean -0.14 h [-0.52, 0.23]. No cell flagged.
+   - **E42** (900 rows: every C_AUCTION cell at loss > 0): 529 bit-identical. **1 of 30 cells is flagged:** team 25, loss 0.10, timeout 0.5 changed +1.75 h [0.39, 3.27] in urgent wait. About 1.5 flags are expected among 30 cells at 95 % by chance; all other cells' CIs include 0.
+   - B-73 and B-74 numbers are left as they were, not bit-exact, as PREREG notes.
+   - **Seeds check (LEAD's ask):**
+     - CEM fitness seeds 1000, 1002, 1004, 1006; tuning 2000, 2002, 2004; imitation 1000-1009 and 2000-2004. None overlaps evaluation seeds 1-30.
+     - Hash order only permuted message-loss draws inside a run and carries no information across seeds. Both policies were frozen before E40.
+     - LIN's E40 rows were rerun with the fix: 16 of 30 identical, mean change -0.14 h, not significant.
+
+**Per-owner backfill:** all 592 rows that ran before the per-owner columns existed (572 at 30 % in my file, 20 A_EARTH strict 60 % rows in LEAD's) were rerun. Every existing column matched bit for bit (run_s excepted); there were no mismatches. The new columns are in `results/E40_owner_backfill.csv`, merged by the analysis; no run file was modified.
+
+**Not done in part 1:**
+- E40 at 60 %: LEAD's single background loop, `--part L60`. 405 runs were left when it restarted. `analyse_e40.py` picks up whatever exists and prints n per cell.
+- E41: LEAD's, `--part lead`.
+- The double-fleet OOD cell: not run.
+- 1 note: in 1 of 80 A_EARTH strict 10 % runs (seed 25) every urgent item was on a failed landing (landing outcomes come from the operations stream, not CRN across regimes), so that pair drops out (n = 79).
+- **Exploratory idea, not run** (LEAD): initialise the MLP from the linear policy, then CEM.
+
+**Files**
+
+- New:
+  - `experiments/phase5/run_phase5.py` (runner: `time` / `list` / `run`, `--part`, duplicate-key errors, v1-only 60 % cells for Earth-independent regimes);
+  - `experiments/phase5/analyse_e40.py`;
+  - `tools/atc/rerun_check.py`, `tools/atc/backfill_owner.py`, `tools/atc/diag_oracle.py`;
+  - `tests/test_phase5_runner.py` (3 tests).
+- Changed:
+  - `lunarsim/atc/regimes.py`: own_teams, mast2 (second 10 m relay mast; site PAD_B: the only shadowed site whose mast sees the BASE mast, 0.76 m clearance, so it joins by radio; route-sample coverage 23.3 % → 34.4 %), C_LEARNED_MLP and C_LEARNED_LIN regimes, the o_rally diagnostic, per-owner summary columns;
+  - `lunarsim/atc/auction.py`: base arbitration (exploratory), the hash-order fix, the mast2 crash fix.
+- **Results for LEAD to commit:**
+  - `results/E40_runs.csv`, `results/E42_runs.csv`;
+  - `results/archive/E40_runs.csv.prefix`, `results/archive/E42_runs.csv.prefix`;
+  - `results/E40_rerun_check.json`, `results/E42_rerun_check.json`;
+  - `results/E40_owner_backfill.csv`;
+  - `results/table_E40_regimes.csv`, `results/table_E40_pairs.csv`, `results/E40_fit.json`;
+  - `results/ATC_oracle_diag.json`.
+  - `E40_runs.L60.csv` is yours.
+
+**How to test**
+- `.venv/Scripts/python -m pytest -q tests/test_phase5_runner.py tests/test_atc_regimes.py tests/test_atc_auction.py`.
+- `python experiments/phase5/analyse_e40.py` rebuilds the tables (~3 min).
+- Full pytest, file by file: **43 files, 550 passed, 0 failed.**
+- The 20 committed E21 / E19 rows rerun with 0 differences.
+
+**FRONTEND:** nothing.
+
+**Questions for LEAD**
+1. **The H1 split wording.** Should P1 call the 68.5 % "pooling of vehicles and decisions" rather than "dispatch"? It includes owner C's cargo carried by A's and B's rovers.

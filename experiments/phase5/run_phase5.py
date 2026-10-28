@@ -66,6 +66,11 @@ REGIMES_E40 = [("A_EARTH strict", "A_EARTH", dict(A_KW, fallback="strict")),
                ("C_LEARNED_MLP", "C_LEARNED_MLP", {"loss": LOSS}),
                ("C_LEARNED_LIN", "C_LEARNED_LIN", {"loss": LOSS}),
                ("O_ORACLE", "O_ORACLE", {})]
+# Regimes that never wait for Earth: with no engine Earth-link rule in the p5 scenarios, their run for a seed is the
+# same whatever the start year, so block v3 would repeat v1 seeds 1-10 (PREREG change 4). The unrun 60 % cells of these
+# regimes run block v1 only; the 10 % and 30 % cells keep their keys (block "both") and rows.
+EARTH_INDEPENDENT = {"O_ORACLE", "B_EARTH_RELAY 1.0", "A_EARTH full coverage", "C_LEADER", "C_AUCTION",
+                     "C_LEARNED_MLP", "C_LEARNED_LIN", "O_ORACLE hopper_refuel", "C_AUCTION hopper_refuel"}
 C_FOUR = [("C_LEADER", "C_LEADER"), ("C_AUCTION", "C_AUCTION"), ("C_LEARNED_MLP", "C_LEARNED_MLP"),
           ("C_LEARNED_LIN", "C_LEARNED_LIN")]
 
@@ -94,12 +99,15 @@ def cell(exp, label, regime, kw, load="30", team="10", mix="3eq", block="both", 
 
 
 def e40_cells() -> List[Dict[str, Any]]:
-    cells = [cell("E40", lab, reg, kw, load=load) for load in ("10", "30", "60") for lab, reg, kw in REGIMES_E40]
+    cells = [cell("E40", lab, reg, kw, load=load,
+                  block="v1" if load == "60" and lab in EARTH_INDEPENDENT else "both")
+             for load in ("10", "30", "60") for lab, reg, kw in REGIMES_E40]
     for lab, reg, kw in REGIMES_E40:
         if lab in ("O_ORACLE", "C_AUCTION"):
             cells.append(cell("E40", lab + " hopper_refuel", reg, dict(kw), block="v1", hopper_refuel=True))
     for load in ("30", "60"):                  # H1's "A regimes with full coverage" (appended: indices 38-39)
-        cells.append(cell("E40", "A_EARTH full coverage", "A_EARTH", dict(A_KW, fallback="strict", coverage=1.0), load=load))
+        cells.append(cell("E40", "A_EARTH full coverage", "A_EARTH", dict(A_KW, fallback="strict", coverage=1.0), load=load,
+                          block="v1" if load == "60" else "both"))
     return cells
 
 

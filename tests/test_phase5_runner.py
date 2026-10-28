@@ -22,6 +22,21 @@ def test_cells_and_blocks():
         assert len({c["key"] for c in cs}) == len(cs)
 
 
+def test_existing_rows_keep_their_cell_keys():
+    """PREREG change 4: only the unrun 60 % cells of the Earth-independent regimes run block v1 only; every row already
+    in results/E40_runs*.csv still belongs to a current cell (same key)."""
+    e40 = R.e40_cells()
+    keys = {c["key"] for c in e40}
+    l60 = {c["tag"]["label"]: c["block"] for c in e40 if c["tag"]["load"] == 60}
+    assert {lab for lab, b in l60.items() if b == "v1"} == {lab for lab in l60 if lab in R.EARTH_INDEPENDENT}
+    assert all(c["block"] == "both" for c in e40 if c["tag"]["load"] in (10,) or
+               (c["tag"]["load"] == 30 and "hopper" not in c["tag"]["label"]))
+    df = R.load_runs("E40")
+    if df.empty:
+        pytest.skip("no E40 rows")
+    assert set(df["cell"].astype(str)) <= keys
+
+
 def test_run_files_union_and_duplicates(tmp_path, monkeypatch):
     monkeypatch.setattr(R, "RESULTS", str(tmp_path))
     row = lambda cell, seed, extra=None: dict({"cell": cell, "seed": seed, "start_year": 2028 + seed % 4, "x": 1.0}, **(extra or {}))

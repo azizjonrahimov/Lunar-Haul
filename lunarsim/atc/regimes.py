@@ -92,6 +92,8 @@ DEFAULTS: Dict[str, Any] = {
     "arbitrate": False,              # exploratory (E42): the base computer arbitrates a team meeting when both robots
                                      # are in its partition: it resends the decision until the lease (timeout_h) ends
     "mast2": None,                   # E41 network design: a second 10 m relay mast at this site (e.g. "PAD_B")
+    "o_rally": False,                # diagnostic (B-75): O_ORACLE plus the auction's rally (idle robots at sites the
+                                     # BASE mast does not see drive to the nearest one it sees); not a PREREG cell
 }
 REGIME_KEYS = set(DEFAULTS)
 RETRY_H = 0.05                       # Assumed: a robot whose message was lost is reconsidered 3 min later
@@ -418,7 +420,13 @@ class ATCState:
         inner_kw = {k: v for k, v in kw.items() if k not in REGIME_KEYS}
         r = self.regime
         if r == "O_ORACLE":
-            return _inner_fn("marketplace")(sim, waiting, free, **inner_kw)
+            jobs = _inner_fn("marketplace")(sim, waiting, free, **inner_kw)
+            if self.cfg["o_rally"]:
+                busy = {v.id for j in jobs for v in j.vehicles}
+                for v in free:
+                    if v.id not in busy:
+                        self._rally(sim, v, self.covered_sites(sim, antenna_m(v)))
+            return jobs
         if r in ("B_EARTH", "B_EARTH_RELAY"):
             if self.earth.next_change(t)[0]:
                 return _inner_fn(self.cfg["inner"])(sim, waiting, free, **inner_kw)

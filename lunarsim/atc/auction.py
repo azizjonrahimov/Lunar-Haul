@@ -99,7 +99,7 @@ def dispatch(st, sim, waiting, free, inner_kw) -> List[Any]:
             st.m["claims_stale"] += 1
     claimed_by = {id(x): vid for vid, q in st.claims.items() for items, _ in q for x in items}
     # 2. the auction, component by component
-    for comp in sorted(comps, key=lambda s: min((k for k in s if k != "BASE"), default=10 ** 6)):
+    for comp in sorted(comps, key=lambda s: min((k for k in s if not isinstance(k, str)), default=10 ** 6)):
         fc = [v for v in free if v.id in comp and v.id not in started]
         if not fc:
             continue
@@ -115,7 +115,8 @@ def dispatch(st, sim, waiting, free, inner_kw) -> List[Any]:
         st.m["robots_out_sum"] += sum(1 for v in fc if "BASE" not in comp)
         if not known:
             continue
-        robots = [k for k in comp if k != "BASE"]
+        robots = sorted(k for k in comp if not isinstance(k, str))   # sorted: a set holding "BASE" iterates in a
+                                                                   # per-process hash order (PYTHONHASHSEED)
         limit = max(len(known), len(fc)) * max(1, hops.diameter(comp))
         sel = _Selector(st, hops, robots, limit)
         adj_fn, flush = _learned_hooks(st, sim, waiting, free, inner_kw, adj, comps, sel)

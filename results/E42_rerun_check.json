@@ -1,0 +1,2232 @@
+{
+ "exp": "E42",
+ "note": "Affected (PREREG change 4): C_AUCTION, C_LEARNED_MLP and C_LEARNED_LIN cells with message loss > 0, whose robot list was\nbuilt from a set holding the string \"BASE\" (iteration order by Python's per-process string hash) before the fix in\nlunarsim/atc/auction.py. E40: the 10 % and 30 % cells of those regimes, block v1 (their v3 rows repeat v1 seeds 1-10\nand are not used), and the C_AUCTION hopper_refuel cell. E42: every C_AUCTION cell with loss > 0.",
+ "rows_old": 900,
+ "rows_new": 900,
+ "paired": 900,
+ "cells": {
+  "C_AUCTION team 25 any loss 0.1 arbitrated (exploratory) | L30": {
+   "label": "C_AUCTION team 25 any loss 0.1 arbitrated (exploratory)",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 7,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 19.6066,
+    "new": 19.6066,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "delivered_kg": {
+    "old": 1505053.1746,
+    "new": 1505053.1746,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 83.4784,
+    "new": 83.4784,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_conflicts": {
+    "old": 46.9333,
+    "new": 45.0667,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -1.8667,
+     "ci": [
+      -5.2333,
+      1.4
+     ],
+     "ci90": [
+      -4.6667,
+      0.8667
+     ],
+     "p": 0.2681
+    }
+   }
+  },
+  "C_AUCTION team 25 any loss 0.25 arbitrated (exploratory) | L30": {
+   "label": "C_AUCTION team 25 any loss 0.25 arbitrated (exploratory)",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 26,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 19.6513,
+    "new": 19.6513,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "delivered_kg": {
+    "old": 1504856.6441,
+    "new": 1504856.6441,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 83.9434,
+    "new": 83.9434,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_conflicts": {
+    "old": 114.1333,
+    "new": 114.0333,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -0.1,
+     "ci": [
+      -0.3667,
+      0.1333
+     ],
+     "ci90": [
+      -0.3333,
+      0.1
+     ],
+     "p": 0.51
+    }
+   }
+  },
+  "C_AUCTION team 25 any loss 0.4 arbitrated (exploratory) | L30": {
+   "label": "C_AUCTION team 25 any loss 0.4 arbitrated (exploratory)",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 26,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 19.9779,
+    "new": 19.9779,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "delivered_kg": {
+    "old": 1504487.5306,
+    "new": 1504487.5306,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 86.034,
+    "new": 86.034,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_conflicts": {
+    "old": 177.2333,
+    "new": 176.2,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -1.0333,
+     "ci": [
+      -2.8667,
+      0.2667
+     ],
+     "ci90": [
+      -2.5,
+      0.2667
+     ],
+     "p": 0.2169
+    }
+   }
+  },
+  "C_AUCTION team 25 any loss 0.1 no commit | L30": {
+   "label": "C_AUCTION team 25 any loss 0.1 no commit",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 21,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 20.079,
+    "new": 20.1661,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0871,
+     "ci": [
+      -0.2818,
+      0.5022
+     ],
+     "ci90": [
+      -0.2264,
+      0.4287
+     ],
+     "p": 0.6982
+    }
+   },
+   "delivered_kg": {
+    "old": 1504400.1575,
+    "new": 1504803.9774,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 403.8199,
+     "ci": [
+      -1026.4318,
+      2305.4624
+     ],
+     "ci90": [
+      -843.7889,
+      1947.7026
+     ],
+     "p": 0.698
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 81.8869,
+    "new": 81.8318,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -0.0551,
+     "ci": [
+      -1.8199,
+      1.7247
+     ],
+     "ci90": [
+      -1.5317,
+      1.4257
+     ],
+     "p": 0.9432
+    }
+   },
+   "atc_conflicts": {
+    "old": 47.7667,
+    "new": 48.4333,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.6667,
+     "ci": [
+      -0.7,
+      2.2
+     ],
+     "ci90": [
+      -0.5,
+      1.9333
+     ],
+     "p": 0.383
+    }
+   }
+  },
+  "C_AUCTION team 25 any loss 0.25 no commit | L30": {
+   "label": "C_AUCTION team 25 any loss 0.25 no commit",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 24,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 22.2347,
+    "new": 21.886,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -0.3488,
+     "ci": [
+      -0.9798,
+      0.0685
+     ],
+     "ci90": [
+      -0.8534,
+      0.0326
+     ],
+     "p": 0.1553
+    }
+   },
+   "delivered_kg": {
+    "old": 1502519.2141,
+    "new": 1503567.9295,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 1048.7154,
+     "ci": [
+      -52.4709,
+      3046.4644
+     ],
+     "ci90": [
+      -34.5688,
+      2840.6055
+     ],
+     "p": 0.1849
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 94.475,
+    "new": 90.9921,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -3.4829,
+     "ci": [
+      -8.7804,
+      0.1066
+     ],
+     "ci90": [
+      -7.7337,
+      -0.4451
+     ],
+     "p": 0.064
+    }
+   },
+   "atc_conflicts": {
+    "old": 108.3333,
+    "new": 107.8,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -0.5333,
+     "ci": [
+      -2.4667,
+      1.2667
+     ],
+     "ci90": [
+      -2.1333,
+      1.0
+     ],
+     "p": 0.5748
+    }
+   }
+  },
+  "C_AUCTION team 25 any loss 0.4 no commit | L30": {
+   "label": "C_AUCTION team 25 any loss 0.4 no commit",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 0,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 22.7047,
+    "new": 23.5495,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.8447,
+     "ci": [
+      -0.7243,
+      2.4609
+     ],
+     "ci90": [
+      -0.4804,
+      2.2067
+     ],
+     "p": 0.2962
+    }
+   },
+   "delivered_kg": {
+    "old": 1505093.1208,
+    "new": 1504517.8362,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -575.2846,
+     "ci": [
+      -2453.5557,
+      1271.4386
+     ],
+     "ci90": [
+      -2147.3088,
+      984.1666
+     ],
+     "p": 0.5543
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 99.1247,
+    "new": 106.4855,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 7.3608,
+     "ci": [
+      -3.204,
+      18.3749
+     ],
+     "ci90": [
+      -1.5563,
+      16.6629
+     ],
+     "p": 0.1743
+    }
+   },
+   "atc_conflicts": {
+    "old": 172.3333,
+    "new": 172.6667,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.3333,
+     "ci": [
+      -2.7667,
+      3.5
+     ],
+     "ci90": [
+      -2.2667,
+      3.0
+     ],
+     "p": 0.8451
+    }
+   }
+  },
+  "C_AUCTION team 00 any loss 0.1 | L30": {
+   "label": "C_AUCTION team 00 any loss 0.1",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 10.9653,
+    "new": 10.9653,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "delivered_kg": {
+    "old": 1447327.5083,
+    "new": 1447327.5083,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 51.2205,
+    "new": 51.2205,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_conflicts": {
+    "old": 51.1,
+    "new": 51.1,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   }
+  },
+  "C_AUCTION team 00 any loss 0.25 | L30": {
+   "label": "C_AUCTION team 00 any loss 0.25",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 10.7774,
+    "new": 10.7774,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "delivered_kg": {
+    "old": 1447126.0778,
+    "new": 1447126.0778,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 51.1519,
+    "new": 51.1519,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_conflicts": {
+    "old": 121.2333,
+    "new": 121.2333,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   }
+  },
+  "C_AUCTION team 00 any loss 0.4 | L30": {
+   "label": "C_AUCTION team 00 any loss 0.4",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 25,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 10.7394,
+    "new": 10.763,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0236,
+     "ci": [
+      -0.1187,
+      0.209
+     ],
+     "ci90": [
+      -0.0993,
+      0.1736
+     ],
+     "p": 0.8994
+    }
+   },
+   "delivered_kg": {
+    "old": 1446991.2503,
+    "new": 1447174.1738,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 182.9234,
+     "ci": [
+      0.0,
+      493.5724
+     ],
+     "ci90": [
+      0.0,
+      438.3744
+     ],
+     "p": 0.2494
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 49.5628,
+    "new": 49.9487,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.386,
+     "ci": [
+      -0.2779,
+      1.5194
+     ],
+     "ci90": [
+      -0.2131,
+      1.3989
+     ],
+     "p": 0.7228
+    }
+   },
+   "atc_conflicts": {
+    "old": 190.0667,
+    "new": 189.5,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -0.5667,
+     "ci": [
+      -2.4333,
+      0.8667
+     ],
+     "ci90": [
+      -2.0333,
+      0.7
+     ],
+     "p": 0.5262
+    }
+   }
+  },
+  "C_AUCTION team 00 same_owner loss 0.1 | L30": {
+   "label": "C_AUCTION team 00 same_owner loss 0.1",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 24.6103,
+    "new": 24.6103,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "delivered_kg": {
+    "old": 1443588.1284,
+    "new": 1443588.1284,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 53.2267,
+    "new": 53.2267,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_conflicts": {
+    "old": 49.7667,
+    "new": 49.7667,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   }
+  },
+  "C_AUCTION team 00 same_owner loss 0.25 | L30": {
+   "label": "C_AUCTION team 00 same_owner loss 0.25",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 28,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 24.8074,
+    "new": 24.8074,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "delivered_kg": {
+    "old": 1443754.93,
+    "new": 1443754.93,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 52.5199,
+    "new": 52.5199,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_conflicts": {
+    "old": 121.1,
+    "new": 121.0667,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -0.0333,
+     "ci": [
+      -0.2,
+      0.1
+     ],
+     "ci90": [
+      -0.1667,
+      0.0667
+     ],
+     "p": 0.9235
+    }
+   }
+  },
+  "C_AUCTION team 00 same_owner loss 0.4 | L30": {
+   "label": "C_AUCTION team 00 same_owner loss 0.4",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 0,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 25.5254,
+    "new": 25.5781,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0527,
+     "ci": [
+      -0.36,
+      0.4787
+     ],
+     "ci90": [
+      -0.2922,
+      0.407
+     ],
+     "p": 0.8109
+    }
+   },
+   "delivered_kg": {
+    "old": 1443602.514,
+    "new": 1443529.5896,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -72.9244,
+     "ci": [
+      -466.2564,
+      323.3277
+     ],
+     "ci90": [
+      -399.6175,
+      254.2404
+     ],
+     "p": 0.7164
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 52.1611,
+    "new": 53.2731,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 1.112,
+     "ci": [
+      -0.7349,
+      3.7451
+     ],
+     "ci90": [
+      -0.5437,
+      3.2692
+     ],
+     "p": 0.3622
+    }
+   },
+   "atc_conflicts": {
+    "old": 187.7,
+    "new": 189.0333,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 1.3333,
+     "ci": [
+      -2.7667,
+      5.5
+     ],
+     "ci90": [
+      -2.1333,
+      4.8333
+     ],
+     "p": 0.5402
+    }
+   }
+  },
+  "C_AUCTION team 10 any loss 0.1 | L30": {
+   "label": "C_AUCTION team 10 any loss 0.1",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 16,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 13.9901,
+    "new": 14.0865,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0964,
+     "ci": [
+      -0.2879,
+      0.594
+     ],
+     "ci90": [
+      -0.2364,
+      0.4987
+     ],
+     "p": 0.7247
+    }
+   },
+   "delivered_kg": {
+    "old": 1470120.8028,
+    "new": 1470266.2616,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 145.4588,
+     "ci": [
+      -650.2037,
+      998.2174
+     ],
+     "ci90": [
+      -526.6692,
+      850.8565
+     ],
+     "p": 0.7341
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 58.9943,
+    "new": 58.5346,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -0.4598,
+     "ci": [
+      -3.5437,
+      1.7329
+     ],
+     "ci90": [
+      -2.99,
+      1.4706
+     ],
+     "p": 0.8167
+    }
+   },
+   "atc_conflicts": {
+    "old": 48.9333,
+    "new": 49.2667,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.3333,
+     "ci": [
+      -1.7,
+      2.2667
+     ],
+     "ci90": [
+      -1.3333,
+      2.0
+     ],
+     "p": 0.7312
+    }
+   }
+  },
+  "C_AUCTION team 10 any loss 0.25 | L30": {
+   "label": "C_AUCTION team 10 any loss 0.25",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 0,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 15.5316,
+    "new": 14.8871,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -0.6445,
+     "ci": [
+      -1.6721,
+      0.2521
+     ],
+     "ci90": [
+      -1.492,
+      0.117
+     ],
+     "p": 0.1734
+    }
+   },
+   "delivered_kg": {
+    "old": 1469941.958,
+    "new": 1470213.7897,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 271.8317,
+     "ci": [
+      -889.7423,
+      1544.1832
+     ],
+     "ci90": [
+      -717.7978,
+      1330.4291
+     ],
+     "p": 0.6774
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 63.322,
+    "new": 61.3209,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -2.0012,
+     "ci": [
+      -5.7048,
+      1.5264
+     ],
+     "ci90": [
+      -5.0661,
+      0.9827
+     ],
+     "p": 0.2697
+    }
+   },
+   "atc_conflicts": {
+    "old": 116.1,
+    "new": 116.7,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.6,
+     "ci": [
+      -3.1,
+      4.5667
+     ],
+     "ci90": [
+      -2.5333,
+      3.9333
+     ],
+     "p": 0.7709
+    }
+   }
+  },
+  "C_AUCTION team 10 any loss 0.4 | L30": {
+   "label": "C_AUCTION team 10 any loss 0.4",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 12,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 17.9328,
+    "new": 17.7573,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -0.1756,
+     "ci": [
+      -1.4453,
+      0.9976
+     ],
+     "ci90": [
+      -1.2202,
+      0.8228
+     ],
+     "p": 0.8002
+    }
+   },
+   "delivered_kg": {
+    "old": 1470584.4332,
+    "new": 1470906.6014,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 322.1682,
+     "ci": [
+      -1436.7845,
+      2041.0728
+     ],
+     "ci90": [
+      -1148.2858,
+      1765.3711
+     ],
+     "p": 0.7168
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 70.1183,
+    "new": 73.9607,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 3.8423,
+     "ci": [
+      -2.225,
+      10.5548
+     ],
+     "ci90": [
+      -1.2973,
+      9.383
+     ],
+     "p": 0.2297
+    }
+   },
+   "atc_conflicts": {
+    "old": 184.2667,
+    "new": 183.2667,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -1.0,
+     "ci": [
+      -4.6,
+      2.7667
+     ],
+     "ci90": [
+      -4.0667,
+      2.1
+     ],
+     "p": 0.5885
+    }
+   }
+  },
+  "C_AUCTION team 10 same_owner loss 0.1 | L30": {
+   "label": "C_AUCTION team 10 same_owner loss 0.1",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 403.0395,
+    "new": 403.0395,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "delivered_kg": {
+    "old": 1442793.2194,
+    "new": 1442793.2194,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 2992.0711,
+    "new": 2992.0711,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_conflicts": {
+    "old": 50.5,
+    "new": 50.5,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   }
+  },
+  "C_AUCTION team 10 same_owner loss 0.25 | L30": {
+   "label": "C_AUCTION team 10 same_owner loss 0.25",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 12,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 412.0539,
+    "new": 408.4122,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -3.6417,
+     "ci": [
+      -15.6596,
+      5.9753
+     ],
+     "ci90": [
+      -13.4883,
+      4.6301
+     ],
+     "p": 0.5309
+    }
+   },
+   "delivered_kg": {
+    "old": 1442695.7016,
+    "new": 1441989.4849,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -706.2167,
+     "ci": [
+      -1565.6223,
+      31.492
+     ],
+     "ci90": [
+      -1409.5788,
+      -71.1183
+     ],
+     "p": 0.0614
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 3002.2363,
+    "new": 2884.1735,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -118.0628,
+     "ci": [
+      -382.3848,
+      48.2096
+     ],
+     "ci90": [
+      -338.8587,
+      32.5716
+     ],
+     "p": 0.3278
+    }
+   },
+   "atc_conflicts": {
+    "old": 120.3333,
+    "new": 117.7333,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -2.6,
+     "ci": [
+      -6.4333,
+      1.1667
+     ],
+     "ci90": [
+      -5.8333,
+      0.6
+     ],
+     "p": 0.1912
+    }
+   }
+  },
+  "C_AUCTION team 10 same_owner loss 0.4 | L30": {
+   "label": "C_AUCTION team 10 same_owner loss 0.4",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 21,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 406.6159,
+    "new": 404.4288,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -2.1871,
+     "ci": [
+      -6.4195,
+      0.4382
+     ],
+     "ci90": [
+      -5.8078,
+      0.2071
+     ],
+     "p": 0.1707
+    }
+   },
+   "delivered_kg": {
+    "old": 1442509.9989,
+    "new": 1442580.3938,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 70.3949,
+     "ci": [
+      -208.6346,
+      385.2144
+     ],
+     "ci90": [
+      -168.0638,
+      330.7353
+     ],
+     "p": 0.6717
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 2979.7498,
+    "new": 2956.9704,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -22.7794,
+     "ci": [
+      -66.9448,
+      0.9109
+     ],
+     "ci90": [
+      -64.0448,
+      0.1338
+     ],
+     "p": 0.1488
+    }
+   },
+   "atc_conflicts": {
+    "old": 188.2333,
+    "new": 187.7,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -0.5333,
+     "ci": [
+      -3.8,
+      2.9667
+     ],
+     "ci90": [
+      -3.3,
+      2.3667
+     ],
+     "p": 0.7411
+    }
+   }
+  },
+  "C_AUCTION team 25 any loss 0.1 timeout 0.5 | L30": {
+   "label": "C_AUCTION team 25 any loss 0.1 timeout 0.5",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 0,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 19.8531,
+    "new": 21.6049,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 1.7518,
+     "ci": [
+      0.3857,
+      3.2663
+     ],
+     "ci90": [
+      0.5883,
+      2.9932
+     ],
+     "p": 0.0078
+    }
+   },
+   "delivered_kg": {
+    "old": 1503387.8757,
+    "new": 1505997.8351,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 2609.9594,
+     "ci": [
+      239.8845,
+      4880.9022
+     ],
+     "ci90": [
+      643.2498,
+      4523.1045
+     ],
+     "p": 0.0318
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 84.2,
+    "new": 95.6695,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 11.4695,
+     "ci": [
+      2.9584,
+      20.6181
+     ],
+     "ci90": [
+      4.1999,
+      18.915
+     ],
+     "p": 0.0079
+    }
+   },
+   "atc_conflicts": {
+    "old": 46.1333,
+    "new": 46.5333,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.4,
+     "ci": [
+      -1.9667,
+      2.8667
+     ],
+     "ci90": [
+      -1.6,
+      2.4333
+     ],
+     "p": 0.7811
+    }
+   }
+  },
+  "C_AUCTION team 25 any loss 0.1 timeout 2 | L30": {
+   "label": "C_AUCTION team 25 any loss 0.1 timeout 2",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 9,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 21.9475,
+    "new": 21.6113,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -0.3362,
+     "ci": [
+      -1.7785,
+      1.29
+     ],
+     "ci90": [
+      -1.5587,
+      0.9986
+     ],
+     "p": 0.641
+    }
+   },
+   "delivered_kg": {
+    "old": 1504205.3123,
+    "new": 1504889.4271,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 684.1148,
+     "ci": [
+      -1478.9171,
+      3069.7013
+     ],
+     "ci90": [
+      -1167.7242,
+      2658.4078
+     ],
+     "p": 0.5761
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 91.531,
+    "new": 92.9864,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 1.4553,
+     "ci": [
+      -9.1034,
+      14.9255
+     ],
+     "ci90": [
+      -7.6891,
+      12.3806
+     ],
+     "p": 0.8651
+    }
+   },
+   "atc_conflicts": {
+    "old": 46.4333,
+    "new": 48.1667,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 1.7333,
+     "ci": [
+      -0.4333,
+      4.0333
+     ],
+     "ci90": [
+      -0.1,
+      3.6333
+     ],
+     "p": 0.125
+    }
+   }
+  },
+  "C_AUCTION team 25 any loss 0.1 | L30": {
+   "label": "C_AUCTION team 25 any loss 0.1",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 18,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 21.3895,
+    "new": 21.7557,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.3662,
+     "ci": [
+      -0.6699,
+      1.4439
+     ],
+     "ci90": [
+      -0.5001,
+      1.2664
+     ],
+     "p": 0.4976
+    }
+   },
+   "delivered_kg": {
+    "old": 1506091.652,
+    "new": 1506063.1155,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -28.5365,
+     "ci": [
+      -734.7063,
+      838.7203
+     ],
+     "ci90": [
+      -617.3498,
+      642.4766
+     ],
+     "p": 0.8714
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 88.6317,
+    "new": 89.4061,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.7744,
+     "ci": [
+      -3.5569,
+      4.6167
+     ],
+     "ci90": [
+      -2.7913,
+      4.0085
+     ],
+     "p": 0.6695
+    }
+   },
+   "atc_conflicts": {
+    "old": 45.3,
+    "new": 46.5,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 1.2,
+     "ci": [
+      -0.6333,
+      3.2333
+     ],
+     "ci90": [
+      -0.3667,
+      2.9
+     ],
+     "p": 0.22
+    }
+   }
+  },
+  "C_AUCTION team 25 any loss 0.25 timeout 0.5 | L30": {
+   "label": "C_AUCTION team 25 any loss 0.25 timeout 0.5",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 23.676,
+    "new": 23.676,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "delivered_kg": {
+    "old": 1503950.177,
+    "new": 1503950.177,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 104.3709,
+    "new": 104.3709,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_conflicts": {
+    "old": 108.7,
+    "new": 108.7,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   }
+  },
+  "C_AUCTION team 25 any loss 0.25 timeout 2 | L30": {
+   "label": "C_AUCTION team 25 any loss 0.25 timeout 2",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 25.7405,
+    "new": 25.7405,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "delivered_kg": {
+    "old": 1503707.5378,
+    "new": 1503707.5378,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 106.7017,
+    "new": 106.7017,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_conflicts": {
+    "old": 109.1,
+    "new": 109.1,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   }
+  },
+  "C_AUCTION team 25 any loss 0.25 | L30": {
+   "label": "C_AUCTION team 25 any loss 0.25",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 7,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 24.4621,
+    "new": 24.483,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0208,
+     "ci": [
+      -1.522,
+      1.659
+     ],
+     "ci90": [
+      -1.2886,
+      1.3733
+     ],
+     "p": 0.9954
+    }
+   },
+   "delivered_kg": {
+    "old": 1504298.4495,
+    "new": 1504835.9193,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 537.4698,
+     "ci": [
+      -1674.7821,
+      2865.2064
+     ],
+     "ci90": [
+      -1323.7836,
+      2461.2717
+     ],
+     "p": 0.6452
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 115.3401,
+    "new": 114.7751,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -0.565,
+     "ci": [
+      -10.3666,
+      9.7627
+     ],
+     "ci90": [
+      -8.8569,
+      8.0837
+     ],
+     "p": 0.8883
+    }
+   },
+   "atc_conflicts": {
+    "old": 110.5667,
+    "new": 109.9667,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -0.6,
+     "ci": [
+      -3.6333,
+      2.2333
+     ],
+     "ci90": [
+      -3.1667,
+      1.8
+     ],
+     "p": 0.7074
+    }
+   }
+  },
+  "C_AUCTION team 25 any loss 0.4 timeout 0.5 | L30": {
+   "label": "C_AUCTION team 25 any loss 0.4 timeout 0.5",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 20,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 28.9785,
+    "new": 28.5384,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -0.4401,
+     "ci": [
+      -1.8091,
+      1.0106
+     ],
+     "ci90": [
+      -1.5907,
+      0.7652
+     ],
+     "p": 0.5248
+    }
+   },
+   "delivered_kg": {
+    "old": 1503029.6574,
+    "new": 1503448.84,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 419.1826,
+     "ci": [
+      -740.1816,
+      1748.1138
+     ],
+     "ci90": [
+      -572.2987,
+      1511.6481
+     ],
+     "p": 0.5187
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 132.7999,
+    "new": 132.465,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -0.3349,
+     "ci": [
+      -5.9896,
+      5.0906
+     ],
+     "ci90": [
+      -5.0664,
+      4.2101
+     ],
+     "p": 0.9355
+    }
+   },
+   "atc_conflicts": {
+    "old": 173.6,
+    "new": 172.6667,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -0.9333,
+     "ci": [
+      -3.4,
+      1.3667
+     ],
+     "ci90": [
+      -3.0,
+      1.0333
+     ],
+     "p": 0.4519
+    }
+   }
+  },
+  "C_AUCTION team 25 any loss 0.4 timeout 2 | L30": {
+   "label": "C_AUCTION team 25 any loss 0.4 timeout 2",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 0,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 31.0328,
+    "new": 30.1104,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -0.9224,
+     "ci": [
+      -3.1352,
+      1.1752
+     ],
+     "ci90": [
+      -2.7795,
+      0.8158
+     ],
+     "p": 0.3943
+    }
+   },
+   "delivered_kg": {
+    "old": 1504086.3274,
+    "new": 1504774.147,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 687.8196,
+     "ci": [
+      -2617.1658,
+      4520.8289
+     ],
+     "ci90": [
+      -2126.4364,
+      3826.3123
+     ],
+     "p": 0.7379
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 142.1617,
+    "new": 138.4318,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -3.7299,
+     "ci": [
+      -16.4891,
+      8.9843
+     ],
+     "ci90": [
+      -14.4518,
+      6.9317
+     ],
+     "p": 0.5644
+    }
+   },
+   "atc_conflicts": {
+    "old": 173.4,
+    "new": 172.2333,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -1.1667,
+     "ci": [
+      -6.0333,
+      3.6667
+     ],
+     "ci90": [
+      -5.2683,
+      2.9
+     ],
+     "p": 0.6393
+    }
+   }
+  },
+  "C_AUCTION team 25 any loss 0.4 | L30": {
+   "label": "C_AUCTION team 25 any loss 0.4",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 28,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 30.2214,
+    "new": 30.5968,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.3754,
+     "ci": [
+      0.0,
+      1.0919
+     ],
+     "ci90": [
+      0.0,
+      1.0575
+     ],
+     "p": 0.2527
+    }
+   },
+   "delivered_kg": {
+    "old": 1504332.5086,
+    "new": 1504131.7655,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -200.7431,
+     "ci": [
+      -585.5625,
+      0.0
+     ],
+     "ci90": [
+      -568.8958,
+      0.0
+     ],
+     "p": 0.2527
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 142.2992,
+    "new": 144.319,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 2.0198,
+     "ci": [
+      0.0,
+      5.254
+     ],
+     "ci90": [
+      0.0,
+      4.4485
+     ],
+     "p": 0.2527
+    }
+   },
+   "atc_conflicts": {
+    "old": 174.3,
+    "new": 174.0,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -0.3,
+     "ci": [
+      -0.8,
+      0.0
+     ],
+     "ci90": [
+      -0.7,
+      0.0
+     ],
+     "p": 0.2527
+    }
+   }
+  },
+  "C_AUCTION team 25 same_owner loss 0.1 | L30": {
+   "label": "C_AUCTION team 25 same_owner loss 0.1",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 21,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 1023.6424,
+    "new": 1025.2362,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 1.5937,
+     "ci": [
+      -0.4299,
+      5.2115
+     ],
+     "ci90": [
+      -0.3195,
+      5.0131
+     ],
+     "p": 0.4996
+    }
+   },
+   "delivered_kg": {
+    "old": 1434214.9555,
+    "new": 1434125.7503,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -89.2052,
+     "ci": [
+      -277.5987,
+      8.3233
+     ],
+     "ci90": [
+      -275.3775,
+      7.2006
+     ],
+     "p": 0.7309
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 5880.1113,
+    "new": 5881.7715,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 1.6602,
+     "ci": [
+      -1.1968,
+      6.1773
+     ],
+     "ci90": [
+      -0.7979,
+      5.7784
+     ],
+     "p": 0.7305
+    }
+   },
+   "atc_conflicts": {
+    "old": 46.9333,
+    "new": 47.9,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.9667,
+     "ci": [
+      -0.7,
+      2.7667
+     ],
+     "ci90": [
+      -0.4333,
+      2.4667
+     ],
+     "p": 0.2789
+    }
+   }
+  },
+  "C_AUCTION team 25 same_owner loss 0.25 | L30": {
+   "label": "C_AUCTION team 25 same_owner loss 0.25",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 11,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 1023.6232,
+    "new": 1034.966,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 11.3427,
+     "ci": [
+      -0.6184,
+      29.4056
+     ],
+     "ci90": [
+      -0.0352,
+      25.7783
+     ],
+     "p": 0.105
+    }
+   },
+   "delivered_kg": {
+    "old": 1413037.1232,
+    "new": 1412945.4674,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -91.6558,
+     "ci": [
+      -539.4727,
+      269.7167
+     ],
+     "ci90": [
+      -450.2203,
+      214.5826
+     ],
+     "p": 0.6878
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 5857.3418,
+    "new": 5861.3979,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 4.0561,
+     "ci": [
+      -0.0367,
+      10.6221
+     ],
+     "ci90": [
+      -0.0255,
+      9.0407
+     ],
+     "p": 0.2527
+    }
+   },
+   "atc_conflicts": {
+    "old": 115.1667,
+    "new": 113.3,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -1.8667,
+     "ci": [
+      -4.5333,
+      0.6667
+     ],
+     "ci90": [
+      -4.1,
+      0.2667
+     ],
+     "p": 0.1541
+    }
+   }
+  },
+  "C_AUCTION team 25 same_owner loss 0.4 | L30": {
+   "label": "C_AUCTION team 25 same_owner loss 0.4",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 17,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 1035.7461,
+    "new": 1031.4534,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -4.2927,
+     "ci": [
+      -24.2573,
+      11.694
+     ],
+     "ci90": [
+      -20.0471,
+      9.0813
+     ],
+     "p": 0.6766
+    }
+   },
+   "delivered_kg": {
+    "old": 1415944.8847,
+    "new": 1415932.6044,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -12.2803,
+     "ci": [
+      -689.8673,
+      584.3223
+     ],
+     "ci90": [
+      -571.8064,
+      496.1079
+     ],
+     "p": 0.989
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 5857.2776,
+    "new": 5870.6972,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 13.4196,
+     "ci": [
+      -25.1555,
+      67.817
+     ],
+     "ci90": [
+      -20.293,
+      58.1928
+     ],
+     "p": 0.6641
+    }
+   },
+   "atc_conflicts": {
+    "old": 179.7667,
+    "new": 178.2333,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -1.5333,
+     "ci": [
+      -3.5,
+      0.2
+     ],
+     "ci90": [
+      -3.1667,
+      -0.0333
+     ],
+     "p": 0.0911
+    }
+   }
+  }
+ },
+ "flagged": [
+  "C_AUCTION team 25 any loss 0.1 timeout 0.5 L30: new - old 1.7518 h, CI [0.3857, 3.2663] excludes 0"
+ ]
+}

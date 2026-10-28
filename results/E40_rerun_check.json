@@ -1,0 +1,528 @@
+{
+ "exp": "E40",
+ "note": "Affected (PREREG change 4): C_AUCTION, C_LEARNED_MLP and C_LEARNED_LIN cells with message loss > 0, whose robot list was\nbuilt from a set holding the string \"BASE\" (iteration order by Python's per-process string hash) before the fix in\nlunarsim/atc/auction.py. E40: the 10 % and 30 % cells of those regimes, block v1 (their v3 rows repeat v1 seeds 1-10\nand are not used), and the C_AUCTION hopper_refuel cell. E42: every C_AUCTION cell with loss > 0.",
+ "rows_old": 210,
+ "rows_new": 210,
+ "paired": 210,
+ "cells": {
+  "C_AUCTION | L10": {
+   "label": "C_AUCTION",
+   "load": 10,
+   "n": 30,
+   "identical_rows": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 11.8032,
+    "new": 11.8032,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "delivered_kg": {
+    "old": 448640.2551,
+    "new": 448640.2551,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 45.5304,
+    "new": 45.5304,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_conflicts": {
+    "old": 26.3,
+    "new": 26.3,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   }
+  },
+  "C_AUCTION | L30": {
+   "label": "C_AUCTION",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 14.0865,
+    "new": 14.0865,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "delivered_kg": {
+    "old": 1470266.2616,
+    "new": 1470266.2616,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 58.5346,
+    "new": 58.5346,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_conflicts": {
+    "old": 49.2667,
+    "new": 49.2667,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   }
+  },
+  "C_LEARNED_LIN | L10": {
+   "label": "C_LEARNED_LIN",
+   "load": 10,
+   "n": 30,
+   "identical_rows": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 10.9777,
+    "new": 10.9777,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "delivered_kg": {
+    "old": 449589.2928,
+    "new": 449589.2928,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 41.31,
+    "new": 41.31,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_conflicts": {
+    "old": 26.8667,
+    "new": 26.8667,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   }
+  },
+  "C_LEARNED_LIN | L30": {
+   "label": "C_LEARNED_LIN",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 16,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 11.7417,
+    "new": 11.5979,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -0.1438,
+     "ci": [
+      -0.5164,
+      0.2279
+     ],
+     "ci90": [
+      -0.456,
+      0.1641
+     ],
+     "p": 0.4478
+    }
+   },
+   "delivered_kg": {
+    "old": 1470425.1805,
+    "new": 1470734.5549,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 309.3744,
+     "ci": [
+      -827.4697,
+      1488.6426
+     ],
+     "ci90": [
+      -648.8872,
+      1295.1779
+     ],
+     "p": 0.6005
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 49.9254,
+    "new": 50.5612,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.6359,
+     "ci": [
+      -1.4307,
+      3.0677
+     ],
+     "ci90": [
+      -1.1368,
+      2.6592
+     ],
+     "p": 0.6089
+    }
+   },
+   "atc_conflicts": {
+    "old": 47.7667,
+    "new": 46.7333,
+    "new_minus_old": {
+     "n": 30,
+     "mean": -1.0333,
+     "ci": [
+      -2.9,
+      0.5333
+     ],
+     "ci90": [
+      -2.5667,
+      0.3333
+     ],
+     "p": 0.2314
+    }
+   }
+  },
+  "C_LEARNED_MLP | L10": {
+   "label": "C_LEARNED_MLP",
+   "load": 10,
+   "n": 30,
+   "identical_rows": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 10.8463,
+    "new": 10.8463,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "delivered_kg": {
+    "old": 448218.733,
+    "new": 448218.733,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 40.0653,
+    "new": 40.0653,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_conflicts": {
+    "old": 26.0,
+    "new": 26.0,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   }
+  },
+  "C_LEARNED_MLP | L30": {
+   "label": "C_LEARNED_MLP",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 13.9293,
+    "new": 13.9293,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "delivered_kg": {
+    "old": 1472509.209,
+    "new": 1472509.209,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 58.6406,
+    "new": 58.6406,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_conflicts": {
+    "old": 47.9333,
+    "new": 47.9333,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   }
+  },
+  "C_AUCTION hopper_refuel | L30": {
+   "label": "C_AUCTION hopper_refuel",
+   "load": 30,
+   "n": 30,
+   "identical_rows": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "old": 13.7363,
+    "new": 13.7363,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "delivered_kg": {
+    "old": 1471866.2011,
+    "new": 1471866.2011,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_urgent_wait_p95_cens_h": {
+    "old": 58.746,
+    "new": 58.746,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   },
+   "atc_conflicts": {
+    "old": 49.8,
+    "new": 49.8,
+    "new_minus_old": {
+     "n": 30,
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "ci90": [
+      0.0,
+      0.0
+     ],
+     "p": 1.0
+    }
+   }
+  }
+ },
+ "flagged": []
+}

@@ -1,0 +1,101 @@
+{
+ "task": "B-75 diagnostic",
+ "note": "E40 at 30 % load, block v1 (seeds 1-30, start year 2028 + seed mod 4), paired with E40's own O_ORACLE and\nC_AUCTION rows (results/E40_runs.csv; same scenario, seeds and years). Two extra cells, not PREREG cells:\n- O + rally: O_ORACLE with the auction's lost-link rally applied to every idle robot (o_rally);\n- C_AUCTION loss 0: the auction on terrain radio without message loss.\nSingle process, --max-seconds 540.",
+ "cells": {
+  "O_ORACLE": {
+   "atc_urgent_wait_mean_cens_h": 14.4684,
+   "atc_deadhead_share": 0.4979,
+   "atc_rallies": 0.0,
+   "delivered_kg": 1469348.6639,
+   "atc_urgent_within24_share": 0.8209
+  },
+  "C_AUCTION": {
+   "atc_urgent_wait_mean_cens_h": 14.0865,
+   "atc_deadhead_share": 0.7128,
+   "atc_rallies": 808.4,
+   "delivered_kg": 1470266.2616,
+   "atc_urgent_within24_share": 0.8333
+  },
+  "O + rally": {
+   "atc_urgent_wait_mean_cens_h": 14.8252,
+   "atc_deadhead_share": 0.636,
+   "atc_rallies": 418.1667,
+   "delivered_kg": 1470869.3235,
+   "atc_urgent_within24_share": 0.8137
+  },
+  "C_AUCTION loss 0": {
+   "atc_urgent_wait_mean_cens_h": 14.9316,
+   "atc_deadhead_share": 0.7121,
+   "atc_rallies": 808.2667,
+   "delivered_kg": 1471168.2792,
+   "atc_urgent_within24_share": 0.823
+  }
+ },
+ "pairs": {
+  "O + rally - O_ORACLE": {
+   "n": 30,
+   "mean": 0.3568,
+   "ci": [
+    -0.683,
+    1.5534
+   ],
+   "ci90": [
+    -0.5379,
+    1.3383
+   ],
+   "p": 0.551
+  },
+  "C_AUCTION - O_ORACLE": {
+   "n": 30,
+   "mean": -0.3819,
+   "ci": [
+    -1.9921,
+    1.1591
+   ],
+   "ci90": [
+    -1.7293,
+    0.9234
+   ],
+   "p": 0.635
+  },
+  "C_AUCTION loss 0 - O_ORACLE": {
+   "n": 30,
+   "mean": 0.4632,
+   "ci": [
+    -1.0014,
+    1.9334
+   ],
+   "ci90": [
+    -0.7541,
+    1.6937
+   ],
+   "p": 0.5382
+  },
+  "C_AUCTION - O + rally": {
+   "n": 30,
+   "mean": -0.7386,
+   "ci": [
+    -2.1175,
+    0.5433
+   ],
+   "ci90": [
+    -1.8731,
+    0.3383
+   ],
+   "p": 0.261
+  },
+  "C_AUCTION loss 0 - O + rally": {
+   "n": 30,
+   "mean": 0.1064,
+   "ci": [
+    -1.3794,
+    1.656
+   ],
+   "ci90": [
+    -1.1358,
+    1.3894
+   ],
+   "p": 0.9006
+  }
+ }
+}
