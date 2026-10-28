@@ -396,3 +396,35 @@ Venues:
 - Elsevier's Acta Astronautica guide for authors (not retrievable here; confirm limits directly).
 
 Internal: `paper/v3/REVIEW_round1.md`, `paper/v3/REVIEW_round2.md`, `paper/r1/REVIEW_round1.md`, `paper/r1/REVIEW_round2_internal.md`.
+
+## 7. Owner's sources (28 Oct 2026): the IMRaD checklist as journals apply it
+From four posts the owner sent (TheRealPublishing channel, drawing on Justin Paul 2024, "Publishing in premier
+journals with high impact factor and Q1 journals: Dos and Don'ts", Int. J. Consumer Studies 48(3): e13049,
+doi:10.1111/ijcs.13049). Where they differ from §5, these are the stricter rule and win.
+- **Title**: at most 20 words, specific, matches the result; write or re-check it last.
+- **Abstract**: 250-300 words (journal-dependent; never under 200). Four parts in order: purpose; how it was done
+  and with what methods; the results and how important they are; what they may change. The abstract is what
+  decides whether anyone reads on.
+- **Keywords**: 4-6 precise field terms (some journals allow up to 12). Not a list of everything in the paper.
+- **Introduction** must answer, in one place, "what is new here compared with earlier work?". A paper is refused
+  when that answer is missing, when the aim is vague, or when the title is too long or too narrow.
+- **Methodology** justifies the choices (why this method, this sample size, this data source), not only describes
+  them, and runs the checks the design needs (for us: V&V, CRN, pre-registration, seed hygiene).
+- **Results** are reported in a fixed order: design recap, primary outcome, secondary outcomes, sensitivity; they
+  must actually support the conclusions drawn (a frequent refusal reason).
+- **Discussion** is a separate section and does not repeat Results. It compares with earlier studies and states:
+  theoretical contribution; practical significance; limitations; future work.
+- **Conclusion** is a separate section: purpose, method, main results, significance, in 150-250 words.
+- **References**: numbered; at least 15; aim for most from the last five years (the post says 80 %; our field's
+  foundations are older, so report the share honestly rather than pad); keep self-citation low and cite the
+  journal's own recent papers where relevant.
+- **Editing**: short sentences; several passes; a reader outside the project before submission; check for
+  plagiarism and disclose AI assistance where the journal requires it (most now do).
+- **Reviews**: answer every point separately, show each change, never argue without evidence.
+- **Journal fit**: a good paper sent to the wrong journal is refused at the desk; read Aims & Scope.
+- **Missing data** (their post is about surveys): state how much is missing, why, and how it was handled; never
+  fill blanks with zero or the mean without a reason. Our analogue is censoring: undelivered items are not
+  "zero wait"; report censored means and delivered-only means separately and say which is which.
+- Their tool list (AnswerThis, Paperpal, Overleaf, Zotero, ...) is optional for us: our build scripts do the number
+  checks, and the HTML-to-PDF pipeline replaces LaTeX. Their warning holds: no citation, DOI or statistic from
+  an AI tool enters a paper unverified against the source.
