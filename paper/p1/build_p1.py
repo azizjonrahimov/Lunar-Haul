@@ -68,6 +68,11 @@ LABELS = {
     "H6": "H6: cross-owner - same owner, team {team}, loss {loss}",
     "H6_team_items": "H6 (reported): team items, team {team}, loss {loss}",
     "H1_split": "H1 split (E42): C_AUCTION same owner - A_EARTH own teams, team {team}, loss 0.1",
+    # the split agreed with BACKEND (B-75): "dispatch part" = single-robot jobs pooled across owners plus the pooled
+    # dispatcher; "capacity part" = lifts by pairs of different owners' rovers
+    "H1_pool": "H1 dispatch part: C_AUCTION same-owner teams - A_EARTH full coverage",
+    "H1_team": "H1 capacity part: C_AUCTION cross-owner - C_AUCTION same-owner teams",
+    "H1_owner": "H1 (reported): owner {owner}",
     "leader_minus_O": "C_LEADER - O_ORACLE",
     "auction_minus_O": "C_AUCTION - O_ORACLE",
     "lin_minus_O": "C_LEARNED_LIN - O_ORACLE",
@@ -377,12 +382,26 @@ def values(r: R, allow_pending: bool):
     ad = r.pair("H2_A_delivered_only", LOAD_MAIN)
     check(ad["lo"] > 0, "owners alone wait longer even on delivered items")
     V["P1-A-DELIV-MINUS-O-30"] = h_(ad["mean"], 0)
-    # capacity share of the H1 gap: the part of the censored gap that is not a difference in waiting among
-    # delivered items (the delivered-only paired difference, H1 (reported)). Definition to confirm with BACKEND.
+    # the share of the censored gap that lies in items owners alone had not delivered by year end: one minus the
+    # delivered-only paired difference over the censored one (both "H1 (reported)" rows, v1)
     h1d = r.pair("H1_delivered_only", LOAD_MAIN)
-    cap_share = 1 - abs(h1d["mean"]) / abs(h1["mean"])
-    check(cap_share > 0.5, "most of the H1 gap is capacity")
-    V["P1-H1-CAPACITY-SHARE"] = sh(cap_share, 0)
+    undel = 1 - abs(h1d["mean"]) / abs(h1["mean"])
+    check(undel > 0.9, "almost the whole H1 gap is cargo owners alone never delivered")
+    V["P1-H1-UNDELIVERED-SHARE"] = sh(undel, 0)
+    # the split agreed with BACKEND (B-75): lifts by pairs of different owners' rovers against single-robot jobs
+    # pooled across owners together with the pooled dispatcher; the two parts sum to the E40 gap
+    team, pool = r.pair("H1_team", LOAD_MAIN), r.pair("H1_pool", LOAD_MAIN)
+    split = r.fit("hypotheses", "H1", "split_30")
+    check(team["hi"] < 0 and pool["hi"] < 0, "both parts of the H1 split exclude zero")
+    check(abs(split["sum_of_parts"] - h1["mean"]) < 0.05 * abs(h1["mean"]), "the two H1 parts sum to the gap within 5 %")
+    check(pool["mean"] < team["mean"], "single-robot pooling with the dispatcher is the larger part of the H1 gap")
+    V["P1-H1-TEAM-DIFF"], V["P1-H1-TEAM-DIFF-CI"] = h_(-team["mean"], 0), ci_abs(team, 0)
+    V["P1-H1-POOL-DIFF"], V["P1-H1-POOL-DIFF-CI"] = h_(-pool["mean"], 0), ci_abs(pool, 0)
+    V["P1-H1-TEAM-SHARE"], V["P1-H1-POOL-SHARE"] = sh(split["share_capacity"], 0), sh(split["share_dispatch"], 0)
+    own = {o: r.pair("H1_owner", LOAD_MAIN, owner=o) for o in "ABC"}
+    check(own["C"]["mean"] < own["B"]["mean"] < own["A"]["mean"] < 0, "owner C gains most from pooling, then B, then A")
+    for o in "ABC":
+        V[f"P1-H1-OWNER-{o}-DIFF"] = h_(-own[o]["mean"], 0)
 
     # --- H2 ------------------------------------------------------------------------------------------------
     h2 = r.pair("H2_pooled", LOAD_MAIN)
@@ -466,6 +485,8 @@ def values(r: R, allow_pending: bool):
           "the relay's loss is small next to the strict dispatcher's and still above a tenth of O's mean (6.1)")
     ld = r.pair("leader_minus_O", LOAD_MAIN)
     V["P1-LEADER-MINUS-O"], V["P1-LEADER-MINUS-O-CI"] = h_(ld["mean"], 2, sign=True), ci_h(ld["lo"], ld["hi"])
+    spread = max(abs(r.pair(k, LOAD_MAIN)["mean"]) for k in ("leader_minus_O", "auction_minus_O", "lin_minus_O"))
+    check(spread < 10, "the pooled regimes that differ only in their dispatcher sit within a few hours of one another (6.1)")
 
     # --- H4 ------------------------------------------------------------------------------------------------
     f4 = r.fit("hypotheses", "H4")
@@ -574,7 +595,13 @@ def values(r: R, allow_pending: bool):
                              (f"{num(hi_s / 3600, 1)}{NB}h" if hi_s >= 3600 else f"{num(hi_s, 0)}{NB}s"))
     npc = r.fit("n_per_cell")
     v1_counts = {k: v for k, v in npc.items() if k.endswith("|v1")}
-    check(all(v == 30 for v in v1_counts.values()), "every cell holds exactly the 30 v1 seeds")
+    check(all(v == 30 for k, v in v1_counts.items() if not k.startswith(f"{LOAD_HEAVY}|")),
+          "every cell at 10 and 30 % holds exactly the 30 v1 seeds")
+    short60 = {k: v for k, v in v1_counts.items() if k.startswith(f"{LOAD_HEAVY}|") and v != 30}
+    if short60:      # the 60 % block is LEAD's background job; until it completes the draft is pending, not wrong
+        if not allow_pending:
+            raise SystemExit(f"E40 60 % cells incomplete: {short60}")
+        pending.append(f"E40 60 % cells incomplete: {short60}")
     V["P1-SEEDS-ADDED"] = ("No seeds were added: every cell holds the 30 seeds of the design"
                            + (" (and the 50 runs of the second block where it applies)" if any(
                                k.endswith("|v3") for k in npc) else "") + ".")
