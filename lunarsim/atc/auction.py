@@ -37,6 +37,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 import numpy as np
 
 TIMEOUT_H = 1.0                  # Assumed (B-73 task): rendezvous timeout, sweep 0.5-2 h
+RETRY_H = 0.05                   # as regimes.RETRY_H: the base computer resends a lost decision 3 min later
 
 
 # ------------------------------------------------------------------------------------------------- engine side
@@ -227,6 +228,16 @@ def _team_hook(st, sim, hops):
         a, b = job.vehicles[0], job.vehicles[1]
         h = hops(a.id, b.id)
         chan, c = st.channel, st.cfg
+        if c.get("arbitrate") and hops("BASE", a.id) < 10 ** 6 and hops("BASE", b.id) < 10 ** 6:
+            st.m["arbitrated"] = st.m.get("arbitrated", 0) + 1          # exploratory: one decision, a lease
+            k = max(1, int(float(c["timeout_h"]) / RETRY_H))
+            got = [any(chan.send(hops("BASE", v.id))[0] for _ in range(k)) for v in (a, b)]
+            if all(got):
+                return True, set()
+            if not any(got):
+                st.m["team_no_agreement"] += 1
+                return False, set()
+            return _failed_meeting(st, sim, a if got[0] else b, job.items[0].origin)
         if c["commit"]:
             if not (chan.send(h)[0] and chan.send(h)[0]):     # proposal, yes
                 st.m["team_no_agreement"] += 1

@@ -57,7 +57,10 @@ LINK_V1 = os.path.join(ROOT, "data", "comms", "connecting_ridge", "earth_link-v1
 LINK_V3 = os.path.join(ROOT, "data", "comms", "connecting_ridge", "earth_link-v3.json")
 SAMPLES_V1 = os.path.join(ROOT, "data", "comms", "connecting_ridge", "earth_link-v1-samples.json.gz")
 
-REGIMES = ("O_ORACLE", "B_EARTH", "B_EARTH_RELAY", "A_EARTH", "A_MOON", "C_LEADER", "C_AUCTION", "C_LEARNED")
+REGIMES = ("O_ORACLE", "B_EARTH", "B_EARTH_RELAY", "A_EARTH", "A_MOON", "C_LEADER", "C_AUCTION", "C_LEARNED",
+           "C_LEARNED_MLP", "C_LEARNED_LIN")
+POLICY_FILES = {"C_LEARNED_MLP": os.path.join(ROOT, "data", "policies", "atc_bid_v1.json"),
+                "C_LEARNED_LIN": os.path.join(ROOT, "data", "policies", "atc_bid_linear_v1.json")}
 A_REGIMES = ("A_EARTH", "A_MOON")
 EARTH_REGIMES = ("A_EARTH", "B_EARTH", "B_EARTH_RELAY")
 DEFAULTS: Dict[str, Any] = {
@@ -83,6 +86,12 @@ DEFAULTS: Dict[str, Any] = {
     # C_LEARNED (B-74, lunarsim/atc/learned.py): C_AUCTION with a learned bid correction
     "policy": None,                  # policy file (default data/policies/atc_bid_v1.json for C_LEARNED)
     "collect": False,                # record DAgger rows with oracle labels (tools/atc/train_bid.py)
+    # B-75 variants
+    "own_teams": False,              # A regimes: pair an owner's own robots for team lifts (needs team_lift True so
+                                     # the engine does not strand team items); off = dispatch.inhouse exactly
+    "arbitrate": False,              # exploratory (E42): the base computer arbitrates a team meeting when both robots
+                                     # are in its partition: it resends the decision until the lease (timeout_h) ends
+    "mast2": None,                   # E41 network design: a second 10 m relay mast at this site (e.g. "PAD_B")
 }
 REGIME_KEYS = set(DEFAULTS)
 RETRY_H = 0.05                       # Assumed: a robot whose message was lost is reconsidered 3 min later
@@ -143,6 +152,29 @@ def _mesh():
     return _MESH["rm"]
 
 
+_MAST2: Dict[str, Any] = {}
+
+
+def _mast2(site: str, st) -> Dict[str, Any]:
+    """LOS table of a 10 m relay mast at `site` to every B-70 point (2.5 m and 1.0 m antennas) and to the BASE mast,
+    computed once with the arithmetic of Terrain.los_clearance_m (tools/comms/parking.los_batch)."""
+    if site not in _MAST2:
+        import sys
+        sys.path.insert(0, os.path.join(ROOT, "tools", "comms"))
+        import parking as PK
+        from ..terrain import Terrain
+        rm = _mesh()
+        k = st.site_index(site)
+        P = rm.xy
+        t = Terrain(os.path.join(ROOT, "data", "terrain", "connecting_ridge"))
+        A = np.repeat(P[k][None], len(P), 0)
+        _MAST2[site] = {"site": site, "idx": k, "d": np.hypot(*(P - P[k]).T),
+                        "clear": {ANT_ROVER_M: PK.los_batch(t, A, P, h_a=ANT_MAST_M, h_b=ANT_ROVER_M),
+                                  ANT_SMALL_M: PK.los_batch(t, A, P, h_a=ANT_MAST_M, h_b=ANT_SMALL_M)},
+                        "to_base": bool(PK.los_batch(t, P[k][None], P[0][None], h_a=ANT_MAST_M, h_b=ANT_MAST_M)[0] > 0)}
+    return _MAST2[site]
+
+
 def antenna_m(v) -> float:
     return ANT_SMALL_M if v.cls.name.startswith(SMALL_ANTENNA_PREFIXES) else ANT_ROVER_M
 
@@ -196,7 +228,8 @@ class ATCState:
         self._earth_t = [t for t, _ in self.earth_ch]
         # base computer (C_LEADER): failure intervals from its own stream
         self.base_down: List[Tuple[float, float]] = []
-        if regime in ("C_LEADER", "C_AUCTION", "C_LEARNED") and math.isfinite(float(c["base_mtbf_h"])):
+        if regime in ("C_LEADER", "C_AUCTION", "C_LEARNED", "C_LEARNED_MLP", "C_LEARNED_LIN") and \
+                math.isfinite(float(c["base_mtbf_h"])):
             rng = np.random.default_rng([int(sim.seed), 72, 1])
             t = 0.0
             while True:
@@ -221,8 +254,11 @@ class ATCState:
         self.queue: Dict[int, List[Any]] = {}
         self.queue_for: Optional[float] = None
         self._covered: Dict[float, List[str]] = {}
+        self.mast2 = _mast2(c["mast2"], self) if c["mast2"] else None
         self._retry_at = -1.0
         self.policy = None
+        if regime in POLICY_FILES and c["policy"] is None:
+            c["policy"] = POLICY_FILES[regime]
         if regime == "C_LEARNED" or c["policy"] is not None:
             from .learned import Policy
             self.policy = Policy(c["policy"]) if c["policy"] else Policy()
@@ -297,16 +333,62 @@ class ATCState:
     # ------------------------------------------------------------------------------------------- mesh
     def _graph(self, nodes: List[Tuple[Any, int, float]]) -> Dict[Any, List[Any]]:
         """Adjacency of (key, point, antenna height) nodes under the radio model."""
+        if self.mast2 is not None and not any(k == "MAST2" for k, _, _ in nodes) and any(k == "BASE" for k, _, _ in nodes):
+            nodes = nodes + [("MAST2", self.mast2["idx"], ANT_MAST_M)]
         adj: Dict[Any, List[Any]] = {k: [] for k, _, _ in nodes}
         perfect = self.cfg["radio"] == "perfect"
         rm = None if perfect else _mesh()
         for i in range(len(nodes)):
             for j in range(i + 1, len(nodes)):
                 (ka, pa, ha), (kb, pb, hb) = nodes[i], nodes[j]
-                if perfect or rm.link(pa, pb, ha, hb, **self.radio_kw):
+                if "MAST2" in (ka, kb) and not perfect:
+                    ok = self._mast2_link(ka, pa, ha, kb, pb, hb)
+                elif perfect:
+                    ok = True
+                else:
+                    ok = rm.link(pa, pb, ha, hb, **self.radio_kw)
+                if ok:
                     adj[ka].append(kb)
                     adj[kb].append(ka)
         return adj
+
+    def _mast2_link(self, ka, pa, ha, kb, pb, hb) -> bool:
+        """The second mast's links: to the BASE mast (10 m - 10 m) and to robots (10 m - h), from its own LOS table."""
+        m = self.mast2
+        if ka == "MAST2":
+            ka, pa, ha, kb, pb, hb = kb, pb, hb, ka, pa, ha
+        if ka == "BASE":
+            return m["to_base"]
+        if pa == m["idx"]:
+            return True
+        from .radio import DEFAULT_D_MAX_M, DEFAULT_MARGIN_M
+        dmax = self.radio_kw.get("d_max_m", DEFAULT_D_MAX_M)
+        marg = self.radio_kw.get("margin_m", DEFAULT_MARGIN_M)
+        return bool(m["d"][pa] <= dmax and m["clear"][ha][pa] > marg)
+
+    def _own_teams(self, sim, waiting, free):
+        """own_teams: an owner's oversize items with a pair of its own free robots (A regimes)."""
+        p5 = getattr(sim, "p5", None)
+        if not self.cfg["own_teams"] or p5 is None or not free:
+            return [], free, waiting
+        from .. import dispatch as D
+        from ..engine import Job
+        single = max((v.cls.capacity_kg for v in free), default=0.0)
+        jobs, used, taken = [], set(), set()
+        for c in sorted([c for c in waiting if c.mass_kg > single], key=lambda c: (c.priority, c.t_ready)):
+            owner = sim.carrier_of.get(c.owner, c.owner)
+            cands = [v for v in free if v.id not in used and v.owner == owner and v.cls.can_team_lift and v.compatible(c)]
+            team = p5.team_for(c, cands)
+            if team is None:
+                continue
+            job = Job(team, [c], [c.dest], note="team")
+            if not all(D._night_ok(sim, v, job) for v in team):
+                continue
+            jobs.append(job)
+            used |= {v.id for v in team}
+            taken.add(id(c))
+            self.m["own_team_jobs"] = self.m.get("own_team_jobs", 0) + 1
+        return jobs, [v for v in free if v.id not in used], [c for c in waiting if id(c) not in taken]
 
     @staticmethod
     def _bfs(adj, src) -> Dict[Any, int]:
@@ -344,17 +426,19 @@ class ATCState:
         if r == "A_EARTH":
             waiting = self._unlocked(waiting, t)
             if self.earth.next_change(t)[0]:
-                jobs = _inner_fn("inhouse")(sim, waiting, free)
+                tj, free, waiting = self._own_teams(sim, waiting, free)
+                jobs = tj + _inner_fn("inhouse")(sim, waiting, free)
             else:
                 jobs = self._dark(sim, waiting, free, pooled=False)
             return self._hand(sim, jobs, t)
         if r == "A_MOON":
             waiting = self._unlocked(waiting, t)
             ok = self._owner_partitions(sim, free, t)
-            jobs = _inner_fn("inhouse")(sim, waiting, ok) if ok else []
+            tj, ok, waiting = self._own_teams(sim, waiting, ok)
+            jobs = tj + (_inner_fn("inhouse")(sim, waiting, ok) if ok else [])
             jobs = self._deliver(sim, jobs, t)
             return self._hand(sim, jobs, t)
-        if r in ("C_AUCTION", "C_LEARNED"):
+        if r in ("C_AUCTION", "C_LEARNED", "C_LEARNED_MLP", "C_LEARNED_LIN"):
             from . import auction
             return auction.dispatch(self, sim, waiting, free, inner_kw)
         if r == "C_LEADER":
@@ -549,7 +633,9 @@ class ATCState:
             rm = _mesh() if self.cfg["radio"] != "perfect" else None
             b = self.site_index("BASE")
             self._covered[h] = [x for x in sim.world.names
-                                if x == "BASE" or rm is None or rm.link(b, self.site_index(x), ANT_MAST_M, h, **self.radio_kw)]
+                                if x == "BASE" or rm is None or rm.link(b, self.site_index(x), ANT_MAST_M, h, **self.radio_kw)
+                                or (self.mast2 is not None and self.mast2["to_base"]
+                                    and self._mast2_link("MAST2", self.mast2["idx"], ANT_MAST_M, "R", self.site_index(x), h))]
         return self._covered[h]
 
     def _rally(self, sim, v, sites: Sequence[str]) -> None:
@@ -614,6 +700,7 @@ class ATCState:
             "atc_msgs_per_robot_h": self.channel.sent / (nveh * H),
             "atc_msgs_lost": self.channel.lost, "atc_msg_latency_s_mean": self.channel.latency_s / max(1, self.channel.messages - self.channel.lost),
             "atc_base_failures": len(self.base_down), "atc_rallies": self.m["rallies"],
+            "atc_own_team_jobs": self.m.get("own_team_jobs", 0), "atc_arbitrated": self.m.get("arbitrated", 0),
             "atc_claims_won": self.m["claims_won"], "atc_claims_run": self.m["claims_run"],
             "atc_claims_stale": self.m["claims_stale"], "atc_wasted_trips": self.m["wasted_trips"],
             "atc_parallel_winners": self.m["parallel_winners"], "atc_conflicts": self.m["conflicts"],
@@ -632,4 +719,17 @@ class ATCState:
             "atc_blackouts": len(self.backlog_at_aos),
             "atc_backlog_end_blackout_t_mean": float(np.nanmean(bl)),
             "atc_backlog_end_blackout_t_max": float(np.nanmax(bl)),
+            **self._per_owner(sim, urg),
         }
+
+    @staticmethod
+    def _per_owner(sim, urg) -> Dict[str, float]:
+        """Per cargo owner: urgent wait (censored, h) and tonnes delivered (B-75: per-owner results)."""
+        H = float(sim.sc.horizon_h)
+        out: Dict[str, float] = {}
+        for o in sorted({str(c.owner) for c in sim.all_cargo}):
+            w = [(c.t_delivered if c.t_delivered is not None else H) - c.t_ready for c in urg if str(c.owner) == o]
+            out[f"own_{o}_urgent_wait_cens_h"] = float(np.mean(w)) if w else float("nan")
+            out[f"own_{o}_delivered_t"] = sum(c.mass_kg for c in sim.all_cargo
+                                              if str(c.owner) == o and c.t_delivered is not None) / 1000.0
+        return out
