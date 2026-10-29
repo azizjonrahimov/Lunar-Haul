@@ -244,3 +244,25 @@ carries no numeric decision rule. Decisions, all before the first E46 row:
   program), as the site's vehicle table shows; B-81 measures the on-robot part on the driving and flying classes.
   The MTBF levels, the reference flight processor and its benchmark, and the per-class frequency and transmit
   power are set in data/scenarios/E48-design.json before the first measurement and are flagged Assumed.
+
+### Change 8, 29 Oct 2026 (after types 1-10 and 9 of the 25 type-11 batches of the E44 main run; before the E44 rerun): two simulator defects, one genuine finding, the main run restarted
+What we saw: an interim summary of the paused main run showed violations in four encounter types (T4 37, T5 3,
+T6 82, T9 58; every other type 0). BACKEND traced every violating encounter to one of three causes.
+- **Defect, body geometry at corners (T4, T5; reaching T11 and T12 through T4).** The vehicle body was drawn
+  backwards from the front disc along the front's current heading. Past a sharp corner the body swung sideways
+  into the oncoming lane and registered false contacts. Fix: the body follows the path, with discs placed at
+  s - L/2 +/- off along the centreline. The ten T4 and three T5 violating encounters are clean after the fix,
+  with the fuzzer disabled. Run time rises by about 38 %.
+- **Defect, T6 builder.** The random straight roads through the zone crossed with no junction control, so the
+  contacts occurred at unmanaged crossings and not under R5 as the type intended. Fix: an R10 junction tile at
+  every crossing, half-length (W + 1 m)/sin(angle) + 2 m. The five re-run encounters are clean.
+- **Genuine finding, T9 dead stop (58 gap-below-D0 and 7 contacts; unchanged by both fixes).** A fault stops a
+  vehicle instantly, while R1's d_min assumes the leader brakes at most at B_MAX = 0.8 m/s^2. A same-direction
+  follower inside a single-lane segment therefore loses its margin. This is a limit of RSS-style separation
+  against instantaneous stops and is reported as a result of E44, not corrected. A dead-stop margin variant is
+  noted as future work and is not run.
+Decisions: the parts of the paused run are archived as development output in results/archive/E44_parts_pre-body-fix/
+with the counts above recorded as found and fixed; the main run is restarted for all 12 types at the same n
+with both fixes; the type-11 batch size drops from 400 to 300 encounters so that each chunk stays inside the
+480 s limit (sample size unchanged); the encounter fixtures are regenerated and tests/test_safety.py must pass
+before the first rerun row. No outcome class, bound, rule or sample size of change 6 is altered.
