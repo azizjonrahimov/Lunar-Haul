@@ -157,9 +157,9 @@ def e42_cells() -> List[Dict[str, Any]]:
 
 
 E43_K30 = 2.806                   # the 30 % load multiplier of data/scenarios/p5 (B-71 calibration)
-E43_DENSITY = {1: (None, 30), 2: (None, 30), 4: (2160.0, 10), 8: (720.0, 10)}    # horizon h (None = a year), seeds
-# 8x was 60 days (1440 h) in the design sent to LEAD; cut to 30 days after the first 8x run took 310 s at 60 days (over
-# the 5 min per-run limit); seeds kept at 10, so the cut is in horizon only (rows carry horizon_days)
+E43_DENSITY = {1: (None, 30), 2: (None, 30), 4: (2160.0, 10), 8: (1440.0, 10)}   # horizon h (None = a year), seeds
+# 8x: 60 days as designed. It was cut to 30 days after the first 8x run took 310 s (the WAKE storm, PREREG issue 5),
+# never used for results, and restored for the rerun with --fixpoint (60-day 8x runs then take 6.7-9.1 s)
 E43_DESIGN = os.path.join(ROOT, "data", "scenarios", "E43-design.json")   # not in p5/: that folder holds scenarios only
 E43_PLUME = {"keepout_km": 1.0, "standdown_h": 0.75, "shelter": "auto"}           # R5: R 1 km, 30 + 15 min
 SINGLE_SHARE = 0.15
@@ -213,8 +213,11 @@ def write_e43_design() -> None:
                                "why": "a 30-day 8x run went past 470 s (none x8 seed 1: 7 d 1.8 s, 14 d 8.6 s, 21 d "
                                       "141 s); cause: duplicate consolidation WAKEs (lunarsim/dispatch.py:299, 2.37 M "
                                       "WAKEs and 1.6 M dispatch calls in 21 d); the opt-in dedupe failed the "
-                                      "bit-identity gate (results/ATC_wake_check.json), so 8x is reported as not run"}],
-           "not_run_cells": [12, 13, 14, 15],
+                                      "bit-identity gate (results/ATC_wake_check.json), so 8x is reported as not run"},
+                              {"what": "8x horizon restored to 60 d (1440 h), for the PREREG issue 5 rerun only",
+                               "why": "with dispatch_fixpoint (run_phase5.py --fixpoint) a 60-day 8x run takes 6.7 s "
+                                      "(none) and 9.1 s (atc), seed 1; rows carry dispatch_fixpoint = 1"}],
+           "not_run_cells_without_fixpoint": [12, 13, 14, 15],
            "cells": [{"index": i, "label": c["tag"]["label"], "key": c["key"], "block": c["block"],
                       "density": c["build"]["m"], "horizon_days": (c["build"]["horizon"] or 8760.0) / 24.0,
                       "roads": c["build"]["roads"]} for i, c in enumerate(e43_cells())]}
@@ -227,7 +230,7 @@ def write_e43_design() -> None:
 EXPS = {"E40": e40_cells, "E41": e41_cells, "E42": e42_cells, "E43": e43_cells}
 
 
-def run_one(c: Dict[str, Any], seed: int, year: Optional[int]) -> Dict[str, Any]:
+def run_one(c: Dict[str, Any], seed: int, year: Optional[int], fixpoint: bool = False) -> Dict[str, Any]:
     from lunarsim import Simulation
     from lunarsim.atc import regimes as G
     from lunarsim.config import load_scenario
@@ -246,6 +249,8 @@ def run_one(c: Dict[str, Any], seed: int, year: Optional[int]) -> Dict[str, Any]
     kw = dict(c["kw"])
     if c["tag"].get("hopper_refuel"):
         sc = sc.with_(p5=dict(sc.p5, hopper_refuel=True))
+    if fixpoint:                                    # PREREG issue 5: dispatch until quiet (the row records it)
+        sc = sc.with_(p5=dict(sc.p5, dispatch_fixpoint=True))
     y = year if year is not None else start_year(seed)
     kw["start_year"] = y
     t0 = time.time()
@@ -327,8 +332,24 @@ def parse_cells(spec: Optional[str], n: int) -> List[int]:
     return [i for i in out if i < n]
 
 
-def cmd_run(exp: str, cells_spec: Optional[str], max_s: float, part: str = "") -> bool:
+def check_fixpoint_files(exp: str, fixpoint: bool) -> None:
+    """Rows with and without the dispatch fixed point never share an experiment's run files: archive the old rows
+    first (they share cell keys, so a mixed set would silently skip or mix runs)."""
+    for f in run_files(exp):
+        d = pd.read_csv(f, nrows=None, usecols=lambda c: c in ("cell", "dispatch_fixpoint"))
+        if d.empty:
+            continue
+        flagged = d["dispatch_fixpoint"].fillna(0).astype(int).eq(1) if "dispatch_fixpoint" in d else pd.Series(False, index=d.index)
+        if fixpoint and not flagged.all():
+            raise SystemExit(f"{exp}: {os.path.basename(f)} holds {int((~flagged).sum())} rows run without the dispatch "
+                             f"fixed point; move them to results/archive/ before running with --fixpoint")
+        if not fixpoint and flagged.any():
+            raise SystemExit(f"{exp}: {os.path.basename(f)} holds rows run with --fixpoint; rerun with --fixpoint")
+
+
+def cmd_run(exp: str, cells_spec: Optional[str], max_s: float, part: str = "", fixpoint: bool = False) -> bool:
     t0 = time.time()
+    check_fixpoint_files(exp, fixpoint)
     cells = EXPS[exp]()
     if exp == "E43":
         write_e43_design()
@@ -345,7 +366,7 @@ def cmd_run(exp: str, cells_spec: Optional[str], max_s: float, part: str = "") -
             if time.time() - t0 > max_s - max(60.0, 1.5 * est):
                 print(f"{exp}: time limit after {n_new} new runs; rerun")
                 return False
-            row = run_one(c, seed, year)
+            row = run_one(c, seed, year, fixpoint=fixpoint)
             last[c["regime"] + c["tag"]["label"]] = row["run_s"]
             _append(exp, row, part)
             done.add((c["key"], seed, y))
@@ -387,6 +408,9 @@ def main(argv=None) -> int:
     ap.add_argument("--cells", default=None)
     ap.add_argument("--part", default="", help="write results/<exp>_runs.<part>.csv (a second process uses its own file)")
     ap.add_argument("--max-seconds", type=float, default=540.0)
+    ap.add_argument("--fixpoint", action="store_true",
+                    help="PREREG issue 5: run with p5 dispatch_fixpoint (rows carry dispatch_fixpoint = 1); refuses run "
+                         "files that hold rows without it")
     a = ap.parse_args(argv)
     faulthandler.dump_traceback_later(a.max_seconds + 60, exit=True)
     if a.cmd == "time":
@@ -397,7 +421,7 @@ def main(argv=None) -> int:
             print(f"{i:3d} {c['tag']['label']:48s} L{c['tag']['load']:<3d} team {c['tag']['team_share']:.2f} "
                   f"block {c['block']} ({n} runs)")
     else:
-        cmd_run(a.exp, a.cells, a.max_seconds, a.part)
+        cmd_run(a.exp, a.cells, a.max_seconds, a.part, a.fixpoint)
     return 0
 
 

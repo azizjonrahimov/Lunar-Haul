@@ -52,3 +52,18 @@ def test_run_files_union_and_duplicates(tmp_path, monkeypatch):
         R.load_runs("EX")
     with pytest.raises(ValueError):
         R._done("EX")
+
+
+def test_fixpoint_rows_never_mix(tmp_path, monkeypatch):
+    """PREREG issue 5: --fixpoint refuses run files with unflagged rows, and a plain run refuses flagged rows."""
+    monkeypatch.setattr(R, "RESULTS", str(tmp_path))
+    R.check_fixpoint_files("EX", True)                             # no files: fine either way
+    R._append("EX", {"cell": "a", "seed": 1, "start_year": 2029, "x": 1.0})
+    R.check_fixpoint_files("EX", False)
+    with pytest.raises(SystemExit):
+        R.check_fixpoint_files("EX", True)
+    R._append("EX", {"cell": "b", "seed": 1, "start_year": 2029, "x": 1.0, "dispatch_fixpoint": 1}, part="fix")
+    with pytest.raises(SystemExit):
+        R.check_fixpoint_files("EX", False)
+    os.remove(os.path.join(str(tmp_path), "EX_runs.csv"))
+    R.check_fixpoint_files("EX", True)

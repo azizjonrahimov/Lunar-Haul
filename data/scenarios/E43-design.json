@@ -16,9 +16,13 @@
   {
    "what": "8x cells (indices 12-15) not run; the 30-day cut was never used for results",
    "why": "a 30-day 8x run went past 470 s (none x8 seed 1: 7 d 1.8 s, 14 d 8.6 s, 21 d 141 s); cause: duplicate consolidation WAKEs (lunarsim/dispatch.py:299, 2.37 M WAKEs and 1.6 M dispatch calls in 21 d); the opt-in dedupe failed the bit-identity gate (results/ATC_wake_check.json), so 8x is reported as not run"
+  },
+  {
+   "what": "8x horizon restored to 60 d (1440 h), for the PREREG issue 5 rerun only",
+   "why": "with dispatch_fixpoint (run_phase5.py --fixpoint) a 60-day 8x run takes 6.7 s (none) and 9.1 s (atc), seed 1; rows carry dispatch_fixpoint = 1"
   }
  ],
- "not_run_cells": [
+ "not_run_cells_without_fixpoint": [
   12,
   13,
   14,
@@ -181,19 +185,19 @@
   {
    "index": 12,
    "label": "none x8",
-   "key": "bay_km=0.0;block=y2028:10;density=8;horizon_h=720.0;label=none x8;load=30;mode=none;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.0;team_share=0.1",
+   "key": "bay_km=0.0;block=y2028:10;density=8;horizon_h=1440.0;label=none x8;load=30;mode=none;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.0;team_share=0.1",
    "block": "y2028:10",
    "density": 8,
-   "horizon_days": 30.0,
+   "horizon_days": 60.0,
    "roads": null
   },
   {
    "index": 13,
    "label": "atc x8",
-   "key": "bay_km=1.0;block=y2028:10;density=8;horizon_h=720.0;label=atc x8;load=30;mode=atc;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.15;team_share=0.1",
+   "key": "bay_km=1.0;block=y2028:10;density=8;horizon_h=1440.0;label=atc x8;load=30;mode=atc;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.15;team_share=0.1",
    "block": "y2028:10",
    "density": 8,
-   "horizon_days": 30.0,
+   "horizon_days": 60.0,
    "roads": {
     "mode": "atc",
     "single_share": 0.15,
@@ -204,10 +208,10 @@
   {
    "index": 14,
    "label": "uncoordinated x8",
-   "key": "bay_km=1.0;block=y2028:10;density=8;horizon_h=720.0;label=uncoordinated x8;load=30;mode=uncoordinated;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.15;team_share=0.1",
+   "key": "bay_km=1.0;block=y2028:10;density=8;horizon_h=1440.0;label=uncoordinated x8;load=30;mode=uncoordinated;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.15;team_share=0.1",
    "block": "y2028:10",
    "density": 8,
-   "horizon_days": 30.0,
+   "horizon_days": 60.0,
    "roads": {
     "mode": "uncoordinated",
     "single_share": 0.15,
@@ -218,10 +222,10 @@
   {
    "index": 15,
    "label": "uncoordinated x8",
-   "key": "bay_km=1.0;block=y2038:10;density=8;horizon_h=720.0;label=uncoordinated x8;load=30;mode=uncoordinated;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.15;team_share=0.1",
+   "key": "bay_km=1.0;block=y2038:10;density=8;horizon_h=1440.0;label=uncoordinated x8;load=30;mode=uncoordinated;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.15;team_share=0.1",
    "block": "y2038:10",
    "density": 8,
-   "horizon_days": 30.0,
+   "horizon_days": 60.0,
    "roads": {
     "mode": "uncoordinated",
     "single_share": 0.15,
