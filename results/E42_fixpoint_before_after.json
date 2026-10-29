@@ -1,0 +1,25 @@
+{
+ "exp": "E42",
+ "archived_files": [
+  "results/archive/E42_runs.pre-fixpoint-2026-10-28.csv"
+ ],
+ "current_files": [
+  "results/E42_runs.lead.csv"
+ ],
+ "n_old": 1170,
+ "n_new": 1170,
+ "n_matched": 1170,
+ "primary": "delay_mean_h",
+ "primary_mean_change_h": -0.016278461651418004,
+ "primary_mean_abs_change_h": 0.32644214600978144,
+ "primary_max_abs_change_h": 5.7156817738350725,
+ "primary_max_abs_label": "C_AUCTION team 25 same_owner loss 0.4",
+ "share_rows_moved_over_0.1h": 0.6487179487179487,
+ "share_rows_identical": 0.08717948717948718,
+ "run_s_old_mean": 21.932726495726495,
+ "run_s_new_mean": 5.678188034188034,
+ "run_s_old_max": 8391.17,
+ "run_s_new_max": 14.94,
+ "labels_only_new": [],
+ "labels_only_old": []
+}

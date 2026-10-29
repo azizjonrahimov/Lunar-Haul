@@ -648,23 +648,28 @@ def values(r: R, allow_pending: bool):
     # --- H6 (E42) ------------------------------------------------------------------------------------------
     f6 = r.fit("hypotheses", "H6")
     check(bool(f6["supported"]), "H6 is supported")
-    parts = []
-    for team in ("10", "25"):
-        ti = r.pair("H6_team_items", LOAD_MAIN, team=team, loss="0.1")
-        parts.append(f"from {sh(ti['b_mean'])} to {sh(ti['b_mean'] + ti['mean'])} at team share 0.{team} "
-                     f"(paired difference {num(100 * ti['mean'], 0, sign=True)} percentage points, 95&#8239;% CI "
-                     f"{num(100 * ti['lo'], 0)} to {num(100 * ti['hi'], 0)}, n = {int(ti['n'])})")
-        check(ti["lo"] > 0, f"cross-owner pairs raise the share of team items delivered at team share 0.{team}")
-    all_items = [r.pair("H6", LOAD_MAIN, team=t, loss="0.1") for t in ("10", "25")]
-    check(all(a["lo"] > 0 for a in all_items), "cross-owner pairs raise the share of all items delivered")
-    held = all(r.pair("H6", LOAD_MAIN, team=t, loss=l)["lo"] > 0 for t in ("10", "25") for l in ("0.25", "0.4"))
-    V["P1-H6-SHARE-SENTENCE"] = (
-        "Allowing pairs of different owners raised the share of team items delivered " + " and ".join(parts) +
-        " at message loss 0.10, and the share of all items delivered by " +
-        listing(f"{num(100 * a['mean'], 1, sign=True)} percentage points ({num(100 * a['lo'], 1)} to "
-                f"{num(100 * a['hi'], 1)})" for a in all_items) +
-        f". H6's first part is supported (Holm-adjusted p {p_eq(holm[LABELS['holm_H6']])}). The gain "
-        + ("held" if held else "did not hold in every cell") + " at loss 0.25 and 0.40 (Table 8).")
+
+    def h6_sentence():
+        # every pair here reads E42 cells; a partial E42 raises Pending inside the fill, not at module level
+        parts = []
+        for team in ("10", "25"):
+            ti = r.pair("H6_team_items", LOAD_MAIN, team=team, loss="0.1")
+            parts.append(f"from {sh(ti['b_mean'])} to {sh(ti['b_mean'] + ti['mean'])} at team share 0.{team} "
+                         f"(paired difference {num(100 * ti['mean'], 0, sign=True)} percentage points, 95&#8239;% CI "
+                         f"{num(100 * ti['lo'], 0)} to {num(100 * ti['hi'], 0)}, n = {int(ti['n'])})")
+            check(ti["lo"] > 0, f"cross-owner pairs raise the share of team items delivered at team share 0.{team}")
+        all_items = [r.pair("H6", LOAD_MAIN, team=t, loss="0.1") for t in ("10", "25")]
+        check(all(a["lo"] > 0 for a in all_items), "cross-owner pairs raise the share of all items delivered")
+        held = all(r.pair("H6", LOAD_MAIN, team=t, loss=l)["lo"] > 0 for t in ("10", "25") for l in ("0.25", "0.4"))
+        return (
+            "Allowing pairs of different owners raised the share of team items delivered " + " and ".join(parts) +
+            " at message loss 0.10, and the share of all items delivered by " +
+            listing(f"{num(100 * a['mean'], 1, sign=True)} percentage points ({num(100 * a['lo'], 1)} to "
+                    f"{num(100 * a['hi'], 1)})" for a in all_items) +
+            f". H6's first part is supported (Holm-adjusted p {p_eq(holm[LABELS['holm_H6']])}). The gain "
+            + ("held" if held else "did not hold in every cell") + " at loss 0.25 and 0.40 (Table 8).")
+
+    fill("P1-H6-SHARE-SENTENCE", h6_sentence, "E42")
     mt = f6["meetings"]
     def meet(key, **fmt):
         label = LABELS[key].format(**fmt)
