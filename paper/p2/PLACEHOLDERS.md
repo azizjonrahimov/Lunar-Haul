@@ -45,7 +45,9 @@ Comparisons are named in `LABELS` of the build script; the analysis is `experime
 | P2-BAY{b}-ATC-VS-ATC-DIFF, P2-BAY05-ATC-VS-ATC-DIFF-CI, P2-BAY05-ATC-TRAVERSALS | P `atc x1 bay {b} - atc x1`; C `road_traversals` of `atc x1 bay 0.5` | hours; count |
 | P2-R7-ATC-DIFF, P2-R7-ATC-DIFF-CI, P2-R7-HAND-CONFLICTS, P2-R7-HAND-WAIT-H, P2-R7-UNLINKED-JOBS | P `atc x1 r7 - atc x1`; C `atc x1 r7` | hours; counts |
 | P2-RUN-S-X{m}, P2-RUN-S-X8-CLAUSE, P2-E43-CPU-H | F `run_s_mean_by_label` (mean over the three modes at that multiple), raw `run_s` sum | seconds; hours |
-| P2-N-CHANGES-WORD, P2-X8-HORIZON-SENTENCE, P2-WAKE-SENTENCE | D `design_changes`; the B-77 report | composed; pending until the hold decision (PREREG issue 5) |
+| P2-N-CHANGES-WORD, P2-X8-HORIZON-SENTENCE | D `design_changes` (three dated entries; the run times are parsed from their `why`) | composed |
+| P2-WAKE-SENTENCE | `results/E43_fixpoint_before_after.json` from `experiments/phase5/compare_rerun.py --exp E43` (rows matched, mean and max change of `delay_mean_h`, share moved > 0.1 h, run times) | composed; pending until the comparison is as new as the run files |
+| P2-INCOMPLETE-CELLS-SENTENCE, P2-R7-N-CLAUSE | run counts per (label, year) against the design blocks; P `atc x1 r7 - atc x1` `n` | composed: "Every cell ran all its seeds." or the short cells with their counts |
 | P2-CHECKS-SENTENCE, P2-FAILED-CHECKS-SENTENCE, P2-SHARED-CHECK-LIMITATION | the verification page's phase-5 checks (B-79); `lunarsim/atc/roads.py` calling the shared `safety_check()` (B-78) | pending |
 | P2-E44-N-ENCOUNTERS, P2-E44-DESIGN-SENTENCE, P2-E44-DESIGN-SENTENCE-SHORT, P2-E44-INTRO-CLAUSE, P2-E44-RESULTS-PARAGRAPH, P2-E44-DISCUSSION-CLAUSE, P2-E44-COMPARISON-CLAUSE, P2-E44-COMPUTE-SENTENCE | `results/E44_encounters.csv`, `E44_bounds.json` (B-78) | pending |
 | P2-E45-N-NODES, P2-E45-DESIGN-SENTENCE, P2-E45-INTRO-CLAUSE, P2-E45-RESULTS-PARAGRAPH, P2-E45-DISCUSSION-CLAUSE, P2-E45-COMPUTE-SENTENCE | `results/E45_modelcheck.json` (B-78) | pending |

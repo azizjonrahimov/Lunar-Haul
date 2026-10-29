@@ -1,14 +1,14 @@
 {
- "note": "Per cell: means of the delivery and road metrics. Paired by seed (same seed, same start year): atc - none (what the rules\ncost when one shared table resolves conflicts) and uncoordinated - atc (what coordinating the table is worth), per fleet\ndensity and, for uncoordinated, per start year; bootstrap 95 % CI as in analyse_e40. The single-lane share is ASSUMED\n(results/ATC_roads_corridor.json); the 8x cells were not run (data/scenarios/p5/E43-design.json).",
+ "note": "Per cell: means of the delivery and road metrics. Paired by seed (same seed, same start year): atc - none (what the rules\ncost when one shared table resolves conflicts) and uncoordinated - atc (what coordinating the table is worth), per fleet\ndensity and, for uncoordinated, per start year; bootstrap 95 % CI as in analyse_e40. The single-lane share is ASSUMED\n(results/ATC_roads_corridor.json); the 8x cells were not run (data/scenarios/E43-design.json).",
  "single_share_flag": "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the narrowest places at a 10 deg slope limit are marked first",
  "cells": {
   "none x1 | y2028:30": {
    "n": 30,
    "n_planned": 30,
    "horizon_days": 365.0,
-   "atc_urgent_wait_mean_cens_h": 14.4684,
-   "delay_mean_h": 15.471,
-   "delivered_share": 0.9989,
+   "atc_urgent_wait_mean_cens_h": 14.932,
+   "delay_mean_h": 15.532,
+   "delivered_share": 0.999,
    "road_wait_h": NaN,
    "road_conflicts": NaN,
    "road_hand_conflicts": NaN,
@@ -21,53 +21,53 @@
    "n": 30,
    "n_planned": 30,
    "horizon_days": 365.0,
-   "atc_urgent_wait_mean_cens_h": 14.5888,
-   "delay_mean_h": 15.522,
+   "atc_urgent_wait_mean_cens_h": 14.5204,
+   "delay_mean_h": 15.5463,
    "delivered_share": 0.999,
-   "road_wait_h": 24.6109,
-   "road_conflicts": 75.3333,
+   "road_wait_h": 24.1255,
+   "road_conflicts": 72.8667,
    "road_hand_conflicts": 0.0,
    "road_hand_wait_h": 0.0,
    "road_other_stop_h": 0.0,
-   "road_eva_slow_h": 10.1217,
-   "road_apron_wait_h": 0.5729
+   "road_eva_slow_h": 10.025,
+   "road_apron_wait_h": 0.4752
   },
   "uncoordinated x1 | y2028:30": {
    "n": 30,
    "n_planned": 30,
    "horizon_days": 365.0,
-   "atc_urgent_wait_mean_cens_h": 61.2031,
-   "delay_mean_h": 81.8856,
-   "delivered_share": 0.998,
-   "road_wait_h": 0.0244,
-   "road_conflicts": 0.2333,
-   "road_hand_conflicts": 51.7,
-   "road_hand_wait_h": 2024.5668,
-   "road_other_stop_h": 2016.8765,
-   "road_eva_slow_h": 9.9867,
+   "atc_urgent_wait_mean_cens_h": 59.1727,
+   "delay_mean_h": 79.0632,
+   "delivered_share": 0.9974,
+   "road_wait_h": 0.0319,
+   "road_conflicts": 0.3,
+   "road_hand_conflicts": 52.9,
+   "road_hand_wait_h": 1969.0167,
+   "road_other_stop_h": 1960.8317,
+   "road_eva_slow_h": 10.04,
    "road_apron_wait_h": 0.0
   },
   "uncoordinated x1 | y2038:30": {
    "n": 30,
    "n_planned": 30,
    "horizon_days": 365.0,
-   "atc_urgent_wait_mean_cens_h": 85.7674,
-   "delay_mean_h": 104.4919,
-   "delivered_share": 0.9928,
-   "road_wait_h": 0.0369,
-   "road_conflicts": 0.2,
-   "road_hand_conflicts": 43.7,
-   "road_hand_wait_h": 2647.2751,
-   "road_other_stop_h": 2634.6192,
-   "road_eva_slow_h": 9.9233,
+   "atc_urgent_wait_mean_cens_h": 81.8354,
+   "delay_mean_h": 98.4778,
+   "delivered_share": 0.993,
+   "road_wait_h": 0.0659,
+   "road_conflicts": 0.3667,
+   "road_hand_conflicts": 44.6333,
+   "road_hand_wait_h": 2526.7274,
+   "road_other_stop_h": 2521.977,
+   "road_eva_slow_h": 9.8317,
    "road_apron_wait_h": 0.0
   },
   "none x2 | y2028:30": {
    "n": 30,
    "n_planned": 30,
    "horizon_days": 365.0,
-   "atc_urgent_wait_mean_cens_h": 11.9272,
-   "delay_mean_h": 8.0599,
+   "atc_urgent_wait_mean_cens_h": 12.0146,
+   "delay_mean_h": 7.9881,
    "delivered_share": 0.9996,
    "road_wait_h": NaN,
    "road_conflicts": NaN,
@@ -81,53 +81,53 @@
    "n": 30,
    "n_planned": 30,
    "horizon_days": 365.0,
-   "atc_urgent_wait_mean_cens_h": 11.957,
-   "delay_mean_h": 8.2119,
+   "atc_urgent_wait_mean_cens_h": 12.712,
+   "delay_mean_h": 8.2829,
    "delivered_share": 0.9996,
-   "road_wait_h": 291.0204,
-   "road_conflicts": 858.1667,
+   "road_wait_h": 287.5124,
+   "road_conflicts": 846.5333,
    "road_hand_conflicts": 0.0,
    "road_hand_wait_h": 0.0,
    "road_other_stop_h": 0.0,
-   "road_eva_slow_h": 22.88,
-   "road_apron_wait_h": 2.9958
+   "road_eva_slow_h": 22.6217,
+   "road_apron_wait_h": 3.0238
   },
   "uncoordinated x2 | y2028:30": {
    "n": 30,
    "n_planned": 30,
    "horizon_days": 365.0,
-   "atc_urgent_wait_mean_cens_h": 53.0138,
-   "delay_mean_h": 62.0972,
-   "delivered_share": 0.9992,
-   "road_wait_h": 64.2631,
-   "road_conflicts": 219.1333,
-   "road_hand_conflicts": 235.3333,
-   "road_hand_wait_h": 4909.2335,
-   "road_other_stop_h": 5369.6776,
-   "road_eva_slow_h": 22.0433,
-   "road_apron_wait_h": 0.1389
+   "atc_urgent_wait_mean_cens_h": 53.5386,
+   "delay_mean_h": 64.7937,
+   "delivered_share": 0.9987,
+   "road_wait_h": 63.9612,
+   "road_conflicts": 216.5667,
+   "road_hand_conflicts": 238.2,
+   "road_hand_wait_h": 5019.8673,
+   "road_other_stop_h": 5374.052,
+   "road_eva_slow_h": 21.7433,
+   "road_apron_wait_h": 0.0854
   },
   "uncoordinated x2 | y2038:30": {
    "n": 30,
    "n_planned": 30,
    "horizon_days": 365.0,
-   "atc_urgent_wait_mean_cens_h": 70.7423,
-   "delay_mean_h": 78.8333,
-   "delivered_share": 0.9948,
-   "road_wait_h": 54.6604,
-   "road_conflicts": 183.4,
-   "road_hand_conflicts": 194.5667,
-   "road_hand_wait_h": 5927.2129,
-   "road_other_stop_h": 6430.5524,
-   "road_eva_slow_h": 21.55,
-   "road_apron_wait_h": 0.1461
+   "atc_urgent_wait_mean_cens_h": 71.2785,
+   "delay_mean_h": 82.2271,
+   "delivered_share": 0.9949,
+   "road_wait_h": 55.5322,
+   "road_conflicts": 185.5333,
+   "road_hand_conflicts": 190.4333,
+   "road_hand_wait_h": 6044.0187,
+   "road_other_stop_h": 6522.2081,
+   "road_eva_slow_h": 21.1267,
+   "road_apron_wait_h": 0.1021
   },
   "none x4 | y2028:10": {
    "n": 10,
    "n_planned": 10,
    "horizon_days": 90.0,
-   "atc_urgent_wait_mean_cens_h": 5.4539,
-   "delay_mean_h": 5.0711,
+   "atc_urgent_wait_mean_cens_h": 4.4052,
+   "delay_mean_h": 5.0107,
    "delivered_share": 0.9994,
    "road_wait_h": NaN,
    "road_conflicts": NaN,
@@ -141,211 +141,271 @@
    "n": 10,
    "n_planned": 10,
    "horizon_days": 90.0,
-   "atc_urgent_wait_mean_cens_h": 5.8745,
-   "delay_mean_h": 5.3988,
-   "delivered_share": 0.9992,
-   "road_wait_h": 371.3393,
-   "road_conflicts": 971.4,
+   "atc_urgent_wait_mean_cens_h": 6.4667,
+   "delay_mean_h": 5.4083,
+   "delivered_share": 0.9993,
+   "road_wait_h": 384.405,
+   "road_conflicts": 999.2,
    "road_hand_conflicts": 0.0,
    "road_hand_wait_h": 0.0,
    "road_other_stop_h": 0.0,
    "road_eva_slow_h": 11.37,
-   "road_apron_wait_h": 2.9155
+   "road_apron_wait_h": 2.9302
   },
   "uncoordinated x4 | y2028:10": {
    "n": 10,
    "n_planned": 10,
    "horizon_days": 90.0,
-   "atc_urgent_wait_mean_cens_h": 42.3279,
-   "delay_mean_h": 51.9485,
-   "delivered_share": 0.9891,
-   "road_wait_h": 92.8731,
-   "road_conflicts": 267.2,
-   "road_hand_conflicts": 200.8,
-   "road_hand_wait_h": 2691.7582,
-   "road_other_stop_h": 2938.0684,
-   "road_eva_slow_h": 11.73,
-   "road_apron_wait_h": 0.5219
+   "atc_urgent_wait_mean_cens_h": 51.2426,
+   "delay_mean_h": 63.0053,
+   "delivered_share": 0.9786,
+   "road_wait_h": 92.2,
+   "road_conflicts": 265.4,
+   "road_hand_conflicts": 206.6,
+   "road_hand_wait_h": 2792.5966,
+   "road_other_stop_h": 3055.8332,
+   "road_eva_slow_h": 11.055,
+   "road_apron_wait_h": 0.7764
   },
   "uncoordinated x4 | y2038:10": {
    "n": 10,
    "n_planned": 10,
    "horizon_days": 90.0,
-   "atc_urgent_wait_mean_cens_h": 49.1117,
-   "delay_mean_h": 54.4994,
-   "delivered_share": 0.9953,
-   "road_wait_h": 111.2764,
-   "road_conflicts": 275.4,
-   "road_hand_conflicts": 178.8,
-   "road_hand_wait_h": 3425.5788,
-   "road_other_stop_h": 3921.05,
-   "road_eva_slow_h": 10.235,
-   "road_apron_wait_h": 0.3511
+   "atc_urgent_wait_mean_cens_h": 50.2883,
+   "delay_mean_h": 64.1684,
+   "delivered_share": 0.9931,
+   "road_wait_h": 100.9464,
+   "road_conflicts": 253.9,
+   "road_hand_conflicts": 170.1,
+   "road_hand_wait_h": 3660.2814,
+   "road_other_stop_h": 4016.4621,
+   "road_eva_slow_h": 10.52,
+   "road_apron_wait_h": 0.2696
+  },
+  "none x8 | y2028:10": {
+   "n": 10,
+   "n_planned": 10,
+   "horizon_days": 60.0,
+   "atc_urgent_wait_mean_cens_h": 6.5494,
+   "delay_mean_h": 3.7353,
+   "delivered_share": 0.9976,
+   "road_wait_h": NaN,
+   "road_conflicts": NaN,
+   "road_hand_conflicts": NaN,
+   "road_hand_wait_h": NaN,
+   "road_other_stop_h": NaN,
+   "road_eva_slow_h": NaN,
+   "road_apron_wait_h": NaN
+  },
+  "atc x8 | y2028:10": {
+   "n": 10,
+   "n_planned": 10,
+   "horizon_days": 60.0,
+   "atc_urgent_wait_mean_cens_h": 9.1857,
+   "delay_mean_h": 5.2936,
+   "delivered_share": 0.9966,
+   "road_wait_h": 1456.4934,
+   "road_conflicts": 2933.1,
+   "road_hand_conflicts": 0.0,
+   "road_hand_wait_h": 0.0,
+   "road_other_stop_h": 0.0,
+   "road_eva_slow_h": 15.46,
+   "road_apron_wait_h": 9.8559
+  },
+  "uncoordinated x8 | y2028:10": {
+   "n": 10,
+   "n_planned": 10,
+   "horizon_days": 60.0,
+   "atc_urgent_wait_mean_cens_h": 54.8113,
+   "delay_mean_h": 75.6021,
+   "delivered_share": 0.8842,
+   "road_wait_h": 365.8751,
+   "road_conflicts": 824.0,
+   "road_hand_conflicts": 448.3,
+   "road_hand_wait_h": 4455.1605,
+   "road_other_stop_h": 4881.6252,
+   "road_eva_slow_h": 12.535,
+   "road_apron_wait_h": 3.3411
+  },
+  "uncoordinated x8 | y2038:10": {
+   "n": 10,
+   "n_planned": 10,
+   "horizon_days": 60.0,
+   "atc_urgent_wait_mean_cens_h": 61.8802,
+   "delay_mean_h": 67.6079,
+   "delivered_share": 0.9785,
+   "road_wait_h": 427.0469,
+   "road_conflicts": 821.4,
+   "road_hand_conflicts": 361.5,
+   "road_hand_wait_h": 4679.588,
+   "road_other_stop_h": 5160.5866,
+   "road_eva_slow_h": 13.62,
+   "road_apron_wait_h": 2.743
   },
   "atc x1 share 0 | y2028:30": {
    "n": 30,
    "n_planned": 30,
    "horizon_days": 365.0,
-   "atc_urgent_wait_mean_cens_h": 15.025,
-   "delay_mean_h": 15.4918,
+   "atc_urgent_wait_mean_cens_h": 14.8001,
+   "delay_mean_h": 15.4998,
    "delivered_share": 0.999,
    "road_wait_h": 0.0,
    "road_conflicts": 0.0,
    "road_hand_conflicts": 0.0,
    "road_hand_wait_h": 0.0,
    "road_other_stop_h": 0.0,
-   "road_eva_slow_h": 9.95,
-   "road_apron_wait_h": 0.35
+   "road_eva_slow_h": 9.9383,
+   "road_apron_wait_h": 0.4178
   },
   "uncoordinated x1 share 0 | y2028:30": {
    "n": 30,
    "n_planned": 30,
    "horizon_days": 365.0,
-   "atc_urgent_wait_mean_cens_h": 15.7338,
-   "delay_mean_h": 15.6118,
-   "delivered_share": 0.9991,
+   "atc_urgent_wait_mean_cens_h": 15.1535,
+   "delay_mean_h": 15.5923,
+   "delivered_share": 0.999,
    "road_wait_h": 0.0,
    "road_conflicts": 0.0,
-   "road_hand_conflicts": 0.8667,
-   "road_hand_wait_h": 11.9422,
-   "road_other_stop_h": 11.4873,
-   "road_eva_slow_h": 9.9083,
+   "road_hand_conflicts": 1.1667,
+   "road_hand_wait_h": 21.0077,
+   "road_other_stop_h": 20.4527,
+   "road_eva_slow_h": 9.84,
    "road_apron_wait_h": 0.0
   },
   "atc x1 share 0.05 | y2028:30": {
    "n": 30,
    "n_planned": 30,
    "horizon_days": 365.0,
-   "atc_urgent_wait_mean_cens_h": 14.6054,
-   "delay_mean_h": 15.4978,
+   "atc_urgent_wait_mean_cens_h": 14.3558,
+   "delay_mean_h": 15.5611,
    "delivered_share": 0.999,
-   "road_wait_h": 24.1993,
-   "road_conflicts": 75.0333,
+   "road_wait_h": 24.0041,
+   "road_conflicts": 73.3,
    "road_hand_conflicts": 0.0,
    "road_hand_wait_h": 0.0,
    "road_other_stop_h": 0.0,
-   "road_eva_slow_h": 10.14,
-   "road_apron_wait_h": 0.5704
+   "road_eva_slow_h": 10.0417,
+   "road_apron_wait_h": 0.4443
   },
   "uncoordinated x1 share 0.05 | y2028:30": {
    "n": 30,
    "n_planned": 30,
    "horizon_days": 365.0,
-   "atc_urgent_wait_mean_cens_h": 61.0362,
-   "delay_mean_h": 81.4808,
-   "delivered_share": 0.9976,
-   "road_wait_h": 0.0244,
-   "road_conflicts": 0.2333,
-   "road_hand_conflicts": 52.2,
-   "road_hand_wait_h": 2014.6545,
-   "road_other_stop_h": 2006.8331,
-   "road_eva_slow_h": 9.9583,
+   "atc_urgent_wait_mean_cens_h": 60.785,
+   "delay_mean_h": 79.2315,
+   "delivered_share": 0.9971,
+   "road_wait_h": 0.0247,
+   "road_conflicts": 0.2667,
+   "road_hand_conflicts": 53.5,
+   "road_hand_wait_h": 1967.7674,
+   "road_other_stop_h": 1959.6075,
+   "road_eva_slow_h": 10.0883,
    "road_apron_wait_h": 0.0
   },
   "atc x1 share 0.4 | y2028:30": {
    "n": 30,
    "n_planned": 30,
    "horizon_days": 365.0,
-   "atc_urgent_wait_mean_cens_h": 15.2921,
-   "delay_mean_h": 15.613,
-   "delivered_share": 0.9989,
-   "road_wait_h": 44.0964,
-   "road_conflicts": 107.2333,
+   "atc_urgent_wait_mean_cens_h": 16.4754,
+   "delay_mean_h": 15.8077,
+   "delivered_share": 0.999,
+   "road_wait_h": 42.5342,
+   "road_conflicts": 105.3667,
    "road_hand_conflicts": 0.0,
    "road_hand_wait_h": 0.0,
    "road_other_stop_h": 0.0,
-   "road_eva_slow_h": 10.2067,
-   "road_apron_wait_h": 0.4931
+   "road_eva_slow_h": 10.135,
+   "road_apron_wait_h": 0.4489
   },
   "uncoordinated x1 share 0.4 | y2028:30": {
    "n": 30,
    "n_planned": 30,
    "horizon_days": 365.0,
-   "atc_urgent_wait_mean_cens_h": 78.4132,
-   "delay_mean_h": 96.2436,
-   "delivered_share": 0.9969,
-   "road_wait_h": 0.4199,
-   "road_conflicts": 1.7667,
-   "road_hand_conflicts": 77.4333,
-   "road_hand_wait_h": 2405.1161,
-   "road_other_stop_h": 2375.6616,
-   "road_eva_slow_h": 10.01,
+   "atc_urgent_wait_mean_cens_h": 77.6916,
+   "delay_mean_h": 95.2283,
+   "delivered_share": 0.9941,
+   "road_wait_h": 0.3638,
+   "road_conflicts": 1.5333,
+   "road_hand_conflicts": 78.5333,
+   "road_hand_wait_h": 2375.2907,
+   "road_other_stop_h": 2345.3143,
+   "road_eva_slow_h": 9.95,
    "road_apron_wait_h": 0.0
   },
   "atc x1 bay 0.5 | y2028:30": {
    "n": 30,
    "n_planned": 30,
    "horizon_days": 365.0,
-   "atc_urgent_wait_mean_cens_h": 15.1062,
-   "delay_mean_h": 15.7979,
+   "atc_urgent_wait_mean_cens_h": 14.6891,
+   "delay_mean_h": 15.6089,
    "delivered_share": 0.999,
-   "road_wait_h": 12.8396,
-   "road_conflicts": 106.1,
+   "road_wait_h": 12.7643,
+   "road_conflicts": 106.7333,
    "road_hand_conflicts": 0.0,
    "road_hand_wait_h": 0.0,
    "road_other_stop_h": 0.0,
-   "road_eva_slow_h": 10.13,
-   "road_apron_wait_h": 0.3945
+   "road_eva_slow_h": 9.9817,
+   "road_apron_wait_h": 0.329
   },
   "uncoordinated x1 bay 0.5 | y2028:30": {
    "n": 30,
    "n_planned": 30,
    "horizon_days": 365.0,
-   "atc_urgent_wait_mean_cens_h": 54.0547,
-   "delay_mean_h": 78.7294,
-   "delivered_share": 0.9968,
-   "road_wait_h": 0.071,
-   "road_conflicts": 0.4333,
-   "road_hand_conflicts": 51.9333,
-   "road_hand_wait_h": 1965.3852,
-   "road_other_stop_h": 1966.5064,
-   "road_eva_slow_h": 10.0717,
+   "atc_urgent_wait_mean_cens_h": 54.765,
+   "delay_mean_h": 78.5483,
+   "delivered_share": 0.9964,
+   "road_wait_h": 0.0577,
+   "road_conflicts": 0.4,
+   "road_hand_conflicts": 50.7333,
+   "road_hand_wait_h": 1958.8829,
+   "road_other_stop_h": 1960.0625,
+   "road_eva_slow_h": 9.9783,
    "road_apron_wait_h": 0.0
   },
   "atc x1 bay 2 | y2028:30": {
    "n": 30,
    "n_planned": 30,
    "horizon_days": 365.0,
-   "atc_urgent_wait_mean_cens_h": 14.5888,
-   "delay_mean_h": 15.522,
+   "atc_urgent_wait_mean_cens_h": 14.5204,
+   "delay_mean_h": 15.5463,
    "delivered_share": 0.999,
-   "road_wait_h": 24.6109,
-   "road_conflicts": 75.3333,
+   "road_wait_h": 24.1255,
+   "road_conflicts": 72.8667,
    "road_hand_conflicts": 0.0,
    "road_hand_wait_h": 0.0,
    "road_other_stop_h": 0.0,
-   "road_eva_slow_h": 10.1217,
-   "road_apron_wait_h": 0.5729
+   "road_eva_slow_h": 10.025,
+   "road_apron_wait_h": 0.4752
   },
   "uncoordinated x1 bay 2 | y2028:30": {
    "n": 30,
    "n_planned": 30,
    "horizon_days": 365.0,
-   "atc_urgent_wait_mean_cens_h": 61.2031,
-   "delay_mean_h": 81.8856,
-   "delivered_share": 0.998,
-   "road_wait_h": 0.0244,
-   "road_conflicts": 0.2333,
-   "road_hand_conflicts": 51.7,
-   "road_hand_wait_h": 2024.5668,
-   "road_other_stop_h": 2016.8765,
-   "road_eva_slow_h": 9.9867,
+   "atc_urgent_wait_mean_cens_h": 59.1727,
+   "delay_mean_h": 79.0632,
+   "delivered_share": 0.9974,
+   "road_wait_h": 0.0319,
+   "road_conflicts": 0.3,
+   "road_hand_conflicts": 52.9,
+   "road_hand_wait_h": 1969.0167,
+   "road_other_stop_h": 1960.8317,
+   "road_eva_slow_h": 10.04,
    "road_apron_wait_h": 0.0
   },
   "atc x1 r7 | y2028:30": {
-   "n": 30,
+   "n": 6,
    "n_planned": 30,
    "horizon_days": 365.0,
-   "atc_urgent_wait_mean_cens_h": 51.4558,
-   "delay_mean_h": 65.442,
-   "delivered_share": 0.997,
-   "road_wait_h": 3.8064,
-   "road_conflicts": 14.5,
-   "road_hand_conflicts": 37.1667,
-   "road_hand_wait_h": 1591.9694,
-   "road_other_stop_h": 1580.8989,
-   "road_eva_slow_h": 10.2383,
-   "road_apron_wait_h": 0.2928
+   "atc_urgent_wait_mean_cens_h": 42.6932,
+   "delay_mean_h": 58.0581,
+   "delivered_share": 0.9975,
+   "road_wait_h": 4.3415,
+   "road_conflicts": 16.5,
+   "road_hand_conflicts": 39.8333,
+   "road_hand_wait_h": 1476.6632,
+   "road_other_stop_h": 1463.7025,
+   "road_eva_slow_h": 10.3667,
+   "road_apron_wait_h": 0.3062
   }
  },
  "paired": {
@@ -353,40 +413,40 @@
    "n": 30,
    "atc_urgent_wait_mean_cens_h": {
     "n": 30,
-    "mean": 71.1786,
+    "mean": 67.3151,
     "ci": [
-     60.3952,
-     82.8401
+     58.0101,
+     76.9105
     ],
     "ci90": [
-     62.0454,
-     80.9444
+     59.4148,
+     75.417
     ],
     "p": 5e-05
    },
    "delay_mean_h": {
     "n": 30,
-    "mean": 88.9698,
+    "mean": 82.9315,
     "ci": [
-     82.2617,
-     95.7449
+     75.9072,
+     89.6626
     ],
     "ci90": [
-     83.3313,
-     94.6541
+     77.0997,
+     88.6344
     ],
     "p": 5e-05
    },
    "delivered_share": {
     "n": 30,
-    "mean": -0.0062,
+    "mean": -0.006,
     "ci": [
-     -0.0078,
-     -0.0046
+     -0.0075,
+     -0.0045
     ],
     "ci90": [
-     -0.0076,
-     -0.0049
+     -0.0073,
+     -0.0047
     ],
     "p": 5e-05
    }
@@ -395,124 +455,124 @@
    "n": 30,
    "atc_urgent_wait_mean_cens_h": {
     "n": 30,
-    "mean": 0.1205,
+    "mean": -0.4116,
     "ci": [
-     -1.3377,
-     1.9576
+     -1.7829,
+     0.9663
     ],
     "ci90": [
-     -1.1414,
-     1.5786
+     -1.5731,
+     0.7388
     ],
-    "p": 0.9549
+    "p": 0.5534
    },
    "delay_mean_h": {
     "n": 30,
-    "mean": 0.0511,
+    "mean": 0.0143,
     "ci": [
-     -0.1821,
-     0.3052
+     -0.1736,
+     0.2218
     ],
     "ci90": [
-     -0.1477,
-     0.2623
+     -0.1472,
+     0.1858
     ],
-    "p": 0.7224
+    "p": 0.912
    },
    "delivered_share": {
     "n": 30,
-    "mean": 0.0001,
+    "mean": 0.0,
     "ci": [
      -0.0001,
-     0.0003
+     0.0002
     ],
     "ci90": [
      -0.0001,
-     0.0003
+     0.0001
     ],
-    "p": 0.3458
+    "p": 0.8004
    }
   },
   "uncoordinated - atc x1 | 2028": {
    "n": 30,
    "atc_urgent_wait_mean_cens_h": {
     "n": 30,
-    "mean": 46.6143,
+    "mean": 44.6523,
     "ci": [
-     38.023,
-     55.5069
+     36.091,
+     53.7839
     ],
     "ci90": [
-     39.2889,
-     54.0082
+     37.3735,
+     52.2527
     ],
     "p": 5e-05
    },
    "delay_mean_h": {
     "n": 30,
-    "mean": 66.3636,
+    "mean": 63.5169,
     "ci": [
-     61.6313,
-     71.2243
+     58.3214,
+     68.701
     ],
     "ci90": [
-     62.3678,
-     70.3965
+     59.1898,
+     67.8803
     ],
     "p": 5e-05
    },
    "delivered_share": {
     "n": 30,
-    "mean": -0.001,
+    "mean": -0.0017,
     "ci": [
-     -0.0019,
+     -0.0036,
      -0.0003
     ],
     "ci90": [
-     -0.0018,
-     -0.0003
+     -0.0032,
+     -0.0005
     ],
-    "p": 0.002
+    "p": 0.003
    }
   },
   "uncoordinated - atc x2 | 2038 (atc run is year-independent)": {
    "n": 30,
    "atc_urgent_wait_mean_cens_h": {
     "n": 30,
-    "mean": 58.7853,
+    "mean": 58.5664,
     "ci": [
-     52.5324,
-     65.555
+     51.9297,
+     65.9415
     ],
     "ci90": [
-     53.4847,
-     64.413
+     52.8537,
+     64.6226
     ],
     "p": 5e-05
    },
    "delay_mean_h": {
     "n": 30,
-    "mean": 70.6213,
+    "mean": 73.9442,
     "ci": [
-     66.1073,
-     74.8169
+     69.2191,
+     78.7546
     ],
     "ci90": [
-     66.8337,
-     74.2111
+     69.9506,
+     77.9275
     ],
     "p": 5e-05
    },
    "delivered_share": {
     "n": 30,
-    "mean": -0.0048,
+    "mean": -0.0047,
     "ci": [
      -0.0062,
-     -0.0034
+     -0.0032
     ],
     "ci90": [
      -0.006,
-     -0.0036
+     -0.0034
     ],
     "p": 5e-05
    }
@@ -521,29 +581,29 @@
    "n": 30,
    "atc_urgent_wait_mean_cens_h": {
     "n": 30,
-    "mean": 0.0298,
+    "mean": 0.6974,
     "ci": [
-     -0.8593,
-     0.9405
+     0.1955,
+     1.198
     ],
     "ci90": [
-     -0.718,
-     0.7882
+     0.2794,
+     1.1211
     ],
-    "p": 0.9496
+    "p": 0.0052
    },
    "delay_mean_h": {
     "n": 30,
-    "mean": 0.152,
+    "mean": 0.2948,
     "ci": [
-     0.0262,
-     0.2772
+     0.204,
+     0.3893
     ],
     "ci90": [
-     0.0459,
-     0.257
+     0.2176,
+     0.3736
     ],
-    "p": 0.0178
+    "p": 5e-05
    },
    "delivered_share": {
     "n": 30,
@@ -554,91 +614,91 @@
     ],
     "ci90": [
      -0.0001,
-     0.0001
+     0.0
     ],
-    "p": 0.8105
+    "p": 0.8054
    }
   },
   "uncoordinated - atc x2 | 2028": {
    "n": 30,
    "atc_urgent_wait_mean_cens_h": {
     "n": 30,
-    "mean": 41.0568,
+    "mean": 40.8265,
     "ci": [
-     36.3911,
-     46.4055
+     35.6713,
+     46.6366
     ],
     "ci90": [
-     37.0748,
-     45.5303
+     36.4135,
+     45.6457
     ],
     "p": 5e-05
    },
    "delay_mean_h": {
     "n": 30,
-    "mean": 53.8853,
+    "mean": 56.5107,
     "ci": [
-     49.9234,
-     57.8401
+     52.3431,
+     60.8292
     ],
     "ci90": [
-     50.5418,
-     57.2422
+     53.0133,
+     60.1138
     ],
     "p": 5e-05
    },
    "delivered_share": {
     "n": 30,
-    "mean": -0.0004,
+    "mean": -0.0009,
     "ci": [
-     -0.001,
-     0.0
+     -0.0023,
+     -0.0001
     ],
     "ci90": [
-     -0.0009,
-     -0.0
+     -0.002,
+     -0.0001
     ],
-    "p": 0.073
+    "p": 0.0048
    }
   },
   "uncoordinated - atc x4 | 2038 (atc run is year-independent)": {
    "n": 10,
    "atc_urgent_wait_mean_cens_h": {
     "n": 10,
-    "mean": 43.2372,
+    "mean": 43.8216,
     "ci": [
-     32.9154,
-     53.7845
+     34.6508,
+     54.4507
     ],
     "ci90": [
-     34.5554,
-     52.1439
+     35.7762,
+     52.6126
     ],
     "p": 5e-05
    },
    "delay_mean_h": {
     "n": 10,
-    "mean": 49.1006,
+    "mean": 58.7601,
     "ci": [
-     39.9068,
-     58.8737
+     49.0646,
+     67.8525
     ],
     "ci90": [
-     41.2236,
-     57.2215
+     50.6953,
+     66.6275
     ],
     "p": 5e-05
    },
    "delivered_share": {
     "n": 10,
-    "mean": -0.0039,
+    "mean": -0.0062,
     "ci": [
-     -0.0056,
-     -0.0024
+     -0.0088,
+     -0.0037
     ],
     "ci90": [
-     -0.0053,
-     -0.0026
+     -0.0084,
+     -0.0041
     ],
     "p": 5e-05
    }
@@ -647,27 +707,27 @@
    "n": 10,
    "atc_urgent_wait_mean_cens_h": {
     "n": 10,
-    "mean": 0.4206,
+    "mean": 2.0615,
     "ci": [
-     -0.3175,
-     1.5011
+     0.2239,
+     4.2276
     ],
     "ci90": [
-     -0.2417,
-     1.3259
+     0.5259,
+     3.8662
     ],
-    "p": 0.4236
+    "p": 0.0148
    },
    "delay_mean_h": {
     "n": 10,
-    "mean": 0.3277,
+    "mean": 0.3976,
     "ci": [
-     0.1785,
-     0.4878
+     0.2651,
+     0.5035
     ],
     "ci90": [
-     0.1991,
-     0.4622
+     0.2881,
+     0.4901
     ],
     "p": 5e-05
    },
@@ -675,54 +735,54 @@
     "n": 10,
     "mean": -0.0001,
     "ci": [
-     -0.0009,
-     0.0004
+     -0.0003,
+     0.0001
     ],
     "ci90": [
-     -0.0008,
-     0.0003
+     -0.0003,
+     0.0001
     ],
-    "p": 0.7614
+    "p": 0.3757
    }
   },
   "uncoordinated - atc x4 | 2028": {
    "n": 10,
    "atc_urgent_wait_mean_cens_h": {
     "n": 10,
-    "mean": 36.4534,
+    "mean": 44.776,
     "ci": [
-     27.9715,
-     46.9543
+     36.1436,
+     54.0517
     ],
     "ci90": [
-     29.0338,
-     45.0541
+     37.366,
+     52.5111
     ],
     "p": 5e-05
    },
    "delay_mean_h": {
     "n": 10,
-    "mean": 46.5497,
+    "mean": 57.5971,
     "ci": [
-     38.7358,
-     56.0683
+     46.8979,
+     67.663
     ],
     "ci90": [
-     39.7595,
-     54.2971
+     48.6063,
+     66.1724
     ],
     "p": 5e-05
    },
    "delivered_share": {
     "n": 10,
-    "mean": -0.0101,
+    "mean": -0.0207,
     "ci": [
-     -0.0186,
-     -0.0037
+     -0.0404,
+     -0.0039
     ],
     "ci90": [
-     -0.0171,
-     -0.0044
+     -0.0375,
+     -0.0061
     ],
     "p": 5e-05
    }
@@ -731,201 +791,117 @@
    "n": 30,
    "atc_urgent_wait_mean_cens_h": {
     "n": 30,
-    "mean": 0.7088,
+    "mean": 0.3534,
     "ci": [
-     0.1007,
-     1.6397
+     -0.0275,
+     0.8018
     ],
     "ci90": [
-     0.1544,
-     1.4617
+     0.0234,
+     0.7228
     ],
-    "p": 0.0056
+    "p": 0.0747
    },
    "delay_mean_h": {
     "n": 30,
-    "mean": 0.1201,
+    "mean": 0.0925,
     "ci": [
-     -0.0254,
-     0.3315
+     -0.0459,
+     0.2957
     ],
     "ci90": [
-     -0.0098,
-     0.2916
+     -0.0308,
+     0.2626
     ],
-    "p": 0.1443
+    "p": 0.2951
    },
    "delivered_share": {
     "n": 30,
     "mean": 0.0,
     "ci": [
      -0.0,
-     0.0002
+     0.0001
     ],
     "ci90": [
      -0.0,
      0.0001
     ],
-    "p": 0.3394
+    "p": 0.8641
    }
   },
   "atc - none x1 share 0 | 2028": {
    "n": 30,
    "atc_urgent_wait_mean_cens_h": {
     "n": 30,
-    "mean": 0.5566,
+    "mean": -0.1319,
     "ci": [
-     -0.7961,
-     2.1881
+     -2.1008,
+     1.6018
     ],
     "ci90": [
-     -0.6167,
-     1.8894
+     -1.7667,
+     1.3285
     ],
-    "p": 0.489
+    "p": 0.9294
    },
    "delay_mean_h": {
     "n": 30,
-    "mean": 0.0208,
+    "mean": -0.0322,
     "ci": [
-     -0.1651,
-     0.219
+     -0.2496,
+     0.1679
     ],
     "ci90": [
-     -0.1383,
-     0.1854
+     -0.2123,
+     0.1372
     ],
-    "p": 0.8541
+    "p": 0.7807
    },
    "delivered_share": {
     "n": 30,
-    "mean": 0.0001,
+    "mean": -0.0,
     "ci": [
      -0.0001,
-     0.0003
+     0.0001
     ],
     "ci90": [
      -0.0001,
-     0.0003
+     0.0001
     ],
-    "p": 0.303
+    "p": 0.5602
    }
   },
   "uncoordinated - atc x1 share 0.05 | 2028": {
    "n": 30,
    "atc_urgent_wait_mean_cens_h": {
     "n": 30,
-    "mean": 46.4307,
+    "mean": 46.4293,
     "ci": [
-     37.884,
-     55.2526
+     37.6173,
+     55.5326
     ],
     "ci90": [
-     39.1424,
-     53.7513
+     39.0176,
+     54.0884
     ],
     "p": 5e-05
    },
    "delay_mean_h": {
     "n": 30,
-    "mean": 65.983,
+    "mean": 63.6704,
     "ci": [
-     61.2985,
-     70.8383
+     58.5726,
+     68.83
     ],
     "ci90": [
-     62.0023,
-     69.9957
+     59.376,
+     67.983
     ],
     "p": 5e-05
    },
    "delivered_share": {
     "n": 30,
-    "mean": -0.0014,
-    "ci": [
-     -0.0028,
-     -0.0003
-    ],
-    "ci90": [
-     -0.0026,
-     -0.0004
-    ],
-    "p": 0.0042
-   }
-  },
-  "atc - none x1 share 0.05 | 2028": {
-   "n": 30,
-   "atc_urgent_wait_mean_cens_h": {
-    "n": 30,
-    "mean": 0.1371,
-    "ci": [
-     -1.3184,
-     1.9661
-    ],
-    "ci90": [
-     -1.1248,
-     1.5951
-    ],
-    "p": 0.9398
-   },
-   "delay_mean_h": {
-    "n": 30,
-    "mean": 0.0268,
-    "ci": [
-     -0.1996,
-     0.2767
-    ],
-    "ci90": [
-     -0.1693,
-     0.235
-    ],
-    "p": 0.8692
-   },
-   "delivered_share": {
-    "n": 30,
-    "mean": 0.0001,
-    "ci": [
-     -0.0001,
-     0.0003
-    ],
-    "ci90": [
-     -0.0001,
-     0.0003
-    ],
-    "p": 0.347
-   }
-  },
-  "uncoordinated - atc x1 share 0.4 | 2028": {
-   "n": 30,
-   "atc_urgent_wait_mean_cens_h": {
-    "n": 30,
-    "mean": 63.1211,
-    "ci": [
-     53.8939,
-     72.8002
-    ],
-    "ci90": [
-     55.3186,
-     71.1832
-    ],
-    "p": 5e-05
-   },
-   "delay_mean_h": {
-    "n": 30,
-    "mean": 80.6306,
-    "ci": [
-     75.2824,
-     85.9569
-    ],
-    "ci90": [
-     76.1014,
-     85.1534
-    ],
-    "p": 5e-05
-   },
-   "delivered_share": {
-    "n": 30,
-    "mean": -0.002,
+    "mean": -0.0019,
     "ci": [
      -0.0039,
      -0.0004
@@ -934,266 +910,345 @@
      -0.0036,
      -0.0006
     ],
-    "p": 0.0064
+    "p": 0.002
+   }
+  },
+  "atc - none x1 share 0.05 | 2028": {
+   "n": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "n": 30,
+    "mean": -0.5762,
+    "ci": [
+     -1.896,
+     0.7512
+    ],
+    "ci90": [
+     -1.6933,
+     0.5313
+    ],
+    "p": 0.3904
+   },
+   "delay_mean_h": {
+    "n": 30,
+    "mean": 0.0291,
+    "ci": [
+     -0.156,
+     0.2353
+    ],
+    "ci90": [
+     -0.1288,
+     0.1971
+    ],
+    "p": 0.7924
+   },
+   "delivered_share": {
+    "n": 30,
+    "mean": 0.0,
+    "ci": [
+     -0.0001,
+     0.0002
+    ],
+    "ci90": [
+     -0.0001,
+     0.0001
+    ],
+    "p": 0.9105
+   }
+  },
+  "uncoordinated - atc x1 share 0.4 | 2028": {
+   "n": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "n": 30,
+    "mean": 61.2162,
+    "ci": [
+     51.922,
+     71.4165
+    ],
+    "ci90": [
+     53.3284,
+     69.6303
+    ],
+    "p": 5e-05
+   },
+   "delay_mean_h": {
+    "n": 30,
+    "mean": 79.4206,
+    "ci": [
+     74.5181,
+     84.3035
+    ],
+    "ci90": [
+     75.2841,
+     83.5237
+    ],
+    "p": 5e-05
+   },
+   "delivered_share": {
+    "n": 30,
+    "mean": -0.0049,
+    "ci": [
+     -0.0083,
+     -0.0021
+    ],
+    "ci90": [
+     -0.0077,
+     -0.0025
+    ],
+    "p": 5e-05
    }
   },
   "atc - none x1 share 0.4 | 2028": {
    "n": 30,
    "atc_urgent_wait_mean_cens_h": {
     "n": 30,
-    "mean": 0.8237,
+    "mean": 1.5434,
     "ci": [
-     -0.3315,
-     2.1794
+     -0.565,
+     3.5132
     ],
     "ci90": [
-     -0.1734,
-     1.9476
+     -0.2308,
+     3.2075
     ],
-    "p": 0.183
+    "p": 0.1486
    },
    "delay_mean_h": {
     "n": 30,
-    "mean": 0.142,
+    "mean": 0.2757,
     "ci": [
-     -0.0429,
-     0.3444
+     -0.0289,
+     0.5735
     ],
     "ci90": [
-     -0.0169,
-     0.3076
+     0.0226,
+     0.5248
     ],
-    "p": 0.1465
+    "p": 0.0739
    },
    "delivered_share": {
     "n": 30,
-    "mean": -0.0,
+    "mean": 0.0,
     "ci": [
      -0.0002,
      0.0002
     ],
     "ci90": [
-     -0.0002,
+     -0.0001,
      0.0002
     ],
-    "p": 0.8181
+    "p": 0.7249
    }
   },
   "uncoordinated - atc x1 bay 0.5 | 2028": {
    "n": 30,
    "atc_urgent_wait_mean_cens_h": {
     "n": 30,
-    "mean": 38.9485,
+    "mean": 40.0759,
     "ci": [
-     31.0762,
-     47.2126
+     32.5895,
+     47.9682
     ],
     "ci90": [
-     32.3152,
-     45.7646
+     33.7147,
+     46.6215
     ],
     "p": 5e-05
    },
    "delay_mean_h": {
     "n": 30,
-    "mean": 62.9314,
+    "mean": 62.9395,
     "ci": [
-     58.5611,
-     67.1143
+     58.1306,
+     67.8191
     ],
     "ci90": [
-     59.2757,
-     66.4524
+     58.8482,
+     67.0661
     ],
     "p": 5e-05
    },
    "delivered_share": {
     "n": 30,
-    "mean": -0.0022,
+    "mean": -0.0026,
     "ci": [
-     -0.0042,
+     -0.0049,
      -0.0007
     ],
     "ci90": [
-     -0.0038,
-     -0.0009
+     -0.0045,
+     -0.001
     ],
-    "p": 0.0006
+    "p": 0.0015
    }
   },
   "atc - none x1 bay 0.5 | 2028": {
    "n": 30,
    "atc_urgent_wait_mean_cens_h": {
     "n": 30,
-    "mean": 0.6378,
+    "mean": -0.2429,
     "ci": [
-     -1.1353,
-     2.5901
+     -2.3007,
+     1.6735
     ],
     "ci90": [
-     -0.8672,
-     2.2649
+     -1.9637,
+     1.3769
     ],
-    "p": 0.5188
+    "p": 0.83
    },
    "delay_mean_h": {
     "n": 30,
-    "mean": 0.327,
+    "mean": 0.0769,
     "ci": [
-     0.0246,
-     0.6593
+     -0.1792,
+     0.3122
     ],
     "ci90": [
-     0.0716,
-     0.6006
+     -0.1347,
+     0.2786
     ],
-    "p": 0.0304
+    "p": 0.5266
    },
    "delivered_share": {
     "n": 30,
-    "mean": 0.0001,
+    "mean": -0.0,
     "ci": [
-     -0.0,
-     0.0003
+     -0.0002,
+     0.0001
     ],
     "ci90": [
-     -0.0,
-     0.0003
+     -0.0002,
+     0.0001
     ],
-    "p": 0.1995
+    "p": 0.5233
    }
   },
   "uncoordinated - atc x1 bay 2 | 2028": {
    "n": 30,
    "atc_urgent_wait_mean_cens_h": {
     "n": 30,
-    "mean": 46.6143,
+    "mean": 44.6523,
     "ci": [
-     38.023,
-     55.5069
+     36.091,
+     53.7839
     ],
     "ci90": [
-     39.2889,
-     54.0082
+     37.3735,
+     52.2527
     ],
     "p": 5e-05
    },
    "delay_mean_h": {
     "n": 30,
-    "mean": 66.3636,
+    "mean": 63.5169,
     "ci": [
-     61.6313,
-     71.2243
+     58.3214,
+     68.701
     ],
     "ci90": [
-     62.3678,
-     70.3965
+     59.1898,
+     67.8803
     ],
     "p": 5e-05
    },
    "delivered_share": {
     "n": 30,
-    "mean": -0.001,
+    "mean": -0.0017,
     "ci": [
-     -0.0019,
+     -0.0036,
      -0.0003
     ],
     "ci90": [
-     -0.0018,
-     -0.0003
+     -0.0032,
+     -0.0005
     ],
-    "p": 0.002
+    "p": 0.003
    }
   },
   "atc - none x1 bay 2 | 2028": {
    "n": 30,
    "atc_urgent_wait_mean_cens_h": {
     "n": 30,
-    "mean": 0.1205,
+    "mean": -0.4116,
     "ci": [
-     -1.3377,
-     1.9576
+     -1.7829,
+     0.9663
     ],
     "ci90": [
-     -1.1414,
-     1.5786
+     -1.5731,
+     0.7388
     ],
-    "p": 0.9549
+    "p": 0.5534
    },
    "delay_mean_h": {
     "n": 30,
-    "mean": 0.0511,
+    "mean": 0.0143,
     "ci": [
-     -0.1821,
-     0.3052
+     -0.1736,
+     0.2218
     ],
     "ci90": [
-     -0.1477,
-     0.2623
+     -0.1472,
+     0.1858
     ],
-    "p": 0.7224
+    "p": 0.912
    },
    "delivered_share": {
     "n": 30,
-    "mean": 0.0001,
+    "mean": 0.0,
     "ci": [
      -0.0001,
-     0.0003
+     0.0002
     ],
     "ci90": [
      -0.0001,
-     0.0003
+     0.0001
     ],
-    "p": 0.3458
+    "p": 0.8004
    }
   },
   "atc r7 strict - atc x1 | 2028": {
-   "n": 30,
+   "n": 6,
    "atc_urgent_wait_mean_cens_h": {
-    "n": 30,
-    "mean": 36.8669,
+    "n": 6,
+    "mean": 28.6938,
     "ci": [
-     27.6016,
-     47.5943
+     18.5708,
+     38.1854
     ],
     "ci90": [
-     28.868,
-     45.7835
+     20.1428,
+     36.8398
     ],
     "p": 5e-05
    },
    "delay_mean_h": {
-    "n": 30,
-    "mean": 49.9199,
+    "n": 6,
+    "mean": 42.9359,
     "ci": [
-     44.8266,
-     55.1143
+     32.5579,
+     52.94
     ],
     "ci90": [
-     45.6051,
-     54.2501
+     34.2609,
+     51.611
     ],
     "p": 5e-05
    },
    "delivered_share": {
-    "n": 30,
-    "mean": -0.002,
+    "n": 6,
+    "mean": -0.0013,
     "ci": [
-     -0.0035,
-     -0.0008
+     -0.0045,
+     0.0005
     ],
     "ci90": [
-     -0.0032,
-     -0.001
+     -0.0044,
+     0.0003
     ],
-    "p": 5e-05
+    "p": 0.6408
    }
   }
  },
- "not_run": [
-  "none x8 | y2028:10",
-  "atc x8 | y2028:10",
-  "uncoordinated x8 | y2028:10",
-  "uncoordinated x8 | y2038:10"
- ]
+ "not_run": []
 }

@@ -115,6 +115,8 @@ class R:
         self.runs = pd.concat([pd.read_csv(f, usecols=lambda c: c in ("cell", "label", "seed", "start_year", "run_s",
                                                                        "density", "single_share"))
                                for f in files], ignore_index=True) if files else pd.DataFrame()
+        ba = os.path.join(RES, "E43_fixpoint_before_after.json")      # experiments/phase5/compare_rerun.py --exp E43
+        self.ba = jl(ba) if os.path.exists(ba) else None
         self.e44 = os.path.join(RES, "E44_bounds.json")
         self.e45 = os.path.join(RES, "E45_modelcheck.json")
 
@@ -335,11 +337,64 @@ def values(r: R, allow_pending: bool):
 
     # --- choices after looking (4.6) --------------------------------------------------------------------------
     dc = r.d.get("design_changes", [])
-    V["P2-N-CHANGES-WORD"] = words(1 + len(dc) + 1).capitalize()
-    V["P2-X8-HORIZON-SENTENCE"] = " ".join(f"{html.escape(c['what'])}, because {html.escape(c['why'])}." for c in dc) \
-        if dc else "no change was needed."
-    pend("P2-WAKE-SENTENCE", "PREREG issue 5", "the duplicate wake-up decision is pending (paper/atc/PREREG.md, issue 5)")
-    pend("P2-X8-STATUS-SENTENCE", "E43 8x", "whether the 8x cells run depends on the PREREG issue 5 decision")
+    # three dated entries in E43-design.json: the 60 -> 30 d cut, the abandonment of the cut, the restoration to 60 d
+    check(len(dc) == 3, "the design file holds the three dated 8x entries the text describes")
+    V["P2-N-CHANGES-WORD"] = "Three"      # the share, the horizon (one choice with three dated entries), the defect
+    first_s = re.search(r"took ([\d.]+) s at 60 days", dc[0]["why"]) if dc else None
+    cut_s = re.search(r"went past (\d+) s", dc[1]["why"]) if len(dc) > 1 else None
+    x8_days = int(round(RP.E43_DENSITY[8][0] / 24.0))
+    check(bool(first_s and cut_s and x8_days == 60), "the 8x horizon entries carry the run times the sentence quotes")
+    V["P2-X8-HORIZON-SENTENCE"] = (
+        f"it was planned at {x8_days} days on ten seeds, cut to 30 days when the first {x8_days}-day run took "
+        f"{num(float(first_s.group(1)), 0)}{NB}s, over the per-run limit of Section 4.7, abandoned when a 30-day run "
+        f"went past {cut_s.group(1)}{NB}s, and restored to {x8_days} days once the defect below was fixed; no 30-day row "
+        f"was ever used, and every eight-times row in this paper is a {x8_days}-day row."
+        if first_s and cut_s else "see the design file.")
+
+    def wake_sentence():
+        ba = r.ba
+        if ba is None:
+            raise Pending("compare_rerun.py --exp E43 has not been run against the archived rows")
+        if ba["n_new"] < r.f["n_rows"]:
+            raise Pending("the before/after table is older than the run files")
+        check(ba.get("primary_max_abs_label", "").startswith("uncoordinated"),
+              "the largest single-run change of the rerun is in the uncoordinated mode")
+        return (f"the dispatcher's consolidation hold re-posted a wake-up for every held lane on every call, so the "
+                f"event queue grew geometrically with fleet size (the cause of the {cut_s.group(1)}{NB}s run above) and, "
+                f"because one dispatch call does not reach a fixed point, the duplicates also changed assignments. "
+                f"The fix, pre-registered as change 5 of [43] before any rerun row, posts one wake-up per lane and lot "
+                f"and repeats dispatch at the same instant until nothing changes. Every cell of E43 was then rerun; "
+                f"the {cnt(ba['n_old'])} earlier rows are archived and reproducible with the fix off. Against the "
+                f"{cnt(ba['n_matched'])} archived rows with the same cell and seed, the primary outcome moved by "
+                f"{h_(ba['primary_mean_change_h'], 2, sign=True)} on average and by {h_(ba['primary_mean_abs_change_h'], 1)} "
+                f"in absolute value, with a largest single-run change of {h_(ba['primary_max_abs_change_h'], 0)} "
+                f"(in the uncoordinated mode, whose hand-resolution waits depend on the order of events); "
+                f"{pc(ba['share_rows_moved_over_0.1h'], 0)} of the rows moved by more than 0.1{NB}h. The mean run time "
+                f"fell from {num(ba['run_s_old_mean'], 0)} to {num(ba['run_s_new_mean'], 0)}{NB}s and the longest run "
+                f"from {num(ba['run_s_old_max'], 0)} to {num(ba['run_s_new_max'], 0)}{NB}s. Table 4 and Table 5 hold "
+                f"only rerun rows; the before/after table per cell is results/E43_fixpoint_before_after.csv.")
+    fill("P2-WAKE-SENTENCE", wake_sentence, "change 5 before/after")
+
+    # cells with fewer rows than their design block (a rerun stopped before the end)
+    expected = {}
+    for c in r.d["cells"]:                     # the design file's cells carry label and block
+        mb = re.fullmatch(r"y(\d{4}):(\d+)", c["block"])
+        expected[(c["label"], int(mb.group(1)))] = int(mb.group(2))
+    have = r.runs.groupby(["label", "start_year"]).size().to_dict() if len(r.runs) else {}
+    short = [(lab, y, have.get((lab, y), 0), n) for (lab, y), n in expected.items() if have.get((lab, y), 0) < n]
+    x8_have = sum(v for (lab, y), v in have.items() if lab.endswith(" x8"))
+    V["P2-X8-STATUS-SENTENCE"] = (
+        f"The eight-times cells ran at {x8_days} days on ten seeds ({cnt(x8_have)} runs) after the dispatch fix of "
+        f"Section 4.6; without it they could not run, and no 30-day row was used." if x8_have else
+        "The eight-times cells did not run.")
+    V["P2-INCOMPLETE-CELLS-SENTENCE"] = (
+        "Every cell ran all its seeds." if not short else
+        "; ".join(f"the cell {html.escape(lab)} ({y}) has {cnt(h)} of {cnt(n)} seeds" for lab, y, h, n in short).capitalize()
+        + ": the rerun was stopped for memory on 29 October 2026 before the end and not restarted, so its numbers are "
+          "provisional and its interval is wider than the design intended.")
+    r7_n = int(p7["n"])
+    V["P2-R7-N-CLAUSE"] = ("on all 30 seeds" if r7_n >= expected.get(("atc x1 r7", 2028), 30) else
+                           f"on the {words(r7_n)} seeds that had run when the rerun was stopped (Section 5.9)")
     pend("P2-CHECKS-SENTENCE", "B-79", "the phase-5 checks are counted once B-79's batches land")
     pend("P2-FAILED-CHECKS-SENTENCE", "B-79", "the check outcomes are read from the verification data once B-79 lands")
     pend("P2-SHARED-CHECK-LIMITATION", "B-78", "whether roads.py calls the shared safety_check() is known once B-78 lands")
