@@ -91,6 +91,7 @@ counts = integer. "ABS" keys print the absolute value (the sentence carries the 
 | P1-BOUNDS-N / -SSI-MAX / -CBBA-MIN | small-instance checks | `results/ATC_auction_bounds.json` | integer, 3 dp, % 1 dp |
 | P1-CHECK-N-ROWS / -N-TESTS | regression rows and pytest count | B-7x reports (20 rows; 547 tests at B-74, rising): take from the final run log at submission | integer |
 | P1-SEEDS-ADDED | sentence on the seed-adding rule | F `n_per_cell` vs 30/80 | sentence |
+| P1-FIXPOINT-SENTENCE | PREREG change 5 before/after (4.6) | `results/{E40,E42,E41}_fixpoint_before_after.json` from `experiments/phase5/compare_rerun.py --exp ...` (`n_old`, `n_matched`, `primary_mean_change_h`, `primary_mean_abs_change_h`, `primary_max_abs_change_h`) | composed; pending until all three reruns have landed |
 | P1-RUNTIME-RANGE / P1-PEAK-MB | run time per year, peak memory | `run_s` column of the run CSVs; peak from reports | "0.4-66&nbsp;s", MB |
 | P1-TABLE-REGIMES | Table 5 | R | HTML table |
 | P1-FIG-H2-YEARS | Figure 1 | P H2 rows + visibility per year | figure include |

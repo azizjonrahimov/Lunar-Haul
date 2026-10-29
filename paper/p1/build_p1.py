@@ -206,7 +206,10 @@ class R:
         self.load = jl("ATC_p5_load.json")
         self.diag = jl("ATC_oracle_diag.json")
         self.rerun = jl("E40_rerun_check.json")
-        self.lin = json.load(open(os.path.join(ROOT, "data/policies/atc_bid_linear_v1.json"), encoding="utf-8"))
+        # PREREG change 5 before/after per experiment (experiments/phase5/compare_rerun.py --exp E40 / E42 / E41)
+        self.ba = {e: jl(f"{e}_fixpoint_before_after.json") for e in ("E40", "E42", "E41")
+                   if os.path.exists(os.path.join(RES, f"{e}_fixpoint_before_after.json"))}
+        self.lin =json.load(open(os.path.join(ROOT, "data/policies/atc_bid_linear_v1.json"), encoding="utf-8"))
         self.mlp = json.load(open(os.path.join(ROOT, "data/policies/atc_bid_v1.json"), encoding="utf-8"))
         self.dev = json.load(open(os.path.join(HERE, "dev_notes.json"), encoding="utf-8"))
         self.runs = {}                                     # exp -> raw run rows (union of the part files)
@@ -296,6 +299,29 @@ def values(r: R, allow_pending: bool):
                 raise SystemExit(f"{key}: pending ({e}); rerun with --allow-pending to build a draft")
             pending.append(f"{key}: {e}")
             V[key] = f'<span class="pending">[[PENDING {tag}]]</span>'
+
+    # --- PREREG change 5 (4.6): the dispatch fixed-point rerun, before/after from compare_rerun.py ---------------
+    def fixpoint_sentence():
+        missing = [e for e in ("E40", "E42", "E41") if e not in r.ba]
+        if missing:
+            raise Pending(f"the before/after of {', '.join(missing)} (compare_rerun.py) has not landed")
+        parts = []
+        for e in ("E40", "E42", "E41"):
+            b = r.ba[e]
+            parts.append(f"{e}: {b['n_matched']:,} rows matched, the primary outcome moved by "
+                         f"{num(b['primary_mean_change_h'], 2, sign=True)}{NB}h on average and "
+                         f"{num(b['primary_mean_abs_change_h'], 1)}{NB}h in absolute value, at most "
+                         f"{num(b['primary_max_abs_change_h'], 0)}{NB}h in one run")
+        tot_old = sum(r.ba[e]["n_old"] for e in r.ba)
+        return (f"The dispatcher's consolidation hold re-posted a wake-up for every held lane on every call, so the "
+                f"event queue grew with fleet size and, because one dispatch call does not reach a fixed point, the "
+                f"duplicates also changed assignments. The fix, pre-registered as change 5 before any rerun row, posts "
+                f"one wake-up per lane and lot and repeats dispatch at the same instant until nothing changes. Every "
+                f"block of E40, E41 and E42 was rerun with it; the {tot_old:,} earlier rows are archived and "
+                f"reproducible with the fix off, and every number in this paper is from the rerun rows. Against the "
+                f"archived rows with the same cell and seed ({'; '.join(parts)}). The per-cell before/after tables "
+                f"are results/E40_fixpoint_before_after.csv and the E41 and E42 files beside it.")
+    fill("P1-FIXPOINT-SENTENCE", fixpoint_sentence, "change 5 before/after")
 
     # --- design -------------------------------------------------------------------------------------------
     V["P1-LOAD-MAIN"] = pc(LOAD_MAIN, 0)
