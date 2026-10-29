@@ -50,6 +50,7 @@ Comparisons are named in `LABELS` of the build script; the analysis is `experime
 | P2-INCOMPLETE-CELLS-SENTENCE, P2-R7-N-CLAUSE | run counts per (label, year) against the design blocks; P `atc x1 r7 - atc x1` `n` | composed: "Every cell ran all its seeds." or the short cells with their counts |
 | P2-CHECKS-SENTENCE, P2-FAILED-CHECKS-SENTENCE, P2-SHARED-CHECK-LIMITATION | the verification page's phase-5 checks (B-79); `lunarsim/atc/roads.py` calling the shared `safety_check()` (B-78) | pending |
 | P2-E44-N-ENCOUNTERS, P2-E44-DESIGN-SENTENCE, P2-E44-DESIGN-SENTENCE-SHORT, P2-E44-INTRO-CLAUSE, P2-E44-RESULTS-PARAGRAPH, P2-E44-DISCUSSION-CLAUSE, P2-E44-COMPARISON-CLAUSE, P2-E44-COMPUTE-SENTENCE | `results/E44_encounters.csv`, `E44_bounds.json` (B-78) | pending |
+| P2-DEADLOCK-SCOPE-CLAUSE | `results/ATC_roads_rings.json` (single-lane rings in the base's road graph per share, BACKEND) and E45's ring counterexample | composed; pending: whether the zero deadlock count is a property of the construction on this network or a limit |
 | P2-E45-N-NODES, P2-E45-DESIGN-SENTENCE, P2-E45-INTRO-CLAUSE, P2-E45-RESULTS-PARAGRAPH, P2-E45-DISCUSSION-CLAUSE, P2-E45-COMPUTE-SENTENCE | `results/E45_modelcheck.json` (B-78) | pending |
 | P2-E47-DESIGN-SENTENCE, P2-E47-GEOMETRY-SENTENCE, P2-E47-INTRO-CLAUSE, P2-E47-RESULTS-PARAGRAPH, P2-E47-DISCUSSION-CLAUSE, P2-E47-LIMITATION-SENTENCE | E47 files (B-82) | pending |
 | P2-H7-ABSTRACT-CLAUSE, P2-H9-ABSTRACT-CLAUSE, P2-CONCLUSION-SAFETY-CLAUSE, P2-CONCLUSION-MARS-CLAUSE | E44/E45 and E47 | composed; pending |

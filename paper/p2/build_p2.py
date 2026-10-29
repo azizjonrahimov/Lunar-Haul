@@ -399,6 +399,15 @@ def values(r: R, allow_pending: bool):
     pend("P2-FAILED-CHECKS-SENTENCE", "B-79", "the check outcomes are read from the verification data once B-79 lands")
     pend("P2-SHARED-CHECK-LIMITATION", "B-78", "whether roads.py calls the shared safety_check() is known once B-78 lands")
 
+    def deadlock_scope():
+        # the checker (E45) found that R3's one-hop exit rule can deadlock on a ring of single-lane segments; the clause
+        # says whether this base's road graph has such a ring at any share (results/ATC_roads_rings.json, BACKEND)
+        rings = os.path.join(RES, "ATC_roads_rings.json")
+        if not (os.path.exists(rings) and os.path.exists(r.e45)):
+            raise Pending("the single-lane ring check (results/ATC_roads_rings.json) and E45 have not landed")
+        raise Pending("compose from the ring JSON and E45 once their formats are fixed")
+    fill("P2-DEADLOCK-SCOPE-CLAUSE", deadlock_scope, "E45 ring check")
+
     # --- E44, E45, E47 -----------------------------------------------------------------------------------------
     e44 = ("P2-E44-N-ENCOUNTERS", "P2-E44-DESIGN-SENTENCE", "P2-E44-DESIGN-SENTENCE-SHORT", "P2-E44-INTRO-CLAUSE",
            "P2-E44-RESULTS-PARAGRAPH", "P2-E44-DISCUSSION-CLAUSE", "P2-E44-COMPARISON-CLAUSE", "P2-E44-COMPUTE-SENTENCE",
