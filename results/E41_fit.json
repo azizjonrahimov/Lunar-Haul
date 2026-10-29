@@ -1,0 +1,368 @@
+{
+ "n_rows": 1356,
+ "n_cells_designed": 52,
+ "labels": {
+  "C_LEADER loss 0": 30,
+  "C_AUCTION loss 0": 30,
+  "C_LEARNED_MLP loss 0": 30,
+  "C_LEARNED_LIN loss 0": 30,
+  "C_LEADER loss 0.1": 30,
+  "C_AUCTION loss 0.1": 30,
+  "C_LEARNED_MLP loss 0.1": 30,
+  "C_LEARNED_LIN loss 0.1": 30,
+  "C_LEADER loss 0.25": 30,
+  "C_AUCTION loss 0.25": 30,
+  "C_LEARNED_MLP loss 0.25": 30,
+  "C_LEARNED_LIN loss 0.25": 30,
+  "C_LEADER loss 0.4": 30,
+  "C_AUCTION loss 0.4": 30,
+  "C_LEARNED_MLP loss 0.4": 30,
+  "C_LEARNED_LIN loss 0.4": 30,
+  "C_LEADER burst 0.25": 30,
+  "C_AUCTION burst 0.25": 30,
+  "C_LEARNED_MLP burst 0.25": 30,
+  "C_LEARNED_LIN burst 0.25": 30,
+  "C_AUCTION depth 2 loss 0.25": 30,
+  "C_LEARNED_MLP depth 2 loss 0.25": 30,
+  "C_LEARNED_LIN depth 2 loss 0.25": 30,
+  "C_AUCTION depth 2 loss 0.4": 30,
+  "C_LEARNED_MLP depth 2 loss 0.4": 30,
+  "C_LEARNED_LIN depth 2 loss 0.4": 30,
+  "C_AUCTION depth 5 loss 0.25": 30,
+  "C_LEARNED_MLP depth 5 loss 0.25": 30,
+  "C_LEARNED_LIN depth 5 loss 0.25": 30,
+  "C_AUCTION depth 5 loss 0.4": 30,
+  "C_LEARNED_MLP depth 5 loss 0.4": 30,
+  "C_LEARNED_LIN depth 5 loss 0.4": 30,
+  "C_LEADER range 2 km": 30,
+  "C_AUCTION range 2 km": 30,
+  "C_LEARNED_MLP range 2 km": 30,
+  "C_LEARNED_LIN range 2 km": 30,
+  "C_LEADER range 10 km": 30,
+  "C_AUCTION range 10 km": 30,
+  "C_LEARNED_MLP range 10 km": 30,
+  "C_LEARNED_LIN range 10 km": 30,
+  "C_LEADER range perfect": 30,
+  "C_AUCTION range perfect": 30,
+  "C_LEARNED_MLP range perfect": 30,
+  "C_LEARNED_LIN range perfect": 30,
+  "C_LEADER rally off": 30,
+  "C_LEADER mast2 PAD_B": 6
+ },
+ "primary": "atc_urgent_wait_mean_cens_h",
+ "n_boot": 20000,
+ "seed": 41,
+ "default_cell": "loss 0.1",
+ "oracle_rows": 30,
+ "H3b": {
+  "cells": {
+   "C_AUCTION depth 2 loss 0.25": {
+    "n": 30,
+    "mean": 3.736262352603779,
+    "lo": 1.8236407816798839,
+    "hi": 5.590427027817504,
+    "worse": true,
+    "better": false
+   },
+   "C_AUCTION depth 2 loss 0.4": {
+    "n": 30,
+    "mean": 5.026510187918354,
+    "lo": 2.2941093055619093,
+    "hi": 7.596129223787279,
+    "worse": true,
+    "better": false
+   },
+   "C_AUCTION depth 5 loss 0.25": {
+    "n": 30,
+    "mean": 6.030444610966058,
+    "lo": 4.437912739527331,
+    "hi": 7.75459299910774,
+    "worse": true,
+    "better": false
+   },
+   "C_AUCTION depth 5 loss 0.4": {
+    "n": 30,
+    "mean": 10.044135231813083,
+    "lo": 7.655258812312036,
+    "hi": 12.602758118685822,
+    "worse": true,
+    "better": false
+   },
+   "C_LEARNED_MLP depth 2 loss 0.25": {
+    "n": 30,
+    "mean": 4.48132063584463,
+    "lo": 2.4363590091822744,
+    "hi": 6.586691792719688,
+    "worse": true,
+    "better": false
+   },
+   "C_LEARNED_MLP depth 2 loss 0.4": {
+    "n": 30,
+    "mean": 6.845532994745304,
+    "lo": 4.101004485227817,
+    "hi": 10.10743779933279,
+    "worse": true,
+    "better": false
+   },
+   "C_LEARNED_MLP depth 5 loss 0.25": {
+    "n": 30,
+    "mean": 5.749917790626408,
+    "lo": 3.5330483776685093,
+    "hi": 7.860723176343903,
+    "worse": true,
+    "better": false
+   },
+   "C_LEARNED_MLP depth 5 loss 0.4": {
+    "n": 30,
+    "mean": 9.774363951460627,
+    "lo": 7.590634814392773,
+    "hi": 12.04226108579145,
+    "worse": true,
+    "better": false
+   },
+   "C_LEARNED_LIN depth 2 loss 0.25": {
+    "n": 30,
+    "mean": 6.42768287821441,
+    "lo": 4.19586493535551,
+    "hi": 8.82154148364927,
+    "worse": true,
+    "better": false
+   },
+   "C_LEARNED_LIN depth 2 loss 0.4": {
+    "n": 30,
+    "mean": 7.266555357343378,
+    "lo": 4.422281011276454,
+    "hi": 10.300334318262411,
+    "worse": true,
+    "better": false
+   },
+   "C_LEARNED_LIN depth 5 loss 0.25": {
+    "n": 30,
+    "mean": 8.34000237912361,
+    "lo": 6.0305066412232335,
+    "hi": 10.62394930687102,
+    "worse": true,
+    "better": false
+   },
+   "C_LEARNED_LIN depth 5 loss 0.4": {
+    "n": 30,
+    "mean": 8.72329986968919,
+    "lo": 6.415103510734362,
+    "hi": 11.111022452556602,
+    "worse": true,
+    "better": false
+   }
+  },
+  "supported": true,
+  "test": {
+   "loss 0.25": {
+    "n": 30,
+    "mean": 6.030444610966058,
+    "lo": 4.437912739527331,
+    "hi": 7.75459299910774,
+    "worse": true,
+    "better": false
+   },
+   "loss 0.4": {
+    "n": 30,
+    "mean": 10.044135231813083,
+    "lo": 7.655258812312036,
+    "hi": 12.602758118685822,
+    "worse": true,
+    "better": false
+   }
+  }
+ },
+ "H3c": {
+  "margin": 0.1,
+  "cells": {
+   "loss 0": {
+    "n": 30,
+    "mean": 0.255519242669341,
+    "lo": -0.5108657091527827,
+    "hi": 1.0583390046722359,
+    "ratio_lo90": -0.02757333628488844,
+    "ratio_hi90": 0.06614215628282483,
+    "matches": true,
+    "robots_out_share": {
+     "leader": 0.046064500135135994,
+     "auction": 0.051018372500502944
+    }
+   },
+   "loss 0.1": {
+    "n": 30,
+    "mean": 0.578624527166076,
+    "lo": -0.8995579454571325,
+    "hi": 2.2199732292207037,
+    "ratio_lo90": -0.04719164981314718,
+    "ratio_hi90": 0.13945118714006577,
+    "matches": false,
+    "robots_out_share": {
+     "leader": 0.0324109897921597,
+     "auction": 0.051042530909642066
+    }
+   },
+   "loss 0.25": {
+    "n": 30,
+    "mean": -0.7328999546540906,
+    "lo": -2.2091903204405154,
+    "hi": 0.8611312214630049,
+    "ratio_lo90": -0.12479750788426995,
+    "ratio_hi90": 0.03781913066927762,
+    "matches": false,
+    "robots_out_share": {
+     "leader": 0.01852264592840345,
+     "auction": 0.0508900949680098
+    }
+   },
+   "loss 0.4": {
+    "n": 30,
+    "mean": -2.5573714862052777,
+    "lo": -4.52804431431255,
+    "hi": -0.6818370072709474,
+    "ratio_lo90": -0.21996006606534768,
+    "ratio_hi90": -0.05627783385562714,
+    "matches": false,
+    "robots_out_share": {
+     "leader": 0.010234067281493925,
+     "auction": 0.051061571186805634
+    }
+   },
+   "burst 0.25": {
+    "n": 30,
+    "mean": 1.0144773975735257,
+    "lo": -0.2970381752348952,
+    "hi": 2.4398621659642243,
+    "ratio_lo90": -0.007473557120132523,
+    "ratio_hi90": 0.1528018186214366,
+    "matches": false,
+    "robots_out_share": {
+     "leader": 0.03254327312761313,
+     "auction": 0.05098820893797065
+    }
+   },
+   "range 2 km": {
+    "n": 30,
+    "mean": 0.6347328158364758,
+    "lo": -0.832731491530682,
+    "hi": 2.245783303102196,
+    "ratio_lo90": -0.042920671930212144,
+    "ratio_hi90": 0.14254127753688248,
+    "matches": false,
+    "robots_out_share": {
+     "leader": 0.03241055480181596,
+     "auction": 0.05102066120319196
+    }
+   },
+   "range 10 km": {
+    "n": 30,
+    "mean": 0.578624527166076,
+    "lo": -0.8749913701722852,
+    "hi": 2.1996860841526766,
+    "ratio_lo90": -0.0462453912218689,
+    "ratio_hi90": 0.13952762406761826,
+    "matches": false,
+    "robots_out_share": {
+     "leader": 0.0324109897921597,
+     "auction": 0.051042530909642066
+    }
+   },
+   "range perfect": {
+    "n": 30,
+    "mean": 0.20627248051586963,
+    "lo": -0.9670940825548505,
+    "hi": 1.334531381124765,
+    "ratio_lo90": -0.04662667498682219,
+    "ratio_hi90": 0.08265881305127938,
+    "matches": true,
+    "robots_out_share": {
+     "leader": 0.0,
+     "auction": 0.007707288644816983
+    }
+   }
+  }
+ },
+ "slope_per_point_of_loss": {
+  "C_LEADER": {
+   "wait_0_h": 14.553827987240647,
+   "wait_40_h": 15.600639565114948,
+   "pct_of_loss0_per_point": 0.17981722382455698
+  },
+  "C_AUCTION": {
+   "wait_0_h": 14.298308744571305,
+   "wait_40_h": 18.158011051320223,
+   "pct_of_loss0_per_point": 0.6748529451454086
+  },
+  "C_LEARNED_MLP": {
+   "wait_0_h": 13.817749341976018,
+   "wait_40_h": 17.54470383226645,
+   "pct_of_loss0_per_point": 0.6743056336549262
+  },
+  "C_LEARNED_LIN": {
+   "wait_0_h": 10.75911988188243,
+   "wait_40_h": 15.083877523758114,
+   "pct_of_loss0_per_point": 1.0049050687589833
+  }
+ },
+ "crossing_loss_vs_oracle": {
+  "C_LEADER": null,
+  "C_AUCTION": "0.4",
+  "C_LEARNED_MLP": "0.4",
+  "C_LEARNED_LIN": null
+ },
+ "replication_e40": {
+  "n": 30,
+  "mean": 0.0,
+  "lo": 0.0,
+  "hi": 0.0
+ },
+ "run_s_mean_by_label": {
+  "C_LEADER loss 0": 4.196,
+  "C_AUCTION loss 0": 5.125,
+  "C_LEARNED_MLP loss 0": 6.387666666666666,
+  "C_LEARNED_LIN loss 0": 5.977666666666667,
+  "C_LEADER loss 0.1": 5.135999999999999,
+  "C_AUCTION loss 0.1": 5.104666666666666,
+  "C_LEARNED_MLP loss 0.1": 6.298666666666667,
+  "C_LEARNED_LIN loss 0.1": 5.917,
+  "C_LEADER loss 0.25": 7.531000000000001,
+  "C_AUCTION loss 0.25": 5.128333333333333,
+  "C_LEARNED_MLP loss 0.25": 6.342666666666667,
+  "C_LEARNED_LIN loss 0.25": 5.940666666666667,
+  "C_LEADER loss 0.4": 11.946333333333333,
+  "C_AUCTION loss 0.4": 5.169,
+  "C_LEARNED_MLP loss 0.4": 6.2556666666666665,
+  "C_LEARNED_LIN loss 0.4": 6.099666666666667,
+  "C_LEADER burst 0.25": 6.0793333333333335,
+  "C_AUCTION burst 0.25": 5.703666666666666,
+  "C_LEARNED_MLP burst 0.25": 6.5169999999999995,
+  "C_LEARNED_LIN burst 0.25": 5.987333333333334,
+  "C_AUCTION depth 2 loss 0.25": 5.242666666666667,
+  "C_LEARNED_MLP depth 2 loss 0.25": 5.472333333333333,
+  "C_LEARNED_LIN depth 2 loss 0.25": 5.362333333333334,
+  "C_AUCTION depth 2 loss 0.4": 5.277666666666667,
+  "C_LEARNED_MLP depth 2 loss 0.4": 5.5136666666666665,
+  "C_LEARNED_LIN depth 2 loss 0.4": 5.462999999999999,
+  "C_AUCTION depth 5 loss 0.25": 4.878333333333333,
+  "C_LEARNED_MLP depth 5 loss 0.25": 5.136,
+  "C_LEARNED_LIN depth 5 loss 0.25": 4.969666666666667,
+  "C_AUCTION depth 5 loss 0.4": 4.946,
+  "C_LEARNED_MLP depth 5 loss 0.4": 5.132333333333333,
+  "C_LEARNED_LIN depth 5 loss 0.4": 5.015333333333333,
+  "C_LEADER range 2 km": 5.287000000000001,
+  "C_AUCTION range 2 km": 5.174333333333333,
+  "C_LEARNED_MLP range 2 km": 6.297666666666667,
+  "C_LEARNED_LIN range 2 km": 5.914,
+  "C_LEADER range 10 km": 5.273666666666667,
+  "C_AUCTION range 10 km": 5.201666666666667,
+  "C_LEARNED_MLP range 10 km": 6.340333333333334,
+  "C_LEARNED_LIN range 10 km": 6.009333333333333,
+  "C_LEADER range perfect": 3.675,
+  "C_AUCTION range perfect": 3.941666666666667,
+  "C_LEARNED_MLP range perfect": 5.125,
+  "C_LEARNED_LIN range perfect": 4.723,
+  "C_LEADER rally off": 3.5013333333333336,
+  "C_LEADER mast2 PAD_B": 6.285
+ },
+ "elapsed_s": 13.0
+}
