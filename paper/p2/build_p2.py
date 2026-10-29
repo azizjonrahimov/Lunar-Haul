@@ -37,7 +37,29 @@ PARTS = ["part1_front.html", "part2_related.html", "part3_methods.html", "part4_
 PDF = os.path.join(HERE, "rules_of_the_road_p2.pdf")
 CHROME = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 MINUS, NB, PCT = "&minus;", "&nbsp;", "&#8239;%"
-WORDS = {0: "no", 1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine"}
+WORDS = {0: "no", 1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine",
+         10: "ten", 11: "eleven", 12: "twelve"}
+# E44 design (PREREG change 6): encounters generated per type
+E44_N_DEFAULT = 10_000
+E44_N = {1: 100_000, 7: 100_000}
+T12 = {1: "following", 2: "head-on on a one-lane segment", 3: "overtaking", 4: "the junction", 5: "the ring",
+       6: "the landing closure", 7: "crew", 8: "radio dropout", 9: "the nonconforming vehicle",
+       10: "mixed owners and classes", 11: "charger and pad contention", 12: "planner fuzzing"}
+KIND = {"viol_contact": "contacts", "viol_gap": "below the required gap", "viol_zone": "inside a closed zone",
+        "viol_crew": "too close to crew", "viol_r3": "opposite directions in one segment",
+        "viol_slots": "over a bay's slots"}
+
+
+def sci(x):
+    """A probability bound in scientific notation with one decimal: 3.0 x 10^-5."""
+    x = _fin(x)
+    if x <= 0:
+        raise ValueError("a bound must be positive")
+    e = math.floor(math.log10(x))
+    m = x / 10 ** e
+    if round(m, 1) >= 10:
+        m, e = m / 10, e + 1
+    return f"{m:.1f}{NB}&times;{NB}10<sup>{MINUS if e < 0 else ''}{abs(e)}</sup>"
 PRIMARY = "delay_mean_h"
 MARGIN = 0.05
 
@@ -119,6 +141,12 @@ class R:
         self.ba = jl(ba) if os.path.exists(ba) else None
         self.e44 = os.path.join(RES, "E44_bounds.json")
         self.e45 = os.path.join(RES, "E45_modelcheck.json")
+        self.e44j = jl(self.e44) if os.path.exists(self.e44) else None       # tools/atc/run_e44.py summarize
+        d44 = os.path.join(RES, "E44_defects.json")                           # PREREG change 8
+        self.e44d = jl(d44) if os.path.exists(d44) else None
+        self.e45j = jl(self.e45) if os.path.exists(self.e45) else None       # tools/atc/run_e45.py
+        b44 = os.path.join(RES, "E44_bins.csv")                               # per-type parameter bins
+        self.e44b = pd.read_csv(b44) if os.path.exists(b44) else None
 
     def cell(self, key, year=2028, **fmt):
         label = LABELS.get(key, key).format(**fmt)
@@ -431,19 +459,384 @@ def values(r: R, allow_pending: bool):
            "P2-E45-DISCUSSION-CLAUSE", "P2-E45-COMPUTE-SENTENCE", "P2-CONCLUSION-SAFETY-CLAUSE")
     e47 = ("P2-E47-DESIGN-SENTENCE", "P2-E47-GEOMETRY-SENTENCE", "P2-E47-INTRO-CLAUSE", "P2-E47-RESULTS-PARAGRAPH",
            "P2-E47-DISCUSSION-CLAUSE", "P2-E47-LIMITATION-SENTENCE", "P2-H9-ABSTRACT-CLAUSE", "P2-CONCLUSION-MARS-CLAUSE")
-    for key in e44:
-        pend(key, "E44", "E44 (encounter simulator, B-78) has not run")
-    for key in e45:
-        pend(key, "E45", "E45 (model checker, B-78) has not run")
     for key in e47:
         pend(key, "E47", "E47 (Mars, B-82) has not run")
 
+    # ---- E44: the encounter simulator (results/E44_bounds.json, E44_defects.json; PREREG changes 6 and 8) -----
+    def e44():
+        j = r.e44j
+        if j is None:
+            raise Pending("E44 (encounter simulator, B-78) has not run")
+        ty = j["types"]
+        missing = [k for k in range(1, 13) if str(k) not in ty]
+        if missing:
+            raise Pending(f"E44 types {missing} have no rows yet")
+        short = [k for k in range(1, 13) if ty[str(k)]["n"] < E44_N.get(k, E44_N_DEFAULT)]
+        if short:
+            raise Pending(f"E44 types {short} are below their designed n")
+        if r.e44d is None:
+            raise Pending("results/E44_defects.json (change 8) is missing")
+        return j
+
+    def t44(j, k):
+        return j["types"][str(k)]
+
+    def e44_split(j):
+        zero = [k for k in range(1, 13) if t44(j, k)["violations"] == 0]
+        viol = [k for k in range(1, 13) if t44(j, k)["violations"] > 0]
+        return zero, viol
+
+    def e44_violating_clause(j, viol, with_counts=True):
+        """One clause per violating type; type 9's dead stop is named, the others are generic."""
+        parts = []
+        for k in viol:
+            t = t44(j, k)
+            kinds = {kk: v for kk, v in t["violations_by_kind"].items() if v > 0}
+            if k == 9:
+                gap, con = t["violations_by_kind"]["viol_gap"], t["violations_by_kind"]["viol_contact"]
+                parts.append(f"a vehicle that stops dead inside a one-lane segment (type 9), where the following "
+                             f"vehicle closed below the required gap in {cnt(gap)} of {cnt(t['n'])} encounters and "
+                             f"touched it in {cnt(con)}, because the gap rule assumes a leader that brakes rather "
+                             f"than stops")
+            else:
+                parts.append(f"type {k} ({T12[k]}), with {cnt(t['violations'])} violations "
+                             f"({', '.join(f'{cnt(v)} {KIND[kk]}' for kk, v in kinds.items())})")
+        return ("the exception is " if len(parts) == 1 else "the exceptions are ") + "; ".join(parts)
+
+    def e44_n_encounters():
+        j = e44()
+        return cnt(sum(t44(j, k)["n_driven"] for k in range(1, 13)))
+    fill("P2-E44-N-ENCOUNTERS", e44_n_encounters, "E44")
+
+    def e44_design_sentence():
+        j = e44()
+        nm = j["near_miss_definition"]
+        t1 = t44(j, 1)
+        d = r.e44d["defects_found_in_main_run"]
+        check(len(d["defects"]) == 2, "two simulator defects were found in the first main run")
+        return (f"Types 1 and 7 run {cnt(E44_N[1])} encounters each and the other ten {cnt(E44_N_DEFAULT)} (change 6 "
+                f"of [43], a cost of compute on the shared machine that weakens those bounds tenfold); type-1 draws "
+                f"whose slope and friction cannot hold the vehicle ({pc(1 - t1['n_driven'] / t1['n'], 0)} of them) "
+                f"are not driven and are counted apart. Each type's bound is the 95{PCT} upper limit on the "
+                f"probability of a hard violation under that type's parameter distribution: with no violation "
+                f"1 &minus; 0.05<sup>1/n<sub>eff</sub></sup> and, beside it, the Bonferroni limit "
+                f"1 &minus; (0.05/12)<sup>1/n<sub>eff</sub></sup> over the twelve types; with violations the "
+                f"Clopper&ndash;Pearson upper limit at the same levels. Types 6, 7 and 9 are "
+                f"importance-sampled (the inside vehicle's exit distance, the crew's emergence time and the dead-stop "
+                f"time) with weights p/q and an effective n of (&Sigma;w)<sup>2</sup>/&Sigma;w<sup>2</sup>. A near "
+                f"miss is a same-lane gap below twice d<sub>min</sub>, a time to collision below "
+                f"{num(nm['ttc_s'], 0)}{NB}s, a crew clearance below twice the stopping radius, or a zone exit "
+                f"margin below {num(nm['zone_exit_margin_s'], 0)}{NB}s; the minimum margin is the smallest clearance "
+                f"to another vehicle or crew member. Every encounter receives exactly one of six outcomes by "
+                f"precedence (not driven, violation, blocked by a fault, deadlock, finished, incomplete); deadlock is "
+                f"judged only where no random fuzzer runs, and an emergency-brake event (no candidate satisfies "
+                f"every rule and the shield applies full braking) is a rate, not an outcome. The first main run was "
+                f"stopped when two simulator defects showed as violations, the vehicle body swinging off the path at "
+                f"corners and type-6 crossings built without a junction tile; both were fixed, the stored encounters "
+                f"regenerated and all twelve types rerun at the same n (change 8 of [43]); the stopped run's counts "
+                f"are reported in Section 5.6 and its files archived. Twenty stored encounters must reproduce "
+                f"exactly on every build.")
+    fill("P2-E44-DESIGN-SENTENCE", e44_design_sentence, "E44")
+
+    def e44_design_short():
+        j = e44()
+        return (f"{cnt(sum(t44(j, k)['n'] for k in range(1, 13)))} encounters in the twelve types of Table 3 "
+                f"({cnt(E44_N[1])} in types 1 and 7, {cnt(E44_N_DEFAULT)} in each other), with the three planners "
+                f"of Section 3.5, importance weights on types 6, 7 and 9, and a 95{PCT} per-type bound with a "
+                f"Bonferroni correction over the types.")
+    fill("P2-E44-DESIGN-SENTENCE-SHORT", e44_design_short, "E44")
+
+    def e44_intro_clause():
+        j = e44()
+        zero, viol = e44_split(j)
+        n = sum(t44(j, k)["n_driven"] for k in range(1, 13))
+        bmax = max(t44(j, k)["bonferroni_bound"] for k in zero)
+        s = (f"In {cnt(n)} driven encounters of twelve types the safety program allowed no hard violation in "
+             f"{words(len(zero))} types, with a per-type 95{PCT} bound on the violation probability of {sci(bmax)} "
+             f"or less under each type's parameter distribution")
+        if viol:
+            s += "; " + e44_violating_clause(j, viol)
+        return s + " (Section 5.6)."
+    fill("P2-E44-INTRO-CLAUSE", e44_intro_clause, "E44")
+
+    def e44_results_paragraph():
+        j = e44()
+        d = r.e44d["defects_found_in_main_run"]
+        zero, viol = e44_split(j)
+        n_all = sum(t44(j, k)["n"] for k in range(1, 13))
+        n_drv = sum(t44(j, k)["n_driven"] for k in range(1, 13))
+        for k in range(1, 13):
+            check(t44(j, k).get("outcomes_sum_equals_n", True), f"type {k}: the outcome classes sum to n")
+        bz = {k: t44(j, k)["bonferroni_bound"] for k in zero}
+        kmin, kmax = min(bz, key=bz.get), max(bz, key=bz.get)
+        nz = sum(t44(j, k)["n_driven"] for k in zero)
+        s = (f"Table 6 gives every type. Of the {cnt(n_all)} encounters generated, {cnt(n_drv)} were driven "
+             f"({cnt(t44(j, 1)['n'] - t44(j, 1)['n_driven'])} type-1 draws could not hold the vehicle on the slope). "
+             f"{words(len(zero)).capitalize()} of the twelve types produced no hard violation in {cnt(nz)} driven "
+             f"encounters; their Bonferroni bounds run from {sci(bz[kmin])} (type {kmin}, {T12[kmin]}, effective "
+             f"n {cnt(t44(j, kmin)['n_eff'])}) to {sci(bz[kmax])} (type {kmax}, {T12[kmax]}, effective n "
+             f"{cnt(t44(j, kmax)['n_eff'])}). ")
+        for k in viol:
+            t = t44(j, k)
+            kinds = {kk: v for kk, v in t["violations_by_kind"].items() if v > 0}
+            s += (f"Type {k} ({T12[k]}) had {cnt(t['violations'])} violating encounters in {cnt(t['n_driven'])} "
+                  f"(effective n {cnt(t['n_eff'])}): "
+                  f"{', '.join(f'{cnt(v)} {KIND[kk]}' for kk, v in kinds.items())}"
+                  + ("; an encounter may count under more than one kind" if len(kinds) > 1 else "")
+                  + f". Its Clopper&ndash;Pearson upper limit is {sci(t['bonferroni_bound'])}. ")
+            if k == 9:
+                g = d["genuine_finding"]
+                check("dead stop" in g["name"], "the type-9 finding in E44_defects.json is the dead stop")
+                if r.e44b is not None:
+                    b9 = r.e44b[r.e44b["type"] == 9].set_index("bin")["violation"]
+                    check(int(b9.get("kind=dead", 0)) == t["violations"] and
+                          int(b9.get("kind=slip", 0)) == 0 and int(b9.get("kind=drift", 0)) == 0,
+                          "every type-9 violation is in the dead-stop bin (E44_bins.csv)")
+                s += (f"Every one of them is the dead stop: a fault stops the leader instantly, while R1's gap is "
+                      f"derived for a leader that brakes at most at b<sub>max</sub> = 0.8{NB}m/s<sup>2</sup>, so a "
+                      f"same-direction follower already inside the segment loses its margin; the slip and drift "
+                      f"cases of the same type produced none. ")
+        if viol:
+            s += (f"H7 as registered, zero violations in every type, is therefore not supported; its first clause "
+                  f"holds in {words(len(zero))} of twelve types. ")
+        else:
+            s += "H7's first clause, zero violations in every type, holds. "
+        # importance weights, near misses, margins
+        ne = {k: t44(j, k) for k in (6, 7, 9)}
+        s += ("The importance weights reduce the effective n to " +
+              ", ".join(f"{cnt(t['n_eff'])} of {cnt(t['n_driven'])} in type {k}" for k, t in ne.items()) + ". ")
+        nm_tot = sum(t44(j, k)["near_misses"] for k in range(1, 13))
+        nm_gap = sum(t44(j, k)["near_misses_by_kind"]["near_gap"] for k in range(1, 13))
+        check(nm_gap > 0.5 * nm_tot, "most near misses are same-lane gaps under twice d_min")
+        s += (f"Near misses, mostly a same-lane gap under twice d<sub>min</sub>, occurred in "
+              f"{cnt(nm_tot)} encounters ({pc(nm_tot / n_drv, 0)} of those driven); the smallest clearance in any "
+              f"type without a violation was {num(min(t44(j, k)['min_margin_m'] for k in zero), 1)}{NB}m. ")
+        # outcomes
+        t5 = t44(j, 5)
+        dl = {k: t44(j, k)["outcomes"]["deadlock"] for k in range(1, 13) if t44(j, k)["outcomes"]["deadlock"] > 0}
+        if dl:
+            s += ("Deadlocks occurred in " + ", ".join(
+                f"{cnt(v)} of {cnt(t44(j, k)['n_driven'])} type-{k} encounters ({pc(v / t44(j, k)['n_driven'], 1)})"
+                for k, v in dl.items()) + (", the ring of one-lane segments with finite bays, and in no other type. "
+                                            if list(dl) == [5] else ". "))
+        else:
+            s += "No encounter deadlocked. "
+        bf = {k: t44(j, k)["outcomes"]["blocked_by_fault"] for k in range(1, 13)
+              if t44(j, k)["outcomes"]["blocked_by_fault"] > 0}
+        if bf:
+            s += ("A fault blocked " + ", ".join(f"{cnt(v)} type-{k} encounters" for k, v in bf.items()) +
+                  " before any rule was tested. ")
+        eb = max(range(1, 13), key=lambda k: t44(j, k)["emergency_brake_rate"])
+        s += (f"The emergency brake fired in up to {pc(t44(j, eb)['emergency_brake_rate'], 1)} of a type's "
+              f"encounters (type {eb}, {T12[eb]}). ")
+        # the stopped first run
+        f = d["first_run_violations_by_type"]
+        rr = {k: v for dd in d["defects"] for k, v in dd["re_run_after_fix"].items()}
+        g9 = d["genuine_finding"]["re_run_after_both_fixes"]
+        s += (f"The first main run, stopped after types 1&ndash;10 and part of type 11, had shown "
+              + ", ".join(f"{cnt(v)} violations in type {k}" for k, v in f.items() if k != "others")
+              + " and none elsewhere. The deterministic violating encounters (those without a random fuzzer) were "
+                "rerun after each fix: "
+              + ", ".join(f"{cnt(v['re_run'])} of {cnt(v['of_fuzzer_free_violating'])} in type {k}"
+                          for k, v in rr.items())
+              + f" were clean, while {cnt(g9['still_violating'])} of {cnt(g9['of_fuzzer_free_violating'])} in "
+                f"type 9 still violated ({cnt(g9['gap_below_D0'])} below the gap, {cnt(g9['contact'])} contacts). "
+                f"The stopped run's files are archived and used for nothing else.")
+        check(all(v["still_violating"] == 0 for v in rr.values()),
+              "every deterministic encounter rerun after a defect fix was clean")
+        return s
+    fill("P2-E44-RESULTS-PARAGRAPH", e44_results_paragraph, "E44")
+
+    def e44_discussion_clause():
+        j = e44()
+        zero, viol = e44_split(j)
+        t9 = t44(j, 9)
+        s = ""
+        if viol == [9]:
+            s = (f"The simulator's one failure is where the derivation says it should be. R1's gap is computed for "
+                 f"a leader that brakes at b<sub>max</sub>, and a vehicle that stops dead, a fault rather than a "
+                 f"manoeuvre, lies outside that model [14], so a same-direction follower already inside a one-lane "
+                 f"segment can close below the gap and, in {cnt(t9['violations_by_kind']['viol_contact'])} of "
+                 f"{cnt(t9['n_driven'])} encounters, touch. A dead-stop margin, the follower's own stopping distance "
+                 f"at its current speed, would close the case at a cost in segment capacity; we did not run it, and "
+                 f"the count stands as a limit of braking-based separation. ")
+        elif viol:
+            s = ("The simulator's failures, " + e44_violating_clause(j, viol).replace("the exceptions are ", "")
+                 .replace("the exception is ", "") + ", are reported as found. ")
+        t5 = t44(j, 5)
+        if t5["outcomes"]["deadlock"] > 0:
+            s += (f"The ring deadlocks of type 5 ({pc(t5['outcomes']['deadlock'] / t5['n_driven'], 1)} of its "
+                  f"encounters) are the property noted before the main run [43]: the exit-bay rule is not "
+                  f"deadlock-free on a ring of one-lane segments with finite bays, and the logistics model's zero "
+                  f"count comes from its unbounded bays.")
+        return s.strip()
+    fill("P2-E44-DISCUSSION-CLAUSE", e44_discussion_clause, "E44")
+
+    def e44_comparison_clause():
+        j = e44()
+        zero, viol = e44_split(j)
+        b5 = {k: t44(j, k)["bound"] for k in zero if t44(j, k)["n"] >= 100_000}
+        b4 = {k: t44(j, k)["bound"] for k in zero if t44(j, k)["n"] < 100_000}
+        return (f"Our per-type bounds are the zero-numerator bounds of Hanley and Lippman-Hand [33]: with no "
+                f"violation in n encounters the 95{PCT} upper limit is close to 3/n, {sci(min(b5.values()))} at "
+                f"{cnt(100_000)} and {sci(min(b4.values()))} at {cnt(10_000)}, and they hold for the generated "
+                f"distribution of each type, not for the base's actual traffic. Zhao and colleagues reach rarer "
+                f"events by importance sampling on the lane-change parameters [35]; we used the same device on "
+                f"three types (the exit distance, the crew's emergence time and the dead-stop time), which cost "
+                f"effective sample size (Section 5.6) and found the one violating case, type 9, where the boosted "
+                f"region was.")
+    fill("P2-E44-COMPARISON-CLAUSE", e44_comparison_clause, "E44")
+
+    def e44_compute_sentence():
+        j = e44()
+        secs = {k: t44(j, k)["run_time_s"] for k in range(1, 13)}
+        kmax = max(secs, key=secs.get)
+        return (f"E44's final run took {num(sum(secs.values()) / 3600, 1)}{NB}h of processor time in resumable "
+                f"batches of 250 to 4,000 encounters, type {kmax} the longest at {num(secs[kmax] / 3600, 1)}{NB}h, "
+                f"with a process peak of {num(max(t44(j, k)['peak_rss_mb'] for k in range(1, 13)), 0)}{NB}MB.")
+    fill("P2-E44-COMPUTE-SENTENCE", e44_compute_sentence, "E44")
+
+    # ---- E45: the discrete model and its checker (results/E45_modelcheck.json) ---------------------------------
+    def e45():
+        j = r.e45j
+        if j is None:
+            raise Pending("E45 (model checker, B-78) has not run")
+        if not j.get("models") or not j.get("mutations"):
+            raise Pending("E45_modelcheck.json has no models or mutations")
+        return j
+
+    def e45_nodes():
+        try:
+            from lunarsim.atc import modelcheck as MC
+        except Exception as e:                  # BACKEND's file is not yet in the tree
+            raise Pending(f"lunarsim/atc/modelcheck.py not importable ({e})")
+        return cnt(len(MC.X))
+    fill("P2-E45-N-NODES", e45_nodes, "E45")
+
+    E45_NAME = {"A_pad_and_oncoming": "a pad visit with one oncoming vehicle (landing, crew and radio links)",
+                "B_three_on_line": "three vehicles on the line, two of them interchangeable (crew, no landing)",
+                "C_pad_two_oncoming": "a pad visit with two oncoming vehicles (landing and crew)",
+                "D_pad_two_oncoming_links": "a pad visit with two oncoming vehicles and radio links"}
+    E45_MUT = {"R3_exit": "R3 without the exit-slot check", "R5_entry": "R5 without the entry check",
+               "R7_hold": "R7 without the hold"}
+
+    def e45_design_sentence():
+        j = e45()
+        check(set(j["models"]) == set(E45_NAME), "E45 ran the four named layouts")
+        check(set(j["mutations"]) == set(E45_MUT), "E45 ran the three named mutations")
+        return (f"Four layouts of the discrete model of Section 3.6: " + "; ".join(E45_NAME[k] for k in E45_NAME) +
+                f". Then the three mutations, " + ", ".join(E45_MUT.values()) +
+                ", each required to produce a counterexample on the layout where the rule acts.")
+    fill("P2-E45-DESIGN-SENTENCE", e45_design_sentence, "E45")
+
+    def e45_totals(j):
+        ms = j["models"]
+        return (sum(m["states"] for m in ms.values()), sum(m["transitions"] for m in ms.values()),
+                max(m["K_max_steps_to_goal"] for m in ms.values()))
+
+    def e45_intro_clause():
+        j = e45()
+        st, tr, K = e45_totals(j)
+        check(j["all_models_pass"], "every E45 layout passes")
+        check(j["all_mutations_caught"], "every E45 mutation is caught")
+        return (f"The exhaustive search of the discrete model found no unsafe state, no deadlock and no livelock "
+                f"in {cnt(st)} reachable states over four layouts, every state could reach the goal within {cnt(K)} "
+                f"steps, and each of three removed rules produced a counterexample (Section 5.7).")
+    fill("P2-E45-INTRO-CLAUSE", e45_intro_clause, "E45")
+
+    def e45_results_paragraph():
+        j = e45()
+        ms, mu = j["models"], j["mutations"]
+        st, tr, K = e45_totals(j)
+        big = max(ms, key=lambda k: ms[k]["states"])
+        s = (f"The four layouts have {cnt(st)} reachable states and {cnt(tr)} transitions in all; the largest, "
+             f"{E45_NAME[big]}, has {cnt(ms[big]['states'])} states. In every layout the search found no state "
+             f"that breaks a safety invariant, no deadlock state, no state from which the goal is unreachable and no "
+             f"livelock component; the longest shortest path to the goal is {cnt(K)} steps of {num(j['step_s'], 1)}"
+             f"{NB}s on {num(j['cell_m'], 0)}{NB}m cells. ")
+        for k, m in ms.items():
+            check(m["violating_states"] == 0 and m["deadlock_states"] == 0 and m["cannot_reach_goal"] == 0
+                  and m["livelock_sccs"] == 0 and m["passes"], f"E45 layout {k} passes every check")
+        s += "Each mutation produced its counterexample. "
+        r3 = mu["R3_exit"]
+        if "deadlock_trace_length" in r3:
+            s += (f"Without R3's exit-slot check, {cnt(r3['deadlock_states'])} reachable states of the three-vehicle "
+                  f"line are deadlocks and {cnt(r3['cannot_reach_goal'])} cannot reach the goal "
+                  f"({cnt(r3['livelock_sccs'])} livelock components); the shortest deadlock trace is "
+                  f"{cnt(r3['deadlock_trace_length'])} steps. ")
+        r5, r7 = mu["R5_entry"], mu["R7_hold"]
+        s += (f"Without R5's entry check, {cnt(r5['violating_states'])} reachable states have a vehicle inside the "
+              f"landing zone while it is closed, the shortest reached in {cnt(r5['counterexample_length'])} steps. "
+              f"Without R7's hold, {cnt(r7['violating_states'])} reachable states break an invariant ("
+              + ", ".join(f"{cnt(v)} {kk}" for kk, v in r7["violation_kinds"].items())
+              + f"), the shortest in {cnt(r7['counterexample_length'])} steps. The traces are stored beside the "
+                f"results.")
+        for k, m in mu.items():
+            check(m["counterexample_found"], f"E45 mutation {k} produced a counterexample")
+        return s
+    fill("P2-E45-RESULTS-PARAGRAPH", e45_results_paragraph, "E45")
+
+    def e45_discussion_clause():
+        j = e45()
+        st, tr, K = e45_totals(j)
+        return (f"the exhaustive check says that the rules are consistent on every layout the checker can hold, "
+                f"{cnt(st)} states of up to three vehicles on one segment with its bays, a pad and a crew member, "
+                f"and that each of the three clauses we removed is load-bearing: without it the search finds an "
+                f"unsafe or a stuck state within a few steps. It says nothing about larger layouts, which is where "
+                f"the simulator takes over.")
+    fill("P2-E45-DISCUSSION-CLAUSE", e45_discussion_clause, "E45")
+
+    def e45_compute_sentence():
+        j = e45()
+        ms, mu = j["models"], j["mutations"]
+        big = max(ms, key=lambda k: ms[k]["states"])
+        tot = sum(m["seconds"] for m in ms.values()) + sum(m["seconds"] for m in mu.values())
+        return (f"E45's four layouts and three mutations took {num(tot, 0)}{NB}s in all, the largest layout "
+                f"{num(ms[big]['seconds'], 0)}{NB}s and {num(ms[big]['peak_mb_traced'], 0)}{NB}MB.")
+    fill("P2-E45-COMPUTE-SENTENCE", e45_compute_sentence, "E45")
+
+    def h7_abstract_clause():
+        j, j5 = e44(), e45()
+        zero, viol = e44_split(j)
+        st, tr, K = e45_totals(j5)
+        s = (f"The safety program allowed no violation in {words(len(zero))} of the twelve encounter types")
+        if viol == [9]:
+            s += ("; the exception, a vehicle stopping dead inside a one-lane segment, defeats a gap rule derived "
+                  "for a braking leader")
+        elif viol:
+            s += "; " + e44_violating_clause(j, viol, with_counts=False)
+        s += (f", and the exhaustive search found no unsafe or stuck state in {cnt(st)} reachable states and "
+              f"caught each of three removed rules.")
+        return s
+    fill("P2-H7-ABSTRACT-CLAUSE", h7_abstract_clause, "E44/E45")
+
+    def conclusion_safety_clause():
+        j, j5 = e44(), e45()
+        zero, viol = e44_split(j)
+        st, tr, K = e45_totals(j5)
+        n = sum(t44(j, k)["n_driven"] for k in range(1, 13))
+        s = (f"The exhaustive check found no unsafe or stuck state in {cnt(st)} reachable states and caught every "
+             f"removed rule; the simulator found no violation in {words(len(zero))} of twelve encounter types over "
+             f"{cnt(n)} encounters")
+        if viol == [9]:
+            s += (", and one in the twelfth: a vehicle that stops dead inside a one-lane segment, which the "
+                  "braking-based gap rule does not cover.")
+        elif viol:
+            s += "; " + e44_violating_clause(j, viol, with_counts=False) + "."
+        else:
+            s += "."
+        return s
+    fill("P2-CONCLUSION-SAFETY-CLAUSE", conclusion_safety_clause, "E44/E45")
+
     V["P2-REFERENCES"] = references()
-    T = {"E43_cells": table_cells(r), "E43_pairs": table_pairs(r),
-         "E44": '<p class="pending">[[PENDING E44: Table 6, encounters per type with bounds]]</p>' if allow_pending else None,
-         }
-    if T["E44"] is None:
-        raise SystemExit("TABLE:E44 pending (E44 has not run); rerun with --allow-pending to build a draft")
+    T = {"E43_cells": table_cells(r), "E43_pairs": table_pairs(r), "E44": None}
+    try:
+        T["E44"] = table_e44(r, e44())
+    except Pending as e:
+        if not allow_pending:
+            raise SystemExit(f"TABLE:E44 pending ({e}); rerun with --allow-pending to build a draft")
+        pending.append(f"TABLE:E44: {e}")
+        T["E44"] = '<p class="pending">[[PENDING E44: Table 6, encounters per type with bounds]]</p>'
     F = {"E43_density": fig_density(r)}
     if broken:
         raise SystemExit("claims contradicted by the data:\n  " + "\n  ".join(broken))
@@ -475,6 +868,32 @@ def table_cells(r: R):
                 "run; deadlocks are the total over the cell's runs. Horizon in days.",
                 ["Cell", "Start year", "Runs", "Horizon", "Delay (h)", "p90 (h)", "Items", "Bay wait (h)", "Conflicts",
                  "To Earth", "Earth wait (h)", "Deadlocks"], rows, cls="wide")
+
+
+def table_e44(r: R, j):
+    """Table 6: encounters per type with their bounds (results/E44_bounds.json)."""
+    rows = []
+    for k in range(1, 13):
+        t = j["types"][str(k)]
+        kinds = {kk: v for kk, v in t["violations_by_kind"].items() if v > 0}
+        short = {"viol_contact": "contact", "viol_gap": "gap", "viol_zone": "zone", "viol_crew": "crew",
+                 "viol_r3": "R3", "viol_slots": "slots"}
+        viol = (cnt(t["violations"]) if not kinds else
+                cnt(t["violations"]) + " (" + ", ".join(f"{cnt(v)} {short[kk]}" for kk, v in kinds.items()) + ")")
+        o = t["outcomes"]
+        rows.append([k, html.escape(T12[k]), cnt(t["n"]), cnt(t["n_driven"]), cnt(t["n_eff"]), viol,
+                     sci(t["bonferroni_bound"]), cnt(t["near_misses"]), num(t["min_margin_m"], 1),
+                     cnt(o["deadlock"]), cnt(o["blocked_by_fault"]), pc(t["emergency_brake_rate"], 1)])
+    return _tab("Table 6. E44, encounters per type: generated, driven and effective n, hard violations (by kind), the "
+                f"95{PCT} upper bound on the per-encounter violation probability with the Bonferroni correction over "
+                "the twelve types, near misses, the smallest clearance, deadlocks, encounters blocked by a fault and the "
+                "emergency-brake rate.",
+                ["#", "Type", "n", "driven", "effective n", "violations", "bound (Bonferroni)", "near misses",
+                 "min margin (m)", "deadlocks", "blocked by fault", "emergency brake"], rows, "wide",
+                "Bound: with no violation 1 &minus; (0.05/12)<sup>1/n<sub>eff</sub></sup>; with violations the "
+                "Clopper&ndash;Pearson upper limit at &alpha;/12. Effective n = (&Sigma;w)<sup>2</sup>/&Sigma;w<sup>2</sup> "
+                "under the importance weights of types 6, 7 and 9. A negative minimum margin is a contact. Deadlocks are "
+                "judged only in encounters without a random fuzzer.")
 
 
 def table_pairs(r: R):
