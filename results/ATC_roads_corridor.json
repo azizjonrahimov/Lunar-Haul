@@ -1,0 +1,55 @@
+{
+ "task": "B-77",
+ "criterion": {
+  "rule": "corridor narrower than 2 vehicle widths + 2 lateral margins at the slope limit",
+  "width_single_m": 10.0,
+  "vehicle_width_m": 2.3,
+  "lateral_margin_m": 2.7,
+  "profile": "+-50 m across the route direction every 1 m, bilinear on the 5 m DEM slope grid",
+  "dem": "LOLA 5 m Connecting Ridge tile (data/terrain/connecting_ridge)"
+ },
+ "samples": 2421,
+ "route_km_unique": 242.1,
+ "junctions_excluded": 17,
+ "slope_at_sample_percentiles_deg": {
+  "0.5": 6.8,
+  "0.9": 10.4,
+  "0.99": 13.4,
+  "1.0": 17.2
+ },
+ "by_slope_limit_deg": {
+  "20": {
+   "single_lane_share": 0.0,
+   "single_lane_km_unique": 0.0,
+   "width_lt_20m_share": 0.0,
+   "median_width_m": 101.0
+  },
+  "15": {
+   "single_lane_share": 0.0017,
+   "single_lane_km_unique": 0.4,
+   "width_lt_20m_share": 0.0025,
+   "median_width_m": 101.0
+  },
+  "12": {
+   "single_lane_share": 0.0285,
+   "single_lane_km_unique": 6.9,
+   "width_lt_20m_share": 0.0401,
+   "median_width_m": 101.0
+  },
+  "10": {
+   "single_lane_share": 0.1508,
+   "single_lane_km_unique": 36.5,
+   "width_lt_20m_share": 0.1846,
+   "median_width_m": 84.0
+  },
+  "8": {
+   "single_lane_share": 0.3986,
+   "single_lane_km_unique": 96.5,
+   "width_lt_20m_share": 0.442,
+   "median_width_m": 37.0
+  }
+ },
+ "single_lane_km_at_20deg": 0.0,
+ "single_lane_km_at_15deg": 0.4,
+ "e43_choice": "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads, so the single-lane share is a scenario factor; the narrowest places (corridor width at 10 deg) are marked first"
+}

@@ -1,0 +1,1199 @@
+{
+ "note": "Per cell: means of the delivery and road metrics. Paired by seed (same seed, same start year): atc - none (what the rules\ncost when one shared table resolves conflicts) and uncoordinated - atc (what coordinating the table is worth), per fleet\ndensity and, for uncoordinated, per start year; bootstrap 95 % CI as in analyse_e40. The single-lane share is ASSUMED\n(results/ATC_roads_corridor.json); the 8x cells were not run (data/scenarios/p5/E43-design.json).",
+ "single_share_flag": "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the narrowest places at a 10 deg slope limit are marked first",
+ "cells": {
+  "none x1 | y2028:30": {
+   "n": 30,
+   "n_planned": 30,
+   "horizon_days": 365.0,
+   "atc_urgent_wait_mean_cens_h": 14.4684,
+   "delay_mean_h": 15.471,
+   "delivered_share": 0.9989,
+   "road_wait_h": NaN,
+   "road_conflicts": NaN,
+   "road_hand_conflicts": NaN,
+   "road_hand_wait_h": NaN,
+   "road_other_stop_h": NaN,
+   "road_eva_slow_h": NaN,
+   "road_apron_wait_h": NaN
+  },
+  "atc x1 | y2028:30": {
+   "n": 30,
+   "n_planned": 30,
+   "horizon_days": 365.0,
+   "atc_urgent_wait_mean_cens_h": 14.5888,
+   "delay_mean_h": 15.522,
+   "delivered_share": 0.999,
+   "road_wait_h": 24.6109,
+   "road_conflicts": 75.3333,
+   "road_hand_conflicts": 0.0,
+   "road_hand_wait_h": 0.0,
+   "road_other_stop_h": 0.0,
+   "road_eva_slow_h": 10.1217,
+   "road_apron_wait_h": 0.5729
+  },
+  "uncoordinated x1 | y2028:30": {
+   "n": 30,
+   "n_planned": 30,
+   "horizon_days": 365.0,
+   "atc_urgent_wait_mean_cens_h": 61.2031,
+   "delay_mean_h": 81.8856,
+   "delivered_share": 0.998,
+   "road_wait_h": 0.0244,
+   "road_conflicts": 0.2333,
+   "road_hand_conflicts": 51.7,
+   "road_hand_wait_h": 2024.5668,
+   "road_other_stop_h": 2016.8765,
+   "road_eva_slow_h": 9.9867,
+   "road_apron_wait_h": 0.0
+  },
+  "uncoordinated x1 | y2038:30": {
+   "n": 30,
+   "n_planned": 30,
+   "horizon_days": 365.0,
+   "atc_urgent_wait_mean_cens_h": 85.7674,
+   "delay_mean_h": 104.4919,
+   "delivered_share": 0.9928,
+   "road_wait_h": 0.0369,
+   "road_conflicts": 0.2,
+   "road_hand_conflicts": 43.7,
+   "road_hand_wait_h": 2647.2751,
+   "road_other_stop_h": 2634.6192,
+   "road_eva_slow_h": 9.9233,
+   "road_apron_wait_h": 0.0
+  },
+  "none x2 | y2028:30": {
+   "n": 30,
+   "n_planned": 30,
+   "horizon_days": 365.0,
+   "atc_urgent_wait_mean_cens_h": 11.9272,
+   "delay_mean_h": 8.0599,
+   "delivered_share": 0.9996,
+   "road_wait_h": NaN,
+   "road_conflicts": NaN,
+   "road_hand_conflicts": NaN,
+   "road_hand_wait_h": NaN,
+   "road_other_stop_h": NaN,
+   "road_eva_slow_h": NaN,
+   "road_apron_wait_h": NaN
+  },
+  "atc x2 | y2028:30": {
+   "n": 30,
+   "n_planned": 30,
+   "horizon_days": 365.0,
+   "atc_urgent_wait_mean_cens_h": 11.957,
+   "delay_mean_h": 8.2119,
+   "delivered_share": 0.9996,
+   "road_wait_h": 291.0204,
+   "road_conflicts": 858.1667,
+   "road_hand_conflicts": 0.0,
+   "road_hand_wait_h": 0.0,
+   "road_other_stop_h": 0.0,
+   "road_eva_slow_h": 22.88,
+   "road_apron_wait_h": 2.9958
+  },
+  "uncoordinated x2 | y2028:30": {
+   "n": 30,
+   "n_planned": 30,
+   "horizon_days": 365.0,
+   "atc_urgent_wait_mean_cens_h": 53.0138,
+   "delay_mean_h": 62.0972,
+   "delivered_share": 0.9992,
+   "road_wait_h": 64.2631,
+   "road_conflicts": 219.1333,
+   "road_hand_conflicts": 235.3333,
+   "road_hand_wait_h": 4909.2335,
+   "road_other_stop_h": 5369.6776,
+   "road_eva_slow_h": 22.0433,
+   "road_apron_wait_h": 0.1389
+  },
+  "uncoordinated x2 | y2038:30": {
+   "n": 30,
+   "n_planned": 30,
+   "horizon_days": 365.0,
+   "atc_urgent_wait_mean_cens_h": 70.7423,
+   "delay_mean_h": 78.8333,
+   "delivered_share": 0.9948,
+   "road_wait_h": 54.6604,
+   "road_conflicts": 183.4,
+   "road_hand_conflicts": 194.5667,
+   "road_hand_wait_h": 5927.2129,
+   "road_other_stop_h": 6430.5524,
+   "road_eva_slow_h": 21.55,
+   "road_apron_wait_h": 0.1461
+  },
+  "none x4 | y2028:10": {
+   "n": 10,
+   "n_planned": 10,
+   "horizon_days": 90.0,
+   "atc_urgent_wait_mean_cens_h": 5.4539,
+   "delay_mean_h": 5.0711,
+   "delivered_share": 0.9994,
+   "road_wait_h": NaN,
+   "road_conflicts": NaN,
+   "road_hand_conflicts": NaN,
+   "road_hand_wait_h": NaN,
+   "road_other_stop_h": NaN,
+   "road_eva_slow_h": NaN,
+   "road_apron_wait_h": NaN
+  },
+  "atc x4 | y2028:10": {
+   "n": 10,
+   "n_planned": 10,
+   "horizon_days": 90.0,
+   "atc_urgent_wait_mean_cens_h": 5.8745,
+   "delay_mean_h": 5.3988,
+   "delivered_share": 0.9992,
+   "road_wait_h": 371.3393,
+   "road_conflicts": 971.4,
+   "road_hand_conflicts": 0.0,
+   "road_hand_wait_h": 0.0,
+   "road_other_stop_h": 0.0,
+   "road_eva_slow_h": 11.37,
+   "road_apron_wait_h": 2.9155
+  },
+  "uncoordinated x4 | y2028:10": {
+   "n": 10,
+   "n_planned": 10,
+   "horizon_days": 90.0,
+   "atc_urgent_wait_mean_cens_h": 42.3279,
+   "delay_mean_h": 51.9485,
+   "delivered_share": 0.9891,
+   "road_wait_h": 92.8731,
+   "road_conflicts": 267.2,
+   "road_hand_conflicts": 200.8,
+   "road_hand_wait_h": 2691.7582,
+   "road_other_stop_h": 2938.0684,
+   "road_eva_slow_h": 11.73,
+   "road_apron_wait_h": 0.5219
+  },
+  "uncoordinated x4 | y2038:10": {
+   "n": 10,
+   "n_planned": 10,
+   "horizon_days": 90.0,
+   "atc_urgent_wait_mean_cens_h": 49.1117,
+   "delay_mean_h": 54.4994,
+   "delivered_share": 0.9953,
+   "road_wait_h": 111.2764,
+   "road_conflicts": 275.4,
+   "road_hand_conflicts": 178.8,
+   "road_hand_wait_h": 3425.5788,
+   "road_other_stop_h": 3921.05,
+   "road_eva_slow_h": 10.235,
+   "road_apron_wait_h": 0.3511
+  },
+  "atc x1 share 0 | y2028:30": {
+   "n": 30,
+   "n_planned": 30,
+   "horizon_days": 365.0,
+   "atc_urgent_wait_mean_cens_h": 15.025,
+   "delay_mean_h": 15.4918,
+   "delivered_share": 0.999,
+   "road_wait_h": 0.0,
+   "road_conflicts": 0.0,
+   "road_hand_conflicts": 0.0,
+   "road_hand_wait_h": 0.0,
+   "road_other_stop_h": 0.0,
+   "road_eva_slow_h": 9.95,
+   "road_apron_wait_h": 0.35
+  },
+  "uncoordinated x1 share 0 | y2028:30": {
+   "n": 30,
+   "n_planned": 30,
+   "horizon_days": 365.0,
+   "atc_urgent_wait_mean_cens_h": 15.7338,
+   "delay_mean_h": 15.6118,
+   "delivered_share": 0.9991,
+   "road_wait_h": 0.0,
+   "road_conflicts": 0.0,
+   "road_hand_conflicts": 0.8667,
+   "road_hand_wait_h": 11.9422,
+   "road_other_stop_h": 11.4873,
+   "road_eva_slow_h": 9.9083,
+   "road_apron_wait_h": 0.0
+  },
+  "atc x1 share 0.05 | y2028:30": {
+   "n": 30,
+   "n_planned": 30,
+   "horizon_days": 365.0,
+   "atc_urgent_wait_mean_cens_h": 14.6054,
+   "delay_mean_h": 15.4978,
+   "delivered_share": 0.999,
+   "road_wait_h": 24.1993,
+   "road_conflicts": 75.0333,
+   "road_hand_conflicts": 0.0,
+   "road_hand_wait_h": 0.0,
+   "road_other_stop_h": 0.0,
+   "road_eva_slow_h": 10.14,
+   "road_apron_wait_h": 0.5704
+  },
+  "uncoordinated x1 share 0.05 | y2028:30": {
+   "n": 30,
+   "n_planned": 30,
+   "horizon_days": 365.0,
+   "atc_urgent_wait_mean_cens_h": 61.0362,
+   "delay_mean_h": 81.4808,
+   "delivered_share": 0.9976,
+   "road_wait_h": 0.0244,
+   "road_conflicts": 0.2333,
+   "road_hand_conflicts": 52.2,
+   "road_hand_wait_h": 2014.6545,
+   "road_other_stop_h": 2006.8331,
+   "road_eva_slow_h": 9.9583,
+   "road_apron_wait_h": 0.0
+  },
+  "atc x1 share 0.4 | y2028:30": {
+   "n": 30,
+   "n_planned": 30,
+   "horizon_days": 365.0,
+   "atc_urgent_wait_mean_cens_h": 15.2921,
+   "delay_mean_h": 15.613,
+   "delivered_share": 0.9989,
+   "road_wait_h": 44.0964,
+   "road_conflicts": 107.2333,
+   "road_hand_conflicts": 0.0,
+   "road_hand_wait_h": 0.0,
+   "road_other_stop_h": 0.0,
+   "road_eva_slow_h": 10.2067,
+   "road_apron_wait_h": 0.4931
+  },
+  "uncoordinated x1 share 0.4 | y2028:30": {
+   "n": 30,
+   "n_planned": 30,
+   "horizon_days": 365.0,
+   "atc_urgent_wait_mean_cens_h": 78.4132,
+   "delay_mean_h": 96.2436,
+   "delivered_share": 0.9969,
+   "road_wait_h": 0.4199,
+   "road_conflicts": 1.7667,
+   "road_hand_conflicts": 77.4333,
+   "road_hand_wait_h": 2405.1161,
+   "road_other_stop_h": 2375.6616,
+   "road_eva_slow_h": 10.01,
+   "road_apron_wait_h": 0.0
+  },
+  "atc x1 bay 0.5 | y2028:30": {
+   "n": 30,
+   "n_planned": 30,
+   "horizon_days": 365.0,
+   "atc_urgent_wait_mean_cens_h": 15.1062,
+   "delay_mean_h": 15.7979,
+   "delivered_share": 0.999,
+   "road_wait_h": 12.8396,
+   "road_conflicts": 106.1,
+   "road_hand_conflicts": 0.0,
+   "road_hand_wait_h": 0.0,
+   "road_other_stop_h": 0.0,
+   "road_eva_slow_h": 10.13,
+   "road_apron_wait_h": 0.3945
+  },
+  "uncoordinated x1 bay 0.5 | y2028:30": {
+   "n": 30,
+   "n_planned": 30,
+   "horizon_days": 365.0,
+   "atc_urgent_wait_mean_cens_h": 54.0547,
+   "delay_mean_h": 78.7294,
+   "delivered_share": 0.9968,
+   "road_wait_h": 0.071,
+   "road_conflicts": 0.4333,
+   "road_hand_conflicts": 51.9333,
+   "road_hand_wait_h": 1965.3852,
+   "road_other_stop_h": 1966.5064,
+   "road_eva_slow_h": 10.0717,
+   "road_apron_wait_h": 0.0
+  },
+  "atc x1 bay 2 | y2028:30": {
+   "n": 30,
+   "n_planned": 30,
+   "horizon_days": 365.0,
+   "atc_urgent_wait_mean_cens_h": 14.5888,
+   "delay_mean_h": 15.522,
+   "delivered_share": 0.999,
+   "road_wait_h": 24.6109,
+   "road_conflicts": 75.3333,
+   "road_hand_conflicts": 0.0,
+   "road_hand_wait_h": 0.0,
+   "road_other_stop_h": 0.0,
+   "road_eva_slow_h": 10.1217,
+   "road_apron_wait_h": 0.5729
+  },
+  "uncoordinated x1 bay 2 | y2028:30": {
+   "n": 30,
+   "n_planned": 30,
+   "horizon_days": 365.0,
+   "atc_urgent_wait_mean_cens_h": 61.2031,
+   "delay_mean_h": 81.8856,
+   "delivered_share": 0.998,
+   "road_wait_h": 0.0244,
+   "road_conflicts": 0.2333,
+   "road_hand_conflicts": 51.7,
+   "road_hand_wait_h": 2024.5668,
+   "road_other_stop_h": 2016.8765,
+   "road_eva_slow_h": 9.9867,
+   "road_apron_wait_h": 0.0
+  },
+  "atc x1 r7 | y2028:30": {
+   "n": 30,
+   "n_planned": 30,
+   "horizon_days": 365.0,
+   "atc_urgent_wait_mean_cens_h": 51.4558,
+   "delay_mean_h": 65.442,
+   "delivered_share": 0.997,
+   "road_wait_h": 3.8064,
+   "road_conflicts": 14.5,
+   "road_hand_conflicts": 37.1667,
+   "road_hand_wait_h": 1591.9694,
+   "road_other_stop_h": 1580.8989,
+   "road_eva_slow_h": 10.2383,
+   "road_apron_wait_h": 0.2928
+  }
+ },
+ "paired": {
+  "uncoordinated - atc x1 | 2038 (atc run is year-independent)": {
+   "n": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "n": 30,
+    "mean": 71.1786,
+    "ci": [
+     60.3952,
+     82.8401
+    ],
+    "ci90": [
+     62.0454,
+     80.9444
+    ],
+    "p": 5e-05
+   },
+   "delay_mean_h": {
+    "n": 30,
+    "mean": 88.9698,
+    "ci": [
+     82.2617,
+     95.7449
+    ],
+    "ci90": [
+     83.3313,
+     94.6541
+    ],
+    "p": 5e-05
+   },
+   "delivered_share": {
+    "n": 30,
+    "mean": -0.0062,
+    "ci": [
+     -0.0078,
+     -0.0046
+    ],
+    "ci90": [
+     -0.0076,
+     -0.0049
+    ],
+    "p": 5e-05
+   }
+  },
+  "atc - none x1 | 2028": {
+   "n": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "n": 30,
+    "mean": 0.1205,
+    "ci": [
+     -1.3377,
+     1.9576
+    ],
+    "ci90": [
+     -1.1414,
+     1.5786
+    ],
+    "p": 0.9549
+   },
+   "delay_mean_h": {
+    "n": 30,
+    "mean": 0.0511,
+    "ci": [
+     -0.1821,
+     0.3052
+    ],
+    "ci90": [
+     -0.1477,
+     0.2623
+    ],
+    "p": 0.7224
+   },
+   "delivered_share": {
+    "n": 30,
+    "mean": 0.0001,
+    "ci": [
+     -0.0001,
+     0.0003
+    ],
+    "ci90": [
+     -0.0001,
+     0.0003
+    ],
+    "p": 0.3458
+   }
+  },
+  "uncoordinated - atc x1 | 2028": {
+   "n": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "n": 30,
+    "mean": 46.6143,
+    "ci": [
+     38.023,
+     55.5069
+    ],
+    "ci90": [
+     39.2889,
+     54.0082
+    ],
+    "p": 5e-05
+   },
+   "delay_mean_h": {
+    "n": 30,
+    "mean": 66.3636,
+    "ci": [
+     61.6313,
+     71.2243
+    ],
+    "ci90": [
+     62.3678,
+     70.3965
+    ],
+    "p": 5e-05
+   },
+   "delivered_share": {
+    "n": 30,
+    "mean": -0.001,
+    "ci": [
+     -0.0019,
+     -0.0003
+    ],
+    "ci90": [
+     -0.0018,
+     -0.0003
+    ],
+    "p": 0.002
+   }
+  },
+  "uncoordinated - atc x2 | 2038 (atc run is year-independent)": {
+   "n": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "n": 30,
+    "mean": 58.7853,
+    "ci": [
+     52.5324,
+     65.555
+    ],
+    "ci90": [
+     53.4847,
+     64.413
+    ],
+    "p": 5e-05
+   },
+   "delay_mean_h": {
+    "n": 30,
+    "mean": 70.6213,
+    "ci": [
+     66.1073,
+     74.8169
+    ],
+    "ci90": [
+     66.8337,
+     74.2111
+    ],
+    "p": 5e-05
+   },
+   "delivered_share": {
+    "n": 30,
+    "mean": -0.0048,
+    "ci": [
+     -0.0062,
+     -0.0034
+    ],
+    "ci90": [
+     -0.006,
+     -0.0036
+    ],
+    "p": 5e-05
+   }
+  },
+  "atc - none x2 | 2028": {
+   "n": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "n": 30,
+    "mean": 0.0298,
+    "ci": [
+     -0.8593,
+     0.9405
+    ],
+    "ci90": [
+     -0.718,
+     0.7882
+    ],
+    "p": 0.9496
+   },
+   "delay_mean_h": {
+    "n": 30,
+    "mean": 0.152,
+    "ci": [
+     0.0262,
+     0.2772
+    ],
+    "ci90": [
+     0.0459,
+     0.257
+    ],
+    "p": 0.0178
+   },
+   "delivered_share": {
+    "n": 30,
+    "mean": -0.0,
+    "ci": [
+     -0.0001,
+     0.0001
+    ],
+    "ci90": [
+     -0.0001,
+     0.0001
+    ],
+    "p": 0.8105
+   }
+  },
+  "uncoordinated - atc x2 | 2028": {
+   "n": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "n": 30,
+    "mean": 41.0568,
+    "ci": [
+     36.3911,
+     46.4055
+    ],
+    "ci90": [
+     37.0748,
+     45.5303
+    ],
+    "p": 5e-05
+   },
+   "delay_mean_h": {
+    "n": 30,
+    "mean": 53.8853,
+    "ci": [
+     49.9234,
+     57.8401
+    ],
+    "ci90": [
+     50.5418,
+     57.2422
+    ],
+    "p": 5e-05
+   },
+   "delivered_share": {
+    "n": 30,
+    "mean": -0.0004,
+    "ci": [
+     -0.001,
+     0.0
+    ],
+    "ci90": [
+     -0.0009,
+     -0.0
+    ],
+    "p": 0.073
+   }
+  },
+  "uncoordinated - atc x4 | 2038 (atc run is year-independent)": {
+   "n": 10,
+   "atc_urgent_wait_mean_cens_h": {
+    "n": 10,
+    "mean": 43.2372,
+    "ci": [
+     32.9154,
+     53.7845
+    ],
+    "ci90": [
+     34.5554,
+     52.1439
+    ],
+    "p": 5e-05
+   },
+   "delay_mean_h": {
+    "n": 10,
+    "mean": 49.1006,
+    "ci": [
+     39.9068,
+     58.8737
+    ],
+    "ci90": [
+     41.2236,
+     57.2215
+    ],
+    "p": 5e-05
+   },
+   "delivered_share": {
+    "n": 10,
+    "mean": -0.0039,
+    "ci": [
+     -0.0056,
+     -0.0024
+    ],
+    "ci90": [
+     -0.0053,
+     -0.0026
+    ],
+    "p": 5e-05
+   }
+  },
+  "atc - none x4 | 2028": {
+   "n": 10,
+   "atc_urgent_wait_mean_cens_h": {
+    "n": 10,
+    "mean": 0.4206,
+    "ci": [
+     -0.3175,
+     1.5011
+    ],
+    "ci90": [
+     -0.2417,
+     1.3259
+    ],
+    "p": 0.4236
+   },
+   "delay_mean_h": {
+    "n": 10,
+    "mean": 0.3277,
+    "ci": [
+     0.1785,
+     0.4878
+    ],
+    "ci90": [
+     0.1991,
+     0.4622
+    ],
+    "p": 5e-05
+   },
+   "delivered_share": {
+    "n": 10,
+    "mean": -0.0001,
+    "ci": [
+     -0.0009,
+     0.0004
+    ],
+    "ci90": [
+     -0.0008,
+     0.0003
+    ],
+    "p": 0.7614
+   }
+  },
+  "uncoordinated - atc x4 | 2028": {
+   "n": 10,
+   "atc_urgent_wait_mean_cens_h": {
+    "n": 10,
+    "mean": 36.4534,
+    "ci": [
+     27.9715,
+     46.9543
+    ],
+    "ci90": [
+     29.0338,
+     45.0541
+    ],
+    "p": 5e-05
+   },
+   "delay_mean_h": {
+    "n": 10,
+    "mean": 46.5497,
+    "ci": [
+     38.7358,
+     56.0683
+    ],
+    "ci90": [
+     39.7595,
+     54.2971
+    ],
+    "p": 5e-05
+   },
+   "delivered_share": {
+    "n": 10,
+    "mean": -0.0101,
+    "ci": [
+     -0.0186,
+     -0.0037
+    ],
+    "ci90": [
+     -0.0171,
+     -0.0044
+    ],
+    "p": 5e-05
+   }
+  },
+  "uncoordinated - atc x1 share 0 | 2028": {
+   "n": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "n": 30,
+    "mean": 0.7088,
+    "ci": [
+     0.1007,
+     1.6397
+    ],
+    "ci90": [
+     0.1544,
+     1.4617
+    ],
+    "p": 0.0056
+   },
+   "delay_mean_h": {
+    "n": 30,
+    "mean": 0.1201,
+    "ci": [
+     -0.0254,
+     0.3315
+    ],
+    "ci90": [
+     -0.0098,
+     0.2916
+    ],
+    "p": 0.1443
+   },
+   "delivered_share": {
+    "n": 30,
+    "mean": 0.0,
+    "ci": [
+     -0.0,
+     0.0002
+    ],
+    "ci90": [
+     -0.0,
+     0.0001
+    ],
+    "p": 0.3394
+   }
+  },
+  "atc - none x1 share 0 | 2028": {
+   "n": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "n": 30,
+    "mean": 0.5566,
+    "ci": [
+     -0.7961,
+     2.1881
+    ],
+    "ci90": [
+     -0.6167,
+     1.8894
+    ],
+    "p": 0.489
+   },
+   "delay_mean_h": {
+    "n": 30,
+    "mean": 0.0208,
+    "ci": [
+     -0.1651,
+     0.219
+    ],
+    "ci90": [
+     -0.1383,
+     0.1854
+    ],
+    "p": 0.8541
+   },
+   "delivered_share": {
+    "n": 30,
+    "mean": 0.0001,
+    "ci": [
+     -0.0001,
+     0.0003
+    ],
+    "ci90": [
+     -0.0001,
+     0.0003
+    ],
+    "p": 0.303
+   }
+  },
+  "uncoordinated - atc x1 share 0.05 | 2028": {
+   "n": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "n": 30,
+    "mean": 46.4307,
+    "ci": [
+     37.884,
+     55.2526
+    ],
+    "ci90": [
+     39.1424,
+     53.7513
+    ],
+    "p": 5e-05
+   },
+   "delay_mean_h": {
+    "n": 30,
+    "mean": 65.983,
+    "ci": [
+     61.2985,
+     70.8383
+    ],
+    "ci90": [
+     62.0023,
+     69.9957
+    ],
+    "p": 5e-05
+   },
+   "delivered_share": {
+    "n": 30,
+    "mean": -0.0014,
+    "ci": [
+     -0.0028,
+     -0.0003
+    ],
+    "ci90": [
+     -0.0026,
+     -0.0004
+    ],
+    "p": 0.0042
+   }
+  },
+  "atc - none x1 share 0.05 | 2028": {
+   "n": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "n": 30,
+    "mean": 0.1371,
+    "ci": [
+     -1.3184,
+     1.9661
+    ],
+    "ci90": [
+     -1.1248,
+     1.5951
+    ],
+    "p": 0.9398
+   },
+   "delay_mean_h": {
+    "n": 30,
+    "mean": 0.0268,
+    "ci": [
+     -0.1996,
+     0.2767
+    ],
+    "ci90": [
+     -0.1693,
+     0.235
+    ],
+    "p": 0.8692
+   },
+   "delivered_share": {
+    "n": 30,
+    "mean": 0.0001,
+    "ci": [
+     -0.0001,
+     0.0003
+    ],
+    "ci90": [
+     -0.0001,
+     0.0003
+    ],
+    "p": 0.347
+   }
+  },
+  "uncoordinated - atc x1 share 0.4 | 2028": {
+   "n": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "n": 30,
+    "mean": 63.1211,
+    "ci": [
+     53.8939,
+     72.8002
+    ],
+    "ci90": [
+     55.3186,
+     71.1832
+    ],
+    "p": 5e-05
+   },
+   "delay_mean_h": {
+    "n": 30,
+    "mean": 80.6306,
+    "ci": [
+     75.2824,
+     85.9569
+    ],
+    "ci90": [
+     76.1014,
+     85.1534
+    ],
+    "p": 5e-05
+   },
+   "delivered_share": {
+    "n": 30,
+    "mean": -0.002,
+    "ci": [
+     -0.0039,
+     -0.0004
+    ],
+    "ci90": [
+     -0.0036,
+     -0.0006
+    ],
+    "p": 0.0064
+   }
+  },
+  "atc - none x1 share 0.4 | 2028": {
+   "n": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "n": 30,
+    "mean": 0.8237,
+    "ci": [
+     -0.3315,
+     2.1794
+    ],
+    "ci90": [
+     -0.1734,
+     1.9476
+    ],
+    "p": 0.183
+   },
+   "delay_mean_h": {
+    "n": 30,
+    "mean": 0.142,
+    "ci": [
+     -0.0429,
+     0.3444
+    ],
+    "ci90": [
+     -0.0169,
+     0.3076
+    ],
+    "p": 0.1465
+   },
+   "delivered_share": {
+    "n": 30,
+    "mean": -0.0,
+    "ci": [
+     -0.0002,
+     0.0002
+    ],
+    "ci90": [
+     -0.0002,
+     0.0002
+    ],
+    "p": 0.8181
+   }
+  },
+  "uncoordinated - atc x1 bay 0.5 | 2028": {
+   "n": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "n": 30,
+    "mean": 38.9485,
+    "ci": [
+     31.0762,
+     47.2126
+    ],
+    "ci90": [
+     32.3152,
+     45.7646
+    ],
+    "p": 5e-05
+   },
+   "delay_mean_h": {
+    "n": 30,
+    "mean": 62.9314,
+    "ci": [
+     58.5611,
+     67.1143
+    ],
+    "ci90": [
+     59.2757,
+     66.4524
+    ],
+    "p": 5e-05
+   },
+   "delivered_share": {
+    "n": 30,
+    "mean": -0.0022,
+    "ci": [
+     -0.0042,
+     -0.0007
+    ],
+    "ci90": [
+     -0.0038,
+     -0.0009
+    ],
+    "p": 0.0006
+   }
+  },
+  "atc - none x1 bay 0.5 | 2028": {
+   "n": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "n": 30,
+    "mean": 0.6378,
+    "ci": [
+     -1.1353,
+     2.5901
+    ],
+    "ci90": [
+     -0.8672,
+     2.2649
+    ],
+    "p": 0.5188
+   },
+   "delay_mean_h": {
+    "n": 30,
+    "mean": 0.327,
+    "ci": [
+     0.0246,
+     0.6593
+    ],
+    "ci90": [
+     0.0716,
+     0.6006
+    ],
+    "p": 0.0304
+   },
+   "delivered_share": {
+    "n": 30,
+    "mean": 0.0001,
+    "ci": [
+     -0.0,
+     0.0003
+    ],
+    "ci90": [
+     -0.0,
+     0.0003
+    ],
+    "p": 0.1995
+   }
+  },
+  "uncoordinated - atc x1 bay 2 | 2028": {
+   "n": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "n": 30,
+    "mean": 46.6143,
+    "ci": [
+     38.023,
+     55.5069
+    ],
+    "ci90": [
+     39.2889,
+     54.0082
+    ],
+    "p": 5e-05
+   },
+   "delay_mean_h": {
+    "n": 30,
+    "mean": 66.3636,
+    "ci": [
+     61.6313,
+     71.2243
+    ],
+    "ci90": [
+     62.3678,
+     70.3965
+    ],
+    "p": 5e-05
+   },
+   "delivered_share": {
+    "n": 30,
+    "mean": -0.001,
+    "ci": [
+     -0.0019,
+     -0.0003
+    ],
+    "ci90": [
+     -0.0018,
+     -0.0003
+    ],
+    "p": 0.002
+   }
+  },
+  "atc - none x1 bay 2 | 2028": {
+   "n": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "n": 30,
+    "mean": 0.1205,
+    "ci": [
+     -1.3377,
+     1.9576
+    ],
+    "ci90": [
+     -1.1414,
+     1.5786
+    ],
+    "p": 0.9549
+   },
+   "delay_mean_h": {
+    "n": 30,
+    "mean": 0.0511,
+    "ci": [
+     -0.1821,
+     0.3052
+    ],
+    "ci90": [
+     -0.1477,
+     0.2623
+    ],
+    "p": 0.7224
+   },
+   "delivered_share": {
+    "n": 30,
+    "mean": 0.0001,
+    "ci": [
+     -0.0001,
+     0.0003
+    ],
+    "ci90": [
+     -0.0001,
+     0.0003
+    ],
+    "p": 0.3458
+   }
+  },
+  "atc r7 strict - atc x1 | 2028": {
+   "n": 30,
+   "atc_urgent_wait_mean_cens_h": {
+    "n": 30,
+    "mean": 36.8669,
+    "ci": [
+     27.6016,
+     47.5943
+    ],
+    "ci90": [
+     28.868,
+     45.7835
+    ],
+    "p": 5e-05
+   },
+   "delay_mean_h": {
+    "n": 30,
+    "mean": 49.9199,
+    "ci": [
+     44.8266,
+     55.1143
+    ],
+    "ci90": [
+     45.6051,
+     54.2501
+    ],
+    "p": 5e-05
+   },
+   "delivered_share": {
+    "n": 30,
+    "mean": -0.002,
+    "ci": [
+     -0.0035,
+     -0.0008
+    ],
+    "ci90": [
+     -0.0032,
+     -0.001
+    ],
+    "p": 5e-05
+   }
+  }
+ },
+ "not_run": [
+  "none x8 | y2028:10",
+  "atc x8 | y2028:10",
+  "uncoordinated x8 | y2028:10",
+  "uncoordinated x8 | y2038:10"
+ ]
+}

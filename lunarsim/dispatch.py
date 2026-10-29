@@ -296,7 +296,18 @@ def marketplace(sim, waiting, free, bundling=True, team_lift=True, backhaul=True
                 if cap_ref > 0 and mass < fill * cap_ref and age < max_wait:
                     held.update(id(c) for c in lots)
                     # wake the dispatcher when the oldest lot reaches the maximum wait
-                    sim._push(sim.t + (max_wait - age) + 1e-6, "WAKE", None)
+                    pend = getattr(sim, "wake_pending", None)
+                    if pend is None:
+                        sim._push(sim.t + (max_wait - age) + 1e-6, "WAKE", None)
+                    else:                   # B-77 opt-in: one pending wake per lane deadline (no WAKE storm)
+                        key = (lane, min(c.t_ready for c in lots))
+                        if pend.get(key, -math.inf) <= sim.t:
+                            pend[key] = sim.t + (max_wait - age) + 1e-6
+                            sim._push(pend[key], "WAKE", None)
+                        else:
+                            sim.wake_skipped += 1
+                            if sim.wake_debug:      # check mode: push it anyway, marked, so its call can be audited
+                                sim._push(sim.t + (max_wait - age) + 1e-6, "WAKE", "dup")
             if held:
                 pool = [c for c in pool if id(c) not in held]
     # 1. oversize items first (they need teams, and teams need several free vehicles)

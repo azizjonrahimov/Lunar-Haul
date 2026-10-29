@@ -6656,3 +6656,136 @@ Idle until BACKEND's data for F-53 lands.
 
 **Questions for LEAD**
 1. **The H1 split wording.** Should P1 call the 68.5 % "pooling of vehicles and decisions" rather than "dispatch"? It includes owner C's cargo carried by A's and B's rovers.
+
+## B-77 DONE 22:40 (roads and rules of the road in the engine; E43 without the 8x cells) | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+### The terrain finding and the choice (single-lane share)
+- **Criterion.** A route sample is single-lane when the drivable corridor across it is narrower than two lanes: `WIDTH_SINGLE_M` = 2 × 2.3 m vehicle + 2 × 2.7 m margin = **10 m**.
+  - Corridor = the run of cells within the slope limit on a 1 m transect, ±50 m, perpendicular to the route.
+  - Grid: the 5 m DEM, 2,421 route samples 100 m apart.
+  - Source: `tools/atc/roads.py`, output `results/ATC_roads_corridor.json`.
+- **Finding:** at the vehicles' slope limits the DEM shows almost no single-lane road.
+
+  | slope limit | single-lane share |
+  |---|---|
+  | 20° | **0 %** (0.0 km) |
+  | 15° | 0.17 % (0.4 km) |
+  | 12° | 2.85 % |
+  | 10° | 15.08 % (36.5 km) |
+  | 8° | 39.86 % |
+
+  The median slope at a route sample is 6.8°.
+- **Choice** (your conditions (a)-(c)): the single-lane share is a scenario factor, **ASSUMED**.
+  - Default 15 %; sweep 0, 5, 15 and 40 %.
+  - The narrowest places are marked first: corridor width at 10°, then at 8°, then sample id. The ranking is in `results/ATC_roads_narrow.json`; sites and pads are never marked.
+  - Flag text, carried in every E43 cell (`single_share_flag`), in `data/scenarios/E43-design.json` and in `results/E43_summary.json`: "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the narrowest places at a 10 deg slope limit are marked first".
+
+### Road layer (`lunarsim/atc/roads.py`, opt-in `Scenario.p5["roads"]`)
+- **Hook.** Gated at job commit, after the plume hold (`engine._start_job`: `dur += roads.apply(...)`). R4/R8 priority sorts the jobs of one dispatch call.
+- **Segments.** Consecutive single-lane samples along any leg, merged across legs, split by passing bays every `bay_km`.
+  - **R3:** a vehicle reserves the whole (sub)segment for its traversal window.
+    - An overlapping reservation in the opposite direction, or any overlap on a branched segment, is a conflict.
+    - Vehicles going the same direction may follow.
+    - Every reservation ends at a bay or junction (exit-bay rule), and the table is filled one job at a time, so there is no deadlock: `road_deadlocks` = 0 in every run.
+- **R4/R8:** urgent first, then loaded before empty, then earlier filed, then lower vehicle id. Owner never matters.
+- **R10:** pad apron, 2 slots.
+- **R6:** EVA crew zone at BASE, 2 EVAs a week of 6 h (Assumed): 50 m at 1 km/h.
+- **R5:** the engine's plume keep-out, 1 km, stand-down 0.75 h, unchanged.
+- **Modes.**
+  - `atc`: one shared table. A conflict means waiting at the bay until the segment is free.
+  - `uncoordinated`: each owner sees only its own reservations. A cross-owner conflict stops both vehicles until Earth settles it (`t_hand` 2 h, only while BASE sees Earth). The other vehicle's stop extends its busy time; its already recorded deliveries are not moved (limitation).
+- **R7.** In the default the reservation travels with the job assignment. Variant `r7: True`: a robot files only from a place the BASE mast sees (its start site, or the first route sample in mast view); before that, its conflicts go to Earth as in uncoordinated.
+- **Constants.** Every new constant carries a Spec/Modelled/Assumed flag and a source in the module docstring and DEFAULTS.
+
+### E43 results (`results/E43_runs.csv`, 610 rows; `results/E43_summary.json`; `experiments/phase5/analyse_e43.py`)
+- **Design.**
+  - Pooled dispatch (O_ORACLE) in every cell, 30 % load.
+  - Fleet and demand both multiplied by m.
+  - 1× and 2× run a year with 30 seeds; 4× runs 90 days with 10 seeds.
+  - `none` and `atc` don't depend on the start year (one run per seed). Uncoordinated runs 2028 and 2038.
+- **Primary outcome:** urgent wait, censored, in h. Paired by seed; bootstrap 95 % CI.
+
+  | comparison | 1× | 2× | 4× (90 d) |
+  |---|---|---|---|
+  | atc − none (the rules' cost with a shared table) | +0.12 [−1.34, 1.96] | +0.03 [−0.86, 0.94] | +0.42 [−0.32, 1.50] |
+  | uncoordinated − atc, 2028 | **+46.6 [38.0, 55.5]** | **+41.1 [36.4, 46.4]** | **+36.5 [28.0, 47.0]** |
+  | uncoordinated − atc, 2038 | **+71.2 [60.4, 82.8]** | **+58.8 [52.5, 65.6]** | **+43.2 [32.9, 53.8]** |
+
+- **Mechanism:** in uncoordinated mode, a cross-owner conflict waits for Earth.
+  - 2028: 51.7 hand conflicts a year, 39 h each.
+  - 2038: 43.7 hand conflicts a year, 61 h each.
+  - Under atc, 1×: 75 bay waits a year totalling 24.6 h, and no hand conflicts.
+- **Sweeps at 1× (2028), uncoordinated − atc:**
+
+  | single-lane share | uncoordinated − atc (h) |
+  |---|---|
+  | 0 % | +0.71 [0.10, 1.64] (apron slots only) |
+  | 5 % | +46.4 |
+  | 15 % | +46.6 |
+  | 40 % | +63.1 [53.9, 72.8] |
+
+  - atc − none stays within [−1.3, 2.6] at every share and bay spacing.
+  - The strict R7 variant costs +36.9 h [27.6, 47.6] against default atc.
+- **Ill-posed sweep point:** at a 15 % share no single-lane segment is longer than 1 km (215 segments without bays, 215 with 1 km bays), so **2 km bays give runs identical to 1 km**. Only 0.5 km bays split anything (218 resources). The bay sweep only bites at shares above 15 %.
+- **8× cells: not run.** See the next section. P2 reports the scale sweep up to 4×.
+- **Development figures, not results:** seed 1, 1×, before the direction fix of single-sample traversals.
+  - atc: 28.5 h of bay waits, delay 15.5 h.
+  - uncoordinated: 50 hand conflicts, delay 72.6 h.
+
+### Design change after the first 8× timings, and the WAKE defect
+1. **The 60-day horizon was over the limit.** The first 8× run (none ×8, seed 1, 60 d) took **310.2 s**, over the 5-minute per-run limit. 8× was cut to 30 days with 10 seeds kept; the row is archived in `results/archive/E43_runs.x8_60d.csv`. A 30-day run then went past 470 s, so **8× stopped at 0 of 40** per your condition. Every E43 row carries `horizon_days`. `data/scenarios/E43-design.json` records both horizons, the timings, and that the 30-day cut was never used for results.
+2. **Timings and the cause.** Run time against horizon (none ×8, seed 1): 7 d 1.8 s, 14 d 8.6 s, 21 d 141 s.
+   - My first diagnosis (night handling, vehicles × cargo) was **wrong**.
+   - Instrumented 21-day run: **2.37 M WAKE events and 1.6 M dispatch calls, all of them from `lunarsim/dispatch.py:299`**.
+   - Up to **211,638 dispatch calls at a single timestamp**; daily calls grow about 1.5× a day (44 k on day 14, 539 k on day 20).
+3. **Defect** (pre-existing runtime defect of the v2 marketplace's bulk consolidation hold).
+   - Every dispatch call pushes another WAKE for every held lane at that lane's deadline.
+   - Each WAKE re-runs dispatch, which pushes again, so duplicate WAKEs grow geometrically.
+   - It occurs at 1× too: LEAD's E41 cell 3 (C_LEARNED_LIN, loss 0, 30 %, seed 24, 2028) took **10,916 s** for one run, against 10-41 s for the other 126 runs, and gave a sane result (urgent 13.0 h).
+4. **Dedupe test (opt-in `p5["wake_dedupe"]`, default off; one pending WAKE per lane and oldest lot): NOT result-neutral.**
+   - **Gate:** `tools/atc/wake_check.py gate` covers E40 one cell per regime at 30 % (A_EARTH strict and C_AUCTION included), two E42 cells, and E43 1× atc and uncoordinated, 4-5 stored rows each. **0 of 54 rows are identical.**
+   - A, B and O regimes and both E42 cells differ only in the per-call counter `atc_calls` or by ≤ 0.001 h.
+   - Urgent wait moves (mean / max |Δ| over 4-5 seeds):
+
+     | cell | mean Δ (h) | max abs Δ (h) |
+     |---|---|---|
+     | C_LEADER | −5.8 | 17.0 |
+     | C_AUCTION | −1.8 | 7.0 |
+     | C_LEARNED_MLP | +0.9 | 3.6 |
+     | C_LEARNED_LIN | +2.1 | 8.5 |
+     | E43 atc | +0.2 | 1.1 |
+     | E43 uncoordinated | −4.6 | 23.1 |
+
+   - **Audit** (`wake_check.py audit`: duplicates pushed anyway, each duplicate call checked for any state change):
+     - E43 atc 1× seed 1: 1 of 44,315 duplicate calls started a job.
+     - E40 C_AUCTION seed 4: 3 of 83,370 started jobs, and 82,351 changed the auction's per-call counters (`robots_seen`, `robots_out_sum` → `atc_robots_out_share`; 1 × `team_no_agreement`).
+     - With all duplicates pushed, both rows reproduce the stored rows exactly, so the stored rows are reproducible on the flag-off path.
+   - Output: `results/ATC_wake_check.json`.
+   - **Reading.** A repeated dispatch at the same instant is not a no-op; the stored C-regime numbers depend in part on duplicate polls that no regime design contains. This rests on the gate and audit above, **not on a proof**. The proposed mechanism (a duplicate fires a float-noise later, after a time-dependent condition has flipped) is a hypothesis. LEAD logged this as PREREG Issue 5.
+- **No results use the dedupe flag.** Its engine comment says so.
+
+### Files
+- **New:** `lunarsim/atc/roads.py`, `tools/atc/roads.py`, `tools/atc/wake_check.py`, `tests/test_roads.py`, `experiments/phase5/analyse_e43.py`.
+- **Changed:**
+  - `lunarsim/engine.py`: road hook, priority sort, summary, the opt-in WAKE flag and counters.
+  - `lunarsim/dispatch.py`: opt-in dedupe branch only.
+  - `lunarsim/schemas/scenario-v1.schema.json`: `p5.roads`.
+  - `experiments/phase5/run_phase5.py`: E43 cells, `y<year>:<n>` blocks, `build` cells, `horizon_days`, design file.
+- **Data and results:**
+  - `data/atc/connecting_ridge/roads-v1.json`, `data/scenarios/E43-design.json`;
+  - `results/ATC_roads_corridor.json`, `results/ATC_roads_narrow.json`;
+  - `results/E43_runs.csv`, `results/E43_summary.json`, `results/ATC_wake_check.json`;
+  - `results/archive/E43_runs.x8_60d.csv`.
+- **Old results:** byte-identical apart from E43's own files. Road layer and dedupe are both opt-in and default off.
+
+### How to test
+- `python -m pytest tests/test_roads.py` (6 tests): corridor file, nested ranking and bays, **a single vehicle sees zero added delay** (trace and summary identical with the layer on), head-on conflict in both modes, apron slots and EVA.
+- Full suite file by file: **44 files, 556 passed.**
+- Analysis: `python experiments/phase5/analyse_e43.py`.
+- Peak memory: about 0.4 GB working set per chunk, read from Get-Process during runs (not instrumented in-process); 489 MB for the roads build.
+
+**FRONTEND:** nothing new to consume. If the road layer goes on the site later, the formats are new summary keys `road_*` (incl. `road_wait_h_owner_<X>`) and `horizon_days` in E43 rows.
+
+**Questions for LEAD**
+1. **Bay sweep:** keep the ill-posed 2 km point as "identical by construction", or replace it with a bay sweep at the 40 % share?
+2. **8×:** stays not run unless the owner picks the proper hold fix (Issue 5). Your 1.5 h diagnostic of the proper fix is next.

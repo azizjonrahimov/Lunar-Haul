@@ -1,0 +1,1486 @@
+{
+ "note": "python tools/atc/wake_check.py gate  [--max-seconds 480]   # rerun stored rows with the flag on; every column must match\n    python tools/atc/wake_check.py audit [--max-seconds 480]   # flag on + debug: each skipped WAKE is pushed anyway, marked,\n                                                               # and its dispatch call must assign nothing and change no state\n    -> results/ATC_wake_check.json (resumable: rows already checked are kept) The defect: the v2 marketplace's bulk consolidation hold pushes a WAKE for every held lane on every dispatch call, all at\nthe lane's deadline; each WAKE re-runs dispatch, which pushes again (geometric growth, 2.37 M WAKEs in a 21-day 8x run).\nThe dedupe keeps one pending WAKE per (lane, oldest lot). A skipped WAKE would only have re-run dispatch at the same\ninstant as one that still runs, and the other events keep their relative order, so the flag is result-neutral iff such a\nrepeated call assigns nothing. This tool tests that on stored rows (gate) and directly (audit); it is evidence, not proof.",
+ "gate": {
+  "E40|A_EARTH strict|4|2028": {
+   "columns": 141,
+   "mismatched": [
+    "own_A_urgent_wait_cens_h",
+    "own_A_delivered_t",
+    "own_B_urgent_wait_cens_h",
+    "own_B_delivered_t",
+    "own_C_urgent_wait_cens_h",
+    "own_C_delivered_t"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 0,
+   "run_s": 8.81,
+   "stored_run_s": 8.66,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0,
+    "delay_mean_bulk": 0.0,
+    "delivered_kg": 0.0,
+    "atc_calls": 0.0
+   }
+  },
+  "E40|A_EARTH strict|8|2028": {
+   "columns": 141,
+   "mismatched": [
+    "own_A_urgent_wait_cens_h",
+    "own_A_delivered_t",
+    "own_B_urgent_wait_cens_h",
+    "own_B_delivered_t",
+    "own_C_urgent_wait_cens_h",
+    "own_C_delivered_t"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 0,
+   "run_s": 8.06,
+   "stored_run_s": 8.13,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0,
+    "delay_mean_bulk": 0.0,
+    "delivered_kg": 0.0,
+    "atc_calls": 0.0
+   }
+  },
+  "E40|A_EARTH strict|12|2028": {
+   "columns": 141,
+   "mismatched": [
+    "own_A_urgent_wait_cens_h",
+    "own_A_delivered_t",
+    "own_B_urgent_wait_cens_h",
+    "own_B_delivered_t",
+    "own_C_urgent_wait_cens_h",
+    "own_C_delivered_t"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 0,
+   "run_s": 8.45,
+   "stored_run_s": 8.56,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0,
+    "delay_mean_bulk": 0.0,
+    "delivered_kg": 0.0,
+    "atc_calls": 0.0
+   }
+  },
+  "E40|A_EARTH strict|16|2028": {
+   "columns": 141,
+   "mismatched": [
+    "own_A_urgent_wait_cens_h",
+    "own_A_delivered_t",
+    "own_B_urgent_wait_cens_h",
+    "own_B_delivered_t",
+    "own_C_urgent_wait_cens_h",
+    "own_C_delivered_t"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 0,
+   "run_s": 7.81,
+   "stored_run_s": 7.83,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0,
+    "delay_mean_bulk": 0.0,
+    "delivered_kg": 0.0,
+    "atc_calls": 0.0
+   }
+  },
+  "E40|A_MOON|4|2028": {
+   "columns": 140,
+   "mismatched": [
+    "own_A_urgent_wait_cens_h",
+    "own_A_delivered_t",
+    "own_B_urgent_wait_cens_h",
+    "own_B_delivered_t",
+    "own_C_urgent_wait_cens_h",
+    "own_C_delivered_t"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 0,
+   "run_s": 12.65,
+   "stored_run_s": 11.86,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0,
+    "delay_mean_bulk": 0.0,
+    "delivered_kg": 0.0,
+    "atc_calls": 0.0
+   }
+  },
+  "E40|A_MOON|8|2028": {
+   "columns": 140,
+   "mismatched": [
+    "own_A_urgent_wait_cens_h",
+    "own_A_delivered_t",
+    "own_B_urgent_wait_cens_h",
+    "own_B_delivered_t",
+    "own_C_urgent_wait_cens_h",
+    "own_C_delivered_t"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 0,
+   "run_s": 10.93,
+   "stored_run_s": 11.19,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0,
+    "delay_mean_bulk": 0.0,
+    "delivered_kg": 0.0,
+    "atc_calls": 0.0
+   }
+  },
+  "E40|A_MOON|12|2028": {
+   "columns": 140,
+   "mismatched": [
+    "own_A_urgent_wait_cens_h",
+    "own_A_delivered_t",
+    "own_B_urgent_wait_cens_h",
+    "own_B_delivered_t",
+    "own_C_urgent_wait_cens_h",
+    "own_C_delivered_t"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 0,
+   "run_s": 11.53,
+   "stored_run_s": 14.15,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0,
+    "delay_mean_bulk": 0.0,
+    "delivered_kg": 0.0,
+    "atc_calls": 0.0
+   }
+  },
+  "E40|A_MOON|16|2028": {
+   "columns": 140,
+   "mismatched": [
+    "own_A_urgent_wait_cens_h",
+    "own_A_delivered_t",
+    "own_B_urgent_wait_cens_h",
+    "own_B_delivered_t",
+    "own_C_urgent_wait_cens_h",
+    "own_C_delivered_t"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 0,
+   "run_s": 10.58,
+   "stored_run_s": 11.19,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0,
+    "delay_mean_bulk": 0.0,
+    "delivered_kg": 0.0,
+    "atc_calls": 0.0
+   }
+  },
+  "E40|B_EARTH strict|4|2028": {
+   "columns": 140,
+   "mismatched": [
+    "atc_calls",
+    "atc_gated_calls",
+    "atc_blocked_calls",
+    "own_A_urgent_wait_cens_h",
+    "own_A_delivered_t",
+    "own_B_urgent_wait_cens_h",
+    "own_B_delivered_t",
+    "own_C_urgent_wait_cens_h",
+    "own_C_delivered_t"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 2431,
+   "run_s": 9.99,
+   "stored_run_s": 10.47,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0,
+    "delay_mean_bulk": 0.0,
+    "delivered_kg": 0.0,
+    "atc_calls": -10126.0
+   }
+  },
+  "E40|B_EARTH strict|8|2028": {
+   "columns": 140,
+   "mismatched": [
+    "atc_calls",
+    "atc_gated_calls",
+    "atc_blocked_calls",
+    "own_A_urgent_wait_cens_h",
+    "own_A_delivered_t",
+    "own_B_urgent_wait_cens_h",
+    "own_B_delivered_t",
+    "own_C_urgent_wait_cens_h",
+    "own_C_delivered_t"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 2523,
+   "run_s": 10.53,
+   "stored_run_s": 11.1,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0,
+    "delay_mean_bulk": 0.0,
+    "delivered_kg": 0.0,
+    "atc_calls": -9038.0
+   }
+  },
+  "E40|B_EARTH strict|12|2028": {
+   "columns": 140,
+   "mismatched": [
+    "atc_calls",
+    "atc_gated_calls",
+    "atc_blocked_calls",
+    "own_A_urgent_wait_cens_h",
+    "own_A_delivered_t",
+    "own_B_urgent_wait_cens_h",
+    "own_B_delivered_t",
+    "own_C_urgent_wait_cens_h",
+    "own_C_delivered_t"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 2306,
+   "run_s": 10.38,
+   "stored_run_s": 11.02,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0,
+    "delay_mean_bulk": 0.0,
+    "delivered_kg": 0.0,
+    "atc_calls": -10590.0
+   }
+  },
+  "E40|B_EARTH strict|16|2028": {
+   "columns": 140,
+   "mismatched": [
+    "atc_calls",
+    "atc_gated_calls",
+    "atc_blocked_calls",
+    "own_A_urgent_wait_cens_h",
+    "own_A_delivered_t",
+    "own_B_urgent_wait_cens_h",
+    "own_B_delivered_t",
+    "own_C_urgent_wait_cens_h",
+    "own_C_delivered_t"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 2043,
+   "run_s": 10.58,
+   "stored_run_s": 10.94,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0,
+    "delay_mean_bulk": 0.0,
+    "delivered_kg": 0.0,
+    "atc_calls": -7574.0
+   }
+  },
+  "E40|B_EARTH_RELAY 0.8|4|2028": {
+   "columns": 140,
+   "mismatched": [
+    "delay_mean_bulk",
+    "delay_mean_h",
+    "delay_mass_weighted_h",
+    "tonne_days_waiting",
+    "atc_calls",
+    "atc_gated_calls",
+    "atc_blocked_calls",
+    "own_A_urgent_wait_cens_h",
+    "own_A_delivered_t",
+    "own_B_urgent_wait_cens_h",
+    "own_B_delivered_t",
+    "own_C_urgent_wait_cens_h",
+    "own_C_delivered_t"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 6308,
+   "run_s": 2.51,
+   "stored_run_s": 3.37,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.00024606126544313156,
+    "delay_mean_bulk": 0.00026422627326994075,
+    "delivered_kg": 0.0,
+    "atc_calls": -22318.0
+   }
+  },
+  "E40|B_EARTH_RELAY 0.8|8|2028": {
+   "columns": 140,
+   "mismatched": [
+    "delay_mean_bulk",
+    "delay_mean_h",
+    "delay_mass_weighted_h",
+    "tonne_days_waiting",
+    "atc_calls",
+    "atc_gated_calls",
+    "atc_blocked_calls",
+    "own_A_urgent_wait_cens_h",
+    "own_A_delivered_t",
+    "own_B_urgent_wait_cens_h",
+    "own_B_delivered_t",
+    "own_C_urgent_wait_cens_h",
+    "own_C_delivered_t"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 5618,
+   "run_s": 2.48,
+   "stored_run_s": 3.59,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 6.920880684901931e-05,
+    "delay_mean_bulk": 7.10846518323649e-05,
+    "delivered_kg": 0.0,
+    "atc_calls": -32533.0
+   }
+  },
+  "E40|B_EARTH_RELAY 0.8|12|2028": {
+   "columns": 140,
+   "mismatched": [
+    "atc_calls",
+    "atc_gated_calls",
+    "atc_blocked_calls",
+    "own_A_urgent_wait_cens_h",
+    "own_A_delivered_t",
+    "own_B_urgent_wait_cens_h",
+    "own_B_delivered_t",
+    "own_C_urgent_wait_cens_h",
+    "own_C_delivered_t"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 5818,
+   "run_s": 3.07,
+   "stored_run_s": 4.67,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0,
+    "delay_mean_bulk": 0.0,
+    "delivered_kg": 0.0,
+    "atc_calls": -39071.0
+   }
+  },
+  "E40|B_EARTH_RELAY 0.8|16|2028": {
+   "columns": 140,
+   "mismatched": [
+    "atc_calls",
+    "atc_gated_calls",
+    "atc_blocked_calls",
+    "own_A_urgent_wait_cens_h",
+    "own_A_delivered_t",
+    "own_B_urgent_wait_cens_h",
+    "own_B_delivered_t",
+    "own_C_urgent_wait_cens_h",
+    "own_C_delivered_t"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 5655,
+   "run_s": 2.6,
+   "stored_run_s": 5.04,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0,
+    "delay_mean_bulk": 0.0,
+    "delivered_kg": 0.0,
+    "atc_calls": -75809.0
+   }
+  },
+  "E40|C_LEADER|4|2028": {
+   "columns": 140,
+   "mismatched": [
+    "delay_mean_consumables",
+    "delay_p90_consumables",
+    "delay_mean_science",
+    "delay_p90_science",
+    "delay_mean_equipment",
+    "delay_p90_equipment",
+    "delay_mean_infrastructure",
+    "delay_p90_infrastructure",
+    "delay_mean_bulk",
+    "delay_p90_bulk",
+    "delay_mean_return",
+    "delay_p90_return",
+    "delay_prio2_mean_h",
+    "delay_prio1_p90_h",
+    "sl24_prio1",
+    "sl48_prio12",
+    "ready_kg",
+    "delivered_kg",
+    "delivered_items",
+    "delivered_share"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 9914,
+   "run_s": 4.69,
+   "stored_run_s": 14.1,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": -5.1923566272252835,
+    "delay_mean_h": -0.38398629951077723,
+    "delay_mean_bulk": -0.03126873760244564,
+    "delivered_kg": 2715.9143322082236,
+    "atc_calls": -61745.0
+   }
+  },
+  "E40|C_LEADER|8|2028": {
+   "columns": 140,
+   "mismatched": [
+    "delay_mean_consumables",
+    "delay_p90_consumables",
+    "delay_mean_science",
+    "delay_p90_science",
+    "delay_mean_equipment",
+    "delay_p90_equipment",
+    "delay_mean_infrastructure",
+    "delay_p90_infrastructure",
+    "delay_mean_bulk",
+    "delay_p90_bulk",
+    "delay_mean_return",
+    "delay_p90_return",
+    "delay_prio2_mean_h",
+    "delay_prio1_p90_h",
+    "sl24_prio1",
+    "sl48_prio12",
+    "ready_kg",
+    "delivered_kg",
+    "delivered_items",
+    "delivered_share"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 9618,
+   "run_s": 4.47,
+   "stored_run_s": 25.81,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": -16.976559777399657,
+    "delay_mean_h": -0.9302089544729171,
+    "delay_mean_bulk": -0.4955073544729238,
+    "delivered_kg": -14747.401709716069,
+    "atc_calls": -140350.0
+   }
+  },
+  "E40|C_LEADER|12|2028": {
+   "columns": 140,
+   "mismatched": [
+    "delay_mean_consumables",
+    "delay_p90_consumables",
+    "delay_mean_science",
+    "delay_p90_science",
+    "delay_mean_equipment",
+    "delay_p90_equipment",
+    "delay_mean_infrastructure",
+    "delay_p90_infrastructure",
+    "delay_mean_bulk",
+    "delay_p90_bulk",
+    "delay_mean_return",
+    "delay_p90_return",
+    "delay_prio2_mean_h",
+    "delay_prio1_p90_h",
+    "sl24_prio1",
+    "sl48_prio12",
+    "ready_kg",
+    "delivered_kg",
+    "delivered_items",
+    "delivered_share"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 9559,
+   "run_s": 4.62,
+   "stored_run_s": 80.13,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": -1.642933571866891,
+    "delay_mean_h": -0.2637265877784696,
+    "delay_mean_bulk": -0.29240370199990195,
+    "delivered_kg": 20157.70353726577,
+    "atc_calls": -472089.0
+   }
+  },
+  "E40|C_LEADER|16|2028": {
+   "columns": 140,
+   "mismatched": [
+    "delay_mean_consumables",
+    "delay_p90_consumables",
+    "delay_mean_science",
+    "delay_p90_science",
+    "delay_mean_equipment",
+    "delay_p90_equipment",
+    "delay_mean_bulk",
+    "delay_p90_bulk",
+    "delay_mean_return",
+    "delay_p90_return",
+    "delay_prio2_mean_h",
+    "delay_prio1_p90_h",
+    "sl24_prio1",
+    "sl48_prio12",
+    "ready_kg",
+    "delivered_kg",
+    "delivered_items",
+    "delivered_share",
+    "backlog_kg",
+    "delay_mean_h"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 9622,
+   "run_s": 4.16,
+   "stored_run_s": 23.23,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.4866180426361346,
+    "delay_mean_h": -2.5892645373352394,
+    "delay_mean_bulk": -2.584534808825106,
+    "delivered_kg": -11374.372100605397,
+    "atc_calls": -137478.0
+   }
+  },
+  "E40|C_AUCTION|4|2028": {
+   "columns": 140,
+   "mismatched": [
+    "delay_mean_consumables",
+    "delay_mean_bulk",
+    "delay_mean_return",
+    "delay_mean_h",
+    "delay_mass_weighted_h",
+    "delay_prio1_mean_h",
+    "tonne_days_waiting",
+    "energy_kwh",
+    "utilisation",
+    "operator_hours",
+    "operator_cost_musd",
+    "cost_per_kg_usd",
+    "cost_per_tkm_usd",
+    "revenue_gini",
+    "cost_per_landed_kg_usd",
+    "p5_utilisation_active",
+    "p5_cargo_util",
+    "atc_calls",
+    "atc_robots_out_share",
+    "atc_msg_latency_s_mean"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 6500,
+   "run_s": 4.61,
+   "stored_run_s": 20.81,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.002007064824230298,
+    "delay_mean_h": 0.0012900620719005218,
+    "delay_mean_bulk": 0.0012833174671698089,
+    "delivered_kg": 0.0,
+    "atc_calls": -82352.0
+   }
+  },
+  "E40|C_AUCTION|8|2028": {
+   "columns": 140,
+   "mismatched": [
+    "delay_mean_bulk",
+    "delay_mean_h",
+    "delay_mass_weighted_h",
+    "tonne_days_waiting",
+    "atc_calls",
+    "atc_robots_out_share",
+    "atc_msg_latency_s_mean"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 6404,
+   "run_s": 4.38,
+   "stored_run_s": 13.8,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0006386827484270441,
+    "delay_mean_bulk": 0.0006596455785583544,
+    "delivered_kg": 0.0,
+    "atc_calls": -48753.0
+   }
+  },
+  "E40|C_AUCTION|12|2028": {
+   "columns": 140,
+   "mismatched": [
+    "delay_mean_consumables",
+    "delay_p90_consumables",
+    "delay_mean_science",
+    "delay_p90_science",
+    "delay_mean_equipment",
+    "delay_p90_equipment",
+    "delay_mean_bulk",
+    "delay_p90_bulk",
+    "delay_mean_return",
+    "delay_prio2_mean_h",
+    "delay_prio1_p90_h",
+    "sl24_prio1",
+    "sl48_prio12",
+    "ready_kg",
+    "delivered_kg",
+    "delivered_items",
+    "delivered_share",
+    "delay_mean_h",
+    "delay_median_h",
+    "delay_p90_h"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 6607,
+   "run_s": 4.69,
+   "stored_run_s": 34.56,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": -7.030390556440462,
+    "delay_mean_h": -0.7475692480792091,
+    "delay_mean_bulk": -0.4382698096736384,
+    "delivered_kg": 452.19062138488516,
+    "atc_calls": -146792.0
+   }
+  },
+  "E40|C_AUCTION|16|2028": {
+   "columns": 140,
+   "mismatched": [
+    "delay_mean_bulk",
+    "delay_mean_h",
+    "delay_mass_weighted_h",
+    "tonne_days_waiting",
+    "atc_calls",
+    "atc_robots_out_share"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 6407,
+   "run_s": 4.35,
+   "stored_run_s": 12.2,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 3.6593682271046646e-05,
+    "delay_mean_bulk": 3.7706151154282e-05,
+    "delivered_kg": 0.0,
+    "atc_calls": -40782.0
+   }
+  },
+  "E40|C_LEARNED_MLP|4|2028": {
+   "columns": 140,
+   "mismatched": [
+    "delay_mean_consumables",
+    "delay_p90_consumables",
+    "delay_mean_science",
+    "delay_p90_science",
+    "delay_mean_equipment",
+    "delay_p90_equipment",
+    "delay_mean_infrastructure",
+    "delay_p90_infrastructure",
+    "delay_mean_bulk",
+    "delay_p90_bulk",
+    "delay_mean_return",
+    "delay_p90_return",
+    "delay_prio2_mean_h",
+    "delay_prio1_p90_h",
+    "sl24_prio1",
+    "sl48_prio12",
+    "ready_kg",
+    "delivered_kg",
+    "delivered_items",
+    "delivered_share"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 6469,
+   "run_s": 6.05,
+   "stored_run_s": 12.48,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 3.5514228661032803,
+    "delay_mean_h": 0.5652244714087207,
+    "delay_mean_bulk": 0.5025608489384634,
+    "delivered_kg": -825.9910044670105,
+    "atc_calls": -29830.0
+   }
+  },
+  "E40|C_LEARNED_MLP|8|2028": {
+   "columns": 140,
+   "mismatched": [
+    "delay_mean_bulk",
+    "delay_mean_h",
+    "delay_mass_weighted_h",
+    "tonne_days_waiting",
+    "atc_calls",
+    "atc_robots_out_share",
+    "atc_msg_latency_s_mean",
+    "atc_conflicts"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 6354,
+   "run_s": 5.41,
+   "stored_run_s": 14.05,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0006758463117186864,
+    "delay_mean_bulk": 0.0006994756155176418,
+    "delivered_kg": 0.0,
+    "atc_calls": -43169.0
+   }
+  },
+  "E40|C_LEARNED_MLP|12|2028": {
+   "columns": 140,
+   "mismatched": [
+    "atc_calls",
+    "atc_robots_out_share"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 6591,
+   "run_s": 5.79,
+   "stored_run_s": 15.05,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0,
+    "delay_mean_bulk": 0.0,
+    "delivered_kg": 0.0,
+    "atc_calls": -42595.0
+   }
+  },
+  "E40|C_LEARNED_MLP|16|2028": {
+   "columns": 140,
+   "mismatched": [
+    "delay_mean_bulk",
+    "delay_mean_h",
+    "delay_mass_weighted_h",
+    "tonne_days_waiting",
+    "atc_calls",
+    "atc_robots_out_share"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 6287,
+   "run_s": 5.41,
+   "stored_run_s": 17.79,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 3.656829643361448e-05,
+    "delay_mean_bulk": 3.7706151150729283e-05,
+    "delivered_kg": 0.0,
+    "atc_calls": -59195.0
+   }
+  },
+  "E40|C_LEARNED_LIN|4|2028": {
+   "columns": 140,
+   "mismatched": [
+    "delay_mean_consumables",
+    "delay_p90_consumables",
+    "delay_mean_science",
+    "delay_p90_science",
+    "delay_mean_equipment",
+    "delay_p90_equipment",
+    "delay_mean_infrastructure",
+    "delay_p90_infrastructure",
+    "delay_mean_bulk",
+    "delay_p90_bulk",
+    "delay_mean_return",
+    "delay_p90_return",
+    "delay_prio2_mean_h",
+    "delay_prio1_p90_h",
+    "sl24_prio1",
+    "sl48_prio12",
+    "ready_kg",
+    "delivered_kg",
+    "delivered_items",
+    "delivered_share"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 6455,
+   "run_s": 5.9,
+   "stored_run_s": 55.32,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 8.49113377994973,
+    "delay_mean_h": 2.0431281372718004,
+    "delay_mean_bulk": 1.8074758912815163,
+    "delivered_kg": 112.43021081434563,
+    "atc_calls": -239321.0
+   }
+  },
+  "E40|C_LEARNED_LIN|8|2028": {
+   "columns": 140,
+   "mismatched": [
+    "atc_calls",
+    "atc_robots_out_share"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 6376,
+   "run_s": 5.19,
+   "stored_run_s": 12.2,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0,
+    "delay_mean_bulk": 0.0,
+    "delivered_kg": 0.0,
+    "atc_calls": -35480.0
+   }
+  },
+  "E40|C_LEARNED_LIN|12|2028": {
+   "columns": 140,
+   "mismatched": [
+    "atc_calls",
+    "atc_robots_out_share"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 6513,
+   "run_s": 5.47,
+   "stored_run_s": 11.2,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0,
+    "delay_mean_bulk": 0.0,
+    "delivered_kg": 0.0,
+    "atc_calls": -26900.0
+   }
+  },
+  "E40|C_LEARNED_LIN|16|2028": {
+   "columns": 140,
+   "mismatched": [
+    "atc_calls",
+    "atc_robots_out_share"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 6387,
+   "run_s": 5.13,
+   "stored_run_s": 11.38,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0,
+    "delay_mean_bulk": 0.0,
+    "delivered_kg": 0.0,
+    "atc_calls": -30729.0
+   }
+  },
+  "E40|O_ORACLE|4|2028": {
+   "columns": 139,
+   "mismatched": [
+    "atc_calls"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 6865,
+   "run_s": 2.35,
+   "stored_run_s": 4.5,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0,
+    "delay_mean_bulk": 0.0,
+    "delivered_kg": 0.0,
+    "atc_calls": -49689.0
+   }
+  },
+  "E40|O_ORACLE|8|2028": {
+   "columns": 139,
+   "mismatched": [
+    "delay_mean_bulk",
+    "delay_mean_h",
+    "delay_mass_weighted_h",
+    "tonne_days_waiting",
+    "atc_calls"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 6595,
+   "run_s": 2.17,
+   "stored_run_s": 3.53,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 6.923284603388424e-05,
+    "delay_mean_bulk": 7.111001203341516e-05,
+    "delivered_kg": 0.0,
+    "atc_calls": -37203.0
+   }
+  },
+  "E40|O_ORACLE|12|2028": {
+   "columns": 139,
+   "mismatched": [
+    "atc_calls"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 6830,
+   "run_s": 2.41,
+   "stored_run_s": 3.99,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0,
+    "delay_mean_bulk": 0.0,
+    "delivered_kg": 0.0,
+    "atc_calls": -35454.0
+   }
+  },
+  "E40|O_ORACLE|16|2028": {
+   "columns": 139,
+   "mismatched": [
+    "delay_mean_bulk",
+    "delay_mean_h",
+    "delay_mass_weighted_h",
+    "tonne_days_waiting",
+    "km_total",
+    "empty_km_share",
+    "energy_kwh",
+    "utilisation",
+    "operator_hours",
+    "operator_cost_musd",
+    "cost_per_kg_usd",
+    "cost_per_tkm_usd",
+    "revenue_gini",
+    "cost_per_landed_kg_usd",
+    "interventions",
+    "intervention_h",
+    "p5_utilisation_active",
+    "p5_cargo_util",
+    "atc_calls",
+    "atc_deadhead_share"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 6682,
+   "run_s": 2.11,
+   "stored_run_s": 4.33,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": -0.00014776416091422107,
+    "delay_mean_bulk": -0.00015183348866543156,
+    "delivered_kg": 0.0,
+    "atc_calls": -56247.0
+   }
+  },
+  "E42|C_AUCTION team 00 same_owner loss 0.1|4|2028": {
+   "columns": 143,
+   "mismatched": [
+    "delay_mean_bulk",
+    "delay_mean_h",
+    "delay_mass_weighted_h",
+    "tonne_days_waiting",
+    "atc_calls",
+    "atc_robots_out_share"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 6753,
+   "run_s": 4.89,
+   "stored_run_s": 11.34,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0007295878708823977,
+    "delay_mean_bulk": 0.0007808646495330862,
+    "delivered_kg": 0.0,
+    "atc_calls": -30368.0
+   }
+  },
+  "E42|C_AUCTION team 00 same_owner loss 0.1|8|2028": {
+   "columns": 143,
+   "mismatched": [
+    "delay_mean_bulk",
+    "delay_mean_h",
+    "delay_mass_weighted_h",
+    "tonne_days_waiting",
+    "atc_calls",
+    "atc_robots_out_share"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 6299,
+   "run_s": 4.47,
+   "stored_run_s": 11.74,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 6.868413636240689e-05,
+    "delay_mean_bulk": 7.108465182881218e-05,
+    "delivered_kg": 0.0,
+    "atc_calls": -36235.0
+   }
+  },
+  "E42|C_AUCTION team 00 same_owner loss 0.1|12|2028": {
+   "columns": 143,
+   "mismatched": [
+    "delay_mean_bulk",
+    "delay_mean_h",
+    "delay_mass_weighted_h",
+    "tonne_days_waiting",
+    "atc_calls",
+    "atc_robots_out_share"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 6787,
+   "run_s": 4.69,
+   "stored_run_s": 42.49,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.000358990319305974,
+    "delay_mean_bulk": 0.0003842208198072683,
+    "delivered_kg": 0.0,
+    "atc_calls": -174082.0
+   }
+  },
+  "E42|C_AUCTION team 00 same_owner loss 0.1|16|2028": {
+   "columns": 143,
+   "mismatched": [
+    "delay_mean_bulk",
+    "delay_mean_h",
+    "delay_mass_weighted_h",
+    "tonne_days_waiting",
+    "atc_calls",
+    "atc_robots_out_share"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 6236,
+   "run_s": 4.49,
+   "stored_run_s": 13.39,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 3.665730132951239e-05,
+    "delay_mean_bulk": 3.771964172116782e-05,
+    "delivered_kg": 0.0,
+    "atc_calls": -45463.0
+   }
+  },
+  "E42|C_AUCTION team 25 any loss 0.4 arbitrated (exploratory)|4|2028": {
+   "columns": 144,
+   "mismatched": [
+    "delay_mean_bulk",
+    "delay_mean_h",
+    "delay_mass_weighted_h",
+    "tonne_days_waiting",
+    "atc_calls",
+    "atc_robots_out_share",
+    "atc_msg_latency_s_mean"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 6368,
+   "run_s": 4.55,
+   "stored_run_s": 9.93,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0006996818144529016,
+    "delay_mean_bulk": 0.0007503544538867146,
+    "delivered_kg": 0.0,
+    "atc_calls": -26995.0
+   }
+  },
+  "E42|C_AUCTION team 25 any loss 0.4 arbitrated (exploratory)|8|2028": {
+   "columns": 144,
+   "mismatched": [
+    "delay_mean_bulk",
+    "delay_mean_h",
+    "delay_mass_weighted_h",
+    "tonne_days_waiting",
+    "atc_calls",
+    "atc_robots_out_share"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 6207,
+   "run_s": 4.43,
+   "stored_run_s": 10.95,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 6.875521342664115e-05,
+    "delay_mean_bulk": 7.11100120316388e-05,
+    "delivered_kg": 0.0,
+    "atc_calls": -34058.0
+   }
+  },
+  "E42|C_AUCTION team 25 any loss 0.4 arbitrated (exploratory)|12|2028": {
+   "columns": 144,
+   "mismatched": [
+    "atc_calls",
+    "atc_robots_out_share"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 6246,
+   "run_s": 4.63,
+   "stored_run_s": 11.73,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0,
+    "delay_mean_bulk": 0.0,
+    "delivered_kg": 0.0,
+    "atc_calls": -33807.0
+   }
+  },
+  "E42|C_AUCTION team 25 any loss 0.4 arbitrated (exploratory)|16|2028": {
+   "columns": 144,
+   "mismatched": [
+    "delay_mean_bulk",
+    "delay_mean_h",
+    "delay_mass_weighted_h",
+    "tonne_days_waiting",
+    "atc_calls",
+    "atc_robots_out_share"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 6101,
+   "run_s": 4.63,
+   "stored_run_s": 15.31,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 3.659368226749393e-05,
+    "delay_mean_bulk": 3.7706151150729283e-05,
+    "delivered_kg": 0.0,
+    "atc_calls": -53354.0
+   }
+  },
+  "E43|atc x1|1|2028": {
+   "columns": 164,
+   "mismatched": [
+    "delay_mean_bulk",
+    "delay_mean_h",
+    "delay_mass_weighted_h",
+    "tonne_days_waiting",
+    "atc_calls"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 7070,
+   "run_s": 3.11,
+   "stored_run_s": 4.7,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 5.9014224643050284e-05,
+    "delay_mean_bulk": 6.248812655762492e-05,
+    "delivered_kg": 0.0,
+    "atc_calls": -42827.0
+   }
+  },
+  "E43|atc x1|2|2028": {
+   "columns": 163,
+   "mismatched": [
+    "atc_calls"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 7263,
+   "run_s": 2.55,
+   "stored_run_s": 3.74,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0,
+    "delay_mean_bulk": 0.0,
+    "delivered_kg": 0.0,
+    "atc_calls": -30227.0
+   }
+  },
+  "E43|atc x1|3|2028": {
+   "columns": 163,
+   "mismatched": [
+    "delay_mean_bulk",
+    "delay_mean_h",
+    "delay_median_h",
+    "delay_mass_weighted_h",
+    "tonne_days_waiting",
+    "km_total",
+    "km_empty",
+    "empty_km_share",
+    "energy_kwh",
+    "utilisation",
+    "operator_hours",
+    "operator_cost_musd",
+    "cost_per_kg_usd",
+    "cost_per_tkm_usd",
+    "revenue_gini",
+    "cost_per_landed_kg_usd",
+    "interventions",
+    "intervention_h",
+    "p5_utilisation_active",
+    "p5_cargo_util"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 6973,
+   "run_s": 2.67,
+   "stored_run_s": 4.44,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.004112261107007242,
+    "delay_mean_bulk": 0.004336886579826782,
+    "delivered_kg": 0.0,
+    "atc_calls": -42424.0
+   }
+  },
+  "E43|atc x1|4|2028": {
+   "columns": 163,
+   "mismatched": [
+    "atc_calls"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 6703,
+   "run_s": 2.88,
+   "stored_run_s": 5.12,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0,
+    "delay_mean_bulk": 0.0,
+    "delivered_kg": 0.0,
+    "atc_calls": -53324.0
+   }
+  },
+  "E43|atc x1|5|2028": {
+   "columns": 163,
+   "mismatched": [
+    "delay_mean_consumables",
+    "delay_p90_consumables",
+    "delay_mean_science",
+    "delay_p90_science",
+    "delay_mean_equipment",
+    "delay_p90_equipment",
+    "delay_mean_bulk",
+    "delay_p90_bulk",
+    "delay_mean_return",
+    "delay_prio2_mean_h",
+    "delay_prio1_p90_h",
+    "sl24_prio1",
+    "ready_kg",
+    "delivered_kg",
+    "delivered_items",
+    "delivered_share",
+    "backlog_kg",
+    "delay_mean_h",
+    "delay_median_h",
+    "delay_p90_h"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 6711,
+   "run_s": 2.37,
+   "stored_run_s": 3.94,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 1.1094724637405307,
+    "delay_mean_h": 0.3243100374094876,
+    "delay_mean_bulk": 0.30384621039176807,
+    "delivered_kg": -1689.4534841428977,
+    "atc_calls": -40595.0
+   }
+  },
+  "E43|uncoordinated x1|1|2028": {
+   "columns": 164,
+   "mismatched": [
+    "delay_mean_bulk",
+    "delay_mean_h",
+    "delay_mass_weighted_h",
+    "tonne_days_waiting",
+    "atc_calls"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 4105,
+   "run_s": 7.89,
+   "stored_run_s": 8.65,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 5.487941831461285e-05,
+    "delay_mean_bulk": 5.807076516362031e-05,
+    "delivered_kg": 0.0,
+    "atc_calls": -17948.0
+   }
+  },
+  "E43|uncoordinated x1|2|2028": {
+   "columns": 164,
+   "mismatched": [
+    "delay_mean_bulk",
+    "delay_mean_h",
+    "delay_mass_weighted_h",
+    "tonne_days_waiting",
+    "atc_calls"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 4100,
+   "run_s": 7.58,
+   "stored_run_s": 8.39,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 4.778308790776009e-05,
+    "delay_mean_bulk": 5.0842162579556316e-05,
+    "delivered_kg": 0.0,
+    "atc_calls": -12850.0
+   }
+  },
+  "E43|uncoordinated x1|3|2028": {
+   "columns": 163,
+   "mismatched": [
+    "atc_calls"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 3459,
+   "run_s": 8.79,
+   "stored_run_s": 9.39,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0,
+    "delay_mean_bulk": 0.0,
+    "delivered_kg": 0.0,
+    "atc_calls": -14416.0
+   }
+  },
+  "E43|uncoordinated x1|4|2028": {
+   "columns": 163,
+   "mismatched": [
+    "atc_calls"
+   ],
+   "missing": [],
+   "identical": false,
+   "wake_skipped": 3388,
+   "run_s": 8.7,
+   "stored_run_s": 9.21,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "delay_mean_h": 0.0,
+    "delay_mean_bulk": 0.0,
+    "delivered_kg": 0.0,
+    "atc_calls": -11442.0
+   }
+  },
+  "E43|uncoordinated x1|5|2028": {
+   "columns": 163,
+   "mismatched": [
+    "delay_mean_consumables",
+    "delay_p90_consumables",
+    "delay_mean_science",
+    "delay_p90_science",
+    "delay_mean_equipment",
+    "delay_p90_equipment",
+    "delay_mean_bulk",
+    "delay_p90_bulk",
+    "delay_mean_return",
+    "delay_p90_return",
+    "delay_prio2_mean_h",
+    "delay_prio1_p90_h",
+    "sl24_prio1",
+    "sl48_prio12",
+    "ready_kg",
+    "delivered_kg",
+    "delivered_items",
+    "delivered_share",
+    "backlog_kg",
+    "delay_mean_h"
+   ],
+   "missing": [
+    "road_wait_h_owner_C"
+   ],
+   "identical": false,
+   "wake_skipped": 3954,
+   "run_s": 7.29,
+   "stored_run_s": 8.39,
+   "new_minus_stored": {
+    "atc_urgent_wait_mean_cens_h": -23.14056366884543,
+    "delay_mean_h": -5.589553150045418,
+    "delay_mean_bulk": -5.285582548379061,
+    "delivered_kg": 3991.5897938623093,
+    "atc_calls": -11837.0
+   }
+  }
+ },
+ "audit": {
+  "E43|atc x1|1|2028": {
+   "dup_calls_audited": 44315,
+   "violations": 1,
+   "violations_outside_atc_counters": 1,
+   "atc_counters_changed": {},
+   "examples": [
+    {
+     "t": 4543.845970352402,
+     "keys": [
+      "vehicles",
+      "waiting",
+      "metrics",
+      "rng",
+      "events",
+      "op_jobs"
+     ],
+     "pushed": 2,
+     "atc": {}
+    }
+   ],
+   "wake_skipped_counted": 44394,
+   "row_matches_stored": true,
+   "mismatched": [],
+   "run_s": 103.2
+  },
+  "E40|C_AUCTION|4|2028": {
+   "dup_calls_audited": 83370,
+   "violations": 82351,
+   "violations_outside_atc_counters": 3,
+   "atc_counters_changed": {
+    "robots_seen": 82351,
+    "robots_out_sum": 72,
+    "team_no_agreement": 1
+   },
+   "examples": [
+    {
+     "t": 21.355053601055896,
+     "keys": [
+      "atc"
+     ],
+     "pushed": 0,
+     "atc": {
+      "robots_seen": [
+       122,
+       127
+      ]
+     }
+    },
+    {
+     "t": 21.355053601055896,
+     "keys": [
+      "atc"
+     ],
+     "pushed": 0,
+     "atc": {
+      "robots_seen": [
+       127,
+       132
+      ]
+     }
+    },
+    {
+     "t": 21.355053601055896,
+     "keys": [
+      "atc"
+     ],
+     "pushed": 0,
+     "atc": {
+      "robots_seen": [
+       132,
+       137
+      ]
+     }
+    }
+   ],
+   "wake_skipped_counted": 83416,
+   "row_matches_stored": true,
+   "mismatched": [],
+   "run_s": 279.2
+  }
+ },
+ "gate_summary": {
+  "rows": 54,
+  "identical": 0,
+  "wakes_skipped": 280460
+ }
+}

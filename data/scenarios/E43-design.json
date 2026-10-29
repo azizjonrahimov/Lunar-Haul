@@ -1,0 +1,388 @@
+{
+ "experiment": "E43",
+ "builder": "experiments/phase5/run_phase5.py e43_cells",
+ "load_multiplier_30pct": 2.806,
+ "plume_R5": {
+  "keepout_km": 1.0,
+  "standdown_h": 0.75,
+  "shelter": "auto"
+ },
+ "single_share_flag": "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the narrowest places at a 10 deg slope limit are marked first",
+ "design_changes": [
+  {
+   "what": "8x horizon 60 d -> 30 d (1440 h -> 720 h), 10 seeds kept",
+   "why": "the first 8x run took 310.2 s at 60 days (none x8, seed 1), over the 5 min per-run limit; the 60-day row is archived in results/archive/E43_runs.x8_60d.csv"
+  },
+  {
+   "what": "8x cells (indices 12-15) not run; the 30-day cut was never used for results",
+   "why": "a 30-day 8x run went past 470 s (none x8 seed 1: 7 d 1.8 s, 14 d 8.6 s, 21 d 141 s); cause: duplicate consolidation WAKEs (lunarsim/dispatch.py:299, 2.37 M WAKEs and 1.6 M dispatch calls in 21 d); the opt-in dedupe failed the bit-identity gate (results/ATC_wake_check.json), so 8x is reported as not run"
+  }
+ ],
+ "not_run_cells": [
+  12,
+  13,
+  14,
+  15
+ ],
+ "cells": [
+  {
+   "index": 0,
+   "label": "none x1",
+   "key": "bay_km=0.0;block=y2028:30;density=1;horizon_h=8760.0;label=none x1;load=30;mode=none;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.0;team_share=0.1",
+   "block": "y2028:30",
+   "density": 1,
+   "horizon_days": 365.0,
+   "roads": null
+  },
+  {
+   "index": 1,
+   "label": "atc x1",
+   "key": "bay_km=1.0;block=y2028:30;density=1;horizon_h=8760.0;label=atc x1;load=30;mode=atc;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.15;team_share=0.1",
+   "block": "y2028:30",
+   "density": 1,
+   "horizon_days": 365.0,
+   "roads": {
+    "mode": "atc",
+    "single_share": 0.15,
+    "single_share_flag": "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the narrowest places at a 10 deg slope limit are marked first",
+    "bay_km": 1.0
+   }
+  },
+  {
+   "index": 2,
+   "label": "uncoordinated x1",
+   "key": "bay_km=1.0;block=y2028:30;density=1;horizon_h=8760.0;label=uncoordinated x1;load=30;mode=uncoordinated;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.15;team_share=0.1",
+   "block": "y2028:30",
+   "density": 1,
+   "horizon_days": 365.0,
+   "roads": {
+    "mode": "uncoordinated",
+    "single_share": 0.15,
+    "single_share_flag": "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the narrowest places at a 10 deg slope limit are marked first",
+    "bay_km": 1.0
+   }
+  },
+  {
+   "index": 3,
+   "label": "uncoordinated x1",
+   "key": "bay_km=1.0;block=y2038:30;density=1;horizon_h=8760.0;label=uncoordinated x1;load=30;mode=uncoordinated;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.15;team_share=0.1",
+   "block": "y2038:30",
+   "density": 1,
+   "horizon_days": 365.0,
+   "roads": {
+    "mode": "uncoordinated",
+    "single_share": 0.15,
+    "single_share_flag": "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the narrowest places at a 10 deg slope limit are marked first",
+    "bay_km": 1.0
+   }
+  },
+  {
+   "index": 4,
+   "label": "none x2",
+   "key": "bay_km=0.0;block=y2028:30;density=2;horizon_h=8760.0;label=none x2;load=30;mode=none;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.0;team_share=0.1",
+   "block": "y2028:30",
+   "density": 2,
+   "horizon_days": 365.0,
+   "roads": null
+  },
+  {
+   "index": 5,
+   "label": "atc x2",
+   "key": "bay_km=1.0;block=y2028:30;density=2;horizon_h=8760.0;label=atc x2;load=30;mode=atc;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.15;team_share=0.1",
+   "block": "y2028:30",
+   "density": 2,
+   "horizon_days": 365.0,
+   "roads": {
+    "mode": "atc",
+    "single_share": 0.15,
+    "single_share_flag": "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the narrowest places at a 10 deg slope limit are marked first",
+    "bay_km": 1.0
+   }
+  },
+  {
+   "index": 6,
+   "label": "uncoordinated x2",
+   "key": "bay_km=1.0;block=y2028:30;density=2;horizon_h=8760.0;label=uncoordinated x2;load=30;mode=uncoordinated;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.15;team_share=0.1",
+   "block": "y2028:30",
+   "density": 2,
+   "horizon_days": 365.0,
+   "roads": {
+    "mode": "uncoordinated",
+    "single_share": 0.15,
+    "single_share_flag": "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the narrowest places at a 10 deg slope limit are marked first",
+    "bay_km": 1.0
+   }
+  },
+  {
+   "index": 7,
+   "label": "uncoordinated x2",
+   "key": "bay_km=1.0;block=y2038:30;density=2;horizon_h=8760.0;label=uncoordinated x2;load=30;mode=uncoordinated;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.15;team_share=0.1",
+   "block": "y2038:30",
+   "density": 2,
+   "horizon_days": 365.0,
+   "roads": {
+    "mode": "uncoordinated",
+    "single_share": 0.15,
+    "single_share_flag": "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the narrowest places at a 10 deg slope limit are marked first",
+    "bay_km": 1.0
+   }
+  },
+  {
+   "index": 8,
+   "label": "none x4",
+   "key": "bay_km=0.0;block=y2028:10;density=4;horizon_h=2160.0;label=none x4;load=30;mode=none;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.0;team_share=0.1",
+   "block": "y2028:10",
+   "density": 4,
+   "horizon_days": 90.0,
+   "roads": null
+  },
+  {
+   "index": 9,
+   "label": "atc x4",
+   "key": "bay_km=1.0;block=y2028:10;density=4;horizon_h=2160.0;label=atc x4;load=30;mode=atc;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.15;team_share=0.1",
+   "block": "y2028:10",
+   "density": 4,
+   "horizon_days": 90.0,
+   "roads": {
+    "mode": "atc",
+    "single_share": 0.15,
+    "single_share_flag": "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the narrowest places at a 10 deg slope limit are marked first",
+    "bay_km": 1.0
+   }
+  },
+  {
+   "index": 10,
+   "label": "uncoordinated x4",
+   "key": "bay_km=1.0;block=y2028:10;density=4;horizon_h=2160.0;label=uncoordinated x4;load=30;mode=uncoordinated;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.15;team_share=0.1",
+   "block": "y2028:10",
+   "density": 4,
+   "horizon_days": 90.0,
+   "roads": {
+    "mode": "uncoordinated",
+    "single_share": 0.15,
+    "single_share_flag": "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the narrowest places at a 10 deg slope limit are marked first",
+    "bay_km": 1.0
+   }
+  },
+  {
+   "index": 11,
+   "label": "uncoordinated x4",
+   "key": "bay_km=1.0;block=y2038:10;density=4;horizon_h=2160.0;label=uncoordinated x4;load=30;mode=uncoordinated;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.15;team_share=0.1",
+   "block": "y2038:10",
+   "density": 4,
+   "horizon_days": 90.0,
+   "roads": {
+    "mode": "uncoordinated",
+    "single_share": 0.15,
+    "single_share_flag": "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the narrowest places at a 10 deg slope limit are marked first",
+    "bay_km": 1.0
+   }
+  },
+  {
+   "index": 12,
+   "label": "none x8",
+   "key": "bay_km=0.0;block=y2028:10;density=8;horizon_h=720.0;label=none x8;load=30;mode=none;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.0;team_share=0.1",
+   "block": "y2028:10",
+   "density": 8,
+   "horizon_days": 30.0,
+   "roads": null
+  },
+  {
+   "index": 13,
+   "label": "atc x8",
+   "key": "bay_km=1.0;block=y2028:10;density=8;horizon_h=720.0;label=atc x8;load=30;mode=atc;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.15;team_share=0.1",
+   "block": "y2028:10",
+   "density": 8,
+   "horizon_days": 30.0,
+   "roads": {
+    "mode": "atc",
+    "single_share": 0.15,
+    "single_share_flag": "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the narrowest places at a 10 deg slope limit are marked first",
+    "bay_km": 1.0
+   }
+  },
+  {
+   "index": 14,
+   "label": "uncoordinated x8",
+   "key": "bay_km=1.0;block=y2028:10;density=8;horizon_h=720.0;label=uncoordinated x8;load=30;mode=uncoordinated;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.15;team_share=0.1",
+   "block": "y2028:10",
+   "density": 8,
+   "horizon_days": 30.0,
+   "roads": {
+    "mode": "uncoordinated",
+    "single_share": 0.15,
+    "single_share_flag": "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the narrowest places at a 10 deg slope limit are marked first",
+    "bay_km": 1.0
+   }
+  },
+  {
+   "index": 15,
+   "label": "uncoordinated x8",
+   "key": "bay_km=1.0;block=y2038:10;density=8;horizon_h=720.0;label=uncoordinated x8;load=30;mode=uncoordinated;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.15;team_share=0.1",
+   "block": "y2038:10",
+   "density": 8,
+   "horizon_days": 30.0,
+   "roads": {
+    "mode": "uncoordinated",
+    "single_share": 0.15,
+    "single_share_flag": "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the narrowest places at a 10 deg slope limit are marked first",
+    "bay_km": 1.0
+   }
+  },
+  {
+   "index": 16,
+   "label": "atc x1 share 0",
+   "key": "bay_km=1.0;block=y2028:30;density=1;horizon_h=8760.0;label=atc x1 share 0;load=30;mode=atc;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.0;team_share=0.1",
+   "block": "y2028:30",
+   "density": 1,
+   "horizon_days": 365.0,
+   "roads": {
+    "mode": "atc",
+    "single_share": 0.0,
+    "single_share_flag": "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the narrowest places at a 10 deg slope limit are marked first",
+    "bay_km": 1.0
+   }
+  },
+  {
+   "index": 17,
+   "label": "uncoordinated x1 share 0",
+   "key": "bay_km=1.0;block=y2028:30;density=1;horizon_h=8760.0;label=uncoordinated x1 share 0;load=30;mode=uncoordinated;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.0;team_share=0.1",
+   "block": "y2028:30",
+   "density": 1,
+   "horizon_days": 365.0,
+   "roads": {
+    "mode": "uncoordinated",
+    "single_share": 0.0,
+    "single_share_flag": "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the narrowest places at a 10 deg slope limit are marked first",
+    "bay_km": 1.0
+   }
+  },
+  {
+   "index": 18,
+   "label": "atc x1 share 0.05",
+   "key": "bay_km=1.0;block=y2028:30;density=1;horizon_h=8760.0;label=atc x1 share 0.05;load=30;mode=atc;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.05;team_share=0.1",
+   "block": "y2028:30",
+   "density": 1,
+   "horizon_days": 365.0,
+   "roads": {
+    "mode": "atc",
+    "single_share": 0.05,
+    "single_share_flag": "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the narrowest places at a 10 deg slope limit are marked first",
+    "bay_km": 1.0
+   }
+  },
+  {
+   "index": 19,
+   "label": "uncoordinated x1 share 0.05",
+   "key": "bay_km=1.0;block=y2028:30;density=1;horizon_h=8760.0;label=uncoordinated x1 share 0.05;load=30;mode=uncoordinated;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.05;team_share=0.1",
+   "block": "y2028:30",
+   "density": 1,
+   "horizon_days": 365.0,
+   "roads": {
+    "mode": "uncoordinated",
+    "single_share": 0.05,
+    "single_share_flag": "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the narrowest places at a 10 deg slope limit are marked first",
+    "bay_km": 1.0
+   }
+  },
+  {
+   "index": 20,
+   "label": "atc x1 share 0.4",
+   "key": "bay_km=1.0;block=y2028:30;density=1;horizon_h=8760.0;label=atc x1 share 0.4;load=30;mode=atc;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.4;team_share=0.1",
+   "block": "y2028:30",
+   "density": 1,
+   "horizon_days": 365.0,
+   "roads": {
+    "mode": "atc",
+    "single_share": 0.4,
+    "single_share_flag": "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the narrowest places at a 10 deg slope limit are marked first",
+    "bay_km": 1.0
+   }
+  },
+  {
+   "index": 21,
+   "label": "uncoordinated x1 share 0.4",
+   "key": "bay_km=1.0;block=y2028:30;density=1;horizon_h=8760.0;label=uncoordinated x1 share 0.4;load=30;mode=uncoordinated;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.4;team_share=0.1",
+   "block": "y2028:30",
+   "density": 1,
+   "horizon_days": 365.0,
+   "roads": {
+    "mode": "uncoordinated",
+    "single_share": 0.4,
+    "single_share_flag": "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the narrowest places at a 10 deg slope limit are marked first",
+    "bay_km": 1.0
+   }
+  },
+  {
+   "index": 22,
+   "label": "atc x1 bay 0.5",
+   "key": "bay_km=0.5;block=y2028:30;density=1;horizon_h=8760.0;label=atc x1 bay 0.5;load=30;mode=atc;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.15;team_share=0.1",
+   "block": "y2028:30",
+   "density": 1,
+   "horizon_days": 365.0,
+   "roads": {
+    "mode": "atc",
+    "single_share": 0.15,
+    "single_share_flag": "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the narrowest places at a 10 deg slope limit are marked first",
+    "bay_km": 0.5
+   }
+  },
+  {
+   "index": 23,
+   "label": "uncoordinated x1 bay 0.5",
+   "key": "bay_km=0.5;block=y2028:30;density=1;horizon_h=8760.0;label=uncoordinated x1 bay 0.5;load=30;mode=uncoordinated;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.15;team_share=0.1",
+   "block": "y2028:30",
+   "density": 1,
+   "horizon_days": 365.0,
+   "roads": {
+    "mode": "uncoordinated",
+    "single_share": 0.15,
+    "single_share_flag": "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the narrowest places at a 10 deg slope limit are marked first",
+    "bay_km": 0.5
+   }
+  },
+  {
+   "index": 24,
+   "label": "atc x1 bay 2",
+   "key": "bay_km=2.0;block=y2028:30;density=1;horizon_h=8760.0;label=atc x1 bay 2;load=30;mode=atc;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.15;team_share=0.1",
+   "block": "y2028:30",
+   "density": 1,
+   "horizon_days": 365.0,
+   "roads": {
+    "mode": "atc",
+    "single_share": 0.15,
+    "single_share_flag": "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the narrowest places at a 10 deg slope limit are marked first",
+    "bay_km": 2.0
+   }
+  },
+  {
+   "index": 25,
+   "label": "uncoordinated x1 bay 2",
+   "key": "bay_km=2.0;block=y2028:30;density=1;horizon_h=8760.0;label=uncoordinated x1 bay 2;load=30;mode=uncoordinated;owners=3eq;r7=False;regime=O_ORACLE;single_share=0.15;team_share=0.1",
+   "block": "y2028:30",
+   "density": 1,
+   "horizon_days": 365.0,
+   "roads": {
+    "mode": "uncoordinated",
+    "single_share": 0.15,
+    "single_share_flag": "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the narrowest places at a 10 deg slope limit are marked first",
+    "bay_km": 2.0
+   }
+  },
+  {
+   "index": 26,
+   "label": "atc x1 r7",
+   "key": "bay_km=1.0;block=y2028:30;density=1;horizon_h=8760.0;label=atc x1 r7;load=30;mode=atc;owners=3eq;r7=True;regime=O_ORACLE;single_share=0.15;team_share=0.1",
+   "block": "y2028:30",
+   "density": 1,
+   "horizon_days": 365.0,
+   "roads": {
+    "mode": "atc",
+    "single_share": 0.15,
+    "single_share_flag": "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the narrowest places at a 10 deg slope limit are marked first",
+    "bay_km": 1.0,
+    "r7": true
+   }
+  }
+ ]
+}

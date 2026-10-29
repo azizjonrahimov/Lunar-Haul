@@ -86,6 +86,9 @@ def blocks(which: str = "both") -> List[Tuple[str, int, Optional[int]]]:
         out += [("v1", s, None) for s in V1_SEEDS]
     if which in ("both", "v3"):
         out += [("v3", s, y) for y in V3_YEARS for s in V3_SEEDS]
+    if which.startswith("y"):                      # E43: "y2038:10" = start year 2038, seeds 1-10
+        y, _, n = which[1:].partition(":")
+        out += [(which, s, int(y)) for s in range(1, int(n or 30) + 1)]
     return out
 
 
@@ -153,14 +156,93 @@ def e42_cells() -> List[Dict[str, Any]]:
     return cells
 
 
-EXPS = {"E40": e40_cells, "E41": e41_cells, "E42": e42_cells}
+E43_K30 = 2.806                   # the 30 % load multiplier of data/scenarios/p5 (B-71 calibration)
+E43_DENSITY = {1: (None, 30), 2: (None, 30), 4: (2160.0, 10), 8: (720.0, 10)}    # horizon h (None = a year), seeds
+# 8x was 60 days (1440 h) in the design sent to LEAD; cut to 30 days after the first 8x run took 310 s at 60 days (over
+# the 5 min per-run limit); seeds kept at 10, so the cut is in horizon only (rows carry horizon_days)
+E43_DESIGN = os.path.join(ROOT, "data", "scenarios", "E43-design.json")   # not in p5/: that folder holds scenarios only
+E43_PLUME = {"keepout_km": 1.0, "standdown_h": 0.75, "shelter": "auto"}           # R5: R 1 km, 30 + 15 min
+SINGLE_SHARE = 0.15
+SINGLE_SHARE_FLAG = ("ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the "
+                     "narrowest places at a 10 deg slope limit are marked first")
+
+
+def e43_cells() -> List[Dict[str, Any]]:
+    """E43 (B-77): road coordination mode x fleet density (fleet and demand both x m, 30 % load) x start year.
+    Modes: "none" (no road layer and no landing closures), "atc", "uncoordinated" (R3-R6, R10 and the plume closure
+    R5). Pooled dispatch (O_ORACLE) in every cell, so only road coordination differs. "none" and "atc" never wait for
+    Earth, so their runs do not depend on the start year (one year per seed, PREREG change 4); "uncoordinated" runs
+    2028 and 2038. 4x and 8x run 90 and 60 days, 10 seeds (a year at 4x takes ~6 min)."""
+    cells = []
+
+    def mk(mode, m, block, label_extra="", **roads):
+        horizon, _ = E43_DENSITY[m]
+        rd = None if mode == "none" else dict({"mode": mode, "single_share": SINGLE_SHARE,
+                                               "single_share_flag": SINGLE_SHARE_FLAG, "bay_km": 1.0}, **roads)
+        c = cell("E43", f"{mode} x{m}{label_extra}", "O_ORACLE", {}, block=block, mode=mode, density=m,
+                 horizon_h=horizon or 8760.0, single_share=(rd or {}).get("single_share", 0.0),
+                 bay_km=(rd or {}).get("bay_km", 0.0), r7=bool((rd or {}).get("r7", False)))
+        c["build"] = {"m": m, "horizon": horizon, "roads": rd}
+        cells.append(c)
+
+    for m, (horizon, n) in E43_DENSITY.items():
+        mk("none", m, f"y2028:{n}")
+        mk("atc", m, f"y2028:{n}")
+        for y in (2028, 2038):
+            mk("uncoordinated", m, f"y{y}:{n}")
+    for share in (0.0, 0.05, 0.40):                          # sweeps at 1x, 2028
+        mk("atc", 1, "y2028:30", f" share {share:g}", single_share=share)
+        mk("uncoordinated", 1, "y2028:30", f" share {share:g}", single_share=share)
+    for bay in (0.5, 2.0):
+        mk("atc", 1, "y2028:30", f" bay {bay:g}", bay_km=bay)
+        mk("uncoordinated", 1, "y2028:30", f" bay {bay:g}", bay_km=bay)
+    mk("atc", 1, "y2028:30", " r7", r7=True)
+    return cells
+
+
+def write_e43_design() -> None:
+    """data/scenarios/E43-design.json: every E43 cell as built (density, horizon, roads incl. the ASSUMED flag)."""
+    import json
+    doc = {"experiment": "E43", "builder": "experiments/phase5/run_phase5.py e43_cells",
+           "load_multiplier_30pct": E43_K30, "plume_R5": E43_PLUME,
+           "single_share_flag": SINGLE_SHARE_FLAG,
+           "design_changes": [{"what": "8x horizon 60 d -> 30 d (1440 h -> 720 h), 10 seeds kept",
+                               "why": "the first 8x run took 310.2 s at 60 days (none x8, seed 1), over the 5 min "
+                                      "per-run limit; the 60-day row is archived in results/archive/E43_runs.x8_60d.csv"},
+                              {"what": "8x cells (indices 12-15) not run; the 30-day cut was never used for results",
+                               "why": "a 30-day 8x run went past 470 s (none x8 seed 1: 7 d 1.8 s, 14 d 8.6 s, 21 d "
+                                      "141 s); cause: duplicate consolidation WAKEs (lunarsim/dispatch.py:299, 2.37 M "
+                                      "WAKEs and 1.6 M dispatch calls in 21 d); the opt-in dedupe failed the "
+                                      "bit-identity gate (results/ATC_wake_check.json), so 8x is reported as not run"}],
+           "not_run_cells": [12, 13, 14, 15],
+           "cells": [{"index": i, "label": c["tag"]["label"], "key": c["key"], "block": c["block"],
+                      "density": c["build"]["m"], "horizon_days": (c["build"]["horizon"] or 8760.0) / 24.0,
+                      "roads": c["build"]["roads"]} for i, c in enumerate(e43_cells())]}
+    os.makedirs(os.path.dirname(E43_DESIGN), exist_ok=True)
+    with open(E43_DESIGN, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(doc, f, indent=1)
+        f.write("\n")
+
+
+EXPS = {"E40": e40_cells, "E41": e41_cells, "E42": e42_cells, "E43": e43_cells}
 
 
 def run_one(c: Dict[str, Any], seed: int, year: Optional[int]) -> Dict[str, Any]:
     from lunarsim import Simulation
     from lunarsim.atc import regimes as G
     from lunarsim.config import load_scenario
-    sc = load_scenario(c["scen"])
+    if c.get("build"):                              # E43: fleet and demand x m, horizon, roads and closures
+        from lunarsim.atc import p5 as P5
+        b = c["build"]
+        m = int(b["m"])
+        sc = P5.build("3eq", k=E43_K30 * m, team_lift_share=0.10)
+        sc = sc.with_(fleet=list(sc.fleet) * m, n_operators=sc.n_operators * m)
+        if b["horizon"]:
+            sc = sc.with_(horizon_h=float(b["horizon"]))
+        if b["roads"]:
+            sc = sc.with_(p5=dict(sc.p5, roads=dict(b["roads"])), plume=dict(E43_PLUME))
+    else:
+        sc = load_scenario(c["scen"])
     kw = dict(c["kw"])
     if c["tag"].get("hopper_refuel"):
         sc = sc.with_(p5=dict(sc.p5, hopper_refuel=True))
@@ -175,6 +257,8 @@ def run_one(c: Dict[str, Any], seed: int, year: Optional[int]) -> Dict[str, Any]
     out.update(c["tag"])
     out.update({"seed": seed, "start_year": y, "cell": c["key"], "run_s": round(time.time() - t0, 2),
                 "landings": len(sim.landing_schedule)})
+    if c.get("build"):
+        out["horizon_days"] = float(sc.horizon_h) / 24.0
     return out
 
 
@@ -246,6 +330,8 @@ def parse_cells(spec: Optional[str], n: int) -> List[int]:
 def cmd_run(exp: str, cells_spec: Optional[str], max_s: float, part: str = "") -> bool:
     t0 = time.time()
     cells = EXPS[exp]()
+    if exp == "E43":
+        write_e43_design()
     done = _done(exp)
     last: Dict[str, float] = {}
     n_new = 0

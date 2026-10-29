@@ -263,9 +263,19 @@ class Simulation:
         self._build_fleet()
         self.atc = None                     # Phase 5 (B-72): set by a lunarsim.atc.regimes mechanism on its first call
         self.p5 = None
+        self.roads = None
+        # B-77 opt-in (Scenario.p5["wake_dedupe"]): the consolidation hold pushes one WAKE per lane deadline instead of
+        # one per dispatch call. NOT result-neutral (tools/atc/wake_check.py gate: 0/54 stored rows identical; some
+        # repeated calls start jobs), so no results use it; kept for the check and a future, pre-registered fix
+        self.wake_pending = {} if (sc.p5 or {}).get("wake_dedupe") else None
+        self.wake_skipped = 0
+        self.wake_debug = False             # tools/atc/wake_check.py only: skipped wakes are pushed anyway, marked
         if sc.p5 is not None:               # Phase 5 (B-71), opt-in: real vehicle classes, reach, team share, hoppers
             from .atc.p5 import P5State
             self.p5 = P5State(self)
+            if sc.p5.get("roads"):          # Phase 5 (B-77), opt-in: roads and rules of the road
+                from .atc.roads import RoadLayer
+                self.roads = RoadLayer(self)
         self._schedule_demand()
         self.batch_h = self.mech_kwargs.get("batch_h", 0.0)
         if self.batch_h > 0:
@@ -760,6 +770,11 @@ class Simulation:
             out.update(self.p5.summary())
         if self.atc is not None:
             out.update(self.atc.summary(self))
+        if self.roads is not None:
+            out.update(self.roads.summary())
+        if self.wake_pending is not None:
+            out["wake_dedupe"] = 1
+            out["wake_skipped"] = self.wake_skipped
         return out
 
     def _advance_to(self, t: float):
@@ -969,6 +984,8 @@ class Simulation:
             return
         self._dispatch_serial = getattr(self, "_dispatch_serial", 0) + 1   # dispatch's per-call plan memo (B-57)
         jobs: List[Job] = self.mechanism(self, candidates, free, **self.mech_kwargs)
+        if self.roads is not None:          # B-77 R4 / R8: priority order among this call's requests
+            jobs = sorted(jobs, key=self.roads.priority_key)
         for job in jobs:
             self._start_job(job)
         if self.comms is not None and self.comms.active:      # Phase 4: re-dispatch when a deferred link returns
@@ -1037,6 +1054,8 @@ class Simulation:
         if comms_on and not math.isfinite(dur):
             self.comms.jobs_refused += 1
             return
+        if self.roads is not None:          # B-77: single-lane reservations, apron slots, crew zones
+            dur += self.roads.apply(self, job, self.t)
         # battery: if the trip needs more than is in the pack, charge first
         for v in job.vehicles:
             need = e_wh / len(job.vehicles)

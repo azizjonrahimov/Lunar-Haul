@@ -1017,7 +1017,7 @@ paired differences with bootstrap 95 % CIs (20,000 resamples), Holm correction a
 claim "no difference", per-owner results. LEAD commits `paper/atc/PREREG.md` first; do not start E40 before it.
 Time one cell first and propose a schedule (the machine is shared; LEAD may run chunks in the background).
 
-## B-77 [QUEUED] Roads and rules of the road inside the logistics engine (P-B, logistics level)
+## B-77 [DONE 22:40] Roads and rules of the road inside the logistics engine (P-B, logistics level)
 Steps:
 1. Road graph from the route network: mark single-lane segments where the drivable corridor (slope below the
    class limit on the 5 m DEM) is narrower than 2 vehicle widths + 2 x lateral margin (~10 m for LTV class);

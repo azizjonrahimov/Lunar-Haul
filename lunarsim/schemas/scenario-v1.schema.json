@@ -379,7 +379,8 @@
             "owners": {"type": "string", "description": "owner mix label (informational)"},
             "k": {"type": "number", "minimum": 0, "description": "demand multiplier the file was built with (informational)"},
             "load": {"type": "object", "description": "load variant and its calibration (informational)"},
-            "label": {"type": "string", "description": "variant label, e.g. an ASSUMED sensitivity (informational)"}
+            "label": {"type": "string", "description": "variant label, e.g. an ASSUMED sensitivity (informational)"},
+            "roads": {"type": "object", "description": "B-77 roads and rules of the road (lunarsim/atc/roads.py): {mode: atc|uncoordinated, single_share (ASSUMED: the 5 m DEM cannot see boulders, rims, shadows or graded one-lane roads), single_share_flag, bay_km, apron_slots, t_hand, eva, start_year}"}
           }
         },
         "illumination": {
