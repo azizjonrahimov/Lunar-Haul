@@ -176,3 +176,38 @@ counters). The accidental extra wake-ups of the old hold are gone; the audit fou
   from the new rows and the before/after of every tested comparison is reported in the papers (Section 4.6 of
   each) whichever way it comes out. The interim E43 numbers in P2 draft 0 are likewise superseded.
 - Written before any rerun row existed.
+
+### Change 6, 29 Oct 2026 (after E45 and the development runs of the encounter simulator; before any E44 main row): R9 gains a lateral conformance test; E44's sample size
+Found by the exhaustive check and the development runs of B-78, written before the first main E44 encounter.
+- **R9 (conformance) gains a lateral test.** A vehicle more than e_lat = 0.3 m (Assumed) off its filed path is
+  nonconforming, and its occupied volume is its broadcast position inflated by that deviation. Every vehicle's safety
+  check tests its path ahead, as driven, against the inflated volumes of nonconforming neighbours, and a nonconforming
+  vehicle tests its own track against all neighbours. A conflict within 60 m is a stop line placed before it, net of
+  the approaching vehicle's travel while braking. The position tolerance e_conf = 11 m stays for along-track lateness;
+  it cannot catch a 1.75 m drift into a 3.5 m lane. Why: the shield of R1-R10 as first implemented tested only filed
+  intents, so a drifting vehicle (encounter type 9) could touch a conforming neighbour. Development counts on 300
+  type-9 encounters (results/E44_dev_r9.json): 31 encounters with a contact before the fix, 0 after; under the earlier
+  per-second drift model 122 before. Reported in P2 as found and fixed during development.
+- **Drift model.** Lateral drift grows per metre driven, not per second (a stopped vehicle does not slide); changed
+  together with the fix. A stall behind a nonconforming vehicle is classified blocked_by_fault, not a deadlock.
+- **R4's tie-break** is defined as the order in which the base computer queued the requests (its FIFO), not the
+  filing clock; the logistics model already serves reservations in commit order, so E43 is unchanged. Wording only.
+- **E44 sample size: 10^4 encounters per type (120,000), not 10^5.** Why: the simulator's throughput after batch
+  compaction is 0.4-22 h per 10^5 encounters by type (type 11, sixteen vehicles, 21.8 h), 55 h in all on the shared
+  8 GB machine; 10^4 per type takes about 5.5 h. Types 1 and 7 are cheap and run 10^5. The reported bound per type
+  stays 1 - 0.05^(1/n) with zero violations (3.0e-4 at 10^4, 3.0e-5 at 10^5), and the Bonferroni bound at
+  alpha/12 (5.5e-4 at 10^4) is reported beside it; with x > 0 violations the Clopper-Pearson upper bound. H7's
+  decision rule (zero violations in every type) is unchanged. The weaker bound is a cost of compute, disclosed.
+- **Importance sampling** on types 6 (the inside vehicle's exit distance: 70 % of draws in the far 40 %), 7 (crew
+  emergence time: 80 % in the 40 s before the robot arrives) and 9 (dead-stop time: 80 % while inside the segment),
+  with weights p/q reported and the bound computed on n_eff = (sum w)^2 / sum w^2.
+- **Type 1 draws whose slope and friction cannot hold the vehicle** (about 26 % of draws) are not driven and are
+  counted apart, not as violations and not in n.
+- **Deadlocks** are counted only in encounters without the random fuzzer (a fuzzed planner may stop forever by
+  construction).
+- **R3 on rings.** The exit-bay rule is not deadlock-free on a ring of single-lane segments with finite bays (about
+  1 % of three- and four-vehicle ring encounters in development, all nominal planners; a "keep one slot free" variant
+  is worse). R3 is not amended. The ring frequency is reported with E44, the logistics model's zero deadlock count is
+  reported as a property of that model (unbounded bays, one job at a time) and not of the rule, and whether the base
+  has a physical single-lane ring is reported as undetermined from the route samples
+  (results/ATC_roads_rings.json: 1 candidate ring at the default share after merging samples within 40 m).

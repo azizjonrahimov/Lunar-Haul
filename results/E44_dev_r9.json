@@ -1,0 +1,32 @@
+{
+ "task": "B-78, PREREG change 6 (R9 lateral conformance), found and fixed during development",
+ "set": "300 type-9 drift encounters (seeds (4490, 9) / (4491, 9)), all planners as drawn",
+ "before_time_based_drift": {
+  "tag": "before",
+  "drift_encounters": 300,
+  "contact": 122,
+  "any_violation": 122,
+  "deadlock": 138,
+  "finished": 0.42,
+  "no_safe": 2
+ },
+ "before_same_drift_model": {
+  "tag": "before_same_drift_model",
+  "drift_encounters": 300,
+  "contact": 31,
+  "any_violation": 31,
+  "deadlock": 143,
+  "finished": 0.42,
+  "no_safe": 0
+ },
+ "after_r9": {
+  "tag": "after_r9_classified",
+  "drift_encounters": 300,
+  "contact": 0,
+  "any_violation": 0,
+  "deadlock": 103,
+  "finished": 0.2633333333333333,
+  "no_safe": 165
+ },
+ "note": "drift was changed from per second to per metre driven together with the fix (a stopped vehicle does not slide sideways); 'before_same_drift_model' is the fair comparison: the same encounters with the R9 check switched off. Deadlock counts include random-fuzzer encounters; stalls behind a nonconforming vehicle count as blocked_by_fault after the fix."
+}

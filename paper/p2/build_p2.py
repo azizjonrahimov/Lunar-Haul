@@ -403,9 +403,24 @@ def values(r: R, allow_pending: bool):
         # the checker (E45) found that R3's one-hop exit rule can deadlock on a ring of single-lane segments; the clause
         # says whether this base's road graph has such a ring at any share (results/ATC_roads_rings.json, BACKEND)
         rings = os.path.join(RES, "ATC_roads_rings.json")
-        if not (os.path.exists(rings) and os.path.exists(r.e45)):
-            raise Pending("the single-lane ring check (results/ATC_roads_rings.json) and E45 have not landed")
-        raise Pending("compose from the ring JSON and E45 once their formats are fixed")
+        if not os.path.exists(rings):
+            raise Pending("the single-lane ring check (results/ATC_roads_rings.json) has not landed")
+        rg = json.load(open(rings, encoding="utf-8"))
+        bs = rg["by_share"]
+        d15, d05, d40 = bs["0.15"], bs["0.05"], bs["0.4"]
+        check(all(len(b["ring_lengths_m"]) == b["rings"] for b in bs.values()), "ring counts match their length lists")
+        check(d15["rings"] >= 1 or d15["raw_sample_cycles"] >= 1, "the ring question is undetermined at the default share")
+        merged = f"{words(d15['rings'])} candidate ring of {num(d15['ring_lengths_m'][0], 0)}{NB}m" if d15["rings"] == 1 \
+            else f"{words(d15['rings'])} candidate rings"
+        return (f"That zero is a property of the logistics model rather than of the rule: its bays are unbounded and "
+                f"its reservation table is filled one job at a time (Section 3.4), so no circular wait can form there, "
+                f"and the count is a check of the code. With finite bays the exit-bay rule is not deadlock-free on a "
+                f"ring of single-lane segments, as the encounter simulator's ring type shows (Section 5.6), and whether "
+                f"this base has such a ring the 5{NB}m route samples cannot settle: merged to road nodes within "
+                f"{num(rg['merge_m'], 0)}{NB}m they show {merged} at the default share, {words(d05['rings'])} at a "
+                f"5{PCT} share and {cnt(d40['rings'])} at 40{PCT}, but the merge can itself join neighbouring roads, "
+                f"and before merging the {cnt(d15['raw_sample_cycles'])} loops at the default share are one road "
+                f"sampled twice by different legs. A surveyed centreline map would settle it; the samples do not.")
     fill("P2-DEADLOCK-SCOPE-CLAUSE", deadlock_scope, "E45 ring check")
 
     # --- E44, E45, E47 -----------------------------------------------------------------------------------------
