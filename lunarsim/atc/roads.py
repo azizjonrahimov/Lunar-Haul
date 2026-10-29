@@ -36,6 +36,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
+from .safety import Reserve, safety_check
+
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 ROADS_FILE = os.path.join(ROOT, "data", "atc", "connecting_ridge", "roads-v1.json")
 SAMPLES_FILE = os.path.join(ROOT, "data", "comms", "connecting_ridge", "earth_link-v1-samples.json.gz")
@@ -238,20 +240,14 @@ class RoadLayer:
         return 0.0
 
     def _conflicts(self, res, t_in, t_out, d, v, mine_only: bool):
-        out = []
-        for (a, b, dd, owner, vid) in self.table.get(res, ()):
-            if vid == v.id or b <= t_in or a >= t_out:
-                continue
-            if mine_only and owner != v.owner:
-                continue
-            if dd != d or self.branched.get(res, False):
-                out.append((a, b, dd, owner, vid))
-        return out
+        """R3 via the safety program (lunarsim/atc/safety.py, the single source of truth)."""
+        return safety_check(self.table, Reserve(res, t_in, t_out, v.id, v.owner, d=d, kind="segment",
+                                                branched=self.branched.get(res, False), mine_only=mine_only)).conflicts
 
     def _apron_conflicts(self, pad, t_in, t_out, v, mine_only: bool):
-        occ = [(a, b, o, vid) for (a, b, _, o, vid) in self.table.get(("apron", pad), ())
-               if vid != v.id and a < t_out and b > t_in and (not mine_only or o == v.owner)]
-        return occ if len(occ) >= int(self.cfg["apron_slots"]) else []
+        """R10 via the safety program."""
+        return safety_check(self.table, Reserve(("apron", pad), t_in, t_out, v.id, v.owner, kind="slots",
+                                                slots=int(self.cfg["apron_slots"]), mine_only=mine_only)).conflicts
 
     # --------------------------------------------------------------------------------------------- commit
     def _hand(self, sim, v, t_req: float, hidden, key) -> float:
