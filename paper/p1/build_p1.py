@@ -708,7 +708,7 @@ def values(r: R, allow_pending: bool):
               listing(f"{h_(base[reg]['b_mean'] + base[reg]['mean'])} ({NAME4[reg]})" for reg in REG4) +
               f", against {h_(o)} for the full-information marketplace on the same seeds; " +
               ("none of the four differed from it by a 95&#8239;% CI that excludes zero." if not diff else
-               listing(f"{NAME4[reg]} was {'below' if base[reg]['hi'] < 0 else 'above'} it by "
+               listing(f"{NAME4[reg]} lay {'below' if base[reg]['hi'] < 0 else 'above'} it by "
                        f"{h_(abs(base[reg]['mean']))} ({ci_h(*sorted((abs(base[reg]['lo']), abs(base[reg]['hi']))))})"
                        for reg in diff) + (" and the others did not differ from it." if len(diff) < 4 else ".")))
         s2 = ("Raising the loss to 0.40 added " +
@@ -718,7 +718,9 @@ def values(r: R, allow_pending: bool):
               "best allocators in Lott and Honary's benchmark [11].")
         above = [reg for reg in REG4 if cross.get(reg)]
         below = [reg for reg in REG4 if not cross.get(reg)]
-        s3 = ((listing(f"{NAME4[reg]} rose above the marketplace at loss {num(float(cross[reg]), 2)}" for reg in above)
+        by_loss = sorted({cross[reg] for reg in above}, key=float)
+        s3 = ((listing(listing(NAME4[reg] for reg in above if cross[reg] == L) +
+                       f" rose above the marketplace at loss {num(float(L), 2)}" for L in by_loss)
                + " (one-sided 95&#8239;% lower bound of the paired difference above zero)" if above else "") +
               ("; " if above and below else "") +
               (listing(NAME4[reg] for reg in below) + (" stayed level with or below it through loss 0.40"
@@ -728,7 +730,7 @@ def values(r: R, allow_pending: bool):
         s4 = ("Bursty loss at a mean rate of 0.25 " +
               ("was not distinguishable from steady loss at 0.25 for any regime (differences " +
                listing(delta(burst[reg]) for reg in REG4) + ")." if not bd else
-               listing(f"{moved(burst[reg], NAME4[reg] + chr(39) + 's wait')}" for reg in bd) +
+               listing(f"{moved(burst[reg], 'the wait of ' + NAME4[reg])}" for reg in bd) +
                (" and left the others within their intervals of zero." if len(bd) < 4 else ".")))
         return " ".join((s1, s2, s3, s4))
 
