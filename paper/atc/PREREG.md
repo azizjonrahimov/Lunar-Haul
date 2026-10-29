@@ -218,3 +218,29 @@ Found by the exhaustive check and the development runs of B-78, written before t
   a stalled fuzzer encounter is incomplete. An emergency-brake event (the shield finds no candidate that satisfies
   every rule and applies full braking) is an event, not an outcome, reported as a per-type rate beside the classes.
   Counts are reported unweighted; rates and bounds use the importance weights where sampled.
+
+### Change 7, 29 Oct 2026 (before any E46 or E48 row; recorded while drafting P3 draft 0): H5's design and rules
+What we saw: nothing from E46 or E48 (neither has run). The P3 draft found that B-76 REVISED (27 Oct) dropped the
+first-price rule with the dropped manipulations, which would leave H5's first two clauses untestable, and that H5
+carries no numeric decision rule. Decisions, all before the first E46 row:
+- E46 keeps a first-price cell beside per-item second price and posted price with Shapley sharing, so that H5 is
+  tested as registered. The manipulation test (bid scaling k in {0.8, 0.9, 1.1, 1.25}, one owner at a time) runs
+  under first price and second price; posted price has no bid to scale.
+- Decision rules for H5 (paired by seed, percentile bootstrap, 20,000 resamples). Clause 1 (first price invites
+  shading): supported if, under first price, the largest gain in an owner's annual profit over bidding truthfully
+  across the tested k has a 95 % CI above zero. Clause 2 (second price reduces it): supported if the largest such
+  gain under per-item second price is smaller than under first price with the 95 % CI of the paired difference
+  excluding zero. Clause 3 (posted price with Shapley sharing leaves no owner worse off than alone): supported if,
+  for every owner in every tested coalition, the 95 % CI of (profit in the coalition - profit alone) does not lie
+  entirely below zero; the point estimates are reported either way. The operator's budget (payments in minus
+  payouts) is reported per rule as a mean with its interval, not tested.
+- The individual-rationality baseline "alone" is the owners-alone regime decided on the Moon (A_MOON), on the
+  same seeds, so that the comparison does not carry the Earth-availability effect of P1's H2. Coalitions are every
+  non-empty subset of the three owners (7, plus the grand coalition's split), as the Shapley computation needs.
+- Parameters not fixed by B-76 REVISED (the posted price per tonne-km and how Earth sets it, the owners' private
+  cost distributions, the audit penalty multiple m) are set by BACKEND in data/scenarios/E46-design.json before the
+  first row and read by P3 from that file; they are design inputs, not results.
+- E48: the lander carries a Lunar ATC radio unit and the landing-announcement part only (no planner, no safety
+  program), as the site's vehicle table shows; B-81 measures the on-robot part on the driving and flying classes.
+  The MTBF levels, the reference flight processor and its benchmark, and the per-class frequency and transmit
+  power are set in data/scenarios/E48-design.json before the first measurement and are flagged Assumed.

@@ -1,0 +1,67 @@
+
+<h2 id="p3-sec-discussion">6. Discussion</h2>
+
+<h3>6.1 What the results say about the question</h3>
+
+<p>The question had three parts: what the vehicles of 2028&ndash;2032 can carry, what Lunar ATC needs inside each of them and whether it fits, and under which payment rules a market among owners is fair and hard to game. On the first part the answer needed no experiment and is the least comfortable: the fleet's capacity is a plateau at {{P3-CAP-MAX-PAIR-KG}} per lift, set by two cargo rovers nobody has bought, and the crew rovers NASA has bought carry {{P3-CLV1-PAYLOAD-KG}} and drive {{P3-CLV1-RANGE-KM}} on a charge. Whatever a dispatcher does, elements heavier than the plateau wait for a vehicle that does not exist, and the base's stated need runs to 15,000&nbsp;kg [5, 6]. The sizing of this paper is for the fleet that will exist, which is small; the network it needs is correspondingly small.</p>
+
+<p>On the second part, {{P3-E48-DISCUSSION-CLAUSE}} <!-- build, PENDING E48: the scaled CPU share, memory and link rate against the capacities, with the direction words from the data; the class that comes closest to a limit; what the failover sweep showed about time without a leader. --> The safety program is explicit switching by design, the form that costs least in computation in the one measured comparison [45], and the planner's learned part is {{P3-LIN-N-WEIGHTS}} weights; the sizing question was always the bookkeeping of the market and the reservation table rather than any arithmetic, and the measurement says how much bookkeeping there is.</p>
+
+<p>On the third part, {{P3-E46-DISCUSSION-CLAUSE}} <!-- build, PENDING E46: which rule left every owner at least as well off as alone, the operator's budget under each rule with its sign, the largest gain from scaling under each rule and what the audits recovered; H5 clause by clause. --> The market's purpose in this design is not to extract the last hour of efficiency but to let three companies share eight vehicles without a treaty; the number that matters for that is whether any owner, in particular the smallest, loses by joining, and E46 measures it directly.</p>
+
+<h3>6.2 Comparison with earlier studies</h3>
+
+<p>{{P3-E48-COMPARISON-CLAUSE}} <!-- build, PENDING E48: the measured bytes per robot-hour against the 13.8 kB/s convoy controller of [25], the per-message latency against UTM's 189 ms / 531 ms [66], the processor cost per safety check against the 1.0x / 3.25x / 11-13x ladder of [45], and the re-election time against CADRE's 30-minute wake cycle [27]. --> The mesh itself agrees with NASA's viewsheds [16]: a 10&nbsp;m mast on this ridge sees {{P3-MESH-MAST-DIRECT-SHARE}} of the route points directly, within the 10&ndash;30&#8239;% that a single tower covered of a 20 &times; 20&nbsp;km polar area in that study, and the rest of the network is multi-hop, as the Subterranean Challenge teams found underground [54, 55]. {{P3-E46-COMPARISON-CLAUSE}} <!-- build, PENDING E46: the smallest owner's result in the 50/35/15 split against Kondor's 48 % fleet penalty for the smallest of three operators [39]; the budget sign against the deficit that theory predicts for efficient, truthful mechanisms [29, 30]; the second-price gain from scaling against the expectation that sequential auctions are not strategyproof across rounds; the Shapley result against the freight practice of [36]. --></p>
+
+<h3>6.3 Implications</h3>
+
+<p>For the companies that will own the vehicles, the implication of Section 3.2 is that the first base cannot be served by any one of them, and that the first thing worth agreeing is not a market but a coupling: two rovers of two owners lifting one load, which is the only way anything above {{P3-CAP-MAX-SINGLE-KG}} moves in this fleet [25, 60]. For the designers of those vehicles, Table 3 is the list of what a vehicle must carry to take part in a shared network: one small program that refuses unsafe moves, a radio that floods a few hundred bytes a second to whatever it can see, and a copy of the entries it has heard, and Section 5.1 says what they cost <!-- PENDING E48 -->. For the agencies that write LunaNet, the surface-to-surface link that the specification leaves bilateral [15] is where every number in Section 5.3 lives; a lunar UHF band [24] would change the link budget more than any software choice. For the operator of the base, the payment rule is a policy choice with a measured price: {{P3-E46-IMPLICATION-CLAUSE}} <!-- build, PENDING E46: which rule to recommend, from the IR, budget and manipulation results, with the trade-off stated in the data's direction. --> Earth's role in this design is the one it can play from 400,000&nbsp;km away: it sets the prices and the rules, keeps the ledger, settles the accounts and audits a sample, and nothing it does has to happen within a radio window.</p>
+
+<h3>6.4 Limitations</h3>
+
+<p>The findings hold for one base, one fleet of eight vehicles in three ownerships, one radio model with assumed antenna heights, range and loss, and one implementation of the software; the sizing is scaled to flight hardware by a factor, not measured on it; the market has three owners and one manipulation; and H5's first two clauses depend on a first-price cell the reduced design does not have. Section 7 states each in full.</p>
+
+<h3>6.5 Future work</h3>
+
+<p>Four pieces follow directly. The safety program and the auction should be run on the flight-class processor itself, against recorded traffic from the companion experiments, to replace the scaling factor with a measurement. The link budget should be checked against a measured lunar surface link as soon as one exists; none does today [17]. The market should be run with five owners and with the manipulations this paper dropped, false availability, charger hogging and cherry-picking, which an auditable ledger may or may not catch. And the Phase-1 rovers' real battery, mass and radio should replace the assumed values when their design reviews publish them, due in late 2026 [1].</p>
+
+<h2 id="p3-sec-limits">7. Limitations</h2>
+
+<p><b>The sizing is scaled, not flown.</b> Every processor time and memory figure is measured on a laptop in Python and scaled by the ratio of a reference flight processor's published benchmark to the laptop's. The factor is stated with a range, but a flight implementation in another language on another operating system could differ from it by more than that range in either direction. {{P3-E48-LIMITATION-SENTENCE}} <!-- build, PENDING E48: the factor and its range; the laptop and the reference processor, from E48_sizing.json. --></p>
+
+<p><b>The radio is a model.</b> Line of sight on a 5&nbsp;m terrain grid with assumed antenna heights, a fixed range and a fixed loss probability stands in for a radio that nobody has measured on the Moon; the link budget uses standard diffraction and two-ray models over a regolith whose permittivity is unmeasured [20, 21]. The share of the time a class is reachable is a property of this model on this ridge.</p>
+
+<p><b>The fleet is the fleet of 2028&ndash;2032 as published in October 2026.</b> The cargo rovers are uncontracted, their masses, batteries and one capacity are assumed, and the Phase-1 rovers' batteries are set from a stated range. The design reviews due in late 2026 and early 2027 may change every assumed value in Table 2.</p>
+
+<p><b>Three owners, one manipulation.</b> The market is tested with three owners in two splits; the theory's warnings about collusion and shill identities [31] concern exactly such thin markets and are not tested. Bid scaling is the only misreport simulated; an owner that misreports position, availability or job completion, or that hogs a charger, is not. The audits compare bids with logged costs and assume the logs are honest.</p>
+
+<p><b>H5's first-price clauses.</b> The reduced design of E46 has no first-price rule, so the registered clauses that depend on one are reported as not tested unless a cell is added before the runs (Section 4.1). The decision rule we will apply to the other clause was not in the original registration and is dated in [59].</p>
+
+<p><b>Private costs are assumed.</b> Each owner's cost of energy, wear and time is drawn from a distribution we chose; profits and individual rationality are measured against those costs. The sweep brackets them but cannot replace a company's own accounting.</p>
+
+<p><b>The lander is not a participant.</b> In this design landers publish a landing time and are otherwise closures; a lander that carries its own Lunar ATC unit, as the site's cutaway supposes, is not sized here.</p>
+
+<h2 id="p3-sec-conclusion">8. Conclusion</h2>
+
+<p>This paper asked what the lunar vehicles of 2028&ndash;2032 can carry, what a shared traffic and market network must put inside each of them and whether it fits, and under which payment rules owners who do not trust one another are better off in the market than alone. We built the vehicle table from published sources with a provenance flag on every figure, described the surface radio network as the standards and the terrain leave it, measured our own implementation of the safety program, the planner, the radio unit and the base computer at one, four and eight times today's fleet, and ran a market experiment of {{P3-E46-N-RUNS}} simulated years under three payment rules with bid scaling and audits. The fleet's capacity is a plateau at {{P3-CAP-MAX-PAIR-KG}} per lift, set by two uncontracted cargo rovers. {{P3-E48-CONCLUSION-CLAUSE}} <!-- PENDING E48 --> {{P3-E46-CONCLUSION-CLAUSE}} <!-- PENDING E46 --></p>
+
+<p>For practice, the parts list of Table 3 is what a vehicle needs to join a shared lunar network, and its cost is measured rather than guessed; for policy, the surface link that LunaNet leaves bilateral is where the design's numbers live, and the payment rule is a choice with a measured price in fairness and in budget. The results hold for one base, one small fleet, a modelled radio and a scaled rather than flown implementation. The vehicles are known, the network can be small, and the market can be written down and priced.</p>
+
+<h2 id="p3-sec-availability">Data and code availability</h2>
+
+<p>The simulation engine, the vehicle catalogue with every source (<code>lunarsim/atc/vehicles-p5.json</code>), the mesh data product and its summary (<code>data/atc/connecting_ridge/mesh-v1.json.gz</code>, <code>results/ATC_mesh.json</code>), the safety program (<code>lunarsim/atc/safety.py</code>), the auction and message layers, the regime defaults (<code>lunarsim/atc/regimes.py</code>), the experiment runner, every results file this paper quotes (<code>results/E46_*</code>, <code>results/E48_sizing.json</code>) and the script that builds the paper from them (<code>paper/p3/build_p3.py</code>) are in the repository at <a href="https://github.com/azizjonrahimov/Lunar-Haul">github.com/azizjonrahimov/Lunar-Haul</a>. The pre-registration with its dated changes is <code>paper/atc/PREREG.md</code> [59]. The live site at <a href="https://azizjonrahimov.github.io/Lunar-Haul/">azizjonrahimov.github.io/Lunar-Haul</a> shows the vehicles with a &ldquo;Lunar ATC inside&rdquo; layer, the base, the network and a walk-through of the market.</p>
+
+<h2 id="p3-sec-contrib">Author contributions</h2>
+
+<p>A.R. set the questions, the scope of the three papers and the standards of evidence, directed the design of the vehicle table, the network model, the sizing measurements and the market experiment, reviewed the hypotheses, the results and the text, and is responsible for the content.</p>
+
+<h2 id="p3-sec-ai">Use of AI tools</h2>
+
+<p>Large-language-model assistants (Anthropic's Claude, used through Claude Code) wrote the simulation code, the safety program, the auction and message layers, the instrumentation, the experiment runner and the analysis scripts, ran the experiments, drafted and revised the text and compiled the reference list, all under the author's direction and review. Every number in the paper is written by the build script from the results files or the catalogue and summary files named in the text, and each sentence that states a direction or a verdict is checked by that script against the data; no number was typed from an assistant's output. The references were collected from published sources and the repository's research notes; entries not yet checked against the publisher's record are marked in the notes and will be checked before submission. The author takes responsibility for the whole.</p>
+
+<h2 id="p3-sec-funding">Funding and competing interests</h2>
+
+<p>No external funding was received. <!-- OWNER: confirm. --> The author founded Roatify, which proposes a traffic and dispatch network for lunar vehicles of the kind sized here. The pre-registration, the reported assumptions and the build-script checks are the safeguards offered against that interest.</p>
+
+<h2 id="p3-sec-refs">References</h2>
+{{P3-REFERENCES}}
