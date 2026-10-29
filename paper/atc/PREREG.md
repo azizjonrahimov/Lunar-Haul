@@ -211,3 +211,10 @@ Found by the exhaustive check and the development runs of B-78, written before t
   reported as a property of that model (unbounded bays, one job at a time) and not of the rule, and whether the base
   has a physical single-lane ring is reported as undetermined from the route samples
   (results/ATC_roads_rings.json: 1 candidate ring at the default share after merging samples within 40 m).
+- **E44 outcome classes (added 29 Oct, still before any main row).** Every encounter is classified into exactly one
+  of not_driven, violation, blocked_by_fault, deadlock, finished, incomplete, with that precedence; incomplete means
+  the encounter ended at its time limit, or was quiet by design (an idling fuzzer, a robot told to stay stopped, a
+  vehicle held at a closed zone), with no violation, fault or deadlock. Deadlock is judged only where no fuzzer runs;
+  a stalled fuzzer encounter is incomplete. An emergency-brake event (the shield finds no candidate that satisfies
+  every rule and applies full braking) is an event, not an outcome, reported as a per-type rate beside the classes.
+  Counts are reported unweighted; rates and bounds use the importance weights where sampled.
