@@ -686,6 +686,8 @@ def values(r: R, allow_pending: bool):
             return f"raised {what} by {h_(p['mean'], nd)} (95{PCT} CI {ci_h(p['lo'], p['hi'], nd)})"
         if p["hi"] < 0:
             return f"cut {what} by {h_(-p['mean'], nd)} (95{PCT} CI {ci_abs(p, nd)})"
+        if p["mean"] == 0 and p["lo"] == 0 and p["hi"] == 0:
+            return f"left {what} unchanged on every seed"
         return f"moved {what} by {delta(p, nd)}, not distinguishable from zero"
 
     def need_f41():
@@ -787,8 +789,8 @@ def values(r: R, allow_pending: bool):
         cut = out["mast2 PAD_B"] < out["loss 0.1"]
         s2 = (f"With the lost-link rule off the wait {rally_verb(rally)}, and the share of robot-time out of reach of "
               f"every mast went from {sh(out['loss 0.1'], 1)} to {sh(out['rally off'], 1)} "
-              f"({num(c['loss 0.1']['atc_rallies'], 0)} returns to a mast per year with the rule on; "
-              f"{sh(out['range 2 km'], 1)} out of reach with a 2&nbsp;km range). A second mast at pad B "
+              f"({num(c['loss 0.1']['atc_rallies'], 0)} returns to a mast per year with the rule on). "
+              f"A second mast at pad B "
               f"{moved(mast, 'the wait')} and {'cut' if cut else 'left'} that share "
               f"{'from ' + sh(out['loss 0.1'], 1) + ' to ' if cut else 'at '}{sh(out['mast2 PAD_B'], 1)}.")
         s3 = ("H3c, that the elected leader matches the auction unless the mesh partitions, was tested in ten cells by "
