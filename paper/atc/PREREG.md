@@ -144,3 +144,21 @@ and tested against stored rows, on the claim that a repeated call at the same in
   LEAD recommends (b): the artefact is a dispatcher polling pattern no design specified, and results should not
   depend on it. The owner decides; E41 is paused meanwhile (132 of 1,560 runs, kept in
   results/E41_runs.lead.csv until the decision).
+- Diagnostic (B-77 follow-up, 28 Oct 2026, scratch data only, no results files changed). The "missing wake-up"
+  reading above is rejected: every duplicate call that started a job came 0.0 h after the previous call, with no
+  state change between them. The gap is that one dispatch call is greedy and does not reach a fixed point (for
+  example the hold's capacity reference is recomputed over the vehicles still free, so a second call at the same
+  instant releases what the first held). A proper fix was built behind the opt-in flag p5["dispatch_fixpoint"]:
+  one pending consolidation WAKE per lane and oldest lot, and after any call that changed state, dispatch again at
+  the same instant until a call changes nothing (cap 64, never reached). Audit with duplicates pushed anyway: 0 of
+  41,307 duplicate calls assign anything in an E43 run, 0 of 31,782 in an E40 C_AUCTION run.
+  Effect on the primary outcome (urgent wait), mean / max |delta| over 4-5 seeds per cell, fix minus stored:
+  C_LEADER +0.8 / 6.6 h, C_AUCTION +0.3 / 5.3, C_LEARNED_MLP +0.8 / 2.6, C_LEARNED_LIN -0.2 / 3.5, E43 atc 1x
+  +0.6 / 7.7, E43 uncoordinated 1x -11.0 / 32.6 (against an effect of about +46 h). The fix also moves
+  Earth-dependent regimes and O_ORACLE on single seeds (B_EARTH strict at 60 % +21.2 h on one seed; O_ORACLE +0.4
+  / 2.7), so a rerun cannot be limited to the on-Moon regimes; A_EARTH strict is unchanged. Runs with the fix are
+  faster (5-7 s against 11-80 s) and the 8x cells of E43 fit a chunk at 60 days. Rerun estimate with the fix,
+  single process: E40 all regimes about 2,780 runs, 8.5 h; E42 1,170 runs, 2 h; E41 1,560 runs, 3 h; E43 all cells
+  including 8x at 60 days, 650 runs, 1.6 h; about 15 h in all. Old rows stay reproducible with the flag off.
+  LEAD's recommendation stands: option (b), the fix as the dispatcher's defined behaviour, every affected block
+  rerun, the before/after reported as change 5, and the old rows archived. Decision: pending the owner.

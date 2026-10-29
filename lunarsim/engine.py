@@ -267,7 +267,13 @@ class Simulation:
         # B-77 opt-in (Scenario.p5["wake_dedupe"]): the consolidation hold pushes one WAKE per lane deadline instead of
         # one per dispatch call. NOT result-neutral (tools/atc/wake_check.py gate: 0/54 stored rows identical; some
         # repeated calls start jobs), so no results use it; kept for the check and a future, pre-registered fix
-        self.wake_pending = {} if (sc.p5 or {}).get("wake_dedupe") else None
+        # B-77 diagnostic opt-in (Scenario.p5["dispatch_fixpoint"], implies the dedupe): after a dispatch call that
+        # changed anything (a job started or a vehicle was held), dispatch again at the same instant until a call changes
+        # nothing; the duplicate WAKEs used to provide these re-polls by accident (tools/atc/wake_check.py)
+        self.dispatch_fixpoint = bool((sc.p5 or {}).get("dispatch_fixpoint"))
+        self.fixpoint_extra_calls = 0
+        self.fixpoint_capped = 0
+        self.wake_pending = {} if ((sc.p5 or {}).get("wake_dedupe") or self.dispatch_fixpoint) else None
         self.wake_skipped = 0
         self.wake_debug = False             # tools/atc/wake_check.py only: skipped wakes are pushed anyway, marked
         if sc.p5 is not None:               # Phase 5 (B-71), opt-in: real vehicle classes, reach, team share, hoppers
@@ -762,7 +768,10 @@ class Simulation:
                 self._mark_stranded([c])
             if self.batch_h > 0 and kind != "TICK":
                 continue
-            self._dispatch()
+            if self.dispatch_fixpoint:
+                self._dispatch_until_quiet()
+            else:
+                self._dispatch()
         self._advance_to(H)
         self._finalise()
         out = self.metrics.summary()
@@ -775,6 +784,10 @@ class Simulation:
         if self.wake_pending is not None:
             out["wake_dedupe"] = 1
             out["wake_skipped"] = self.wake_skipped
+        if self.dispatch_fixpoint:
+            out["dispatch_fixpoint"] = 1
+            out["fixpoint_extra_calls"] = self.fixpoint_extra_calls
+            out["fixpoint_capped"] = self.fixpoint_capped
         return out
 
     def _advance_to(self, t: float):
@@ -970,6 +983,17 @@ class Simulation:
         self.metrics.veh_hours_busy += h
         self._push(t_end, "FREE", None)
         return True
+
+    def _dispatch_until_quiet(self, cap: int = 64):
+        """Dispatch until a call changes neither the waiting list nor any vehicle's busy time (or cap calls)."""
+        for i in range(cap):
+            sig = (len(self.waiting), tuple(v.busy_until for v in self.vehicles), len(self.pending))
+            self._dispatch()
+            if sig == (len(self.waiting), tuple(v.busy_until for v in self.vehicles), len(self.pending)):
+                self.fixpoint_extra_calls += i
+                return
+        self.fixpoint_extra_calls += cap - 1
+        self.fixpoint_capped += 1
 
     def _dispatch(self):
         candidates = [c for c in self.waiting if not c.stranded]
