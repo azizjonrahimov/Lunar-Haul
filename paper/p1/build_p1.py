@@ -209,6 +209,11 @@ class R:
         # PREREG change 5 before/after per experiment (experiments/phase5/compare_rerun.py --exp E40 / E42 / E41)
         self.ba = {e: jl(f"{e}_fixpoint_before_after.json") for e in ("E40", "E42", "E41")
                    if os.path.exists(os.path.join(RES, f"{e}_fixpoint_before_after.json"))}
+        # E41 pairs, cells and decisions (experiments/phase5/analyse_e41_pairs.py); absent or short cells are Pending
+        ex = lambda f: os.path.exists(os.path.join(RES, f))
+        self.p41 = rd("table_E41_pairs.csv") if ex("table_E41_pairs.csv") else None
+        self.c41 = rd("table_E41_cells.csv") if ex("table_E41_cells.csv") else None
+        self.f41 = jl("E41_fit.json") if ex("E41_fit.json") else None
         self.lin =json.load(open(os.path.join(ROOT, "data/policies/atc_bid_linear_v1.json"), encoding="utf-8"))
         self.mlp = json.load(open(os.path.join(ROOT, "data/policies/atc_bid_v1.json"), encoding="utf-8"))
         self.dev = json.load(open(os.path.join(HERE, "dev_notes.json"), encoding="utf-8"))
@@ -266,6 +271,27 @@ class R:
         if label not in cells:
             raise KeyError(f"E42 cell {label!r} not in E40_fit.json (have {sorted(cells)[:6]} ...)")
         return cells[label]
+
+    def pair41(self, comparison, metric="atc_urgent_wait_mean_cens_h", n_full=30):
+        """A row of table_E41_pairs.csv; Pending until the cell has all its seeds."""
+        if self.p41 is None:
+            raise Pending("E41 pairs (analyse_e41_pairs.py) have not been built")
+        d = self.p41[(self.p41["comparison"] == comparison) & (self.p41["metric"] == metric)]
+        if len(d) != 1:
+            raise KeyError(f"E41 pairs row {comparison!r} / {metric}: {len(d)} rows")
+        row = d.iloc[0].to_dict()
+        if int(row["n"]) < n_full or not np.isfinite(row["mean"]):
+            raise Pending(f"E41 pair {comparison!r} has {int(row['n'])} of {n_full} runs")
+        return row
+
+    def cell41(self, label, n_full=30):
+        """A row of table_E41_cells.csv (cell means); Pending until the cell has all its seeds."""
+        if self.c41 is None:
+            raise Pending("E41 cells (analyse_e41_pairs.py) have not been built")
+        d = self.c41[self.c41["label"] == label]
+        if len(d) == 0 or int(d.iloc[0]["n"]) < n_full:
+            raise Pending(f"E41 cell {label!r} has {int(d.iloc[0]['n']) if len(d) else 0} of {n_full} runs")
+        return d.iloc[0].to_dict()
 
     def runs_of(self, exp, label):
         d = self.runs.get(exp)
@@ -641,9 +667,156 @@ def values(r: R, allow_pending: bool):
     fill("P1-E41-RALLY-OFF-URGENT", lambda: rally("E41_rally_off", M, h_), "E41")
     fill("P1-E41-RALLY-ON-T", lambda: rally("E41_rally_on", "delivered_kg", lambda x: t_(x / 1000)), "E41")
     fill("P1-E41-RALLY-OFF-T", lambda: rally("E41_rally_off", "delivered_kg", lambda x: t_(x / 1000)), "E41")
-    for key in ("P1-E41-LOSS-SENTENCE", "P1-E41-DEPTH-SENTENCE", "P1-E41-RANGE-SENTENCE"):
-        fill(key, lambda: (_ for _ in ()).throw(Pending("E41 prose is written from table_E41_*.csv once it exists")),
-             "E41")
+    # Section 5.5: three composed paragraphs from table_E41_pairs.csv, table_E41_cells.csv and E41_fit.json. Every
+    # direction word is chosen from the interval, so the prose cannot contradict the numbers it quotes.
+    REG4 = ("C_LEADER", "C_AUCTION", "C_LEARNED_MLP", "C_LEARNED_LIN")
+    NAME4 = {"C_LEADER": "the elected leader", "C_AUCTION": "the auction", "C_LEARNED_MLP": "the learned network bids",
+             "C_LEARNED_LIN": "the learned linear bids"}
+
+    def delta(p, nd=1):
+        """'+1.4 h (95 % CI 0.2 to 2.6 h)'."""
+        return f"{h_(p['mean'], nd, sign=True)} (95{PCT} CI {ci_h(p['lo'], p['hi'], nd)})"
+
+    def excl0(p):
+        return p["lo"] > 0 or p["hi"] < 0
+
+    def moved(p, what, nd=1):
+        """'raised X by ...', 'cut X by ...' or 'moved X by ... (not distinguishable from zero)'."""
+        if p["lo"] > 0:
+            return f"raised {what} by {h_(p['mean'], nd)} (95{PCT} CI {ci_h(p['lo'], p['hi'], nd)})"
+        if p["hi"] < 0:
+            return f"cut {what} by {h_(-p['mean'], nd)} (95{PCT} CI {ci_abs(p, nd)})"
+        return f"moved {what} by {delta(p, nd)}, not distinguishable from zero"
+
+    def need_f41():
+        if r.f41 is None:
+            raise Pending("E41_fit.json (analyse_e41_pairs.py) has not been built")
+        return r.f41
+
+    def e41_loss_sentence():
+        f = need_f41()
+        base = {reg: r.pair41(f"{reg} loss 0 - O_ORACLE") for reg in REG4}
+        at40 = {reg: r.pair41(f"{reg} loss 0.4 - {reg} loss 0") for reg in REG4}
+        burst = {reg: r.pair41(f"{reg} burst 0.25 - {reg} loss 0.25") for reg in REG4}
+        slope, cross = f["slope_per_point_of_loss"], f["crossing_loss_vs_oracle"]
+        if any(reg not in slope for reg in REG4):
+            raise Pending("E41 loss cells incomplete for the slope")
+        o = base["C_AUCTION"]["b_mean"]
+        check(all(abs(base[reg]["b_mean"] - o) < 1e-9 for reg in REG4), "every regime pairs with the same oracle runs")
+        diff = [reg for reg in REG4 if excl0(base[reg])]
+        s1 = ("With no message loss the four on-Moon regimes kept urgent cargo waiting " +
+              listing(f"{h_(base[reg]['b_mean'] + base[reg]['mean'])} ({NAME4[reg]})" for reg in REG4) +
+              f", against {h_(o)} for the full-information marketplace on the same seeds; " +
+              ("none of the four differed from it by a 95&#8239;% CI that excludes zero." if not diff else
+               listing(f"{NAME4[reg]} was {'below' if base[reg]['hi'] < 0 else 'above'} it by "
+                       f"{h_(abs(base[reg]['mean']))} ({ci_h(*sorted((abs(base[reg]['lo']), abs(base[reg]['hi']))))})"
+                       for reg in diff) + (" and the others did not differ from it." if len(diff) < 4 else ".")))
+        s2 = ("Raising the loss to 0.40 added " +
+              listing(f"{delta(at40[reg])} for {NAME4[reg]}" for reg in REG4) +
+              ", that is " + listing(f"{num(slope[reg]['pct_of_loss0_per_point'], 2)}" for reg in REG4) +
+              f"{PCT} of the loss-free wait per point of loss, against about 0.3{PCT} of makespan per point for the "
+              "best allocators in Lott and Honary's benchmark [11].")
+        above = [reg for reg in REG4 if cross.get(reg)]
+        below = [reg for reg in REG4 if not cross.get(reg)]
+        s3 = ((listing(f"{NAME4[reg]} rose above the marketplace at loss {num(float(cross[reg]), 2)}" for reg in above)
+               + " (one-sided 95&#8239;% lower bound of the paired difference above zero)" if above else "") +
+              ("; " if above and below else "") +
+              (listing(NAME4[reg] for reg in below) + (" stayed level with or below it through loss 0.40"
+                                                       if below else "")) + ".")
+        s3 = s3[0].upper() + s3[1:]
+        bd = [reg for reg in REG4 if excl0(burst[reg])]
+        s4 = ("Bursty loss at a mean rate of 0.25 " +
+              ("was not distinguishable from steady loss at 0.25 for any regime (differences " +
+               listing(delta(burst[reg]) for reg in REG4) + ")." if not bd else
+               listing(f"{moved(burst[reg], NAME4[reg] + chr(39) + 's wait')}" for reg in bd) +
+               (" and left the others within their intervals of zero." if len(bd) < 4 else ".")))
+        return " ".join((s1, s2, s3, s4))
+
+    def e41_depth_sentence():
+        f = need_f41()
+        h3b = f["H3b"]
+        if h3b.get("supported") is None:
+            raise Pending("E41 depth cells of the auction incomplete")
+        d5 = {L: r.pair41(f"C_AUCTION depth 5 loss {L} - C_AUCTION loss {L}") for L in ("0.25", "0.4")}
+        d2 = {L: r.pair41(f"C_AUCTION depth 2 loss {L} - C_AUCTION loss {L}") for L in ("0.25", "0.4")}
+        st1, st5 = r.cell41("C_AUCTION loss 0.4"), r.cell41("C_AUCTION depth 5 loss 0.4")
+        learned = {reg: r.pair41(f"{reg} depth 5 loss 0.4 - {reg} loss 0.4") for reg in ("C_LEARNED_MLP", "C_LEARNED_LIN")}
+        check(bool(h3b["supported"]) == all(d5[L]["lo"] > 0 for L in d5), "H3b verdict follows the two intervals")
+        verdict = "supported" if h3b["supported"] else "not supported"
+        stale = st5["atc_claims_stale"] - st1["atc_claims_stale"]
+        return (f"Bundles of up to five jobs {'hurt' if h3b['supported'] else 'did not hurt'} the auction: against "
+                f"depth 1, depth 5 {moved(d5['0.25'], 'the urgent wait')} at loss 0.25 and "
+                f"{moved(d5['0.4'], 'it')} at loss 0.40, and depth 2 {moved(d2['0.25'], 'it')} and "
+                f"{moved(d2['0.4'], 'it')}. Stale claims, bids on items that another robot had already taken by the "
+                f"time the bundle was accepted, {'rose' if stale > 0 else 'fell' if stale < 0 else 'did not change'} "
+                f"from {num(st1['atc_claims_stale'], 0)} to {num(st5['atc_claims_stale'], 0)} per year at depth 5 "
+                f"and loss 0.40. H3b, that depth 5 is worse than depth 1 at loss 0.25 to 0.40, is {verdict}. "
+                f"For the learned bids at loss 0.40, depth 5 "
+                + listing(f"{moved(learned[reg], 'the wait of ' + NAME4[reg])}" for reg in learned) + ".")
+
+    def e41_range_sentence():
+        f = need_f41()
+        rg = {k: r.pair41(f"C_AUCTION range {k} - C_AUCTION loss 0.1") for k in ("2 km", "10 km", "perfect")}
+        rally = r.pair41("C_AUCTION rally off - C_AUCTION loss 0.1")
+        mast = r.pair41("C_AUCTION mast2 PAD_B - C_AUCTION loss 0.1")
+        c = {k: r.cell41(f"C_AUCTION {k}") for k in ("loss 0.1", "range 2 km", "rally off", "mast2 PAD_B")}
+        out = {k: c[k]["atc_robots_out_share"] for k in c}
+        h3c = f["H3c"]["cells"]
+        conds = ["loss 0", "loss 0.1", "loss 0.25", "loss 0.4", "burst 0.25", "range 2 km", "range 10 km",
+                 "range perfect", "rally off", "mast2 PAD_B"]
+        if any(k not in h3c or h3c[k]["n"] < 30 for k in conds):
+            raise Pending("E41 leader or auction cells incomplete for H3c")
+        COND = {"loss 0": "loss 0", "loss 0.1": "loss 0.10", "loss 0.25": "loss 0.25", "loss 0.4": "loss 0.40",
+                "burst 0.25": "bursty loss", "range 2 km": "a 2&nbsp;km range", "range 10 km": "a 10&nbsp;km range",
+                "range perfect": "a perfect radio", "rally off": "the lost-link rule off",
+                "mast2 PAD_B": "the second mast"}
+        matched = [k for k in conds if h3c[k]["matches"]]
+        differed = [k for k in conds if h3c[k]["lo"] > 0 or h3c[k]["hi"] < 0]
+        undecided = [k for k in conds if k not in matched and k not in differed]
+        s1 = (f"Radio range mattered less than loss: against the default 5&nbsp;km range, a 2&nbsp;km range "
+              f"{moved(rg['2 km'], chr(39).join(('the auction', 's urgent wait')))}, a 10&nbsp;km range "
+              f"{moved(rg['10 km'], 'it')} and a radio that reaches every robot {moved(rg['perfect'], 'it')}.")
+        def rally_verb(p):
+            if p["lo"] > 0:
+                return f"rose by {h_(p['mean'])} (95{PCT} CI {ci_h(p['lo'], p['hi'])})"
+            if p["hi"] < 0:
+                return f"fell by {h_(-p['mean'])} (95{PCT} CI {ci_abs(p)})"
+            return f"moved by {delta(p)}, not distinguishable from zero"
+        cut = out["mast2 PAD_B"] < out["loss 0.1"]
+        s2 = (f"With the lost-link rule off the wait {rally_verb(rally)}, and the share of robot-time out of reach of "
+              f"every mast went from {sh(out['loss 0.1'], 1)} to {sh(out['rally off'], 1)} "
+              f"({num(c['loss 0.1']['atc_rallies'], 0)} returns to a mast per year with the rule on; "
+              f"{sh(out['range 2 km'], 1)} out of reach with a 2&nbsp;km range). A second mast at pad B "
+              f"{moved(mast, 'the wait')} and {'cut' if cut else 'left'} that share "
+              f"{'from ' + sh(out['loss 0.1'], 1) + ' to ' if cut else 'at '}{sh(out['mast2 PAD_B'], 1)}.")
+        s3 = ("H3c, that the elected leader matches the auction unless the mesh partitions, was tested in ten cells by "
+              f"equivalence within &plusmn;10&#8239;% (90&#8239;% CI of the ratio): the leader matched the auction "
+              + ("under " + listing(COND[k] for k in matched) if matched else "in no cell") +
+              ("; it differed under " + listing(f"{COND[k]} ({'slower' if h3c[k]['mean'] > 0 else 'faster'} by "
+                                                f"{h_(abs(h3c[k]['mean']))}, 95{PCT} CI "
+                                                f"{ci_h(*sorted((abs(h3c[k]['lo']), abs(h3c[k]['hi']))))})"
+                                                for k in differed) if differed else "") +
+              ("; under " + listing(COND[k] for k in undecided) + " the interval was too wide to decide either way"
+               if undecided else "") + ".")
+        return " ".join((s1, s2, s3))
+
+    fill("P1-E41-LOSS-SENTENCE", e41_loss_sentence, "E41")
+    fill("P1-E41-DEPTH-SENTENCE", e41_depth_sentence, "E41")
+    fill("P1-E41-RANGE-SENTENCE", e41_range_sentence, "E41")
+
+    def e41_depth_clause():
+        h3b = need_f41()["H3b"]
+        if h3b.get("supported") is None:
+            raise Pending("E41 depth cells of the auction incomplete")
+        return ("Bundle depth 5 made the auction " + ("worse" if h3b["supported"] else "no worse") +
+                " at message loss 0.25 and 0.40 (Section 5.5)")
+
+    fill("P1-E41-DEPTH-CLAUSE", e41_depth_clause, "E41")
+    fill("P1-E41-REPLICATION-SENTENCE", lambda: (
+        lambda rep: (f"E41's default auction cell reran E40's auction at 30&#8239;% on the same {int(rep['n'])} seeds "
+                     + ("and reproduced every run exactly" if rep["mean"] == 0 and rep["lo"] == 0 and rep["hi"] == 0
+                        else f"with a mean difference of {delta(rep, 2)}") + ".")
+    )(need_f41()["replication_e40"] or (_ for _ in ()).throw(Pending("E41 replication pair not built"))), "E41")
 
     # --- H6 (E42) ------------------------------------------------------------------------------------------
     f6 = r.fit("hypotheses", "H6")

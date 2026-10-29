@@ -33,19 +33,19 @@
 <!-- Figure 1: paired difference (B strict minus marketplace) by start year with 95 % CIs, base visibility of each year
      on the second axis; plan-ahead and relay 0.8 as second and third series. Source: table_E40_pairs.csv + windows. -->
 
-<h3 id="p1-sec-res-h3">5.4 Deciding on the Moon (H3a, H3c)</h3>
+<h3 id="p1-sec-res-h3">5.4 Deciding on the Moon (H3a)</h3>
 
 <p>The robots' own auction, at message loss 0.10 over the terrain-limited network, kept urgent cargo waiting {{P1-H3A-DIFF}} relative to the full-information marketplace ({{P1-H3A-PCT}}; 90&#8239;% CI {{P1-H3A-CI90}}, n = {{P1-H3A-N}}). We had registered the expectation that it would come within &plusmn;10&#8239;% of the marketplace, &plusmn;{{P1-H2-MARGIN}}. {{P1-H3A-VERDICT}} Because the auction, the leader and the marketplace never wait for Earth, a seed gives the same run in every start year; this comparison therefore uses the {{P1-H3A-N}} runs of the v1 block only (PREREG change 4). An earlier interim reading that counted the repeated runs as independent suggested the auction beat the marketplace; on independent runs that difference is not distinguishable from zero.</p>
 
-<p>The marketplace is the auction's own bid rule given perfect information, which is why we call it a reference and not a bound. <!-- PENDING B-75 mechanism paragraph: what the auction does differently from the marketplace (round structure, rebroadcast, item knowledge per part of the network, retry epochs) and a test of it if one is run. Do not state a mechanism until BACKEND's analysis supports it. --> The elected leader, which runs the marketplace itself on the base computer and loses messages on the way, came within {{P1-LEADER-MINUS-O}} of it ({{P1-LEADER-MINUS-O-CI}}). <!-- PENDING E41: H3c, the leader against the auction when the network splits (range 2 km, rally off). --></p>
+<p>The marketplace is the auction's own bid rule given perfect information, which is why we call it a reference and not a bound. <!-- PENDING B-75 mechanism paragraph: what the auction does differently from the marketplace (round structure, rebroadcast, item knowledge per part of the network, retry epochs) and a test of it if one is run. Do not state a mechanism until BACKEND's analysis supports it. --> The elected leader, which runs the marketplace itself on the base computer and loses messages on the way, came within {{P1-LEADER-MINUS-O}} of it ({{P1-LEADER-MINUS-O-CI}}).</p>
 
-<h3 id="p1-sec-res-net">5.5 Message loss, bundle depth and radio range (H3b) <!-- PENDING E41 --></h3>
+<h3 id="p1-sec-res-net">5.5 Message loss, bundle depth and radio range (H3b, H3c)</h3>
 
-<p>{{P1-E41-LOSS-SENTENCE}} <!-- PENDING E41: urgent wait of the auction, leader and both learned regimes against loss 0-0.40 and bursty 0.25 (Figure 2), with the loss at which each crosses the full-information marketplace. Compare the slope with Lott and Honary's ~0.3 % of makespan per point of loss [11]. --></p>
+<p>{{P1-E41-LOSS-SENTENCE}}</p>
 
-<p>{{P1-E41-DEPTH-SENTENCE}} <!-- PENDING E41: H3b, depth 5 vs depth 1 at loss 0.25 and 0.40, with stale claims; development runs showed depth 5 worse even at loss 0. Compare with [10]. --></p>
+<p>{{P1-E41-DEPTH-SENTENCE}}</p>
 
-<p>{{P1-E41-RANGE-SENTENCE}} <!-- PENDING E41: range 2/5/10 km and unlimited; rally off; second mast at pad B, with the share of robots outside the mast's part of the network. --></p>
+<p>{{P1-E41-RANGE-SENTENCE}} {{P1-E41-REPLICATION-SENTENCE}}</p>
 
 <h3 id="p1-sec-res-h4">5.6 Learned bids (H4)</h3>
 
@@ -60,11 +60,11 @@
 <!-- TABLE:pairs -->
 <!-- Table 6, from results/ATC_learned_eval.json "ood": cell, linear minus hand (h), 95 % CI, n. -->
 
-<h3 id="p1-sec-res-h6">5.7 Team lifts across owners (H6) <!-- PENDING E42 --></h3>
+<h3 id="p1-sec-res-h6">5.7 Team lifts across owners (H6)</h3>
 
-<p>{{P1-H6-SHARE-SENTENCE}} <!-- PENDING E42: share of team items delivered with and without cross-owner pairs at team share 0.10 and 0.25 (H6 part 1, paired CI, Holm). --></p>
+<p>{{P1-H6-SHARE-SENTENCE}}</p>
 
-<p>{{P1-H6-MEETINGS-SENTENCE}} <!-- PENDING E42: failed meetings and their waiting hours with and without the commit step at loss 0.25 and 0.40 (H6 part 2). The development runs showed the commit step did not reduce failed meetings (Two Generals, Section 3.8); report the E42 result whichever way it falls, with timeouts 0.5 and 2 h and the base-arbitrated variant as exploratory. --></p>
+<p>{{P1-H6-MEETINGS-SENTENCE}}</p>
 
 <!-- TABLE:e42 -->
 
@@ -74,4 +74,4 @@
 
 <h3 id="p1-sec-res-negative">5.9 What did not work</h3>
 
-<p>Imitating the full-information marketplace taught the bidding models nothing, because the marketplace uses the same bid rule; we could have seen this from the definitions before collecting {{P1-IMIT-N-ROWS}} labelled examples, and report it so others do not repeat it. The network trained by search on its output layer did not beat the hand-built bids. The relay at 80&#8239;% coverage missed its equivalence margin. Bundle depth 5 made the auction worse in both development cells we ran, at message loss 0 and 0.25. <!-- PENDING E41/E42: confirm the last sentence and add the commit-step result. --></p>
+<p>Imitating the full-information marketplace taught the bidding models nothing, because the marketplace uses the same bid rule; we could have seen this from the definitions before collecting {{P1-IMIT-N-ROWS}} labelled examples, and report it so others do not repeat it. The network trained by search on its output layer did not beat the hand-built bids. The relay at 80&#8239;% coverage missed its equivalence margin. {{P1-E41-DEPTH-CLAUSE}}.</p>

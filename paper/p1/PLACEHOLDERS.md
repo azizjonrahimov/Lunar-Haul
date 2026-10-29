@@ -95,7 +95,9 @@ counts = integer. "ABS" keys print the absolute value (the sentence carries the 
 | P1-RUNTIME-RANGE / P1-PEAK-MB | run time per year, peak memory | `run_s` column of the run CSVs; peak from reports | "0.4-66&nbsp;s", MB |
 | P1-TABLE-REGIMES | Table 5 | R | HTML table |
 | P1-FIG-H2-YEARS | Figure 1 | P H2 rows + visibility per year | figure include |
-| P1-E41-LOSS/DEPTH/RANGE-SENTENCE | E41 results | PENDING E41 | prose, to be rewritten by hand with placeholders |
+| P1-E41-LOSS-SENTENCE / -DEPTH-SENTENCE / -RANGE-SENTENCE | Section 5.5 paragraphs | `results/table_E41_pairs.csv`, `table_E41_cells.csv`, `E41_fit.json` from `experiments/phase5/analyse_e41_pairs.py` (paired differences against each regime's loss-0 and default cells and against E40's O_ORACLE on block v1; H3b and H3c decisions; slope per point of loss; crossing loss) | composed; every direction word chosen from the interval; pending until each cell has 30 runs |
+| P1-E41-DEPTH-CLAUSE | the depth-5 sentence in 5.8 | `E41_fit.json` `H3b.supported` | composed |
+| P1-E41-REPLICATION-SENTENCE | end of 5.5 | `E41_fit.json` `replication_e40` (E41 "C_AUCTION loss 0.1" minus E40 C_AUCTION 30 % v1 on the same seeds) | composed: "reproduced every run exactly" only when the difference is exactly 0 |
 | P1-H6-SHARE/MEETINGS-SENTENCE | E42 results | PENDING E42 | prose, as above |
 
 **Typed inputs that stay typed** (with flags, as R-1): MTBF 2,000 h, repair 24 h, re-election 0.5 h, t_hand 2 h,
