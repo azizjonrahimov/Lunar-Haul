@@ -1,0 +1,71 @@
+# P2 notes: reference list (draft 0, 28 Oct 2026)
+
+Sources: `research_notes/Lunar ATC/traffic_and_safety.md` (TAS), `paper/p1/NOTES.md` (P1) for our own papers and
+the lunar vehicle sources, and `paper_writing_guide.md` (PWG). The grade is the research note's (High / Medium /
+Low). Entries marked "to check" are to be checked against the publisher's record before submission.
+
+[1] *The Artemis Accords: Principles for Cooperation in the Civil Exploration and Use of the Moon, Mars, Comets, and Asteroids*. Signed 13 October 2020. https://www.nasa.gov/wp-content/uploads/2022/11/Artemis-Accords-signed-13Oct2020.pdf (TAS, High)
+[2] G. Swiney, A. Hernandez. *Lunar Landing and Operations Policy Analysis*. NASA Office of Technology, Policy, and Strategy, report 20220015973, 30 September 2022. https://www.nasa.gov/wp-content/uploads/2023/05/nasa-otps-lunar-landing-and-operations-policy-analysis-final-report-2.pdf (TAS, High)
+[3] Kim, Li, Wang. "Lunar Surface Space Traffic Management: Considerations for Future Regulations." GLEX-2025, 11, IP, 15, x93808. https://iafastro.directory/iac/archive/browse/GLEX-2025/11/IP/93808/ (TAS, High for the abstract; full paper not available)
+[4] D. Silver. "Cooperative pathfinding." AIIDE 2005, pp. 117-122. (TAS, High)
+[5] W. Hönig, S. Kiesel, A. Tinka, J. W. Durham, N. Ayanian. "Persistent and robust execution of MAPF schedules in warehouses." *IEEE Robotics and Automation Letters* 4(2):1125-1131, 2019. doi:10.1109/LRA.2019.2894217 (TAS, High)
+[6] J. Li, A. Tinka, S. Kiesel, J. W. Durham, T. K. S. Kumar, S. Koenig. "Lifelong multi-agent path finding in large-scale warehouses." AAAI 2021, 35(13):11272-11281. arXiv:2005.07371 (TAS, High)
+[7] K. Dresner, P. Stone. "A multiagent approach to autonomous intersection management." *Journal of Artificial Intelligence Research* 31:591-656, 2008. doi:10.1613/jair.2502 (TAS, High)
+[8] P. Kopardekar, J. Rios, T. Prevot, M. Johnson, J. Jung, J. E. Robinson. "Unmanned Aircraft System Traffic Management (UTM) Concept of Operations." 16th AIAA Aviation Technology, Integration, and Operations Conference, 2016, AIAA 2016-3292. NTRS 20190000370. (TAS, High; DOI to check)
+[9] J. Rios et al. *UAS Service Supplier Network Performance: Results and Analysis from Flight Testing Multiple USS Providers in NASA's TCL4 Demonstration*. NASA/TM-2020-220462, January 2020. https://ntrs.nasa.gov/citations/20200000531 (TAS, High)
+[10] Commission Implementing Regulation (EU) 2021/664 of 22 April 2021 on a regulatory framework for the U-space. OJ L 139. https://eur-lex.europa.eu/eli/reg_impl/2021/664/oj/eng (TAS, Medium; wording from EASA extracts)
+[11] L. Sha. "Using simplicity to control complexity." *IEEE Software* 18(4):20-28, 2001. doi:10.1109/MS.2001.936213 (TAS, Medium)
+[12] ASTM F3269-21. *Standard Practice for Methods to Safely Bound Behavior of Aircraft Systems Containing Complex Functions Using Run-Time Assurance*. ASTM International, 2021. https://store.astm.org/f3269-21.html (TAS, Medium)
+[13] K. L. Hobbs, M. L. Mote, M. C. L. Abate, S. D. Coogan, E. M. Feron. "Runtime assurance for safety-critical systems: An introduction to safety filtering approaches for complex control systems." *IEEE Control Systems Magazine* 43(2):28-65, 2023. doi:10.1109/MCS.2023.3234380 (TAS, High for the abstract)
+[14] S. Shalev-Shwartz, S. Shammah, A. Shashua. "On a formal model of safe and scalable self-driving cars." arXiv:1708.06374, 2017. (TAS, High)
+[15] NASA. *Working on the Moon*, Lunar Roving Vehicle performance page (Apollo 16 braking). https://nasa.gov/wp-content/uploads/static/history/alsj/WOTM/WOTM-LRVPerformance.html (TAS, Medium)
+[16] H. Litaker et al. NASA government-reference Lunar Terrain Vehicle in JSC simulators: top speed 15 km/h, +-20 deg slopes. NTRS 20240011392, 2024. (TAS via rover_autonomy_driving.md, High; full title to add)
+[17] Z. Chen, D. Harabor, J. Li, P. J. Stuckey. "Traffic flow optimisation for lifelong multi-agent path finding." AAAI 2024, 38(18):20674-20682. doi:10.1609/aaai.v38i18.30054 (TAS, Medium)
+[18] G. Sharon, R. Stern, A. Felner, N. R. Sturtevant. "Conflict-based search for optimal multi-agent pathfinding." *Artificial Intelligence* 219:40-66, 2015. doi:10.1016/j.artint.2014.11.006 (TAS, High)
+[19] M. Čáp, P. Novák, A. Kleiner, M. Selecký. "Prioritized planning algorithms for trajectory coordination of multiple mobile robots." *IEEE Transactions on Automation Science and Engineering* 12(3):835-849, 2015. doi:10.1109/TASE.2015.2445780 (TAS, Medium)
+[20] H. Ma, J. Li, T. K. S. Kumar, S. Koenig. "Lifelong multi-agent path finding for online pickup and delivery tasks." AAMAS 2017, pp. 837-845. (TAS, Medium)
+[21] K. Okumura, M. Machida, X. Défago, Y. Tamura. "Priority inheritance with backtracking for iterative multi-agent path finding." IJCAI 2019, pp. 535-542; *Artificial Intelligence* 310:103752, 2022. (TAS, High)
+[22] K. Okumura. "Engineering LaCAM*: Towards real-time, large-scale, and near-optimal multi-agent pathfinding." AAMAS 2024. arXiv:2308.04292 (TAS, High)
+[23] E. G. Coffman, M. J. Elphick, A. Shoshani. "System deadlocks." *ACM Computing Surveys* 3(2):67-78, 1971. (TAS, High)
+[24] P. R. Wurman, R. D'Andrea, M. Mountz. "Coordinating hundreds of cooperative, autonomous vehicles in warehouses." *AI Magazine* 29(1):9-20, 2008. doi:10.1609/aimag.v29i1.2082 (TAS, Medium)
+[25] ASTM F3548-21. *Standard Specification for UAS Traffic Management (UTM) UAS Service Supplier (USS) Interoperability*. ASTM International, 2021. (TAS, Medium; normative text not read)
+[26] A. D. Ames, X. Xu, J. W. Grizzle, P. Tabuada. "Control barrier function based quadratic programs for safety critical systems." *IEEE Transactions on Automatic Control* 62(8):3861-3876, 2017. doi:10.1109/TAC.2016.2638961 (TAS, High)
+[27] L. Wang, A. D. Ames, M. Egerstedt. "Safety barrier certificates for collisions-free multirobot systems." *IEEE Transactions on Robotics* 33(3):661-674, 2017. doi:10.1109/TRO.2017.2659727 (TAS, High)
+[28] M. Alshiekh, R. Bloem, R. Ehlers, B. Könighofer, S. Niekum, U. Topcu. "Safe reinforcement learning via shielding." AAAI 2018, 32(1). arXiv:1708.08611 (TAS, High)
+[29] S. Mitsch, K. Ghorbal, D. Vogelbacher, A. Platzer. "Formal verification of obstacle avoidance and navigation of ground robots." *International Journal of Robotics Research* 36(12):1312-1340, 2017. doi:10.1177/0278364917733549 (TAS, Medium)
+[30] K. Dunlap, M. Hibbard, M. Mote, K. Hobbs. "Comparing run time assurance approaches for safe spacecraft docking." arXiv:2110.00447, 2021. (TAS, High; venue to check)
+[31] C. Newcombe, T. Rath, F. Zhang, B. Munteanu, M. Brooker, M. Deardeuff. "How Amazon Web Services uses formal methods." *Communications of the ACM* 58(4):66-73, 2015. doi:10.1145/2699417 (TAS, Medium-High)
+[32] G. Behrmann, A. David, K. G. Larsen. "A tutorial on UPPAAL." SFM-RT 2004, LNCS 3185, pp. 200-236. (TAS, High)
+[33] J. A. Hanley, A. Lippman-Hand. "If nothing goes wrong, is everything all right? Interpreting zero numerators." *JAMA* 249(13):1743-1745, 1983. doi:10.1001/jama.1983.03330370053031 (TAS, High)
+[34] N. Kalra, S. M. Paddock. "Driving to safety: How many miles of driving would it take to demonstrate autonomous vehicle reliability?" *Transportation Research Part A* 94:182-193, 2016. doi:10.1016/j.tra.2016.09.010 (TAS, Medium)
+[35] D. Zhao, H. Lam, H. Peng, S. Bao, D. J. LeBlanc, K. Nobukawa, C. S. Pan. "Accelerated evaluation of automated vehicles safety in lane-change scenarios based on importance sampling techniques." *IEEE Transactions on Intelligent Transportation Systems* 18(3):595-607, 2017. doi:10.1109/TITS.2016.2582208 (TAS, High)
+[36] O. Maler, D. Ničković. "Monitoring temporal properties of continuous signals." FORMATS/FTRTFT 2004, LNCS 3253, pp. 152-166. (TAS, High)
+[37] Anderson, Saxena, Metzger. Crater "umbrella zones" sheltering a rover near a lander. *npj Space Exploration* 2(28), 2026. (TAS via plume_ejecta_base_layout.md, Medium; authors' initials and title to add)
+[38] Bhakta. NASA ESDMD logistics guidance: lander blast ejecta separation ">1,000 m", aggregation distances "up to 5,000 m". Moon-to-Mars workshop, February 2025. (TAS via novelty_prior_art.md, Medium; full citation to add)
+[39] NASA JPL. CADRE mission page. https://www.jpl.nasa.gov/missions/cadre (TAS, Medium)
+[40] A. Rahimov. *Who Hauls the Habitat? A Verified Simulation Testbed, a Pooled Dispatch Marketplace and a Reference Design for Lunar Surface Logistics*. Preprint, version 2, October 2026. (P1 [40])
+[41] A. Rahimov. *Where the Lander Lands: Landing Precision, Pad Standoff, Plume Keep-Out and Rover Autonomy Priced in Lunar Surface Logistics*. Preprint, version 3, October 2026. (P1 [41])
+[42] A. Rahimov. *What Earth's Horizon Costs a Lunar Base: Terrain-Masked Communication Windows in South-Pole Cargo Logistics*. Preprint, October 2026. (P1 [42])
+[43] Pre-registration: `paper/atc/PREREG.md` in the repository, written 27 October 2026, with dated changes. Cite by repository tag when tagged. (P1 [43])
+[44] A. Rahimov. *Working Together Without Earth: Job Sharing, Team Lifts and Learned Bidding Among Lunar Robots of Different Owners*. Preprint, October 2026 (companion paper P1).
+[45] Companion paper P3 (the vehicles, the network and the market). Title to be fixed.
+[46] M. Schwammberger. *Formal Verification of Spatial Properties and Liveness of Autonomous Vehicles at Urban Intersections*. PhD thesis, University of Oldenburg, 2020. oops.uni-oldenburg.de/4961 (TAS, Medium; title to check)
+[47] A. Legay, B. Delahaye, S. Bensalem. "Statistical model checking: An overview." RV 2010, LNCS 6418, pp. 122-135. (TAS, High)
+[48] S. Bansal, M. Chen, S. Herbert, C. J. Tomlin. "Hamilton-Jacobi reachability: A brief overview and recent advances." CDC 2017, pp. 2242-2253. (TAS, High)
+[49] Mobile World Live. "Nokia activates Moon network, falls short on call." March 2025. https://www.mobileworldlive.com/nokia/nokia-activates-moon-network-falls-short-on-call/ (TAS, Medium)
+[50] L. Lamport. *Specifying Systems: The TLA+ Language and Tools for Hardware and Software Engineers*. Addison-Wesley, 2002. (TAS, High)
+[51] NASA. *LunaNet Interoperability Specification*, version 5, 29 January 2025. https://www.nasa.gov/wp-content/uploads/2025/02/lunanet-interoperability-specification-v5-baseline.pdf (P1 [39], High)
+[52] M. Erdmann, T. Lozano-Pérez. "On multiple moving objects." *Algorithmica* 2:477-521, 1987. (TAS, High)
+[53] D. Seto, B. Krogh, L. Sha, A. Chutinan. "The Simplex architecture for safe online control system upgrades." American Control Conference 1998, pp. 3504-3508. (TAS, Medium)
+[54] NASA. News release on Lunar Terrain Vehicle Phase 1 task orders, 26-27 May 2026. https://www.nasa.gov/news-release/nasa-provides-update-on-moon-base-rovers-landers-missions/ (P1 [37], High)
+[55] B. Efron, R. J. Tibshirani. *An Introduction to the Bootstrap*. Chapman & Hall, 1993. (P1 [53])
+[56] D. J. Schuirmann. "A comparison of the two one-sided tests procedure and the power approach for assessing the equivalence of average bioavailability." *Journal of Pharmacokinetics and Biopharmaceutics* 15(6):657-680, 1987. (P1 [46]; title to check)
+[57] C. J. Clopper, E. S. Pearson. "The use of confidence or fiducial limits illustrated in the case of the binomial." *Biometrika* 26(4):404-413, 1934. (TAS, High)
+[58] ISO 3691-4:2023. *Industrial trucks, Safety requirements and verification, Part 4: Driverless industrial trucks and their systems*. (TAS, Low; standard text not read, speed limit from a vendor summary)
+
+## Reference statistics (draft 0)
+
+To be counted by build_p2.py's note once the text is stable: entries dated 2021 or later, own work (40-45), and
+entries needing publisher checks ([8] DOI, [16], [30], [37], [38], [46], [56]).
+
+[43] is the pre-registration file and [44, 45] the companion papers.

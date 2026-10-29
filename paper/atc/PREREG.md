@@ -117,3 +117,30 @@ not supported for the MLP (the pre-registered C_LEARNED), supported for the line
    E40, and C_AUCTION at loss > 0 in E42) are rerun with the fix and replace the old rows. The old rows are kept
    in results/archive/ and compared with the new ones in the B-75 report. B-73's smoke run and B-74's evaluation
    were made before the fix and are reported as statistically valid but not bit-exact.
+
+### Issue 5, 28 Oct 2026 (found after the E40/E42 analysis and the P1 draft; decision pending): duplicate wake-ups
+What we saw (B-77, `results/ATC_wake_check.json`, `tools/atc/wake_check.py`). The v2 marketplace's bulk
+consolidation hold pushes a WAKE event for every held lane at that lane's deadline on every dispatch call, so N calls
+give N wake-ups, each of which re-runs dispatch and pushes again (2.37 M WAKEs in a 21-day run at 8x the fleet; one
+E41 run at 1x took 10,916 s). A dedupe that keeps one pending WAKE per lane and deadline was built as an opt-in flag
+and tested against stored rows, on the claim that a repeated call at the same instant assigns nothing.
+- The claim is false. With the flag on, 0 of 54 stored rows reproduce. Earth-dependent regimes and O_ORACLE change
+  only in per-call counters or by <= 0.001 h; the on-Moon regimes (C_*) and E43 move. Mean / max |delta| of the
+  primary outcome over 4-5 seeds per cell: C_LEADER -5.8 / 17.0 h, C_AUCTION -1.8 / 7.0, C_LEARNED_MLP +0.9 / 3.6,
+  C_LEARNED_LIN +2.1 / 8.5, E43 atc 1x +0.2 / 1.1, E43 uncoordinated 1x -4.6 / 23.1.
+- A direct audit (duplicates pushed anyway and every call checked) found that a few duplicate calls start a job
+  (1 of 44,315 in an E43 run; 3 of 83,370 in an E40 C_AUCTION run) and most change the auction's per-call counters.
+  Reading (hypothesis): duplicates fire a float-noise later, after a time-dependent condition has flipped (an operator
+  freed, a window opened), so they act as accidental extra wake-ups that the design never specified.
+- Consequence: the stored rows are reproducible with the flag off, but the on-Moon regimes' numbers depend on how many
+  accidental wake-ups the hold generated, which differs by regime. H3a and H4 (P1) and H8 (P2) are affected in
+  principle; the direction of the shift on 4-5 seeds (auction and leader improve, learned bids worsen) would narrow
+  H4's linear-model gain. No result is withdrawn yet; the P1 draft is not final until this is settled.
+- Options, written before the decision: (a) keep the stored rows, disclose the artefact as a limitation, run E41 and
+  the rest as they are (about ten more multi-hour storm runs expected); (b) fix the hold properly (every state change
+  that can enable a job schedules its own wake-up, then one WAKE per lane and deadline), verify on the audit that no
+  duplicate call ever assigns, rerun every affected cell (E40 C regimes, E42, E41, E43 atc and uncoordinated), and
+  report the before/after as change 5; (c) as (b) but keep the old rows in the paper alongside the new ones.
+  LEAD recommends (b): the artefact is a dispatcher polling pattern no design specified, and results should not
+  depend on it. The owner decides; E41 is paused meanwhile (132 of 1,560 runs, kept in
+  results/E41_runs.lead.csv until the decision).

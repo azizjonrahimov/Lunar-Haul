@@ -1,0 +1,48 @@
+
+<h2 id="p2-sec-results">5. Results</h2>
+
+<p>Section 5.1 describes what the road layer did on the base's roads at today's fleet. Sections 5.2 to 5.5 give E43: the primary outcome at today's fleet (H8), the larger fleets, the uncoordinated mode, and the sweeps. Sections 5.6 and 5.7 give the encounter simulator (H7) and the exhaustive check, and Section 5.8 the Mars part (H9). Section 5.9 lists what did not work. Table 4 holds every cell mean and Table 5 every paired difference; the text describes them in that order. Intervals are 95&#8239;% bootstrap intervals over seeds unless stated.</p>
+
+<h3>5.1 The road layer on the base's roads</h3>
+
+<p>At the default single-lane share, {{P2-SINGLE-KM-DEFAULT}} of the {{P2-ROUTE-KM}} of road is one lane wide, in segments split by bays every kilometre. Over a simulated year at today's fleet, vehicles in the ATC mode made {{P2-ATC-X1-TRAVERSALS}} traversals of those segments, met {{P2-ATC-X1-CONFLICTS}} conflicts, and waited {{P2-ATC-X1-BAY-WAIT-H}} at bays in all, across the fleet. They waited {{P2-ATC-X1-APRON-WAIT-H}} for an apron slot and drove {{P2-ATC-X1-EVA-SLOW-H}} at crew speed through the habitat zone during EVAs. Landings closed a pad {{P2-ATC-X1-STANDDOWNS}} times a year, as in [41]. The bay wait fell on the owners unequally: {{P2-OWNER-A-BAY-WAIT-X1}} for owner A, {{P2-OWNER-B-BAY-WAIT-X1}} for owner B and {{P2-OWNER-C-BAY-WAIT-X1}} for owner C; {{P2-OWNER-BAY-WAIT-ORDER-CLAUSE}}. <!-- build: which owner waited most and least, from the data. --> No run in any cell of E43 recorded a deadlock ({{P2-DEADLOCKS-TOTAL}} in {{P2-N-RUNS-E43}} runs).</p>
+
+<!-- TABLE:E43_cells -->
+
+<h3>5.2 The price of the rules at today's fleet (H8)</h3>
+
+<p>With the road layer off, the mean delay per delivered item at today's fleet was {{P2-NONE-X1-DELAY}}. With the rules on and one shared reservation table it was {{P2-H8-X1-DELAY}}: a paired difference of {{P2-H8-X1-DIFF}} {{P2-H8-X1-DIFF-CI}}, {{P2-H8-X1-PCT}} of the baseline, with a one-sided 95&#8239;% upper bound of {{P2-H8-X1-UPPER}}. {{P2-H8-VERDICT-SENTENCE}} <!-- build: composed from the H8 rule at 1x; never typed. --> The 90th percentile of delay moved by {{P2-H8-X1-P90-DIFF}}, items delivered by {{P2-H8-X1-ITEMS-DIFF}} of {{P2-X1-ITEMS}}, and the censored mean wait of urgent items by {{P2-H8-X1-URGENT-DIFF}}. Operator hours changed by {{P2-H8-X1-OPERATOR-DIFF}}.</p>
+
+<!-- TABLE:E43_pairs -->
+
+<h3>5.3 Larger fleets</h3>
+
+<p>Fleet and demand were multiplied together, so a larger fleet is also a busier road network. At two times the fleet the rules added {{P2-H8-X2-DIFF}} {{P2-H8-X2-DIFF-CI}} to a baseline delay of {{P2-NONE-X2-DELAY}}, {{P2-H8-X2-PCT}} (upper bound {{P2-H8-X2-UPPER}}), with {{P2-ATC-X2-CONFLICTS}} conflicts and {{P2-ATC-X2-BAY-WAIT-H}} of bay wait a year. At four times, over {{P2-HORIZON-X4-D}} days, the rules added {{P2-H8-X4-DIFF}} {{P2-H8-X4-DIFF-CI}} to a baseline of {{P2-NONE-X4-DELAY}}, {{P2-H8-X4-PCT}} (upper bound {{P2-H8-X4-UPPER}}), with {{P2-ATC-X4-CONFLICTS}} conflicts and {{P2-ATC-X4-BAY-WAIT-H}} of bay wait in the period. {{P2-H8-X8-SENTENCE}} <!-- PENDING E43 8x --> The baseline delay itself fell as the fleet grew, because the pooled dispatcher has more vehicles to choose from. Figure 1 plots the delay per delivery against the fleet multiple for the three modes.</p>
+
+<!-- FIG:E43_density -->
+
+<h3>5.4 Owners who keep their own tables</h3>
+
+<p>In the uncoordinated mode, with the same rules but each owner seeing only its own reservations and every cross-owner conflict settled from Earth, the mean delay per delivery at today's fleet was {{P2-UNC-X1-DELAY-2028}} in the 2028 start year and {{P2-UNC-X1-DELAY-2038}} in 2038, against {{P2-NONE-X1-DELAY}} without the road layer: differences of {{P2-UNC-X1-DIFF-2028}} {{P2-UNC-X1-DIFF-CI-2028}} and {{P2-UNC-X1-DIFF-2038}} {{P2-UNC-X1-DIFF-CI-2038}}, that is {{P2-UNC-X1-RATIO-2028}} and {{P2-UNC-X1-RATIO-2038}} times the baseline. Vehicles met {{P2-UNC-X1-HAND-CONFLICTS-2028}} cross-owner conflicts a year in 2028 and stood {{P2-UNC-X1-HAND-WAIT-H-2028}} of vehicle-hours waiting for a decision from Earth, plus {{P2-UNC-X1-OTHER-STOP-H-2028}} in which the other vehicle of each conflict stood; in 2038 the figures were {{P2-UNC-X1-HAND-CONFLICTS-2038}} conflicts and {{P2-UNC-X1-HAND-WAIT-H-2038}}. Against the ATC mode on the same seeds the differences were {{P2-UNC-VS-ATC-X1-DIFF-2028}} and {{P2-UNC-VS-ATC-X1-DIFF-2038}}. At two times the fleet the uncoordinated delay was {{P2-UNC-X2-RATIO-2028}} times the baseline in 2028 and {{P2-UNC-X2-RATIO-2038}} in 2038, with {{P2-UNC-X2-HAND-WAIT-H-2028}} of hand-resolution wait; at four times, {{P2-UNC-X4-RATIO-2028}} and {{P2-UNC-X4-RATIO-2038}} times. {{P2-UNC-X8-SENTENCE}} <!-- PENDING E43 8x --></p>
+
+<h3>5.5 Single-lane share, bay spacing and the lost-contact rule</h3>
+
+<p>With no single-lane road at all, the ATC mode's delay differed from the baseline by {{P2-SHARE0-ATC-DIFF}} and the uncoordinated mode's by {{P2-SHARE0-UNC-DIFF}}, the latter with {{P2-SHARE0-UNC-HAND-CONFLICTS}} conflicts a year at the pads' aprons. At a 5&#8239;% share the ATC mode differed from the baseline by {{P2-SHARE5-ATC-DIFF}} and the uncoordinated mode by {{P2-SHARE5-UNC-DIFF}} ({{P2-SHARE5-UNC-RATIO}} times); at 40&#8239;%, with {{P2-SHARE40-SINGLE-KM}} of one-lane road, the ATC mode differed by {{P2-SHARE40-ATC-DIFF}} {{P2-SHARE40-ATC-DIFF-CI}}, {{P2-SHARE40-ATC-PCT}}, with {{P2-SHARE40-ATC-BAY-WAIT-H}} of bay wait, and the uncoordinated mode by {{P2-SHARE40-UNC-DIFF}} ({{P2-SHARE40-UNC-RATIO}} times). Bays every 0.5&nbsp;km instead of 1&nbsp;km changed the ATC mode's delay by {{P2-BAY05-ATC-VS-ATC-DIFF}} {{P2-BAY05-ATC-VS-ATC-DIFF-CI}} and raised the segment traversals from {{P2-ATC-X1-TRAVERSALS}} to {{P2-BAY05-ATC-TRAVERSALS}}; bays every 2&nbsp;km changed it by {{P2-BAY2-ATC-VS-ATC-DIFF}}. Under the strict reading of R7, in which a robot files a reservation only from a place the base's mast can see, the ATC mode's delay rose by {{P2-R7-ATC-DIFF}} {{P2-R7-ATC-DIFF-CI}} over the default ATC mode, with {{P2-R7-UNLINKED-JOBS}} jobs a year that could not file, {{P2-R7-HAND-CONFLICTS}} conflicts referred to Earth and {{P2-R7-HAND-WAIT-H}} of vehicle-hours waiting for it.</p>
+
+<h3>5.6 Encounters (H7)</h3>
+
+<p>{{P2-E44-RESULTS-PARAGRAPH}} <!-- PENDING E44 (B-78): per type, n, violations, the bound, near misses, the minimum margin; the importance-sampling weights; Table 6. --></p>
+
+<!-- TABLE:E44 -->
+
+<h3>5.7 The exhaustive check</h3>
+
+<p>{{P2-E45-RESULTS-PARAGRAPH}} <!-- PENDING E45 (B-78): reachable states, properties proved, the three mutation counterexamples with trace lengths, run time and memory; counterexamples found and fixed during development. --></p>
+
+<h3>5.8 Mars (H9)</h3>
+
+<p>{{P2-E47-RESULTS-PARAGRAPH}} <!-- PENDING E47 (B-82): encounter bounds on Mars, the delay cost of the rules, the uncoordinated-vs-ATC comparison with 6-44 min round trips and the conjunction; Table 7. --></p>
+
+<h3>5.9 What did not work</h3>
+
+<p>{{P2-X8-STATUS-SENTENCE}} <!-- build: from E43-design.json and the run counts: whether the 8x cells ran, at what horizon, and why. --> {{P2-FAILED-CHECKS-SENTENCE}} <!-- build: any check of Section 3.8 that failed, or "Every check of Section 3.8 passed." --> Nothing else is withheld: every cell that ran is in Table 4.</p>

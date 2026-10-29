@@ -1,0 +1,69 @@
+
+<h2 id="p2-sec-discussion">6. Discussion</h2>
+
+<h3>6.1 What the results say about the question</h3>
+
+<p>The question had three parts: whether a small shared rule set keeps robots of several owners safe against any planner, what it costs, and whether it holds on Mars. On cost the answer is clear and, we think, the most useful number in the paper. At today's planned fleet the rules cost {{P2-H8-X1-PCT}} of delay per delivery, an amount that no operator would notice, and the whole fleet lost {{P2-ATC-X1-BAY-WAIT-H}} a year at passing bays. That is because the base's roads are long and its vehicles few: at today's fleet a vehicle meets another on a one-lane segment about {{P2-ATC-X1-CONFLICTS-PER-WEEK}} times a week, and a wait at a bay is minutes against deliveries measured in hours. The cost grows with the fleet, to {{P2-H8-X4-PCT}} at four times the fleet and demand, which is the congestion the warehouse literature predicts [6, 17], and the price of safety at eight times is {{P2-H8-X8-DISCUSSION-CLAUSE}}. The rules as implemented in the logistics model never deadlocked, in {{P2-N-RUNS-E43}} runs at up to eight times the fleet; that is the exit-bay construction of R3 doing what the theory says it does [19, 23], and it is a property of the construction, not luck.</p>
+
+<p>The second number is the one we would put in front of a policymaker. The same rules, with each owner keeping its own reservation table and every cross-owner conflict settled by hand from Earth, cost {{P2-UNC-X1-RATIO-2028}} times the baseline delay at today's fleet, with {{P2-UNC-X1-HAND-WAIT-H-2028}} of vehicle-hours a year spent waiting for a decision that could only be made while the base saw Earth. The rules did not change between the two modes; the place of the decision did. A conflict on a one-lane road is settled in milliseconds by a shared table on the Moon and in hours by two control rooms on Earth, and for about eleven days in every month it is not settled at all [42]. The strict reading of the lost-contact rule tells the same story from the other side: a robot that may not file a reservation until the base's mast sees it behaves like an uncoordinated one for the first leg of every job, and the ATC mode lost {{P2-R7-ATC-DIFF}} of its advantage. The rule that matters most for cost is therefore not any of the ten in Table 2 but the one about who may grant a reservation.</p>
+
+<p>On safety, {{P2-E45-DISCUSSION-CLAUSE}} {{P2-E44-DISCUSSION-CLAUSE}} <!-- PENDING E44, E45 --> On Mars, {{P2-E47-DISCUSSION-CLAUSE}} <!-- PENDING E47 --></p>
+
+<h3>6.2 Comparison with earlier studies</h3>
+
+<p>Our cost of safety is smaller than the warehouse and intersection literature reports, for a reason that is in the numbers rather than in the method. Hönig and colleagues' execution layer cost nothing in unnecessary wait and beat synchronous execution by 2.5 times in station use [5]; Dresner and Stone's reservations added under 0.1&nbsp;s to travel time at densities that saturated every traffic light [7]; lifelong warehouse planners lose throughput only past a density peak of hundreds of agents on a few thousand cells [6, 17]. Our base has eight vehicles on {{P2-ROUTE-KM}} of road, and the density ladder of Section 5.3 shows the same shape, with the cost becoming visible between two and four times today's fleet. The uncoordinated mode's cost has a closer analogue in drone traffic management, where NASA's tests found operational impact from downed servers and misimplemented specifications rather than from latency [9]; on the Moon the equivalent of a downed server is the horizon, and it is down for eleven days at a time. Our deadlock result agrees with the theory of well-formed layouts [19, 20] and with Dresner and Stone's observation that coarse reservations deadlock [7]: our reservations are whole segments, which is coarse, but they end at bays, which is what the theory requires. {{P2-E44-COMPARISON-CLAUSE}} <!-- PENDING E44: compare the per-type bounds with Zhao et al.'s acceleration [35] and the rule of three [33]; state that the bound is for the generated distribution. --></p>
+
+<h3>6.3 Implications</h3>
+
+<p>For the agreements that the Artemis Accords leave to the parties [1], the implication is that the rules themselves are cheap and the sharing of a reservation table is where the value lies. A base that adopts rules like Table 2 but lets each company keep its own table, with conflicts escalated to Earth, keeps the safety of the rules and pays {{P2-UNC-X1-RATIO-2028}} times the delay; one that shares the table on the Moon pays {{P2-H8-X1-PCT}}. The shared table does not require a shared planner, a shared dispatcher or a shared owner, only that every vehicle run the same small program and accept a grant from the base computer, which is the federated structure of drone traffic management [8, 25] with the server moved to the Moon. For NASA's policy question of when central coordination becomes necessary [2], the simulation says: as soon as there is a one-lane road and two owners. For designers, the number that drives cost is the share of one-lane road, which the 5&nbsp;m terrain cannot give; a survey of the real corridors at rover scale, or a graded road, would settle what we had to assume.</p>
+
+<h3>6.4 Limitations</h3>
+
+<p>The findings hold for one base, one route network and one demand model, with the single-lane share assumed; the road layer acts at a 100&nbsp;m grain and leaves separation within a segment to the encounter simulator; the uncoordinated mode's accounting understates its cost; the encounter bounds hold for the generated distribution and the proof for the discrete model; and no sensor is modelled. Section 7 states each in full.</p>
+
+<h3>6.5 Future work</h3>
+
+<p>Four pieces follow directly. A survey of corridor widths at rover scale, from higher-resolution imagery or a graded road plan, would replace the assumed single-lane share. The safety program should be run on the flight-class computer the companion paper sizes [45], against recorded traffic from this model. The uncoordinated mode should be given the relay and plan-ahead options of [44], to see how much of its cost a relay recovers. And the encounter simulator should be extended to a lander in flight and to the dust a landing raises, which the rules here treat only as a closed zone.</p>
+
+<h2 id="p2-sec-limits">7. Limitations</h2>
+
+<p><b>The single-lane share is assumed.</b> At the rovers' slope limit the 5&nbsp;m terrain shows no corridor narrower than two vehicles, so every one-lane segment in E43 is a choice: a share of the route samples, the narrowest at a 10&deg; criterion first. The sweep from 0 to {{P2-SHARE-MAX-PCT}} brackets the plausible range, and the ATC mode's cost stayed under {{P2-SHARE40-ATC-PCT-ABS}} across it, but the absolute waits depend on where the real pinch points are.</p>
+
+<p><b>One base, one network, one demand.</b> The Connecting Ridge base of [41, 42], its routes and the demand model of [40] are the only ones simulated. The fleet multiples change the number of vehicles and items, not the road network, so the density ladder is a ladder of traffic on fixed roads.</p>
+
+<p><b>The road layer has a 100&nbsp;m grain.</b> In the logistics model vehicles reserve whole segments at job commit and following vehicles are not separated; R1, R2 and R9 act only in the encounter simulator. A vehicle that would be delayed within a segment by a slower one ahead is not delayed in E43, which understates the ATC mode's cost by an amount the encounter simulator bounds but does not price.</p>
+
+<p><b>The uncoordinated mode's cost is understated.</b> When a cross-owner conflict stops two vehicles, the other vehicle's stop lengthens its busy time but deliveries it had already recorded are not moved, and the hand-resolution time of two hours is assumed. Both choices favour the uncoordinated mode.</p>
+
+<p><b>The rules are checked, not validated.</b> The exhaustive check covers a small discrete model, the encounter bounds hold for the twelve generated types and their parameter ranges, and neither covers real sensors, navigation error beyond the conformance margin, or a vehicle that breaks the rules on purpose. Owners who misreport are the subject of [45].</p>
+
+<p><b>The safety program is one implementation.</b> What is checked is our code; a vehicle maker's implementation of the same rules would need the same checks against its own code. {{P2-SHARED-CHECK-LIMITATION}} <!-- build: if the logistics road layer does not yet call the shared safety_check(), say so here; otherwise fill with an empty string. --></p>
+
+<p><b>Horizons and seeds differ by fleet size.</b> The four- and eight-times cells run {{P2-HORIZON-X4-D}} and {{P2-HORIZON-X8-D}} days on ten seeds, not a year on thirty, so their intervals are wider and their delays are not directly comparable with the year-long cells' absolute values; the paired differences within a cell size are the result.</p>
+
+<p><b>Mars is the Moon's roads with Mars parameters.</b> {{P2-E47-LIMITATION-SENTENCE}} <!-- PENDING E47 --></p>
+
+<h2 id="p2-sec-conclusion">8. Conclusion</h2>
+
+<p>This paper asked whether a small, shared set of traffic rules can keep the surface robots of several companies safe at a lunar base, what the rules cost, and whether they carry to Mars. We wrote ten rules with every parameter traced to a source or an assumption, built one safety program that enforces them, and tested it three ways on one simulated base on real terrain. {{P2-CONCLUSION-SAFETY-CLAUSE}} <!-- PENDING E44, E45 --> In a year of simulated logistics at today's planned fleet the rules cost {{P2-H8-X1-PCT}} of delay per delivery and never deadlocked; the cost reached {{P2-H8-X4-PCT}} at four times the fleet. Keeping the same rules but settling every cross-owner conflict from Earth cost {{P2-UNC-X1-RATIO-2028}} times the baseline delay, because the decision waits for a horizon that hides Earth for days. {{P2-CONCLUSION-MARS-CLAUSE}} <!-- PENDING E47 --></p>
+
+<p>For practice, the rules are cheap and the shared reservation table is where the value lies; a base that lets its robots settle conflicts among themselves under common rules pays almost nothing for safety, and one that keeps the decision on Earth pays in every blackout. For research, the share of one-lane road on real lunar roads is the number this work most needs and could not measure. The results hold for one base, one route network and a checked rather than validated model. What the Artemis Accords leave to the parties can be written down, checked and priced, and the price is small.</p>
+
+<h2 id="p2-sec-availability">Data and code availability</h2>
+
+<p>The simulation engine, the road layer, the safety program, the encounter simulator, the model checker, the experiment runner, every results file this paper quotes and the script that builds the paper from them are in the repository at <a href="https://github.com/azizjonrahimov/Lunar-Haul">github.com/azizjonrahimov/Lunar-Haul</a> (directories <code>lunarsim/atc</code>, <code>experiments/phase5</code>, <code>results</code> and <code>paper/p2</code>). The ranked single-lane places with coordinates are <code>results/ATC_roads_narrow.json</code>, the corridor analysis <code>results/ATC_roads_corridor.json</code>, and the design of E43 with its dated changes <code>data/scenarios/p5/E43-design.json</code>. The pre-registration with its dated changes is <code>paper/atc/PREREG.md</code> [43]. The live site at <a href="https://azizjonrahimov.github.io/Lunar-Haul/">azizjonrahimov.github.io/Lunar-Haul</a> shows the base, the vehicles, an encounter sandbox and the results.</p>
+
+<h2 id="p2-sec-contrib">Author contributions</h2>
+
+<p>A.R. set the questions, the scope of the three papers and the standards of evidence, directed the design of the rules, the simulation and the experiments, reviewed the hypotheses, the results and the text, and is responsible for the content.</p>
+
+<h2 id="p2-sec-ai">Use of AI tools</h2>
+
+<p>Large-language-model assistants (Anthropic's Claude, used through Claude Code) wrote the simulation code, the road layer, the safety program, the experiment runner and the analysis scripts, ran the experiments, drafted and revised the text and compiled the reference list, all under the author's direction and review. Every number in the paper is written by the build script from the results files, and each sentence that states a direction or a verdict is checked by that script against the data; no number was typed from an assistant's output. The references were collected from published sources and the repository's research notes; entries not yet checked against the publisher's record are marked in the notes and will be checked before submission. The author takes responsibility for the whole.</p>
+
+<h2 id="p2-sec-funding">Funding and competing interests</h2>
+
+<p>No external funding was received. <!-- OWNER: confirm. --> The author founded Roatify, which proposes a traffic and dispatch network for lunar vehicles of the kind simulated here. The pre-registration, the reported assumptions and the build-script checks are the safeguards offered against that interest.</p>
+
+<h2 id="p2-sec-refs">References</h2>
+{{P2-REFERENCES}}

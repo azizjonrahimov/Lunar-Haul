@@ -1,0 +1,179 @@
+{
+ "n_rows": 610,
+ "labels": {
+  "none x1": 30,
+  "atc x1": 30,
+  "uncoordinated x1": 60,
+  "none x2": 30,
+  "atc x2": 30,
+  "uncoordinated x2": 60,
+  "none x4": 10,
+  "atc x4": 10,
+  "uncoordinated x4": 20,
+  "atc x1 share 0": 30,
+  "uncoordinated x1 share 0": 30,
+  "atc x1 share 0.05": 30,
+  "uncoordinated x1 share 0.05": 30,
+  "atc x1 share 0.4": 30,
+  "uncoordinated x1 share 0.4": 30,
+  "atc x1 bay 0.5": 30,
+  "uncoordinated x1 bay 0.5": 30,
+  "atc x1 bay 2": 30,
+  "uncoordinated x1 bay 2": 30,
+  "atc x1 r7": 30
+ },
+ "densities": [
+  1,
+  2,
+  4
+ ],
+ "years": [
+  2028,
+  2038
+ ],
+ "horizons_days": {
+  "1": [
+   365.0
+  ],
+  "2": [
+   365.0
+  ],
+  "4": [
+   90.0
+  ]
+ },
+ "primary": "delay_mean_h",
+ "n_boot": 20000,
+ "seed": 43,
+ "H8": {
+  "1": {
+   "test": {
+    "comparison": "H8: atc - none, x1",
+    "metric": "delay_mean_h",
+    "density": 1,
+    "start_year": 2028,
+    "n": 30,
+    "mean": 0.05107495117714246,
+    "lo": -0.1804344802430346,
+    "hi": 0.31033007258471296,
+    "lo90": -0.14546542363998854,
+    "hi90": 0.2632878076127802,
+    "p": 0.705,
+    "b_mean": 15.47096378552913,
+    "share_of_b": 0.0033013425592086096,
+    "ratio_lo": -0.011690501714322274,
+    "ratio_hi": 0.020049044845012094,
+    "ratio_hi95": 0.016935580973352522
+   },
+   "supported": true,
+   "margin": 0.05,
+   "confirmatory": true
+  },
+  "2": {
+   "test": {
+    "comparison": "H8: atc - none, x2",
+    "metric": "delay_mean_h",
+    "density": 2,
+    "start_year": 2028,
+    "n": 30,
+    "mean": 0.15197566294819728,
+    "lo": 0.02724707629952578,
+    "hi": 0.2831319729514059,
+    "lo90": 0.048106664503646,
+    "hi90": 0.2601754215154804,
+    "p": 0.0179,
+    "b_mean": 8.059940121982397,
+    "share_of_b": 0.018855681388215802,
+    "ratio_lo": 0.0033681260667989526,
+    "ratio_hi": 0.03536242476467961,
+    "ratio_hi95": 0.03252361316672648
+   },
+   "supported": true,
+   "margin": 0.05,
+   "confirmatory": false
+  },
+  "4": {
+   "test": {
+    "comparison": "H8: atc - none, x4",
+    "metric": "delay_mean_h",
+    "density": 4,
+    "start_year": 2028,
+    "n": 10,
+    "mean": 0.32765889508570123,
+    "lo": 0.17763744303965123,
+    "hi": 0.48766492692516206,
+    "lo90": 0.1992441021805073,
+    "hi90": 0.461757291940131,
+    "p": 5e-05,
+    "b_mean": 5.071149055509499,
+    "share_of_b": 0.06461235737681965,
+    "ratio_lo": 0.034880347499441945,
+    "ratio_hi": 0.09670404350247135,
+    "ratio_hi95": 0.09160025880402821
+   },
+   "supported": false,
+   "margin": 0.05,
+   "confirmatory": false
+  }
+ },
+ "deadlocks_total_by_density": {
+  "1": 0.0,
+  "2": 0.0,
+  "4": 0.0
+ },
+ "owner_bay_wait_h_atc": {
+  "1": {
+   "A": 19.738400127987198,
+   "B": 4.804918051604353,
+   "C": 0.3380785470725793
+  },
+  "2": {
+   "A": 175.97460400534285,
+   "B": 114.89134149530067,
+   "C": 0.23172995327912532
+  },
+  "4": {
+   "A": 180.82934790706997,
+   "B": 190.46056522353527,
+   "C": 0.16453562624296106
+  }
+ },
+ "run_s_mean_by_label": {
+  "none x1": 4.029,
+  "atc x1": 4.685333333333333,
+  "uncoordinated x1": 9.789333333333333,
+  "none x2": 19.625999999999998,
+  "atc x2": 31.320333333333334,
+  "uncoordinated x2": 25.038,
+  "none x4": 76.16,
+  "atc x4": 93.666,
+  "uncoordinated x4": 17.1225,
+  "atc x1 share 0": 4.8373333333333335,
+  "uncoordinated x1 share 0": 4.760666666666666,
+  "atc x1 share 0.05": 4.745,
+  "uncoordinated x1 share 0.05": 9.292,
+  "atc x1 share 0.4": 4.614,
+  "uncoordinated x1 share 0.4": 10.822000000000001,
+  "atc x1 bay 0.5": 6.196666666666667,
+  "uncoordinated x1 bay 0.5": 9.746333333333332,
+  "atc x1 bay 2": 4.819,
+  "uncoordinated x1 bay 2": 9.331333333333333,
+  "atc x1 r7": 8.692333333333332
+ },
+ "design": {
+  "load_multiplier_30pct": 2.806,
+  "plume_R5": {
+   "keepout_km": 1.0,
+   "standdown_h": 0.75,
+   "shelter": "auto"
+  },
+  "single_share_flag": "ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; the narrowest places at a 10 deg slope limit are marked first",
+  "design_changes": [
+   {
+    "what": "8x horizon 60 d -> 30 d (1440 h -> 720 h), 10 seeds kept",
+    "why": "the first 8x run took 310.2 s at 60 days (none x8, seed 1), over the 5 min per-run limit; the 60-day row is archived in results/archive/E43_runs.x8_60d.csv"
+   }
+  ]
+ },
+ "elapsed_s": 4.1
+}
