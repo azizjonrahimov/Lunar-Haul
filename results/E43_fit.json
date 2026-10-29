@@ -1,5 +1,5 @@
 {
- "n_rows": 626,
+ "n_rows": 650,
  "labels": {
   "none x1": 30,
   "atc x1": 30,
@@ -23,7 +23,7 @@
   "uncoordinated x1 bay 0.5": 30,
   "atc x1 bay 2": 30,
   "uncoordinated x1 bay 2": 30,
-  "atc x1 r7": 6
+  "atc x1 r7": 30
  },
  "densities": [
   1,
@@ -197,7 +197,7 @@
   "uncoordinated x1 bay 0.5": 9.334333333333332,
   "atc x1 bay 2": 2.8993333333333333,
   "uncoordinated x1 bay 2": 8.881,
-  "atc x1 r7": 7.691666666666667
+  "atc x1 r7": 7.824
  },
  "design": {
   "load_multiplier_30pct": 2.806,
@@ -222,5 +222,5 @@
    }
   ]
  },
- "elapsed_s": 4.1
+ "elapsed_s": 4.7
 }
