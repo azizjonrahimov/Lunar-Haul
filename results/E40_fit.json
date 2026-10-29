@@ -1,6 +1,6 @@
 {
  "task": "B-75",
- "n_rows": 2602,
+ "n_rows": 2750,
  "n_per_cell": {
   "10|A_EARTH plan_ahead|v1": 30,
   "10|A_EARTH plan_ahead|v3": 50,
@@ -54,6 +54,7 @@
   "30|O_ORACLE|v1": 30,
   "30|O_ORACLE|v3": 50,
   "30|O_ORACLE hopper_refuel|v1": 30,
+  "60|A_EARTH full coverage|v1": 30,
   "60|A_EARTH plan_ahead|v1": 30,
   "60|A_EARTH plan_ahead|v3": 50,
   "60|A_EARTH strict|v1": 30,
@@ -67,8 +68,11 @@
   "60|B_EARTH_RELAY 0.8|v1": 30,
   "60|B_EARTH_RELAY 0.8|v3": 50,
   "60|B_EARTH_RELAY 1.0|v1": 30,
-  "60|C_AUCTION|v1": 2,
-  "60|C_LEADER|v1": 30
+  "60|C_AUCTION|v1": 30,
+  "60|C_LEADER|v1": 30,
+  "60|C_LEARNED_LIN|v1": 30,
+  "60|C_LEARNED_MLP|v1": 30,
+  "60|O_ORACLE|v1": 30
  },
  "metric": "atc_urgent_wait_mean_cens_h",
  "bootstrap": 20000,
@@ -183,15 +187,15 @@
      "block": "v1",
      "pseudo_replicated": false,
      "valid": true,
-     "n": 0,
-     "mean": null,
-     "lo": null,
-     "hi": null,
-     "lo90": null,
-     "hi90": null,
-     "p": null,
-     "b_mean": NaN,
-     "share_of_b": null
+     "n": 30,
+     "mean": -1079.6598,
+     "lo": -1176.8677,
+     "hi": -987.5515,
+     "lo90": -1161.1401,
+     "hi90": -1001.7751,
+     "p": 5e-05,
+     "b_mean": 1143.5746,
+     "share_of_b": -0.9441
     },
     "delivered_only": {
      "comparison": "H1 (reported): delivered-only urgent wait",
@@ -200,15 +204,15 @@
      "block": "v1",
      "pseudo_replicated": false,
      "valid": true,
-     "n": 0,
-     "mean": null,
-     "lo": null,
-     "hi": null,
-     "lo90": null,
-     "hi90": null,
-     "p": null,
-     "b_mean": NaN,
-     "share_of_b": null
+     "n": 30,
+     "mean": 17.0874,
+     "lo": 11.4491,
+     "hi": 22.3956,
+     "lo90": 12.3876,
+     "hi90": 21.6258,
+     "p": 5e-05,
+     "b_mean": 43.3689,
+     "share_of_b": 0.394
     },
     "by_owner": {
      "A": {
@@ -218,15 +222,15 @@
       "block": "v1",
       "pseudo_replicated": false,
       "valid": true,
-      "n": 0,
-      "mean": null,
-      "lo": null,
-      "hi": null,
-      "lo90": null,
-      "hi90": null,
-      "p": null,
-      "b_mean": NaN,
-      "share_of_b": null
+      "n": 30,
+      "mean": -378.6178,
+      "lo": -449.7855,
+      "hi": -308.7709,
+      "lo90": -438.5142,
+      "hi90": -319.4591,
+      "p": 5e-05,
+      "b_mean": 444.9248,
+      "share_of_b": -0.851
      },
      "B": {
       "comparison": "H1 (reported): owner B",
@@ -235,15 +239,15 @@
       "block": "v1",
       "pseudo_replicated": false,
       "valid": true,
-      "n": 0,
-      "mean": null,
-      "lo": null,
-      "hi": null,
-      "lo90": null,
-      "hi90": null,
-      "p": null,
-      "b_mean": NaN,
-      "share_of_b": null
+      "n": 30,
+      "mean": -516.2606,
+      "lo": -597.5543,
+      "hi": -437.2993,
+      "lo90": -584.0139,
+      "hi90": -450.0407,
+      "p": 5e-05,
+      "b_mean": 575.7562,
+      "share_of_b": -0.8967
      },
      "C": {
       "comparison": "H1 (reported): owner C",
@@ -252,18 +256,18 @@
       "block": "v1",
       "pseudo_replicated": false,
       "valid": true,
-      "n": 0,
-      "mean": null,
-      "lo": null,
-      "hi": null,
-      "lo90": null,
-      "hi90": null,
-      "p": null,
-      "b_mean": NaN,
-      "share_of_b": null
+      "n": 30,
+      "mean": -2362.6837,
+      "lo": -2562.4598,
+      "hi": -2163.1798,
+      "lo90": -2532.3782,
+      "hi90": -2196.1251,
+      "p": 5e-05,
+      "b_mean": 2427.4446,
+      "share_of_b": -0.9733
      }
     },
-    "supported": null
+    "supported": true
    },
    "split_30": {
     "parts": {
@@ -543,17 +547,17 @@
       "block": "all",
       "pseudo_replicated": false,
       "valid": true,
-      "n": 0,
-      "mean": null,
-      "lo": null,
-      "hi": null,
-      "lo90": null,
-      "hi90": null,
-      "p": null,
-      "b_mean": NaN,
-      "share_of_b": null,
-      "threshold": null,
-      "passes": false
+      "n": 8,
+      "mean": 386.0608,
+      "lo": 325.0992,
+      "hi": 457.7193,
+      "lo90": 333.9368,
+      "hi90": 445.6159,
+      "p": 5e-05,
+      "b_mean": 62.5496,
+      "share_of_b": 6.1721,
+      "threshold": 6.255,
+      "passes": true
      },
      "2031": {
       "comparison": "H2: B_EARTH strict - O_ORACLE, 2031",
@@ -562,17 +566,17 @@
       "block": "all",
       "pseudo_replicated": false,
       "valid": true,
-      "n": 0,
-      "mean": null,
-      "lo": null,
-      "hi": null,
-      "lo90": null,
-      "hi90": null,
-      "p": null,
-      "b_mean": NaN,
-      "share_of_b": null,
-      "threshold": null,
-      "passes": false
+      "n": 7,
+      "mean": 431.48,
+      "lo": 388.0808,
+      "hi": 476.7022,
+      "lo90": 394.7227,
+      "hi90": 469.0855,
+      "p": 5e-05,
+      "b_mean": 65.0619,
+      "share_of_b": 6.6318,
+      "threshold": 6.5062,
+      "passes": true
      },
      "2032": {
       "comparison": "H2: B_EARTH strict - O_ORACLE, 2032",
@@ -658,17 +662,17 @@
      "block": "all",
      "pseudo_replicated": false,
      "valid": true,
-     "n": 0,
-     "mean": null,
-     "lo": null,
-     "hi": null,
-     "lo90": null,
-     "hi90": null,
-     "p": null,
-     "b_mean": NaN,
-     "share_of_b": null,
-     "threshold": null,
-     "passes": false
+     "n": 30,
+     "mean": 411.2406,
+     "lo": 382.1932,
+     "hi": 441.7891,
+     "lo90": 386.5638,
+     "hi90": 436.6873,
+     "p": 5e-05,
+     "b_mean": 63.9147,
+     "share_of_b": 6.4342,
+     "threshold": 6.3915,
+     "passes": true
     },
     "plan_ahead_and_relay_0.8": {
      "B_EARTH plan_ahead": {
@@ -678,15 +682,18 @@
       "block": "all",
       "pseudo_replicated": false,
       "valid": true,
-      "n": 0,
-      "mean": null,
-      "lo": null,
-      "hi": null,
-      "lo90": null,
-      "hi90": null,
-      "p": null,
-      "b_mean": NaN,
-      "share_of_b": null
+      "n": 30,
+      "mean": 96.7478,
+      "lo": 68.9243,
+      "hi": 129.737,
+      "lo90": 73.0495,
+      "hi90": 123.8986,
+      "p": 5e-05,
+      "b_mean": 63.9147,
+      "share_of_b": 1.5137,
+      "margin": 6.3915,
+      "within_10pct_tost": false,
+      "direction": "worse than O"
      },
      "B_EARTH_RELAY 0.8": {
       "comparison": "H2 (reported): B_EARTH_RELAY 0.8 - O_ORACLE",
@@ -695,20 +702,23 @@
       "block": "all",
       "pseudo_replicated": false,
       "valid": true,
-      "n": 0,
-      "mean": null,
-      "lo": null,
-      "hi": null,
-      "lo90": null,
-      "hi90": null,
-      "p": null,
-      "b_mean": NaN,
-      "share_of_b": null
+      "n": 30,
+      "mean": 15.8378,
+      "lo": 9.2688,
+      "hi": 22.5793,
+      "lo90": 10.3043,
+      "hi90": 21.4846,
+      "p": 5e-05,
+      "b_mean": 63.9147,
+      "share_of_b": 0.2478,
+      "margin": 6.3915,
+      "within_10pct_tost": false,
+      "direction": "worse than O"
      }
     },
-    "original_yardstick_half_A_minus_O": null,
-    "delivered_only_A_minus_O": null,
-    "supported": null
+    "original_yardstick_half_A_minus_O": 767.5077,
+    "delivered_only_A_minus_O": 584.0223,
+    "supported": false
    }
   },
   "H3a": {
@@ -778,15 +788,16 @@
      "block": "v1",
      "pseudo_replicated": false,
      "valid": true,
-     "n": 0,
-     "mean": null,
-     "lo": null,
-     "hi": null,
-     "lo90": null,
-     "hi90": null,
-     "p": null,
-     "b_mean": 48.6606,
-     "share_of_b": null
+     "n": 30,
+     "mean": 5.3649,
+     "lo": -2.0154,
+     "hi": 13.5741,
+     "lo90": -0.8768,
+     "hi90": 12.2356,
+     "p": 0.1666,
+     "b_mean": 74.9778,
+     "share_of_b": 0.0716,
+     "beats_hand": false
     }
    },
    "C_LEARNED_LIN": {
@@ -834,15 +845,16 @@
      "block": "v1",
      "pseudo_replicated": false,
      "valid": true,
-     "n": 0,
-     "mean": null,
-     "lo": null,
-     "hi": null,
-     "lo90": null,
-     "hi90": null,
-     "p": null,
-     "b_mean": 48.6606,
-     "share_of_b": null
+     "n": 30,
+     "mean": -30.2891,
+     "lo": -35.86,
+     "hi": -25.0057,
+     "lo90": -34.9197,
+     "hi90": -25.8074,
+     "p": 5e-05,
+     "b_mean": 74.9778,
+     "share_of_b": -0.404,
+     "beats_hand": true
     }
    }
   },
@@ -1279,6 +1291,38 @@
   "cells 38-39 (A_EARTH full coverage) were added to the runner before any of their rows ran; they are the yardstick PREREG H1 names (LEAD, 27 Oct)",
   "block v1 = start_year == 2028 + seed mod 4; Earth-independent regimes repeat v1 seeds 1-10 in block v3, so comparisons between two of them use v1 only (pseudo_replicated rows flagged)"
  ],
+ "E41": {
+  "n_rows": 1,
+  "cells": {
+   "C_LEADER loss 0": {
+    "n": 1,
+    "atc_urgent_wait_mean_cens_h": 8.0595,
+    "atc_urgent_wait_mean_h": 8.0595,
+    "atc_urgent_wait_p95_cens_h": 37.3363,
+    "atc_urgent_within24_share": 0.8462,
+    "delivered_kg": 1486671.7382,
+    "atc_deadhead_share": 0.7031,
+    "p5_cargo_util": 0.2909,
+    "utilisation": 0.076,
+    "atc_decider_down_share": 0.0002,
+    "atc_msgs_per_robot_h": 3.3464,
+    "atc_backlog_end_blackout_t_mean": 2.1923,
+    "atc_starved_items": 0.0,
+    "atc_robots_out_share": 0.0096,
+    "team_lifts": 17.0,
+    "p5_team_items_delivered": 13.0,
+    "p5_team_items": 13.0,
+    "backlog_kg": 1000.0,
+    "stranded_kg": 0.0,
+    "atc_failed_meetings": 0.0,
+    "atc_team_no_agreement": 0.0,
+    "atc_meeting_wait_h": 0.0,
+    "atc_own_team_jobs": 0.0,
+    "atc_arbitrated": 0.0,
+    "ready_kg": 1487671.7382
+   }
+  }
+ },
  "E42": {
   "n_rows": 1170,
   "cells": {
@@ -2354,5 +2398,5 @@
   },
   "note": "two-sided bootstrap p; a small p supports a hypothesis only in its predicted direction (check the sign of each row's mean)"
  },
- "wall_s": 3.7
+ "wall_s": 5.0
 }
