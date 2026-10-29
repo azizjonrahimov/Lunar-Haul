@@ -162,3 +162,17 @@ and tested against stored rows, on the claim that a repeated call at the same in
   including 8x at 60 days, 650 runs, 1.6 h; about 15 h in all. Old rows stay reproducible with the flag off.
   LEAD's recommendation stands: option (b), the fix as the dispatcher's defined behaviour, every affected block
   rerun, the before/after reported as change 5, and the old rows archived. Decision: pending the owner.
+
+### Change 5, 28 Oct 2026 (after the E40/E42 analysis and the P1 draft; the owner's decision on issue 5): dispatch runs to a fixed point
+The owner chose option (b). The dispatcher's defined behaviour is now: one pending consolidation wake-up per lane
+and oldest lot, and after any dispatch call that changed state, dispatch again at the same instant until a call
+changes nothing (flag p5["dispatch_fixpoint"], recorded in every row as dispatch_fixpoint = 1 with the fix's
+counters). The accidental extra wake-ups of the old hold are gone; the audit found no duplicate call that assigns.
+- Every block affected is rerun with the flag: E40 (all regimes and loads, both blocks), E42, E41 and E43 (all
+  cells, the 8x cells at the original 60 days). Hypotheses, comparisons, seeds, blocks and decision rules are
+  unchanged. No cell is dropped and no seed is added.
+- The old rows are archived as results/archive/*pre-fixpoint-2026-10-28.csv and stay reproducible with the flag
+  off. The B-75 analysis and the P1 draft 2 numbers are those of the old rows; after the rerun both are rebuilt
+  from the new rows and the before/after of every tested comparison is reported in the papers (Section 4.6 of
+  each) whichever way it comes out. The interim E43 numbers in P2 draft 0 are likewise superseded.
+- Written before any rerun row existed.
