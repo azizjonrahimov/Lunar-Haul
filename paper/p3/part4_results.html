@@ -1,7 +1,7 @@
 
 <h2 id="p3-sec-results">5. Results</h2>
 
-<p>Sections 5.1 to 5.4 give E48: processor time and memory per vehicle class against the flight-processor capacities (H10), the radio traffic and the ledger, the link budget per class, and failover. Sections 5.5 to 5.7 give E46: the three payment rules, individual rationality per owner, and manipulation with audits (H5). Section 5.8 lists what did not work. Table 5 holds every sizing value, Table 6 the link budget, Table 7 every cell mean of E46 and Table 8 every owner's profit against working alone; the text describes them in that order. Intervals are 95&#8239;% bootstrap intervals over seeds unless stated. Nothing in this section is interpreted; Section 6 does that.</p>
+<p>Sections 5.1 to 5.4 give E48: processor time and memory per vehicle class against the flight-processor capacities (H10), the radio traffic and the ledger, the link budget per class, and failover. Sections 5.5 to 5.7 give E46: the four payment rules, individual rationality per owner, and manipulation with audits (H5). Section 5.8 lists what did not work. Table 5 holds every sizing value, Table 6 the link budget, Table 7 every cell mean of E46 and Table 8 every owner's profit against working alone; the text describes them in that order. Intervals are 95&#8239;% bootstrap intervals over seeds unless stated. Nothing in this section is interpreted; Section 6 does that.</p>
 
 <h3>5.1 Processor time and memory per vehicle class (H10)</h3>
 
@@ -23,7 +23,7 @@
 
 <p>{{P3-E48-RESULTS-FAILOVER}} <!-- PENDING E48: per MTBF level, the base computer's downtime share, the share of time without any leader, the measured re-election time, the number of partition merges and the count of jobs found assigned twice after a merge (must be zero; if not, it is a defect and goes to Section 5.8); the effect of the sweep on the urgent wait if B-81 reports it. --></p>
 
-<h3>5.5 The three payment rules</h3>
+<h3>5.5 The four payment rules</h3>
 
 <p>{{P3-E46-RESULTS-RULES}} <!-- PENDING E46 (B-76): per rule and share split, the efficiency loss against the oracle in urgent wait with its interval, the operator's budget per year (surplus or deficit, sign from the data), total earnings and payments, the money settled on Earth and left open at the year's end; the none rule's identity with the pooled regime of [60] stated as a check. --></p>
 
@@ -37,7 +37,7 @@
 
 <h3>5.7 Manipulation and audits (H5)</h3>
 
-<p>{{P3-E46-RESULTS-MANIP}} <!-- PENDING E46: per rule with money, the largest gain any owner obtained by scaling, the factor that gave it and the owner, with its interval; the cost to the system in urgent wait on the same seeds; the same for the first-price rule if a cell is added (Section 4.1). --> {{P3-E46-RESULTS-AUDITS}} <!-- PENDING E46: per rule and audit share q, what the audits recovered of the gain, and the gain net of expected penalties with its sign. --> {{P3-H5-VERDICT-SENTENCE}} <!-- build: composed clause by clause from the E46 fit against the rules of Section 4.1; "supported" / "not supported" / "not tested" from the data and the design, never typed. --></p>
+<p>{{P3-E46-RESULTS-MANIP}} <!-- PENDING E46: per rule with money, the largest gain any owner obtained by scaling, the factor that gave it and the owner, with its interval; the cost to the system in urgent wait on the same seeds; the first-price rule is the reference the registered clauses compare against (Section 4.1). --> {{P3-E46-RESULTS-AUDITS}} <!-- PENDING E46: per rule and audit share q, what the audits recovered of the gain, and the gain net of expected penalties with its sign. --> {{P3-H5-VERDICT-SENTENCE}} <!-- build: composed clause by clause from the E46 fit against the rules of Section 4.1; "supported" / "not supported" / "not tested" from the data and the design, never typed. --></p>
 
 <h3>5.8 What did not work</h3>
 
