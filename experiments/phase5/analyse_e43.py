@@ -3,7 +3,7 @@
 Per cell: means of the delivery and road metrics. Paired by seed (same seed, same start year): atc - none (what the rules
 cost when one shared table resolves conflicts) and uncoordinated - atc (what coordinating the table is worth), per fleet
 density and, for uncoordinated, per start year; bootstrap 95 % CI as in analyse_e40. The single-lane share is ASSUMED
-(results/ATC_roads_corridor.json); the 8x cells were not run (data/scenarios/p5/E43-design.json).
+(results/ATC_roads_corridor.json); the 8x cells were not run (data/scenarios/E43-design.json).
 """
 from __future__ import annotations
 

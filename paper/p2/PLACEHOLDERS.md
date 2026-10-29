@@ -15,7 +15,7 @@ quoted from the literature and from our earlier papers [40-42, 44] are typed wit
 P = `results/table_E43_pairs.csv` (row = `comparison` + `metric`; `mean`, `lo`, `hi`, `lo90`, `hi90`, `n`, `b_mean`,
 `share_of_b`, `ratio_lo`, `ratio_hi`, `ratio_hi95`). F = `results/E43_fit.json` (H8 per density, deadlocks, owner
 waits, run times, design). K = `results/ATC_roads_corridor.json`. D = `data/scenarios/p5/E43-design.json`.
-Comparisons are named in `LABELS` of the build script; the analysis is `experiments/phase5/analyse_e43.py`.
+Comparisons are named in `LABELS` of the build script; the analysis is `experiments/phase5/analyse_e43_pairs.py` (BACKEND's `analyse_e43.py` writes the report summary).
 
 | Key | Source | Format |
 |---|---|---|

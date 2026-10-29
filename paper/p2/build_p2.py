@@ -3,7 +3,7 @@ results, insert the tables and the figure, write paper/p2/paper.html and render 
 
     python paper/p2/build_p2.py [--no-pdf] [--allow-pending]
 
-Sources (read-only): results/table_E43_cells.csv and table_E43_pairs.csv and E43_fit.json (analyse_e43.py),
+Sources (read-only): results/table_E43_cells.csv and table_E43_pairs.csv and E43_fit.json (analyse_e43_pairs.py),
 results/ATC_roads_corridor.json (the corridor analysis), data/scenarios/p5/E43-design.json (the design with its dated
 changes), the raw E43 run files (counts and run times), and paper/p2/NOTES.md (references). E44, E45 and E47 files
 (B-78, B-82) are read once they exist; until then their keys are pending.
@@ -308,6 +308,8 @@ def values(r: R, allow_pending: bool):
     for b, tag in (("0.5", "05"), ("2", "2")):
         p = r.pair("bay_atc", b=b)
         V[f"P2-BAY{tag}-ATC-VS-ATC-DIFF"] = h_(p["mean"], 2, sign=True)
+        if tag == "2":
+            check(p["mean"] == 0 and p["lo"] == 0 and p["hi"] == 0, "bays every 2 km change nothing (identical by construction)")
         if tag == "05":
             V["P2-BAY05-ATC-VS-ATC-DIFF-CI"] = ci(p["lo"], p["hi"], 2)
             V["P2-BAY05-ATC-TRAVERSALS"] = cnt(r.cell("atc_bay", b=b)["road_traversals"])

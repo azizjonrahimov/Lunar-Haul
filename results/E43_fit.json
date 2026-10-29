@@ -172,6 +172,10 @@
    {
     "what": "8x horizon 60 d -> 30 d (1440 h -> 720 h), 10 seeds kept",
     "why": "the first 8x run took 310.2 s at 60 days (none x8, seed 1), over the 5 min per-run limit; the 60-day row is archived in results/archive/E43_runs.x8_60d.csv"
+   },
+   {
+    "what": "8x cells (indices 12-15) not run; the 30-day cut was never used for results",
+    "why": "a 30-day 8x run went past 470 s (none x8 seed 1: 7 d 1.8 s, 14 d 8.6 s, 21 d 141 s); cause: duplicate consolidation WAKEs (lunarsim/dispatch.py:299, 2.37 M WAKEs and 1.6 M dispatch calls in 21 d); the opt-in dedupe failed the bit-identity gate (results/ATC_wake_check.json), so 8x is reported as not run"
    }
   ]
  },
