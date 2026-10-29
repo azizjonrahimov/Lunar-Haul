@@ -53,7 +53,10 @@ counts = integer. "ABS" keys print the absolute value (the sentence carries the 
 | P1-H1-OWNER-A-DIFF, P1-H1-OWNER-B-DIFF, P1-H1-OWNER-C-DIFF | pooling's cut in mean urgent wait per owner (B relay 1.0 minus A full coverage, v1) | P "H1 (reported): owner A/B/C" | h 0 dp |
 | P1-A-URGENT-RANGE-30 | min-max over A regimes, mean urgent wait | R, labels starting `A_` | "1,217 to 1,258&nbsp;h" |
 | P1-A-T-RANGE-30 / P1-POOLED-T-RANGE-30 | delivered tonnes, A vs pooled regimes | R `delivered_kg`/1000 | t range |
-| P1-A-BACKLOG-T-30 | year-end backlog, A strict | R `backlog_kg`/1000 | t 0 dp |
+| P1-A-BACKLOG-T-30 | year-end backlog, A full coverage (the H1 comparison's owners-alone cell) | R `backlog_kg`/1000 | t 0 dp |
+| P1-H1-60-SENTENCE | H1's registered 60 % half | P `H1` at load 60 (`mean`, CI, `n`, `p`) | composed: supported if hi < 0; outside the Holm family |
+| P1-H4-60-SENTENCE | H4's registered 60 % half, linear and network | P `H4_LIN`, `H4_MLP` at load 60 | composed: cut / lengthened / includes zero |
+| P1-GROUPS-60-SENTENCE | the three regime groups at 60 % | R at load 60 (block-one means for Earth-independent cells) | composed: same order, or which Earth-losing regime falls inside the on-Moon range |
 | P1-A-DELIV-MINUS-O-30 | delivered-only A strict minus O | P "...delivered-only urgent wait (not tested...)" | h 0 dp |
 | P1-POOLED-SPREAD-10 | max-min of pooled regimes except B strict, 10 % | R load 10 | h 1 dp |
 | P1-LIN-URGENT-30 / P1-LEADER-URGENT-30 | means | R | h 1 dp |

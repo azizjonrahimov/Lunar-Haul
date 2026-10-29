@@ -134,9 +134,13 @@ def regimes_table(df: pd.DataFrame) -> pd.DataFrame:
     for (load, label), g in df.groupby(["load", "label"]):
         r = {"load": int(load), "label": label, "n": len(g), "n_v1": int((g["run_block"] == "v1").sum()),
              "earth_independent": label in EARTH_INDEPENDENT}
+        g1 = g[g["run_block"] == "v1"]
         for k in REPORT:
             if k in g:
                 r[k] = round(float(g[k].astype(float).mean()), 4)
+                # the mean over block v1 only (seeds 1-30): the cell mean an Earth-independent regime should show,
+                # since its 80-run mean counts seeds 1-10 six times (PREREG change 4)
+                r[f"{k}_v1"] = round(float(g1[k].astype(float).mean()), 4) if len(g1) else None
         rows.append(r)
     return pd.DataFrame(rows)
 
@@ -299,6 +303,13 @@ def main() -> Dict[str, Any]:
         cap = {team: P42.add(f"H1 split (E42): C_AUCTION same owner - A_EARTH own teams, team {team}, loss 0.1", 30,
                              {"label": f"C_AUCTION team {team} same_owner loss 0.1"},
                              {"label": f"A_EARTH strict own teams team {team}"})["valid"] for team in ("00", "10", "25")}
+        # the commit step's cost and benefit, paired by seed and year: with the step minus without it, at team
+        # share 0.25, on the primary outcome and on failed meetings (the referee round asked for the interval)
+        for loss in ("0.25", "0.4"):
+            a = {"label": f"C_AUCTION team 25 any loss {loss}"}
+            b = {"label": f"C_AUCTION team 25 any loss {loss} no commit"}
+            for metric in (M, "atc_failed_meetings", "atc_team_no_agreement"):
+                P42.add(f"H6 commit step: with - without, team 25, loss {loss}", 30, a, b, metric=metric)
         meet = {}
         for loss in ("0.1", "0.25", "0.4"):
             for lab in (f"C_AUCTION team 25 any loss {loss}", f"C_AUCTION team 25 any loss {loss} no commit",

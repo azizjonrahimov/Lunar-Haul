@@ -46,12 +46,12 @@ research note's (High / Medium / Low). Numbers in brackets are the ones used in 
 [40] A. Rahimov. *Who Hauls the Habitat? A Verified Simulation Testbed, a Pooled Dispatch Marketplace and a Reference Design for Lunar Surface Logistics*. Preprint, version 2, October 2026. (R1 [33])
 [41] A. Rahimov. *Where the Lander Lands: Landing Precision, Pad Standoff, Plume Keep-Out and Rover Autonomy Priced in Lunar Surface Logistics*. Preprint, version 3, October 2026. (R1 [14])
 [42] A. Rahimov. *What Earth's Horizon Costs a Lunar Base: Terrain-Masked Communication Windows in South-Pole Cargo Logistics*. Preprint, October 2026.
-[43] Pre-registration: `paper/atc/PREREG.md` in the repository, written 27 October 2026, changes 1-3 dated (commits 4bb0b0b, 0deb61d, 31c8ceb, c90676f). Cite by repository tag when tagged.
-[44] Companion paper P3 (vehicles, network, what Lunar ATC puts inside each vehicle, and the market). Title to be fixed.
-[45] Companion paper P2 (rules of the road and the safety layer on the Moon and Mars). Title to be fixed.
+[43] Pre-registration: `paper/atc/PREREG.md` in the repository, written 27 October 2026, changes 1-5 apply to this paper and 6-8 to the companion papers, each dated in the file. Cite by repository tag when tagged.
+[44] A. Rahimov. "The Vehicles, the Network and the Market: What Lunar ATC Puts Inside Each Lunar Vehicle and How Its Marketplace Works." Companion paper P3, in preparation, 2026.
+[45] A. Rahimov. "Rules of the Road on the Moon and Mars: Traffic Rules for Surface Robots of Different Owners, Checked and Priced." Companion paper P2, in preparation, 2026.
 [46] D. J. Schuirmann. "A comparison of the two one-sided tests procedure and the power approach for assessing the equivalence of average bioavailability." *Journal of Pharmacokinetics and Biopharmaceutics* 15(6):657-680, 1987. (PWG; journal details confirmed by LEAD 28 Oct; title to check against the journal page)
 [47] D. Lakens. *Social Psychological and Personality Science* 8(4):355-362, 2017 (equivalence testing). (PWG; title to add)
-[48] B. A. Nosek et al. "The preregistration revolution." *PNAS* 115(11):2600-2606, 2018. (PWG) Not cited in the text yet; cite in 4.1 if kept.
+[48] B. A. Nosek et al. "The preregistration revolution." *PNAS* 115(11):2600-2606, 2018. (PWG)
 [49] NASA. Delay/Disruption Tolerant Networking page, https://www.nasa.gov/communicating-with-missions/delay-disruption-tolerant-networking/ (VCI, High)
 [50] Kim, Li, Wang. "Lunar Surface Space Traffic Management: Considerations for Future Regulations." GLEX-2025, 11, IP, 15, x93808. (MOA, Medium)
 [51] F. Cruijssen et al. Joint route planning savings, *IJPDLM* 37(4):287-304, 2007. (MOA via notes/03, Medium-High; full title to add)
@@ -64,6 +64,6 @@ Missing from the research notes and needed:
 ## Reference statistics (LEAD, 28 Oct 2026; writing guide §7: mostly recent, low self-citation)
 53 entries. Dated 2021 or later: 26 by the year in the entry, plus [33] (IAC-24, 2024) and the two companion papers
 [44, 45] (2026) = 29 of 53 (55 %). Undated: [49] (NASA web page). Own work: [40]-[45] = 6 of 53 (11 %), of which
-[43] is the pre-registration file and [44, 45] the companion papers. Entries marked "title to confirm" or "to add"
+Here [43] is the pre-registration file and [44, 45] the companion papers. Entries marked "title to confirm" or "to add"
 ([24], [29], [46], [47], [51]) must be checked against the publisher's record before submission; the AI-use statement
 in part5 says so.

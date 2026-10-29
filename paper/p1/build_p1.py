@@ -430,7 +430,7 @@ def values(r: R, allow_pending: bool):
     V["P1-H1-N-30"] = f"{int(h1['n'])}"
     holm = r.fit("holm", "adjusted_p")
     V["P1-H1-PHOLM"] = p_eq(holm[LABELS["holm_H1"]])
-    V["P1-A-BACKLOG-T-30"] = t_(reg30["A_strict"]["backlog_kg"] / 1000)
+    V["P1-A-BACKLOG-T-30"] = t_(reg30["A_full"]["backlog_kg"] / 1000)     # the H1 comparison's owners-alone cell
     ad = r.pair("H2_A_delivered_only", LOAD_MAIN)
     check(ad["lo"] > 0, "owners alone wait longer even on delivered items")
     V["P1-A-DELIV-MINUS-O-30"] = h_(ad["mean"], 0)
@@ -439,7 +439,7 @@ def values(r: R, allow_pending: bool):
     h1d = r.pair("H1_delivered_only", LOAD_MAIN)
     undel = 1 - abs(h1d["mean"]) / abs(h1["mean"])
     check(undel > 0.9, "almost the whole H1 gap is cargo owners alone never delivered")
-    V["P1-H1-UNDELIVERED-SHARE"] = sh(undel, 0)
+    V["P1-H1-UNDELIVERED-SHARE"] = sh(undel, 1)        # one decimal: "almost the whole gap" must not read "100 %"
     # the split agreed with BACKEND (B-75): lifts by pairs of different owners' rovers against single-robot jobs
     # pooled across owners together with the pooled dispatcher; the two parts sum to the E40 gap
     team, pool = r.pair("H1_team", LOAD_MAIN), r.pair("H1_pool", LOAD_MAIN)
@@ -477,7 +477,8 @@ def values(r: R, allow_pending: bool):
     rel_fit = r.fit("hypotheses", "H2", str(LOAD_MAIN), "plan_ahead_and_relay_0.8")[LABELS["relay08"]]
     check(not rel_fit["within_10pct_tost"] and relay["lo"] > 0, "the 80 % relay misses its equivalence margin")
     V["P1-PLAN-MINUS-O"], V["P1-PLAN-MINUS-O-CI"] = h_(plan["mean"]), ci_h(plan["lo"], plan["hi"])
-    V["P1-RELAY08-MINUS-O"], V["P1-RELAY08-MINUS-O-CI"] = h_(relay["mean"]), ci_h(relay["lo"], relay["hi"])
+    # the 90 % interval: the equivalence margin of 4.5 is judged on it (the referee round asked for the same interval)
+    V["P1-RELAY08-MINUS-O"], V["P1-RELAY08-MINUS-O-CI"] = h_(relay["mean"]), ci_h(relay["lo90"], relay["hi90"])
     bo = "atc_backlog_end_blackout_t_mean"
     check(reg30["B_strict"][bo] > reg30["O"][bo], "the blackout backlog is larger under strict fallback")
     V["P1-B-STRICT-BACKLOG-30"], V["P1-O-BACKLOG-30"] = t_(reg30["B_strict"][bo], 1), t_(reg30["O"][bo], 1)
@@ -492,7 +493,8 @@ def values(r: R, allow_pending: bool):
     check(h3["block"] == "v1", "H3a uses the v1 block")
     equiv = -m3 < h3["lo90"] and h3["hi90"] < m3
     check(equiv == bool(f3["tost_equivalent"]), "the H3a TOST verdict in E40_fit.json matches the interval")
-    V["P1-H3A-DIFF"] = h_(h3["mean"], 2, sign=True)
+    # magnitude with a direction word, so that the sentence never reads "waiting -0.84 h relative to"
+    V["P1-H3A-DIFF"] = f"{h_(abs(h3['mean']), 2)} {'less' if h3['mean'] < 0 else 'longer'}"
     V["P1-H3A-PCT"] = pc(100 * h3["share_of_b"], 1, sign=True)
     V["P1-H3A-PCT-ABS"] = pc(abs(100 * h3["share_of_b"]), 1)
     V["P1-H3A-CI90"] = ci_h(h3["lo90"], h3["hi90"])
@@ -526,7 +528,12 @@ def values(r: R, allow_pending: bool):
         clause = (f"kept urgent cargo waiting {pc(abs(100 * h3['share_of_b']), 1)} "
                   f"{'less' if h3['mean'] < 0 else 'longer'} than the full-information marketplace")
     V["P1-H3A-INTRO-CLAUSE"] = clause
-    V["P1-H3A-ABSTRACT-CLAUSE"] = ("matched the full-information marketplace" if h3["lo"] < 0 < h3["hi"] else
+    # "matched" only when equivalence is shown; a zero-covering interval that is too wide is reported as such
+    V["P1-H3A-ABSTRACT-CLAUSE"] = (f"came within {pc(abs(100 * h3['share_of_b']), 1)} of the full-information "
+                                   f"marketplace, equivalent within the pre-registered margin" if equiv else
+                                   f"came within {h_(abs(h3['mean']), 1)} of the full-information marketplace, a "
+                                   f"difference not distinguishable from zero but too wide to show equivalence"
+                                   if h3["lo"] < 0 < h3["hi"] else
                                    f"was {'better' if h3['hi'] < 0 else 'worse'} than the full-information marketplace "
                                    f"by {pc(abs(100 * h3['share_of_b']), 1)}")
     check(h3["mean"] <= 0 and h3["hi"] <= m3, "deciding on the Moon recovers all of the strict dispatcher's loss")
@@ -536,7 +543,8 @@ def values(r: R, allow_pending: bool):
     check(relay["mean"] < h2["mean"] and relay["lo"] > margin,
           "the relay's loss is small next to the strict dispatcher's and still above a tenth of O's mean (6.1)")
     ld = r.pair("leader_minus_O", LOAD_MAIN)
-    V["P1-LEADER-MINUS-O"], V["P1-LEADER-MINUS-O-CI"] = h_(ld["mean"], 2, sign=True), ci_h(ld["lo"], ld["hi"])
+    # "came within X of it": a magnitude, not a signed difference
+    V["P1-LEADER-MINUS-O"], V["P1-LEADER-MINUS-O-CI"] = h_(abs(ld["mean"]), 2), ci_h(ld["lo"], ld["hi"])
     spread = max(abs(r.pair(k, LOAD_MAIN)["mean"]) for k in ("leader_minus_O", "auction_minus_O", "lin_minus_O"))
     check(spread < 10, "the pooled regimes that differ only in their dispatcher sit within a few hours of one another (6.1)")
 
@@ -557,11 +565,50 @@ def values(r: R, allow_pending: bool):
     V["P1-H4-MLP-CI-30"], V["P1-H4-MLP-CI-10"] = ci_h(mlp30["lo"], mlp30["hi"]), ci_h(mlp10["lo"], mlp10["hi"])
     V["P1-H4-N"] = f"{int(lin30['n'])}"
     V["P1-H4-LIN-PHOLM"] = p_eq(holm[LABELS["holm_H4_LIN"]])
+
+    # --- the registered 60 % halves of H1 and H4, and the regime groups at 60 % (raw p; outside the Holm family)
+    h1_60 = r.pair("H1", LOAD_HEAVY)
+    lin60, mlp60 = r.pair("H4_LIN", LOAD_HEAVY), r.pair("H4_MLP", LOAD_HEAVY)
+    V["P1-H1-60-SENTENCE"] = (
+        f"At {LOAD_HEAVY}{PCT} load the same comparison cut the wait by {h_(-h1_60['mean'], 0)} (95{PCT} CI "
+        f"{ci_abs(h1_60, 0)}, n = {int(h1_60['n'])}, p {p_eq(h1_60['p'])}), so H1's second half, that pooling "
+        f"helps at {LOAD_HEAVY}{PCT} load too, is " + ("supported" if h1_60["hi"] < 0 else "not supported") +
+        " (Table 7; the 60&#8239;% rows lie outside the Holm family of Section 4.5).")
+    def h4_60(p, name):
+        if p["hi"] < 0:
+            return f"the {name} cut the wait by {h_(-p['mean'])} (95{PCT} CI {ci_abs(p)})"
+        if p["lo"] > 0:
+            return f"the {name} lengthened the wait by {h_(p['mean'])} (95{PCT} CI {ci_h(p['lo'], p['hi'])})"
+        return (f"the {name}'s difference, {h_(p['mean'], 1, sign=True)} (95{PCT} CI {ci_h(p['lo'], p['hi'])}), "
+                f"includes zero")
+    V["P1-H4-60-SENTENCE"] = (f"At {LOAD_HEAVY}{PCT} load " + h4_60(lin60, "linear model") + " and " +
+                              h4_60(mlp60, "network") + f" (n = {int(lin60['n'])}; Table 7).")
+    GROUP_NAME = {"B_strict": "the strict dispatcher on Earth", "B_plan": "the plan-ahead dispatcher on Earth",
+                  "relay08": "the 80&#8239;% relay"}
+    def shown(k, load):
+        row = r.reg(k, load)
+        return row[f"{M}_v1"] if bool(row["earth_independent"]) and f"{M}_v1" in row else row[M]
+    a60 = [shown(k, LOAD_HEAVY) for k in ("A_strict", "A_plan", "A_moon", "A_full")]
+    mid60 = {k: shown(k, LOAD_HEAVY) for k in EARTH_LOSING}
+    bot60 = {k: shown(k, LOAD_HEAVY) for k in BOTTOM}
+    check(min(a60) > max(mid60.values()) and min(a60) > max(bot60.values()), "owners alone wait longest at 60 % too")
+    rng = lambda vals: rng_txt(list(vals), lambda x: num(x, 0)) + NB + "h"
+    if min(mid60.values()) > max(bot60.values()):
+        V["P1-GROUPS-60-SENTENCE"] = (f"At {LOAD_HEAVY}{PCT} load the three groups stand in the same order: owners "
+                                      f"alone {rng(a60)}, the Earth-losing pooled regimes {rng(mid60.values())} and "
+                                      f"the on-Moon regimes with the marketplace {rng(bot60.values())}.")
+    else:
+        inside = [k for k in EARTH_LOSING if mid60[k] <= max(bot60.values())]
+        V["P1-GROUPS-60-SENTENCE"] = (f"At {LOAD_HEAVY}{PCT} load owners alone still wait longest ({rng(a60)}), but "
+                                      f"the middle and bottom groups overlap: " +
+                                      listing(f"{GROUP_NAME[k]} waits {h_(mid60[k])}" for k in inside) +
+                                      f", inside the range of the on-Moon regimes and the marketplace "
+                                      f"({rng(bot60.values())}).")
     if lin10["hi"] < 0:
         V["P1-H4-LIGHT-CLAUSE"] = "and the linear model helped there too"
     elif lin10["lo"] < 0 < lin10["hi"]:
-        V["P1-H4-LIGHT-CLAUSE"] = ("and there the data could show neither a gain nor its absence: the "
-                                   f"interval ({ci_h(lin10['lo'], lin10['hi'])}) includes zero and reaches past the "
+        V["P1-H4-LIGHT-CLAUSE"] = ("and there the data could show neither a gain nor its absence: the gain's "
+                                   f"interval ({ci_h(-lin10['hi'], -lin10['lo'])}) includes zero and reaches past the "
                                    "&plusmn;2&#8239;% margin")
     else:
         V["P1-H4-LIGHT-CLAUSE"] = "and there the linear model was worse than the hand-built bids"
@@ -584,7 +631,7 @@ def values(r: R, allow_pending: bool):
     order = np.argsort(-np.abs(w))
     fav = [i for i in order if w[i] > 0][:3]
     dis = [i for i in order if w[i] < 0][:3]
-    unit = lambda i: f"{num(w[i], 2, sign=True)}{NB}h per unit" + (f" ({names[i]} scaled by 1/{scale[i]:g})"
+    unit = lambda i: f"{num(w[i], 2, sign=True)}{NB}h per unit" + (f", the feature scaled by 1/{scale[i]:g}"
                                                                      if scale[i] != 1 else "")
     V["P1-LIN-WEIGHTS-SENTENCE"] = (
         "The largest weights lower the bid, and so favour the item, for " +
@@ -654,9 +701,17 @@ def values(r: R, allow_pending: bool):
         if not allow_pending:
             raise SystemExit(f"E40 60 % cells incomplete: {short60}")
         pending.append(f"E40 60 % cells incomplete: {short60}")
+    # the registered rule (half-width over 10 % of the mean: add seeds in tens) against H3a's comparison, disclosed
+    half90 = (h3["hi90"] - h3["lo90"]) / 2
+    tenpct = 0.1 * abs(h3["b_mean"])
     V["P1-SEEDS-ADDED"] = ("No seeds were added: every cell holds the 30 seeds of the design"
                            + (" (and the 50 runs of the second block where it applies)" if any(
-                               k.endswith("|v3") for k in npc) else "") + ".")
+                               k.endswith("|v3") for k in npc) else "") + "."
+                           + (f" The rule was not applied to H3a's comparison, whose 90{PCT} half-width of "
+                              f"{h_(half90, 2)} exceeds 10{PCT} of the marketplace mean ({h_(tenpct, 2)}); by the rule "
+                              f"ten more seeds should have been run for it. We report the equivalence test as it "
+                              f"stands rather than extend the sample after seeing the result (Section 7)."
+                              if half90 > tenpct else ""))
     check(not r.rerun["flagged"], "the rerun after the ordering fix changed no cell")
 
     # --- E41 (pending until it runs) -------------------------------------------------------------------------
@@ -688,7 +743,8 @@ def values(r: R, allow_pending: bool):
             return f"cut {what} by {h_(-p['mean'], nd)} (95{PCT} CI {ci_abs(p, nd)})"
         if p["mean"] == 0 and p["lo"] == 0 and p["hi"] == 0:
             return f"left {what} unchanged on every seed"
-        return f"moved {what} by {delta(p, nd)}, not distinguishable from zero"
+        return (f"{'lowered' if p['mean'] < 0 else 'raised'} {what} by {h_(abs(p['mean']), nd)} (95{PCT} CI "
+                f"{ci_h(p['lo'], p['hi'], nd)}), not distinguishable from zero")
 
     def need_f41():
         if r.f41 is None:
@@ -713,8 +769,10 @@ def values(r: R, allow_pending: bool):
                listing(f"{NAME4[reg]} lay {'below' if base[reg]['hi'] < 0 else 'above'} it by "
                        f"{h_(abs(base[reg]['mean']))} ({ci_h(*sorted((abs(base[reg]['lo']), abs(base[reg]['hi']))))})"
                        for reg in diff) + (" and the others did not differ from it." if len(diff) < 4 else ".")))
+        check(all(at40[reg]["mean"] > 0 for reg in REG4), "loss 0.40 lengthened every regime's wait on average")
         s2 = ("Raising the loss to 0.40 added " +
-              listing(f"{delta(at40[reg])} for {NAME4[reg]}" for reg in REG4) +
+              listing(f"{h_(at40[reg]['mean'])} ({ci_h(at40[reg]['lo'], at40[reg]['hi'])}) for {NAME4[reg]}"
+                      for reg in REG4) +
               ", that is " + listing(f"{num(slope[reg]['pct_of_loss0_per_point'], 2)}" for reg in REG4) +
               f"{PCT} of the loss-free wait per point of loss, against about 0.3{PCT} of makespan per point for the "
               "best allocators in Lott and Honary's benchmark [11].")
@@ -729,7 +787,7 @@ def values(r: R, allow_pending: bool):
                                                        if below else "")) + ".")
         s3 = s3[0].upper() + s3[1:]
         bd = [reg for reg in REG4 if excl0(burst[reg])]
-        s4 = ("Bursty loss at a mean rate of 0.25 " +
+        s4 = ("Bursty loss at a mean rate of 0.25, against steady loss at the same rate, " +
               ("was not distinguishable from steady loss at 0.25 for any regime (differences " +
                listing(delta(burst[reg]) for reg in REG4) + ")." if not bd else
                listing(f"{moved(burst[reg], 'the wait of ' + NAME4[reg])}" for reg in bd) +
@@ -832,7 +890,7 @@ def values(r: R, allow_pending: bool):
         for team in ("10", "25"):
             ti = r.pair("H6_team_items", LOAD_MAIN, team=team, loss="0.1")
             parts.append(f"from {sh(ti['b_mean'])} to {sh(ti['b_mean'] + ti['mean'])} at team share 0.{team} "
-                         f"(paired difference {num(100 * ti['mean'], 0, sign=True)} percentage points, 95&#8239;% CI "
+                         f"(paired difference {num(100 * ti['mean'], 0)} percentage points, 95&#8239;% CI "
                          f"{num(100 * ti['lo'], 0)} to {num(100 * ti['hi'], 0)}, n = {int(ti['n'])})")
             check(ti["lo"] > 0, f"cross-owner pairs raise the share of team items delivered at team share 0.{team}")
         all_items = [r.pair("H6", LOAD_MAIN, team=t, loss="0.1") for t in ("10", "25")]
@@ -841,9 +899,10 @@ def values(r: R, allow_pending: bool):
         return (
             "Allowing pairs of different owners raised the share of team items delivered " + " and ".join(parts) +
             " at message loss 0.10, and the share of all items delivered by " +
-            listing(f"{num(100 * a['mean'], 1, sign=True)} percentage points ({num(100 * a['lo'], 1)} to "
-                    f"{num(100 * a['hi'], 1)})" for a in all_items) +
-            f". H6's first part is supported (Holm-adjusted p {p_eq(holm[LABELS['holm_H6']])}). The gain "
+            listing(f"{num(100 * a['mean'], 1)} percentage points ({num(100 * a['lo'], 1)} to "
+                    f"{num(100 * a['hi'], 1)}) at team share 0.{t}" for a, t in zip(all_items, ("10", "25"))) +
+            f". H6's first part, registered on the share of all items at team share 0.25, is supported "
+            f"(Holm-adjusted p {p_eq(holm[LABELS['holm_H6']])}, Table 7). The gain "
             + ("held" if held else "did not hold in every cell") + " at loss 0.25 and 0.40 (Table 8).")
 
     fill("P1-H6-SHARE-SENTENCE", h6_sentence, "E42")
@@ -864,27 +923,51 @@ def values(r: R, allow_pending: bool):
     arb = {l: meet("E42_meet_arb", loss=l)[fm] for l in ("0.25", "0.4")}
     to = {t: meet("E42_meet_timeout", loss="0.25", to=t)["atc_meeting_wait_h"] for t in ("0.5", "2")}
     to1 = meet("E42_meet", loss="0.25")["atc_meeting_wait_h"]
+    # the commit step, paired by seed and year (with the step minus without it): failed meetings and the primary outcome
+    def pair_metric(label, metric):
+        d = r.p[(r.p["comparison"] == label) & (r.p["load"] == LOAD_MAIN) & (r.p["metric"] == metric)]
+        d = d[d["valid"].astype(bool)]
+        if len(d) != 1:
+            raise KeyError(f"pairs row {label!r} on {metric}: {len(d)} rows; rerun analyse_e40.py")
+        return d.iloc[0].to_dict()
+    cm = {l: pair_metric(f"H6 commit step: with - without, team 25, loss {l}", "atc_failed_meetings") for l in noc}
+    cw = {l: pair_metric(f"H6 commit step: with - without, team 25, loss {l}", M) for l in noc}
+    fewer_with = all(cm[l]["hi"] < 0 for l in noc)
+    cost = all(cw[l]["lo"] > 0 for l in noc)
+    def noc_clause():
+        if all(noc[l] == 0 for l in noc):
+            return "it had none at either loss"
+        return (f"it had {compare(noc['0.25'], base['0.25'])} at loss 0.25 ({num(noc['0.25'], 1)}) and "
+                f"{compare(noc['0.4'], base['0.4'])} at 0.40 ({num(noc['0.4'], 1)})")
     V["P1-H6-MEETINGS-SENTENCE"] = (
         f"Failed meetings {'rose' if rises else 'did not rise steadily'} with message loss: at team share 0.25 the "
         f"auction with the commit step and a 1&nbsp;h timeout had on average {num(base['0.1'], 1)} failed meetings "
         f"per year at loss 0.10, {num(base['0.25'], 1)} at 0.25 and {num(base['0.4'], 1)} at 0.40. Without the "
-        f"commit step it had {compare(noc['0.25'], base['0.25'])} at loss 0.25 ({num(noc['0.25'], 1)}) and "
-        f"{compare(noc['0.4'], base['0.4'])} at 0.40 ({num(noc['0.4'], 1)}), so the second part of H6, that failed "
-        f"meetings rise without a commit step, is "
-        + ("supported" if all(noc[l] > 1.1 * base[l] for l in noc) else "not supported") +
-        f" (cell means, no interval). The timeout trades waiting for failures: at loss 0.25 the hours robots spent "
+        f"commit step {noc_clause()}: paired by seed, the step "
+        + ("cut" if fewer_with else "did not cut") + " failed meetings by "
+        + listing(f"{num(-cm[l]['mean'], 1)} ({num(-cm[l]['hi'], 1)} to {num(-cm[l]['lo'], 1)}) at loss "
+                  f"{'0.40' if l == '0.4' else l}" for l in noc) +
+        f", so the second part of H6, that failed meetings rise without a commit step, is "
+        + ("supported" if fewer_with else "not supported") +
+        f". The step is not free: the urgent wait with it was "
+        + listing(f"{h_(cw[l]['mean'], 1)} ({ci_h(cw[l]['lo'], cw[l]['hi'])}) "
+                  f"{'longer' if cw[l]['mean'] > 0 else 'shorter'} at loss {'0.40' if l == '0.4' else l}" for l in noc)
+        + (", a cost that excludes zero at both losses" if cost else "") +
+        f", because a meeting that the step refuses is a lift that waits. The timeout trades waiting for failures: at "
+        f"loss 0.25 the hours robots spent "
         f"waiting at meeting points were {num(to['0.5'], 1)} with a 0.5&nbsp;h timeout, {num(to1, 1)} with 1&nbsp;h "
         f"and {num(to['2'], 1)} with 2&nbsp;h. The exploratory variant in which the base computer arbitrates each "
-        f"meeting had {num(arb['0.25'], 1)} and {num(arb['0.4'], 1)} failed meetings at loss 0.25 and 0.40.")
+        + ("meeting had no failed meetings at either loss." if all(v == 0 for v in arb.values()) else
+           f"meeting had {num(arb['0.25'], 1)} and {num(arb['0.4'], 1)} failed meetings at loss 0.25 and 0.40."))
     check(to["0.5"] < to1 < to["2"], "meeting wait grows with the timeout")
     # one clause for the abstract, 6.1 and the conclusion: the team-share-0.10 lift in team items and the commit step's
     # effect, with the same rule as the meetings sentence (supported if failures without the step exceed 1.1x)
     t10 = r.pair("H6_team_items", LOAD_MAIN, team="10", loss="0.1")
-    commit_helped = all(noc[l] > 1.1 * base[l] for l in noc)
     V["P1-H6-ABSTRACT-CLAUSE"] = (
-        f"Letting robots of different owners lift heavy crates together raised the share of team items delivered "
-        f"from {sh(t10['b_mean'])} to {sh(t10['b_mean'] + t10['mean'])}, and a commit step before each meeting "
-        f"{'reduced' if commit_helped else 'did not reduce'} failed meetings under message loss")
+        f"Pairs of different owners' robots lifting heavy crates raised the share of team items delivered "
+        f"from {sh(t10['b_mean'])} to {sh(t10['b_mean'] + t10['mean'])}; a commit step before each meeting "
+        + ("cut failed meetings under loss" if fewer_with else "did not cut failed meetings")
+        + (", at a cost in urgent wait" if cost else ""))
 
     # --- tables and the figure ---------------------------------------------------------------------------
     V["P1-TABLE-REGIMES"] = table_regimes(r)
@@ -914,25 +997,34 @@ def table_regimes(r: R):
     """Table 5: every E40 cell at each load (the 60 % block shows how many runs it has so far)."""
     rows = []
     M = "atc_urgent_wait_mean_cens_h"
+    if f"{M}_v1" not in r.r.columns:
+        raise KeyError("table_E40_regimes.csv has no *_v1 columns; rerun experiments/phase5/analyse_e40.py")
     for load in (LOAD_LIGHT, LOAD_MAIN, LOAD_HEAVY):
-        d = r.r[r.r["load"] == load].sort_values(M, ascending=False)
+        d = r.r[r.r["load"] == load].copy()
         if len(d) == 0:
             continue
+        # an Earth-independent cell shows its block-one mean (seeds 1-30), the same runs its "Runs" counts;
+        # the 80-run mean would count seeds 1-10 six times. Sorted on the value shown.
+        d["_shown"] = np.where(d["earth_independent"].astype(bool), d[f"{M}_v1"], d[M])
+        d = d.sort_values("_shown", ascending=False)
+        first = True
         for _, c in d.iterrows():
-            lab = html.escape(c["label"]) + ("&dagger;" if bool(c["earth_independent"]) else "")
-            n = f"{int(c['n_v1'])}" if bool(c["earth_independent"]) else f"{int(c['n'])}"
-            rows.append([f"{load}" if not rows or rows[-1][0] != f"{load}" else "", lab, n, num(c[M], 1),
-                         num(c["atc_urgent_wait_p95_cens_h"], 0), sh(c["atc_urgent_within24_share"]),
-                         num(c["delivered_kg"] / 1000, 0), num(c["backlog_kg"] / 1000, 0),
-                         sh(c["utilisation"], 1)])
+            indep = bool(c["earth_independent"])
+            lab = html.escape(c["label"]) + ("&dagger;" if indep else "")
+            n = f"{int(c['n_v1'])}" if indep else f"{int(c['n'])}"
+            v = (lambda k: c[f"{k}_v1"]) if indep else (lambda k: c[k])
+            rows.append([f"{load}" if first else "", lab, n, num(v(M), 1),
+                         num(v("atc_urgent_wait_p95_cens_h"), 0), sh(v("atc_urgent_within24_share")),
+                         num(v("delivered_kg") / 1000, 0), num(v("backlog_kg") / 1000, 0),
+                         sh(v("utilisation"), 1)])
+            first = False
     return _tab("<b>Table 5.</b> Each decision regime at each load: mean urgent wait (h, censored at the horizon), "
                 "its 95th percentile, the share of urgent items delivered within a day, tonnes delivered and left in "
                 "the backlog at the end of the year, and whole-fleet utilisation. Cell means over the runs listed.",
                 ["Load (%)", "Regime", "Runs", "Urgent wait (h)", "p95 (h)", "Within 24 h", "Delivered (t)",
                  "Backlog (t)", "Fleet busy"], rows, cls="wide",
                 note="&dagger; Earth-independent regime: a seed gives the same run in every start year, so only the "
-                     "30 runs of the v1 block are counted (PREREG change 4). The 60&#8239;% block is partial where "
-                     "it shows fewer runs than the design.")
+                     "30 runs of block one are counted and shown (change 4 of the pre-registration [43]).")
 
 
 def table_ood(r: R):
@@ -941,9 +1033,12 @@ def table_ood(r: R):
         d = v["linear"]["vs_hand_h"]
         rows.append([html.escape(cell), num(v["hand"]["urgent_mean_h"], 1), num(v["linear"]["urgent_mean_h"], 1),
                      f"{num(d['mean'], 2, sign=True)} [{num(d['ci95'][0], 2)}, {num(d['ci95'][1], 2)}]", f"{d['n']}"])
-    return _tab("<b>Table 6.</b> The linear bids outside their training range: mean urgent wait (h) with hand-built "
-                "and learned bids, and the paired difference with its 95&#8239;% interval, on seeds the model never "
-                "saw.", ["Cell", "Hand-built (h)", "Learned (h)", "Difference (h)", "n"], rows)
+    return _tab("<b>Table 6.</b> The linear bids outside their training range, from the evaluation of the learned "
+                "bids before the main runs: mean urgent wait (h) with hand-built and learned bids, and the paired "
+                "difference with its 95&#8239;% interval, on ten evaluation seeds the model never saw. 2eq and 5eq "
+                "split the same eight vehicles and the demand equally among two and five owners. Where E41 reran a cell on 30 seeds (loss 0.25 and 0.40, "
+                "Section 5.5) and E40 on 30 seeds (load 10&#8239;%, Section 5.6), those values supersede these.",
+                ["Cell", "Hand-built (h)", "Learned (h)", "Difference (h)", "n"], rows)
 
 
 def table_pairs(r: R, holm):
@@ -963,9 +1058,16 @@ def table_pairs(r: R, holm):
         rows.append([name, html.escape(row["comparison"]), row["block"], f"{int(row['n'])}", val,
                      pfmt(row["p"]), pfmt(adj),
                      "supported" if ok else ("wrong direction" if adj < 0.05 else "not supported")])
+    # the registered 60 % halves of H1 and H4: raw p only, outside the Holm family
+    for name, row in (("H1, 60&#8239;%", r.pair("H1", LOAD_HEAVY)), ("H4, linear, 60&#8239;%", r.pair("H4_LIN", LOAD_HEAVY)),
+                      ("H4, network, 60&#8239;%", r.pair("H4_MLP", LOAD_HEAVY))):
+        val = f"{num(row['mean'], 1, sign=True)}{NB}h [{num(row['lo'], 1)}, {num(row['hi'], 1)}]"
+        rows.append([name, html.escape(row["comparison"]), row["block"], f"{int(row['n'])}", val, pfmt(row["p"]),
+                     "&ndash;", "supported" if row["hi"] < 0 else "not supported"])
     return _tab("<b>Table 7.</b> The confirmatory family at the middle load: paired mean difference with its "
                 "95&#8239;% bootstrap interval, the two-sided bootstrap p and Holm's adjusted p. H3a is an "
-                "equivalence claim and is tested in Section 5.4.",
+                "equivalence claim and is tested in Section 5.4. The last three rows are the registered 60&#8239;% "
+                "halves of H1 and H4, outside the Holm family, with the raw p only.",
                 ["Hypothesis", "Comparison", "Block", "n", "Difference [95&#8239;% CI]", "p", "Holm p", "Outcome"],
                 rows, cls="wide")
 
