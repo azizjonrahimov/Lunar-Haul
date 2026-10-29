@@ -1,0 +1,26 @@
+{
+ "exp": "E40",
+ "archived_files": [
+  "results/archive/E40_runs.L60.pre-fixpoint-2026-10-28.csv",
+  "results/archive/E40_runs.pre-fixpoint-2026-10-28.csv"
+ ],
+ "current_files": [
+  "results/E40_runs.csv"
+ ],
+ "n_old": 2750,
+ "n_new": 2750,
+ "n_matched": 2750,
+ "primary": "delay_mean_h",
+ "primary_mean_change_h": -0.009709975278332143,
+ "primary_mean_abs_change_h": 1.2665419472300652,
+ "primary_max_abs_change_h": 105.14989582940211,
+ "primary_max_abs_label": "B_EARTH strict",
+ "share_rows_moved_over_0.1h": 0.37054545454545457,
+ "share_rows_identical": 0.37636363636363634,
+ "run_s_old_mean": 14.622959999999999,
+ "run_s_new_mean": 13.845047272727275,
+ "run_s_old_max": 133.13,
+ "run_s_new_max": 71.0,
+ "labels_only_new": [],
+ "labels_only_old": []
+}
