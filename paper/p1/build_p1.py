@@ -748,8 +748,8 @@ def values(r: R, allow_pending: bool):
         stale = st5["atc_claims_stale"] - st1["atc_claims_stale"]
         return (f"Bundles of up to five jobs {'hurt' if h3b['supported'] else 'did not hurt'} the auction: against "
                 f"depth 1, depth 5 {moved(d5['0.25'], 'the urgent wait')} at loss 0.25 and "
-                f"{moved(d5['0.4'], 'it')} at loss 0.40, and depth 2 {moved(d2['0.25'], 'it')} and "
-                f"{moved(d2['0.4'], 'it')}. Stale claims, bids on items that another robot had already taken by the "
+                f"{moved(d5['0.4'], 'it')} at loss 0.40, and depth 2 {moved(d2['0.25'], 'it')} at loss 0.25 and "
+                f"{moved(d2['0.4'], 'it')} at loss 0.40. Stale claims, bids on items that another robot had already taken by the "
                 f"time the bundle was accepted, {'rose' if stale > 0 else 'fell' if stale < 0 else 'did not change'} "
                 f"from {num(st1['atc_claims_stale'], 0)} to {num(st5['atc_claims_stale'], 0)} per year at depth 5 "
                 f"and loss 0.40. H3b, that depth 5 is worse than depth 1 at loss 0.25 to 0.40, is {verdict}. "
