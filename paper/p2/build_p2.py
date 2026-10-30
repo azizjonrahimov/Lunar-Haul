@@ -122,6 +122,89 @@ class Pending(Exception):
 
 
 # ---------------------------------------------------------------------------------------------------------
+# B-79: the phase-5 verification checks (results/vv_phase5.json, the schema agreed with FRONTEND on 30 Oct)
+# ---------------------------------------------------------------------------------------------------------
+VV5 = os.path.join(RES, "vv_phase5.json")
+
+
+def vv5_load(tag, check):
+    """The rows tagged to this paper, after the file's summary is recounted from its rows and every row's passed flag
+    is recomputed from its error and tolerance (the site's verification page makes the same two checks)."""
+    path = os.environ.get("P_VV_PHASE5", VV5)
+    if not os.path.exists(path):
+        raise Pending("results/vv_phase5.json (B-79) has not landed")
+    with open(path, encoding="utf-8") as f:
+        d = json.load(f)
+    allr = d.get("rows", [])
+    s = d.get("summary", {})
+    ran = [x for x in allr if not x.get("skipped")]
+    check(int(s.get("rows", -1)) == len(allr), "vv_phase5.json: the summary's row count equals the rows")
+    check(int(s.get("passed", -1)) == sum(1 for x in ran if x.get("passed")), "vv_phase5.json: the summary's passed count equals the rows")
+    check(int(s.get("failed", -1)) == sum(1 for x in ran if not x.get("passed")), "vv_phase5.json: the summary's failed count equals the rows")
+    check(int(s.get("skipped", -1)) == len(allr) - len(ran), "vv_phase5.json: the summary's skipped count equals the rows")
+    check(len({(x.get("id"), x.get("sub")) for x in allr}) == len(allr), "vv_phase5.json: id plus sub is unique")
+    for x in ran:
+        tol, err = x.get("tolerance"), (x.get("rel_error") if x.get("mode") == "rel" else x.get("error"))
+        if tol is not None and err is not None:
+            check(bool(x.get("passed")) == (abs(float(err)) <= float(tol)), f"check {x.get('id')} {x.get('sub')}: the passed flag agrees with its error and tolerance")
+    rows = [x for x in allr if tag in (x.get("papers") or [])]
+    if not rows:
+        raise Pending(f"no check in results/vv_phase5.json is tagged {tag} yet (later B-79 batches)")
+    return d, rows
+
+
+def _vv5_err(x):
+    v = x.get("rel_error") if x.get("mode") == "rel" else x.get("error")
+    return "n/a" if v is None else f"{abs(float(v)):.2g}"
+
+
+def vv5_checks_sentence(tag, results_section, check):
+    d, rows = vv5_load(tag, check)
+    kinds = {k: sum(1 for x in rows if x.get("kind") == k) for k in ("V", "Val", "Cal")}
+    tech = {}
+    for x in rows:
+        tech[x.get("technique", "unstated")] = tech.get(x.get("technique", "unstated"), 0) + 1
+    tech_txt = ", ".join(f"{html.escape(str(k))} ({cnt(v)})" for k, v in sorted(tech.items(), key=lambda kv: (-kv[1], str(kv[0]))))
+    commit = str(d.get("commit") or "")
+    parts = []
+    if kinds["V"]:
+        parts.append(f"{words(kinds['V'])} verification{'s' if kinds['V'] != 1 else ''} that the code does what the model says")
+    if kinds["Val"]:
+        parts.append(f"{words(kinds['Val'])} validation{'s' if kinds['Val'] != 1 else ''} against references outside the model")
+    if kinds["Cal"]:
+        parts.append(f"{words(kinds['Cal'])} calibration reproduction{'s' if kinds['Cal'] != 1 else ''}")
+    return (f"In addition, {cnt(len(rows))} checks of the engine's phase-5 verification suite (<code>lunarsim/vv5.py</code>, results in "
+            f"<code>results/vv_phase5.json</code> and on the live site's verification page) bear on this paper: " + ", ".join(parts) +
+            f", by Sargent's technique {tech_txt}. Deterministic identities are held to 10<sup>&minus;9</sup> relative or exact; stochastic checks "
+            f"pass when the error is within a tolerance set in advance, and a 99&#8239;% batch-means interval that misses the reference is recorded "
+            f"as a bias flag, not a failure" + (f"; the checks ran at commit <code>{html.escape(commit[:7])}</code>" if commit else "") +
+            f". Their outcomes are in Section {results_section}.")
+
+
+def vv5_failed_sentence(tag, methods_section, check):
+    d, rows = vv5_load(tag, check)
+    ran = [x for x in rows if not x.get("skipped")]
+    failed = [x for x in ran if not x.get("passed")]
+    skipped = [x for x in rows if x.get("skipped")]
+    bias = [x for x in ran if x.get("bias_flag")]
+    label = lambda x: f"{html.escape(str(x.get('id')))}{(' ' + html.escape(str(x.get('sub')))) if x.get('sub') else ''}"
+    if failed:
+        lst = "; ".join(f"{label(x)} ({html.escape(str(x.get('name', '')))}), error {_vv5_err(x)} against a tolerance of {x.get('tolerance')}" for x in failed)
+        out = (f"Of the {cnt(len(rows))} phase-5 checks of Section {methods_section} tagged to this paper, {cnt(len(failed))} failed: {lst}. "
+               f"The other {cnt(len(ran) - len(failed))} that ran passed")
+    else:
+        out = (f"The one phase-5 check of Section {methods_section} tagged to this paper that ran passed" if len(ran) == 1 else
+               f"Every one of the {cnt(len(ran))} phase-5 checks of Section {methods_section} tagged to this paper that ran passed")
+    if skipped:
+        out += ("; " + cnt(len(skipped)) + (" was" if len(skipped) == 1 else " were") + " not run: " +
+                "; ".join(f"{label(x)} ({html.escape(str(x.get('skipped')))})" for x in skipped))
+    if bias:
+        out += ("; " + cnt(len(bias)) + " met " + ("its" if len(bias) == 1 else "their") + " tolerance with a 99&#8239;% interval that misses the reference, "
+                "recorded as a bias flag: " + ", ".join(label(x) for x in bias))
+    return out + "."
+
+
+# ---------------------------------------------------------------------------------------------------------
 # data
 # ---------------------------------------------------------------------------------------------------------
 class R:
@@ -443,8 +526,8 @@ def values(r: R, allow_pending: bool):
     r7_n = int(p7["n"])
     V["P2-R7-N-CLAUSE"] = ("on all 30 seeds" if r7_n >= expected.get(("atc x1 r7", 2028), 30) else
                            f"on the {words(r7_n)} seeds that had run when the rerun was stopped (Section 5.9)")
-    pend("P2-CHECKS-SENTENCE", "B-79", "the phase-5 checks are counted once B-79's batches land")
-    pend("P2-FAILED-CHECKS-SENTENCE", "B-79", "the check outcomes are read from the verification data once B-79 lands")
+    fill("P2-CHECKS-SENTENCE", lambda: vv5_checks_sentence("P2", "5.9", check), "B-79")
+    fill("P2-FAILED-CHECKS-SENTENCE", lambda: vv5_failed_sentence("P2", "3.8", check), "B-79")
     def shared_check_limitation():
         # empty when the engine's road layer enforces the rules through the same safety_check() the encounter
         # simulator and the checker use; the limitation sentence only if it has its own implementation

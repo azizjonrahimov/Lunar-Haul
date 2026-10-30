@@ -52,7 +52,7 @@ E46 = the three E46 files; E48 = `results/E48_sizing.json`; PR = `paper/atc/PRER
 | P3-TIMEOUT-H | `auction.TIMEOUT_H` | h |
 | P3-LIN-N-WEIGHTS, P3-MLP-N-PARAMS | as build_p1.py: the linear policy's `layers[0].w` length (checked: one weight per observation name) and the sum of `w` and `b` sizes over the network's `layers` (`data/policies/atc_bid_linear_v1.json`, `atc_bid_v1.json`) | count |
 | P3-CHANGES-SENTENCE | PR: `### Change N` headings after change 1 that name E46, E48, H5, H10 or first-price | composed |
-| P3-CHECKS-SENTENCE, P3-FAILED-CHECKS-SENTENCE | the verification page's phase-5 checks (B-79 batch 3) | pending |
+| P3-CHECKS-SENTENCE, P3-FAILED-CHECKS-SENTENCE | `results/vv_phase5.json` rows whose `papers` holds P3: counts by `kind` and `technique`, `commit`; outcomes from `passed`, `skipped`, `bias_flag`, `error`/`rel_error` against `tolerance`; the summary is recounted from the rows and every passed flag recomputed | composed; pending until a B-79 batch tags P3 |
 | P3-E48-DESIGN-SENTENCE, P3-E48-COMPUTE-SENTENCE | E48 `runs` | composed; pending |
 | P3-E48-RESULTS-CPU, P3-E48-RESULTS-MESSAGES, P3-E48-RESULTS-LINK, P3-E48-RESULTS-FAILOVER | E48 `classes`, `messages`, `ledger_mb_per_year`, `failover`, `flight`, `laptop` | composed paragraphs; pending; checked: no job assigned twice |
 | P3-H10-VERDICT-SENTENCE | E48: scaled p99 safety-check time x factor x `safety_hz` as a share of one core at the worst class; scaled peak memory against `flight.memory_mb`; `bytes_per_robot_hour."1"` x `robots` x 8 / 3600 against `link_kbps_20_robots` | composed: "holds on every count" / "does not hold on every count (...)" from the data |
