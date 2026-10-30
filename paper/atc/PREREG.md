@@ -270,3 +270,44 @@ with both fixes; the type-11 batch size drops from 400 to 250 encounters (40 bat
 each chunk stays inside the 480 s limit and n stays exactly 10,000; the encounter fixtures are regenerated and
 tests/test_safety.py (7 tests, including the fixture parity check) must pass before the first rerun row. The
 defects record is results/E44_defects.json, copied into E44_bounds.json as defects_found_in_main_run. No outcome class, bound, rule or sample size of change 6 is altered.
+
+### Change 9, 29 Oct 2026 (during the E44 rerun, after types 1-10 of 12; before the type-6 rerun): a type-6 builder defect, a narrower same-lane test for the gap metric, and a genuine finding in type 6 with one exploratory variant cell
+What we saw: in the rerun, the body-geometry and junction fixes of change 8 held (types 4 and 5: 0 violations;
+type 9 unchanged at 58 gap-below-D0 and 7 contacts, all in the dead-stop bin). Type 6, now built with its
+crossing tiles, showed 20 violations and 201 deadlocks in 10,000 encounters. BACKEND traced them to three causes.
+- **Defect, type-6 builder start state (10 R3 "inside without grant").** The junction tiles of change 8 moved the
+  stop lines, and some vehicles now start inside their own stopping distance of a crossing (one example: 0.6 m
+  before a tile at 2.78 m/s), so they are inside a tile before any request could be granted. This is a start
+  state the protocol never faces. Fix: no vehicle starts closer than its stopping distance + 20 m before any
+  tile. The fix is in the type-6 builder only; the fixtures of the other eleven types must be byte-identical
+  before and after it (the parity test of tests/test_safety.py is the check).
+- **Metric definition, same lane (10 "gap below D0", minimum clearance 2.2 m or more, no contact).** The
+  registered gap metric counts a bumper gap below D0 between two vehicles in the same lane, and "same lane" was
+  implemented as heading within 30 degrees and lateral offset below 1.5 m. On two roads that cross at a shallow
+  angle, two vehicles leaving the crossing on different roads satisfy that test for a few metres while their
+  bodies are 2.2 m or more apart. For the D0 violation and the near-miss gap metric only, "same lane" now means
+  heading within 10 degrees and lateral offset below 1.5 m. The shield's own leader test, which decides when a
+  vehicle brakes, stays at 30 degrees: a wider test there is conservative, a wider test in the metric is a false
+  violation. The ten reclassified encounters are recorded in results/E44_defects.json with their minimum
+  clearance. Condition: if the type-6 builder can draw two roads crossing at less than 10 degrees, the metric uses
+  road identity (same road, same direction) instead of a heading test, and the record says which was used. The
+  other eleven types cannot change under the narrower test, because every gap event in them is between vehicles
+  on the same road (type 9) or there is none; BACKEND verifies this from the stored encounter records and the
+  type-9 counts must reproduce exactly.
+- **Genuine finding, reservation behind a hold point (201 deadlocks, all at R = 1 km).** A vehicle outside the
+  landing zone, held at the zone's stop line while the zone is closing, requests and is granted a crossing tile
+  inside the zone. The vehicle inside the zone needs that tile to leave and waits for it; the holder cannot move
+  to use it. Had the encounter run into the closure the result would have been an R5 violation; it ends earlier,
+  as a deadlock. This is a gap in the registered protocol: a reservation can be held by a vehicle that cannot
+  reach it because another hold point lies before it. It is reported as a result of E44 in the registered
+  type-6 cell, which is not altered.
+Decisions: the type-6 parts of the rerun are archived in results/archive/E44_T6_pre-start-fix/ with the counts above
+recorded as found; type 6 is rerun at n = 10,000 after type 12 with the builder fix and the narrower metric; the
+defects record gains the two items above as found and fixed. One exploratory cell is added, outside the twelve
+registered types and outside the Bonferroni family: type 6 with one added request rule, "a vehicle requests a
+resource only when no unpassable hold point (a closed or closing zone, a group it does not hold) lies between it
+and that resource", at n = 10,000, stored in E44_bounds.json under "variants" as "6_request_rule" with the same
+record structure as a type. It is a protocol change made after seeing the data, so P2 reports it as a candidate
+repair beside the registered cell, not as a test of H7. H7 is read on the twelve registered types as before;
+a type whose violation count is zero but whose deadlock count is not is reported as clean of violations and not
+live, never as "holds". No bound, rule or sample size of change 6 is altered for the registered types.
