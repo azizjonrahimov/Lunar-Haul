@@ -2178,17 +2178,112 @@ def check_s5_encounters() -> List[Dict]:
                  "V", "P1", ["P2"], mode="abs", source="results/E44_bounds.json; PREREG change 9", t0=t0)]
 
 
+def _trace_files():
+    import gzip
+    d = _repo("data", "atc", "trace_pair")
+    idx = json.load(open(os.path.join(d, "index.json"), encoding="utf-8"))
+    docs = {n: json.load(gzip.open(os.path.join(d, r["file"]), "rt")) for n, r in idx["runs"].items()}
+    return d, idx, docs
+
+
 def check_v_replay() -> List[Dict]:
-    out = []
-    for cid, name in (("V1", "ATC trace replay equals the engine output (bids, awards, interventions, team lifts, links)"),
-                      ("V2", "Vehicle positions in the ATC scene equal the engine's at event times")):
-        r = _row(cid, "not yet possible", name, float("nan"), float("nan"), 0.0, "",
-                 "the ATC trace export (B-80) has not been written, so there is no ATC replay to compare; the v3 scene "
-                 "package is checked by the phase 4 rows (scene reproduces trace, trajectory replay)", "traces",
-                 "code verification", "V", "P1", ["P1", "P2"], mode="abs", source="B-80; lunarsim/vv.py phase 4")
-        r["skipped"] = "not yet possible: no ATC trace export (B-80) to replay"
-        out.append(r)
-    return out
+    """V1: the ATC trace pair (data/atc/trace_pair, B-80) against a fresh engine run without export hooks; the index's
+    sizes and hashes. V2: positions: a vehicle never jumps between legs, every edge starts and ends at its sites, and
+    every piece of road on a single-lane segment lies inside that vehicle's own reservation."""
+    from .engine import Simulation
+    from .atc import regimes as G
+    rows = []
+    if not os.path.isfile(_repo("data", "atc", "trace_pair", "index.json")):
+        for cid in ("V1", "V2"):
+            r = _row(cid, "not yet possible", "ATC trace replay", float("nan"), float("nan"), 0.0, "", "no trace pair",
+                     "traces", "code verification", "V", "P1", ["P1", "P2"], mode="abs", source="B-80")
+            r["skipped"] = "no data/atc/trace_pair (run tools/atc/export_trace.py)"
+            rows.append(r)
+        return rows
+    t0 = time.time()
+    d, idx, docs = _trace_files()
+    bad = 0
+    for n, r in idx["runs"].items():
+        p = os.path.join(d, r["file"])
+        bad += os.path.getsize(p) != r["bytes"]
+        bad += hashlib.sha256(open(p, "rb").read()).hexdigest() != r["sha256"]
+    rows.append(_row("V1", "index", "The trace index's sizes and hashes match its files", 0.0, float(bad), 0.0,
+                     "mismatches", f"{len(idx['runs'])} files in data/atc/trace_pair, commit {str(idx.get('commit'))[:10]}",
+                     "traces", "code verification", "V", "P1", ["P1", "P2"], mode="abs", source="tools/atc/export_trace.py",
+                     t0=t0))
+    E = _tool("export_trace")
+    t0w, t1w = idx["window"]["t0_h"], idx["window"]["t1_h"]
+    _t = E._t
+    for name, tr in docs.items():
+        t0 = time.time()
+        spec = E.RUNS[name]
+        sim = Simulation(E._scenario(name, t1w), G.mechanism(spec["regime"]), seed=int(idx["seed"]),
+                         mech_kwargs=dict(spec["kw"], start_year=E.YEAR))
+        _run_quiet(sim)
+        items = [[c.id, c.owner, round(c.mass_kg, 1), c.cls, c.priority, c.origin, c.dest, _t(c.t_ready),
+                  _t(c.t_picked), _t(c.t_delivered), c.carrier, c.team_size] for c in sorted(sim.all_cargo, key=lambda c: c.id)
+                 if c.t_ready <= t1w and (c.t_delivered is None or c.t_delivered >= t0w)]
+        res = sorted([[f"apron:{k[1]}" if isinstance(k, tuple) else int(k), _t(a), _t(b), int(dd), o, int(v)]
+                      for k, lst in sim.roads.table.items() for a, b, dd, o, v in lst if b > t0w and a < t1w],
+                     key=lambda x: (x[1], str(x[0])))
+        lands = [[_t(t), lt.name, pad] for t, lt, pad in sim.landing_schedule if t0w <= t <= t1w]
+        clos = [[_t(a), _t(b), pad, float(sim.plume.R)] for a, b, pad in sim.plume.windows if b >= t0w and a <= t1w]
+        e = sim.roads.cfg["eva"]
+        crew = [[_t(a), _t(b), "BASE", float(e["zone_km"]), float(e["v_crew_kmh"])] for a, b in sim.roads.eva
+                if b >= t0w and a <= t1w]
+        mism = {"items": items != tr["items"], "reservations": res != tr["reservations"],
+                "landings": lands != tr["landings"], "closures": clos != tr["closures"], "crew": crew != tr["crew"]}
+        dk = {}
+        for x in tr["decisions"]:
+            dk[x[1]] = dk.get(x[1], 0) + 1
+        rows.append(_row("V1", f"{name}: engine", f"The '{name}' trace equals a fresh engine run ({tr['regime']})", 0.0,
+                         float(sum(mism.values())), 0.0, "blocks differing", f"fresh run without export hooks, same "
+                         f"scenario, seed and horizon; compared: {len(items)} items, {len(res)} reservations, "
+                         f"{len(lands)} landings, {len(clos)} closures, {len(crew)} crew walks (differing: "
+                         f"{[k for k, v in mism.items() if v] or 'none'}). Trace counts: {len(tr['jobs'])} jobs, "
+                         f"{len(tr['radio'])} radio entries, decisions {dk}", "traces", "code verification", "V", "P1",
+                         ["P1", "P2"], mode="abs", source="tools/atc/export_trace.py; extends B-31", t0=t0))
+    t0 = time.time()
+    v = {"jump": 0, "edge_ends": 0, "outside_reservation": 0, "fractions": 0, "pieces_on_segments": 0}
+    for name, tr in docs.items():
+        resv = {}
+        for rname, a, b, dd, o, vid in tr["reservations"]:
+            resv.setdefault((str(rname), vid), []).append((a, b))
+        def start_at(l):
+            e = l[7]
+            return (l[2],) if e is None or e[1] == 0.0 else (e[0], e[1])
+
+        def end_at(l):
+            e = l[7]
+            return (l[2],) if e is None else ((l[3],) if e[2] == 1.0 else (e[0], e[2]))
+        for vid, legs in tr["legs"].items():
+            prev = None
+            for leg in legs:
+                t_a, t_b, fr, to, kind, load, job, edge = leg
+                if prev is not None and end_at(prev) != start_at(leg):      # where one leg ends the next begins
+                    v["jump"] += 1
+                if edge is not None:
+                    key, f0, f1, res = edge
+                    poly = tr["roads"]["edges"][key]
+                    if (f0 == 0.0 and poly[0] != tr["sites"][fr]) or (f1 == 1.0 and poly[-1] != tr["sites"][to]):
+                        v["edge_ends"] += 1
+                    if not (0.0 <= f0 <= f1 <= 1.0):
+                        v["fractions"] += 1
+                    if res >= 0:
+                        v["pieces_on_segments"] += 1
+                        win = resv.get((str(res), int(vid)), [])
+                        if not any(abs(a - t_a) <= 0.0015 and abs(b - t_b) <= 0.0015 for a, b in win):
+                            v["outside_reservation"] += 1
+                prev = leg
+    n_on = v.pop("pieces_on_segments")
+    rows.append(_row("V2", "positions", "Vehicle positions in the trace: no jumps (each leg starts where the last "
+                     "ended, at a site or at the same fraction of the same edge), edges end at their sites, every "
+                     "single-lane piece inside the vehicle's own reservation", 0.0, float(sum(v.values())), 0.0,
+                     "violations", f"both traces; {n_on} pieces on single-lane segments; violations by kind: "
+                     + ", ".join(f"{k} {x}" for k, x in v.items()) + "; times compared at the files' 0.001 h rounding",
+                     "traces", "code verification", "V", "P1", ["P1", "P2"], mode="abs",
+                     source="tools/atc/export_trace.py; lunarsim/atc/roads.py", t0=t0))
+    return rows
 
 
 def run_phase5_batch3b() -> List[Dict]:

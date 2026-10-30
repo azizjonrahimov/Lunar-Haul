@@ -7494,3 +7494,76 @@ lunarsim/vv5.py, results/vv_phase5.json, tests/test_verification_phase5.py, .tea
 **Questions for LEAD:**
 1. Keep S1 (c), S2 "unholdable slope flagged" and S5 "encounter deadlocks" as FAIL (as with D10), or move the two E44 findings to reported rows?
 2. Do you want the shield to flag near-standstill braking on unholdable slopes? That would change safety.py's kinematics, outside every run's states. I have not done it.
+
+## B-80 DONE 30 Oct (the ATC trace pair for the site) + V1, V2 | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**Files:** data/atc/trace_pair/ in format lunarsim-atc-trace v1, built to FRONTEND's nine agreed changes.
+- index.json (5.3 kB): frame, window, run settings, bytes, sha256, counts, summaries, field notes.
+- with.json.gz: 24,566 B gz (145.8 kB JSON). C_AUCTION, loss 0.10, terrain radio, road layer atc.
+- without.json.gz: 27,989 B gz (170.9 kB JSON). A_EARTH strict, road layer uncoordinated.
+- Both are well under the 250 kB aim.
+
+**Scenario and window:** p5 3eq, 30 % load, team share 0.10, landing closures, fixpoint, seed 1, start year 2028.
+- The window is July 2028 (4368-5112 h), the 2028 calendar month with the least BASE direct-to-Earth visibility (52.7 %).
+- Each run simulates from 1 Jan to the window's end.
+
+**Contents, per FRONTEND's points:**
+1. **Frame and sites:** terrain/hero/sites.json's frame in integer metres, with its site ids; pads sit at their stand-off point.
+2. **Roads:**
+   - roads.edges uses the road file's leg ids, with polylines;
+   - res gives each point's single-lane resource, branched marks branched resources, bays lists where resources end;
+   - no_road lists PAD_A@1->PAD_B@1 as a straight line, because the road file lacks it and the engine drives it by its distance table.
+   - nodes has BASE (the 10 m mast).
+3. **Legs:** [t0, t1, from, to, kind, load_kg, job, edge].
+   - Drive legs are split at every reserved segment's entry and exit; edge = [edge id, f0, f1, resource].
+   - Fractions are by sample index, as the engine places vehicles.
+   - Non-drive legs have from == to, except the hand stop below.
+4. **Radio:** the first entry at t0 holds the full state; later entries hold links added and removed, the hops array in fleet order, and base_up.
+5. **Compact form:** tuples throughout, times to 0.001 h, positions to 1 m.
+6. **Messages and summary:**
+   - msgs is the radio transmissions per hour for "with". Earth messages are not modelled, so the list is empty for "without".
+   - summary holds the four window totals: urgent_items_waiting, idle_robot_hours, messages_per_hour, earth_hand_hours. Each is defined in the field notes and recomputed from the exported events.
+7. **Rally and Earth:**
+   - rally {site, vehicles, timeout_h};
+   - earth lists the DTE windows overlapping July, unclipped, plus the first after it. No window is open at t0.
+8. **Index:** bytes and sha256 per file.
+
+**Window totals:**
+- with: urgent 0, idle 5,532 robot-h, 2.16 messages/h, 0 Earth-hand h.
+- without: urgent 1, idle 5,642 robot-h, 0 messages/h, 8.655 Earth-hand h (2 referrals, 4.655 h for the vehicles that waited plus 2 × 2 h for those that went first).
+
+**V1 (P1, P2), all pass:**
+- The index's sizes and hashes match the files.
+- Each trace equals a fresh engine run with no export hooks: same items (252 / 782), reservations (102 / 184), landings, closures and crew walks. So the export hooks do not perturb the run.
+
+**V2 (P1, P2), passes:**
+- 0 jumps: each leg starts where the last ended, at a site or at the same fraction of the same edge.
+- 0 edge ends away from their sites.
+- 0 of 258 single-lane pieces outside the vehicle's own reservation.
+
+**Engine finding (traced, not changed):**
+- In a hand-resolved conflict (uncoordinated roads), RoadLayer._hand shifts the reservation and busy time of the vehicle that goes first by the stop. It does not shift that vehicle's leg plan (sim._last_segments, regimes.plans).
+- So the engine's positions for that vehicle run up to t_hand early until its job ends.
+- Outcomes come from busy time and reservations, which are right.
+- Positions matter only for radio connectivity in mesh regimes. E43 and E47 ran road coordination with O_ORACLE, which uses no positions, so no reported number is affected.
+- The exporter follows the reservation: it inserts a hand stop at the segment entry (an edge piece with f0 = f1) and shifts that job's later legs. V2 found the 2 cases before this correction.
+
+**Tests and verification file:**
+- tests/test_verification_phase5.py: 16 tests, including the trace's index, radio and summary contract.
+- results/vv_phase5.json: 163 rows, 149 passed, 7 failed (as before), 7 skipped, 1 bias flag. V1 and V2 now run, 4 rows.
+
+### Files
+- **Code:** tools/atc/export_trace.py (new), lunarsim/vv5.py (V1, V2).
+- **Data:** data/atc/trace_pair/{index.json, with.json.gz, without.json.gz}.
+- **Results and tests:** results/vv_phase5.json, tests/test_verification_phase5.py.
+- **Team files:** .team/inbox-backend.md, .team/reports.md.
+
+### How to test
+- `python tools/atc/export_trace.py` rewrites the pair (about 16 s); the gzip mtime is 0, so the bytes are deterministic.
+- V rows: lunarsim.vv5.check_v_replay().
+
+**FRONTEND:** stage data/atc/trace_pair/* unchanged. The index's bytes and sha256 match the files (V1 checks them).
+
+**Questions for LEAD:**
+1. Do you want the hand stop of the vehicle that goes first written into the engine's plan as well (roads._hand)? It would change positions in uncoordinated runs, which no reported experiment uses. Not done.
+2. Next per your order: the tranche-3 rows X2, X5, R3, R4, S4, T3, E4.

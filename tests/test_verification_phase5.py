@@ -129,3 +129,18 @@ def test_single_lane_harness_matches_lindley_and_deterministic_cases():
 
 def test_closest_approach_row():
     assert V.check_s1_separation()[0]["passed"]
+
+
+# ------------------------------------------------------------------------------------------------ B-80 trace pair
+def test_trace_pair_index_and_positions():
+    import os
+    if not os.path.isfile(os.path.join(V._repo(), "data", "atc", "trace_pair", "index.json")):
+        pytest.skip("no trace pair")
+    d, idx, docs = V._trace_files()
+    assert set(docs) == {"with", "without"}
+    for n, r in idx["runs"].items():
+        assert os.path.getsize(os.path.join(d, r["file"])) == r["bytes"] <= 400_000
+        t = docs[n]
+        assert t["radio"][0][0] == idx["window"]["t0_h"] and len(t["radio"][0]) == 4
+        assert all(len(e[3]) == len(t["fleet"]) for e in t["radio"][1:])
+        assert set(t["summary"]) == {"urgent_items_waiting", "idle_robot_hours", "messages_per_hour", "earth_hand_hours"}

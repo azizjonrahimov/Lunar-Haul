@@ -1076,7 +1076,7 @@ traffic, payments, 3D replay) after B-78/B-76. Each check in `lunarsim/vv.py` (n
 `tests/`, and `results/vv_phase5.json` in the format the verification page reads (agree it with FRONTEND). Label
 the teleoperation and night checks "reproduces calibration data", as the research note recommends.
 
-## B-80 [QUEUED, as pieces land] Data for the site
+## B-80 [trace pair DONE 30 Oct; policy JSON and encounter fixtures already delivered] Data for the site
 A "with vs without" trace pair (same seed, 30 % load, a dark month of 2028) with positions, radio links (who hears
 whom, hops to BASE), reservations, landing closures, crew zones, team lifts and each regime's decisions:
 `site/public/data/atc/*.json` within budgets (agree limits with FRONTEND); the policy JSON for the browser; the
