@@ -1,0 +1,706 @@
+{
+ "note": "python tools/atc/run_e44.py run [--types 1-12] [--n 100000] [--max-seconds 480]   # resumable, batch files\n    python tools/atc/run_e44.py summarize        # -> results/E44_encounters.csv, results/E44_bounds.json\n    python tools/atc/run_e44.py fixtures         # -> data/atc/encounter_fixtures/ (20 replays + index with tolerance)",
+ "outcome_classes": [
+  "not_driven",
+  "violation",
+  "blocked_by_fault",
+  "deadlock",
+  "finished",
+  "incomplete"
+ ],
+ "outcome_rule": "Exactly one outcome per encounter, by precedence: not_driven > violation > blocked_by_fault > deadlock (only where no random fuzzer runs) > finished > incomplete (time limit, or quiet by design: a fuzzer idling, a robot told to stay stopped, vehicles held at a closed zone).",
+ "near_miss_margin_m": "same-lane bumper gap below 2 x RSS d_min (speed-dependent, so not a fixed number of metres)",
+ "near_miss_definition": {
+  "gap": "same-lane bumper gap below 2 x RSS d_min (speed-dependent, so not a fixed number of metres)",
+  "ttc_s": 10.0,
+  "crew": "clearance below 2 x R_crew,stop (stopping distance + 10 m)",
+  "zone_exit_margin_s": 300.0
+ },
+ "min_margin_m_definition": "smallest clearance to another vehicle (two-disc footprint) or crew member, m",
+ "emergency_brake_definition": "share of encounters with at least one step where no candidate satisfied every rule and the shield applied full braking (an event, not an outcome)",
+ "alpha_per_type": 0.004166666666666667,
+ "types": {
+  "1": {
+   "title": "following, leader brakes at maximum (flat, 10/15/20 deg downhill)",
+   "n": 12000,
+   "n_driven": 3039,
+   "n_eff": 3039.0,
+   "violations": 0,
+   "violations_by_kind": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   },
+   "bound": 0.000985276807608293,
+   "bonferroni_bound": 0.0018018097745520212,
+   "bound_rule": "zero violations: 1 - 0.05^(1/n_eff)",
+   "near_misses": 2649,
+   "near_misses_by_kind": {
+    "near_gap": 2649,
+    "near_ttc": 1020,
+    "near_crew": 0,
+    "near_zone": 0
+   },
+   "min_margin_m": 5.168,
+   "min_margin_m_p01": 5.168138,
+   "outcomes": {
+    "not_driven": 8961,
+    "violation": 0,
+    "blocked_by_fault": 0,
+    "deadlock": 0,
+    "finished": 770,
+    "incomplete": 2269
+   },
+   "outcomes_sum_equals_n": true,
+   "emergency_brake_rate": 0.0,
+   "intervention_rate": 0.3125680368111965,
+   "r1_breach_rate": 0.0,
+   "delay_s_nominal_mean": -114.5863309352518,
+   "run_time_s": 54.9,
+   "peak_rss_mb": 128.8
+  },
+  "2": {
+   "title": "head-on on a single-lane segment (with/without a passing bay; a third vehicle queued behind each)",
+   "n": 2000,
+   "n_driven": 2000,
+   "n_eff": 2000.0,
+   "violations": 0,
+   "violations_by_kind": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   },
+   "bound": 0.0014967448951882512,
+   "bonferroni_bound": 0.0027365682136166747,
+   "bound_rule": "zero violations: 1 - 0.05^(1/n_eff)",
+   "near_misses": 1368,
+   "near_misses_by_kind": {
+    "near_gap": 1368,
+    "near_ttc": 727,
+    "near_crew": 0,
+    "near_zone": 0
+   },
+   "min_margin_m": 1.2,
+   "min_margin_m_p01": 1.2,
+   "outcomes": {
+    "not_driven": 0,
+    "violation": 0,
+    "blocked_by_fault": 0,
+    "deadlock": 0,
+    "finished": 722,
+    "incomplete": 1278
+   },
+   "outcomes_sum_equals_n": true,
+   "emergency_brake_rate": 0.0,
+   "intervention_rate": 0.2507049145671374,
+   "r1_breach_rate": 0.0,
+   "delay_s_nominal_mean": 37.72570068965517,
+   "run_time_s": 188.7,
+   "peak_rss_mb": 130.4
+  },
+  "3": {
+   "title": "overtaking on a two-lane stretch ending before a single-lane segment",
+   "n": 2000,
+   "n_driven": 2000,
+   "n_eff": 2000.0,
+   "violations": 0,
+   "violations_by_kind": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   },
+   "bound": 0.0014967448951882512,
+   "bonferroni_bound": 0.0027365682136166747,
+   "bound_rule": "zero violations: 1 - 0.05^(1/n_eff)",
+   "near_misses": 1669,
+   "near_misses_by_kind": {
+    "near_gap": 1669,
+    "near_ttc": 908,
+    "near_crew": 0,
+    "near_zone": 0
+   },
+   "min_margin_m": 1.2,
+   "min_margin_m_p01": 1.2,
+   "outcomes": {
+    "not_driven": 0,
+    "violation": 0,
+    "blocked_by_fault": 0,
+    "deadlock": 0,
+    "finished": 781,
+    "incomplete": 1219
+   },
+   "outcomes_sum_equals_n": true,
+   "emergency_brake_rate": 0.0,
+   "intervention_rate": 0.28664390945155527,
+   "r1_breach_rate": 0.001,
+   "delay_s_nominal_mean": 7.197693010752688,
+   "run_time_s": 219.9,
+   "peak_rss_mb": 130.4
+  },
+  "4": {
+   "title": "crossing and merging at a junction; four-way contention (tile granularity 1-4)",
+   "n": 2000,
+   "n_driven": 2000,
+   "n_eff": 2000.0,
+   "violations": 0,
+   "violations_by_kind": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   },
+   "bound": 0.0014967448951882512,
+   "bonferroni_bound": 0.0027365682136166747,
+   "bound_rule": "zero violations: 1 - 0.05^(1/n_eff)",
+   "near_misses": 39,
+   "near_misses_by_kind": {
+    "near_gap": 39,
+    "near_ttc": 0,
+    "near_crew": 0,
+    "near_zone": 0
+   },
+   "min_margin_m": 1.2,
+   "min_margin_m_p01": 1.2,
+   "outcomes": {
+    "not_driven": 0,
+    "violation": 0,
+    "blocked_by_fault": 0,
+    "deadlock": 0,
+    "finished": 732,
+    "incomplete": 1268
+   },
+   "outcomes_sum_equals_n": true,
+   "emergency_brake_rate": 0.0,
+   "intervention_rate": 0.2267710890825686,
+   "r1_breach_rate": 0.0,
+   "delay_s_nominal_mean": 4.033714110429448,
+   "run_time_s": 163.2,
+   "peak_rss_mb": 131.5
+  },
+  "5": {
+   "title": "cyclic wait on a ring of single-lane segments (3 or 4 vehicles, bays of 2 slots)",
+   "n": 2000,
+   "n_driven": 2000,
+   "n_eff": 2000.0,
+   "violations": 0,
+   "violations_by_kind": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   },
+   "bound": 0.0014967448951882512,
+   "bonferroni_bound": 0.0027365682136166747,
+   "bound_rule": "zero violations: 1 - 0.05^(1/n_eff)",
+   "near_misses": 0,
+   "near_misses_by_kind": {
+    "near_gap": 0,
+    "near_ttc": 0,
+    "near_crew": 0,
+    "near_zone": 0
+   },
+   "min_margin_m": 1.4996,
+   "min_margin_m_p01": 2.655372,
+   "outcomes": {
+    "not_driven": 0,
+    "violation": 0,
+    "blocked_by_fault": 0,
+    "deadlock": 70,
+    "finished": 691,
+    "incomplete": 1239
+   },
+   "outcomes_sum_equals_n": true,
+   "emergency_brake_rate": 0.0,
+   "intervention_rate": 0.2707826186138215,
+   "r1_breach_rate": 0.0,
+   "delay_s_nominal_mean": 89.5633935483871,
+   "run_time_s": 315.7,
+   "peak_rss_mb": 131.5
+  },
+  "6": {
+   "title": "landing closure: vehicle inside, filed route through, delay and wave-off",
+   "n": 2000,
+   "n_driven": 2000,
+   "n_eff": 906.3,
+   "violations": 0,
+   "violations_by_kind": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   },
+   "bound": 0.0032999728417204555,
+   "bonferroni_bound": 0.0060289773048101125,
+   "bound_rule": "zero violations: 1 - 0.05^(1/n_eff)",
+   "near_misses": 36,
+   "near_misses_by_kind": {
+    "near_gap": 0,
+    "near_ttc": 1,
+    "near_crew": 0,
+    "near_zone": 35
+   },
+   "min_margin_m": 1.0518,
+   "min_margin_m_p01": 3.314106,
+   "outcomes": {
+    "not_driven": 0,
+    "violation": 0,
+    "blocked_by_fault": 0,
+    "deadlock": 2,
+    "finished": 733,
+    "incomplete": 1265
+   },
+   "outcomes_sum_equals_n": true,
+   "emergency_brake_rate": 0.0,
+   "intervention_rate": 0.3327858865327986,
+   "r1_breach_rate": 0.0005,
+   "delay_s_nominal_mean": 0.3657809090909091,
+   "run_time_s": 674.3,
+   "peak_rss_mb": 119.2,
+   "weights": {
+    "min": 0.4878048780487805,
+    "max": 3.333333333333333,
+    "mean": 0.978658536585366
+   },
+   "outcome_shares_weighted": {
+    "violation": 0.0,
+    "blocked_by_fault": 0.0,
+    "deadlock": 0.0004984423676012461,
+    "finished": 0.37603322949117346,
+    "incomplete": 0.6234683281412253
+   }
+  },
+  "7": {
+   "title": "crew crossing, emerging from occlusion, walking toward a stopped robot",
+   "n": 12000,
+   "n_driven": 12000,
+   "n_eff": 5664.0,
+   "violations": 0,
+   "violations_by_kind": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   },
+   "bound": 0.0005287668224774889,
+   "bonferroni_bound": 0.0009671573472092021,
+   "bound_rule": "zero violations: 1 - 0.05^(1/n_eff)",
+   "near_misses": 506,
+   "near_misses_by_kind": {
+    "near_gap": 0,
+    "near_ttc": 0,
+    "near_crew": 506,
+    "near_zone": 0
+   },
+   "min_margin_m": 4.0967,
+   "min_margin_m_p01": 5.372752,
+   "outcomes": {
+    "not_driven": 0,
+    "violation": 0,
+    "blocked_by_fault": 0,
+    "deadlock": 0,
+    "finished": 5623,
+    "incomplete": 6377
+   },
+   "outcomes_sum_equals_n": true,
+   "emergency_brake_rate": 0.5283333333333333,
+   "intervention_rate": 0.33279654234289074,
+   "r1_breach_rate": 0.0,
+   "delay_s_nominal_mean": 79.62775080098584,
+   "run_time_s": 143.2,
+   "peak_rss_mb": 127.9,
+   "weights": {
+    "min": 0.3956102357904529,
+    "max": 5.000000000000001,
+    "mean": 1.038265933435655
+   },
+   "outcome_shares_weighted": {
+    "violation": 0.0,
+    "blocked_by_fault": 0.0,
+    "deadlock": 0.0,
+    "finished": 0.4722981542946554,
+    "incomplete": 0.5277018457053446
+   }
+  },
+  "8": {
+   "title": "communication dropout mid-negotiation; 10-50 % message loss; partition",
+   "n": 2000,
+   "n_driven": 2000,
+   "n_eff": 2000.0,
+   "violations": 0,
+   "violations_by_kind": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   },
+   "bound": 0.0014967448951882512,
+   "bonferroni_bound": 0.0027365682136166747,
+   "bound_rule": "zero violations: 1 - 0.05^(1/n_eff)",
+   "near_misses": 1365,
+   "near_misses_by_kind": {
+    "near_gap": 1365,
+    "near_ttc": 689,
+    "near_crew": 0,
+    "near_zone": 0
+   },
+   "min_margin_m": 1.2,
+   "min_margin_m_p01": 1.2,
+   "outcomes": {
+    "not_driven": 0,
+    "violation": 0,
+    "blocked_by_fault": 0,
+    "deadlock": 0,
+    "finished": 717,
+    "incomplete": 1283
+   },
+   "outcomes_sum_equals_n": true,
+   "emergency_brake_rate": 0.0,
+   "intervention_rate": 0.2428655541237095,
+   "r1_breach_rate": 0.0,
+   "delay_s_nominal_mean": 47.078521341463414,
+   "run_time_s": 167.9,
+   "peak_rss_mb": 127.1
+  },
+  "9": {
+   "title": "nonconforming vehicle: slip, drift, dead stop inside a single-lane segment",
+   "n": 2000,
+   "n_driven": 2000,
+   "n_eff": 1230.1,
+   "violations": 11,
+   "violations_by_kind": {
+    "viol_contact": 0,
+    "viol_gap": 11,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   },
+   "bound": 0.009087352469332526,
+   "bonferroni_bound": 0.011519722024793882,
+   "bound_rule": "Clopper-Pearson upper (unweighted)",
+   "near_misses": 889,
+   "near_misses_by_kind": {
+    "near_gap": 889,
+    "near_ttc": 491,
+    "near_crew": 0,
+    "near_zone": 0
+   },
+   "min_margin_m": 0.2262,
+   "min_margin_m_p01": 0.737131,
+   "outcomes": {
+    "not_driven": 0,
+    "violation": 11,
+    "blocked_by_fault": 824,
+    "deadlock": 0,
+    "finished": 446,
+    "incomplete": 719
+   },
+   "outcomes_sum_equals_n": true,
+   "emergency_brake_rate": 0.175,
+   "intervention_rate": 0.2395014917134333,
+   "r1_breach_rate": 0.0,
+   "delay_s_nominal_mean": 27.090307051282053,
+   "run_time_s": 211.4,
+   "peak_rss_mb": 127.1,
+   "weights": {
+    "min": 0.259599134040851,
+    "max": 5.0,
+    "mean": 0.9975467836387258
+   },
+   "outcome_shares_weighted": {
+    "violation": 0.00496434652093202,
+    "blocked_by_fault": 0.40593622697258647,
+    "deadlock": 0.0,
+    "finished": 0.22354841262338454,
+    "incomplete": 0.365551013883097
+   },
+   "violating_examples": [
+    {
+     "batch": 0,
+     "idx": 464,
+     "params": {
+      "kind": "dead",
+      "n": 3
+     },
+     "kinds": [
+      "viol_gap"
+     ]
+    },
+    {
+     "batch": 0,
+     "idx": 570,
+     "params": {
+      "kind": "dead",
+      "n": 3
+     },
+     "kinds": [
+      "viol_gap"
+     ]
+    },
+    {
+     "batch": 0,
+     "idx": 592,
+     "params": {
+      "kind": "dead",
+      "n": 3
+     },
+     "kinds": [
+      "viol_gap"
+     ]
+    },
+    {
+     "batch": 0,
+     "idx": 838,
+     "params": {
+      "kind": "dead",
+      "n": 3
+     },
+     "kinds": [
+      "viol_gap"
+     ]
+    },
+    {
+     "batch": 0,
+     "idx": 879,
+     "params": {
+      "kind": "dead",
+      "n": 3
+     },
+     "kinds": [
+      "viol_gap"
+     ]
+    },
+    {
+     "batch": 0,
+     "idx": 985,
+     "params": {
+      "kind": "dead",
+      "n": 3
+     },
+     "kinds": [
+      "viol_gap"
+     ]
+    },
+    {
+     "batch": 0,
+     "idx": 1023,
+     "params": {
+      "kind": "dead",
+      "n": 3
+     },
+     "kinds": [
+      "viol_gap"
+     ]
+    },
+    {
+     "batch": 0,
+     "idx": 1173,
+     "params": {
+      "kind": "dead",
+      "n": 3
+     },
+     "kinds": [
+      "viol_gap"
+     ]
+    },
+    {
+     "batch": 0,
+     "idx": 1620,
+     "params": {
+      "kind": "dead",
+      "n": 3
+     },
+     "kinds": [
+      "viol_gap"
+     ]
+    },
+    {
+     "batch": 0,
+     "idx": 1834,
+     "params": {
+      "kind": "dead",
+      "n": 3
+     },
+     "kinds": [
+      "viol_gap"
+     ]
+    },
+    {
+     "batch": 0,
+     "idx": 1987,
+     "params": {
+      "kind": "dead",
+      "n": 3
+     },
+     "kinds": [
+      "viol_gap"
+     ]
+    }
+   ]
+  },
+  "10": {
+   "title": "multi-owner speed mix (HAUL and LTV) with one adversarial planner",
+   "n": 2000,
+   "n_driven": 2000,
+   "n_eff": 2000.0,
+   "violations": 0,
+   "violations_by_kind": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   },
+   "bound": 0.0014967448951882512,
+   "bonferroni_bound": 0.0027365682136166747,
+   "bound_rule": "zero violations: 1 - 0.05^(1/n_eff)",
+   "near_misses": 1486,
+   "near_misses_by_kind": {
+    "near_gap": 1486,
+    "near_ttc": 1186,
+    "near_crew": 0,
+    "near_zone": 0
+   },
+   "min_margin_m": 1.2,
+   "min_margin_m_p01": 1.2,
+   "outcomes": {
+    "not_driven": 0,
+    "violation": 0,
+    "blocked_by_fault": 0,
+    "deadlock": 0,
+    "finished": 958,
+    "incomplete": 1042
+   },
+   "outcomes_sum_equals_n": true,
+   "emergency_brake_rate": 0.0,
+   "intervention_rate": 0.5590005944590621,
+   "r1_breach_rate": 0.0,
+   "delay_s_nominal_mean": NaN,
+   "run_time_s": 381.6,
+   "peak_rss_mb": 114.3
+  },
+  "11": {
+   "title": "pad apron contention at 2x, 4x, 8x the nominal fleet",
+   "n": 2000,
+   "n_driven": 2000,
+   "n_eff": 2000.0,
+   "violations": 0,
+   "violations_by_kind": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   },
+   "bound": 0.0014967448951882512,
+   "bonferroni_bound": 0.0027365682136166747,
+   "bound_rule": "zero violations: 1 - 0.05^(1/n_eff)",
+   "near_misses": 1964,
+   "near_misses_by_kind": {
+    "near_gap": 1964,
+    "near_ttc": 1272,
+    "near_crew": 0,
+    "near_zone": 0
+   },
+   "min_margin_m": 1.2,
+   "min_margin_m_p01": 1.2,
+   "outcomes": {
+    "not_driven": 0,
+    "violation": 0,
+    "blocked_by_fault": 0,
+    "deadlock": 0,
+    "finished": 189,
+    "incomplete": 1811
+   },
+   "outcomes_sum_equals_n": true,
+   "emergency_brake_rate": 0.0,
+   "intervention_rate": 0.20786410878556433,
+   "r1_breach_rate": 0.0,
+   "delay_s_nominal_mean": 69.43795882352943,
+   "run_time_s": 2061.9,
+   "peak_rss_mb": 115.0
+  },
+  "12": {
+   "title": "planner fuzzing: random and adversarial proposals on a mixed geometry",
+   "n": 2000,
+   "n_driven": 1600,
+   "n_eff": 1193.6,
+   "violations": 0,
+   "violations_by_kind": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   },
+   "bound": 0.0025067593897433182,
+   "bonferroni_bound": 0.004581303109883472,
+   "bound_rule": "zero violations: 1 - 0.05^(1/n_eff)",
+   "near_misses": 445,
+   "near_misses_by_kind": {
+    "near_gap": 439,
+    "near_ttc": 243,
+    "near_crew": 6,
+    "near_zone": 0
+   },
+   "min_margin_m": 1.2,
+   "min_margin_m_p01": 1.2,
+   "outcomes": {
+    "not_driven": 400,
+    "violation": 0,
+    "blocked_by_fault": 0,
+    "deadlock": 0,
+    "finished": 338,
+    "incomplete": 1262
+   },
+   "outcomes_sum_equals_n": true,
+   "emergency_brake_rate": 0.11375,
+   "intervention_rate": 0.35680066190469145,
+   "r1_breach_rate": 0.0,
+   "delay_s_nominal_mean": NaN,
+   "run_time_s": 160.6,
+   "peak_rss_mb": 129.1,
+   "weights": {
+    "min": 0.3961362317571666,
+    "max": 5.0,
+    "mean": 0.9936369326566143
+   },
+   "outcome_shares_weighted": {
+    "violation": 0.0,
+    "blocked_by_fault": 0.0,
+    "deadlock": 0.0,
+    "finished": 0.20961261040277734,
+    "incomplete": 0.7903873895972227
+   }
+  }
+ },
+ "joint": {
+  "types": 12,
+  "max_bonferroni_bound": 0.011519722024793882,
+  "equal_weight_mix_bonferroni_bound": 0.003671245588047118,
+  "statement": "95 % jointly (Bonferroni over the 12 types): for each type, the per-encounter probability of a hard violation is below its bonferroni_bound, for that type's randomised parameter distribution (results/E44_bins.csv)"
+ },
+ "experiment": "E47 (Mars): E44's 12 types with g = 3.71 m/s2, lunar vehicles; exploratory (H9)"
+}

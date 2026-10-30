@@ -42,6 +42,8 @@ BATCH = {1: 4000, 2: 2000, 3: 2000, 4: 2000, 5: 1000, 6: 1000, 7: 4000, 8: 2000,
 N_TARGET = {k: 10_000 for k in range(1, 13)}          # PREREG change 6: 10^4 per type, 10^5 for the cheap types 1 and 7
 N_TARGET.update({1: 100_000, 7: 100_000})
 OUT_BINS = os.path.join(ROOT, "results", "E44_bins.csv")
+GRAVITY = E.S.G_MOON           # E47 (Mars) sets S.G_MARS
+DEFECTS_FILE = os.path.join(ROOT, "results", "E44_defects.json")   # E47 sets None
 OUTCOMES = ("not_driven", "violation", "blocked_by_fault", "deadlock", "finished", "incomplete")
 VIOL = ("viol_contact", "viol_gap", "viol_zone", "viol_crew", "viol_r3", "viol_slots")
 NEAR = ("near_gap", "near_ttc", "near_crew", "near_zone")
@@ -77,7 +79,7 @@ def run_batch(k: int, j: int, size: int, variant=None) -> dict:
     rows = []
     t0 = time.time()
     if drive:
-        b = E.Batch([specs[i] for i in drive])
+        b = E.Batch([specs[i] for i in drive], g=GRAVITY)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             oc, _ = E.run_batch(b, np.random.default_rng([4400, k, j]))
@@ -255,8 +257,8 @@ def cmd_summarize():
                        "statement": "95 % jointly (Bonferroni over the 12 types): for each type, the per-encounter "
                                     "probability of a hard violation is below its bonferroni_bound, for that type's "
                                     "randomised parameter distribution (results/E44_bins.csv)"}
-    dfile = os.path.join(ROOT, "results", "E44_defects.json")
-    if os.path.isfile(dfile):                         # PREREG change 8: defects found in the first main run
+    dfile = DEFECTS_FILE
+    if dfile and os.path.isfile(dfile):                         # PREREG change 8: defects found in the first main run
         bounds["defects_found_in_main_run"] = json.load(open(dfile, encoding="utf-8"))["defects_found_in_main_run"]
     # exploratory variants (PREREG change 9): outside the twelve types and outside the Bonferroni family
     for name, vdef in VARIANTS.items():

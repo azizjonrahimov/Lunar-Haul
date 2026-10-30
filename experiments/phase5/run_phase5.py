@@ -227,7 +227,38 @@ def write_e43_design() -> None:
         f.write("\n")
 
 
-EXPS = {"E40": e40_cells, "E41": e41_cells, "E42": e42_cells, "E43": e43_cells}
+E47_RTT_MIN = (6.0, 20.0, 44.0)                # Mars round trips swept (B-82)
+
+
+def e47_cells() -> List[Dict[str, Any]]:
+    """E47 (B-82, Mars, exploratory H9): E43's road coordination at 1x with a Mars Earth link. Uncoordinated conflicts
+    are settled from Earth (lunarsim/atc/roads.py MARS_DEFAULTS: contact half of each sol without relay, a 14-day
+    conjunction blackout and two 5-day dust storms a year, then t_hand + the round trip). atc never waits for Earth, so
+    its cell checks that its runs equal E43's atc x1 runs (they are the paired control). Pooled dispatch, 30 % load,
+    the Connecting Ridge road geometry as the controlled case; one year, seeds 1-30."""
+    cells = []
+
+    def mk(mode, rtt=None, relay=None):
+        rd = {"mode": mode, "single_share": SINGLE_SHARE, "single_share_flag": SINGLE_SHARE_FLAG, "bay_km": 1.0,
+              "planet": "mars"}
+        label = f"{mode} x1 mars"
+        if mode == "uncoordinated":
+            rd["mars"] = {"rtt_min": rtt, "relay": relay}
+            label += f" rtt {rtt:g} {'relay' if relay else 'no relay'}"
+        c = cell("E47", label, "O_ORACLE", {}, block="y2028:30", mode=mode, density=1, horizon_h=8760.0,
+                 single_share=SINGLE_SHARE, bay_km=1.0, r7=False, planet="mars",
+                 rtt_min=rtt if rtt is not None else 0.0, relay=bool(relay))
+        c["build"] = {"m": 1, "horizon": None, "roads": rd}
+        cells.append(c)
+
+    mk("atc")
+    for relay in (False, True):
+        for rtt in E47_RTT_MIN:
+            mk("uncoordinated", rtt, relay)
+    return cells
+
+
+EXPS = {"E40": e40_cells, "E41": e41_cells, "E42": e42_cells, "E43": e43_cells, "E47": e47_cells}
 
 
 def run_one(c: Dict[str, Any], seed: int, year: Optional[int], fixpoint: bool = False) -> Dict[str, Any]:

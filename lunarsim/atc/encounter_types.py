@@ -18,6 +18,7 @@ from .encounter import (LANE_W, T_LEAD_S, V_HAUL, V_LTV, V_LTV_FAST, VEH_L, VEH_
 Y = LANE_W / 2
 TAPER = 10.0                 # m, lane to single-lane taper length; A
 PLANNER_P = (0.4, 0.3, 0.3)  # nominal, random, adversarial; A (test design)
+G_BUILD = S.G_MOON           # gravity the builders use for drivability and start spacing (E47 sets S.G_MARS)
 
 
 def _cum(pts):
@@ -52,10 +53,10 @@ def t1(rng):
     mu = _mu(rng)
     nv = int(rng.choice([2, 3]))
     vcl = float(rng.choice([V_LTV, V_LTV_FAST]))
-    vmax = float(S.v_max_r2(theta, mu, 1e4, vcl))
+    vmax = float(S.v_max_r2(theta, mu, 1e4, vcl, g=G_BUILD))
     drivable = vmax > 0.05
     v0 = vmax * rng.uniform(0.6, 1.0) if drivable else 0.0
-    b = float(S.b_guaranteed(theta, mu))
+    b = float(S.b_guaranteed(theta, mu, G_BUILD))
     pts = [(0.0, -Y), (700.0, -Y)]
     s, sl = [], 250.0
     for i in range(nv):
@@ -97,7 +98,7 @@ def _headon(rng, bay=None, queued=None, nv_side=None):
     if bay:
         nodes = [{"cap": 1, "iv": {}}]
     lead = {"W": float(cw[1]) - rng.uniform(20, 120), "E": float(ce[1]) - rng.uniform(20, 120)}
-    b0 = float(S.b_guaranteed(0.0, 0.3))
+    b0 = float(S.b_guaranteed(0.0, 0.3, G_BUILD))
     for idx, (side, j) in enumerate(vehicles):
         s_front = lead[side]
         lead[side] = s_front - VEH_L - float(S.rss_dmin(V_LTV, V_LTV, b0)) - rng.uniform(2, 15)
@@ -382,7 +383,7 @@ def _crossing_tiles(paths, s0, v0=None):
                 merged.append([a, b, list(r)])
         # start state (PREREG change 9): never inside a crossing zone and never within stopping distance + 20 m of
         # one; a start that would be is moved just past that zone, and the check repeats for the next zone
-        clear = float(S.stop_distance(v0[k], S.b_guaranteed(0.0, 0.3))) + 20.0 if v0 is not None else 0.0
+        clear = float(S.stop_distance(v0[k], S.b_guaranteed(0.0, 0.3, G_BUILD))) + 20.0 if v0 is not None else 0.0
         moved = True
         while moved:
             moved = False
@@ -403,7 +404,7 @@ def t7(rng):
     pts = [(0.0, -Y), (xc + 300, -Y)]
     s0 = 10.0
     walk = rng.uniform(0.5, 1.2)
-    b = float(S.b_guaranteed(0.0, 0.45))
+    b = float(S.b_guaranteed(0.0, 0.45, G_BUILD))
     w = 1.0
     dwell = None
     occl = math.inf

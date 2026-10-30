@@ -1,0 +1,744 @@
+{
+ "experiment": "E47 (B-82, Mars, exploratory H9)",
+ "design": "data/scenarios/E47-design.json",
+ "encounters": {
+  "1": {
+   "n": 12000,
+   "violations_mars": 0,
+   "violations_by_kind_mars": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   },
+   "deadlocks_mars": 0,
+   "bound_mars": 0.000985276807608293,
+   "not_driven_mars": 8961,
+   "not_driven_moon_same_encounters": 3019,
+   "paired_driven_both": 2274,
+   "violations_moon_same_encounters": 0,
+   "violations_mars_same_encounters": 0,
+   "delay_s_nominal": {
+    "moon": {
+     "mean": null,
+     "ci": null,
+     "n": 0
+    },
+    "mars": {
+     "mean": null,
+     "ci": null,
+     "n": 0
+    },
+    "mars_minus_moon": {
+     "mean": null,
+     "ci": null,
+     "n": 0
+    }
+   }
+  },
+  "2": {
+   "n": 2000,
+   "violations_mars": 0,
+   "violations_by_kind_mars": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   },
+   "deadlocks_mars": 0,
+   "bound_mars": 0.0014967448951882512,
+   "not_driven_mars": 0,
+   "not_driven_moon_same_encounters": 0,
+   "paired_driven_both": 2000,
+   "violations_moon_same_encounters": 0,
+   "violations_mars_same_encounters": 0,
+   "delay_s_nominal": {
+    "moon": {
+     "mean": 37.7175,
+     "ci": [
+      34.8648,
+      40.6391
+     ],
+     "n": 145
+    },
+    "mars": {
+     "mean": 37.7257,
+     "ci": [
+      34.8712,
+      40.6473
+     ],
+     "n": 145
+    },
+    "mars_minus_moon": {
+     "mean": 0.0082,
+     "ci": [
+      0.0042,
+      0.0123
+     ],
+     "n": 145
+    }
+   }
+  },
+  "3": {
+   "n": 2000,
+   "violations_mars": 0,
+   "violations_by_kind_mars": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   },
+   "deadlocks_mars": 0,
+   "bound_mars": 0.0014967448951882512,
+   "not_driven_mars": 0,
+   "not_driven_moon_same_encounters": 0,
+   "paired_driven_both": 2000,
+   "violations_moon_same_encounters": 0,
+   "violations_mars_same_encounters": 0,
+   "delay_s_nominal": {
+    "moon": {
+     "mean": 7.1689,
+     "ci": [
+      6.6086,
+      7.808
+     ],
+     "n": 181
+    },
+    "mars": {
+     "mean": 7.1628,
+     "ci": [
+      6.6029,
+      7.8023
+     ],
+     "n": 181
+    },
+    "mars_minus_moon": {
+     "mean": -0.0062,
+     "ci": [
+      -0.0095,
+      -0.0029
+     ],
+     "n": 181
+    }
+   }
+  },
+  "4": {
+   "n": 2000,
+   "violations_mars": 0,
+   "violations_by_kind_mars": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   },
+   "deadlocks_mars": 0,
+   "bound_mars": 0.0014967448951882512,
+   "not_driven_mars": 0,
+   "not_driven_moon_same_encounters": 0,
+   "paired_driven_both": 2000,
+   "violations_moon_same_encounters": 0,
+   "violations_mars_same_encounters": 0,
+   "delay_s_nominal": {
+    "moon": {
+     "mean": 4.0341,
+     "ci": [
+      3.3303,
+      4.7829
+     ],
+     "n": 163
+    },
+    "mars": {
+     "mean": 4.0337,
+     "ci": [
+      3.3297,
+      4.7828
+     ],
+     "n": 163
+    },
+    "mars_minus_moon": {
+     "mean": -0.0004,
+     "ci": [
+      -0.001,
+      0.0
+     ],
+     "n": 163
+    }
+   }
+  },
+  "5": {
+   "n": 2000,
+   "violations_mars": 0,
+   "violations_by_kind_mars": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   },
+   "deadlocks_mars": 70,
+   "bound_mars": 0.0014967448951882512,
+   "not_driven_mars": 0,
+   "not_driven_moon_same_encounters": 0,
+   "paired_driven_both": 2000,
+   "violations_moon_same_encounters": 0,
+   "violations_mars_same_encounters": 0,
+   "delay_s_nominal": {
+    "moon": {
+     "mean": 90.9803,
+     "ci": [
+      82.9062,
+      99.1066
+     ],
+     "n": 181
+    },
+    "mars": {
+     "mean": 90.9803,
+     "ci": [
+      82.9062,
+      99.1066
+     ],
+     "n": 181
+    },
+    "mars_minus_moon": {
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "n": 181
+    }
+   }
+  },
+  "6": {
+   "n": 2000,
+   "violations_mars": 0,
+   "violations_by_kind_mars": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   },
+   "deadlocks_mars": 2,
+   "bound_mars": 0.0032999728417204555,
+   "not_driven_mars": 0,
+   "not_driven_moon_same_encounters": 0,
+   "paired_driven_both": 2000,
+   "violations_moon_same_encounters": 0,
+   "violations_mars_same_encounters": 0,
+   "delay_s_nominal": {
+    "moon": {
+     "mean": 0.3933,
+     "ci": [
+      0.127,
+      0.7426
+     ],
+     "n": 203
+    },
+    "mars": {
+     "mean": 0.3931,
+     "ci": [
+      0.1268,
+      0.7425
+     ],
+     "n": 203
+    },
+    "mars_minus_moon": {
+     "mean": -0.0002,
+     "ci": [
+      -0.0005,
+      0.0
+     ],
+     "n": 203
+    }
+   }
+  },
+  "7": {
+   "n": 12000,
+   "violations_mars": 0,
+   "violations_by_kind_mars": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   },
+   "deadlocks_mars": 0,
+   "bound_mars": 0.0005287668224774889,
+   "not_driven_mars": 0,
+   "not_driven_moon_same_encounters": 0,
+   "paired_driven_both": 12000,
+   "violations_moon_same_encounters": 0,
+   "violations_mars_same_encounters": 0,
+   "delay_s_nominal": {
+    "moon": {
+     "mean": 79.6278,
+     "ci": [
+      78.6581,
+      80.5991
+     ],
+     "n": 3246
+    },
+    "mars": {
+     "mean": 79.6278,
+     "ci": [
+      78.6581,
+      80.5991
+     ],
+     "n": 3246
+    },
+    "mars_minus_moon": {
+     "mean": 0.0,
+     "ci": [
+      0.0,
+      0.0
+     ],
+     "n": 3246
+    }
+   }
+  },
+  "8": {
+   "n": 2000,
+   "violations_mars": 0,
+   "violations_by_kind_mars": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   },
+   "deadlocks_mars": 0,
+   "bound_mars": 0.0014967448951882512,
+   "not_driven_mars": 0,
+   "not_driven_moon_same_encounters": 0,
+   "paired_driven_both": 2000,
+   "violations_moon_same_encounters": 0,
+   "violations_mars_same_encounters": 0,
+   "delay_s_nominal": {
+    "moon": {
+     "mean": 46.6081,
+     "ci": [
+      43.75,
+      49.5764
+     ],
+     "n": 164
+    },
+    "mars": {
+     "mean": 47.0785,
+     "ci": [
+      44.1729,
+      50.0723
+     ],
+     "n": 164
+    },
+    "mars_minus_moon": {
+     "mean": 0.4704,
+     "ci": [
+      -1.419,
+      2.4488
+     ],
+     "n": 164
+    }
+   }
+  },
+  "9": {
+   "n": 2000,
+   "violations_mars": 11,
+   "violations_by_kind_mars": {
+    "viol_contact": 0,
+    "viol_gap": 11,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   },
+   "deadlocks_mars": 0,
+   "bound_mars": 0.009087352469332526,
+   "not_driven_mars": 0,
+   "not_driven_moon_same_encounters": 0,
+   "paired_driven_both": 2000,
+   "violations_moon_same_encounters": 11,
+   "violations_mars_same_encounters": 11,
+   "delay_s_nominal": {
+    "moon": {
+     "mean": 36.1125,
+     "ci": [
+      33.1431,
+      39.132
+     ],
+     "n": 111
+    },
+    "mars": {
+     "mean": 36.1177,
+     "ci": [
+      33.1479,
+      39.1387
+     ],
+     "n": 111
+    },
+    "mars_minus_moon": {
+     "mean": 0.0052,
+     "ci": [
+      0.0019,
+      0.0084
+     ],
+     "n": 111
+    }
+   }
+  },
+  "10": {
+   "n": 2000,
+   "violations_mars": 0,
+   "violations_by_kind_mars": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   },
+   "deadlocks_mars": 0,
+   "bound_mars": 0.0014967448951882512,
+   "not_driven_mars": 0,
+   "not_driven_moon_same_encounters": 0,
+   "paired_driven_both": 2000,
+   "violations_moon_same_encounters": 0,
+   "violations_mars_same_encounters": 0,
+   "delay_s_nominal": {
+    "moon": {
+     "mean": null,
+     "ci": null,
+     "n": 0
+    },
+    "mars": {
+     "mean": null,
+     "ci": null,
+     "n": 0
+    },
+    "mars_minus_moon": {
+     "mean": null,
+     "ci": null,
+     "n": 0
+    }
+   }
+  },
+  "11": {
+   "n": 2000,
+   "violations_mars": 0,
+   "violations_by_kind_mars": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   },
+   "deadlocks_mars": 0,
+   "bound_mars": 0.0014967448951882512,
+   "not_driven_mars": 0,
+   "not_driven_moon_same_encounters": 0,
+   "paired_driven_both": 2000,
+   "violations_moon_same_encounters": 0,
+   "violations_mars_same_encounters": 0,
+   "delay_s_nominal": {
+    "moon": {
+     "mean": 69.435,
+     "ci": [
+      66.8301,
+      72.1489
+     ],
+     "n": 17
+    },
+    "mars": {
+     "mean": 69.438,
+     "ci": [
+      66.8355,
+      72.1548
+     ],
+     "n": 17
+    },
+    "mars_minus_moon": {
+     "mean": 0.0029,
+     "ci": [
+      0.0,
+      0.0088
+     ],
+     "n": 17
+    }
+   }
+  },
+  "12": {
+   "n": 2000,
+   "violations_mars": 0,
+   "violations_by_kind_mars": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   },
+   "deadlocks_mars": 0,
+   "bound_mars": 0.0025067593897433182,
+   "not_driven_mars": 400,
+   "not_driven_moon_same_encounters": 149,
+   "paired_driven_both": 1482,
+   "violations_moon_same_encounters": 0,
+   "violations_mars_same_encounters": 0,
+   "delay_s_nominal": {
+    "moon": {
+     "mean": null,
+     "ci": null,
+     "n": 0
+    },
+    "mars": {
+     "mean": null,
+     "ci": null,
+     "n": 0
+    },
+    "mars_minus_moon": {
+     "mean": null,
+     "ci": null,
+     "n": 0
+    }
+   }
+  }
+ },
+ "road_coordination": {
+  "atc_mars_equals_moon": true,
+  "delay_mean_h": {
+   "moon_2028": {
+    "uncoordinated_minus_atc": {
+     "mean": 63.5169,
+     "ci": [
+      58.3857,
+      68.7802
+     ],
+     "n": 30
+    },
+    "atc_mean": 15.546
+   },
+   "moon_2038": {
+    "uncoordinated_minus_atc": {
+     "mean": 82.9315,
+     "ci": [
+      75.8657,
+      89.6707
+     ],
+     "n": 30
+    },
+    "atc_mean": 15.546
+   },
+   "mars_rtt6_norelay": {
+    "uncoordinated_minus_atc": {
+     "mean": 10.3618,
+     "ci": [
+      7.8422,
+      13.0887
+     ],
+     "n": 30
+    },
+    "hand_conflicts_mean": 95.63,
+    "hand_wait_h_mean": 747.6
+   },
+   "mars_rtt20_norelay": {
+    "uncoordinated_minus_atc": {
+     "mean": 11.1239,
+     "ci": [
+      8.5018,
+      14.0386
+     ],
+     "n": 30
+    },
+    "hand_conflicts_mean": 93.97,
+    "hand_wait_h_mean": 771.6
+   },
+   "mars_rtt44_norelay": {
+    "uncoordinated_minus_atc": {
+     "mean": 10.7865,
+     "ci": [
+      8.7725,
+      12.8282
+     ],
+     "n": 30
+    },
+    "hand_conflicts_mean": 96.47,
+    "hand_wait_h_mean": 836.2
+   },
+   "mars_rtt6_relay": {
+    "uncoordinated_minus_atc": {
+     "mean": 8.2233,
+     "ci": [
+      6.03,
+      10.5056
+     ],
+     "n": 30
+    },
+    "hand_conflicts_mean": 89.97,
+    "hand_wait_h_mean": 478.9
+   },
+   "mars_rtt20_relay": {
+    "uncoordinated_minus_atc": {
+     "mean": 8.6811,
+     "ci": [
+      6.3198,
+      11.2496
+     ],
+     "n": 30
+    },
+    "hand_conflicts_mean": 92.1,
+    "hand_wait_h_mean": 516.7
+   },
+   "mars_rtt44_relay": {
+    "uncoordinated_minus_atc": {
+     "mean": 6.3727,
+     "ci": [
+      4.245,
+      8.741
+     ],
+     "n": 30
+    },
+    "hand_conflicts_mean": 97.9,
+    "hand_wait_h_mean": 533.7
+   }
+  },
+  "atc_urgent_wait_mean_cens_h": {
+   "moon_2028": {
+    "uncoordinated_minus_atc": {
+     "mean": 44.6523,
+     "ci": [
+      36.0645,
+      53.8748
+     ],
+     "n": 30
+    },
+    "atc_mean": 14.52
+   },
+   "moon_2038": {
+    "uncoordinated_minus_atc": {
+     "mean": 67.3151,
+     "ci": [
+      57.8583,
+      76.9249
+     ],
+     "n": 30
+    },
+    "atc_mean": 14.52
+   },
+   "mars_rtt6_norelay": {
+    "uncoordinated_minus_atc": {
+     "mean": 7.6863,
+     "ci": [
+      3.6561,
+      12.8051
+     ],
+     "n": 30
+    },
+    "hand_conflicts_mean": 95.63,
+    "hand_wait_h_mean": 747.6
+   },
+   "mars_rtt20_norelay": {
+    "uncoordinated_minus_atc": {
+     "mean": 8.71,
+     "ci": [
+      4.6625,
+      13.9805
+     ],
+     "n": 30
+    },
+    "hand_conflicts_mean": 93.97,
+    "hand_wait_h_mean": 771.6
+   },
+   "mars_rtt44_norelay": {
+    "uncoordinated_minus_atc": {
+     "mean": 6.8759,
+     "ci": [
+      3.5473,
+      10.7739
+     ],
+     "n": 30
+    },
+    "hand_conflicts_mean": 96.47,
+    "hand_wait_h_mean": 836.2
+   },
+   "mars_rtt6_relay": {
+    "uncoordinated_minus_atc": {
+     "mean": 4.9055,
+     "ci": [
+      2.0162,
+      8.4431
+     ],
+     "n": 30
+    },
+    "hand_conflicts_mean": 89.97,
+    "hand_wait_h_mean": 478.9
+   },
+   "mars_rtt20_relay": {
+    "uncoordinated_minus_atc": {
+     "mean": 5.66,
+     "ci": [
+      2.7018,
+      9.0375
+     ],
+     "n": 30
+    },
+    "hand_conflicts_mean": 92.1,
+    "hand_wait_h_mean": 516.7
+   },
+   "mars_rtt44_relay": {
+    "uncoordinated_minus_atc": {
+     "mean": 4.2265,
+     "ci": [
+      1.0573,
+      8.6583
+     ],
+     "n": 30
+    },
+    "hand_conflicts_mean": 97.9,
+    "hand_wait_h_mean": 533.7
+   }
+  }
+ },
+ "headline": {
+  "violations_mars_all_types": 11,
+  "violations_mars_excluding_type9": 0,
+  "type9_dead_stop_violations_mars": 11,
+  "type9_dead_stop_violations_moon_same_encounters": 11,
+  "deadlocks_mars": {
+   "5": 70,
+   "6": 2
+  },
+  "type1_not_driven_share_mars": 0.747,
+  "type1_not_driven_share_moon": 0.252,
+  "steepest_holdable_downhill_deg_mars": 7.7,
+  "rule_delay_nominal_mars_over_moon": 1.0,
+  "rule_delay_nominal_s": {
+   "mars": 67.0,
+   "moon": 66.9,
+   "n": 4411
+  },
+  "uncoordinated_penalty_delay_h": {
+   "mars_rtt20_norelay": 11.1239,
+   "moon_2028": 63.5169,
+   "moon_2038": 82.9315,
+   "mars_over_moon_2028": 0.175
+  },
+  "atc_mars_equals_moon": true
+ },
+ "second_geometry": {
+  "done": false,
+  "why_not": "the terrain code reads PGDA LOLA polar-stereographic tiles with the lunar radius; a HiRISE DTM (PDS IMG/GeoTIFF, equirectangular, ~1 m/px, hundreds of MB per tile) needs a new reader and projection, and a Jezero base needs its own sites, pads and route network before E43-style runs can use it; together more than a day, so the controlled case only"
+ }
+}

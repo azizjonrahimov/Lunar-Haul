@@ -1108,7 +1108,7 @@ McAfee, charger hogging, false availability, cherry-picking. E46 at 3 owners (eq
 Output `results/E48_sizing.json` + a table per vehicle class ("what's inside": software parts, CPU, memory,
 radio, power estimate, each value measured / derived / assumed).
 
-## B-82 [QUEUED] Mars part of P2 (E47)
+## B-82 [DONE 30 Oct] Mars part of P2 (E47)
 Same rules, safety check and encounter types with Mars parameters: g = 3.71 m/s2 in braking and slope terms;
 round trip 6-44 min (sweep 6, 20, 44); solar-conjunction blackout ~14 days a year (no Earth contact at all); no
 relay in the base case, one relay as a variant; dust storms as comms-loss bursts (assumed). Terrain: reuse the

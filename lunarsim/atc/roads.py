@@ -43,7 +43,17 @@ ROADS_FILE = os.path.join(ROOT, "data", "atc", "connecting_ridge", "roads-v1.jso
 SAMPLES_FILE = os.path.join(ROOT, "data", "comms", "connecting_ridge", "earth_link-v1-samples.json.gz")
 DEFAULTS = {"r7": False, "mode": "atc", "single_share": 0.15, "bay_km": 1.0, "apron_slots": 2, "t_hand": 2.0,
             "eva": {"per_week": 2, "duration_h": 6.0, "first_h": 30.0, "zone_km": 0.05, "v_crew_kmh": 1.0},
-            "start_year": None}
+            "start_year": None, "planet": "moon", "mars": None}
+# Mars (B-82, E47): Earth contact for hand-resolution of an uncoordinated conflict. Flags: S = Spec, A = Assumed.
+MARS_DEFAULTS = {
+    "rtt_min": 20.0,                  # one of 6, 20, 44 min; S (light time 3-22 min each way)
+    "relay": False,                   # base: direct to Earth only; variant: one areostationary relay (continuous); A
+    "sol_h": 24.6597,                 # S (mean solar day)
+    "dte_fraction": 0.5,              # share of each sol with Earth above the horizon at the base; A
+    "conjunction_start_d": 200.0,     # day of the year the solar-conjunction blackout starts; A (fixed date)
+    "conjunction_days": 14.0,         # S/A (~2 weeks of no contact per conjunction; B-82 spec: ~14 days a year)
+    "storms": [[90.0, 5.0], [270.0, 5.0]],   # [start day, days] dust storms as comms-loss bursts; A (B-82 spec)
+}
 SINGLE_SHARE_FLAG = ("ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; "
                      "the narrowest places at a 10 deg slope limit are marked first")
 _CACHE: Dict[str, Any] = {}
@@ -172,11 +182,17 @@ class RoadLayer:
         e = c["eva"]
         step = 168.0 / max(1e-9, float(e["per_week"]))
         self.eva = [(t, t + float(e["duration_h"])) for t in np.arange(float(e["first_h"]), H, step)] if e["per_week"] else []
-        y = c["start_year"] if c["start_year"] is not None else int(sim.mech_kwargs.get("start_year", 2028))
-        from .regimes import LINK_V1, LINK_V3, _earth_link
-        from ..comms import _Windows, file_year_start_h
-        el = _earth_link(LINK_V1 if y <= 2031 else LINK_V3)
-        self.dte = _Windows(el, "BASE", "any_part", "dte", file_year_start_h(el.doc["time"]["start_utc"], el.horizon_h, int(y)))
+        if c["planet"] == "mars":
+            m = dict(MARS_DEFAULTS)
+            m.update(c.get("mars") or {})
+            c["mars"] = m
+            self.dte = None
+        else:
+            y = c["start_year"] if c["start_year"] is not None else int(sim.mech_kwargs.get("start_year", 2028))
+            from .regimes import LINK_V1, LINK_V3, _earth_link
+            from ..comms import _Windows, file_year_start_h
+            el = _earth_link(LINK_V1 if y <= 2031 else LINK_V3)
+            self.dte = _Windows(el, "BASE", "any_part", "dte", file_year_start_h(el.doc["time"]["start_utc"], el.horizon_h, int(y)))
         self._covered = None
         self._cover_memo: Dict[Tuple[str, float], float] = {}
         self._mast_seen = None
@@ -227,8 +243,35 @@ class RoadLayer:
         return self._cover_memo[k]
 
     def _hand_until(self, t: float) -> float:
+        if self.dte is None:                                   # Mars: contact, then staff time and the round trip
+            m = self.cfg["mars"]
+            return self._mars_next_contact(t) + float(self.cfg["t_hand"]) + float(m["rtt_min"]) / 60.0
         up, dt = self.dte.next_change(t)
         return t + (0.0 if up else dt) + float(self.cfg["t_hand"])
+
+    def _mars_next_contact(self, t: float) -> float:
+        """First time >= t with Earth contact from the Mars base: not in the conjunction blackout or a dust storm, and
+        (without relay) Earth above the horizon (the first dte_fraction of each sol)."""
+        m = self.cfg["mars"]
+        blocks = [(float(m["conjunction_start_d"]) * 24.0, float(m["conjunction_days"]) * 24.0)]
+        blocks += [(float(a) * 24.0, float(d) * 24.0) for a, d in m["storms"]]
+        sol = float(m["sol_h"])
+        for _ in range(1000):
+            moved = False
+            for a, d in blocks:
+                yr = 8766.0
+                tt = t % yr
+                if a <= tt < a + d:                            # repeats every year
+                    t += a + d - tt
+                    moved = True
+            if not m["relay"]:
+                ph = t % sol
+                if ph >= sol * float(m["dte_fraction"]):
+                    t += sol - ph
+                    moved = True
+            if not moved:
+                return t
+        return t
 
     def _eva_extra(self, a: str, b: str, t0: float, t1: float) -> float:
         e = self.cfg["eva"]

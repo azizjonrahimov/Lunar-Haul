@@ -7029,3 +7029,52 @@ Title, abstract and keywords are read from `paper/r1/paper.html` (tracked) at bu
 - Headless Chrome (profile on D:, removed): /paper/ light and dark at 1280 and 390 px, 390 = 390, no console errors. C: had 789 MB free and RAM 0.91 GB before the build.
 
 **Next:** idle. F-55 waits for B-79 and the Mars toggle for B-82.
+
+## B-82 DONE 30 Oct (E47, the Mars part of P2, exploratory H9; plus B-83 sandbox) | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+The design is in data/scenarios/E47-design.json, committed (afd4426) before the first row. Key numbers: results/E47_fit.json "headline".
+
+### Encounters: E44's 12 types at g = 3.71 m/s², lunar vehicles, E44's seeds (paired)
+- **Size:** 2,000 encounters per type, 12,000 for types 1 and 7 (36,000 in all).
+- **Violations:** 0 in every type except type 9: 11 dead-stop violations, the same 11 as on the Moon for the same encounters (R1's leader-braking assumption, as in E44).
+- **Deadlocks:** T5 70 (ring, R3); T6 2 (junction at the zone line). Both are the Moon's mechanisms.
+- **Bounds:** 1.5e-3 per type at n = 2,000.
+- **Rule delay for nominal planners,** paired encounters driven and finished on both bodies (n = 4,411): Mars 67.0 s against Moon 66.9 s, a ratio of 1.00.
+- **New Mars finding:** the lunar vehicles' 0.5 m/s² service brake cannot hold a Mars downhill steeper than 7.7°, so R2 forbids those slopes.
+  - 74.7 % of type-1 draws are not drivable on Mars, against 25.2 % on the Moon.
+  - Mars vehicles need brakes sized for Mars gravity.
+
+### Road coordination: E43 at 1× with a Mars Earth link (7 cells × 30 seeds)
+- **Control:** the ATC runs are byte-equal to E43's ATC runs (Earth-independent), so they serve as the paired control.
+- **Uncoordinated − ATC, delay per delivery** (h, mean [95 % CI]):
+
+  | round trip | no relay | areostationary relay |
+  |---|---|---|
+  | 6 min | 10.4 [7.8, 13.1] | 8.2 [6.0, 10.5] |
+  | 20 min | 11.1 [8.5, 14.0] | 8.7 [6.3, 11.2] |
+  | 44 min | 10.8 [8.8, 12.8] | 6.4 [4.2, 8.7] |
+
+- **Moon comparison** (E43): 63.5 [58.4, 68.8] h in 2028 and 82.9 [75.9, 89.7] h in 2038.
+- **H9's third clause fails in direction:** Earth-dependent coordination loses about 6× less on Mars, about 11 h against 63-83 h.
+  - A Mars base sees Earth every sol, while this polar lunar base has gaps of days in Earth visibility.
+  - The round trip hardly matters: hand-resolution is dominated by waiting for contact and by the 2 h of staff time.
+- **Second geometry (HiRISE Jezero):** not done. A new reader, projection, sites and road network would take more than a day (see the design file).
+
+### Files
+- **New:** tools/atc/run_e47.py, results/E47_{encounters.csv, bounds.json, bins.csv, fit.json, runs.csv}, results/E47_parts/.
+- **Changed:**
+  - lunarsim/atc/roads.py: Mars Earth link (MARS_DEFAULTS, `_mars_next_contact`); the Moon path is unchanged, and 8 E43 rows reran identical.
+  - lunarsim/atc/encounter_types.py: G_BUILD, default Moon; E44 is unchanged.
+  - tools/atc/run_e44.py: GRAVITY, DEFECTS_FILE.
+  - experiments/phase5/run_phase5.py: E47 cells.
+- **B-83 (already committed 42eadd8):** data/atc/encounter_sandbox/, tools/atc/sandbox.py, run_batch(shield=False).
+
+### How to test
+- `python tools/atc/run_e47.py analyse` rebuilds the E47 outputs from the parts and runs.
+- Full suite file by file: **45 files, 561 passed.**
+
+**Process note:** one E47 chunk overran the 600 s tool limit because its first batch of a type started on a default time estimate. It was moved to the background, and one more chunk ran beside it. All part files were checked complete, with one per batch. Estimates are now seeded from E44's.
+
+**FRONTEND:** nothing new.
+
+**Questions for LEAD:** none open. H9's clause 3 is reported as failing in direction.
