@@ -7567,3 +7567,59 @@ lunarsim/vv5.py, results/vv_phase5.json, tests/test_verification_phase5.py, .tea
 **Questions for LEAD:**
 1. Do you want the hand stop of the vehicle that goes first written into the engine's plan as well (roads._hand)? It would change positions in uncoordinated runs, which no reported experiment uses. Not done.
 2. Next per your order: the tranche-3 rows X2, X5, R3, R4, S4, T3, E4.
+
+## B-79 tranche 3 DONE 30 Oct (X2, X5, R3, R4, S4, T3, E4; the skip list judged by the ten-minute rule) | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**Overview:** results/vv_phase5.json has 186 rows: 159 passed, 10 failed, 17 skipped, 1 bias flag. Written at e63616c.
+- No engine or ATC code changed: only lunarsim/vv5.py and the tests.
+
+### Done, passing
+- **R3** (P3), knife edge, through tools/atc/mesh.py pair_profiles:
+  - a single ridge blocks the link iff its top is above the chord, 0 of 2,400 misclassified (ridge 0-6 m in 1 cm steps, 4 antenna pairs);
+  - the Fresnel ratio equals clearance / sqrt(λ d1 d2 / (d1 + d2)) to 8.9e-14.
+  - The model has no diffraction loss J(ν), so J(ν) is not checked; the basis says so.
+- **R4** (P3), E48's link budget:
+  - it reproduces from E48-design.json within the stored 0.1 kbit/s rounding;
+  - its rounded constants (FSPL −147.55 against the exact −147.5522; kT −174 against −173.975 dBm/Hz) move the SNR by at most 0.023 dB and the rates by at most 0.15 %;
+  - no class exceeds Shannon capacity.
+- **S4** (P2):
+  - (a) E45's model checker: 4 models pass and 3 mutations are caught (from E45_modelcheck.json);
+  - (b) closed-loop forward invariance: 16,875 initial states with the RSS gap (25 × 25 speed grid, gaps 1-3 × d_min, slopes 0/5/10°) × 1,500 steps, with an always-accelerating planner under the shield and the leader braking at up to B_MAX, then at B_MAX to a stop. 0 contacts.
+- **T3** (P2), "saturation flow, 10 Hz shield": a 12-vehicle platoon from standstill with full-acceleration planners gives 609.39 veh/h, against the shield's own equilibrium 609.46 (0.01 %).
+- **E4** (P1, P3):
+  - charge time before a trip = energy short / charging power, exact (the engine has no charging efficiency, η = 1);
+  - idle recharge = power × time up to capacity, exact.
+- **L5 was under ten minutes, so it was run.** It failed; see below.
+
+### Done, failing (traced; none is a code defect)
+- **T3 "saturation flow"** (the plan's v / (L + d_min(v, v))): 609.39 against 619.95, 1.7 % low.
+  - Each 0.1 s step the shield assumes the leader brakes at B_MAX within the step, so the steady gap is 12.539 m, not 12.259 m.
+  - The discrete formula matches to 0.01 % (the row above). This is a property of the 10 Hz shield.
+- **L5** (P1, learned bids monotone), against the total bid: the base bid rises with approach time by at least the smallest value of time, and does not depend on mass or battery.
+  - atc_bid_v1 (MLP) violates on 31.9 % of probes: approach 5,172, mass 3,718, battery 668 of 10,000 each.
+  - atc_bid_linear_v1 violates on 66.7 %: mass and battery in every probe. Its correction weights are mass_frac +1.28 (heavier bundles bid lower) and battery −1.39 (fuller packs bid higher).
+  - This is a property of the trained policies, which CEM tuned on urgent wait. I have not traced why those preferences help, and claim no mechanism.
+
+### Skipped (17 skipped rows in all; these with reasons)
+- **X2:** the browser has no ATC engine. Its safety program's parity on the E44 fixtures is FRONTEND's test.
+- **X5:** needs outside human reviewers.
+- **E4 solar:** the engine has no solar model.
+- **A4:** the CBBA guarantee is not applicable, as with A3.
+- **R6:** the relay is a coverage share, not an orbit.
+- **R8** (ten-minute rule): the published coverage values use other criteria and heights, so they would need matching case by case.
+- **L3** (ten-minute rule): the policy outputs a correction, not a cost prediction, so a target would need defining.
+- **V3, V4:** FRONTEND's scene.
+- **T4** (ten-minute rule): needs a new exponential, Markov-routing test hook in the road layer.
+
+### Files
+lunarsim/vv5.py, results/vv_phase5.json, tests/test_verification_phase5.py (17 tests), .team/inbox-backend.md, .team/reports.md.
+
+### How to test
+- run_phase5_tranche3() runs these rows (about 70 s, T3 54 s of it).
+- `python -m lunarsim.vv5` runs everything.
+
+**Failing rows now 10:** the 4 D10 pairings, S1 (c), S2 unholdable, S5 encounter deadlocks, T3 continuous formula, L5 × 2.
+
+**Questions for LEAD:**
+1. Keep T3's continuous-formula row and the two L5 rows as FAIL, like the others?
+2. What next? The B-79 plan rows are all done or skipped with reasons.

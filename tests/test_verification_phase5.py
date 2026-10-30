@@ -144,3 +144,12 @@ def test_trace_pair_index_and_positions():
         assert t["radio"][0][0] == idx["window"]["t0_h"] and len(t["radio"][0]) == 4
         assert all(len(e[3]) == len(t["fleet"]) for e in t["radio"][1:])
         assert set(t["summary"]) == {"urgent_items_waiting", "idle_robot_hours", "messages_per_hour", "earth_hand_hours"}
+
+
+# ------------------------------------------------------------------------------------------------ tranche 3
+def test_tranche3_fast_rows():
+    rows = V.check_r4_link_budget() + V.check_e4_charging()
+    bad = [(r["id"], r["sub"]) for r in rows if not r["passed"] and not r["skipped"]]
+    assert not bad
+    skips = V.check_tranche3_skipped() + V.check_x_not_possible()
+    assert all(r["skipped"] and not r["passed"] for r in skips)

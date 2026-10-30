@@ -2286,12 +2286,349 @@ def check_v_replay() -> List[Dict]:
     return rows
 
 
+def run_phase5_tranche3() -> List[Dict]:
+    rows: List[Dict] = []
+    for f in (check_r3_knife_edge, check_r4_link_budget, check_s4_invariance, check_t3_capacity, check_e4_charging,
+              check_l5_monotone, check_x_not_possible, check_tranche3_skipped):
+        rows += f()
+    return rows
+
+
 def run_phase5_batch3b() -> List[Dict]:
     rows: List[Dict] = []
     for f in (check_s1_separation, check_s2_injection, check_s3_minimal, check_s5_encounters, check_t1_single_lane,
               check_t2_deterministic, check_t5_s5_s6_s7_roads, check_v_replay):
         rows += f()
     return rows
+
+
+# ================================================================================================ tranche 3 (B-79)
+def check_r3_knife_edge() -> List[Dict]:
+    """R3: a single ridge of known height between two antennas, through the mesh builder's line-of-sight routine:
+    blocked iff the ridge top is above the chord; the first-Fresnel clearance ratio against r1 = sqrt(lambda d1 d2 /
+    (d1 + d2)). The model computes clearance and the Fresnel ratio, not a diffraction loss J(nu)."""
+    t0 = time.time()
+    MESH = _tool("mesh")
+    L, xm, half = 2000.0, 1000.0, 10.0
+    lam = MESH.C_LIGHT / MESH.FREQS_HZ[0]
+    Hs = np.round(np.arange(0.0, 6.0, 0.01), 6)
+    wrong, worst, n = 0, 0.0, 0
+    for ha, hb in ((2.5, 2.5), (2.5, 1.0), (1.0, 2.5), (10.0, 2.5)):
+        for H in Hs:
+            class Ridge:
+                @staticmethod
+                def height(x, y, _H=H):
+                    return np.where(np.abs(np.asarray(x) - xm) <= half + 1e-9, _H, 0.0) + 0.0 * np.asarray(y)
+            P = np.array([[0.0, 0.0], [L, 0.0]])
+            clear, ratio = MESH.pair_profiles(Ridge(), P, np.array([0]), np.array([1]), [(ha, hb)], radius_m=math.inf)
+            s = np.arange(1, int(math.ceil(L / MESH.STEP_M))) * (L / math.ceil(L / MESH.STEP_M))
+            ground = np.where(np.abs(s - xm) <= half + 1e-9, H, 0.0)
+            chord = ha + (hb - ha) * s / L
+            cl = chord - ground
+            r1 = np.sqrt(lam * s * (L - s) / L)
+            blocked_ref = bool(cl.min() <= 0)
+            wrong += blocked_ref != bool(clear[0, 0] <= 0)
+            worst = max(worst, abs(float(ratio[0, 0]) - float((cl / r1).min())) / max(1e-12, abs(float((cl / r1).min()))))
+            n += 1
+    return [_row("R3", "knife edge: blocking", "A single ridge blocks the link iff its top is above the chord", 0.0,
+                 float(wrong), 0.0, "cases", f"{n} cases: a 20 m wide ridge 0-6 m high (1 cm steps) midway on a 2 km flat "
+                 "path, antennas 2.5/2.5, 2.5/1.0, 1.0/2.5 and mast 10/2.5 m, through tools/atc/mesh.py pair_profiles",
+                 "analytic", "code verification", "V", "P2", ["P3"], mode="abs", source="ITU-R P.526 (single knife "
+                 "edge); geometry", t0=t0),
+            _row("R3", "knife edge: Fresnel ratio", "First-Fresnel clearance ratio at the worst point equals clearance / "
+                 "sqrt(lambda d1 d2 / (d1 + d2))", 0.0, worst, 1e-9, "rel", f"same {n} cases at {MESH.FREQS_HZ[0] / 1e9:g} "
+                 "GHz; largest relative difference. The model has no diffraction loss J(nu): a link needs clearance (and, "
+                 "when asked, a Fresnel ratio), so J(nu) is not checked", "analytic", "code verification", "V", "P2",
+                 ["P3"], mode="abs", source="ITU-R P.526", t0=t0)]
+
+
+def check_r4_link_budget() -> List[Dict]:
+    """R4: E48's link budget per class recomputed from its design file (arithmetic), its constants against the exact
+    ones, and the Shannon bound."""
+    t0 = time.time()
+    rd = json.load(open(_repo("data", "scenarios", "E48-design.json"), encoding="utf-8"))["radio"]
+    res = json.load(open(_repo("results", "E48_sizing.json"), encoding="utf-8"))["classes"]
+    c, kB = 299792458.0, 1.380649e-23
+    worst_arith, worst_const, worst_rate, over = 0.0, 0.0, 0.0, 0
+    lines = []
+    for cls, r in res.items():
+        f = rd["freq_ghz"][cls] * 1e9
+        pt = 10 * math.log10(rd["tx_power_w"][cls] * 1000.0)
+        fspl48 = 20 * math.log10(rd["worst_hop_m"]) + 20 * math.log10(f) - 147.55
+        noise48 = -174 + 10 * math.log10(rd["bandwidth_mhz"] * 1e6) + rd["noise_figure_db"]
+        snr48 = pt + 2 * rd["antenna_gain_dbi"] - fspl48 - noise48 - rd["implementation_margin_db"]
+        rate48 = rd["bandwidth_mhz"] * 1e3 * math.log2(1 + 10 ** (snr48 / 10))
+        worst_arith = max(worst_arith, abs(rate48 - r["link"]["worst_hop_kbps"]))
+        fspl = 20 * math.log10(4 * math.pi * rd["worst_hop_m"] * f / c)
+        n0 = 10 * math.log10(kB * 290.0 * 1000.0)
+        noise = n0 + 10 * math.log10(rd["bandwidth_mhz"] * 1e6) + rd["noise_figure_db"]
+        snr = pt + 2 * rd["antenna_gain_dbi"] - fspl - noise - rd["implementation_margin_db"]
+        rate = rd["bandwidth_mhz"] * 1e3 * math.log2(1 + 10 ** (snr / 10))
+        worst_const = max(worst_const, abs(snr - snr48))
+        worst_rate = max(worst_rate, abs(rate - rate48) / rate48)
+        cap = rd["bandwidth_mhz"] * 1e3 * math.log2(1 + 10 ** ((snr48 + rd["implementation_margin_db"]) / 10))
+        over += r["link"]["worst_hop_kbps"] > cap + 1e-9
+        lines.append(f"{cls} {r['link']['worst_hop_kbps']:.1f} kbit/s")
+    return [_row("R4", "arithmetic", "E48's link budget reproduces from its design file", 0.0, worst_arith, 0.05,
+                 "kbit/s", "per class: P_t + 2 G - FSPL - (kTB + NF) - margin, rate = B log2(1 + SNR), with E48's own "
+                 "constants; stored rates are rounded to 0.1 kbit/s: " + ", ".join(lines), "analytic",
+                 "code verification", "V", "P2", ["P3"], mode="abs", source="Friis 1946; Shannon 1948; tools/atc/run_e48.py",
+                 t0=t0, tol_src="half the stored rounding (0.1 kbit/s)"),
+            _row("R4", "constants", "E48's rounded constants against the exact ones (FSPL 20 log10(4 pi d f / c), kT at "
+                 "290 K)", 0.0, worst_const, 0.05, "dB", f"E48 uses -147.55 dB for 20 log10(4 pi / c) (exact "
+                 f"{20 * math.log10(4 * math.pi / c):.4f}) and -174 dBm/Hz for kT (exact {10 * math.log10(kB * 290 * 1000):.3f}); "
+                 f"largest SNR difference {worst_const:.4f} dB, rate difference {100 * worst_rate:.3f} %", "analytic",
+                 "code verification", "V", "P2", ["P3"], mode="abs", source="CODATA 2018 (k, c)", t0=t0,
+                 tol_src="half of E48's 0.1 dB SNR reporting precision"),
+            _row("R4", "Shannon bound", "No link carries more than B log2(1 + SNR)", 0.0, float(over), 0.0, "classes",
+                 f"{len(res)} classes; the stored rate against the capacity at the SNR before the implementation margin",
+                 "analytic", "code verification", "V", "P2", ["P3"], mode="abs", source="Shannon 1948", t0=t0)]
+
+
+def check_e4_charging() -> List[Dict]:
+    """E4: charge time = energy short / charging power (the engine has no charging efficiency: eta = 1), and idle
+    recharge = power x time up to capacity. The engine has no solar model, so the solar row is skipped."""
+    from . import dispatch
+    from .engine import Simulation, Job
+    from .scenario import Scenario
+    from .entities import Cargo
+    rows = []
+    t0 = time.time()
+    worst = 0.0
+    for frac in (0.0, 0.25, 0.6):
+        sc = Scenario(night_fraction=0.0, failures=False, other_duty_share=0.0)
+        sim = Simulation(sc, dispatch.pooled_greedy, seed=1)
+        v = sim.vehicles[0]
+        c = Cargo(10 ** 6, "NASA", 100.0, sim.world.pads[0], "BASE", 0.0, 0.0, 1, "A", "consumables")
+        job = Job([v], [c], ["BASE"])
+        dur, km, km_e, e_wh, _ = sim.job_plan(job, 0.0)
+        v.battery_wh = frac * e_wh
+        sim.waiting.append(c)
+        sim.all_cargo.append(c)
+        sim._start_job(job)
+        ref = dur + (e_wh - frac * e_wh) / (v.cls.charge_kw * 1000.0)
+        worst = max(worst, abs((v.busy_until - 0.0) - ref) / ref)
+    rows.append(_row("E4", "charge time", "Charge time before a trip = energy short / charging power", 0.0, worst, 1e-9,
+                     "rel", "first vehicle of the default fleet, a pad-to-BASE job needing e_wh with the pack at 0, 25 and "
+                     "60 % of it: busy time = planned hours + (e_wh - pack) / (charge_kw x 1000); the engine has no "
+                     "charging efficiency (eta = 1)", "analytic", "code verification", "V", "P2", ["P1", "P3"], mode="abs",
+                     source="lunarsim/engine.py", t0=t0))
+    t0 = time.time()
+    sim = Simulation(Scenario(night_fraction=0.0, failures=False, other_duty_share=0.0), dispatch.pooled_greedy, seed=1)
+    worst = 0.0
+    for v in sim.vehicles:
+        v.battery_wh = 0.1 * v.cls.battery_wh
+        v.busy_until = 0.0
+    dt = 3.0
+    sim._advance_to(dt)
+    for v in sim.vehicles:
+        ref = min(v.cls.battery_wh, 0.1 * v.cls.battery_wh + v.cls.charge_kw * 1000.0 * dt)
+        worst = max(worst, abs(v.battery_wh - ref) / ref)
+    rows.append(_row("E4", "idle recharge", "Idle recharge = charging power x time, up to capacity", 0.0, worst, 1e-9,
+                     "rel", f"every vehicle of the default fleet idle for {dt:g} h from 10 % of its pack", "analytic",
+                     "code verification", "V", "P2", ["P1", "P3"], mode="abs", source="lunarsim/engine.py", t0=t0))
+    r = _row("E4", "solar input", "Daily solar energy = eta A S cos i over the illumination file", float("nan"),
+             float("nan"), 0.0, "", "the engine has no solar power model (vehicles recharge at a fixed power when idle)",
+             "analytic", "code verification", "V", "P2", ["P1", "P3"], mode="abs", source="Kopp and Lean 2011")
+    r["skipped"] = "not applicable: no solar power model in the engine"
+    rows.append(r)
+    return rows
+
+
+def check_s4_invariance() -> List[Dict]:
+    """S4: (a) the bounded model checker (E45) proves the rule set on its instances and catches every mutation;
+    (b) closed-loop forward invariance by exhaustive grid: from every state with the RSS gap, a follower whose planner
+    always asks for full acceleration, under the shield, never touches a leader that brakes at up to B_MAX."""
+    from .atc import safety as S
+    rows = []
+    t0 = time.time()
+    mc = json.load(open(_repo("results", "E45_modelcheck.json"), encoding="utf-8"))
+    n_models = len(mc.get("models", {}))
+    n_mut = len(mc.get("mutations", {}))
+    ok = bool(mc.get("all_models_pass")) and bool(mc.get("all_mutations_caught"))
+    rows.append(_row("S4", "(a) model checker", "The bounded model checker proves the rules on its instances and catches "
+                     "every mutation (E45)", 1.0, float(ok), 0.0, "pass", f"results/E45_modelcheck.json: {n_models} "
+                     f"models (all pass: {mc.get('all_models_pass')}), {n_mut} mutations (all caught: "
+                     f"{mc.get('all_mutations_caught')}); step {mc.get('step_s')} s, cell {mc.get('cell_m')} m",
+                     "formal (bounded model checking)", "code verification", "V", "P1", ["P2"], mode="abs",
+                     source="Lamport 2002; lunarsim/atc/modelcheck.py", t0=t0))
+    t0 = time.time()
+    dt, steps = 0.1, 1500
+    coll, n_states, min_gap = 0, 0, math.inf
+    rng = np.random.default_rng(4)
+    for theta in (0.0, 5.0, 10.0):
+        b = float(S.b_guaranteed(theta, 0.3))
+        vmax = float(S.v_max_r2(theta, 0.3, 1e6, 2.8))
+        vr0, vl0, k = np.meshgrid(np.linspace(0, vmax, 25), np.linspace(0, vmax, 25), np.linspace(1.0, 3.0, 9),
+                                  indexing="ij")
+        vr, vl = vr0.ravel(), vl0.ravel()
+        gap = S.rss_dmin(vr, vl, b) * k.ravel()
+        N = len(vr)
+        n_states += N
+        brake_at = rng.uniform(0, 60, N)                # the leader cruises, then brakes at B_MAX to a stop
+        t = 0.0
+        for _ in range(steps):
+            al = np.where(t >= brake_at, -S.B_MAX, rng.uniform(-S.B_MAX, 0.05, N))
+            m = _move(v=vr, a_prop=np.full(N, 0.2), theta=np.full(N, theta), mu=np.full(N, 0.3),
+                      v_class=np.full(N, 2.8), sight=np.full(N, 1e6), gap_lead=gap, v_lead=vl,
+                      d_stop=np.full(N, np.inf), d_crew=np.full(N, np.inf))
+            a = S.safety_check(None, m).a
+            vr1, xr = S._after_step(vr, a, dt)
+            vl1, xl = S._after_step(vl, al, dt)
+            gap = gap - xr + xl
+            vr, vl = vr1, vl1
+            t += dt
+            min_gap = min(min_gap, float(gap.min()))
+            coll += int(np.sum(gap <= 0))
+    rows.append(_row("S4", "(b) closed loop", "Forward invariance: from every state with the RSS gap, an always-"
+                     "accelerating planner under the shield never touches its leader", 0.0, float(coll), 0.0,
+                     "contacts", f"{n_states:,} initial states (follower and leader speeds on a 25 x 25 grid up to the R2 "
+                     f"limit, gap 1-3 x the RSS minimum, slopes 0 / 5 / 10 deg, mu 0.3) x {steps} steps of {dt} s; "
+                     f"leader cruises with random braking up to B_MAX, then brakes at B_MAX to a stop; smallest gap "
+                     f"{min_gap:.3f} m", "formal (exhaustive grid)", "code verification", "V", "P2", ["P2"], mode="abs",
+                     source="Ames et al. 2019 (forward invariance); Shalev-Shwartz et al. 2017 (RSS)", t0=t0))
+    return rows
+
+
+def check_x_not_possible() -> List[Dict]:
+    out = []
+    for cid, name, why in (("X2", "Python against the browser engine on the ATC cells",
+                            "not possible: the browser has no ATC engine (web/sim.js is the frozen v2/v3 engine); the "
+                            "browser's ATC safety program is checked against the E44 fixtures by FRONTEND's tests"),
+                           ("X5", "Face validity review by outside reviewers",
+                            "not a computation: it needs reviewers outside the team watching replays (the owner's call)")):
+        r = _row(cid, "not possible", name, float("nan"), float("nan"), 0.0, "", why, "comparison to other models",
+                 "results robustness", "V" if cid == "X2" else "Val", "P2", ["P1", "P2", "P3"], mode="abs",
+                 source="verification_plan.md")
+        r["skipped"] = why
+        out.append(r)
+    return out
+
+
+def check_t3_capacity() -> List[Dict]:
+    """T3: saturation flow of a following lane. A platoon starts packed at standstill and every planner asks for full
+    acceleration, so only the safety program limits the gaps; at the R2 speed v the flow past a line far downstream is
+    v / (L_veh + d_min(v, v)), d_min the RSS minimum gap (with its static margin)."""
+    from .atc import encounter as E
+    from .atc import safety as S
+    t0 = time.time()
+    nv, X = 12, 2500.0
+    theta, mu, vcl = 0.0, 0.3, 2.8
+    b = float(S.b_guaranteed(theta, mu))
+    v = float(S.v_max_r2(theta, mu, 1e4, vcl))
+    y = E.lane_y(1)
+    pts = np.array([(0.0, y), (4000.0, y)])
+    s0, s = [], 300.0
+    for i in range(nv):
+        s0.append(s)
+        s -= E.VEH_L + float(S.rss_dmin(0.0, 0.0, b)) + 0.01
+    t_end = (X + 300.0) / v + 40.0 * nv + 200.0
+    sp = E.Spec(paths=[pts] * nv, v_class=[v] * nv, v0=[0.0] * nv, s0=s0, planner=[2] * nv, theta=theta, mu=mu,
+                priority=list(range(nv)), t_max=t_end, params={"t3": True})
+    bt = E.Batch([sp])
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        oc, tr = E.run_batch(bt, np.random.default_rng(3), record=[0])
+    steps = tr[0]
+    ts = np.array([st["t"] for st in steps])
+    ss = np.array([st["s"] for st in steps])                # (steps, nv)
+    cross = []
+    for k in range(nv):
+        j = np.flatnonzero(ss[:, k] >= X)
+        if len(j) == 0:
+            break
+        j = int(j[0])
+        f = (X - ss[j - 1, k]) / (ss[j, k] - ss[j - 1, k])  # linear within the 0.1 s step
+        cross.append(ts[j - 1] + f * (ts[j] - ts[j - 1]))
+    cross = np.array(cross)
+    hw = np.diff(cross)[2:]                                  # skip the first gaps (the platoon still forming)
+    q = 1.0 / float(hw.mean()) if len(hw) else float("nan")
+    ref = v / (E.VEH_L + float(S.rss_dmin(v, v, b)))
+    vl1, xl1 = S._after_step(np.array([v]), np.array([-S.B_MAX]), E.DT)
+    g_eq = float(S.rss_dmin(v, vl1[0], b)) + v * E.DT - float(xl1[0])     # the shield's equilibrium at 10 Hz
+    disc = _row("T3", "saturation flow, 10 Hz shield", "Saturation flow of a following lane with the shield's one-step "
+                "look-ahead = v / (L_veh + d_min(v, v - B_MAX dt) + v dt - x_lead(dt))", 3600.0 * v / (E.VEH_L + g_eq),
+                q * 3600.0, 0.01, "veh/h", f"same run; each 0.1 s step the shield assumes the leader brakes at B_MAX "
+                f"within the step, so the steady gap is {g_eq:.3f} m, not d_min(v, v) = {float(S.rss_dmin(v, v, b)):.3f} m",
+                "analytic", "code verification", "V", "P2", ["P2"], source="lunarsim/atc/safety.py _ok (R1)", t0=t0)
+    return [disc, _row("T3", "saturation flow", "Saturation flow of a following lane = v / (L_veh + d_min)", ref * 3600.0,
+                 q * 3600.0, 0.01, "veh/h", f"{nv} vehicles from standstill, every planner at full acceleration "
+                 f"(adversarial), flat, mu {mu}: v = {v:.3f} m/s (R2), L_veh {E.VEH_L} m, d_min(v, v) "
+                 f"{float(S.rss_dmin(v, v, b)):.2f} m; flow from the last {len(hw)} headways past s = {X:g} m "
+                 f"({len(cross)} vehicles crossed); violations in the run {int(oc.viol_contact[0] + oc.viol_gap[0])}. "
+                 "The continuous formula overstates the model's capacity by the shield's one-step look-ahead (row "
+                 "'saturation flow, 10 Hz shield' matches); a property of the 10 Hz shield, not a defect",
+                 "analytic", "code verification", "V", "P2", ["P2"], source="Daganzo 1997", t0=t0)]
+
+
+def check_l5_monotone(n: int = 10000) -> List[Dict]:
+    """L5: the learned correction never makes a robot bid less for a longer approach or a heavier bundle, or more for a
+    fuller battery: bid' = bid - urgency x g, so g must not rise with approach_h or mass_frac and not fall with battery
+    (finite differences on random probes inside the check vectors' feature ranges)."""
+    from .atc.learned import Policy, FEATURES
+    from .scenario import Scenario
+    sc0 = Scenario()
+    # the base bid rises with approach time by at least the smallest value of time (and the carrier's cost, ignored
+    # here): the correction may rise by up to that over the urgency weight per approach hour without lowering the bid
+    slack_per_h = min(sc0.vot_usd_per_h.values()) / sc0.urgency_usd_per_h
+    rows = []
+    for pid in ("atc_bid_v1", "atc_bid_linear_v1"):
+        t0 = time.time()
+        pol = Policy(_repo("data", "policies", pid + ".json"))
+        chk = json.load(open(_repo("data", "policies", pid + ".check.json"), encoding="utf-8"))
+        obs = np.array(chk["obs"], float)
+        lo, hi = obs.min(0), obs.max(0)
+        rng = np.random.default_rng(5)
+        X = lo + (hi - lo) * rng.random((n, len(FEATURES)))
+        viol, lines = 0, []
+        for feat, sign in (("approach_h", +1), ("mass_frac", +1), ("battery", -1)):
+            j = list(FEATURES).index(feat)
+            d = max(1e-3, 0.01 * (hi[j] - lo[j]))
+            X2 = X.copy()
+            X2[:, j] += d
+            dg = pol(X2) - pol(X)
+            allow = slack_per_h * d if feat == "approach_h" else 0.0
+            bad = int(np.sum(sign * dg > allow + 1e-12))  # the total bid falls with approach or mass, or rises with SOC
+            viol += bad
+            lines.append(f"{feat} {bad}")
+        share = viol / (3 * n)
+        rows.append(_row("L5", pid, f"Learned bid monotone in approach, mass and battery ({pid})", 0.0, share, 0.01,
+                         "share", f"{n:,} probes x 3 features inside the check vectors' ranges; bid' = bid - urgency x g, the "
+                         f"base bid rising with approach time by at least the smallest value of time (slack {slack_per_h:g} "
+                         "of g per approach hour) and not depending on mass or battery; violations by feature: "
+                         + ", ".join(lines) + ". A property of the trained policy (tuned by CEM on urgent wait), not of the "
+                         "code", "metamorphic testing", "referent validation", "Val", "P2", ["P1"],
+                         mode="abs", source="Chen et al. 2018", t0=t0,
+                         tol_src="research_notes/Lunar ATC/verification_plan.md section 3, row L5: <= 1 % of probes"))
+    return rows
+
+
+def check_tranche3_skipped() -> List[Dict]:
+    out = []
+    for cid, name, why in (
+            ("A4", "CBBA score at least half the optimum (small instances)",
+             "not applicable: the 50 % guarantee is CBBA's and the code is a sequential single-item auction (as A3)"),
+            ("R6", "Relay orbit period and visible fraction against SPICE",
+             "not applicable: the relay is modelled as a coverage share (B_EARTH_RELAY coverage p), not an orbit"),
+            ("R8", "Face validity of DTE coverage against published values",
+             "skipped by the ten-minute rule: the published values use other criteria and antenna heights, so a fair "
+             "comparison needs the prior-art note's criteria matched case by case"),
+            ("L3", "Calibration of predicted against realised costs",
+             "skipped by the ten-minute rule: the policy outputs a bid correction, not a cost or ETA prediction, so a "
+             "calibration target would have to be defined first"),
+            ("V3", "Positions between events on the route and on the ground in the 3D scene",
+             "FRONTEND's: the scene's interpolation and the wheel height above the DEM live in the browser"),
+            ("V4", "Sun, Earth and link lines drawn in the scene",
+             "FRONTEND's: the drawn directions and link lines live in the browser"),
+            ("T4", "Jackson network of single-lane segments",
+             "skipped by the ten-minute rule: it needs exponential traversal and Markov routing through a new test hook "
+             "in the road layer")):
+        r = _row(cid, "skipped", name, float("nan"), float("nan"), 0.0, "", why, "analytic", "code verification", "V",
+                 "P3", ["P1", "P2", "P3"], mode="abs", source="verification_plan.md")
+        r["skipped"] = why
+        out.append(r)
+    return out
 
 
 # ------------------------------------------------------------------------------------------------ run and write
@@ -2307,7 +2644,7 @@ def run_phase5_checks(batches=(1, 2, 3)) -> List[Dict]:
     if 2 in batches:
         rows += run_phase5_batch2()
     if 3 in batches:
-        rows += run_phase5_batch3() + run_phase5_batch3b()
+        rows += run_phase5_batch3() + run_phase5_batch3b() + run_phase5_tranche3()
     return rows
 
 

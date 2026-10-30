@@ -1066,7 +1066,7 @@ Steps:
    the oracle, the largest gain from any deviation and its cost to the system, money left to settle on Earth.
 Done when: tables, plus a plain one-line answer for hypothesis H5.
 
-## B-79 [batches 1-3 DONE 30 Oct; V1-V2 wait for B-80; plan tranche 3 rows not started] Verification: from 13 checks to about 110
+## B-79 [batches 1-3 + V1-V2 + tranche 3 DONE 30 Oct] Verification: from 13 checks to about 110
 Source: `research_notes/Lunar ATC/verification_plan.md` (60 checks, ~110 rows with sub-cases, each with formula,
 tolerance and source). Batch 1 (14 checks on the current engine: Little's law, P-K at three loads + M/D/1, Erlang C
 and M/D/c, Cobham priorities, extreme conditions, one-owner case, time-scale invariance, trace invariants,
