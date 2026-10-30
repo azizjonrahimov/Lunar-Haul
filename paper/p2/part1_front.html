@@ -10,9 +10,9 @@
 <!-- DRAFT 1 (30 Oct 2026), revised after an internal referee round. Draft 0 was written on 28 Oct while E43 ran;
      E43 (all cells, including 8x), E44 and E45 (B-78) have since run and their values are filled. Every result
      number is a {{P2-...}} placeholder filled by build_p2.py from the files listed in PLACEHOLDERS.md. Model
-     inputs (rule parameters, seeds, settings) are typed with their provenance flag. Sentences marked PENDING E47
-     depend on the Mars part (B-82), and those marked PENDING B-79 on the phase-5 verification checks; neither has
-     run. The abstract has four parts (purpose, method, results, impact) and build_p2.py checks that it has
+     inputs (rule parameters, seeds, settings) are typed with their provenance flag. The Mars part (E47, B-82) has
+     run and its values are filled; sentences marked PENDING B-79 depend on the phase-5 verification checks, which
+     have not. The abstract has four parts (purpose, method, results, impact) and build_p2.py checks that it has
      250-300 words; the introduction has no subsections; the methods state no results; the results interpret
      nothing (writing guide §7). -->
 
@@ -45,7 +45,7 @@
 <li><b>A parameterised rule set for lunar and Martian surface traffic</b> among vehicles of different owners, with each parameter traced to a source, a derivation or an assumption to be swept: separation from braking physics, single-lane reservations with an exit bay, landing closures, crew zones, lost-contact behaviour, a priority ladder in which owner identity never counts, and conformance.</li>
 <li><b>Three kinds of evidence for the same rules.</b> An exhaustive check of a discrete model against any planner with mutation tests, per-type statistical bounds from simulated encounters, and the delay the rules cost inside a year-long logistics model, all from one implementation of the safety check.</li>
 <li><b>A measured price of coordination.</b> The delay cost of the rules at one, two, four and eight times today's fleet, the congestion peak, and the cost of keeping conflicts on Earth instead of settling them on the Moon, on real terrain with the base's real Earth-link windows.</li>
-<li><b>The same rules on Mars.</b> Gravity, round-trip delay and conjunction blackouts changed, nothing else. <!-- PENDING E47 --></li>
+<li><b>The same rules on Mars.</b> Gravity, the Earth round trip and the conjunction changed, nothing else, with the lunar vehicles kept on purpose; every Mars encounter and run is paired with its lunar twin.</li>
 </ul>
 
 <p>Several things are outside this paper. Who gets which job, and how robots of different owners share jobs and lift together, is the subject of a companion paper [44]; here every cell uses the same pooled dispatcher, so only the road layer differs between runs. Payments and owners who misreport are the subject of another [45]; here every vehicle obeys the rules and reports its position honestly. The road graph is the base's route network, not a street plan; single-lane road is an assumed share of it. The rules handle vehicles and crew on foot, not landers in flight beyond the closure window, and not the dust a landing raises. The model checker covers a small model exhaustively and the encounter simulator covers twelve families; neither covers real sensors, and we say so in Section 7.</p>

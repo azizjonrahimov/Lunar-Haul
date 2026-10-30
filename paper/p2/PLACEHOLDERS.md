@@ -1,7 +1,7 @@
 # P2 placeholders (draft 0, 28 Oct 2026)
 
 `build_p2.py` fills every `{{P2-...}}` in `part1`-`part5` and fails on any unfilled placeholder and on any nan/inf.
-Keys whose experiment has not run (E44, E45, E47, the 8x cells of E43) are filled with a visible `[[PENDING ...]]`
+Keys whose experiment has not run (now only the B-79 checks) are filled with a visible `[[PENDING ...]]`
 marker only with `--allow-pending`. Families are written with `{m}` (fleet multiple 1, 2, 4, 8), `{y}` (start year
 2028, 2038), `SHARE{s}` (0, 5, 40 for the shares 0, 0.05, 0.40), `BAY{b}` (05, 2 for 0.5 and 2 km), `OWNER-{o}`
 (A, B, C) and `SINGLE-KM-{lim}` (15, 10, 8 degrees); the build maps a key to its family before checking it is listed.
@@ -59,9 +59,10 @@ Comparisons are named in `LABELS` of the build script; the analysis is `experime
 | P2-DEADLOCK-SCOPE-CLAUSE | `results/ATC_roads_rings.json` (`merge_m`; `by_share.{s}.rings`, `ring_lengths_m`, `raw_sample_cycles` for 0.05, 0.15, 0.4; BACKEND, B-78) | composed: the zero count is a property of the logistics model (unbounded bays); the ring question is undetermined from the samples; checked: counts match their length lists |
 | P2-E45-N-NODES | `lunarsim/atc/modelcheck.py` `X` (the road cells) | count |
 | P2-E45-DESIGN-SENTENCE, P2-E45-INTRO-CLAUSE, P2-E45-RESULTS-PARAGRAPH, P2-E45-DISCUSSION-CLAUSE, P2-E45-COMPUTE-SENTENCE | M = `results/E45_modelcheck.json` (`tools/atc/run_e45.py`): `models.{A,B,C,D}` (`states`, `transitions`, `K_max_steps_to_goal`, `seconds`, `peak_mb_traced`, the zero counts), `mutations.{R3_exit,R5_entry,R7_hold}` (`deadlock_states`, `cannot_reach_goal`, `livelock_sccs`, `deadlock_trace_length`, `violating_states`, `violation_kinds`, `counterexample_length`), `step_s`, `cell_m` | composed; checked: the four layouts and three mutations are the named ones, every layout passes, every mutation is caught. The results paragraph ends with the development counterexamples from `results/E45_development.json` (`items[].kind`; checked: the four known kinds) |
-| P2-E47-DESIGN-SENTENCE, P2-E47-GEOMETRY-SENTENCE, P2-E47-INTRO-CLAUSE, P2-E47-RESULTS-PARAGRAPH, P2-E47-DISCUSSION-CLAUSE, P2-E47-LIMITATION-SENTENCE | E47 files (B-82) | pending |
+| P2-E47-DESIGN-SENTENCE, P2-E47-GEOMETRY-SENTENCE, P2-E47-INTRO-CLAUSE, P2-E47-RESULTS-PARAGRAPH, P2-E47-DISCUSSION-CLAUSE, P2-E47-LIMITATION-SENTENCE | results/E47_fit.json, E47_bounds.json, E47_bins.csv, E47_runs.csv, data/scenarios/E47-design.json, E44_bounds.json (the lunar twins), table_E43_pairs.csv (the Moon comparison) | composed; every direction checked (H9 verdicts, the brake limit from the design, the Mars-over-Moon ratio, the per-conflict wait) |
 | P2-H7-ABSTRACT-CLAUSE, P2-CONCLUSION-SAFETY-CLAUSE | B (types with and without violations) and M (states summed over the layouts) | composed: how many types had no violation, the type-9 exception named, the exhaustive check's verdict |
-| P2-H9-ABSTRACT-CLAUSE, P2-CONCLUSION-MARS-CLAUSE | E47 | composed; pending |
+| P2-H9-ABSTRACT-CLAUSE, P2-CONCLUSION-MARS-CLAUSE | E47 (as above) | composed; the "times less" word is the rounded reciprocal of the Mars-over-Moon ratio, checked within 0.5 |
 | P2-REFERENCES | `NOTES.md` | numbered list |
 | TABLE:E43_cells, TABLE:E43_pairs, FIG:E43_density | C, P, C | built HTML |
 | TABLE:E44 | B `types.{k}` (Table 6: n, driven, effective n, violations by kind, Bonferroni bound, near misses, min margin, deadlocks, blocked by fault, emergency-brake rate) | built HTML; pending with the E44 keys |
+| TABLE:E47, TABLE:E47_link | results/E47_bounds.json `types.{k}` (Table 7, E44's columns at Mars gravity); results/E47_fit.json `road_coordination.delay_mean_h` and table_E43_cells.csv (Table 8: uncoordinated minus ATC by round trip and relay, with the Moon's two years) | built HTML; pending with the E47 keys |

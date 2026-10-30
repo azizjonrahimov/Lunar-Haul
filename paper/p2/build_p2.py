@@ -149,6 +149,14 @@ class R:
         self.e45d = jl(d45) if os.path.exists(d45) else None
         b44 = os.path.join(RES, "E44_bins.csv")                               # per-type parameter bins
         self.e44b = pd.read_csv(b44) if os.path.exists(b44) else None
+        # E47 (Mars, B-82): tools/atc/run_e47.py analyse -> bounds (E44's structure), fit (headline, road cells), bins
+        f47 = {k: os.path.join(RES, f"E47_{k}") for k in ("bounds.json", "fit.json", "bins.csv", "runs.csv")}
+        self.e47b = jl(f47["bounds.json"]) if os.path.exists(f47["bounds.json"]) else None
+        self.e47f = jl(f47["fit.json"]) if os.path.exists(f47["fit.json"]) else None
+        self.e47bins = pd.read_csv(f47["bins.csv"]) if os.path.exists(f47["bins.csv"]) else None
+        self.e47runs = pd.read_csv(f47["runs.csv"]) if os.path.exists(f47["runs.csv"]) else None
+        d47 = os.path.join(ROOT, "data", "scenarios", "E47-design.json")
+        self.e47d = jl(d47) if os.path.exists(d47) else None
 
     def cell(self, key, year=2028, **fmt):
         label = LABELS.get(key, key).format(**fmt)
@@ -477,10 +485,6 @@ def values(r: R, allow_pending: bool):
            "P2-H7-ABSTRACT-CLAUSE")
     e45 = ("P2-E45-N-NODES", "P2-E45-DESIGN-SENTENCE", "P2-E45-INTRO-CLAUSE", "P2-E45-RESULTS-PARAGRAPH",
            "P2-E45-DISCUSSION-CLAUSE", "P2-E45-COMPUTE-SENTENCE", "P2-CONCLUSION-SAFETY-CLAUSE")
-    e47 = ("P2-E47-DESIGN-SENTENCE", "P2-E47-GEOMETRY-SENTENCE", "P2-E47-INTRO-CLAUSE", "P2-E47-RESULTS-PARAGRAPH",
-           "P2-E47-DISCUSSION-CLAUSE", "P2-E47-LIMITATION-SENTENCE", "P2-H9-ABSTRACT-CLAUSE", "P2-CONCLUSION-MARS-CLAUSE")
-    for key in e47:
-        pend(key, "E47", "E47 (Mars, B-82) has not run")
 
     # ---- E44: the encounter simulator (results/E44_bounds.json, E44_defects.json; PREREG changes 6 and 8) -----
     def e44():
@@ -992,8 +996,344 @@ def values(r: R, allow_pending: bool):
         return s + "."
     fill("P2-CONCLUSION-SAFETY-CLAUSE", conclusion_safety_clause, "E44/E45")
 
+    # ---- E47: Mars (results/E47_fit.json, E47_bounds.json, E47_bins.csv, E47_runs.csv; data/scenarios/E47-design.json)
+    MARS_CELLS = ("mars_rtt6_norelay", "mars_rtt20_norelay", "mars_rtt44_norelay",
+                  "mars_rtt6_relay", "mars_rtt20_relay", "mars_rtt44_relay")
+    MARS_HEAD = "mars_rtt20_norelay"          # the headline cell: the middle round trip, no relay (the base case)
+    FRACTION = {2: "half", 3: "third", 4: "quarter", 5: "fifth", 6: "sixth", 7: "seventh", 8: "eighth"}
+
+    def e47():
+        """Readiness: every type at its designed n, every road cell with its 30 seeds, the design file present."""
+        if r.e47f is None or r.e47b is None or r.e47bins is None or r.e47runs is None:
+            raise Pending("E47 (Mars, B-82) has not run")
+        if r.e47d is None:
+            raise Pending("data/scenarios/E47-design.json is missing")
+        ty = r.e47b["types"]
+        want = r.e47d["encounters"]["n_per_type"]
+        missing = [k for k in range(1, 13) if str(k) not in ty]
+        if missing:
+            raise Pending(f"E47 types {missing} have no rows yet")
+        short = [k for k in range(1, 13) if ty[str(k)]["n"] < int(want[str(k)])]
+        if short:
+            raise Pending(f"E47 types {short} are below their designed n")
+        rc = r.e47f["road_coordination"]["delay_mean_h"]
+        for c in MARS_CELLS + ("moon_2028", "moon_2038"):
+            if c not in rc or int(rc[c]["uncoordinated_minus_atc"]["n"]) < 30:
+                raise Pending(f"E47 road cell {c} is incomplete")
+        return r.e47f, r.e47b
+
+    def t47(b, k):
+        return b["types"][str(k)]
+
+    def times(n):
+        return {1: "once", 2: "twice"}.get(int(n), f"{words(n)} times")
+
+    def e47_g():
+        return _fin(r.e47d["encounters"]["gravity_m_s2"]["value"])
+
+    def e47_brake_limits():
+        """Steepest downhill the service brake holds on each body: sin(theta) = b_service / g."""
+        import lunarsim.atc.safety as S
+        b = _fin(r.e47d["encounters"]["vehicles"]["service_braking_m_s2"])
+        mars = math.degrees(math.asin(b / e47_g()))
+        moon = math.degrees(math.asin(b / S.G_MOON))
+        check(abs(mars - r.e47f["headline"]["steepest_holdable_downhill_deg_mars"]) < 0.1,
+              "the Mars brake limit in the headline is the one computed from the design's brake and gravity")
+        return mars, moon
+
+    def e47_thetas(bins, k):
+        """Downhill angles of the driven bins of type k in a bins table ('theta=10.0; mu=0.3')."""
+        g = bins[(bins["type"] == k) & (bins["n_driven"] > 0)]
+        out = set()
+        for b in g["bin"]:
+            m = re.search(r"theta=([\d.]+)", str(b))
+            if m:
+                out.add(float(m.group(1)))
+        return sorted(out)
+
+    def e47_split(b):
+        zero = [k for k in range(1, 13) if t47(b, k)["violations"] == 0]
+        viol = [k for k in range(1, 13) if t47(b, k)["violations"] > 0]
+        return zero, viol
+
+    def e47_road():
+        """The six Mars cells and the two Moon cells of the same comparison, checked against E43's Table 5."""
+        f, b = e47()
+        rc = f["road_coordination"]["delay_mean_h"]
+        check(f["headline"]["atc_mars_equals_moon"] is True and f["road_coordination"]["atc_mars_equals_moon"] is True,
+              "the ATC mode's Mars runs equal E43's ATC runs (it never waits for Earth)")
+        for y in (2028, 2038):
+            p = r.pair("unc_atc", m=1, y=y)
+            m = rc[f"moon_{y}"]["uncoordinated_minus_atc"]
+            check(abs(m["mean"] - p["mean"]) < 0.05 and abs(m["ci"][0] - p["lo"]) < 0.5 and abs(m["ci"][1] - p["hi"]) < 0.5,
+                  f"E47's Moon comparison for {y} is E43's uncoordinated - atc pair")
+        check(len(r.e47runs) == 30 * (len(MARS_CELLS) + 1), "E47 ran seven road cells of 30 seeds")
+        return rc
+
+    def e47_ratio():
+        """Mars-over-Moon ratio of the uncoordinated mode's cost at the headline cell, against 2028."""
+        rc = e47_road()
+        ratio = rc[MARS_HEAD]["uncoordinated_minus_atc"]["mean"] / rc["moon_2028"]["uncoordinated_minus_atc"]["mean"]
+        check(abs(ratio - r.e47f["headline"]["uncoordinated_penalty_delay_h"]["mars_over_moon_2028"]) < 0.005,
+              "the headline Mars-over-Moon ratio is the one computed from the cells")
+        return ratio
+
+    def e47_less():
+        """H9's third clause judged on the intervals: every Mars cell below both Moon cells' lower limits (or above)."""
+        rc = e47_road()
+        moon_lo = min(rc["moon_2028"]["uncoordinated_minus_atc"]["ci"][0], rc["moon_2038"]["uncoordinated_minus_atc"]["ci"][0])
+        moon_hi = max(rc["moon_2028"]["uncoordinated_minus_atc"]["ci"][1], rc["moon_2038"]["uncoordinated_minus_atc"]["ci"][1])
+        less = all(rc[c]["uncoordinated_minus_atc"]["ci"][1] < moon_lo for c in MARS_CELLS)
+        more = all(rc[c]["uncoordinated_minus_atc"]["ci"][0] > moon_hi for c in MARS_CELLS)
+        if not (less or more):
+            raise Pending("H9 clause 3 is mixed across the Mars cells; the wording is not written for that case")
+        return less
+
+    def e47_times_less():
+        """'six times less': the rounded reciprocal of the ratio, only when the ratio is within 0.5 of that integer."""
+        inv = 1.0 / e47_ratio()
+        n = int(round(inv))
+        check(abs(inv - n) < 0.5 and 2 <= n <= 8, "the Mars cost is a whole number of times smaller, to the nearest")
+        return words(n), FRACTION[n]
+
+    def e47_per_conflict():
+        """Hours waited for Earth per conflict referred, Mars headline cell against the Moon's 2028 cell."""
+        rc = e47_road()
+        mars = rc[MARS_HEAD]["hand_wait_h_mean"] / rc[MARS_HEAD]["hand_conflicts_mean"]
+        u = r.cell("unc", 2028, m=1)
+        moon = u["road_hand_wait_h"] / u["road_hand_conflicts"]
+        check(mars < moon, "a referred conflict waits less for Earth on Mars than on the Moon")
+        return mars, moon, rc[MARS_HEAD], u
+
+    def e47_design_sentence():
+        f, b = e47()
+        d = r.e47d
+        n_enc = sum(int(v) for v in d["encounters"]["n_per_type"].values())
+        check(n_enc == sum(t47(b, k)["n"] for k in range(1, 13)), "the Mars encounter count is the design's")
+        ns = d["encounters"]["n_per_type"]
+        big = sorted(int(k) for k, v in ns.items() if int(v) != int(ns["2"]))
+        link = d["road_coordination"]["mars_link"]
+        rtts = d["road_coordination"]["rtt_min"]["values"]
+        storms = link["storms"]
+        check(len(set(st[1] for st in storms)) == 1, "the dust storms have one length")
+        return (f"E44's twelve types at g = {num(e47_g(), 2)}{NB}m/s<sup>2</sup> with the lunar vehicles unchanged, "
+                f"{cnt(ns['2'])} encounters per type and {cnt(ns[str(big[0])])} for types "
+                f"{' and '.join(str(k) for k in big)}, generated from E44's seeds so that each Mars encounter is paired "
+                f"with the lunar encounter of the same type, batch and index; and E43's ATC and uncoordinated cells at "
+                f"today's fleet, 2028, seeds 1&ndash;30, with a Mars Earth link: round trips of "
+                f"{', '.join(cnt(x) for x in rtts[:-1])} and {cnt(rtts[-1])} minutes, no relay or one areostationary "
+                f"relay, Earth in view for {pc(link['dte_fraction'], 0)} of each sol, a {cnt(link['conjunction_days'])}-day "
+                f"conjunction from day {cnt(link['conjunction_start_d'])} and {words(len(storms))} "
+                f"{words(storms[0][1])}-day dust storms as message loss, with the "
+                f"{words(d['road_coordination']['t_hand_h']['value'])} hours of staff time plus the round trip per "
+                f"referred conflict. {cnt(n_enc)} encounters and {cnt(len(r.e47runs))} runs in "
+                f"{words(len(MARS_CELLS) + 1)} cells.")
+    fill("P2-E47-DESIGN-SENTENCE", e47_design_sentence, "E47")
+
+    def e47_geometry_sentence():
+        f, b = e47()
+        if f["second_geometry"]["done"]:
+            raise Pending("the second Mars geometry ran; the sentence for that case is not written")
+        return ("a second geometry on a Mars site was planned and not run, because the terrain reader is written for "
+                "the lunar polar tiles and a Jezero base would need its own reader, sites and route network (Section 7).")
+    fill("P2-E47-GEOMETRY-SENTENCE", e47_geometry_sentence, "E47")
+
+    def e47_safety_facts():
+        """Shared by the intro, results, discussion and abstract: the violation and deadlock picture on Mars."""
+        f, b = e47()
+        j = e44()
+        zero, viol = e47_split(b)
+        zero44, viol44 = e44_split(j)
+        check(viol == viol44, "the Mars types with a violation are the Moon's")
+        check(all(t47(b, k)["violations_by_kind"]["viol_contact"] == 0 for k in range(1, 13)), "no contact on Mars")
+        h = f["headline"]
+        check(h["violations_mars_excluding_type9"] == sum(t47(b, k)["violations"] for k in zero),
+              "the headline's count outside type 9 is the table's")
+        for k in range(1, 13):
+            e = f["encounters"][str(k)]
+            check(e["violations_mars_same_encounters"] == e["violations_moon_same_encounters"],
+                  f"type {k}: the paired lunar encounters violated exactly where the Mars ones did")
+        dl = {k: t47(b, k)["outcomes"]["deadlock"] for k in range(1, 13) if t47(b, k)["outcomes"]["deadlock"] > 0}
+        dl44 = {k: t44(j, k)["outcomes"]["deadlock"] for k in range(1, 13) if t44(j, k)["outcomes"]["deadlock"] > 0}
+        check(set(dl) == set(dl44) == {5, 6}, "the deadlocking types on Mars are the Moon's two (the ring and the closure)")
+        check({int(k): v for k, v in h["deadlocks_mars"].items()} == dl, "the headline deadlock counts are the table's")
+        return zero, viol, dl, dl44
+
+    def e47_intro_clause():
+        f, b = e47()
+        zero, viol, dl, dl44 = e47_safety_facts()
+        mars_lim, moon_lim = e47_brake_limits()
+        t9 = t47(b, 9)
+        times, frac = e47_times_less()
+        s = (f"On Mars, with the lunar vehicles on the same roads, the safety program allowed no violation in "
+             f"{words(len(zero))} of the twelve types")
+        if viol == [9]:
+            s += (f" and, in the dead-stop type, the same {words(t9['violations'])} encounters that violated on the "
+                  f"Moon")
+        less = e47_less()
+        s += (f"; the rules' delay was the same to within a second, but coordination that depends on Earth lost "
+              f"{times} times {'less' if less else 'more'} than on the Moon, "
+              f"{'the opposite of' if less else 'as in'} the third clause of H9, because a Mars base sees Earth every "
+              f"sol. The lunar service brake cannot hold a Mars downhill steeper than {num(mars_lim, 1)}&deg; "
+              f"(Section 5.8).")
+        return s
+    fill("P2-E47-INTRO-CLAUSE", e47_intro_clause, "E47")
+
+    def e47_results_paragraph():
+        f, b = e47()
+        j = e44()
+        zero, viol, dl, dl44 = e47_safety_facts()
+        mars_lim, moon_lim = e47_brake_limits()
+        rc = e47_road()
+        h = f["headline"]
+        n_enc = sum(t47(b, k)["n"] for k in range(1, 13))
+        t9, t9m = t47(b, 9), t44(j, 9)
+        n_std = t47(b, 2)["n"]
+        bound_std = 1 - 0.05 ** (1 / n_std)
+        bonf_std = 1 - (0.05 / 12) ** (1 / n_std)
+        weighted = any(t47(b, k)["n_eff"] < t47(b, k)["n_driven"] - 1 for k in zero)
+        s = (f"The Mars part ran E44's twelve types at g = {num(e47_g(), 2)}{NB}m/s<sup>2</sup> with the lunar "
+             f"vehicles, {cnt(n_enc)} encounters paired with the lunar encounters of the same seeds, and E43's two "
+             f"road modes at today's fleet with a Mars Earth link (Tables 7 and 8). The safety program allowed no "
+             f"violation in {words(len(zero))} of the twelve types")
+        if viol == [9]:
+            gap = t9["violations_by_kind"]["viol_gap"]
+            check(gap == t9["violations"], "type 9's Mars violations are all gap violations")
+            s += (f"; in the dead-stop type the following vehicle closed below the required gap in {cnt(gap)} of "
+                  f"{cnt(t9['n'])} encounters, the same {words(gap)} encounters that violated on the Moon, and no "
+                  f"vehicle touched another.")
+        else:
+            s += "; " + e44_violating_clause(b, viol) + "."
+        s += (f" With no violation the bound at {cnt(n_std)} encounters is {sci(bound_std)} ({sci(bonf_std)} with the "
+              f"Bonferroni correction), {'larger' if weighted else 'the same'} at the effective n of the weighted "
+              f"types; type 9's Clopper&ndash;Pearson limit is {sci(t9['bound'])}, against {sci(t9m['bound'])} on the "
+              f"Moon at {words(round(t9m['n'] / t9['n']))} times the sample.")
+        check(abs(t9m["n"] / t9["n"] - round(t9m["n"] / t9["n"])) < 0.01, "the Moon's type-9 sample is a whole multiple")
+        s += (f" The ring deadlocked in {cnt(dl[5])} of {cnt(t47(b, 5)['n_driven'])} encounters "
+              f"({pc(dl[5] / t47(b, 5)['n_driven'], 1)}, against {pc(dl44[5] / t44(j, 5)['n_driven'], 1)} on the Moon) "
+              f"and the landing closure {times(dl[6])} in {cnt(t47(b, 6)['n_driven'])} "
+              f"({words(dl44[6])} in {cnt(t44(j, 6)['n_driven'])} on the Moon); no other type deadlocked.")
+        e1 = f["encounters"]["1"]
+        nd_m, nd_l, n1 = e1["not_driven_mars"], e1["not_driven_moon_same_encounters"], e1["n"]
+        check(abs(nd_m / n1 - h["type1_not_driven_share_mars"]) < 0.001
+              and abs(nd_l / n1 - h["type1_not_driven_share_moon"]) < 0.001,
+              "the type-1 undriven shares in the headline are the counts over n")
+        check(nd_m == t47(b, 1)["outcomes"]["not_driven"], "the fit's undriven count is the bounds table's")
+        th_m, th_l = e47_thetas(r.e47bins, 1), e47_thetas(r.e44b, 1)
+        check(bool(th_m) and max(th_m) <= mars_lim and bool(th_l) and max(th_l) <= moon_lim,
+              "every driven following encounter is on a slope the service brake holds")
+        check(nd_m > nd_l, "more following draws are undrivable on Mars than on the Moon")
+        s += (f" Of the {cnt(n1)} following draws, {cnt(nd_m)} ({pc(nd_m / n1, 1)}) could not be driven on Mars, "
+              f"because the vehicles' {num(r.e47d['encounters']['vehicles']['service_braking_m_s2'], 1)}{NB}m/s<sup>2</sup> "
+              f"service brake cannot hold a downhill steeper than {num(mars_lim, 1)}&deg; at Mars gravity, against "
+              f"{cnt(nd_l)} ({pc(nd_l / n1, 1)}) of the same draws on the Moon, where the limit is "
+              f"{num(moon_lim, 1)}&deg;; every Mars following encounter that was driven was "
+              f"{'on the flat' if th_m == [0.0] else 'on a slope of at most ' + num(max(th_m), 0) + '&deg;'}.")
+        rd = h["rule_delay_nominal_s"]
+        ratio = rd["mars"] / rd["moon"]
+        check(abs(ratio - h["rule_delay_nominal_mars_over_moon"]) < 0.01, "the rule-delay ratio is the headline's")
+        s += (f" For the {cnt(rd['n'])} paired encounters that nominal planners drove to the end on both bodies, the "
+              f"rules delayed the vehicles by {num(rd['mars'], 1)}{NB}s on Mars and {num(rd['moon'], 1)}{NB}s on the "
+              f"Moon, a ratio of {num(ratio, 2)}.")
+        c = lambda k: rc[k]["uncoordinated_minus_atc"]
+        hm = c(MARS_HEAD)
+        s += (f" The ATC mode does not wait for Earth, and its 30 Mars runs reproduced E43's ATC runs exactly. The "
+              f"uncoordinated mode cost {h_(hm['mean'], 1)} {ci(*hm['ci'], 1)} of delay per delivery above the ATC "
+              f"mode at a 20-minute round trip without a relay, {h_(c('mars_rtt6_norelay')['mean'], 1)} "
+              f"{ci(*c('mars_rtt6_norelay')['ci'], 1)} at 6 minutes and {h_(c('mars_rtt44_norelay')['mean'], 1)} "
+              f"{ci(*c('mars_rtt44_norelay')['ci'], 1)} at 44; with the relay {h_(c('mars_rtt6_relay')['mean'], 1)}, "
+              f"{h_(c('mars_rtt20_relay')['mean'], 1)} and {h_(c('mars_rtt44_relay')['mean'], 1)} (Table 8). On the "
+              f"Moon the same difference was {h_(c('moon_2028')['mean'], 1)} {ci(*c('moon_2028')['ci'], 1)} in 2028 "
+              f"and {h_(c('moon_2038')['mean'], 1)} {ci(*c('moon_2038')['ci'], 1)} in 2038 (Section 5.4); the Mars "
+              f"cost is {num(e47_ratio(), 2)} of the Moon's 2028 cost.")
+        pm, pl, mc, u = e47_per_conflict()
+        s += (f" The Mars fleet referred {cnt(mc['hand_conflicts_mean'])} conflicts a year to Earth and waited "
+              f"{h_(mc['hand_wait_h_mean'], 0)} for the decisions, {h_(pm, 1)} per conflict; the lunar fleet referred "
+              f"{cnt(u['road_hand_conflicts'])} and waited {h_(u['road_hand_wait_h'], 0)}, {h_(pl, 1)} per conflict.")
+        rdv = "holds" if 0.9 <= ratio <= 1.1 else "fails"
+        less = e47_less()
+        third = ("contradicted: it loses less in every Mars cell, with intervals that do not overlap the Moon's"
+                 if less else "supported in every Mars cell")
+        s += (f" H9's first clause holds in the same {words(len(zero))} types as H7 and fails in type 9 for the same "
+              f"encounters; its second, a similar rule cost, {rdv}; its third, that Earth-dependent coordination loses "
+              f"more on Mars, is {third}.")
+        return s
+    fill("P2-E47-RESULTS-PARAGRAPH", e47_results_paragraph, "E47")
+
+    def e47_discussion_clause():
+        f, b = e47()
+        rc = e47_road()
+        c = lambda k: rc[k]["uncoordinated_minus_atc"]
+        mars_lim, moon_lim = e47_brake_limits()
+        nr = [c(f"mars_rtt{x}_norelay") for x in (6, 20, 44)]
+        check(all(a["ci"][0] <= bb["ci"][1] and bb["ci"][0] <= a["ci"][1] for a in nr for bb in nr),
+              "the three round trips give costs whose intervals overlap")
+        check(all(c(f"mars_rtt{x}_relay")["mean"] < c(f"mars_rtt{x}_norelay")["mean"] for x in (6, 20, 44)),
+              "the relay lowers the mean cost at each round trip")
+        pm, pl, mc, u = e47_per_conflict()
+        e1 = f["encounters"]["1"]
+        less = e47_less()
+        _, frac = e47_times_less()
+        rd = f["headline"]["rule_delay_nominal_s"]
+        check(0.9 <= rd["mars"] / rd["moon"] <= 1.1, "the rules cost the same on Mars (nominal rule delay within 10 %)")
+        return (f"the rules held and cost the same, and the Earth-dependent mode lost "
+                f"{'about a ' + frac + ' of' if less else 'more than'} what it loses on the Moon, "
+                f"{h_(c(MARS_HEAD)['mean'], 1)} against {h_(c('moon_2028')['mean'], 1)}, "
+                f"{'the opposite of' if less else 'as in'} H9's third clause. The reason is in the Earth windows, not "
+                f"the round trip: the three round trips gave the same cost within their intervals, and the relay "
+                f"lowered the mean at each, while a Mars base sees Earth for half of every sol and the polar base "
+                f"loses it for days at a time [42], so a referred conflict waited {h_(pm, 1)} for a decision "
+                f"on Mars and {h_(pl, 1)} on the Moon. The one Mars-specific finding is about hardware: the lunar "
+                f"vehicles' service brake cannot hold a Mars downhill steeper than {num(mars_lim, 1)}&deg;, so "
+                f"{pc(e1['not_driven_mars'] / e1['n'], 0)} of the following draws were undrivable against "
+                f"{pc(e1['not_driven_moon_same_encounters'] / e1['n'], 0)} on the Moon; the rules forbid the slope "
+                f"rather than the vehicle, and vehicles for Mars need brakes sized for Mars gravity.")
+    fill("P2-E47-DISCUSSION-CLAUSE", e47_discussion_clause, "E47")
+
+    def e47_limitation_sentence():
+        f, b = e47()
+        d = r.e47d
+        n_std = t47(b, 2)["n"]
+        flags = d["road_coordination"]["mars_link_flags"]
+        check(all("Assumed" in flags[k] for k in ("dte_fraction", "conjunction_start_d", "storms")),
+              "the Earth-visibility fraction, the conjunction date and the storms are assumed")
+        return (f"The Mars part runs the same base, roads, routes and demand with Mars gravity, a Mars Earth link and "
+                f"the lunar vehicles; a Mars site with its own terrain, roads and vehicles was planned and not run, "
+                f"because the terrain reader is written for the lunar polar tiles; the share of each sol with Earth in "
+                f"view, the conjunction date and the dust storms are assumed; and at {cnt(n_std)} encounters per type "
+                f"the Mars bounds are {sci(1 - 0.05 ** (1 / n_std))}, weaker than the Moon's by the ratio of the samples.")
+    fill("P2-E47-LIMITATION-SENTENCE", e47_limitation_sentence, "E47")
+
+    def h9_abstract_clause():
+        f, b = e47()
+        zero, viol, dl, dl44 = e47_safety_facts()
+        check(viol == [9] and e47_less(), "the abstract's Mars clause describes the observed outcome")
+        times, frac = e47_times_less()
+        return f"On Mars the rules held and referral to Earth cost {times} times less."
+    fill("P2-H9-ABSTRACT-CLAUSE", h9_abstract_clause, "E47")
+
+    def conclusion_mars_clause():
+        f, b = e47()
+        zero, viol, dl, dl44 = e47_safety_facts()
+        check(viol == [9] and e47_less(), "the conclusion's Mars clause describes the observed outcome")
+        mars_lim, moon_lim = e47_brake_limits()
+        times, frac = e47_times_less()
+        return (f"On Mars the rules held, referral to Earth cost {times} times less, and lunar brakes cannot hold "
+                f"downhills past {num(mars_lim, 1)}&deg;.")
+    fill("P2-CONCLUSION-MARS-CLAUSE", conclusion_mars_clause, "E47")
+
     V["P2-REFERENCES"] = references()
-    T = {"E43_cells": table_cells(r), "E43_pairs": table_pairs(r), "E44": None}
+    T = {"E43_cells": table_cells(r), "E43_pairs": table_pairs(r), "E44": None, "E47": None, "E47_link": None}
+    try:
+        f47, b47 = e47()
+        T["E47"] = table_e47(r, b47)
+        T["E47_link"] = table_e47_link(r, f47)
+    except Pending as e:
+        if not allow_pending:
+            raise SystemExit(f"TABLE:E47 pending ({e}); rerun with --allow-pending to build a draft")
+        pending.append(f"TABLE:E47: {e}")
+        T["E47"] = '<p class="pending">[[PENDING E47: Table 7, Mars encounters per type]]</p>'
+        T["E47_link"] = '<p class="pending">[[PENDING E47: Table 8, the Mars Earth link]]</p>'
     try:
         T["E44"] = table_e44(r, e44())
     except Pending as e:
@@ -1034,8 +1374,8 @@ def table_cells(r: R):
                  "To Earth", "Earth wait (h)", "Deadlocks"], rows, cls="wide")
 
 
-def table_e44(r: R, j):
-    """Table 6: encounters per type with their bounds (results/E44_bounds.json)."""
+def table_e44(r: R, j, number=6, body="E44"):
+    """Table 6: encounters per type with their bounds (results/E44_bounds.json); Table 7 reuses it for E47."""
     rows = []
     for k in range(1, 13):
         t = j["types"][str(k)]
@@ -1049,7 +1389,7 @@ def table_e44(r: R, j):
                      sci(t["bonferroni_bound"]), cnt(t["near_misses"]), num(t["min_margin_m"], 1),
                      cnt(o["deadlock"]), cnt(o["blocked_by_fault"]), pc(t["emergency_brake_rate"], 1)])
     variant_note = ""
-    return _tab("Table 6. E44, encounters per type: generated, driven and effective n, hard violations (by kind), the "
+    return _tab(f"Table {number}. {body}, encounters per type: generated, driven and effective n, hard violations (by kind), the "
                 f"95{PCT} upper bound on the per-encounter violation probability with the Bonferroni correction over "
                 "the twelve types, near misses, the smallest clearance, deadlocks, encounters blocked by a fault and the "
                 "emergency-brake rate.",
@@ -1061,6 +1401,35 @@ def table_e44(r: R, j):
                 "under the importance weights of types 6, 7 and 9, which type 12 inherits from its type-7 draws. A "
                 "negative minimum margin is a contact. Deadlocks are judged only in encounters without a random "
                 "fuzzer." + variant_note)
+
+
+def table_e47(r: R, b):
+    """Table 7: the Mars encounters, E44's table at Mars gravity (results/E47_bounds.json)."""
+    return table_e44(r, b, number=7, body="E47 (Mars)")
+
+
+def table_e47_link(r: R, f):
+    """Table 8: the uncoordinated mode on Mars against the ATC mode, by round trip and relay, with the Moon's cells."""
+    rc = f["road_coordination"]["delay_mean_h"]
+    rows = []
+    for rtt in (6, 20, 44):
+        for relay in (False, True):
+            c = rc[f"mars_rtt{rtt}_{'relay' if relay else 'norelay'}"]
+            d = c["uncoordinated_minus_atc"]
+            rows.append(["Mars", cnt(rtt), "one areostationary" if relay else "none", cnt(d["n"]),
+                         num(d["mean"], 1), ci(*d["ci"], 1, unit=""), num(c["hand_conflicts_mean"], 1),
+                         num(c["hand_wait_h_mean"], 0)])
+    for y in (2028, 2038):
+        d = rc[f"moon_{y}"]["uncoordinated_minus_atc"]
+        u = r.cell("unc", y, m=1)
+        rows.append([f"Moon, {y}", f"2.6{NB}s", "&ndash;", cnt(d["n"]), num(d["mean"], 1), ci(*d["ci"], 1, unit=""),
+                     num(u["road_hand_conflicts"], 1), num(u["road_hand_wait_h"], 0)])
+    return _tab("Table 8. E47, the uncoordinated mode against the ATC mode at today's fleet: the paired difference in "
+                "mean delay per delivery (h, 95&#8239;% bootstrap interval over seeds), conflicts referred to Earth and "
+                "the hours waited for Earth, fleet totals per run, on Mars by round trip and relay and on the Moon in "
+                "the two E43 years (Section 5.4). The ATC mode's Mars runs equal its lunar runs.",
+                ["Body", "Round trip (min)", "Relay", "Seeds", "Uncoordinated &minus; ATC (h)", "95&#8239;% interval",
+                 "To Earth", "Earth wait (h)"], rows, cls="wide")
 
 
 def table_pairs(r: R):
