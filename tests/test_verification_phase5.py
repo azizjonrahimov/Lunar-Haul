@@ -88,3 +88,24 @@ def test_cargo_ids_unique_after_fix():
     V._run_quiet(sim)
     cnt = Counter(c.id for c in sim.all_cargo)
     assert len(sim.all_cargo) > 500 and max(cnt.values()) == 1
+
+
+# ------------------------------------------------------------------------------------------------ batch 3 (P3)
+def test_audit_and_k1_identities_on_one_run():
+    import gzip
+    M = V._tool("run_e46")
+    T = json.load(open(M.DESIGN, encoding="utf-8"))["posted_price"]["values_usd_per_tkm"]["3eq"]
+    base = json.load(gzip.open(M._name("3eq", 1, "pooled", None, 1.0, None), "rt"))
+    dev = json.load(gzip.open(M._name("3eq", 1, "dev", "B", 1.25, None), "rt"))
+    for rule in ("first", "second", "posted", "none"):
+        assert M.money(base, rule, T, dev_owner="A", k=1.0) == M.money(base, rule, T)
+    assert all(v == 0 for v in M.money(dev, "first", T, dev_owner="B", k=1.25, q=0.0)["fines"].values())
+    one = M.money(dev, "first", T, dev_owner="B", k=1.25, q=1.0, m=3.0)["fines"]["B"]
+    mis = sum(abs(0.25 * j["cost"] / len(j["carriers"]) * dev["eps"]["B"]) for j in dev["jobs"] for c in j["carriers"]
+              if c == "B")
+    assert one == pytest.approx(3.0 * mis, rel=1e-12)
+
+
+def test_x7_timer_is_bit_identical():
+    rows = V.check_x7_timing()
+    assert rows[0]["passed"]

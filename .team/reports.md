@@ -7390,3 +7390,42 @@ Analysis only, no new runs. Every existing field is identical, and E46_cells.csv
 - The skipped rows have simulated, error and rel_error as null.
 
 **Questions for LEAD:** none open.
+
+## F-55 CHECK FILE (B-79 batch 2) + F-54 E46 REFEREE BLOCKS DONE 11:55 | site/scripts/prepare-data.mjs, site/src/atc/main.js | how to check: below | from BACKEND: nothing | for LEAD: headless look at /atc/?
+- /verification/, data side only (the page's own reader, phase5.js, run in Node on results/vv_phase5.json at 1268b60): summary rows 122, passed 112, failed 4, skipped 6, bias_flags 1; the recount gives the same, mismatch empty, 0 format errors. Groups D 67/71 (1 bias), A 9/13, R 19/19, E 5/5, L 4/6, X 8/8. The 6 not-run rows (A1, A3, A4, A5, L1 teacher agreement, L2) each carry their reason. Fails: D10 pairing A_EARTH plan_ahead, A_EARTH strict, A_MOON, B_EARTH strict. Bias: D4 class 2. No page change; no browser run.
+- /atc/ market block: staging passes vs_none, transfers, settled_with_transfers, budget and second_price (note dropped) into atc/E46_summary.json. New, after the IR line: a paragraph ("alone" is a weak test because of the delay cost; no payments is the harder one) with per-company counts computed from the intervals (A above in 5 of 6 and below in 0; B above in 6; C below in 6); a table of each company against no payments (rule x company, both splits, mean and 95 % interval); a table of the Shapley transfers per company plus the row "Settled, including the Shapley transfers". Step 5 now says "the cash that had to change hands" and adds the posted-price settlement including the transfers (214.4 and 90.3 M USD). The honest table's column is now "Settled through Earth in cash". The operator's-balance note gains the first-price calibration gap (payouts against receipts per split) and the second-price shares (reserve and with-alternative). The per-coalition details box is kept.
+- Checks: every value rendered in Node from the staged file with num() stubbed; all finite and equal to the fit. Tests 31/31; budgets pages OK; /atc/ page JS 14.8 of 15 kB gz (was 14.0), data 3.2 of 5, lazy 14.9 of 15; /verification/ 9.3 of 10.
+- Not done: no browser look at /atc/ yet (waiting for LEAD's go). RAM 2.44 GB, C: 0.61 GB at 11:55. Note: 0.2 kB of JS headroom left on /atc/; the next addition there should drop the details box.
+
+## B-79 batch 3 part 1 DONE 30 Oct (P3 Section 3.6: payments, failover, timing) | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+Nine rows, all passing, all tagged P3. Each row's name is the wording P3 lists:
+- **A8 "(a) multiplier 1"**, "With every bid multiplier at 1, the market run reproduces the pooled auction exactly": 3 of 3 one-year runs identical by md5 (3eq seeds 1-2, 3uneq seed 1; loss 0, fixpoint).
+- **A8 "(b) one owner"**, the agreed wording: 0 violations on E46 3eq seed 1 with every vehicle and item owned by A.
+  - Budgets: none 0, posted 0, first −16.05 M (receipts 46.29 − payouts 62.34), second −22.10 M.
+  - The other owners' cash is 0, and A's cash equals − budget.
+- **A8 "(c) Shapley efficiency"**: 60 seed-splits, largest relative gap 7.4e-16.
+- **A8 "(d) k = 1, payments"**: 720 cases (60 pooled runs × 4 rules × 3 owners), largest difference 0.0 USD.
+- **A8 "(d) k = 1, physical run"**: owner A at k = 1.0 equals the honest run, all 2,358 jobs.
+- **A8 "(e) audit q = 0"**: largest fine 0.0 over 1,440 deviation runs × rules.
+- **A8 "(e) audit q = 1"**: fines equal m × Σ|ask − true cost| recomputed from the job log, largest relative gap 5.2e-15.
+- **A8 "(g) no job twice"**: 0 of 11,847 jobs in 5 one-year runs.
+  - C_LEADER at base MTBF 500 h, seeds 1-2: 27 base failures and recoveries.
+  - C_AUCTION with terrain radio at loss 0.10 and 0.40: on average 1.4 % of robots outside the mast's component.
+- **X7 "(f) E48 timer"**: the event list (1,398 events) and every item record are md5-identical with and without the timer.
+
+### File and tests
+- results/vv_phase5.json: 131 rows, 121 passed, 4 failed (the D10 pairings), 6 skipped, 1 bias flag. Written at 2d601e1.
+  - The batch-3 rows were appended to the batch 1-2 rows of 1268b60. The engine code is identical between the two (unchanged since 7247b8e).
+- tests/test_verification_phase5.py: 12 tests, all passing.
+
+### Files
+lunarsim/vv5.py, results/vv_phase5.json, tests/test_verification_phase5.py, .team/inbox-backend.md, .team/reports.md.
+
+### How to test
+- `python -m lunarsim.vv5` regenerates everything (about 15 min in 600 s chunks).
+- The batch-3 functions are run_phase5_batch3() in lunarsim/vv5.py (about 3.5 min).
+
+**FRONTEND:** 131 rows; 9 new A8/X7 rows.
+
+**Next:** batch 3 part 2, the plan's safety, traffic and replay checks (S1-S3, S5-S7, T1, T2, T5, V1, V2).

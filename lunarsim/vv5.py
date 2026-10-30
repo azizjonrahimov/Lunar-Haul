@@ -1434,6 +1434,257 @@ def run_phase5_batch2() -> List[Dict]:
     return rows
 
 
+# ================================================================================================ batch 3 (B-79)
+# P3's payment and timing checks (LEAD's list for P3 Section 3.6)
+
+def _tool(name):
+    for p in (_repo("tools", "atc"), _repo(), _repo("experiments", "phase5")):
+        if p not in sys.path:
+            sys.path.insert(0, p)
+    import importlib
+    return importlib.import_module(name)
+
+
+def _e46_runs():
+    import glob
+    import gzip
+    M = _tool("run_e46")
+    runs = {}
+    for f in sorted(glob.glob(os.path.join(M.PARTS, "*.json.gz"))):
+        tag = os.path.basename(f).split("_", 2)[2].replace(".json.gz", "")
+        if tag in ("pooled", "alone", "pair_AB", "pair_AC", "pair_BC") or tag.startswith("dev_"):
+            r = json.load(gzip.open(f, "rt"))
+            runs[(r["split"], r["seed"], tag)] = r
+    design = json.load(open(M.DESIGN, encoding="utf-8"))
+    return M, runs, design
+
+
+def check_a8_payments() -> List[Dict]:
+    """A8 for P3: (c) Shapley payoffs sum to the grand coalition's value on every seed; (d) asks scaled by k = 1.0
+    reproduce the honest payments exactly; (e) the audit charges nothing at q = 0 and m x |misreport| on every job
+    at q = 1. All on the stored E46 runs with run_e46's own payment code."""
+    t0 = time.time()
+    M, runs, design = _e46_runs()
+    T = design["posted_price"]["values_usd_per_tkm"]
+    m = float(design["audit_penalty_multiple"]["value"])
+    rows = []
+    worst, n = 0.0, 0
+    for (split, seed, tag), base in runs.items():
+        if tag != "pooled" or (split, seed, "alone") not in runs:
+            continue
+        v = {frozenset(): 0.0}
+        for o in M.OWNERS:
+            v[frozenset([o])] = M.owner_value(runs[(split, seed, "alone")], o)
+        for pr in itertools.combinations(M.OWNERS, 2):
+            v[frozenset(pr)] = M.coalition_value(runs[(split, seed, "pair_" + "".join(pr))], pr)
+        v[frozenset(M.OWNERS)] = M.coalition_value(base, M.OWNERS)
+        phi = M.shapley(v, M.OWNERS)
+        worst = max(worst, abs(sum(phi.values()) - v[frozenset(M.OWNERS)]) / abs(v[frozenset(M.OWNERS)]))
+        n += 1
+    rows.append(_row("A8", "(c) Shapley efficiency", "The Shapley payoffs sum to the grand coalition's value on every seed", 0.0,
+                     worst, 1e-9, "rel", f"{n} seed-splits of E46 (30 seeds x 3eq, 3uneq); coalition values from the "
+                     "stored runs (alone: A_MOON; pairs; grand: the pooled market); largest relative gap",
+                     "analytic", "code verification", "V", "P2", ["P3"], mode="abs",
+                     source="Shapley 1953 (efficiency); tools/atc/run_e46.py", t0=t0))
+    t0 = time.time()
+    worst, n = 0.0, 0
+    for (split, seed, tag), base in runs.items():
+        if tag != "pooled":
+            continue
+        for rule in ("first", "second", "posted", "none"):
+            ref = M.money(base, rule, T[split])
+            for o in M.OWNERS:
+                got = M.money(base, rule, T[split], dev_owner=o, k=1.0)
+                for key in ("profit", "cash", "fines"):
+                    for oo in M.OWNERS:
+                        worst = max(worst, abs(got[key][oo] - ref[key][oo]))
+                worst = max(worst, abs(got["budget"] - ref["budget"]))
+                n += 1
+    rows.append(_row("A8", "(d) k = 1, payments", "Asks scaled by k = 1.0 reproduce the honest payments exactly", 0.0,
+                     worst, 1e-9, "USD", f"{n} cases (60 pooled runs x 4 rules x 3 owners): largest |difference| over "
+                     "every owner's profit, cash flow, fine and the operator's budget", "degenerate tests",
+                     "code verification", "V", "P1", ["P3"], mode="abs", source="tools/atc/run_e46.py money()", t0=t0,
+                     tol_src="1e-9 USD absolute (the same arithmetic on the same floats)"))
+    t0 = time.time()
+    a = M.run_one("3eq", 1, "pooled")
+    b = M.run_one("3eq", 1, "dev", "A", 1.0)
+    same = json.dumps(a["jobs"]) == json.dumps(b["jobs"]) and a["owners"] == b["owners"]
+    rows.append(_row("A8", "(d) k = 1, physical run", "Asks scaled by k = 1.0 reproduce the honest payments exactly: the physical run with a deviating owner at k = 1.0 equals the honest run", 1.0,
+                     float(same), 0.0, "match", f"E46 3eq seed 1: owner A's asks x 1.0 against the pooled run; every job "
+                     f"(time, carriers, cost, items, alternatives) and every owner's delay and deliveries; "
+                     f"{len(a['jobs'])} jobs", "degenerate tests", "code verification", "V", "P1", ["P3"], mode="abs",
+                     source="lunarsim/atc/auction.py bid_mult hook", t0=t0))
+    t0 = time.time()
+    f0 = f1 = 0.0
+    n = 0
+    for (split, seed, tag), r in runs.items():
+        if not tag.startswith("dev_"):
+            continue
+        _, o, k = tag.split("_")
+        k = float(k)
+        for rule in ("first", "second"):
+            z = M.money(r, rule, T[split], dev_owner=o, k=k, q=0.0, m=m)
+            f0 = max(f0, max(abs(x) for x in z["fines"].values()))
+            one = M.money(r, rule, T[split], dev_owner=o, k=k, q=1.0, m=m)
+            mis = {oo: 0.0 for oo in M.OWNERS}
+            for j in r["jobs"]:
+                share = j["cost"] / len(j["carriers"])
+                for c in j["carriers"]:
+                    ask = share * r["eps"][c] * (k if c == o else 1.0)
+                    mis[c] += abs(ask - share * r["eps"][c])
+            f1 = max(f1, max(abs(one["fines"][oo] - m * mis[oo]) / max(1.0, m * mis[oo]) for oo in M.OWNERS))
+            n += 1
+    rows.append(_row("A8", "(e) audit q = 0", "The audit at q = 0 charges nothing and at q = 1 charges m times every misreport: q = 0", 0.0, f0, 0.0, "USD",
+                     f"{n} deviation runs x rules (first, second): largest fine at q = 0", "degenerate tests",
+                     "code verification", "V", "P1", ["P3"], mode="abs", source="tools/atc/run_e46.py money()", t0=t0))
+    rows.append(_row("A8", "(e) audit q = 1", "The audit at q = 0 charges nothing and at q = 1 charges m times every misreport: q = 1", 0.0, f1, 1e-9, "rel",
+                     f"{n} deviation runs x rules: each owner's fine against m = {m:g} times the sum over its jobs of "
+                     "|ask - true cost|, recomputed from the job log; largest relative gap", "analytic",
+                     "code verification", "V", "P1", ["P3"], mode="abs", source="tools/atc/run_e46.py money()", t0=t0))
+    return rows
+
+
+def check_x7_timing() -> List[Dict]:
+    """X7 (added, for P3): E48's round timer (a wrapper that reads perf_counter around each dispatch call, as in
+    tools/atc/run_e48.py) leaves the run bit-identical: every pushed event (time, kind) and every item record."""
+    from .engine import Simulation
+    from .atc import regimes as G
+    t0 = time.time()
+    E = _tool("run_e48")
+    sc = E._scen(1, 60)
+    out = []
+    for timed in (False, True):
+        mech = G.mechanism("C_AUCTION")
+        call = mech
+        if timed:
+            rounds = []
+
+            def call(sim, cand, free, _m=mech, **kw):
+                t1 = time.perf_counter()
+                r = _m(sim, cand, free, **kw)
+                rounds.append(time.perf_counter() - t1)
+                return r
+            for a in ("anticipates", "supports_team", "regime", "__name__"):
+                if hasattr(mech, a):
+                    setattr(call, a, getattr(mech, a))
+        sim = Simulation(sc, call, seed=1, mech_kwargs={"start_year": 2028, "loss": 0.10})
+        ev = []
+        real = sim._push
+
+        def push(t, kind, payload, _rp=real, _ev=ev):
+            _ev.append((float(t), kind))
+            return _rp(t, kind, payload)
+        sim._push = push
+        _run_quiet(sim)
+        out.append((hashlib.md5(json.dumps(ev).encode()).hexdigest(), _items_digest(sim), len(ev)))
+    return [_row("X7", "(f) E48 timer", "The E48 timers leave a run's event trace bit-identical to a run with timing off", 1.0,
+                 float(out[0][:2] == out[1][:2]), 0.0, "match", f"C_AUCTION + road layer (E48's 1x scenario), 60 days, "
+                 f"seed 1, loss 0.10: {out[0][2]:,} events; md5 of the event list {out[0][0][:12]} vs {out[1][0][:12]}, "
+                 f"of the item records {out[0][1][:12]} vs {out[1][1][:12]}", "degenerate tests", "code verification",
+                 "V", "P1", ["P3"], mode="abs", source="tools/atc/run_e48.py", t0=t0)]
+
+
+def check_a8_market_identities() -> List[Dict]:
+    """A8 for P3: (a) with every bid multiplier at 1 the market run reproduces the pooled auction; (b) the one-owner
+    market's money flows."""
+    from .engine import Simulation
+    from .atc import regimes as G
+    M = _tool("run_e46")
+    rows = []
+    t0 = time.time()
+    same, n = 0, 0
+    for split, seed in (("3eq", 1), ("3eq", 2), ("3uneq", 1)):
+        d = []
+        for mult in (None, {o: 1.0 for o in M.OWNERS}):
+            kw = {"loss": 0.0, "start_year": 2028}
+            if mult is not None:
+                kw["bid_mult"] = mult
+            sim = Simulation(M.scenario(split), G.mechanism("C_AUCTION"), seed=seed, mech_kwargs=kw)
+            _run_quiet(sim)
+            d.append(_items_digest(sim))
+        same += d[0] == d[1]
+        n += 1
+    rows.append(_row("A8", "(a) multiplier 1", "With every bid multiplier at 1, the market run reproduces the pooled "
+                     "auction exactly", float(n), float(same), 0.0, "runs identical", f"E46's scenario (p5, 30 % load, "
+                     "fixpoint), C_AUCTION, loss 0, with bid_mult {A: 1, B: 1, C: 1} against no hook; 3eq seeds 1-2 and "
+                     "3uneq seed 1, a year each; md5 of every item record (the hook is outcome-neutral when off)",
+                     "degenerate tests", "code verification", "V", "P1", ["P3"], mode="abs",
+                     source="lunarsim/atc/auction.py bid_mult hook", t0=t0))
+    t0 = time.time()
+    real = M.scenario
+
+    def one_owner(split, members=None, _r=real):
+        sc = _r(split, members)
+        return sc.with_(fleet=[("A",) + tuple(f[1:]) for f in sc.fleet], cargo_owners=["A"] * len(sc.cargo_owners),
+                        bulk_flows=[__import__("dataclasses").replace(b, owner="A") for b in sc.bulk_flows])
+    M.scenario = one_owner
+    try:
+        run = M.run_one("3eq", 1, "pooled")
+    finally:
+        M.scenario = real
+    T = json.load(open(M.DESIGN, encoding="utf-8"))["posted_price"]["values_usd_per_tkm"]["3eq"]
+    viol = 0
+    lines = []
+    for rule in ("none", "first", "second", "posted"):
+        x = M.money(run, rule, T)
+        others = abs(x["cash"]["B"]) + abs(x["cash"]["C"])
+        earth = abs(x["cash"]["A"] + x["budget"])
+        ident = abs(x["budget"] - (x["receipts"] - x["payouts"] + x["fines_total"]))
+        zero = abs(x["budget"]) if rule in ("none", "posted") else 0.0
+        viol += (others > 1e-6) + (earth > 1e-6) + (ident > 1e-6) + (zero > 1e-6)
+        lines.append(f"{rule}: budget {x['budget'] / 1e6:+.3f} M (receipts {x['receipts'] / 1e6:.3f} - payouts "
+                     f"{x['payouts'] / 1e6:.3f})")
+    rows.append(_row("A8", "(b) one owner", "With one owner there are no payments between owners under any rule; the "
+                     "operator's budget is zero under no payments and the posted price, and under first and second price "
+                     "it equals the tariff receipts less the payouts, all of it between that owner and Earth", 0.0,
+                     float(viol), 0.0, "violations", f"E46 3eq seed 1 with every vehicle and every item owned by A "
+                     f"({len(run['jobs'])} jobs); per rule: the other owners' cash 0, A's cash = - budget, budget = "
+                     f"receipts - payouts + fines, budget 0 under none and posted. " + "; ".join(lines),
+                     "degenerate tests", "code verification", "V", "P1", ["P3"], mode="abs",
+                     source="tools/atc/run_e46.py money()", t0=t0, tol_src="1e-6 USD absolute on each identity"))
+    return rows
+
+
+def check_a8_no_double_assignment() -> List[Dict]:
+    """(g) for P3: across base-computer failures and recoveries (C_LEADER, E48's failover settings) and across mesh
+    partitions (C_AUCTION, terrain radio), no cargo item is ever assigned to two jobs."""
+    t0 = time.time()
+    E = _tool("run_e48")
+    fo = E.DESIGN_DOC["failover"]
+    dup = jobs = merges = runs = 0
+    out_share = []
+    cells = [("C_LEADER", {"loss": 0.10, "base_mtbf_h": 500.0, "base_repair_h": fo["repair_h"],
+                           "reelect_h": fo["reelect_h"]}, s) for s in (1, 2)]
+    cells += [("C_AUCTION", {"loss": 0.10}, s) for s in (1, 2)] + [("C_AUCTION", {"loss": 0.40}, 3)]
+    for reg, kw, seed in cells:
+        sim = _p5_sim(reg, kw, seed=seed, days=365)
+        log = _job_log(sim)
+        out = _run_quiet(sim)
+        objs = [i for j in log for i in j["objs"]]
+        dup += len(objs) - len(set(objs))
+        jobs += len(log)
+        runs += 1
+        if reg == "C_LEADER":
+            merges += len(sim.atc.base_down)
+        else:
+            out_share.append(float(out.get("atc_robots_out_share", 0.0) or 0.0))
+    return [_row("A8", "(g) no job twice", "Across base-computer failures and recoveries and across mesh partitions, no "
+                 "cargo item is ever assigned to two jobs (the ledger itself is sized, not simulated)", 0.0, float(dup),
+                 0.0, "items", f"{runs} one-year runs: C_LEADER at base MTBF 500 h, repair {fo['repair_h']:g} h, "
+                 f"re-election {fo['reelect_h']:g} h, loss 0.10, seeds 1-2 ({merges} base failures and recoveries); "
+                 f"C_AUCTION with terrain radio at loss 0.10 (seeds 1-2) and 0.40 (seed 3), mean share of robots outside "
+                 f"the mast's component {np.mean(out_share):.3f}; {jobs:,} jobs, items keyed by object", "event validity",
+                 "code verification", "V", "P1", ["P3"], mode="abs", source="tools/atc/run_e48.py (failover)",
+                 exposure={"n": jobs, "unit": "jobs", "upper95": 1 - 0.05 ** (1 / max(jobs, 1))}, t0=t0)]
+
+
+def run_phase5_batch3() -> List[Dict]:
+    rows: List[Dict] = []
+    for f in (check_a8_market_identities, check_a8_payments, check_a8_no_double_assignment, check_x7_timing):
+        rows += f()
+    return rows
+
+
 # ------------------------------------------------------------------------------------------------ run and write
 def run_phase5_checks(batches=(1, 2)) -> List[Dict]:
     rows: List[Dict] = []
