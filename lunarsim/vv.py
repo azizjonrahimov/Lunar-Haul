@@ -363,6 +363,12 @@ def run_phase4_checks() -> List[Dict]:
     return [asdict(c) for c in checks]
 
 
+def run_phase5_checks() -> List[Dict]:
+    """Phase 5 checks (B-79, lunarsim/vv5.py); `python -m lunarsim.vv5` also writes results/vv_phase5.json."""
+    from .vv5 import run_phase5_checks as _run
+    return _run()
+
+
 if __name__ == "__main__":
     for c in run_all_checks():
         flag = "PASS" if c["passed"] else "FAIL"

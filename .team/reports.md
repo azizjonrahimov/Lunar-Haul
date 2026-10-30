@@ -7225,3 +7225,78 @@ The design file data/scenarios/E46-design.json was committed (20c41ad) before th
 3. The answers to the three CHECK items went to you in the design message (one frequency, 2.4 GHz, provisional; transmit powers and the power row Assumed with no source; sigma 0.2 with range 0.1-0.3, declared but not run).
 
 ## F-54 MARKET (E46) + F-55 READER PORT DONE 09:58 | site/scripts/prepare-data.mjs, site/atc/index.html, site/src/atc/main.js, site/src/atc/atc.css, site/src/verify/phase5.js, site/src/verify/main.js, site/src/verify/verify.css, site/tests/vv-phase5.test.mjs | how to check: npm run build (prints "E46 (market) summary staged, 152 cells"), /atc/ section 4: steps 4 and 5 carry an "In the market experiment (E46)" line (posted tariff per split; money settled through Earth 6.7 to 20.9 M USD across the paying rules, open at the year's end "under 0.01" computed from the cells), then "What the market experiment found": the design from the fit, the H5 table (verdicts recomputed on the page by change 7 and checked against each clause's supported flag; clause 3 as the smallest bounds over every owner and coalition), the honest-offer table (operator's balance and settled through Earth per rule and split, from the k 1, q 0 cells), efficiency loss in system cost against the oracle (same under every rule, checked on the page), IR count summed over all 152 cells, the Shapley-not-cash note, and the per-coalition table in a details box. /verification/ phase 5 reads BACKEND's names (version 1, rows keyed by id + sub, grouped by id letter, skipped = not run with its reason, bias flag recorded not failed, "passed" re-derived from error and tolerance, summary checked against the rows, commit optional). Checked in headless Chrome light/dark, 1280 and 390 px, no horizontal scroll, no console errors; the verify page on a temporary sample file in dist (removed by the rebuild). /atc/ page JS 14.0 of 15 kB gz (was 11.6), lazy chunk 14.9 unchanged; /verification/ 9.3 of 10; tests 31/31; budgets OK | from BACKEND: "commit" and non-finite as null in vv_phase5.json (relayed by LEAD) | for LEAD: /atc/ page JS now has 1.0 kB of headroom.
+
+## B-79 batch 1 DONE 30 Oct 10:36 (verification: 13 engine checks + R1 + E3) | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**Result:** results/vv_phase5.json has 81 rows: 77 passed, 4 failed (all D10 pairing effectiveness), 0 skipped, 1 bias flag.
+- It was written at commit c20da61; total 191 s, one process.
+- The schema is as agreed with FRONTEND: "commit" at top level; NaN/inf written as null (allow_nan=False); "tolerance_source" on every row; "id" + "sub" unique.
+
+### Checks
+- **D1 Little's law:**
+  - Sample path, tonne-days and item-hours, under marketplace and pooled greedy: exact.
+  - Asymptotic form L_q = lambda W_q: 2 %.
+- **D2 P-K and D3 Erlang C / M/D/c:** in two steps.
+  - (a) The engine's per-item waits equal an independent queue recursion fed the engine's own arrival and service times. Exact in all 10 cases, max difference 0.
+  - (b) That recursion, sized by the plan's rule (99 % half-width at most a third of the tolerance), matches P-K at rho 0.3/0.6/0.85 and M/D/1, Erlang C for c = 2, 3, 4, and the exact M/D/c for c = 2, 3. The M/D/c reference comes from the Crommelin embedded chain and is checked against M/D/1 in the tests.
+  - Each row's basis also quotes the engine run's own mean and interval.
+  - Why two steps: at sizes the engine can afford, the M/M/c engine runs had ±6 % half-widths (rule: ≤ 1.7 %). M/M/2 missed by 6.2 % on one run. The trace showed the engine equal to the recursion wait for wait, and the realized mean service time was 1.986 h against 2.0.
+- **D4 Cobham:** exact sample path; class 1 0.09 % and class 2 1.7 % off.
+  - Class 2 carries a bias flag: its 99 % interval [2.672, 2.750] just misses 2.757.
+  - At 2 million customers on three other seeds the intervals cover it, so the flag is chance at the first size that met the rule.
+- **D5 extremes:** zero landings, zero vehicles, overload slope 1.5 % off (tolerance 2 %).
+- **D6 one owner:** in-house = pooled greedy by md5, 3 seeds.
+- **D7 time scale ×2:** 1e-9; with night, the largest error is 7e-10.
+- **D8 trace invariants:** 0 violations in 28 runs and 21,104 jobs (24 library runs + 4 ATC regimes).
+- **D9 Hungarian vs brute force:** 1,000 instances, gap 2.5e-16.
+- **D11 inputs:** 16 tests, none rejected after Holm at 0.01. Masses are tested on a test-only 100 t lander so that the draws are unbiased; see "how to test".
+- **R1 bald-Moon horizon:** edges within 0.75 m for 2.5/2.5, 2.5/10 and 10/10 m antennas; 0 misclassified points.
+- **E3 energy by hand:** within 0.16 %. The flat 700 kg row is labelled Cal, because C_rr_eff is fitted to the LRV's 58.5 Wh/km.
+
+### Traces LEAD asked for
+1. **D1 "sample path, items"** (failed in the 10:11 file): a defect in my check, not the engine, now fixed.
+   - In P2-default seed 1, one item is ready at t = −21.78 h, before the clock's zero. The engine integrates from there.
+   - My count hook started its integral at 0 and so lost exactly 21.78 item-hours under both job rules.
+   - The hook now starts at the first event; both forms agree to 1e-15 relative. The basis says so.
+2. **D10 pairing:** demand is common to every regime; the operations stream is not, in any regime. The 4 failing rows measure how much pairing helps, not whether the streams are common.
+   - **Demand:**
+     - In E40 every regime's run has O_ORACLE's landed mass and landings for the same (seed, start year): 880 pairs, 0 differing. This is the new row "E40 demand identical".
+     - In a 90-day rerun of seed 11 the manifest is identical across 8 regimes.
+     - Initial fault draws are identical across regimes.
+   - **Operations stream (engine rng_ops):**
+     - Shared in draw order by the per-job driving-intervention draws (engine.py:489-492, three per committed job) and the fault redraws (engine.py:1098).
+     - It desynchronises once allocations differ. Seed 11: draw #18 (about the sixth job) differs from O_ORACLE for C_AUCTION, A_MOON and A_EARTH strict; draw #427 for B_EARTH strict.
+     - The well-pairing C regimes desynchronise just as early, so this is not what separates the failing rows.
+   - **What separates them:**
+     - In A_EARTH strict and B_EARTH strict, 89-91 % of the delay variance lies between start years (Earth-link gaps). O_ORACLE does not have that source.
+     - The raw correlation stays at 0.06-0.19, and 0.10-0.29 after removing year means. Their delay sd is 9.7-9.9 h against O_ORACLE's 0.58 h.
+     - For A_MOON (sd 1.93 h, 19 % between years) I have **not** traced the source and claim no mechanism.
+   - **Not an engine defect, so nothing in the engine was changed.**
+   - For the papers: "paired by seed" holds for demand in every contrast. The fault and intervention draws are paired only up to the first difference in allocation, in every regime. Against O_ORACLE, pairing reduces variance by a factor of 0.07-0.52 for the C regimes, B_EARTH plan_ahead and B_EARTH_RELAY, and barely at all (0.90-0.99) for A_EARTH (both fallbacks), A_MOON and B_EARTH strict.
+
+### Engine and code changes
+None of these changes any E40-E48 number.
+- **lunarsim/engine.py:** the empty-fleet branch (D5b), accepted by LEAD. That configuration crashed before, so no earlier run used it.
+- **lunarsim/scenario.py:** the literal 0.25 h stagger between items becoming ready is now the constant ITEM_STAGGER_H = 0.25, same value. D7 needed to scale it.
+
+### Files
+- **New:** lunarsim/vv5.py, tests/test_verification_phase5.py (7 tests), results/vv_phase5.json.
+- **Changed:**
+  - lunarsim/vv.py: adds run_phase5_checks().
+  - lunarsim/engine.py and lunarsim/scenario.py: as above.
+  - .team/inbox-backend.md.
+
+### How to test
+- `python -m lunarsim.vv5` regenerates the JSON (about 3-4 min).
+- `pytest tests/test_verification_phase5.py` takes 11 s.
+- The test-only hooks are named in vv5's docstring: a one-item lander, fixed cargo classes, one-pad landings, exponential service, time scaling, and the 100 t lander for the D11 masses.
+- **Full suite: 47 files, 576 passed, 0 failed.**
+
+**FRONTEND:**
+- The file is ready at results/vv_phase5.json.
+- The "D10 E40 demand identical" row is new since the 10:11 file.
+- Row count 81.
+
+**Questions for LEAD:**
+1. Keep the 4 D10 pairing rows as FAIL under the plan's criterion (as now), or turn pairing effectiveness into a reported, non-pass/fail row and leave the demand rows as the pass/fail test?
+2. Do you want the operations stream split (separate streams for faults and for driving interventions, keyed per vehicle) as a future engine change? That would alter every run's numbers, so it is not done.

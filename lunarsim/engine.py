@@ -323,7 +323,7 @@ class Simulation:
         k = 0
         owners = list(self.sc.cargo_owners) + [bf.owner for bf in self.sc.bulk_flows]
         for o in sorted(set(owners)):
-            if o in carriers:
+            if o in carriers or not carriers:       # no fleet at all (B-79 D5): nobody carries, nothing crashes
                 self.carrier_of[o] = o
             else:
                 self.carrier_of[o] = carriers[k % len(carriers)]

@@ -15,6 +15,7 @@ HOURS_PER_DAY = 24.0
 LUNAR_CYCLE_H = 29.53 * HOURS_PER_DAY  # synodic month
 RETURN_ITEM_PROB = 0.30                # share of outbound items that generate a return item
 RETURN_LAG_H = (5 * 24, 30 * 24)       # days after delivery when the return item is ready
+ITEM_STAGGER_H = 0.25                  # hours between successive items of one landing becoming ready (was a literal; B-79 D7)
 
 
 # Cargo classes: (label, mass range kg, destination weights, priority, share of items)
@@ -158,7 +159,7 @@ def sample_cargo_manifest(rng: np.random.Generator, lander: LanderType, owner_po
         dest = rng.choice(list(dests.keys()), p=np.array(list(dests.values())) / sum(dests.values()))
         std = "A" if rng.random() < common_share else "B"
         owner = rng.choice(owner_pool)
-        t_ready = t_land + rng.uniform(*lander.offload_h) + 0.25 * len(items)
+        t_ready = t_land + rng.uniform(*lander.offload_h) + ITEM_STAGGER_H * len(items)
         c = Cargo(cid, owner, m, pad, dest, t_land, t_ready, int(prio), std, label)
         # Return flow (trash, samples, empty containers) is drawn here so that it is
         # identical across mechanisms for a given seed (common random numbers).
