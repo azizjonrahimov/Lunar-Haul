@@ -120,6 +120,8 @@ def dispatch(st, sim, waiting, free, inner_kw) -> List[Any]:
         limit = max(len(known), len(fc)) * max(1, hops.diameter(comp))
         sel = _Selector(st, hops, robots, limit)
         adj_fn, flush = _learned_hooks(st, sim, waiting, free, inner_kw, adj, comps, sel)
+        if c.get("bid_mult"):                                  # B-76 (E46): owners name their own carrier cost
+            adj_fn = _market_hook(adj_fn, c["bid_mult"])
         jc = D.marketplace(sim, known, fc, selector=sel, team_hook=_team_hook(st, sim, hops), round_limit=limit,
                            bid_adjust=adj_fn, **inner_kw)
         flush()
@@ -135,6 +137,21 @@ def dispatch(st, sim, waiting, free, inner_kw) -> List[Any]:
             _future_rounds(st, sim, [x for x in known if id(x) not in taken], comp, jc, hops, robots, inner_kw)
             claimed_by = {id(x): vid for vid, q in st.claims.items() for items, _ in q for x in items}
     return jobs
+
+
+def _market_hook(base, mult):
+    """E46: a robot's bid = the marketplace bid + (mult[owner] - 1) x its carrier-cost part (dispatch._bid), so an owner
+    with a higher private cost or a scaled ask names that cost; the shippers' value of time is untouched."""
+    from ..engine import Job
+
+    def adjust(sim, v, bundle, route, bid):
+        b = base(sim, v, bundle, route, bid) if base is not None else bid
+        m = float(mult.get(v.owner, 1.0))
+        if m == 1.0:
+            return b
+        job = Job([v], bundle, route)
+        return b + (m - 1.0) * sim.job_cost_usd(job, sim.job_plan(job, sim.t)[0])
+    return adjust
 
 
 def _learned_hooks(st, sim, waiting, free, inner_kw, adj, comps, sel):

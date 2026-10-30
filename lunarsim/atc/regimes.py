@@ -94,6 +94,8 @@ DEFAULTS: Dict[str, Any] = {
     "mast2": None,                   # E41 network design: a second 10 m relay mast at this site (e.g. "PAD_B")
     "o_rally": False,                # diagnostic (B-75): O_ORACLE plus the auction's rally (idle robots at sites the
                                      # BASE mast does not see drive to the nearest one it sees); not a PREREG cell
+    # B-76 (E46, the market): an owner's ask = its true cost x this multiplier (private cost x bid scaling); None = off
+    "bid_mult": None,
 }
 REGIME_KEYS = set(DEFAULTS)
 RETRY_H = 0.05                       # Assumed: a robot whose message was lost is reconsidered 3 min later

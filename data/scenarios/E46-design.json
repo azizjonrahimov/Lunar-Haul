@@ -1,0 +1,129 @@
+{
+ "experiment": "E46 (B-76 REVISED with PREREG change 7), P3, H5",
+ "H5": "first-price asks let at least one owner gain by shading; per-item second price reduces that gain; posted price with Shapley sharing leaves no owner worse off than working alone (decision rules: PREREG change 7)",
+ "owners": [
+  "A",
+  "B",
+  "C"
+ ],
+ "splits": {
+  "3eq": "equal cargo shares",
+  "3uneq": "50/35/15 cargo shares"
+ },
+ "fleet": "the p5 owner mix (A: CLV-1 + FLEX; B: Pegasus + Eagle; C: two HL-MAPP + two MoonFall), 30 % load, team-lift share 0.10, one year",
+ "rules": [
+  "none",
+  "first",
+  "second",
+  "posted"
+ ],
+ "rule_definitions": {
+  "none": "cooperative: no payments",
+  "first": "carriers are paid their ask; shippers pay the posted tariff per tonne-km",
+  "second": "carriers are paid the lowest competing ask for the same job (team jobs: the two lowest competing asks); the posted tariff is the reserve when no other free robot could carry it; shippers pay the posted tariff",
+  "posted": "carriers are paid the posted tariff per tonne-km, shippers pay it; the coalition's value is then shared by Shapley values (budget-neutral transfers)"
+ },
+ "k_levels": [
+  0.8,
+  0.9,
+  1.1,
+  1.25
+ ],
+ "k_note": "one owner at a time scales its asks by k (the others truthful); under first and second price; posted price has no ask",
+ "q_levels": [
+  0.0,
+  0.05,
+  0.2
+ ],
+ "audit_penalty_multiple": {
+  "value": 3.0,
+  "flag": "Assumed",
+  "range": [
+   2.0,
+   5.0
+  ]
+ },
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+  20,
+  21,
+  22,
+  23,
+  24,
+  25,
+  26,
+  27,
+  28,
+  29,
+  30
+ ],
+ "calibration_seeds": [
+  101,
+  102,
+  103,
+  104,
+  105,
+  106,
+  107,
+  108,
+  109,
+  110
+ ],
+ "message_loss": {
+  "value": 0.0,
+  "flag": "design choice: perfect radio, so paired differences show incentives, not message-loss noise (P1 covers loss)"
+ },
+ "private_costs": {
+  "true_cost": "the engine's job_cost_usd (wear share 0.5 of unit cost per life hour + operator demand x operator_cost_per_h 1,000 USD/h) times the owner's multiplier eps_o",
+  "eps_distribution": "lognormal: eps_o = exp(N(0, sigma)), one draw per owner per seed (rng seeded by (46, seed)), the same in every run of that seed",
+  "sigma": {
+   "value": 0.2,
+   "flag": "Assumed",
+   "sweep_range": [
+    0.1,
+    0.3
+   ],
+   "sweep_note": "declared range; the main run uses 0.2 (a sigma sweep needs new physical runs and is not part of E46)"
+  },
+  "in_the_auction": "an owner's bid = the marketplace bid + (eps_o x k_o - 1) x the carrier-cost part of it (dispatch._bid): the ask scales the cost the carrier names, not the shippers' value of time"
+ },
+ "shipper_value": {
+  "what": "value of delivery time by priority, Scenario.vot_usd_per_h (1: 5,000, 2: 1,000, 3: 100 USD/h) x completion time; undelivered items censored at the horizon",
+  "flag": "Spec of the scenario (R-1 economics)"
+ },
+ "posted_price": {
+  "how_earth_sets_it": "cost recovery: Earth sets the tariff per tonne-km to the mean true carrier cost per tonne-km of the pooled market in the calibration seeds 101-110 (not the test seeds), per split, published before the year",
+  "markup": 0.0,
+  "flag": "Assumed (rule)",
+  "values_usd_per_tkm": {
+   "3eq": 19828.85,
+   "3uneq": 19908.58
+  }
+ },
+ "coalitions": "all non-empty subsets of {A, B, C}: singletons from the owners-alone run (A_MOON), pairs from pair-only runs (their vehicles and cargo, pooled C_AUCTION), the grand coalition from the pooled market",
+ "benchmark": "O_ORACLE (the marketplace with full information) for the efficiency loss",
+ "outputs": [
+  "results/E46_cells.csv",
+  "results/E46_pairs.csv",
+  "results/E46_fit.json",
+  "results/E46_parts/"
+ ]
+}
