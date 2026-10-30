@@ -5,39 +5,39 @@
 
 <h3>5.1 Processor time and memory per vehicle class (H10)</h3>
 
-<p>{{P3-E48-RESULTS-CPU}} <!-- PENDING E48 (B-81): per class, the median and 99th-percentile CPU time per safety_check call and per auction round, the number of calls timed, the peak memory of the on-robot part, the laptop's processor, the reference flight processor, the scaling factor with its range, and each scaled value as a share of the capacity it is compared with. --> {{P3-H10-VERDICT-SENTENCE}} <!-- build: composed from the scaled values against the stated capacities; "fits" / "does not fit" chosen from the data, never typed. --></p>
+<p>From the catalogue, the fleet's largest single payload is {{P3-CAP-MAX-SINGLE-KG}} and its largest team lift {{P3-CAP-MAX-PAIR-KG}} (Section 3.2); the sizing below is for that fleet. {{P3-E48-RESULTS-CPU}} <!-- build (draft 2): per class the range of the safety-check median and 99th percentile and the worst class with its value, not five near-identical sentences; the auction round once; the base computer's timed check is a reservation check over the table, not a safety check, and is labelled so; the laptop's processor, the reference flight processor, the scaling factor with its range, and each scaled value as a share of the capacity it is compared with. --> {{P3-H10-VERDICT-SENTENCE}} <!-- build: composed from the scaled values against the stated capacities; "fits" / "does not fit" chosen from the data, never typed. --> {{P3-E48-ROUND-SENTENCE}} <!-- build: the auction round's median and p99 scaled by the factor against a one-second decision, and what that does to H10 --></p>
 
 <!-- TABLE:E48_sizing -->
 
 <h3>5.2 Messages and the ledger</h3>
 
-<p>{{P3-E48-RESULTS-MESSAGES}} <!-- PENDING E48: bytes per message type as serialised (status, bid, rebroadcast, reservation request and grant, team-lift proposal / answer / commit, ledger entry); messages and bytes per robot-hour at 1x, 4x and 8x the fleet; the implied link rate for 20 robots against the 16 kbit/s target and the 100 B/s-per-robot target; market bytes per day against the 1 MB target; the ledger's size after a year at each multiple. --></p>
+<p>{{P3-E48-RESULTS-MESSAGES}} <!-- PENDING E48: bytes per message type as serialised (status, bid, rebroadcast, reservation request and grant, team-lift proposal / answer / commit, ledger entry); messages and bytes per robot-hour at 1x, 4x and 8x the fleet; the implied link rate for 20 robots against the 16 kbit/s target and the 100 B/s-per-robot target; market bytes per day against the 1 MB target; the ledger's size after a year at each multiple; the ledger figures at four and eight times are extrapolated to a year from the run's jobs per hour (Section 4.2). --> {{P3-E48-TRAFFIC-NOTE}} <!-- build: the share of bytes and messages that is the status heartbeat, per multiple --></p>
 
 <h3>5.3 The link budget per vehicle class</h3>
 
-<p>{{P3-E48-RESULTS-LINK}} <!-- PENDING E48: per class (antenna height, frequency, transmit power), the data rate at the worst hop, the latency budget for a decision within 1 s over the median and maximum hop count of Section 3.3, and the share of the time each class is reachable from the mast over a run; at 2.4 GHz and at 400 MHz if both are computed. --></p>
+<p>{{P3-E48-RESULTS-LINK}} <!-- PENDING E48: per class (antenna height, frequency, transmit power), the data rate at the worst hop, the latency budget for a decision within 1 s over the median and maximum hop count of Section 3.3, and the share of route sample points in direct view of the mast; at 2.4 GHz and at 400 MHz if both are computed. --> The 1&nbsp;s decision interval of the latency budget is the Assumed target of Section 4.2.</p>
 
 <!-- TABLE:E48_link -->
 
 <h3>5.4 Failover</h3>
 
-<p>{{P3-E48-RESULTS-FAILOVER}} <!-- PENDING E48: per MTBF level, the base computer's downtime share, the share of time without any leader, the measured re-election time, the number of partition merges and the count of jobs found assigned twice after a merge (must be zero; if not, it is a defect and goes to Section 5.8); the effect of the sweep on the urgent wait if B-81 reports it. --></p>
+<p>{{P3-E48-RESULTS-FAILOVER}} <!-- PENDING E48: per MTBF level, the base computer's downtime share, the share of time without any leader at the assumed re-election delay (copied from the design, not measured), the number of partition merges and the count of jobs found assigned twice after a merge (must be zero; if not, it is a defect and goes to Section 5.8); the effect of the sweep on the urgent wait if B-81 reports it. --></p>
 
 <h3>5.5 The four payment rules</h3>
 
-<p>{{P3-E46-RESULTS-RULES}} <!-- PENDING E46 (B-76): per rule and share split, the efficiency loss against the oracle in urgent wait with its interval, the operator's budget per year (surplus or deficit, sign from the data), total earnings and payments, the money settled on Earth and left open at the year's end; the none rule's identity with the pooled regime of [60] stated as a check. --></p>
+<p>{{P3-E46-RESULTS-RULES}} <!-- PENDING E46 (B-76): per rule and share split, the efficiency loss against the oracle in urgent wait with its interval, the operator's budget per year (surplus or deficit, sign from the data), total earnings and payments, the money settled on Earth and left open at the year's end; the none rule's identity with the pooled regime of [60] stated as a check. --> {{P3-E46-BUDGET-SENTENCE}} <!-- build: each rule's budget with its interval; the first-price budget as tariff receipts less true cost --> {{P3-E46-TRANSFERS-SENTENCE}} <!-- build: the Shapley transfers per owner and split, and the settlement including them --></p>
 
 <!-- TABLE:E46_rules -->
 
 <h3>5.6 Each owner against working alone</h3>
 
-<p>{{P3-E46-RESULTS-IR}} <!-- PENDING E46: per owner, rule and split, the paired difference between market profit and alone profit with its interval; the count of owner-seed pairs in which the market made an owner worse off; the Shapley shares under the posted-price rule; the smallest owner's result in the 50/35/15 split. --></p>
+<p>{{P3-E46-RESULTS-IR}} <!-- PENDING E46: per owner, rule and split, the paired difference between market profit and alone profit with its interval; the count of owner-seed pairs in which the market made an owner worse off; the Shapley shares under the posted-price rule; the smallest owner's result in the 50/35/15 split. --> {{P3-E46-VS-NONE-SENTENCE}} <!-- build: each owner's profit under each paid rule minus under no payments, paired by seed --></p>
 
 <!-- TABLE:E46_owners -->
 
 <h3>5.7 Manipulation and audits (H5)</h3>
 
-<p>{{P3-E46-RESULTS-MANIP}} <!-- PENDING E46: per rule with money, the largest gain any owner obtained by scaling, the factor that gave it and the owner, with its interval; the cost to the system in urgent wait on the same seeds; the first-price rule is the reference the registered clauses compare against (Section 4.1). --> {{P3-E46-RESULTS-AUDITS}} <!-- PENDING E46: per rule and audit share q, what the audits recovered of the gain, and the gain net of expected penalties with its sign. --> {{P3-H5-VERDICT-SENTENCE}} <!-- build: composed clause by clause from the E46 fit against the rules of Section 4.1; "supported" / "not supported" / "not tested" from the data and the design, never typed. --></p>
+<p>{{P3-E46-RESULTS-MANIP}} <!-- PENDING E46: per rule with money, the largest gain any owner obtained by scaling, the factor that gave it and the owner, with its interval; the cost to the system in urgent wait on the same seeds; the first-price rule is the reference the registered clauses compare against (Section 4.1). --> {{P3-E46-RESULTS-AUDITS}} <!-- PENDING E46: per rule and audit share q, what the audits recovered of the gain, and the gain net of expected penalties with its sign. --> {{P3-H5-VERDICT-SENTENCE}} <!-- build: composed clause by clause from the E46 fit against the rules of Section 4.1; "supported" / "not supported" / "not tested" from the data and the design, never typed. --> {{P3-H5-POWER-CLAUSE}} <!-- build: the cash part of the largest gain with its interval, labelled post hoc; the registered measure includes the deviator's own delay --></p>
 
 <h3>5.8 What did not work</h3>
 

@@ -51,6 +51,9 @@ POLICY_LIN = os.path.join(ROOT, "data", "policies", "atc_bid_linear_v1.json")
 POLICY_MLP = os.path.join(ROOT, "data", "policies", "atc_bid_v1.json")
 PREREG = os.path.join(ROOT, "paper", "atc", "PREREG.md")
 E46_CELLS, E46_PAIRS, E46_FIT = (os.path.join(RES, f) for f in ("E46_cells.csv", "E46_pairs.csv", "E46_fit.json"))
+D46 = os.path.join(ROOT, "data", "scenarios", "E46-design.json")
+D48 = os.path.join(ROOT, "data", "scenarios", "E48-design.json")
+OWN_CHECK_IDS: tuple = ()      # the ids of P3's seven own checks in results/vv_phase5.json, assigned by B-79 batch 3
 E48 = os.path.join(RES, "E48_sizing.json")
 RULES = ("none", "first", "second", "posted")  # payment rules of E46 as run (change 7 of the PREREG restored first price)
 RULE_NAME = {"none": "no payments", "first": "first price", "second": "the per-item second price",
@@ -272,6 +275,8 @@ class R:
         self.mlp = jl(POLICY_MLP)
         self.prereg = open(PREREG, encoding="utf-8").read()
         self.e48 = jl(E48) if os.path.exists(E48) else None
+        self.d46 = jl(D46) if os.path.exists(D46) else None
+        self.d48 = jl(D48) if os.path.exists(D48) else None
         self.e46c = pd.read_csv(E46_CELLS) if os.path.exists(E46_CELLS) else None
         self.e46p = pd.read_csv(E46_PAIRS) if os.path.exists(E46_PAIRS) else None
         self.e46f = jl(E46_FIT) if os.path.exists(E46_FIT) else None
@@ -285,6 +290,12 @@ class R:
         return [(row[0], row[1]) for row in self.scn["fleet"]]
 
     # --- E48 ---------------------------------------------------------------------------------------------------
+    def design(self, which, *keys):
+        d = self.d46 if which == 46 else self.d48
+        if d is None:
+            raise Pending(f"data/scenarios/E{which}-design.json is missing")
+        return _get(d, *keys)
+
     def s48(self, *keys):
         if self.e48 is None:
             raise Pending("E48 (B-81, results/E48_sizing.json) has not run")
@@ -362,7 +373,6 @@ def values(r: R, allow_pending: bool):
     V["P3-CAP-MAX-PAIR-KG"] = unit(lifters[0] + lifters[1], "kg")
     V["P3-CAP-FLEET-SUM-KG"] = unit(sum(caps[c] for _, c in fleet), "kg")
     check(lifters[0] + lifters[1] > max(caps.values()), "a pair lifts more than the largest single vehicle")
-    V["P3-N-COALITION-RUNS"] = words(2 ** len({o for o, _ in fleet}))
 
     # --- the network (3.3) ------------------------------------------------------------------------------------------
     m = r.mesh
@@ -422,7 +432,7 @@ def values(r: R, allow_pending: bool):
     changes = re.findall(r"^### (Change \d+, .+?)$", r.prereg, re.M)
     later = [c for c in changes if re.search(r"\bE4[68]\b|\bH5\b|\bH10\b|first-price", c) and
              not c.startswith("Change 1,")]
-    V["P3-CHANGES-SENTENCE"] = ("No other choice was made after looking at data." if not later else
+    V["P3-CHANGES-SENTENCE"] = ("" if not later else
                                 "Later dated changes of [59] that touch this paper: " +
                                 "; ".join(html.escape(c) for c in later) + ".")
 
@@ -466,25 +476,83 @@ def values(r: R, allow_pending: bool):
                  f"and the radio traffic at {num(s['kbps_20'], 2)}{NB}kbit/s for 20 robots against the {num(s['kbps_target'], 0)}{NB}kbit/s target"]
         verdict = ("H10, exploratory, holds on every count: " if all(fits.values()) else
                    "H10, exploratory, does not hold on every count (" + ", ".join(k for k, v in fits.items() if not v) + " over the limit): ")
-        return verdict + ", ".join(parts) + f", with the scaling factor at {num(s['factor'], 1)} (range {num(s['range'][0], 1)}&ndash;{num(s['range'][1], 1)})."
+        return (verdict + ", ".join(parts) + f", with the scaling factor at {num(s['factor'], 1)} (range {num(s['range'][0], 1)}&ndash;{num(s['range'][1], 1)}); "
+                "the bidding, which H10 also names, has no registered capacity.")
     fill("P3-H10-VERDICT-SENTENCE", h10_sentence, "E48")
+
+    def e48_round():
+        s = e48_scaled()
+        worst = max((c for c in CLASSES if c != "BASE"), key=lambda c: r.s48("classes", c, "cpu_auction_round_ms")["p99"])
+        a = r.s48("classes", worst, "cpu_auction_round_ms")
+        med, p99 = a["median"] * s["factor"] / 1000.0, a["p99"] * s["factor"] / 1000.0
+        over = p99 > 1.0
+        return (f"Scaled by the same factor, an auction round on the {CLASS_NAME[worst]} takes {unit(med, 's', 2)} at the median and {unit(p99, 's', 2)} "
+                f"at the 99th percentile, {'above' if over else 'within'} the one-second decision that the link model of Section 5.3 assumes"
+                + ("; one round in a hundred would miss that decision on the reference processor, and the median round would not." if over else "."))
+    fill("P3-E48-ROUND-SENTENCE", e48_round, "E48")
+
+    def e48_reference():
+        fl, lp = r.design(48, "flight"), r.design(48, "laptop")
+        return (f"The reference flight processor is the {html.escape(fl['processor'])}, at {num(fl['benchmark'], 1)} {html.escape(fl['benchmark_name'])} "
+                f"(source: {html.escape(fl['source'].split(';')[0])}) with {unit(fl['memory_mb'], 'MB')} of memory ({html.escape(fl['memory_flag'])}); the laptop "
+                f"is an {html.escape(lp['processor'])} at {num(lp['benchmark'], 0)} {html.escape(lp['benchmark_name'])}, itself assumed "
+                f"({html.escape(lp['benchmark_note'])}); the factor is their ratio, {num(fl['factor'], 1)}, with the range "
+                f"{num(fl['factor_range'][0], 1)}&ndash;{num(fl['factor_range'][1], 1)} from the laptop's CoreMark range, and the CPU share uses "
+                f"the 99th-percentile call time at every call, so it is an upper bound (Assumed).")
+    fill("P3-E48-REFERENCE-SENTENCE", e48_reference, "E48 design")
+
+    def e48_mtbf():
+        fo = r.design(48, "failover")
+        lv = ", ".join(unit(x, "h", 0) for x in fo["mtbf_levels_h"])
+        return (f"The failover sweep runs the base computer at an MTBF of {lv}, a repair time of {unit(fo['repair_h'], 'h', 0)} and a re-election delay "
+                f"of {unit(fo['reelect_h'], 'h', 1)}, on {words(len(fo['seeds']))} seeds of {html.escape(fo['regime'])} ({html.escape(fo['flag'])}); "
+                f"the re-election delay is an input, not a measurement.")
+    fill("P3-E48-MTBF-SENTENCE", e48_mtbf, "E48 design")
+
+    def e48_horizons():
+        hz = r.design(48, "runs", "horizon_days")
+        return ("The instrumented runs last " + ", ".join(f"{unit(float(v), 'days', 0)} at {k} times today's fleet" for k, v in hz.items()) +
+                "; the ledger's yearly growth at four and eight times is extrapolated from jobs per hour.")
+    fill("P3-E48-HORIZONS-SENTENCE", e48_horizons, "E48 design")
+
+    def e48_traffic_note():
+        by = r.s48("messages", "per_robot_hour_by_type")
+        bt = r.s48("messages", "bytes_per_type")
+        bits = []
+        for m in ("1", "4", "8"):
+            tot = sum(by[m].values())
+            st = by[m]["status"]
+            bytes_st = st * bt["status"]
+            bytes_all = sum(v * (bt.get(k, (bt["bid"] + bt["award"] + bt["claim"]) / 3.0)) for k, v in by[m].items())
+            bits.append(f"{pc(st / tot, 2)} of the messages and {pc(bytes_st / bytes_all, 2)} of the bytes at {m} times")
+        omitted = "rebroadcasts, team-lift proposals, answers and commits, and ledger entries"
+        return (f"The status message at the assumed 1{NB}Hz is " + ", ".join(bits) + f"; the traffic counts reservation requests, grants and releases "
+                f"from road traversals, bids, awards and claims from auction rounds, and landing announcements, and omits {omitted}.")
+    fill("P3-E48-TRAFFIC-NOTE", e48_traffic_note, "E48")
 
     def e48_cpu():
         s = e48_scaled()
-        bits = []
-        for c in CLASSES:
-            cl = r.s48("classes", c)
-            if c == "BASE":
-                a = cl["cpu_auction_round_ms"]
-                bits.append(f"the base computer's auction round took {unit(a['median'], 'ms', 2)} at the median and {unit(a['p99'], 'ms', 1)} "
-                            f"at the 99th percentile over {cnt(a['n'])} rounds at today's fleet")
-                continue
-            sc, a = cl["cpu_safety_check_us"], cl["cpu_auction_round_ms"]
-            bits.append(f"on the {CLASS_NAME[c]} a safety check took {unit(sc['median'], '&micro;s', 1)} at the median and "
-                        f"{unit(sc['p99'], '&micro;s', 1)} at the 99th percentile over {cnt(sc['n'])} calls, an auction round "
-                        f"{unit(a['median'], 'ms', 2)} and {unit(a['p99'], 'ms', 1)}, and the on-robot part peaked at {unit(cl['peak_memory_mb'], 'MB', 1)}")
+        robots = [c for c in CLASSES if c != "BASE"]
+        sc = {c: r.s48("classes", c, "cpu_safety_check_us") for c in robots}
+        med = [sc[c]["median"] for c in robots]
+        p99 = [sc[c]["p99"] for c in robots]
+        worst = max(robots, key=lambda c: sc[c]["p99"])
+        mem = {c: r.s48("classes", c, "peak_memory_mb") for c in robots}
+        a = r.s48("classes", worst, "cpu_auction_round_ms")
+        b = r.s48("classes", "BASE", "cpu_auction_round_ms")
+        n_calls = {sc[c]["n"] for c in robots}
         return (f"Measured on {html.escape(s['laptop'])} and scaled to the {html.escape(s['processor'])} by a factor of {num(s['factor'], 1)} "
-                f"(range {num(s['range'][0], 1)}&ndash;{num(s['range'][1], 1)}, Assumed): " + "; ".join(bits) + ".")
+                f"(range {num(s['range'][0], 1)}&ndash;{num(s['range'][1], 1)}, Assumed): across the four robot classes a safety check took "
+                f"{unit(min(med), '&micro;s', 0)}&ndash;{unit(max(med), '&micro;s', 0)} at the median and {unit(min(p99), '&micro;s', 0)}&ndash;"
+                f"{unit(max(p99), '&micro;s', 0)} at the 99th percentile over {' and '.join(cnt(n) for n in sorted(n_calls))} calls per class, "
+                f"worst on the {CLASS_NAME[worst]}; an auction round took {unit(a['median'], 'ms', 2)} at the median and {unit(a['p99'], 'ms', 1)} "
+                f"at the 99th percentile over {cnt(a['n'])} rounds; the on-robot part peaked at "
+                + (unit(max(mem.values()), 'MB', 2) if abs(max(mem.values()) - min(mem.values())) < 0.005 else
+                   f"{unit(min(mem.values()), 'MB', 2)}&ndash;{unit(max(mem.values()), 'MB', 2)}")
+                + f". The base computer's reservation check over the shared table, a different function from the "
+                f"vehicles' safety check, took {unit(r.s48('classes', 'BASE', 'cpu_safety_check_us')['median'], '&micro;s', 0)} at the median and "
+                f"{unit(r.s48('classes', 'BASE', 'cpu_safety_check_us')['p99'], '&micro;s', 0)} at the 99th percentile, and its auction round "
+                f"{unit(b['median'], 'ms', 2)} and {unit(b['p99'], 'ms', 1)} (Table 5).")
     fill("P3-E48-RESULTS-CPU", e48_cpu, "E48")
 
     def e48_messages():
@@ -493,21 +561,27 @@ def values(r: R, allow_pending: bool):
         mph, bph = r.s48("messages", "per_robot_hour"), r.s48("messages", "bytes_per_robot_hour")
         led = r.s48("ledger_mb_per_year")
         types = "; ".join(f"{html.escape(k)} {unit(v, 'B')}" for k, v in bt.items())
-        return (f"As serialised, the message types weigh: {types}. The runs generated {num(mph['1'], 1)} messages and "
+        return (f"With the assumed byte layouts of Section 3.4 the message types weigh: {types}. Computed from each run's event counts and the "
+                f"status rate, the fleet generated {num(mph['1'], 1)} messages and "
                 f"{unit(bph['1'], 'B', 0)} per robot-hour at today's fleet, {num(mph['4'], 1)} and {unit(bph['4'], 'B', 0)} at four times, "
                 f"and {num(mph['8'], 1)} and {unit(bph['8'], 'B', 0)} at eight times; at today's fleet that is {num(s['bps_robot'], 1)}{NB}B/s per robot "
                 f"against the {num(s['bps_target'], 0)}{NB}B/s target and {num(s['kbps_20'], 2)}{NB}kbit/s for 20 robots against {num(s['kbps_target'], 0)}{NB}kbit/s. "
-                f"The ledger held {unit(led['1'], 'MB', 1)} after a year at today's fleet, {unit(led['4'], 'MB', 1)} at four times and {unit(led['8'], 'MB', 1)} at eight.")
+                f"The ledger grows by {unit(led['1'], 'MB', 1)} a year at today's fleet, {unit(led['4'], 'MB', 1)} at four times and {unit(led['8'], 'MB', 1)} at eight, "
+                f"extrapolated from each run's jobs per hour.")
     fill("P3-E48-RESULTS-MESSAGES", e48_messages, "E48")
 
     def e48_link():
         bits = []
         for c in CLASSES:
             lk = r.s48("classes", c, "link")
-            bits.append(f"the {CLASS_NAME[c]} (antenna {unit(lk['antenna_m'], 'm', 1)}, {num(lk['freq_ghz'], 1)}{NB}GHz, {unit(lk['tx_power_w'], 'W', 1)}) "
-                        f"had {num(lk['worst_hop_kbps'], 1)}{NB}kbit/s at its worst hop, a latency budget of {unit(lk['latency_budget_ms'], 'ms')} "
-                        f"for a decision within 1{NB}s, and was in direct view of the mast from {pc(lk['reachable_share'], 1)} of the route samples")
-        return "Per class, under the models of Section 3.3: " + "; ".join(bits) + "."
+            bits.append(f"the {CLASS_NAME[c]} (antenna {unit(lk['antenna_m'], 'm', 1)}, {unit(lk['tx_power_w'], 'W', 2)}): "
+                        f"{num(lk['worst_hop_kbps'], 0)}{NB}kbit/s at the worst hop, {unit(lk['latency_budget_ms'], 'ms')} over "
+                        f"{words(lk['latency_hops'])} hop{'s' if int(lk['latency_hops']) != 1 else ''}, direct view of the mast from "
+                        f"{pc(lk['reachable_share'], 1)} of the route samples")
+        f0 = r.s48("classes", "LTV1", "link")
+        return (f"Per class, under the models of Section 3.3, at {num(f0['freq_ghz'], 1)}{NB}GHz with the data rate at the worst hop, the modelled "
+                f"latency of a 100-byte message (10{NB}ms per hop plus transmit time plus the scaled safety check, against the one-second decision "
+                f"the model assumes) and the share of route samples in direct view of the mast: " + "; ".join(bits) + ".")
     fill("P3-E48-RESULTS-LINK", e48_link, "E48")
 
     def e48_failover():
@@ -518,7 +592,7 @@ def values(r: R, allow_pending: bool):
             b = fo["by_mtbf"][lv]
             twice += int(b["jobs_assigned_twice"])
             bits.append(f"at an MTBF of {unit(float(lv), 'h')} the base computer was down {pc(b['down_share'], 2)} of the time, the fleet had no leader "
-                        f"{pc(b['no_leader_share'], 2)} of the time, re-election took {unit(b['reelect_s'], 's', 0)} and the ledger merged "
+                        f"{pc(b['no_leader_share'], 2)} of the time with the assumed re-election delay of {unit(b['reelect_s'], 's', 0)}, and the ledger merged "
                         f"{num(b['merges'], 1)} times a year on average over {words(b['seeds'])} seeds")
         check(twice == 0, "no job was assigned twice after a merge (3.4, 3.6)")
         return "At" + "; ".join(bits)[2:] + f". After every merge the ledger held {words(twice)} job assigned twice."
@@ -548,8 +622,11 @@ def values(r: R, allow_pending: bool):
         if kind == "comparison":
             bph = r.s48("messages", "bytes_per_robot_hour")
             ratio = 13800.0 / max(_fin(bph["1"]) / 3600.0, 1e-9)
+            by = r.s48("messages", "per_robot_hour_by_type", "1")
+            market = sum(v for k, v in by.items() if k != "status")
             return (f"The radio traffic of Lunar ATC, {num(s['bps_robot'], 1)}{NB}B/s per robot, is {num(ratio, 0)} times smaller than the "
-                    f"13.8{NB}kB/s the two-rover convoy controller of [25] used, because a market exchanges decisions and a convoy exchanges state.")
+                    f"13.8{NB}kB/s the two-rover convoy controller of [25] used; the market's own messages come to {num(market, 2)} per robot-hour "
+                    f"at today's fleet.")
         if kind == "conclusion":
             return (f"Scaled to flight hardware, the software {ok} the reference processor and a 16{NB}kbit/s-class link for 20 robots.")
         if kind == "limitation":
@@ -622,6 +699,110 @@ def values(r: R, allow_pending: bool):
                 f"the audit penalty multiple is m = {num(r.f46('audit_penalty_multiple'), 0)} (Assumed; the design file declares 2&ndash;5 and E46 runs one value).")
     fill("P3-E46-TARIFF-SENTENCE", e46_tariff, "E46")
 
+    def e46_loss():
+        ml = r.design(46, "message_loss")
+        check(float(ml["value"]) == 0.0, "E46 runs with a perfect radio by design (3.3, 4.2)")
+        return (f"E46 sets the message loss to {num(ml['value'], 2)} in every cell, the owners-alone and coalition runs included: a perfect radio by "
+                f"design, so that paired differences show incentives and not message-loss noise, which the companion paper [60] covers.")
+    fill("P3-E46-LOSS-SENTENCE", e46_loss, "E46 design")
+
+    def e46_reserve():
+        sp = r.f46("second_price")
+        bits = []
+        for split in SPLITS:
+            x = _get(sp, split)
+            bits.append(f"with {SPLIT_NAME[split]} {pc(x['with_alternative_share'], 0)} of jobs had a competing free vehicle, {pc(x['reserve_share'], 0)} were "
+                        f"priced by the tariff reserve and {pc(x['floor_at_ask_share'], 0)} paid the carrier its own ask")
+        return "In E46, " + "; ".join(bits) + "."
+    fill("P3-E46-RESERVE-SENTENCE", e46_reserve, "E46 fit second_price (BACKEND)")
+
+    def e46_budget():
+        bg = r.f46("budget")
+        bits = []
+        for rule in ("first", "second", "posted"):
+            for split in SPLITS:
+                b = _get(bg, rule, split)
+                bits.append(f"{musd(b['mean'], 2, sign=True)} {ci_m(b['lo'], b['hi'])} under {RULE_NAME[rule]} with {SPLIT_NAME[split]}")
+        f3 = _get(bg, "first", "3eq")
+        return (f"The operator's budget with honest asks, receipts less payouts with its 95{PCT} interval over seeds, was " + "; ".join(bits) +
+                f". Under first price with honest asks the carriers are paid their true costs, so that budget is the tariff receipts "
+                f"({musd(f3['receipts_mean'], 1)} a year with equal shares) less the true carrier cost ({musd(f3['payouts_mean'], 1)}): the gap between "
+                f"the calibration seeds that set the tariff and the test seeds, not a property of the rule.")
+    fill("P3-E46-BUDGET-SENTENCE", e46_budget, "E46 fit budget (BACKEND)")
+
+    def e46_transfers(kind="sentence"):
+        tr = r.f46("transfers")
+        sw = r.f46("settled_with_transfers")
+        bits = []
+        for split in SPLITS:
+            owners = ", ".join(f"owner {o} {musd(_get(tr, split, o)['mean'], 0, sign=True)} {ci_m(_get(tr, split, o)['lo'], _get(tr, split, o)['hi'], 0)}" for o in "ABC")
+            bits.append(f"with {SPLIT_NAME[split]} {owners}")
+        payer = {split: min("ABC", key=lambda o: _get(tr, split, o)["mean"]) for split in SPLITS}
+        if kind == "clause":
+            return ("the Shapley transfers move " + " and ".join(f"{musd(-_get(tr, split, payer[split])['mean'], 0)} a year from owner {payer[split]} with {SPLIT_NAME[split]}" for split in SPLITS)
+                    + " to the other two owners")
+        return (f"The Shapley sharing is settled by transfers between owners, Shapley payoff less the owner's cash profit under the posted price on the same seed: "
+                + "; ".join(bits) + f". With the transfers included, the cash settled on Earth under the posted price is "
+                + " and ".join(f"{musd(_get(sw, split)['mean'], 1)} {ci_m(_get(sw, split)['lo'], _get(sw, split)['hi'], 1)} a year with {SPLIT_NAME[split]}" for split in SPLITS)
+                + ", against the tariff cash alone in Table 7.")
+    fill("P3-E46-TRANSFERS-SENTENCE", e46_transfers, "E46 fit transfers (BACKEND)")
+    fill("P3-E46-TRANSFERS-CLAUSE", lambda: e46_transfers("clause"), "E46 fit transfers (BACKEND)")
+
+    def e46_vs_none(kind="sentence"):
+        vn = r.f46("vs_none")
+        worse = []
+        bits = []
+        for rule in ("first", "second", "posted"):
+            for split in SPLITS:
+                owners = []
+                for o in "ABC":
+                    x = _get(vn, rule, split, o)
+                    owners.append(f"{o} {musd(x['mean'], 1, sign=True)} {ci_m(x['lo'], x['hi'], 1)}")
+                    if x["hi"] < 0:
+                        worse.append(f"owner {o} under {RULE_NAME[rule]} with {SPLIT_NAME[split]}")
+                bits.append(f"under {RULE_NAME[rule]} with {SPLIT_NAME[split]} " + ", ".join(owners))
+        if kind == "clause":
+            return ("no owner is worse off under any paid rule than under no payments" if not worse else
+                    "against no payments " + "; ".join(worse) + (" is" if len(worse) == 1 else " are") + " worse off, with the interval below zero")
+        return ("Against the no-payment pooled market on the same seeds, each owner's profit changed by: " + "; ".join(bits) + " (M USD a year).")
+    fill("P3-E46-VS-NONE-SENTENCE", e46_vs_none, "E46 fit vs_none (BACKEND)")
+    fill("P3-E46-VS-NONE-CLAUSE", lambda: e46_vs_none("clause"), "E46 fit vs_none (BACKEND)")
+
+    def h5_power(kind):
+        ex = r.f46("exploratory")
+        afg = {sp: _get(ex, "allocation_fixed_gain", "first", sp) for sp in SPLITS}
+        rt = {sp: _get(ex, "reallocation_term", sp) for sp in SPLITS}
+        pos = all(afg[sp]["lo"] > 0 for sp in SPLITS)
+        ratio = min(rt[sp]["sd"] / afg[sp]["gain"] for sp in SPLITS if afg[sp]["gain"] > 0)
+        if kind == "abstract":
+            return (f"Its cash part, with the allocation held fixed, is {musd(min(a['gain'] for a in afg.values()), 1, sign=True)} to "
+                    f"{musd(max(a['gain'] for a in afg.values()), 1, sign=True)} a year with intervals {'above' if pos else 'not above'} zero (post hoc), "
+                    f"so the registered test was underpowered.")
+        if kind == "conclusion":
+            return (f"The cash part of that gain is {'positive with intervals above zero' if pos else 'not clearly positive'} (post hoc); the registered "
+                    f"test was underpowered.")
+        return (f"The cash part of that gain, with the allocation held fixed, was {musd(afg['3eq']['gain'], 2, sign=True)} a year "
+                f"{ci_m(afg['3eq']['lo'], afg['3eq']['hi'])} with equal shares and {musd(afg['3uneq']['gain'], 2, sign=True)} "
+                f"{ci_m(afg['3uneq']['lo'], afg['3uneq']['hi'])} with 50/35/15 shares, a decomposition made after the runs (Section 4.6); the registered "
+                f"measure adds the deviator's own cargo delay, whose standard deviation over seeds is at least {num(ratio, 1)} times that cash, so the "
+                f"registered test had little power.")
+    fill("P3-H5-POWER-CLAUSE", lambda: h5_power("full"), "E46 post hoc")
+    fill("P3-H5-POWER-ABSTRACT-CLAUSE", lambda: h5_power("abstract"), "E46 post hoc")
+    fill("P3-H5-POWER-CONCLUSION-CLAUSE", lambda: h5_power("conclusion"), "E46 post hoc")
+
+    def own_checks():
+        if not OWN_CHECK_IDS:
+            raise Pending("the ids of P3's seven own checks are assigned by B-79 batch 3")
+        d, rows = vv5_load("P3", check)
+        got = {(x.get("id"), x.get("sub")): x for x in rows}
+        have = [x for x in rows if x.get("id") in OWN_CHECK_IDS]
+        missing = [i for i in OWN_CHECK_IDS if not any(x.get("id") == i for x in rows)]
+        if missing:
+            raise Pending("own checks not yet in results/vv_phase5.json: " + ", ".join(missing))
+        return ("; ".join(f"{html.escape(str(x.get('id')))} {html.escape(str(x.get('name')))}" for x in have) +
+                f" ({cnt(len(have))} checks; outcomes in Section 5.8).")
+    fill("P3-OWN-CHECKS-SENTENCE", own_checks, "B-79 batch 3")
+
     def sign_word(x, pos="a surplus", neg="a deficit", zero="a balanced budget"):
         return pos if x > 1e-9 else (neg if x < -1e-9 else zero)
 
@@ -665,8 +846,8 @@ def values(r: R, allow_pending: bool):
                   "each of " + " and ".join(html.escape(x["owner"]) for x in ties) + "'s")
         return (f"Working alone on their own cargo on the same seeds, the owners' mean profits were {musd(al['3eq']['A'], 1)}, "
                 f"{musd(al['3eq']['B'], 1)} and {musd(al['3eq']['C'], 1)} a year for A, B and C with equal shares and {musd(al['3uneq']['A'], 1)}, "
-                f"{musd(al['3uneq']['B'], 1)} and {musd(al['3uneq']['C'], 1)} with 50/35/15 shares, negative because an owner alone pays its vehicles' "
-                f"costs and its cargo's delay and no one pays it. Under every rule and split each owner's mean market profit (Table 7) was above its alone "
+                f"{musd(al['3uneq']['B'], 1)} and {musd(al['3uneq']['C'], 1)} with 50/35/15 shares (alone profit is the negative of the owner's vehicle "
+                f"costs and its cargo's delay cost, with no receipts). Under every rule and split each owner's mean market profit (Table 7) was above its alone "
                 f"profit: the market left an owner below alone in {cnt(viol_truth)} of the {cnt(len(RULES) * len(SPLITS) * 3)} owner-rule-split cases "
                 f"with honest bids and in {cnt(viol_all)} of the {cnt(len(c) * 3)} owner-cell cases over every cell. Under the posted price the "
                 f"profit of Table 7 is the owner's Shapley value of the coalition's value, true carrier costs plus delay costs with the sign reversed, "
@@ -767,8 +948,8 @@ def values(r: R, allow_pending: bool):
         gmax = max(c1e["gain"], c1u["gain"])
         incl = "includes" if (c1e["lo"] <= 0 <= c1e["hi"] or c1u["lo"] <= 0 <= c1u["hi"]) else "excludes"
         if kind == "abstract":
-            return (f"Scaling bids under first price gained at most {musd(gmax, 1)} a year, with an interval that {incl} zero; the "
-                    f"second price {'reduced' if v2 == 'supported' else 'did not reduce'} that gain; posted prices with Shapley sharing left every owner "
+            return (f"First-price bid shading gained at most {musd(gmax, 1)} a year, with an interval that {incl} zero; the "
+                    f"second price {'reduced' if v2 == 'supported' else 'did not reduce'} it; posted prices with Shapley sharing left every owner "
                     f"{'better off than' if min(c3e['min_lower'], c3u['min_lower']) > 0 else 'no worse off than'} alone in every coalition.")
         if kind == "intro":
             return (f"H5's first clause, that first-price bids reward shading, is {v1}; its second, that the second price reduces the gain, is {v2}; "
@@ -808,7 +989,7 @@ def values(r: R, allow_pending: bool):
             return (f"The smallest owner of the 50/35/15 split {'gained' if small['lo'] > 0 else ('lost' if small['hi'] < 0 else 'neither gained nor lost')} "
                     f"under the posted price with Shapley sharing ({musd(small['mean'], 0, sign=True)} a year {ci_m(small['lo'], small['hi'], 0)} in the "
                     f"grand coalition against working alone), where Kondor's smallest operator paid the largest fleet penalty [39]; the operator's budget "
-                    f"under the second price was {sign_word(bud['second']['3eq'])}, as the theory of truthful mechanisms predicts [29, 30].")
+                    f"under the second price was {sign_word(bud['second']['3eq'])}.")
         if kind == "implication":
             return (f"{rules_txt} kept every owner in; the budget was {sign_word(bud['posted']['3eq'])} under the posted price and "
                     f"{sign_word(bud['second']['3eq'])} under the second price.")
@@ -834,7 +1015,7 @@ def values(r: R, allow_pending: bool):
                 f"shares ({musd(afg['second']['3eq']['gain'], 2, sign=True)} and {musd(afg['second']['3uneq']['gain'], 2, sign=True)} under the second "
                 f"price); the rest of the paired gain is the change in the deviator's own cargo delay once its asks move jobs, a term with a mean of "
                 f"{musd(rt['3eq']['mean'], 2, sign=True)} and {musd(rt['3uneq']['mean'], 2, sign=True)} and a standard deviation over seeds of "
-                f"{musd(rt['3eq']['sd'], 0)} and {musd(rt['3uneq']['sd'], 0)}, at least {num(ratio, 0)} times the cash, which is why the "
+                f"{musd(rt['3eq']['sd'], 0)} and {musd(rt['3uneq']['sd'], 0)}, at least {num(ratio, 1)} times the cash, which is why the "
                 f"registered interval covers zero although shading pays in cash.")
     fill("P3-E46-POSTHOC-SENTENCE", e46_posthoc, "E46 post hoc (BACKEND's exploratory block)")
 
@@ -923,19 +1104,19 @@ def table_e48_sizing(r: R):
                 f"stated, scaled to the {html.escape(f['processor'])} by {num(f['factor'], 1)} (Assumed, range {num(f['factor_range'][0], 1)}"
                 f"&ndash;{num(f['factor_range'][1], 1)}). CPU per safety check in microseconds and per auction round in milliseconds, median / "
                 f"99th percentile; peak memory of the on-robot part in MB; power with its flag.",
-                ["Class", "Safety check (&micro;s)", "Auction round (ms)", "Peak memory (MB)", "Power (W)"], rows, cls="wide")
+                ["Class", "Safety check, base: reservation check (&micro;s)", "Auction round (ms)", "Peak memory (MB)", "Power (W)"], rows, cls="wide")
 
 
 def table_e48_link(r: R):
     rows = []
     for c in CLASSES:
         lk = r.s48("classes", c, "link")
-        rows.append([CLASS_NAME[c].capitalize(), num(lk["antenna_m"], 1), num(lk["freq_ghz"], 1), num(lk["tx_power_w"], 1),
+        rows.append([CLASS_NAME[c].capitalize(), num(lk["antenna_m"], 1), num(lk["freq_ghz"], 1), num(lk["tx_power_w"], 2),
                      num(lk["worst_hop_kbps"], 1), num(lk["latency_budget_ms"], 0), pc(lk["reachable_share"], 1)])
     return _tab("Table 6. Link budget per vehicle class under the models of Section 3.3: antenna height (m), frequency (GHz), transmit power (W), "
-                "data rate at the worst hop (kbit/s), latency budget for a decision within 1 s (ms) and the share of the route samples "
+                "data rate at the worst hop (kbit/s), modelled latency of a 100-byte message over three hops (one for the base) plus the scaled safety check (ms), and the share of the route samples "
                 "in direct view of the base mast within 5 km (multi-hop reach is higher and not measured).",
-                ["Class", "Antenna (m)", "Frequency (GHz)", "Power (W)", "Worst hop (kbit/s)", "Latency budget (ms)", "Reachable"], rows, cls="wide")
+                ["Class", "Antenna (m)", "Frequency (GHz)", "Power (W)", "Worst hop (kbit/s)", "Modelled latency (ms)", "Direct view of mast (share of route samples)"], rows, cls="wide")
 
 
 def table_e46_rules(r: R):

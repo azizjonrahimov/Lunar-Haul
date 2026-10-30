@@ -1,4 +1,7 @@
-# P3 notes: reference list (draft 0, 29 Oct 2026)
+# P3 notes: reference list (draft 2 after referee round 1, 30 Oct 2026)
+
+Entries run to the next blank line; a paragraph that starts with `NOTE:` after a blank line is an editorial note the
+build does not render (build_p3.py references() matches only lines that start with `[n]`).
 
 Sources: `research_notes/Lunar ATC/vehicles_comms_internals.md` (VCI), `multi_owner_allocation.md` (MOA),
 `traffic_and_safety.md` (TAS), `paper/p1/NOTES.md` (P1) and `paper/p2/NOTES.md` (P2) for our own papers and the
@@ -27,7 +30,10 @@ The earlier papers are [40, 41, 42] in P2's numbering and [56, 57, 58] here; the
 [18] Astrobotic. *Lunar Landers Payload User's Guide*, 2021. https://science.nasa.gov/wp-content/uploads/2023/11/astrobotic-lunar-landers-pug.pdf (VCI, High)
 [19] J. Esper, G. Heckler, J. Verville, G. Ryden. "NASA's Lunar Communications Relay and Navigation Systems (LCRNS)." SpaceOps 2025. NTRS 20250003321. (P1 [38], High)
 [20] ITU-R Recommendation P.526. *Propagation by diffraction*. https://www.itu.int/rec/R-REC-P.526/en (VCI, High for the method; the knife-edge values are Computed)
-[21] S. U. Hwu, M. Upanavage, C. C. Sham. Lunar surface propagation study. NASA JSC, 2008. NTRS 20080015374. https://ntrs.nasa.gov/citations/20080015374 (VCI, High; title to add) ; NASA GRC on regolith permittivity, NTRS 20230013296.
+[21] S. U. Hwu, M. Upanavage, C. C. Sham. Lunar surface propagation study. NASA JSC, 2008. NTRS 20080015374. https://ntrs.nasa.gov/citations/20080015374 ; NASA GRC on regolith permittivity, NTRS 20230013296. (VCI, High)
+
+NOTE: [21] full title to add from the NTRS record before submission.
+
 [22] NASA. Delay/Disruption Tolerant Networking page. https://www.nasa.gov/communicating-with-missions/delay-disruption-tolerant-networking/ (VCI, High)
 [23] N. Ashby, B. Patla. Lunar clock rate relative to Earth. *Astronomical Journal* 168:3, 2024; APS Physics summary https://physics.aps.org/articles/v17/140 (VCI, High; title to add)
 [24] UNOOSA ICG Working Group B, Lunar PNT, June 2024 slides (draft lunar UHF band 390-405 MHz). https://www.unoosa.org/documents/pdf/icg/2024/WG-B_Lunar_PNT_Jun24/LunarPNT_Jun24_02_01.pdf (VCI, Medium; draft)
@@ -43,7 +49,10 @@ The earlier papers are [40, 41, 42] in P2's numbering and [56, 57, 58] here; the
 [34] P. Friedrich, Y. Zhang, M. Curry, L. Dierks, S. McAleer, J. Li, T. Sandholm, S. Seuken. "Scalable Mechanism Design for Multi-Agent Path Finding." IJCAI 2024. arXiv:2401.17044 (MOA, Medium)
 [35] F. Cruijssen, M. Cools, W. Dullaert. "Horizontal cooperation in logistics: opportunities and impediments." *Transportation Research Part E* 43(2):129-142, 2007; joint route planning savings in *IJPDLM* 37(4):287-304, 2007. (MOA via notes/03, Medium-High; titles to confirm)
 [36] M. Gansterer, R. F. Hartl. "Collaborative vehicle routing: A survey." *European Journal of Operational Research* 268(1):1-12, 2018. (MOA, Medium-High; title to confirm)
-[37] L. S. Shapley. "A value for n-person games." In *Contributions to the Theory of Games II*, Princeton University Press, 1953, pp. 307-317. (not in the research notes; the standard reference for the Shapley value; to verify)
+[37] L. S. Shapley. "A value for n-person games." In *Contributions to the Theory of Games II*, Princeton University Press, 1953, pp. 307-317.
+
+NOTE: [37] is not in the research notes; it is the standard reference for the Shapley value and is to be verified against the publisher's record before submission.
+
 [38] S. Berger, C. Bierwirth. "Solutions to the request reassignment problem in collaborative carrier networks." *Transportation Research Part E* 46(5):627-638, 2010. (MOA, Medium)
 [39] D. Kondor, I. Bojic, G. Resta, F. Duarte, P. Santi, C. Ratti. "The cost of non-coordination in urban on-demand mobility." *Scientific Reports* 12:4669, 2022. doi:10.1038/s41598-022-08427-2 (MOA, High)
 [40] T. Séjourné, S. Samaranayake, S. Banerjee. "The Price of Fragmentation in Mobility-on-Demand Services." *Proc. ACM Meas. Anal. Comput. Syst.* 2(2), 2018. arXiv:1711.10963 (MOA, High)
@@ -65,13 +74,16 @@ The earlier papers are [40, 41, 42] in P2's numbering and [56, 57, 58] here; the
 [56] A. Rahimov. *Who Hauls the Habitat? A Verified Simulation Testbed, a Pooled Dispatch Marketplace and a Reference Design for Lunar Surface Logistics*. Preprint, version 2, October 2026. (P2 [40])
 [57] A. Rahimov. *Where the Lander Lands: Landing Precision, Pad Standoff, Plume Keep-Out and Rover Autonomy Priced in Lunar Surface Logistics*. Preprint, version 3, October 2026. (P2 [41])
 [58] A. Rahimov. *What Earth's Horizon Costs a Lunar Base: Terrain-Masked Communication Windows in South-Pole Cargo Logistics*. Preprint, October 2026. (P2 [42])
-[59] Pre-registration: `paper/atc/PREREG.md` in the repository, written 27 October 2026, with dated changes 1-6. Cite by repository tag when tagged. (P2 [43])
+[59] Pre-registration: `paper/atc/PREREG.md` in the repository, written 27 October 2026, with dated changes. Cite by repository tag when tagged. (P2 [43])
 [60] A. Rahimov. *Working Together Without Earth: Job Sharing, Team Lifts and Learned Bidding Among Lunar Robots of Different Owners*. Preprint, October 2026 (companion paper P1).
 [61] A. Rahimov. *Rules of the Road on the Moon and Mars: Traffic Rules for Surface Robots of Different Owners, Checked and Priced*. Preprint, October 2026 (companion paper P2).
 [62] B. Efron, R. J. Tibshirani. *An Introduction to the Bootstrap*. Chapman & Hall, 1993. (P2 [55])
 [63] NASA Space Math. Horizon distance on a sphere. https://spacemath.gsfc.nasa.gov/Geometry/3Page19.pdf (VCI, High; the lunar values are Computed in the note)
 [64] NSSDC. Apollo Lunar Roving Vehicle. https://nssdc.gsfc.nasa.gov/planetary/lunar/apollo_lrv.html (VCI, High)
-[65] S. Pan, D. Trentesaux, E. Ballot, G. Q. Huang. "Horizontal collaborative transport: survey of solutions and practical implementation issues." *International Journal of Production Research* 57(15-16):5340-5361, 2019. doi:10.1080/00207543.2019.1574040 (MOA, Medium) Not cited in the text yet; cite in 2.4 if kept.
+[65] S. Pan, D. Trentesaux, E. Ballot, G. Q. Huang. "Horizontal collaborative transport: survey of solutions and practical implementation issues." *International Journal of Production Research* 57(15-16):5340-5361, 2019. doi:10.1080/00207543.2019.1574040 (MOA, Medium)
+
+NOTE: [65] is cited in 2.4 since draft 2 (the survey of 120 studies). Draft 2 also cites [22] in 2.2 (DTN operational, no surface demonstration) and [51], [52], [53] in 2.1 (the policy frame); every entry is now cited.
+
 [66] J. Rios et al. *UAS Service Supplier Network Performance: Results and Analysis from Flight Testing Multiple USS Providers in NASA's TCL4 Demonstration*. NASA/TM-2020-220462, January 2020. https://ntrs.nasa.gov/citations/20200000531 (TAS, High)
 
 ## Reference statistics (draft 0)

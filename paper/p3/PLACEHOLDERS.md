@@ -1,4 +1,4 @@
-# P3 placeholders (draft 0, 29 Oct 2026)
+# P3 placeholders (draft 2 after referee round 1, 30 Oct 2026)
 
 `build_p3.py` fills every `{{P3-...}}` in `part1`-`part5` and fails on any unfilled placeholder and on any nan/inf.
 Keys whose experiment has not run (E46, E48, the B-79 checks) are filled with a visible `[[PENDING ...]]` marker only
@@ -40,7 +40,7 @@ E46 = the three E46 files; E48 = `results/E48_sizing.json`; PR = `paper/atc/PRER
 | P3-K30 | SCN `p5.k` | 3 decimals |
 | P3-CLV1-PAYLOAD-KG, P3-CLV1-RANGE-KM | CAT `LTV1_CLV1.params.capacity_kg`, `range_km_per_charge` (checked equal to Pegasus's payload) | kg; km |
 | P3-CAP-MAX-SINGLE-KG, P3-CAP-MAX-PAIR-KG, P3-CAP-FLEET-SUM-KG | CAT `capacity_kg` over the fleet's classes: the largest, the two largest with `can_team_lift`, the sum over the fleet's vehicles | kg |
-| P3-N-COALITION-RUNS | 2 to the power of the number of owners (SCN) | word |
+| P3-N-COALITION-RUNS | removed from the text in draft 2 (the coalition sentence of 3.5 now states the seven coalitions and five runs per seed in words); the lead removes it from the build | &ndash; |
 | P3-MESH-N-POINTS | M `n_points` | count |
 | P3-MESH-LOS-25-0TO05, P3-MESH-LOS-25-2TO5, P3-MESH-LOS-10-2TO5 | M `los_by_distance_band` `2.5-2.5` `0-0.5 km`, `2-5 km`, `1.0-1.0` `2-5 km`, `los_0m` (checked: falls with distance and height) | % |
 | P3-MESH-MAST-DIRECT-SHARE, P3-MESH-MAST-DIRECT-MAX-KM | M `mast_direct.rover_2.5m`: (n_points &minus; `n_no_direct_los`) / n_points; the last distance band whose `within_km.n` grows (checked against the band share; checked 10-30 %) | %; km |
@@ -51,7 +51,7 @@ E46 = the three E46 files; E48 = `results/E48_sizing.json`; PR = `paper/atc/PRER
 | P3-BASE-MTBF-H, P3-BASE-REPAIR-H, P3-REELECT-MIN | REG `base_mtbf_h`, `base_repair_h`, `reelect_h` x 60 | h; h; min |
 | P3-TIMEOUT-H | `auction.TIMEOUT_H` | h |
 | P3-LIN-N-WEIGHTS, P3-MLP-N-PARAMS | as build_p1.py: the linear policy's `layers[0].w` length (checked: one weight per observation name) and the sum of `w` and `b` sizes over the network's `layers` (`data/policies/atc_bid_linear_v1.json`, `atc_bid_v1.json`) | count |
-| P3-CHANGES-SENTENCE | PR: `### Change N` headings after change 1 that name E46, E48, H5, H10 or first-price | composed |
+| P3-CHANGES-SENTENCE | PR: `### Change N` headings after change 1 that name E46, E48, H5, H10 or first-price; since draft 2 the "none" case must be empty, because 4.6 types the closing sentence "No other choice was made after looking at data." | composed |
 | P3-CHECKS-SENTENCE, P3-FAILED-CHECKS-SENTENCE | `results/vv_phase5.json` rows whose `papers` holds P3: counts by `kind` and `technique`, `commit`; outcomes from `passed`, `skipped`, `bias_flag`, `error`/`rel_error` against `tolerance`; the summary is recounted from the rows and every passed flag recomputed | composed; pending until a B-79 batch tags P3 |
 | P3-E48-DESIGN-SENTENCE, P3-E48-COMPUTE-SENTENCE | E48 `runs` | composed; pending |
 | P3-E48-RESULTS-CPU, P3-E48-RESULTS-MESSAGES, P3-E48-RESULTS-LINK, P3-E48-RESULTS-FAILOVER | E48 `classes`, `messages`, `ledger_mb_per_year`, `failover`, `flight`, `laptop` | composed paragraphs; pending; checked: no job assigned twice |
@@ -67,6 +67,21 @@ E46 = the three E46 files; E48 = `results/E48_sizing.json`; PR = `paper/atc/PRER
 | P3-E46-STATUS-SENTENCE | E46 fit `short_cells` | composed |
 | P3-E46-POSTHOC-SENTENCE | E46 fit `exploratory.allocation_fixed_gain.{rule}.{split}` (`gain`, `lo`, `hi`) and `exploratory.reallocation_term.{split}` (`mean`, `sd`); made after the runs, labelled so in the text | composed; pending until BACKEND adds the block |
 | P3-E46-TARIFF-SENTENCE | E46 fit `tariff_usd_per_tkm.{split}`, `audit_penalty_multiple` (copies of the design file) | composed |
+| P3-E46-RESERVE-SENTENCE (3.5, after the second-price rule) | E46 run parts (`results/E46_parts/`, each job's `alts`): the share of jobs with at least one competing free vehicle at the dispatch instant and the share priced by the tariff reserve, per split | composed |
+| P3-E46-LOSS-SENTENCE (4.2, E46 paragraph) | `data/scenarios/E46-design.json` `message_loss.value` and `.flag` | composed; design input |
+| P3-E46-BUDGET-SENTENCE (5.5, after P3-E46-RESULTS-RULES) | E46 cells `operator_budget_musd` per rule and split with a bootstrap interval over seeds; the first-price budget stated as tariff receipts less true carrier cost | composed |
+| P3-E46-TRANSFERS-SENTENCE (5.5, after P3-E46-BUDGET-SENTENCE) | E46 fit `H5.{split}.clause3.rows` and the posted-price cells: each owner's Shapley payoff less its posted-price cash, per split, and the settlement on Earth including the transfers | composed |
+| P3-E46-VS-NONE-SENTENCE (5.6, after P3-E46-RESULTS-IR) | E46 cells: each owner's profit under first, second and posted price minus its profit under none, paired by seed, with intervals (needs per-seed profits from the run parts or a new pairs row `rule - none, owner {o} ({split})`) | composed |
+| P3-H5-POWER-CLAUSE (5.7, after P3-H5-VERDICT-SENTENCE) | E46 fit `exploratory.allocation_fixed_gain.first.{split}` (`gain`, `lo`, `hi`), labelled post hoc; states that the registered measure includes the deviator's own delay | composed |
+| P3-E46-TRANSFERS-CLAUSE (6.1) | as P3-E46-TRANSFERS-SENTENCE: the transfer amounts per split, one clause | composed |
+| P3-E46-VS-NONE-CLAUSE (6.1) | as P3-E46-VS-NONE-SENTENCE: whether any owner is worse off under a paid rule than under none, one clause | composed; direction from the data |
+| P3-H5-POWER-ABSTRACT-CLAUSE (abstract, after P3-H5-ABSTRACT-CLAUSE), P3-H5-POWER-CONCLUSION-CLAUSE (conclusion, after P3-E46-CONCLUSION-CLAUSE) | as P3-H5-POWER-CLAUSE, one short clause each (about 20 words; the abstract's typed part is 171 words and the conclusion's 126) | composed |
+| P3-E48-REFERENCE-SENTENCE (4.2, E48 paragraph) | `data/scenarios/E48-design.json` `flight.processor`, `flight.benchmark`, `flight.source`, `laptop.processor`, `laptop.benchmark`, `laptop.benchmark_note`, `flight.factor`, `flight.factor_range` | composed; design input, Assumed |
+| P3-E48-MTBF-SENTENCE (4.2, E48 paragraph) | `data/scenarios/E48-design.json` `failover.mtbf_levels_h`, `failover.repair_h`, `failover.seeds`, `failover.regime` | composed; design input, Assumed |
+| P3-E48-HORIZONS-SENTENCE (4.2, E48 paragraph) | `data/scenarios/E48-design.json` `runs.horizon_days` per multiple and `runs.seeds` | composed; design input |
+| P3-E48-TRAFFIC-NOTE (5.2, after the bytes-per-robot-hour sentence) | E48 `messages.per_robot_hour` and `bytes_per_robot_hour` per multiple against the status rate (`status_hz` x 3600) and the status bytes: the share of messages and of bytes that is the heartbeat | composed |
+| P3-E48-ROUND-SENTENCE (5.1, after P3-H10-VERDICT-SENTENCE) | E48 `classes.BASE.cpu_auction_round_ms` (`median`, `p99`) x `flight.factor` against a one-second decision; what the scaled round does to H10 | composed; direction from the data |
+| P3-OWN-CHECKS-SENTENCE (3.6) | `results/vv_phase5.json` rows of the seven market and sizing checks (none rule equals the pooled regime; one owner has no payments and a zero budget; Shapley payoffs sum to the grand coalition's value; k = 1 reproduces honest payments; the audit at q = 0 charges nothing and at q = 1 charges m times every misreport; the E48 timers leave the event trace bit-identical; the ledger after a merge holds no job twice), once B-79 batch 3 lands | composed; pending |
 | P3-REFERENCES | `NOTES.md` | numbered list |
 | TABLE:vehicles | CAT and SCN (built: value and flag per cell) | built HTML |
 | TABLE:E48_sizing, TABLE:E48_link | E48 `classes`, `flight`, `laptop` | built HTML; pending |
