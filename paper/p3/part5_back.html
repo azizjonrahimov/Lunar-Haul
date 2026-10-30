@@ -19,7 +19,7 @@
 
 <h3>6.4 Limitations</h3>
 
-<p>The findings hold for one base, one fleet of eight vehicles in three ownerships, one radio model with assumed antenna heights, range and loss, and one implementation of the software; the sizing is scaled to flight hardware by a factor, not measured on it; the market has three owners and one manipulation; and H5's first two clauses depend on a first-price cell the reduced design does not have. Section 7 states each in full.</p>
+<p>The findings hold for one base, one fleet of eight vehicles in three ownerships, one radio model with assumed antenna heights, range and loss, and one implementation of the software; the sizing is scaled to flight hardware by a factor, not measured on it; the market has three owners, one manipulation and one private-cost spread; and H5's decision rules were written after the registration, before any run. Section 7 states each in full.</p>
 
 <h3>6.5 Future work</h3>
 
@@ -35,9 +35,9 @@
 
 <p><b>Three owners, one manipulation.</b> The market is tested with three owners in two splits; the theory's warnings about collusion and shill identities [31] concern exactly such thin markets and are not tested. Bid scaling is the only misreport simulated; an owner that misreports position, availability or job completion, or that hogs a charger, is not. The audits compare bids with logged costs and assume the logs are honest.</p>
 
-<p><b>H5's first-price clauses.</b> The reduced design of E46 has no first-price rule, so the registered clauses that depend on one are reported as not tested unless a cell is added before the runs (Section 4.1). The decision rule we will apply to the other clause was not in the original registration and is dated in [59].</p>
+<p><b>H5's decision rules are dated after the registration.</b> The first-price cell that H5's first two clauses need was dropped on 27 October and restored on 29 October, before any E46 row (change 7 of [59]); the numeric decision rules for all three clauses were written then, not in the original registration, and are dated in [59].</p>
 
-<p><b>Private costs are assumed.</b> Each owner's cost of energy, wear and time is drawn from a distribution we chose; profits and individual rationality are measured against those costs. The sweep brackets them but cannot replace a company's own accounting.</p>
+<p><b>Private costs are assumed and their spread is not swept.</b> Each owner's cost of energy, wear and time is the engine's job cost times a lognormal multiplier with &sigma; = 0.2, a distribution we chose; profits and individual rationality are measured against those costs. The declared range of 0.1&ndash;0.3 was not run, because each value needs a new year of physical runs, so the results hold at one spread, and no spread replaces a company's own accounting.</p>
 
 <p><b>The lander is not a participant.</b> In this design landers publish a landing time and are otherwise closures; a lander that carries its own Lunar ATC unit, as the site's cutaway supposes, is not sized here.</p>
 
