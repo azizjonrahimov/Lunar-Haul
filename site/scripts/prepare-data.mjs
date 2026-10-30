@@ -156,17 +156,31 @@ if (existsSync(join(sbDir, 'index.json'))) {
   rmSync(sbOut, { recursive: true, force: true }); cpSync(sbDir, sbOut, { recursive: true, filter: s => statSync(s).isDirectory() || /\.json(\.gz)?$/.test(s) });
   console.log(`prepare-data: sandbox set staged (${JSON.parse(readFileSync(join(sbDir, 'index.json'), 'utf8')).encounters.length} encounters)`);
 }
-const e44 = join(ROOT, 'results', 'E44_bounds.json');
-if (existsSync(e44)) {
-  // Python's json writes NaN / Infinity bare (e.g. a mean delay with nothing finished); they are not JSON
-  const d = JSON.parse(readFileSync(e44, 'utf8').replace(/([:[,]\s*)-?(NaN|Infinity)\b/g, '$1null')), keep = ['title', 'n', 'n_driven', 'n_eff', 'violations', 'violations_by_kind', 'bound', 'bonferroni_bound', 'near_misses',
+// Python's json writes NaN / Infinity bare (e.g. a mean delay with nothing finished); they are not JSON
+const pyJson = p => JSON.parse(readFileSync(p, 'utf8').replace(/([:[,]\s*)-?(NaN|Infinity)\b/g, '$1null'));
+// the per-type counts of an encounter run (E44 on the Moon, E47 on Mars: the same structure)
+function boundsSummary(d, source) {
+  const keep = ['title', 'n', 'n_driven', 'n_eff', 'violations', 'violations_by_kind', 'bound', 'bonferroni_bound', 'near_misses',
     'near_misses_by_kind', 'min_margin_m', 'outcomes', 'emergency_brake_rate', 'intervention_rate'];
   const types = Object.fromEntries(Object.entries(d.types).map(([k, t]) => [k, Object.fromEntries(keep.filter(x => x in t).map(x => [x, t[x]]))]));
-  const g = d.defects_found_in_main_run?.genuine_finding;
+  return { source, outcome_rule: d.outcome_rule, near_miss_definition: d.near_miss_definition, emergency_brake_definition: d.emergency_brake_definition, joint: d.joint, types };
+}
+const e44 = join(ROOT, 'results', 'E44_bounds.json');
+if (existsSync(e44)) {
+  const d = pyJson(e44), g = d.defects_found_in_main_run?.genuine_finding;
   mkdirSync(join(PUB, 'atc'), { recursive: true });
-  writeFileSync(join(PUB, 'atc', 'E44_summary.json'), JSON.stringify({ source: 'results/E44_bounds.json (B-78, E44)', outcome_rule: d.outcome_rule, near_miss_definition: d.near_miss_definition,
-    emergency_brake_definition: d.emergency_brake_definition, joint: d.joint, types, finding_9: g && { rule: g.rule, status: g.status } }));
+  writeFileSync(join(PUB, 'atc', 'E44_summary.json'), JSON.stringify({ ...boundsSummary(d, 'results/E44_bounds.json (B-78, E44)'), finding_9: g && { rule: g.rule, status: g.status } }));
   console.log('prepare-data: E44 summary staged');
+}
+// E47 (B-82): the same twelve types under Mars gravity, and the road cells with a Mars Earth link (the Mars toggle on /atc/)
+const e47 = ['E47_bounds.json', 'E47_fit.json'].map(f => join(ROOT, 'results', f)), e47d = join(ROOT, 'data', 'scenarios', 'E47-design.json');
+if ([...e47, e47d].every(existsSync)) {
+  const [bounds, fit] = e47.map(pyJson), des = JSON.parse(readFileSync(e47d, 'utf8')), enc = des.encounters, road = des.road_coordination;
+  writeFileSync(join(PUB, 'atc', 'E47_summary.json'), JSON.stringify({ ...boundsSummary(bounds, 'results/E47_bounds.json (B-82, E47)'),
+    headline: fit.headline, delay_mean_h: fit.road_coordination.delay_mean_h, atc_mars_equals_moon: fit.road_coordination.atc_mars_equals_moon,
+    design: { gravity_m_s2: enc.gravity_m_s2, vehicles: enc.vehicles, rtt_min: road.rtt_min, relay: road.relay, conjunction_days: road.mars_link.conjunction_days,
+      storms: road.mars_link.storms, dte_fraction: road.mars_link.dte_fraction } }));
+  console.log('prepare-data: E47 (Mars) summary staged');
 }
 
 // /results: figure PNGs (PDFs link to the repository) and the small summary tables; whatever exists is staged

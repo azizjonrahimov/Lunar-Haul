@@ -10,7 +10,7 @@ import { readFixture, parity, replayTrace, delayAt, PLANNERS } from './encounter
 import { B_MAX, D0_M } from './safety.js';
 
 const BASE = import.meta.env.BASE_URL, $ = id => document.getElementById(id);
-const SRC_E44 = 'results/E44_bounds.json';
+const SRC_E44 = 'results/E44_bounds.json', SRC_E47 = 'results/E47_bounds.json', FIT_E47 = 'results/E47_fit.json';
 export const OWNER = ['var(--tol-blue)', 'var(--tol-red)', 'var(--tol-green)', 'var(--tol-yellow)', 'var(--tol-cyan)', 'var(--tol-purple)'];
 const TYPE_TEXT = {
   1: 'Following: the vehicle ahead brakes as hard as it can (flat, or 10, 15 or 20° downhill)',
@@ -42,25 +42,28 @@ const VIOL_TEXT = {
 };
 const PLANNER_TEXT = { nominal: 'nominal', random: 'random (fuzzer)', adversarial: 'adversarial' };
 
-let E44 = null, FIX = null, SB = null, scene = null, cur = null, k = 0, playing = false, speed = 5, last = 0, raf = 0, lastDom = 0, clock = 0;
+let E44 = null, E47 = null, world = 'moon', FIX = null, SB = null, scene = null, cur = null, k = 0, playing = false, speed = 5, last = 0, raf = 0, lastDom = 0, clock = 0;
 const ui = { type: 1, file: null, mode: 'on' };
 const docs = new Map(), runs = new Map();
 const m = (value, unit, digits, source) => num({ value, unit, digits, flag: 'Modelled', source });
 
 // ---------- E44 in one table ----------
 function e44Table() {
-  const T = E44.types, keys = Object.keys(T).sort((a, b) => a - b), src = q => `${SRC_E44}: types.${q}`;
+  const mars = world === 'mars', SRC = mars ? SRC_E47 : SRC_E44, T = (mars ? E47 : E44).types, keys = Object.keys(T).sort((a, b) => a - b), src = q => `${SRC}: types.${q}`;
   const sum = f => keys.reduce((a, q) => a + f(T[q]), 0);
   const clean = keys.filter(q => T[q].violations === 0).length;
   const viol = keys.filter(q => T[q].violations > 0);
-  $('atc-e44-lead').innerHTML = `Of ${m(sum(t => t.n), '', 0, `${SRC_E44}: Σ n`)} simulated encounters, ${m(sum(t => t.n_driven), '', 0, `${SRC_E44}: Σ n_driven`)} were driven
-    (the rest were slopes no vehicle could hold). ${clean} of the ${keys.length} types had no violation at all.
-    ${viol.map(q => `Type ${q} had ${m(T[q].violations, '', 0, `${src(q)}.violations`)} encounters with a violation (${m(T[q].violations_by_kind.viol_contact, '', 0, `${src(q)}.violations_by_kind.viol_contact`)} with contact)`).join('; ')}.`;
+  const g = mars && E47.design.gravity_m_s2, same = mars && E47.headline.type9_dead_stop_violations_moon_same_encounters;
+  $('atc-e44-lead').innerHTML = `${mars ? `On Mars (experiment E47, task B-82: gravity ${num({ value: g.value, unit: ' m/s²', digits: 2, flag: g.flag, source: 'data/scenarios/E47-design.json: encounters.gravity_m_s2' })}, the lunar vehicles and rules unchanged, the same random draws as on the Moon), of` : 'Of'}
+    ${m(sum(t => t.n), '', 0, `${SRC}: Σ n`)} simulated encounters, ${m(sum(t => t.n_driven), '', 0, `${SRC}: Σ n_driven`)} were driven
+    (the rest were slopes ${mars ? "the lunar brakes could not hold under Mars gravity" : "no vehicle could hold"}). ${clean} of the ${keys.length} types had no violation at all.
+    ${viol.map(q => `Type ${q} had ${m(T[q].violations, '', 0, `${src(q)}.violations`)} encounters with a violation (${m(T[q].violations_by_kind.viol_contact, '', 0, `${src(q)}.violations_by_kind.viol_contact`)} with contact)`).join('; ')}${mars && T[9]?.violations ? `, the same ${m(same, '', 0, `${FIT_E47}: headline.type9_dead_stop_violations_moon_same_encounters`)} encounters that lost their margin on the Moon` : ''}.`;
   const rows = keys.map(q => {
     const t = T[q], f = FINDING[q];
     return h('tr', { class: f ? 'atc-finding-row' : '' },
       h('th', { scope: 'row' }, h('button', { type: 'button', class: 'atc-linkbtn', 'aria-label': `Play type ${q} below`, onclick: () => { choose(+q); $('atc-sb').scrollIntoView({ block: 'start' }); } }, `${q}`)),
       h('td', {}, TYPE_TEXT[q], f ? h('span', { class: 'atc-tag atc-find' }, 'finding') : null),
+      h('td', { class: 'n', html: m(t.n, '', 0, `${src(q)}.n`) }),
       h('td', { class: 'n', html: m(t.n_driven, '', 0, `${src(q)}.n_driven`) }),
       h('td', { class: 'n', html: m(t.violations, '', 0, `${src(q)}.violations`) }),
       h('td', { class: 'n', html: m(t.outcomes.deadlock, '', 0, `${src(q)}.outcomes.deadlock`) }),
@@ -69,11 +72,41 @@ function e44Table() {
       h('td', { class: 'n', html: m(t.bonferroni_bound * 1e3, '‰', 2, `${src(q)}.bonferroni_bound`) }));
   });
   $('atc-e44').replaceChildren(h('table', { class: 'atc-table atc-e44-t' },
-    h('caption', { class: 'visually-hidden' }, 'The twelve encounter types of E44 and what the safety program allowed'),
-    h('thead', {}, h('tr', {}, ...['Type', 'What happens', 'Driven', 'With a violation', 'Deadlocks', 'Smallest clearance', 'Emergency brake', 'Violation risk, 95 % bound'].map(x => h('th', { scope: 'col' }, x)))),
+    h('caption', { class: 'visually-hidden' }, `The twelve encounter types ${mars ? 'on Mars (E47)' : 'on the Moon (E44)'} and what the safety program allowed`),
+    h('thead', {}, h('tr', {}, ...['Type', 'What happens', 'Drawn', 'Driven', 'With a violation', 'Deadlocks', 'Smallest clearance', 'Emergency brake', 'Violation risk, 95 % bound'].map(x => h('th', { scope: 'col' }, x)))),
     h('tbody', {}, rows)));
   $('atc-findings').replaceChildren(...Object.entries(FINDING).sort((a, b) => a[0] - b[0]).map(([q, txt]) => h('li', {}, h('strong', {}, `Type ${q}: `), txt)));
   upgradeFlags($('atc-e44')); upgradeFlags($('atc-e44-lead'));
+}
+
+// ---------- Mars (E47, P2's exploratory H9): the switch above the table, and what came out ----------
+function marsPart() {
+  const H = E47.headline, D = E47.delay_mean_h, des = E47.design, F = `${FIT_E47}: headline`, DES = 'data/scenarios/E47-design.json';
+  const seg = segmented({ legend: 'Where the encounters ran', options: [{ value: 'moon', label: 'Moon (E44)' }, { value: 'mars', label: 'Mars (E47)' }], value: world,
+    onChange: v => { world = v; e44Table(); } });
+  $('atc-world').replaceChildren(seg.el); $('atc-world').hidden = false;
+  const d = k => D[k].uncoordinated_minus_atc, rd = H.rule_delay_nominal_s, pen = H.uncoordinated_penalty_delay_h, brake = des.vehicles.service_braking_m_s2;
+  const mars = Object.keys(D).filter(k => k.startsWith('mars_')), moon = Object.keys(D).filter(k => k.startsWith('moon_'));
+  // P2's verdict on H9's third clause, checked here: every Mars interval lies below every Moon interval
+  const below = Math.max(...mars.map(k => d(k).ci[1])) < Math.min(...moon.map(k => d(k).ci[0]));
+  $('atc-mars').replaceChildren(
+    h('p', { class: 'prose', html: `The same twelve types ran again under Mars gravity with the lunar vehicles, and the road model ran with a Mars Earth link: a round trip to Earth of ${des.rtt_min.values.map(v => num({ value: v, digits: 0, flag: 'Spec', source: `${DES}: road_coordination.rtt_min` })).join(', ')} minutes, with or without a relay satellite, a ${num({ value: des.conjunction_days, digits: 0, flag: 'Assumed', source: `${DES}: road_coordination.mars_link.conjunction_days` })}-day blackout behind the Sun and two dust storms (experiment E47, task B-82; exploratory). The switch above the table shows the Mars counts. Three things came out.` }),
+    h('ul', { class: 'prose atc-list' },
+      h('li', { html: `<strong>The rules held, and cost the same.</strong> No violation in eleven of the twelve types; in type 9 the same ${m(H.type9_dead_stop_violations_mars, '', 0, `${F}.type9_dead_stop_violations_mars`)} dead-stop encounters lost their margin as on the Moon. With the normal planner the rules cost a vehicle ${m(rd.mars, ' s', 1, `${F}.rule_delay_nominal_s.mars`)} on Mars and ${m(rd.moon, ' s', 1, `${F}.rule_delay_nominal_s.moon`)} on the Moon, on average over the same ${m(rd.n, '', 0, `${F}.rule_delay_nominal_s.n`)} encounters.` }),
+      h('li', { html: `<strong>Waiting for Earth costs about ${fmt(1 / pen.mars_over_moon_2028, 0)} times less on Mars.</strong> Without Lunar ATC, conflicts between companies go to Earth for a decision. That added ${m(pen.mars_rtt20_norelay, ' h', 1, `${F}.uncoordinated_penalty_delay_h.mars_rtt20_norelay`)} to the mean delay per delivery on Mars (20-minute round trip, no relay) against ${m(pen.moon_2028, ' h', 1, `${F}.uncoordinated_penalty_delay_h.moon_2028`)} on the Moon (2028 traffic). The round trip is not the reason: a Mars base sees Earth for part of every sol, while the polar base loses it for days at a time. Lunar ATC never asks Earth, and its Mars runs ${E47.atc_mars_equals_moon ? 'equal' : 'differ from'} its lunar runs.` }),
+      h('li', { html: `<strong>The lunar brake cannot hold a Mars slope.</strong> The vehicles' service brake (${num({ value: brake, unit: ' m/s²', digits: 1, flag: 'Assumed', source: `${DES}: encounters.vehicles.service_braking_m_s2 (the lunar vehicles, unchanged)` })}) holds a downhill of at most ${m(H.steepest_holdable_downhill_deg_mars, '°', 1, `${F}.steepest_holdable_downhill_deg_mars`)} under Mars gravity, so ${m(H.type1_not_driven_share_mars * 100, ' %', 1, `${F}.type1_not_driven_share_mars`)} of the following draws (type 1, up to 20° downhill) could not be driven at all, against ${m(H.type1_not_driven_share_moon * 100, ' %', 1, `${F}.type1_not_driven_share_moon`)} on the Moon. The rules forbid the slope; vehicles for Mars need brakes sized for Mars gravity.` })),
+    h('p', { class: 'prose' }, h('strong', {}, 'What the hypothesis said. '), `Before the run, P2 wrote down three expectations for Mars (H9): the rules keep zero violations, they cost about the same delay, and coordination through Earth loses more on Mars than on the Moon. The first held outside type 9, as on the Moon; the second held. The third is contradicted: ${below ? 'coordination through Earth lost less in every Mars case, with intervals that do not overlap the Moon’s' : 'see the table below'}.`),
+    h('div', { class: 'atc-table-wrap' }, h('table', { class: 'atc-table atc-mars-t' },
+      h('caption', { class: 'small' }, `Extra mean delay per delivery when conflicts go to Earth instead of Lunar ATC: one simulated year at today’s fleet, paired over the same ${new Set([...moon, ...mars].map(k => d(k).n)).size === 1 ? d(mars[0]).n : 'paired'} seeds, 95 % bootstrap interval`),
+      h('thead', {}, h('tr', {}, ...['Where', 'Earth link', 'Extra delay', '95 % interval'].map(x => h('th', { scope: 'col' }, x)))),
+      h('tbody', {}, [...moon, ...mars].map(k => {
+        const [w, a, b] = k.split('_'), x = d(k), s = `${FIT_E47}: road_coordination.delay_mean_h.${k}.uncoordinated_minus_atc`;
+        return h('tr', {}, h('th', { scope: 'row' }, w === 'moon' ? `Moon, ${a} traffic` : 'Mars'),
+          h('td', {}, w === 'moon' ? 'polar base: Earth sets for days' : `${a.slice(3)}-minute round trip, ${b === 'relay' ? 'one relay satellite' : 'no relay'}`),
+          h('td', { class: 'n', html: m(x.mean, ' h', 1, `${s}.mean`) }),
+          h('td', { class: 'n', html: `${m(x.ci[0], '', 1, `${s}.ci[0]`)} to ${m(x.ci[1], ' h', 1, `${s}.ci[1]`)}` }));
+      })))));
+  upgradeFlags($('atc-mars'));
 }
 
 // ---------- loading ----------
@@ -287,6 +320,9 @@ export async function mount() {
     $('atc-e44').replaceChildren(h('p', {}, `The encounter results could not load (${e.message}).`)); return;
   }
   e44Table(); controls(); parityBox();
+  // Mars is optional: the page works without E47 (vite preview answers a missing file with index.html)
+  fetch(BASE + 'atc/E47_summary.json').then(r => (r.ok && /json/.test(r.headers.get('content-type') || '') ? r.json() : null))
+    .then(d => { if (d) { E47 = d; marsPart(); $('atc-mars-sec').hidden = false; } }).catch(() => {});
   $('atc-sb-start').disabled = false;
   $('atc-sb-start').addEventListener('click', start3D);
   await choose(ui.type);

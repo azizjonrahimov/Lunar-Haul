@@ -7035,7 +7035,7 @@ Title, abstract and keywords are read from `paper/r1/paper.html` (tracked) at bu
 The design is in data/scenarios/E47-design.json, committed (afd4426) before the first row. Key numbers: results/E47_fit.json "headline".
 
 ### Encounters: E44's 12 types at g = 3.71 m/s², lunar vehicles, E44's seeds (paired)
-- **Size:** 2,000 encounters per type, 12,000 for types 1 and 7 (36,000 in all).
+- **Size:** 2,000 encounters per type, 12,000 for types 1 and 7 (44,000 in all: 10 × 2,000 + 2 × 12,000).
 - **Violations:** 0 in every type except type 9: 11 dead-stop violations, the same 11 as on the Moon for the same encounters (R1's leader-braking assumption, as in E44).
 - **Deadlocks:** T5 70 (ring, R3); T6 2 (junction at the zone line). Both are the Moon's mechanisms.
 - **Bounds:** 1.5e-3 per type at n = 2,000.
@@ -7078,3 +7078,10 @@ The design is in data/scenarios/E47-design.json, committed (afd4426) before the 
 **FRONTEND:** nothing new.
 
 **Questions for LEAD:** none open. H9's clause 3 is reported as failing in direction.
+
+## F-54 MARS TOGGLE + F-56 P1 PDF DONE 06:34 | site/src/atc/sandbox.js, site/atc/index.html, site/src/atc/atc.css, site/scripts/prepare-data.mjs, site/content/paper.md, site/tests/papers.test.mjs | how to check below | from BACKEND: nothing | questions for LEAD: none
+- /atc/ section 5: a "Moon (E44) / Mars (E47)" switch above the encounter table repaints the lead and the table from results/E47_bounds.json. The table gained a "Drawn" column (n), because Mars ran fewer draws per type. Mars lead: 44,000 encounters (Σ n over types, from the JSON), 34,639 driven, 11 type-9 violations with 0 contact, "the same 11 encounters that lost their margin on the Moon" (headline.type9_dead_stop_violations_moon_same_encounters).
+- New "On Mars" block under the three findings: (1) rules held and cost the same (67.0 s vs 66.9 s over 4,411 encounters); (2) waiting for Earth costs about 6 times less (1/mars_over_moon_2028 rounded; 11.1 h vs 63.5 h), with the reason (Earth in view every sol vs days-long loss at the pole) and "Lunar ATC's Mars runs equal its lunar runs" from atc_mars_equals_moon; (3) the 0.5 m/s² service brake holds at most 7.7°, so 74.7 % of type-1 draws undrivable vs 25.2 %. Then H9: the first two clauses held, the third contradicted; the "intervals do not overlap" wording is computed on the page (max Mars upper < min Moon lower) and falls back to "see the table" if not. A table of uncoordinated minus ATC per delivery for Moon 2028/2038 and the six Mars cells, with 95 % intervals and the seed count from the JSON. A note says the player stays on the Moon.
+- prepare-data stages atc/E47_summary.json (10.7 kB: E47_bounds' per-type subset, fit.headline, road_coordination.delay_mean_h, design inputs); the E44 staging now shares the same helper. The page loads Mars optionally (missing file: no switch).
+- /paper/: "PDF to follow" replaced by a PDF link to paper/p1/working_together_without_earth_p1.pdf on GitHub, the same way as R-1's (no page count typed). New test: every PDF that /paper/ links exists in the repo.
+- Check: npm run build; node --test tests/*.test.mjs 31/31; budgets pages OK (atc lazy 14.6 of 15 kB gz). Headless Chrome: switch works, desktop and 390 px, light and dark, scrollWidth = clientWidth, no console errors. Preview stopped, profile deleted.

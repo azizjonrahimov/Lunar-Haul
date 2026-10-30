@@ -175,7 +175,8 @@
       encounter, each drawn at random many times: following, meeting head-on on a one-lane road, junctions, crew on
       foot, radio dropouts, landing closures, misbehaving vehicles and planners that try to cause a crash. Every
       vehicle's every move, ten times a second, went through the safety program (experiment E44, task B-78).</p>
-    <p class="prose" id="atc-e44-lead">Loading the results…</p>
+    <div class="atc-world" id="atc-world" hidden></div>
+    <p class="prose" id="atc-e44-lead" aria-live="polite">Loading the results…</p>
     <div class="atc-table-wrap" id="atc-e44"></div>
     <p class="small muted">A violation is any contact, a gap to the vehicle ahead below the 5 m margin, a vehicle inside a
       closed landing zone, a moving vehicle too close to crew, two vehicles meeting inside a one-lane road, or an
@@ -184,6 +185,11 @@
       once, no gentler move kept every rule and the safety program braked fully.</p>
     <h3>Three findings, not bugs</h3>
     <ul class="prose atc-list" id="atc-findings"></ul>
+    <div id="atc-mars-sec" hidden>
+      <h3 id="atc-mars-h">On Mars</h3>
+      <div id="atc-mars"></div>
+      <p class="small muted">The encounter player below stays on the Moon.</p>
+    </div>
 
     <h3 id="atc-sb-h">Play one encounter</h3>
     <p class="prose">Pick a type and watch the stored encounter: what each vehicle's planner asked for, what the safety

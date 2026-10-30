@@ -8,8 +8,8 @@ pole without waiting for Earth. P1 is finished; P2 and P3 are being written.
 ### P1 · <!--@paper:p1:title-->
 
 Azizjon Rahimov, Roatify Research · preprint, October 2026 ·
-[Paper source, data and pre-registration](https://github.com/azizjonrahimov/Lunar-Haul/tree/main/paper/p1) ·
-PDF to follow
+[PDF](https://github.com/azizjonrahimov/Lunar-Haul/blob/main/paper/p1/working_together_without_earth_p1.pdf) ·
+[Paper source, data and pre-registration](https://github.com/azizjonrahimov/Lunar-Haul/tree/main/paper/p1)
 
 **Abstract.** <!--@paper:p1:abstract-->
 

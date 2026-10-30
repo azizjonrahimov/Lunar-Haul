@@ -32,3 +32,10 @@ test('R-1: title, abstract and keywords from the built paper, without its build 
   for (const f of ['title', 'abstract', 'keywords', 'bibtex']) assert.doesNotMatch(paperField('r1', f), /\(pending\)|\{\{|<!--/, f);
   assert.match(paperField('r1', 'title'), /^What Earth's Horizon Costs/);
 });
+
+test('every PDF that /paper/ links to is in the repository', () => {
+  const md = readFileSync(new URL('../content/paper.md', import.meta.url), 'utf8');
+  const pdfs = [...md.matchAll(/Lunar-Haul\/blob\/main\/([^)\s]+\.pdf)\)/g)].map(x => x[1]);
+  assert.ok(pdfs.length >= 4, `${pdfs.length} PDF links`);
+  for (const p of pdfs) assert.ok(existsSync(new URL(`../../${p}`, import.meta.url)), p);
+});

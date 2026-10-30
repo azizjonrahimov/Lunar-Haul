@@ -33,6 +33,9 @@
 
 /* inside each vehicle */
 .atc-table-wrap { overflow-x: auto; margin-top: var(--s-3); position: relative; }   /* contains the cells' visually-hidden spans (absolutely placed), which otherwise widen the page */
+.atc-world { margin: var(--s-3) 0 0; }
+.atc-table.atc-mars-t { min-width: 30rem; }
+.atc-mars-t caption { caption-side: top; text-align: left; padding-bottom: var(--s-2); color: var(--ink-2); }
 .atc-table { border-collapse: collapse; font-size: 0.875rem; min-width: 46rem; }
 .atc-table th, .atc-table td { border-bottom: 1px solid var(--hairline); padding: var(--s-2) var(--s-3); text-align: left; vertical-align: top; }
 .atc-table thead th { font-family: var(--font-display); font-weight: 600; }
