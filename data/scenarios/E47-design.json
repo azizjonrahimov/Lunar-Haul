@@ -1,0 +1,126 @@
+{
+ "experiment": "E47 (B-82), the Mars part of P2, exploratory H9",
+ "hypothesis_H9": "the same rules keep zero violations under Mars gravity and braking; the delay cost of the rules is similar to the Moon's; Earth-dependent coordination loses more on Mars than on the Moon because of 6-44 min round trips and conjunction blackouts (PREREG change 1)",
+ "encounters": {
+  "types": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12
+  ],
+  "n_per_type": {
+   "1": 12000,
+   "2": 2000,
+   "3": 2000,
+   "4": 2000,
+   "5": 2000,
+   "6": 2000,
+   "7": 12000,
+   "8": 2000,
+   "9": 2000,
+   "10": 2000,
+   "11": 2000,
+   "12": 2000
+  },
+  "seeds": "(44, type, batch) as E44: paired with the Moon encounters of the same type, batch and index",
+  "batch_sizes": {
+   "1": 4000,
+   "2": 2000,
+   "3": 2000,
+   "4": 2000,
+   "5": 1000,
+   "6": 1000,
+   "7": 4000,
+   "8": 2000,
+   "9": 2000,
+   "10": 1000,
+   "11": 250,
+   "12": 2000
+  },
+  "gravity_m_s2": {
+   "value": 3.71,
+   "flag": "Spec"
+  },
+  "vehicles": {
+   "service_braking_m_s2": 0.5,
+   "max_braking_m_s2": 0.8,
+   "flag": "Assumed: the lunar vehicles, unchanged",
+   "steepest_holdable_downhill_deg": 7.75
+  },
+  "friction_mu": {
+   "values": [
+    0.3,
+    0.45,
+    0.6
+   ],
+   "flag": "Assumed: as on the Moon (Low)"
+  },
+  "everything_else": "E44 unchanged (rules, safety_check, builders, outcome classes, bound rule)"
+ },
+ "road_coordination": {
+  "cells": "E43 atc and uncoordinated at 1x, pooled dispatch, 30 % load, one year, seeds 1-30; atc is Earth-independent (its runs must equal E43's atc x1)",
+  "geometry": "Connecting Ridge roads, as the controlled case",
+  "rtt_min": {
+   "values": [
+    6,
+    20,
+    44
+   ],
+   "flag": "Spec (light time 3-22 min each way)"
+  },
+  "relay": {
+   "values": [
+    "none (base)",
+    "one areostationary relay (variant: continuous contact outside conjunction and storms)"
+   ],
+   "flag": "Assumed"
+  },
+  "mars_link": {
+   "sol_h": 24.6597,
+   "dte_fraction": 0.5,
+   "conjunction_start_d": 200.0,
+   "conjunction_days": 14.0,
+   "storms": [
+    [
+     90.0,
+     5.0
+    ],
+    [
+     270.0,
+     5.0
+    ]
+   ]
+  },
+  "mars_link_flags": {
+   "sol_h": "Spec",
+   "dte_fraction": "Assumed",
+   "conjunction_start_d": "Assumed (fixed date)",
+   "conjunction_days": "Spec/Assumed",
+   "storms": "Assumed (dust storms as comms-loss bursts)"
+  },
+  "t_hand_h": {
+   "value": 2.0,
+   "flag": "Assumed: staff time as E43; the round trip is added on Mars"
+  },
+  "moon_baseline": "results/E43_runs.lead.csv (uncoordinated x1 2028 and 2038, atc x1)"
+ },
+ "second_geometry": {
+  "done": false,
+  "why_not": "the terrain code reads PGDA LOLA polar-stereographic tiles with the lunar radius; a HiRISE DTM (PDS IMG/GeoTIFF, equirectangular, ~1 m/px, hundreds of MB per tile) needs a new reader and projection, and a Jezero base needs its own sites, pads and route network before E43-style runs can use it; together more than a day, so the controlled case only"
+ },
+ "outputs": [
+  "results/E47_encounters.csv",
+  "results/E47_bounds.json",
+  "results/E47_bins.csv",
+  "results/E47_runs.csv",
+  "results/E47_fit.json"
+ ]
+}
