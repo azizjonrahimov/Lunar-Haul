@@ -406,7 +406,7 @@ def cmd_analyse():
            "cpu_h": round(sum(run_s) / 3600.0, 3), "design": {k: design[k] for k in ("owners", "splits", "rules", "k_levels",
                                                                                    "q_levels", "seeds")},
            "tariff_usd_per_tkm": tariffs, "audit_penalty_multiple": mpen, "H5": {}, "max_gain": {}, "audits": {},
-           "short_cells": []}
+           "short_cells": [], "exploratory": {"note": "made after the runs, not pre-registered (LEAD, B-76 Q1)", "allocation_fixed_gain": {}, "reallocation_term": {}}}
     for split in design["splits"]:
         seeds = sorted({s for (sp, s, t) in runs if sp == split and t == "pooled"})
         T = tariffs[split]
@@ -566,6 +566,23 @@ def cmd_analyse():
                          "rule": "over every owner in every tested coalition, (Shapley payoff in the coalition - "
                                  "profit alone); supported iff the smallest upper bound >= 0", "rows": cl3}
         fit["H5"][split] = h5
+        # post hoc (not pre-registered): the largest cell's gain with the allocation held fixed (the truthful run
+        # re-priced with the scaled asks), and the rest of the paired gain (the deviator's own-delay term)
+        ex = fit["exploratory"]
+        for rule in ("first", "second"):
+            if rule not in best:
+                continue
+            _, o, k, _ = best[rule]
+            fixed = {s: money(base[s], rule, T, dev_owner=o, k=k)["profit"][o] - truth[rule][s]["profit"][o]
+                     for s in seeds}
+            b = _boot(list(fixed.values()))
+            ex["allocation_fixed_gain"].setdefault(rule, {})[split] = {"gain": b["mean"], "lo": b["lo"], "hi": b["hi"],
+                                                                       "n": b["n"], "owner": o, "k": k}
+            if rule == "first":
+                g = dict(zip(gains[best[rule]]["seeds"], gains[best[rule]]["gain"]))
+                term = np.array([g[s] - fixed[s] for s in seeds if s in g])
+                ex["reallocation_term"][split] = {"mean": float(term.mean()), "sd": float(term.std(ddof=1)),
+                                                  "n": int(len(term)), "owner": o, "k": k}
     fit["n_cells"] = len(cells)
     pd.DataFrame(cells).to_csv(os.path.join(ROOT, "results", "E46_cells.csv"), index=False, lineterminator="\n")
     pd.DataFrame(pairs).to_csv(os.path.join(ROOT, "results", "E46_pairs.csv"), index=False, lineterminator="\n")
