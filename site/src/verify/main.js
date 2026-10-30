@@ -97,7 +97,7 @@ $('v-run').addEventListener('click', runAll);
 $('v-cross').addEventListener('click', crossCheck);
 $('v-refs').textContent = `Reference numbers for the Phase-3 checks: site/verify/refs.json, made by site/scripts/make_verify_refs.py from the Python code at commit ${refs.generated.commit.slice(0, 7)} (${refs.generated.time}).`;
 // ---------- Phase 5 (F-55): the recorded Python checks, from verify/vv_phase5.json (B-79), grouped by component ----------
-const RESULT = { pass: ['pass', 'ok'], fail: ['fail', 'bad'], not_run: ['not run yet', 'idle'], error: ['format error', 'bad'] };
+const RESULT = { pass: ['pass', 'ok'], fail: ['fail', 'bad'], not_run: ['not run', 'idle'], error: ['format error', 'bad'] };
 async function phase5() {
   const host = $('v5-results'), badge = $('v5-badge');
   let r;
@@ -105,20 +105,21 @@ async function phase5() {
   // missing file: a 404 on Pages, an HTML fallback page on some servers (vite preview answers 200 with index.html)
   if (!r || !r.ok || !/json/.test(r.headers.get('content-type') || '')) {
     badge.textContent = 'not published yet'; badge.className = 'v-badge idle';
-    host.innerHTML = '<p class="small muted">No phase-5 checks are published yet. They come in three batches with task B-79 (about 110 rows: the engine, the auction and team lifts, radio, the safety program, traffic, energy, the learned bidding policy and the 3D replay).</p>';
+    host.innerHTML = '<p class="small muted">No phase-5 checks are published yet. They come with task B-79: the engine, the auction and team lifts, radio, the safety program, traffic, energy, the learned bidding policy and the 3D replay.</p>';
     return;
   }
   const doc = readPhase5(await r.json().catch(() => null));
   if (!doc.ok) { badge.textContent = 'unreadable'; badge.className = 'v-badge bad'; host.innerHTML = `<p class="small">verify/vv_phase5.json: ${esc(doc.error)}</p>`; return; }
   const t = doc.totals, scored = t.pass + t.fail + t.errors;
-  badge.textContent = `${t.pass} of ${scored} recorded checks pass${t.notRun ? `, ${t.notRun} not run yet` : ''}`;
+  badge.textContent = `${t.pass} of ${scored} recorded checks pass${t.notRun ? `, ${t.notRun} not run` : ''}${t.bias ? `, ${t.bias} bias flag${t.bias === 1 ? '' : 's'}` : ''}`;
   badge.className = 'v-badge ' + (!scored ? 'idle' : t.pass === scored ? 'ok' : 'bad');
-  host.innerHTML = doc.groups.map(g => `<section class="v-group" aria-label="${esc(g.label)}"><h3>${esc(g.label)} <span class="v-count">${g.pass + g.fail + g.errors ? `${g.pass} / ${g.pass + g.fail + g.errors}` : 'not run yet'}</span></h3>
+  host.innerHTML = (doc.mismatch ? `<p class="small v5-err">The file's summary disagrees with its rows: ${esc(doc.mismatch)}.</p>` : '') +
+    '<p class="small muted">Stochastic checks pass on their tolerance. A <span class="v5-bias">bias flag</span> marks a check whose 99 % batch-means interval misses the reference: recorded, not a failure.</p>' + doc.groups.map(g => `<section class="v-group" aria-label="${esc(g.label)}"><h3>${esc(g.label)} <span class="v-count">${g.pass + g.fail + g.errors ? `${g.pass} / ${g.pass + g.fail + g.errors}` : 'not run'}</span></h3>
     <div class="v-scroll"><table class="w-table"><thead><tr><th>Check</th><th>Formula or reference</th><th>Measured</th><th>Tolerance</th><th>Result</th><th>Source</th></tr></thead><tbody>` +
-    g.rows.map(c => `<tr><td><span class="mono">${esc(c.id)}</span> ${esc(c.name)}${c.calibration ? ' <span class="v5-cal">reproduces calibration data</span>' : ''}<div class="small muted">${esc([c.kindText, c.technique, c.credibility].filter(Boolean).join(' · '))}</div>${c.error ? `<div class="small v5-err">${esc(c.error)}</div>` : ''}</td>` +
-      `<td class="small">${esc(c.formula)}<div class="mono small">${esc(c.reference)}</div></td><td class="mono small">${esc(c.measured)}${c.run ? `<div class="muted">${esc(c.run)}</div>` : ''}</td><td class="small">${esc(c.tolerance)}</td>` +
-      `<td><span class="v5-res ${RESULT[c.status][1]}">${RESULT[c.status][0]}</span></td><td class="small">${esc(c.source)}${c.paper ? ` · ${esc(c.paper)}` : ''}${c.test ? `<div class="mono muted">${esc(c.test)}</div>` : ''}</td></tr>`).join('') +
-    '</tbody></table></div></section>').join('') + `<p class="small muted">Recorded at commit ${esc(doc.commit.slice(0, 7))} (${esc(doc.generated)}), results/vv_phase5.json.</p>`;
+    g.rows.map(c => `<tr><td><span class="mono">${esc(c.id)}</span>${c.sub ? ` <span class="small">${esc(c.sub)}</span>` : ''} ${esc(c.name)}${c.calibration ? ' <span class="v5-cal">reproduces calibration data</span>' : ''}<div class="small muted">${esc(c.meta)}</div>${c.error ? `<div class="small v5-err">${esc(c.error)}</div>` : ''}</td>` +
+      `<td class="small">${esc(c.formula)}<div class="mono small">${esc(c.reference)}</div></td><td class="mono small">${esc(c.measured)}${c.ci ? `<div class="muted">${esc(c.ci)}</div>` : ''}${c.bias ? '<div><span class="v5-bias">bias flag</span></div>' : ''}${c.run ? `<div class="muted">${esc(c.run)}</div>` : ''}</td><td class="small">${esc(c.tolerance)}</td>` +
+      `<td><span class="v5-res ${RESULT[c.status][1]}">${RESULT[c.status][0]}</span>${c.reason ? `<div class="small muted">${esc(c.reason)}</div>` : ''}</td><td class="small">${esc(c.source)}${c.papers ? ` · ${esc(c.papers)}` : ''}</td></tr>`).join('') +
+    '</tbody></table></div></section>').join('') + `<p class="small muted">Recorded ${doc.commit ? `at commit ${esc(doc.commit.slice(0, 7))} ` : ''}(${esc(doc.generated)}), results/vv_phase5.json.</p>`;
 }
 render();
 runAll();

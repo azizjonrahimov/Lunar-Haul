@@ -54,6 +54,14 @@
 .atc-num { border-left: 3px solid var(--accent); padding-left: var(--s-3); }
 .atc-num .ui-label { display: block; margin-bottom: 0.15rem; }
 .atc-pending-line { color: var(--ink-2); }
+/* E46: the market experiment's tables and verdicts (the word carries the verdict; the border only repeats it) */
+.atc-table.atc-mk-t { min-width: 34rem; margin-top: var(--s-4); }
+.atc-mk-t caption { caption-side: top; text-align: left; padding-bottom: var(--s-2); color: var(--ink-2); }
+.atc-tag.atc-verdict { margin-top: var(--s-1); border-style: solid; border-color: var(--warm); color: var(--warm); }
+.atc-tag.atc-verdict.atc-yes { border-color: var(--accent); color: var(--ink); }
+.atc-err { color: var(--warm); font-weight: 600; }
+.atc-mk-more { margin-top: var(--s-4); }
+.atc-mk-more summary { cursor: pointer; font-weight: 600; }
 
 /* section 5: E44 in one table, the findings, the encounter sandbox and the parity check */
 .atc-table td.n, .atc-sb-t td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }

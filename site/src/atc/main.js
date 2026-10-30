@@ -103,17 +103,90 @@ function render(doc) {
       n: `Talking is cheap: with ${said('C_LEADER loss 0.10')}, each robot sent ${v('C_LEADER loss 0.10', 'atc_msgs_per_robot_h')} messages an hour. Cross-company team lifts: ${v('C_LEADER loss 0.10', 'team_lifts')} a year in the shared market, ${v('A_EARTH strict', 'team_lifts', { digits: 0 })} with ${said('A_EARTH strict')}. The learned policy is not in this run yet (task B-74).` },
     { t: 'The cheapest offer wins', p: 'The board gives the job to the lowest offer and tells the robots. The winner’s planner suggests a route; its safety program reserves the road ahead and decides, move by move.',
       n: `How long an urgent load waited, on average: ${v('O_ORACLE', 'atc_urgent_wait_mean_h', { unit: ' h' })} with ${said('O_ORACLE')}, ${v('C_LEADER loss 0.10', 'atc_urgent_wait_mean_h', { unit: ' h' })} with ${said('C_LEADER loss 0.10')}, ${v('B_EARTH strict', 'atc_urgent_wait_mean_h', { unit: ' h' })} with ${said('B_EARTH strict')}, and ${v('A_EARTH strict', 'atc_urgent_wait_mean_h', { unit: ' h' })} with ${said('A_EARTH strict')}.` },
-    { t: 'The winner is paid', p: 'When the cargo is delivered, the ledger on the base computer records a payment from the cargo’s owner to the robot’s owner: per item at the second-lowest offer, or at a posted price per tonne-kilometre with the gains of team lifts shared fairly.',
-      n: null, wait: 'The payment rules and what each company earns and pays are being simulated (task B-76).' },
+    { t: 'The winner is paid', p: 'When the cargo is delivered, the ledger on the base computer records the payments. The cargo’s owner pays a price per tonne-kilometre set on Earth. The robot’s owner is paid by one of three rules: its own offer (first price), the best offer it beat (second price), or the same posted price, with the gains of working together shared by Shapley value. The base operator covers any difference.',
+      n: null, e: MK && `The posted price, set on Earth to recover the cost: ${Object.entries(MK.tariff_usd_per_tkm).map(([s, t]) => `${mk(t, ' USD', 0, `tariff_usd_per_tkm.${s}`)} per tonne-km with ${esc(MK.design.splits[s])}`).join(', ')}. What each rule cost the operator is in the table below.`,
+      wait: 'The payment rules and what each company earns and pays are being simulated (task B-76).' },
     { t: 'Earth settles up later', p: 'Nothing waits for Earth: the robots keep working on the Moon’s ledger. When Earth is back in view, the ledger is sent home, the companies settle the money and an audit checks a sample of the records.',
-      n: `Work does not pile up meanwhile: at the end of a blackout, the cargo still waiting was ${v('C_LEADER loss 0.10', 'atc_backlog_end_blackout_t_mean', { unit: ' t' })} with ${said('C_LEADER loss 0.10')}, against ${v('B_EARTH strict', 'atc_backlog_end_blackout_t_mean', { unit: ' t' })} with ${said('B_EARTH strict')}.`, wait: 'The settlement and audit numbers come with task B-76.' },
+      n: `Work does not pile up meanwhile: at the end of a blackout, the cargo still waiting was ${v('C_LEADER loss 0.10', 'atc_backlog_end_blackout_t_mean', { unit: ' t' })} with ${said('C_LEADER loss 0.10')}, against ${v('B_EARTH strict', 'atc_backlog_end_blackout_t_mean', { unit: ' t' })} with ${said('B_EARTH strict')}.`,
+      e: MK && settleLine(), wait: 'The settlement and audit numbers come with task B-76.' },
   ];
   $('atc-steps').replaceChildren(...steps.map((s, i) => h('li', { class: 'atc-step' },
     h('p', { class: 'atc-step-n ui-label' }, `Step ${i + 1}`), h('h3', {}, s.t), h('p', {}, s.p),
+    s.e ? h('p', { class: 'atc-num', html: `<span class="ui-label">In the market experiment (E46)</span> ${s.e}` }) : null,
     s.n ? h('p', { class: 'atc-num', html: `<span class="ui-label">In the test run</span> ${s.n}` }) : null,
-    s.wait ? h('p', { class: 'atc-pending-line' }, h('span', { class: 'atc-tag' }, 'coming'), ' ', s.wait) : null)));
+    s.wait && !s.e ? h('p', { class: 'atc-pending-line' }, h('span', { class: 'atc-tag' }, 'coming'), ' ', s.wait) : null)));
   upgradeFlags($('atc-steps'));
 }
+
+// ---------- 4b. The market experiment (E46, B-76; P3's H5), from atc/E46_summary.json ----------
+const MKS = 'results/E46_fit.json', MKC = 'results/E46_cells.csv';
+let MK = null, smoke = null;
+const mk = (value, unit, digits, source, file = MKS) => num({ value, unit, digits, flag: 'Modelled', source: `${file}: ${source}` });
+const musd = (v, src, d = 2) => mk(v / 1e6, '', d, `${src} / 1e6`);
+const RULE = { none: 'No payments', first: 'First price', second: 'Second price', posted: 'Posted price' };
+const paidHonest = () => MK.honest.filter(c => c.rule !== 'none');
+const cellSrc = c => `${c.rule} ${c.split}, k 1, q 0`;
+function settleLine() {
+  const P = paidHonest(), lo = P.reduce((a, c) => (c.settled_earth_musd < a.settled_earth_musd ? c : a)), hi = P.reduce((a, c) => (c.settled_earth_musd > a.settled_earth_musd ? c : a));
+  const open = Math.max(...P.map(c => c.open_end_musd));
+  return `With honest offers, the money that had to change hands through Earth in a year was ${mk(lo.settled_earth_musd, '', 1, `settled_earth_musd (${cellSrc(lo)})`, MKC)} to ${mk(hi.settled_earth_musd, ' M USD', 1, `settled_earth_musd (${cellSrc(hi)})`, MKC)} across the three paying rules and both splits. ` +
+    `Owed but not yet settled when the year ended: ${open < 0.01 ? 'under 0.01 M USD in every case' : mk(open, ' M USD', 2, 'max open_end_musd', MKC)}. With no payments, nothing moves.`;
+}
+// a clause's verdict from its intervals by PREREG change 7, checked against the file's own flag
+const VERDICT = { clause1: c => c.lo > 0, clause2: c => c.diff_mean < 0 && c.diff_hi < 0, clause3: c => c.min_upper >= 0 };
+function verdict(q, c) {
+  const ok = VERDICT[q](c), word = ok ? 'supported' : 'not supported';
+  return `<span class="atc-tag atc-verdict${ok ? ' atc-yes' : ''}">${word}</span>${ok === c.supported ? '' : ` <span class="atc-err">(the file says ${c.supported ? 'supported' : 'not supported'})</span>`}`;
+}
+function marketPart() {
+  const D = MK.design, S = Object.keys(D.splits), H = MK.H5, iv = (c, s, q, lo, hi) => `${musd(c[lo], `H5.${s}.${q}.${lo}`)} to ${musd(c[hi], `H5.${s}.${q}.${hi}`)}`;
+  const claim = {
+    clause1: ['Under first price, a company gains by scaling its offers', (c, s) => `${musd(c.gain, `H5.${s}.clause1.gain`)} M USD a year (${iv(c, s, 'clause1', 'lo', 'hi')}), company ${esc(c.owner)} at k ${c.k}`],
+    clause2: ['Second price shrinks that gain', (c, s) => `${musd(c.diff_mean, `H5.${s}.clause2.diff_mean`)} M USD a year (${iv(c, s, 'clause2', 'diff_lo', 'diff_hi')}), second less first, paired by seed`],
+    clause3: ['Posted price with Shapley sharing leaves no company worse off than alone', (c, s) => `smallest bounds over every company in every coalition: lower ${musd(c.min_lower, `H5.${s}.clause3.min_lower`, 1)}, upper ${musd(c.min_upper, `H5.${s}.clause3.min_upper`, 1)} M USD a year`],
+  };
+  const hon = (r, s) => MK.honest.find(c => c.rule === r && c.split === s), rules = D.rules.filter(r => hon(r, S[0]));
+  const eff = S.map(s => [...new Set(MK.honest.filter(c => c.split === s).map(c => c.efficiency_loss_pct))]), same = eff.every(e => e.length === 1);
+  const coal = S.map(s => H[s].clause3.rows), cr = coal[0];
+  $('atc-e46').innerHTML = `
+    <p class="prose">Experiment E46 tested P3’s hypothesis H5, written down before the run: ${fmt(D.seeds, 0)} simulated years for each case,
+      three companies with ${S.map(s => esc(D.splits[s])).join(' or ')}, and the payment rules above. To test cheating, one company scaled
+      its offers by k = ${D.k_levels.join(', ')}, with ${D.q_levels.map(q => fmt(q * 100, 0)).join(', ')} % of records audited
+      and a fine of ${fmt(MK.audit_penalty_multiple, 0)} times the misstatement. Intervals are 95 % bootstrap intervals over the seeds.</p>
+    <div class="atc-table-wrap"><table class="atc-table atc-mk-t">
+      <caption>H5, clause by clause (USD a year)</caption>
+      <thead><tr><th scope="col">Clause</th>${S.map(s => `<th scope="col">${esc(D.splits[s])}</th>`).join('')}</tr></thead>
+      <tbody>${Object.entries(claim).map(([q, [t, f]], i) => `<tr><th scope="row">${i + 1}. ${t}</th>${S.map(s => `<td>${f(H[s][q], s)}<br>${verdict(q, H[s][q])}</td>`).join('')}</tr>`).join('')}</tbody>
+    </table></div>
+    <p class="small muted">The page recomputes each verdict from the intervals, by the rules registered before the run: clause 1 holds if its interval lies
+      above zero; clause 2 if the difference and its upper bound are below zero; clause 3 if the smallest upper bound is not below zero.
+      Under the posted price a company’s result is its Shapley value of the shared cost, not cash.</p>
+    <div class="atc-table-wrap"><table class="atc-table atc-mk-t">
+      <caption>With honest offers, per payment rule (M USD a year)</caption>
+      <thead><tr><th scope="col" rowspan="2">Rule</th><th scope="colgroup" colspan="${S.length}">Operator’s balance</th><th scope="colgroup" colspan="${S.length}">Settled through Earth</th></tr>
+        <tr>${[0, 1].map(() => S.map(s => `<th scope="col">${esc(D.splits[s])}</th>`).join('')).join('')}</tr></thead>
+      <tbody>${rules.map(r => `<tr><th scope="row">${RULE[r] || esc(r)}</th>${['operator_budget_musd', 'settled_earth_musd'].map(k => S.map(s => { const c = hon(r, s); return `<td class="n">${mk(c[k] === 0 ? 0 : c[k], '', 2, `${k} (${cellSrc(c)})`, MKC)}</td>`; }).join('')).join('')}</tr>`).join('')}</tbody>
+    </table></div>
+    <ul class="prose atc-list">
+      <li><strong>The operator’s balance.</strong> Shippers pay the posted price under every paying rule, so a minus means the operator paid carriers
+        more than it collected. Under the posted price it is zero by construction: the same price goes in and out.</li>
+      <li><strong>Efficiency.</strong> Against a perfect pooled market (the oracle), the market’s system cost (the carriers’ true cost plus the cost of delay) was higher by
+        ${S.map((s, i) => `${mk(eff[i][0], ' %', 1, `efficiency_loss_pct (${cellSrc(hon(rules[0], s))})`, MKC)} with ${esc(D.splits[s])}`).join(' and ')}${same ? ', the same under every rule: payments are worked out afterwards, on one allocation' : ' (it varies by rule; see the cells table)'}.</li>
+      <li><strong>${MK.cells.ir_violations ? 'Some companies worse off.' : 'No company worse off.'}</strong> Over all ${mk(MK.cells.n, '', 0, 'rows', MKC)} cases (every rule, split, k and audit rate),
+        a company made less on average than working alone ${mk(MK.cells.ir_violations, '', 0, 'Σ ir_violations', MKC)} times.</li>
+    </ul>
+    <details class="atc-mk-more"><summary>Every company in every coalition (clause 3)</summary>
+      <div class="atc-table-wrap"><table class="atc-table atc-mk-t">
+        <caption class="small">Shapley value in the coalition less profit alone, M USD a year, mean and 95 % interval</caption>
+        <thead><tr><th scope="col">Coalition</th><th scope="col">Company</th>${S.map(s => `<th scope="col">${esc(D.splits[s])}</th>`).join('')}</tr></thead>
+        <tbody>${cr.map((r, i) => `<tr><td>${esc(r.coalition)}</td><td>${esc(r.owner)}</td>${S.map((s, j) => { const x = coal[j].find(y => y.coalition === r.coalition && y.owner === r.owner), src = `H5.${s}.clause3.rows[${coal[j].indexOf(x)}]`;
+          return x ? `<td class="n">${musd(x.mean, `${src}.mean`, 1)} (${musd(x.lo, `${src}.lo`, 1)} to ${musd(x.hi, `${src}.hi`, 1)})</td>` : '<td>–</td>'; }).join('')}</tr>`).join('')}</tbody>
+      </table></div></details>`;
+  upgradeFlags($('atc-e46'));
+  $('atc-e46-sec').hidden = false;
+}
+fetch(BASE + 'atc/E46_summary.json').then(r => (r.ok && /json/.test(r.headers.get('content-type') || '') ? r.json() : null))
+  .then(d => { if (d) { MK = d; marketPart(); if (smoke) render(smoke); } }).catch(() => {});
 
 insideTable(null);
 fetch(BASE + 'atc/E48_sizing.json').then(r => (r.ok && /json/.test(r.headers.get('content-type') || '') ? r.json() : null)).then(S => S && insideTable(S)).catch(() => {});
@@ -125,7 +198,7 @@ whenNear('atc-bid', () => import('./bid.js').then(m => m.mount()));
 whenNear('sandbox', () => import('./sandbox.js').then(s => s.mount()));
 try {
   const r = await fetch(BASE + 'atc/ATC_regimes_smoke.json'); if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  const doc = await r.json(), years = Object.keys(doc.years);
+  const doc = smoke = await r.json(), years = Object.keys(doc.years);
   ui.year = years[0];
   const load = /-L(\d+)-/.exec(doc.scenario)?.[1], eq = /-3eq-/.test(doc.scenario);   // from the scenario's name, e.g. p5-3eq-L30-T10
   $('atc-run-desc').textContent = `task B-72: ${eq ? 'three equally sized companies' : 'several companies'}${load ? `, cargo rovers about ${load} % busy` : ''}, ${doc.seeds.length} seeds a year, start years ${years.join(' and ')}`;

@@ -668,7 +668,7 @@ split screen "without the network" | "with the network" on the same seed and clo
 (urgent items waiting, hours robots sat idle, messages per hour, hand-coordination hours on Earth). Owner colours
 from the existing Tol palette; every counter traceable to the trace file. Default speed per F-50.
 
-## F-54 [IN PROGRESS: explainer, inside-each-vehicle placeholders, market walk-through; encounter sandbox DONE 30 Oct 04:36 (committed 0a36875); learned bid policy (item 3) DONE 30 Oct (uncommitted); Mars toggle DONE 30 Oct 06:34 (committed); inside-each-vehicle sizing from E48 DONE 30 Oct 07:20 (uncommitted)] /atc/ page: what Lunar ATC is, and an encounter sandbox
+## F-54 [IN PROGRESS: explainer, inside-each-vehicle placeholders, market walk-through (E46 block DONE 30 Oct 09:58, uncommitted); encounter sandbox DONE 30 Oct 04:36 (committed 0a36875); learned bid policy (item 3) DONE 30 Oct (uncommitted); Mars toggle DONE 30 Oct 06:34 (committed); inside-each-vehicle sizing from E48 DONE 30 Oct 07:20 (uncommitted)] /atc/ page: what Lunar ATC is, and an encounter sandbox
 1. Plain explainer: the three parts (safety program on each robot, the robots' shared job market with learned
    bids, the base computer with failover), "the AI suggests, the safety program decides", what Earth still does.
    A diagram (inline SVG, both themes).
@@ -678,7 +678,7 @@ from the existing Tol palette; every counter traceable to the trace file. Defaul
 3. The learned bid policy runs in the browser from `data/policies/atc_bid_linear_v1.json` (LEAD 27 Oct: the linear model is the one that helps; the MLP file atc_bid_v1.json stays as the record and is not shown as the method) (pattern: site/src/policy.js)
    with its check file.
 
-## F-55 [FRAME DONE (uncommitted); fills in as B-79 batches land] Verification page, phase 5
+## F-55 [FRAME DONE; reader ported to BACKEND's vv5.py names 30 Oct 09:58 (uncommitted); fills in as B-79 lands] Verification page, phase 5
 Show the new checks from `results/vv_phase5.json` grouped by component (engine, auction, radio, safety, traffic,
 energy, learned policy, 3D replay), each with formula, tolerance, measured value, pass/fail and source; label the
 calibration-reproduction checks as such; keep the existing 37 rows.

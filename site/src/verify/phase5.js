@@ -1,17 +1,18 @@
-// Phase 5 checks on /verification/ (F-55): results/vv_phase5.json, written by BACKEND's run_phase5_checks() (B-79),
-// staged to verify/vv_phase5.json. read(doc) validates the file against the schema proposed to BACKEND on 27 Oct
-// (format lunarsim-vv-phase5 v1; confirmed by BACKEND with an optional "run" {seeds, wall_s}; sub-cases are rows, D3a, D3b)
-// and returns the components in page order with their rows; a row that breaks the
-// schema becomes an error row, never a pass. No DOM, so Node tests can use it.
+// Phase 5 checks on /verification/ (F-55): results/vv_phase5.json, written by BACKEND's lunarsim/vv5.py (B-79),
+// staged to verify/vv_phase5.json. read(doc) validates the file against BACKEND's names (agreed with LEAD on 30 Oct:
+// version 1, {generated, commit, summary, rows}; one row per check and sub-case, keyed by id + sub; grouped by the
+// letter of the id as in research_notes/Lunar ATC/verification_plan.md) and returns the groups in page order. A row
+// that breaks the schema, or whose "passed" disagrees with its own error and tolerance, becomes an error row, never a
+// pass. A skipped row is "not run", never a fail; a bias flag is recorded, not a failure. No DOM, so Node tests can use it.
 
-export const FORMAT = 'lunarsim-vv-phase5', VERSION = 1;
-// the page order and plain names (the file's own components list may rename them or add more)
+export const VERSION = 1;
+// the plan's id letters, in page order
 export const COMPONENTS = [
-  ['engine', 'Dispatch engine'], ['auction', 'Auction and team lifts'], ['radio', 'Radio and visibility'], ['safety', 'Safety program'],
-  ['traffic', 'Traffic'], ['energy', 'Energy and battery'], ['learned', 'Learned bidding policy'], ['replay', '3D scene and replay'], ['cross', 'Cross-cutting'],
+  ['D', 'Dispatch engine'], ['A', 'Auction and team lifts'], ['R', 'Radio and visibility'], ['S', 'Safety program'],
+  ['T', 'Traffic'], ['E', 'Energy and battery'], ['L', 'Learned bidding policy'], ['V', '3D scene and replay'], ['X', 'Cross-cutting'],
 ];
 const KINDS = { V: 'verification', Val: 'validation', Cal: 'reproduces calibration data' };
-const TOL = ['rel', 'abs', 'exact', 'zero_events', 'pvalue'], STATUS = ['pass', 'fail', 'not_run'];
+const MODES = ['rel', 'abs'];
 
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 // 1e-9 -> "1e-9", 0.0123 -> "0.0123", 1234.5 -> "1,234.5"
@@ -20,50 +21,63 @@ export function fmtNum(v, unit = '') {
   const a = Math.abs(v), s = a !== 0 && (a < 1e-3 || a >= 1e7) ? v.toExponential(2).replace(/\.?0+e/, 'e').replace('e+', 'e') : v.toLocaleString('en-GB', { maximumSignificantDigits: 6 });
   return unit ? `${s} ${unit}` : s;
 }
-export function tolText(t) {
-  if (!t) return '–';
-  return { rel: () => `≤ ${fmtNum(t.value)} relative`, abs: () => `≤ ${fmtNum(t.value)}`, exact: () => 'exact', zero_events: () => 'zero events', pvalue: () => `p ≥ ${fmtNum(t.value)}` }[t.type]?.() ?? '–';
+export function tolText(c) {
+  if (!isNum(c?.tolerance) || !MODES.includes(c.mode)) return '–';
+  if (c.tolerance === 0) return 'exact';
+  return c.mode === 'rel' ? `≤ ${fmtNum(c.tolerance)} relative` : `≤ ${fmtNum(c.tolerance, c.unit)}`;
 }
+// the error the tolerance applies to, as vv.Check.finish() computes it
+export const errorOf = c => (c.mode === 'abs' ? Math.abs(c.simulated - c.reference) : Math.abs(c.simulated - c.reference) / Math.max(Math.abs(c.reference), 1e-12));
 
-// one row -> {ok, row} or {ok: false, row with error}
-function checkRow(c, components) {
-  const errs = [];
-  if (!c || typeof c !== 'object') return { id: '?', component: 'cross', name: 'unreadable row', status: 'error', error: 'not an object' };
-  if (typeof c.id !== 'string' || !c.id) errs.push('id');
-  if (!components.has(c.component)) errs.push(`component "${c.component}"`);
-  if (typeof c.name !== 'string') errs.push('name');
+function checkRow(c, seen) {
+  if (!c || typeof c !== 'object') return { id: '?', key: '?', group: 'X', name: 'unreadable row', status: 'error', error: 'not an object' };
+  const errs = [], skipped = typeof c.skipped === 'string' && c.skipped !== '';
+  if (typeof c.id !== 'string' || !/^[A-Z]\d+$/.test(c.id)) errs.push(`id "${c.id}"`);
+  if (c.sub != null && typeof c.sub !== 'string') errs.push('sub');
+  const key = `${c.id}${c.sub ? ` · ${c.sub}` : ''}`;
+  if (seen.has(key)) errs.push('id + sub repeated'); seen.add(key);
+  if (typeof c.name !== 'string' || !c.name) errs.push('name');
   if (!(c.kind in KINDS)) errs.push(`kind "${c.kind}"`);
-  if (!STATUS.includes(c.status)) errs.push(`status "${c.status}"`);
-  if (!c.tolerance || !TOL.includes(c.tolerance.type)) errs.push('tolerance.type');
-  if (c.tolerance && ['rel', 'abs', 'pvalue'].includes(c.tolerance.type) && !isNum(c.tolerance.value)) errs.push('tolerance.value');
-  if (c.tolerance?.type === 'zero_events' && !(c.zero_events && isNum(c.zero_events.exposure) && isNum(c.zero_events.upper95))) errs.push('zero_events');
-  if (c.status !== 'not_run' && c.measured?.value === undefined) errs.push('measured');
-  if (typeof c.source !== 'string' || !c.source) errs.push('source');
+  if (!MODES.includes(c.mode)) errs.push(`mode "${c.mode}"`);
+  if (!isNum(c.tolerance) || c.tolerance < 0) errs.push('tolerance');
+  if (typeof c.skipped !== 'string') errs.push('skipped');
+  if (typeof c.passed !== 'boolean') errs.push('passed');
+  if (!skipped) {
+    if (!isNum(c.reference)) errs.push('reference');
+    if (!isNum(c.simulated)) errs.push('simulated');
+    if (!errs.length && (errorOf(c) <= c.tolerance) !== c.passed) errs.push(`"passed" is ${c.passed} but the error ${fmtNum(errorOf(c))} is ${errorOf(c) <= c.tolerance ? 'within' : 'outside'} the tolerance`);
+  }
+  if (c.ci99 != null && !(Array.isArray(c.ci99) && c.ci99.length === 2 && c.ci99.every(isNum))) errs.push('ci99');
+  if (c.exposure != null && !(isNum(c.exposure.n) && isNum(c.exposure.upper95))) errs.push('exposure');
+  const ci = Array.isArray(c.ci99) && c.ci99.every(isNum) ? c.ci99 : null, ex = c.exposure && isNum(c.exposure.n) ? c.exposure : null;
   const row = {
-    id: String(c.id ?? '?'), component: components.has(c.component) ? c.component : 'cross', name: String(c.name ?? ''), kind: c.kind, kindText: KINDS[c.kind] || '',
-    calibration: c.kind === 'Cal', technique: c.technique || '', credibility: c.credibility || '', formula: c.formula || '',
-    reference: c.reference?.text || fmtNum(c.reference?.value, c.reference?.unit),
-    measured: c.status === 'not_run' ? 'not run yet' : fmtNum(c.measured?.value, c.measured?.unit) + (Array.isArray(c.measured?.ci95) ? ` (95 % CI ${fmtNum(c.measured.ci95[0])} to ${fmtNum(c.measured.ci95[1])})` : '') + (isNum(c.measured?.n) ? `, n = ${c.measured.n}` : ''),
-    tolerance: tolText(c.tolerance) + (c.zero_events ? `; exposure ${fmtNum(c.zero_events.exposure, c.zero_events.unit)}, 95 % upper bound ${fmtNum(c.zero_events.upper95)}` : ''),
-    status: errs.length ? 'error' : c.status, source: c.source || '', paper: c.paper || null, test: c.test || '', batch: c.batch ?? null,
-    // optional (BACKEND, 27 Oct): what the check cost to run
-    run: c.run ? [Array.isArray(c.run.seeds) ? `${c.run.seeds.length} seed${c.run.seeds.length === 1 ? '' : 's'}` : '', isNum(c.run.wall_s) ? `${fmtNum(c.run.wall_s)} s` : ''].filter(Boolean).join(', ') : '',
+    id: String(c.id ?? '?'), sub: typeof c.sub === 'string' ? c.sub : '', key, group: /^[A-Z]/.test(c.id ?? '') ? c.id[0] : 'X',
+    name: String(c.name ?? ''), kind: c.kind, kindText: KINDS[c.kind] || '', calibration: c.kind === 'Cal',
+    meta: [c.kind === 'Cal' ? '' : KINDS[c.kind], c.technique, c.factor, c.priority].filter(x => typeof x === 'string' && x).join(' · '),
+    formula: typeof c.basis === 'string' ? c.basis : '', reference: fmtNum(c.reference, c.unit),
+    measured: skipped ? '–' : fmtNum(c.simulated, c.unit) + (isNum(c.error) ? `; error ${fmtNum(c.error)}${c.mode === 'rel' ? ' relative' : ''}` : ''),
+    ci: ci ? `99 % batch-means interval ${fmtNum(ci[0])} to ${fmtNum(ci[1])}` : '', bias: c.bias_flag === true,
+    tolerance: tolText(c) + (ex ? `; zero events in ${fmtNum(ex.n, ex.unit || '')}, 95 % upper bound ${fmtNum(ex.upper95)}` : ''),
+    status: errs.length ? 'error' : skipped ? 'not_run' : c.passed ? 'pass' : 'fail', reason: skipped ? c.skipped : '',
+    source: typeof c.source === 'string' ? c.source : '', papers: Array.isArray(c.papers) ? c.papers.join(', ') : '',
+    run: isNum(c.runtime_s) ? `${fmtNum(c.runtime_s)} s` : '',
   };
   if (errs.length) row.error = `does not match the agreed format: ${errs.join(', ')}`;
   return row;
 }
 
-/* read(doc) -> {ok, error?, generated, commit, groups: [{id, label, rows, pass, fail, notRun, errors}], totals} */
+/* read(doc) -> {ok, error?, generated, commit, groups: [{id, label, rows, pass, fail, notRun, errors, bias}], totals, mismatch} */
 export function read(doc) {
-  if (!doc || doc.format !== FORMAT) return { ok: false, error: `not a ${FORMAT} file`, groups: [] };
+  if (!doc || typeof doc !== 'object' || !Array.isArray(doc.rows)) return { ok: false, error: 'not a phase-5 check file (no "rows")', groups: [] };
   if (doc.version !== VERSION) return { ok: false, error: `version ${doc.version}: this page reads version ${VERSION}`, groups: [] };
-  const names = new Map(COMPONENTS);
-  for (const c of doc.components || []) if (c && typeof c.id === 'string') names.set(c.id, c.label || names.get(c.id) || c.id);
-  const rows = (Array.isArray(doc.checks) ? doc.checks : []).map(c => checkRow(c, names));
-  const order = [...COMPONENTS.map(([id]) => id), ...[...names.keys()].filter(id => !COMPONENTS.some(([k]) => k === id))];
-  const count = (rs, s) => rs.filter(r => r.status === s).length;
-  const groups = order.map(id => { const rs = rows.filter(r => r.component === id); return { id, label: names.get(id), rows: rs, pass: count(rs, 'pass'), fail: count(rs, 'fail'), notRun: count(rs, 'not_run'), errors: count(rs, 'error') }; })
-    .filter(g => g.rows.length);
-  const totals = { rows: rows.length, pass: count(rows, 'pass'), fail: count(rows, 'fail'), notRun: count(rows, 'not_run'), errors: count(rows, 'error') };
-  return { ok: true, generated: doc.generated || '', commit: doc.commit || '', groups, totals };
+  const seen = new Set(), rows = doc.rows.map(c => checkRow(c, seen)), names = new Map(COMPONENTS);
+  for (const r of rows) if (!names.has(r.group)) names.set(r.group, `Other (${r.group})`);
+  const count = (rs, s) => rs.filter(r => r.status === s).length, tally = rs => ({ pass: count(rs, 'pass'), fail: count(rs, 'fail'), notRun: count(rs, 'not_run'), errors: count(rs, 'error'), bias: rs.filter(r => r.bias).length });
+  const groups = [...names].map(([id, label]) => { const rs = rows.filter(r => r.group === id); return { id, label, rows: rs, ...tally(rs) }; }).filter(g => g.rows.length);
+  const totals = { rows: rows.length, ...tally(rows) };
+  // the file's own summary must agree with its rows (a format error counts as neither passed nor failed)
+  const S = doc.summary || {}, want = { rows: totals.rows, passed: totals.pass, failed: totals.fail, skipped: totals.notRun, bias_flags: totals.bias };
+  const off = Object.entries(want).filter(([k, v]) => S[k] !== v).map(([k, v]) => `${k} ${S[k] ?? 'missing'} (rows give ${v})`);
+  return { ok: true, generated: typeof doc.generated === 'string' ? doc.generated : '', commit: typeof doc.commit === 'string' ? doc.commit : '', groups, totals,
+    mismatch: totals.errors ? '' : off.join(', ') };
 }
