@@ -635,7 +635,7 @@ def values(r: R, allow_pending: bool):
         fits_all = all(s["fits"].values())
         ok = "fits" if fits_all else "does not fit"
         if kind == "abstract":
-            return (f"Scaled by a factor of {num(s['factor'], 1)}, the on-vehicle software {ok} the reference flight processor: the safety check "
+            return (f"Scaled by {num(s['factor'], 1)} to the reference flight processor, the software {ok}: the safety check "
                     f"takes {num(s['cpu_share_worst'] * 100, 1)}{PCT} of one core at the worst class and the radio traffic is {num(s['kbps_20'], 2)}{NB}kbit/s for 20 robots.")
         if kind == "intro":
             return (f"Lunar ATC {ok} the vehicles of Section 3.2 as implemented: at the worst class the safety check takes "
@@ -744,12 +744,16 @@ def values(r: R, allow_pending: bool):
     def e46_budget():
         bg = r.f46("budget")
         bits = []
-        for rule in ("first", "second", "posted"):
+        for rule in ("first", "second"):
             for split in SPLITS:
                 b = _get(bg, rule, split)
                 bits.append(f"{musd(b['mean'], 2, sign=True)} {ci_m(b['lo'], b['hi'])} under {RULE_NAME[rule]} with {SPLIT_NAME[split]}")
+        for split in SPLITS:
+            check(abs(_get(bg, "posted", split)["mean"]) < 1e-6 and abs(_get(bg, "none", split)["mean"]) < 1e-6 if "none" in bg else abs(_get(bg, "posted", split)["mean"]) < 1e-6,
+                  f"budget zero under the posted price ({split})")
         f3 = _get(bg, "first", "3eq")
         return (f"The operator's budget with honest asks, receipts less payouts with its 95{PCT} interval over seeds, was " + "; ".join(bits) +
+                f"; zero under the posted price and under no payments by construction" +
                 f". Under first price with honest asks the carriers are paid their true costs, so that budget is the tariff receipts "
                 f"({musd(f3['receipts_mean'], 1)} a year with equal shares) less the true carrier cost ({musd(f3['payouts_mean'], 1)}): the gap between "
                 f"the calibration seeds that set the tariff and the test seeds, not a property of the rule.")
@@ -786,9 +790,18 @@ def values(r: R, allow_pending: bool):
                     if x["hi"] < 0:
                         worse.append(f"owner {o} under {RULE_NAME[rule]} with {SPLIT_NAME[split]}")
                 bits.append(f"under {RULE_NAME[rule]} with {SPLIT_NAME[split]} " + ", ".join(owners))
+        owners_worse = sorted({w.split()[1] for w in worse})
+        cases = len([x for x in ("first", "second", "posted") for sp in SPLITS])
+        one_owner_everywhere = len(owners_worse) == 1 and len(worse) == cases
+        if kind == "summary":
+            return owners_worse, one_owner_everywhere, worse
         if kind == "clause":
-            return ("no owner is worse off under any paid rule than under no payments" if not worse else
-                    "against no payments " + "; ".join(worse) + (" is" if len(worse) == 1 else " are") + " worse off, with the interval below zero")
+            if not worse:
+                return "no owner is worse off under any paid rule than under none"
+            if one_owner_everywhere:
+                return (f"against no payments owner {owners_worse[0]} is worse off under every paid rule and both splits, with the interval below zero, "
+                        f"and the other owners are not")
+            return "against no payments " + "; ".join(worse) + (" is" if len(worse) == 1 else " are") + " worse off, with the interval below zero"
         return ("Against the no-payment pooled market on the same seeds, each owner's profit changed by: " + "; ".join(bits) + " (M USD a year).")
     fill("P3-E46-VS-NONE-SENTENCE", e46_vs_none, "E46 fit vs_none (BACKEND)")
     fill("P3-E46-VS-NONE-CLAUSE", lambda: e46_vs_none("clause"), "E46 fit vs_none (BACKEND)")
@@ -800,12 +813,11 @@ def values(r: R, allow_pending: bool):
         pos = all(afg[sp]["lo"] > 0 for sp in SPLITS)
         ratio = min(rt[sp]["sd"] / afg[sp]["gain"] for sp in SPLITS if afg[sp]["gain"] > 0)
         if kind == "abstract":
-            return (f"Its cash part, with the allocation held fixed, is {musd(min(a['gain'] for a in afg.values()), 1, sign=True)} to "
+            return (f"Its cash part, allocation held fixed, is {num(min(a['gain'] for a in afg.values()) / M, 1, sign=True)} to "
                     f"{musd(max(a['gain'] for a in afg.values()), 1, sign=True)} a year with intervals {'above' if pos else 'not above'} zero (post hoc), "
                     f"so the registered test was underpowered.")
         if kind == "conclusion":
-            return (f"The cash part of that gain is {'positive with intervals above zero' if pos else 'not clearly positive'} (post hoc); the registered "
-                    f"test was underpowered.")
+            return (f"Its cash part is {'positive' if pos else 'not clearly positive'} (post hoc); the registered test was underpowered.")
         return (f"The cash part of that gain, with the allocation held fixed, was {musd(afg['3eq']['gain'], 2, sign=True)} a year "
                 f"{ci_m(afg['3eq']['lo'], afg['3eq']['hi'])} with equal shares and {musd(afg['3uneq']['gain'], 2, sign=True)} "
                 f"{ci_m(afg['3uneq']['lo'], afg['3uneq']['hi'])} with 50/35/15 shares, a decomposition made after the runs (Section 4.6); the registered "
@@ -846,15 +858,11 @@ def values(r: R, allow_pending: bool):
         paid = [rule for rule in RULES if rule != "none"]
         settled = [r.cell46(rule, sp)["settled_earth_musd"] for rule in paid for sp in SPLITS]
         open_end = [r.cell46(rule, sp)["open_end_musd"] for rule in paid for sp in SPLITS]
-        bits = []
-        for rule in ("first", "second"):
-            bits.append(f"under {RULE_NAME[rule]} the operator ran {sign_word(bud[rule]['3eq'])} of {musd_m(abs(bud[rule]['3eq']))} a year with equal shares "
-                        f"and {sign_word(bud[rule]['3uneq'])} of {musd_m(abs(bud[rule]['3uneq']))} with 50/35/15 shares")
         return (f"With honest bids the four rules share one allocation, so the items delivered and the cargo delay are the same under every rule on every "
                 f"seed (the paired differences between rules in delay and in deliveries are exactly zero), and the market's system cost, true carrier cost "
                 f"plus delay cost, was above the oracle's by {pc(eff['3eq'] / 100, 1)} with equal shares and {pc(eff['3uneq'] / 100, 1)} with 50/35/15 shares "
-                f"under every rule. The rules differ in who pays whom: under no payments no money moved; {'; '.join(bits)}; under the posted price the "
-                f"budget {sign_word(bud['posted']['3eq'], 'ran a surplus', 'ran a deficit', 'was balanced')}, the same tariff paid in by shippers and out to carriers. Across the three paid rules and "
+                f"under every rule. Under no payments no money moved; under the posted price the budget "
+                f"{sign_word(bud['posted']['3eq'], 'ran a surplus', 'ran a deficit', 'was balanced')} by construction, the same tariff paid in by shippers and out to carriers. Across the three paid rules and "
                 f"both splits the cash settled on Earth was {musd_m(min(settled), 1)} to {musd_m(max(settled), 1)} a year and the balance still open at "
                 f"the year's end at most {musd_m(max(open_end), 2)} (Table 7).")
     fill("P3-E46-RESULTS-RULES", e46_rules, "E46")
@@ -996,11 +1004,17 @@ def values(r: R, allow_pending: bool):
         sec_ratio = bud["second"]["3eq"] / bud["first"]["3eq"] if bud["first"]["3eq"] else None
         if kind == "abstract":
             bid_sign = {sign_word(bud[x]['3eq']) for x in BID_RULES}
-            return (f"Under {rules_txt} every owner beat its alone profit; the operator ran "
-                    f"{(bid_sign.pop() + ' under both bid rules') if len(bid_sign) == 1 else (sign_word(bud['first']['3eq']) + ' under first price and ' + sign_word(bud['second']['3eq']) + ' under the second price')} "
-                    f"and {sign_word(bud['posted']['3eq'], 'a surplus', 'a deficit', 'broke even')} under the posted price.")
+            ow, one, worse = e46_vs_none("summary")
+            vs = ("" if not worse else (f", but owner {ow[0]} fell below the no-payment market under every paid rule" if one else
+                                        f", but {cnt(len(worse))} owner-rule-split cases fell below the no-payment market"))
+            return (f"Every owner beat its alone profit under {rules_txt}{vs}; "
+                    f"{('the bid rules ran ' + bid_sign.pop()) if len(bid_sign) == 1 else ('first price ran ' + sign_word(bud['first']['3eq']) + ' and the second price ' + sign_word(bud['second']['3eq']))}, "
+                    f"the posted price {sign_word(bud['posted']['3eq'], 'ran a surplus', 'ran a deficit', 'broke even')}.")
         if kind == "intro":
-            return (f"In the market, {rules_txt} made every owner at least as well off as alone in both splits; the operator ran "
+            ow, one, worse = e46_vs_none("summary")
+            vs = ("" if not worse else (f", though owner {ow[0]} was worse off than under no payments under every paid rule" if one else
+                                        f", though {cnt(len(worse))} owner-rule-split cases were worse off than under no payments"))
+            return (f"In the market, {rules_txt} made every owner at least as well off as alone in both splits{vs}; the operator ran "
                     f"{sign_word(bud['first']['3eq'])} under first price, {sign_word(bud['second']['3eq'])} under the second price and "
                     f"{sign_word(bud['posted']['3eq'])} under the posted price (Sections 5.5 to 5.7).")
         if kind == "discussion":
@@ -1019,9 +1033,12 @@ def values(r: R, allow_pending: bool):
             return (f"{rules_txt} kept every owner in; the budget was {sign_word(bud['posted']['3eq'])} under the posted price and "
                     f"{sign_word(bud['second']['3eq'])} under the second price.")
         if kind == "conclusion":
-            return (f"Under {rules_txt} every owner was at least as well off as alone, and the largest gain from scaling bids was "
-                    f"{musd(gmax, 1, sign=True)} a year with an interval that included zero." if any(mg[rule][sp]["lo"] <= 0 for rule in BID_RULES for sp in SPLITS)
-                    else f"Under {rules_txt} every owner was at least as well off as alone, and the largest gain from scaling bids was {musd(gmax, 1, sign=True)} a year.")
+            ow, one, worse = e46_vs_none("summary")
+            vs = ("" if not worse else (f" but owner {ow[0]} lost against no payments under every paid rule," if one else
+                                        f" but {cnt(len(worse))} owner-rule-split cases lost against no payments,"))
+            return (f"Under {rules_txt} every owner was at least as well off as alone,{vs} and the largest "
+                    f"gain from scaling bids was {musd(gmax, 1, sign=True)} a year with an interval that included zero." if any(mg[rule][sp]["lo"] <= 0 for rule in BID_RULES for sp in SPLITS)
+                    else f"Under {rules_txt} every owner was at least as well off as alone,{vs} and the largest gain from scaling bids was {musd(gmax, 1, sign=True)} a year.")
         raise KeyError(kind)
     for kind, key in (("abstract", "P3-E46-ABSTRACT-CLAUSE"), ("intro", "P3-E46-INTRO-CLAUSE"), ("discussion", "P3-E46-DISCUSSION-CLAUSE"),
                       ("comparison", "P3-E46-COMPARISON-CLAUSE"), ("implication", "P3-E46-IMPLICATION-CLAUSE"),
