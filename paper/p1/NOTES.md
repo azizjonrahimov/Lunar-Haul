@@ -50,11 +50,11 @@ research note's (High / Medium / Low). Numbers in brackets are the ones used in 
 [44] A. Rahimov. "The Vehicles, the Network and the Market: What Lunar ATC Puts Inside Each Lunar Vehicle and How Its Marketplace Works." Companion paper P3, in preparation, 2026.
 [45] A. Rahimov. "Rules of the Road on the Moon and Mars: Traffic Rules for Surface Robots of Different Owners, Checked and Priced." Companion paper P2, in preparation, 2026.
 [46] D. J. Schuirmann. "A comparison of the two one-sided tests procedure and the power approach for assessing the equivalence of average bioavailability." *Journal of Pharmacokinetics and Biopharmaceutics* 15(6):657-680, 1987. (PWG; journal details confirmed by LEAD 28 Oct; title to check against the journal page)
-[47] D. Lakens. *Social Psychological and Personality Science* 8(4):355-362, 2017 (equivalence testing). (PWG; title to add)
+[47] D. Lakens. "Equivalence tests: a practical primer for t tests, correlations, and meta-analyses." *Social Psychological and Personality Science* 8(4):355-362, 2017. (PWG; title to confirm)
 [48] B. A. Nosek et al. "The preregistration revolution." *PNAS* 115(11):2600-2606, 2018. (PWG)
 [49] NASA. Delay/Disruption Tolerant Networking page, https://www.nasa.gov/communicating-with-missions/delay-disruption-tolerant-networking/ (VCI, High)
 [50] Kim, Li, Wang. "Lunar Surface Space Traffic Management: Considerations for Future Regulations." GLEX-2025, 11, IP, 15, x93808. (MOA, Medium)
-[51] F. Cruijssen et al. Joint route planning savings, *IJPDLM* 37(4):287-304, 2007. (MOA via notes/03, Medium-High; full title to add)
+[51] F. Cruijssen, O. Bräysy, W. Dullaert, H. Fleuren, M. Salomon. "Joint route planning under varying market conditions." *International Journal of Physical Distribution and Logistics Management* 37(4):287-304, 2007. (MOA via notes/03, Medium-High; title to confirm)
 [52] S. Holm. "A simple sequentially rejective multiple test procedure." *Scandinavian Journal of Statistics* 6(2):65-70, 1979. (added by LEAD, 28 Oct)
 [53] B. Efron, R. J. Tibshirani. *An Introduction to the Bootstrap*. Chapman & Hall, 1993. (added by LEAD, 28 Oct)
 

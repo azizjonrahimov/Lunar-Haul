@@ -54,6 +54,8 @@ counts = integer. "ABS" keys print the absolute value (the sentence carries the 
 | P1-A-URGENT-RANGE-30 | min-max over A regimes, mean urgent wait | R, labels starting `A_` | "1,217 to 1,258&nbsp;h" |
 | P1-A-T-RANGE-30 / P1-POOLED-T-RANGE-30 | delivered tonnes, A vs pooled regimes | R `delivered_kg`/1000 | t range |
 | P1-A-BACKLOG-T-30 | year-end backlog, A full coverage (the H1 comparison's owners-alone cell) | R `backlog_kg`/1000 | t 0 dp |
+| P1-BOTTOM-MAX-NAME | the regime(s) at the top of the on-Moon group at 30 % (within 0.05 h of the maximum) | R, block-one means | names |
+| P1-O-URGENT-30-ALL | the marketplace's mean over the 80 matched runs of the H2 comparison (5.3) | P `H2_pooled` `b_mean` | h |
 | P1-H1-60-SENTENCE | H1's registered 60 % half | P `H1` at load 60 (`mean`, CI, `n`, `p`) | composed: supported if hi < 0; outside the Holm family |
 | P1-H4-60-SENTENCE | H4's registered 60 % half, linear and network | P `H4_LIN`, `H4_MLP` at load 60 | composed: cut / lengthened / includes zero |
 | P1-GROUPS-60-SENTENCE | the three regime groups at 60 % | R at load 60 (block-one means for Earth-independent cells) | composed: same order, or which Earth-losing regime falls inside the on-Moon range |

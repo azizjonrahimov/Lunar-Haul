@@ -396,30 +396,39 @@ def values(r: R, allow_pending: bool):
     M = "atc_urgent_wait_mean_cens_h"
     reg30 = {k: r.reg(k, LOAD_MAIN) for k in ("A_strict", "A_plan", "A_moon", "A_full") + tuple(EARTH_LOSING) +
              tuple(BOTTOM)}
-    a_vals = [reg30[k][M] for k in ("A_strict", "A_plan", "A_moon", "A_full")]
-    mid = {k: reg30[k][M] for k in EARTH_LOSING}
-    bot = {k: reg30[k][M] for k in BOTTOM}
+    # the value Table 5 shows: the block-one mean for an Earth-independent regime, the 80-run mean otherwise
+    def sv(row, key):
+        return row[f"{key}_v1"] if bool(row["earth_independent"]) and f"{key}_v1" in row else row[key]
+    a_vals = [sv(reg30[k], M) for k in ("A_strict", "A_plan", "A_moon", "A_full")]
+    mid = {k: sv(reg30[k], M) for k in EARTH_LOSING}
+    bot = {k: sv(reg30[k], M) for k in BOTTOM}
     check(min(a_vals) > max(mid.values()) > max(bot.values()), "owners alone wait longest, Earth-losing pooled next")
     check(min(mid, key=mid.get) == "relay08" and max(mid, key=mid.get) == "B_strict",
           "the middle group runs from relay 0.8 to strict")
-    check(min(bot, key=bot.get) == "lin" and max(bot, key=bot.get) == "leader",
-          "the bottom group runs from learned linear bids to the elected leader")
+    check(min(bot, key=bot.get) == "lin", "the bottom group starts from learned linear bids")
+    kmax = max(bot, key=bot.get)
+    BOT_NAME = {"O": "the full-information marketplace", "relay10": "the relay that is always up",
+                "leader": "the elected leader", "auction": "the auction", "mlp": "the network",
+                "lin": "learned linear bids"}
+    V["P1-BOTTOM-MAX-NAME"] = listing(BOT_NAME[k] for k in BOTTOM if bot[kmax] - bot[k] < 0.05)
     V["P1-A-URGENT-RANGE-30"] = rng_txt(a_vals, lambda x: num(x, 0)) + NB + "h"
     V["P1-RELAY08-URGENT-30"], V["P1-B-STRICT-URGENT-30"] = h_(mid["relay08"]), h_(mid["B_strict"])
-    V["P1-LIN-URGENT-30"], V["P1-LEADER-URGENT-30"] = h_(bot["lin"]), h_(bot["leader"])
+    V["P1-LIN-URGENT-30"], V["P1-LEADER-URGENT-30"] = h_(bot["lin"]), h_(bot[kmax])   # the group's top, named by P1-BOTTOM-MAX-NAME
     V["P1-O-URGENT-30"] = h_(bot["O"])
     V["P1-B-STRICT-URGENT-10"] = h_(r.reg("B_strict", LOAD_LIGHT)[M])
-    pooled_t = [reg30[k]["delivered_kg"] / 1000 for k in EARTH_LOSING + BOTTOM]
-    a_t = [reg30[k]["delivered_kg"] / 1000 for k in ("A_strict", "A_plan", "A_moon", "A_full")]
+    pooled_t = [sv(reg30[k], "delivered_kg") / 1000 for k in EARTH_LOSING + BOTTOM]
+    a_t = [sv(reg30[k], "delivered_kg") / 1000 for k in ("A_strict", "A_plan", "A_moon", "A_full")]
     check((max(pooled_t) - min(pooled_t)) / np.mean(pooled_t) < 0.02, "tonnes are almost the same among pooled regimes")
     check(max(a_t) < min(pooled_t), "owners alone deliver much less")
     V["P1-POOLED-T-RANGE-30"] = rng_txt(pooled_t, lambda x: num(x, 0)) + NB + "t"
     V["P1-A-T-RANGE-30"] = rng_txt(a_t, lambda x: num(x, 0)) + NB + "t"
-    V["P1-CARGO-UTIL-30"] = sh(reg30["O"]["p5_cargo_util"], 0)
-    V["P1-UTIL-FLEET-30"] = sh(reg30["O"]["utilisation"], 1)
-    pooled10 = [r.reg(k, LOAD_LIGHT)[M] for k in EARTH_LOSING + BOTTOM if k != "B_strict"]
+    V["P1-CARGO-UTIL-30"] = sh(sv(reg30["O"], "p5_cargo_util"), 0)
+    V["P1-UTIL-FLEET-30"] = sh(sv(reg30["O"], "utilisation"), 1)
+    pooled10 = [sv(r.reg(k, LOAD_LIGHT), M) for k in EARTH_LOSING + BOTTOM if k != "B_strict"]
     V["P1-POOLED-SPREAD-10"] = h_(max(pooled10) - min(pooled10))
     check(r.reg("B_strict", LOAD_LIGHT)[M] > max(pooled10), "the strict dispatcher is the exception at light load")
+    # the marketplace mean over the 80 matched runs of the H2 comparison (5.3 quotes the n = 80 contrast)
+    V["P1-O-URGENT-30-ALL"] = h_(r.pair("H2_pooled", LOAD_MAIN)["b_mean"])
 
     # --- H1 ------------------------------------------------------------------------------------------------
     h1 = r.pair("H1", LOAD_MAIN)
@@ -923,6 +932,13 @@ def values(r: R, allow_pending: bool):
     arb = {l: meet("E42_meet_arb", loss=l)[fm] for l in ("0.25", "0.4")}
     to = {t: meet("E42_meet_timeout", loss="0.25", to=t)["atc_meeting_wait_h"] for t in ("0.5", "2")}
     to1 = meet("E42_meet", loss="0.25")["atc_meeting_wait_h"]
+    tof = {t: meet("E42_meet_timeout", loss="0.25", to=t)[fm] for t in ("0.5", "2")}
+    tof["1"] = base["0.25"]
+    trades = tof["2"] < tof["1"] < tof["0.5"]           # fewer failures the longer the timeout
+    timeout_lead = ("The timeout trades waiting for failures:" if trades else
+                    "The timeout sets the waiting without buying fewer failures:")
+    timeout_tail = ("" if trades else f", while failed meetings stayed between {num(min(tof.values()), 1)} and "
+                                     f"{num(max(tof.values()), 1)}")
     # the commit step, paired by seed and year (with the step minus without it): failed meetings and the primary outcome
     def pair_metric(label, metric):
         d = r.p[(r.p["comparison"] == label) & (r.p["load"] == LOAD_MAIN) & (r.p["metric"] == metric)]
@@ -953,10 +969,10 @@ def values(r: R, allow_pending: bool):
         + listing(f"{h_(cw[l]['mean'], 1)} ({ci_h(cw[l]['lo'], cw[l]['hi'])}) "
                   f"{'longer' if cw[l]['mean'] > 0 else 'shorter'} at loss {'0.40' if l == '0.4' else l}" for l in noc)
         + (", a cost that excludes zero at both losses" if cost else "") +
-        f", because a meeting that the step refuses is a lift that waits. The timeout trades waiting for failures: at "
+        f", because a meeting that the step refuses is a lift that waits. {timeout_lead} at "
         f"loss 0.25 the hours robots spent "
         f"waiting at meeting points were {num(to['0.5'], 1)} with a 0.5&nbsp;h timeout, {num(to1, 1)} with 1&nbsp;h "
-        f"and {num(to['2'], 1)} with 2&nbsp;h. The exploratory variant in which the base computer arbitrates each "
+        f"and {num(to['2'], 1)} with 2&nbsp;h{timeout_tail}. The exploratory variant in which the base computer arbitrates each "
         + ("meeting had no failed meetings at either loss." if all(v == 0 for v in arb.values()) else
            f"meeting had {num(arb['0.25'], 1)} and {num(arb['0.4'], 1)} failed meetings at loss 0.25 and 0.40."))
     check(to["0.5"] < to1 < to["2"], "meeting wait grows with the timeout")
@@ -1055,7 +1071,8 @@ def table_pairs(r: R, holm):
         unit = "" if row["metric"] == "delivered_share" else NB + "h"
         val = (f"{num(100 * row['mean'], 1, sign=True)} pp [{num(100 * row['lo'], 1)}, {num(100 * row['hi'], 1)}]"
                if not unit else f"{num(row['mean'], 1, sign=True)}{unit} [{num(row['lo'], 1)}, {num(row['hi'], 1)}]")
-        rows.append([name, html.escape(row["comparison"]), row["block"], f"{int(row['n'])}", val,
+        blk = "v1" if name == "H6" else row["block"]      # E42 has block one only
+        rows.append([name, html.escape(row["comparison"]), blk, f"{int(row['n'])}", val,
                      pfmt(row["p"]), pfmt(adj),
                      "supported" if ok else ("wrong direction" if adj < 0.05 else "not supported")])
     # the registered 60 % halves of H1 and H4: raw p only, outside the Holm family
