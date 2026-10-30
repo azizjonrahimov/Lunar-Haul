@@ -1,0 +1,131 @@
+{
+ "experiment": "E48 (B-81), P3, exploratory H10",
+ "H10": "the safety check, the bidding and the radio traffic of Lunar ATC fit a flight-class computer (measured CPU time, memory and bytes per robot-hour, scaled to a reference radiation-tolerant processor with a stated factor) and a 16 kbit/s-class link for 20 robots (PREREG change 1)",
+ "classes": {
+  "LTV1": [
+   "LTV1_CLV1",
+   "LTV1_PEGASUS"
+  ],
+  "CARGO": [
+   "CARGO_FLEX",
+   "CARGO_EAGLE"
+  ],
+  "SMALL": [
+   "MAPP_SMALL"
+  ],
+  "HOPPER": [
+   "HOPPER_MOONFALL",
+   "HOPPER_MICRONOVA"
+  ],
+  "BASE": "the base computer at the habitat (reservation table, auction, ledger)",
+  "lander": "radio unit and landing-announcement part only (PREREG change 7); not sized here"
+ },
+ "laptop": {
+  "processor": "Intel Core i5-10500H (6 cores, 2.5 GHz base, 4.5 GHz turbo)",
+  "benchmark": 27000.0,
+  "benchmark_name": "CoreMark per core",
+  "benchmark_note": "Assumed: 4.5 GHz turbo (Intel spec) x 6.0 CoreMark/MHz (typical for this core generation; no published CoreMark for this chip found), range 4-7 CoreMark/MHz"
+ },
+ "flight": {
+  "processor": "Frontgrade Gaisler GR740 (rad-hard quad-core LEON4FT, 250 MHz)",
+  "benchmark": 492.5,
+  "benchmark_name": "CoreMark per core",
+  "source": "Cobham Gaisler, GR740 benchmark results, ESA DSP Day 2016: 1.97 CoreMark/MHz/core x 250 MHz; https://indico.esa.int/event/102/contributions/62/ ; product brief: https://download.gaisler.com/products/gr740/doc/Product%20Brief_GR740_20230908_rev1.pdf",
+  "memory_mb": 256,
+  "memory_flag": "Assumed: SDRAM of a typical GR740 single-board computer",
+  "factor": 54.8,
+  "factor_range": [
+   36.5,
+   64.0
+  ],
+  "factor_note": "laptop CoreMark per core / flight CoreMark per core; the measured times are Python + numpy, a flight implementation in C would be faster, so the scaled times are an upper bound in that respect (Assumed)"
+ },
+ "targets": {
+  "robots": 20,
+  "safety_hz": 10,
+  "link_kbps_20_robots": 16,
+  "bytes_per_s_per_robot": 100,
+  "market_mb_per_day": 1,
+  "flag": "Assumed: the proposal's estimates (B-81 task)"
+ },
+ "radio": {
+  "freq_ghz": {
+   "LTV1": 2.4,
+   "CARGO": 2.4,
+   "SMALL": 2.4,
+   "HOPPER": 2.4,
+   "BASE": 2.4
+  },
+  "tx_power_w": {
+   "LTV1": 1.0,
+   "CARGO": 1.0,
+   "SMALL": 0.25,
+   "HOPPER": 0.5,
+   "BASE": 5.0
+  },
+  "antenna_gain_dbi": 3.0,
+  "bandwidth_mhz": 1.0,
+  "noise_figure_db": 5.0,
+  "implementation_margin_db": 10.0,
+  "worst_hop_m": 5000.0,
+  "flag": "Assumed (frequency as B-70's provisional 2.4 GHz; powers per class; worst hop = the mesh's 5 km range)"
+ },
+ "power_w": {
+  "LTV1": 12.0,
+  "CARGO": 12.0,
+  "SMALL": 6.0,
+  "HOPPER": 8.0,
+  "BASE": 25.0,
+  "flag": "Assumed: a GR740-class board (~4-5 W) plus the radio at the stated transmit power and duty; BASE adds the mast radio and storage"
+ },
+ "messages": {
+  "bytes": {
+   "status": 48,
+   "reservation_request": 32,
+   "grant": 32,
+   "release": 16,
+   "bid": 40,
+   "award": 32,
+   "claim": 32,
+   "landing_announcement": 64,
+   "ledger_entry": 128
+  },
+  "status_hz": 1.0,
+  "flag": "Assumed byte layouts (ids, times, positions as 32-bit values, headers 8 B); status at 1 Hz per R9"
+ },
+ "failover": {
+  "mtbf_levels_h": [
+   500.0,
+   2000.0,
+   8000.0
+  ],
+  "repair_h": 24.0,
+  "reelect_h": 0.5,
+  "seeds": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "regime": "C_LEADER, message loss 0.1, 30 % load, 1x, one year",
+  "flag": "Assumed (B-72 defaults; sweep)"
+ },
+ "runs": {
+  "multiples": [
+   1,
+   4,
+   8
+  ],
+  "horizon_days": {
+   "1": 365,
+   "4": 90,
+   "8": 60
+  },
+  "seeds": [
+   1,
+   2
+  ],
+  "regime": "C_AUCTION, message loss 0.1, roads atc (15 % single-lane), dispatch to a fixed point"
+ }
+}
