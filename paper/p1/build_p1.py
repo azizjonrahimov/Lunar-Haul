@@ -1061,7 +1061,7 @@ def values(r: R, allow_pending: bool):
             return "The learned bids were monotone in approach time, mass and battery on every probe (L5)."
         bits = []
         for x in failed:
-            bits.append(f"{html.escape(str(x.get('sub')))} in {pc(x['simulated'], 0)} of the probes")
+            bits.append(f"{html.escape(str(x.get('sub')))} in {num(100 * x['simulated'], 0)}{PCT} of the probes")
         return (f"The L5 failures are properties of the trained policies, not of the code: the learned bid was not monotone in approach time, "
                 f"mass and battery for " + " and ".join(bits) + ", as the policies were tuned on urgent wait and not constrained to monotone bids (Section 3.5).")
     fill("P1-CHECK-FINDINGS-SENTENCE", l5_sentence, "B-79 tranche 3")
