@@ -33,7 +33,7 @@ export function paperField(id, field) {
   if (field === 'abstract') {
     const box = one(new RegExp(`<div class="abstract" id="${id}-abstract">([\\s\\S]*?)</div>`), html);
     const p = box && one(/<p>([\s\S]*?)<\/p>/, box);
-    return p ? finished(id, 'abstract', p.replace(/^<b>Abstract\.<\/b>\s*/, '')) : PENDING;
+    return p ? finished(id, 'abstract', p.replace(/<!--[\s\S]*?-->\s*/g, '').replace(/^<b>Abstract\.<\/b>\s*/, '')) : PENDING;   // the paper's build notes stay out
   }
   if (field === 'keywords') {
     const kw = one(/<p class="kw">([\s\S]*?)<\/p>/, html);

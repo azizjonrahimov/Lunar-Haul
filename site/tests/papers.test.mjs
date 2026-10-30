@@ -26,3 +26,9 @@ test('a paper that is not built gives (pending), not a failed build', () => {
   assert.match(paperField('p9', 'title'), /\(pending\)/);
   assert.match(paperValue('p9', 'ANY'), /\(pending\)/);
 });
+
+const R1 = new URL('../../paper/r1/paper.html', import.meta.url);
+test('R-1: title, abstract and keywords from the built paper, without its build notes', { skip: !existsSync(R1) && 'paper/r1 not built' }, () => {
+  for (const f of ['title', 'abstract', 'keywords', 'bibtex']) assert.doesNotMatch(paperField('r1', f), /\(pending\)|\{\{|<!--/, f);
+  assert.match(paperField('r1', 'title'), /^What Earth's Horizon Costs/);
+});

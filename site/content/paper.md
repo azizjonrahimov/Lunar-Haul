@@ -40,6 +40,22 @@ In preparation.
 
 ## Earlier papers
 
+### <!--@paper:r1:title-->
+
+Azizjon Rahimov, Roatify Research · preprint, October 2026 ·
+[PDF](https://github.com/azizjonrahimov/Lunar-Haul/blob/main/paper/r1/what_earths_horizon_costs_r1.pdf) ·
+[Code, data and link windows](https://github.com/azizjonrahimov/Lunar-Haul)
+
+**Abstract.** <!--@paper:r1:abstract-->
+
+**Keywords:** <!--@paper:r1:keywords-->
+
+Where Earth stands in the base's sky, year by year, is on the [Earth's sky](../research/earth-sky/) page.
+
+#### Cite R-1
+
+<!--@paper:r1:bibtex-->
+
 ### Who Hauls the Habitat? A Verified Simulation Testbed, a Pooled Dispatch Marketplace and a Reference Design for Lunar Surface Logistics
 
 Azizjon Rahimov, Roatify Research · version 2, October 2026 · 44 pages ·

@@ -7014,3 +7014,18 @@ Idle until BACKEND's data for F-53 lands.
 1. `paper/p1/paper.html` and `paper/p1/values.json` (and those of p2 and p3) are untracked. The site build reads them, so the Pages build shows "(pending)" until they are committed. Please commit at least P1's two files with this.
 2. P1 has no PDF yet. The entry links to `paper/p1/` in the repository and says "PDF to follow". When a PDF exists, tell me its path and I'll add the link.
 3. F-56 also names R-1 ("What Earth's horizon costs", `paper/r1/`, PDF present) for /paper/. It isn't on the page now. Shall I add it under "Earlier papers" (title and abstract from its paper.html, PDF link)?
+
+## F-56 R-1 DONE 05:00 | /paper/ "Earlier papers" gains R-1 (What Earth's Horizon Costs a Lunar Base), in the same form as P1
+
+**Files changed (uncommitted):**
+- `site/content/paper.md`: the R-1 entry, first under "Earlier papers" as the newest of them. It has title, author line, the PDF link (`paper/r1/what_earths_horizon_costs_r1.pdf`), abstract, keywords, a link to the Earth's sky page, and a BibTeX entry.
+- `site/lib/papers.mjs`: HTML comments are stripped from a quoted abstract. R-1's abstract carries a build note, `<!-- RESULT SENTENCES … -->`, which now stays out of the site.
+- `site/tests/papers.test.mjs`: an R-1 test (fields finished, no build notes).
+
+Title, abstract and keywords are read from `paper/r1/paper.html` (tracked) at build time, the same way as P1; nothing is typed.
+
+**Checks:**
+- `npm run build` OK, node tests 30/30, `budgets.py pages` OK.
+- Headless Chrome (profile on D:, removed): /paper/ light and dark at 1280 and 390 px, 390 = 390, no console errors. C: had 789 MB free and RAM 0.91 GB before the build.
+
+**Next:** idle. F-55 waits for B-79 and the Mars toggle for B-82.
