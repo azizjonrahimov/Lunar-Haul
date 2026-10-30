@@ -311,3 +311,33 @@ record structure as a type. It is a protocol change made after seeing the data, 
 repair beside the registered cell, not as a test of H7. H7 is read on the twelve registered types as before;
 a type whose violation count is zero but whose deadlock count is not is reported as clean of violations and not
 live, never as "holds". No bound, rule or sample size of change 6 is altered for the registered types.
+
+### Change 9, correction of 30 Oct 2026 (before the type-5 and type-6 reruns): the type-6 "deadlocks" were a classification defect, not a protocol gap; the variant cell is dropped; the narrower same-lane test moved near-miss counts in two types
+What we saw: the exploratory variant cell of change 9 ran first (n = 10,000): 203 "deadlocks" and 0 violations,
+against 202 in the registered type-6 cell, so the added request rule changed nothing. BACKEND then traced one
+encounter. A slow hauler is held at the zone boundary by the closure, correctly, and would wait until the zone
+reopens (4,500 s). Its nominal braking stopped it 1.9 m before the line, and the stall check's "held at a closed
+zone" test counted only vehicles within about 1 m of the line, so the check fell through to "waiting for a
+grant" (the next junction tile, 870 m ahead, was not held) and the encounter was classed as a deadlock. All 202
+are at R = 1 km, the radius at which only haulers that cannot clear the zone before closure are held. The
+mechanism written in change 9 (a reservation held behind a hold point) was stated before it had been traced and
+is withdrawn: no such encounter exists.
+- **Defect, stall classification (type 6; type 5 to be confirmed).** Fix in the simulator's classifier, not in
+  the dynamics: "held at a closed zone" means the zone line is the binding stop line (the stopping distance
+  equals the distance to it) and the vehicle is stopped; "waiting for a grant" means the binding stop line is
+  that group's entry and the group is within request distance. Only the deadlock flag can change, and only
+  downwards. Type 6 is rerun (its 202 are expected to become "incomplete", held by the closure) and type 5 is
+  rerun to confirm that its 386 ring deadlocks, whose vehicles wait at a segment entry, stand. Every other type
+  has 0 deadlocks and can only stay 0.
+- **Variant cell dropped.** The "6_request_rule" cell has no mechanism to test; it is not reported in P2 and
+  its files are archived with the first pass. Its null result (203 against 202) is recorded here and in
+  results/E44_defects.json.
+- **Same-lane test, correction.** Change 9 said the other eleven types could not change under the 10-degree
+  test. That holds for violations (type 9 reproduces 58 and 7 exactly; batch 0 is byte-identical for types 1,
+  2, 4, 7, 8, 10, 11 and 12) but not for near misses: the near-miss gap counts of type 5 (ring vehicles on
+  different roads within 30 degrees) and the minimum-gap diagnostic of type 3 changed, with no change in
+  violations. Types 3 and 5 were rerun in full under the final metric; the earlier parts are archived in
+  results/archive/E44_T3_T5_pre-c9-metric/ with a README. Every reported count is under the one final metric.
+The three statements of change 9 that stand: the builder start-state defect and its fix, the 10-degree
+same-lane test for the gap metric with the shield's 30-degree leader test unchanged, and the archiving of
+the first type-6 pass. H7 is read on the twelve registered types as before.
