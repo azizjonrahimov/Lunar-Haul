@@ -3,10 +3,10 @@
  "generated": "2026-10-30T12:36:01-0700",
  "commit": "e63616c6ca825c4e6ab7a4448bd46c0ecd1d729a",
  "summary": {
-  "rows": 186,
+  "rows": 185,
   "passed": 159,
   "failed": 10,
-  "skipped": 17,
+  "skipped": 16,
   "bias_flags": 1
  },
  "rows": [
@@ -5280,36 +5280,6 @@
    "exposure": null,
    "runtime_s": 0.01,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row L5: <= 1 % of probes"
-  },
-  {
-   "name": "CBBA score at least half the optimum (small instances)",
-   "reference": null,
-   "simulated": null,
-   "tolerance": 0.0,
-   "unit": "",
-   "basis": "not applicable: the 50 % guarantee is CBBA's and the code is a sequential single-item auction (as A3)",
-   "passed": false,
-   "rel_error": null,
-   "source": "verification_plan.md",
-   "mode": "abs",
-   "error": null,
-   "skipped": "not applicable: the 50 % guarantee is CBBA's and the code is a sequential single-item auction (as A3)",
-   "id": "A4",
-   "sub": "skipped",
-   "technique": "analytic",
-   "factor": "code verification",
-   "kind": "V",
-   "priority": "P3",
-   "papers": [
-    "P1",
-    "P2",
-    "P3"
-   ],
-   "ci99": null,
-   "bias_flag": null,
-   "exposure": null,
-   "runtime_s": null,
-   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
   },
   {
    "name": "Relay orbit period and visible fraction against SPICE",

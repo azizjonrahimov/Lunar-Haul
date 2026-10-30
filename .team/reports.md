@@ -7623,3 +7623,75 @@ lunarsim/vv5.py, results/vv_phase5.json, tests/test_verification_phase5.py (17 t
 **Questions for LEAD:**
 1. Keep T3's continuous-formula row and the two L5 rows as FAIL, like the others?
 2. What next? The B-79 plan rows are all done or skipped with reasons.
+
+## B-79 CLOSING SUMMARY 30 Oct (Phase 5 verification suite) | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**Final file:** results/vv_phase5.json at commit e63616c. Code in lunarsim/vv5.py (run_phase5_checks(), also via lunarsim/vv.py); tests in tests/test_verification_phase5.py (17).
+- **185 rows:** 159 passed, 10 failed, 16 skipped, 1 bias flag (D4 class 2, chance at the first sample size meeting the plan's rule; covered at 2 million customers on 3 seeds).
+- **Rows by group:** D engine 71, R radio and messages 26, A auction, team lifts and payments 21, S safety 18, T traffic 15, X cross-cutting 11, L learned policy 9, E energy 8, V replay 6.
+- **Correction made with this summary:** A4 appeared twice; the tranche-3 copy is removed, so 186 → 185 rows and 17 → 16 skipped. Files: lunarsim/vv5.py and results/vv_phase5.json (commit field unchanged). Tests 17/17.
+
+**Method notes**
+- Stochastic queueing references (D2-D4, T1) run in two steps:
+  1. The engine's sample path equals an independent queue recursion fed the engine's own inputs (exact).
+  2. The recursion, sized by the plan's rule (99 % half-width ≤ tolerance / 3), matches the formula.
+- Every failure was traced to a mechanism before it was reported.
+- Six check-definition errors of mine were found and fixed while tracing:
+  - the D1 integral started at 0, though one item is ready at −21.8 h;
+  - D10 first paired by seed, not by (seed, start year);
+  - the D11 mass filter let fill crates through;
+  - the S2 R3 generator drew windows that did not overlap;
+  - T2 alternation first sent all vehicles at once, so they formed platoons;
+  - S5's bookkeeping keyed bookings by time, which hand-resolution shifts.
+
+### The 10 failures (all traced; none is an open code defect)
+1. **D10 pairing A_EARTH plan_ahead:** pairing with O_ORACLE gives no significant correlation (CI covers 0); variance factor 0.90. The demand stream is common (D10 demand rows pass).
+2. **D10 pairing A_EARTH strict:** factor 0.99. 89 % of its delay variance lies between start years (Earth gaps), absent in O_ORACLE.
+3. **D10 pairing A_MOON:** factor 0.91. The source is untraced; no mechanism claimed.
+4. **D10 pairing B_EARTH strict:** factor 0.99. 91 % of its delay variance lies between start years.
+5. **S1 (c), type 9 non-conforming:** 58 violations (7 contacts). A dead stop brakes harder than R1's leader assumption (B_MAX); P2 5.6 reports it.
+6. **S2 unholdable slope flagged:** 990 of 1,000 flagged. Near-standstill braking on slopes friction cannot hold is accepted, not flagged. R2 never admits such slopes, so no run reaches the state; P2 7 states it as a gap.
+7. **S5 encounter deadlocks:** 390 in E44 (T5 386, T6 4), the genuine mechanisms of PREREG change 9; P2 5.6 reports them.
+8. **T3 saturation flow** against v / (L + d_min(v, v)): 1.7 % low. The 10 Hz shield's one-step look-ahead keeps a 12.539 m gap; the discrete formula matches to 0.01 % (row "10 Hz shield").
+9. **L5 atc_bid_v1:** the learned bid is not monotone in 31.9 % of probes (approach, mass, battery). A property of the CEM-tuned policy.
+10. **L5 atc_bid_linear_v1:** 66.7 % of probes. Weights mass +1.28 (heavier bundles bid lower) and battery −1.39 (fuller packs bid higher). A policy property; no mechanism claimed.
+
+### The 16 skips (each with its reason in the row)
+- **Not applicable to the code:**
+  - A1: there is no epsilon-auction; central assignment is D9.
+  - A3, A4, A5: CBBA guarantees the papers do not claim (C_AUCTION is a sequential single-item auction with CBBA's conflict rule).
+  - L2: the policy is tuned to differ from its teacher; H4 tests the outcome.
+  - R6: the relay is a coverage share, not an orbit.
+  - T5 (c): there is no node occupancy; site capacity is T5 (b).
+  - E4 solar: there is no solar model.
+- **Not a computation or not possible here:**
+  - L1 teacher agreement: no registered threshold; the numbers are in basis.
+  - X2: no browser ATC engine.
+  - X5: needs outside human reviewers.
+- **FRONTEND's:** V3 and V4, in the browser scene.
+- **Ten-minute rule:**
+  - R8: published coverage values use other criteria and heights.
+  - L3: no cost prediction to calibrate.
+  - T4: needs a new Markov-routing test hook.
+
+### Engine findings
+1. **Empty fleet crashed** (ZeroDivisionError in Simulation._build_fleet).
+   - Found by D5 (b); fixed in 5eda14b (batch 1 commit), owners map to themselves when there are no carriers.
+   - No experiment reached it, since it crashed before.
+2. **Cargo ids reused** (12-18 of about 2,970 items a year, every regime).
+   - Found by A7 at a46353b. Manifests used Simulation._cid as the next free id, while return items and bulk lots advanced it before use.
+   - Fixed in 7247b8e: use the id, then advance.
+   - Outcome-neutral on 48 of 48 one-year reruns (results/id_fix_evidence.json); no md5 baseline moved; PREREG change 10 (cdc0bbd).
+3. **Hand-stopped vehicle's plan not shifted.** In a hand-resolved road conflict, RoadLayer._hand shifts the reservation and busy time of the vehicle that goes first, but not its leg plan, so its positions run up to t_hand early until its job ends.
+   - Found by V2 during B-80. Not changed, by LEAD's decision.
+   - Outcomes use busy time and reservations, and positions feed only mesh radio, which no road experiment used. Recorded under PREREG change 10 and in P2 7. The trace exporter follows the reservation.
+- **Also changed (not a defect):** scenario.py's literal 0.25 h item stagger became the constant ITEM_STAGGER_H (same value), so D7 could scale it (5eda14b).
+
+### Plan rows not run
+The 13 plan rows skipped above: A1, A3, A4, A5, L1 agreement, L2, L3, R6, R8, T4, V3, V4, X2, X5.
+- A4, L3, R8, T4: not run for cost or applicability.
+- V3, V4: FRONTEND's.
+- Every other plan row (D1-D11, A2, A6-A9, R1-R4, R7, S1-S7, T1-T3, T5, E3, E4, L4-L6, V1, V2) is in the file.
+- Added beyond the plan: R9 (message model), X6 (Earth independence, full relay = oracle), X7 (E48 timer), D8 cargo ids, the A8 P3 rows (a)-(g), D10 E40 demand identity, S2 unholdable slopes, T3 10 Hz shield.
+
+**Status:** BACKEND idle.

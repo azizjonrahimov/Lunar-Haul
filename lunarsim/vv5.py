@@ -2607,8 +2607,6 @@ def check_l5_monotone(n: int = 10000) -> List[Dict]:
 def check_tranche3_skipped() -> List[Dict]:
     out = []
     for cid, name, why in (
-            ("A4", "CBBA score at least half the optimum (small instances)",
-             "not applicable: the 50 % guarantee is CBBA's and the code is a sequential single-item auction (as A3)"),
             ("R6", "Relay orbit period and visible fraction against SPICE",
              "not applicable: the relay is modelled as a coverage share (B_EARTH_RELAY coverage p), not an orbit"),
             ("R8", "Face validity of DTE coverage against published values",
