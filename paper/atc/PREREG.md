@@ -365,3 +365,5 @@ only through a planning memo keyed by vehicle, item ids and route within one dis
 reruns (every E40 regime at 30 % load and E43's three road modes at 1x, seeds 1-3) give identical outcomes item by
 item, by content without ids (results/id_fix_evidence.json); reused ids fell from 670 to 0. No experiment was rerun
 and no reported number changes. Traces and scene files written before the fix still carry the duplicate ids.
+
+Note to change 10 (30 Oct 2026, after B-80): the trace export found that in a hand-resolved conflict RoadLayer._hand shifts the first vehicle's reservation and busy time but not its leg plan, so its plotted position runs early by the hand delay until the job ends. Outcomes (delay, deliveries, waits) use busy times and reservations and are unaffected; positions feed only the mesh radio, which the road runs of E43 and E47 do not use. Not corrected in the engine; the exporter follows the reservation.
