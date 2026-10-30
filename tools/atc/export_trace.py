@@ -40,7 +40,9 @@ KIND = {"conflicts": "conflict", "wasted_trips": "wasted_trip", "failed_meetings
 FIELDS = {
     "frame": "terrain/hero/sites.json: x, y in metres (integers), BASE at [7450, 7510]; site ids as there",
     "time": "hours since 1 Jan 2028 00:00 UTC, rounded to 0.001 h",
-    "fleet": "[id, owner, class, antenna_m], in id order (the order of every per-vehicle array)",
+    "fleet": "[id, owner, class, antenna_m, start], in id order (the order of every per-vehicle array); start = the "
+             "site where the vehicle stands at t0 (for a vehicle moving at t0, the 'from' of the leg it is on; a vehicle "
+             "with no leg in the window stays at start all window)",
     "sites": "id -> [x_m, y_m]; pads at their stand-off point (where a rover works), as the road legs end there",
     "nodes": "radio nodes that are not vehicles: id -> [x_m, y_m, antenna_m] ('BASE' = the 10 m mast)",
     "roads": "{edges: edge id -> [[x_m, y_m], ...], res: edge id -> [resource id per point, -1 = two-lane], "
@@ -426,7 +428,8 @@ def run_trace(name: str, seed: int, t0: float, t1: float, earth_iv):
                                                       scenario="p5 3eq, 30 % load, team share 0.10, landing closures, "
                                                                "fixpoint"),
            "window_h": [_t(t0), _t(t1)], "run_h": [0.0, _t(t1)], "summary": summary,
-           "fleet": [[v.id, v.owner, v.cls.name, antenna_m(v)] for v in sorted(sim.vehicles, key=lambda v: v.id)],
+           "fleet": [[v.id, v.owner, v.cls.name, antenna_m(v), legs[str(v.id)][0][2] if legs.get(str(v.id))
+                      else v.location] for v in sorted(sim.vehicles, key=lambda v: v.id)],
            "sites": sites, "nodes": {"BASE": _m(sxy[st.site_index("BASE")]) + [G.ANT_MAST_M]}, "roads": roads,
            "legs": legs, "jobs": rec["jobs"], "items": items,
            "landings": [[_t(t), lt.name, pad] for t, lt, pad in sim.landing_schedule if t0 <= t <= t1],

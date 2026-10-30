@@ -2244,7 +2244,7 @@ def check_v_replay() -> List[Dict]:
                          f"{len(tr['radio'])} radio entries, decisions {dk}", "traces", "code verification", "V", "P1",
                          ["P1", "P2"], mode="abs", source="tools/atc/export_trace.py; extends B-31", t0=t0))
     t0 = time.time()
-    v = {"jump": 0, "edge_ends": 0, "outside_reservation": 0, "fractions": 0, "pieces_on_segments": 0}
+    v = {"jump": 0, "edge_ends": 0, "outside_reservation": 0, "fractions": 0, "start": 0, "pieces_on_segments": 0}
     for name, tr in docs.items():
         resv = {}
         for rname, a, b, dd, o, vid in tr["reservations"]:
@@ -2256,6 +2256,9 @@ def check_v_replay() -> List[Dict]:
         def end_at(l):
             e = l[7]
             return (l[2],) if e is None else ((l[3],) if e[2] == 1.0 else (e[0], e[2]))
+        for f in tr["fleet"]:                                 # start: a known site, and where the first leg begins
+            first = tr["legs"].get(str(f[0]))
+            v["start"] += (len(f) < 5 or f[4] not in tr["sites"] or (bool(first) and first[0][2] != f[4]))
         for vid, legs in tr["legs"].items():
             prev = None
             for leg in legs:
@@ -2276,9 +2279,9 @@ def check_v_replay() -> List[Dict]:
                             v["outside_reservation"] += 1
                 prev = leg
     n_on = v.pop("pieces_on_segments")
-    rows.append(_row("V2", "positions", "Vehicle positions in the trace: no jumps (each leg starts where the last "
-                     "ended, at a site or at the same fraction of the same edge), edges end at their sites, every "
-                     "single-lane piece inside the vehicle's own reservation", 0.0, float(sum(v.values())), 0.0,
+    rows.append(_row("V2", "positions", "Vehicle positions in the trace: every vehicle has a start site, no jumps "
+                     "(each leg starts where the last ended, at a site or at the same fraction of the same edge), edges "
+                     "end at their sites, every single-lane piece inside the vehicle's own reservation", 0.0, float(sum(v.values())), 0.0,
                      "violations", f"both traces; {n_on} pieces on single-lane segments; violations by kind: "
                      + ", ".join(f"{k} {x}" for k, x in v.items()) + "; times compared at the files' 0.001 h rounding",
                      "traces", "code verification", "V", "P1", ["P1", "P2"], mode="abs",

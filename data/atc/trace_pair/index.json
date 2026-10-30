@@ -1,7 +1,7 @@
 {
  "format": "lunarsim-atc-trace",
  "version": 1,
- "commit": "5c5b8fd341aee24a26fc121c755b54ebec2d7d23",
+ "commit": "46a87175017d91d4ba3b742bf3f7b69b6e7532d9",
  "seed": 1,
  "year": 2028,
  "frame": {
@@ -32,9 +32,9 @@
     "start_year": 2028,
     "scenario": "p5 3eq, 30 % load, team share 0.10, landing closures, fixpoint"
    },
-   "bytes": 24566,
-   "bytes_json": 145829,
-   "sha256": "2c73427454472f3465f1ffbdd261e9a77027fbb8bf5c5289b2807e9d1d7eb4da",
+   "bytes": 24583,
+   "bytes_json": 145889,
+   "sha256": "21103fd57995eb4de5cb414c80dd6498cce79a5bce542a654f0d41ca84a15163",
    "summary": {
     "urgent_items_waiting": 0,
     "idle_robot_hours": 5532.261,
@@ -66,9 +66,9 @@
     "start_year": 2028,
     "scenario": "p5 3eq, 30 % load, team share 0.10, landing closures, fixpoint"
    },
-   "bytes": 27989,
-   "bytes_json": 170857,
-   "sha256": "4b9302e642048c87f5d266e72f562aaddcf36698b91d4b1ea48ba33fb28ba985",
+   "bytes": 28004,
+   "bytes_json": 170917,
+   "sha256": "8097f6c3642ca9cdd269bd8ac0dd553212f3164fcbb5c895599a5039030a2681",
    "summary": {
     "urgent_items_waiting": 1,
     "idle_robot_hours": 5642.063,
@@ -92,7 +92,7 @@
  "fields": {
   "frame": "terrain/hero/sites.json: x, y in metres (integers), BASE at [7450, 7510]; site ids as there",
   "time": "hours since 1 Jan 2028 00:00 UTC, rounded to 0.001 h",
-  "fleet": "[id, owner, class, antenna_m], in id order (the order of every per-vehicle array)",
+  "fleet": "[id, owner, class, antenna_m, start], in id order (the order of every per-vehicle array); start = the site where the vehicle stands at t0 (for a vehicle moving at t0, the 'from' of the leg it is on; a vehicle with no leg in the window stays at start all window)",
   "sites": "id -> [x_m, y_m]; pads at their stand-off point (where a rover works), as the road legs end there",
   "nodes": "radio nodes that are not vehicles: id -> [x_m, y_m, antenna_m] ('BASE' = the 10 m mast)",
   "roads": "{edges: edge id -> [[x_m, y_m], ...], res: edge id -> [resource id per point, -1 = two-lane], branched: resource id -> bool, bays: [[x_m, y_m], ...] (where a single-lane resource ends)}; edge ids are the road file's leg ids ('PAD_A@1->BASE'); no_road: edges the road file lacks (pad to pad), given as a straight line between the two sites (the engine drives them by its distance table, with no single-lane segments)",

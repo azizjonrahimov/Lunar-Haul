@@ -7714,3 +7714,31 @@ Files: site/src/world/atc-pair.js (new), site/src/world/v2.js, site/src/world/v2
   2. The P3 title in your message differs from the paper's h1. The page uses the h1: "...What Lunar ATC Puts Inside Each Vehicle and How Its Marketplace Works".
 - For BACKEND (via LEAD): vehicles with no leg in the window have no position in the trace (without: LTV1_PEGASUS 2, the two hoppers 5 and 6; with: LTV1_CLV1 0, hoppers 5 and 6). The page lists them as "not moved this month" instead of placing them. A start site per vehicle would put them on the map.
 - C: is down to 0.50 GB free (12:42).
+
+## B-80 addendum DONE 30 Oct (fleet start sites) | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**Change:** each fleet tuple is now [id, owner, class, antenna_m, start]. start is the site where the vehicle stands at t0.
+- For a vehicle moving at t0, it is the 'from' of the leg it is on.
+- A vehicle with no leg in the window stays at start all window.
+- index.json's field notes say so.
+
+**Vehicles with no leg in the window:**
+- with: 0 BASE, 5 DEPOT, 6 DEPOT.
+- without: 2 PAD_A, 5 DEPOT, 6 DEPOT.
+
+**Regenerated files:**
+- with.json.gz: 24,583 B, sha256 21103fd57995...
+- without.json.gz: 28,004 B, sha256 8097f6c3642c...
+- index.json, with the new bytes and sha256.
+
+**Checks:**
+- V1 passes: index, and both runs equal a fresh hook-free run.
+- V2 passes. It now also checks that every start is a known site and is where the vehicle's first leg begins: 0 violations.
+- results/vv_phase5.json V rows updated, with the commit field unchanged: 185 rows, 159 passed, 10 failed, 16 skipped.
+- Tests 17/17.
+
+**Files:** tools/atc/export_trace.py, data/atc/trace_pair/{index.json, with.json.gz, without.json.gz}, lunarsim/vv5.py, results/vv_phase5.json, .team/reports.md.
+
+**FRONTEND:** fleet[i][4] = start site id.
+
+**Status:** BACKEND idle.
