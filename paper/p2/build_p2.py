@@ -427,7 +427,15 @@ def values(r: R, allow_pending: bool):
                            f"on the {words(r7_n)} seeds that had run when the rerun was stopped (Section 5.9)")
     pend("P2-CHECKS-SENTENCE", "B-79", "the phase-5 checks are counted once B-79's batches land")
     pend("P2-FAILED-CHECKS-SENTENCE", "B-79", "the check outcomes are read from the verification data once B-79 lands")
-    pend("P2-SHARED-CHECK-LIMITATION", "B-78", "whether roads.py calls the shared safety_check() is known once B-78 lands")
+    def shared_check_limitation():
+        # empty when the engine's road layer enforces the rules through the same safety_check() the encounter
+        # simulator and the checker use; the limitation sentence only if it has its own implementation
+        src = open(os.path.join(ROOT, "lunarsim", "atc", "roads.py"), encoding="utf-8").read()
+        if "safety_check(" in src and "from .safety import" in src:
+            return ""
+        return ("The logistics model's road layer enforces the reservation and closure rules in its own code and does "
+                "not call the vehicle safety program, so the two implementations were checked separately.")
+    fill("P2-SHARED-CHECK-LIMITATION", shared_check_limitation, "B-78")
 
     def deadlock_scope():
         # the checker (E45) found that R3's one-hop exit rule can deadlock on a ring of single-lane segments; the clause
@@ -638,10 +646,19 @@ def values(r: R, allow_pending: bool):
             why = {5: "the ring of one-lane segments with finite bays",
                    6: "the landing closure"}
             s += ("Deadlocks occurred in " + ", ".join(
-                f"{cnt(v)} of {cnt(t44(j, k)['n_driven'])} type-{k} encounters ({pc(v / t44(j, k)['n_driven'], 1)}"
-                f"{', ' + why[k] if k in why else ''})"
+                f"{cnt(v)} of {cnt(t44(j, k)['n_driven'])} type-{k} encounters"
+                + (f" ({pc(v / t44(j, k)['n_driven'], 1)}" if v / t44(j, k)["n_driven"] >= 0.001 else " (")
+                + f"{why[k] if k in why and v / t44(j, k)['n_driven'] < 0.001 else (', ' + why[k] if k in why else '')})"
                 for k, v in dl.items()) + " and in no other type. ")
-            check(6 not in dl, "type 6 has no deadlock under the corrected stall classifier (change 9)")
+            if 6 in dl:
+                g6 = c9()["classification_defect"]["remaining_type6_deadlocks"]
+                check(g6["count"] == dl[6] and g6["all_at_R_m"] == 1000,
+                      "the type-6 deadlocks are the traced remainder, all at the 1 km radius")
+                s += (f"The {words(dl[6])} type-6 deadlocks are at the {cnt(1000)}{NB}m zone radius and have one "
+                      f"mechanism: a crossing lies on the zone boundary, a vehicle held at the zone line stops inside "
+                      f"the crossing tile it holds, and a vehicle that must leave the closing zone through that "
+                      f"crossing cannot. No rule keeps a vehicle out of a junction whose far side is a hold point; "
+                      f"R3's exit check covers bays only. ")
         else:
             s += "No encounter deadlocked. "
         bf = {k: t44(j, k)["outcomes"]["blocked_by_fault"] for k in range(1, 13)
@@ -678,23 +695,26 @@ def values(r: R, allow_pending: bool):
               f"first was fixed in the builder and the second by narrowing the gap metric's same-lane test "
               f"({'heading within 10&deg;' if mc['method'].startswith('heading') else 'same road and direction'} "
               f"instead of 30&deg;; the shield's leader test is unchanged). No violation count in any other type "
-              f"changes under the narrower test, and type 9's reproduced exactly; the near-miss counts of types "
-              f"{' and '.join(str(k) for k in mc['near_miss_changed_types'])} did change, so both were rerun in full "
-              f"under the final metric. The first pass had also classed {cnt(cd['type6_deadlocks_before'])} "
+              f"changes under the narrower test, and type 9's reproduced exactly; the near-miss counts of type "
+              f"{' and '.join(str(k) for k in mc['near_miss_changed_types'])} and the minimum-gap diagnostic of "
+              f"type {' and '.join(str(k) for k in mc['min_gap_diagnostic_changed_types'] if k not in mc['near_miss_changed_types'])} "
+              f"did change, so types {' and '.join(str(k) for k in mc['rerun_full_under_final_metric'])} were rerun "
+              f"in full under the final metric. The first pass had also classed {cnt(cd['type6_deadlocks_before'])} "
               f"encounters as deadlocks; a trace showed slow haulers correctly held at the closed zone, stopped "
               f"just short of its line, that the stall check counted as waiting for a grant. The classifier was "
-              f"corrected (only the deadlock flag can change, and only downwards) and types 5 and 6 rerun: type 6 "
-              f"has no deadlock, and type 5's ring deadlocks "
+              f"corrected (the deadlock flag and, in type 6, where the stall test ends an encounter; no violation "
+              f"changed) and types 5 and 6 rerun: type 6 fell from {cnt(cd['type6_deadlocks_before'])} deadlocks to "
+              f"the {words(t44(j, 6)['outcomes']['deadlock'])} above, and type 5's ring deadlocks "
               + (f"stand at {cnt(t5d)}" if t5d == cd["type5_deadlocks_before"] else
                  f"moved from {cnt(cd['type5_deadlocks_before'])} to {cnt(t5d)}")
               + " (change 9 of [43]). The earlier passes' files are archived and used for nothing else.")
         check(mc.get("other_types_violations_unchanged", False) and mc.get("t9_reproduced", {}).get("viol_gap") ==
               t44(j, 9)["violations_by_kind"]["viol_gap"], "the narrower same-lane test left every violation count unchanged")
-        check(sorted(mc["near_miss_changed_types"]) == sorted(mc["rerun_full_under_final_metric"]),
-              "every type whose near-miss count moved under the narrower test was rerun in full")
-        check(cd.get("only_deadlock_flag_changes", False) and sorted(cd["types_rerun"]) == [5, 6],
-              "the classifier fix changed only deadlock flags and types 5 and 6 were rerun")
-        check(t44(j, 6)["outcomes"]["deadlock"] == 0, "type 6 has no deadlock after the classifier fix")
+        check(set(mc["near_miss_changed_types"]) | set(mc["min_gap_diagnostic_changed_types"])
+              <= set(mc["rerun_full_under_final_metric"]),
+              "every type whose near-miss count or gap diagnostic moved under the narrower test was rerun in full")
+        check(sorted(cd["types_rerun"]) == [5, 6] and cd["type6_deadlocks_after"] == t44(j, 6)["outcomes"]["deadlock"]
+              and cd["type5_deadlocks_after"] == t5d, "types 5 and 6 were rerun and their deadlock counts match the record")
         return s
     fill("P2-E44-RESULTS-PARAGRAPH", e44_results_paragraph, "E44")
 
@@ -723,6 +743,14 @@ def values(r: R, allow_pending: bool):
                   + ("stood" if t5["outcomes"]["deadlock"] == c9()["classification_defect"]["type5_deadlocks_before"]
                      else f"moved from {cnt(c9()['classification_defect']['type5_deadlocks_before'])}")
                   + " when the stall classifier was corrected (change 9 of [43]). ")
+        t6 = t44(j, 6)
+        if t6["outcomes"]["deadlock"] > 0:
+            s += (f"The {words(t6['outcomes']['deadlock'])} deadlocks of type 6 are a gap in the rules: a crossing "
+                  f"that lies on a landing zone's boundary can be held by a vehicle stopped at the zone line, and the "
+                  f"vehicle leaving the closing zone through it is blocked. R3 keeps a vehicle out of a segment it "
+                  f"cannot leave into a bay, but no rule keeps it out of a junction whose far side is a hold point. "
+                  f"The repair is a one-line extension of R3's exit check to junctions; we did not run it, and the "
+                  f"count stands as found. ")
         return s.strip()
     fill("P2-E44-DISCUSSION-CLAUSE", e44_discussion_clause, "E44")
 
@@ -874,17 +902,20 @@ def values(r: R, allow_pending: bool):
         j, j5 = e44(), e45()
         zero, viol = e44_split(j)
         st, tr, K = e45_totals(j5)
-        s = (f"The safety program allowed no violation in {words(len(zero))} of the twelve encounter types")
+        s = (f"The safety program allowed no violation in {words(len(zero))} of twelve encounter types")
         if viol == [9]:
-            s += ("; the exception, a vehicle stopping dead inside a one-lane segment, defeats a gap rule derived "
+            s += ("; the exception, a vehicle stopping dead in a one-lane segment, defeats a gap rule derived "
                   "for a braking leader")
         elif viol:
             s += "; " + e44_violating_clause(j, viol, with_counts=False)
         dc = [k for k in deadlocked_clean(j, zero) if k != 5]
-        if dc:
-            s += "; " + ("type " if len(dc) == 1 else "types ") + ", ".join(str(k) for k in dc) + " deadlocked"
-        s += (f", and the exhaustive search found no unsafe or stuck state in {cnt(st)} reachable states and "
-              f"caught each of three removed rules.")
+        if dc == [6]:
+            s += (f", and one type deadlocked {words(t44(j, 6)['outcomes']['deadlock'])} times in "
+                  f"{cnt(t44(j, 6)['n_driven'])} at a crossing on a closed zone's boundary")
+        elif dc:
+            s += ", and " + ("type " if len(dc) == 1 else "types ") + ", ".join(str(k) for k in dc) + " deadlocked"
+        s += (f". The exhaustive search of {cnt(st)} reachable states found no unsafe or stuck state and "
+              f"caught three removed rules.")
         return s
     fill("P2-H7-ABSTRACT-CLAUSE", h7_abstract_clause, "E44/E45")
 
@@ -893,21 +924,20 @@ def values(r: R, allow_pending: bool):
         zero, viol = e44_split(j)
         st, tr, K = e45_totals(j5)
         n = sum(t44(j, k)["n_driven"] for k in range(1, 13))
-        s = (f"The exhaustive check found no unsafe or stuck state in {cnt(st)} reachable states and caught every "
-             f"removed rule; the simulator found no violation in {words(len(zero))} of twelve encounter types over "
-             f"{cnt(n)} encounters")
+        s = (f"The exhaustive check found no unsafe or stuck state in {cnt(st)} reachable states; the simulator "
+             f"found no violation in {words(len(zero))} of twelve encounter types")
         if viol == [9]:
-            s += (", and one in the twelfth: a vehicle that stops dead inside a one-lane segment, which the "
-                  "braking-based gap rule does not cover.")
+            s += ", one in the twelfth, a vehicle that stops dead inside a one-lane segment"
         elif viol:
-            s += "; " + e44_violating_clause(j, viol, with_counts=False) + "."
-        else:
-            s += "."
+            s += "; " + e44_violating_clause(j, viol, with_counts=False)
         dc = [k for k in deadlocked_clean(j, zero) if k != 5]
-        if dc:
-            s += (" " + ("Type " if len(dc) == 1 else "Types ") + ", ".join(str(k) for k in dc)
-                  + " produced no violation but deadlocked.")
-        return s
+        if dc == [6]:
+            s += (f", and {words(t44(j, 6)['outcomes']['deadlock'])} deadlocks in {cnt(t44(j, 6)['n_driven'])} at a "
+                  f"crossing on a closed zone's boundary")
+        elif dc:
+            s += (", and deadlocks without a violation in " + ("type " if len(dc) == 1 else "types ")
+                  + ", ".join(str(k) for k in dc))
+        return s + "."
     fill("P2-CONCLUSION-SAFETY-CLAUSE", conclusion_safety_clause, "E44/E45")
 
     V["P2-REFERENCES"] = references()

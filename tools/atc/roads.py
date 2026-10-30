@@ -1,6 +1,7 @@
 """B-77: corridor widths along the Connecting Ridge route network -> data/atc/connecting_ridge/roads-v1.json.
 
     python tools/atc/roads.py build      # ~10 s, single process
+    python tools/atc/roads.py rings      # single-lane rings per share -> results/ATC_roads_rings.json (B-78)
 
 For every route sample of the engine's samples file (earth_link-v1-samples, 2,421 samples, 100 m apart along the
 legs), the drivable corridor across the route: the contiguous band through the sample, perpendicular to the route
@@ -164,12 +165,109 @@ def build(log=print) -> Dict[str, Any]:
     return doc
 
 
+RINGS = os.path.join(ROOT, "results", "ATC_roads_rings.json")
+
+
+def rings(shares=(0.05, 0.15, 0.40), log=print) -> Dict[str, Any]:
+    """Rings made only of single-lane road (B-78 / LEAD): cycles of the graph of single-lane route samples (edges between
+    consecutive samples of any leg; sites and pads are junctions, never single-lane, so a cycle through a site has an
+    unbounded waiting place and is not counted). The exit-bay rule (R3) can deadlock only on such a ring (E44 type 5,
+    E45 ring note); per share: number of independent cycles (cycle basis) and their lengths. For context, the same for
+    the whole route graph (all samples) and how many of its cycles avoid every site."""
+    import networkx as nx
+    sys.path.insert(0, ROOT)
+    from lunarsim.atc import roads as RD
+    roads, sdoc = RD._load()
+    xy = np.array([s_["xy_m"] for s_ in sdoc["samples"]], float)
+    junc = set(roads["junctions"])
+
+    def graph(mask):
+        G = nx.Graph()
+        for ids in sdoc["legs"].values():
+            for a, b in zip(ids[:-1], ids[1:]):
+                if a != b and mask[a] and mask[b]:
+                    G.add_edge(a, b, w=float(np.hypot(*(xy[a] - xy[b]))))
+        return G
+
+    pairs = {lg: set(zip(ids[:-1], ids[1:])) for lg, ids in sdoc["legs"].items()}
+
+    def cyc_info(G):
+        out = []
+        for c in nx.cycle_basis(G):
+            ln = sum(float(np.hypot(*(xy[c[k]] - xy[c[(k + 1) % len(c)]]))) for k in range(len(c)))
+            edges = [(c[k], c[(k + 1) % len(c)]) for k in range(len(c))]
+            legs = sorted({lg for lg, pr in pairs.items() for a, b in edges if (a, b) in pr or (b, a) in pr})
+            out.append({"samples": len(c), "length_m": round(ln, 1), "through_site": any(u in junc for u in c),
+                        "sample_ids": [int(u) for u in c], "legs": legs})
+        return sorted(out, key=lambda d: d["length_m"])
+
+    # Legs sample shared roads at their own 100 m offsets, so raw sample cycles include 'diamonds' of one road sampled
+    # twice. Merge samples closer than MERGE_M into one road node (union-find) and count cycles on the merged graph.
+    MERGE_M = 40.0
+    parent = list(range(len(xy)))
+
+    def find(u):
+        while parent[u] != u:
+            parent[u] = parent[parent[u]]
+            u = parent[u]
+        return u
+    from scipy.spatial import cKDTree
+    for a, b in cKDTree(xy).query_pairs(MERGE_M):
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[ra] = rb
+    root = np.array([find(u) for u in range(len(xy))])
+
+    def merged_graph(mask):
+        G = nx.Graph()
+        for ids in sdoc["legs"].values():
+            for a, b in zip(ids[:-1], ids[1:]):
+                if mask[a] and mask[b] and root[a] != root[b]:
+                    G.add_edge(int(root[a]), int(root[b]))
+        return G
+
+    def merged_cycles(mask):
+        G = merged_graph(mask)
+        out = []
+        for c in nx.cycle_basis(G):
+            ln = sum(float(np.hypot(*(xy[c[k]] - xy[c[(k + 1) % len(c)]]))) for k in range(len(c)))
+            out.append({"nodes": len(c), "length_m": round(ln, 1),
+                        "through_site": any(root[j] == u for u in c for j in junc)})
+        return sorted(out, key=lambda d: d["length_m"])
+
+    doc = {"task": "B-78", "note": " ".join(rings.__doc__.split()), "merge_m": MERGE_M, "by_share": {},
+           "raw_sample_cycles_note": "cycles of the raw sample graph (before merging) are mostly one road sampled twice "
+                                     "by different legs; the merged counts are the physical answer"}
+    full = merged_cycles(np.ones(len(xy), bool))
+    doc["whole_route_graph"] = {"independent_cycles_merged": len(full),
+                                "cycles_avoiding_sites": sum(not c["through_site"] for c in full),
+                                "cycle_lengths_m": [c["length_m"] for c in full]}
+    for sh in shares:
+        G = graph(RD.single_lane_set(sh))
+        cs = cyc_info(G)
+        mc = merged_cycles(RD.single_lane_set(sh))
+        doc["by_share"][f"{sh:g}"] = {"single_lane_samples": int(RD.single_lane_set(sh).sum()),
+                                      "rings": len(mc), "ring_lengths_m": [c["length_m"] for c in mc],
+                                      "raw_sample_cycles": len(cs), "raw_cycle_lengths_m": [c["length_m"] for c in cs]}
+        log(f"rings: share {sh:g}: {len(mc)} single-lane rings after merging {[c['length_m'] for c in mc]} "
+            f"(raw sample cycles {len(cs)})")
+    log(f"rings: whole route graph: {len(full)} independent cycles, {doc['whole_route_graph']['cycles_avoiding_sites']} "
+        f"avoid every site")
+    with open(RINGS, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(doc, f, indent=1)
+        f.write("\n")
+    return doc
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(prog="python tools/atc/roads.py")
-    ap.add_argument("cmd", choices=["build"])
-    ap.parse_args()
+    ap.add_argument("cmd", choices=["build", "rings"])
+    a = ap.parse_args()
     import faulthandler
     faulthandler.dump_traceback_later(540, exit=True)
+    if a.cmd == "rings":
+        rings()
+        raise SystemExit(0)
     build()
     rss = EL.peak_rss_mb()
     if rss:

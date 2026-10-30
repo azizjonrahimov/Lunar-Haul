@@ -1,0 +1,162 @@
+{
+ "task": "B-78, PREREG change 8",
+ "defects_found_in_main_run": {
+  "when": "29 Oct 2026, after types 1-10 and 9 of 25 type-11 batches of the first E44 main run (interim summary)",
+  "first_run_violations_by_type": {
+   "4": 37,
+   "5": 3,
+   "6": 82,
+   "9": 58,
+   "others": 0
+  },
+  "first_run_parts": "results/archive/E44_parts_pre-body-fix/ (development output; not used for results)",
+  "defects": [
+   {
+    "name": "body geometry at path corners",
+    "types": [
+     4,
+     5,
+     11,
+     12
+    ],
+    "what": "the vehicle body was drawn backwards from the front along the front's current heading; past a sharp corner it swung sideways into the other lane and registered false contacts",
+    "fix": "the body follows the path: body centre and the two discs at s - L/2 and s - L/2 +- off along the centreline (lunarsim/atc/encounter.py _body); run time +38 %",
+    "re_run_after_fix": {
+     "4": {
+      "re_run": 10,
+      "of_fuzzer_free_violating": 27,
+      "still_violating": 0
+     },
+     "5": {
+      "re_run": 3,
+      "of_fuzzer_free_violating": 3,
+      "still_violating": 0
+     }
+    }
+   },
+   {
+    "name": "type-6 builder: crossings without junction control",
+    "types": [
+     6
+    ],
+    "what": "the random straight roads through the landing zone crossed with no junction control (no R10 tile), so contacts occurred at unmanaged crossings, not under R5",
+    "fix": "an R10 junction tile at every crossing, half-length (W + 1 m) / sin(angle) + 2 m (lunarsim/atc/encounter_types.py _crossing_tiles)",
+    "re_run_after_fix": {
+     "6": {
+      "re_run": 5,
+      "of_fuzzer_free_violating": 46,
+      "still_violating": 0
+     }
+    }
+   }
+  ],
+  "genuine_finding": {
+   "name": "type 9 dead stop",
+   "first_run_counts": {
+    "gap_below_D0": 58,
+    "contact": 7,
+    "encounters_with_violation": 58
+   },
+   "re_run_after_both_fixes": {
+    "re_run": 25,
+    "of_fuzzer_free_violating": 48,
+    "still_violating": 25,
+    "gap_below_D0": 25,
+    "contact": 4
+   },
+   "rule": "R1 (RSS keep distance): d_min assumes the leader brakes at most at B_MAX = 0.8 m/s2; a fault stops a vehicle instantly, so a same-direction follower inside the single-lane segment loses its margin",
+   "status": "reported as a result of E44, not corrected; a dead-stop margin variant is future work (not run)",
+   "final_counts": "results/E44_bounds.json types.9"
+  },
+  "re_runs": "the fuzzer-free violating encounters were re-run because they are deterministic (a random fuzzer draws from a batch-shaped random stream); the fixes are in the final run of all 12 types at the same n"
+ },
+ "change_9": {
+  "when": "29-30 Oct 2026, E44 rerun: the first type-6 pass after change 8, then change 9 and its correction",
+  "first_pass_type6": {
+   "n": 10000,
+   "viol_r3": 10,
+   "viol_gap": 10,
+   "deadlock": 201
+  },
+  "first_pass_parts": "results/archive/E44_T6_pre-start-fix/",
+  "defect": {
+   "name": "type-6 builder start state",
+   "what": "with the change-8 junction tiles, a vehicle could start within its stopping distance of a crossing tile (e.g. 0.6 m before it at 2.78 m/s), so it entered the tile without a grant",
+   "fix": "no start inside a crossing tile or within stopping distance (mu 0.3) + 20 m of one; such a start is moved just past the tile, repeated for the next tile (lunarsim/atc/encounter_types.py _crossing_tiles)",
+   "found": 10,
+   "fixtures_other_types_identical": true,
+   "fixtures_identity_method": "by construction: the fixtures hold the first 600 steps of each replay, and no change-9 code path except the type-6 builder enters them (the gap metric and the stall classifier are not in the fixtures, and termination cannot occur within 600 steps). A direct byte comparison with the earlier files was not possible: gzip stored a timestamp and the files were regenerated in place. Fixtures are now written with mtime 0; two regenerations are byte-identical; the parity test passes."
+  },
+  "metric_change": {
+   "name": "same-lane test for the gap metric",
+   "method": "road_identity",
+   "definition": "the D0 violation and the near-miss gap count a leader pair only if both vehicles are on the same path, or on the same piece line in the same direction (heading within 0.001 rad, line offset within 0.05 m); the shield's own leader test stays at 30 deg and 1.5 m",
+   "reclassified": 10,
+   "min_clearance_m": 2.231,
+   "contacts": 0,
+   "min_crossing_angle_deg": 0.0,
+   "min_crossing_angle_note": "the type-6 builder draws road directions uniformly, so two roads can cross at any angle; hence road identity rather than a heading test",
+   "other_types_violations_unchanged": true,
+   "near_miss_changed_types": [
+    5
+   ],
+   "min_gap_diagnostic_changed_types": [
+    3,
+    5
+   ],
+   "rerun_full_under_final_metric": [
+    3,
+    5
+   ],
+   "archive": "results/archive/E44_T3_T5_pre-c9-metric/",
+   "batch0_byte_identical_types": [
+    1,
+    2,
+    4,
+    7,
+    8,
+    10,
+    11,
+    12
+   ],
+   "t9_reproduced": {
+    "viol_gap": 58,
+    "viol_contact": 7,
+    "batches_identical": 5
+   }
+  },
+  "classification_defect": {
+   "name": "stall check: held at a closed zone counted only within 1 m of the line",
+   "what": "a vehicle held by a closure that had stopped more than ~1 m before the zone line was not counted as held, and any stalled vehicle with an ungranted group counted as 'waiting for a grant', even when that group lay far beyond the zone line; all 202 type-6 'deadlocks' were such closure holds at R = 1 km",
+   "fix": "held at a closed zone = the zone line is the binding stop line; waiting for a grant = the entry of the ungranted group is the binding stop line, within request distance (lunarsim/atc/encounter.py)",
+   "type6_deadlocks_before": 202,
+   "type5_deadlocks_before": 386,
+   "type6_deadlocks_after": 4,
+   "type5_deadlocks_after": 386,
+   "types_rerun": [
+    5,
+    6
+   ],
+   "only_deadlock_flag_changes": false,
+   "changes_by_type": {
+    "5": "deadlock flag only (915 rows, nearly all fuzzer encounters, which are not counted)",
+    "6": "deadlock flag; the stall test also ends encounters, so end time, steps and proposals changed in 355 encounters (min_sep in 40, interventions in 25); violations unchanged (0)"
+   },
+   "archive": "results/archive/E44_T5_T6_pre-classifier/",
+   "remaining_type6_deadlocks": {
+    "count": 4,
+    "all_at_R_m": 1000,
+    "mechanism": "a crossing lies at the zone boundary: a vehicle held at the zone line stops inside the crossing tile it holds, and a vehicle that must exit the closing zone through that crossing cannot; no rule keeps a vehicle out of a junction whose far side is a hold point (R3's exit check covers bays only)",
+    "status": "genuine; reported, not corrected"
+   }
+  },
+  "variant_dropped": {
+   "name": "6_request_rule",
+   "deadlocks": 203,
+   "violations": 0,
+   "against_registered": 202,
+   "status": "no mechanism; not reported; files archived",
+   "archive": "results/archive/E44_variant_6_request_rule/"
+  }
+ }
+}

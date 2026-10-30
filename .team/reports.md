@@ -6789,3 +6789,86 @@ Idle until BACKEND's data for F-53 lands.
 **Questions for LEAD**
 1. **Bay sweep:** keep the ill-posed 2 km point as "identical by construction", or replace it with a bay sweep at the 40 % share?
 2. **8×:** stays not run unless the owner picks the proper hold fix (Issue 5). Your 1.5 h diagnostic of the proper fix is next.
+
+## B-78 DONE 30 Oct 04:10 (encounter simulator, one safety_check, model checker; E44, E45) | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+### One source of truth
+- `lunarsim/atc/safety.py` `safety_check(state, proposal)` handles two proposal kinds:
+  - **Reserve** (R3 segment, R10 slots, on time windows): called by `lunarsim/atc/roads.py` at job commit. 16 stored E43 rows reran bit-identical after the switch.
+  - **Move** (R1, R2, R3/R5/R10 stop lines, R5 must-exit, R6; numpy over vehicles × encounters): called by the encounter simulator for every vehicle at 10 Hz, and by the model checker for every move (stop-and-go mapping onto 10 m cells, T_step = 8.45 s).
+- Every constant carries a flag and a source in the module docstring.
+
+### E44: 12 encounter types, final run (PREREG changes 6, 8, 9)
+- **Design.** 10^4 encounters per type and 10^5 for types 1 and 7: 300,000 encounters in total. Seeds are (44, type, batch). Planners: nominal 40 %, random fuzzer 30 %, adversarial 30 %; type 12 uses fuzzers only.
+- **Importance sampling** (types 6, 7, 9): weights are reported, and the bounds use n_eff.
+- **Outcome classes** sum to n per type: not_driven, violation, blocked_by_fault, deadlock (counted only without a fuzzer), finished, incomplete.
+
+| type | n | violations (kind) | deadlocks | bound / Bonferroni |
+|---|---|---|---|---|
+| 1 | 100,000 (24,743 not drivable) | 0 | 0 | 3.98e-5 / 7.28e-5 |
+| 2 | 10,000 | 0 | 0 | 3.00e-4 / 5.48e-4 |
+| 3 | 10,000 | 0 | 0 | 3.00e-4 / 5.48e-4 |
+| 4 | 10,000 | 0 | 0 | 3.00e-4 / 5.48e-4 |
+| 5 | 10,000 | 0 | **386** (R3 ring deadlocks; genuine, see E45) | 3.00e-4 / 5.48e-4 |
+| 6 | 10,000 | 0 | **4** (genuine: a vehicle held at the zone line stands inside its crossing tile and blocks an exiting vehicle) | 6.59e-4 / 1.21e-3 |
+| 7 | 100,000 | 0 | 0 | 6.35e-5 / 1.16e-4 |
+| 8 | 10,000 | 0 | 0 | 3.00e-4 / 5.48e-4 |
+| 9 | 10,000 | **58** (58 gap below D0, 7 contacts; all dead stops) | 0 | 7.21e-3 / 8.12e-3 |
+| 10 | 10,000 | 0 | 0 | 3.00e-4 / 5.48e-4 |
+| 11 | 10,000 | 0 | 0 | 3.00e-4 / 5.48e-4 |
+| 12 | 10,000 (677 not drivable) | 0 | 0 | 4.14e-4 / 7.58e-4 |
+
+- **Joint statement** (Bonferroni over the 12 types): max bound 8.1e-3 (type 9); equal-weight mix 1.18e-3.
+- **Genuine findings:**
+  - (i) Type-9 dead stop: R1's d_min assumes a leader braking at ≤ 0.8 m/s²; an instantaneous stop breaks that. This happens only in type 9; type 11 and type 12 fuzzers have no faults, and both have 0 violations.
+  - (ii) Type-5 ring deadlocks: R3's one-hop exit rule is not deadlock-free on single-lane rings.
+  - (iii) Type-6 junction at the zone line: a vehicle that stops at a hold point inside a junction it holds blocks others. R3's exit check covers bays, not hold points.
+- **Defects found and fixed** (records in `results/E44_defects.json`):
+  - body geometry at corners;
+  - type-6 crossings without tiles;
+  - type-6 start state;
+  - the same-lane metric (road identity);
+  - the stall classifier.
+- **Archives:** `results/archive/E44_parts_pre-body-fix/`, `E44_T6_pre-start-fix/`, `E44_T3_T5_pre-c9-metric/`, `E44_T5_T6_pre-classifier/`, `E44_variant_6_request_rule/`, each with a README.
+- **Run time:** about 9.5 h for the final run. Peak process RSS 109-136 MB per type (single process, 480 s chunks).
+- **Other rates per type** (in `results/E44_bounds.json`): emergency brakes, interventions, near misses, minimum margin.
+
+### E45: exhaustive check (`results/E45_modelcheck.json`, traces in `results/E45_traces/`)
+- **Models**, all of which pass (no violation, no deadlock, the goal reachable from every state, no livelock):
+
+  | model | states | K | time |
+  |---|---|---|---|
+  | A: pad visit + oncoming; landing, crew, links | 4,356 | 30 | 2.7 s |
+  | B: three vehicles on the line | 1,092 | 32 | 1.0 s |
+  | C: pad + two oncoming | 4,725 | 38 | 3.7 s |
+  | D: as C, with links | 36,912 | 41 | 37 s (29 MB) |
+
+- **Mutations, each caught:** R3 exit check (deadlock), R5 entry check (zone violation), R7 hold (segment without reservation).
+- **Development counterexamples:** `results/E45_development.json`.
+
+### Replay fixtures
+- 20 replays in `data/atc/encounter_fixtures/` (*.json.gz, ~0.5 MB), written with a fixed gzip timestamp, plus `index.json`.
+- Parity tolerance: a = 1e-6; one-step s and v = 1e-5.
+- The Python parity test is in `tests/test_safety.py`.
+
+### Files
+- **New:**
+  - `lunarsim/atc/encounter.py`, `lunarsim/atc/encounter_types.py`, `lunarsim/atc/modelcheck.py`;
+  - `tools/atc/run_e44.py`, `tools/atc/run_e45.py`, `tests/test_safety.py`;
+  - `data/atc/encounter_fixtures/`;
+  - `results/E44_{encounters.csv, bounds.json, bins.csv, defects.json}`, `results/E44_parts/`, `results/E45_traces/`;
+  - the five archive folders.
+- **Changed:**
+  - `lunarsim/atc/safety.py`: R6 strict keep-out, anticipated slow zone, d_crew_any.
+  - `tools/atc/roads.py`: `rings`.
+  - `results/E45_modelcheck.json`: rerun on the final safety.py; same states and verdicts, new timings.
+
+### How to test
+- `python -m pytest tests/test_safety.py` (7 tests).
+- Full suite file by file: **45 files, 561 passed.**
+- `python tools/atc/run_e44.py summarize` rebuilds the E44 outputs from the parts.
+- `python tools/atc/run_e45.py` reruns E45 in ~50 s.
+
+**FRONTEND:** the fixtures are ready for the encounter sandbox (F-54). The format is in `data/atc/encounter_fixtures/index.json`, and the constants are in each fixture.
+
+**Questions for LEAD:** none open. The three genuine findings above are for P2.

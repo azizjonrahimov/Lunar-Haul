@@ -1,0 +1,130 @@
+{
+ "note": "Replays for the site's encounter sandbox (F-54). Each step holds the safety_check inputs per vehicle ('move', the Move fields of lunarsim/atc/safety.py) and its output acceleration 'a', all stored to 6 decimals. Parity: a JS port of safety_check given 'move' must return 'a' within 1e-6 m/s2 per vehicle; one step of the kinematics of lunarsim/atc/encounter.py (no reversing, 0.1 s) from the stored 's', 'v' with the stored 'a' must give the next step's 's', 'v' within 1e-5. Infinite distances are stored as null.",
+ "tolerance": {
+  "a": 1e-06,
+  "s": 1e-05,
+  "v": 1e-05
+ },
+ "fixtures": [
+  {
+   "file": "E44_fixture_00_T01_nominal.json.gz",
+   "type": 1,
+   "planner": "nominal",
+   "steps": 600
+  },
+  {
+   "file": "E44_fixture_01_T01_adversarial.json.gz",
+   "type": 1,
+   "planner": "adversarial",
+   "steps": 600
+  },
+  {
+   "file": "E44_fixture_02_T02_nominal.json.gz",
+   "type": 2,
+   "planner": "nominal",
+   "steps": 600
+  },
+  {
+   "file": "E44_fixture_03_T02_adversarial.json.gz",
+   "type": 2,
+   "planner": "adversarial",
+   "steps": 600
+  },
+  {
+   "file": "E44_fixture_04_T03_nominal.json.gz",
+   "type": 3,
+   "planner": "nominal",
+   "steps": 600
+  },
+  {
+   "file": "E44_fixture_05_T03_adversarial.json.gz",
+   "type": 3,
+   "planner": "adversarial",
+   "steps": 600
+  },
+  {
+   "file": "E44_fixture_06_T04_nominal.json.gz",
+   "type": 4,
+   "planner": "nominal",
+   "steps": 600
+  },
+  {
+   "file": "E44_fixture_07_T04_adversarial.json.gz",
+   "type": 4,
+   "planner": "adversarial",
+   "steps": 600
+  },
+  {
+   "file": "E44_fixture_08_T05_nominal.json.gz",
+   "type": 5,
+   "planner": "nominal",
+   "steps": 600
+  },
+  {
+   "file": "E44_fixture_09_T05_adversarial.json.gz",
+   "type": 5,
+   "planner": "adversarial",
+   "steps": 600
+  },
+  {
+   "file": "E44_fixture_10_T06_nominal.json.gz",
+   "type": 6,
+   "planner": "nominal",
+   "steps": 600
+  },
+  {
+   "file": "E44_fixture_11_T06_adversarial.json.gz",
+   "type": 6,
+   "planner": "adversarial",
+   "steps": 600
+  },
+  {
+   "file": "E44_fixture_12_T07_nominal.json.gz",
+   "type": 7,
+   "planner": "nominal",
+   "steps": 600
+  },
+  {
+   "file": "E44_fixture_13_T07_adversarial.json.gz",
+   "type": 7,
+   "planner": "adversarial",
+   "steps": 600
+  },
+  {
+   "file": "E44_fixture_14_T08_nominal.json.gz",
+   "type": 8,
+   "planner": "nominal",
+   "steps": 600
+  },
+  {
+   "file": "E44_fixture_15_T08_adversarial.json.gz",
+   "type": 8,
+   "planner": "adversarial",
+   "steps": 600
+  },
+  {
+   "file": "E44_fixture_16_T10_nominal.json.gz",
+   "type": 10,
+   "planner": "nominal",
+   "steps": 600
+  },
+  {
+   "file": "E44_fixture_17_T10_adversarial.json.gz",
+   "type": 10,
+   "planner": "adversarial",
+   "steps": 600
+  },
+  {
+   "file": "E44_fixture_18_T09_nominal.json.gz",
+   "type": 9,
+   "planner": "nominal",
+   "steps": 600
+  },
+  {
+   "file": "E44_fixture_19_T11_nominal.json.gz",
+   "type": 11,
+   "planner": "nominal",
+   "steps": 600
+  }
+ ]
+}

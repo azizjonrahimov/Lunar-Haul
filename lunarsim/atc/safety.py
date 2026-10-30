@@ -143,6 +143,7 @@ class Move:
     must_exit: Any = False           # inside a closing landing zone (R5): keep moving to the exit
     a_max: Any = 0.2                 # the vehicle's acceleration capability (m/s2)
     g: float = G_MOON
+    d_crew_any: Any = None           # distance to the nearest crew in any direction (R6 slow zone); None = d_crew
 
 
 @dataclass
@@ -198,7 +199,11 @@ def _ok(m: Move, a, b, vmax):
     rs = x1 + stop_distance(v1, b) <= m.d_stop + 1e-9
     # R6: crew keep-out while moving, and the crew slow zone
     dc1 = m.d_crew - x1
-    r6 = ((dc1 >= r_crew_stop(v1, b)) | (v1 <= MOVING_MS)) & ((m.d_crew > R_CREW_SLOW_M) | (v1 <= V_CREW_MS + 1e-9))
+    d_any = m.d_crew if m.d_crew_any is None else m.d_crew_any
+    # slow zone, anticipated: able to be at v_crew by the time the zone is reached
+    slow_room = d_any - x1 - R_CREW_SLOW_M
+    to_slow = np.where(v1 > V_CREW_MS, (v1 * v1 - V_CREW_MS ** 2) / (2.0 * np.where(b > 0, b, 1e-9)), 0.0)
+    r6 = ((dc1 >= r_crew_stop(v1, b)) | (v1 <= 1e-9)) & ((slow_room >= to_slow) | (v1 <= V_CREW_MS + 1e-9))
     ok = r2 & r1 & rs & r6
     rule = np.where(~r6, 6, np.where(~r1, 1, np.where(~rs, 3, np.where(~r2, 2, 0))))
     return ok, rule

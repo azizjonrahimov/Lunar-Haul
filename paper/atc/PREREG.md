@@ -341,3 +341,17 @@ is withdrawn: no such encounter exists.
 The three statements of change 9 that stand: the builder start-state defect and its fix, the 10-degree
 same-lane test for the gap metric with the shield's 30-degree leader test unchanged, and the archiving of
 the first type-6 pass. H7 is read on the twelve registered types as before.
+
+### Change 9, addendum of 30 Oct 2026 (after the type-5 and type-6 reruns; E44 complete): four type-6 deadlocks remain and are genuine; the same-lane test uses road identity
+- After the classifier fix, type 6 has 4 deadlocks (from 202) and type 5 keeps 386. The four are at R = 1 km and
+  have one mechanism, traced: a crossing lies on the zone boundary, a vehicle held at the zone line stops inside
+  the crossing tile it holds, and a vehicle that must leave the closing zone through that crossing cannot. No rule
+  keeps a vehicle out of a junction whose far side is a hold point; R3's exit check covers bays only. Reported as a
+  result of E44, not corrected; a junction-exit rule is noted as future work and is not run.
+- The type-6 builder draws road directions uniformly, so roads can cross at any angle; by the condition of change 9
+  the gap metric's same-lane test uses road identity (same path, or the same line in the same direction), not a
+  heading test. Under it only type 5's near-miss counts and type 3's minimum-gap diagnostic changed; both types
+  were rerun in full. The classifier fix also changes where the stall test ends a type-6 encounter (355 encounters),
+  with no change in violations. Fixture identity for the other types holds by construction (no change-9 code path
+  except the type-6 builder enters the first 600 steps that the fixtures hold); a byte comparison with the earlier
+  files was not possible because gzip timestamps were overwritten, and fixtures are now written with a zero mtime.

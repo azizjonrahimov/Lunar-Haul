@@ -1033,7 +1033,7 @@ Steps:
    delivery, throughput, conflicts per day, hand-resolution hours, deadlocks, per-owner fairness.
 Done when: E43 tables, plus a check that a single vehicle sees zero added delay from the road layer.
 
-## B-78 [QUEUED] Encounter simulator, safety layer and exhaustive check (P-B core)
+## B-78 [DONE 30 Oct 04:10] Encounter simulator, safety layer and exhaustive check (P-B core)
 Steps:
 1. `lunarsim/atc/encounter.py`: continuous 2D kinematics at 10 Hz on a small local road geometry; class speeds
    and braking (b_min 0.5 m/s2 on the flat, minus g sin(theta) downhill; friction sweep 0.3/0.45/0.6); planners

@@ -1,0 +1,253 @@
+[
+ {
+  "action": null,
+  "cells": [
+   0,
+   9
+  ],
+  "held": [
+   0,
+   0
+  ],
+  "crew": 0,
+  "phase": 0,
+  "links": 3,
+  "violations": []
+ },
+ {
+  "action": [
+   "move",
+   0
+  ],
+  "cells": [
+   1,
+   9
+  ],
+  "held": [
+   0,
+   0
+  ],
+  "crew": 0,
+  "phase": 0,
+  "links": 3,
+  "violations": []
+ },
+ {
+  "action": [
+   "move",
+   0
+  ],
+  "cells": [
+   2,
+   9
+  ],
+  "held": [
+   0,
+   0
+  ],
+  "crew": 0,
+  "phase": 0,
+  "links": 3,
+  "violations": []
+ },
+ {
+  "action": [
+   "grant",
+   0
+  ],
+  "cells": [
+   2,
+   9
+  ],
+  "held": [
+   1,
+   0
+  ],
+  "crew": 0,
+  "phase": 0,
+  "links": 3,
+  "violations": []
+ },
+ {
+  "action": [
+   "move",
+   0
+  ],
+  "cells": [
+   3,
+   9
+  ],
+  "held": [
+   1,
+   0
+  ],
+  "crew": 0,
+  "phase": 0,
+  "links": 3,
+  "violations": []
+ },
+ {
+  "action": [
+   "move",
+   0
+  ],
+  "cells": [
+   4,
+   9
+  ],
+  "held": [
+   1,
+   0
+  ],
+  "crew": 0,
+  "phase": 0,
+  "links": 3,
+  "violations": []
+ },
+ {
+  "action": [
+   "move",
+   0
+  ],
+  "cells": [
+   5,
+   9
+  ],
+  "held": [
+   1,
+   0
+  ],
+  "crew": 0,
+  "phase": 0,
+  "links": 3,
+  "violations": []
+ },
+ {
+  "action": [
+   "move",
+   0
+  ],
+  "cells": [
+   6,
+   9
+  ],
+  "held": [
+   1,
+   0
+  ],
+  "crew": 0,
+  "phase": 0,
+  "links": 3,
+  "violations": []
+ },
+ {
+  "action": [
+   "move",
+   0
+  ],
+  "cells": [
+   7,
+   9
+  ],
+  "held": [
+   0,
+   0
+  ],
+  "crew": 0,
+  "phase": 0,
+  "links": 3,
+  "violations": []
+ },
+ {
+  "action": [
+   "move",
+   0
+  ],
+  "cells": [
+   8,
+   9
+  ],
+  "held": [
+   0,
+   0
+  ],
+  "crew": 0,
+  "phase": 0,
+  "links": 3,
+  "violations": []
+ },
+ {
+  "action": [
+   "move",
+   0
+  ],
+  "cells": [
+   9,
+   9
+  ],
+  "held": [
+   0,
+   0
+  ],
+  "crew": 0,
+  "phase": 0,
+  "links": 3,
+  "violations": []
+ },
+ {
+  "action": [
+   "notice",
+   0
+  ],
+  "cells": [
+   9,
+   9
+  ],
+  "held": [
+   0,
+   0
+  ],
+  "crew": 0,
+  "phase": 1,
+  "links": 3,
+  "violations": []
+ },
+ {
+  "action": [
+   "move",
+   0
+  ],
+  "cells": [
+   10,
+   9
+  ],
+  "held": [
+   0,
+   0
+  ],
+  "crew": 0,
+  "phase": 1,
+  "links": 3,
+  "violations": []
+ },
+ {
+  "action": [
+   "close",
+   0
+  ],
+  "cells": [
+   10,
+   9
+  ],
+  "held": [
+   0,
+   0
+  ],
+  "crew": 0,
+  "phase": 2,
+  "links": 3,
+  "violations": [
+   "vehicle 0 in the zone while closed"
+  ]
+ }
+]
