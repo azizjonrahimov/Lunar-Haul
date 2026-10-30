@@ -166,6 +166,43 @@
     <div id="atc-year"></div>
     <ol class="atc-steps" id="atc-steps"><li class="muted">Loading the numbers…</li></ol>
   </section>
+
+  <section class="atc-section" aria-labelledby="atc-sandbox-h" id="sandbox">
+    <h2 id="atc-sandbox-h">5. The safety program at work</h2>
+    <p class="prose">To test the safety program, the simulation threw vehicles at each other in twelve kinds of
+      encounter, each drawn at random many times: following, meeting head-on on a one-lane road, junctions, crew on
+      foot, radio dropouts, landing closures, misbehaving vehicles and planners that try to cause a crash. Every
+      vehicle's every move, ten times a second, went through the safety program (experiment E44, task B-78).</p>
+    <p class="prose" id="atc-e44-lead">Loading the results…</p>
+    <div class="atc-table-wrap" id="atc-e44"></div>
+    <p class="small muted">A violation is any contact, a gap to the vehicle ahead below the 5 m margin, a vehicle inside a
+      closed landing zone, a moving vehicle too close to crew, two vehicles meeting inside a one-lane road, or an
+      over-full pad or junction. The bound is the 95 % upper limit on the chance of a violation per encounter of that
+      type, corrected for testing twelve types (Bonferroni). Emergency brake: the share of encounters in which, at least
+      once, no gentler move kept every rule and the safety program braked fully.</p>
+    <h3>Three findings, not bugs</h3>
+    <ul class="prose atc-list" id="atc-findings"></ul>
+
+    <h3 id="atc-sb-h">Play one encounter</h3>
+    <p class="prose">Pick a type and watch the stored encounter: what each vehicle's planner asked for, what the safety
+      program gave it, the rule that made the difference and the time it cost. With the adversarial planner, switch the
+      safety program off to see what the same proposals would have done.</p>
+    <div class="atc-sb" id="atc-sb" aria-labelledby="atc-sb-h" role="group">
+      <div class="atc-sb-controls" id="atc-sb-controls"></div>
+      <p class="small atc-sb-note" id="atc-sb-note" aria-live="polite"></p>
+      <div class="atc-sb-view">
+        <canvas id="atc-sb-canvas" tabindex="0" aria-label="3D view of the encounter: roads, vehicles numbered as in the table, a ring under a vehicle while the safety program corrects it. Arrow keys orbit, plus and minus zoom." hidden></canvas>
+        <div id="atc-sb-labels"></div>
+        <div class="atc-sb-door" id="atc-sb-door">
+          <p>The 3D view loads the site's 3D viewer, the one the Vehicles page uses. Everything below the view works without it.</p>
+          <button type="button" class="ui-btn primary" id="atc-sb-start" disabled>Start the 3D view</button>
+        </div>
+      </div>
+      <div class="atc-sb-bar" id="atc-sb-bar"></div>
+      <div class="atc-sb-read" id="atc-sb-read"></div>
+    </div>
+    <div class="atc-parity" id="atc-parity"></div>
+  </section>
 </div></main>
 <!--@footer-->
 </body>

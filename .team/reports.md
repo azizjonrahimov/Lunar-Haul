@@ -6872,3 +6872,71 @@ Idle until BACKEND's data for F-53 lands.
 **FRONTEND:** the fixtures are ready for the encounter sandbox (F-54). The format is in `data/atc/encounter_fixtures/index.json`, and the constants are in each fixture.
 
 **Questions for LEAD:** none open. The three genuine findings above are for P2.
+
+## F-54 SANDBOX DONE 04:36 | /atc/ section 5: E44 in one table, three findings, the encounter sandbox (B-83 set, safety program on/off), JS safety program with parity on B-78's 20 fixtures
+
+**Files changed (uncommitted, all FRONTEND):**
+- New:
+  - `site/src/atc/safety.js`: port of the Move half of `lunarsim/atc/safety.py`.
+  - `site/src/atc/encounter.js`: path geometry, the kinematic step, the fixture reader, `parity()`, and `replayTrace()` for the B-83 traces.
+  - `site/src/atc/sandbox.js`: section 5, a lazy chunk loaded by a scroll check.
+  - `site/src/atc/sandbox-scene.js`: the 3D view, a lazy chunk started by a button.
+  - `site/tests/atc-safety.test.mjs`.
+- Modified:
+  - `site/atc/index.html`: section 5.
+  - `site/src/atc/main.js`: the scroll check and header comment.
+  - `site/src/atc/atc.css`.
+  - `site/scripts/prepare-data.mjs` stages three things:
+    - the 20 fixtures to `atc/encounters/`, with an `index.json` that holds the parity it computes at build time using the same `encounter.js`;
+    - the B-83 set to `atc/sandbox/`;
+    - `atc/E44_summary.json`, a subset of `E44_bounds.json`. Python's bare NaN is mapped to null.
+  - `.team/inbox-frontend.md`: F-54 header.
+- Not mine (in the tree): `experiments/phase5/run_phase5.py`, `lunarsim/atc/encounter_types.py`, `lunarsim/atc/roads.py`, `tools/atc/run_e44.py`, `tools/atc/run_e47.py`, `results/E47_parts/`, `paper/p*/`.
+
+**What's on the page:**
+1. **E44 in one table**, every number read from the JSON with its flag and source:
+   - The lead line: the encounter totals, how many of the 12 types had no violation, and type 9's counts.
+   - 12 rows, each with driven, violations, deadlocks, smallest clearance, emergency-brake share and the Bonferroni bound. The type number plays that type below.
+   - Types 5, 6 and 9 are tagged "finding", each with a short explanation that follows P2's discussion: a dead stop is outside R1's braking-leader model; a junction whose far side is a hold point; the exit-bay rule on a ring with finite bays.
+2. **The sandbox:**
+   - **Controls:** encounter type (all 12; type 6 has an A/B choice), safety program on/off, play at 1×/5×/20×, and a scrub bar.
+   - **3D view (on request), on the shared stage:**
+     - roads as ribbons and vehicles as owner-coloured boxes, numbered as in the table;
+     - an amber ring while a move is corrected (with the safety program off: where it would have stepped in); a red ring for a vehicle stopped dead;
+     - crew with their 50 m slow zone, the occluding rock while it hides crew, and the landing zone in grey, amber while closing or red while closed;
+     - a contact marker, the camera following the vehicles, and the shared view pad.
+   - **Readout:**
+     - A table per vehicle: planner, speed limit, speed, the planner's request, what the safety program gave (or what was applied), the rule that fired, and time lost.
+     - A log of what the safety program did.
+     - "The simulator's record of this run", read from the file's Outcome: closest approach, rules broken, how and when it ended, and mean time lost.
+     - Type 5/6 deadlocks are labelled as the findings. Type 12's stall says "E44 counts no deadlock where a random planner runs", following `outcome_rule`.
+     - The off run omits time lost, which is meaningless for vehicles that are speeding.
+   - The E44 batch and index are cited, with "the recording reproduces its E44 result" when `reproduces_e44_row` is true.
+3. **Parity box:**
+   - The JS safety program against Python on all 20 fixtures, every step and every vehicle: 32,400 checks; Δa max 0 (tolerance 1e-6); Δs 1.0e-6 m, Δv 1.0e-6 m/s (tolerance 1e-5); 20 of 20 pass.
+   - It's computed at build time, and a button reruns it in the browser (0.4 MB download, one encounter at a time). That run in headless Chrome gave "All 20 pass".
+
+**Checks:**
+- `npm run build` OK; node tests 23/23 (3 new: formulas; parity on all 20 fixtures; the sandbox replay agrees with every run's recorded minimum separation and contact, and no run with the safety program on shows contact). `budgets.py pages` OK.
+- **Browser:** checked in headless Chrome on the production preview, because the Chrome extension is not connected. Desktop in both themes, and 390 px in both themes before and after the 3D view starts: 390 = 390, no overflow. Every type loads with no console errors (one ANGLE shader-compiler precision warning from the shared stage, not an error). Playback, the A/B choice and the view pad all work.
+- **Fixed on the way:**
+  - a false contact in type 1 (the stopped leader is dropped from the encounter by the simulator, so the replay hides it as well);
+  - the page widening at 390 px (the long select options in a grid column);
+  - playback stalling at 4× (it needed its own clock);
+  - a crash when a trace stores `crew: [null]` with no crew;
+  - a stale frame index when switching type.
+
+**Notes:**
+- **C: drive:** it hit 0 MB. About 230 MB was my headless Chrome profiles; I deleted them, and the profile is now removed after each run. C: had 232 MB free afterwards; something else is filling it.
+- **Rounding in the B-83 files:** they store `move` to 4 decimals. In T07, 20 of 109 stored moves sit at exactly the 1 km/h crew limit, and 0.2778 rounds above V_CREW_MS = 0.27778, so recomputing from them brakes where Python held. This is a rounding artefact, not a port difference: the full-precision fixtures pass exactly. So the page does its live check on the 20 fixtures, not on the sandbox files. If BACKEND ever wants the sandbox files checkable, store `move` to 6 decimals.
+
+**Budget request (for LEAD to grant):**
+- **Lazy entry for /atc/:** `assets/atc-sandbox-*.js` and `assets/encounter-*.js` measure 7.0 + 2.6 = 9.6 kB gz, loaded on scroll. At +25 % rounded up, that is 15 kB lazy.
+- **The 3D part** is `atc-sandbox-scene` (2.4 kB) plus the shared stage and three chunks, which /vehicles/ already counts. It loads only on the button, so the stage chunks could stay outside /atc/'s lazy budget, or I can list them if you prefer.
+- **Data per encounter:** 24–62 kB gz, one file at a time.
+
+**What I need from BACKEND:** nothing now. B-82 (Mars) for the Mars toggle.
+
+**Questions for LEAD:**
+1. Grant the /atc/ lazy budget entry above?
+2. F-54 item 3, the learned bid policy in the browser (`atc_bid_linear_v1.json` with its check file): shall I do it next, or does something else come first?

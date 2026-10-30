@@ -668,7 +668,7 @@ split screen "without the network" | "with the network" on the same seed and clo
 (urgent items waiting, hours robots sat idle, messages per hour, hand-coordination hours on Earth). Owner colours
 from the existing Tol palette; every counter traceable to the trace file. Default speed per F-50.
 
-## F-54 [IN PROGRESS: explainer, inside-each-vehicle placeholders, market walk-through; sandbox waits for B-78/B-82] /atc/ page: what Lunar ATC is, and an encounter sandbox
+## F-54 [IN PROGRESS: explainer, inside-each-vehicle placeholders, market walk-through; encounter sandbox DONE 30 Oct 04:36 (uncommitted); learned bid policy (item 3) and Mars toggle (B-82) to come] /atc/ page: what Lunar ATC is, and an encounter sandbox
 1. Plain explainer: the three parts (safety program on each robot, the robots' shared job market with learned
    bids, the base computer with failover), "the AI suggests, the safety program decides", what Earth still does.
    A diagram (inline SVG, both themes).

@@ -129,6 +129,45 @@ if (existsSync(vv5)) { mkdirSync(join(PUB, 'verify'), { recursive: true }); copy
 // /atc/ (F-54): B-72's smoke run of the decision places, read by the market walk-through
 const atcSmoke = join(ROOT, 'results', 'ATC_regimes_smoke.json');
 if (existsSync(atcSmoke)) { mkdirSync(join(PUB, 'atc'), { recursive: true }); copyFileSync(atcSmoke, join(PUB, 'atc', 'ATC_regimes_smoke.json')); console.log('prepare-data: ATC smoke run staged'); }
+// the encounter sandbox (F-54): B-78's 20 stored encounters as they are (gzip JSON, loaded one at a time), the parity of
+// the JS safety program with Python on all of them (computed here by the same src/atc/encounter.js the page runs), and
+// the per-type E44 counts the sandbox quotes (a subset of results/E44_bounds.json; the 11 MB encounters CSV stays home)
+const encDir = join(ROOT, 'data', 'atc', 'encounter_fixtures'), encOut = join(PUB, 'atc', 'encounters');
+if (existsSync(join(encDir, 'index.json'))) {
+  const { readFixture, parity } = await import('../src/atc/encounter.js');
+  const idx = JSON.parse(readFileSync(join(encDir, 'index.json'), 'utf8'));
+  rmSync(encOut, { recursive: true, force: true }); mkdirSync(encOut, { recursive: true });
+  const runs = [];
+  for (const f of idx.fixtures) {
+    copyFileSync(join(encDir, f.file), join(encOut, f.file));
+    const doc = await readFixture(readFileSync(join(encDir, f.file)));
+    const { firstFail, ...p } = parity(doc, idx.tolerance);
+    runs.push({ ...p, file: f.file, title: doc.title, vehicles: doc.spec.paths.length, firstFail, kb: Math.round(statSync(join(encDir, f.file)).size / 102.4) / 10 });
+  }
+  const fails = runs.filter(r => !r.pass).length;
+  writeFileSync(join(encOut, 'index.json'), JSON.stringify({ source: 'data/atc/encounter_fixtures (B-78, E44)', note: idx.note, tolerance: idx.tolerance,
+    parity: { built: new Date().toISOString(), fixtures: runs.length, fails, checks: runs.reduce((a, r) => a + r.checks, 0),
+      maxDa: Math.max(...runs.map(r => r.maxDa)), maxDs: Math.max(...runs.map(r => r.maxDs)), maxDv: Math.max(...runs.map(r => r.maxDv)) }, fixtures: runs }));
+  console.log(`prepare-data: ${runs.length} stored encounters staged, JS parity ${fails ? `FAILS in ${fails}` : 'passes in all'}`);
+}
+// B-83's sandbox set: one recorded encounter per type (two of type 6), each with and without the safety program
+const sbDir = join(ROOT, 'data', 'atc', 'encounter_sandbox'), sbOut = join(PUB, 'atc', 'sandbox');
+if (existsSync(join(sbDir, 'index.json'))) {
+  rmSync(sbOut, { recursive: true, force: true }); cpSync(sbDir, sbOut, { recursive: true, filter: s => statSync(s).isDirectory() || /\.json(\.gz)?$/.test(s) });
+  console.log(`prepare-data: sandbox set staged (${JSON.parse(readFileSync(join(sbDir, 'index.json'), 'utf8')).encounters.length} encounters)`);
+}
+const e44 = join(ROOT, 'results', 'E44_bounds.json');
+if (existsSync(e44)) {
+  // Python's json writes NaN / Infinity bare (e.g. a mean delay with nothing finished); they are not JSON
+  const d = JSON.parse(readFileSync(e44, 'utf8').replace(/([:[,]\s*)-?(NaN|Infinity)\b/g, '$1null')), keep = ['title', 'n', 'n_driven', 'n_eff', 'violations', 'violations_by_kind', 'bound', 'bonferroni_bound', 'near_misses',
+    'near_misses_by_kind', 'min_margin_m', 'outcomes', 'emergency_brake_rate', 'intervention_rate'];
+  const types = Object.fromEntries(Object.entries(d.types).map(([k, t]) => [k, Object.fromEntries(keep.filter(x => x in t).map(x => [x, t[x]]))]));
+  const g = d.defects_found_in_main_run?.genuine_finding;
+  mkdirSync(join(PUB, 'atc'), { recursive: true });
+  writeFileSync(join(PUB, 'atc', 'E44_summary.json'), JSON.stringify({ source: 'results/E44_bounds.json (B-78, E44)', outcome_rule: d.outcome_rule, near_miss_definition: d.near_miss_definition,
+    emergency_brake_definition: d.emergency_brake_definition, joint: d.joint, types, finding_9: g && { rule: g.rule, status: g.status } }));
+  console.log('prepare-data: E44 summary staged');
+}
 
 // /results: figure PNGs (PDFs link to the repository) and the small summary tables; whatever exists is staged
 const figs = join(ROOT, 'figures'), resOut = join(PUB, 'results');
