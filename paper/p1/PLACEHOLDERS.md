@@ -127,3 +127,4 @@ checked against `paper/r1/values.json`.
 
 **Key list after the 28 Oct edits:** the 122 above plus `P1-H3A-ABSTRACT-CLAUSE`, `P1-H3A-INTRO-CLAUSE`, `P1-H4-LIGHT-CLAUSE`
 and `P1-REFERENCES`; `P1-H3A-PCT-ABS` is no longer used in the text (the build notes it) and may be dropped.
+| P1-ID-FIX-SENTENCE | `results/id_fix_evidence.json` (`runs`, `identical`, `ids_reused_pre/post`, rows' `items`, `exp`) | composed |

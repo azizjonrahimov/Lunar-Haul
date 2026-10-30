@@ -206,6 +206,30 @@ def vv5_failed_sentence(tag, methods_section, check):
     return out + "."
 
 
+def idfix_sentence(check, exp_labels):
+    """The cargo-id defect of PREREG change 10, from results/id_fix_evidence.json: counts only, never typed."""
+    path = os.path.join(RES, "id_fix_evidence.json")
+    if not os.path.exists(path):
+        raise Pending("results/id_fix_evidence.json (the cargo-id fix evidence, B-79) has not landed")
+    with open(path, encoding="utf-8") as f:
+        d = json.load(f)
+    rows = d.get("rows", [])
+    check(int(d["identical"]) == sum(1 for x in rows if x.get("identical")) and int(d["runs"]) == len(rows), "id-fix evidence: totals equal the rows")
+    check(int(d["ids_reused_post"]) == 0, "id-fix evidence: no id reused after the fix")
+    mine = [x for x in rows if x.get("exp") in exp_labels]
+    per = [x["ids_reused_pre"] for x in rows]
+    items = [x["items"] for x in rows]
+    exps = sorted({str(x.get("exp")) for x in rows})
+    return (f"After every experiment had run, a verification check found that cargo ids were not unique: {cnt(min(per))}&ndash;{cnt(max(per))} of "
+            f"about {cnt(round(sum(items) / len(items), -1))} items a year reused an earlier id, in every regime (change 10 of the pre-registration). "
+            f"Ids enter the simulator's decisions only through a planning memo within one dispatch call. The fix was tested by rerunning "
+            f"{cnt(d['runs'])} full years ({', '.join(exps)}: every regime or mode, seeds 1&ndash;3), of which {cnt(d['identical'])} gave outcomes "
+            f"identical item by item, compared by content without ids"
+            + (f", {cnt(len(mine))} of them in this paper's experiment" if mine else "") +
+            f"; reused ids fell from {cnt(d['ids_reused_pre'])} to {cnt(d['ids_reused_post'])}. No experiment was rerun and no reported number changes; "
+            f"trace and scene files written before the fix still carry the duplicate ids.")
+
+
 def _vv5_d10(tag, check):
     d, rows = vv5_load(tag, check)
     dem = [x for x in d.get("rows", []) if x.get("id") == "D10" and x.get("sub") == "E40 demand identical"]
@@ -578,6 +602,7 @@ def values(r: R, allow_pending: bool):
                            f"on the {words(r7_n)} seeds that had run when the rerun was stopped (Section 5.9)")
     fill("P2-CHECKS-SENTENCE", lambda: vv5_checks_sentence("P2", "5.9", check), "B-79")
     fill("P2-FAILED-CHECKS-SENTENCE", lambda: vv5_failed_sentence("P2", "3.8", check), "B-79")
+    fill("P2-ID-FIX-SENTENCE", lambda: idfix_sentence(check, ("E43", "E44", "E45", "E47")), "B-79 id fix")
     fill("P2-PAIRING-SENTENCE", lambda: vv5_demand_sentence("P2", "3.8", check), "B-79")
     def shared_check_limitation():
         # empty when the engine's road layer enforces the rules through the same safety_check() the encounter

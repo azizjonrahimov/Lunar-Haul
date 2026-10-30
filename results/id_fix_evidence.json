@@ -1,0 +1,441 @@
+{
+ "what": "content digest of every item (no cargo ids) before and after the cargo-id fix",
+ "runs": 48,
+ "identical": 48,
+ "ids_reused_pre": 670,
+ "ids_reused_post": 0,
+ "rows": [
+  {
+   "label": "A_EARTH full coverage",
+   "seed": 1,
+   "exp": "E40",
+   "items": 2952,
+   "ids_reused_pre": 11,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "A_EARTH full coverage",
+   "seed": 2,
+   "exp": "E40",
+   "items": 2964,
+   "ids_reused_pre": 13,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "A_EARTH full coverage",
+   "seed": 3,
+   "exp": "E40",
+   "items": 2953,
+   "ids_reused_pre": 11,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "A_EARTH plan_ahead",
+   "seed": 1,
+   "exp": "E40",
+   "items": 2957,
+   "ids_reused_pre": 12,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "A_EARTH plan_ahead",
+   "seed": 2,
+   "exp": "E40",
+   "items": 2971,
+   "ids_reused_pre": 16,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "A_EARTH plan_ahead",
+   "seed": 3,
+   "exp": "E40",
+   "items": 2952,
+   "ids_reused_pre": 10,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "A_EARTH strict",
+   "seed": 1,
+   "exp": "E40",
+   "items": 2950,
+   "ids_reused_pre": 9,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "A_EARTH strict",
+   "seed": 2,
+   "exp": "E40",
+   "items": 2966,
+   "ids_reused_pre": 14,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "A_EARTH strict",
+   "seed": 3,
+   "exp": "E40",
+   "items": 2951,
+   "ids_reused_pre": 10,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "A_MOON",
+   "seed": 1,
+   "exp": "E40",
+   "items": 2955,
+   "ids_reused_pre": 12,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "A_MOON",
+   "seed": 2,
+   "exp": "E40",
+   "items": 2969,
+   "ids_reused_pre": 16,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "A_MOON",
+   "seed": 3,
+   "exp": "E40",
+   "items": 2953,
+   "ids_reused_pre": 11,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "B_EARTH plan_ahead",
+   "seed": 1,
+   "exp": "E40",
+   "items": 2970,
+   "ids_reused_pre": 15,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "B_EARTH plan_ahead",
+   "seed": 2,
+   "exp": "E40",
+   "items": 2982,
+   "ids_reused_pre": 17,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "B_EARTH plan_ahead",
+   "seed": 3,
+   "exp": "E40",
+   "items": 2967,
+   "ids_reused_pre": 14,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "B_EARTH strict",
+   "seed": 1,
+   "exp": "E40",
+   "items": 2966,
+   "ids_reused_pre": 11,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "B_EARTH strict",
+   "seed": 2,
+   "exp": "E40",
+   "items": 2983,
+   "ids_reused_pre": 18,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "B_EARTH strict",
+   "seed": 3,
+   "exp": "E40",
+   "items": 2966,
+   "ids_reused_pre": 12,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "B_EARTH_RELAY 0.8",
+   "seed": 1,
+   "exp": "E40",
+   "items": 2967,
+   "ids_reused_pre": 13,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "B_EARTH_RELAY 0.8",
+   "seed": 2,
+   "exp": "E40",
+   "items": 2980,
+   "ids_reused_pre": 16,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "B_EARTH_RELAY 0.8",
+   "seed": 3,
+   "exp": "E40",
+   "items": 2966,
+   "ids_reused_pre": 13,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "B_EARTH_RELAY 1.0",
+   "seed": 1,
+   "exp": "E40",
+   "items": 2967,
+   "ids_reused_pre": 14,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "B_EARTH_RELAY 1.0",
+   "seed": 2,
+   "exp": "E40",
+   "items": 2983,
+   "ids_reused_pre": 17,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "B_EARTH_RELAY 1.0",
+   "seed": 3,
+   "exp": "E40",
+   "items": 2952,
+   "ids_reused_pre": 12,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "C_AUCTION",
+   "seed": 1,
+   "exp": "E40",
+   "items": 2969,
+   "ids_reused_pre": 14,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "C_AUCTION",
+   "seed": 2,
+   "exp": "E40",
+   "items": 2984,
+   "ids_reused_pre": 18,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "C_AUCTION",
+   "seed": 3,
+   "exp": "E40",
+   "items": 2967,
+   "ids_reused_pre": 14,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "C_LEADER",
+   "seed": 1,
+   "exp": "E40",
+   "items": 2968,
+   "ids_reused_pre": 13,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "C_LEADER",
+   "seed": 2,
+   "exp": "E40",
+   "items": 2982,
+   "ids_reused_pre": 17,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "C_LEADER",
+   "seed": 3,
+   "exp": "E40",
+   "items": 2966,
+   "ids_reused_pre": 13,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "C_LEARNED_LIN",
+   "seed": 1,
+   "exp": "E40",
+   "items": 2970,
+   "ids_reused_pre": 15,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "C_LEARNED_LIN",
+   "seed": 2,
+   "exp": "E40",
+   "items": 2982,
+   "ids_reused_pre": 17,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "C_LEARNED_LIN",
+   "seed": 3,
+   "exp": "E40",
+   "items": 2963,
+   "ids_reused_pre": 13,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "C_LEARNED_MLP",
+   "seed": 1,
+   "exp": "E40",
+   "items": 2970,
+   "ids_reused_pre": 15,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "C_LEARNED_MLP",
+   "seed": 2,
+   "exp": "E40",
+   "items": 2981,
+   "ids_reused_pre": 17,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "C_LEARNED_MLP",
+   "seed": 3,
+   "exp": "E40",
+   "items": 2965,
+   "ids_reused_pre": 13,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "O_ORACLE",
+   "seed": 1,
+   "exp": "E40",
+   "items": 2967,
+   "ids_reused_pre": 14,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "O_ORACLE",
+   "seed": 2,
+   "exp": "E40",
+   "items": 2983,
+   "ids_reused_pre": 17,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "O_ORACLE",
+   "seed": 3,
+   "exp": "E40",
+   "items": 2952,
+   "ids_reused_pre": 12,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "atc x1",
+   "seed": 1,
+   "exp": "E43",
+   "items": 2967,
+   "ids_reused_pre": 14,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "atc x1",
+   "seed": 2,
+   "exp": "E43",
+   "items": 2979,
+   "ids_reused_pre": 15,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "atc x1",
+   "seed": 3,
+   "exp": "E43",
+   "items": 2965,
+   "ids_reused_pre": 13,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "none x1",
+   "seed": 1,
+   "exp": "E43",
+   "items": 2967,
+   "ids_reused_pre": 14,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "none x1",
+   "seed": 2,
+   "exp": "E43",
+   "items": 2983,
+   "ids_reused_pre": 17,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "none x1",
+   "seed": 3,
+   "exp": "E43",
+   "items": 2952,
+   "ids_reused_pre": 12,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "uncoordinated x1",
+   "seed": 1,
+   "exp": "E43",
+   "items": 2970,
+   "ids_reused_pre": 16,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "uncoordinated x1",
+   "seed": 2,
+   "exp": "E43",
+   "items": 2982,
+   "ids_reused_pre": 17,
+   "ids_reused_post": 0,
+   "identical": true
+  },
+  {
+   "label": "uncoordinated x1",
+   "seed": 3,
+   "exp": "E43",
+   "items": 2966,
+   "ids_reused_pre": 13,
+   "ids_reused_post": 0,
+   "identical": true
+  }
+ ]
+}

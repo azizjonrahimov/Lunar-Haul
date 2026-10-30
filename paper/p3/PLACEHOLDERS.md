@@ -86,3 +86,4 @@ E46 = the three E46 files; E48 = `results/E48_sizing.json`; PR = `paper/atc/PRER
 | TABLE:vehicles | CAT and SCN (built: value and flag per cell) | built HTML |
 | TABLE:E48_sizing, TABLE:E48_link | E48 `classes`, `flight`, `laptop` | built HTML; pending |
 | TABLE:E46_rules, TABLE:E46_owners | E46 cells (`profit_{A,B,C}_musd`, `operator_budget_musd`, `efficiency_loss_pct`, `settled_earth_musd`, `open_end_musd`, `ir_violations`); E46 pairs (coalition minus alone rows) | built HTML |
+| P3-ID-FIX-SENTENCE | `results/id_fix_evidence.json` (`runs`, `identical`, `ids_reused_pre/post`, rows' `items`, `exp`) | composed |
