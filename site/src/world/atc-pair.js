@@ -47,7 +47,7 @@ function prep(d) {
   for (const [e, p] of Object.entries(E)) { const r = d.roads.res[e] || []; for (let i = 1; i < p.length; i++) if (r[i] !== -1 && r[i] === r[i - 1]) pieces[r[i]] = (pieces[r[i]] || '') + `M${p[i - 1][0]} ${-p[i - 1][1]}L${p[i][0]} ${-p[i][1]}`; }
   function where(v, t) {
     const L = legs[v], k = last(L, t);
-    if (!L.length) return null;
+    if (!L.length) return S[d.fleet[v][4]] ? { at: S[d.fleet[v][4]], kind: 'idle' } : null;   // no leg in the month: at its start site (B-80 addendum)
     if (k < 0) { const l = L[0]; return { at: l[7] ? along(l[7][0], l[7][1]) : S[l[2]], kind: 'idle' }; }
     const l = L[k], e = l[7];
     if (t < l[1]) return { at: e ? along(e[0], e[1] + (e[2] - e[1]) * (t - l[0]) / Math.max(1e-9, l[1] - l[0])) : S[l[2]], kind: l[4], load: l[5], moving: !!e && e[1] !== e[2] };
@@ -99,6 +99,7 @@ function panel(R, title) {
     sites.append(Object.assign(s('text', { x: x + 60, y: -y - 50 }), { textContent: n.replace('_', ' ') }));
   }
   const dots = R.ids.map(v => vehs.appendChild(s('circle', { r: 55, fill: OWN[d.fleet[v][1]] || 'var(--ink)' })));
+  for (const v of R.still) dots[v].append(Object.assign(s('title'), { textContent: `${d.fleet[v][2].replace(/_/g, ' ')} ${v}: not moved this month (at ${String(d.fleet[v][4]).replace('_', ' ')})` }));
   const pos = v => (v === 'BASE' ? d.nodes.BASE : R.cur[v]?.at);
   const earth = h('span', { class: 'ap-earth' }), closed = h('span', { class: 'ap-earth ap-closed', hidden: true }), line = h('p', { class: 'ap-dec small' }), dl = h('dl', { class: 'w2-dl ap-cnt' }), now = h('p', { class: 'ap-now small muted' });
   const el = h('figure', { class: 'ap-run' }, h('figcaption', {}, h('strong', {}, title), h('span', { class: 'ap-chips' }, closed, earth)), svg, line, now, dl);
@@ -127,7 +128,7 @@ function panel(R, title) {
     const k = last(d.decisions, t); line.textContent = k >= 0 ? `${clock(d.decisions[k][0]).replace(' 2028', '')}: ${describe(d.decisions[k], d.fleet)}` : 'No decision yet this month.';
     const by = {}; R.cur.forEach(c => { if (c) by[c.kind] = (by[c.kind] || 0) + 1; });
     const cut = rs.hops.filter(x => x < 0).length;
-    now.textContent = `Now: ${Object.entries(by).map(([k2, n]) => `${n} ${KIND[k2] || k2}`).join(', ')}; ${cut} of ${rs.hops.length} out of radio reach of the base${R.still.length ? `; not moved this month: ${R.still.map(v => `${d.fleet[v][2].replace(/_/g, ' ')} ${v}`).join(', ')}` : ''}.`;
+    now.textContent = `Now: ${Object.entries(by).map(([k2, n]) => `${n} ${KIND[k2] || k2}`).join(', ')}; ${cut} of ${rs.hops.length} out of radio reach of the base.`;
     const c = R.at(t);
     dl.replaceChildren(...COUNTERS.flatMap(([kk, label, dg]) => [h('dt', {}, kk === 'urgent_items_waiting' ? 'Urgent items waiting now' : `${label}, so far`), h('dd', {}, fmt(c[kk], dg))]));
   }
