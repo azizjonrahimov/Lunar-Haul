@@ -478,10 +478,39 @@ def values(r: R, allow_pending: bool):
             raise Pending(f"E44 types {short} are below their designed n")
         if r.e44d is None:
             raise Pending("results/E44_defects.json (change 8) is missing")
+        if "change_9" not in r.e44d:
+            raise Pending("E44_defects.json has no change_9 record (the type-6 rerun of change 9 has not landed)")
         return j
 
     def t44(j, k):
         return j["types"][str(k)]
+
+    def c9():
+        """The change-9 record of E44_defects.json (type-6 builder defect, metric change, deadlock finding)."""
+        return r.e44d["change_9"]
+
+    def e44_variant():
+        """The exploratory type-6 cell with the request rule (change 9); Pending until it has run."""
+        v = (r.e44j or {}).get("variants", {}).get("6_request_rule")
+        if v is None or v.get("n", 0) < E44_N_DEFAULT:
+            raise Pending("E44 variant 6_request_rule (change 9) has not reached its designed n")
+        check(v.get("outcomes_sum_equals_n", True), "variant 6_request_rule: the outcome classes sum to n")
+        return v
+
+    def variant_verb():
+        """What the exploratory request rule did to the type-6 deadlocks: read from the variant cell, never typed."""
+        v = e44_variant()
+        d6 = t44(r.e44j, 6)["outcomes"]["deadlock"]
+        vd = v["outcomes"]["deadlock"]
+        if vd == 0:
+            return "removes"
+        if vd < d6:
+            return f"cuts to {cnt(vd)} but does not remove"
+        return "does not remove"
+
+    def deadlocked_clean(j, zero):
+        """Types with no violation whose deadlock count is not zero: clean of violations, not live."""
+        return [k for k in zero if t44(j, k)["outcomes"]["deadlock"] > 0]
 
     def e44_split(j):
         zero = [k for k in range(1, 13) if t44(j, k)["violations"] == 0]
@@ -536,8 +565,13 @@ def values(r: R, allow_pending: bool):
                 f"stopped when two simulator defects showed as violations, the vehicle body swinging off the path at "
                 f"corners and type-6 crossings built without a junction tile; both were fixed, the stored encounters "
                 f"regenerated and all twelve types rerun at the same n (change 8 of [43]); the stopped run's counts "
-                f"are reported in Section 5.6 and its files archived. Twenty stored encounters must reproduce "
-                f"exactly on every build.")
+                f"are reported in Section 5.6 and its files archived. During the rerun the type-6 cell showed a third "
+                f"defect, start states inside a vehicle's own stopping distance of a crossing tile, and a same-lane "
+                f"test in the gap metric wide enough to count two vehicles leaving a shallow crossing on different "
+                f"roads; the builder was fixed, the metric's same-lane test narrowed "
+                f"{'to a heading difference of 10&deg;' if c9()['metric_change']['method'].startswith('heading') else 'to the same road and direction'} "
+                f"(the shield's own leader test is unchanged) and type 6 alone rerun at the same n (change 9 of "
+                f"[43]). Twenty stored encounters must reproduce exactly on every build.")
     fill("P2-E44-DESIGN-SENTENCE", e44_design_sentence, "E44")
 
     def e44_design_short():
@@ -617,10 +651,20 @@ def values(r: R, allow_pending: bool):
         t5 = t44(j, 5)
         dl = {k: t44(j, k)["outcomes"]["deadlock"] for k in range(1, 13) if t44(j, k)["outcomes"]["deadlock"] > 0}
         if dl:
+            why = {5: "the ring of one-lane segments with finite bays",
+                   6: "the landing closure"}
             s += ("Deadlocks occurred in " + ", ".join(
-                f"{cnt(v)} of {cnt(t44(j, k)['n_driven'])} type-{k} encounters ({pc(v / t44(j, k)['n_driven'], 1)})"
-                for k, v in dl.items()) + (", the ring of one-lane segments with finite bays, and in no other type. "
-                                            if list(dl) == [5] else ". "))
+                f"{cnt(v)} of {cnt(t44(j, k)['n_driven'])} type-{k} encounters ({pc(v / t44(j, k)['n_driven'], 1)}"
+                f"{', ' + why[k] if k in why else ''})"
+                for k, v in dl.items()) + " and in no other type. ")
+            if 6 in dl:
+                g6 = c9()["genuine_finding"]
+                check(g6["all_at_R_m"] == 1000, "every type-6 deadlock is at the 1 km zone radius")
+                s += (f"Every type-6 deadlock is at the {cnt(1000)}{NB}m zone radius and has one mechanism: a vehicle "
+                      f"outside the zone, held at its stop line because the zone is closing, requests and is granted "
+                      f"a crossing tile inside the zone; the vehicle inside needs that tile to leave and waits for a "
+                      f"holder that cannot move. Had the encounter run into the closure it would have ended as an R5 "
+                      f"violation. ")
         else:
             s += "No encounter deadlocked. "
         bf = {k: t44(j, k)["outcomes"]["blocked_by_fault"] for k in range(1, 13)
@@ -643,9 +687,29 @@ def values(r: R, allow_pending: bool):
                           for k, v in rr.items())
               + f" were clean, while {cnt(g9['still_violating'])} of {cnt(g9['of_fuzzer_free_violating'])} in "
                 f"type 9 still violated ({cnt(g9['gap_below_D0'])} below the gap, {cnt(g9['contact'])} contacts). "
-                f"The stopped run's files are archived and used for nothing else.")
+                f"The stopped run's files are archived and used for nothing else. ")
         check(all(v["still_violating"] == 0 for v in rr.values()),
               "every deterministic encounter rerun after a defect fix was clean")
+        # change 9: the type-6 cell of the rerun was itself run twice
+        c = c9()
+        f6, mc = c["first_pass_type6"], c["metric_change"]
+        s += (f"The type-6 cell was run twice: its first pass showed {cnt(f6['viol_r3'])} R3 violations, vehicles "
+              f"that started inside their own stopping distance of a crossing tile, a start the protocol never "
+              f"faces, and {cnt(f6['viol_gap'])} gap counts between vehicles leaving a shallow crossing on different "
+              f"roads with {num(mc['min_clearance_m'], 1)}{NB}m or more between their bodies and no contact. The "
+              f"first was fixed in the builder and the second by narrowing the gap metric's same-lane test "
+              f"({'heading within 10&deg;' if mc['method'].startswith('heading') else 'same road and direction'} "
+              f"instead of 30&deg;; the shield's leader test is unchanged), with the other eleven types' counts "
+              f"unchanged by construction and type 9's reproduced exactly (change 9 of [43]). "
+              + (f"Both passes showed {cnt(f6['deadlock'])} deadlocks"
+                 if f6["deadlock"] == t44(j, 6)["outcomes"]["deadlock"] else
+                 f"The first pass showed {cnt(f6['deadlock'])} deadlocks and the final cell "
+                 f"{cnt(t44(j, 6)['outcomes']['deadlock'])}")
+              + "; the first pass's files are archived.")
+        check(mc.get("other_types_unchanged", False) and mc.get("t9_reproduced", {}).get("viol_gap") ==
+              t44(j, 9)["violations_by_kind"]["viol_gap"], "the narrower same-lane test left the other types unchanged")
+        check(abs(f6["deadlock"] - t44(j, 6)["outcomes"]["deadlock"]) <= 5,
+              "the type-6 deadlock count is the same before and after the change-9 fixes (within five)")
         return s
     fill("P2-E44-RESULTS-PARAGRAPH", e44_results_paragraph, "E44")
 
@@ -670,7 +734,22 @@ def values(r: R, allow_pending: bool):
             s += (f"The ring deadlocks of type 5 ({pc(t5['outcomes']['deadlock'] / t5['n_driven'], 1)} of its "
                   f"encounters) are the property noted before the main run [43]: the exit-bay rule is not "
                   f"deadlock-free on a ring of one-lane segments with finite bays, and the logistics model's zero "
-                  f"count comes from its unbounded bays.")
+                  f"count comes from its unbounded bays. ")
+        t6 = t44(j, 6)
+        if t6["outcomes"]["deadlock"] > 0:
+            v = e44_variant()
+            vd, vv = v["outcomes"]["deadlock"], v["violations"]
+            s += (f"The type-6 deadlocks ({pc(t6['outcomes']['deadlock'] / t6['n_driven'], 1)} of its encounters, all "
+                  f"at the {cnt(1000)}{NB}m zone radius) are a gap in the rules rather than in a derivation: nothing "
+                  f"stops a vehicle from holding a reservation it cannot reach because a closed zone lies before "
+                  f"it, and the vehicle that could use the reservation waits for it. One added rule, that a vehicle "
+                  f"requests a resource only when no unpassable hold point lies between it and that resource, "
+                  + (f"removed every deadlock in a cell of {cnt(v['n_driven'])} encounters of the same type, with "
+                     f"{cnt(vv)} violations" if vd == 0 else
+                     f"left {cnt(vd)} deadlocks in a cell of {cnt(v['n_driven'])} encounters of the same type, with "
+                     f"{cnt(vv)} violations")
+                  + " (Table 6, last row). That cell was added after we had seen the data, so it is a candidate "
+                    "repair and not a test of H7; the registered cell stands as reported.")
         return s.strip()
     fill("P2-E44-DISCUSSION-CLAUSE", e44_discussion_clause, "E44")
 
@@ -828,6 +907,13 @@ def values(r: R, allow_pending: bool):
                   "for a braking leader")
         elif viol:
             s += "; " + e44_violating_clause(j, viol, with_counts=False)
+        dc = [k for k in deadlocked_clean(j, zero) if k != 5]
+        if dc == [6]:
+            s += (f"; one clean type, the landing closure, deadlocked in {pc(t44(j, 6)['outcomes']['deadlock'] / t44(j, 6)['n_driven'], 1)} "
+                  f"of its encounters through a reservation held behind a closed zone, which one added request "
+                  f"rule {variant_verb()}")
+        elif dc:
+            s += "; " + ("type " if len(dc) == 1 else "types ") + ", ".join(str(k) for k in dc) + " deadlocked"
         s += (f", and the exhaustive search found no unsafe or stuck state in {cnt(st)} reachable states and "
               f"caught each of three removed rules.")
         return s
@@ -848,6 +934,14 @@ def values(r: R, allow_pending: bool):
             s += "; " + e44_violating_clause(j, viol, with_counts=False) + "."
         else:
             s += "."
+        dc = [k for k in deadlocked_clean(j, zero) if k != 5]
+        if dc == [6]:
+            s += (" One clean type was not live: at a landing closure a reservation held behind the closed zone "
+                  f"deadlocked the vehicle inside, and one added request rule, tested after the fact, "
+                  f"{variant_verb()} it.")
+        elif dc:
+            s += (" " + ("Type " if len(dc) == 1 else "Types ") + ", ".join(str(k) for k in dc)
+                  + " produced no violation but deadlocked.")
         return s
     fill("P2-CONCLUSION-SAFETY-CLAUSE", conclusion_safety_clause, "E44/E45")
 
@@ -907,6 +1001,19 @@ def table_e44(r: R, j):
         rows.append([k, html.escape(T12[k]), cnt(t["n"]), cnt(t["n_driven"]), cnt(t["n_eff"]), viol,
                      sci(t["bonferroni_bound"]), cnt(t["near_misses"]), num(t["min_margin_m"], 1),
                      cnt(o["deadlock"]), cnt(o["blocked_by_fault"]), pc(t["emergency_brake_rate"], 1)])
+    v = j.get("variants", {}).get("6_request_rule")
+    variant_note = ""
+    if v is not None and v.get("n", 0) >= E44_N_DEFAULT:
+        o = v["outcomes"]
+        kinds = {kk: vv for kk, vv in v["violations_by_kind"].items() if vv > 0}
+        viol = (cnt(v["violations"]) if not kinds else
+                cnt(v["violations"]) + " (" + ", ".join(f"{cnt(vv)} {short[kk]}" for kk, vv in kinds.items()) + ")")
+        rows.append(["6R", "type 6 with the request rule (exploratory, change 9)", cnt(v["n"]), cnt(v["n_driven"]),
+                     cnt(v["n_eff"]), viol, sci(v["bound"]), cnt(v["near_misses"]), num(v["min_margin_m"], 1),
+                     cnt(o["deadlock"]), cnt(o["blocked_by_fault"]), pc(v["emergency_brake_rate"], 1)])
+        variant_note = (" Row 6R is an exploratory cell added after the data of type 6 were seen (change 9 of [43]), "
+                        "outside the twelve registered types and the Bonferroni family; its bound is the uncorrected "
+                        "95 % limit.")
     return _tab("Table 6. E44, encounters per type: generated, driven and effective n, hard violations (by kind), the "
                 f"95{PCT} upper bound on the per-encounter violation probability with the Bonferroni correction over "
                 "the twelve types, near misses, the smallest clearance, deadlocks, encounters blocked by a fault and the "
@@ -916,7 +1023,7 @@ def table_e44(r: R, j):
                 "Bound: with no violation 1 &minus; (0.05/12)<sup>1/n<sub>eff</sub></sup>; with violations the "
                 "Clopper&ndash;Pearson upper limit at &alpha;/12. Effective n = (&Sigma;w)<sup>2</sup>/&Sigma;w<sup>2</sup> "
                 "under the importance weights of types 6, 7 and 9. A negative minimum margin is a contact. Deadlocks are "
-                "judged only in encounters without a random fuzzer.")
+                "judged only in encounters without a random fuzzer." + variant_note)
 
 
 def table_pairs(r: R):
