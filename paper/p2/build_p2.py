@@ -624,6 +624,14 @@ def values(r: R, allow_pending: bool):
             out += (f"The {html.escape(str(sl['id']))} row flags the shield's one accepted unsafe case: of {cnt(sl['reference'])} injected proposals to brake "
                     f"on a slope that friction cannot hold, {cnt(sl['simulated'])} were refused and {cnt(sl['reference'] - sl['simulated'])} accepted, all at "
                     f"near-standstill, a case that R2 keeps every run from reaching (Section 7).")
+        try:
+            tc, tl = vv5_row("T3", "saturation flow"), vv5_row("T3", "saturation flow, 10 Hz shield")
+            if not tc.get("passed") and tl.get("passed"):
+                out += (f" The T3 row against the continuous saturation-flow formula fails by {pc(abs(tc['rel_error']), 1)} ({num(tc['simulated'], 0)} against "
+                        f"{num(tc['reference'], 0)} vehicles an hour), because the shield's one-step look-ahead keeps a longer following gap than the "
+                        f"formula's minimum; the row with that look-ahead in the formula matches to {pc(abs(tl['rel_error']), 2)}.")
+        except Pending:
+            pass
         return out.strip()
     fill("P2-CHECK-FINDINGS-SENTENCE", check_findings, "B-79 batch 3")
 

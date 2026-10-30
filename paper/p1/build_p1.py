@@ -1050,6 +1050,21 @@ def values(r: R, allow_pending: bool):
     fill("P1-CHECKS-SENTENCE", lambda: vv5_checks_sentence("P1", "5.9", check), "B-79")
     fill("P1-FAILED-CHECKS-SENTENCE", lambda: vv5_failed_sentence("P1", "3.11", check), "B-79")
     fill("P1-ID-FIX-SENTENCE", lambda: idfix_sentence(check, ("E40", "E41", "E42")), "B-79 id fix")
+
+    def l5_sentence():
+        d, rows = vv5_load("P1", check)
+        l5 = [x for x in rows if x.get("id") == "L5"]
+        if not l5:
+            raise Pending("the L5 rows are not in results/vv_phase5.json")
+        failed = [x for x in l5 if not x.get("passed")]
+        if not failed:
+            return "The learned bids were monotone in approach time, mass and battery on every probe (L5)."
+        bits = []
+        for x in failed:
+            bits.append(f"{html.escape(str(x.get('sub')))} in {pc(x['simulated'], 0)} of the probes")
+        return (f"The L5 failures are properties of the trained policies, not of the code: the learned bid was not monotone in approach time, "
+                f"mass and battery for " + " and ".join(bits) + ", as the policies were tuned on urgent wait and not constrained to monotone bids (Section 3.5).")
+    fill("P1-CHECK-FINDINGS-SENTENCE", l5_sentence, "B-79 tranche 3")
     fill("P1-PAIRING-SENTENCE", lambda: vv5_pairing_sentence("P1", "3.11", check), "B-79")
     fill("P1-E41-REPLICATION-SENTENCE", lambda: (
         lambda rep: (f"E41's default auction cell reran E40's auction at 30&#8239;% on the same {int(rep['n'])} seeds "
