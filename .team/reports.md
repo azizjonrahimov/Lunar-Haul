@@ -7164,3 +7164,62 @@ The design is in data/scenarios/E48-design.json, committed (eb9150f) before resu
   - failover base-down 4.2 / 1.1 / 0.38 % and no leader 0.088 / 0.023 / 0.008 % at MTBF 500 / 2,000 / 8,000 h;
   - 0 of 44,275 jobs given to two robots (both sums taken from the JSON).
 - Check: build OK, tests 31/31, budgets pages OK. Section 3 is in the page chunk (atc page JS 9.8 -> 11.6 of 15 kB); the lazy chunk is unchanged at 14.9. Headless: light and dark, desktop and 390 px, no overflow (the table scrolls in its box), no console errors. Preview stopped, profile deleted.
+
+## B-76 DONE 30 Oct (E46, the market for P3, H5) | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+The design file data/scenarios/E46-design.json was committed (20c41ad) before the first row; nothing in it changed afterwards. Runs: 1,080 (30 seeds × 2 splits × 18 kinds), mean 7.1 s, 2.13 CPU-h, no short cells. Money is in USD a year and every number below comes from results/E46_fit.json. Payments are computed afterwards from each run's job log, so the four rules share one allocation; only the deviations change who carries what.
+
+### H5 (PREREG change 7 rules; the fit carries the fields from LEAD's schema in 7d169bb)
+| | clause 1: largest first-price gain [95 % CI] | clause 2: second − first largest gain, paired | clause 3: coalition − alone, min upper / min lower |
+|---|---|---|---|
+| 3eq | owner B, k 1.1: 7.73 M [−1.46, 18.53] → **not supported** | −0.82 M [−0.93, −0.70] → supported | 82.0 M / 29.7 M → supported |
+| 3uneq | owner A, k 1.25: 5.23 M [−9.72, 19.31] → **not supported** | −2.33 M [−2.51, −2.13] → supported | 93.9 M / 36.4 M → supported |
+
+**Traced before claiming:**
+- **Why clause 1 is wide (largest cells):**
+  - With the allocation held fixed (the truthful run re-priced with the scaled asks), the payment gain is 2.57 M (3eq) and 5.40 M (3uneq) under first price, and 1.75 M and 3.05 M under second price.
+  - The full paired gain adds the change in the deviator's own cargo delay once its asks move jobs. That term has an sd of 28 M (3eq) and 41 M (3uneq) over seeds and a mean near zero (−5.15 M, +0.07 M).
+  - So in this model shading pays in cash, but the year-scale reallocation noise is ten times larger than the cash. The interval covers zero.
+- **Clause 2 is tight because both rules use the same deviation run:** the difference is purely the payment rule. 3eq: 1.75 − 2.57 = −0.82 M.
+- **Clause 3:**
+  - Shapley payoff minus alone is positive for every owner in every coalition; the smallest is AB at 54-65 M a year.
+  - In a two-owner coalition both owners get the same surplus by construction: half of v(AB) − v(A) − v(B).
+  - Alone, owner C cannot move most of its cargo: in 3eq seed 1 it delivered 10 of 973 items. This makes its gains the largest (ABC: C 472 M in 3eq, 213 M in 3uneq).
+
+### Other numbers (fit / cells)
+- **Audits (largest-gain cell, net gain at q = 0 / 5 / 20 %):**
+  - First price: 3eq 7.73 / 7.34 / 6.18 M (recovered 0 / 5 / 20 %); 3uneq 5.23 / 4.43 / 2.03 M (0 / 15 / 61 %).
+  - Second price: 3uneq 2.89 / 2.09 / −0.31 M (recovered 111 % at 20 %).
+  - Fines are q × m × |ask − cost| with m = 3. So in 3eq the recovered share equals q almost exactly: the fine falls on the cash part while the noise is unchanged.
+- **Operator budget, truthful (M a year):** none 0; first −2.50 (3eq) and −2.76 (3uneq); second −12.71 and −13.07; posted 0 by construction (the same tariff in and out).
+  - So second price runs a deficit about five times first price's; the posted tariff from cost recovery balances.
+- **Efficiency loss against O_ORACLE (system cost = true carrier cost + delay cost):** 12.7 % (3eq) and 35.9 % (3uneq). It is the same for every rule (one allocation).
+- **IR violations:** 0 in all 152 cells.
+  - Caution: in the posted rows the profit columns are Shapley values of the cost game, not cash profits, so they are on a different scale from the other rules (3eq C −251.7 M against its alone value of about −800 M).
+- **settled_earth (half the sum of absolute net cash flows):** 14.7-20.9 M (3eq), 6.7-12.8 M (3uneq). **open_end** under 0.01 M.
+
+### Files
+- **New:**
+  - tools/atc/run_e46.py (design / calibrate / run / analyse).
+  - results/E46_cells.csv (152 rows), E46_pairs.csv, E46_fit.json, results/E46_parts/ (1,080 gz).
+  - tests/test_e46_market.py: 5 tests of the payment, audit and Shapley arithmetic and the run plan.
+- **Changed:**
+  - tests/test_formats.py: SCENARIO_FILES skips *-design.json.
+  - Already committed: data/scenarios/E46-design.json, plus the auction.py / regimes.py `bid_mult` hook (default off).
+- **Calibration runs** (seeds 101-110) are in .cache/atc/e46_calibration, not committed. The tariffs they set are in the design file.
+
+### Test failure I had missed
+**test_formats has been failing 15 tests since E43-design.json first went into data/scenarios/.** Its glob treated the design records as scenarios.
+- My earlier suite totals summed only the passes, so the "561 passed" lines in the B-81/B-82 reports hid 15 failures.
+- Fixed in the test, since the design records are not scenarios.
+- **Full suite now: 46 files, 569 passed, 0 failed.**
+
+### How to test
+`python tools/atc/run_e46.py analyse` rebuilds all three outputs from the parts (about 1 min). `pytest tests/test_e46_market.py tests/test_formats.py`.
+
+**FRONTEND:** nothing new.
+
+**Questions for LEAD:**
+1. Clause 1 fails because the reallocation term dominates, not because shading is unprofitable in cash. Do you want the allocation-fixed payment gain (2.57 / 5.40 M first, 1.75 / 3.05 M second) in the fit as a labelled secondary number? It is not a PREREG quantity, so I have not added it.
+2. The posted-price profit columns hold Shapley values (cost-game scale). Rename them in E46_cells.csv for those rows, or leave them as PLACEHOLDERS lists them?
+3. The answers to the three CHECK items went to you in the design message (one frequency, 2.4 GHz, provisional; transmit powers and the power row Assumed with no source; sigma 0.2 with range 0.1-0.3, declared but not run).

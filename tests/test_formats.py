@@ -131,7 +131,9 @@ from lunarsim.config import (scenario_to_dict, scenario_from_dict, scenario_from
                              save_scenario, load_scenario, split_rtt, marketplace_kwargs)
 from lunarsim.formats import validate_scenario
 
-SCENARIO_FILES = sorted(glob.glob(os.path.join(ROOT, "data", "scenarios", "*.json")))
+# experiment design records (E43-design.json, ...) live beside the scenarios but are not scenarios
+SCENARIO_FILES = sorted(p for p in glob.glob(os.path.join(ROOT, "data", "scenarios", "*.json"))
+                        if not p.endswith("-design.json"))
 OWNERS = ["NASA", "NASA", "NASA", "NASA", "CoA", "CoA", "CoB", "CoC"]
 
 

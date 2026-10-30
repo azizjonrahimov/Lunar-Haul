@@ -1053,7 +1053,7 @@ Steps:
 Done when: zero violations, or a precise list of what failed (a failure is a result: report it); every mutation
 test produces a counterexample; run time and peak memory recorded.
 
-## B-76 [QUEUED] Owners, payments and cheating (P-C)
+## B-76 [SUPERSEDED by B-76 REVISED] Owners, payments and cheating (P-C)
 Steps:
 1. Private costs per owner (energy, wear, opportunity; assumed distributions with sweeps). Payment rules on the
    pooled regimes: none (cooperative), first-price, per-item second-price, McAfee trade reduction, posted price
@@ -1087,7 +1087,7 @@ encounter fixtures from B-78.
 ## Lunar ATC puts inside each vehicle, and how its market works (B-76 reduced, new B-81). Order after B-75:
 ## B-77, B-78, B-82, B-81, B-76, with B-79 batches as before.
 
-## B-76 [REVISED] The market for P3 (smaller than before)
+## B-76 [REVISED] [DONE 30 Oct] The market for P3 (smaller than before)
 Keep: payment rules none / per-item second price / posted price per tonne-km with Shapley sharing; the money flow
 (what each owner earns and pays, what Earth settles afterwards, the operator's budget); individual rationality per
 owner against working alone; one manipulation test (bid scaling 0.8-1.25) and audits at q = 0, 5, 20 %. Drop:

@@ -1,0 +1,390 @@
+{
+ "n_rows": 1080,
+ "run_s_mean": 7.1,
+ "cpu_h": 2.129,
+ "design": {
+  "owners": [
+   "A",
+   "B",
+   "C"
+  ],
+  "splits": {
+   "3eq": "equal cargo shares",
+   "3uneq": "50/35/15 cargo shares"
+  },
+  "rules": [
+   "none",
+   "first",
+   "second",
+   "posted"
+  ],
+  "k_levels": [
+   0.8,
+   0.9,
+   1.1,
+   1.25
+  ],
+  "q_levels": [
+   0.0,
+   0.05,
+   0.2
+  ],
+  "seeds": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   18,
+   19,
+   20,
+   21,
+   22,
+   23,
+   24,
+   25,
+   26,
+   27,
+   28,
+   29,
+   30
+  ]
+ },
+ "tariff_usd_per_tkm": {
+  "3eq": 19828.85,
+  "3uneq": 19908.58
+ },
+ "audit_penalty_multiple": 3.0,
+ "H5": {
+  "3eq": {
+   "clause1": {
+    "tested": true,
+    "supported": false,
+    "gain": 7730389.658189803,
+    "lo": -1463046.862539604,
+    "hi": 18531987.3628416,
+    "owner": "B",
+    "k": 1.1,
+    "rule": "largest gain over truthful across the tested k under first price; supported iff lo > 0"
+   },
+   "clause2": {
+    "tested": true,
+    "supported": true,
+    "diff_mean": -817168.0580509615,
+    "diff_lo": -926356.924446136,
+    "diff_hi": -701617.7581716032,
+    "n": 30,
+    "rule": "paired by seed: second-price largest gain minus first-price largest gain; supported iff diff_mean < 0 and diff_hi < 0"
+   },
+   "clause3": {
+    "tested": true,
+    "supported": true,
+    "min_upper": 81996922.97854538,
+    "min_lower": 29718928.340510447,
+    "rule": "over every owner in every tested coalition, (Shapley payoff in the coalition - profit alone); supported iff the smallest upper bound >= 0",
+    "rows": [
+     {
+      "coalition": "AB",
+      "owner": "A",
+      "mean": 54178300.021212205,
+      "lo": 29718928.340510447,
+      "hi": 81996922.97854538,
+      "n": 30
+     },
+     {
+      "coalition": "AB",
+      "owner": "B",
+      "mean": 54178300.02121222,
+      "lo": 29718928.340510447,
+      "hi": 81996922.97854538,
+      "n": 30
+     },
+     {
+      "coalition": "AC",
+      "owner": "A",
+      "mean": 366249775.52786845,
+      "lo": 335144770.16096914,
+      "hi": 399859273.62501407,
+      "n": 30
+     },
+     {
+      "coalition": "AC",
+      "owner": "C",
+      "mean": 366249775.52786845,
+      "lo": 335144770.16096914,
+      "hi": 399859273.62501407,
+      "n": 30
+     },
+     {
+      "coalition": "BC",
+      "owner": "B",
+      "mean": 353553355.8807774,
+      "lo": 320210014.9607079,
+      "hi": 388005705.7638528,
+      "n": 30
+     },
+     {
+      "coalition": "BC",
+      "owner": "C",
+      "mean": 353553355.8807775,
+      "lo": 320210014.9607079,
+      "hi": 388005705.7638528,
+      "n": 30
+     },
+     {
+      "coalition": "ABC",
+      "owner": "A",
+      "mean": 172342530.9488867,
+      "lo": 145273193.03908327,
+      "hi": 201422017.47632498,
+      "n": 30
+     },
+     {
+      "coalition": "ABC",
+      "owner": "B",
+      "mean": 159646111.30179563,
+      "lo": 135975989.91135544,
+      "hi": 184456839.72956082,
+      "n": 30
+     },
+     {
+      "coalition": "ABC",
+      "owner": "C",
+      "mean": 471717586.80845183,
+      "lo": 436314452.23705995,
+      "hi": 508375026.6634611,
+      "n": 30
+     }
+    ]
+   }
+  },
+  "3uneq": {
+   "clause1": {
+    "tested": true,
+    "supported": false,
+    "gain": 5226660.278600659,
+    "lo": -9715703.82267156,
+    "hi": 19307101.657860953,
+    "owner": "A",
+    "k": 1.25,
+    "rule": "largest gain over truthful across the tested k under first price; supported iff lo > 0"
+   },
+   "clause2": {
+    "tested": true,
+    "supported": true,
+    "diff_mean": -2333985.994697969,
+    "diff_lo": -2512705.00866486,
+    "diff_hi": -2129531.3865007027,
+    "n": 30,
+    "rule": "paired by seed: second-price largest gain minus first-price largest gain; supported iff diff_mean < 0 and diff_hi < 0"
+   },
+   "clause3": {
+    "tested": true,
+    "supported": true,
+    "min_upper": 93884904.66495343,
+    "min_lower": 36429009.039671704,
+    "rule": "over every owner in every tested coalition, (Shapley payoff in the coalition - profit alone); supported iff the smallest upper bound >= 0",
+    "rows": [
+     {
+      "coalition": "AB",
+      "owner": "A",
+      "mean": 65222673.9760042,
+      "lo": 36429009.039671704,
+      "hi": 93884904.66495343,
+      "n": 30
+     },
+     {
+      "coalition": "AB",
+      "owner": "B",
+      "mean": 65222673.9760042,
+      "lo": 36429009.039671704,
+      "hi": 93884904.66495343,
+      "n": 30
+     },
+     {
+      "coalition": "AC",
+      "owner": "A",
+      "mean": 169431737.5364456,
+      "lo": 146577625.39621997,
+      "hi": 193520074.9047718,
+      "n": 30
+     },
+     {
+      "coalition": "AC",
+      "owner": "C",
+      "mean": 169431737.5364456,
+      "lo": 146577625.39621997,
+      "hi": 193520074.9047718,
+      "n": 30
+     },
+     {
+      "coalition": "BC",
+      "owner": "B",
+      "mean": 163725060.7324406,
+      "lo": 144822490.6971725,
+      "hi": 185195770.8824991,
+      "n": 30
+     },
+     {
+      "coalition": "BC",
+      "owner": "C",
+      "mean": 163725060.7324406,
+      "lo": 144822490.6971725,
+      "hi": 185195770.8824991,
+      "n": 30
+     },
+     {
+      "coalition": "ABC",
+      "owner": "A",
+      "mean": 114971713.51990956,
+      "lo": 89933624.44047412,
+      "hi": 142383599.81085604,
+      "n": 30
+     },
+     {
+      "coalition": "ABC",
+      "owner": "B",
+      "mean": 109265036.71590452,
+      "lo": 85592676.04319666,
+      "hi": 133688082.28196377,
+      "n": 30
+     },
+     {
+      "coalition": "ABC",
+      "owner": "C",
+      "mean": 213474100.2763459,
+      "lo": 191785665.6941568,
+      "hi": 236273372.77281567,
+      "n": 30
+     }
+    ]
+   }
+  }
+ },
+ "max_gain": {
+  "first": {
+   "3eq": {
+    "owner": "B",
+    "k": 1.1,
+    "gain": 7730389.658189803,
+    "lo": -1463046.862539604,
+    "hi": 18531987.3628416,
+    "system_cost_usd": -15072032.112238266,
+    "system_cost_h": -5499.703770291805,
+    "lo_cost": -16271.513003798005,
+    "hi_cost": 3704.2957551579943
+   },
+   "3uneq": {
+    "owner": "A",
+    "k": 1.25,
+    "gain": 5226660.278600659,
+    "lo": -9715703.82267156,
+    "hi": 19307101.657860953,
+    "system_cost_usd": 2648472.3450196953,
+    "system_cost_h": -71.77021696169638,
+    "lo_cost": -11322.920365822918,
+    "hi_cost": 11595.762054917448
+   }
+  },
+  "second": {
+   "3eq": {
+    "owner": "B",
+    "k": 1.1,
+    "gain": 6913221.600138844,
+    "lo": -2302794.5532715856,
+    "hi": 17708594.832936633,
+    "system_cost_usd": -15072032.112238266,
+    "system_cost_h": -5499.703770291805,
+    "lo_cost": -16271.513003798005,
+    "hi_cost": 3704.2957551579943
+   },
+   "3uneq": {
+    "owner": "A",
+    "k": 1.25,
+    "gain": 2892674.283902688,
+    "lo": -12053008.800385114,
+    "hi": 16970745.071715303,
+    "system_cost_usd": 2648472.3450196953,
+    "system_cost_h": -71.77021696169638,
+    "lo_cost": -11322.920365822918,
+    "hi_cost": 11595.762054917448
+   }
+  }
+ },
+ "audits": {
+  "first": {
+   "3eq": {
+    "0": {
+     "recovered_share": 0.0,
+     "net_gain": 7730389.658189803
+    },
+    "5": {
+     "recovered_share": 0.0499900184364049,
+     "net_gain": 7343947.336656301
+    },
+    "20": {
+     "recovered_share": 0.1999600737456195,
+     "net_gain": 6184620.372055796
+    }
+   },
+   "3uneq": {
+    "0": {
+     "recovered_share": 0.0,
+     "net_gain": 5226660.278600659
+    },
+    "5": {
+     "recovered_share": 0.1531091575996264,
+     "net_gain": 4426410.726284684
+    },
+    "20": {
+     "recovered_share": 0.6124366303985062,
+     "net_gain": 2025662.0693367545
+    }
+   }
+  },
+  "second": {
+   "3eq": {
+    "0": {
+     "recovered_share": 0.0,
+     "net_gain": 6913221.600138844
+    },
+    "5": {
+     "recovered_share": 0.05589902130806056,
+     "net_gain": 6526779.278605338
+    },
+    "20": {
+     "recovered_share": 0.22359608523224025,
+     "net_gain": 5367452.314004835
+    }
+   },
+   "3uneq": {
+    "0": {
+     "recovered_share": 0.0,
+     "net_gain": 2892674.283902688
+    },
+    "5": {
+     "recovered_share": 0.27664696186820853,
+     "net_gain": 2092424.7315867136
+    },
+    "20": {
+     "recovered_share": 1.1065878474728357,
+     "net_gain": -308323.9253612137
+    }
+   }
+  }
+ },
+ "short_cells": [],
+ "n_cells": 152
+}
