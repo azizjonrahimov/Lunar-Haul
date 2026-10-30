@@ -31,6 +31,9 @@ Comparisons are named in `LABELS` of the build script; the analysis is `experime
 | P2-ATC-X1-CONFLICTS-PER-WEEK | C `road_conflicts` of `atc x1` / 52 | 1 decimal |
 | P2-OWNER-{o}-BAY-WAIT-X{m}, P2-OWNER-BAY-WAIT-ORDER-CLAUSE | F `owner_bay_wait_h_atc.{m}` (only x1 is used in the text) | hours; composed: which owner waited most and least |
 | P2-DEADLOCKS-TOTAL | F `deadlocks_total_by_density` summed | word (checked = 0 for the "no deadlock" sentences) |
+| P2-DEADLOCKS-TOTAL-N | F `deadlocks_total_by_density` summed | the same count with digits, for the parenthesis in 5.1 |
+| P2-VIS-2028 | 4.2 | share of hours with Earth in view at the base in start year 2028, E40_fit.json hypotheses.H2.30.visibility |
+| P2-VIS-2038 | 4.2 | the same for 2038 |
 | P2-NONE-X{m}-DELAY, P2-H8-X{m}-DELAY | C `delay_mean_h` of `none x{m}`, `atc x{m}` | hours, 1 decimal |
 | P2-H8-X{m}-DIFF, P2-H8-X{m}-DIFF-CI, P2-H8-X{m}-PCT, P2-H8-X{m}-UPPER | P `H8: atc - none, x{m}` on `delay_mean_h`: `mean`, [lo, hi], `share_of_b`, `ratio_hi95` | hours with sign; %; % |
 | P2-H8-X1-P90-DIFF, P2-H8-X1-ITEMS-DIFF, P2-H8-X1-URGENT-DIFF, P2-H8-X1-OPERATOR-DIFF, P2-X1-ITEMS | P same comparison on `delay_p90_h`, `delivered_items`, `atc_urgent_wait_mean_cens_h`, `operator_hours`; C `delivered_items` of `none x1` | signed, with CI |

@@ -68,4 +68,4 @@ Low). Entries marked "to check" are to be checked against the publisher's record
 To be counted by build_p2.py's note once the text is stable: entries dated 2021 or later, own work (40-45), and
 entries needing publisher checks ([8] DOI, [16], [30], [37], [38], [46], [56]).
 
-[43] is the pre-registration file and [44, 45] the companion papers.
+The pre-registration file is [43] and the companion papers [44, 45].

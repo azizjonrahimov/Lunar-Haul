@@ -7,20 +7,21 @@
 <style>table.wide { break-inside: auto; } table.wide tr { break-inside: avoid; } .pending { color: #b00000; font-weight: bold; } p.tabnote { font-size: 8.5pt; color: var(--ink2); margin: -8px 0 12px 0; }</style>
 </head>
 <body>
-<!-- DRAFT 0 (28 Oct 2026), written while E43 runs and before E44, E45 and E47 exist. Every result number is a
-     {{P2-...}} placeholder filled by build_p2.py from the files listed in PLACEHOLDERS.md. Model inputs (rule
-     parameters, seeds, settings) are typed with their provenance flag. Sentences marked PENDING depend on the
-     encounter simulator and model checker (B-78: E44, E45), the 8x cells of E43, or the Mars part (B-82: E47),
-     none of which had run when this draft was written. The abstract has four parts (purpose, method, results,
-     impact) and build_p2.py checks that it has 250-300 words; the introduction has no subsections; the methods
-     state no results; the results interpret nothing (writing guide §7). -->
+<!-- DRAFT 1 (30 Oct 2026), revised after an internal referee round. Draft 0 was written on 28 Oct while E43 ran;
+     E43 (all cells, including 8x), E44 and E45 (B-78) have since run and their values are filled. Every result
+     number is a {{P2-...}} placeholder filled by build_p2.py from the files listed in PLACEHOLDERS.md. Model
+     inputs (rule parameters, seeds, settings) are typed with their provenance flag. Sentences marked PENDING E47
+     depend on the Mars part (B-82), and those marked PENDING B-79 on the phase-5 verification checks; neither has
+     run. The abstract has four parts (purpose, method, results, impact) and build_p2.py checks that it has
+     250-300 words; the introduction has no subsections; the methods state no results; the results interpret
+     nothing (writing guide §7). -->
 
 <h1 id="p2-title">Rules of the Road on the Moon and Mars: Traffic Rules for Surface Robots of Different Owners, Checked and Priced</h1>
 <div class="authors">Azizjon Rahimov</div>
 <div class="affil">Roatify Research &middot; Preprint, October 2026 &middot; Code, data and pre-registration: <a href="https://github.com/azizjonrahimov/Lunar-Haul">github.com/azizjonrahimov/Lunar-Haul</a> &middot; Live site: <a href="https://azizjonrahimov.github.io/Lunar-Haul/">azizjonrahimov.github.io/Lunar-Haul</a></div>
 
 <div class="abstract" id="p2-abstract">
-<p><b>Abstract.</b> Rovers and robots of several companies will soon share the roads and landing zones of a lunar south-pole base, and later a Mars base, with no traffic rules written for them. Policy documents ask for coordination but give no operating rules; published rule sets are for warehouses, road cars and drones on Earth. We propose rules for surface traffic among vehicles of different owners: separation from lunar braking physics, exclusive reservations with an exit bay on single-lane roads, timed landing closures, crew keep-clear zones and a rule for lost radio contact, enforced by a safety program on each vehicle that overrides any planner. We checked them three ways on one simulated south-pole base: an exhaustive search of a discrete model, {{P2-E44-N-ENCOUNTERS}} simulated encounters in twelve types, and {{P2-N-RUNS-E43}} runs of a logistics model that prices the rules in cargo delay at one to eight times today's fleet. {{P2-H7-ABSTRACT-CLAUSE}} At today's fleet the rules added {{P2-H8-X1-PCT}} to the delay per delivery and {{P2-DEADLOCKS-TOTAL}} deadlocks, and {{P2-H8-X4-PCT}} at four times the fleet. Owners who keep their own reservations and refer every conflict to Earth saw delay per delivery rise {{P2-UNC-X1-RATIO}}-fold. {{P2-H9-ABSTRACT-CLAUSE}} A base whose robots settle conflicts among themselves pays almost nothing for safety; one that keeps the decision on Earth pays in every blackout. The rules are a proposal for the agreements the Artemis Accords leave open.</p>
+<p><b>Abstract.</b> Rovers and robots of several companies will soon share the roads and landing zones of a lunar south-pole base, and later a Mars base, with no traffic rules written for them. Policy documents ask for coordination but give no operating rules. We propose rules for surface traffic among vehicles of different owners: separation from lunar braking physics, exclusive reservations with an exit bay on single-lane roads, timed landing closures, crew keep-clear zones and a rule for lost radio contact, enforced by a safety program on each vehicle. We checked them three ways on one simulated south-pole base: an exhaustive search of a discrete model, {{P2-E44-N-ENCOUNTERS}} simulated encounters in twelve types, and {{P2-N-RUNS-E43}} runs of a logistics model that prices the rules in cargo delay at one to eight times today's fleet. {{P2-H7-ABSTRACT-CLAUSE}} At today's fleet the rules added {{P2-H8-X1-PCT}} to the delay per delivery and {{P2-DEADLOCKS-TOTAL}} deadlocks, and {{P2-H8-X4-PCT}} at four times the fleet. Owners who refer every conflict to Earth instead saw delay per delivery rise {{P2-UNC-X1-RATIO}}-fold. {{P2-H9-ABSTRACT-CLAUSE}} A base whose robots settle conflicts among themselves pays almost nothing for safety; one that keeps the decision on Earth pays in every blackout. The rules are a proposal for the agreements the Artemis Accords leave open.</p>
 <p class="kw"><b>Keywords:</b> lunar surface traffic, multi-robot coordination, runtime assurance, formal verification, rules of the road, Mars surface operations</p>
 </div>
 
@@ -42,7 +43,7 @@
 
 <ul class="contrib">
 <li><b>A parameterised rule set for lunar and Martian surface traffic</b> among vehicles of different owners, with each parameter traced to a source, a derivation or an assumption to be swept: separation from braking physics, single-lane reservations with an exit bay, landing closures, crew zones, lost-contact behaviour, a priority ladder in which owner identity never counts, and conformance.</li>
-<li><b>Three kinds of evidence for the same rules.</b> An exhaustive check of a discrete model against any planner with mutation tests, per-type statistical bounds from simulated encounters, and the delay the rules cost inside a year-long logistics model, all from one implementation of the safety check. <!-- PENDING E44, E45 --></li>
+<li><b>Three kinds of evidence for the same rules.</b> An exhaustive check of a discrete model against any planner with mutation tests, per-type statistical bounds from simulated encounters, and the delay the rules cost inside a year-long logistics model, all from one implementation of the safety check.</li>
 <li><b>A measured price of coordination.</b> The delay cost of the rules at one, two, four and eight times today's fleet, the congestion peak, and the cost of keeping conflicts on Earth instead of settling them on the Moon, on real terrain with the base's real Earth-link windows.</li>
 <li><b>The same rules on Mars.</b> Gravity, round-trip delay and conjunction blackouts changed, nothing else. <!-- PENDING E47 --></li>
 </ul>

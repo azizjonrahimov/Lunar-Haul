@@ -237,7 +237,13 @@ def values(r: R, allow_pending: bool):
     V["P2-OWNER-BAY-WAIT-ORDER-CLAUSE"] = f"owner {hi} waited most and owner {lo} least"
     dl = sum(r.f["deadlocks_total_by_density"].values())
     V["P2-DEADLOCKS-TOTAL"] = words(dl) if dl < 10 else cnt(dl)
+    V["P2-DEADLOCKS-TOTAL-N"] = cnt(dl)
     check(dl == 0, "no run in any cell recorded a deadlock")
+    # base visibility by start year (results/E40_fit.json, the same source as P1), for the E43 year choice in 4.2
+    vis = json.load(open(os.path.join(RES, "E40_fit.json"), encoding="utf-8"))["hypotheses"]["H2"]["30"]["visibility"]
+    V["P2-VIS-2028"] = pc(vis["2028"], 1)
+    V["P2-VIS-2038"] = pc(vis["2038"], 1)
+    check(vis["2028"] > vis["2038"], "2028 is the better of the two E43 start years for Earth visibility")
 
     # --- H8 per density (5.2, 5.3) ---------------------------------------------------------------------------
     pcts: Dict[int, float] = {}
@@ -246,10 +252,11 @@ def values(r: R, allow_pending: bool):
             n, a, h = r.cell("none", m=m), r.cell("atc", m=m), r.pair("H8", m=m)
             V[f"P2-NONE-X{m}-DELAY"] = h_(n[PRIMARY], 1)
             V[f"P2-H8-X{m}-DELAY"] = h_(a[PRIMARY], 1)
-            V[f"P2-H8-X{m}-DIFF"] = h_(h["mean"], 2, sign=True)
+            V[f"P2-H8-X{m}-DIFF"] = h_(h["mean"], 2)      # the prose says "added"; positivity is checked below
             V[f"P2-H8-X{m}-DIFF-CI"] = ci(h["lo"], h["hi"], 2)
-            V[f"P2-H8-X{m}-PCT"] = pc(h["share_of_b"], 1, sign=True)
-            V[f"P2-H8-X{m}-UPPER"] = pc(h["ratio_hi95"], 1, sign=True)
+            check(h["mean"] > 0, f"the rules add delay at x{m} (the prose says 'added', without a sign)")
+            V[f"P2-H8-X{m}-PCT"] = pc(h["share_of_b"], 1)
+            V[f"P2-H8-X{m}-UPPER"] = pc(h["ratio_hi"], 1)     # upper end of the two-sided 95 % interval (PREREG)
             V[f"P2-ATC-X{m}-CONFLICTS"] = cnt(a["road_conflicts"])
             V[f"P2-ATC-X{m}-BAY-WAIT-H"] = h_(a["road_wait_h"], 0)
             pcts[m] = h["share_of_b"]
@@ -264,7 +271,8 @@ def values(r: R, allow_pending: bool):
                 pend(key, "E43 8x", str(e))
     h1 = r.pair("H8", m=1)
     sup = r.f["H8"]["1"]["supported"]
-    check(sup == (h1["ratio_hi95"] < MARGIN), "the fit's H8 verdict matches the rule")
+    check(sup == (h1["ratio_hi"] < MARGIN) == (h1["ratio_hi95"] < MARGIN),
+          "the H8 verdict is the same under the two-sided interval's upper end and the one-sided bound")
     check(sup, "the rules added less than 5 % at today's fleet (abstract, intro, conclusion)")
     V["P2-H8-VERDICT-SENTENCE"] = (
         f"H8's confirmatory clause is supported: the upper bound is below the pre-registered 5{PCT} margin."
@@ -286,10 +294,11 @@ def values(r: R, allow_pending: bool):
         if "8" not in r.f["H8"]:
             raise Pending("E43 8x cells not run (PREREG issue 5)")
         h = r.f["H8"]["8"]["test"]
-        p = pc(h["share_of_b"], 1, sign=True)
+        check(h["mean"] > 0, "the rules add delay at x8 (the prose says 'added', without a sign)")
+        p = pc(h["share_of_b"], 1)
         return {"clause": f"and {p} at eight times",
-                "sentence": f"At eight times, over {V['P2-HORIZON-X8-D']} days, the rules added {h_(h['mean'], 2, sign=True)} "
-                            f"{ci(h['lo'], h['hi'], 2)}, {p} (upper bound {pc(h['ratio_hi95'], 1, sign=True)}).",
+                "sentence": f"At eight times, over {V['P2-HORIZON-X8-D']} days, the rules added {h_(h['mean'], 2)} "
+                            f"{ci(h['lo'], h['hi'], 2)}, {p} (upper bound {pc(h['ratio_hi'], 1)}).",
                 "disc": f"{p} of delay per delivery"}[kind]
     fill("P2-H8-X8-CLAUSE", lambda: x8("clause"), "E43 8x")
     fill("P2-H8-X8-SENTENCE", lambda: x8("sentence"), "E43 8x")
@@ -333,7 +342,7 @@ def values(r: R, allow_pending: bool):
     pa = r.pair("share_atc", s="0.4")
     V["P2-SHARE40-ATC-DIFF-CI"] = ci(pa["lo"], pa["hi"], 2)
     V["P2-SHARE40-ATC-PCT"] = pc(pa["share_of_b"], 1, sign=True)
-    V["P2-SHARE40-ATC-PCT-ABS"] = pc(abs(pa["ratio_hi95"]), 1)
+    V["P2-SHARE40-ATC-PCT-ABS"] = pc(abs(pa["ratio_hi"]), 1)
     V["P2-SHARE40-ATC-BAY-WAIT-H"] = h_(r.cell("atc_share", s="0.4")["road_wait_h"], 0)
     V["P2-SHARE0-UNC-HAND-CONFLICTS"] = num(r.cell("unc_share", s="0")["road_hand_conflicts"], 1)
     check(abs(r.pair("share_atc", s="0")["mean"]) < 0.5, "with no single-lane road the ATC mode is within 0.5 h of the baseline")
@@ -346,7 +355,8 @@ def values(r: R, allow_pending: bool):
             V["P2-BAY05-ATC-VS-ATC-DIFF-CI"] = ci(p["lo"], p["hi"], 2)
             V["P2-BAY05-ATC-TRAVERSALS"] = cnt(r.cell("atc_bay", b=b)["road_traversals"])
     p7, c7 = r.pair("r7_atc"), r.cell("atc_r7")
-    V["P2-R7-ATC-DIFF"] = h_(p7["mean"], 1, sign=True)
+    check(p7["mean"] > 0, "the strict R7 reading raises the ATC mode's delay (the prose says 'rose by')")
+    V["P2-R7-ATC-DIFF"] = h_(p7["mean"], 1)
     V["P2-R7-ATC-DIFF-CI"] = ci(p7["lo"], p7["hi"], 1)
     V["P2-R7-HAND-CONFLICTS"] = cnt(c7["road_hand_conflicts"])
     V["P2-R7-HAND-WAIT-H"] = h_(c7["road_hand_wait_h"], 0)
@@ -501,6 +511,35 @@ def values(r: R, allow_pending: bool):
         """Types with no violation whose deadlock count is not zero: clean of violations, not live."""
         return [k for k in zero if t44(j, k)["outcomes"]["deadlock"] > 0]
 
+    def cp_upper(k, n, alpha):
+        """Clopper-Pearson upper limit for k events in n at level 1 - alpha."""
+        from scipy.stats import beta
+        return 1.0 if k >= n else float(beta.ppf(1 - alpha, k + 1, n - k))
+
+    def weighted_bound(t, alpha):
+        """The violating type's bound on its weighted violation share at the effective n (3.5 promises n_eff)."""
+        return cp_upper(t["outcome_shares_weighted"]["violation"] * t["n_eff"], t["n_eff"], alpha)
+
+    def not_driven_clause(j):
+        nd = {k: t44(j, k)["outcomes"]["not_driven"] for k in range(1, 13) if t44(j, k)["outcomes"]["not_driven"] > 0}
+        return " and ".join(f"{cnt(v)} type-{k} draws" for k, v in nd.items()) + " could not hold the vehicle on the slope"
+
+    def deadlock_clause(j, zero):
+        """Abstract and conclusion: every type clean of violations but not live, type 5 included (PREREG change 6)."""
+        dc = deadlocked_clean(j, zero)
+        parts = []
+        for k in dc:
+            t = t44(j, k)
+            if k == 5:
+                parts.append(f"the ring of one-lane segments with finite bays deadlocked in "
+                             f"{pc(t['outcomes']['deadlock'] / t['n_driven'], 1)} of its encounters")
+            elif k == 6:
+                parts.append(f"the landing closure {words(t['outcomes']['deadlock'])} times in {cnt(t['n_driven'])} "
+                             f"at a crossing on the zone boundary")
+            else:
+                parts.append(f"type {k} in {cnt(t['outcomes']['deadlock'])} encounters")
+        return ", and ".join(parts) if len(parts) <= 2 else "; ".join(parts)
+
     def e44_split(j):
         zero = [k for k in range(1, 13) if t44(j, k)["violations"] == 0]
         viol = [k for k in range(1, 13) if t44(j, k)["violations"] > 0]
@@ -541,9 +580,12 @@ def values(r: R, allow_pending: bool):
                 f"probability of a hard violation under that type's parameter distribution: with no violation "
                 f"1 &minus; 0.05<sup>1/n<sub>eff</sub></sup> and, beside it, the Bonferroni limit "
                 f"1 &minus; (0.05/12)<sup>1/n<sub>eff</sub></sup> over the twelve types; with violations the "
-                f"Clopper&ndash;Pearson upper limit at the same levels. Types 6, 7 and 9 are "
+                f"Clopper&ndash;Pearson upper limit on the unweighted count at the same levels, with the limit on the "
+                f"weighted violation share at the effective n reported beside it. Types 6, 7 and 9 are "
                 f"importance-sampled (the inside vehicle's exit distance, the crew's emergence time and the dead-stop "
-                f"time) with weights p/q and an effective n of (&Sigma;w)<sup>2</sup>/&Sigma;w<sup>2</sup>. A near "
+                f"time) with weights p/q and an effective n of (&Sigma;w)<sup>2</sup>/&Sigma;w<sup>2</sup>; type 12 "
+                f"fuzzes draws of types 1, 2, 4 and 7 and so inherits type 1's undriven slopes and type 7's weights. "
+                f"A near "
                 f"miss is a same-lane gap below twice d<sub>min</sub>, a time to collision below "
                 f"{num(nm['ttc_s'], 0)}{NB}s, a crew clearance below twice the stopping radius, or a zone exit "
                 f"margin below {num(nm['zone_exit_margin_s'], 0)}{NB}s; the minimum margin is the smallest clearance "
@@ -554,12 +596,12 @@ def values(r: R, allow_pending: bool):
                 f"stopped when two simulator defects showed as violations, the vehicle body swinging off the path at "
                 f"corners and type-6 crossings built without a junction tile; both were fixed, the stored encounters "
                 f"regenerated and all twelve types rerun at the same n (change 8 of [43]); the stopped run's counts "
-                f"are reported in Section 5.6 and its files archived. During the rerun the type-6 cell showed a third "
-                f"defect, start states inside a vehicle's own stopping distance of a crossing tile, and a same-lane "
-                f"test in the gap metric wide enough to count two vehicles leaving a shallow crossing on different "
-                f"roads, and its first pass also exposed a stall classifier that counted a vehicle correctly held "
-                f"at a closed zone as waiting for a grant; the builder and the classifier were fixed, the metric's "
-                f"same-lane test narrowed "
+                f"are reported in Section 5.6 and its files archived. During the rerun the type-6 cell ran three "
+                f"times: its first pass showed a third defect, start states inside a vehicle's own stopping distance "
+                f"of a crossing tile, and a same-lane test in the gap metric wide enough to count two vehicles "
+                f"leaving a shallow crossing on different roads; its second pass exposed a stall classifier that "
+                f"counted a vehicle correctly held at a closed zone as waiting for a grant. The builder and the "
+                f"classifier were fixed, the metric's same-lane test narrowed "
                 f"{'to a heading difference of 10&deg;' if c9()['metric_change']['method'].startswith('heading') else 'to the same road and direction'} "
                 f"(the shield's own leader test is unchanged), and types 3, 5 and 6 rerun at the same n so that every "
                 f"count is under the one final metric and classifier (change 9 of [43]). Twenty stored encounters "
@@ -580,8 +622,8 @@ def values(r: R, allow_pending: bool):
         n = sum(t44(j, k)["n_driven"] for k in range(1, 13))
         bmax = max(t44(j, k)["bonferroni_bound"] for k in zero)
         s = (f"In {cnt(n)} driven encounters of twelve types the safety program allowed no hard violation in "
-             f"{words(len(zero))} types, with a per-type 95{PCT} bound on the violation probability of {sci(bmax)} "
-             f"or less under each type's parameter distribution")
+             f"{words(len(zero))} types, with a bound on the violation probability of {sci(bmax)} or less, jointly "
+             f"at 95{PCT} over the twelve types, under each type's parameter distribution")
         if viol:
             s += "; " + e44_violating_clause(j, viol)
         return s + " (Section 5.6)."
@@ -598,8 +640,10 @@ def values(r: R, allow_pending: bool):
         bz = {k: t44(j, k)["bonferroni_bound"] for k in zero}
         kmin, kmax = min(bz, key=bz.get), max(bz, key=bz.get)
         nz = sum(t44(j, k)["n_driven"] for k in zero)
+        check(sum(t44(j, k)["outcomes"]["not_driven"] for k in range(1, 13)) == n_all - n_drv,
+              "the undriven draws account for the whole gap between generated and driven")
         s = (f"Table 6 gives every type. Of the {cnt(n_all)} encounters generated, {cnt(n_drv)} were driven "
-             f"({cnt(t44(j, 1)['n'] - t44(j, 1)['n_driven'])} type-1 draws could not hold the vehicle on the slope). "
+             f"({not_driven_clause(j)}). "
              f"{words(len(zero)).capitalize()} of the twelve types produced no hard violation in {cnt(nz)} driven "
              f"encounters; their Bonferroni bounds run from {sci(bz[kmin])} (type {kmin}, {T12[kmin]}, effective "
              f"n {cnt(t44(j, kmin)['n_eff'])}) to {sci(bz[kmax])} (type {kmax}, {T12[kmax]}, effective n "
@@ -611,7 +655,12 @@ def values(r: R, allow_pending: bool):
                   f"(effective n {cnt(t['n_eff'])}): "
                   f"{', '.join(f'{cnt(v)} {KIND[kk]}' for kk, v in kinds.items())}"
                   + ("; an encounter may count under more than one kind" if len(kinds) > 1 else "")
-                  + f". Its Clopper&ndash;Pearson upper limit is {sci(t['bonferroni_bound'])}. ")
+                  + f". Its Clopper&ndash;Pearson upper limit is {sci(t['bonferroni_bound'])} on the unweighted "
+                    f"count"
+                  + (f" and {sci(weighted_bound(t, j['alpha_per_type']))} on its weighted violation share "
+                     f"({pc(t['outcome_shares_weighted']['violation'], 2)}) at the effective n. "
+                     if t["n_eff"] < t["n_driven"] - 1 else ". "))
+            check("unweighted" in t.get("bound_rule", ""), f"type {k}'s stored bound is the unweighted limit")
             if k == 9:
                 g = d["genuine_finding"]
                 check("dead stop" in g["name"], "the type-9 finding in E44_defects.json is the dead stop")
@@ -620,17 +669,22 @@ def values(r: R, allow_pending: bool):
                     check(int(b9.get("kind=dead", 0)) == t["violations"] and
                           int(b9.get("kind=slip", 0)) == 0 and int(b9.get("kind=drift", 0)) == 0,
                           "every type-9 violation is in the dead-stop bin (E44_bins.csv)")
-                s += (f"Every one of them is the dead stop: a fault stops the leader instantly, while R1's gap is "
-                      f"derived for a leader that brakes at most at b<sub>max</sub> = 0.8{NB}m/s<sup>2</sup>, so a "
-                      f"same-direction follower already inside the segment loses its margin; the slip and drift "
-                      f"cases of the same type produced none. ")
+                s += (f"Every one of them is in the dead-stop bin, where a fault stops the leader instantly; the slip "
+                      f"and drift bins of the same type produced none (Section 6.1). ")
+        dc_all = deadlocked_clean(j, zero)
+        live = [k for k in zero if k not in dc_all]
         if viol:
-            s += (f"H7 as registered, zero violations in every type, is therefore not supported; its first clause "
-                  f"holds in {words(len(zero))} of twelve types. ")
+            s += (f"H7 as registered, zero violations in every type, is therefore not supported: {words(len(zero))} "
+                  f"types produced no violation, of which {words(len(live))} were also free of deadlocks"
+                  + (f"; {'type ' if len(dc_all) == 1 else 'types '}{' and '.join(str(k) for k in dc_all)} "
+                     f"{'is' if len(dc_all) == 1 else 'are'} clean of violations but not live (below). "
+                     if dc_all else ". "))
         else:
-            s += "H7's first clause, zero violations in every type, holds. "
+            s += ("H7's first clause, zero violations in every type, holds"
+                  + (f", though {'type ' if len(dc_all) == 1 else 'types '}{' and '.join(str(k) for k in dc_all)} "
+                     f"deadlocked (below). " if dc_all else ". "))
         # importance weights, near misses, margins
-        ne = {k: t44(j, k) for k in (6, 7, 9)}
+        ne = {k: t44(j, k) for k in range(1, 13) if t44(j, k)["n_eff"] < t44(j, k)["n_driven"] - 1}
         s += ("The importance weights reduce the effective n to " +
               ", ".join(f"{cnt(t['n_eff'])} of {cnt(t['n_driven'])} in type {k}" for k, t in ne.items()) + ". ")
         nm_tot = sum(t44(j, k)["near_misses"] for k in range(1, 13))
@@ -654,11 +708,8 @@ def values(r: R, allow_pending: bool):
                 g6 = c9()["classification_defect"]["remaining_type6_deadlocks"]
                 check(g6["count"] == dl[6] and g6["all_at_R_m"] == 1000,
                       "the type-6 deadlocks are the traced remainder, all at the 1 km radius")
-                s += (f"The {words(dl[6])} type-6 deadlocks are at the {cnt(1000)}{NB}m zone radius and have one "
-                      f"mechanism: a crossing lies on the zone boundary, a vehicle held at the zone line stops inside "
-                      f"the crossing tile it holds, and a vehicle that must leave the closing zone through that "
-                      f"crossing cannot. No rule keeps a vehicle out of a junction whose far side is a hold point; "
-                      f"R3's exit check covers bays only. ")
+                s += (f"The {words(dl[6])} type-6 deadlocks are all at the {cnt(1000)}{NB}m zone radius, and a trace "
+                      f"of each shows one common cause, a crossing that lies on the zone boundary (Section 6.1). ")
         else:
             s += "No encounter deadlocked. "
         bf = {k: t44(j, k)["outcomes"]["blocked_by_fault"] for k in range(1, 13)
@@ -675,39 +726,49 @@ def values(r: R, allow_pending: bool):
         g9 = d["genuine_finding"]["re_run_after_both_fixes"]
         s += (f"The first main run, stopped after types 1&ndash;10 and part of type 11, had shown "
               + ", ".join(f"{cnt(v)} violations in type {k}" for k, v in f.items() if k != "others")
-              + " and none elsewhere. The deterministic violating encounters (those without a random fuzzer) were "
-                "rerun after each fix: "
+              + " and none elsewhere. Of the violating encounters without a random fuzzer, which are deterministic "
+                "and can be rerun as they were, "
               + ", ".join(f"{cnt(v['re_run'])} of {cnt(v['of_fuzzer_free_violating'])} in type {k}"
                           for k, v in rr.items())
-              + f" were clean, while {cnt(g9['still_violating'])} of {cnt(g9['of_fuzzer_free_violating'])} in "
-                f"type 9 still violated ({cnt(g9['gap_below_D0'])} below the gap, {cnt(g9['contact'])} contacts). "
-                f"The stopped run's files are archived and used for nothing else. ")
+              + f" were rerun after the fix and every one was clean"
+              + (f" ({d['re_run_selection_short']})" if d.get("re_run_selection_short") else "")
+              + f"; {cnt(g9['re_run'])} of {cnt(g9['of_fuzzer_free_violating'])} in type 9 were rerun after both "
+                f"fixes and every one still violated ({cnt(g9['gap_below_D0'])} below the gap, "
+                f"{cnt(g9['contact'])} contacts). The stopped run's files are archived and used for nothing else. ")
         check(all(v["still_violating"] == 0 for v in rr.values()),
               "every deterministic encounter rerun after a defect fix was clean")
+        check(g9["still_violating"] == g9["re_run"], "every rerun type-9 encounter still violated")
         # change 9: the type-6 cell of the rerun was itself run twice
         c = c9()
         f6, mc, cd = c["first_pass_type6"], c["metric_change"], c["classification_defect"]
         t5d = t44(j, 5)["outcomes"]["deadlock"]
-        s += (f"The type-6 cell was run twice: its first pass showed {cnt(f6['viol_r3'])} R3 violations, vehicles "
-              f"that started inside their own stopping distance of a crossing tile, a start the protocol never "
-              f"faces, and {cnt(f6['viol_gap'])} gap counts between vehicles leaving a shallow crossing on different "
-              f"roads with {num(mc['min_clearance_m'], 1)}{NB}m or more between their bodies and no contact. The "
-              f"first was fixed in the builder and the second by narrowing the gap metric's same-lane test "
+        vd = c["variant_dropped"]
+        s += (f"The type-6 cell was run three times. Its first pass showed {cnt(f6['viol_r3'])} R3 violations, "
+              f"vehicles that started inside their own stopping distance of a crossing tile, a start the protocol "
+              f"never faces, {cnt(f6['viol_gap'])} gap counts between vehicles leaving a shallow crossing on "
+              f"different roads with {num(mc['min_clearance_m'], 1)}{NB}m or more between their bodies and no "
+              f"contact, and {cnt(f6['deadlock'])} encounters classed as deadlocks. The first was fixed in the "
+              f"builder and the second by narrowing the gap metric's same-lane test "
               f"({'heading within 10&deg;' if mc['method'].startswith('heading') else 'same road and direction'} "
               f"instead of 30&deg;; the shield's leader test is unchanged). No violation count in any other type "
               f"changes under the narrower test, and type 9's reproduced exactly; the near-miss counts of type "
               f"{' and '.join(str(k) for k in mc['near_miss_changed_types'])} and the minimum-gap diagnostic of "
               f"type {' and '.join(str(k) for k in mc['min_gap_diagnostic_changed_types'] if k not in mc['near_miss_changed_types'])} "
               f"did change, so types {' and '.join(str(k) for k in mc['rerun_full_under_final_metric'])} were rerun "
-              f"in full under the final metric. The first pass had also classed {cnt(cd['type6_deadlocks_before'])} "
-              f"encounters as deadlocks; a trace showed slow haulers correctly held at the closed zone, stopped "
-              f"just short of its line, that the stall check counted as waiting for a grant. The classifier was "
-              f"corrected (the deadlock flag and, in type 6, where the stall test ends an encounter; no violation "
-              f"changed) and types 5 and 6 rerun: type 6 fell from {cnt(cd['type6_deadlocks_before'])} deadlocks to "
-              f"the {words(t44(j, 6)['outcomes']['deadlock'])} above, and type 5's ring deadlocks "
+              f"in full under the final metric. The second pass, with both corrections, had no violation and "
+              f"{cnt(cd['type6_deadlocks_before'])} encounters classed as deadlocks; a trace showed slow haulers "
+              f"correctly held at the closed zone, stopped just short of its line, that the stall check counted as "
+              f"waiting for a grant. The classifier was corrected (the deadlock flag and, in type 6, where the "
+              f"stall test ends an encounter; no violation changed) and types 5 and 6 rerun. The third pass is the "
+              f"one reported: type 6 fell from {cnt(cd['type6_deadlocks_before'])} deadlocks to the "
+              f"{words(t44(j, 6)['outcomes']['deadlock'])} above, and type 5's ring deadlocks "
               + (f"stand at {cnt(t5d)}" if t5d == cd["type5_deadlocks_before"] else
                  f"moved from {cnt(cd['type5_deadlocks_before'])} to {cnt(t5d)}")
-              + " (change 9 of [43]). The earlier passes' files are archived and used for nothing else.")
+              + f" (change 9 of [43]). Between the second and third passes an exploratory type-6 cell with an added "
+                f"request rule, registered in change 9 against a mechanism that the trace then withdrew, ran once "
+                f"({cnt(vd['deadlocks'])} deadlocks against {cnt(vd['against_registered'])}) and tested nothing; it "
+                f"is archived with the earlier passes and used for nothing else.")
+        check(vd["violations"] == 0 and vd["status"].startswith("no mechanism"), "the dropped variant record is as expected")
         check(mc.get("other_types_violations_unchanged", False) and mc.get("t9_reproduced", {}).get("viol_gap") ==
               t44(j, 9)["violations_by_kind"]["viol_gap"], "the narrower same-lane test left every violation count unchanged")
         check(set(mc["near_miss_changed_types"]) | set(mc["min_gap_diagnostic_changed_types"])
@@ -757,11 +818,11 @@ def values(r: R, allow_pending: bool):
     def e44_comparison_clause():
         j = e44()
         zero, viol = e44_split(j)
-        b5 = {k: t44(j, k)["bound"] for k in zero if t44(j, k)["n"] >= 100_000}
-        b4 = {k: t44(j, k)["bound"] for k in zero if t44(j, k)["n"] < 100_000}
+        b5, b4 = 1 - 0.05 ** (1 / 100_000), 1 - 0.05 ** (1 / 10_000)
         return (f"Our per-type bounds are the zero-numerator bounds of Hanley and Lippman-Hand [33]: with no "
-                f"violation in n encounters the 95{PCT} upper limit is close to 3/n, {sci(min(b5.values()))} at "
-                f"{cnt(100_000)} and {sci(min(b4.values()))} at {cnt(10_000)}, and they hold for the generated "
+                f"violation in n encounters the 95{PCT} upper limit is close to 3/n, {sci(b5)} at "
+                f"{cnt(100_000)} and {sci(b4)} at {cnt(10_000)}, larger at the smaller effective n of the weighted "
+                f"types, and they hold for the generated "
                 f"distribution of each type, not for the base's actual traffic. Zhao and colleagues reach rarer "
                 f"events by importance sampling on the lane-change parameters [35]; we used the same device on "
                 f"three types (the exit distance, the crew's emergence time and the dead-stop time), which cost "
@@ -851,8 +912,8 @@ def values(r: R, allow_pending: bool):
               f"landing zone while it is closed, the shortest reached in {cnt(r5['counterexample_length'])} steps. "
               f"Without R7's hold, {cnt(r7['violating_states'])} reachable states break an invariant ("
               + ", ".join(f"{cnt(v)} {kk}" for kk, v in r7["violation_kinds"].items())
-              + f"), the shortest in {cnt(r7['counterexample_length'])} steps. The traces are stored beside the "
-                f"results.")
+              + f"; a state may break both), the shortest in {cnt(r7['counterexample_length'])} steps. The traces "
+                f"are stored beside the results. H7's second clause, a counterexample for each removed rule, holds.")
         for k, m in mu.items():
             check(m["counterexample_found"], f"E45 mutation {k} produced a counterexample")
         if r.e45d is not None:                       # results/E45_development.json: found and fixed before the final run
@@ -908,12 +969,8 @@ def values(r: R, allow_pending: bool):
                   "for a braking leader")
         elif viol:
             s += "; " + e44_violating_clause(j, viol, with_counts=False)
-        dc = [k for k in deadlocked_clean(j, zero) if k != 5]
-        if dc == [6]:
-            s += (f", and one type deadlocked {words(t44(j, 6)['outcomes']['deadlock'])} times in "
-                  f"{cnt(t44(j, 6)['n_driven'])} at a crossing on a closed zone's boundary")
-        elif dc:
-            s += ", and " + ("type " if len(dc) == 1 else "types ") + ", ".join(str(k) for k in dc) + " deadlocked"
+        if deadlocked_clean(j, zero):
+            s += "; " + deadlock_clause(j, zero)
         s += (f". The exhaustive search of {cnt(st)} reachable states found no unsafe or stuck state and "
               f"caught three removed rules.")
         return s
@@ -930,13 +987,8 @@ def values(r: R, allow_pending: bool):
             s += ", one in the twelfth, a vehicle that stops dead inside a one-lane segment"
         elif viol:
             s += "; " + e44_violating_clause(j, viol, with_counts=False)
-        dc = [k for k in deadlocked_clean(j, zero) if k != 5]
-        if dc == [6]:
-            s += (f", and {words(t44(j, 6)['outcomes']['deadlock'])} deadlocks in {cnt(t44(j, 6)['n_driven'])} at a "
-                  f"crossing on a closed zone's boundary")
-        elif dc:
-            s += (", and deadlocks without a violation in " + ("type " if len(dc) == 1 else "types ")
-                  + ", ".join(str(k) for k in dc))
+        if deadlocked_clean(j, zero):
+            s += "; " + deadlock_clause(j, zero)
         return s + "."
     fill("P2-CONCLUSION-SAFETY-CLAUSE", conclusion_safety_clause, "E44/E45")
 
@@ -1004,9 +1056,11 @@ def table_e44(r: R, j):
                 ["#", "Type", "n", "driven", "effective n", "violations", "bound (Bonferroni)", "near misses",
                  "min margin (m)", "deadlocks", "blocked by fault", "emergency brake"], rows, "wide",
                 "Bound: with no violation 1 &minus; (0.05/12)<sup>1/n<sub>eff</sub></sup>; with violations the "
-                "Clopper&ndash;Pearson upper limit at &alpha;/12. Effective n = (&Sigma;w)<sup>2</sup>/&Sigma;w<sup>2</sup> "
-                "under the importance weights of types 6, 7 and 9. A negative minimum margin is a contact. Deadlocks are "
-                "judged only in encounters without a random fuzzer." + variant_note)
+                "Clopper&ndash;Pearson upper limit at &alpha;/12 on the unweighted count (the limit on the weighted "
+                "share at the effective n is given in the text). Effective n = (&Sigma;w)<sup>2</sup>/&Sigma;w<sup>2</sup> "
+                "under the importance weights of types 6, 7 and 9, which type 12 inherits from its type-7 draws. A "
+                "negative minimum margin is a contact. Deadlocks are judged only in encounters without a random "
+                "fuzzer." + variant_note)
 
 
 def table_pairs(r: R):
@@ -1014,10 +1068,10 @@ def table_pairs(r: R):
     for _, p in r.p[r.p["metric"] == PRIMARY].iterrows():
         rows.append([html.escape(p["comparison"]), int(p["n"]), num(p["mean"], 2, sign=True),
                      ci(p["lo"], p["hi"], 2, unit=""), pc(p["share_of_b"], 1, sign=True),
-                     pc(p["ratio_hi95"], 1, sign=True)])
+                     pc(p["ratio_hi"], 1, sign=True)])
     return _tab("Table 5. Paired differences in the mean delay per delivered item (h), 95 % bootstrap intervals over "
-                "seeds, the difference as a share of the baseline's mean, and the one-sided 95 % upper bound of that "
-                "share. The H8 rule applies to the x1 row only.",
+                "seeds, the difference as a share of the baseline's mean, and the upper end of the two-sided 95 % "
+                "interval of that share. The H8 rule applies to the x1 row only.",
                 ["Comparison", "n", "Difference (h)", "95 % CI", "Share of baseline", "Upper bound"], rows, cls="wide")
 
 
@@ -1064,6 +1118,7 @@ def fig_density(r: R):
 
 def references():
     notes = open(os.path.join(HERE, "NOTES.md"), encoding="utf-8").read()
+    notes = notes.split("\n## Reference statistics")[0]          # the notes below the list are not entries
     out = ['<ol class="refs">']
     for m in re.finditer(r"^\[(\d+)\]\s+(.+?)(?=\n\n|\n\[\d+\]|\n## |\Z)", notes, re.S | re.M):
         txt = html.escape(" ".join(m.group(2).split()))
@@ -1073,6 +1128,9 @@ def references():
         out.append(f'<li value="{m.group(1)}">{txt}</li>')
     if len(out) < 2:
         raise SystemExit("no references found in NOTES.md")
+    nums = [int(re.search(r'value="(\d+)"', o).group(1)) for o in out[1:]]
+    if nums != list(range(1, len(nums) + 1)):
+        raise SystemExit(f"reference list is not 1..n without gaps or repeats: {nums}")
     return "\n".join(out + ["</ol>"])
 
 
