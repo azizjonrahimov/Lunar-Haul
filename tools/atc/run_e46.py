@@ -322,6 +322,7 @@ def money(run: dict, rule: str, tariff: float, dev_owner=None, k: float = 1.0, q
     fines = {o: 0.0 for o in OWNERS}
     open_end = 0.0
     H = run["horizon_h"]
+    sp = {"jobs": 0, "with_alternative": 0, "reserve": 0, "floor_at_ask": 0}   # second price, as implemented
     for j in run["jobs"]:
         n = len(j["carriers"])
         share = j["cost"] / n
@@ -334,6 +335,10 @@ def money(run: dict, rule: str, tariff: float, dev_owner=None, k: float = 1.0, q
             need = 2 if j["team"] else 1
             total = sum(alt[:need]) if len(alt) >= need else tariff * tkm
             pay = [max(a, total / n) for a in asks]
+            sp["jobs"] += 1
+            sp["with_alternative"] += len(alt) >= 1
+            sp["reserve"] += len(alt) < need
+            sp["floor_at_ask"] += all(a >= total / n for a in asks)
         elif rule == "posted":
             pay = [tariff * tkm / n] * n
         else:
@@ -358,7 +363,8 @@ def money(run: dict, rule: str, tariff: float, dev_owner=None, k: float = 1.0, q
             "system_cost": sum(cost.values()) + sum(run["owners"][o]["delay_usd"] for o in run["members"]),
             "delay_h": sum(run["owners"][o]["delay_h"] for o in run["members"]),
             "delivered": sum(run["owners"][o]["delivered"] for o in run["members"]), "fines": fines,
-            "true_cost": cost}
+            "true_cost": cost, "receipts": sum(paid.values()), "payouts": sum(recv.values()),
+            "fines_total": sum(fines.values()), "cash": cash, "second_price_jobs": sp}
 
 
 def coalition_value(run: dict, members) -> float:
@@ -458,9 +464,47 @@ def cmd_analyse():
                         continue
                     v[frozenset(OWNERS)] = coalition_value(base[s], OWNERS)
                     phi = shapley(v, OWNERS)
+                    x["cash_profit"] = dict(x["profit"])    # money() before the Shapley payoff replaces it
                     x["profit"] = phi
                     x["v"] = v
             cell_row(f"{rule} {split} truthful", rule, 1.0, 0.0, None, per)
+        # P3 referee round 1 (LEAD, 30 Oct): budget with honest asks, Shapley transfers, the second price as
+        # implemented, and every rule against no payments (USD a year; bootstrap over seeds, 20,000 resamples)
+        bud = fit.setdefault("budget", {})
+        for rule in design["rules"]:
+            b = _boot([truth[rule][s]["budget"] for s in seeds])
+            bud.setdefault(rule, {})[split] = {"mean": b["mean"], "lo": b["lo"], "hi": b["hi"], "n": b["n"],
+                "receipts_mean": float(np.mean([truth[rule][s]["receipts"] for s in seeds])),
+                "payouts_mean": float(np.mean([truth[rule][s]["payouts"] for s in seeds])),
+                "fines_mean": float(np.mean([truth[rule][s]["fines_total"] for s in seeds]))}
+        sh = [s for s in seeds if "cash_profit" in truth["posted"][s]]
+        tr = fit.setdefault("transfers", {}).setdefault(split, {})
+        for o in OWNERS:
+            b = _boot([truth["posted"][s]["profit"][o] - truth["posted"][s]["cash_profit"][o] for s in sh])
+            tr[o] = {"mean": b["mean"], "lo": b["lo"], "hi": b["hi"], "n": b["n"]}
+        st = []
+        for s in sh:
+            x = truth["posted"][s]
+            net = {o: x["cash"][o] + x["profit"][o] - x["cash_profit"][o] for o in OWNERS}
+            st.append(sum(abs(v) for v in net.values()) / 2.0)
+        b = _boot(st)
+        fit.setdefault("settled_with_transfers", {})[split] = {"mean": b["mean"], "lo": b["lo"], "hi": b["hi"],
+                                                               "n": b["n"]}
+        tot = {k: sum(truth["second"][s]["second_price_jobs"][k] for s in seeds) for k in
+               ("jobs", "with_alternative", "reserve", "floor_at_ask")}
+        fit.setdefault("second_price", {})[split] = {
+            "jobs": tot["jobs"], "with_alternative_share": tot["with_alternative"] / tot["jobs"],
+            "reserve_share": tot["reserve"] / tot["jobs"], "floor_at_ask_share": tot["floor_at_ask"] / tot["jobs"],
+            "note": "honest asks, all seeds pooled; with_alternative: at least one other free robot could carry the "
+                    "job; reserve: fewer alternatives than carriers needed, so total = tariff x tkm; floor_at_ask: "
+                    "every carrier of the job is paid its own ask (max(ask, total / n) = ask)"}
+        vn = fit.setdefault("vs_none", {})
+        for rule in ("first", "second", "posted"):
+            vn.setdefault(rule, {})[split] = {}
+            for o in OWNERS:
+                ss = sh if rule == "posted" else seeds
+                b = _boot([truth[rule][s]["profit"][o] - truth["none"][s]["profit"][o] for s in ss])
+                vn[rule][split][o] = {"mean": b["mean"], "lo": b["lo"], "hi": b["hi"], "n": b["n"]}
         # rule - rule on delay and delivered (truthful: the same allocation, so identical by construction)
         for r1, r2 in (("second", "first"), ("posted", "first"), ("posted", "second")):
             for met in ("delay_h", "delivered"):
