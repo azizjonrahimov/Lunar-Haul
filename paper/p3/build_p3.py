@@ -53,7 +53,7 @@ PREREG = os.path.join(ROOT, "paper", "atc", "PREREG.md")
 E46_CELLS, E46_PAIRS, E46_FIT = (os.path.join(RES, f) for f in ("E46_cells.csv", "E46_pairs.csv", "E46_fit.json"))
 D46 = os.path.join(ROOT, "data", "scenarios", "E46-design.json")
 D48 = os.path.join(ROOT, "data", "scenarios", "E48-design.json")
-OWN_CHECK_IDS: tuple = ()      # the ids of P3's seven own checks in results/vv_phase5.json, assigned by B-79 batch 3
+OWN_CHECK_IDS: tuple = ("A8", "X7")   # the ids of P3's seven own checks in results/vv_phase5.json, assigned by B-79 batch 3
 E48 = os.path.join(RES, "E48_sizing.json")
 RULES = ("none", "first", "second", "posted")  # payment rules of E46 as run (change 7 of the PREREG restored first price)
 RULE_NAME = {"none": "no payments", "first": "first price", "second": "the per-item second price",
@@ -152,8 +152,9 @@ def _vv5_err(x):
     return "n/a" if v is None else f"{abs(float(v)):.2g}"
 
 
-def vv5_checks_sentence(tag, results_section, check):
+def vv5_checks_sentence(tag, results_section, check, exclude=()):
     d, rows = vv5_load(tag, check)
+    rows = [x for x in rows if x.get("id") not in exclude]      # the paper's own checks are listed by name before this sentence
     kinds = {k: sum(1 for x in rows if x.get("kind") == k) for k in ("V", "Val", "Cal")}
     tech = {}
     for x in rows:
@@ -167,7 +168,7 @@ def vv5_checks_sentence(tag, results_section, check):
         parts.append(f"{words(kinds['Val'])} validation{'s' if kinds['Val'] != 1 else ''} against references outside the model")
     if kinds["Cal"]:
         parts.append(f"{words(kinds['Cal'])} calibration reproduction{'s' if kinds['Cal'] != 1 else ''}")
-    return (f"In addition, {cnt(len(rows))} checks of the engine's phase-5 verification suite (<code>lunarsim/vv5.py</code>, results in "
+    return (f"In addition, {cnt(len(rows))} {'further ' if exclude else ''}checks of the engine's phase-5 verification suite (<code>lunarsim/vv5.py</code>, results in "
             f"<code>results/vv_phase5.json</code> and on the live site's verification page) bear on this paper: " + ", ".join(parts) +
             f", by Sargent's technique {tech_txt}. Deterministic identities are held to 10<sup>&minus;9</sup> relative or exact; stochastic checks "
             f"pass when the error is within a tolerance set in advance, and a 99&#8239;% batch-means interval that misses the reference is recorded "
@@ -461,7 +462,7 @@ def values(r: R, allow_pending: bool):
                                 "; ".join(html.escape(c) for c in later) + ".")
 
     # --- checks (3.6, 5.8) -------------------------------------------------------------------------------------------
-    fill("P3-CHECKS-SENTENCE", lambda: vv5_checks_sentence("P3", "5.8", check), "B-79")
+    fill("P3-CHECKS-SENTENCE", lambda: vv5_checks_sentence("P3", "5.8", check, exclude=OWN_CHECK_IDS), "B-79")
     fill("P3-FAILED-CHECKS-SENTENCE", lambda: vv5_failed_sentence("P3", "3.6", check), "B-79")
     fill("P3-ID-FIX-SENTENCE", lambda: idfix_sentence(check, ("E46", "E48")), "B-79 id fix")
 
@@ -836,8 +837,14 @@ def values(r: R, allow_pending: bool):
         missing = [i for i in OWN_CHECK_IDS if not any(x.get("id") == i for x in rows)]
         if missing:
             raise Pending("own checks not yet in results/vv_phase5.json: " + ", ".join(missing))
-        return ("; ".join(f"{html.escape(str(x.get('id')))} {html.escape(str(x.get('name')))}" for x in have) +
-                f" ({cnt(len(have))} checks; outcomes in Section 5.8).")
+        names = []                                  # one entry per check; a check with several rows shares the name before the colon
+        for x in have:
+            base = str(x.get("name", "")).split(": ")[0]
+            if base not in [n for n, _ in names]:
+                names.append((base, str(x.get("id"))))
+        low1 = lambda t: t[:1].lower() + t[1:]
+        return ("; ".join(f"{low1(html.escape(n))} ({html.escape(i)})" for n, i in names) +
+                f" ({words(len(names))} checks in {cnt(len(have))} rows; outcomes in Section 5.8).")
     fill("P3-OWN-CHECKS-SENTENCE", own_checks, "B-79 batch 3")
 
     def sign_word(x, pos="a surplus", neg="a deficit", zero="a balanced budget"):
