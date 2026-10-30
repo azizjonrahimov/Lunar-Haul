@@ -314,7 +314,7 @@ def values(r: R, allow_pending: bool):
         out["kbps_target"] = _fin(tg["link_kbps_20_robots"])
         out["bps_robot"] = _fin(bph["1"]) / 3600.0
         out["bps_target"] = _fin(tg["bytes_per_s_per_robot"])
-        out["fits"] = {"cpu": worst_cpu < 1.0, "memory": out["mem_worst_mb"] * f <= out["mem_capacity_mb"],
+        out["fits"] = {"cpu": worst_cpu < 1.0, "memory": out["mem_worst_mb"] <= out["mem_capacity_mb"],     # memory is not scaled by the speed factor
                        "link": out["kbps_20"] <= out["kbps_target"]}
         return out
 
@@ -323,7 +323,7 @@ def values(r: R, allow_pending: bool):
         fits = s["fits"]
         parts = [f"the safety check at {num(s['cpu_share_worst'] * 100, 1)}{PCT} of one core of the reference processor at the worst class "
                  f"(the {CLASS_NAME[s['cpu_class_worst']]})",
-                 f"the on-robot part at {unit(s['mem_worst_mb'] * s['factor'], 'MB', 1)} of {unit(s['mem_capacity_mb'], 'MB')}",
+                 f"the on-robot part at {unit(s['mem_worst_mb'], 'MB', 1)} of {unit(s['mem_capacity_mb'], 'MB')}",
                  f"and the radio traffic at {num(s['kbps_20'], 2)}{NB}kbit/s for 20 robots against the {num(s['kbps_target'], 0)}{NB}kbit/s target"]
         verdict = ("H10, exploratory, holds on every count: " if all(fits.values()) else
                    "H10, exploratory, does not hold on every count (" + ", ".join(k for k, v in fits.items() if not v) + " over the limit): ")
@@ -367,7 +367,7 @@ def values(r: R, allow_pending: bool):
             lk = r.s48("classes", c, "link")
             bits.append(f"the {CLASS_NAME[c]} (antenna {unit(lk['antenna_m'], 'm', 1)}, {num(lk['freq_ghz'], 1)}{NB}GHz, {unit(lk['tx_power_w'], 'W', 1)}) "
                         f"had {num(lk['worst_hop_kbps'], 1)}{NB}kbit/s at its worst hop, a latency budget of {unit(lk['latency_budget_ms'], 'ms')} "
-                        f"for a decision within 1{NB}s, and was reachable from the mast {pc(lk['reachable_share'], 1)} of the time")
+                        f"for a decision within 1{NB}s, and was in direct view of the mast from {pc(lk['reachable_share'], 1)} of the route samples")
         return "Per class, under the models of Section 3.3: " + "; ".join(bits) + "."
     fill("P3-E48-RESULTS-LINK", e48_link, "E48")
 
@@ -382,7 +382,7 @@ def values(r: R, allow_pending: bool):
                         f"{pc(b['no_leader_share'], 2)} of the time, re-election took {unit(b['reelect_s'], 's', 0)} and the ledger merged "
                         f"{num(b['merges'], 1)} times a year on average over {words(b['seeds'])} seeds")
         check(twice == 0, "no job was assigned twice after a merge (3.4, 3.6)")
-        return "; ".join(bits).capitalize() + f". After every merge the ledger held {words(twice)} job assigned twice."
+        return "At" + "; ".join(bits)[2:] + f". After every merge the ledger held {words(twice)} job assigned twice."
     fill("P3-E48-RESULTS-FAILOVER", e48_failover, "E48")
 
     def e48_design():
@@ -401,7 +401,7 @@ def values(r: R, allow_pending: bool):
                     f"takes {num(s['cpu_share_worst'] * 100, 1)}{PCT} of one core at the worst class and the radio traffic is {num(s['kbps_20'], 2)}{NB}kbit/s for 20 robots.")
         if kind == "intro":
             return (f"Lunar ATC {ok} the vehicles of Section 3.2 as implemented: at the worst class the safety check takes "
-                    f"{num(s['cpu_share_worst'] * 100, 1)}{PCT} of one core of the reference processor, the on-robot part {unit(s['mem_worst_mb'] * s['factor'], 'MB', 1)}, "
+                    f"{num(s['cpu_share_worst'] * 100, 1)}{PCT} of one core of the reference processor, the on-robot part {unit(s['mem_worst_mb'], 'MB', 1)}, "
                     f"and 20 robots generate {num(s['kbps_20'], 2)}{NB}kbit/s against a 16{NB}kbit/s-class link (Sections 5.1 to 5.3).")
         if kind == "discussion":
             return (f"the on-vehicle software {ok} the reference processor and the link class with the stated factor; the class nearest a limit is the "
@@ -656,8 +656,8 @@ def table_e48_link(r: R):
         rows.append([CLASS_NAME[c].capitalize(), num(lk["antenna_m"], 1), num(lk["freq_ghz"], 1), num(lk["tx_power_w"], 1),
                      num(lk["worst_hop_kbps"], 1), num(lk["latency_budget_ms"], 0), pc(lk["reachable_share"], 1)])
     return _tab("Table 6. Link budget per vehicle class under the models of Section 3.3: antenna height (m), frequency (GHz), transmit power (W), "
-                "data rate at the worst hop (kbit/s), latency budget for a decision within 1 s (ms) and the share of the time the class is "
-                "reachable from the mast over a run.",
+                "data rate at the worst hop (kbit/s), latency budget for a decision within 1 s (ms) and the share of the route samples "
+                "in direct view of the base mast within 5 km (multi-hop reach is higher and not measured).",
                 ["Class", "Antenna (m)", "Frequency (GHz)", "Power (W)", "Worst hop (kbit/s)", "Latency budget (ms)", "Reachable"], rows, cls="wide")
 
 
