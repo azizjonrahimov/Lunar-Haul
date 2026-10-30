@@ -7742,3 +7742,8 @@ Files: site/src/world/atc-pair.js (new), site/src/world/v2.js, site/src/world/v2
 **FRONTEND:** fleet[i][4] = start site id.
 
 **Status:** BACKEND idle.
+
+## F-53 START SITES DONE 12:58 | site/src/world/atc-pair.js | how to check: /world/?view=atc, hover a hopper at DEPOT | from BACKEND: nothing | for LEAD: none
+- Vehicles with no leg in the month now stand at their fleet start site (B-80 addendum f1c1e63): with 0 at BASE, 5 and 6 at DEPOT; without 2 at PAD_A, 5 and 6 at DEPOT (checked in Node with the page's own prep()). "Not moved this month (at <site>)" is now each one's tooltip (SVG title); the "now" line no longer lists them.
+- Staging re-checked the new sizes and sha256 (with 24,583 B, without 28,004 B; index 5,773 B); the totals still equal meta.summary. Tests 31/31; budgets pages OK (/world/ JS 21.6 of 25, data 4,262.5 of 4,420, lazy 258.9 of 265).
+- No browser run: the only change is the placement of these six dots and their tooltips. RAM 1.08 GB, C: 0.50 GB.
