@@ -123,13 +123,16 @@ const MKS = 'results/E46_fit.json', MKC = 'results/E46_cells.csv';
 let MK = null, smoke = null;
 const mk = (value, unit, digits, source, file = MKS) => num({ value, unit, digits, flag: 'Modelled', source: `${file}: ${source}` });
 const musd = (v, src, d = 2) => mk(v / 1e6, '', d, `${src} / 1e6`);
+const ci = (x, src, d = 1) => `${musd(x.mean, `${src}.mean`, d)} (${musd(x.lo, `${src}.lo`, d)} to ${musd(x.hi, `${src}.hi`, d)})`;
 const RULE = { none: 'No payments', first: 'First price', second: 'Second price', posted: 'Posted price' };
 const paidHonest = () => MK.honest.filter(c => c.rule !== 'none');
 const cellSrc = c => `${c.rule} ${c.split}, k 1, q 0`;
 function settleLine() {
   const P = paidHonest(), lo = P.reduce((a, c) => (c.settled_earth_musd < a.settled_earth_musd ? c : a)), hi = P.reduce((a, c) => (c.settled_earth_musd > a.settled_earth_musd ? c : a));
   const open = Math.max(...P.map(c => c.open_end_musd));
-  return `With honest offers, the money that had to change hands through Earth in a year was ${mk(lo.settled_earth_musd, '', 1, `settled_earth_musd (${cellSrc(lo)})`, MKC)} to ${mk(hi.settled_earth_musd, ' M USD', 1, `settled_earth_musd (${cellSrc(hi)})`, MKC)} across the three paying rules and both splits. ` +
+  const W = MK.settled_with_transfers, sp = MK.design.splits;
+  return `With honest offers, the cash that had to change hands through Earth in a year was ${mk(lo.settled_earth_musd, '', 1, `settled_earth_musd (${cellSrc(lo)})`, MKC)} to ${mk(hi.settled_earth_musd, ' M USD', 1, `settled_earth_musd (${cellSrc(hi)})`, MKC)} across the three paying rules and both splits. ` +
+    (W ? `Under the posted price, including the Shapley transfers: ${Object.keys(W).map(s => `${ci(W[s], `settled_with_transfers.${s}`)} M USD with ${esc(sp[s])}`).join(', ')}. ` : '') +
     `Owed but not yet settled when the year ended: ${open < 0.01 ? 'under 0.01 M USD in every case' : mk(open, ' M USD', 2, 'max open_end_musd', MKC)}. With no payments, nothing moves.`;
 }
 // a clause's verdict from its intervals by PREREG change 7, checked against the file's own flag
@@ -137,6 +140,33 @@ const VERDICT = { clause1: c => c.lo > 0, clause2: c => c.diff_mean < 0 && c.dif
 function verdict(q, c) {
   const ok = VERDICT[q](c), word = ok ? 'supported' : 'not supported';
   return `<span class="atc-tag atc-verdict${ok ? ' atc-yes' : ''}">${word}</span>${ok === c.supported ? '' : ` <span class="atc-err">(the file says ${c.supported ? 'supported' : 'not supported'})</span>`}`;
+}
+// why first and second price run a deficit with honest offers (budget and second_price in the fit)
+function opNote(D, S) {
+  const B = MK.budget.first, P = MK.second_price, pc = (s, k) => mk(P[s][k] * 100, ' %', 0, `second_price.${s}.${k} × 100`);
+  return ` Under first price, carriers were paid their honest offers, their true cost, against what shippers paid: ${S.map(s => `${musd(B[s].payouts_mean, `budget.first.${s}.payouts_mean`, 1)} against ${musd(B[s].receipts_mean, `budget.first.${s}.receipts_mean`, 1)} M USD with ${esc(D.splits[s])}`).join(', ')}.
+      The price set on Earth fell short of the cost it was meant to recover (a calibration gap).${P ? ` Under second price, a carrier is never paid below its own offer, and ${S.map(s => pc(s, 'reserve_share')).join(' and ')} of jobs
+      had too few competing robots to set a price, so the posted price set it (${S.map(s => pc(s, 'with_alternative_share')).join(' and ')} had enough).` : ''}`;
+}
+// each company under a paying rule against the same market with no payments (paired by seed), and the posted price's
+// Shapley transfers; a case counts on one side only when its whole interval is
+function noneTables(D, S) {
+  const V = MK.vs_none, T = MK.transfers, own = D.owners, cols = S.map(s => `<th scope="col">${esc(D.splits[s])}</th>`).join('');
+  const side = own.map(o => { const c = Object.values(V).flatMap(r => S.map(s => r[s][o])); return `company ${esc(o)} above in ${c.filter(x => x.lo > 0).length} and below in ${c.filter(x => x.hi < 0).length}`; });
+  return `
+    <p class="prose">A company’s profit alone is dominated by its cargo’s delay cost at its own value of time, so every pooled rule clears it by a wide margin.
+      The harder comparison is the same pooled market with no payments. Of the ${Object.keys(V).length * S.length} cases (paying rule and split), ${side.join(', ')}.</p>
+    <div class="atc-table-wrap"><table class="atc-table atc-mk-t">
+      <caption>Each company’s profit under the rule less its profit with no payments, paired by seed (M USD a year, mean and 95 % interval)</caption>
+      <thead><tr><th scope="col">Rule</th><th scope="col">Company</th>${cols}</tr></thead>
+      <tbody>${Object.keys(V).map(r => own.map((o, i) => `<tr>${i ? '' : `<th scope="row" rowspan="${own.length}">${RULE[r] || esc(r)}</th>`}<td>${esc(o)}</td>${S.map(s => `<td class="n">${ci(V[r][s][o], `vs_none.${r}.${s}.${o}`)}</td>`).join('')}</tr>`).join('')).join('')}</tbody>
+    </table></div>
+    <div class="atc-table-wrap"><table class="atc-table atc-mk-t">
+      <caption>Posted price: the Shapley transfers (plus: the company receives) and the money settled through Earth with them (M USD a year)</caption>
+      <thead><tr><th scope="col">Company</th>${cols}</tr></thead>
+      <tbody>${own.map(o => `<tr><th scope="row">${esc(o)}</th>${S.map(s => `<td class="n">${ci(T[s][o], `transfers.${s}.${o}`)}</td>`).join('')}</tr>`).join('')}
+        <tr><th scope="row">Settled, including the Shapley transfers</th>${S.map(s => `<td class="n">${ci(MK.settled_with_transfers[s], `settled_with_transfers.${s}`)}</td>`).join('')}</tr></tbody>
+    </table></div>`;
 }
 function marketPart() {
   const D = MK.design, S = Object.keys(D.splits), H = MK.H5, iv = (c, s, q, lo, hi) => `${musd(c[lo], `H5.${s}.${q}.${lo}`)} to ${musd(c[hi], `H5.${s}.${q}.${hi}`)}`;
@@ -163,24 +193,24 @@ function marketPart() {
       Under the posted price a company’s result is its Shapley value of the shared cost, not cash.</p>
     <div class="atc-table-wrap"><table class="atc-table atc-mk-t">
       <caption>With honest offers, per payment rule (M USD a year)</caption>
-      <thead><tr><th scope="col" rowspan="2">Rule</th><th scope="colgroup" colspan="${S.length}">Operator’s balance</th><th scope="colgroup" colspan="${S.length}">Settled through Earth</th></tr>
+      <thead><tr><th scope="col" rowspan="2">Rule</th><th scope="colgroup" colspan="${S.length}">Operator’s balance</th><th scope="colgroup" colspan="${S.length}">Settled through Earth in cash</th></tr>
         <tr>${[0, 1].map(() => S.map(s => `<th scope="col">${esc(D.splits[s])}</th>`).join('')).join('')}</tr></thead>
       <tbody>${rules.map(r => `<tr><th scope="row">${RULE[r] || esc(r)}</th>${['operator_budget_musd', 'settled_earth_musd'].map(k => S.map(s => { const c = hon(r, s); return `<td class="n">${mk(c[k] === 0 ? 0 : c[k], '', 2, `${k} (${cellSrc(c)})`, MKC)}</td>`; }).join('')).join('')}</tr>`).join('')}</tbody>
     </table></div>
     <ul class="prose atc-list">
       <li><strong>The operator’s balance.</strong> Shippers pay the posted price under every paying rule, so a minus means the operator paid carriers
-        more than it collected. Under the posted price it is zero by construction: the same price goes in and out.</li>
+        more than it collected. Under the posted price it is zero by construction: the same price goes in and out.${MK.budget ? opNote(D, S) : ''}</li>
       <li><strong>Efficiency.</strong> Against a perfect pooled market (the oracle), the market’s system cost (the carriers’ true cost plus the cost of delay) was higher by
         ${S.map((s, i) => `${mk(eff[i][0], ' %', 1, `efficiency_loss_pct (${cellSrc(hon(rules[0], s))})`, MKC)} with ${esc(D.splits[s])}`).join(' and ')}${same ? ', the same under every rule: payments are worked out afterwards, on one allocation' : ' (it varies by rule; see the cells table)'}.</li>
       <li><strong>${MK.cells.ir_violations ? 'Some companies worse off.' : 'No company worse off.'}</strong> Over all ${mk(MK.cells.n, '', 0, 'rows', MKC)} cases (every rule, split, k and audit rate),
         a company made less on average than working alone ${mk(MK.cells.ir_violations, '', 0, 'Σ ir_violations', MKC)} times.</li>
-    </ul>
+    </ul>${MK.vs_none ? noneTables(D, S) : ''}
     <details class="atc-mk-more"><summary>Every company in every coalition (clause 3)</summary>
       <div class="atc-table-wrap"><table class="atc-table atc-mk-t">
         <caption class="small">Shapley value in the coalition less profit alone, M USD a year, mean and 95 % interval</caption>
         <thead><tr><th scope="col">Coalition</th><th scope="col">Company</th>${S.map(s => `<th scope="col">${esc(D.splits[s])}</th>`).join('')}</tr></thead>
         <tbody>${cr.map((r, i) => `<tr><td>${esc(r.coalition)}</td><td>${esc(r.owner)}</td>${S.map((s, j) => { const x = coal[j].find(y => y.coalition === r.coalition && y.owner === r.owner), src = `H5.${s}.clause3.rows[${coal[j].indexOf(x)}]`;
-          return x ? `<td class="n">${musd(x.mean, `${src}.mean`, 1)} (${musd(x.lo, `${src}.lo`, 1)} to ${musd(x.hi, `${src}.hi`, 1)})</td>` : '<td>–</td>'; }).join('')}</tr>`).join('')}</tbody>
+          return x ? `<td class="n">${ci(x, src)}</td>` : '<td>–</td>'; }).join('')}</tr>`).join('')}</tbody>
       </table></div></details>`;
   upgradeFlags($('atc-e46'));
   $('atc-e46-sec').hidden = false;

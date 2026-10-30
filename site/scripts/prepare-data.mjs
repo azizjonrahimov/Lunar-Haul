@@ -186,7 +186,8 @@ if ([...e47, e47d].every(existsSync)) {
   console.log('prepare-data: E47 (Mars) summary staged');
 }
 // E46 (B-76): the market's payment rules and P3's H5 for /atc/ section 4; the honest-offer cells (k 1, q 0) and the
-// individual-rationality count over every cell come from the cells table
+// individual-rationality count over every cell come from the cells table; each company against no payments, the Shapley
+// transfers and the settlement including them come from the fit (P3 referee round)
 const e46 = ['E46_fit.json', 'E46_cells.csv'].map(f => join(ROOT, 'results', f));
 if (e46.every(existsSync)) {
   const fit = pyJson(e46[0]), [head, ...lines] = readFileSync(e46[1], 'utf8').trim().split(/\r?\n/).map(l => l.split(','));
@@ -196,6 +197,8 @@ if (e46.every(existsSync)) {
   const keep = ['rule', 'split', 'n', 'operator_budget_musd', 'efficiency_loss_pct', 'settled_earth_musd', 'open_end_musd', 'ir_violations'];
   writeFileSync(join(PUB, 'atc', 'E46_summary.json'), JSON.stringify({ source: 'results/E46_fit.json and results/E46_cells.csv (B-76, E46)',
     design: { ...fit.design, seeds: fit.design.seeds.length }, tariff_usd_per_tkm: fit.tariff_usd_per_tkm, audit_penalty_multiple: fit.audit_penalty_multiple, H5: fit.H5,
+    vs_none: fit.vs_none, transfers: fit.transfers, settled_with_transfers: fit.settled_with_transfers, budget: fit.budget,
+    second_price: fit.second_price && Object.fromEntries(Object.entries(fit.second_price).map(([s, { note, ...x }]) => [s, x])),
     honest: cells.filter(c => c.k === 1 && c.q === 0).map(c => Object.fromEntries(keep.map(k => [k, c[k]]))),
     cells: { n: cells.length, ir_violations: cells.reduce((a, c) => a + c.ir_violations, 0) } }));
   console.log(`prepare-data: E46 (market) summary staged, ${cells.length} cells`);

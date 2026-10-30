@@ -7429,3 +7429,8 @@ lunarsim/vv5.py, results/vv_phase5.json, tests/test_verification_phase5.py, .tea
 **FRONTEND:** 131 rows; 9 new A8/X7 rows.
 
 **Next:** batch 3 part 2, the plan's safety, traffic and replay checks (S1-S3, S5-S7, T1, T2, T5, V1, V2).
+
+## F-54 E46 REFEREE BLOCKS: BROWSER LOOK DONE 12:10 | site/scripts/prepare-data.mjs, site/src/atc/main.js | how to check: /atc/ section 4, after "No company worse off" | from BACKEND: nothing | for LEAD: none
+- Wording per LEAD: the paragraph before the no-payments table now follows P3: "A company's profit alone is dominated by its cargo's delay cost at its own value of time, so every pooled rule clears it by a wide margin. The harder comparison is the same pooled market with no payments." The word "weak" is gone.
+- Headless Chrome (one instance, profile on D:, deleted after): light and dark at 1280 and 390 px. Theme applied every time; page scrollWidth equals clientWidth (1265/1265, 390/390); 5 market tables; at 390 px they scroll inside their own boxes, as the existing ones do. Step 5 and the new block text equal the fit; console errors: none. RAM 1.86 GB before, 1.87 GB after.
+- Sizes unchanged: /atc/ JS 14.8 of 15 kB gz, data 3.2 of 5, lazy 14.9 of 15; budgets pages OK; tests 31/31. Preview server stopped; screenshots deleted.
