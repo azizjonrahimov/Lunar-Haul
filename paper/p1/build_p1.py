@@ -646,7 +646,10 @@ def values(r: R, allow_pending: bool):
         "The largest weights lower the bid, and so favour the item, for " +
         listing(f"{FEATURE_WORDS[names[i]]} ({unit(i)})" for i in fav) +
         ", and raise it for " + listing(f"{FEATURE_WORDS[names[i]]} ({unit(i)})" for i in dis) +
-        "; the remaining weights are smaller than these.")
+        "; the other weights in each direction are smaller than these.")
+    check(all(abs(w[i]) <= min(abs(w[j]) for j in fav) for i in range(len(w)) if w[i] > 0 and i not in fav) and
+          all(abs(w[i]) <= min(abs(w[j]) for j in dis) for i in range(len(w)) if w[i] < 0 and i not in dis),
+          "the three named weights in each direction are that direction's largest")
 
     # --- the learned models and their training ------------------------------------------------------------
     im = r.L["imitation"]
