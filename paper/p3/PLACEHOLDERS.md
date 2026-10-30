@@ -18,7 +18,7 @@ no file; the build reads `results/E46_cells.csv` (one row per cell: `label`, `ru
 `first` if a first-price cell is added), `split` in 3eq / 3uneq, `k`, `q`, `n`, and the metrics below),
 `results/E46_pairs.csv` (`comparison`, `metric`, `n`, `mean`, `lo`, `hi`, `b_mean`, `share_of_b`) and
 `results/E46_fit.json` (`n_rows`, `n_cells`, `run_s_mean`, `cpu_h`, `design` {`owners`, `splits`, `rules`, `k_levels`,
-`q_levels`, `seeds`}, `H5` {`clause1` {`tested`, `supported`, `gain`, `lo`, `hi`}, `clause2` {`tested`, `supported`, `diff_mean`, `diff_lo`, `diff_hi`}, `clause3` {`tested`, `supported`, `min_upper`, `min_lower`}; the build recomputes `supported` from the intervals by the rules of change 7},
+`q_levels`, `seeds`}, `H5` {per split: `clause1` {`tested`, `supported`, `gain`, `lo`, `hi`}, `clause2` {`tested`, `supported`, `diff_mean`, `diff_lo`, `diff_hi`}, `clause3` {`tested`, `supported`, `min_upper`, `min_lower`}; the build recomputes `supported` from the intervals by the rules of change 7},
 `max_gain` {rule: {`owner`, `k`, `gain`, `lo`, `hi`, `system_cost_h`, `lo_cost`, `hi_cost`}}, `audits` {rule: {"0", "5",
 "20": {`recovered_share`, `net_gain`}}}, `short_cells` [{`label`, `have`, `n`}]). The E48 schema the build expects:
 `laptop` {`processor`, `benchmark`, `benchmark_name`}; `flight` {`processor`, `benchmark`, `factor`, `factor_range`,
@@ -59,13 +59,15 @@ E46 = the three E46 files; E48 = `results/E48_sizing.json`; PR = `paper/atc/PRER
 | P3-E48-ABSTRACT-CLAUSE, P3-E48-INTRO-CLAUSE, P3-E48-DISCUSSION-CLAUSE, P3-E48-COMPARISON-CLAUSE, P3-E48-CONCLUSION-CLAUSE, P3-E48-LIMITATION-SENTENCE | the same scaled values; "fits" / "does not fit" from the data; the comparison with the 13.8 kB/s convoy controller of [25] | composed; pending |
 | P3-E48-STATUS-SENTENCE | E48: the fields of Section 4.2 that are missing from the file | composed |
 | P3-E46-N-RUNS, P3-E46-DESIGN-SENTENCE, P3-E46-COMPUTE-SENTENCE | E46 fit `n_rows`, `n_cells`, `design`, `run_s_mean`, `cpu_h` | count; composed; pending |
-| P3-E46-RESULTS-RULES | E46 cells per rule and split (k = 1, q = 0): `efficiency_loss_vs_oracle`, `budget_per_year` (surplus / deficit from the sign), `settled_earth`, `open_end`; checked: the none rule equals the pooled regime | composed; pending |
-| P3-E46-RESULTS-IR | E46 pairs `IR: {rule} - alone, {split}, owner {o}` on `profit`; cells `ir_violations` | composed; pending |
-| P3-E46-RESULTS-MANIP, P3-E46-RESULTS-AUDITS | E46 fit `max_gain` per rule (owner, k, gain with CI, system cost in urgent wait with CI); `audits` per rule and q (`recovered_share`, `net_gain`) | composed; pending |
+| P3-E46-RESULTS-RULES | E46 cells per rule and split (k = 1, q = 0): `efficiency_loss_pct`, `operator_budget_musd` (surplus / deficit from the sign), `settled_earth_musd`, `open_end_musd`; checked: one allocation (efficiency loss equal across rules; the rule-minus-rule pairs on `delay_h` and `delivered` exactly zero; budget zero under none and posted) | composed |
+| P3-E46-RESULTS-IR | E46 cells `ir_violations` (honest cells and all cells); pairs `coalition {S} - alone, owner {o} ({split})` on `profit_usd` (`b_mean` = alone profit); fit `H5.{split}.clause3.rows` | composed |
+| P3-E46-RESULTS-MANIP, P3-E46-RESULTS-AUDITS | E46 fit `max_gain.{rule}.{split}` (owner, k, gain with CI, `system_cost_h` with CI, `system_cost_usd`); `audits.{rule}.{split}.{q}` (`recovered_share`, `net_gain`) | composed |
 | P3-H5-VERDICT-SENTENCE, P3-H5-ABSTRACT-CLAUSE, P3-H5-INTRO-CLAUSE | E46 fit `H5.clause1..3` (`tested`, `supported`, and the intervals `lo`, `diff_mean`/`diff_hi`, `min_upper`/`min_lower`) against the rules of Section 4.1, with `supported` checked against the intervals | composed: supported / not supported / not tested, from the data |
 | P3-E46-ABSTRACT-CLAUSE, P3-E46-INTRO-CLAUSE, P3-E46-DISCUSSION-CLAUSE, P3-E46-COMPARISON-CLAUSE, P3-E46-IMPLICATION-CLAUSE, P3-E46-CONCLUSION-CLAUSE | the rules with zero IR violations in both splits; the budget's sign per rule; the largest gain; the audits' net gain at 20 %; the smallest owner (C, 3uneq, posted) against Kondor [39] | composed; pending |
 | P3-E46-STATUS-SENTENCE | E46 fit `short_cells` | composed |
+| P3-E46-POSTHOC-SENTENCE | E46 fit `exploratory.allocation_fixed_gain.{rule}.{split}` (`gain`, `lo`, `hi`) and `exploratory.reallocation_term.{split}` (`mean`, `sd`); made after the runs, labelled so in the text | composed; pending until BACKEND adds the block |
+| P3-E46-TARIFF-SENTENCE | E46 fit `tariff_usd_per_tkm.{split}`, `audit_penalty_multiple` (copies of the design file) | composed |
 | P3-REFERENCES | `NOTES.md` | numbered list |
 | TABLE:vehicles | CAT and SCN (built: value and flag per cell) | built HTML |
 | TABLE:E48_sizing, TABLE:E48_link | E48 `classes`, `flight`, `laptop` | built HTML; pending |
-| TABLE:E46_rules, TABLE:E46_owners | E46 cells (`urgent_wait_mean_h`, `efficiency_loss_vs_oracle`, `budget_per_year`, `earnings_total`, `payments_total`, `settled_earth`, `open_end`, `ir_violations`); E46 pairs (IR rows) | built HTML; pending |
+| TABLE:E46_rules, TABLE:E46_owners | E46 cells (`profit_{A,B,C}_musd`, `operator_budget_musd`, `efficiency_loss_pct`, `settled_earth_musd`, `open_end_musd`, `ir_violations`); E46 pairs (coalition minus alone rows) | built HTML |

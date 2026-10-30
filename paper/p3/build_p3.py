@@ -52,8 +52,16 @@ POLICY_MLP = os.path.join(ROOT, "data", "policies", "atc_bid_v1.json")
 PREREG = os.path.join(ROOT, "paper", "atc", "PREREG.md")
 E46_CELLS, E46_PAIRS, E46_FIT = (os.path.join(RES, f) for f in ("E46_cells.csv", "E46_pairs.csv", "E46_fit.json"))
 E48 = os.path.join(RES, "E48_sizing.json")
-RULES = ("none", "second", "posted")          # payment rules of B-76 REVISED, in the order of the text
-RULE_NAME = {"none": "no payments", "second": "the per-item second price", "posted": "the posted price with Shapley sharing"}
+RULES = ("none", "first", "second", "posted")  # payment rules of E46 as run (change 7 of the PREREG restored first price)
+RULE_NAME = {"none": "no payments", "first": "first price", "second": "the per-item second price",
+             "posted": "the posted price with Shapley sharing"}
+BID_RULES = ("first", "second")                 # the rules with a bid to scale (the manipulation test)
+RULE_SHORT = {"none": "None", "first": "First price", "second": "Second price (per item)", "posted": "Posted price, Shapley sharing"}
+
+
+def cap1(x: str) -> str:
+    """Upper-case the first character only (str.capitalize lower-cases the rest: 'M USD', 'owner B')."""
+    return x[:1].upper() + x[1:]
 SPLITS = ("3eq", "3uneq")
 SPLIT_NAME = {"3eq": "equal shares", "3uneq": "50/35/15 shares"}
 CLASSES = ("LTV1", "CARGO", "SMALL", "HOPPER", "BASE")   # E48 classes, in the order of Table 3
@@ -443,133 +451,261 @@ def values(r: R, allow_pending: bool):
     fill("P3-E48-STATUS-SENTENCE", e48_status, "E48")
 
     # --- E46 -----------------------------------------------------------------------------------------------------------
+    M = 1e6
+    MUSD = "M" + NB + "USD"
+
+    def musd(x_usd, nd=2, sign=False):
+        return unit(x_usd / M, MUSD, nd, sign)
+
+    def musd_m(x_m, nd=2, sign=False):
+        return unit(x_m, MUSD, nd, sign)
+
+    def ci_m(lo, hi, nd=2):
+        return ci(lo / M, hi / M, nd)
+
+    def alone_mean(split, owner):
+        return r.pair46(f"coalition ABC - alone, owner {owner} ({split})", "profit_usd")["b_mean"]
+
     fill("P3-E46-N-RUNS", lambda: cnt(r.f46("n_rows")), "E46")
 
     def e46_design():
         d = r.f46("design")
-        return (f"{cnt(r.f46('n_rows'))} runs in {cnt(r.f46('n_cells'))} cells, with {cnt(len(d['seeds']))} seeds per cell"
-                + (", including a first-price cell added as a dated change of [59]" if "first" in d["rules"] else
-                   ", with no first-price cell (Section 4.1)") + ".")
+        n, ns, nsp = int(r.f46("n_rows")), len(d["seeds"]), len(d["splits"])
+        kinds = n / (ns * nsp)
+        check(kinds == int(kinds), "E46 run count = seeds x splits x run kinds")
+        check(all(x in d["rules"] for x in RULES) and len(d["rules"]) == len(RULES), "E46 ran the four rules of 3.5")
+        return (f"{cnt(n)} physical runs, {cnt(ns)} seeds by {cnt(nsp)} splits by {cnt(kinds)} run kinds (the pooled market, the oracle, "
+                f"the owners alone, the three pair coalitions and one owner at a time scaling its asks by each of the {cnt(len(d['k_levels']))} "
+                f"factors); payments are computed afterwards from each run's job log, so the four rules and the {cnt(len(d['q_levels']))} audit "
+                f"shares share one allocation per seed and cost no further runs, giving {cnt(r.f46('n_cells'))} cells of {cnt(ns)} seeds. "
+                f"The first-price cell is the one restored by change 7 of [59].")
     fill("P3-E46-DESIGN-SENTENCE", e46_design, "E46")
     fill("P3-E46-COMPUTE-SENTENCE", lambda: f"A simulated year of E46 took {unit(r.f46('run_s_mean'), 's', 0)} on average and the experiment "
          f"{unit(r.f46('cpu_h'), 'h', 1)} of processor time.", "E46")
 
+    def e46_tariff():
+        t = r.f46("tariff_usd_per_tkm")
+        return (f"In E46 the posted price is {unit(t['3eq'], 'USD per tonne-kilometre', 2)} with equal shares and "
+                f"{unit(t['3uneq'], 'USD per tonne-kilometre', 2)} with 50/35/15 shares, set before the main runs as the price at which "
+                f"the carriers' true costs are recovered over ten calibration seeds (101&ndash;110) that the main runs do not use; "
+                f"the audit penalty multiple is m = {num(r.f46('audit_penalty_multiple'), 0)} (Assumed; the design file declares 2&ndash;5 and E46 runs one value).")
+    fill("P3-E46-TARIFF-SENTENCE", e46_tariff, "E46")
+
     def sign_word(x, pos="a surplus", neg="a deficit", zero="a balanced budget"):
-        return pos if x > 0 else (neg if x < 0 else zero)
+        return pos if x > 1e-9 else (neg if x < -1e-9 else zero)
 
     def e46_rules():
+        eff = {sp: r.cell46("none", sp)["efficiency_loss_pct"] for sp in SPLITS}
+        for sp in SPLITS:
+            for rule in RULES:
+                check(abs(r.cell46(rule, sp)["efficiency_loss_pct"] - eff[sp]) < 1e-6, f"one allocation: the efficiency loss is the same under every rule ({sp})")
+            for r1, r2 in (("second", "first"), ("posted", "first"), ("posted", "second")):
+                for met in ("delay_h", "delivered"):
+                    pr = r.pair46(f"{r1} - {r2} ({sp}, truthful)", met)
+                    check(pr["mean"] == 0 and pr["lo"] == 0 and pr["hi"] == 0, f"one allocation: {r1} - {r2} on {met} is zero on every seed ({sp})")
+            check(abs(r.cell46("none", sp)["operator_budget_musd"]) < 1e-9, f"no payments: the operator's budget is zero ({sp})")
+            check(abs(r.cell46("posted", sp)["operator_budget_musd"]) < 1e-6, f"posted price: the same tariff in and out, budget zero ({sp})")
+        bud = {rule: {sp: r.cell46(rule, sp)["operator_budget_musd"] for sp in SPLITS} for rule in RULES}
+        paid = [rule for rule in RULES if rule != "none"]
+        settled = [r.cell46(rule, sp)["settled_earth_musd"] for rule in paid for sp in SPLITS]
+        open_end = [r.cell46(rule, sp)["open_end_musd"] for rule in paid for sp in SPLITS]
         bits = []
-        for rule in RULES:
-            for split in SPLITS:
-                c = r.cell46(rule, split)
-                bits.append(f"under {RULE_NAME[rule]} with {SPLIT_NAME[split]} the market lost {pc(c['efficiency_loss_vs_oracle'], 1)} of the oracle's urgent wait, "
-                            f"the operator ran {sign_word(c['budget_per_year'])} of {unit(abs(c['budget_per_year']), 'units', 0)} a year, "
-                            f"{unit(c['settled_earth'], 'units', 0)} were settled on Earth and {unit(c['open_end'], 'units', 0)} left open at the year's end")
-        none_eq = r.cell46("none", "3eq")
-        check(abs(none_eq["efficiency_loss_vs_oracle"]) < 1e-9 or none_eq.get("identical_to_pooled", 0) == 1,
-              "the none rule is the pooled regime of [60] (3.6)")
-        return "; ".join(bits).capitalize() + " (Table 7)."
+        for rule in ("first", "second"):
+            bits.append(f"under {RULE_NAME[rule]} the operator ran {sign_word(bud[rule]['3eq'])} of {musd_m(abs(bud[rule]['3eq']))} a year with equal shares "
+                        f"and {sign_word(bud[rule]['3uneq'])} of {musd_m(abs(bud[rule]['3uneq']))} with 50/35/15 shares")
+        return (f"With honest bids the four rules share one allocation, so the items delivered and the cargo delay are the same under every rule on every "
+                f"seed (the paired differences between rules in delay and in deliveries are exactly zero), and the market's system cost, true carrier cost "
+                f"plus delay cost, was above the oracle's by {pc(eff['3eq'] / 100, 1)} with equal shares and {pc(eff['3uneq'] / 100, 1)} with 50/35/15 shares "
+                f"under every rule. The rules differ in who pays whom: under no payments no money moved; {'; '.join(bits)}; under the posted price the "
+                f"budget {sign_word(bud['posted']['3eq'], 'ran a surplus', 'ran a deficit', 'was balanced')}, the same tariff paid in by shippers and out to carriers. Across the three paid rules and "
+                f"both splits the cash settled on Earth was {musd_m(min(settled), 1)} to {musd_m(max(settled), 1)} a year and the balance still open at "
+                f"the year's end at most {musd_m(max(open_end), 2)} (Table 7).")
     fill("P3-E46-RESULTS-RULES", e46_rules, "E46")
 
     def e46_ir():
-        bits, viol = [], 0
-        for rule in RULES:
-            for split in SPLITS:
-                c = r.cell46(rule, split)
-                viol += int(c["ir_violations"])
-                owners = []
-                for o in "ABC":
-                    p = r.pair46(f"IR: {rule} - alone, {split}, owner {o}", "profit")
-                    owners.append(f"owner {o} {unit(p['mean'], 'units', 0, sign=True)} {ci(p['lo'], p['hi'], 0)}")
-                bits.append(f"under {RULE_NAME[rule]} with {SPLIT_NAME[split]}: " + ", ".join(owners))
-        return ("Each owner's market profit less its alone profit on the same seeds was, " + "; ".join(bits) +
-                f". The market made an owner worse off than alone in {cnt(viol)} owner-seed pairs over every rule and split (Table 8).")
+        c = r.e46c
+        viol_all = int(c["ir_violations"].sum())
+        viol_truth = sum(int(r.cell46(rule, sp)["ir_violations"]) for rule in RULES for sp in SPLITS)
+        al = {sp: {o: alone_mean(sp, o) for o in "ABC"} for sp in SPLITS}
+        rows = sorted(({**x, "split": sp} for sp in SPLITS for x in r.f46("H5", sp, "clause3", "rows")), key=lambda x: x["mean"])
+        lo_row, hi_row = rows[0], rows[-1]
+        ties = [x for x in rows if abs(x["mean"] - lo_row["mean"]) < 1e-6 and x["coalition"] == lo_row["coalition"] and x["split"] == lo_row["split"]]
+        lo_who = (f"owner {html.escape(lo_row['owner'])}'s" if len(ties) == 1 else
+                  "each of " + " and ".join(html.escape(x["owner"]) for x in ties) + "'s")
+        return (f"Working alone on their own cargo on the same seeds, the owners' mean profits were {musd(al['3eq']['A'], 1)}, "
+                f"{musd(al['3eq']['B'], 1)} and {musd(al['3eq']['C'], 1)} a year for A, B and C with equal shares and {musd(al['3uneq']['A'], 1)}, "
+                f"{musd(al['3uneq']['B'], 1)} and {musd(al['3uneq']['C'], 1)} with 50/35/15 shares, negative because an owner alone pays its vehicles' "
+                f"costs and its cargo's delay and no one pays it. Under every rule and split each owner's mean market profit (Table 7) was above its alone "
+                f"profit: the market left an owner below alone in {cnt(viol_truth)} of the {cnt(len(RULES) * len(SPLITS) * 3)} owner-rule-split cases "
+                f"with honest bids and in {cnt(viol_all)} of the {cnt(len(c) * 3)} owner-cell cases over every cell. Under the posted price the "
+                f"profit of Table 7 is the owner's Shapley value of the coalition's value, true carrier costs plus delay costs with the sign reversed, "
+                f"not its cash, and that value is what the Shapley clause of H5 compares with alone. In every tested coalition every owner's Shapley "
+                f"value was above its alone profit: the smallest difference was {lo_who} in coalition "
+                f"{html.escape(lo_row['coalition'])} with {SPLIT_NAME[lo_row['split']]}, {musd(lo_row['mean'], 1, sign=True)} "
+                f"{ci_m(lo_row['lo'], lo_row['hi'], 1)}, and the largest owner {html.escape(hi_row['owner'])}'s in coalition "
+                f"{html.escape(hi_row['coalition'])} with {SPLIT_NAME[hi_row['split']]}, {musd(hi_row['mean'], 0, sign=True)} "
+                f"{ci_m(hi_row['lo'], hi_row['hi'], 0)} (Table 8).")
     fill("P3-E46-RESULTS-IR", e46_ir, "E46")
 
     def e46_manip():
         bits = []
-        for rule in [x for x in ("first", "second", "posted") if x in r.f46("max_gain")]:
-            g = r.f46("max_gain", rule)
-            name = "first price" if rule == "first" else RULE_NAME[rule]
-            bits.append(f"under {name} the largest gain from scaling was {unit(g['gain'], 'units', 0, sign=True)} {ci(g['lo'], g['hi'], 0)} "
-                        f"for owner {html.escape(str(g['owner']))} at k = {num(g['k'], 2)}, and that deviation changed the fleet's urgent wait by "
-                        f"{unit(g['system_cost_h'], 'h', 2, sign=True)} {ci(g['lo_cost'], g['hi_cost'], 2)}")
-        return "; ".join(bits).capitalize() + "."
+        for sp in SPLITS:
+            g = {rule: r.f46("max_gain", rule, sp) for rule in BID_RULES}
+            same = all(g[x]["owner"] == g["first"]["owner"] and abs(g[x]["k"] - g["first"]["k"]) < 1e-9 for x in BID_RULES)
+            effect = (f"that deviation changed the fleet's cargo delay by {unit(g['first']['system_cost_h'], 'h', 0, sign=True)} "
+                      f"{ci(g['first']['lo_cost'], g['first']['hi_cost'], 0)} and the system cost by {musd(g['first']['system_cost_usd'], 2, sign=True)}")
+            if same:
+                for x in BID_RULES:
+                    check(abs(g[x]["system_cost_h"] - g["first"]["system_cost_h"]) < 1e-9, f"one deviation run under both bid rules ({sp})")
+                bits.append(f"with {SPLIT_NAME[sp]} the largest gain from scaling came from owner {html.escape(str(g['first']['owner']))} at "
+                            f"k = {num(g['first']['k'], 2)} under both bid rules: {musd(g['first']['gain'], 2, sign=True)} a year "
+                            f"{ci_m(g['first']['lo'], g['first']['hi'], 2)} under first price and {musd(g['second']['gain'], 2, sign=True)} "
+                            f"{ci_m(g['second']['lo'], g['second']['hi'], 2)} under the per-item second price; {effect}")
+            else:
+                for rule in BID_RULES:
+                    x = g[rule]
+                    bits.append(f"with {SPLIT_NAME[sp]} under {RULE_NAME[rule]} the largest gain from scaling was {musd(x['gain'], 2, sign=True)} a year "
+                                f"{ci_m(x['lo'], x['hi'], 2)} for owner {html.escape(str(x['owner']))} at k = {num(x['k'], 2)}; that deviation changed "
+                                f"the fleet's cargo delay by {unit(x['system_cost_h'], 'h', 0, sign=True)} {ci(x['lo_cost'], x['hi_cost'], 0)} and the "
+                                f"system cost by {musd(x['system_cost_usd'], 2, sign=True)}")
+        return ". ".join(cap1(b) for b in bits) + ". Under the posted price there is no bid to scale."
     fill("P3-E46-RESULTS-MANIP", e46_manip, "E46")
 
     def e46_audits():
         bits = []
-        au = r.f46("audits")
-        for rule in [x for x in ("first", "second", "posted") if x in au]:
-            name = "first price" if rule == "first" else RULE_NAME[rule]
-            qs = ", ".join(f"at q = {q}{PCT} {pc(au[rule][q]['recovered_share'], 0)} of the gain, leaving {unit(au[rule][q]['net_gain'], 'units', 0, sign=True)} net of penalties"
-                           for q in ("0", "5", "20"))
-            bits.append(f"under {name} the audits recovered {qs}")
-        return "; ".join(bits).capitalize() + "."
+        for rule in BID_RULES:
+            for sp in SPLITS:
+                au = r.f46("audits", rule, sp)
+                qs = []
+                for q in ("5", "20"):
+                    rec = au[q]["recovered_share"]
+                    qs.append(f"an audit share of {q}{PCT} recovered {pc(rec, 0) if rec is not None else 'none'} of the gain, leaving "
+                              f"{musd(au[q]['net_gain'], 2, sign=True)}")
+                bits.append(f"under {RULE_NAME[rule]} with {SPLIT_NAME[sp]} " + " and ".join(qs))
+        return cap1("; ".join(bits)) + " a year net of expected penalties, at a penalty multiple of " + \
+            f"{num(r.f46('audit_penalty_multiple'), 0)} times the misreport."
     fill("P3-E46-RESULTS-AUDITS", e46_audits, "E46")
 
+    def h5_flags():
+        """Per clause, the per-split verdicts, recomputed here from the intervals by the rules of PREREG change 7 (Section 4.1)."""
+        out = {}
+        for sp in SPLITS:
+            h = r.f46("H5", sp)
+            c1, c2, c3 = h["clause1"], h["clause2"], h["clause3"]
+            if c1.get("tested", True):
+                check(bool(c1["supported"]) == (float(c1["lo"]) > 0), f"clause 1 ({sp}): supported iff the largest first-price gain's interval is above zero")
+            if c2.get("tested", True):
+                check(bool(c2["supported"]) == (float(c2["diff_hi"]) < 0 and float(c2["diff_mean"]) < 0),
+                      f"clause 2 ({sp}): supported iff the second-price gain is smaller with the paired difference's interval excluding zero")
+            if c3.get("tested", True):
+                check(bool(c3["supported"]) == (float(c3["min_upper"]) >= 0),
+                      f"clause 3 ({sp}): supported iff no owner's coalition-less-alone interval lies entirely below zero")
+                check(float(c3["min_lower"]) <= float(c3["min_upper"]), f"clause 3 ({sp}): bounds ordered")
+            out[sp] = (c1, c2, c3)
+        return out
+
+    def verdict(cs):
+        """One word per clause over both splits: supported / not supported / supported with <split> only / not tested."""
+        tested = [sp for sp, c in cs.items() if c.get("tested", True)]
+        if not tested:
+            return "not tested"
+        sup = [sp for sp in tested if cs[sp]["supported"]]
+        if len(sup) == len(tested):
+            return "supported"
+        if not sup:
+            return "not supported"
+        return "supported with " + " and ".join(SPLIT_NAME[sp] for sp in sup) + " only"
+
     def h5_sentence(kind="full"):
-        h = r.f46("H5")
-        c1, c2, c3 = h["clause1"], h["clause2"], h["clause3"]
-        w = lambda c: ("not tested" if not c.get("tested", True) else ("supported" if c["supported"] else "not supported"))
-        s1, s2, s3 = w(c1), w(c2), w(c3)
-        # the verdict flags are recomputed here from the intervals, by the rules of PREREG change 7 (Section 4.1)
-        if c1.get("tested", True):
-            check(bool(c1["supported"]) == (float(c1["lo"]) > 0), "clause 1: supported iff the largest first-price gain's interval is above zero")
-        if c2.get("tested", True):
-            check(bool(c2["supported"]) == (float(c2["diff_hi"]) < 0 and float(c2["diff_mean"]) < 0),
-                  "clause 2: supported iff the second-price gain is smaller with the paired difference's interval excluding zero")
-        if c3.get("tested", True):
-            check(bool(c3["supported"]) == (float(c3["min_upper"]) >= 0),
-                  "clause 3: supported iff no owner's coalition-less-alone interval lies entirely below zero")
+        f = h5_flags()
+        v1 = verdict({sp: f[sp][0] for sp in SPLITS})
+        v2 = verdict({sp: f[sp][1] for sp in SPLITS})
+        v3 = verdict({sp: f[sp][2] for sp in SPLITS})
+        c1e, c1u = f["3eq"][0], f["3uneq"][0]
+        c2e, c2u = f["3eq"][1], f["3uneq"][1]
+        c3e, c3u = f["3eq"][2], f["3uneq"][2]
         if kind == "full":
-            return (f"H5 clause by clause: that first-price bids reward shading is {s1}; that the per-item second price reduces the largest gain is {s2}; "
-                    f"that the posted price with Shapley sharing leaves no owner worse off than alone in any tested coalition is {s3}"
-                    f" (over every owner and coalition the smallest upper bound of profit in the coalition less profit alone is "
-                    f"{unit(c3['min_upper'], 'units', 0, sign=True)} and the smallest lower bound {unit(c3['min_lower'], 'units', 0, sign=True)}).")
+            return (f"H5 clause by clause, in both splits: that first-price bids reward shading is {v1} (the largest first-price gain's 95{PCT} "
+                    f"interval is {ci_m(c1e['lo'], c1e['hi'])} with equal shares and {ci_m(c1u['lo'], c1u['hi'])} with 50/35/15 shares, in {MUSD} a year); "
+                    f"that the per-item second price reduces the largest gain is {v2} (paired difference {musd(c2e['diff_mean'], 2, sign=True)} "
+                    f"{ci_m(c2e['diff_lo'], c2e['diff_hi'])} and {musd(c2u['diff_mean'], 2, sign=True)} {ci_m(c2u['diff_lo'], c2u['diff_hi'])}); "
+                    f"that the posted price with Shapley sharing leaves no owner worse off than alone in any tested coalition is {v3} (over every "
+                    f"owner and coalition the smallest upper bound of Shapley value less alone profit is {musd(c3e['min_upper'], 1, sign=True)} and "
+                    f"{musd(c3u['min_upper'], 1, sign=True)}, and the smallest lower bound {musd(c3e['min_lower'], 1, sign=True)} and "
+                    f"{musd(c3u['min_lower'], 1, sign=True)}).")
+        gmax = max(c1e["gain"], c1u["gain"])
+        incl = "includes" if (c1e["lo"] <= 0 <= c1e["hi"] or c1u["lo"] <= 0 <= c1u["hi"]) else "excludes"
         if kind == "abstract":
-            return (f"Posted prices with Shapley sharing {'left' if c3['supported'] else 'did not leave'} every owner at least as well off as alone; "
-                    f"the first-price clauses of H5 were {s1 if s1 == 'not tested' else ('supported' if c1['supported'] else 'not supported')}.")
+            return (f"Scaling bids under first price gained at most {musd(gmax, 1)} a year, with an interval that {incl} zero; the "
+                    f"second price {'reduced' if v2 == 'supported' else 'did not reduce'} that gain; posted prices with Shapley sharing left every owner "
+                    f"{'better off than' if min(c3e['min_lower'], c3u['min_lower']) > 0 else 'no worse off than'} alone in every coalition.")
         if kind == "intro":
-            return (f"H5's Shapley clause is {s3} and its first-price clauses are {s1} (Section 5.7).")
+            return (f"H5's first clause, that first-price bids reward shading, is {v1}; its second, that the second price reduces the gain, is {v2}; "
+                    f"its third, that the posted price with Shapley sharing leaves no owner worse off than alone, is {v3} (Section 5.7).")
         raise KeyError(kind)
     fill("P3-H5-VERDICT-SENTENCE", h5_sentence, "E46")
     fill("P3-H5-ABSTRACT-CLAUSE", lambda: h5_sentence("abstract"), "E46")
     fill("P3-H5-INTRO-CLAUSE", lambda: h5_sentence("intro"), "E46")
 
     def e46_clause(kind):
-        h = r.f46("H5")
-        ir_ok = [rule for rule in RULES if all(int(r.cell46(rule, s)["ir_violations"]) == 0 for s in SPLITS)]
-        budgets = {rule: r.cell46(rule, "3eq")["budget_per_year"] for rule in RULES}
-        mg = r.f46("max_gain")
+        ir_ok = [rule for rule in RULES if all(int(r.cell46(rule, sp)["ir_violations"]) == 0 for sp in SPLITS)]
+        every = len(ir_ok) == len(RULES)
+        rules_txt = ("every rule" if every else (", ".join(RULE_NAME[x] for x in ir_ok) if ir_ok else "no rule"))
+        bud = {rule: {sp: r.cell46(rule, sp)["operator_budget_musd"] for sp in SPLITS} for rule in RULES}
+        mg = {rule: {sp: r.f46("max_gain", rule, sp) for sp in SPLITS} for rule in BID_RULES}
+        gmax = max(g["gain"] for rule in BID_RULES for g in mg[rule].values())
+        au20 = {rule: {sp: r.f46("audits", rule, sp, "20")["net_gain"] for sp in SPLITS} for rule in BID_RULES}
+        removed = [rule for rule in BID_RULES if all(au20[rule][sp] <= 0 for sp in SPLITS)]
+        sec_ratio = bud["second"]["3eq"] / bud["first"]["3eq"] if bud["first"]["3eq"] else None
         if kind == "abstract":
-            return (f"{', '.join(RULE_NAME[x] for x in ir_ok).capitalize() if ir_ok else 'No rule'} left every owner at least as well off as alone; "
-                    f"the largest gain from scaling bids was {unit(max(g['gain'] for g in mg.values()), 'units', 0, sign=True)}.")
+            bid_sign = {sign_word(bud[x]['3eq']) for x in BID_RULES}
+            return (f"Under {rules_txt} every owner beat its alone profit; the operator ran "
+                    f"{(bid_sign.pop() + ' under both bid rules') if len(bid_sign) == 1 else (sign_word(bud['first']['3eq']) + ' under first price and ' + sign_word(bud['second']['3eq']) + ' under the second price')} "
+                    f"and {sign_word(bud['posted']['3eq'], 'a surplus', 'a deficit', 'broke even')} under the posted price.")
         if kind == "intro":
-            return (f"In the market, {', '.join(RULE_NAME[x] for x in ir_ok) if ir_ok else 'no rule'} made every owner at least as well off as alone "
-                    f"in both splits; the operator ran {sign_word(budgets['second'])} under the second price and {sign_word(budgets['posted'])} under the posted price (Sections 5.5 to 5.7).")
+            return (f"In the market, {rules_txt} made every owner at least as well off as alone in both splits; the operator ran "
+                    f"{sign_word(bud['first']['3eq'])} under first price, {sign_word(bud['second']['3eq'])} under the second price and "
+                    f"{sign_word(bud['posted']['3eq'])} under the posted price (Sections 5.5 to 5.7).")
         if kind == "discussion":
-            return (f"{', '.join(RULE_NAME[x] for x in ir_ok).capitalize() if ir_ok else 'no rule'} left every owner at least as well off as alone; "
-                    f"the operator ran {sign_word(budgets['second'])} under the second price and {sign_word(budgets['posted'])} under the posted price; "
-                    f"the largest gain from scaling was {unit(max(g['gain'] for g in mg.values()), 'units', 0, sign=True)} and the audits at 20{PCT} "
-                    f"{'removed' if all(r.f46('audits', k, '20')['net_gain'] <= 0 for k in mg) else 'did not remove'} it.")
+            return (f"{rules_txt} left every owner's mean profit above its alone profit; the operator ran {sign_word(bud['first']['3eq'])} "
+                    f"under first price ({musd_m(abs(bud['first']['3eq']))} a year with equal shares), {sign_word(bud['second']['3eq'])} under the "
+                    f"second price ({musd_m(abs(bud['second']['3eq']))}, {num(abs(sec_ratio), 1) if sec_ratio else 'n/a'} times first price's) and "
+                    f"{sign_word(bud['posted']['3eq'])} under the posted price; the largest gain from scaling bids was {musd(gmax, 2, sign=True)} a year, "
+                    f"and audits at 20{PCT} {('removed it under ' + ' and '.join(RULE_NAME[x] for x in removed)) if removed else 'did not remove it under either bid rule'}.")
         if kind == "comparison":
-            small = r.pair46("IR: posted - alone, 3uneq, owner C", "profit")
+            small = r.pair46("coalition ABC - alone, owner C (3uneq)", "profit_usd")
             return (f"The smallest owner of the 50/35/15 split {'gained' if small['lo'] > 0 else ('lost' if small['hi'] < 0 else 'neither gained nor lost')} "
-                    f"under the posted price with Shapley sharing ({unit(small['mean'], 'units', 0, sign=True)} {ci(small['lo'], small['hi'], 0)}), "
-                    f"where Kondor's smallest operator paid the largest fleet penalty [39]; the operator's budget under the second price was "
-                    f"{sign_word(budgets['second'])}, as the theory of truthful mechanisms predicts [29, 30].")
+                    f"under the posted price with Shapley sharing ({musd(small['mean'], 0, sign=True)} a year {ci_m(small['lo'], small['hi'], 0)} in the "
+                    f"grand coalition against working alone), where Kondor's smallest operator paid the largest fleet penalty [39]; the operator's budget "
+                    f"under the second price was {sign_word(bud['second']['3eq'])}, as the theory of truthful mechanisms predicts [29, 30].")
         if kind == "implication":
-            return (f"{', '.join(RULE_NAME[x] for x in ir_ok) if ir_ok else 'no rule'} kept every owner in; the budget was {sign_word(budgets['posted'])} "
-                    f"under the posted price and {sign_word(budgets['second'])} under the second price.")
+            return (f"{rules_txt} kept every owner in; the budget was {sign_word(bud['posted']['3eq'])} under the posted price and "
+                    f"{sign_word(bud['second']['3eq'])} under the second price.")
         if kind == "conclusion":
-            return (f"Under {', '.join(RULE_NAME[x] for x in ir_ok) if ir_ok else 'no rule'} every owner was at least as well off as alone, and the largest "
-                    f"gain from scaling bids was {unit(max(g['gain'] for g in mg.values()), 'units', 0, sign=True)}.")
+            return (f"Under {rules_txt} every owner was at least as well off as alone, and the largest gain from scaling bids was "
+                    f"{musd(gmax, 1, sign=True)} a year with an interval that included zero." if any(mg[rule][sp]["lo"] <= 0 for rule in BID_RULES for sp in SPLITS)
+                    else f"Under {rules_txt} every owner was at least as well off as alone, and the largest gain from scaling bids was {musd(gmax, 1, sign=True)} a year.")
         raise KeyError(kind)
     for kind, key in (("abstract", "P3-E46-ABSTRACT-CLAUSE"), ("intro", "P3-E46-INTRO-CLAUSE"), ("discussion", "P3-E46-DISCUSSION-CLAUSE"),
                       ("comparison", "P3-E46-COMPARISON-CLAUSE"), ("implication", "P3-E46-IMPLICATION-CLAUSE"),
                       ("conclusion", "P3-E46-CONCLUSION-CLAUSE")):
         fill(key, lambda kind=kind: e46_clause(kind), "E46")
+
+    def e46_posthoc():
+        ex = r.f46("exploratory")
+        afg = {rule: {sp: _get(ex, "allocation_fixed_gain", rule, sp) for sp in SPLITS} for rule in BID_RULES}
+        rt = {sp: _get(ex, "reallocation_term", sp) for sp in SPLITS}
+        ratio = min(rt[sp]["sd"] / afg["first"][sp]["gain"] for sp in SPLITS if afg["first"][sp]["gain"] > 0)
+        return (f"A decomposition made after the runs, not pre-registered, separates the two parts of that gain: with the allocation held fixed, "
+                f"the scaled asks alone paid the deviator {musd(afg['first']['3eq']['gain'], 2, sign=True)} a year "
+                f"{ci_m(afg['first']['3eq']['lo'], afg['first']['3eq']['hi'])} under first price with equal shares and "
+                f"{musd(afg['first']['3uneq']['gain'], 2, sign=True)} {ci_m(afg['first']['3uneq']['lo'], afg['first']['3uneq']['hi'])} with 50/35/15 "
+                f"shares ({musd(afg['second']['3eq']['gain'], 2, sign=True)} and {musd(afg['second']['3uneq']['gain'], 2, sign=True)} under the second "
+                f"price); the rest of the paired gain is the change in the deviator's own cargo delay once its asks move jobs, a term with a mean of "
+                f"{musd(rt['3eq']['mean'], 2, sign=True)} and {musd(rt['3uneq']['mean'], 2, sign=True)} and a standard deviation over seeds of "
+                f"{musd(rt['3eq']['sd'], 0)} and {musd(rt['3uneq']['sd'], 0)}, at least {num(ratio, 0)} times the cash, which is why the "
+                f"registered interval covers zero although shading pays in cash.")
+    fill("P3-E46-POSTHOC-SENTENCE", e46_posthoc, "E46 post hoc (BACKEND's exploratory block)")
 
     def e46_status():
         short = r.f46("short_cells")
@@ -676,28 +812,31 @@ def table_e46_rules(r: R):
     for rule in RULES:
         for split in SPLITS:
             c = r.cell46(rule, split)
-            rows.append([RULE_NAME[rule].capitalize(), SPLIT_NAME[split], int(c["n"]), num(c["urgent_wait_mean_h"], 1),
-                         pc(c["efficiency_loss_vs_oracle"], 1), num(c["budget_per_year"], 0, sign=True), num(c["earnings_total"], 0),
-                         num(c["payments_total"], 0), num(c["settled_earth"], 0), num(c["open_end"], 0), int(c["ir_violations"])])
-    return _tab("Table 7. Cell means of E46 per payment rule and share split, honest bids, no audits. Urgent wait is the mean wait of urgent "
-                "cargo (h); efficiency loss is the difference from the oracle of [60] as a share of its mean; budget is the operator's surplus "
-                "(+) or deficit (&minus;) per year; earnings, payments, settled and open are yearly totals in the market's cost units; IR "
-                "violations count the owner-seed pairs in which the market left an owner worse off than alone.",
-                ["Rule", "Split", "Runs", "Urgent wait (h)", "Efficiency loss", "Budget", "Earnings", "Payments", "Settled on Earth",
+            rows.append([RULE_SHORT[rule], SPLIT_NAME[split], int(c["n"]), num(c["profit_A_musd"], 1, sign=True),
+                         num(c["profit_B_musd"], 1, sign=True), num(c["profit_C_musd"], 1, sign=True), num(c["operator_budget_musd"], 2, sign=True),
+                         pc(c["efficiency_loss_pct"] / 100, 1), num(c["settled_earth_musd"], 1), num(c["open_end_musd"], 3), int(c["ir_violations"])])
+    return _tab("Table 7. Cell means over the seeds of E46 per payment rule and share split, honest bids, no audits, in million USD a year. "
+                "Profit is each owner's earnings less its private costs, the tariff it paid for its own cargo and its cargo's delay cost; under the "
+                "posted price it is instead the owner's Shapley value of the coalition's value (carrier costs plus delay costs, sign reversed), the "
+                "quantity H5's third clause compares with alone. Budget is the operator's surplus (+) or deficit (&minus;). Efficiency loss is the "
+                "market's system cost (true carrier cost plus delay cost) above the oracle of [60], the same under every rule because the rules share "
+                "one allocation. Settled is half the sum of the owners' absolute net cash flows; open is the pay due on jobs unfinished at the year's end. "
+                "IR violations count the owners whose mean market profit was below their mean alone profit.",
+                ["Rule", "Split", "Runs", "Profit A", "Profit B", "Profit C", "Budget", "Efficiency loss", "Settled on Earth",
                  "Open at year end", "IR violations"], rows, cls="wide")
 
 
 def table_e46_owners(r: R):
     rows = []
-    for rule in RULES:
-        for split in SPLITS:
-            for o in "ABC":
-                p = r.pair46(f"IR: {rule} - alone, {split}, owner {o}", "profit")
-                rows.append([RULE_NAME[rule].capitalize(), SPLIT_NAME[split], o, int(p["n"]), num(p["b_mean"], 0),
-                             num(p["mean"], 0, sign=True), ci(p["lo"], p["hi"], 0)])
-    return _tab("Table 8. Each owner's profit in the market against working alone on the same seeds: the alone profit, the paired "
-                "difference (market minus alone) and its 95 % bootstrap interval, in the market's cost units per year.",
-                ["Rule", "Split", "Owner", "n", "Alone profit", "Difference", "95 % CI"], rows, cls="wide")
+    for split in SPLITS:
+        for x in r.f46("H5", split, "clause3", "rows"):
+            p = r.pair46(f"coalition {x['coalition']} - alone, owner {x['owner']} ({split})", "profit_usd")
+            rows.append([SPLIT_NAME[split], html.escape(x["coalition"]), html.escape(x["owner"]), int(p["n"]), num(p["b_mean"] / 1e6, 1),
+                         num(p["mean"] / 1e6, 1, sign=True), ci(p["lo"] / 1e6, p["hi"] / 1e6, 1)])
+    return _tab("Table 8. Each owner's Shapley value in every tested coalition under the posted price against working alone on the same seeds, in "
+                "million USD a year: the alone profit, the paired difference (Shapley value in the coalition minus alone) and its 95&#8239;% bootstrap "
+                "interval over seeds. In a two-owner coalition both owners receive the same difference by construction, half the coalition's gain.",
+                ["Split", "Coalition", "Owner", "n", "Alone profit", "Difference", "95&#8239;% CI"], rows, cls="wide")
 
 
 def references():
