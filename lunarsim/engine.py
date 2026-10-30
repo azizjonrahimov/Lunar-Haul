@@ -384,9 +384,9 @@ class Simulation:
             base_times = np.linspace(bf.start_h, self.sc.horizon_h, n_lots, endpoint=False)
             jitter = self.rng.uniform(-0.5, 0.5, n_lots) * (self.sc.horizon_h - bf.start_h) / n_lots
             for t_r in np.sort(base_times + jitter):
-                self._cid += 1
                 c = Cargo(self._cid, bf.owner, bf.lot_kg, bf.origin, bf.dest, float(t_r), float(t_r),
                           bf.priority, "A", "bulk")
+                self._cid += 1                  # _cid is the next free id, as in sample_cargo_manifest (B-79 D8)
                 self._push(float(t_r), "BULK", c)
 
     def _push(self, t: float, kind: str, payload):
@@ -1206,9 +1206,9 @@ class Simulation:
         if c.origin in self.world.pads and c.cls != "return" and c.return_mass_kg > 0:
             t_r = c.t_delivered + c.return_lag_h
             if t_r < self.sc.horizon_h:
-                self._cid += 1
                 rc = Cargo(self._cid, c.owner, c.return_mass_kg, c.dest, c.origin,
                            t_r, t_r, 3, c.standard, "return")
+                self._cid += 1                  # use, then advance: no id is reused (B-79 D8)
                 self.all_cargo.append(rc)
                 self.pending.append(rc)
                 self._push(rc.t_ready, "READY", rc)
