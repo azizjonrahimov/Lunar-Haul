@@ -126,6 +126,11 @@ if (existsSync(join(src, 'height_5m.png')) && !meta.dev_standin) {
 const vv5 = join(ROOT, 'results', 'vv_phase5.json');
 if (existsSync(vv5)) { mkdirSync(join(PUB, 'verify'), { recursive: true }); copyFileSync(vv5, join(PUB, 'verify', 'vv_phase5.json')); console.log('prepare-data: phase-5 checks staged'); }
 
+// Python's json writes NaN / Infinity bare (e.g. a mean delay with nothing finished); they are not JSON
+const pyJson = p => JSON.parse(readFileSync(p, 'utf8').replace(/([:[,]\s*)-?(NaN|Infinity)\b/g, '$1null'));
+// B-81's sizing (E48) for /atc/ section 3, as it is (7 kB)
+const e48 = join(ROOT, 'results', 'E48_sizing.json');
+if (existsSync(e48)) { mkdirSync(join(PUB, 'atc'), { recursive: true }); writeFileSync(join(PUB, 'atc', 'E48_sizing.json'), JSON.stringify(pyJson(e48))); console.log('prepare-data: E48 sizing staged'); }
 // /atc/ (F-54): B-72's smoke run of the decision places, read by the market walk-through
 const atcSmoke = join(ROOT, 'results', 'ATC_regimes_smoke.json');
 if (existsSync(atcSmoke)) { mkdirSync(join(PUB, 'atc'), { recursive: true }); copyFileSync(atcSmoke, join(PUB, 'atc', 'ATC_regimes_smoke.json')); console.log('prepare-data: ATC smoke run staged'); }
@@ -156,8 +161,6 @@ if (existsSync(join(sbDir, 'index.json'))) {
   rmSync(sbOut, { recursive: true, force: true }); cpSync(sbDir, sbOut, { recursive: true, filter: s => statSync(s).isDirectory() || /\.json(\.gz)?$/.test(s) });
   console.log(`prepare-data: sandbox set staged (${JSON.parse(readFileSync(join(sbDir, 'index.json'), 'utf8')).encounters.length} encounters)`);
 }
-// Python's json writes NaN / Infinity bare (e.g. a mean delay with nothing finished); they are not JSON
-const pyJson = p => JSON.parse(readFileSync(p, 'utf8').replace(/([:[,]\s*)-?(NaN|Infinity)\b/g, '$1null'));
 // the per-type counts of an encounter run (E44 on the Moon, E47 on Mars: the same structure)
 function boundsSummary(d, source) {
   const keep = ['title', 'n', 'n_driven', 'n_eff', 'violations', 'violations_by_kind', 'bound', 'bonferroni_bound', 'near_misses',

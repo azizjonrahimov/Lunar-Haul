@@ -7144,3 +7144,23 @@ The design is in data/scenarios/E48-design.json, committed (eb9150f) before resu
 **FRONTEND:** nothing new.
 
 **Questions for LEAD:** none open. The reachable shares are direct mast view by road length; multi-hop reach is higher and would need a run with per-class tracking (not done).
+
+## F-54 INSIDE EACH VEHICLE (E48 sizing) DONE 07:20 | site/src/atc/main.js, site/atc/index.html, site/scripts/prepare-data.mjs | /atc/ section 3 | from BACKEND: nothing | questions for LEAD: the Lander column (E48 has no lander class), see below
+- prepare-data stages results/E48_sizing.json as atc/E48_sizing.json (7 kB). main.js renders the placeholders first and fills the table when the file loads; a missing file keeps the placeholders. The pyJson helper moved up in prepare-data so E48 can use it.
+- The table, per class (LTV1, CARGO, SMALL, HOPPER, BASE; columns as before):
+  - Safety check: laptop p99 µs, and per robot the share of one flight core at 10 Hz (p99 × factor × safety_hz), with the range from factor_range (LTV1 0.42, 0.28–0.49). For the base: its reservation check (1,211 entries), 10.5 ms on the flight core.
+  - Market round: median 2.0 / p99 20.5 ms (laptop).
+  - Memory: peak_memory_mb of 256 MB, not multiplied by the speed factor.
+  - Radio: worst-hop Mbit/s with antenna and power; the mast in direct view at 23 % / 19 % of route points.
+  - Messages: 3,600 per robot-hour (status once a second, 0.29 for the market); the base column shows the fleet's 7.7 kbit/s for 20 robots.
+  - Power: from power_w, with its Assumed flag.
+- Lander column: "not sized (E48 sized the robots and the base)". The software parts and "if it fails" rows stay as our design.
+- Under the table:
+  - how it was measured (laptop, GR740, CoreMark ratio 54.8× (36.5–64.0); times scaled, memory not; Python, so the computing figures are upper bounds);
+  - computing 0.42 of a core per robot;
+  - memory 0.39 MB of 256;
+  - radio 7.7 kbit/s against 16, status 48 B/s against 100, market 0.005 MB a day, the mast share described as places, not time, with relaying not measured;
+  - ledger 0.30 / 1.35 / 2.71 MB a year at 1× / 4× / 8×;
+  - failover base-down 4.2 / 1.1 / 0.38 % and no leader 0.088 / 0.023 / 0.008 % at MTBF 500 / 2,000 / 8,000 h;
+  - 0 of 44,275 jobs given to two robots (both sums taken from the JSON).
+- Check: build OK, tests 31/31, budgets pages OK. Section 3 is in the page chunk (atc page JS 9.8 -> 11.6 of 15 kB); the lazy chunk is unchanged at 14.9. Headless: light and dark, desktop and 390 px, no overflow (the table scrolls in its box), no console errors. Preview stopped, profile deleted.
