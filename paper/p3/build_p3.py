@@ -373,13 +373,14 @@ def values(r: R, allow_pending: bool):
 
     def e48_failover():
         fo = r.s48("failover")
-        levels = [str(x) for x in fo["mtbf_levels_h"]]
+        levels = [str(int(x)) if float(x) == int(x) else str(x) for x in fo["mtbf_levels_h"]]   # keys "500", "2000", "8000"
         bits, twice = [], 0
         for lv in levels:
             b = fo["by_mtbf"][lv]
             twice += int(b["jobs_assigned_twice"])
             bits.append(f"at an MTBF of {unit(float(lv), 'h')} the base computer was down {pc(b['down_share'], 2)} of the time, the fleet had no leader "
-                        f"{pc(b['no_leader_share'], 2)} of the time, re-election took {unit(b['reelect_s'], 's', 0)} and the ledger merged {cnt(b['merges'])} times")
+                        f"{pc(b['no_leader_share'], 2)} of the time, re-election took {unit(b['reelect_s'], 's', 0)} and the ledger merged "
+                        f"{num(b['merges'], 1)} times a year on average over {words(b['seeds'])} seeds")
         check(twice == 0, "no job was assigned twice after a merge (3.4, 3.6)")
         return "; ".join(bits).capitalize() + f". After every merge the ledger held {words(twice)} job assigned twice."
     fill("P3-E48-RESULTS-FAILOVER", e48_failover, "E48")
