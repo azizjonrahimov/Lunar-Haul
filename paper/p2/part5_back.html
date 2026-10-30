@@ -19,11 +19,11 @@
 
 <h3>6.4 Limitations</h3>
 
-<p>The findings hold for one base, one route network and one demand model, with the single-lane share assumed; the road layer acts at a 100&nbsp;m grain and leaves separation within a segment to the encounter simulator; the uncoordinated mode's accounting understates its cost; the encounter bounds hold for the generated distribution and the proof for the discrete model; and no sensor is modelled. Section 7 states each in full.</p>
+<p>The findings hold for one base, one route network and one demand model, with the single-lane share assumed; the road layer acts at a 100&nbsp;m grain and leaves separation within a segment to the encounter simulator; the uncoordinated mode's accounting understates its cost; the encounter bounds hold for the generated distribution and the proof for the discrete model; and no sensor is modelled; and Mars is the Moon's roads with Mars parameters, with its encounters repeating the lunar ones on the flat. Section 7 states each in full.</p>
 
 <h3>6.5 Future work</h3>
 
-<p>Four pieces follow directly. A survey of corridor widths at rover scale, from higher-resolution imagery or a graded road plan, would replace the assumed single-lane share. The safety program should be run on the flight-class computer the companion paper sizes [45], against recorded traffic from this model. The uncoordinated mode should be given the relay and plan-ahead options of [44], to see how much of its cost a relay recovers. And the encounter simulator should be extended to a lander in flight and to the dust a landing raises, which the rules here treat only as a closed zone.</p>
+<p>Five pieces follow directly. A survey of corridor widths at rover scale, from higher-resolution imagery or a graded road plan, would replace the assumed single-lane share. The safety program should be run on the flight-class computer the companion paper sizes [45], against recorded traffic from this model. The lunar uncoordinated mode should be given the relay the Mars part had and the plan-ahead option of [44], to see how much of its cost they recover. The encounter simulator should be extended to a lander in flight and to the dust a landing raises, which the rules here treat only as a closed zone. And a Mars base on its own terrain, which needs a reader for the HiRISE tiles, a site and a route network, would test the rules on the slopes where Mars gravity acts.</p>
 
 <h2 id="p2-sec-limits">7. Limitations</h2>
 
@@ -45,9 +45,9 @@
 
 <h2 id="p2-sec-conclusion">8. Conclusion</h2>
 
-<p>This paper asked whether shared traffic rules can keep robots of several companies safe at a lunar base, what they cost, and whether they carry to Mars. We wrote ten rules, every parameter traced to a source or assumption, and tested one safety program three ways on one simulated base. {{P2-CONCLUSION-SAFETY-CLAUSE}} At today's planned fleet the rules cost {{P2-H8-X1-PCT}} of delay per delivery and never deadlocked, and {{P2-H8-X4-PCT}} at four times. Settling every cross-owner conflict from Earth cost {{P2-UNC-X1-RATIO-2028}} times the baseline delay. {{P2-CONCLUSION-MARS-CLAUSE}}</p>
+<p>We asked whether shared traffic rules keep robots of several companies safe at a lunar base, what they cost and whether they carry to Mars. We wrote ten rules, each parameter sourced or marked assumed, and tested one safety program three ways in simulation. {{P2-CONCLUSION-SAFETY-CLAUSE}} At today's fleet the rules cost {{P2-H8-X1-PCT}} of delay per delivery, {{P2-H8-X4-PCT}} at four times, and never deadlocked. Settling every cross-owner conflict from Earth cost {{P2-UNC-X1-RATIO-2028}} times the baseline delay. {{P2-CONCLUSION-MARS-CLAUSE}}</p>
 
-<p>For practice, the shared reservation table is where the value lies: a base whose robots settle conflicts themselves pays almost nothing for safety, and one that keeps the decision on Earth pays in every blackout. For research, the share of one-lane road at a real base is the number this work most needs; the results hold for one base and a checked, not validated, model. What the Artemis Accords leave open can be written down, checked and priced.</p>
+<p>For practice, the value lies in the shared reservation table: a base whose robots settle conflicts themselves pays almost nothing for safety; one that keeps the decision on Earth pays in every blackout. For research, the one-lane share of a real base's roads is what this work most needs; the results hold for one base and a checked, not validated, model. What the Artemis Accords leave open can be written down, checked and priced.</p>
 
 <h2 id="p2-sec-availability">Data and code availability</h2>
 

@@ -1031,25 +1031,55 @@ def values(r: R, allow_pending: bool):
     def e47_g():
         return _fin(r.e47d["encounters"]["gravity_m_s2"]["value"])
 
+    def e47_mus():
+        return [float(m) for m in r.e47d["encounters"]["friction_mu"]["values"]]
+
+    def e47_brake_limit(mu, g):
+        """Steepest downhill (deg) on which the guaranteed braking of lunarsim.atc.safety stays positive, by bisection."""
+        import lunarsim.atc.safety as S
+        lo, hi = 0.0, 45.0
+        for _ in range(60):
+            mid = 0.5 * (lo + hi)
+            if float(S.b_guaranteed(mid, mu, g)) > 0:
+                lo = mid
+            else:
+                hi = mid
+        return lo
+
     def e47_brake_limits():
-        """Steepest downhill the service brake holds on each body: sin(theta) = b_service / g."""
+        """Holdable downhill per friction value on each body; Mars is one number (the service-brake cap binds)."""
         import lunarsim.atc.safety as S
         b = _fin(r.e47d["encounters"]["vehicles"]["service_braking_m_s2"])
-        mars = math.degrees(math.asin(b / e47_g()))
-        moon = math.degrees(math.asin(b / S.G_MOON))
-        check(abs(mars - r.e47f["headline"]["steepest_holdable_downhill_deg_mars"]) < 0.1,
+        check(abs(b - S.B_MIN_FLAT) < 1e-9, "the design's service brake is the safety program's B_MIN_FLAT")
+        mars = [e47_brake_limit(mu, e47_g()) for mu in e47_mus()]
+        moon = [e47_brake_limit(mu, S.G_MOON) for mu in e47_mus()]
+        check(max(mars) - min(mars) < 0.05, "the Mars limit is the same at every friction value (the cap binds)")
+        check(abs(mars[0] - math.degrees(math.asin(b / e47_g()))) < 0.05, "the Mars limit is asin(b_service / g)")
+        check(abs(mars[0] - r.e47f["headline"]["steepest_holdable_downhill_deg_mars"]) < 0.1,
               "the Mars brake limit in the headline is the one computed from the design's brake and gravity")
-        return mars, moon
+        return mars[0], min(moon), max(moon)
 
-    def e47_thetas(bins, k):
-        """Downhill angles of the driven bins of type k in a bins table ('theta=10.0; mu=0.3')."""
-        g = bins[(bins["type"] == k) & (bins["n_driven"] > 0)]
+    def e47_flat_brake_diff():
+        """Largest difference between the bodies in the flat braking term min(b_service, mu g), over the design's mu."""
+        import lunarsim.atc.safety as S
+        return max(abs(float(S.b_guaranteed(0.0, mu, e47_g())) - float(S.b_guaranteed(0.0, mu, S.G_MOON)))
+                   for mu in e47_mus())
+
+    def e47_thetas(bins, k, driven_only=True):
+        """Downhill angles of the bins of type k in a bins table ('theta=10.0; mu=0.3'), driven ones by default."""
+        g = bins[(bins["type"] == k) & ((bins["n_driven"] > 0) if driven_only else True)]
         out = set()
         for b in g["bin"]:
             m = re.search(r"theta=([\d.]+)", str(b))
             if m:
                 out.add(float(m.group(1)))
         return sorted(out)
+
+    def e47_slope_types():
+        """Types that draw a slope at all (a theta bin above 0 in E44), and whether any sloped Mars encounter was driven."""
+        sloped = [k for k in range(1, 13) if any(t > 0 for t in e47_thetas(r.e44b, k, driven_only=False))]
+        driven_sloped = [k for k in sloped if any(t > 0 for t in e47_thetas(r.e47bins, k))]
+        return sloped, driven_sloped
 
     def e47_split(b):
         zero = [k for k in range(1, 13) if t47(b, k)["violations"] == 0]
@@ -1061,19 +1091,25 @@ def values(r: R, allow_pending: bool):
         f, b = e47()
         rc = f["road_coordination"]["delay_mean_h"]
         check(f["headline"]["atc_mars_equals_moon"] is True and f["road_coordination"]["atc_mars_equals_moon"] is True,
-              "the ATC mode's Mars runs equal E43's ATC runs (it never waits for Earth)")
+              "the ATC mode's Mars runs equal E43's ATC runs (it uses neither gravity nor the Earth link)")
         for y in (2028, 2038):
             p = r.pair("unc_atc", m=1, y=y)
             m = rc[f"moon_{y}"]["uncoordinated_minus_atc"]
             check(abs(m["mean"] - p["mean"]) < 0.05 and abs(m["ci"][0] - p["lo"]) < 0.5 and abs(m["ci"][1] - p["hi"]) < 0.5,
                   f"E47's Moon comparison for {y} is E43's uncoordinated - atc pair")
         check(len(r.e47runs) == 30 * (len(MARS_CELLS) + 1), "E47 ran seven road cells of 30 seeds")
+        check(abs(rc["moon_2028"]["atc_mean"] - r.cell("atc", m=1)[PRIMARY]) < 0.01, "E47's ATC mean is E43's")
         return rc
+
+    def e47_moon_pair(y):
+        """The Moon's uncoordinated - atc difference as Table 5 reports it (one bootstrap, quoted once)."""
+        p = r.pair("unc_atc", m=1, y=y)
+        return p["mean"], p["lo"], p["hi"], p["share_of_b"]
 
     def e47_ratio():
         """Mars-over-Moon ratio of the uncoordinated mode's cost at the headline cell, against 2028."""
         rc = e47_road()
-        ratio = rc[MARS_HEAD]["uncoordinated_minus_atc"]["mean"] / rc["moon_2028"]["uncoordinated_minus_atc"]["mean"]
+        ratio = rc[MARS_HEAD]["uncoordinated_minus_atc"]["mean"] / e47_moon_pair(2028)[0]
         check(abs(ratio - r.e47f["headline"]["uncoordinated_penalty_delay_h"]["mars_over_moon_2028"]) < 0.005,
               "the headline Mars-over-Moon ratio is the one computed from the cells")
         return ratio
@@ -1081,20 +1117,29 @@ def values(r: R, allow_pending: bool):
     def e47_less():
         """H9's third clause judged on the intervals: every Mars cell below both Moon cells' lower limits (or above)."""
         rc = e47_road()
-        moon_lo = min(rc["moon_2028"]["uncoordinated_minus_atc"]["ci"][0], rc["moon_2038"]["uncoordinated_minus_atc"]["ci"][0])
-        moon_hi = max(rc["moon_2028"]["uncoordinated_minus_atc"]["ci"][1], rc["moon_2038"]["uncoordinated_minus_atc"]["ci"][1])
+        moon_lo = min(e47_moon_pair(2028)[1], e47_moon_pair(2038)[1])
+        moon_hi = max(e47_moon_pair(2028)[2], e47_moon_pair(2038)[2])
         less = all(rc[c]["uncoordinated_minus_atc"]["ci"][1] < moon_lo for c in MARS_CELLS)
         more = all(rc[c]["uncoordinated_minus_atc"]["ci"][0] > moon_hi for c in MARS_CELLS)
         if not (less or more):
             raise Pending("H9 clause 3 is mixed across the Mars cells; the wording is not written for that case")
         return less
 
-    def e47_times_less():
-        """'six times less': the rounded reciprocal of the ratio, only when the ratio is within 0.5 of that integer."""
+    def e47_fraction():
+        """'about one-sixth': the rounded reciprocal of the ratio, only when the ratio is within 0.5 of that integer."""
         inv = 1.0 / e47_ratio()
         n = int(round(inv))
-        check(abs(inv - n) < 0.5 and 2 <= n <= 8, "the Mars cost is a whole number of times smaller, to the nearest")
-        return words(n), FRACTION[n]
+        check(abs(inv - n) < 0.5 and 2 <= n <= 8, "the Mars cost is near a simple fraction of the Moon's")
+        return FRACTION[n]
+
+    def e47_shares():
+        """The uncoordinated mode's extra delay as a share of the ATC mode's delay: Mars headline cell and the Moon 2028."""
+        rc = e47_road()
+        atc = r.cell("atc", m=1)[PRIMARY]
+        mars = rc[MARS_HEAD]["uncoordinated_minus_atc"]["mean"] / atc
+        moon = e47_moon_pair(2028)[3]
+        check(abs(moon - e47_moon_pair(2028)[0] / atc) < 0.02, "Table 5's share is the difference over the ATC delay")
+        return mars, moon, atc
 
     def e47_per_conflict():
         """Hours waited for Earth per conflict referred, Mars headline cell against the Moon's 2028 cell."""
@@ -1104,6 +1149,16 @@ def values(r: R, allow_pending: bool):
         moon = u["road_hand_wait_h"] / u["road_hand_conflicts"]
         check(mars < moon, "a referred conflict waits less for Earth on Mars than on the Moon")
         return mars, moon, rc[MARS_HEAD], u
+
+    def e47_more_conflicts():
+        """Whether the Mars fleet referred more conflicts and delivered more items than the lunar one (same seeds)."""
+        pm, pl, mc, u = e47_per_conflict()
+        runs = r.e47runs
+        g = runs[runs["label"] == "uncoordinated x1 mars rtt 20 no relay"]
+        check(len(g) == 30, "the headline Mars cell has 30 runs")
+        items_mars, items_moon = float(g["delivered_items"].mean()), float(u["delivered_items"])
+        more = mc["hand_conflicts_mean"] > u["road_hand_conflicts"] and items_mars > items_moon
+        return more, mc["hand_conflicts_mean"], u["road_hand_conflicts"], items_mars, items_moon
 
     def e47_design_sentence():
         f, b = e47()
@@ -1120,14 +1175,14 @@ def values(r: R, allow_pending: bool):
                 f"{cnt(ns['2'])} encounters per type and {cnt(ns[str(big[0])])} for types "
                 f"{' and '.join(str(k) for k in big)}, generated from E44's seeds so that each Mars encounter is paired "
                 f"with the lunar encounter of the same type, batch and index; and E43's ATC and uncoordinated cells at "
-                f"today's fleet, 2028, seeds 1&ndash;30, with a Mars Earth link: round trips of "
-                f"{', '.join(cnt(x) for x in rtts[:-1])} and {cnt(rtts[-1])} minutes, no relay or one areostationary "
-                f"relay, Earth in view for {pc(link['dte_fraction'], 0)} of each sol, a {cnt(link['conjunction_days'])}-day "
-                f"conjunction from day {cnt(link['conjunction_start_d'])} and {words(len(storms))} "
-                f"{words(storms[0][1])}-day dust storms as message loss, with the "
-                f"{words(d['road_coordination']['t_hand_h']['value'])} hours of staff time plus the round trip per "
-                f"referred conflict. {cnt(n_enc)} encounters and {cnt(len(r.e47runs))} runs in "
-                f"{words(len(MARS_CELLS) + 1)} cells.")
+                f"today's fleet, seeds 1&ndash;30 (the 2028 label marks the paired lunar runs; the Mars link uses no "
+                f"start year), with a Mars Earth link: round trips of {', '.join(cnt(x) for x in rtts[:-1])} and "
+                f"{cnt(rtts[-1])} minutes added to the {words(d['road_coordination']['t_hand_h']['value'])} hours of "
+                f"staff time per referred conflict, Earth in view for the first {pc(link['dte_fraction'], 0)} of each "
+                f"sol (Assumed) or, as a variant, continuously through one areostationary relay, a "
+                f"{cnt(link['conjunction_days'])}-day conjunction from day {cnt(link['conjunction_start_d'])} and "
+                f"{words(len(storms))} {words(storms[0][1])}-day dust storms, both as loss of the Earth link only. "
+                f"{cnt(n_enc)} encounters and {cnt(len(r.e47runs))} runs in {words(len(MARS_CELLS) + 1)} cells.")
     fill("P2-E47-DESIGN-SENTENCE", e47_design_sentence, "E47")
 
     def e47_geometry_sentence():
@@ -1157,33 +1212,34 @@ def values(r: R, allow_pending: bool):
         dl44 = {k: t44(j, k)["outcomes"]["deadlock"] for k in range(1, 13) if t44(j, k)["outcomes"]["deadlock"] > 0}
         check(set(dl) == set(dl44) == {5, 6}, "the deadlocking types on Mars are the Moon's two (the ring and the closure)")
         check({int(k): v for k, v in h["deadlocks_mars"].items()} == dl, "the headline deadlock counts are the table's")
-        return zero, viol, dl, dl44
+        sloped, driven_sloped = e47_slope_types()
+        if driven_sloped:
+            raise Pending(f"sloped Mars encounters were driven in types {driven_sloped}; the wording assumes none")
+        check(bool(sloped), "some encounter types draw a slope")
+        return zero, viol, dl, dl44, sloped
 
     def e47_intro_clause():
         f, b = e47()
-        zero, viol, dl, dl44 = e47_safety_facts()
-        mars_lim, moon_lim = e47_brake_limits()
+        zero, viol, dl, dl44, sloped = e47_safety_facts()
+        mars_lim, moon_lo, moon_hi = e47_brake_limits()
         t9 = t47(b, 9)
-        times, frac = e47_times_less()
-        s = (f"On Mars, with the lunar vehicles on the same roads, the safety program allowed no violation in "
-             f"{words(len(zero))} of the twelve types")
-        if viol == [9]:
-            s += (f" and, in the dead-stop type, the same {words(t9['violations'])} encounters that violated on the "
-                  f"Moon")
         less = e47_less()
-        s += (f"; the rules' delay was the same to within a second, but coordination that depends on Earth lost "
-              f"{times} times {'less' if less else 'more'} than on the Moon, "
-              f"{'the opposite of' if less else 'as in'} the third clause of H9, because a Mars base sees Earth every "
-              f"sol. The lunar service brake cannot hold a Mars downhill steeper than {num(mars_lim, 1)}&deg; "
-              f"(Section 5.8).")
+        s = (f"On Mars, with the lunar vehicles on the same roads, the safety program behaved as on the Moon, "
+             f"{'the dead-stop exception included, ' if viol == [9] else ''}but only on the flat: at Mars gravity "
+             f"the lunar brakes hold no downhill steeper than {num(mars_lim, 1)}&deg;, so no sloped encounter could "
+             f"be driven. Coordination that depends on Earth lost "
+              f"{'about one-' + e47_fraction() + ' of' if less else 'more than'} what it loses on the Moon, "
+              f"{'the opposite of' if less else 'as in'} what we pre-registered for Mars (H9, Section 4.1): with "
+              f"Earth in view for half of every sol, as we assumed, a referred conflict waits hours, not the days of "
+              f"the polar base's window gaps (Section 5.8).")
         return s
     fill("P2-E47-INTRO-CLAUSE", e47_intro_clause, "E47")
 
     def e47_results_paragraph():
         f, b = e47()
         j = e44()
-        zero, viol, dl, dl44 = e47_safety_facts()
-        mars_lim, moon_lim = e47_brake_limits()
+        zero, viol, dl, dl44, sloped = e47_safety_facts()
+        mars_lim, moon_lo, moon_hi = e47_brake_limits()
         rc = e47_road()
         h = f["headline"]
         n_enc = sum(t47(b, k)["n"] for k in range(1, 13))
@@ -1204,10 +1260,11 @@ def values(r: R, allow_pending: bool):
                   f"vehicle touched another.")
         else:
             s += "; " + e44_violating_clause(b, viol) + "."
-        s += (f" With no violation the bound at {cnt(n_std)} encounters is {sci(bound_std)} ({sci(bonf_std)} with the "
-              f"Bonferroni correction), {'larger' if weighted else 'the same'} at the effective n of the weighted "
-              f"types; type 9's Clopper&ndash;Pearson limit is {sci(t9['bound'])}, against {sci(t9m['bound'])} on the "
-              f"Moon at {words(round(t9m['n'] / t9['n']))} times the sample.")
+        s += (f" With no violation the bound at {cnt(n_std)} encounters is {sci(bonf_std)} with the Bonferroni "
+              f"correction ({sci(bound_std)} without), {'larger' if weighted else 'the same'} at the effective n of "
+              f"the weighted types; type 9's Clopper&ndash;Pearson limit is {sci(t9['bonferroni_bound'])} with the "
+              f"correction ({sci(t9['bound'])} without), against {sci(t9m['bonferroni_bound'])} ({sci(t9m['bound'])}) "
+              f"on the Moon at {words(round(t9m['n'] / t9['n']))} times the sample.")
         check(abs(t9m["n"] / t9["n"] - round(t9m["n"] / t9["n"])) < 0.01, "the Moon's type-9 sample is a whole multiple")
         s += (f" The ring deadlocked in {cnt(dl[5])} of {cnt(t47(b, 5)['n_driven'])} encounters "
               f"({pc(dl[5] / t47(b, 5)['n_driven'], 1)}, against {pc(dl44[5] / t44(j, 5)['n_driven'], 1)} on the Moon) "
@@ -1219,16 +1276,35 @@ def values(r: R, allow_pending: bool):
               and abs(nd_l / n1 - h["type1_not_driven_share_moon"]) < 0.001,
               "the type-1 undriven shares in the headline are the counts over n")
         check(nd_m == t47(b, 1)["outcomes"]["not_driven"], "the fit's undriven count is the bounds table's")
-        th_m, th_l = e47_thetas(r.e47bins, 1), e47_thetas(r.e44b, 1)
-        check(bool(th_m) and max(th_m) <= mars_lim and bool(th_l) and max(th_l) <= moon_lim,
-              "every driven following encounter is on a slope the service brake holds")
+        th_l = e47_thetas(r.e44b, 1)
+        # the bins file lists driven bins only; the full slope set of type 1 is in its title ('flat, 10/15/20 deg')
+        m_t = re.search(r"\(flat, ([\d/]+)\s*deg", t47(b, 1)["title"])
+        if not m_t:
+            raise Pending("type 1's title no longer lists its downhill angles")
+        all_th = [0.0] + [float(x) for x in m_t.group(1).split("/")]
+        excl_moon = [t for t in all_th if t > moon_hi]
+        check(bool(excl_moon) and all(t <= moon_lo for t in all_th if t not in excl_moon)
+              and sorted(set(all_th) - set(excl_moon)) == th_l,
+              "the lunar following bins split cleanly into holdable (driven) and excluded at every friction value")
+        check(abs(nd_l / n1 - len(excl_moon) / len(all_th)) < 0.02, "the lunar undriven share is the excluded bins' share")
+        check(abs(nd_m / n1 - len([t for t in all_th if t > mars_lim]) / len(all_th)) < 0.02,
+              "the Mars undriven share is the share of bins steeper than the Mars limit")
+        check(f["encounters"]["12"]["not_driven_mars"] > f["encounters"]["12"]["not_driven_moon_same_encounters"],
+              "type 12, which inherits type 1's slopes, also lost draws on Mars")
+        check(bool(th_l) and max(th_l) <= moon_hi and all(t <= moon_lo for t in th_l),
+              "every driven lunar following encounter is on a slope the service brake holds at every friction value")
         check(nd_m > nd_l, "more following draws are undrivable on Mars than on the Moon")
-        s += (f" Of the {cnt(n1)} following draws, {cnt(nd_m)} ({pc(nd_m / n1, 1)}) could not be driven on Mars, "
-              f"because the vehicles' {num(r.e47d['encounters']['vehicles']['service_braking_m_s2'], 1)}{NB}m/s<sup>2</sup> "
-              f"service brake cannot hold a downhill steeper than {num(mars_lim, 1)}&deg; at Mars gravity, against "
-              f"{cnt(nd_l)} ({pc(nd_l / n1, 1)}) of the same draws on the Moon, where the limit is "
-              f"{num(moon_lim, 1)}&deg;; every Mars following encounter that was driven was "
-              f"{'on the flat' if th_m == [0.0] else 'on a slope of at most ' + num(max(th_m), 0) + '&deg;'}.")
+        diff = e47_flat_brake_diff()
+        s += (f" Of the {cnt(n1)} following draws, {cnt(nd_m)} ({pc(nd_m / n1, 1)}) were on downhills steeper than "
+              f"{num(mars_lim, 1)}&deg;, the steepest the vehicles' "
+              f"{num(r.e47d['encounters']['vehicles']['service_braking_m_s2'], 1)}{NB}m/s<sup>2</sup> service brake "
+              f"holds at Mars gravity (Section 3.5), and were not driven; on the Moon the limit is "
+              f"{num(moon_lo, 1)}&ndash;{num(moon_hi, 1)}&deg; depending on the friction value, "
+              f"{'only the ' + ' and '.join(num(t, 0) + '&deg;' for t in excl_moon) + ' draws are excluded' if excl_moon else 'no draw is excluded'}, "
+              f"and {cnt(nd_l)} ({pc(nd_l / n1, 1)}) of the same draws were not driven. No sloped encounter of any "
+              f"type was driven on Mars, and on the flat the braking term of R1 and R2 differs between the bodies by "
+              f"at most {num(diff, 2)}{NB}m/s<sup>2</sup>, so the driven Mars encounters repeat the lunar ones with "
+              f"the same seeds.")
         rd = h["rule_delay_nominal_s"]
         ratio = rd["mars"] / rd["moon"]
         check(abs(ratio - h["rule_delay_nominal_mars_over_moon"]) < 0.01, "the rule-delay ratio is the headline's")
@@ -1237,15 +1313,19 @@ def values(r: R, allow_pending: bool):
               f"Moon, a ratio of {num(ratio, 2)}.")
         c = lambda k: rc[k]["uncoordinated_minus_atc"]
         hm = c(MARS_HEAD)
-        s += (f" The ATC mode does not wait for Earth, and its 30 Mars runs reproduced E43's ATC runs exactly. The "
-              f"uncoordinated mode cost {h_(hm['mean'], 1)} {ci(*hm['ci'], 1)} of delay per delivery above the ATC "
-              f"mode at a 20-minute round trip without a relay, {h_(c('mars_rtt6_norelay')['mean'], 1)} "
-              f"{ci(*c('mars_rtt6_norelay')['ci'], 1)} at 6 minutes and {h_(c('mars_rtt44_norelay')['mean'], 1)} "
-              f"{ci(*c('mars_rtt44_norelay')['ci'], 1)} at 44; with the relay {h_(c('mars_rtt6_relay')['mean'], 1)}, "
-              f"{h_(c('mars_rtt20_relay')['mean'], 1)} and {h_(c('mars_rtt44_relay')['mean'], 1)} (Table 8). On the "
-              f"Moon the same difference was {h_(c('moon_2028')['mean'], 1)} {ci(*c('moon_2028')['ci'], 1)} in 2028 "
-              f"and {h_(c('moon_2038')['mean'], 1)} {ci(*c('moon_2038')['ci'], 1)} in 2038 (Section 5.4); the Mars "
-              f"cost is {num(e47_ratio(), 2)} of the Moon's 2028 cost.")
+        sm, sl, atc = e47_shares()
+        m28, m38 = e47_moon_pair(2028), e47_moon_pair(2038)
+        s += (f" The logistics model's ATC mode uses neither gravity nor the Earth link, and its 30 Mars runs equalled "
+              f"E43's ATC runs on every seed. The uncoordinated mode cost {h_(c('mars_rtt6_norelay')['mean'], 1)} "
+              f"{ci(*c('mars_rtt6_norelay')['ci'], 1)}, {h_(hm['mean'], 1)} {ci(*hm['ci'], 1)} and "
+              f"{h_(c('mars_rtt44_norelay')['mean'], 1)} {ci(*c('mars_rtt44_norelay')['ci'], 1)} of delay per "
+              f"delivery above the ATC mode at round trips of 6, 20 and 44 minutes without a relay, and "
+              f"{h_(c('mars_rtt6_relay')['mean'], 1)}, {h_(c('mars_rtt20_relay')['mean'], 1)} and "
+              f"{h_(c('mars_rtt44_relay')['mean'], 1)} with the relay (Table 8); at 20 minutes without a relay that "
+              f"is {num(sm, 2)} of the ATC mode's {h_(atc, 1)}. On the Moon the same difference was "
+              f"{h_(m28[0], 1)} {ci(m28[1], m28[2], 1)} in 2028, {num(sl, 1)} times the ATC mode's delay, and "
+              f"{h_(m38[0], 1)} {ci(m38[1], m38[2], 1)} in 2038 (Table 5); the Mars cost is {num(e47_ratio(), 2)} of "
+              f"the Moon's 2028 cost.")
         pm, pl, mc, u = e47_per_conflict()
         s += (f" The Mars fleet referred {cnt(mc['hand_conflicts_mean'])} conflicts a year to Earth and waited "
               f"{h_(mc['hand_wait_h_mean'], 0)} for the decisions, {h_(pm, 1)} per conflict; the lunar fleet referred "
@@ -1254,17 +1334,19 @@ def values(r: R, allow_pending: bool):
         less = e47_less()
         third = ("contradicted: it loses less in every Mars cell, with intervals that do not overlap the Moon's"
                  if less else "supported in every Mars cell")
-        s += (f" H9's first clause holds in the same {words(len(zero))} types as H7 and fails in type 9 for the same "
-              f"encounters; its second, a similar rule cost, {rdv}; its third, that Earth-dependent coordination loses "
-              f"more on Mars, is {third}.")
+        s += (f" H9's first clause, zero violations under Mars gravity, is supported on the flat in the same "
+              f"{words(len(zero))} types as H7, fails in type 9 for the same encounters, and is untested on slopes; "
+              f"its second, a similar rule cost, is tested only by the encounter delays, where it {rdv}; its third, "
+              f"that Earth-dependent coordination loses more on Mars, is {third}.")
         return s
     fill("P2-E47-RESULTS-PARAGRAPH", e47_results_paragraph, "E47")
 
     def e47_discussion_clause():
+        import lunarsim.atc.safety as S
         f, b = e47()
         rc = e47_road()
         c = lambda k: rc[k]["uncoordinated_minus_atc"]
-        mars_lim, moon_lim = e47_brake_limits()
+        mars_lim, moon_lo, moon_hi = e47_brake_limits()
         nr = [c(f"mars_rtt{x}_norelay") for x in (6, 20, 44)]
         check(all(a["ci"][0] <= bb["ci"][1] and bb["ci"][0] <= a["ci"][1] for a in nr for bb in nr),
               "the three round trips give costs whose intervals overlap")
@@ -1273,21 +1355,42 @@ def values(r: R, allow_pending: bool):
         pm, pl, mc, u = e47_per_conflict()
         e1 = f["encounters"]["1"]
         less = e47_less()
-        _, frac = e47_times_less()
         rd = f["headline"]["rule_delay_nominal_s"]
         check(0.9 <= rd["mars"] / rd["moon"] <= 1.1, "the rules cost the same on Mars (nominal rule delay within 10 %)")
-        return (f"the rules held and cost the same, and the Earth-dependent mode lost "
-                f"{'about a ' + frac + ' of' if less else 'more than'} what it loses on the Moon, "
-                f"{h_(c(MARS_HEAD)['mean'], 1)} against {h_(c('moon_2028')['mean'], 1)}, "
-                f"{'the opposite of' if less else 'as in'} H9's third clause. The reason is in the Earth windows, not "
-                f"the round trip: the three round trips gave the same cost within their intervals, and the relay "
-                f"lowered the mean at each, while a Mars base sees Earth for half of every sol and the polar base "
-                f"loses it for days at a time [42], so a referred conflict waited {h_(pm, 1)} for a decision "
-                f"on Mars and {h_(pl, 1)} on the Moon. The one Mars-specific finding is about hardware: the lunar "
-                f"vehicles' service brake cannot hold a Mars downhill steeper than {num(mars_lim, 1)}&deg;, so "
-                f"{pc(e1['not_driven_mars'] / e1['n'], 0)} of the following draws were undrivable against "
-                f"{pc(e1['not_driven_moon_same_encounters'] / e1['n'], 0)} on the Moon; the rules forbid the slope "
-                f"rather than the vehicle, and vehicles for Mars need brakes sized for Mars gravity.")
+        mus = e47_mus()
+        bs = _fin(r.e47d["encounters"]["vehicles"]["service_braking_m_s2"])
+        fric_moon = [mu for mu in mus if mu * S.G_MOON < bs]          # friction binds on the flat on the Moon
+        cap_mars = all(mu * e47_g() >= bs for mu in mus)
+        check(cap_mars and fric_moon and len(fric_moon) < len(mus),
+              "on Mars the service-brake cap binds at every friction value; on the Moon only above the lowest")
+        more, hc_m, hc_l, it_m, it_l = e47_more_conflicts()
+        s = (f"the safety program behaved as on the Moon, the dead-stop exception included, but that is weaker evidence "
+             f"than it looks: the only ground the lunar brakes hold at Mars gravity is nearly flat, and on the flat the "
+             f"braking term is the same on both bodies, so the Mars encounters that were driven repeat the lunar ones; "
+             f"the rules are untested on the slopes where Mars gravity acts. The same holds for the rules' cost, "
+             f"measured only by the paired encounter delays. The Earth-dependent mode lost "
+             f"{'about one-' + e47_fraction() + ' of' if less else 'more than'} what it loses on the Moon, "
+             f"{h_(c(MARS_HEAD)['mean'], 1)} against {h_(e47_moon_pair(2028)[0], 1)}, "
+             f"{'the opposite of' if less else 'as in'} H9's third clause. The reason is in the Earth windows, not the "
+             f"round trip: the three round trips gave the same cost within their intervals, and the relay lowered the "
+             f"mean at each, while a Mars base, as we modelled it, sees Earth for half of every sol (Assumed, Section 7) "
+             f"and the polar base's computed windows [42] leave it blind for days, so a referred conflict waited "
+             f"{h_(pm, 1)} for a decision on Mars and {h_(pl, 1)} on the Moon. The reversal therefore holds for any "
+             f"Mars site whose horizon returns Earth every sol, and would not for one that does not.")
+        if hc_m > hc_l:
+            s += (f" The Mars fleet referred more conflicts ({cnt(hc_m)} against {cnt(hc_l)}) for the same demand and "
+                  f"almost the same deliveries ({cnt(it_m)} against {cnt(it_l)} items); we have not traced the cause.")
+        s += (f" The one Mars-specific finding is about hardware. The guaranteed braking of Section 3.5 is the smaller "
+              f"of the service brake and the friction limit, less the downhill component: on the Moon the friction "
+              f"term binds at &mu; = {num(fric_moon[0], 1)} and the {num(bs, 1)}{NB}m/s<sup>2</sup> service brake "
+              f"above it, so the holdable downhill is {num(moon_lo, 1)}&ndash;{num(moon_hi, 1)}&deg;; on Mars the "
+              f"service brake binds at every friction value, so braking does not grow with gravity while the slope "
+              f"term does, and the holdable downhill falls to {num(mars_lim, 1)}&deg;. "
+              f"Of the following draws, {pc(e1['not_driven_mars'] / e1['n'], 0)} were on steeper ground, against "
+              f"{pc(e1['not_driven_moon_same_encounters'] / e1['n'], 0)} on the Moon. R2 gives a zero admissible "
+              f"speed on such a slope, so the safety program refuses the slope; it has no rule that says a vehicle is "
+              f"under-braked for the body it is on, and vehicles for Mars need a service brake sized for Mars gravity.")
+        return s
     fill("P2-E47-DISCUSSION-CLAUSE", e47_discussion_clause, "E47")
 
     def e47_limitation_sentence():
@@ -1297,29 +1400,35 @@ def values(r: R, allow_pending: bool):
         flags = d["road_coordination"]["mars_link_flags"]
         check(all("Assumed" in flags[k] for k in ("dte_fraction", "conjunction_start_d", "storms")),
               "the Earth-visibility fraction, the conjunction date and the storms are assumed")
+        bonf = [t47(b, k)["bonferroni_bound"] for k in range(1, 13) if t47(b, k)["violations"] == 0]
+        ratio = t44(e44(), 2)["n"] / n_std
+        check(abs(ratio - round(ratio)) < 0.01, "the lunar sample is a whole multiple of the Mars sample")
         return (f"The Mars part runs the same base, roads, routes and demand with Mars gravity, a Mars Earth link and "
-                f"the lunar vehicles; a Mars site with its own terrain, roads and vehicles was planned and not run, "
-                f"because the terrain reader is written for the lunar polar tiles; the share of each sol with Earth in "
-                f"view, the conjunction date and the dust storms are assumed; and at {cnt(n_std)} encounters per type "
-                f"the Mars bounds are {sci(1 - 0.05 ** (1 / n_std))}, weaker than the Moon's by the ratio of the samples.")
+                f"the lunar vehicles, and its encounters repeat the lunar ones on the flat (Section 6.1); a Mars site "
+                f"with its own terrain, roads and vehicles was planned and not run, because the terrain reader is "
+                f"written for the lunar polar tiles; the share of each sol with Earth in view, the conjunction date and "
+                f"the dust storms are assumed, and the simulated year holds a conjunction, which comes once in about "
+                f"26 months, a conservative choice; and at {cnt(n_std)} encounters per type the Mars bounds are "
+                f"{words(round(ratio))} times the Moon's for the same type, {sci(1 - (0.05 / 12) ** (1 / n_std))} for "
+                f"the unweighted types with the Bonferroni correction and up to {sci(max(bonf))} for the weighted "
+                f"types (Table 7).")
     fill("P2-E47-LIMITATION-SENTENCE", e47_limitation_sentence, "E47")
 
     def h9_abstract_clause():
         f, b = e47()
-        zero, viol, dl, dl44 = e47_safety_facts()
+        zero, viol, dl, dl44, sloped = e47_safety_facts()
         check(viol == [9] and e47_less(), "the abstract's Mars clause describes the observed outcome")
-        times, frac = e47_times_less()
-        return f"On Mars the rules held and referral to Earth cost {times} times less."
+        return (f"On Mars the rules behaved as on the Moon, and referral to Earth cost about one-{e47_fraction()} "
+                f"as much.")
     fill("P2-H9-ABSTRACT-CLAUSE", h9_abstract_clause, "E47")
 
     def conclusion_mars_clause():
         f, b = e47()
-        zero, viol, dl, dl44 = e47_safety_facts()
+        zero, viol, dl, dl44, sloped = e47_safety_facts()
         check(viol == [9] and e47_less(), "the conclusion's Mars clause describes the observed outcome")
-        mars_lim, moon_lim = e47_brake_limits()
-        times, frac = e47_times_less()
-        return (f"On Mars the rules held, referral to Earth cost {times} times less, and lunar brakes cannot hold "
-                f"downhills past {num(mars_lim, 1)}&deg;.")
+        mars_lim, moon_lo, moon_hi = e47_brake_limits()
+        return (f"On Mars the rules behaved as on the Moon and referral to Earth cost about one-{e47_fraction()} as "
+                f"much; at Mars gravity the lunar vehicles' brakes hold no downhill steeper than {num(mars_lim, 1)}&deg;.")
     fill("P2-CONCLUSION-MARS-CLAUSE", conclusion_mars_clause, "E47")
 
     V["P2-REFERENCES"] = references()
@@ -1411,25 +1520,28 @@ def table_e47(r: R, b):
 def table_e47_link(r: R, f):
     """Table 8: the uncoordinated mode on Mars against the ATC mode, by round trip and relay, with the Moon's cells."""
     rc = f["road_coordination"]["delay_mean_h"]
+    atc = r.cell("atc", m=1)[PRIMARY]
     rows = []
     for rtt in (6, 20, 44):
         for relay in (False, True):
             c = rc[f"mars_rtt{rtt}_{'relay' if relay else 'norelay'}"]
             d = c["uncoordinated_minus_atc"]
-            rows.append(["Mars", cnt(rtt), "one areostationary" if relay else "none", cnt(d["n"]),
-                         num(d["mean"], 1), ci(*d["ci"], 1, unit=""), num(c["hand_conflicts_mean"], 1),
-                         num(c["hand_wait_h_mean"], 0)])
+            rows.append(["Mars", cnt(rtt), "areostationary" if relay else "none", cnt(d["n"]),
+                         num(d["mean"], 1), ci(*d["ci"], 1, unit=""), num(d["mean"] / atc, 2),
+                         num(c["hand_conflicts_mean"], 1), num(c["hand_wait_h_mean"], 0)])
     for y in (2028, 2038):
-        d = rc[f"moon_{y}"]["uncoordinated_minus_atc"]
+        p = r.pair("unc_atc", m=1, y=y)                      # Table 5's values, so one quantity has one interval
         u = r.cell("unc", y, m=1)
-        rows.append([f"Moon, {y}", f"2.6{NB}s", "&ndash;", cnt(d["n"]), num(d["mean"], 1), ci(*d["ci"], 1, unit=""),
-                     num(u["road_hand_conflicts"], 1), num(u["road_hand_wait_h"], 0)])
+        rows.append([f"Moon, {y}", f"2.6{NB}s", "&ndash;", cnt(p["n"]), num(p["mean"], 1), ci(p["lo"], p["hi"], 1, unit=""),
+                     num(p["share_of_b"], 2), num(u["road_hand_conflicts"], 1), num(u["road_hand_wait_h"], 0)])
     return _tab("Table 8. E47, the uncoordinated mode against the ATC mode at today's fleet: the paired difference in "
-                "mean delay per delivery (h, 95&#8239;% bootstrap interval over seeds), conflicts referred to Earth and "
-                "the hours waited for Earth, fleet totals per run, on Mars by round trip and relay and on the Moon in "
-                "the two E43 years (Section 5.4). The ATC mode's Mars runs equal its lunar runs.",
+                "mean delay per delivery (h, 95&#8239;% bootstrap interval over seeds) and the same as a share of the "
+                "ATC mode's delay, conflicts referred to Earth and the hours waited for Earth (fleet totals per run), "
+                "on Mars by round trip and relay and on the Moon in the two E43 years (the rows of Table 5). The "
+                "relay keeps the base in contact for the whole sol outside the conjunction and the storms. The ATC "
+                "mode uses neither gravity nor the Earth link, so its Mars runs equal its lunar runs.",
                 ["Body", "Round trip (min)", "Relay", "Seeds", "Uncoordinated &minus; ATC (h)", "95&#8239;% interval",
-                 "To Earth", "Earth wait (h)"], rows, cls="wide")
+                 "Share of ATC", "To Earth", "Earth wait (h)"], rows, cls="wide")
 
 
 def table_pairs(r: R):
