@@ -109,3 +109,23 @@ def test_audit_and_k1_identities_on_one_run():
 def test_x7_timer_is_bit_identical():
     rows = V.check_x7_timing()
     assert rows[0]["passed"]
+
+
+# ------------------------------------------------------------------------------------------------ batch 3 part 2
+def test_safety_injection_and_minimal_interference():
+    rows = V.check_s2_injection(200) + V.check_s3_minimal(2000)
+    bad = [(r["sub"], r["simulated"]) for r in rows if not r["passed"] and r["sub"] != "unholdable slope flagged"]
+    assert not bad
+
+
+def test_single_lane_harness_matches_lindley_and_deterministic_cases():
+    traverse, _ = V._road_harness()
+    rng = np.random.default_rng(0)
+    arr = np.cumsum(rng.exponential(1 / 6.0, 3000))
+    w = np.array([traverse(i, float(a), 0.1) for i, a in enumerate(arr)])
+    assert np.max(np.abs(w - V.queue_fcfs(arr, np.full(len(arr), 0.1), 1))) <= 1e-9
+    assert all(r["passed"] for r in V.check_t2_deterministic())
+
+
+def test_closest_approach_row():
+    assert V.check_s1_separation()[0]["passed"]

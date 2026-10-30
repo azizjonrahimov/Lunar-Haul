@@ -7434,3 +7434,63 @@ lunarsim/vv5.py, results/vv_phase5.json, tests/test_verification_phase5.py, .tea
 - Wording per LEAD: the paragraph before the no-payments table now follows P3: "A company's profit alone is dominated by its cargo's delay cost at its own value of time, so every pooled rule clears it by a wide margin. The harder comparison is the same pooled market with no payments." The word "weak" is gone.
 - Headless Chrome (one instance, profile on D:, deleted after): light and dark at 1280 and 390 px. Theme applied every time; page scrollWidth equals clientWidth (1265/1265, 390/390); 5 market tables; at 390 px they scroll inside their own boxes, as the existing ones do. Step 5 and the new block text equal the fit; console errors: none. RAM 1.86 GB before, 1.87 GB after.
 - Sizes unchanged: /atc/ JS 14.8 of 15 kB gz, data 3.2 of 5, lazy 14.9 of 15; budgets pages OK; tests 31/31. Preview server stopped; screenshots deleted.
+
+## B-79 batch 3 part 2 DONE 30 Oct (safety S1-S3, S5-S7; traffic T1, T2, T5; replay V1, V2) | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**Overview:** 30 rows: 24 passed, 3 failed, 3 skipped. Safety and traffic rows are tagged P2 (S7 also P3); the replay rows P1/P2.
+- No engine or ATC code changed in part 2. Every failure was traced first; none is an engine defect.
+
+### Passing
+- **S1 (a):** the encounter simulator's between-step closest approach is exact. It agrees with scipy's bounded minimisation to 1.7e-13 m on 2,000 linear moves.
+- **S1 (b):** 0 violations in E44's nominal types (all but 9) over 204,181 driven encounters, with the 95 % bound in the exposure field.
+- **S2:** 1,000 injections per class, all refused: R3 conflicts, R10 full slots, R1 inside the RSS gap, R2 over the limit (on slopes friction can hold), stop lines, R6 crew keep-out, R5 must-exit.
+- **S3:** 10,000 safe free-road proposals pass unchanged. The basis lists the intervention rate per E44 type.
+- **T1:** the engine's RoadLayer.apply on one single-occupancy segment equals the Lindley recursion. Sample path within 1.5e-11 h over up to 1.28 million traversals. Mean waits match M/D/1 at rho 0.3, 0.6 and 0.85 within 0.2 %, 0.7 % and 0.9 %.
+- **T2:**
+  - (a) n vehicles at once give mean wait (n − 1)τ/2 exactly;
+  - (b) alternating directions on a single-occupancy segment give throughput 1/τ exactly;
+  - (c) same-direction vehicles on an unbranched segment never wait (following is allowed).
+- **T5:**
+  - (a) a lone vehicle gets 0 road delay over 258 traversals;
+  - (b) 4 E43-style runs (atc and uncoordinated, landing closures) have 0 conflicting overlaps and 0 aprons over their slots.
+- **S5 road layer:** all 80 wait edges are for another vehicle's booking already in the table. Bookings commit in order, so the wait-for graph is acyclic; no wait is unbounded.
+  - Longest wait 0.90 h in atc mode and 281.75 h uncoordinated (hand-resolution waits for Earth contact through blackouts). T_max is not in the plan, so the maxima are reported.
+- **S6:** road mode atc gives the same run in 2028 and 2038 with 0 hand referrals. The uncoordinated control differs, with 15 and 18 referrals.
+- **S7:** 224 pad visits over 32 keep-out windows, 0 inside a window. Road legs inside the 1 km radius during a window: 0, taking a vehicle to be within R on the last or first R km of a leg into or out of the pad.
+
+### Failing, all traced, none an engine defect
+1. **S1 (c), type 9 (non-conforming vehicles):** 58 gap violations, 7 of them contacts (E44).
+   - A dead stop brakes harder than R1's leader assumption (B_MAX).
+   - The P2 paper already reports this finding.
+2. **S2 "unholdable slope flagged" (my addition beyond the plan):** 990 of 1,000 cases flagged.
+   - On slopes friction cannot hold (above 16.7° at μ 0.3) no action is safe, and the shield says so except in 10 cases. In each of those a near-standstill vehicle (v ≤ 0.02 m/s) proposes to brake, and the shield's kinematics take a stopped vehicle to stay stopped.
+   - These states lie beyond the invariant: R2 never admits such slopes (v_max = 0), so no run can reach them.
+   - The earlier R2 injection misses were exactly these unholdable states. I traced them and moved them to this separate row.
+3. **S5 encounter deadlocks:** 390 in E44 (T5 386, T6 4), the genuine mechanisms recorded in PREREG change 9.
+
+### Skipped
+- **T5 (c) node conservation:** no node occupancy exists in the engine; site capacity is the apron slot rule, tested in T5 (b).
+- **V1, V2:** no ATC trace export exists yet (B-80). The v3 scene is covered by the phase 4 rows.
+
+### Check-definition corrections made while tracing
+These were my errors, not engine defects:
+- The S2 R3 generator drew some windows that did not overlap.
+- T2 (b) first sent all vehicles at t = 0, so they formed same-direction platoons. On unbranched segments R3 lets a later vehicle join an earlier same-direction window, so strict alternation holds only on single-occupancy segments; the basis says so.
+- S5's first bookkeeping keyed bookings by time, which hand-resolution shifts in place.
+
+### File and tests
+- results/vv_phase5.json: 161 rows, 145 passed, 7 failed (4 D10 pairings + S1 (c) + S2 unholdable + S5 encounters), 9 skipped, 1 bias flag. Written at 66b26ec.
+- tests/test_verification_phase5.py: 15 tests, all passing.
+
+### Files
+lunarsim/vv5.py, results/vv_phase5.json, tests/test_verification_phase5.py, .team/inbox-backend.md, .team/reports.md.
+
+### How to test
+- `python -m lunarsim.vv5` (batches 1-3, about 20 min in 600 s chunks).
+- Part 2 alone: run_phase5_batch3b(), about 2 min.
+
+**FRONTEND:** 161 rows; new S and T groups; V1 and V2 skipped.
+
+**Questions for LEAD:**
+1. Keep S1 (c), S2 "unholdable slope flagged" and S5 "encounter deadlocks" as FAIL (as with D10), or move the two E44 findings to reported rows?
+2. Do you want the shield to flag near-standstill braking on unholdable slopes? That would change safety.py's kinematics, outside every run's states. I have not done it.

@@ -1685,11 +1685,525 @@ def run_phase5_batch3() -> List[Dict]:
     return rows
 
 
+# ================================================================================================ batch 3 part 2 (B-79)
+# safety layer (S), traffic (T), replay (V)
+
+def _e44_types():
+    return json.load(open(_repo("results", "E44_bounds.json"), encoding="utf-8"))["types"]
+
+
+def check_s1_separation() -> List[Dict]:
+    """S1: (a) the encounter simulator's closest approach between 10 Hz steps (encounter._closest, two points moving
+    linearly) against an independent bounded minimisation; (b) zero contacts and separation violations in E44's
+    nominal encounter types, with the exposure and the 95 % bound; (c) type 9 (non-conforming vehicles) reported."""
+    from scipy.optimize import minimize_scalar
+    from .atc.encounter import _closest
+    rows = []
+    t0 = time.time()
+    rng = np.random.default_rng(1)
+    n = 20000
+    p0, p1, q0, q1 = (rng.uniform(-20, 20, (n, 2)) for _ in range(4))
+    got = _closest(p0, p1, q0, q1)
+    worst = 0.0
+    for k in range(0, n, 10):                       # 2,000 independent minimisations
+        f = lambda t: float(np.hypot(*((p0[k] + (p1[k] - p0[k]) * t) - (q0[k] + (q1[k] - q0[k]) * t))))
+        r = minimize_scalar(f, bounds=(0.0, 1.0), method="bounded", options={"xatol": 1e-12})
+        ref = min(r.fun, f(0.0), f(1.0))
+        worst = max(worst, abs(got[k] - ref))
+    rows.append(_row("S1", "(a) closest approach", "Closest approach between 10 Hz steps is exact (continuous time, "
+                     "not sampled)", 0.0, worst, 1e-6, "m", "encounter._closest on 2,000 random pairs of linear moves "
+                     "(+/- 20 m) against scipy's bounded minimisation (xatol 1e-12) with both end points; largest "
+                     "|difference|", "comparison to other models", "code verification", "V", "P1", ["P2"], mode="abs",
+                     source="closest-point-of-approach geometry; lunarsim/atc/encounter.py", t0=t0,
+                     tol_src="1e-6 m (the minimiser's own tolerance, well below a disc radius)"))
+    t0 = time.time()
+    ty = _e44_types()
+    nom = {k: v for k, v in ty.items() if k != "9"}
+    viol = sum(int(v["violations"]) for v in nom.values())
+    n_eff = sum(float(v["n_eff"]) for v in nom.values())
+    rows.append(_row("S1", "(b) nominal types", "Zero separation violations in every nominal encounter type (E44)", 0.0,
+                     float(viol), 0.0, "violations", f"E44 types {', '.join(sorted(nom, key=int))}: contacts, gap below "
+                     f"the RSS minimum, zone, crew, R3 and slot violations, evaluated in continuous time between steps; "
+                     f"{n_eff:,.0f} driven encounters (n_eff)", "traces", "code verification", "V", "P1", ["P2"],
+                     mode="abs", source="results/E44_bounds.json; Hanley and Lippman-Hand 1983",
+                     exposure={"n": n_eff, "unit": "driven encounters", "upper95": 1 - 0.05 ** (1 / n_eff)}, t0=t0))
+    t9 = ty["9"]
+    rows.append(_row("S1", "(c) type 9, non-conforming", "Zero separation violations with non-conforming vehicles "
+                     "(type 9: slip, drift, dead stop)", 0.0, float(t9["violations"]), 0.0, "violations",
+                     f"E44 type 9, {t9['n_eff']:,.0f} driven encounters: by kind {t9['violations_by_kind']}. A vehicle that "
+                     "stops dead brakes harder than the leader braking R1 assumes (B_MAX), so R1's guarantee does not "
+                     "cover it; the P2 paper reports this as a finding", "traces", "code verification", "V", "P1",
+                     ["P2"], mode="abs", source="results/E44_bounds.json", exposure={"n": float(t9["n_eff"]),
+                     "unit": "driven encounters", "upper95": None}, t0=t0))
+    return rows
+
+
+def _move(**kw):
+    from .atc.safety import Move
+    base = dict(v=np.array([1.0]), a_prop=np.array([0.0]), dt=0.1, theta=np.array([0.0]), mu=np.array([0.3]),
+                v_class=np.array([2.8]), sight=np.array([1e6]), gap_lead=np.array([np.inf]), v_lead=np.array([0.0]),
+                d_stop=np.array([np.inf]), d_crew=np.array([np.inf]))
+    base.update(kw)
+    return Move(**base)
+
+
+def check_s2_injection(n: int = 1000) -> List[Dict]:
+    """S2: unsafe proposals injected into safety_check, 1,000 per class; every one must be refused (a reservation
+    verdict not ok, or a move replaced by a safe candidate)."""
+    from .atc import safety as S
+    rows = []
+    rng = np.random.default_rng(2)
+    t0 = time.time()
+    caught = {}
+    # R3: an overlapping reservation in the opposite direction (any overlap on a branched segment)
+    c = 0
+    for _ in range(n):
+        a = rng.uniform(0, 100)
+        b = a + rng.uniform(0.01, 2)
+        branched = bool(rng.random() < 0.5)
+        d0 = int(rng.choice([-1, 1]))
+        d1 = d0 if branched else -d0
+        dur = rng.uniform(0.01, 2)
+        ti = rng.uniform(a - dur + 1e-6, b - 1e-6)           # the request overlaps the holder's window
+        table = {"seg": [(a, b, d0, "B", 1)]}
+        v = S.safety_check(table, S.Reserve("seg", ti, ti + dur, 2, "A", d=d1, branched=branched))
+        c += not v.ok
+    caught["R3 reservation conflict"] = c
+    # R10: a slot request while every slot is held
+    c = 0
+    for _ in range(n):
+        slots = int(rng.integers(1, 4))
+        entries = [(0.0, 10.0, 0, "B", 10 + i) for i in range(slots)]
+        ti = rng.uniform(0, 9.9)
+        v = S.safety_check({"pad": entries}, S.Reserve("pad", ti, ti + rng.uniform(0.01, 5), 1, "A", kind="slots",
+                                                       slots=slots))
+        c += not v.ok
+    caught["R10 slots full"] = c
+    # R1: closer than the RSS minimum to the leader, proposing to accelerate
+    c = 0
+    for _ in range(n):
+        vr, vl = rng.uniform(0.5, 2.8), rng.uniform(0.0, 2.8)
+        b = float(S.b_guaranteed(0.0, 0.3))
+        gap = rng.uniform(0.05, 0.9) * float(S.rss_dmin(vr, vl, b))
+        m = _move(v=np.array([vr]), a_prop=np.array([rng.uniform(0.01, 0.2)]), gap_lead=np.array([gap]),
+                  v_lead=np.array([vl]))
+        r = S.safety_check(None, m)
+        c += bool(r.modified[0]) and r.a[0] < 0
+    caught["R1 inside the RSS gap"] = c
+    # R2: at or above the admissible speed, proposing to accelerate (slopes friction can hold: b > 0)
+    th_hold = math.degrees(math.atan(0.3)) - 0.5
+    c = 0
+    for _ in range(n):
+        th = rng.uniform(0, th_hold)
+        vmax = float(S.v_max_r2(th, 0.3, 1e6, 2.8))
+        m = _move(v=np.array([vmax + rng.uniform(0.0, 0.5)]), a_prop=np.array([rng.uniform(0.01, 0.2)]),
+                  theta=np.array([th]))
+        r = S.safety_check(None, m)
+        c += bool(r.modified[0]) and r.a[0] <= 0
+    caught["R2 over the speed limit"] = c
+    # beyond the invariant: on slopes friction cannot hold (b < 0, v_max = 0) no action is safe; the shield must say so
+    c = 0
+    for _ in range(n):
+        th = rng.uniform(th_hold + 1.0, 25)
+        m = _move(v=np.array([rng.uniform(0.0, 0.5)]), a_prop=np.array([rng.uniform(-0.2, 0.2)]), theta=np.array([th]))
+        r = S.safety_check(None, m)
+        c += bool(r.no_safe_action[0])
+    caught["unholdable slope flagged"] = c
+    # stop line (R3 / R5 / R10 entry without a confirmed reservation): too close to stop if it accelerates
+    c = 0
+    for _ in range(n):
+        v0 = rng.uniform(0.5, 2.8)
+        b = float(S.b_guaranteed(0.0, 0.3))
+        d = float(S.stop_distance(v0, b)) + rng.uniform(0.0, 0.05)
+        m = _move(v=np.array([v0]), a_prop=np.array([rng.uniform(0.05, 0.2)]), d_stop=np.array([d]))
+        r = S.safety_check(None, m)
+        c += bool(r.modified[0])
+    caught["stop line"] = c
+    # R6: inside the crew keep-out distance while moving, proposing to accelerate
+    c = 0
+    for _ in range(n):
+        v0 = rng.uniform(0.5, 2.8)
+        b = float(S.b_guaranteed(0.0, 0.3))
+        d = rng.uniform(0.1, 0.95) * float(S.r_crew_stop(v0, b))
+        m = _move(v=np.array([v0]), a_prop=np.array([rng.uniform(0.01, 0.2)]), d_crew=np.array([d]))
+        r = S.safety_check(None, m)
+        c += bool(r.modified[0]) and r.a[0] < 0
+    caught["R6 crew keep-out"] = c
+    # R5: inside a closing landing zone, proposing to slow down with the way out clear
+    c = 0
+    for _ in range(n):
+        v0 = rng.uniform(0.3, 2.0)
+        m = _move(v=np.array([v0]), a_prop=np.array([-rng.uniform(0.05, 0.3)]), must_exit=np.array([True]))
+        r = S.safety_check(None, m)
+        c += bool(r.modified[0]) and r.a[0] >= 0
+    caught["R5 must exit"] = c
+    for k, cnt in caught.items():
+        rows.append(_row("S2", k, f"Injected unsafe proposals refused: {k}", float(n), float(cnt), 0.0, "refused",
+                         f"{n} injections; a miss is an accepted unsafe proposal (miss-rate bound 3/N = {3 / n:.3f})"
+                         + (". Beyond the invariant (R2 forbids these slopes): the shield's kinematics take a stopped "
+                            "vehicle to stay stopped, so a near-standstill vehicle braking on a slope friction cannot "
+                            "hold is accepted instead of flagged" if k == "unholdable slope flagged" else ""),
+                         "fault injection (mutation testing)", "code verification", "V", "P1", ["P2"], mode="abs",
+                         source="DeMillo, Lipton and Sayward 1978; lunarsim/atc/safety.py",
+                         exposure={"n": n, "unit": "injections", "upper95": 1 - 0.05 ** (1 / n)}, t0=t0))
+    return rows
+
+
+def check_s3_minimal(n: int = 10000) -> List[Dict]:
+    """S3: a proposal that is already safe passes unchanged (random free-road states, accelerations that keep the
+    speed within its limit); the intervention rate in the encounters is reported from E44."""
+    from .atc import safety as S
+    t0 = time.time()
+    rng = np.random.default_rng(3)
+    th = rng.uniform(0, 8, n)
+    vmax = S.v_max_r2(th, 0.3, 1e6, 2.8)
+    v = rng.uniform(0, 1, n) * vmax * 0.8
+    b = S.b_guaranteed(th, 0.3)
+    lo = np.maximum(-b * 0.9, -v / 0.1)
+    hi = np.minimum(0.2, (vmax - v) / 0.1)
+    a = lo + (hi - lo) * rng.random(n)
+    m = _move(v=v, a_prop=a, theta=th, mu=np.full(n, 0.3), v_class=np.full(n, 2.8), sight=np.full(n, 1e6),
+              gap_lead=np.full(n, np.inf), v_lead=np.zeros(n), d_stop=np.full(n, np.inf), d_crew=np.full(n, np.inf))
+    r = S.safety_check(None, m)
+    changed = int(np.sum(r.modified))
+    ty = _e44_types()
+    rates = ", ".join(f"T{k} {v['intervention_rate']:.3f}" for k, v in sorted(ty.items(), key=lambda x: int(x[0])))
+    return [_row("S3", "safe passes unchanged", "A proposal that is already safe passes unchanged", 0.0, float(changed),
+                 0.0, "modified", f"{n:,} free-road states (slope 0-8 deg, speed below 80 % of its limit, acceleration "
+                 f"keeping it below the limit, no leader, line or crew); intervention rate per E44 type (share of "
+                 f"proposals the shield changed): {rates}", "analytic", "code verification", "V", "P1", ["P2"],
+                 mode="abs", source="Alshiekh et al. 2018 (shielding); Ames et al. 2019", t0=t0)]
+
+
+def _road_harness(branched=True):
+    """The engine's RoadLayer.apply on one single-lane resource 'X->Y' (direction +1) / 'Y->X' (-1), driven without a
+    simulation: a vehicle's job is one traversal, committed in call order (as jobs commit in the engine)."""
+    from .atc.roads import RoadLayer, DEFAULTS as RD
+
+    class _Sim:
+        def __init__(self):
+            self._last_segments = {}
+            self.vehicles = []
+
+    class _V:
+        def __init__(self, i):
+            self.id, self.owner = i, "A"
+
+    class _Job:
+        def __init__(self, v):
+            self.vehicles = [v]
+    rl = object.__new__(RoadLayer)
+    rl.cfg = dict(RD, eva=dict(RD["eva"], per_week=0))
+    rl.table, rl.wait_by_owner, rl.pads, rl.eva = {}, {}, set(), []
+    rl.standoff = "1"
+    rl.branched = {0: bool(branched)}
+    rl.legs = {"X->Y": [(0, 0.0, 1.0, 1)], "Y->X": [(0, 0.0, 1.0, -1)]}
+    rl.m = {"wait_h": 0.0, "apron_wait_h": 0.0, "eva_slow_h": 0.0, "conflicts": 0, "hand_conflicts": 0,
+            "hand_wait_h": 0.0, "other_stop_h": 0.0, "r7_fallbacks": 0, "jobs": 0, "traversals": 0, "deadlocks": 0}
+    sim = _Sim()
+
+    def traverse(vid, t, tau, d=1, prune=True):
+        if prune:                                     # entries that ended can never conflict again
+            rl.table[0] = [e for e in rl.table.get(0, []) if e[1] > t]
+        a, b = ("X", "Y") if d > 0 else ("Y", "X")
+        sim._last_segments[vid] = [[a, b, t, t + tau, 1.0]]
+        return rl.apply(sim, _Job(_V(vid)), t)
+    return traverse, rl
+
+
+def check_t1_single_lane() -> List[Dict]:
+    """T1: one single-lane segment, single occupancy, Poisson arrivals, deterministic traversal tau: the engine's
+    reservation commit (RoadLayer.apply) equals the Lindley recursion on the same arrivals (exact), and its mean wait
+    matches M/D/1 at rho 0.3, 0.6, 0.85 (sized by the plan's rule)."""
+    rows = []
+    tau = 0.1
+    for rho, tol in ((0.3, 0.03), (0.6, 0.05), (0.85, 0.10)):
+        t0 = time.time()
+        lam = rho / tau
+        rng = np.random.default_rng(int(rho * 100))
+        traverse, rl = _road_harness()
+        ref = lam * tau * tau / (2 * (1 - rho))
+        m_ = 2000
+        waits = []
+        t = 0.0
+        while True:
+            arr = t + np.cumsum(rng.exponential(1 / lam, 20 * m_))
+            for i, a in enumerate(arr):
+                waits.append(traverse(len(waits), float(a), tau))
+            t = float(arr[-1])
+            w = np.array(waits)
+            mean, ci = _batch_means(w)
+            if (ci[1] - ci[0]) / 2 <= tol / 3 * ref or len(w) >= 2_000_000:
+                break
+            m_ = len(w) // 20
+        # sample path: Lindley on the same arrivals
+        rng2 = np.random.default_rng(int(rho * 100))
+        arr_all = []
+        tt, mm = 0.0, 2000
+        while len(arr_all) < len(w):
+            a2 = tt + np.cumsum(rng2.exponential(1 / lam, 20 * mm))
+            arr_all.extend(a2.tolist())
+            tt = float(a2[-1])
+            mm = len(arr_all) // 20
+        lind = queue_fcfs(np.array(arr_all[:len(w)]), np.full(len(w), tau), 1)
+        d = float(np.max(np.abs(lind - w)))
+        rows.append(_row("T1", f"rho {rho}: sample path", f"Single-lane segment = Lindley recursion, rho {rho}", 0.0, d,
+                         1e-9, "h", f"{len(w):,} traversals through RoadLayer.apply (R3 via safety_check, branched "
+                         "segment: single occupancy) against the Lindley recursion on the same arrival times",
+                         "comparison to other models", "code verification", "V", "P1", ["P2"], mode="abs",
+                         source="Lindley 1952", t0=t0, tol_src="exact up to float addition"))
+        rows.append(_row("T1", f"rho {rho}: W_q", f"Single-lane segment mean wait, rho {rho} (M/D/1: lambda tau^2 / "
+                         "(2 (1 - rho)))", ref, mean, tol, "h", f"tau {tau} h, lambda {lam:g}/h, {len(w):,} traversals "
+                         "in 20 batches", "analytic", "code verification", "V", "P1", ["P2"], source="Kleinrock 1975",
+                         ci=ci, t0=t0))
+    return rows
+
+
+def check_t2_deterministic() -> List[Dict]:
+    """T2: (a) n vehicles at once on a single-lane segment: waits 0, tau, ..., mean (n - 1) tau / 2; (b) strictly
+    alternating directions, saturated: throughput 1 / tau (the model has no clearance time between directions);
+    (c) same direction on an unbranched segment: following is allowed, so nobody waits (spacing is R1's job)."""
+    rows = []
+    tau = 0.25
+    t0 = time.time()
+    worst = 0.0
+    for n in (2, 5, 10, 50):
+        traverse, _ = _road_harness()
+        w = [traverse(i, 0.0, tau, prune=False) for i in range(n)]
+        worst = max(worst, abs(np.mean(w) - (n - 1) * tau / 2) / ((n - 1) * tau / 2))
+    rows.append(_row("T2", "(a) n at once", "n vehicles at once: mean wait (n - 1) tau / 2", 0.0, worst, 1e-9, "rel",
+                     "n = 2, 5, 10, 50 at t = 0, tau 0.25 h, single occupancy; largest relative error", "analytic",
+                     "code verification", "V", "P1", ["P2"], mode="abs", source="elementary queueing", t0=t0))
+    t0 = time.time()
+    traverse, _ = _road_harness(branched=True)
+    n = 200
+    ends = []
+    for i in range(n):                                # arrivals in sequence (1e-6 h apart): strict alternation
+        t_a = i * 1e-6
+        w = traverse(i, t_a, tau, d=1 if i % 2 == 0 else -1, prune=False)
+        ends.append(t_a + w + tau)
+    thr = n / max(ends)
+    rows.append(_row("T2", "(b) alternating", "Strictly alternating directions, saturated, single occupancy: "
+                     "throughput 1 / tau", 1 / tau,
+                     thr, 1e-9, "per h", f"{n} vehicles arriving in sequence (1e-6 h apart) with alternating directions on a "
+                     "single-occupancy (branched) segment; the model has no clearance time s between directions (s = 0). "
+                     "On an unbranched segment alternation is not strict: R3 lets a later vehicle join an earlier "
+                     "same-direction window (a platoon; T2 (c)), so directions batch and throughput exceeds 1 / tau", "analytic", "code verification",
+                     "V", "P1", ["P2"], source="elementary queueing", t0=t0))
+    t0 = time.time()
+    traverse, _ = _road_harness(branched=False)
+    w = [traverse(i, 0.0, tau, d=1, prune=False) for i in range(50)]
+    rows.append(_row("T2", "(c) same direction", "Same direction on an unbranched segment: no reservation wait "
+                     "(following is allowed; spacing is R1's job)", 0.0, float(max(w)), 0.0, "h", "50 vehicles at t = 0, "
+                     "same direction", "analytic", "code verification", "V", "P1", ["P2"], mode="abs",
+                     source="lunarsim/atc/safety.py r3_pair_conflict", t0=t0))
+    return rows
+
+
+def _roads_sim(mode, seed=1, days=120, year=2028, plume=True):
+    for p in (_repo(), _repo("experiments", "phase5")):
+        if p not in sys.path:
+            sys.path.insert(0, p)
+    import run_phase5 as RP
+
+    def mut(sc):
+        rd = {"mode": mode, "single_share": RP.SINGLE_SHARE, "bay_km": 1.0}
+        sc = sc.with_(p5=dict(sc.p5, roads=rd, dispatch_fixpoint=True))
+        return sc.with_(plume=dict(RP.E43_PLUME)) if plume else sc
+    return _p5_sim("O_ORACLE", {"start_year": year}, seed=seed, days=days, mutate=mut)
+
+
+def check_t5_s5_s6_s7_roads() -> List[Dict]:
+    """On E43-style runs (road layer + landing closures, O_ORACLE): T5 the reservation table holds no conflicting
+    overlap and no apron over its slots, and a lone vehicle gets no road delay; S5 every reservation wait points to an
+    earlier booking (the wait-for graph is acyclic) and is finite; S6 the 'atc' mode is Earth-independent and never
+    refers a conflict to Earth; S7 no vehicle is at a pad, or within the keep-out radius of it on a road leg, during a
+    landing window."""
+    from .atc.safety import r3_pair_conflict
+    rows = []
+    t0 = time.time()
+    audit = {"overlap": 0, "apron": 0}
+    s5 = {"edges": 0, "phantom": 0, "max_wait_h": {"atc": 0.0, "uncoordinated": 0.0}, "nonfinite": 0}
+    s7 = {"pad": 0, "approach": 0, "visits": 0, "windows": 0}
+    runs = 0
+    for mode in ("atc", "uncoordinated"):
+        for seed in (1, 2):
+            sim = _roads_sim(mode, seed=seed)
+
+            def hook(sim_):
+                rl = sim_.roads
+                orig = rl._conflicts
+
+                def conf(res, t_in, t_out, d, v, mine_only, _o=orig, _rl=rl):
+                    out = _o(res, t_in, t_out, d, v, mine_only)
+                    have = set(_rl.table.get(res, ()))
+                    for x in out:
+                        s5["edges"] += 1
+                        if x not in have or x[4] == v.id:  # a wait must be for another vehicle's existing booking
+                            s5["phantom"] += 1
+                    return out
+                rl._conflicts = conf
+                orig_apply = rl.apply
+
+                def apply(sim__, job, t_start, _a=orig_apply, _mode=mode):
+                    w = _a(sim__, job, t_start)
+                    s5["max_wait_h"][_mode] = max(s5["max_wait_h"][_mode], w)
+                    s5["nonfinite"] += not math.isfinite(w)
+                    return w
+                rl.apply = apply
+            segs_log = []
+            real_start = sim._start_job
+
+            def start(job, _rs=real_start, _sim=sim):
+                if getattr(_sim, "roads", None) is not None and not getattr(_sim, "_vv_hooked", False):
+                    hook(_sim)
+                    _sim._vv_hooked = True
+                n0 = [v.jobs for v in job.vehicles]
+                _rs(job)
+                if [v.jobs for v in job.vehicles] != n0:
+                    for v in job.vehicles:
+                        segs_log.append(list(_sim._last_segments.get(v.id) or []))
+            sim._start_job = start
+            out = _run_quiet(sim)
+            runs += 1
+            rl = sim.roads
+            for res, lst in rl.table.items():
+                if isinstance(res, tuple) and res[0] == "apron":
+                    ev = sorted([(a, 1) for a, b, *_ in lst] + [(b, -1) for a, b, *_ in lst])
+                    occ = 0
+                    for _, dlt in ev:
+                        occ += dlt
+                        audit["apron"] += occ > int(rl.cfg["apron_slots"])
+                    continue
+                br = rl.branched.get(res, False)
+                srt = sorted(lst)
+                for i in range(len(srt)):
+                    for j in range(i + 1, len(srt)):
+                        if srt[j][0] >= srt[i][1]:
+                            break
+                        if srt[i][4] != srt[j][4] and bool(r3_pair_conflict(srt[i][2], srt[j][2], br)):
+                            audit["overlap"] += 1
+            # S7: pad intervals and the approach / departure inside the keep-out radius
+            pl = sim.plume
+            R = float(pl.R)
+            s7["windows"] += len(pl.windows)
+            for segs in segs_log:
+                for a, b, t_a, t_b, _ in segs:
+                    if a == b and a in sim.world.pads and t_b > t_a:
+                        s7["visits"] += 1
+                        if pl.overlapping(a, t_a, t_b) is not None:
+                            s7["pad"] += 1
+                    elif a != b:
+                        L = max(sim.world.distance_km(a, b), 1e-9)
+                        f = min(1.0, R / L)
+                        for site, lo, hi in ((b, t_b - f * (t_b - t_a), t_b), (a, t_a, t_a + f * (t_b - t_a))):
+                            if site in sim.world.pads and hi > lo and pl.overlapping(site, lo, hi) is not None:
+                                s7["approach"] += 1
+    rows.append(_row("T5", "(b) reservation table", "No two conflicting reservations of a segment overlap, and no apron "
+                     "holds more than its slots", 0.0, float(audit["overlap"] + audit["apron"]), 0.0, "violations",
+                     f"{runs} runs (O_ORACLE + road layer, atc and uncoordinated, seeds 1-2, 120 days, landing "
+                     f"closures): conflicting overlaps {audit['overlap']}, apron over slots {audit['apron']}", "traces",
+                     "code verification", "V", "P1", ["P2"], mode="abs", source="lunarsim/atc/roads.py", t0=t0))
+    rows.append(_row("S5", "road layer wait-for", "Every reservation wait is for another vehicle's existing booking "
+                     "(bookings are committed in order, so the wait-for graph is acyclic) and ends", 0.0,
+                     float(s5["phantom"] + s5["nonfinite"]), 0.0, "violations",
+                     f"same {runs} runs: {s5['edges']:,} wait edges, {s5['phantom']} not for another vehicle's booking in "
+                     f"the table, {s5['nonfinite']} unbounded waits; longest wait {s5['max_wait_h']['atc']:.2f} h in atc "
+                     f"mode and {s5['max_wait_h']['uncoordinated']:.2f} h uncoordinated (hand-resolution waits for Earth "
+                     "contact through blackouts; T_max is not stated in the plan, so the maxima are reported). Deadlocks "
+                     "in the encounter layer are a separate row",
+                     "traces", "code verification", "V", "P1", ["P2"], mode="abs",
+                     source="Coffman, Elphick and Shoshani 1971", t0=t0))
+    rows.append(_row("S7", "landing keep-out", "No vehicle at a pad, or within the keep-out radius of it on a road leg, "
+                     "during a landing window", 0.0, float(s7["pad"] + s7["approach"]), 0.0, "violations",
+                     f"same {runs} runs, {s7['windows']} keep-out windows (R {R:g} km, +/- the stand-down): {s7['visits']:,} "
+                     f"pad visits, {s7['pad']} inside a window; road legs inside the radius during a window: "
+                     f"{s7['approach']} (a vehicle is taken to be within R on the last / first R km of a leg into / out "
+                     "of the pad, at the leg's mean speed)", "traces", "code verification", "V", "P1", ["P2", "P3"],
+                     mode="abs", source="v3 engine tests; lunarsim/phase3.py PlumeModel", t0=t0))
+    t0 = time.time()
+    one = lambda sc: sc.with_(fleet=[next(f for f in sc.fleet if f[1] == "CARGO_FLEX")])
+    for p in (_repo(), _repo("experiments", "phase5")):
+        if p not in sys.path:
+            sys.path.insert(0, p)
+    import run_phase5 as RP
+
+    def mut1(sc):
+        sc = one(sc)
+        return sc.with_(p5=dict(sc.p5, roads={"mode": "atc", "single_share": RP.SINGLE_SHARE, "bay_km": 1.0,
+                                             "eva": {"per_week": 0}}, dispatch_fixpoint=True))
+    sim = _p5_sim("O_ORACLE", {}, seed=1, days=120, mutate=mut1)
+    out = _run_quiet(sim)
+    delay = out.get("road_wait_h", 0) + out.get("road_apron_wait_h", 0) + out.get("road_hand_wait_h", 0)
+    rows.append(_row("T5", "(a) free flow", "A lone vehicle gets no delay from the road layer", 0.0, float(delay), 0.0,
+                     "h", f"one CARGO_FLEX, road layer atc (no crew walks), 120 days, {int(out.get('road_traversals', 0))} "
+                     "single-lane traversals: segment, apron and hand waits summed", "degenerate tests",
+                     "code verification", "V", "P1", ["P2"], mode="abs", source="lunarsim/atc/roads.py", t0=t0))
+    r = _row("T5", "(c) node conservation", "Vehicles in = out + present at every node", float("nan"), float("nan"), 0.0,
+             "", "the engine has no node occupancy: vehicles are on legs or at sites, and capacity at sites is the "
+             "apron slot rule (row T5 (b))", "traces", "code verification", "V", "P1", ["P2"], mode="abs",
+             source="lunarsim/atc/roads.py")
+    r["skipped"] = "not applicable: no node occupancy in the engine; site capacity is the apron slot rule (T5 (b))"
+    rows.append(r)
+    t0 = time.time()
+    d = {}
+    for mode in ("atc", "uncoordinated"):
+        for y in (2028, 2038):
+            sim = _roads_sim(mode, seed=3, days=90, year=y)
+            o = _run_quiet(sim)
+            d[(mode, y)] = (_items_digest(sim), o.get("road_hand_conflicts", 0))
+    rows.append(_row("S6", "atc Earth-independent", "Road mode 'atc' decides without Earth: same run in 2028 and 2038, "
+                     "no conflict referred to Earth", 1.0, float(d[("atc", 2028)][0] == d[("atc", 2038)][0] and
+                                                             d[("atc", 2028)][1] == 0 and d[("atc", 2038)][1] == 0),
+                     0.0, "pass", f"seed 3, 90 days, landing closures on: md5 of item records {d[('atc', 2028)][0][:12]} "
+                     f"vs {d[('atc', 2038)][0][:12]}, hand referrals {d[('atc', 2028)][1]:g} / {d[('atc', 2038)][1]:g}; "
+                     f"control 'uncoordinated': {d[('uncoordinated', 2028)][0][:12]} vs "
+                     f"{d[('uncoordinated', 2038)][0][:12]}, hand referrals {d[('uncoordinated', 2028)][1]:g} / "
+                     f"{d[('uncoordinated', 2038)][1]:g}", "metamorphic testing", "code verification", "V", "P1", ["P2"],
+                     mode="abs", source="design identity (lunarsim/atc/roads.py)", t0=t0))
+    return rows
+
+
+def check_s5_encounters() -> List[Dict]:
+    """S5 in the encounter layer, from E44: zero deadlocks (cycles of vehicles waiting for one another)."""
+    t0 = time.time()
+    ty = _e44_types()
+    dl = {k: int(v["outcomes"].get("deadlock", 0)) for k, v in ty.items()}
+    n = sum(float(v["n_eff"]) for v in ty.values())
+    return [_row("S5", "encounter deadlocks", "Zero deadlocks in the encounter layer (E44)", 0.0, float(sum(dl.values())),
+                 0.0, "encounters", f"E44, {n:,.0f} driven encounters; deadlocks by type: "
+                 + ", ".join(f"T{k} {x}" for k, x in sorted(dl.items(), key=lambda z: int(z[0])) if x)
+                 + ". Type 5 is a ring of single-lane reservations (R3) and type 6 a junction at a zone line, the "
+                 "genuine mechanisms PREREG change 9 records; the P2 paper reports them", "traces", "code verification",
+                 "V", "P1", ["P2"], mode="abs", source="results/E44_bounds.json; PREREG change 9", t0=t0)]
+
+
+def check_v_replay() -> List[Dict]:
+    out = []
+    for cid, name in (("V1", "ATC trace replay equals the engine output (bids, awards, interventions, team lifts, links)"),
+                      ("V2", "Vehicle positions in the ATC scene equal the engine's at event times")):
+        r = _row(cid, "not yet possible", name, float("nan"), float("nan"), 0.0, "",
+                 "the ATC trace export (B-80) has not been written, so there is no ATC replay to compare; the v3 scene "
+                 "package is checked by the phase 4 rows (scene reproduces trace, trajectory replay)", "traces",
+                 "code verification", "V", "P1", ["P1", "P2"], mode="abs", source="B-80; lunarsim/vv.py phase 4")
+        r["skipped"] = "not yet possible: no ATC trace export (B-80) to replay"
+        out.append(r)
+    return out
+
+
+def run_phase5_batch3b() -> List[Dict]:
+    rows: List[Dict] = []
+    for f in (check_s1_separation, check_s2_injection, check_s3_minimal, check_s5_encounters, check_t1_single_lane,
+              check_t2_deterministic, check_t5_s5_s6_s7_roads, check_v_replay):
+        rows += f()
+    return rows
+
+
 # ------------------------------------------------------------------------------------------------ run and write
-def run_phase5_checks(batches=(1, 2)) -> List[Dict]:
+def run_phase5_checks(batches=(1, 2, 3)) -> List[Dict]:
     rows: List[Dict] = []
     if 1 not in batches:
-        return run_phase5_batch2() if 2 in batches else rows
+        return (run_phase5_batch2() if 2 in batches else rows) + (run_phase5_batch3() + run_phase5_batch3b() if 3 in batches else [])
     for f in (check_d1_sample_path, check_d2_pk, check_d3_multi, check_d4_cobham, check_d5_extremes,
               check_d6_one_owner, check_d7_time_scale, check_d8_invariants, check_d9_hungarian, check_d10_crn,
               check_d11_inputs, check_r1_horizon, check_e3_energy):
@@ -1697,6 +2211,8 @@ def run_phase5_checks(batches=(1, 2)) -> List[Dict]:
         rows += r if isinstance(r, list) else [r]
     if 2 in batches:
         rows += run_phase5_batch2()
+    if 3 in batches:
+        rows += run_phase5_batch3() + run_phase5_batch3b()
     return rows
 
 
