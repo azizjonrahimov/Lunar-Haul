@@ -1,0 +1,18 @@
+{
+ "task": "B-78 E45, counterexamples found and fixed during development (before the final results/E45_modelcheck.json)",
+ "items": [
+  {"kind": "property definition",
+   "what": "R6 checked as a state invariant (any vehicle in or next to the crew's road cell) flagged a crew member walking up to a vehicle that was already stopped",
+   "fix": "R6 is about the vehicle's motion: checked on transitions (a vehicle moving into or next to the crew's road cell)"},
+  {"kind": "checker adapter",
+   "what": "the crew distance passed to safety_check was not computed for vehicles on the landing-zone spur; a vehicle leaving the spur could move next to crew on the road (80 violating states in model A)",
+   "fix": "crew distance from cell positions along the direction of travel, for every cell"},
+  {"kind": "checker model",
+   "what": "bay slots were counted per lane, which gave each 2-slot bay 4 slots and hid the R3 exit-slot mutation (no counterexample)",
+   "fix": "a bay's slots serve both lanes"},
+  {"kind": "rule interpretation (R3 exit slot)",
+   "what": "after the bay fix, the base model with three vehicles deadlocked: a vehicle was granted the segment with a free exit-bay slot, then another vehicle drove into the bay and took that slot, leaving the first stuck in the segment (deadlock trace, 12 steps)",
+   "fix": "the exit slot reserved with a segment grant binds every other vehicle: entering a bay counts the slots reserved by segment holders as taken (R3 'reserved for it'); the encounter simulator counts granted-not-arrived slots the same way"}
+ ],
+ "final": "results/E45_modelcheck.json: 4 models pass; the R3, R5 and R7 mutations each give a counterexample"
+}

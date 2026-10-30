@@ -145,6 +145,8 @@ class R:
         d44 = os.path.join(RES, "E44_defects.json")                           # PREREG change 8
         self.e44d = jl(d44) if os.path.exists(d44) else None
         self.e45j = jl(self.e45) if os.path.exists(self.e45) else None       # tools/atc/run_e45.py
+        d45 = os.path.join(RES, "E45_development.json")                       # counterexamples fixed in development
+        self.e45d = jl(d45) if os.path.exists(d45) else None
         b44 = os.path.join(RES, "E44_bins.csv")                               # per-type parameter bins
         self.e44b = pd.read_csv(b44) if os.path.exists(b44) else None
 
@@ -773,6 +775,27 @@ def values(r: R, allow_pending: bool):
                 f"results.")
         for k, m in mu.items():
             check(m["counterexample_found"], f"E45 mutation {k} produced a counterexample")
+        if r.e45d is not None:                       # results/E45_development.json: found and fixed before the final run
+            items = r.e45d["items"]
+            kinds = [it["kind"] for it in items]
+            n_rule = sum("rule" in k for k in kinds)
+            n_check = len(items) - n_rule
+            check(set(kinds) == {"property definition", "checker adapter", "checker model", "rule interpretation (R3 exit slot)"},
+                  "the E45 development record holds the four known items")
+            s += (f" Development of the checker found {words(len(items))} counterexamples before the final run, "
+                  f"{words(n_check)} in the checker itself (R6 checked as a state invariant rather than on the "
+                  f"vehicle's motion, which flagged crew walking up to a stopped vehicle; no crew distance computed on "
+                  f"the landing spur, 80 violating states in the first layout; bay slots counted per lane, which hid "
+                  f"the R3 mutation)")
+            rule = [it for it in items if "rule" in it["kind"]]
+            if rule:
+                s += (f" and {words(n_rule)} in the reading of a rule: with the bays fixed, the three-vehicle line "
+                      f"deadlocked when a vehicle granted the segment with a free exit slot lost that slot to a vehicle "
+                      f"that drove into the bay afterwards. R3's &ldquo;reserved for it&rdquo; therefore binds every "
+                      f"other vehicle: a bay counts the slots reserved by segment holders as taken, in the checker and "
+                      f"in the encounter simulator alike.")
+            else:
+                s += "."
         return s
     fill("P2-E45-RESULTS-PARAGRAPH", e45_results_paragraph, "E45")
 
