@@ -3,12 +3,11 @@
 ## Lunar ATC: three papers (2026)
 
 Three papers on Lunar ATC, the network that lets robots of different companies share jobs and roads at the south
-pole without waiting for Earth. P1 is finished; P2 and P3 are being written.
+pole without waiting for Earth. All three are preprints (October 2026).
 
 ### P1 · <!--@paper:p1:title-->
 
-Azizjon Rahimov, Roatify Research · preprint, October 2026 ·
-[PDF](https://github.com/azizjonrahimov/Lunar-Haul/blob/main/paper/p1/working_together_without_earth_p1.pdf) ·
+Azizjon Rahimov, Roatify Research · preprint, October 2026 · <!--@paper:p1:pdf--> ·
 [Paper source, data and pre-registration](https://github.com/azizjonrahimov/Lunar-Haul/tree/main/paper/p1)
 
 **Abstract.** <!--@paper:p1:abstract-->
@@ -31,12 +30,33 @@ Every number below is read from the paper's values file (`paper/p1/values.json`)
 
 ### P2 · <!--@paper:p2:title-->
 
-In preparation. The safety program it tests can be watched at work in the
-[encounter sandbox](../atc/#sandbox).
+Azizjon Rahimov, Roatify Research · preprint, October 2026 · <!--@paper:p2:pdf--> ·
+[Paper source, data and pre-registration](https://github.com/azizjonrahimov/Lunar-Haul/tree/main/paper/p2)
+
+**Abstract.** <!--@paper:p2:abstract-->
+
+**Keywords:** <!--@paper:p2:keywords-->
+
+The safety program it tests can be watched at work in the [encounter sandbox](../atc/#sandbox).
+
+#### Cite P2
+
+<!--@paper:p2:bibtex-->
 
 ### P3 · <!--@paper:p3:title-->
 
-In preparation.
+Azizjon Rahimov, Roatify Research · preprint, October 2026 · <!--@paper:p3:pdf--> ·
+[Paper source, data and pre-registration](https://github.com/azizjonrahimov/Lunar-Haul/tree/main/paper/p3)
+
+**Abstract.** <!--@paper:p3:abstract-->
+
+**Keywords:** <!--@paper:p3:keywords-->
+
+The market it tests is walked through, with its payments, on the [Lunar ATC page](../atc/#atc-market-h).
+
+#### Cite P3
+
+<!--@paper:p3:bibtex-->
 
 ## Earlier papers
 

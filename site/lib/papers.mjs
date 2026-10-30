@@ -3,7 +3,8 @@
 // the same values the paper's own build fills in). Nothing is typed into the site: content/paper.md holds
 // <!--@paper:p1:abstract--> and <!--@v:p1:KEY--> markers, replaced here. The paper's HTML itself is not bundled.
 // A paper not built yet (the files are build outputs) gives "(pending)" rather than failing the site build.
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { inflateSync } from 'node:zlib';
 import { join } from 'node:path';
 import { ROOT } from './pages.mjs';
 
@@ -24,8 +25,32 @@ function finished(id, part, s) {
   return s;
 }
 
-// <!--@paper:<id>:title|abstract|keywords|bibtex-->
+// the PDF's page count: its /Type /Page objects in the file and in its deflated streams (Skia writes the page tree into
+// compressed streams), checked against the largest /Count of a /Type /Pages node (the root)
+function pdfPages(file) {
+  const b = readFileSync(file), s = b.toString('latin1'), texts = [s], re = /stream\r?\n/g;
+  for (let m; (m = re.exec(s));) {
+    const end = s.indexOf('endstream', re.lastIndex); if (end < 0) break;
+    try { texts.push(inflateSync(b.subarray(re.lastIndex, end)).toString('latin1')); } catch { /* not a deflated stream */ }
+    re.lastIndex = end;
+  }
+  const leaves = texts.reduce((a, t) => a + (t.match(/\/Type\s*\/Page\b(?!s)/g) || []).length, 0);
+  const root = Math.max(0, ...texts.flatMap(t => [...t.matchAll(/\/Type\s*\/Pages\b[^]*?\/Count\s+(\d+)|\/Count\s+(\d+)[^>]*?\/Type\s*\/Pages\b/g)].map(q => +(q[1] || q[2]))));
+  if (!leaves || leaves !== root) throw new Error(`${file}: ${leaves} page objects but the page tree counts ${root}`);
+  return leaves;
+}
+// <!--@paper:<id>:pdf--> the link to the paper's one PDF, with its page count and size read from the file
+function paperPdf(id) {
+  const dir = join(ROOT, 'paper', id), pdfs = existsSync(dir) ? readdirSync(dir).filter(f => f.endsWith('.pdf')) : [];
+  if (!pdfs.length) return PENDING;
+  if (pdfs.length > 1) throw new Error(`paper/${id}: more than one PDF (${pdfs.join(', ')})`);
+  const f = join(dir, pdfs[0]), kb = Math.round(readFileSync(f).length / 1000);
+  return `<a href="https://github.com/azizjonrahimov/Lunar-Haul/blob/main/paper/${id}/${pdfs[0]}">PDF, ${pdfPages(f)} pages, ${kb.toLocaleString('en-US')} kB</a>`;
+}
+
+// <!--@paper:<id>:title|abstract|keywords|bibtex|pdf-->
 export function paperField(id, field) {
+  if (field === 'pdf') return paperPdf(id);
   const { html } = load(id);
   if (!html) return PENDING;
   const title = one(new RegExp(`<h1 id="${id}-title">([\\s\\S]*?)</h1>`), html);

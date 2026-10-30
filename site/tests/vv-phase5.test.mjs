@@ -40,6 +40,10 @@ test('calibration, zero-event, skipped and broken rows', () => {
   assert.equal(by('E3 · flat 700 kg').calibration, true);
   assert.match(by('S1').tolerance, /^exact; zero events in 1,200,000 encounters, 95 % upper bound 2\.5e-6/);
   assert.equal(by('S1').tolFrom, '');
+  const ev = row({ id: 'S1', sub: 'type 9', name: 'separation', reference: 0, simulated: 58, tolerance: 0, mode: 'abs', unit: 'violations', exposure: { n: 6114.6, unit: 'driven encounters', upper95: null } });
+  const r9 = read({ ...doc, rows: [ev] }).groups[0].rows[0];
+  assert.equal(r9.status, 'fail'); assert.match(r9.tolerance, /^exact; 58 events in 6,114.6 driven encounters$/);
+  assert.equal(read({ ...doc, rows: [{ ...ev, simulated: 0, passed: true, error: 0 }] }).groups[0].rows[0].status, 'error');   // zero events need the bound
   assert.equal(read({ ...doc, rows: [{ ...rows[0], tolerance_source: 'research_notes/Lunar ATC/verification_plan.md section 3, row D2' }] }).groups[0].rows[0].tolFrom, 'verification plan section 3, row D2');
   assert.equal(by('L1').status, 'not_run'); assert.equal(by('L1').reason, 'needs the GPU build');
   assert.equal(by('R1').status, 'error'); assert.match(by('R1').error, /kind "X"/);

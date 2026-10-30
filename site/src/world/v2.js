@@ -18,6 +18,14 @@ let Q = null;   // quiet.js once loaded
 
 const $ = id => document.getElementById(id);
 const BASE = import.meta.env.BASE_URL;
+// F-53: Lunar ATC with and without the network (B-80's trace pair), a lazy chunk loaded on a click or with ?view=atc
+function openPair() {
+  $('atc-pair-go').disabled = true;
+  import('./atc-pair.js').then(m => m.mount($('atc-pair-view'), BASE)).then(() => $('atc-pair-go').remove())
+    .catch(e => { $('atc-pair-go').disabled = false; $('atc-pair-view').textContent = `The comparison could not be loaded: ${e.message}`; });
+}
+$('atc-pair-go')?.addEventListener('click', openPair);
+if (new URLSearchParams(location.search).get('view') === 'atc') { openPair(); $('atc-pair').scrollIntoView(); }
 const q = new URLSearchParams(location.search);
 // the old entry points (simulator hand-off, service runs, bundled traces, the 2D plan) belong to the trace viewer
 if (q.has('from') || q.has('sample') || q.get('view') === '2d') location.replace(`${BASE}world/trace/${location.search}`);

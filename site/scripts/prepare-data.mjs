@@ -7,6 +7,7 @@
 //   scenes/         lunarsim-scene packages (B-31) and gallery.json (B-36), for /world/
 //   story-data/     resolved guided stories (B-35), for /stories/
 // Terrain source: data/terrain/connecting_ridge/ (LEAD, B-9); fallback site/.terrain-dev/ (scripts/make_dev_terrain.py).
+import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, copyFileSync, readFileSync, readdirSync, cpSync, writeFileSync, statSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -154,6 +155,19 @@ if (existsSync(join(encDir, 'index.json'))) {
     parity: { built: new Date().toISOString(), fixtures: runs.length, fails, checks: runs.reduce((a, r) => a + r.checks, 0),
       maxDa: Math.max(...runs.map(r => r.maxDa)), maxDs: Math.max(...runs.map(r => r.maxDs)), maxDv: Math.max(...runs.map(r => r.maxDv)) }, fixtures: runs }));
   console.log(`prepare-data: ${runs.length} stored encounters staged, JS parity ${fails ? `FAILS in ${fails}` : 'passes in all'}`);
+}
+// B-80's trace pair for /world/'s "with and without the network" (F-53): copied unchanged; each file's size and sha256
+// must equal what index.json states
+const tpDir = join(ROOT, 'data', 'atc', 'trace_pair'), tpOut = join(PUB, 'world', 'atc');
+if (existsSync(join(tpDir, 'index.json'))) {
+  const ix = JSON.parse(readFileSync(join(tpDir, 'index.json'), 'utf8'));
+  for (const r of Object.values(ix.runs)) {
+    const b = readFileSync(join(tpDir, r.file)), sha = createHash('sha256').update(b).digest('hex');
+    if (b.length !== r.bytes || sha !== r.sha256) throw new Error(`prepare-data: data/atc/trace_pair/${r.file} is ${b.length} bytes, sha256 ${sha.slice(0, 12)}; index.json says ${r.bytes}, ${r.sha256.slice(0, 12)}`);
+  }
+  rmSync(tpOut, { recursive: true, force: true }); mkdirSync(tpOut, { recursive: true });
+  for (const f of ['index.json', ...Object.values(ix.runs).map(r => r.file)]) copyFileSync(join(tpDir, f), join(tpOut, f));
+  console.log(`prepare-data: trace pair staged (${Object.keys(ix.runs).join(', ')}; ${ix.window.name} ${ix.year})`);
 }
 // B-83's sandbox set: one recorded encounter per type (two of type 6), each with and without the safety program
 const sbDir = join(ROOT, 'data', 'atc', 'encounter_sandbox'), sbOut = join(PUB, 'atc', 'sandbox');

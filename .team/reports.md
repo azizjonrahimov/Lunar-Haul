@@ -7695,3 +7695,22 @@ The 13 plan rows skipped above: A1, A3, A4, A5, L1 agreement, L2, L3, R6, R8, T4
 - Added beyond the plan: R9 (message model), X6 (Earth independence, full relay = oracle), X7 (E48 timer), D8 cargo ids, the A8 P3 rows (a)-(g), D10 E40 demand identity, S2 unholdable slopes, T3 10 Hz shield.
 
 **Status:** BACKEND idle.
+
+## F-53 WITH/WITHOUT REPLAY + F-56 P2/P3 PDF LINKS + F-55 FINAL CHECK FILE DONE 12:45 | files below | how to check: /world/?view=atc, /paper/, /verification/ | from BACKEND: start positions (below) | for LEAD: two findings below
+Files: site/src/world/atc-pair.js (new), site/src/world/v2.js, site/src/world/v2.css, site/world/index.html, site/scripts/prepare-data.mjs, tools/ci/budgets.json (variant ?view=atc, lists only), site/lib/papers.mjs, site/content/paper.md, site/tests/papers.test.mjs, site/src/verify/phase5.js, site/tests/vv-phase5.test.mjs.
+- /world/ "Lunar ATC: the same month with and without the network": a section under the 3D replay with a button, which loads a lazy chunk (world-atc-pair); ?view=atc opens it directly. Two plan views in the sites.json frame (without | with), one clock (slider, play, F-50 speed control at 15 min to 1 day a second, default 6 h a second).
+  - On the maps: roads, one-lane pieces dashed, bays, reservations in owner colour, radio links (just-lost dashed), team lifts, rally rings, crew rings, landing closures (ring, countdown chip).
+  - Under each map: Earth chip ("Earth hidden for 5 days 13 h more"), the latest decision in words, a "now" line, and four counters (urgent waiting now; idle hours, messages per hour and Earth-hand hours so far).
+  - Below: the month's totals recounted from the events by the file's own definitions. They equal meta.summary in both runs (without: urgent 1, idle 5,642.1 h, 0.00 msgs/h, Earth-hand 8.66 h; with: 0, 5,532.3, 2.16, 0.00); a mismatch line appears if not.
+  - Staging copies data/atc/trace_pair unchanged to public/world/atc/ and fails if a file's size or sha256 differs from index.json. The page checks the same in the browser when the host serves the raw .gz; vite preview serves it unpacked, so there it checks the unpacked size.
+- /paper/: P2 and P3 are linked like P1: author line, then a "PDF, N pages, N kB" link (pages and size read from the PDF at build; page objects checked against the page tree's /Count), then source link, abstract, keywords and citation. Titles come from each paper's h1. After LEAD's 1111ad7 rebuild: P1 28 pages 773 kB, P2 29 pages 876 kB, P3 29 pages 667 kB.
+- /verification/ on the final file (d3a4e53): the recount equals the summary (185 rows, 159 passed, 10 failed, 16 not run, 1 bias flag, 0 format errors). Groups D, A, R, S, T, E, L, V, X; no layout change, so no browser look there.
+  - The reader first refused S1 (c) type 9 as a format error: with 58 events there is no zero-event bound, so exposure.upper95 is null. It now accepts a null bound when events > 0 and shows "58 events in 6,114.6 driven encounters". A test covers it, and a zero-event row without the bound is still an error.
+- Checks: tests 31/31; budgets pages OK. /world/: JS 21.5 of 25, data 4,262.4 of 4,420 with the variant (no limit raised), lazy 258.9 of 265. /verification/ 9.4 of 10, /paper/ 1.7 of 5, /atc/ 14.8 of 15.
+  - Headless Chrome: one instance, D: profile deleted after; RAM 0.95 to 1.10 GB. /paper/ and /world/?view=atc at 1280 and 390 px, light and dark: no console errors, no page-wide horizontal scroll, play and scrub work.
+  - /world/ is dark-only by design (instrument page), so light and dark look the same there. Preview stopped; screenshots deleted.
+- Findings for LEAD:
+  1. paper/p2/paper.html, paper/p2/values.json, paper/p3/paper.html and paper/p3/values.json are untracked in git. /paper/ reads P2's and P3's title, abstract and keywords from them, so a build from the repo alone (CI, Pages) shows "(pending)" for P2 and P3 until they are committed.
+  2. The P3 title in your message differs from the paper's h1. The page uses the h1: "...What Lunar ATC Puts Inside Each Vehicle and How Its Marketplace Works".
+- For BACKEND (via LEAD): vehicles with no leg in the window have no position in the trace (without: LTV1_PEGASUS 2, the two hoppers 5 and 6; with: LTV1_CLV1 0, hoppers 5 and 6). The page lists them as "not moved this month" instead of placing them. A start site per vehicle would put them on the map.
+- C: is down to 0.50 GB free (12:42).

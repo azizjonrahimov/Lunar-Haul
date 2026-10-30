@@ -48,7 +48,8 @@ function checkRow(c, seen) {
     if (!errs.length && (errorOf(c) <= c.tolerance) !== c.passed) errs.push(`"passed" is ${c.passed} but the error ${fmtNum(errorOf(c))} is ${errorOf(c) <= c.tolerance ? 'within' : 'outside'} the tolerance`);
   }
   if (c.ci99 != null && !(Array.isArray(c.ci99) && c.ci99.length === 2 && c.ci99.every(isNum))) errs.push('ci99');
-  if (c.exposure != null && !(isNum(c.exposure.n) && isNum(c.exposure.upper95))) errs.push('exposure');
+  // the 95 % upper bound exists only for zero events; with events it is null (B-79 batch 3, S1 type 9)
+  if (c.exposure != null && !(isNum(c.exposure.n) && (isNum(c.exposure.upper95) || (c.exposure.upper95 === null && c.simulated > 0)))) errs.push('exposure');
   const ci = Array.isArray(c.ci99) && c.ci99.every(isNum) ? c.ci99 : null, ex = c.exposure && isNum(c.exposure.n) ? c.exposure : null;
   const row = {
     id: String(c.id ?? '?'), sub: typeof c.sub === 'string' ? c.sub : '', key, group: /^[A-Z]/.test(c.id ?? '') ? c.id[0] : 'X',
@@ -57,7 +58,7 @@ function checkRow(c, seen) {
     formula: typeof c.basis === 'string' ? c.basis : '', reference: fmtNum(c.reference, c.unit),
     measured: skipped ? '–' : fmtNum(c.simulated, c.unit) + (isNum(c.error) ? `; error ${fmtNum(c.error)}${c.mode === 'rel' ? ' relative' : ''}` : ''),
     ci: ci ? `99 % batch-means interval ${fmtNum(ci[0])} to ${fmtNum(ci[1])}` : '', bias: c.bias_flag === true,
-    tolerance: tolText(c) + (ex ? `; zero events in ${fmtNum(ex.n, ex.unit || '')}, 95 % upper bound ${fmtNum(ex.upper95)}` : ''),
+    tolerance: tolText(c) + (ex ? `; ${c.simulated === 0 ? 'zero' : fmtNum(c.simulated)} events in ${fmtNum(ex.n, ex.unit || '')}${isNum(ex.upper95) ? `, 95 % upper bound ${fmtNum(ex.upper95)}` : ''}` : ''),
     // where the tolerance was fixed before the run (optional)
     tolFrom: typeof c.tolerance_source === 'string' ? c.tolerance_source.replace('research_notes/Lunar ATC/verification_plan.md', 'verification plan') : '',
     status: errs.length ? 'error' : skipped ? 'not_run' : c.passed ? 'pass' : 'fail', reason: skipped ? c.skipped : '',

@@ -40,3 +40,43 @@
 .w2-legend { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-4); margin: 0; padding: 0; list-style: none; font-size: 0.8125rem; color: var(--ink-2); }
 .w2-legend li { display: inline-flex; align-items: center; gap: var(--s-1); }
 .w2-swatch { width: 0.75rem; height: 0.75rem; border-radius: 50%; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35); }
+/* F-53: Lunar ATC with and without the network (atc-pair.js) */
+.ap { margin-top: var(--s-7); }
+.ap-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); padding: var(--s-3); border-radius: var(--radius); }
+.ap-range { flex: 1 1 12rem; min-width: 0; }
+.ap-clock { font-family: var(--font-num); font-variant-numeric: tabular-nums; font-size: var(--fs-small); }
+.ap-pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-4); margin-top: var(--s-4); }
+.ap-run { margin: 0; min-width: 0; }
+.ap-run figcaption { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: baseline; justify-content: space-between; font-size: var(--fs-small); }
+.ap-earth { padding: 0 var(--s-2); border: 1px solid var(--hairline); border-radius: 999px; }
+.ap-earth.up { border-color: var(--tol-cyan); }
+.ap-earth.down { border-color: var(--warm); color: var(--warm); }
+.ap-earth.ap-closed { border-color: var(--tol-yellow); }
+.ap-chips { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.ap-closed[hidden] { display: none; }
+.ap-map { display: block; width: 100%; height: auto; margin-top: var(--s-2); background: var(--bg-2); border-radius: var(--radius); }
+.ap-map * { vector-effect: non-scaling-stroke; }
+.ap-roads path { fill: none; stroke: var(--ink-3); stroke-width: 1.5; }
+.ap-roads path.one-lane { stroke: var(--ink-2); stroke-dasharray: 4 3; }
+.ap-roads .bay { fill: none; stroke: var(--ink-3); stroke-width: 1; }
+.ap-res path { fill: none; stroke-width: 6; stroke-linecap: round; }
+.ap-res .apron { fill: none; stroke-width: 4; }
+.ap-zones .closure { fill: color-mix(in srgb, var(--tol-yellow) 18%, transparent); stroke: var(--tol-yellow); stroke-width: 2; }
+.ap-zones .crew { fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.ap-zones .rally { fill: none; stroke: var(--tol-purple); stroke-width: 2; }
+.ap-links line { stroke: var(--tol-cyan); stroke-width: 1; opacity: 0.7; }
+.ap-links line.lost { stroke: var(--warm); stroke-dasharray: 4 3; opacity: 1; }
+.ap-team line { stroke: var(--tol-purple); stroke-width: 3; }
+.ap-sites circle { fill: var(--ink); }
+.ap-sites text { fill: var(--ink-2); font-size: 120px; font-family: var(--font-sans); }
+.ap-vehs circle { stroke: var(--bg); stroke-width: 1.5; }
+.ap-vehs circle.k-hand { stroke: var(--tol-purple); stroke-width: 4; }
+.ap-vehs circle.k-wait_segment, .ap-vehs circle.k-wait_apron { stroke: var(--warm); stroke-width: 3; }
+.ap-dec { margin: var(--s-2) 0 0; min-height: 2.6em; }
+.ap-now { margin: var(--s-1) 0 var(--s-2); }
+.ap-tot { margin-top: var(--s-5); border-collapse: collapse; font-size: var(--fs-small); }
+.ap-tot caption { text-align: left; padding-bottom: var(--s-2); }
+.ap-tot th, .ap-tot td { padding: var(--s-1) var(--s-3); border-bottom: 1px solid var(--hairline); text-align: left; }
+.ap-tot td { text-align: right; font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.ap-bad { color: var(--warm); font-weight: 600; }
+@media (max-width: 760px) { .ap-pair { grid-template-columns: minmax(0, 1fr); } }

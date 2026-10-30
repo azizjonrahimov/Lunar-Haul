@@ -365,7 +365,19 @@
           "glob": "detect-gpu/benchmarks/d-*.json",
           "count": "max"
         }
-      ]
+      ],
+      "variants": {
+        "?view=atc": {
+          "data": [
+            "world/atc/index.json",
+            "world/atc/with.json.gz",
+            "world/atc/without.json.gz"
+          ],
+          "lazy": [
+            "assets/world-atc-pair-*.js"
+          ]
+        }
+      }
     },
     "world/trace/index.html": {
       "js_gzip_kb": 20,

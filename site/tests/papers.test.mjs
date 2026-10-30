@@ -36,6 +36,14 @@ test('R-1: title, abstract and keywords from the built paper, without its build 
 test('every PDF that /paper/ links to is in the repository', () => {
   const md = readFileSync(new URL('../content/paper.md', import.meta.url), 'utf8');
   const pdfs = [...md.matchAll(/Lunar-Haul\/blob\/main\/([^)\s]+\.pdf)\)/g)].map(x => x[1]);
-  assert.ok(pdfs.length >= 4, `${pdfs.length} PDF links`);
+  // the Phase 5 papers' links come from <!--@paper:<id>:pdf-->, with the page count and size read from the file
+  const marked = [...md.matchAll(/<!--@paper:(\w+):pdf-->/g)].map(x => x[1]);
+  assert.ok(pdfs.length + marked.length >= 4, `${pdfs.length + marked.length} PDF links`);
   for (const p of pdfs) assert.ok(existsSync(new URL(`../../${p}`, import.meta.url)), p);
+  for (const id of marked) {
+    const a = paperField(id, 'pdf');
+    if (/\(pending\)/.test(a)) continue;
+    const m = /blob\/main\/(paper\/\w+\/[^"]+\.pdf)">PDF, (\d+) pages, ([\d,]+) kB</.exec(a);
+    assert.ok(m, a); assert.ok(existsSync(new URL(`../../${m[1]}`, import.meta.url)), m[1]); assert.ok(+m[2] > 0, id);
+  }
 });
