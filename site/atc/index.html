@@ -38,8 +38,8 @@
           exhaustively, and it has the last word.</p>
         <h3>The job market, shared by every company</h3>
         <p>When cargo arrives, the job goes on one board for all the companies' robots. Each robot offers a price: its
-          cost to do the job, from its distance, battery and other work. A small learned policy (a network of about
-          1,500 numbers, being trained now) nudges those offers, and the cheapest offer wins. Heavy loads can go to a team of two robots
+          cost to do the job, from its distance, battery and other work. A small learned correction, one weight for each thing
+          the robot knows locally, nudges those offers (section 4 shows it), and the cheapest offer wins. Heavy loads can go to a team of two robots
           from different companies.</p>
         <h3>The base computer, with a spare</h3>
         <p>A computer at the base runs the board and keeps the ledger of who did what. It has two boards, so either
@@ -165,6 +165,8 @@
       replace them.</p>
     <div id="atc-year"></div>
     <ol class="atc-steps" id="atc-steps"><li class="muted">Loading the numbers…</li></ol>
+    <h3 id="atc-bid-h">The learned correction to each offer</h3>
+    <div class="atc-bid" id="atc-bid" aria-labelledby="atc-bid-h" role="group"><p class="muted">Loading…</p></div>
   </section>
 
   <section class="atc-section" aria-labelledby="atc-sandbox-h" id="sandbox">

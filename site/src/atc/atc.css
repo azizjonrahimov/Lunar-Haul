@@ -78,3 +78,37 @@
 .atc-parity { margin-top: var(--s-5); }
 .atc-parity h3 { margin-bottom: var(--s-2); }
 .atc-e44-t { min-width: 52rem; }
+
+/* section 4: the learned correction. A diverging bar per weight: right of the centre line lowers the offer (favours the
+   item), left raises it; position carries the sign, colour repeats it. Colours validated with the dataviz checker
+   (CVD, chroma, lightness, contrast) on each theme's surface: light #0077BB / #EE6677, dark #2385C8 / #E25C6B. */
+.atc-bid { --bid-down: #0077BB; --bid-up: #EE6677; margin-top: var(--s-2); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .atc-bid { --bid-down: #2385C8; --bid-up: #E25C6B; } }
+:root[data-theme="dark"] .atc-bid { --bid-down: #2385C8; --bid-up: #E25C6B; }
+.atc-bid h4 { margin: var(--s-4) 0 var(--s-2); font-size: 1rem; }
+.atc-bidw { display: grid; gap: 2px; max-width: 52rem; font-size: 0.875rem; margin: var(--s-3) 0; }
+.atc-bidw-row { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr) minmax(0, 13rem); gap: var(--s-3); align-items: center; padding: 0.2rem 0; border-bottom: 1px solid var(--hairline); }
+.atc-bidw-head { font-family: var(--font-display); font-weight: 600; border-bottom-color: var(--ink-3); }
+.atc-bidw-axis { display: flex; justify-content: space-between; gap: var(--s-2); font-weight: 500; color: var(--ink-2); font-size: 0.8125rem; }
+.atc-bidw-row .n { font-variant-numeric: tabular-nums; }
+.atc-bidw-track { position: relative; height: 0.75rem; }
+.atc-bidw-track::before { content: ''; position: absolute; left: 50%; top: -0.25rem; bottom: -0.25rem; border-left: 1px solid var(--ink-3); }
+.atc-bidw-track i { position: absolute; top: 0; bottom: 0; }
+.atc-bidw-track i.down { left: 50%; background: var(--bid-down); border-radius: 0 4px 4px 0; }
+.atc-bidw-track i.up { right: 50%; background: var(--bid-up); border-radius: 4px 0 0 4px; }
+.atc-bidw-row:not(.atc-bidw-head):hover { background: var(--bg-2); }
+@media (max-width: 640px) {
+  .atc-bidw-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .atc-bidw-row > :first-child { grid-column: 1 / -1; }
+  .atc-bidw-head > :first-child { display: none; }
+  .atc-bidw-head .n { display: none; }
+  .atc-bidw-head .atc-bidw-axis { grid-column: 1 / -1; }
+}
+@media (forced-colors: active) { .atc-bidw-track i { background: CanvasText; } }
+.atc-bid-try { border: 1px solid var(--hairline); border-radius: var(--radius); padding: var(--s-3) var(--s-4); background: var(--bg-2); max-width: 52rem; }
+.atc-bid-ctl { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr)); gap: var(--s-3) var(--s-4); align-items: end; }
+.atc-bid-sl { display: grid; gap: 0.2rem; min-width: 0; }
+.atc-bid-sl input { width: 100%; }
+.atc-bid-sl output { font-variant-numeric: tabular-nums; text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--ink); }
+.atc-bid-out { margin: var(--s-3) 0 var(--s-2); font-size: 1.0625rem; }
+.atc-bid-out .ui-label { display: block; margin-bottom: 0.15rem; }

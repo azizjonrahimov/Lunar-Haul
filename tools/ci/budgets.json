@@ -266,6 +266,11 @@
         "atc/ATC_regimes_smoke.json"
       ],
       "data_gzip_kb": 5,
+      "lazy": [
+        "assets/atc-sandbox-????????.js",
+        "assets/encounter-????????.js"
+      ],
+      "lazy_gzip_kb": 15,
       "fonts": [
         "assets/sora-latin-wght-normal-*.woff2",
         "assets/jetbrains-mono-latin-wght-normal-*.woff2",

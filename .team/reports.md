@@ -6940,3 +6940,42 @@ Idle until BACKEND's data for F-53 lands.
 **Questions for LEAD:**
 1. Grant the /atc/ lazy budget entry above?
 2. F-54 item 3, the learned bid policy in the browser (`atc_bid_linear_v1.json` with its check file): shall I do it next, or does something else come first?
+
+## F-54 ITEM 3 DONE 04:45 | the learned bid correction in the browser (atc_bid_linear_v1), with its check; the /atc/ lazy budget line
+
+**Files changed (uncommitted):**
+- New:
+  - `site/src/atc/bid-policy.js`: the runtime for kind linear and mlp, no DOM.
+  - `site/src/atc/bid.js`: the panel, a lazy chunk loaded by a scroll check.
+  - `site/tests/atc-bid.test.mjs`.
+- Modified:
+  - `site/atc/index.html`: section 1 no longer says "a network of about 1,500 numbers, being trained now" but "a small learned correction, one weight for each thing the robot knows locally" (the linear model is the method, per your 27 Oct call); section 4 gains "The learned correction to each offer".
+  - `site/src/atc/main.js`: a shared `whenNear()` loads the bid panel and the sandbox.
+  - `site/src/atc/atc.css`.
+  - `tools/ci/budgets.json`: the /atc/ lazy entry you granted: `atc-sandbox-????????.js` and `encounter-????????.js`, 15 kB; 9.7 kB now. The glob leaves out the 3D scene chunk.
+  - `.team/inbox-frontend.md`: F-54 header.
+- No data staging change: prepare-data already copies every policy file to `lab/policies/`.
+
+**What's on the page (section 4):**
+- **One paragraph, in P1's terms:** the correction moves the offer by hours' worth of the item's urgency price; a positive weight lowers the offer and so favours the item; each weight is in hours per unit of its feature as the file scales it.
+- **All 13 weights as a diverging bar list,** largest first, read from the file: right of the line lowers the offer, left raises it. Each row has a plain label and value, e.g. "+1.93 h per 3 h of planned job", "−1.96 h per 10 days" of slack, "+1.04 h per 8 robots" heard. A row's title repeats it in words.
+  - **Colours** were run through the dataviz palette checker on each theme's surface. Light #0077BB / #EE6677 pass all checks. The site's #4477AA failed the chroma floor, and #EE6677 is outside the dark band, so dark mode uses #2385C8 / #E25C6B, which pass.
+- **"How it was made"** comes from the file's training block, with O_ORACLE written as "the full-information pooled marketplace". It points to P1 Section 5.6 for the effect on waits and quotes no result.
+- **Try it:** priority, planned job, time waited, load, drive to the pad, battery and robots heard as controls in plain units. The slack is computed as `learned.py` does (target − waited − job). The rest is held fixed, and the page says so.
+  - The output reads e.g. "lowers this robot's offer by 3.30 h of the item's urgency price, so it is more likely to win the item". Checked by hand: the 13 terms sum to +3.2996.
+- **Check:** the browser runs the file against its 50 check inputs at 1e-9 and shows the result ("all match, largest difference …").
+
+**Checks:**
+- `npm run build` OK; node tests 26/26. The 3 new tests: both policy files (linear and MLP) match Python on their 50 check vectors at 1e-9, and P1's six named weights with their signs.
+- `budgets.py pages` OK.
+- **Headless Chrome:** desktop light and dark, and 390 px light (390 = 390); no console errors. The profile was on D: and removed after the run; I checked C: before the run (798 MB free).
+
+**For LEAD, about P1's wording (traced in the file):**
+- `P1-LIN-WEIGHTS-SENTENCE` names the three largest weights in each direction (+1.93, +1.28, +1.04; −1.96, −1.41, −1.39), then says "the remaining weights are smaller than these".
+- Read over all six that is not true: `age_d`, the time the item has waited, is −1.10, larger than `heard` at +1.04 and sixth largest overall. `landing` (+1.03) is all but tied with `heard`.
+- A fix that stays true: "…the three largest in each direction…; the others in each direction are smaller", or name `age_d` (−1.10 h per day waited).
+- The page shows all 13, so it doesn't depend on that clause.
+
+**Budget request:** the bid panel's lazy chunk `assets/atc-bid-????????.js` is 3.1 kB gz and isn't in the granted globs. May I add it to the same /atc/ lazy entry? That makes 12.8 of 15 kB.
+
+**What I need from BACKEND:** nothing. B-82 for the Mars toggle.

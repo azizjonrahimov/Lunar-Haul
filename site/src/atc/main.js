@@ -71,9 +71,11 @@ function render(doc) {
 
 insideTable();
 // section 5, the encounter sandbox (B-78): its chunk loads when the section comes near (a passive scroll check, so a
-// jump to #sandbox also triggers it); its 3D view loads only when the visitor starts it
-const near = () => { const el = $('sandbox'); if (el.getBoundingClientRect().top > innerHeight + 600) return; removeEventListener('scroll', near); import('./sandbox.js').then(s => s.mount()); };
-addEventListener('scroll', near, { passive: true }); near();
+// jump to #sandbox also triggers it); its 3D view loads only when the visitor starts it;
+// the learned correction (F-54 item 3, bid.js) the same way, near the end of section 4
+const whenNear = (id, load) => { const go = () => { if ($(id).getBoundingClientRect().top > innerHeight + 600) return; removeEventListener('scroll', go); load(); }; addEventListener('scroll', go, { passive: true }); go(); };
+whenNear('atc-bid', () => import('./bid.js').then(m => m.mount()));
+whenNear('sandbox', () => import('./sandbox.js').then(s => s.mount()));
 try {
   const r = await fetch(BASE + 'atc/ATC_regimes_smoke.json'); if (!r.ok) throw new Error(`HTTP ${r.status}`);
   const doc = await r.json(), years = Object.keys(doc.years);
