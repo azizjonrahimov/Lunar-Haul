@@ -683,7 +683,7 @@ Show the new checks from `results/vv_phase5.json` grouped by component (engine, 
 energy, learned policy, 3D replay), each with formula, tolerance, measured value, pass/fail and source; label the
 calibration-reproduction checks as such; keep the existing 37 rows.
 
-## F-56 [QUEUED, as papers land] The three paper pages, results and a new story
+## F-56 [IN PROGRESS: P1 on /paper/ DONE 30 Oct (uncommitted); P2, P3, /results/ ATC section and the fifth story as they land] The three paper pages, results and a new story
 /paper/ lists v2, v3, R-1 and the three new papers (P-A, P-B, P-C) with PDF links and abstracts; /results/ gains a
 Lunar ATC section with the headline numbers (from the papers' values files, never typed); a fifth story,
 "A month without Earth" (story-v1 format, numbers by `{{r:key}}`), following the with/without pair.

@@ -5,13 +5,14 @@ import { header, footer, markdown, headline, figure, icon, resultText, heroCount
 import { results } from './lib/results.mjs';
 import { pipeline } from './lib/pipeline.mjs';
 import { tex } from './lib/tex.mjs';
+import { paperField, paperValue } from './lib/papers.mjs';
 
 // Public base: '/' locally; CI sets SITE_BASE from actions/configure-pages (/Lunar-Haul/ on GitHub Pages).
 const base = process.env.SITE_BASE || '/';
 const PAGES = ['', 'world/', 'world/trace/', 'results/', 'lab/lander/', 'lab/rover/', 'method/', 'paper/', 'data/', 'about/', 'account/', 'changelog/', 'verification/', 'vehicles/', 'simulator/', 'stories/', 'research/earth-sky/', 'atc/',
   'design/', 'design/stage/'];   // development pages (noindex, not in the nav)
 
-// <!--@header-->, <!--@footer-->, <!--@md:name-->, <!--@headline-->, <!--@results-->, <!--@pipeline--> and <!--@r:key--> (also inside markdown), <!--@icon:name-->, <!--@tex:name--> (KaTeX at build time), <!--@base--> in page HTML
+// <!--@header-->, <!--@footer-->, <!--@md:name-->, <!--@paper:id:field--> and <!--@v:id:KEY--> (lib/papers.mjs), <!--@headline-->, <!--@results-->, <!--@pipeline--> and <!--@r:key--> (also inside markdown), <!--@icon:name-->, <!--@tex:name--> (KaTeX at build time), <!--@base--> in page HTML
 function lunarsimPages() {
   return {
     name: 'lunarsim-pages',
@@ -26,6 +27,8 @@ function lunarsimPages() {
           .replace('<!--@hero-css-->', () => `<style>${readFileSync(join(SITE, 'src', 'home-hero.css'), 'utf8')}</style>`)   // inlined: one render-blocking request fewer on the home page
           .replace('<!--@results-->', () => results(base))
           .replace(/<!--@md:([\w-]+)-->/g, (_, n) => markdown(n))
+          .replace(/<!--@paper:(\w+):(\w+)-->/g, (_, id, f) => paperField(id, f))   // F-56: the Phase 5 papers, from paper/<id>/
+          .replace(/<!--@v:(\w+):([\w-]+)-->/g, (_, id, k) => paperValue(id, k))
           .replace('<!--@pipeline-->', () => pipeline())
           .replace(/<!--@r:(\w+)-->/g, (_, k) => resultText(k))
           .replace(/<!--@figure:([\w-]+)-->/g, (_, n) => figure(n))

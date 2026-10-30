@@ -6979,3 +6979,38 @@ Idle until BACKEND's data for F-53 lands.
 **Budget request:** the bid panel's lazy chunk `assets/atc-bid-????????.js` is 3.1 kB gz and isn't in the granted globs. May I add it to the same /atc/ lazy entry? That makes 12.8 of 15 kB.
 
 **What I need from BACKEND:** nothing. B-82 for the Mars toggle.
+
+## F-56 P1 DONE 04:51 | /paper/ gains "Lunar ATC: three papers (2026)": P1 in full (title, abstract, keywords, headline numbers, citation), P2 and P3 listed as in preparation; the bid chunk in the /atc/ lazy budget
+
+**Files changed (uncommitted):**
+- New:
+  - `site/lib/papers.mjs`: the build-time reader of `paper/<id>/paper.html` and `values.json`.
+  - `site/tests/papers.test.mjs`.
+- Modified:
+  - `site/content/paper.md`: the new section on top; the v2/v3 entries are kept unchanged under "Earlier papers", one heading level down.
+  - `site/vite.config.js`: two markers, `<!--@paper:id:field-->` and `<!--@v:id:KEY-->`.
+  - `site/paper/index.html`: title "Papers" and its description.
+  - `tools/ci/budgets.json`: `atc-bid-????????.js` in the /atc/ lazy entry, as you granted; 12.7 of 15 kB.
+  - `.team/inbox-frontend.md`: F-56 header.
+
+**How it works:**
+- **From P1's files:** title, abstract and keywords come from `paper/p1/paper.html`: the h1, the `#p1-abstract` paragraph and `p.kw`. The site build fails if they still hold `{{KEY}}` or `class="pending"`.
+- **From values.json:** each headline number comes from `paper/p1/values.json` by key. The build fails on an unknown key.
+- **No typed numbers:** content/paper.md has markers only.
+- **Paper HTML not bundled:** the paper's HTML stays out of the site; only the quoted strings are inserted at build time, the same way the existing entries quote their papers.
+- **P2 and P3 titles** come from their `paper.html` h1, marked "In preparation". P2 links to the encounter sandbox.
+- **P1 in numbers**, with keys and interval levels checked against P1's text:
+  - 5,480 simulated years under thirteen regimes;
+  - H2 89.9 h (95 % CI 81.8 to 98.7 h), and planning ahead leaves 7.3 h (95 % CI 5.2 to 9.4 h);
+  - H3a 0.84 h less (90 % CI −2.6 to 0.7 h), "not distinguishable from zero, but too wide to show equivalence";
+  - H4: linear 2.3 h (16.5 %; 95 % CI 0.6 to 3.9 h), network −0.25 h (95 % CI −1.6 to 1.1 h);
+  - 99.5 % of the gap is undelivered cargo, team lifts 32 % of it.
+  - Each sentence states its comparison as P1's body does. H2 is against the full-information marketplace; the abstract says "one that never stops".
+- **Citation:** a BibTeX entry built from the title.
+
+**Checks:** `npm run build` OK; node tests 29/29 (3 new: the fields are finished, every quoted key exists, and a missing paper gives "(pending)"); `budgets.py pages` OK. Headless Chrome (profile on D:, removed): /paper/ in light and dark at 1280 and 390 px, 390 = 390, no console errors. C: had 792 MB free and RAM 0.95 GB before the build.
+
+**For LEAD:**
+1. `paper/p1/paper.html` and `paper/p1/values.json` (and those of p2 and p3) are untracked. The site build reads them, so the Pages build shows "(pending)" until they are committed. Please commit at least P1's two files with this.
+2. P1 has no PDF yet. The entry links to `paper/p1/` in the repository and says "PDF to follow". When a PDF exists, tell me its path and I'll add the link.
+3. F-56 also names R-1 ("What Earth's horizon costs", `paper/r1/`, PDF present) for /paper/. It isn't on the page now. Shall I add it under "Earlier papers" (title and abstract from its paper.html, PDF link)?

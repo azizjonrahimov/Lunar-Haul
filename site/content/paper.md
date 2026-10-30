@@ -1,6 +1,46 @@
-# Paper
+# Papers
 
-## Who Hauls the Habitat? A Verified Simulation Testbed, a Pooled Dispatch Marketplace and a Reference Design for Lunar Surface Logistics
+## Lunar ATC: three papers (2026)
+
+Three papers on Lunar ATC, the network that lets robots of different companies share jobs and roads at the south
+pole without waiting for Earth. P1 is finished; P2 and P3 are being written.
+
+### P1 · <!--@paper:p1:title-->
+
+Azizjon Rahimov, Roatify Research · preprint, October 2026 ·
+[Paper source, data and pre-registration](https://github.com/azizjonrahimov/Lunar-Haul/tree/main/paper/p1) ·
+PDF to follow
+
+**Abstract.** <!--@paper:p1:abstract-->
+
+**Keywords:** <!--@paper:p1:keywords-->
+
+#### P1 in numbers
+
+Every number below is read from the paper's values file (`paper/p1/values.json`) when this site is built.
+
+- **Scale.** <!--@v:p1:P1-N-RUNS-ALL--> pre-registered simulated years under <!--@v:p1:P1-N-REGIMES--> decision regimes.
+- **Waiting for Earth.** At <!--@v:p1:P1-LOAD-MAIN--> load, a pooled dispatcher on Earth that stops when Earth sets kept urgent cargo waiting <!--@v:p1:P1-H2-STRICT-MINUS-O--> longer than the full-information marketplace (95 % CI <!--@v:p1:P1-H2-STRICT-MINUS-O-CI-->). Planning ahead before each blackout left <!--@v:p1:P1-PLAN-MINUS-O--> of extra wait (95 % CI <!--@v:p1:P1-PLAN-MINUS-O-CI-->).
+- **Deciding on the Moon.** The robots' own auction, at message loss <!--@v:p1:P1-LOSS-MAIN-->, kept urgent cargo waiting <!--@v:p1:P1-H3A-DIFF--> than the full-information marketplace (90 % CI <!--@v:p1:P1-H3A-CI90-->): not distinguishable from zero, but too wide to show equivalence.
+- **Learned bids.** A learned linear correction to the bids, with <!--@v:p1:P1-LIN-N-WEIGHTS--> weights, cut the urgent wait by <!--@v:p1:P1-H4-LIN-DIFF-30--> against hand-built bids (<!--@v:p1:P1-H4-LIN-PCT-30-->; 95 % CI <!--@v:p1:P1-H4-LIN-CI-30-->). A <!--@v:p1:P1-MLP-N-PARAMS-->-parameter network trained the same way did not: its difference was <!--@v:p1:P1-H4-MLP-DIFF-30--> (95 % CI <!--@v:p1:P1-H4-MLP-CI-30-->). The [Lunar ATC page](../atc/#atc-bid-h) runs the linear correction in your browser.
+- **What sharing is worth.** <!--@v:p1:P1-H1-UNDELIVERED-SHARE--> of the gap between owners working alone and the pooled fleet is cargo that owners alone never deliver; lifts by two owners' rovers account for <!--@v:p1:P1-H1-TEAM-SHARE--> of it.
+
+#### Cite P1
+
+<!--@paper:p1:bibtex-->
+
+### P2 · <!--@paper:p2:title-->
+
+In preparation. The safety program it tests can be watched at work in the
+[encounter sandbox](../atc/#sandbox).
+
+### P3 · <!--@paper:p3:title-->
+
+In preparation.
+
+## Earlier papers
+
+### Who Hauls the Habitat? A Verified Simulation Testbed, a Pooled Dispatch Marketplace and a Reference Design for Lunar Surface Logistics
 
 Azizjon Rahimov, Roatify Research · version 2, October 2026 · 44 pages ·
 [PDF](https://github.com/azizjonrahimov/Lunar-Haul/blob/main/paper/lunar_logistics_marketplace_paper_v2.pdf) ·
@@ -27,7 +67,7 @@ excluded; ratio of means over 30 years, seed-bootstrap 95 % interval) the pooled
 landed kilogram rather than about $5,000: $5,525 [4,460, 7,281] at Phase 2 with four vehicles, against $10,019
 [8,067, 12,756] for in-house fleets. The cost per kilogram moved is unchanged.
 
-### Version 3 (in preparation)
+#### Version 3 (in preparation)
 
 **Where the Lander Lands: Landing Precision, Pad Standoff, Plume Keep-Out and Rover Autonomy Priced in Lunar
 Surface Logistics.** Azizjon Rahimov, Roatify Research ·
@@ -40,7 +80,7 @@ delivery, a relation NASA's architecture papers describe only qualitatively. At 
 pad. The figures and tables are on the [Results](../results/) page as they are produced, and the method is on the
 [Method](../method/) page. The final version will be posted here with a DOI.
 
-### Cite
+#### Cite version 3
 
 ```
 @misc{rahimov2026lunarhaul,
