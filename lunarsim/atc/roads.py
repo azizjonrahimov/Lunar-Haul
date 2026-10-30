@@ -51,7 +51,8 @@ MARS_DEFAULTS = {
     "sol_h": 24.6597,                 # S (mean solar day)
     "dte_fraction": 0.5,              # share of each sol with Earth above the horizon at the base; A
     "conjunction_start_d": 200.0,     # day of the year the solar-conjunction blackout starts; A (fixed date)
-    "conjunction_days": 14.0,         # S/A (~2 weeks of no contact per conjunction; B-82 spec: ~14 days a year)
+    "conjunction_days": 14.0,         # S/A (~2 weeks of no contact per conjunction; a conjunction comes about once in
+                                      # 26 months, but the simulated year holds one: a conservative choice)
     "storms": [[90.0, 5.0], [270.0, 5.0]],   # [start day, days] dust storms as comms-loss bursts; A (B-82 spec)
 }
 SINGLE_SHARE_FLAG = ("ASSUMED: the 5 m DEM cannot see boulders, crater rims, shadows or graded one-lane roads; "

@@ -1093,7 +1093,7 @@ Keep: payment rules none / per-item second price / posted price per tonne-km wit
 owner against working alone; one manipulation test (bid scaling 0.8-1.25) and audits at q = 0, 5, 20 %. Drop:
 McAfee, charger hogging, false availability, cherry-picking. E46 at 3 owners (equal and 50/35/15), 30 seeds.
 
-## B-81 [QUEUED] What Lunar ATC puts inside each vehicle: measured sizing (P3, E48)
+## B-81 [DONE 30 Oct] What Lunar ATC puts inside each vehicle: measured sizing (P3, E48)
 1. Instrument our own implementation: CPU time per safety_check call and per auction round (median, p99), peak
    memory of the on-robot part (planner + safety check + reservation table + ledger copy), bytes per message
    type and messages per robot-hour from the E40/E43 runs at 1x, 4x and 8x fleet size; the base computer's

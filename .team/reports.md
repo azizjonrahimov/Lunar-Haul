@@ -7091,3 +7091,56 @@ The design is in data/scenarios/E47-design.json, committed (afd4426) before the 
 - (2) "about 6 times less" is now "Referring conflicts to Earth cost about one-sixth as much on Mars (0.18 of the lunar cost)". The 0.18 is mars_rtt20_norelay / moon_2028 from the headline (0.1751); the stored 0.175 would print as 0.17 because of float rounding. "one-sixth" is the rounded inverse looked up in a word table.
 - (3) The conjunction now reads "(once in about 26 months; the simulated year holds one)", with 26 flagged Spec (Mars synodic period).
 - Check: build OK, tests 31/31, budgets pages OK; the /atc/ lazy chunk is 14.9 of 15 kB gz, so the next /atc/ addition needs a trim or a budget decision. Headless: desktop light and 390 dark, no overflow, no console errors. Preview stopped, profile deleted.
+
+## B-81 DONE 30 Oct (E48: what Lunar ATC puts inside each vehicle; P3, exploratory H10) | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+The design is in data/scenarios/E48-design.json, committed (eb9150f) before results; measurement started after it was written. Results: results/E48_sizing.json, in the schema of paper/p3/PLACEHOLDERS.md, plus `h10`, `cpu_safety_check_batch20_us` and `per_robot_hour_by_type`.
+
+### Measured on the laptop (i5-10500H, Python + numpy, single core)
+- **safety_check per call** (one vehicle, inputs drawn from the E44 fixtures): median ~580 µs, p99 693-763 µs across classes.
+  - BASE's Reserve check: 136 / 191 µs.
+  - A batched call over 20 robots: p99 808 µs, i.e. 40 µs per robot. Numpy overhead dominates the single-vehicle call.
+- **Auction round** (one C_AUCTION dispatch call, 84,367 rounds at 1×/4×/8×): median 2.0 ms, p99 20.5 ms.
+- **On-robot data:** 0.39 MB = a 24 h reservation-table window + a year's ledger + the bid policies. BASE: 0.42 MB.
+- **Messages per robot-hour:** 3,600 at 1×, 4× and 8× alike. The 1 Hz status broadcast (R9) dominates: reservations ~0.05, auction 0.29, landing announcements 0.003.
+  - 173 kB per robot-hour = 48 B/s per robot.
+- **Ledger:** 0.30 / 1.35 / 2.71 MB a year at 1×/4×/8×.
+
+### Scaled to flight hardware and checked against the targets
+- **Factor:** laptop CoreMark per core (Assumed 6.0 CoreMark/MHz × 4.5 GHz) over GR740's 492 per core (sourced) = 54.8, range 36.5-64.0.
+- **H10 counts, all within the targets:**
+  - On board, safety_check at 10 Hz takes 0.42 of one GR740 core per robot, an upper bound since the code is Python.
+  - A base computer checking 20 robots batched takes 0.44 of a core.
+  - Memory: 0.39 MB against 256 MB.
+  - Link for 20 robots: 7.7 kbit/s against 16.
+  - Market messages: 0.005 MB a day against 1.
+- **Link budget per class** (2.4 GHz, worst 5 km hop, 1 MHz, 10 dB margin; Assumed powers):
+
+  | class | worst-hop rate (kbit/s) | direct mast view (share of route samples) |
+  |---|---|---|
+  | LTV1, CARGO | 6,976 | 0.23 |
+  | SMALL | 5,010 | 0.19 |
+  | HOPPER | 5,988 | 0.19 |
+
+- **Failover** (C_LEADER, 1×, a year, 5 seeds per level):
+
+  | base MTBF | base down | without a decider | merges a year |
+  |---|---|---|---|
+  | 500 h | 4.2 % | 0.09 % | 15.4 |
+  | 2,000 h | 1.1 % | 0.02 % | 4.0 |
+  | 8,000 h | 0.38 % | 0.008 % | 1.4 |
+
+  Re-election takes 1,800 s. Jobs assigned twice: **0** of 44,275 assignments.
+- **Runs:** 21, mean 63 s, 0.1 CPU h.
+
+### Files
+- **New:** tools/atc/run_e48.py, results/E48_sizing.json (cache in .cache/atc/e48/, not committed).
+- **Changed:** lunarsim/atc/roads.py, conjunction comment only (it comes once in about 26 months; the simulated year holds one, conservatively).
+
+### How to test
+- `python tools/atc/run_e48.py build` rebuilds the results from the cache; `measure` reruns the measurements.
+- Full suite file by file: **45 files, 561 passed.**
+
+**FRONTEND:** nothing new.
+
+**Questions for LEAD:** none open. The reachable shares are direct mast view by road length; multi-hop reach is higher and would need a run with per-class tracking (not done).

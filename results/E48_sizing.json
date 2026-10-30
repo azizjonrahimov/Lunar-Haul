@@ -1,0 +1,293 @@
+{
+ "experiment": "E48 (B-81, P3, exploratory H10)",
+ "design": "data/scenarios/E48-design.json",
+ "note": "python tools/atc/run_e48.py design      # -> data/scenarios/E48-design.json (before the first measurement)\n    python tools/atc/run_e48.py measure [--max-seconds 480]   # resumable steps -> .cache/atc/e48/*.json\n    python tools/atc/run_e48.py build       # -> results/E48_sizing.json (schema: paper/p3/PLACEHOLDERS.md)",
+ "laptop": {
+  "processor": "Intel Core i5-10500H (6 cores, 2.5 GHz base, 4.5 GHz turbo)",
+  "benchmark": 27000.0,
+  "benchmark_name": "CoreMark per core"
+ },
+ "flight": {
+  "processor": "Frontgrade Gaisler GR740 (rad-hard quad-core LEON4FT, 250 MHz)",
+  "benchmark": 492.5,
+  "factor": 54.8,
+  "factor_range": [
+   36.5,
+   64.0
+  ],
+  "memory_mb": 256,
+  "source": "Cobham Gaisler, GR740 benchmark results, ESA DSP Day 2016: 1.97 CoreMark/MHz/core x 250 MHz; https://indico.esa.int/event/102/contributions/62/ ; product brief: https://download.gaisler.com/products/gr740/doc/Product%20Brief_GR740_20230908_rev1.pdf"
+ },
+ "targets": {
+  "robots": 20,
+  "safety_hz": 10,
+  "link_kbps_20_robots": 16,
+  "bytes_per_s_per_robot": 100,
+  "market_mb_per_day": 1
+ },
+ "classes": {
+  "LTV1": {
+   "cpu_safety_check_us": {
+    "median": 583.4,
+    "p99": 763.3,
+    "n": 20000
+   },
+   "cpu_auction_round_ms": {
+    "median": 1.975,
+    "p99": 20.528,
+    "n": 84367
+   },
+   "peak_memory_mb": 0.388,
+   "peak_memory_note": "24 h reservation-table window + a year's ledger copy + bid policies + working data (0.05 MB)",
+   "power_w": {
+    "value": 12.0,
+    "flag": "Assumed"
+   },
+   "link": {
+    "antenna_m": 2.5,
+    "freq_ghz": 2.4,
+    "tx_power_w": 1.0,
+    "worst_hop_kbps": 6976.4,
+    "snr_db_worst_hop": 21.0,
+    "latency_budget_ms": 72.2,
+    "latency_hops": 3,
+    "reachable_share": 0.233,
+    "reachable_note": "share of route samples in direct view of the BASE mast within 5 km (B-70 mesh)"
+   }
+  },
+  "CARGO": {
+   "cpu_safety_check_us": {
+    "median": 578.2,
+    "p99": 731.1,
+    "n": 20000
+   },
+   "cpu_auction_round_ms": {
+    "median": 1.975,
+    "p99": 20.528,
+    "n": 84367
+   },
+   "peak_memory_mb": 0.388,
+   "peak_memory_note": "24 h reservation-table window + a year's ledger copy + bid policies + working data (0.05 MB)",
+   "power_w": {
+    "value": 12.0,
+    "flag": "Assumed"
+   },
+   "link": {
+    "antenna_m": 2.5,
+    "freq_ghz": 2.4,
+    "tx_power_w": 1.0,
+    "worst_hop_kbps": 6976.4,
+    "snr_db_worst_hop": 21.0,
+    "latency_budget_ms": 70.4,
+    "latency_hops": 3,
+    "reachable_share": 0.233,
+    "reachable_note": "share of route samples in direct view of the BASE mast within 5 km (B-70 mesh)"
+   }
+  },
+  "SMALL": {
+   "cpu_safety_check_us": {
+    "median": 579.9,
+    "p99": 738.8,
+    "n": 20000
+   },
+   "cpu_auction_round_ms": {
+    "median": 1.975,
+    "p99": 20.528,
+    "n": 84367
+   },
+   "peak_memory_mb": 0.388,
+   "peak_memory_note": "24 h reservation-table window + a year's ledger copy + bid policies + working data (0.05 MB)",
+   "power_w": {
+    "value": 6.0,
+    "flag": "Assumed"
+   },
+   "link": {
+    "antenna_m": 1.0,
+    "freq_ghz": 2.4,
+    "tx_power_w": 0.25,
+    "worst_hop_kbps": 5010.4,
+    "snr_db_worst_hop": 14.9,
+    "latency_budget_ms": 71.0,
+    "latency_hops": 3,
+    "reachable_share": 0.192,
+    "reachable_note": "share of route samples in direct view of the BASE mast within 5 km (B-70 mesh)"
+   }
+  },
+  "HOPPER": {
+   "cpu_safety_check_us": {
+    "median": 577.0,
+    "p99": 693.4,
+    "n": 20000
+   },
+   "cpu_auction_round_ms": {
+    "median": 1.975,
+    "p99": 20.528,
+    "n": 84367
+   },
+   "peak_memory_mb": 0.388,
+   "peak_memory_note": "24 h reservation-table window + a year's ledger copy + bid policies + working data (0.05 MB)",
+   "power_w": {
+    "value": 8.0,
+    "flag": "Assumed"
+   },
+   "link": {
+    "antenna_m": 1.0,
+    "freq_ghz": 2.4,
+    "tx_power_w": 0.5,
+    "worst_hop_kbps": 5987.8,
+    "snr_db_worst_hop": 18.0,
+    "latency_budget_ms": 68.4,
+    "latency_hops": 3,
+    "reachable_share": 0.192,
+    "reachable_note": "share of route samples in direct view of the BASE mast within 5 km (B-70 mesh)"
+   }
+  },
+  "BASE": {
+   "cpu_safety_check_us": {
+    "median": 136.2,
+    "p99": 190.81,
+    "n": 20000,
+    "check": "Reserve",
+    "entries": 1211
+   },
+   "cpu_auction_round_ms": {
+    "median": 1.975,
+    "p99": 20.528,
+    "n": 84367
+   },
+   "peak_memory_mb": 0.424,
+   "peak_memory_note": "the full year's reservation table + ledger + policies + working data",
+   "power_w": {
+    "value": 25.0,
+    "flag": "Assumed"
+   },
+   "link": {
+    "antenna_m": 10.0,
+    "freq_ghz": 2.4,
+    "tx_power_w": 5.0,
+    "worst_hop_kbps": 9289.1,
+    "snr_db_worst_hop": 28.0,
+    "latency_budget_ms": 20.5,
+    "latency_hops": 1,
+    "reachable_share": 1.0,
+    "reachable_note": "the mast itself"
+   }
+  }
+ },
+ "messages": {
+  "bytes_per_type": {
+   "status": 48,
+   "reservation_request": 32,
+   "grant": 32,
+   "release": 16,
+   "bid": 40,
+   "award": 32,
+   "claim": 32,
+   "landing_announcement": 64,
+   "ledger_entry": 128
+  },
+  "per_robot_hour": {
+   "1": 3600.3,
+   "4": 3604.2,
+   "8": 3613.9
+  },
+  "per_robot_hour_by_type": {
+   "1": {
+    "status": 3600.0,
+    "reservation_request": 0.016,
+    "grant": 0.016,
+    "release": 0.016,
+    "auction (bid, award, claim)": 0.292,
+    "landing_announcement": 0.003
+   },
+   "4": {
+    "status": 3600.0,
+    "reservation_request": 0.018,
+    "grant": 0.018,
+    "release": 0.018,
+    "auction (bid, award, claim)": 4.132,
+    "landing_announcement": 0.011
+   },
+   "8": {
+    "status": 3600.0,
+    "reservation_request": 0.017,
+    "grant": 0.017,
+    "release": 0.017,
+    "auction (bid, award, claim)": 13.777,
+    "landing_announcement": 0.022
+   }
+  },
+  "bytes_per_robot_hour": {
+   "1": 172811.6,
+   "4": 172945.4,
+   "8": 173280.4
+  }
+ },
+ "ledger_mb_per_year": {
+  "1": 0.299,
+  "4": 1.351,
+  "8": 2.706
+ },
+ "failover": {
+  "mtbf_levels_h": [
+   500.0,
+   2000.0,
+   8000.0
+  ],
+  "by_mtbf": {
+   "500": {
+    "down_share": 0.0421,
+    "no_leader_share": 0.00088,
+    "reelect_s": 1800.0,
+    "merges": 15.4,
+    "jobs_assigned_twice": 0,
+    "items_assigned": 14760,
+    "seeds": 5
+   },
+   "2000": {
+    "down_share": 0.011,
+    "no_leader_share": 0.00023,
+    "reelect_s": 1800.0,
+    "merges": 4.0,
+    "jobs_assigned_twice": 0,
+    "items_assigned": 14770,
+    "seeds": 5
+   },
+   "8000": {
+    "down_share": 0.0038,
+    "no_leader_share": 8e-05,
+    "reelect_s": 1800.0,
+    "merges": 1.4,
+    "jobs_assigned_twice": 0,
+    "items_assigned": 14745,
+    "seeds": 5
+   }
+  }
+ },
+ "runs": {
+  "n": 21,
+  "multiples": [
+   1,
+   4,
+   8
+  ],
+  "run_s_mean": 62.8,
+  "cpu_h": 0.105
+ },
+ "cpu_safety_check_batch20_us": {
+  "robots": 20,
+  "median_us": 627.5,
+  "p99_us": 808.23,
+  "n": 5000,
+  "per_robot_p99_us": 40.41
+ },
+ "h10": {
+  "worst_class_safety": "LTV1",
+  "safety_core_share_flight_per_robot_10hz": 0.4183,
+  "safety_core_share_note": "on board: p99 laptop time of one call x factor x 10 Hz, as a share of one flight core (each robot checks only itself); measured in Python + numpy, so an upper bound for a C implementation",
+  "safety_core_share_flight_base_20_robots_batched": 0.4429,
+  "peak_memory_mb_max_robot": 0.388,
+  "link_kbps_needed_20_robots": 7.68,
+  "market_mb_per_day": 0.0049
+ }
+}
