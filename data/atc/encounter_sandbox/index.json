@@ -1,0 +1,304 @@
+{
+ "note": "python tools/atc/sandbox.py      # -> data/atc/encounter_sandbox/T<k>_*.json.gz + index.json",
+ "encounters": [
+  {
+   "file": "T01_00.json.gz",
+   "type": 1,
+   "shows": "leader brakes at maximum; followers stop behind it",
+   "e44_batch": 0,
+   "e44_idx": 1654,
+   "reproduces_e44_row": true,
+   "steps_total": 1172,
+   "stride": 2,
+   "kb_gz": 23.5,
+   "shield_on": {
+    "deadlock": false,
+    "finished": true
+   },
+   "shield_off_violations": {
+    "viol_contact": 1,
+    "viol_gap": 1,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   }
+  },
+  {
+   "file": "T02_01.json.gz",
+   "type": 2,
+   "shows": "head-on at a single-lane segment, passing bay",
+   "e44_batch": 0,
+   "e44_idx": 3,
+   "reproduces_e44_row": true,
+   "steps_total": 1513,
+   "stride": 2,
+   "kb_gz": 24.9,
+   "shield_on": {
+    "deadlock": false,
+    "finished": true
+   },
+   "shield_off_violations": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   }
+  },
+  {
+   "file": "T03_02.json.gz",
+   "type": 3,
+   "shows": "overtaking with oncoming traffic before a single-lane segment",
+   "e44_batch": 0,
+   "e44_idx": 3,
+   "reproduces_e44_row": true,
+   "steps_total": 5275,
+   "stride": 5,
+   "kb_gz": 50.4,
+   "shield_on": {
+    "deadlock": false,
+    "finished": true
+   },
+   "shield_off_violations": {
+    "viol_contact": 1,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 1,
+    "viol_slots": 0
+   }
+  },
+  {
+   "file": "T04_03.json.gz",
+   "type": 4,
+   "shows": "four-way junction contention, tile reservations",
+   "e44_batch": 0,
+   "e44_idx": 23,
+   "reproduces_e44_row": true,
+   "steps_total": 1149,
+   "stride": 2,
+   "kb_gz": 37.1,
+   "shield_on": {
+    "deadlock": false,
+    "finished": true
+   },
+   "shield_off_violations": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   }
+  },
+  {
+   "file": "T05_04.json.gz",
+   "type": 5,
+   "shows": "ring of single-lane segments: an R3 deadlock (one of the 386)",
+   "e44_batch": 0,
+   "e44_idx": 11,
+   "reproduces_e44_row": true,
+   "steps_total": 1226,
+   "stride": 2,
+   "kb_gz": 27.3,
+   "shield_on": {
+    "deadlock": true,
+    "finished": false
+   },
+   "shield_off_violations": {
+    "viol_contact": 1,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 1,
+    "viol_slots": 1
+   }
+  },
+  {
+   "file": "T06_05.json.gz",
+   "type": 6,
+   "shows": "landing closure: one of the four deadlocks (vehicle held at the zone line inside its crossing)",
+   "e44_batch": 1,
+   "e44_idx": 274,
+   "reproduces_e44_row": true,
+   "steps_total": 9420,
+   "stride": 9,
+   "kb_gz": 60.6,
+   "shield_on": {
+    "deadlock": true,
+    "finished": false
+   },
+   "shield_off_violations": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   }
+  },
+  {
+   "file": "T07_06.json.gz",
+   "type": 7,
+   "shows": "crew emerging from behind an occluder",
+   "e44_batch": 0,
+   "e44_idx": 3,
+   "reproduces_e44_row": true,
+   "steps_total": 2163,
+   "stride": 2,
+   "kb_gz": 26.5,
+   "shield_on": {
+    "deadlock": false,
+    "finished": true
+   },
+   "shield_off_violations": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 1,
+    "viol_r3": 0,
+    "viol_slots": 0
+   }
+  },
+  {
+   "file": "T08_07.json.gz",
+   "type": 8,
+   "shows": "message loss and a radio dropout during negotiation",
+   "e44_batch": 0,
+   "e44_idx": 0,
+   "reproduces_e44_row": true,
+   "steps_total": 2894,
+   "stride": 3,
+   "kb_gz": 45.7,
+   "shield_on": {
+    "deadlock": false,
+    "finished": true
+   },
+   "shield_off_violations": {
+    "viol_contact": 1,
+    "viol_gap": 1,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 1,
+    "viol_slots": 0
+   }
+  },
+  {
+   "file": "T09_08.json.gz",
+   "type": 9,
+   "shows": "dead stop inside the segment: a follower loses the static margin (one of the 58)",
+   "e44_batch": 0,
+   "e44_idx": 464,
+   "reproduces_e44_row": true,
+   "steps_total": 1571,
+   "stride": 2,
+   "kb_gz": 24.7,
+   "shield_on": {
+    "deadlock": false,
+    "finished": false
+   },
+   "shield_off_violations": {
+    "viol_contact": 1,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 1,
+    "viol_slots": 0
+   }
+  },
+  {
+   "file": "T10_09.json.gz",
+   "type": 10,
+   "shows": "speed mix with one adversarial owner",
+   "e44_batch": 0,
+   "e44_idx": 1,
+   "reproduces_e44_row": true,
+   "steps_total": 4608,
+   "stride": 5,
+   "kb_gz": 37.4,
+   "shield_on": {
+    "deadlock": false,
+    "finished": true
+   },
+   "shield_off_violations": {
+    "viol_contact": 1,
+    "viol_gap": 1,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   }
+  },
+  {
+   "file": "T11_10.json.gz",
+   "type": 11,
+   "shows": "pad apron contention, two slots",
+   "e44_batch": 0,
+   "e44_idx": 52,
+   "reproduces_e44_row": true,
+   "steps_total": 1585,
+   "stride": 2,
+   "kb_gz": 52.4,
+   "shield_on": {
+    "deadlock": false,
+    "finished": true
+   },
+   "shield_off_violations": {
+    "viol_contact": 1,
+    "viol_gap": 1,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 1,
+    "viol_slots": 1
+   }
+  },
+  {
+   "file": "T12_11.json.gz",
+   "type": 12,
+   "shows": "planner fuzzing: random and adversarial proposals",
+   "e44_batch": 0,
+   "e44_idx": 2,
+   "reproduces_e44_row": true,
+   "steps_total": 2282,
+   "stride": 3,
+   "kb_gz": 35.5,
+   "shield_on": {
+    "deadlock": true,
+    "finished": false
+   },
+   "shield_off_violations": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 1,
+    "viol_slots": 0
+   }
+  },
+  {
+   "file": "T06_12.json.gz",
+   "type": 6,
+   "shows": "landing closure: a vehicle inside the zone exits before the window",
+   "e44_batch": 0,
+   "e44_idx": 6,
+   "reproduces_e44_row": true,
+   "steps_total": 7369,
+   "stride": 7,
+   "kb_gz": 44.8,
+   "shield_on": {
+    "deadlock": false,
+    "finished": true
+   },
+   "shield_off_violations": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   }
+  }
+ ]
+}

@@ -68,7 +68,9 @@
    "status": "reported as a result of E44, not corrected; a dead-stop margin variant is future work (not run)",
    "final_counts": "results/E44_bounds.json types.9"
   },
-  "re_runs": "the fuzzer-free violating encounters were re-run because they are deterministic (a random fuzzer draws from a batch-shaped random stream); the fixes are in the final run of all 12 types at the same n"
+  "re_runs": "the fuzzer-free violating encounters were re-run because they are deterministic (a random fuzzer draws from a batch-shaped random stream); the fixes are in the final run of all 12 types at the same n",
+  "re_run_selection": "spot checks: the first n fuzzer-free violating encounters in (batch, index) order, with n set by a single-run time budget (25, cut to 10 for type 4 when 25 timed out; 5 for type 6, whose encounters run about 30 min of simulated time; all 3 for type 5; 25 of 48 for type 9); superseded by the full rerun of all twelve types at the registered n, where types 4, 5 and 6 have 0 violations",
+  "re_run_selection_short": "spot checks of the first few in batch order under a time budget, superseded by the full rerun at the registered n"
  },
  "change_9": {
   "when": "29-30 Oct 2026, E44 rerun: the first type-6 pass after change 8, then change 9 and its correction",

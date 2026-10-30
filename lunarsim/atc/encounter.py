@@ -351,7 +351,7 @@ class Outcome:
     steps: np.ndarray
 
 
-def run_batch(b: Batch, rng: np.random.Generator, record: Optional[List[int]] = None) -> tuple:
+def run_batch(b: Batch, rng: np.random.Generator, record: Optional[List[int]] = None, shield: bool = True) -> tuple:
     """Simulate a batch; returns (Outcome, traces for the encounters listed in `record`)."""
     N, V, R, G, T, K, C = b.N, b.V, b.R, b.G, b.T, b.K, b.C
     real = b.real
@@ -665,7 +665,7 @@ def run_batch(b: Batch, rng: np.random.Generator, record: Optional[List[int]] = 
         mv.d_crew_any = d_crew_any
         ver = safety_check(None, mv)
         v_in = v
-        a = ver.a
+        a = ver.a if shield else np.minimum(np.asarray(a_prop, float), A_MAX)   # shield=False: sandbox "safety off"
         live = real & ~done & active[:, None]
         out["proposals"] += live.sum(1)
         out["interventions"] += (ver.modified & live).sum(1)
@@ -781,6 +781,7 @@ def run_batch(b: Batch, rng: np.random.Generator, record: Optional[List[int]] = 
             if active[n]:
                 traces[n].append({"t": round(t, 3), "s": s[n].tolist(), "v": v[n].tolist(), "a_prop": a_prop[n].tolist(),
                                   "a": a[n].tolist(), "modified": ver.modified[n].tolist(),
+                                  "rule": ver.rule[n].tolist(),
                                   "xy": np.round(c1[n], 4).tolist(), "lat": lat[n].tolist(),
                                   "crew": [cp1[n, c].tolist() if cvis[n, c] else None for c in range(C)],
                                   "d_stop": np.where(np.isfinite(d_stop[n]), d_stop[n], -1).round(3).tolist(),
