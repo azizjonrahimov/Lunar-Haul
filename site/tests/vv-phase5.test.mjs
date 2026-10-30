@@ -39,6 +39,8 @@ test('calibration, zero-event, skipped and broken rows', () => {
   const r = read(doc), all = r.groups.flatMap(g => g.rows), by = k => all.find(x => x.key === k);
   assert.equal(by('E3 · flat 700 kg').calibration, true);
   assert.match(by('S1').tolerance, /^exact; zero events in 1,200,000 encounters, 95 % upper bound 2\.5e-6/);
+  assert.equal(by('S1').tolFrom, '');
+  assert.equal(read({ ...doc, rows: [{ ...rows[0], tolerance_source: 'research_notes/Lunar ATC/verification_plan.md section 3, row D2' }] }).groups[0].rows[0].tolFrom, 'verification plan section 3, row D2');
   assert.equal(by('L1').status, 'not_run'); assert.equal(by('L1').reason, 'needs the GPU build');
   assert.equal(by('R1').status, 'error'); assert.match(by('R1').error, /kind "X"/);
   assert.equal(by('R2').status, 'error'); assert.match(by('R2').error, /"passed" is true but the error 0\.2 is outside/);

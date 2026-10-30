@@ -191,6 +191,143 @@ class Pending(Exception):
 
 
 # ---------------------------------------------------------------------------------------------------------
+# B-79: the phase-5 verification checks (results/vv_phase5.json, the schema agreed with FRONTEND on 30 Oct)
+# ---------------------------------------------------------------------------------------------------------
+VV5 = os.path.join(RES, "vv_phase5.json")
+
+
+def cnt(x):
+    return num(x, 0)
+
+
+def vv5_load(tag, check):
+    """The rows tagged to this paper, after the file's summary is recounted from its rows and every row's passed flag
+    is recomputed from its error and tolerance (the site's verification page makes the same two checks)."""
+    path = os.environ.get("P_VV_PHASE5", VV5)
+    if not os.path.exists(path):
+        raise Pending("results/vv_phase5.json (B-79) has not landed")
+    with open(path, encoding="utf-8") as f:
+        d = json.load(f)
+    allr = d.get("rows", [])
+    s = d.get("summary", {})
+    ran = [x for x in allr if not x.get("skipped")]
+    check(int(s.get("rows", -1)) == len(allr), "vv_phase5.json: the summary's row count equals the rows")
+    check(int(s.get("passed", -1)) == sum(1 for x in ran if x.get("passed")), "vv_phase5.json: the summary's passed count equals the rows")
+    check(int(s.get("failed", -1)) == sum(1 for x in ran if not x.get("passed")), "vv_phase5.json: the summary's failed count equals the rows")
+    check(int(s.get("skipped", -1)) == len(allr) - len(ran), "vv_phase5.json: the summary's skipped count equals the rows")
+    check(len({(x.get("id"), x.get("sub")) for x in allr}) == len(allr), "vv_phase5.json: id plus sub is unique")
+    for x in ran:
+        tol, err = x.get("tolerance"), (x.get("rel_error") if x.get("mode") == "rel" else x.get("error"))
+        if tol is not None and err is not None:
+            check(bool(x.get("passed")) == (abs(float(err)) <= float(tol)), f"check {x.get('id')} {x.get('sub')}: the passed flag agrees with its error and tolerance")
+    rows = [x for x in allr if tag in (x.get("papers") or [])]
+    if not rows:
+        raise Pending(f"no check in results/vv_phase5.json is tagged {tag} yet (later B-79 batches)")
+    return d, rows
+
+
+def _vv5_err(x):
+    v = x.get("rel_error") if x.get("mode") == "rel" else x.get("error")
+    return "n/a" if v is None else f"{abs(float(v)):.2g}"
+
+
+def vv5_checks_sentence(tag, results_section, check):
+    d, rows = vv5_load(tag, check)
+    kinds = {k: sum(1 for x in rows if x.get("kind") == k) for k in ("V", "Val", "Cal")}
+    tech = {}
+    for x in rows:
+        tech[x.get("technique", "unstated")] = tech.get(x.get("technique", "unstated"), 0) + 1
+    tech_txt = ", ".join(f"{html.escape(str(k))} ({cnt(v)})" for k, v in sorted(tech.items(), key=lambda kv: (-kv[1], str(kv[0]))))
+    commit = str(d.get("commit") or "")
+    parts = []
+    if kinds["V"]:
+        parts.append(f"{words(kinds['V'])} verification{'s' if kinds['V'] != 1 else ''} that the code does what the model says")
+    if kinds["Val"]:
+        parts.append(f"{words(kinds['Val'])} validation{'s' if kinds['Val'] != 1 else ''} against references outside the model")
+    if kinds["Cal"]:
+        parts.append(f"{words(kinds['Cal'])} calibration reproduction{'s' if kinds['Cal'] != 1 else ''}")
+    return (f"In addition, {cnt(len(rows))} checks of the engine's phase-5 verification suite (<code>lunarsim/vv5.py</code>, results in "
+            f"<code>results/vv_phase5.json</code> and on the live site's verification page) bear on this paper: " + ", ".join(parts) +
+            f", by Sargent's technique {tech_txt}. Deterministic identities are held to 10<sup>&minus;9</sup> relative or exact; stochastic checks "
+            f"pass when the error is within a tolerance set in advance, and a 99&#8239;% batch-means interval that misses the reference is recorded "
+            f"as a bias flag, not a failure" + (f"; the checks ran at commit <code>{html.escape(commit[:7])}</code>" if commit else "") +
+            f". Their outcomes are in Section {results_section}.")
+
+
+def vv5_failed_sentence(tag, methods_section, check):
+    d, rows = vv5_load(tag, check)
+    ran = [x for x in rows if not x.get("skipped")]
+    failed = [x for x in ran if not x.get("passed")]
+    skipped = [x for x in rows if x.get("skipped")]
+    bias = [x for x in ran if x.get("bias_flag")]
+    label = lambda x: f"{html.escape(str(x.get('id')))}{(' ' + html.escape(str(x.get('sub')))) if x.get('sub') else ''}"
+    if failed:
+        how = lambda x: ("the condition did not hold" if float(x.get("tolerance") or 0) == 0 and x.get("mode") == "abs"
+                         else f"error {_vv5_err(x)} against a tolerance of {x.get('tolerance')}")
+        lst = "; ".join(f"{label(x)} ({html.escape(str(x.get('name', '')))}), {how(x)}" for x in failed)
+        out = (f"Of the {cnt(len(rows))} phase-5 checks of Section {methods_section} tagged to this paper, {cnt(len(failed))} failed: {lst}. "
+               f"The other {cnt(len(ran) - len(failed))} that ran passed")
+    else:
+        out = (f"The one phase-5 check of Section {methods_section} tagged to this paper that ran passed" if len(ran) == 1 else
+               f"Every one of the {cnt(len(ran))} phase-5 checks of Section {methods_section} tagged to this paper that ran passed")
+    if skipped:
+        out += ("; " + cnt(len(skipped)) + (" was" if len(skipped) == 1 else " were") + " not run: " +
+                "; ".join(f"{label(x)} ({html.escape(str(x.get('skipped')))})" for x in skipped))
+    if bias:
+        out += ("; " + cnt(len(bias)) + " met " + ("its" if len(bias) == 1 else "their") + " tolerance with a 99&#8239;% interval that misses the reference, "
+                "recorded as a bias flag: " + ", ".join(label(x) for x in bias))
+    return out + "."
+
+
+def _vv5_d10(tag, check):
+    d, rows = vv5_load(tag, check)
+    dem = [x for x in d.get("rows", []) if x.get("id") == "D10" and x.get("sub") == "E40 demand identical"]
+    if not dem:
+        raise Pending("the D10 row 'E40 demand identical' is not in results/vv_phase5.json")
+    check(bool(dem[0].get("passed")) and float(dem[0].get("error") or 0) == 0, "D10: the demand stream is identical across every E40 regime pair")
+    m = re.search(r"([\d,]+) regime pairs", str(dem[0].get("basis", "")))
+    return d, rows, (m.group(1) if m else None)
+
+
+def vv5_demand_sentence(tag, methods_section, check):
+    """P2: the pairing confirmed by D10 on the companion paper's regimes."""
+    d, rows, n_pairs = _vv5_d10(tag, check)
+    return (f"The engine's phase-5 check D10 (Section {methods_section}) confirms the pairing on the companion paper's regimes: the demand stream, "
+            f"landings and manifests, was identical" + (f" across {n_pairs} regime pairs" if n_pairs else "") + " on the same seed and start year, "
+            f"while the per-job intervention and fault redraws, shared in draw order, diverge once the allocations differ; E43's modes draw from the "
+            f"same streams, so a pair shares its year and diverges in those draws after the first conflict.")
+
+
+def vv5_pairing_sentence(tag, methods_section, check):
+    """P1: how much the pairing buys, per regime, from the D10 pairing rows' detail (variance-reduction factor)."""
+    d, rows, n_pairs = _vv5_d10(tag, check)
+    pr = [x for x in rows if x.get("id") == "D10" and str(x.get("sub", "")).startswith("pairing ")]
+    if not pr:
+        raise Pending("the D10 pairing rows are not in results/vv_phase5.json")
+    if any(not isinstance(x.get("detail"), dict) or "vrf" not in x["detail"] for x in pr):
+        raise Pending("the D10 pairing rows carry no detail.vrf yet (BACKEND adds the variance-reduction factor)")
+    good = [x for x in pr if x.get("passed")]
+    weak = [x for x in pr if not x.get("passed")]
+    reg = lambda x: html.escape(str(x["sub"])[len("pairing "):])
+    vr = lambda xs: (min(float(x["detail"]["vrf"]) for x in xs), max(float(x["detail"]["vrf"]) for x in xs))
+    s = (f"The pairing holds for demand, landings and initial faults: in the engine's phase-5 checks (D10, Section {methods_section}) every regime's "
+         f"E40 run had the same demand as the oracle's on the same seed and start year" + (f" across {n_pairs} regime pairs" if n_pairs else "") +
+         "; the per-job intervention and fault redraws are shared in draw order and diverge once the allocations differ, in every regime. ")
+    if good:
+        lo, hi = vr(good)
+        s += (f"Against the oracle, pairing cut the variance of the paired difference in mean delay per delivery to {num(lo, 2)}&ndash;{num(hi, 2)} "
+              f"of the unpaired sum for {', '.join(reg(x) for x in good)}")
+    if weak:
+        lo, hi = vr(weak)
+        s += ((", and" if good else "Against the oracle, pairing cut it") + f" only to {num(lo, 2)}&ndash;{num(hi, 2)} for {', '.join(reg(x) for x in weak)}, "
+              "whose delay varies mostly between start years; their paired intervals are little narrower than unpaired ones would be, and the bootstrap "
+              "over pairs includes that variation.")
+    else:
+        s += "."
+    return s
+
+
+# ---------------------------------------------------------------------------------------------------------
 # data
 # ---------------------------------------------------------------------------------------------------------
 class R:
@@ -886,6 +1023,9 @@ def values(r: R, allow_pending: bool):
                 " at message loss 0.25 and 0.40 (Section 5.5)")
 
     fill("P1-E41-DEPTH-CLAUSE", e41_depth_clause, "E41")
+    fill("P1-CHECKS-SENTENCE", lambda: vv5_checks_sentence("P1", "5.9", check), "B-79")
+    fill("P1-FAILED-CHECKS-SENTENCE", lambda: vv5_failed_sentence("P1", "3.11", check), "B-79")
+    fill("P1-PAIRING-SENTENCE", lambda: vv5_pairing_sentence("P1", "3.11", check), "B-79")
     fill("P1-E41-REPLICATION-SENTENCE", lambda: (
         lambda rep: (f"E41's default auction cell reran E40's auction at 30&#8239;% on the same {int(rep['n'])} seeds "
                      + ("and reproduced every run exactly" if rep["mean"] == 0 and rep["lo"] == 0 and rep["hi"] == 0

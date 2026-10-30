@@ -58,6 +58,8 @@ function checkRow(c, seen) {
     measured: skipped ? '–' : fmtNum(c.simulated, c.unit) + (isNum(c.error) ? `; error ${fmtNum(c.error)}${c.mode === 'rel' ? ' relative' : ''}` : ''),
     ci: ci ? `99 % batch-means interval ${fmtNum(ci[0])} to ${fmtNum(ci[1])}` : '', bias: c.bias_flag === true,
     tolerance: tolText(c) + (ex ? `; zero events in ${fmtNum(ex.n, ex.unit || '')}, 95 % upper bound ${fmtNum(ex.upper95)}` : ''),
+    // where the tolerance was fixed before the run (optional)
+    tolFrom: typeof c.tolerance_source === 'string' ? c.tolerance_source.replace('research_notes/Lunar ATC/verification_plan.md', 'verification plan') : '',
     status: errs.length ? 'error' : skipped ? 'not_run' : c.passed ? 'pass' : 'fail', reason: skipped ? c.skipped : '',
     source: typeof c.source === 'string' ? c.source : '', papers: Array.isArray(c.papers) ? c.papers.join(', ') : '',
     run: isNum(c.runtime_s) ? `${fmtNum(c.runtime_s)} s` : '',

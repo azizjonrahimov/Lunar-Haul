@@ -1246,7 +1246,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 21.75,
+   "runtime_s": 25.75,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
   },
   {
@@ -1275,16 +1275,16 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.07,
+   "runtime_s": 0.08,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
   },
   {
-   "name": "CRN pairing works: A_EARTH plan_ahead against O_ORACLE (E40, 10 % load, 3eq)",
+   "name": "CRN pairing reduces variance against O_ORACLE (correlation's 95 % CI above zero): A_EARTH plan_ahead (E40, 10 % load, 3eq)",
    "reference": 1.0,
    "simulated": 0.0,
    "tolerance": 0.0,
    "unit": "pass",
-   "basis": "80 paired runs (seed, start year), mean delay per delivery: correlation 0.185 (95 % CI -0.037 to 0.389), variance-reduction factor Var(X - Y) / (Var X + Var Y) = 0.901; passes when the CI excludes 0 and the factor < 1 (pairing effectiveness, not stream integrity: see the demand rows)",
+   "basis": "seeds shared: the exact demand check passes (880 regime pairs, 0 differing in landed mass or landings; row 'E40 demand identical'). 80 paired runs (seed, start year), mean delay per delivery: correlation 0.185 (95 % CI -0.037 to 0.389), variance-reduction factor Var(X - Y) / (Var X + Var Y) = 0.901; passes when the CI excludes 0 and the factor < 1 (pairing effectiveness, not stream integrity: see the demand rows)",
    "passed": false,
    "rel_error": 1.0,
    "source": "Law 2015 ch. 11 (common random numbers)",
@@ -1305,15 +1305,22 @@
    "bias_flag": null,
    "exposure": null,
    "runtime_s": 0.01,
-   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D10"
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D10",
+   "detail": {
+    "corr": 0.1845397847619132,
+    "corr_lo": -0.036667795123175834,
+    "corr_hi": 0.3885076771611153,
+    "vrf": 0.900789323162825,
+    "n": 80
+   }
   },
   {
-   "name": "CRN pairing works: A_EARTH strict against O_ORACLE (E40, 10 % load, 3eq)",
+   "name": "CRN pairing reduces variance against O_ORACLE (correlation's 95 % CI above zero): A_EARTH strict (E40, 10 % load, 3eq)",
    "reference": 1.0,
    "simulated": 0.0,
    "tolerance": 0.0,
    "unit": "pass",
-   "basis": "80 paired runs (seed, start year), mean delay per delivery: correlation 0.060 (95 % CI -0.162 to 0.276), variance-reduction factor Var(X - Y) / (Var X + Var Y) = 0.993; passes when the CI excludes 0 and the factor < 1 (pairing effectiveness, not stream integrity: see the demand rows)",
+   "basis": "seeds shared: the exact demand check passes (880 regime pairs, 0 differing in landed mass or landings; row 'E40 demand identical'). 80 paired runs (seed, start year), mean delay per delivery: correlation 0.060 (95 % CI -0.162 to 0.276), variance-reduction factor Var(X - Y) / (Var X + Var Y) = 0.993; passes when the CI excludes 0 and the factor < 1 (pairing effectiveness, not stream integrity: see the demand rows)",
    "passed": false,
    "rel_error": 1.0,
    "source": "Law 2015 ch. 11 (common random numbers)",
@@ -1334,15 +1341,22 @@
    "bias_flag": null,
    "exposure": null,
    "runtime_s": 0.01,
-   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D10"
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D10",
+   "detail": {
+    "corr": 0.059929277015238,
+    "corr_lo": -0.16192368935726725,
+    "corr_hi": 0.2760155865170529,
+    "vrf": 0.9929726989607464,
+    "n": 80
+   }
   },
   {
-   "name": "CRN pairing works: A_MOON against O_ORACLE (E40, 10 % load, 3eq)",
+   "name": "CRN pairing reduces variance against O_ORACLE (correlation's 95 % CI above zero): A_MOON (E40, 10 % load, 3eq)",
    "reference": 1.0,
    "simulated": 0.0,
    "tolerance": 0.0,
    "unit": "pass",
-   "basis": "80 paired runs (seed, start year), mean delay per delivery: correlation 0.170 (95 % CI -0.051 to 0.376), variance-reduction factor Var(X - Y) / (Var X + Var Y) = 0.906; passes when the CI excludes 0 and the factor < 1 (pairing effectiveness, not stream integrity: see the demand rows)",
+   "basis": "seeds shared: the exact demand check passes (880 regime pairs, 0 differing in landed mass or landings; row 'E40 demand identical'). 80 paired runs (seed, start year), mean delay per delivery: correlation 0.170 (95 % CI -0.051 to 0.376), variance-reduction factor Var(X - Y) / (Var X + Var Y) = 0.906; passes when the CI excludes 0 and the factor < 1 (pairing effectiveness, not stream integrity: see the demand rows)",
    "passed": false,
    "rel_error": 1.0,
    "source": "Law 2015 ch. 11 (common random numbers)",
@@ -1362,16 +1376,23 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.0,
-   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D10"
+   "runtime_s": 0.01,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D10",
+   "detail": {
+    "corr": 0.17022790351352307,
+    "corr_lo": -0.051415991211147975,
+    "corr_hi": 0.37588945849101196,
+    "vrf": 0.905972319500916,
+    "n": 80
+   }
   },
   {
-   "name": "CRN pairing works: B_EARTH plan_ahead against O_ORACLE (E40, 10 % load, 3eq)",
+   "name": "CRN pairing reduces variance against O_ORACLE (correlation's 95 % CI above zero): B_EARTH plan_ahead (E40, 10 % load, 3eq)",
    "reference": 1.0,
    "simulated": 1.0,
    "tolerance": 0.0,
    "unit": "pass",
-   "basis": "80 paired runs (seed, start year), mean delay per delivery: correlation 0.608 (95 % CI 0.448 to 0.730), variance-reduction factor Var(X - Y) / (Var X + Var Y) = 0.520; passes when the CI excludes 0 and the factor < 1 (pairing effectiveness, not stream integrity: see the demand rows)",
+   "basis": "seeds shared: the exact demand check passes (880 regime pairs, 0 differing in landed mass or landings; row 'E40 demand identical'). 80 paired runs (seed, start year), mean delay per delivery: correlation 0.608 (95 % CI 0.448 to 0.730), variance-reduction factor Var(X - Y) / (Var X + Var Y) = 0.520; passes when the CI excludes 0 and the factor < 1 (pairing effectiveness, not stream integrity: see the demand rows)",
    "passed": true,
    "rel_error": 0.0,
    "source": "Law 2015 ch. 11 (common random numbers)",
@@ -1392,15 +1413,22 @@
    "bias_flag": null,
    "exposure": null,
    "runtime_s": 0.01,
-   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D10"
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D10",
+   "detail": {
+    "corr": 0.607991664502435,
+    "corr_lo": 0.44813673946367394,
+    "corr_hi": 0.7301701878144343,
+    "vrf": 0.5201520529868755,
+    "n": 80
+   }
   },
   {
-   "name": "CRN pairing works: B_EARTH strict against O_ORACLE (E40, 10 % load, 3eq)",
+   "name": "CRN pairing reduces variance against O_ORACLE (correlation's 95 % CI above zero): B_EARTH strict (E40, 10 % load, 3eq)",
    "reference": 1.0,
    "simulated": 0.0,
    "tolerance": 0.0,
    "unit": "pass",
-   "basis": "80 paired runs (seed, start year), mean delay per delivery: correlation 0.092 (95 % CI -0.131 to 0.305), variance-reduction factor Var(X - Y) / (Var X + Var Y) = 0.989; passes when the CI excludes 0 and the factor < 1 (pairing effectiveness, not stream integrity: see the demand rows)",
+   "basis": "seeds shared: the exact demand check passes (880 regime pairs, 0 differing in landed mass or landings; row 'E40 demand identical'). 80 paired runs (seed, start year), mean delay per delivery: correlation 0.092 (95 % CI -0.131 to 0.305), variance-reduction factor Var(X - Y) / (Var X + Var Y) = 0.989; passes when the CI excludes 0 and the factor < 1 (pairing effectiveness, not stream integrity: see the demand rows)",
    "passed": false,
    "rel_error": 1.0,
    "source": "Law 2015 ch. 11 (common random numbers)",
@@ -1421,15 +1449,22 @@
    "bias_flag": null,
    "exposure": null,
    "runtime_s": 0.01,
-   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D10"
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D10",
+   "detail": {
+    "corr": 0.09151155629597807,
+    "corr_lo": -0.1308400459139763,
+    "corr_hi": 0.30509776027323254,
+    "vrf": 0.9890306481345252,
+    "n": 80
+   }
   },
   {
-   "name": "CRN pairing works: B_EARTH_RELAY 0.8 against O_ORACLE (E40, 10 % load, 3eq)",
+   "name": "CRN pairing reduces variance against O_ORACLE (correlation's 95 % CI above zero): B_EARTH_RELAY 0.8 (E40, 10 % load, 3eq)",
    "reference": 1.0,
    "simulated": 1.0,
    "tolerance": 0.0,
    "unit": "pass",
-   "basis": "80 paired runs (seed, start year), mean delay per delivery: correlation 0.764 (95 % CI 0.655 to 0.843), variance-reduction factor Var(X - Y) / (Var X + Var Y) = 0.274; passes when the CI excludes 0 and the factor < 1 (pairing effectiveness, not stream integrity: see the demand rows)",
+   "basis": "seeds shared: the exact demand check passes (880 regime pairs, 0 differing in landed mass or landings; row 'E40 demand identical'). 80 paired runs (seed, start year), mean delay per delivery: correlation 0.764 (95 % CI 0.655 to 0.843), variance-reduction factor Var(X - Y) / (Var X + Var Y) = 0.274; passes when the CI excludes 0 and the factor < 1 (pairing effectiveness, not stream integrity: see the demand rows)",
    "passed": true,
    "rel_error": 0.0,
    "source": "Law 2015 ch. 11 (common random numbers)",
@@ -1449,16 +1484,23 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.0,
-   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D10"
+   "runtime_s": 0.01,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D10",
+   "detail": {
+    "corr": 0.7643856008385861,
+    "corr_lo": 0.6546069664006973,
+    "corr_hi": 0.8425918993166128,
+    "vrf": 0.27432219536027436,
+    "n": 80
+   }
   },
   {
-   "name": "CRN pairing works: B_EARTH_RELAY 1.0 against O_ORACLE (E40, 10 % load, 3eq)",
+   "name": "CRN pairing reduces variance against O_ORACLE (correlation's 95 % CI above zero): B_EARTH_RELAY 1.0 (E40, 10 % load, 3eq)",
    "reference": 1.0,
    "simulated": 1.0,
    "tolerance": 0.0,
    "unit": "pass",
-   "basis": "80 paired runs (seed, start year), mean delay per delivery: correlation 1.000 (95 % CI 1.000 to 1.000), variance-reduction factor Var(X - Y) / (Var X + Var Y) = 0.000; passes when the CI excludes 0 and the factor < 1 (pairing effectiveness, not stream integrity: see the demand rows)",
+   "basis": "seeds shared: the exact demand check passes (880 regime pairs, 0 differing in landed mass or landings; row 'E40 demand identical'). 80 paired runs (seed, start year), mean delay per delivery: correlation 1.000 (95 % CI 1.000 to 1.000), variance-reduction factor Var(X - Y) / (Var X + Var Y) = 0.000; passes when the CI excludes 0 and the factor < 1 (pairing effectiveness, not stream integrity: see the demand rows)",
    "passed": true,
    "rel_error": 0.0,
    "source": "Law 2015 ch. 11 (common random numbers)",
@@ -1479,15 +1521,22 @@
    "bias_flag": null,
    "exposure": null,
    "runtime_s": 0.01,
-   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D10"
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D10",
+   "detail": {
+    "corr": 1.0,
+    "corr_lo": 1.0,
+    "corr_hi": 1.0,
+    "vrf": 0.0,
+    "n": 80
+   }
   },
   {
-   "name": "CRN pairing works: C_AUCTION against O_ORACLE (E40, 10 % load, 3eq)",
+   "name": "CRN pairing reduces variance against O_ORACLE (correlation's 95 % CI above zero): C_AUCTION (E40, 10 % load, 3eq)",
    "reference": 1.0,
    "simulated": 1.0,
    "tolerance": 0.0,
    "unit": "pass",
-   "basis": "80 paired runs (seed, start year), mean delay per delivery: correlation 0.928 (95 % CI 0.890 to 0.953), variance-reduction factor Var(X - Y) / (Var X + Var Y) = 0.072; passes when the CI excludes 0 and the factor < 1 (pairing effectiveness, not stream integrity: see the demand rows)",
+   "basis": "seeds shared: the exact demand check passes (880 regime pairs, 0 differing in landed mass or landings; row 'E40 demand identical'). 80 paired runs (seed, start year), mean delay per delivery: correlation 0.928 (95 % CI 0.890 to 0.953), variance-reduction factor Var(X - Y) / (Var X + Var Y) = 0.072; passes when the CI excludes 0 and the factor < 1 (pairing effectiveness, not stream integrity: see the demand rows)",
    "passed": true,
    "rel_error": 0.0,
    "source": "Law 2015 ch. 11 (common random numbers)",
@@ -1507,16 +1556,23 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.0,
-   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D10"
+   "runtime_s": 0.01,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D10",
+   "detail": {
+    "corr": 0.9282153231966082,
+    "corr_lo": 0.890010593149738,
+    "corr_hi": 0.9534763295528137,
+    "vrf": 0.0719705608546956,
+    "n": 80
+   }
   },
   {
-   "name": "CRN pairing works: C_LEADER against O_ORACLE (E40, 10 % load, 3eq)",
+   "name": "CRN pairing reduces variance against O_ORACLE (correlation's 95 % CI above zero): C_LEADER (E40, 10 % load, 3eq)",
    "reference": 1.0,
    "simulated": 1.0,
    "tolerance": 0.0,
    "unit": "pass",
-   "basis": "80 paired runs (seed, start year), mean delay per delivery: correlation 0.849 (95 % CI 0.773 to 0.900), variance-reduction factor Var(X - Y) / (Var X + Var Y) = 0.168; passes when the CI excludes 0 and the factor < 1 (pairing effectiveness, not stream integrity: see the demand rows)",
+   "basis": "seeds shared: the exact demand check passes (880 regime pairs, 0 differing in landed mass or landings; row 'E40 demand identical'). 80 paired runs (seed, start year), mean delay per delivery: correlation 0.849 (95 % CI 0.773 to 0.900), variance-reduction factor Var(X - Y) / (Var X + Var Y) = 0.168; passes when the CI excludes 0 and the factor < 1 (pairing effectiveness, not stream integrity: see the demand rows)",
    "passed": true,
    "rel_error": 0.0,
    "source": "Law 2015 ch. 11 (common random numbers)",
@@ -1536,16 +1592,23 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.02,
-   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D10"
+   "runtime_s": 0.01,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D10",
+   "detail": {
+    "corr": 0.848699461530157,
+    "corr_lo": 0.7731540502887011,
+    "corr_hi": 0.90049813856151,
+    "vrf": 0.1681887474139484,
+    "n": 80
+   }
   },
   {
-   "name": "CRN pairing works: C_LEARNED_LIN against O_ORACLE (E40, 10 % load, 3eq)",
+   "name": "CRN pairing reduces variance against O_ORACLE (correlation's 95 % CI above zero): C_LEARNED_LIN (E40, 10 % load, 3eq)",
    "reference": 1.0,
    "simulated": 1.0,
    "tolerance": 0.0,
    "unit": "pass",
-   "basis": "80 paired runs (seed, start year), mean delay per delivery: correlation 0.758 (95 % CI 0.645 to 0.838), variance-reduction factor Var(X - Y) / (Var X + Var Y) = 0.251; passes when the CI excludes 0 and the factor < 1 (pairing effectiveness, not stream integrity: see the demand rows)",
+   "basis": "seeds shared: the exact demand check passes (880 regime pairs, 0 differing in landed mass or landings; row 'E40 demand identical'). 80 paired runs (seed, start year), mean delay per delivery: correlation 0.758 (95 % CI 0.645 to 0.838), variance-reduction factor Var(X - Y) / (Var X + Var Y) = 0.251; passes when the CI excludes 0 and the factor < 1 (pairing effectiveness, not stream integrity: see the demand rows)",
    "passed": true,
    "rel_error": 0.0,
    "source": "Law 2015 ch. 11 (common random numbers)",
@@ -1565,16 +1628,23 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.0,
-   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D10"
+   "runtime_s": 0.01,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D10",
+   "detail": {
+    "corr": 0.7575015993000384,
+    "corr_lo": 0.6451605894276631,
+    "corr_hi": 0.8377827898734513,
+    "vrf": 0.25053486064288255,
+    "n": 80
+   }
   },
   {
-   "name": "CRN pairing works: C_LEARNED_MLP against O_ORACLE (E40, 10 % load, 3eq)",
+   "name": "CRN pairing reduces variance against O_ORACLE (correlation's 95 % CI above zero): C_LEARNED_MLP (E40, 10 % load, 3eq)",
    "reference": 1.0,
    "simulated": 1.0,
    "tolerance": 0.0,
    "unit": "pass",
-   "basis": "80 paired runs (seed, start year), mean delay per delivery: correlation 0.836 (95 % CI 0.755 to 0.892), variance-reduction factor Var(X - Y) / (Var X + Var Y) = 0.166; passes when the CI excludes 0 and the factor < 1 (pairing effectiveness, not stream integrity: see the demand rows)",
+   "basis": "seeds shared: the exact demand check passes (880 regime pairs, 0 differing in landed mass or landings; row 'E40 demand identical'). 80 paired runs (seed, start year), mean delay per delivery: correlation 0.836 (95 % CI 0.755 to 0.892), variance-reduction factor Var(X - Y) / (Var X + Var Y) = 0.166; passes when the CI excludes 0 and the factor < 1 (pairing effectiveness, not stream integrity: see the demand rows)",
    "passed": true,
    "rel_error": 0.0,
    "source": "Law 2015 ch. 11 (common random numbers)",
@@ -1594,8 +1664,15 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.0,
-   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D10"
+   "runtime_s": 0.01,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D10",
+   "detail": {
+    "corr": 0.8358432245637011,
+    "corr_lo": 0.7547302508723781,
+    "corr_hi": 0.8917856756523619,
+    "vrf": 0.16583636196148982,
+    "n": 80
+   }
   },
   {
    "name": "Input distribution: CLPS yearly counts Poisson(4)",

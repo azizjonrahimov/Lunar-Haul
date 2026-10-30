@@ -239,6 +239,10 @@ Total: 11 + 9 + 8 + 7 + 5 + 5 + 6 + 4 + 5 = **60 checks**. Counting sub-cases an
 3. **Safety paper:** the exposure, the zero count and the upper bound in the Abstract or the Introduction. Formal checks (S4, A3) belong beside the theorems they test.
 4. **Credibility statement:** one paragraph in each paper. It says which claims rest on which factor (code verification, referent validation, and so on). It names what is not validated because no referent exists, for example decentralized lunar operations as a whole, and says what evidence would change that.
 
+## 6. Future work
+
+- Separate random streams for faults and for driving interventions, keyed per vehicle: the shared operations stream (engine `rng_ops`) desynchronises at the first allocation difference, so paired runs share demand, landings and initial faults but not later operations draws (B-79 D10, 30 Oct 2026). Not done in phase 5 because it would change every run's numbers.
+
 ## Sources
 
 Main references (others are cited inline in the tables):

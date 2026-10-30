@@ -842,14 +842,19 @@ def check_d10_crn() -> List[Dict]:
             z, se = math.atanh(r), 1 / math.sqrt(len(s) - 3)
             lo, hi = math.tanh(z - 1.96 * se), math.tanh(z + 1.96 * se)
         vrf = float(np.var(a - b, ddof=1) / (np.var(a, ddof=1) + np.var(b, ddof=1)))
-        rows.append(_row("D10", f"pairing {lab}", f"CRN pairing works: {lab} against O_ORACLE (E40, 10 % load, 3eq)",
-                         1.0, float(lo > 0 and vrf < 1), 0.0, "pass", f"{len(s)} paired runs (seed, start year), mean delay per delivery: "
+        row = _row("D10", f"pairing {lab}", f"CRN pairing reduces variance against O_ORACLE (correlation's 95 % CI "
+                         f"above zero): {lab} (E40, 10 % load, 3eq)",
+                         1.0, float(lo > 0 and vrf < 1), 0.0, "pass", f"seeds shared: the exact demand check passes "
+                         f"({n_pairs} regime pairs, {n_bad} differing in landed mass or landings; row 'E40 demand "
+                         f"identical'). {len(s)} paired runs (seed, start year), mean delay per delivery: "
                          f"correlation {r:.3f} (95 % CI {lo:.3f} to {hi:.3f}), variance-reduction factor "
                          f"Var(X - Y) / (Var X + Var Y) = {vrf:.3f}; passes when the CI excludes 0 and the factor < 1 (pairing "
                          "effectiveness, not stream integrity: see the demand rows)",
                          "internal validity", "results robustness", "V", "P1", ["P1", "P2"], mode="abs",
                          source="Law 2015 ch. 11 (common random numbers)", t0=t0,
-                         tol_src="research_notes/Lunar ATC/verification_plan.md section 3, row D10"))
+                         tol_src="research_notes/Lunar ATC/verification_plan.md section 3, row D10")
+        row["detail"] = {"corr": r, "corr_lo": lo, "corr_hi": hi, "vrf": vrf, "n": len(s)}
+        rows.append(row)
     return rows
 
 
