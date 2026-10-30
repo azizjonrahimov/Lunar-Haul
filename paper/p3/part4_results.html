@@ -15,17 +15,17 @@
 
 <h3>5.3 The link budget per vehicle class</h3>
 
-<p>{{P3-E48-RESULTS-LINK}} <!-- PENDING E48: per class (antenna height, frequency, transmit power), the data rate at the worst hop, the latency budget for a decision within 1 s over the median and maximum hop count of Section 3.3, and the share of route sample points in direct view of the mast; at 2.4 GHz and at 400 MHz if both are computed. --> The 1&nbsp;s decision interval of the latency budget is the Assumed target of Section 4.2.</p>
+<p>{{P3-E48-RESULTS-LINK}} <!-- PENDING E48: per class (antenna height, frequency, transmit power), the data rate at the worst hop, the latency budget for a decision within 1 s over the median and maximum hop count of Section 3.3, and the share of route sample points in direct view of the mast; at 2.4 GHz and at 400 MHz if both are computed. --> The 1&nbsp;s decision interval of the latency budget is the Assumed target of Section 4.2, and the latency reported against it is for a move decision, a three-hop exchange plus one safety check, not for a market round; the auction round's time against the same interval is in Section 5.1.</p>
 
 <!-- TABLE:E48_link -->
 
 <h3>5.4 Failover</h3>
 
-<p>{{P3-E48-RESULTS-FAILOVER}} <!-- PENDING E48: per MTBF level, the base computer's downtime share, the share of time without any leader at the assumed re-election delay (copied from the design, not measured), the number of partition merges and the count of jobs found assigned twice after a merge (must be zero; if not, it is a defect and goes to Section 5.8); the effect of the sweep on the urgent wait if B-81 reports it. --></p>
+<p>{{P3-E48-RESULTS-FAILOVER}} <!-- PENDING E48: per MTBF level, the base computer's downtime share, the share of time without any leader at the assumed re-election delay (copied from the design, not measured), the number of times the base computer's assignment table was rebuilt after repair and the count of jobs found assigned twice after a rebuild (must be zero; if not, it is a defect and goes to Section 5.8); the effect of the sweep on the urgent wait if B-81 reports it. --></p>
 
 <h3>5.5 The four payment rules</h3>
 
-<p>{{P3-E46-RESULTS-RULES}} <!-- PENDING E46 (B-76): per rule and share split, the efficiency loss against the oracle in urgent wait with its interval, the operator's budget per year (surplus or deficit, sign from the data), total earnings and payments, the money settled on Earth and left open at the year's end; the none rule's identity with the pooled regime of [60] stated as a check. --> {{P3-E46-BUDGET-SENTENCE}} <!-- build: each rule's budget with its interval; the first-price budget as tariff receipts less true cost --> {{P3-E46-TRANSFERS-SENTENCE}} <!-- build: the Shapley transfers per owner and split, and the settlement including them --></p>
+<p>{{P3-E46-RESULTS-RULES}} <!-- PENDING E46 (B-76): per rule and share split, the efficiency loss against the oracle in urgent wait with its interval, the operator's budget per year (surplus or deficit, sign from the data), total earnings and payments, the money settled on Earth and left open at the year's end; the none rule's identity with the pooled regime of [60] stated as a check. --> {{P3-E46-RESERVE-SENTENCE}} <!-- build: the share of jobs with a competing alternative and the share priced by the reserve under the per-item second price, per split (moved here from 3.5 in draft 3) --> {{P3-E46-BUDGET-SENTENCE}} <!-- build: each rule's budget with its interval; the first-price budget as tariff receipts less true cost --> {{P3-E46-TRANSFERS-SENTENCE}} <!-- build: the Shapley transfers per owner and split, and the settlement including them --></p>
 
 <!-- TABLE:E46_rules -->
 

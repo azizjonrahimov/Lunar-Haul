@@ -1,4 +1,4 @@
-# P3 notes: reference list (draft 2 after referee round 1, 30 Oct 2026)
+# P3 notes: reference list (draft 3 after referee round 2, 30 Oct 2026)
 
 Entries run to the next blank line; a paragraph that starts with `NOTE:` after a blank line is an editorial note the
 build does not render (build_p3.py references() matches only lines that start with `[n]`).
@@ -10,27 +10,27 @@ Low). Entries marked "to check" or "to add" are to be checked against the publis
 The earlier papers are [40, 41, 42] in P2's numbering and [56, 57, 58] here; the companion papers P1 and P2 are
 [60, 61].
 
-[1] NASA. News release on Lunar Terrain Vehicle Phase 1 task orders, 26-27 May 2026, https://www.nasa.gov/news-release/nasa-provides-update-on-moon-base-rovers-landers-missions/ ; progress update 20-21 October 2026, https://www.nasa.gov/missions/moon-base/nasa-provides-progress-update-on-moon-base-rovers/ (VCI, High; also the MoonFall award)
+[1] NASA. News release on Lunar Terrain Vehicle Phase 1 task orders, 26-27 May 2026, https://www.nasa.gov/news-release/nasa-provides-update-on-moon-base-rovers-landers-missions/; progress update 20-21 October 2026, https://www.nasa.gov/missions/moon-base/nasa-provides-progress-update-on-moon-base-rovers/ (VCI, High; also the MoonFall award)
 [2] Astrolab. FLEX rover page. https://www.astrolab.space (VCI, High as a company claim)
 [3] Lunar Outpost. Rover family page (MAPP, MAPP-Ultra, HL-MAPP). https://lunaroutpost.com/rovers (VCI, High as a company claim)
 [4] Payload Space. "Lunar Outpost closes $30M Series B, unveils new rover." 8 May 2026. https://payloadspace.com/lunar-outpost-closes-30m-series-b-unveils-new-rover/ (VCI, Medium)
 [5] NASA. *Lunar Mobility Drivers and Needs*. Architecture Concept Review 2024 white paper. https://www.nasa.gov/wp-content/uploads/2024/06/acr24-lunar-mobility-drivers-and-needs.pdf (VCI, High)
 [6] NASA. *Lunar Surface Cargo*. Architecture Concept Review 2024 white paper. https://www.nasa.gov/wp-content/uploads/2024/06/acr24-lunar-surface-cargo.pdf (VCI, High)
 [7] Satnews, 27 May 2026; Interesting Engineering; DroneXL, 28 May 2026. Press reports on the NASA/JPL MoonFall hopping drones (about 250 kg wet, about 50 km of coverage per drone, 14 days of hops). https://satnews.com/2026/05/27/firefly-aerospace-wins-75-million-nasa-jpl-moonfall-subcontract-to-deliver-drones-to-the-moons-south-pole/ (VCI, Medium; secondary)
-[8] Intuitive Machines. Micro-Nova hopper. LPSC 2024 abstract 1931, https://www.hou.usra.edu/meetings/lpsc2024/pdf/1931.pdf ; product page https://www.intuitivemachines.com/micro-nova (VCI, High)
+[8] Intuitive Machines. Micro-Nova hopper. LPSC 2024 abstract 1931, https://www.hou.usra.edu/meetings/lpsc2024/pdf/1931.pdf; product page https://www.intuitivemachines.com/micro-nova (VCI, High)
 [9] W. Bluethmann. VIPER mobility hardware, LSIC 2024 technology infusion panel. NASA, November 2024. NTRS 20240013903. (VCI, High; full title to add)
 [10] NASA JPL. CADRE mission page. https://www.jpl.nasa.gov/missions/cadre (VCI, High; band, rate and range not public)
-[11] Gunter's Space Page. Blue Moon MK1, 15 April 2026. https://space.skyrocket.de/doc_sdat/blue-moon.htm ; Blue Origin. (VCI, High/Medium)
+[11] Gunter's Space Page. Blue Moon MK1, 15 April 2026. https://space.skyrocket.de/doc_sdat/blue-moon.htm; Blue Origin. (VCI, High/Medium)
 [12] NASA. "NASA JPL testing readies Voyager Technologies lander for Moon mission." 13 October 2026. https://nasa.gov/missions/moon-base/nasa-jpl-testing-readies-voyager-technologies-lander-for-moon-mission (VCI, High)
-[13] Firefly Aerospace. Blue Ghost. https://fireflyspace.com/blue-ghost ; NASASpaceflight, January 2025. (VCI, High)
-[14] ESA. "Argonaut lunar lander family grows." https://www.esa.int/Science_Exploration/Human_and_Robotic_Exploration/Argonaut_lunar_lander_family_grows ; Thales Alenia Space press release, 30 January 2025. (VCI, High/Medium)
+[13] Firefly Aerospace. Blue Ghost. https://fireflyspace.com/blue-ghost; NASASpaceflight, January 2025. (VCI, High)
+[14] ESA. "Argonaut lunar lander family grows." https://www.esa.int/Science_Exploration/Human_and_Robotic_Exploration/Argonaut_lunar_lander_family_grows; Thales Alenia Space press release, 30 January 2025. (VCI, High/Medium)
 [15] NASA. *LunaNet Interoperability Specification*, version 5, 29 January 2025. https://www.nasa.gov/wp-content/uploads/2025/02/lunanet-interoperability-specification-v5-baseline.pdf (VCI, High)
 [16] M. C. Scardelletti et al. "Lunar Surface Relay." ICSSC 2023. NTRS 20230013361. https://ntrs.nasa.gov/api/citations/20230013361/downloads/ICSSC-2023_LSR_paper%20rev7k.pdf (VCI, High; full author list and title to add)
-[17] Nokia. "Nokia's cellular network ready for Moon as Intuitive Machines completes final lunar lander installation." 7 January 2025. https://www.nokia.com/about-us/news/releases/2025/01/07/ ; Converge Digest, 11 March 2025; Fierce Network; Mobile World Live, March 2025 (the outcome on IM-2). (VCI, Medium: press as summarised; the primary page returned HTTP 403)
+[17] Nokia. "Nokia's cellular network ready for Moon as Intuitive Machines completes final lunar lander installation." 7 January 2025. https://www.nokia.com/about-us/news/releases/2025/01/07/; Converge Digest, 11 March 2025; Fierce Network; Mobile World Live, March 2025 (the outcome on IM-2). (VCI, Medium: press as summarised; the primary page returned HTTP 403)
 [18] Astrobotic. *Lunar Landers Payload User's Guide*, 2021. https://science.nasa.gov/wp-content/uploads/2023/11/astrobotic-lunar-landers-pug.pdf (VCI, High)
 [19] J. Esper, G. Heckler, J. Verville, G. Ryden. "NASA's Lunar Communications Relay and Navigation Systems (LCRNS)." SpaceOps 2025. NTRS 20250003321. (P1 [38], High)
 [20] ITU-R Recommendation P.526. *Propagation by diffraction*. https://www.itu.int/rec/R-REC-P.526/en (VCI, High for the method; the knife-edge values are Computed)
-[21] S. U. Hwu, M. Upanavage, C. C. Sham. Lunar surface propagation study. NASA JSC, 2008. NTRS 20080015374. https://ntrs.nasa.gov/citations/20080015374 ; NASA GRC on regolith permittivity, NTRS 20230013296. (VCI, High)
+[21] S. U. Hwu, M. Upanavage, C. C. Sham. Lunar surface propagation study. NASA JSC, 2008. NTRS 20080015374. https://ntrs.nasa.gov/citations/20080015374; NASA GRC on regolith permittivity, NTRS 20230013296. (VCI, High)
 
 NOTE: [21] full title to add from the NTRS record before submission.
 
@@ -74,7 +74,7 @@ NOTE: [37] is not in the research notes; it is the standard reference for the Sh
 [56] A. Rahimov. *Who Hauls the Habitat? A Verified Simulation Testbed, a Pooled Dispatch Marketplace and a Reference Design for Lunar Surface Logistics*. Preprint, version 2, October 2026. (P2 [40])
 [57] A. Rahimov. *Where the Lander Lands: Landing Precision, Pad Standoff, Plume Keep-Out and Rover Autonomy Priced in Lunar Surface Logistics*. Preprint, version 3, October 2026. (P2 [41])
 [58] A. Rahimov. *What Earth's Horizon Costs a Lunar Base: Terrain-Masked Communication Windows in South-Pole Cargo Logistics*. Preprint, October 2026. (P2 [42])
-[59] Pre-registration: `paper/atc/PREREG.md` in the repository, written 27 October 2026, with dated changes. Cite by repository tag when tagged. (P2 [43])
+[59] Pre-registration, paper/atc/PREREG.md in the repository, written 27 October 2026, with dated changes. (P2 [43])
 [60] A. Rahimov. *Working Together Without Earth: Job Sharing, Team Lifts and Learned Bidding Among Lunar Robots of Different Owners*. Preprint, October 2026 (companion paper P1).
 [61] A. Rahimov. *Rules of the Road on the Moon and Mars: Traffic Rules for Surface Robots of Different Owners, Checked and Priced*. Preprint, October 2026 (companion paper P2).
 [62] B. Efron, R. J. Tibshirani. *An Introduction to the Bootstrap*. Chapman & Hall, 1993. (P2 [55])
@@ -83,6 +83,8 @@ NOTE: [37] is not in the research notes; it is the standard reference for the Sh
 [65] S. Pan, D. Trentesaux, E. Ballot, G. Q. Huang. "Horizontal collaborative transport: survey of solutions and practical implementation issues." *International Journal of Production Research* 57(15-16):5340-5361, 2019. doi:10.1080/00207543.2019.1574040 (MOA, Medium)
 
 NOTE: [65] is cited in 2.4 since draft 2 (the survey of 120 studies). Draft 2 also cites [22] in 2.2 (DTN operational, no surface demonstration) and [51], [52], [53] in 2.1 (the policy frame); every entry is now cited.
+
+NOTE: draft 3 (referee round 2, finding 28): the spaces before semicolons in [1], [8], [11], [13], [14], [17], [21] are removed; [59] no longer carries backticks or the "cite by tag" remark; [53]'s authors' initials are not in the research notes (MOA section 6 and TAS give "Kim (ispace), Li, Wang (Univ. of Newcastle, Australia)" without initials), so the entry stays as it is until the GLEX record is checked; [7] is three press names and keeps its semicolons.
 
 [66] J. Rios et al. *UAS Service Supplier Network Performance: Results and Analysis from Flight Testing Multiple USS Providers in NASA's TCL4 Demonstration*. NASA/TM-2020-220462, January 2020. https://ntrs.nasa.gov/citations/20200000531 (TAS, High)
 
