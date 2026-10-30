@@ -603,6 +603,38 @@ def values(r: R, allow_pending: bool):
     fill("P2-CHECKS-SENTENCE", lambda: vv5_checks_sentence("P2", "5.9", check), "B-79")
     fill("P2-FAILED-CHECKS-SENTENCE", lambda: vv5_failed_sentence("P2", "3.8", check), "B-79")
     fill("P2-ID-FIX-SENTENCE", lambda: idfix_sentence(check, ("E43", "E44", "E45", "E47")), "B-79 id fix")
+
+    def vv5_row(id_, sub):
+        d, rows = vv5_load("P2", check)
+        g = [x for x in rows if x.get("id") == id_ and x.get("sub") == sub]
+        if len(g) != 1:
+            raise Pending(f"check {id_} {sub!r} is not in results/vv_phase5.json ({len(g)} rows)")
+        return g[0]
+
+    def check_findings():
+        """The failing safety checks that are this paper's own findings, named from the rows (never typed)."""
+        t9, dl, sl = vv5_row("S1", "(c) type 9, non-conforming"), vv5_row("S5", "encounter deadlocks"), vv5_row("S2", "unholdable slope flagged")
+        own = [x for x in (t9, dl) if not x.get("passed")]
+        out = ""
+        if own:
+            out += ("Of the failures, " + " and ".join(f"{html.escape(str(x['id']))} {html.escape(str(x['sub']))} ({cnt(x['simulated'])} {html.escape(str(x['unit']))})"
+                                                      for x in own) + (" is" if len(own) == 1 else " are") +
+                    " the findings of Section 5.6, type 9's violations beyond the leader-braking assumption and the deadlocks of change 9. ")
+        if not sl.get("passed"):
+            out += (f"The {html.escape(str(sl['id']))} row flags the shield's one accepted unsafe case: of {cnt(sl['reference'])} injected proposals to brake "
+                    f"on a slope that friction cannot hold, {cnt(sl['simulated'])} were refused and {cnt(sl['reference'] - sl['simulated'])} accepted, all at "
+                    f"near-standstill, a case that R2 keeps every run from reaching (Section 7).")
+        return out.strip()
+    fill("P2-CHECK-FINDINGS-SENTENCE", check_findings, "B-79 batch 3")
+
+    def shield_slope():
+        sl = vv5_row("S2", "unholdable slope flagged")
+        n, ok = sl["reference"], sl["simulated"]
+        return (f"The phase-5 check S2 injected {cnt(n)} proposals to brake on a slope steeper than friction can hold and the shield refused "
+                f"{cnt(ok)}; the {cnt(n - ok)} it accepted were vehicles at near-standstill, because the shield's kinematics take a stopped vehicle to "
+                f"stay stopped. R2 never admits a vehicle to such a slope, so no run of E43, E44 or E47 reaches the case, and the shield was not "
+                f"changed after the runs; a flight implementation should flag it.")
+    fill("P2-SHIELD-SLOPE-SENTENCE", shield_slope, "B-79 batch 3")
     fill("P2-PAIRING-SENTENCE", lambda: vv5_demand_sentence("P2", "3.8", check), "B-79")
     def shared_check_limitation():
         # empty when the engine's road layer enforces the rules through the same safety_check() the encounter

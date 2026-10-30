@@ -39,6 +39,8 @@
 
 <p><b>The safety program is one implementation.</b> What is checked is our code; a vehicle maker's implementation of the same rules would need the same checks against its own code. {{P2-SHARED-CHECK-LIMITATION}} <!-- build: if the logistics road layer does not yet call the shared safety_check(), say so here; otherwise fill with an empty string. --></p>
 
+<p><b>The shield accepts one unsafe case no run reaches.</b> {{P2-SHIELD-SLOPE-SENTENCE}} <!-- build: the S2 row of results/vv_phase5.json (injected, refused, accepted at near-standstill). --></p>
+
 <p><b>Horizons and seeds differ by fleet size.</b> The four- and eight-times cells run {{P2-HORIZON-X4-D}} and {{P2-HORIZON-X8-D}} days on ten seeds, not a year on thirty, so their intervals are wider and their delays are not directly comparable with the year-long cells' absolute values; the paired differences within a cell size are the result. The horizons were fixed in the design of E43 before the dispatch fix of Section 4.6 and kept so that the rerun matched the archived rows; after that fix they are a choice of the design, not a limit of compute.</p>
 
 <p><b>Mars is the Moon's roads with Mars parameters.</b> {{P2-E47-LIMITATION-SENTENCE}}</p>

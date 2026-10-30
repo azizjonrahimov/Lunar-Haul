@@ -359,7 +359,7 @@ the first type-6 pass. H7 is read on the twelve registered types as before.
 ### Change 10, 30 Oct 2026 (after every experiment through E48; no experiment rerun): cargo ids were not unique; fixed, outcome-neutral
 The B-79 verification check A7 (no item carried by two jobs) found two different cargo items sharing one id: the
 manifest generator treats the simulator's id counter as the next free id, while return items and bulk lots advanced
-it before use, so the next landing's first item reused an id (12-18 of about 2,970 items a year, in every regime).
+it before use, so the next landing's first item reused an id (9-18 of about 2,970 items a year per run, in every regime).
 The fix (commit 7247b8e) makes both paths use the next free id and then advance. Ids enter the simulator's decisions
 only through a planning memo keyed by vehicle, item ids and route within one dispatch call. Evidence: 48 one-year
 reruns (every E40 regime at 30 % load and E43's three road modes at 1x, seeds 1-3) give identical outcomes item by
