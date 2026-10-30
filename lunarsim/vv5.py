@@ -942,14 +942,510 @@ def check_d11_inputs(years: int = 400) -> List[Dict]:
     return rows
 
 
-# ------------------------------------------------------------------------------------------------ run and write
-def run_phase5_checks(batch: int = 1) -> List[Dict]:
+# ================================================================================================ batch 2 (B-79)
+# auction and team lifts (A), radio and messages (R), regimes (X6), learned policy (L)
+
+def _p5_sim(regime: str, kw: Dict, seed: int = 1, days: float = 90.0, split: str = "3eq", mutate=None):
+    """One ATC simulation (not yet run) on the p5 scenario as the experiments build it, with explicit settings."""
+    for p in (_repo(), _repo("experiments", "phase5")):
+        if p not in sys.path:
+            sys.path.insert(0, p)
+    import run_phase5 as RP
+    from .engine import Simulation
+    from .atc import regimes as G
+    from .atc import p5 as P5
+    sc = P5.build(split, k=RP.E43_K30, team_lift_share=0.10)
+    if days:
+        sc = sc.with_(horizon_h=days * 24.0)
+    if mutate is not None:
+        sc = mutate(sc)
+    k = dict(kw)
+    k.setdefault("start_year", 2028)
+    return Simulation(sc, G.mechanism(regime), seed=seed, mech_kwargs=k)
+
+
+def _items_digest(sim) -> str:
+    rec = [(c.id, c.owner, round(c.mass_kg, 9), c.origin, c.dest, c.t_ready, c.t_picked, c.t_delivered, c.carrier,
+            c.team_size) for c in sorted(sim.all_cargo, key=lambda c: c.id)]
+    return hashlib.md5(json.dumps(rec, default=str).encode()).hexdigest()
+
+
+def _run_quiet(sim):
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return sim.run()
+
+
+PERFECT = {"loss": 0.0, "radio": "perfect", "base_mtbf_h": 1e15}
+
+
+def check_a2_degenerate() -> List[Dict]:
+    """A2: with perfect communication (no loss, every robot hears every other, the base computer never fails) the
+    decentralised auction gives the centralised marketplace's awards (O_ORACLE)."""
+    rows = []
+    for seed in (1, 2, 3):
+        t0 = time.time()
+        d = {}
+        for reg, kw in (("O_ORACLE", {}), ("C_AUCTION", dict(PERFECT))):
+            sim = _p5_sim(reg, kw, seed=seed)
+            _run_quiet(sim)
+            d[reg] = (_items_digest(sim), len(sim.all_cargo))
+        rows.append(_row("A2", f"seed {seed}", f"Decentralised auction = centralised marketplace under perfect "
+                         f"communication (seed {seed})", 1.0, float(d["O_ORACLE"][0] == d["C_AUCTION"][0]), 0.0, "match",
+                         f"md5 of every item record (pickup, delivery, carrier, team size), p5 3eq, 90 days, "
+                         f"{d['O_ORACLE'][1]} items: {d['O_ORACLE'][0][:12]} vs {d['C_AUCTION'][0][:12]}; C_AUCTION with "
+                         "loss 0, radio 'perfect', base computer MTBF 1e15 h", "degenerate tests", "code verification",
+                         "V", "P1", ["P1"], mode="abs", source="design identity (lunarsim/atc/auction.py)", t0=t0))
+    return rows
+
+
+def check_a6_metamorphic() -> List[Dict]:
+    """A6: (a) relabelling the owners, (b) multiplying every bid by k > 0, (d) one robot: the auction's awards are
+    unchanged (a, b) or equal the marketplace's for that robot (d)."""
+    from . import dispatch as D
+    rows = []
+    t0 = time.time()
+    perm = {"A": "B", "B": "C", "C": "A"}
+
+    def relabel(sc):
+        from .scenario import BulkFlow
+        import dataclasses
+        return sc.with_(fleet=[(perm.get(f[0], f[0]),) + tuple(f[1:]) for f in sc.fleet],
+                        cargo_owners=[perm.get(o, o) for o in sc.cargo_owners],
+                        bulk_flows=[dataclasses.replace(b, owner=perm.get(b.owner, b.owner)) for b in sc.bulk_flows])
+    out = {}
+    for tag, mut in (("base", None), ("relabelled", relabel)):
+        sim = _p5_sim("C_AUCTION", {"loss": 0.10}, seed=4, mutate=mut)
+        _run_quiet(sim)
+        out[tag] = [(c.id, c.t_picked, c.t_delivered, c.carrier, c.team_size, perm.get(c.owner, c.owner) if tag == "base"
+                     else c.owner) for c in sorted(sim.all_cargo, key=lambda c: c.id)]
+    same = out["base"] == out["relabelled"]
+    rows.append(_row("A6", "owner relabelling", "Auction awards unchanged when owners are relabelled (A->B->C->A)", 1.0,
+                     float(same), 0.0, "match", f"C_AUCTION, loss 0.10, terrain radio, seed 4, 90 days, "
+                     f"{len(out['base'])} items: every item's pickup, delivery, carrier and team size, owners mapped",
+                     "metamorphic testing", "code verification", "V", "P1", ["P1"], mode="abs",
+                     source="Burkard, Dell'Amico and Martello 2009; Chen et al. 2018", t0=t0))
+    t0 = time.time()
+    real = D._bid
+    dig = {}
+    try:
+        for k in (1.0, 3.7):
+            D._bid = (lambda *a, _k=k, **kw: _k * real(*a, **kw))
+            for reg, kw in (("C_AUCTION", {"loss": 0.10}), ("O_ORACLE", {})):
+                sim = _p5_sim(reg, kw, seed=5)
+                _run_quiet(sim)
+                dig[(k, reg)] = _items_digest(sim)
+    finally:
+        D._bid = real
+    for reg in ("C_AUCTION", "O_ORACLE"):
+        rows.append(_row("A6", f"bid scaling, {reg}", f"Awards unchanged when every bid is multiplied by 3.7 ({reg})",
+                         1.0, float(dig[(1.0, reg)] == dig[(3.7, reg)]), 0.0, "match",
+                         f"md5 of item records, seed 5, 90 days (test-only: dispatch._bid x 3.7): "
+                         f"{dig[(1.0, reg)][:12]} vs {dig[(3.7, reg)][:12]}", "metamorphic testing", "code verification",
+                         "V", "P1", ["P1"], mode="abs", source="Chen et al. 2018 (scale invariance of argmin)", t0=t0))
+    t0 = time.time()
+    one = lambda sc: sc.with_(fleet=[next(f for f in sc.fleet if f[1] == "CARGO_FLEX")])
+    d1 = {}
+    for reg, kw in (("O_ORACLE", {}), ("C_AUCTION", dict(PERFECT))):
+        sim = _p5_sim(reg, kw, seed=6, mutate=one)
+        _run_quiet(sim)
+        d1[reg] = _items_digest(sim)
+    rows.append(_row("A6", "one robot", "One robot: the auction's awards equal the marketplace's", 1.0,
+                     float(d1["O_ORACLE"] == d1["C_AUCTION"]), 0.0, "match", f"owner A's CARGO_FLEX alone (the p5 fleet's largest carrier), "
+                     f"perfect communication, seed 6, 90 days: {d1['O_ORACLE'][:12]} vs {d1['C_AUCTION'][:12]}",
+                     "degenerate tests", "code verification", "V", "P1", ["P1"], mode="abs", source="Chen et al. 2018",
+                     t0=t0))
+    return rows
+
+
+def _job_log(sim):
+    """Hook: every started job as (start, end, vehicle ids, owners, item ids, item mass, capacities, revenue shares,
+    price)."""
+    log = []
+    real = sim._start_job
+
+    def start(job, _rs=real):
+        n0 = [v.jobs for v in job.vehicles]
+        r0 = [v.revenue_musd for v in job.vehicles]
+        _rs(job)
+        if [v.jobs for v in job.vehicles] == n0:
+            return
+        log.append({"t": sim.t, "ends": [v.busy_until for v in job.vehicles], "vids": [v.id for v in job.vehicles],
+                    "owners": [v.owner for v in job.vehicles], "items": [c.id for c in job.items + job.backhaul],
+                    "objs": [id(c) for c in job.items + job.backhaul],
+                    "mass": sum(c.mass_kg for c in job.items), "caps": [v.cls.capacity_kg for v in job.vehicles],
+                    "shares": [(v.revenue_musd - a) * 1e6 for v, a in zip(job.vehicles, r0)]})
+    sim._start_job = start
+    return log
+
+
+def check_a7_no_double() -> List[Dict]:
+    """A7 (as the auction implements it): under message loss and partitions, no item is ever carried by two jobs;
+    duplicates the auction believes it won end as wasted trips or conflicts settled by the CBBA rule."""
+    t0 = time.time()
+    cells = [("C_AUCTION", {"loss": 0.10}), ("C_AUCTION", {"loss": 0.40}), ("C_AUCTION", {"loss": 0.25, "loss_model": "burst"}),
+             ("C_AUCTION", {"loss": 0.25, "depth": 5}), ("C_LEADER", {"loss": 0.40})]
+    dup = jobs = wasted = conflicts = runs = 0
+    for reg, kw in cells:
+        for seed in (1, 2):
+            sim = _p5_sim(reg, kw, seed=seed)
+            log = _job_log(sim)
+            out = _run_quiet(sim)
+            objs = [i for j in log for i in j["objs"]]            # by object: cargo ids can repeat (row D8 ids)
+            dup += len(objs) - len(set(objs))
+            jobs += len(log)
+            runs += 1
+            wasted += int(out.get("atc_wasted_trips", 0) or 0)
+            conflicts += int(out.get("atc_conflicts", 0) or 0)
+    return [_row("A7", "no item carried twice", "Under loss and partitions no item is carried by two jobs", 0.0,
+                 float(dup), 0.0, "items", f"{runs} runs (C_AUCTION loss 0.10 / 0.40 / burst 0.25 / depth 5 at 0.25; "
+                 f"C_LEADER loss 0.40; seeds 1-2, 90 days), {jobs:,} jobs; duplicates the robots believed they won: "
+                 f"{wasted} wasted trips, {conflicts} conflicts settled by the CBBA rule (summary counters)",
+                 "event validity", "code verification", "V", "P1", ["P1", "P2"], mode="abs",
+                 source="Johnson et al. 2011 (ACBBA); Choi et al. 2009", exposure={"n": runs, "unit": "runs",
+                 "upper95": 1 - 0.05 ** (1 / runs), "jobs": jobs}, t0=t0)]
+
+
+def check_d8_ids() -> List[Dict]:
+    """D8 (added, B-79 batch 2): every cargo item has its own id (the engine reused ids until 7247b8e)."""
+    from collections import Counter
+    t0 = time.time()
+    reused = items = runs = 0
+    for reg, kw in (("O_ORACLE", {}), ("C_AUCTION", {"loss": 0.10})):
+        for seed in (1, 2):
+            sim = _p5_sim(reg, kw, seed=seed, days=365)
+            _run_quiet(sim)
+            cnt = Counter(c.id for c in sim.all_cargo)
+            reused += sum(n - 1 for n in cnt.values() if n > 1)
+            items += len(sim.all_cargo)
+            runs += 1
+    return [_row("D8", "cargo ids unique", "Every cargo item has its own id", 0.0, float(reused), 0.0, "ids reused",
+                 f"{runs} one-year p5 runs (O_ORACLE, C_AUCTION; seeds 1-2), {items:,} items. Found failing on a46353b; "
+                 "fixed in 7247b8e; outcome-neutral on 48 of 48 reruns (results/id_fix_evidence.json; PREREG change "
+                 "10). The defect: manifests used Simulation._cid as the next free id while return items and bulk lots "
+                 "advanced it before use, so the next landing reused an id (12-18 of about 2,970 items a year)",
+                 "traces", "code verification", "V", "P1", ["P1", "P2", "P3"], mode="abs",
+                 source="Balci 1998 (assertion checking)", t0=t0)]
+
+
+def check_a9_team_lifts() -> List[Dict]:
+    """A9: a team forms only when the members' capacities cover the item; members share the job interval; the price
+    is split equally and the shares sum to it; team scope 'same_owner' pairs one owner's robots only."""
+    t0 = time.time()
+    cells = [({"loss": 0.0}, "any"), ({"loss": 0.25}, "any"), ({"loss": 0.25, "commit": False}, "any"),
+             ({"loss": 0.10, "team_scope": "same_owner"}, "same_owner")]
+    v = {"capacity": 0, "interval": 0, "split": 0, "scope": 0}
+    teams = runs = 0
+    cross = 0
+    for kw, scope in cells:
+        for seed in (1, 2):
+            sim = _p5_sim("C_AUCTION", kw, seed=seed, days=180)
+            log = _job_log(sim)
+            _run_quiet(sim)
+            runs += 1
+            for j in log:
+                if len(j["vids"]) < 2:
+                    continue
+                teams += 1
+                cross += len(set(j["owners"])) > 1
+                v["capacity"] += j["mass"] > sum(j["caps"]) + 1e-6
+                v["interval"] += max(j["ends"]) - min(j["ends"]) > 1e-9
+                tot = sum(j["shares"])
+                v["split"] += max(j["shares"]) - min(j["shares"]) > 1e-6 * max(1.0, abs(tot))
+                v["scope"] += scope == "same_owner" and len(set(j["owners"])) > 1
+    bad = sum(v.values())
+    return [_row("A9", "team lifts", "Team lifts: capacity covers the item, shared interval, equal price split, scope "
+                 "respected", 0.0, float(bad), 0.0, "violations", f"{runs} runs (C_AUCTION, team share 0.10; loss 0 / "
+                 f"0.25 / 0.25 without commit / scope same_owner at 0.10; seeds 1-2, 180 days), {teams} team jobs "
+                 f"({cross} cross-owner); by kind: " + ", ".join(f"{k} {x}" for k, x in v.items()),
+                 "traces", "code verification", "V", "P1", ["P1"], mode="abs",
+                 source="Gerkey and Mataric, IJRR 23(9):939-954, 2004", exposure={"n": teams, "unit": "team jobs",
+                 "upper95": 1 - 0.05 ** (1 / max(teams, 1))}, t0=t0)]
+
+
+def check_a_not_applicable() -> List[Dict]:
+    why = ("C_AUCTION is a sequential single-item auction (marketplace bids) that borrows only CBBA's conflict rule "
+           "(lunarsim/atc/auction.py); ")
+    out = []
+    for cid, name, w in (("A1", "Single-item epsilon-auction within n epsilon of the optimum",
+                          "the code has no epsilon-auction; central assignment's optimality is D9"),
+                         ("A3", "CBBA convergence within N_t x D rounds and agreement",
+                          "the CBBA bound does not apply; the auction's own round limit and its agreement (no item "
+                          "carried twice) are A2 and A7"),
+                         ("A4", "CBBA score at least half the optimum", "the 50 % guarantee is CBBA's; not claimed"),
+                         ("A5", "Learned score has diminishing marginal gain", "DMG is the condition of CBBA's "
+                          "guarantees, which the papers do not claim; the learned correction adds to a bundle bid")):
+        r = _row(cid, "not applicable", name, float("nan"), float("nan"), 0.0, "", why + w, "analytic",
+                 "code verification", "V", "P1", ["P1"], mode="abs", source="Choi, Brunet and How 2009")
+        r["skipped"] = "not applicable: " + w
+        r["passed"] = False
+        out.append(r)
+    return out
+
+
+# ------------------------------------------------------------------------------------------------ radio and messages
+def check_r2_reciprocity(n_pairs: int = 3000) -> List[Dict]:
+    """R2: the mesh builder's clearance of a -> b with heights (h_a, h_b) equals b -> a with (h_b, h_a), on the real
+    terrain, for a random sample of the file's pairs; and the recomputation reproduces the stored file."""
+    t0 = time.time()
+    sys.path.insert(0, _repo("tools", "atc"))
+    try:
+        import mesh as MESH
+    finally:
+        sys.path.pop(0)
+    from .terrain import Terrain
+    from .atc.radio import RadioMesh
+    m = RadioMesh()
+    rng = np.random.default_rng(22)
+    near = np.flatnonzero(m.d <= 5000.0)
+    k = rng.choice(near, n_pairs, replace=False)
+    I, J = m.I[k], m.J[k]
+    t = Terrain(MESH.EL.PACK)
+    combos = m.combos
+    fw, _ = MESH.pair_profiles(t, m.xy, I, J, combos)
+    bw, _ = MESH.pair_profiles(t, m.xy, J, I, [(b, a) for a, b in combos])
+    asym = int(np.sum(MESH.encode_clear(fw) != MESH.encode_clear(bw)))
+    stored = m.clear_dm[:, k]
+    repro = int(np.sum(MESH.encode_clear(fw) != stored))
+    base = (f"{n_pairs} random pairs within 5 km of mesh-v1 ({m.n} points), 4 height combinations, clearance encoded "
+            "as the file does (0.1 m)")
+    return [_row("R2", "reciprocity", "Radio reciprocity: a hears b iff b hears a (clearance a->b = b->a)", 0.0,
+                 float(asym), 0.0, "pair-combos", base + "; terrain profiles recomputed both ways", "metamorphic testing",
+                 "code verification", "V", "P1", ["P2", "P3"], mode="abs", source="geometry", t0=t0),
+            _row("R2", "file reproduces", "The mesh file's clearances reproduce from the terrain", 0.0, float(repro), 0.0,
+                 "pair-combos", base + "; recomputed against the stored file", "comparison to other models",
+                 "solution verification", "V", "P1", ["P2", "P3"], mode="abs", source="tools/atc/mesh.py", t0=t0)]
+
+
+def check_r7_graph() -> List[Dict]:
+    """R7: mesh diameter by BFS (radio.hops) equals Floyd-Warshall; component count equals union-find; with no loss a
+    broadcast reaches every node within D x hop latency."""
+    from scipy.sparse.csgraph import floyd_warshall, connected_components
+    from .atc.radio import RadioMesh
+    from .atc.messages import Channel, HOP_LATENCY_S
+    rows = []
+    m = RadioMesh()
+    rng = np.random.default_rng(7)
+    for sub, h, dmax in (("2.5 m, 5 km", 2.5, 5000.0), ("1.0 m, 3 km", 1.0, 3000.0)):
+        t0 = time.time()
+        sel = np.sort(rng.choice(m.n, 600, replace=False))
+        sel = np.union1d(sel, [m.base])
+        G = m.graph(h, d_max_m=dmax)[sel][:, sel]
+        fw = floyd_warshall(G, directed=False, unweighted=True)
+        # BFS from every node with radio.hops' method (scipy shortest_path, unweighted) on the same subgraph
+        from scipy.sparse.csgraph import shortest_path
+        bfs = shortest_path(G, directed=False, unweighted=True, method="D")
+        diff = int(np.sum(~((fw == bfs) | (np.isinf(fw) & np.isinf(bfs)))))
+        fin = np.isfinite(fw)
+        D_fw = int(fw[fin].max())
+        # union-find over the links
+        par = list(range(len(sel)))
+
+        def find(x):
+            while par[x] != x:
+                par[x] = par[par[x]]
+                x = par[x]
+            return x
+        Gc = G.tocoo()
+        for a, b in zip(Gc.row, Gc.col):
+            ra, rb = find(int(a)), find(int(b))
+            if ra != rb:
+                par[ra] = rb
+        n_uf = len({find(x) for x in range(len(sel))})
+        n_cc = connected_components(G, directed=False)[0]
+        rows.append(_row("R7", sub + ": shortest paths", f"Mesh hop counts: BFS equals Floyd-Warshall ({sub})", 0.0,
+                         float(diff), 0.0, "pairs", f"{len(sel)} mesh points (600 random + BASE), antenna {h} m, d_max "
+                         f"{dmax / 1000:g} km, BASE with its mast; diameter of the largest component {D_fw} hops",
+                         "comparison to other models", "code verification", "V", "P1", ["P2", "P3"], mode="abs",
+                         source="Floyd 1962; scipy.sparse.csgraph", t0=t0))
+        rows.append(_row("R7", sub + ": components", f"Mesh components: scipy equals union-find ({sub})", float(n_uf),
+                         float(n_cc), 0.0, "components", f"same subgraph; {n_cc} components", "comparison to other models",
+                         "code verification", "V", "P1", ["P2", "P3"], mode="abs", source="Tarjan 1975 (union-find)",
+                         t0=t0))
+        ch = Channel(0.0)
+        b = int(np.searchsorted(sel, m.base))
+        hops = fw[b][np.isfinite(fw[b])].astype(int)
+        lat = max(ch.send(int(x))[1] for x in hops)
+        ecc = int(hops.max())
+        rows.append(_row("R7", sub + ": broadcast latency", f"No-loss broadcast from BASE reaches its component within "
+                         f"eccentricity x hop latency ({sub})", ecc * HOP_LATENCY_S, lat, 1e-9, "s",
+                         f"{len(hops)} reachable points, eccentricity {ecc} hops, hop latency {HOP_LATENCY_S * 1000:g} ms "
+                         "(lunarsim.atc.messages)", "analytic", "code verification", "V", "P1", ["P2", "P3"],
+                         source="lunarsim/atc/messages.py", t0=t0))
+    return rows
+
+
+def check_r9_messages(n: int = 200000) -> List[Dict]:
+    """R9 (added to the plan: the message model): Bernoulli delivery over h hops = (1 - p)^h; the Gilbert-Elliott
+    chain's stationary loss = p and mean loss burst = MEAN_BURST; messages = delivered + lost."""
+    from scipy import stats
+    from .atc.messages import Channel, MEAN_BURST
+    rows = []
+    for p, h in ((0.10, 1), (0.10, 3), (0.40, 2)):
+        t0 = time.time()
+        ch = Channel(p, rng=np.random.default_rng(int(100 * p) + h))
+        ok = sum(ch.send(h)[0] for _ in range(n))
+        ref = (1 - p) ** h
+        tol = 4.0 * math.sqrt(ref * (1 - ref) / n) / ref
+        rows.append(_row("R9", f"bernoulli p {p:g}, {h} hops", f"Message delivery, Bernoulli loss {p:g} over {h} hop(s) "
+                         "= (1 - p)^h", ref, ok / n, tol, "share", f"{n:,} messages; messages = delivered + lost: "
+                         f"{ch.messages == ok + ch.lost}", "analytic", "code verification", "V", "P1", ["P1", "P2"],
+                         source="lunarsim/atc/messages.py", t0=t0,
+                         tol_src="4 binomial standard errors (a correct model fails with probability 6e-5)"))
+    t0 = time.time()
+    p = 0.25
+    ch = Channel(p, model="burst", rng=np.random.default_rng(9))
+    lost = np.array([not ch.send(1)[0] for _ in range(n)])
+    share = float(lost.mean())
+    edges = np.flatnonzero(np.diff(np.concatenate([[0], lost.astype(int), [0]])))
+    runs = edges[1::2] - edges[::2]
+    nb = 20
+    b = lost[: n // nb * nb].reshape(nb, -1).mean(1)
+    hw = stats.t.ppf(0.995, nb - 1) * b.std(ddof=1) / math.sqrt(nb)
+    rows.append(_row("R9", "burst: stationary loss", f"Burst (Gilbert-Elliott) loss: stationary share = {p:g}", p, share,
+                     0.05, "share", f"{n:,} one-hop messages; 99 % batch-means interval +/- {hw:.4f}", "analytic",
+                     "code verification", "V", "P1", ["P1", "P2"], source="Gilbert 1960; Elliott 1963", ci=(share - hw,
+                     share + hw), t0=t0, tol_src="5 % relative; the interval's half-width is about a third of it"))
+    rows.append(_row("R9", "burst: mean run", f"Burst loss: mean run of lost messages = {MEAN_BURST:g}", MEAN_BURST,
+                     float(runs.mean()), 0.05, "messages", f"{len(runs):,} loss runs", "analytic", "code verification",
+                     "V", "P1", ["P1", "P2"], source="Gilbert 1960; lunarsim.atc.messages MEAN_BURST", t0=t0,
+                     tol_src="5 % relative (standard error about 1 % at this many runs)"))
+    return rows
+
+
+# ------------------------------------------------------------------------------------------------ regimes
+def check_x6_earth_independent() -> List[Dict]:
+    """X6 (added: the regimes' design claim behind PREREG change 4): a regime that never waits for Earth gives the
+    same run whatever the start year; an Earth-dependent one does not (the control). Full relay coverage equals
+    O_ORACLE."""
+    for p in (_repo(), _repo("experiments", "phase5")):
+        if p not in sys.path:
+            sys.path.insert(0, p)
+    import run_phase5 as RP
+    kws = {lab: (reg, kw) for lab, reg, kw in RP.REGIMES_E40}
+    rows = []
+    for lab in ("O_ORACLE", "B_EARTH_RELAY 1.0", "C_LEADER", "C_AUCTION", "C_LEARNED_MLP", "C_LEARNED_LIN",
+                "A_EARTH strict"):
+        t0 = time.time()
+        reg, kw = kws[lab]
+        d = []
+        for y in (2028, 2038):
+            sim = _p5_sim(reg, dict(kw, start_year=y), seed=3)
+            _run_quiet(sim)
+            d.append(_items_digest(sim))
+        indep = lab in RP.EARTH_INDEPENDENT
+        rows.append(_row("X6", f"start year, {lab}", f"{'Earth-independent' if indep else 'Earth-dependent (control)'} "
+                         f"regime {lab}: {'same' if indep else 'different'} run in 2028 and 2038", 1.0,
+                         float((d[0] == d[1]) == indep), 0.0, "pass", f"md5 of item records, seed 3, 90 days: "
+                         f"{d[0][:12]} vs {d[1][:12]}; listed in run_phase5.EARTH_INDEPENDENT: {indep}",
+                         "degenerate tests", "code verification", "V", "P1", ["P1", "P2"], mode="abs",
+                         source="PREREG change 4 (paper/atc/PREREG.md)", t0=t0))
+    t0 = time.time()
+    d = []
+    for reg, kw in (("O_ORACLE", {}), kws["B_EARTH_RELAY 1.0"]):
+        sim = _p5_sim(reg, dict(kw), seed=3)
+        _run_quiet(sim)
+        d.append(_items_digest(sim))
+    rows.append(_row("X6", "full relay = oracle", "B_EARTH_RELAY with full coverage equals O_ORACLE", 1.0,
+                     float(d[0] == d[1]), 0.0, "match", f"md5 of item records, seed 3, 90 days: {d[0][:12]} vs "
+                     f"{d[1][:12]}", "degenerate tests", "code verification", "V", "P1", ["P1", "P2"], mode="abs",
+                     source="regimes.py: B_EARTH decides only while linked; coverage 1.0 links always", t0=t0))
+    return rows
+
+
+# ------------------------------------------------------------------------------------------------ learned policy
+def check_l_policy() -> List[Dict]:
+    from .atc.learned import Policy
+    rows = []
+    for pid in ("atc_bid_v1", "atc_bid_linear_v1"):
+        t0 = time.time()
+        pol = Policy(_repo("data", "policies", pid + ".json"))
+        chk = json.load(open(_repo("data", "policies", pid + ".check.json"), encoding="utf-8"))
+        got = pol(np.array(chk["obs"], float))
+        want = np.array(chk["act"], float).ravel()
+        d = float(np.max(np.abs(got - want)))
+        rows.append(_row("L4", pid, f"Policy runtime reproduces its stored check vectors ({pid})", 0.0, d,
+                         float(chk.get("tolerance", 1e-9)), "h", f"{len(want)} vectors in data/policies/{pid}.check.json; "
+                         "the browser's parity against the same file is FRONTEND's test (site/src/atc/bid.js)",
+                         "comparison to other models", "code verification", "V", "P1", ["P1"], mode="abs",
+                         source="lunarsim.atc.learned.Policy", t0=t0,
+                         tol_src=f"the check file's own tolerance ({chk.get('tolerance')})"))
+    t0 = time.time()
+    sys.path.insert(0, _repo("tools", "atc"))
+    try:
+        import train_bid as TB
+    finally:
+        sys.path.pop(0)
+    train = set(TB.TRAIN_SEEDS) | set(TB.TUNE_SEEDS) | set(TB.CEM_FIT_SEEDS) | set(TB.CEM_TUNE_SEEDS)
+    inter = sorted(train & set(TB.EVAL_SEEDS))
+    rows.append(_row("L1", "seed sets disjoint", "Held-out evaluation seeds are disjoint from training and tuning seeds",
+                     0.0, float(len(inter)), 0.0, "seeds", f"training {min(TB.TRAIN_SEEDS)}-{max(TB.TRAIN_SEEDS)}, tuning "
+                     f"{min(TB.TUNE_SEEDS)}-{max(TB.TUNE_SEEDS)}, CEM {list(TB.CEM_FIT_SEEDS)} / {list(TB.CEM_TUNE_SEEDS)}; "
+                     f"evaluation {min(TB.EVAL_SEEDS)}-{max(TB.EVAL_SEEDS)} (tools/atc/train_bid.py); shared: "
+                     f"{inter or 'none'}", "internal validity", "input pedigree", "V", "P1", ["P1"], mode="abs",
+                     source="Ross, Gordon and Bagnell 2011 (DAgger)", t0=t0))
+    ev = json.load(open(_repo("results", "ATC_learned_eval.json"), encoding="utf-8"))["eval"]["30"]
+    r = _row("L1", "teacher agreement", "Agreement with the teacher (O_ORACLE) on held-out rounds", float("nan"),
+             float(ev["mlp"]["heldout_agreement"]), 0.0, "share",
+             f"held-out top-1 agreement (results/ATC_learned_eval.json, 30 % load): hand bids "
+             f"{ev['hand']['heldout_agreement']} ({ev['hand']['heldout_groups']:,} rounds), MLP "
+             f"{ev['mlp']['heldout_agreement']}, linear {ev['linear']['heldout_agreement']}",
+             "comparison to other models", "referent validation", "Val", "P1", ["P1"], mode="abs",
+             source="Ross et al. 2011; Wilson 1927")
+    r["skipped"] = ("no preregistered agreement threshold (PREREG H4 tests outcomes, not agreement); the numbers are "
+                    "reported in basis")
+    rows.append(r)
+    r = _row("L2", "not applicable", "Outcome equivalence with the teacher (TOST)", float("nan"), float("nan"), 0.0, "",
+             "the policy is not a distilled copy of the teacher: after imitation it is tuned by CEM to beat it, and its "
+             "outcome against C_AUCTION is H4 itself (E40)", "internal validity", "referent validation", "Val", "P1",
+             ["P1"], mode="abs", source="PREREG H4")
+    r["skipped"] = "not applicable: the learned policy is tuned to differ from its teacher; H4 tests the outcome"
+    rows.append(r)
+    t0 = time.time()
+    import tempfile
+    doc = json.load(open(_repo("data", "policies", "atc_bid_v1.json"), encoding="utf-8"))
+    last = doc["layers"][-1]
+    last["w"] = np.zeros_like(np.array(last["w"], float)).tolist()
+    last["b"] = np.zeros_like(np.array(last["b"], float)).tolist()
+    with tempfile.TemporaryDirectory() as td:
+        pth = os.path.join(td, "zero.json")
+        with open(pth, "w", encoding="utf-8") as f:
+            json.dump(doc, f)
+        d = {}
+        for reg, kw in (("C_AUCTION", {"loss": 0.10}), ("C_LEARNED_MLP", {"loss": 0.10, "policy": pth})):
+            sim = _p5_sim(reg, kw, seed=7)
+            _run_quiet(sim)
+            d[reg] = _items_digest(sim)
+    rows.append(_row("L6", "zero correction", "A learned policy with zero correction reproduces the hand-bid auction",
+                     1.0, float(d["C_AUCTION"] == d["C_LEARNED_MLP"]), 0.0, "match", f"atc_bid_v1 with its output layer "
+                     f"zeroed (g = 0) in C_LEARNED_MLP vs C_AUCTION, loss 0.10, seed 7, 90 days: "
+                     f"{d['C_AUCTION'][:12]} vs {d['C_LEARNED_MLP'][:12]}", "degenerate tests", "code verification", "V",
+                     "P1", ["P1"], mode="abs", source="design identity (lunarsim/atc/learned.py)", t0=t0))
+    return rows
+
+
+def run_phase5_batch2() -> List[Dict]:
     rows: List[Dict] = []
+    for f in (check_a2_degenerate, check_a6_metamorphic, check_a7_no_double, check_d8_ids, check_a9_team_lifts,
+              check_a_not_applicable, check_r2_reciprocity, check_r7_graph, check_r9_messages,
+              check_x6_earth_independent, check_l_policy):
+        rows += f()
+    return rows
+
+
+# ------------------------------------------------------------------------------------------------ run and write
+def run_phase5_checks(batches=(1, 2)) -> List[Dict]:
+    rows: List[Dict] = []
+    if 1 not in batches:
+        return run_phase5_batch2() if 2 in batches else rows
     for f in (check_d1_sample_path, check_d2_pk, check_d3_multi, check_d4_cobham, check_d5_extremes,
               check_d6_one_owner, check_d7_time_scale, check_d8_invariants, check_d9_hungarian, check_d10_crn,
               check_d11_inputs, check_r1_horizon, check_e3_energy):
         r = f()
         rows += r if isinstance(r, list) else [r]
+    if 2 in batches:
+        rows += run_phase5_batch2()
     return rows
 
 

@@ -7304,3 +7304,89 @@ None of these changes any E40-E48 number.
 ## F-55 REAL FILE (B-79 batch 1) CHECKED IN NODE 10:52; BROWSER CHECK WAITING ON MEMORY | site/src/verify/phase5.js, site/src/verify/main.js, site/tests/vv-phase5.test.mjs | how to check: the page's own reader (read() from site/src/verify/phase5.js) run in Node on results/vv_phase5.json gives ok, 0 format errors, recount rows 81, pass 77, fail 4, not run 0, bias 1, equal to the file's summary (mismatch empty); groups D 66 pass / 4 fail / 1 bias, R 6, E 5; the failures are D10 · pairing A_EARTH plan_ahead, A_EARTH strict, A_MOON, B_EARTH strict, each with its basis text (correlation, 95 % CI, variance reduction); the bias row is D4 · class 2 (status pass, bias flag); commit c20da61 is read for the footer. New: each row's tolerance_source shows under the tolerance ("from verification plan section 3, row D2 ..."). npm run build stages the file; /verification/ 9.3 of 10 kB gz; tests 31/31; budgets OK. Not done: the headless Chrome look, because free RAM was 0.71 GB (LEAD's line 0.8) | from BACKEND: nothing; the "detail" object can come, the reader ignores it (VRF is already in the basis text) | for LEAD: four D10 failures, not three as relayed (A_EARTH has two rows, plan_ahead and strict).
 
 ## F-55 HEADLESS LOOK ON THE REAL FILE DONE 11:20 | no file changes (built from 585ea96) | how to check: /verification/ light and dark at 1280 and 390 px: badge "77 of 81 recorded checks pass, 1 bias flag"; groups Dispatch engine 66 / 70, Radio and visibility 6 / 6, Energy and battery 5 / 5; the four D10 pairing rows show "fail" with their basis text (seeds shared, correlation with CI, variance-reduction factor); D4 class 2 shows "pass" with the bias-flag note and its 99 % interval; each tolerance shows "from verification plan ..."; footer "Recorded at commit c20da61"; no horizontal scroll (1265/1265, 390/390); no console errors. Preview stopped, D: profile deleted | from BACKEND: nothing | for LEAD: an earlier headless run (1280 light, 390 dark) happened before your "hold" reached me; it found the tolerance-source line in the wrong table, fixed before a46353b.
+
+## B-79 batch 2 DONE 30 Oct (auction, radio, messages, regimes, learned policy) + cargo-id fix evidence + E46 fit additions | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**Overview:** results/vv_phase5.json now holds batches 1 and 2, rerun at the fixed code (commit 1268b60).
+- 122 rows: 112 passed, 4 failed (the D10 pairing rows, unchanged), 6 skipped with reasons, 1 bias flag (D4 class 2).
+- **Batch 2 alone:** 41 rows, 35 passed, 6 skipped, 0 failed.
+
+### Batch 2 rows
+- **A2** (P1): under perfect communication the decentralised auction equals the centralised marketplace. md5 of every item record on 3 seeds. Settings: loss 0, radio "perfect", base computer never fails.
+- **A6** (P1), metamorphic:
+  - owner relabelling A→B→C→A: identical awards;
+  - every bid × 3.7: identical awards for C_AUCTION and O_ORACLE. The patch was verified to take effect: × −1 changes the awards;
+  - one robot (CARGO_FLEX): auction = marketplace.
+- **A7** (P1, P2): no item carried by two jobs. 10 runs (loss 0.10/0.40, burst 0.25, depth 5; C_LEADER 0.40), 6,020 jobs, 0 duplicates by object identity.
+- **D8 cargo ids unique** (added; P1-P3): passes after the fix, with the history sentence in its basis.
+- **A9** (P1): team lifts. 8 runs, 40 team jobs (33 cross-owner): capacity, shared interval, equal split and same_owner scope all hold, 0 violations.
+- **A1, A3, A4, A5:** skipped as not applicable. They state CBBA and epsilon-auction guarantees, while the code is a sequential single-item auction that borrows only CBBA's conflict rule. Each row gives the reason.
+- **R2** (P2, P3): reciprocity on the real terrain. 3,000 pairs × 4 height combinations; clearance a→b equals b→a, and the mesh file reproduces from the terrain (0 differences).
+- **R7** (P2, P3):
+  - Floyd-Warshall equals BFS (scipy) on 601-point subgraphs at 2.5 m / 5 km and 1.0 m / 3 km;
+  - union-find equals scipy's component count (1 and 4 components);
+  - a no-loss broadcast from BASE arrives within eccentricity × 10 ms.
+- **R9** (added: the message model; P1, P2):
+  - Bernoulli delivery equals (1 − p)^h at 3 settings;
+  - the burst model's stationary loss is 0.252 against 0.25, and its mean loss run 9.997 against 10;
+  - messages = delivered + lost.
+- **X6** (added: the regimes' design claim behind PREREG change 4):
+  - O_ORACLE, B_EARTH_RELAY 1.0, C_LEADER, C_AUCTION and both C_LEARNED give the same run in 2028 and 2038;
+  - A_EARTH strict differs, as the control should;
+  - B_EARTH_RELAY 1.0 = O_ORACLE.
+- **L4** (P1): both policy runtimes reproduce their stored check vectors (50 each, 0.0 difference). The browser side is FRONTEND's test.
+- **L1 seed sets** (P1): training, tuning and CEM seeds are disjoint from evaluation seeds 1-30.
+- **L1 teacher agreement:** skipped, because there is no preregistered threshold. The numbers are in basis: hand 0.884, MLP 0.863, linear 0.707 on about 79,000 held-out rounds.
+- **L2:** skipped as not applicable. The policy is tuned to differ from its teacher, and H4 tests the outcome.
+- **L6** (P1): zero correction (output layer zeroed) in C_LEARNED_MLP equals C_AUCTION, by md5.
+
+### Cargo-id defect
+Found by A7 and fixed in 7247b8e by LEAD's commit.
+- **Evidence:** tools/atc/check_id_fix.py, results/id_fix_evidence.json.
+  - 48 of 48 one-year reruns are identical by content: every E40 label at 30 % load plus E43's none/atc/uncoordinated at 1x, seeds 1-3.
+  - Reused ids: 670 → 0.
+- **md5 baselines:** none moved, because they digest summary tables; all digest tests pass.
+- **Suite after the fix:** 47 files, 576 passed, 0 failed. tests/test_verification_phase5.py now has 10 tests, including the unique-id regression test.
+
+### E46 fit additions (P3 referee round 1)
+Analysis only, no new runs. Every existing field is identical, and E46_cells.csv / E46_pairs.csv are byte-identical.
+- **budget, honest asks** (M USD a year, mean [95 % CI]):
+
+  | rule | 3eq | 3uneq |
+  |---|---|---|
+  | first | −2.50 [−4.78, −0.22] | −2.76 [−5.08, −0.44] |
+  | second | −12.71 [−14.36, −11.11] | −13.07 [−14.80, −11.38] |
+  | posted | 0 | 0 |
+  | none | 0 | 0 |
+
+  - Receipts are 45.0 (3eq) and 45.2 (3uneq).
+  - First-price payouts are 47.5 and 48.0, which equal true carrier cost under honest asks. **Confirmed:** the first-price deficit is the calibration gap; test-seed carrier cost per tonne-km is 5.6 % above the tariff set on seeds 101-110.
+  - Fines are 0, since q = 0 for honest asks.
+- **transfers** (Shapley payoff minus posted cash profit, M a year):
+  - 3eq: A +111.9 [96.0, 129.4], B +87.8 [75.6, 100.0], C −199.7 [−223.6, −176.3];
+  - 3uneq: A +34.2, B +43.9, C −78.1.
+- **settled_with_transfers:** 214.4 [190.9, 238.4] (3eq) and 90.3 [77.1, 105.7] (3uneq). This is close to the referee's 215 / 85 M.
+- **second_price**, honest asks, all seeds pooled:
+  - 3eq: 70,288 jobs; with an alternative 15.5 %; tariff reserve 84.5 %; paid the own ask 63.7 %;
+  - 3uneq: 70,533 jobs; 15.3 % / 84.7 % / 63.3 %.
+  - A job counts as "own ask" when every carrier's payment is max(ask, total/n) = ask.
+- **vs_none** (rule minus no payments, paired, M a year):
+  - first: 3eq A +6.5, B +10.8, C −14.7; 3uneq A −0.9 (CI covers 0), B +10.2, C −6.5;
+  - second: 3eq A +13.3, B +13.9, C −14.5; 3uneq A +5.9, B +13.4, C −6.2;
+  - posted (Shapley): 3eq A +119.8, B +94.7, C −214.4; 3uneq A +34.3, B +50.2, C −84.6.
+
+### Files
+- **vv commit:** lunarsim/vv5.py, results/vv_phase5.json, tests/test_verification_phase5.py, tools/atc/check_id_fix.py, results/id_fix_evidence.json, .team/inbox-backend.md, .team/reports.md.
+- **E46 commit:** tools/atc/run_e46.py, results/E46_fit.json.
+
+### How to test
+- `python -m lunarsim.vv5` regenerates all rows (about 12 min; in 600 s tool chunks I ran it in three parts).
+- `python tools/atc/check_id_fix.py compare` rebuilds the evidence from cache.
+- `python tools/atc/run_e46.py analyse`.
+
+**FRONTEND:**
+- vv_phase5.json now has 122 rows.
+- New letter groups: X (X6) and more A, R and L rows.
+- The skipped rows have simulated, error and rel_error as null.
+
+**Questions for LEAD:** none open.

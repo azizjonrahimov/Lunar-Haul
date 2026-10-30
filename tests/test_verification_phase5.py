@@ -65,3 +65,26 @@ def test_write_json_nulls_and_unique(tmp_path):
     assert "commit" in doc
     with pytest.raises(ValueError):
         V.write_json(rows + [rows[1]], str(tmp_path / "dup.json"))
+
+
+# ------------------------------------------------------------------------------------------------ batch 2
+def test_batch2_fast_checks_pass():
+    rows = V.check_r9_messages(20000) + V.check_r7_graph()
+    rows += [r for r in V.check_l_policy() if not r["skipped"]]
+    bad = [(r["id"], r["sub"], r["basis"]) for r in rows if not r["passed"]]
+    assert not bad
+
+
+def test_not_applicable_rows_are_skips_not_failures(tmp_path):
+    rows = V.check_a_not_applicable()
+    assert all(r["skipped"].startswith("not applicable") and not r["passed"] for r in rows)
+    doc = json.loads(open(V.write_json(rows, str(tmp_path / "na.json")), encoding="utf-8").read())
+    assert doc["summary"]["failed"] == 0 and doc["summary"]["skipped"] == len(rows)
+
+
+def test_cargo_ids_unique_after_fix():
+    from collections import Counter
+    sim = V._p5_sim("O_ORACLE", {}, seed=1, days=120)
+    V._run_quiet(sim)
+    cnt = Counter(c.id for c in sim.all_cargo)
+    assert len(sim.all_cargo) > 500 and max(cnt.values()) == 1

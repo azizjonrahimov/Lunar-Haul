@@ -1,12 +1,12 @@
 {
  "version": 1,
- "generated": "2026-10-30T10:36:29-0700",
- "commit": "c20da61496604046eae80080e1040cec86adafc5",
+ "generated": "2026-10-30T11:46:04-0700",
+ "commit": "1268b605ca141477d2ac95966c35d2dffbe3f358",
  "summary": {
-  "rows": 81,
-  "passed": 77,
+  "rows": 122,
+  "passed": 112,
   "failed": 4,
-  "skipped": 0,
+  "skipped": 6,
   "bias_flags": 1
  },
  "rows": [
@@ -37,7 +37,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.2,
+   "runtime_s": 0.24,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: deterministic identity, 1e-9 relative"
   },
   {
@@ -67,7 +67,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.2,
+   "runtime_s": 0.24,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: deterministic identity, 1e-9 relative"
   },
   {
@@ -97,7 +97,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.07,
+   "runtime_s": 0.06,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: deterministic identity, 1e-9 relative"
   },
   {
@@ -127,7 +127,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.07,
+   "runtime_s": 0.06,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: deterministic identity, 1e-9 relative"
   },
   {
@@ -155,7 +155,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 3.73,
+   "runtime_s": 3.9,
    "tolerance_source": "exact up to float addition: the same floats enter both"
   },
   {
@@ -186,7 +186,7 @@
    ],
    "bias_flag": false,
    "exposure": null,
-   "runtime_s": 6.98,
+   "runtime_s": 7.6,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D2 (pass tolerance column)"
   },
   {
@@ -214,7 +214,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 6.98,
+   "runtime_s": 7.6,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D2 (pass tolerance column)"
   },
   {
@@ -242,7 +242,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 7.54,
+   "runtime_s": 8.12,
    "tolerance_source": "exact up to float addition: the same floats enter both"
   },
   {
@@ -273,7 +273,7 @@
    ],
    "bias_flag": false,
    "exposure": null,
-   "runtime_s": 8.68,
+   "runtime_s": 9.28,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D2 (pass tolerance column)"
   },
   {
@@ -301,7 +301,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 8.68,
+   "runtime_s": 9.28,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D2 (pass tolerance column)"
   },
   {
@@ -331,7 +331,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 8.69,
+   "runtime_s": 9.3,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D1 (pass tolerance column)"
   },
   {
@@ -359,7 +359,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 10.79,
+   "runtime_s": 11.72,
    "tolerance_source": "exact up to float addition: the same floats enter both"
   },
   {
@@ -390,7 +390,7 @@
    ],
    "bias_flag": false,
    "exposure": null,
-   "runtime_s": 12.92,
+   "runtime_s": 13.99,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D2 (pass tolerance column)"
   },
   {
@@ -418,7 +418,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 12.92,
+   "runtime_s": 13.99,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D2 (pass tolerance column)"
   },
   {
@@ -446,7 +446,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 8.28,
+   "runtime_s": 8.89,
    "tolerance_source": "exact up to float addition: the same floats enter both"
   },
   {
@@ -477,7 +477,7 @@
    ],
    "bias_flag": false,
    "exposure": null,
-   "runtime_s": 10.64,
+   "runtime_s": 11.28,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D2 (pass tolerance column)"
   },
   {
@@ -505,7 +505,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 10.64,
+   "runtime_s": 11.28,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D2 (pass tolerance column)"
   },
   {
@@ -533,7 +533,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 4.43,
+   "runtime_s": 4.8,
    "tolerance_source": "exact up to float addition: the same floats enter both"
   },
   {
@@ -564,7 +564,7 @@
    ],
    "bias_flag": false,
    "exposure": null,
-   "runtime_s": 6.84,
+   "runtime_s": 7.25,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D3 (pass tolerance column)"
   },
   {
@@ -592,7 +592,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 6.66,
+   "runtime_s": 7.16,
    "tolerance_source": "exact up to float addition: the same floats enter both"
   },
   {
@@ -623,7 +623,7 @@
    ],
    "bias_flag": false,
    "exposure": null,
-   "runtime_s": 12.06,
+   "runtime_s": 12.59,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D3 (pass tolerance column)"
   },
   {
@@ -651,7 +651,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 9.49,
+   "runtime_s": 9.88,
    "tolerance_source": "exact up to float addition: the same floats enter both"
   },
   {
@@ -682,7 +682,7 @@
    ],
    "bias_flag": false,
    "exposure": null,
-   "runtime_s": 14.81,
+   "runtime_s": 15.49,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D3 (pass tolerance column)"
   },
   {
@@ -710,7 +710,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 5.16,
+   "runtime_s": 5.4,
    "tolerance_source": "exact up to float addition: the same floats enter both"
   },
   {
@@ -741,7 +741,7 @@
    ],
    "bias_flag": false,
    "exposure": null,
-   "runtime_s": 7.81,
+   "runtime_s": 8.07,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D3 (pass tolerance column)"
   },
   {
@@ -769,7 +769,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 8.32,
+   "runtime_s": 8.46,
    "tolerance_source": "exact up to float addition: the same floats enter both"
   },
   {
@@ -800,7 +800,7 @@
    ],
    "bias_flag": false,
    "exposure": null,
-   "runtime_s": 11.23,
+   "runtime_s": 11.15,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D3 (pass tolerance column)"
   },
   {
@@ -828,7 +828,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 8.92,
+   "runtime_s": 9.62,
    "tolerance_source": "exact up to float addition: the same floats enter both"
   },
   {
@@ -859,7 +859,7 @@
    ],
    "bias_flag": false,
    "exposure": null,
-   "runtime_s": 10.08,
+   "runtime_s": 10.79,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D4 (pass tolerance column)"
   },
   {
@@ -890,7 +890,7 @@
    ],
    "bias_flag": true,
    "exposure": null,
-   "runtime_s": 12.57,
+   "runtime_s": 13.15,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D4 (pass tolerance column)"
   },
   {
@@ -1010,7 +1010,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 39.53,
+   "runtime_s": 45.16,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D5 (pass tolerance column)"
   },
   {
@@ -1019,7 +1019,7 @@
    "simulated": 1.0,
    "tolerance": 0.0,
    "unit": "match",
-   "basis": "md5 of every item record and the summary: 8eb8ca37a6ef vs 8eb8ca37a6ef (default fleet, 12 CLPS + 6 MK1 + 1 LARGE landings a year, all vehicles and cargo owned by NASA, 118 items)",
+   "basis": "md5 of every item record and the summary: 691829814ee1 vs 691829814ee1 (default fleet, 12 CLPS + 6 MK1 + 1 LARGE landings a year, all vehicles and cargo owned by NASA, 118 items)",
    "passed": true,
    "rel_error": 0.0,
    "source": "Sargent 2013",
@@ -1038,7 +1038,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.05,
+   "runtime_s": 0.06,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
   },
   {
@@ -1047,7 +1047,7 @@
    "simulated": 1.0,
    "tolerance": 0.0,
    "unit": "match",
-   "basis": "md5 of every item record and the summary: 9fa9dc52f260 vs 9fa9dc52f260 (default fleet, 12 CLPS + 6 MK1 + 1 LARGE landings a year, all vehicles and cargo owned by NASA, 112 items)",
+   "basis": "md5 of every item record and the summary: a4d8ada698cf vs a4d8ada698cf (default fleet, 12 CLPS + 6 MK1 + 1 LARGE landings a year, all vehicles and cargo owned by NASA, 112 items)",
    "passed": true,
    "rel_error": 0.0,
    "source": "Sargent 2013",
@@ -1066,7 +1066,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.06,
+   "runtime_s": 0.05,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
   },
   {
@@ -1075,7 +1075,7 @@
    "simulated": 1.0,
    "tolerance": 0.0,
    "unit": "match",
-   "basis": "md5 of every item record and the summary: a9fde5b39a8d vs a9fde5b39a8d (default fleet, 12 CLPS + 6 MK1 + 1 LARGE landings a year, all vehicles and cargo owned by NASA, 95 items)",
+   "basis": "md5 of every item record and the summary: 40862cde42ff vs 40862cde42ff (default fleet, 12 CLPS + 6 MK1 + 1 LARGE landings a year, all vehicles and cargo owned by NASA, 95 items)",
    "passed": true,
    "rel_error": 0.0,
    "source": "Sargent 2013",
@@ -1094,7 +1094,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.03,
+   "runtime_s": 0.05,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
   },
   {
@@ -1103,7 +1103,7 @@
    "simulated": 0.0,
    "tolerance": 1e-09,
    "unit": "rel",
-   "basis": "158 items, largest relative error of ready, pickup and delivery times against x2; counts, kg, jobs and km unchanged: yes (pooled greedy, faults and duties off, seed 7)",
+   "basis": "180 items, largest relative error of ready, pickup and delivery times against x2; counts, kg, jobs and km unchanged: yes (pooled greedy, faults and duties off, seed 7)",
    "passed": true,
    "rel_error": 0.0,
    "source": "Chen et al. 2018; Segura et al. 2016",
@@ -1124,7 +1124,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.08,
+   "runtime_s": 0.07,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D7: 1e-9 relative"
   },
   {
@@ -1133,7 +1133,7 @@
    "simulated": 7.054971514684294e-10,
    "tolerance": 1e-09,
    "unit": "rel",
-   "basis": "158 items, largest relative error of ready, pickup and delivery times against x2; counts, kg, jobs and km unchanged: yes (pooled greedy, faults and duties off, seed 7)",
+   "basis": "180 items, largest relative error of ready, pickup and delivery times against x2; counts, kg, jobs and km unchanged: yes (pooled greedy, faults and duties off, seed 7)",
    "passed": true,
    "rel_error": 705.4971514684295,
    "source": "Chen et al. 2018; Segura et al. 2016",
@@ -1154,7 +1154,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.07,
+   "runtime_s": 0.08,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D7: 1e-9 relative"
   },
   {
@@ -1189,7 +1189,7 @@
     "upper95": 0.10146573557272476,
     "jobs": 21104
    },
-   "runtime_s": 18.24,
+   "runtime_s": 19.42,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
   },
   {
@@ -1217,7 +1217,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.75,
+   "runtime_s": 0.86,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
   },
   {
@@ -1246,7 +1246,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 25.75,
+   "runtime_s": 23.15,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
   },
   {
@@ -1304,7 +1304,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.01,
+   "runtime_s": 0.02,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row D10",
    "detail": {
     "corr": 0.1845397847619132,
@@ -1699,7 +1699,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 2.07,
+   "runtime_s": 2.32,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 4: alpha 0.01, Holm"
   },
   {
@@ -1727,7 +1727,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 2.07,
+   "runtime_s": 2.32,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 4: alpha 0.01, Holm"
   },
   {
@@ -1755,7 +1755,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 2.07,
+   "runtime_s": 2.32,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 4: alpha 0.01, Holm"
   },
   {
@@ -1783,7 +1783,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 2.07,
+   "runtime_s": 2.32,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 4: alpha 0.01, Holm"
   },
   {
@@ -1811,7 +1811,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 2.07,
+   "runtime_s": 2.32,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 4: alpha 0.01, Holm"
   },
   {
@@ -1839,7 +1839,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 2.07,
+   "runtime_s": 2.32,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 4: alpha 0.01, Holm"
   },
   {
@@ -1867,7 +1867,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 2.07,
+   "runtime_s": 2.32,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 4: alpha 0.01, Holm"
   },
   {
@@ -1895,7 +1895,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 2.07,
+   "runtime_s": 2.32,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 4: alpha 0.01, Holm"
   },
   {
@@ -1923,7 +1923,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 2.07,
+   "runtime_s": 2.32,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 4: alpha 0.01, Holm"
   },
   {
@@ -1951,7 +1951,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 2.07,
+   "runtime_s": 2.32,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 4: alpha 0.01, Holm"
   },
   {
@@ -1979,7 +1979,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 2.07,
+   "runtime_s": 2.32,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 4: alpha 0.01, Holm"
   },
   {
@@ -2007,7 +2007,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 2.07,
+   "runtime_s": 2.32,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 4: alpha 0.01, Holm"
   },
   {
@@ -2035,7 +2035,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 2.07,
+   "runtime_s": 2.32,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 4: alpha 0.01, Holm"
   },
   {
@@ -2063,7 +2063,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 2.07,
+   "runtime_s": 2.32,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 4: alpha 0.01, Holm"
   },
   {
@@ -2091,7 +2091,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 2.07,
+   "runtime_s": 2.32,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 4: alpha 0.01, Holm"
   },
   {
@@ -2119,7 +2119,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 2.07,
+   "runtime_s": 2.32,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 4: alpha 0.01, Holm"
   },
   {
@@ -2148,7 +2148,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 3.3,
+   "runtime_s": 4.12,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row R1 (pass tolerance column)"
   },
   {
@@ -2177,7 +2177,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 3.3,
+   "runtime_s": 4.12,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
   },
   {
@@ -2206,7 +2206,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 3.3,
+   "runtime_s": 4.12,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row R1 (pass tolerance column)"
   },
   {
@@ -2235,7 +2235,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 3.3,
+   "runtime_s": 4.12,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
   },
   {
@@ -2264,7 +2264,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 3.31,
+   "runtime_s": 4.12,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row R1 (pass tolerance column)"
   },
   {
@@ -2293,7 +2293,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 3.31,
+   "runtime_s": 4.12,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
   },
   {
@@ -2435,6 +2435,1190 @@
    "exposure": null,
    "runtime_s": 0.0,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 3, row E3 (pass tolerance column)"
+  },
+  {
+   "name": "Decentralised auction = centralised marketplace under perfect communication (seed 1)",
+   "reference": 1.0,
+   "simulated": 1.0,
+   "tolerance": 0.0,
+   "unit": "match",
+   "basis": "md5 of every item record (pickup, delivery, carrier, team size), p5 3eq, 90 days, 742 items: 924687f57cba vs 924687f57cba; C_AUCTION with loss 0, radio 'perfect', base computer MTBF 1e15 h",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "design identity (lunarsim/atc/auction.py)",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "A2",
+   "sub": "seed 1",
+   "technique": "degenerate tests",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 4.94,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "Decentralised auction = centralised marketplace under perfect communication (seed 2)",
+   "reference": 1.0,
+   "simulated": 1.0,
+   "tolerance": 0.0,
+   "unit": "match",
+   "basis": "md5 of every item record (pickup, delivery, carrier, team size), p5 3eq, 90 days, 730 items: 5219925a51c7 vs 5219925a51c7; C_AUCTION with loss 0, radio 'perfect', base computer MTBF 1e15 h",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "design identity (lunarsim/atc/auction.py)",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "A2",
+   "sub": "seed 2",
+   "technique": "degenerate tests",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 3.08,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "Decentralised auction = centralised marketplace under perfect communication (seed 3)",
+   "reference": 1.0,
+   "simulated": 1.0,
+   "tolerance": 0.0,
+   "unit": "match",
+   "basis": "md5 of every item record (pickup, delivery, carrier, team size), p5 3eq, 90 days, 692 items: e7d3b96ac569 vs e7d3b96ac569; C_AUCTION with loss 0, radio 'perfect', base computer MTBF 1e15 h",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "design identity (lunarsim/atc/auction.py)",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "A2",
+   "sub": "seed 3",
+   "technique": "degenerate tests",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 4.81,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "Auction awards unchanged when owners are relabelled (A->B->C->A)",
+   "reference": 1.0,
+   "simulated": 1.0,
+   "tolerance": 0.0,
+   "unit": "match",
+   "basis": "C_AUCTION, loss 0.10, terrain radio, seed 4, 90 days, 737 items: every item's pickup, delivery, carrier and team size, owners mapped",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "Burkard, Dell'Amico and Martello 2009; Chen et al. 2018",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "A6",
+   "sub": "owner relabelling",
+   "technique": "metamorphic testing",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 16.62,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "Awards unchanged when every bid is multiplied by 3.7 (C_AUCTION)",
+   "reference": 1.0,
+   "simulated": 1.0,
+   "tolerance": 0.0,
+   "unit": "match",
+   "basis": "md5 of item records, seed 5, 90 days (test-only: dispatch._bid x 3.7): f3db3bdbe853 vs f3db3bdbe853",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "Chen et al. 2018 (scale invariance of argmin)",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "A6",
+   "sub": "bid scaling, C_AUCTION",
+   "technique": "metamorphic testing",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 6.85,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "Awards unchanged when every bid is multiplied by 3.7 (O_ORACLE)",
+   "reference": 1.0,
+   "simulated": 1.0,
+   "tolerance": 0.0,
+   "unit": "match",
+   "basis": "md5 of item records, seed 5, 90 days (test-only: dispatch._bid x 3.7): 521a1f769572 vs 521a1f769572",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "Chen et al. 2018 (scale invariance of argmin)",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "A6",
+   "sub": "bid scaling, O_ORACLE",
+   "technique": "metamorphic testing",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 6.85,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "One robot: the auction's awards equal the marketplace's",
+   "reference": 1.0,
+   "simulated": 1.0,
+   "tolerance": 0.0,
+   "unit": "match",
+   "basis": "owner A's CARGO_FLEX alone (the p5 fleet's largest carrier), perfect communication, seed 6, 90 days: 9930537b53ca vs 9930537b53ca",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "Chen et al. 2018",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "A6",
+   "sub": "one robot",
+   "technique": "degenerate tests",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 7.05,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "Under loss and partitions no item is carried by two jobs",
+   "reference": 0.0,
+   "simulated": 0.0,
+   "tolerance": 0.0,
+   "unit": "items",
+   "basis": "10 runs (C_AUCTION loss 0.10 / 0.40 / burst 0.25 / depth 5 at 0.25; C_LEADER loss 0.40; seeds 1-2, 90 days), 6,020 jobs; duplicates the robots believed they won: 7 wasted trips, 427 conflicts settled by the CBBA rule (summary counters)",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "Johnson et al. 2011 (ACBBA); Choi et al. 2009",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "A7",
+   "sub": "no item carried twice",
+   "technique": "event validity",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1",
+    "P2"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": {
+    "n": 10,
+    "unit": "runs",
+    "upper95": 0.2588655508930523,
+    "jobs": 6020
+   },
+   "runtime_s": 57.33,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "Every cargo item has its own id",
+   "reference": 0.0,
+   "simulated": 0.0,
+   "tolerance": 0.0,
+   "unit": "ids reused",
+   "basis": "4 one-year p5 runs (O_ORACLE, C_AUCTION; seeds 1-2), 11,899 items. Found failing on a46353b; fixed in 7247b8e; outcome-neutral on 48 of 48 reruns (results/id_fix_evidence.json; PREREG change 10). The defect: manifests used Simulation._cid as the next free id while return items and bulk lots advanced it before use, so the next landing reused an id (12-18 of about 2,970 items a year)",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "Balci 1998 (assertion checking)",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "D8",
+   "sub": "cargo ids unique",
+   "technique": "traces",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1",
+    "P2",
+    "P3"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 37.78,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "Team lifts: capacity covers the item, shared interval, equal price split, scope respected",
+   "reference": 0.0,
+   "simulated": 0.0,
+   "tolerance": 0.0,
+   "unit": "violations",
+   "basis": "8 runs (C_AUCTION, team share 0.10; loss 0 / 0.25 / 0.25 without commit / scope same_owner at 0.10; seeds 1-2, 180 days), 40 team jobs (33 cross-owner); by kind: capacity 0, interval 0, split 0, scope 0",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "Gerkey and Mataric, IJRR 23(9):939-954, 2004",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "A9",
+   "sub": "team lifts",
+   "technique": "traces",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": {
+    "n": 40,
+    "unit": "team jobs",
+    "upper95": 0.0721575245055146
+   },
+   "runtime_s": 58.61,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "Single-item epsilon-auction within n epsilon of the optimum",
+   "reference": null,
+   "simulated": null,
+   "tolerance": 0.0,
+   "unit": "",
+   "basis": "C_AUCTION is a sequential single-item auction (marketplace bids) that borrows only CBBA's conflict rule (lunarsim/atc/auction.py); the code has no epsilon-auction; central assignment's optimality is D9",
+   "passed": false,
+   "rel_error": null,
+   "source": "Choi, Brunet and How 2009",
+   "mode": "abs",
+   "error": null,
+   "skipped": "not applicable: the code has no epsilon-auction; central assignment's optimality is D9",
+   "id": "A1",
+   "sub": "not applicable",
+   "technique": "analytic",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": null,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "CBBA convergence within N_t x D rounds and agreement",
+   "reference": null,
+   "simulated": null,
+   "tolerance": 0.0,
+   "unit": "",
+   "basis": "C_AUCTION is a sequential single-item auction (marketplace bids) that borrows only CBBA's conflict rule (lunarsim/atc/auction.py); the CBBA bound does not apply; the auction's own round limit and its agreement (no item carried twice) are A2 and A7",
+   "passed": false,
+   "rel_error": null,
+   "source": "Choi, Brunet and How 2009",
+   "mode": "abs",
+   "error": null,
+   "skipped": "not applicable: the CBBA bound does not apply; the auction's own round limit and its agreement (no item carried twice) are A2 and A7",
+   "id": "A3",
+   "sub": "not applicable",
+   "technique": "analytic",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": null,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "CBBA score at least half the optimum",
+   "reference": null,
+   "simulated": null,
+   "tolerance": 0.0,
+   "unit": "",
+   "basis": "C_AUCTION is a sequential single-item auction (marketplace bids) that borrows only CBBA's conflict rule (lunarsim/atc/auction.py); the 50 % guarantee is CBBA's; not claimed",
+   "passed": false,
+   "rel_error": null,
+   "source": "Choi, Brunet and How 2009",
+   "mode": "abs",
+   "error": null,
+   "skipped": "not applicable: the 50 % guarantee is CBBA's; not claimed",
+   "id": "A4",
+   "sub": "not applicable",
+   "technique": "analytic",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": null,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "Learned score has diminishing marginal gain",
+   "reference": null,
+   "simulated": null,
+   "tolerance": 0.0,
+   "unit": "",
+   "basis": "C_AUCTION is a sequential single-item auction (marketplace bids) that borrows only CBBA's conflict rule (lunarsim/atc/auction.py); DMG is the condition of CBBA's guarantees, which the papers do not claim; the learned correction adds to a bundle bid",
+   "passed": false,
+   "rel_error": null,
+   "source": "Choi, Brunet and How 2009",
+   "mode": "abs",
+   "error": null,
+   "skipped": "not applicable: DMG is the condition of CBBA's guarantees, which the papers do not claim; the learned correction adds to a bundle bid",
+   "id": "A5",
+   "sub": "not applicable",
+   "technique": "analytic",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": null,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "Radio reciprocity: a hears b iff b hears a (clearance a->b = b->a)",
+   "reference": 0.0,
+   "simulated": 0.0,
+   "tolerance": 0.0,
+   "unit": "pair-combos",
+   "basis": "3000 random pairs within 5 km of mesh-v1 (2421 points), 4 height combinations, clearance encoded as the file does (0.1 m); terrain profiles recomputed both ways",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "geometry",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "R2",
+   "sub": "reciprocity",
+   "technique": "metamorphic testing",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P2",
+    "P3"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 2.6,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "The mesh file's clearances reproduce from the terrain",
+   "reference": 0.0,
+   "simulated": 0.0,
+   "tolerance": 0.0,
+   "unit": "pair-combos",
+   "basis": "3000 random pairs within 5 km of mesh-v1 (2421 points), 4 height combinations, clearance encoded as the file does (0.1 m); recomputed against the stored file",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "tools/atc/mesh.py",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "R2",
+   "sub": "file reproduces",
+   "technique": "comparison to other models",
+   "factor": "solution verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P2",
+    "P3"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 2.6,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "Mesh hop counts: BFS equals Floyd-Warshall (2.5 m, 5 km)",
+   "reference": 0.0,
+   "simulated": 0.0,
+   "tolerance": 0.0,
+   "unit": "pairs",
+   "basis": "601 mesh points (600 random + BASE), antenna 2.5 m, d_max 5 km, BASE with its mast; diameter of the largest component 8 hops",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "Floyd 1962; scipy.sparse.csgraph",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "R7",
+   "sub": "2.5 m, 5 km: shortest paths",
+   "technique": "comparison to other models",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P2",
+    "P3"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 0.82,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "Mesh components: scipy equals union-find (2.5 m, 5 km)",
+   "reference": 1.0,
+   "simulated": 1.0,
+   "tolerance": 0.0,
+   "unit": "components",
+   "basis": "same subgraph; 1 components",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "Tarjan 1975 (union-find)",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "R7",
+   "sub": "2.5 m, 5 km: components",
+   "technique": "comparison to other models",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P2",
+    "P3"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 0.82,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "No-loss broadcast from BASE reaches its component within eccentricity x hop latency (2.5 m, 5 km)",
+   "reference": 0.05,
+   "simulated": 0.05,
+   "tolerance": 1e-09,
+   "unit": "s",
+   "basis": "601 reachable points, eccentricity 5 hops, hop latency 10 ms (lunarsim.atc.messages)",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "lunarsim/atc/messages.py",
+   "mode": "rel",
+   "error": 0.0,
+   "skipped": "",
+   "id": "R7",
+   "sub": "2.5 m, 5 km: broadcast latency",
+   "technique": "analytic",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P2",
+    "P3"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 0.83,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: deterministic identity, 1e-9 relative"
+  },
+  {
+   "name": "Mesh hop counts: BFS equals Floyd-Warshall (1.0 m, 3 km)",
+   "reference": 0.0,
+   "simulated": 0.0,
+   "tolerance": 0.0,
+   "unit": "pairs",
+   "basis": "601 mesh points (600 random + BASE), antenna 1.0 m, d_max 3 km, BASE with its mast; diameter of the largest component 9 hops",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "Floyd 1962; scipy.sparse.csgraph",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "R7",
+   "sub": "1.0 m, 3 km: shortest paths",
+   "technique": "comparison to other models",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P2",
+    "P3"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 0.83,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "Mesh components: scipy equals union-find (1.0 m, 3 km)",
+   "reference": 4.0,
+   "simulated": 4.0,
+   "tolerance": 0.0,
+   "unit": "components",
+   "basis": "same subgraph; 4 components",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "Tarjan 1975 (union-find)",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "R7",
+   "sub": "1.0 m, 3 km: components",
+   "technique": "comparison to other models",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P2",
+    "P3"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 0.83,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "No-loss broadcast from BASE reaches its component within eccentricity x hop latency (1.0 m, 3 km)",
+   "reference": 0.05,
+   "simulated": 0.05,
+   "tolerance": 1e-09,
+   "unit": "s",
+   "basis": "598 reachable points, eccentricity 5 hops, hop latency 10 ms (lunarsim.atc.messages)",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "lunarsim/atc/messages.py",
+   "mode": "rel",
+   "error": 0.0,
+   "skipped": "",
+   "id": "R7",
+   "sub": "1.0 m, 3 km: broadcast latency",
+   "technique": "analytic",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P2",
+    "P3"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 0.83,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: deterministic identity, 1e-9 relative"
+  },
+  {
+   "name": "Message delivery, Bernoulli loss 0.1 over 1 hop(s) = (1 - p)^h",
+   "reference": 0.9,
+   "simulated": 0.90138,
+   "tolerance": 0.0029814239699997194,
+   "unit": "share",
+   "basis": "200,000 messages; messages = delivered + lost: True",
+   "passed": true,
+   "rel_error": 0.0015333333333332631,
+   "source": "lunarsim/atc/messages.py",
+   "mode": "rel",
+   "error": 0.0015333333333332631,
+   "skipped": "",
+   "id": "R9",
+   "sub": "bernoulli p 0.1, 1 hops",
+   "technique": "analytic",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1",
+    "P2"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 0.36,
+   "tolerance_source": "4 binomial standard errors (a correct model fails with probability 6e-5)"
+  },
+  {
+   "name": "Message delivery, Bernoulli loss 0.1 over 3 hop(s) = (1 - p)^h",
+   "reference": 0.7290000000000001,
+   "simulated": 0.72888,
+   "tolerance": 0.005453381427942505,
+   "unit": "share",
+   "basis": "200,000 messages; messages = delivered + lost: True",
+   "passed": true,
+   "rel_error": 0.00016460905349810698,
+   "source": "lunarsim/atc/messages.py",
+   "mode": "rel",
+   "error": 0.00016460905349810698,
+   "skipped": "",
+   "id": "R9",
+   "sub": "bernoulli p 0.1, 3 hops",
+   "technique": "analytic",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1",
+    "P2"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 0.67,
+   "tolerance_source": "4 binomial standard errors (a correct model fails with probability 6e-5)"
+  },
+  {
+   "name": "Message delivery, Bernoulli loss 0.4 over 2 hop(s) = (1 - p)^h",
+   "reference": 0.36,
+   "simulated": 0.360135,
+   "tolerance": 0.01192569587999888,
+   "unit": "share",
+   "basis": "200,000 messages; messages = delivered + lost: True",
+   "passed": true,
+   "rel_error": 0.00037499999999998955,
+   "source": "lunarsim/atc/messages.py",
+   "mode": "rel",
+   "error": 0.00037499999999998955,
+   "skipped": "",
+   "id": "R9",
+   "sub": "bernoulli p 0.4, 2 hops",
+   "technique": "analytic",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1",
+    "P2"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 0.45,
+   "tolerance_source": "4 binomial standard errors (a correct model fails with probability 6e-5)"
+  },
+  {
+   "name": "Burst (Gilbert-Elliott) loss: stationary share = 0.25",
+   "reference": 0.25,
+   "simulated": 0.251885,
+   "tolerance": 0.05,
+   "unit": "share",
+   "basis": "200,000 one-hop messages; 99 % batch-means interval +/- 0.0111",
+   "passed": true,
+   "rel_error": 0.007540000000000102,
+   "source": "Gilbert 1960; Elliott 1963",
+   "mode": "rel",
+   "error": 0.007540000000000102,
+   "skipped": "",
+   "id": "R9",
+   "sub": "burst: stationary loss",
+   "technique": "analytic",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1",
+    "P2"
+   ],
+   "ci99": [
+    0.24073596287659346,
+    0.26303403712340656
+   ],
+   "bias_flag": false,
+   "exposure": null,
+   "runtime_s": 0.39,
+   "tolerance_source": "5 % relative; the interval's half-width is about a third of it"
+  },
+  {
+   "name": "Burst loss: mean run of lost messages = 10",
+   "reference": 10.0,
+   "simulated": 9.997420123040285,
+   "tolerance": 0.05,
+   "unit": "messages",
+   "basis": "5,039 loss runs",
+   "passed": true,
+   "rel_error": 0.0002579876959714511,
+   "source": "Gilbert 1960; lunarsim.atc.messages MEAN_BURST",
+   "mode": "rel",
+   "error": 0.0002579876959714511,
+   "skipped": "",
+   "id": "R9",
+   "sub": "burst: mean run",
+   "technique": "analytic",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1",
+    "P2"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 0.39,
+   "tolerance_source": "5 % relative (standard error about 1 % at this many runs)"
+  },
+  {
+   "name": "Policy runtime reproduces its stored check vectors (atc_bid_v1)",
+   "reference": 0.0,
+   "simulated": 0.0,
+   "tolerance": 1e-09,
+   "unit": "h",
+   "basis": "50 vectors in data/policies/atc_bid_v1.check.json; the browser's parity against the same file is FRONTEND's test (site/src/atc/bid.js)",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "lunarsim.atc.learned.Policy",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "L4",
+   "sub": "atc_bid_v1",
+   "technique": "comparison to other models",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 0.02,
+   "tolerance_source": "the check file's own tolerance (1e-09)"
+  },
+  {
+   "name": "Policy runtime reproduces its stored check vectors (atc_bid_linear_v1)",
+   "reference": 0.0,
+   "simulated": 0.0,
+   "tolerance": 1e-09,
+   "unit": "h",
+   "basis": "50 vectors in data/policies/atc_bid_linear_v1.check.json; the browser's parity against the same file is FRONTEND's test (site/src/atc/bid.js)",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "lunarsim.atc.learned.Policy",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "L4",
+   "sub": "atc_bid_linear_v1",
+   "technique": "comparison to other models",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 0.03,
+   "tolerance_source": "the check file's own tolerance (1e-09)"
+  },
+  {
+   "name": "Held-out evaluation seeds are disjoint from training and tuning seeds",
+   "reference": 0.0,
+   "simulated": 0.0,
+   "tolerance": 0.0,
+   "unit": "seeds",
+   "basis": "training 1000-1009, tuning 2000-2004, CEM [1000, 1002, 1004, 1006] / [2000, 2002, 2004]; evaluation 1-30 (tools/atc/train_bid.py); shared: none",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "Ross, Gordon and Bagnell 2011 (DAgger)",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "L1",
+   "sub": "seed sets disjoint",
+   "technique": "internal validity",
+   "factor": "input pedigree",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 0.0,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "Agreement with the teacher (O_ORACLE) on held-out rounds",
+   "reference": null,
+   "simulated": 0.8628,
+   "tolerance": 0.0,
+   "unit": "share",
+   "basis": "held-out top-1 agreement (results/ATC_learned_eval.json, 30 % load): hand bids 0.8837 (79,069 rounds), MLP 0.8628, linear 0.7071",
+   "passed": false,
+   "rel_error": null,
+   "source": "Ross et al. 2011; Wilson 1927",
+   "mode": "abs",
+   "error": null,
+   "skipped": "no preregistered agreement threshold (PREREG H4 tests outcomes, not agreement); the numbers are reported in basis",
+   "id": "L1",
+   "sub": "teacher agreement",
+   "technique": "comparison to other models",
+   "factor": "referent validation",
+   "kind": "Val",
+   "priority": "P1",
+   "papers": [
+    "P1"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": null,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "Outcome equivalence with the teacher (TOST)",
+   "reference": null,
+   "simulated": null,
+   "tolerance": 0.0,
+   "unit": "",
+   "basis": "the policy is not a distilled copy of the teacher: after imitation it is tuned by CEM to beat it, and its outcome against C_AUCTION is H4 itself (E40)",
+   "passed": false,
+   "rel_error": null,
+   "source": "PREREG H4",
+   "mode": "abs",
+   "error": null,
+   "skipped": "not applicable: the learned policy is tuned to differ from its teacher; H4 tests the outcome",
+   "id": "L2",
+   "sub": "not applicable",
+   "technique": "internal validity",
+   "factor": "referent validation",
+   "kind": "Val",
+   "priority": "P1",
+   "papers": [
+    "P1"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": null,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "A learned policy with zero correction reproduces the hand-bid auction",
+   "reference": 1.0,
+   "simulated": 1.0,
+   "tolerance": 0.0,
+   "unit": "match",
+   "basis": "atc_bid_v1 with its output layer zeroed (g = 0) in C_LEARNED_MLP vs C_AUCTION, loss 0.10, seed 7, 90 days: 9c289ded6566 vs 9c289ded6566",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "design identity (lunarsim/atc/learned.py)",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "L6",
+   "sub": "zero correction",
+   "technique": "degenerate tests",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 6.61,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "Earth-independent regime O_ORACLE: same run in 2028 and 2038",
+   "reference": 1.0,
+   "simulated": 1.0,
+   "tolerance": 0.0,
+   "unit": "pass",
+   "basis": "md5 of item records, seed 3, 90 days: e7d3b96ac569 vs e7d3b96ac569; listed in run_phase5.EARTH_INDEPENDENT: True",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "PREREG change 4 (paper/atc/PREREG.md)",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "X6",
+   "sub": "start year, O_ORACLE",
+   "technique": "degenerate tests",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1",
+    "P2"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 2.4,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "Earth-independent regime B_EARTH_RELAY 1.0: same run in 2028 and 2038",
+   "reference": 1.0,
+   "simulated": 1.0,
+   "tolerance": 0.0,
+   "unit": "pass",
+   "basis": "md5 of item records, seed 3, 90 days: e7d3b96ac569 vs e7d3b96ac569; listed in run_phase5.EARTH_INDEPENDENT: True",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "PREREG change 4 (paper/atc/PREREG.md)",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "X6",
+   "sub": "start year, B_EARTH_RELAY 1.0",
+   "technique": "degenerate tests",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1",
+    "P2"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 2.11,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "Earth-independent regime C_LEADER: same run in 2028 and 2038",
+   "reference": 1.0,
+   "simulated": 1.0,
+   "tolerance": 0.0,
+   "unit": "pass",
+   "basis": "md5 of item records, seed 3, 90 days: b6b9ed5fef19 vs b6b9ed5fef19; listed in run_phase5.EARTH_INDEPENDENT: True",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "PREREG change 4 (paper/atc/PREREG.md)",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "X6",
+   "sub": "start year, C_LEADER",
+   "technique": "degenerate tests",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1",
+    "P2"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 195.28,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "Earth-independent regime C_AUCTION: same run in 2028 and 2038",
+   "reference": 1.0,
+   "simulated": 1.0,
+   "tolerance": 0.0,
+   "unit": "pass",
+   "basis": "md5 of item records, seed 3, 90 days: 63a896f1f0dd vs 63a896f1f0dd; listed in run_phase5.EARTH_INDEPENDENT: True",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "PREREG change 4 (paper/atc/PREREG.md)",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "X6",
+   "sub": "start year, C_AUCTION",
+   "technique": "degenerate tests",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1",
+    "P2"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 20.64,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "Earth-independent regime C_LEARNED_MLP: same run in 2028 and 2038",
+   "reference": 1.0,
+   "simulated": 1.0,
+   "tolerance": 0.0,
+   "unit": "pass",
+   "basis": "md5 of item records, seed 3, 90 days: 2adbfdd12a38 vs 2adbfdd12a38; listed in run_phase5.EARTH_INDEPENDENT: True",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "PREREG change 4 (paper/atc/PREREG.md)",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "X6",
+   "sub": "start year, C_LEARNED_MLP",
+   "technique": "degenerate tests",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1",
+    "P2"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 21.64,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "Earth-independent regime C_LEARNED_LIN: same run in 2028 and 2038",
+   "reference": 1.0,
+   "simulated": 1.0,
+   "tolerance": 0.0,
+   "unit": "pass",
+   "basis": "md5 of item records, seed 3, 90 days: 5f2ad2498ddb vs 5f2ad2498ddb; listed in run_phase5.EARTH_INDEPENDENT: True",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "PREREG change 4 (paper/atc/PREREG.md)",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "X6",
+   "sub": "start year, C_LEARNED_LIN",
+   "technique": "degenerate tests",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1",
+    "P2"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 15.39,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "Earth-dependent (control) regime A_EARTH strict: different run in 2028 and 2038",
+   "reference": 1.0,
+   "simulated": 1.0,
+   "tolerance": 0.0,
+   "unit": "pass",
+   "basis": "md5 of item records, seed 3, 90 days: b890a3ba1c5e vs 604aeaa3cda9; listed in run_phase5.EARTH_INDEPENDENT: False",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "PREREG change 4 (paper/atc/PREREG.md)",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "X6",
+   "sub": "start year, A_EARTH strict",
+   "technique": "degenerate tests",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1",
+    "P2"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 1.15,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "B_EARTH_RELAY with full coverage equals O_ORACLE",
+   "reference": 1.0,
+   "simulated": 1.0,
+   "tolerance": 0.0,
+   "unit": "match",
+   "basis": "md5 of item records, seed 3, 90 days: e7d3b96ac569 vs e7d3b96ac569",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "regimes.py: B_EARTH decides only while linked; coverage 1.0 links always",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "X6",
+   "sub": "full relay = oracle",
+   "technique": "degenerate tests",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1",
+    "P2"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 2.01,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
   }
  ]
 }
