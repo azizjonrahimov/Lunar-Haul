@@ -18,7 +18,7 @@ no file; the build reads `results/E46_cells.csv` (one row per cell: `label`, `ru
 `first` if a first-price cell is added), `split` in 3eq / 3uneq, `k`, `q`, `n`, and the metrics below),
 `results/E46_pairs.csv` (`comparison`, `metric`, `n`, `mean`, `lo`, `hi`, `b_mean`, `share_of_b`) and
 `results/E46_fit.json` (`n_rows`, `n_cells`, `run_s_mean`, `cpu_h`, `design` {`owners`, `splits`, `rules`, `k_levels`,
-`q_levels`, `seeds`}, `H5` {`clause1`, `clause2`, `clause3`: {`tested`, `supported`, ... `min_lower` for clause 3}},
+`q_levels`, `seeds`}, `H5` {`clause1` {`tested`, `supported`, `gain`, `lo`, `hi`}, `clause2` {`tested`, `supported`, `diff_mean`, `diff_lo`, `diff_hi`}, `clause3` {`tested`, `supported`, `min_upper`, `min_lower`}; the build recomputes `supported` from the intervals by the rules of change 7},
 `max_gain` {rule: {`owner`, `k`, `gain`, `lo`, `hi`, `system_cost_h`, `lo_cost`, `hi_cost`}}, `audits` {rule: {"0", "5",
 "20": {`recovered_share`, `net_gain`}}}, `short_cells` [{`label`, `have`, `n`}]). The E48 schema the build expects:
 `laptop` {`processor`, `benchmark`, `benchmark_name`}; `flight` {`processor`, `benchmark`, `factor`, `factor_range`,
@@ -62,7 +62,7 @@ E46 = the three E46 files; E48 = `results/E48_sizing.json`; PR = `paper/atc/PRER
 | P3-E46-RESULTS-RULES | E46 cells per rule and split (k = 1, q = 0): `efficiency_loss_vs_oracle`, `budget_per_year` (surplus / deficit from the sign), `settled_earth`, `open_end`; checked: the none rule equals the pooled regime | composed; pending |
 | P3-E46-RESULTS-IR | E46 pairs `IR: {rule} - alone, {split}, owner {o}` on `profit`; cells `ir_violations` | composed; pending |
 | P3-E46-RESULTS-MANIP, P3-E46-RESULTS-AUDITS | E46 fit `max_gain` per rule (owner, k, gain with CI, system cost in urgent wait with CI); `audits` per rule and q (`recovered_share`, `net_gain`) | composed; pending |
-| P3-H5-VERDICT-SENTENCE, P3-H5-ABSTRACT-CLAUSE, P3-H5-INTRO-CLAUSE | E46 fit `H5.clause1..3` (`tested`, `supported`, `min_lower`) against the rules of Section 4.1 | composed: supported / not supported / not tested, from the data |
+| P3-H5-VERDICT-SENTENCE, P3-H5-ABSTRACT-CLAUSE, P3-H5-INTRO-CLAUSE | E46 fit `H5.clause1..3` (`tested`, `supported`, and the intervals `lo`, `diff_mean`/`diff_hi`, `min_upper`/`min_lower`) against the rules of Section 4.1, with `supported` checked against the intervals | composed: supported / not supported / not tested, from the data |
 | P3-E46-ABSTRACT-CLAUSE, P3-E46-INTRO-CLAUSE, P3-E46-DISCUSSION-CLAUSE, P3-E46-COMPARISON-CLAUSE, P3-E46-IMPLICATION-CLAUSE, P3-E46-CONCLUSION-CLAUSE | the rules with zero IR violations in both splits; the budget's sign per rule; the largest gain; the audits' net gain at 20 %; the smallest owner (C, 3uneq, posted) against Kondor [39] | composed; pending |
 | P3-E46-STATUS-SENTENCE | E46 fit `short_cells` | composed |
 | P3-REFERENCES | `NOTES.md` | numbered list |

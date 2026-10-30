@@ -513,10 +513,20 @@ def values(r: R, allow_pending: bool):
         c1, c2, c3 = h["clause1"], h["clause2"], h["clause3"]
         w = lambda c: ("not tested" if not c.get("tested", True) else ("supported" if c["supported"] else "not supported"))
         s1, s2, s3 = w(c1), w(c2), w(c3)
+        # the verdict flags are recomputed here from the intervals, by the rules of PREREG change 7 (Section 4.1)
+        if c1.get("tested", True):
+            check(bool(c1["supported"]) == (float(c1["lo"]) > 0), "clause 1: supported iff the largest first-price gain's interval is above zero")
+        if c2.get("tested", True):
+            check(bool(c2["supported"]) == (float(c2["diff_hi"]) < 0 and float(c2["diff_mean"]) < 0),
+                  "clause 2: supported iff the second-price gain is smaller with the paired difference's interval excluding zero")
+        if c3.get("tested", True):
+            check(bool(c3["supported"]) == (float(c3["min_upper"]) >= 0),
+                  "clause 3: supported iff no owner's coalition-less-alone interval lies entirely below zero")
         if kind == "full":
             return (f"H5 clause by clause: that first-price bids reward shading is {s1}; that the per-item second price reduces the largest gain is {s2}; "
                     f"that the posted price with Shapley sharing leaves no owner worse off than alone in any tested coalition is {s3}"
-                    f" (smallest lower bound {unit(c3['min_lower'], 'units', 0, sign=True)}).")
+                    f" (over every owner and coalition the smallest upper bound of profit in the coalition less profit alone is "
+                    f"{unit(c3['min_upper'], 'units', 0, sign=True)} and the smallest lower bound {unit(c3['min_lower'], 'units', 0, sign=True)}).")
         if kind == "abstract":
             return (f"Posted prices with Shapley sharing {'left' if c3['supported'] else 'did not leave'} every owner at least as well off as alone; "
                     f"the first-price clauses of H5 were {s1 if s1 == 'not tested' else ('supported' if c1['supported'] else 'not supported')}.")
