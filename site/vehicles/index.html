@@ -14,15 +14,10 @@
 <!--@header-->
 <main id="main">
   <div class="wrap">
-    <header class="page-head v-head">
+    <header class="page-head head-3d v-head">
       <h1>The fleet, at true scale</h1>
-      <p>Every lander, rover and base element in the simulation, built from its catalogue dimensions. Pick one, cut it
-        open or take it apart; every number shown comes from the catalogue with its source.</p>
+      <p>Every vehicle at its catalogue size: pick one under the view, then cut it open or take it apart.</p>
     </header>
-    <div class="v-pick">
-      <div id="v-groups"></div>
-      <div id="v-vehicles"></div>
-    </div>
     <div class="v-stage" id="v-stage">
       <div class="v-view" id="v-view">
         <canvas id="v-canvas" tabindex="-1" aria-label="3D view of the selected vehicle. Arrow keys orbit, plus and minus zoom, Home resets the view." aria-describedby="v-tree-h"></canvas>
@@ -51,6 +46,12 @@
         <button class="ui-btn" type="button" id="v-pause" aria-pressed="false">Pause motion</button>
       </div>
     </div>
+    <!-- F-66: the vehicle pickers and the introduction under the view -->
+    <div class="v-pick">
+      <div id="v-groups"></div>
+      <div id="v-vehicles"></div>
+    </div>
+    <p class="lead-3d">Every lander, rover and base element in the simulation, built from its catalogue dimensions. Pick one, cut it open or take it apart; every number shown comes from the catalogue with its source.</p>
     <div class="v-panels">
       <details class="ui-glass v-tree" open>
         <summary><h2 id="v-tree-h" class="ui-title">Parts</h2></summary>

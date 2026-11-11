@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Protocol · LunarHaul</title>
+<meta name="description" content="Coming next: the Lunar Rover Interaction Protocol, eight problems a base with rovers of several companies must solve and our answer to each.">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="<!--@base-->favicon.svg" type="image/svg+xml">
+<script>try { var t = localStorage.getItem('lunarsim.theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<link rel="stylesheet" href="/src/hub.css">
+<script type="module" src="/src/main.js"></script>
+</head>
+<body>
+<!--@header-->
+<main id="main"><div class="wrap">
+  <header class="page-head">
+    <p class="ui-label">In preparation</p>
+    <h1>The Lunar Rover Interaction Protocol</h1>
+    <p>Rovers of several companies working at one base have to agree on where they are, what the ground looks like,
+      what time it is and how to talk, and keep working when Earth is out of sight. This page will take the eight
+      problems one at a time.</p>
+  </header>
+  <section class="prose" aria-labelledby="pr-coming">
+    <h2 id="pr-coming">What this page will hold</h2>
+    <p>One section per problem: the question, our answer in two sentences, the method, who we would work with, one
+      figure you can play with, and a link to the paper section. The eight problems:</p>
+    <ol class="stub-list">
+      <li><b>Positioning:</b> &ldquo;Where am I?&rdquo;, and how fast a rover's position error grows between fixes.</li>
+      <li><b>A shared map and coordinate system:</b> how a returning rover catches up on new hazards.</li>
+      <li><b>Time:</b> how far apart two rovers' clocks drift, and what that does to ranging.</li>
+      <li><b>Communication:</b> radio links over the terrain, and relays when a hill is in the way.</li>
+      <li><b>The protocol itself:</b> what a message carries, byte by byte, and how a rover says what it can do.</li>
+      <li><b>Coordination as a team:</b> sharing jobs, and taking over when a rover fails.</li>
+      <li><b>Reliability and security:</b> catching a wrong position report before it causes harm.</li>
+      <li><b>Market and reality:</b> who has flown what so far.</li>
+    </ol>
+    <p>Nothing on this page is a result yet. Until the experiments are in, the <a href="<!--@base-->atc/">Lunar ATC</a>
+      page shows the network design these answers build on.</p>
+  </section>
+</div></main>
+<!--@footer-->
+</body>
+</html>

@@ -7829,3 +7829,67 @@ Pages: /, /about/, /method/, /paper/, /results/, /verification/, /stories/, /atc
 - For BACKEND: the 5 m LOLA DEM has about 20 m real resolution poleward of 84 S (about 90 % of cells interpolated); height changes horizontal lengths by up to 1,128 ppm at our site, so leg lengths need 3-D positions for better than 0.1 %.
 - Sync cost at our site (note 02): digest about 8 kB; a day of hazard changes about 86 kB; the full 5 m height layer 2.87 MB. The changed-tile count and hazard tile size are assumptions to sweep in E52.
 - Artemis II: OpNav supports limb navigation only (B-97 text updated).
+
+## F-66 DONE 11:26 | site/lib/pages.mjs, site/src/main.js, site/src/styles/base.css, site/src/home-hero.css, site/src/hub.css (new), site/lab/index.html (new), site/protocol/index.html (new), site/network/index.html (new), site/vite.config.js, tools/ci/budgets.json (3 page lines only), site/world/index.html, site/src/world/v2.css, site/vehicles/index.html, site/src/vehicles/vehicles.css, site/lab/lander/index.html, site/lab/rover/index.html, site/atc/index.html | how to check: below | from BACKEND: nothing | for LEAD: three notes at the end
+**1. Navigation.**
+- Top level: World, Lunar ATC, Protocol, Network, Vehicles, Stories, Results, Verification, then the menus "Labs" (All labs, Lander lab, Rover lab, Simulator) and "About" (Method, Paper, Data, About).
+- I added "All labs" (the new /lab/ hub) as the first Labs item.
+- The menus are disclosure buttons, not ARIA menus: aria-expanded and aria-controls, an open state on click and on Enter/Space, and only one menu open at a time. They close on Escape (focus returns to the button), on a click outside, and when focus leaves the menu.
+- When the current page is inside a menu, the menu name is shown in bold.
+- **Without JavaScript:** the footer is now a "All pages" nav listing every link: the eight top-level links, a "Labs:" line, an "About:" line, then Changelog, Account and Simulator (v2).
+- I fixed the old footer link "Simulator (v2)". It pointed at /simulator/, which is v3; it now points at /simulator/v2/.
+- **At 820 px and below:** the menus fold open inside the existing phone menu as labelled groups (LABS, ABOUT), with the menu button hidden.
+- I also fixed a phone-menu bug that predates this task: with the menu open, the theme switch dropped into the middle of the list. The open menu now gets its own row.
+- Between 820 and 1100 px the brand's subtitle is hidden so the ten items stay on one row.
+- **Measured** (headless, light): header 53 px and one nav row at 1280, 1024 and 900 px. Every check true on /lab/, /protocol/ and on /about/ at 1024 and 900: click opens; one at a time; Escape closes with focus back on the button; focus leaving closes; outside click closes; the dropdown stays inside the viewport. The current item is marked ("Labs" with "All labs" on /lab/, "Protocol" on /protocol/).
+
+**Stub pages.**
+- /protocol/ ("In preparation": the eight problem groups and what each section will hold) and /network/ (loss landscape, inside the network, the comparison with the simple method, where it runs).
+- Both say "Nothing on this page is a result yet" and carry `noindex` until their content lands.
+- vite PAGES entries added; budget lines added (as /about/: JS 5, CSS 10, fonts 60). Measured: JS 1.9, CSS 5.3.
+
+**/lab/ hub (your L7).**
+- Two cards, one per lab. The whole card is the link target, with a focus ring on the card.
+- Each card says what the lab does, using wording already on the lab pages (no new numbers).
+- A line under the cards points to the Simulator.
+- The card styles are in `src/hub.css`, loaded only by /lab/, /protocol/ and /network/.
+
+**2. 3D above the fold.**
+- On /world/, /vehicles/, /lab/lander/ and /lab/rover/: a compact head (`.head-3d`: smaller title and a one-line lead), the view, then the controls.
+- Moved under the view: the world's scene groups, the vehicle pickers, the rover lab's route and driver toolbars (with Drive), and the full original introduction (`.lead-3d`, the same text as before, nothing cut).
+- The lander lab's "Recorded descents in 3D" heading stays for screen readers (visually hidden).
+- Element ids are unchanged, so the page scripts need no change.
+- Measured loading-door card, share visible without scrolling (top..bottom in px):
+
+| Page | 1280 x 800 | 390 x 844 |
+|---|---|---|
+| /world/ | 100 % (372..612) | 100 % (254..526) |
+| /vehicles/ | 100 % (328..568) | 100 % (234..474) |
+| /lab/lander/ | 100 % (352..592) | 100 % (258..498) |
+| /lab/rover/ | 100 % (317..579) | 100 % (231..492) |
+
+- The whole view fits the first screen at 1280 x 800 on all four pages (stage bottom 728-788 px).
+- Before the change, the door started at 728-770 px at 1280 x 800, and was under the 14 scene chips on a phone.
+
+**3. /atc/ eyebrow:** "Our design, being tested in the simulation".
+
+**Budgets.**
+- The shared stylesheet grew with the menus, and pushed /lab/lander/ to 10.02 of 10 kB gz CSS.
+- Instead of raising the budget, I took the hub styles out of the shared CSS. I also moved the F-64 hero tokens into home-hero.css, which is inlined on the home page only, and removed 10 dead rules of the F-5 hero (fallback, controls, sun readout: no page uses them since F-39).
+- /lab/lander/ is now 9.8 of 10 kB; home CSS 4.7 (was 5.1).
+- `npm run build` OK; node tests 31/31; `budgets.py pages` OK.
+
+**Checks.**
+- New pages /lab/ (1280), /protocol/ (1280) and /network/ (390, dark): 0 contrast fails, no small targets, one h1, no heading skips, no overflow, no console errors.
+- The four 3D pages: no console errors and no overflow at either size.
+- Screenshots read: desktop menu open, phone menu (fixed), /lab/, /world/ 1280, rover 390, vehicles 390.
+
+**Memory.**
+- RAM fell to 0.19 GB after the light pages, and to 0.34 GB before the rover lab. I stopped the browser each time and measured the rover lab alone at 0.60 GB.
+- One screenshot command (/world/, door only, no 3D) ran after the loop's stop while RAM was under 0.4. My guard did not cover it.
+- Preview server and browser stopped. The F-64 preview had kept running (stopping the task stopped npx but not its node child); I found it and stopped it.
+
+**For LEAD.**
+1. The /protocol/ and /network/ stubs are `noindex`. F-60 and F-61 should drop that.
+2. tools/ci/budgets.json is in BACKEND's folder; I added only the three page lines you asked for.
+3. lunarsim/atc/radio.py, results/E48_sizing.json and tools/atc/run_e48.py show as modified in git. They are not mine.

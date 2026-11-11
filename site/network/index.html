@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Network · LunarHaul</title>
+<meta name="description" content="Coming next: our neural network, the loss landscape its training crossed, and where it runs on a rover.">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="<!--@base-->favicon.svg" type="image/svg+xml">
+<script>try { var t = localStorage.getItem('lunarsim.theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<link rel="stylesheet" href="/src/hub.css">
+<script type="module" src="/src/main.js"></script>
+</head>
+<body>
+<!--@header-->
+<main id="main"><div class="wrap">
+  <header class="page-head">
+    <p class="ui-label">In preparation</p>
+    <h1>The network</h1>
+    <p>A small neural network that watches a rover's position reports and flags the ones that look wrong, compared
+      with the simple statistical test it would replace. This page will show what it learned and how.</p>
+  </header>
+  <section class="prose" aria-labelledby="nw-coming">
+    <h2 id="nw-coming">What this page will hold</h2>
+    <ul class="stub-list">
+      <li><b>The loss landscape in 3D:</b> the training loss over two directions in weight space, with the path
+        gradient descent took across it and a scrubber over the training epochs.</li>
+      <li><b>Inside the network:</b> its layers, with the activations for an example you choose.</li>
+      <li><b>The honest comparison:</b> the simple method it is measured against, and the test scores that matter for
+        rare faults (how many it catches, how many alarms are false, and how long it takes to notice).</li>
+      <li><b>Where it runs:</b> the rover's computer in a cutaway, the inputs it reads (the ranging radio and wheel
+        odometry) and the safety check it feeds.</li>
+    </ul>
+    <p>Nothing on this page is a result yet: the network is still being trained and tested.</p>
+  </section>
+</div></main>
+<!--@footer-->
+</body>
+</html>

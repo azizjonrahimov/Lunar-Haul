@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Labs · LunarHaul</title>
+<meta name="description" content="Two labs that run the simulation's own models in your browser: fly a lander's last 500 metres, or drive a rover along a leg of the base.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="<!--@base-->favicon.svg" type="image/svg+xml">
+<script>try { var t = localStorage.getItem('lunarsim.theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<link rel="stylesheet" href="/src/hub.css">
+<script type="module" src="/src/main.js"></script>
+</head>
+<body>
+<!--@header-->
+<main id="main"><div class="wrap">
+  <header class="page-head">
+    <h1>Labs</h1>
+    <p>Two labs that run the simulation's own models in your browser, on real Moon terrain (NASA LOLA). Each one shows
+      every constant with its flag and source.</p>
+  </header>
+  <div class="hub">
+    <article class="hub-card">
+      <h2><a href="<!--@base-->lab/lander/">Lander lab: the last 500 metres</a></h2>
+      <p>A lander flies from the start of the final approach to touchdown at pad A, with the same equations as the Python model.</p>
+      <ul>
+        <li>Replay recorded descents in 3D: a trained neural network or the classical guidance law at the controls.</li>
+        <li>Change the reward rules and watch the score the network was trained on.</li>
+        <li>Compare both over 500 landings with random starting errors.</li>
+      </ul>
+    </article>
+    <article class="hub-card">
+      <h2><a href="<!--@base-->lab/rover/">Rover lab: drive a leg of the base</a></h2>
+      <p>Pick two sites, a driver and the lighting, then drive the route with the model the logistics simulation takes its driving times from.</p>
+      <ul>
+        <li>Slope limits, wheel slip, glare from the low sun, shadows and energy use.</li>
+        <li>Drive it yourself and feel what the Earth&ndash;Moon signal delay does.</li>
+        <li>Race the built-in expert against the neural-network driver on the same leg.</li>
+      </ul>
+    </article>
+  </div>
+  <p class="prose" style="margin-top: var(--s-5)">The <a href="<!--@base-->simulator/">simulator</a> runs the logistics model itself: a whole year of the base, in your browser.</p>
+</div></main>
+<!--@footer-->
+</body>
+</html>

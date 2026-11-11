@@ -26,6 +26,30 @@
       ],
       "fonts_kb": 60
     },
+    "lab/index.html": {
+      "js_gzip_kb": 5,
+      "css_gzip_kb": 10,
+      "fonts": [
+        "assets/source-sans-3-latin-wght-italic-*.woff2"
+      ],
+      "fonts_kb": 60
+    },
+    "protocol/index.html": {
+      "js_gzip_kb": 5,
+      "css_gzip_kb": 10,
+      "fonts": [
+        "assets/source-sans-3-latin-wght-italic-*.woff2"
+      ],
+      "fonts_kb": 60
+    },
+    "network/index.html": {
+      "js_gzip_kb": 5,
+      "css_gzip_kb": 10,
+      "fonts": [
+        "assets/source-sans-3-latin-wght-italic-*.woff2"
+      ],
+      "fonts_kb": 60
+    },
     "account/index.html": {
       "js_gzip_kb": 15,
       "css_gzip_kb": 10,

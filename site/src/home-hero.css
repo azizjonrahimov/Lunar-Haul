@@ -1,4 +1,8 @@
 /* Home hero (F-39): the still of the base, the 3D orbit over it once loaded, the copy, three counters and entry chips */
+/* F-64: the hero is always dark: its text and flags take the dark tokens in both themes (the caption was 60 % black
+   on #050506 in the light theme, 1.02:1; the Modelled flags 3.35:1) */
+.hero4 { color-scheme: dark; --ink-2: rgba(255, 255, 255, 0.7); --hairline: rgba(255, 255, 255, 0.12); --link: #8db3dc; --focus: #66CCEE;
+  --flag-measured: #4fbf5c; --flag-spec: #7aa6d6; --flag-modelled: #d47aac; --flag-assumed: #d8c75a; }
 .hero4 .hero-stage { position: relative; height: min(80vh, 50rem); min-height: 34rem; overflow: hidden; background: #050506; }
 .hero4 .hero-still { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .hero4 .hero-canvas { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 1.2s ease; pointer-events: none; }

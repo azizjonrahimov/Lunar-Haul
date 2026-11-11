@@ -89,3 +89,4 @@
 .ap-tot td { text-align: right; font-family: var(--font-num); font-variant-numeric: tabular-nums; }
 .ap-bad { color: var(--warm); font-weight: 600; }
 @media (max-width: 760px) { .ap-pair { grid-template-columns: minmax(0, 1fr); } }
+.w2-pick { margin-top: var(--s-4); }   /* F-66: the scene chips under the view */

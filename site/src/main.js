@@ -17,5 +17,25 @@ for (const b of document.querySelectorAll('[data-menu]')) {
   b.addEventListener('click', () => { const open = !nav.classList.contains('open'); nav.classList.toggle('open', open); b.setAttribute('aria-expanded', String(open)); });
 }
 
+// F-66: the Labs and About menus (disclosure buttons): open on click / Enter / Space, close on Escape (focus back on
+// the button), on a click outside, and when focus leaves the menu; one open at a time
+const menus = [...document.querySelectorAll('.nav-menu')];
+const closeMenu = (m, refocus = false) => {
+  if (!m.classList.contains('open')) return;
+  m.classList.remove('open');
+  const b = m.querySelector('.nav-menu-btn'); b.setAttribute('aria-expanded', 'false'); if (refocus) b.focus();
+};
+for (const m of menus) {
+  const b = m.querySelector('.nav-menu-btn');
+  b.addEventListener('click', () => {
+    const open = !m.classList.contains('open');
+    for (const o of menus) if (o !== m) closeMenu(o);
+    m.classList.toggle('open', open); b.setAttribute('aria-expanded', String(open));
+  });
+  m.addEventListener('keydown', e => { if (e.key === 'Escape' && m.classList.contains('open')) { e.preventDefault(); e.stopPropagation(); closeMenu(m, true); } });
+  m.addEventListener('focusout', e => { if (e.relatedTarget && !m.contains(e.relatedTarget)) closeMenu(m); });
+}
+if (menus.length) document.addEventListener('click', e => { for (const m of menus) if (!m.contains(e.target)) closeMenu(m); });
+
 mountFigures();
 

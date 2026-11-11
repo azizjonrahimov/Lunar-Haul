@@ -21,16 +21,24 @@ export function icon(name, cls = 'icon') {
 }
 
 // ---------- navigation ----------
-// Lunar ATC first: the company's direction (LEAD, 27 Oct)
+// F-66 (LEAD, 11 Nov): eight top-level links, then two disclosure menus (Labs, About). A menu opens on click and on
+// Enter/Space (it is a button), closes on Escape, on a click outside and when focus leaves it (src/main.js). Without
+// JavaScript the footer lists every link; at phone width the menus fold open inside the phone menu as plain groups.
 export const NAV = [
-  ['atc/', 'Lunar ATC'], ['world/', 'World'], ['stories/', 'Stories'], ['vehicles/', 'Vehicles'], ['results/', 'Results'], ['lab/lander/', 'Lander lab'], ['lab/rover/', 'Rover lab'], ['simulator/', 'Simulator'],
-  ['method/', 'Method'], ['paper/', 'Paper'], ['data/', 'Data'], ['about/', 'About'],
+  ['world/', 'World'], ['atc/', 'Lunar ATC'], ['protocol/', 'Protocol'], ['network/', 'Network'], ['vehicles/', 'Vehicles'],
+  ['stories/', 'Stories'], ['results/', 'Results'], ['verification/', 'Verification'],
+  { label: 'Labs', id: 'nav-labs', items: [['lab/', 'All labs'], ['lab/lander/', 'Lander lab'], ['lab/rover/', 'Rover lab'], ['simulator/', 'Simulator']] },
+  { label: 'About', id: 'nav-about', items: [['method/', 'Method'], ['paper/', 'Paper'], ['data/', 'Data'], ['about/', 'About']] },
 ];
-export const FOOT = [['verification/', 'Verification'], ['changelog/', 'Changelog'], ['account/', 'Account'], ['simulator/', 'Simulator (v2)']];
+export const FOOT = [['changelog/', 'Changelog'], ['account/', 'Account'], ['simulator/v2/', 'Simulator (v2)']];
 
 export function header(base, path) {
   const here = path.replace(/^\//, '').replace(/index\.html$/, '');
-  const items = NAV.map(([href, label]) => `<li><a href="${base}${href}"${here === href ? ' aria-current="page"' : ''}>${label}</a></li>`).join('');
+  const link = ([href, label]) => `<li><a href="${base}${href}"${here === href ? ' aria-current="page"' : ''}>${label}</a></li>`;
+  const items = NAV.map(n => Array.isArray(n) ? link(n) : `<li class="nav-menu${n.items.some(([h]) => h === here) ? ' has-current' : ''}">`
+    + `<button class="nav-menu-btn" type="button" aria-expanded="false" aria-controls="${n.id}">${n.label}${icon('chevron-down')}</button>`
+    + `<span class="nav-group" aria-hidden="true">${n.label}</span>`
+    + `<ul class="nav-sub" id="${n.id}" aria-label="${n.label}">${n.items.map(link).join('')}</ul></li>`).join('');
   return `<a class="skip" href="#main">Skip to content</a>
 <header class="site-header"><div class="wrap bar">
   <a class="brand" href="${base}"${here === '' ? ' aria-current="page"' : ''}>LunarHaul <span>· lunar surface logistics</span></a>
@@ -41,16 +49,21 @@ export function header(base, path) {
 }
 
 export function footer(base) {
-  const links = FOOT.map(([href, label]) => `<a href="${base}${href}">${label}</a>`).join(' · ');
+  // every page in plain links (the menus need JavaScript; these do not)
+  const a = ([href, label]) => `<a href="${base}${href}">${label}</a>`;
+  const top = NAV.filter(Array.isArray).map(a).join(' · ');
+  const groups = NAV.filter(n => !Array.isArray(n)).map(n => `<p><span class="foot-group">${n.label}:</span> ${n.items.map(a).join(' · ')}</p>`).join('\n    ');
   return `<footer class="site-footer"><div class="wrap cols">
   <div>
     <p class="tagline">Representative vehicle models · NASA data, credited</p>
     <p>Terrain: Lunar Orbiter Laser Altimeter (LOLA) digital elevation models from NASA Goddard's Planetary Geodesy Data Archive (PGDA). Vehicles and landers are parametric, representative models, not any company's design. No NASA insignia are used.</p>
   </div>
-  <div>
-    <p>${links}</p>
+  <nav aria-label="All pages">
+    <p>${top}</p>
+    ${groups}
+    <p>${FOOT.map(a).join(' · ')}</p>
     <p><a href="${REPO}">Source code</a> · MIT licence · <a href="${base}paper/">Cite</a></p>
-  </div>
+  </nav>
 </div></footer>`;
 }
 

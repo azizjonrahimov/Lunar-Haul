@@ -13,13 +13,10 @@
 <body class="instrument">
 <!--@header-->
 <main id="main"><div class="wrap">
-  <header class="page-head">
+  <header class="page-head head-3d">
     <h1>A year at the base</h1>
-    <p>One simulated year of the base, replayed in 3D on real Moon terrain (NASA LOLA): rovers driving their planned routes, landers coming down with their dust, cargo stacking up at each site, the lunar night, and Earth bobbing along the horizon. Pick a scene, press Enter, and play the year.</p>
+    <p>One simulated year of the base in 3D on real Moon terrain. Press Enter to play; pick another scene under the view.</p>
   </header>
-
-  <div class="w2-gallery" id="w2-gallery" aria-label="Scenes"></div>
-  <p class="w2-scene"><strong id="w2-scene-title"></strong> <span id="w2-scene-desc"></span></p>
 
   <div class="w2-stage" id="w2-stage">
     <div class="w2-view" id="w2-view">
@@ -38,6 +35,13 @@
     <div class="w2-row w2-time" id="w2-time"></div>
     <p class="w2-status small" id="w2-status" role="status"></p>
   </div>
+
+  <!-- F-66: scene choice and the full introduction under the view, so the view opens in the first screen -->
+  <section class="w2-pick" aria-label="Choose a scene">
+    <div class="w2-gallery" id="w2-gallery" aria-label="Scenes"></div>
+    <p class="w2-scene"><strong id="w2-scene-title"></strong> <span id="w2-scene-desc"></span></p>
+  </section>
+  <p class="lead-3d">One simulated year of the base, replayed in 3D on real Moon terrain (NASA LOLA): rovers driving their planned routes, landers coming down with their dust, cargo stacking up at each site, the lunar night, and Earth bobbing along the horizon. Pick a scene, press Enter, and play the year.</p>
 
   <div class="w2-below">
     <section aria-labelledby="w2-mirror-h">
