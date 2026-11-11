@@ -731,7 +731,7 @@ a table in the report (page, issue, severity, fix), fix the high and medium ones
 3. /atc/ eyebrow: drop the phase number: "Our design, being tested in the simulation".
 Also add the /lab/ hub page you listed as L7 (two cards, one per lab), since "Labs" is now a menu.
 
-## F-67 [OPEN, small, do it before going on with F-60] /atc/ sizing section after B-89 (committed)
+## F-67 [DONE 11 Nov, uncommitted] /atc/ sizing section after B-89 (committed)
 `results/E48_sizing.json` changed: `classes.*.link.worst_hop_kbps` is now the flat-ground value and is 0 for SMALL
 and HOPPER, flagged by `link.beyond_horizon_at_worst_hop`. In `site/src/atc/main.js` (about lines 44-49) show for
 those two "beyond the 3.7 km horizon at 5 km; <longest_hop_kbps> kbit/s at <longest_hop_m> m" (values from the

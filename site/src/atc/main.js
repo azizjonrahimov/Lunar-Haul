@@ -24,7 +24,7 @@ const ROWS = [
   ['Computing per safety check', 'cpu', 'measured'],
   ['Computing per market round', 'auction', 'measured'],
   ['Memory (planner, checks, reservations, ledger copy)', 'mem', 'measured'],
-  ['Radio at the worst 5 km hop', 'link', 'derived'],
+  ['Radio at the worst 5 km hop (flat ground)', 'link', 'derived'],
   ['Messages per robot-hour', 'msgs', 'measured'],
   ['Power', 'power', 'assumed'],
   ['If it fails', c => c === 'Base computer' ? 'board B takes over; if both fail, the robots elect a leader' : 'stops at the next safe point; others treat its last reservation as occupied', 'design'],
@@ -41,12 +41,15 @@ function cell(S, key, k) {
   if (key === 'auction') { const a = C.cpu_auction_round_ms; return `median ${sm(a.median, ' ms', 1, `${p}.cpu_auction_round_ms.median`)}, p99 ${sm(a.p99, ' ms', 1, `${p}.cpu_auction_round_ms.p99`)} (laptop)`; }
   if (key === 'mem') return `${sm(C.peak_memory_mb, ' MB', 2, `${p}.peak_memory_mb`)} of ${num({ value: F.memory_mb, unit: ' MB', digits: 0, flag: 'Spec', source: `${SZ}: flight.memory_mb (${F.processor})` })}`;
   if (key === 'link') {
-    const L = C.link;
-    return `${sm(L.worst_hop_kbps / 1e3, ' Mbit/s', 1, `${p}.link.worst_hop_kbps`)} (${fmt(L.antenna_m, L.antenna_m % 1 ? 1 : 0)} m antenna, ${fmt(L.tx_power_w, L.tx_power_w % 1 ? 2 : 0)} W)` +
-      (k === 'BASE' ? '' : `; the mast in direct view at ${sm(L.reachable_share * 100, ' %', 0, `${p}.link.reachable_share`)} of route points`);
+    const L = C.link, ant = `${fmt(L.antenna_m, L.antenna_m % 1 ? 1 : 0)} m antenna, ${fmt(L.tx_power_w, L.tx_power_w % 1 ? 2 : 0)} W`;
+    // F-67 (B-89): flat-ground law with the smooth-Moon horizon check; two 1 m antennas cannot see each other at 5 km
+    const rate = L.beyond_horizon_at_worst_hop
+      ? `beyond the ${sm(L.mutual_horizon_m / 1e3, ' km', 1, `${p}.link.mutual_horizon_m`)} horizon at ${fmt(L.worst_hop_m / 1e3, 0)} km; ${sm(L.longest_hop_kbps, ' kbit/s', 1, `${p}.link.longest_hop_kbps`)} at ${sm(L.longest_hop_m, ' m', 0, `${p}.link.longest_hop_m`)}`
+      : sm(L.worst_hop_kbps / 1e3, ' Mbit/s', 1, `${p}.link.worst_hop_kbps`);
+    return `${rate} (${ant})` + (k === 'BASE' ? '' : `; the mast in direct view at ${sm(L.reachable_share * 100, ' %', 0, `${p}.link.reachable_share`)} of route points`);
   }
   if (key === 'msgs') {
-    if (k === 'BASE') return `receives the fleet's: ${sm(S.h10.link_kbps_needed_20_robots, ' kbit/s', 1, 'h10.link_kbps_needed_20_robots')} for ${fmt(S.targets.robots, 0)} robots`;
+    if (k === 'BASE') return `receives the fleet's: ${sm(S.h10.link_kbps_needed_20_robots_secured_mac8, ' kbit/s', 2, 'h10.link_kbps_needed_20_robots_secured_mac8')} for ${fmt(S.targets.robots, 0)} robots`;
     const by = S.messages.per_robot_hour_by_type['1'];
     return `${sm(S.messages.per_robot_hour['1'], '', 0, 'messages.per_robot_hour.1')}: status once a second, ${sm(by['auction (bid, award, claim)'], '', 2, 'messages.per_robot_hour_by_type.1')} for the market`;
   }
@@ -58,11 +61,16 @@ function insideTable(S) {
     ? h('td', {}, fn(c), ' ', h('span', { class: 'atc-tag atc-design' }, 'our design'))
     : S && k ? h('td', { html: cell(S, fn, k) })
       : h('td', { class: 'atc-pending' }, S ? 'not sized (E48 sized the robots and the base)' : [h('span', { class: 'atc-tag' }, `B-81 · ${kind}`), h('span', { class: 'visually-hidden' }, ' not measured yet')]))));
-  $('atc-inside').replaceChildren(h('table', { class: 'atc-table atc-inside-t' }, h('caption', { class: 'visually-hidden' }, 'What Lunar ATC adds to each kind of vehicle'), h('thead', {}, head), h('tbody', {}, rows)),
+  $('atc-inside').replaceChildren(h('table', { class: 'atc-table atc-inside-t' }, h('caption', { class: 'visually-hidden' }, 'What Lunar ATC adds to each kind of vehicle; the radio row uses the flat-ground law (free space, then two-ray) with the smooth-Moon horizon'), h('thead', {}, head), h('tbody', {}, rows)),
     S ? null : h('p', { class: 'small muted' }, 'Tags: "our design" is how Lunar ATC is built; "B-81 · measured / derived / assumed" marks a value still to come.'));
   if (S) { sizingNote(S); upgradeFlags($('atc-inside')); }
 }
 // what the numbers add up to, against the targets written before the measurement (P3's H10)
+// F-67: airtime at the measured hop count (E48 airtime.rows)
+function air(S, a) {
+  const R = S.airtime.rows, i = R.findIndex(x => x.sizes.startsWith('LRIP secured, MAC 8') && String(x.hops).startsWith('measured') && x.access.startsWith(a)), r = R[i];
+  return r ? `${sm(r.channel_kbps_needed, ' kbit/s', 2, `airtime.rows[${i}].channel_kbps_needed`)} (${r.fits_16_kbps ? 'fits' : 'does not fit'} the ${fmt(S.airtime.channel_kbps, 0)} kbit/s channel)` : '–';
+}
 function sizingNote(S) {
   const H = S.h10, T = S.targets, F = S.flight, L = S.laptop, M = S.messages, fo = S.failover.by_mtbf, lv = Object.keys(fo).sort((a, b) => a - b);
   const pct = (v, d, src) => sm(v * 100, ' %', d, src), jobs = lv.reduce((a, k) => a + fo[k].items_assigned, 0), twice = lv.reduce((a, k) => a + fo[k].jobs_assigned_twice, 0);
@@ -75,7 +83,7 @@ function sizingNote(S) {
     <ul class="prose atc-list">
       <li><strong>Computing.</strong> The safety check of the heaviest case (${esc(H.worst_class_safety)}) takes ${sm(H.safety_core_share_flight_per_robot_10hz, '', 2, 'h10.safety_core_share_flight_per_robot_10hz')} of one flight core per robot at ${fmt(T.safety_hz, 0)} Hz; each robot checks only itself.</li>
       <li><strong>Memory.</strong> At most ${sm(H.peak_memory_mb_max_robot, ' MB', 2, 'h10.peak_memory_mb_max_robot')} on a robot, against ${fmt(F.memory_mb, 0)} MB on the flight board.</li>
-      <li><strong>Radio.</strong> ${fmt(T.robots, 0)} robots need ${sm(H.link_kbps_needed_20_robots, ' kbit/s', 1, 'h10.link_kbps_needed_20_robots')} together, against a target of ${fmt(T.link_kbps_20_robots, 0)}. The status message once a second is most of it: ${sm(M.bytes_per_type.status, ' B/s', 0, 'messages.bytes_per_type.status (once a second)')} per robot against a target of ${fmt(T.bytes_per_s_per_robot, 0)}. Market messages come to ${sm(H.market_mb_per_day, ' MB', 3, 'h10.market_mb_per_day')} a day. The share of route points in direct view of the mast is a share of places, not of time; relaying through other robots reaches further and was not measured.</li>
+      <li><strong>Radio.</strong> ${fmt(T.robots, 0)} robots need ${sm(H.link_kbps_needed_20_robots_secured_mac8, ' kbit/s', 2, 'h10.link_kbps_needed_20_robots_secured_mac8')} together with every message secured (an 8-byte authentication code). On a shared channel that load costs more airtime: ${air(S, 'scheduled')} on a channel the base schedules, and ${air(S, 'slotted')} with random access. The status message once a second is most of it: ${sm(M.bytes_per_type.status, ' B/s', 0, 'messages.bytes_per_type.status (once a second)')} per robot against a target of ${fmt(T.bytes_per_s_per_robot, 0)}. Market messages come to ${sm(H.market_mb_per_day, ' MB', 3, 'h10.market_mb_per_day')} a day. The share of route points in direct view of the mast is a share of places, not of time; relaying through other robots reaches further and was not measured.</li>
       <li><strong>Ledger.</strong> ${ledger.map(([x, v]) => `${sm(v, ' MB', 2, `ledger_mb_per_year.${x}`)} a year at ${x}× today's traffic`).join(', ')}.</li>
       <li><strong>Failover.</strong> With the base computer failing on average every ${lv.map(k => fmt(+k, 0)).join(', ')} hours, the market was without its base computer ${lv.map(k => pct(fo[k].down_share, k === lv[lv.length - 1] ? 2 : 1, `failover.by_mtbf.${k}.down_share`)).join(', ')} of the time,
         and without any leader ${lv.map(k => pct(fo[k].no_leader_share, 3, `failover.by_mtbf.${k}.no_leader_share`)).join(', ')}. ${sm(twice, '', 0, 'Σ failover.by_mtbf.*.jobs_assigned_twice')} of ${sm(jobs, '', 0, 'Σ failover.by_mtbf.*.items_assigned')} jobs were given to two robots.</li>

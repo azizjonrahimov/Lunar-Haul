@@ -7982,3 +7982,32 @@ Per robot-hour at 1x: 176,779 B (MAC 8) and 211,341 B (MAC 16), against E48's 17
 2. **The P3 abstract.** Is "16 kbit/s carries 20 robots only on a scheduled one-hop channel" the sentence you want? It qualifies H10's link clause; it does not change it.
 
 Next: B-90.
+
+## F-67 DONE 11:43 | site/src/atc/main.js, site/atc/index.html, tools/ci/budgets.json (the /atc/ line) | how to check: /atc/ section 3 and the Radio bullet under it; /verification/ | from BACKEND: nothing | for LEAD: budget note and F-60 files below
+**Radio row** (labelled "Radio at the worst 5 km hop (flat ground)"):
+- **SMALL and HOPPER**, read from `classes.*.link` (`mutual_horizon_m`, `worst_hop_m`, `longest_hop_kbps`, `longest_hop_m`), when `beyond_horizon_at_worst_hop` is true:
+  - SMALL: "beyond the 3.7 km horizon at 5 km; 57.9 kbit/s at 3,728 m".
+  - HOPPER: "beyond the 3.7 km horizon at 5 km; 113.5 kbit/s at 3,728 m".
+- **The other classes:** LTV and cargo show 1.6 Mbit/s and the base 4.7 Mbit/s, from `worst_hop_kbps`.
+- **The law is named:**
+  - in the table's caption for screen readers;
+  - in a visible note under the table: flat ground (free space to 4 h1h2/λ, then two-ray 40 log d − 20 log h1h2) with the smooth-Moon horizon, and free space kept in `link_free_space_upper_bound` as an upper bound, not a prediction.
+
+**Radio bullet:** "20 robots need 7.86 kbit/s together with every message secured (an 8-byte authentication code). On a shared channel that load costs more airtime: 10.06 kbit/s (fits the 16 kbit/s channel) on a channel the base schedules, and 21.87 kbit/s (does not fit the 16 kbit/s channel) with random access."
+- The 7.86 is `h10.link_kbps_needed_20_robots_secured_mac8`.
+- The two airtime values come from `airtime.rows` (LRIP secured MAC 8, measured 1.024 hops), with fits_16_kbps read from the file.
+- The base's "receives" cell now uses the same secured 7.86.
+
+**/verification/:** badge "160 of 170 recorded checks pass, 16 not run, 1 bias flag"; 186 rows rendered. The page's reader in Node gives ok, 0 format errors, no summary mismatch.
+
+**Checks:**
+- /atc/ light and dark at 1280 and 390: 0 contrast fails, no overflow, no console errors. /verification/: no console errors.
+- Build OK; tests 31/31; budgets OK.
+
+**Budget (LEAD's fallback taken):**
+- /atc/ eager JS: within 15 kB at f6335a7 (budgets passed), 15.6 kB with F-67 as first written, and 15.4 kB after moving the law note from JS into the HTML.
+- The F-66 menu script is in the shared bundle and had already used the headroom; F-67's horizon cell and airtime sentence went over.
+- I did not move the market walk-through into a lazy chunk: the page's lazy budget is already 14.9 of 15 kB (sandbox 9.0 + bid 3.0 + sandbox scene 2.3 kB), so a scroll-loaded market chunk (about 3 kB) would only move the overrun there.
+- /atc/ `js_gzip_kb` raised from 15 to 16. Sizes now: eager 15.4 of 16 (the page chunk itself 8.7 kB); lazy 14.9 of 15, unchanged.
+
+**F-60 files are in the tree, unfinished:** site/protocol/index.html, site/src/protocol/{params,main}.js, site/src/protocol/protocol.css, the `<!--@pn:key-->` hook in site/vite.config.js, and the /protocol/ budget line (JS 20, CSS 12; measured 17.4 and 9.7). They build and pass budgets but are not browser-checked yet. Please leave them out of the F-67 commit; I'll report them with F-60.

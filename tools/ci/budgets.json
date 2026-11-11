@@ -35,8 +35,8 @@
       "fonts_kb": 60
     },
     "protocol/index.html": {
-      "js_gzip_kb": 5,
-      "css_gzip_kb": 10,
+      "js_gzip_kb": 20,
+      "css_gzip_kb": 12,
       "fonts": [
         "assets/source-sans-3-latin-wght-italic-*.woff2"
       ],
@@ -284,7 +284,7 @@
       "fonts_kb": 150
     },
     "atc/index.html": {
-      "js_gzip_kb": 15,
+      "js_gzip_kb": 16,
       "css_gzip_kb": 15,
       "data": [
         "atc/ATC_regimes_smoke.json"
