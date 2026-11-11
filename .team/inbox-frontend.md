@@ -758,10 +758,30 @@ compared with, the test metrics (event-level precision and recall, detection del
 vehicle cutaway with the computer highlighted, the inputs it reads (ranging radio, odometry) and the output it
 gates (the safety check). Tier 0 fallback: a 2D contour plot. Follow the dataviz rules for colour.
 
-## F-62 [OPEN; F-60 is committed] Cutaways of the navigation, radio and clock hardware
+## F-62 [DONE 11 Nov 12:51, uncommitted] Cutaways of the navigation, radio and clock hardware
 With the anatomy skill: the rover's navigation stack as a physical object (cameras, IMU, star tracker or sun
 sensor, ranging radio and antenna, clock, computer), each part labelled with its measured or sourced number
 from note 01 and E48; labelled "our design" where it is ours and "published" where it is the maker's.
+
+## F-68 [OPEN; F-62 is committed (0e05eca)] Make the cutaway read like the reference (LEAD looked at it at 1280, light)
+What LEAD saw: the drawing is correct and calm, but pale: near-white solids on a near-white stage, so the parts
+do not separate, and the numbers live only in the side list. The reference (note 00 section 3,
+`sources/explainer_style_reference.jpg`) puts the numbers ON the drawing and has strong tone separation.
+1. Tone: use the kit's four-tone shading with real separation between top, left and right faces and a darker
+   ground shadow; give each subsystem a restrained accent (cameras, clock, computer, radio) from the site's
+   palette; check it in dark too (dark stage, light line work, like the bicycle drivetrain slide).
+2. Labels on the drawing: a leader line from each main part to a short label with its key number and unit
+   ("cameras: drift 2 % of distance", "clock: 26 us/day", "UWB: 0.3 m to 100 m", "computer: 40 ms per safety
+   check"), values from params.js and E48 as now, flags kept. At 390 px the labels may collapse to numbered
+   pins with the list below.
+3. One calm interaction that explains something: an "open" control that lifts the lids / separates the
+   layers (exploded view) with the kit's eased motion; reduced motion shows the open state without motion.
+4. Your question 3: yes, add the radio (antenna, front end, two-ray path to a neighbour with the breakpoint
+   and horizon marked, numbers from E48) and the clock (crystal against chip-scale atomic clock, drift per day,
+   resync) as Fig 1c and 1d, in sections 4 and 3, where they belong.
+5. Weight: move the cutaway SVGs out of the HTML into files loaded when their section comes into view (your
+   note 1), with a static fallback image for no-JS; CSS is at 11.9 of 12 kB, so put the figure styles in a
+   file loaded with the figures. Report sizes before and after, and screenshots at 1280 and 390, light and dark.
 
 ## F-63 [QUEUED after F-62; the owner signed in on 11 Nov: free plan, 9.85 credits] Higgsfield stills (no clips yet)
 Budget: z_image costs 0.15 credits per image, nano_banana_2 2, gpt_image_2 6.5, a Seedance video 35 (not
