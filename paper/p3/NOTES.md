@@ -19,7 +19,7 @@ The earlier papers are [40, 41, 42] in P2's numbering and [56, 57, 58] here; the
 [7] Satnews, 27 May 2026; Interesting Engineering; DroneXL, 28 May 2026. Press reports on the NASA/JPL MoonFall hopping drones (about 250 kg wet, about 50 km of coverage per drone, 14 days of hops). https://satnews.com/2026/05/27/firefly-aerospace-wins-75-million-nasa-jpl-moonfall-subcontract-to-deliver-drones-to-the-moons-south-pole/ (VCI, Medium; secondary)
 [8] Intuitive Machines. Micro-Nova hopper. LPSC 2024 abstract 1931, https://www.hou.usra.edu/meetings/lpsc2024/pdf/1931.pdf; product page https://www.intuitivemachines.com/micro-nova (VCI, High)
 [9] W. Bluethmann. VIPER mobility hardware, LSIC 2024 technology infusion panel. NASA, November 2024. NTRS 20240013903. (VCI, High; full title to add)
-[10] NASA JPL. CADRE mission page. https://www.jpl.nasa.gov/missions/cadre (VCI, High; band, rate and range not public)
+[10] NASA JPL. CADRE mission page. https://www.jpl.nasa.gov/missions/cadre (VCI, High; band and range not public; the rate is public, see [28])
 [11] Gunter's Space Page. Blue Moon MK1, 15 April 2026. https://space.skyrocket.de/doc_sdat/blue-moon.htm; Blue Origin. (VCI, High/Medium)
 [12] NASA. "NASA JPL testing readies Voyager Technologies lander for Moon mission." 13 October 2026. https://nasa.gov/missions/moon-base/nasa-jpl-testing-readies-voyager-technologies-lander-for-moon-mission (VCI, High)
 [13] Firefly Aerospace. Blue Ghost. https://fireflyspace.com/blue-ghost; NASASpaceflight, January 2025. (VCI, High)
@@ -30,9 +30,9 @@ The earlier papers are [40, 41, 42] in P2's numbering and [56, 57, 58] here; the
 [18] Astrobotic. *Lunar Landers Payload User's Guide*, 2021. https://science.nasa.gov/wp-content/uploads/2023/11/astrobotic-lunar-landers-pug.pdf (VCI, High)
 [19] J. Esper, G. Heckler, J. Verville, G. Ryden. "NASA's Lunar Communications Relay and Navigation Systems (LCRNS)." SpaceOps 2025. NTRS 20250003321. (P1 [38], High)
 [20] ITU-R Recommendation P.526. *Propagation by diffraction*. https://www.itu.int/rec/R-REC-P.526/en (VCI, High for the method; the knife-edge values are Computed)
-[21] S. U. Hwu, M. Upanavage, C. C. Sham. Lunar surface propagation study. NASA JSC, 2008. NTRS 20080015374. https://ntrs.nasa.gov/citations/20080015374; NASA GRC on regolith permittivity, NTRS 20230013296. (VCI, High)
+[21] S. U. Hwu, M. Upanavage, C. C. Sham. "Lunar Surface Propagation Modeling and Effects on Communications." NASA Johnson Space Center, 2008. NTRS 20080015374. https://ntrs.nasa.gov/citations/20080015374; Johnson, Eckman, Swank, Zemba. "RF Metrology of Lunar Highlands Regolith Simulant NU-LHT-2M." NASA Glenn Research Center, 2023. NTRS 20230013296. https://ntrs.nasa.gov/citations/20230013296 (VCI, High)
 
-NOTE: [21] full title to add from the NTRS record before submission.
+NOTE: [21] titles added on 11 Nov 2026 from the source list of `research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md` (G4, [HWU08] and [GRC23], both opened on that date); the Hwu initials are the VCI note's, the Glenn authors' initials are in neither note. [21] is now also the source cited for the flat-ground two-ray law of Section 4.2 (note 03 Q2 and E1: the JSC model shows the 1/R^4 law and its independence of frequency at long range; it is a model, not a lunar measurement).
 
 [22] NASA. Delay/Disruption Tolerant Networking page. https://www.nasa.gov/communicating-with-missions/delay-disruption-tolerant-networking/ (VCI, High)
 [23] N. Ashby, B. Patla. Lunar clock rate relative to Earth. *Astronomical Journal* 168:3, 2024; APS Physics summary https://physics.aps.org/articles/v17/140 (VCI, High; title to add)
@@ -40,7 +40,7 @@ NOTE: [21] full title to add from the NTRS record before submission.
 [25] A. Krawciw et al. "Sharing the Load: Autonomous Multi-Rover Cargo Transport." arXiv:2510.18766v2, 2026. (VCI/MOA, High; the 13.8 kB/s convoy figure is quoted in MOA section 5)
 [26] G. Rabideau, J. Russino, A. Branch, N. Dhamani, T. Stegun Vaquero, J.-P. de la Croix, F. Rossi. "Multi-Robot Cooperative Autonomy on the Moon: The CADRE Technology Demonstration Mission." ASTRA 2025. https://ai.jpl.nasa.gov/public/documents/papers/CADRE-ASTRA-2025-Extended-Abstract.pdf (MOA, High)
 [27] K. Albee et al. "Lunar Leader: Persistent, Optimal Leader Election for Multi-Agent Exploration Teams." MASSpace 2024; JPL CADRE AAMAS slides, https://ai.jpl.nasa.gov/public/documents/presentations/CADRE-AAMAS-Slides.pdf (MOA, Medium / High)
-[28] M. Saboia et al. "CADRE MoonDB." MASSpace 2024. (MOA, Medium; full title to add)
+[28] M. Saboia, Rossi, Nguyen, Lim, Aguilar, de la Croix. "CADRE MoonDB: Distributed Database for Multi-Robot Information-Sharing and Map-Merging for Lunar Exploration." MASSpace 2024. https://ai.jpl.nasa.gov/public/documents/papers/MoonDB-MASSpace-paper.pdf (MOA, Medium; title, authors and URL from the source list of the LRIP note 04, entry C5, read in part; the co-authors' initials are not in the note; source of "a minimum of 1Mbps of aggregate bandwidth" in Sections 1 and 2.2)
 [29] R. B. Myerson, M. A. Satterthwaite. "Efficient mechanisms for bilateral trading." *Journal of Economic Theory* 29(2):265-281, 1983. (MOA, Medium)
 [30] W. Vickrey. "Counterspeculation, auctions, and competitive sealed tenders." *Journal of Finance* 16(1):8-37, 1961. (MOA, Low; standard result, not re-read; title to check)
 [31] L. M. Ausubel, P. Milgrom. "The Lovely but Lonely Vickrey Auction." In P. Cramton, Y. Shoham, R. Steinberg (eds.), *Combinatorial Auctions*, MIT Press, 2006, pp. 17-40. (MOA, High)
@@ -117,6 +117,23 @@ foundations [29]-[33], [37] are older and reported as such). Entries needing pub
   multiple m; (8) whether E46 gains a first-price cell or H5's first two clauses are reported as not tested, to be
   recorded as a dated change in PREREG.md before E46 runs; (9) the reference flight processor and benchmark B-81
   chooses; (10) the MTBF levels of the failover sweep.
+
+## Correction of 11 Nov 2026 (B-89, PREREG change 11)
+
+- **What changed in the text.** E48's link budget (5.3, Table 6, 4.2, 3.3's last sentence) is read under the flat-ground two-ray law
+  with the smooth-Moon horizon check, free space kept as an upper bound; the traffic (5.2, 3.4, 4.2) gains the authenticated sizes and
+  the airtime on a shared channel; every sentence that said the 20-robot traffic is within the 16 kbit/s target (abstract,
+  introduction, H10 verdict in 5.1, 5.2, discussion 6.1, conclusion) now carries the condition; 4.1, 4.6, 5.8 and Section 7 disclose the
+  correction; CADRE's radio rate is stated as public (1, 2.2) from [28].
+- **Typed with a citation:** the law's lunar confirmation [21] and the horizon rule [63] in the composed 4.2 sentence; CADRE's
+  "a minimum of 1Mbps of aggregate bandwidth" [28]. **Typed and checked against strings of the file:** the 16 kbit/s and 10 dB margin of
+  the mast-reach share, the 20 % guard time and 1/e, the month's trace (regime, load, loss, seed), the report rates of the authenticated
+  layout. **Typed, no file holds it:** "an internal check against the literature" (the event; its date is the file's `revision.date`).
+- **Word limits.** The abstract builds at exactly 300 words and the conclusion at exactly 250 after cutting 10 and 4 typed words; the
+  conclusion therefore states the link condition without the three rates, which Sections 5.1 and 5.2 hold.
+- **Not changed, for the lead** (the correction's report lists them): 3.3's "about 8.5 km" for a rover and the mast (2.95 + 5.89 = 8.84);
+  6.3's sentence that a UHF band would change the link budget more than any software choice (the two-ray loss is independent of
+  frequency beyond the breakpoint); "floods" in 3.4 and 6.3 against the one-hop condition; "known by name" in the introduction.
 
 ## Open questions for the lead
 

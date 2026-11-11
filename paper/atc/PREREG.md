@@ -367,3 +367,38 @@ item, by content without ids (results/id_fix_evidence.json); reused ids fell fro
 and no reported number changes. Traces and scene files written before the fix still carry the duplicate ids.
 
 Note to change 10 (30 Oct 2026, after B-80): the trace export found that in a hand-resolved conflict RoadLayer._hand shifts the first vehicle's reservation and busy time but not its leg plan, so its plotted position runs early by the hand delay until the job ends. Outcomes (delay, deliveries, waits) use busy times and reservations and are unaffected; positions feed only the mesh radio, which the road runs of E43 and E47 do not use. Not corrected in the engine; the exporter follows the reservation.
+
+### Change 11, 11 Nov 2026 (after E48 and the P3 build of 30 Oct; no instrumented run repeated): E48's link budget corrected from free-space loss to the flat-ground two-ray law with a horizon check; traffic restated as airtime; H10's link clause qualified
+What we saw: an internal literature check made for the interaction-protocol notes (research_notes/Lunar Rover Interaction
+Protocol/03_comms_protocol_security.md, sections E1 to E3 and C2) found two errors in E48's analysis as built into P3 on
+30 Oct. First, the link budget (B-81) used free-space loss at the 5 km worst hop. On flat ground beyond the breakpoint
+4 h1 h2 / lambda the loss follows the two-ray law 40 log10 d - 20 log10(h1 h2) (derived in the note from a direct and a
+ground-reflected ray; NASA JSC's model of lunar surface propagation shows the same 1/R^4 law and its independence of
+frequency: Hwu, Upanavage, Sham, 2008, NTRS 20080015374), and two 1 m antennas are beyond their 3.73 km smooth-Moon
+horizon at 5 km. Second, H10's link clause had been judged by the load at the sources (7.68 kbit/s for 20 robots against
+16 kbit/s), which leaves out that every relayed copy of a message is another transmission on a shared channel, that the
+access scheme has an efficiency below one, and that the assumed byte layouts carried no authentication.
+What changed in the analysis (task B-89, commit 344de09; results/E48_sizing.json rebuilt, with old and new side by side
+in its `revision` block; P3 rebuilt from it on 11 Nov):
+- Link budget. The default law is flat ground (free space to the breakpoint, then the larger of free space and the
+  two-ray loss) with a smooth-Moon horizon check; the free-space values are kept as `link_free_space_upper_bound`. Rate
+  at the 5 km worst hop, old to new, in kbit/s: crew and cargo rover 6,976 to 1,574; small rover 5,010 and hopper 5,988
+  to none, beyond the horizon (18.1 and 36.0 if the antennas could see each other; 57.9 and 113.5 at the 3.73 km
+  horizon); base mast downlink 9,289 to 4,717. Modelled latency 72 / 70 / 71 / 68 / 20.5 ms to 73 / 72 / 112 / 89 /
+  20.6 ms. The share of route samples with the mast in reach is 0.233 as before for 2.5 m antennas and 0.192 to 0.191
+  for 1 m antennas; the second change is the denominator only (the mast itself is no longer counted among the points).
+- Traffic. The secured message sizes of the note (8-byte MAC; position at 1 Hz, status and intent at 0.1 Hz) are
+  reported beside the assumed layouts: 7.86 kbit/s for 20 robots at the sources (9.39 with a 16-byte MAC). The traffic
+  is also reported as airtime, channel rate >= load x mean hops / access efficiency: 10.06 kbit/s on a base-scheduled
+  channel (efficiency 0.8) at the 1.024 mean hops to BASE measured in one simulated month, 21.87 kbit/s on slotted
+  random access (efficiency 1/e), and 19.64 kbit/s on a scheduled channel if every report is relayed two hops.
+What did not change: the pre-registered design file data/scenarios/E48-design.json is unchanged. No instrumented run
+was repeated; the processor times, memory, message counts, ledger sizes and failover values of E48 are the measurements
+of 30 Oct. The simulator's default radio is unchanged (the two-ray law is an opt-in of lunarsim/atc/radio.py), so no
+experiment's outcome moves.
+H10: the hypothesis text of change 1 stands as written. Its link clause, "a 16 kbit/s-class link for 20 robots", is now
+reported with a condition: it holds only when the base schedules the channel and the 1 Hz reports travel one hop
+(10.06 kbit/s needed at the measured 1.024 hops, 9.82 at exactly one hop); it does not hold on slotted random access
+(21.87 kbit/s) or with two-hop relaying (19.64 kbit/s). H10 is exploratory and has no decision rule; this is a
+correction made after the results were seen, and P3 says so in Sections 4.6, 5.8 and 7. The processor, memory and
+market-message clauses of H10 are reported as before.

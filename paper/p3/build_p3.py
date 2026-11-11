@@ -8,8 +8,14 @@ Sources (read-only): lunarsim/atc/vehicles-p5.json (the vehicle catalogue with f
 radio.py and auction.py (the Assumed defaults), the two policy files (the learned bids' sizes), paper/atc/PREREG.md
 (dated changes), paper/p3/NOTES.md (references), and the experiment files once they exist: results/E46_cells.csv,
 results/E46_pairs.csv, results/E46_fit.json (B-76 REVISED; file names proposed in PLACEHOLDERS.md, not yet promised)
-and results/E48_sizing.json (B-81). Until an experiment file exists every key that depends on it is pending and, with
+and results/E48_sizing.json (B-81; rebuilt by B-89 on 11 Nov 2026 with the flat-ground link, the secured sizes, the airtime
+and a revision block, PREREG change 11). Until an experiment file exists every key that depends on it is pending and, with
 --allow-pending, prints as a visible [[PENDING ...]] marker.
+
+Since the correction of 11 Nov 2026 the link is not one yes or no: e48_air() reads the authenticated load and three airtime
+cases (a base-scheduled channel and slotted random access at the measured mean hop count, a scheduled channel with two-hop
+relaying) and link_text() words the claim from them; e48_links() carries the checks behind "beyond the horizon", "upper bound"
+and the two-ray law, and a class beyond its horizon at the worst hop never prints a zero rate.
 
 Sentences whose wording depends on the outcome (the H5 and H10 verdicts, every results paragraph, the discussion
 clauses) are composed here from the data, with their direction words chosen from the numbers; every fixed phrase in
@@ -470,6 +476,105 @@ def values(r: R, allow_pending: bool):
         xs = [int(x) for x in xs]
         return f"{xs[0]}&ndash;{xs[-1]}" if xs == list(range(xs[0], xs[-1] + 1)) else ", ".join(str(x) for x in xs)
 
+    KBPS = NB + "kbit/s"
+    _air: Dict[str, Any] = {}
+
+    def e48_air():
+        """B-89 (PREREG change 11): the authenticated load of the target fleet and the channel rate it needs on one shared
+        channel (E48 `messages.secured`, `airtime`, `h10`). Every direction word about the 16 kbit/s link comes from here:
+        `sched` is the base-scheduled channel at the measured mean hop count, `rand` slotted random access at the same hop
+        count, `two` the scheduled channel with every report relayed two hops, `one` the scheduled channel at exactly one hop."""
+        if _air:
+            return _air
+        tg = r.s48("targets")
+        robots, target = int(tg["robots"]), _fin(tg["link_kbps_20_robots"])
+        sec, air, h10 = r.s48("messages", "secured"), r.s48("airtime"), r.s48("h10")
+        bph = {m: _fin(_get(sec, "bytes_per_robot_hour", "1", m)) for m in ("mac8", "mac16")}
+        load = {m: bph[m] * robots * 8 / 3600.0 / 1000.0 for m in bph}
+        for m in bph:
+            check(abs(load[m] - _fin(_get(h10, f"link_kbps_needed_20_robots_secured_{m}"))) < 0.006,
+                  f"the secured load of the target fleet ({m}) is bytes per robot-hour x robots x 8 / 3600")
+        check(int(_get(air, "robots")) == robots and abs(_fin(_get(air, "channel_kbps")) - target) < 1e-9,
+              "the airtime block uses H10's robots and link target")
+        carries = _get(h10, "carries_20_robots_1hz_on_16_kbps")
+        hops = _fin(_get(carries, "hops"))
+        month = r.s48("revision", "two_ray_in_the_mesh", "e40_month")
+        hist = {int(k): int(v) for k, v in _get(month, "variants", "default", "hop_histogram").items()}
+        check(abs(sum(k * v for k, v in hist.items()) / sum(hist.values()) - hops) < 0.001,
+              "the mean hop count to the base computer is the mean of the month's hop histogram")
+        check(abs(_fin(_get(air, "mean_hops_to_base", "default radio")) - hops) < 1e-9, "one mean hop count in the airtime and h10 blocks")
+        dflt = _get(month, "variants", "default")
+        cut = _fin(_get(dflt, "robot_epochs_cut_off_share"))
+        check(abs(cut - (1 - sum(hist.values()) / _fin(_get(dflt, "robot_epochs_with_base_up")))) < 0.0005,
+              "the cut-off share is the robot-epochs with the base computer up that are not in the hop histogram")
+        check(hops < float(conn[key]["median_hops"]), "the month's mean hop count is below the median over all route points (5.2 against 3.3)")
+
+        def row(hop, access):
+            g = [x for x in _get(air, "rows") if str(x["sizes"]).startswith("LRIP secured, MAC 8") and str(x["access"]).startswith(access)
+                 and (str(x["hops"]).startswith("measured") if hop == "measured" else str(x["hops"]) == hop)]
+            if len(g) != 1:
+                raise Pending(f"airtime row (secured, MAC 8 B, hops {hop}, {access}) missing from the file")
+            x = g[0]
+            need, eta = _fin(x["channel_kbps_needed"]), _fin(x["eta"])
+            check(abs(need - load["mac8"] * (hops if hop == "measured" else float(hop)) / eta) < 0.02,
+                  f"airtime ({hop} hops, {access}): the channel rate needed is the load x hops / access efficiency")
+            check(bool(x["fits_16_kbps"]) == (need <= target), f"airtime ({hop} hops, {access}): the fits flag agrees with the target")
+            return {"need": need, "fits": need <= target, "eta": eta, "access": str(x["access"])}
+        _air.update({"robots": robots, "target": target, "load": load["mac8"], "load16": load["mac16"], "bph": bph, "hops": hops,
+                     "hist": hist, "month": month, "cut": cut, "sched": row("measured", "scheduled"), "rand": row("measured", "slotted"),
+                     "two": row("2", "scheduled"), "one": row("1", "scheduled")})
+        check(bool(carries["scheduled"]) == _air["sched"]["fits"] and bool(carries["slotted_aloha"]) == _air["rand"]["fits"],
+              "the h10 block's scheduled and random-access flags agree with the airtime rows")
+        check(hops < 1.1 and _air["one"]["fits"] == _air["sched"]["fits"],
+              "the 'one hop' wording: the measured mean hop count is below 1.1 and the verdict is the same at exactly one hop")
+        check(_air["rand"]["eta"] < _air["sched"]["eta"] and "20 % guard" in _air["sched"]["access"] and "1/e" in _air["rand"]["access"],
+              "access efficiencies: a scheduled channel with a 20 % guard time and slotted random access at 1/e (4.2)")
+        return _air
+
+    def side(x, target_word="it"):
+        """'within' / 'above' the link target, from the row."""
+        return ("within " if x["fits"] else "above ") + target_word
+
+    def link_text(a, form):
+        """The qualified link claim, one wording per place, its direction chosen from the three airtime cases."""
+        T = f"{num(a['target'], 0)}{KBPS}"
+        s_, r_, t_ = a["sched"], a["rand"], a["two"]
+        k = lambda x: num(x["need"], 2)
+        only = s_["fits"] and not r_["fits"] and not t_["fits"]
+        every = s_["fits"] and r_["fits"] and t_["fits"]
+        yn = lambda x: "fits" if x["fits"] else "does not fit"
+        if form == "short":       # the abstract
+            if only:
+                return (f"fits the {T} target only on a base-scheduled, one-hop channel ({k(s_)}{KBPS}), not on random access ({k(r_)}) "
+                        f"or two-hop relaying ({k(t_)})")
+            if every:
+                return f"fits the {T} target on a base-scheduled channel ({k(s_)}{KBPS}), on random access ({k(r_)}) and with two-hop relaying ({k(t_)})"
+            if not s_["fits"]:
+                return f"does not fit the {T} target even on a base-scheduled, one-hop channel ({k(s_)}{KBPS} needed)"
+            return (f"fits the {T} target on a base-scheduled, one-hop channel ({k(s_)}{KBPS}); on random access it {yn(r_)} ({k(r_)}) and "
+                    f"with two-hop relaying it {yn(t_)} ({k(t_)})")
+        if form == "concl":       # the conclusion: the condition, without the numbers (Section 5.2 holds them)
+            if only:
+                return f"fits the {T} link only on a base-scheduled, one-hop channel"
+            if every:
+                return f"fits the {T} link"
+            if not s_["fits"]:
+                return f"does not fit the {T} link"
+            return f"fits the {T} link on a base-scheduled, one-hop channel"
+        if form == "long":        # introduction, discussion
+            at = f"{k(s_)}{KBPS} needed at the measured mean of {num(a['hops'], 3)} hops"
+            if only:
+                return (f"fits the {T} target only when the base schedules the channel and the reports travel one hop ({at}), and does not fit on "
+                        f"slotted random access ({k(r_)}{KBPS}) or when every report is relayed two hops ({k(t_)}{KBPS})")
+            if every:
+                return (f"fits the {T} target on a channel the base schedules ({at}), on slotted random access ({k(r_)}{KBPS}) and when every "
+                        f"report is relayed two hops ({k(t_)}{KBPS})")
+            if not s_["fits"]:
+                return f"does not fit the {T} target even when the base schedules the channel and the reports travel one hop ({at})"
+            return (f"fits the {T} target when the base schedules the channel and the reports travel one hop ({at}); on slotted random access it "
+                    f"{yn(r_)} ({k(r_)}{KBPS}) and when every report is relayed two hops it {yn(t_)} ({k(t_)}{KBPS})")
+        raise KeyError(form)
+
     def e48_scaled():
         """Scaled values against capacities; the direction words come from here."""
         fl, tg = r.s48("flight"), r.s48("targets")
@@ -492,23 +597,40 @@ def values(r: R, allow_pending: bool):
         out["kbps_target"] = _fin(tg["link_kbps_20_robots"])
         out["bps_robot"] = _fin(bph["1"]) / 3600.0
         out["bps_target"] = _fin(tg["bytes_per_s_per_robot"])
-        out["fits"] = {"cpu": worst_cpu < 1.0, "memory": out["mem_worst_mb"] <= out["mem_capacity_mb"],     # memory is not scaled by the speed factor
-                       "link": out["kbps_20"] <= out["kbps_target"]}
+        check(abs(out["kbps_20"] - _fin(r.s48("h10", "link_kbps_needed_20_robots"))) < 0.006, "the unsecured load of the target fleet agrees with the h10 block")
+        # the processor and the memory only: the link is no longer one yes or no (PREREG change 11), its three cases are in `air`
+        out["fits"] = {"cpu": worst_cpu < 1.0, "memory": out["mem_worst_mb"] <= out["mem_capacity_mb"]}     # memory is not scaled by the speed factor
+        out["air"] = e48_air()
         return out
 
     def h10_sentence():
         s = e48_scaled()
-        fits = s["fits"]
+        a = s["air"]
+        fits = dict(s["fits"])
+        mk = r.s48("h10", "market_mb_per_day")
+        fits["market"] = _fin(mk) <= _fin(r.s48("targets", "market_mb_per_day"))
+        T = f"{num(a['target'], 0)}{KBPS}"
         parts = [f"the safety check at {num(s['cpu_share_worst'] * 100, 1)}{PCT} of one core of the reference processor at the worst class "
                  f"(the {CLASS_NAME[s['cpu_class_worst']]})",
                  f"the on-robot part at {unit(s['mem_worst_mb'], 'MB', 1)} of {unit(s['mem_capacity_mb'], 'MB')}",
-                 f"and the radio traffic at {num(s['kbps_20'], 2)}{NB}kbit/s for 20 robots against the {num(s['kbps_target'], 0)}{NB}kbit/s target"]
-        mk = r.s48("h10", "market_mb_per_day")
-        parts.append(f"and the market's messages at {unit(mk, 'MB', 3)} a day against the {unit(r.s48('targets', 'market_mb_per_day'), 'MB')} target")
-        fits["market"] = _fin(mk) <= _fin(r.s48("targets", "market_mb_per_day"))
-        verdict = ("H10, exploratory, holds on every count: " if all(fits.values()) else
-                   "H10, exploratory, does not hold on every count (" + ", ".join(k for k, v in fits.items() if not v) + " over the limit): ")
-        return (verdict + ", ".join(parts) + f", with the scaling factor at {num(s['factor'], 1)} (range {num(s['range'][0], 1)}&ndash;{num(s['range'][1], 1)}); "
+                 f"the market's messages at {unit(mk, 'MB', 3)} a day against the {unit(r.s48('targets', 'market_mb_per_day'), 'MB')} target",
+                 f"and the authenticated radio traffic of {cnt(a['robots'])} robots, {num(a['load'], 2)}{KBPS} at the sources, needing "
+                 f"{num(a['sched']['need'], 2)}{KBPS} of a channel the base schedules at the measured mean of {num(a['hops'], 3)} hops "
+                 f"({side(a['sched'], 'the ' + T + ' target')}), {num(a['rand']['need'], 2)}{KBPS} on slotted random access ({side(a['rand'])}) and "
+                 f"{num(a['two']['need'], 2)}{KBPS} when every report is relayed two hops ({side(a['two'])}), as Section 5.2 reports"]
+        core_ok = all(fits.values())
+        link_every = all(a[x]["fits"] for x in ("sched", "rand", "two"))
+        link_only = a["sched"]["fits"] and not a["rand"]["fits"] and not a["two"]["fits"]
+        if core_ok and link_every:
+            verdict = "H10, exploratory, holds on every count: "
+        elif core_ok and a["sched"]["fits"]:
+            verdict = ("H10, exploratory, holds for the processor, the memory and the market's messages, and for the link "
+                       + ("only when the base schedules the channel and the reports travel one hop: " if link_only else
+                          "when the base schedules the channel and the reports travel one hop, with one of the two other channel cases over the target: "))
+        else:
+            over = [k for k, v in fits.items() if not v] + ([] if a["sched"]["fits"] else ["link"])
+            verdict = "H10, exploratory, does not hold on every count (" + ", ".join(over) + " over the limit): "
+        return (verdict + ", ".join(parts) + f"; the scaling factor is {num(s['factor'], 1)} (range {num(s['range'][0], 1)}&ndash;{num(s['range'][1], 1)}), and "
                 "the bidding, which H10 also names, has no registered capacity (Section 5.1 reports the scaled round against the one-second decision).")
     fill("P3-H10-VERDICT-SENTENCE", h10_sentence, "E48")
 
@@ -596,25 +718,204 @@ def values(r: R, allow_pending: bool):
                 f"status rate, the fleet generated {num(mph['1'], 1)} messages and "
                 f"{unit(bph['1'], 'B', 0)} per robot-hour at today's fleet, {num(mph['4'], 1)} and {unit(bph['4'], 'B', 0)} at four times, "
                 f"and {num(mph['8'], 1)} and {unit(bph['8'], 'B', 0)} at eight times; at today's fleet that is {num(s['bps_robot'], 1)}{NB}B/s per robot "
-                f"against the {num(s['bps_target'], 0)}{NB}B/s target and {num(s['kbps_20'], 2)}{NB}kbit/s for 20 robots against {num(s['kbps_target'], 0)}{NB}kbit/s. "
+                f"against the {num(s['bps_target'], 0)}{NB}B/s target and {num(s['kbps_20'], 2)}{KBPS} for {cnt(s['air']['robots'])} robots at the sources, "
+                f"before authentication and before any relaying (the next paragraph adds both). "
                 f"The ledger grows by {unit(led['1'], 'MB', 1)} a year at today's fleet, {unit(led['4'], 'MB', 1)} at four times and {unit(led['8'], 'MB', 1)} at eight, "
                 f"extrapolated from each run's jobs per hour. The market's messages come to {unit(r.s48('h10', 'market_mb_per_day'), 'MB', 3)} a day "
                 f"at today's fleet.")
     fill("P3-E48-RESULTS-MESSAGES", e48_messages, "E48")
 
-    def e48_link():
-        bits = []
+    def sec_sizes(mac):
+        """The authenticated sizes per message type, in the file's order, underscores as spaces."""
+        return r.s48("messages", "secured", "bytes_per_type", mac)
+
+    def e48_secured_layout():
+        """3.4: the authenticated layout as a design input (E48 `messages.secured.header` and `.map`)."""
+        sec = r.s48("messages", "secured")
+        h = _get(sec, "bytes_per_type", "header")
+        mac_n, mac_w = (int(x) for x in h["mac"])
+        fixed = int(h["space_packet"]) + int(h["lrip"]) + int(h["security_header"])
+        mp = _get(sec, "bytes_per_type", "map")
+        check("POSITION 1 Hz + STATUS 0.1 Hz + INTENT 0.1 Hz" in str(mp.get("status (E48, 1 Hz)", "")),
+              "the authenticated layout sends position at 1 Hz and status and intent at 0.1 Hz in place of the 1 Hz status message (3.4, 5.2)")
+        check("sent once + 3 repeats" in str(mp.get("landing_announcement", "")), "the landing announcement is sent once and repeated three times (3.4, 5.2)")
+        check("signed" in str(mp.get("grant", "")) and "signed" in str(mp.get("award", "")), "grants and awards are the signed messages (3.4)")
+        check("not on the air" in str(mp.get("ledger_entry", "")), "the ledger entry is not on the air (3.4)")
+        s8, s16 = sec_sizes("mac8"), sec_sizes("mac16")
+        check(all(s8[k] == s16[k] for k in ("grant", "award")) and all(s16[k] - s8[k] == mac_w - mac_n for k in s8 if k not in ("grant", "award")),
+              "the wider code adds its extra bytes to every message but the signed grant and award")
+        return (f"The airtime of Section 4.2 uses a second, authenticated layout: around its content every message carries a packet header of "
+                f"{unit(h['space_packet'], 'B')}, a protocol header of {unit(h['lrip'], 'B')}, a security header of {unit(h['security_header'], 'B')} "
+                f"and a message authentication code of {unit(mac_n, 'B')}, {unit(fixed + mac_n, 'B')} in all ({unit(fixed + mac_w, 'B')} with a code of "
+                f"{unit(mac_w, 'B')}); grants and awards carry a signature of {unit(h['signature'], 'B')} in place of the code; the 1{NB}Hz status "
+                f"message becomes a position report at 1{NB}Hz with status and intent reports at 0.1{NB}Hz, and a landing announcement is sent four "
+                f"times (Design, the interaction-protocol draft in the repository's research notes; not flown, and E48 does not serialise it either).")
+    fill("P3-E48-SECURED-LAYOUT-SENTENCE", e48_secured_layout, "E48 secured sizes (B-89)")
+
+    def e48_airtime_method():
+        """4.2: how the airtime is computed (E48 `airtime`, `revision.two_ray_in_the_mesh.e40_month`)."""
+        a = e48_air()
+        mo = a["month"]
+        scn = str(_get(mo, "scenario"))
+        check(all(x in scn for x in ("C_AUCTION", "30 % load", "loss 0.10", "roads atc", "seed 1", "the 2028 month with the least BASE direct-to-Earth visibility")),
+              "the month's trace is the auction regime with roads, 30 % load, message loss 0.10, seed 1, the 2028 month with the least direct-to-Earth visibility (4.2)")
+        return (f"The traffic is also stated as airtime on one shared channel, because every relayed copy of a message is another transmission "
+                f"in the same band: {cnt(a['robots'])} robots need a channel rate of at least their load at the sources, at the authenticated sizes "
+                f"of Section 3.4, times the mean number of hops a message travels, divided by the access efficiency, {num(a['sched']['eta'], 2)} for a "
+                f"channel the base schedules in time slots with a 20{PCT} guard time and {num(a['rand']['eta'], 2)} (1/e) for slotted random access "
+                f"(Assumed). The hop count is one, two, or the mean number of hops to the base computer, among the robots with a path to it, over the "
+                f"{cnt(mo['epochs'])} decision epochs "
+                f"of a one-month trace of the auction regime with the road layer on (seed 1, 30{PCT} load, message loss 0.10, the month of 2028 with "
+                f"the least direct-to-Earth visibility at the base).")
+    fill("P3-E48-AIRTIME-METHOD-SENTENCE", e48_airtime_method, "E48 airtime (B-89)")
+
+    def e48_airtime():
+        """5.2: the authenticated load and the airtime it needs, each direction word from its row."""
+        a = e48_air()
+        sec = r.s48("messages", "secured")
+        s8, s16 = sec_sizes("mac8"), sec_sizes("mac16")
+        mph = _fin(_get(sec, "per_robot_hour", "1"))
+        tg = r.s48("targets")
+        bps = a["bph"]["mac8"] / 3600.0
+        T = f"{num(a['target'], 0)}{KBPS}"
+        types = "; ".join(f"{html.escape(k.replace('_', ' '))} {unit(v, 'B')}" for k, v in s8.items())
+        wide = ", ".join(num(v, 0) for v in s16.values())
+        hist = a["hist"]
+        hist_txt = ("robot-epochs with a path to it: " + ", ".join(f"{cnt(v)} at {words(k)} hop{'s' if k != 1 else ''}" for k, v in sorted(hist.items())) +
+                    f"; {pc(a['cut'], 1)} of the robot-epochs with the base computer up had no path and are not in the mean, and over all route points "
+                    f"the median is {words(conn[key]['median_hops'])} hops, Section 3.3")
+        return (f"With the authenticated layout of Section 3.4 the types weigh: {types} (with the {unit(r.s48('messages', 'secured', 'bytes_per_type', 'header')['mac'][1], 'B')} "
+                f"code, in the same order: {wide}{NB}B). The same event counts then give {num(mph, 1)} messages and {unit(a['bph']['mac8'], 'B', 0)} per robot-hour "
+                f"at today's fleet ({unit(a['bph']['mac16'], 'B', 0)} with the wider code): {num(bps, 1)}{NB}B/s per robot against the "
+                f"{num(tg['bytes_per_s_per_robot'], 0)}{NB}B/s target, and {num(a['load'], 2)}{KBPS} for {cnt(a['robots'])} robots at the sources "
+                f"({num(a['load16'], 2)}{KBPS} with the wider code). On one shared channel, at the mean of {num(a['hops'], 3)} hops to the base computer "
+                f"in the month's trace of Section 4.2 ({hist_txt}), {cnt(a['robots'])} robots need {num(a['sched']['need'], 2)}{KBPS} of a channel the base "
+                f"schedules, {side(a['sched'], 'the ' + T + ' target')}, and {num(a['rand']['need'], 2)}{KBPS} on slotted random access, {side(a['rand'])}. "
+                f"At exactly one hop the scheduled channel needs {num(a['one']['need'], 2)}{KBPS}, {side(a['one'], 'the target')}; if every report is "
+                f"relayed two hops it needs {num(a['two']['need'], 2)}{KBPS}, {side(a['two'])}.")
+    fill("P3-E48-RESULTS-AIRTIME", e48_airtime, "E48 airtime (B-89)")
+
+    def rate(x):
+        """A data rate in kbit/s: whole numbers from 1,000 kbit/s, one decimal below."""
+        return f"{num(x, 0 if _fin(x) >= 1000 else 1)}{KBPS}"
+
+    def e48_links():
+        """Per class, the flat-ground link (default since B-89) with its free-space upper bound, after the checks that carry the
+        words 'beyond the horizon', 'upper bound' and 'two-ray law'."""
+        out = {}
+        hop = None
         for c in CLASSES:
             lk = r.s48("classes", c, "link")
-            bits.append(f"the {CLASS_NAME[c]} (antenna {unit(lk['antenna_m'], 'm', 1)}, {unit(lk['tx_power_w'], 'W', 2)}): "
-                        f"{num(lk['worst_hop_kbps'], 0)}{NB}kbit/s at the worst hop, {unit(lk['latency_budget_ms'], 'ms')} over "
-                        f"{words(lk['latency_hops'])} hop{'s' if int(lk['latency_hops']) != 1 else ''}, direct view of the mast from "
-                        f"{pc(lk['reachable_share'], 1)} of the route samples")
-        f0 = r.s48("classes", "LTV1", "link")
-        return (f"Per class, under the models of Section 3.3, at {num(f0['freq_ghz'], 1)}{NB}GHz with the data rate at the worst hop, the modelled "
-                f"latency of a 100-byte message (10{NB}ms per hop plus transmit time plus the scaled safety check, against the one-second decision "
-                f"the model assumes) and the share of route samples in direct view of the mast: " + "; ".join(bits) + ".")
+            fs = r.s48("classes", c, "link_free_space_upper_bound")
+            d, hz = _fin(_get(lk, "worst_hop_m")), _fin(_get(lk, "mutual_horizon_m"))
+            beyond = bool(_get(lk, "beyond_horizon_at_worst_hop"))
+            h1, h2 = _fin(lk["antenna_m"]), _fin(_get(lk, "peer_antenna_m"))
+            name = CLASS_NAME[c]
+            check("two-ray" in str(_get(lk, "law")) and "free space" in str(fs.get("law", "")), f"{name}: the default link is the flat-ground two-ray law and the bound is free space")
+            check(beyond == (d > hz), f"{name}: 'beyond the horizon' is the worst hop against the smooth-Moon mutual horizon")
+            check(abs(hz - (math.sqrt(2 * 1737.4e3 * h1) + math.sqrt(2 * 1737.4e3 * h2))) < 1.0, f"{name}: the mutual horizon is sqrt(2 R h1) + sqrt(2 R h2)")
+            check(abs(_fin(_get(lk, "longest_hop_m")) - min(d, hz)) < 0.5, f"{name}: the longest hop is the smaller of the worst hop and the horizon")
+            check((_fin(lk["worst_hop_kbps"]) == 0) == beyond, f"{name}: the rate at the worst hop is zero only beyond the horizon")
+            check(d > 4 * math.pi * h1 * h2 * _fin(lk["freq_ghz"]) * 1e9 / 299792458.0 and
+                  abs(_fin(_get(lk, "loss_db_worst_hop")) - (40 * math.log10(d) - 20 * math.log10(h1 * h2))) < 0.1,
+                  f"{name}: the loss at the worst hop is 40 log d - 20 log(h1 h2), beyond the breakpoint")
+            check(_fin(fs["worst_hop_kbps"]) >= _fin(_get(lk, "worst_hop_kbps_if_visible")) >= _fin(lk["worst_hop_kbps"]),
+                  f"{name}: free space is an upper bound on the rate at the worst hop")
+            check(beyond or abs(_fin(lk["longest_hop_kbps"]) - _fin(lk["worst_hop_kbps"])) < 1e-9, f"{name}: within the horizon the longest hop is the worst hop")
+            hop = d if hop is None else hop
+            check(abs(d - hop) < 1e-9 and abs(d - RADIO.DEFAULT_D_MAX_M) < 1e-9, "every class's worst hop is the mesh's range")
+            if c != "BASE":
+                check(h1 == h2, f"{name}: the worst hop is between two antennas of the class's own height")
+                note = str(_get(lk, "reachable_note"))
+                check(all(x in note for x in ("line of sight", "within 5 km", "16 kbit/s", "10 dB margin")),
+                      f"{name}: the mast-reach share is terrain line of sight within 5 km that closes 16 kbit/s with a 10 dB margin (4.2, Table 6)")
+                check(abs(_fin(lk["reachable_share"]) - _fin(_get(lk, "reachable_share_free_space"))) < 0.0005,
+                      f"{name}: the mast-reach share is the same under both laws (4.2)")
+            else:
+                check(str(_get(lk, "reachable_note")) == "the mast itself" and h1 > h2, "the base computer's row is the mast down to a robot antenna")
+            out[c] = {"lk": lk, "fs": fs, "beyond": beyond, "d": d, "hz": hz}
+        mp = r.s48("revision", "two_ray_in_the_mesh", "mesh_pairs", "by_class")
+        check(any(_fin(_get(mp, c, "16k_m10_smooth_horizon", "survive_share")) < _fin(_get(mp, c, "16k_m10", "survive_share")) for c in CLASSES if out[c]["beyond"]),
+              "on the terrain some pairs in line of sight lie beyond the smooth-Moon horizon (the note of Table 6)")
+        return out
+
+    def e48_link():
+        L = e48_links()
+        bits = []
+        for c in CLASSES:
+            x = L[c]
+            lk = x["lk"]
+            hops = f"{unit(lk['latency_budget_ms'], 'ms')} over {words(lk['latency_hops'])} hop{'s' if int(lk['latency_hops']) != 1 else ''}"
+            if c == "BASE":
+                bits.append(f"the {CLASS_NAME[c]} (mast {unit(lk['antenna_m'], 'm', 1)}, {unit(lk['tx_power_w'], 'W', 2)}, the downlink to a "
+                            f"{unit(lk['peer_antenna_m'], 'm', 1)} robot antenna): {rate(lk['worst_hop_kbps'])} at the worst hop, {hops}")
+                continue
+            head = f"the {CLASS_NAME[c]} (antenna {unit(lk['antenna_m'], 'm', 1)}, {unit(lk['tx_power_w'], 'W', 2)}): "
+            if x["beyond"]:
+                what = (f"beyond the {unit(x['hz'] / 1000.0, 'km', 2)} horizon of two such antennas at the worst hop, and "
+                        f"{rate(lk['longest_hop_kbps'])} at the longest hop the horizon allows")
+            else:
+                what = f"{rate(lk['worst_hop_kbps'])} at the worst hop"
+            bits.append(head + what + f", {hops}, the mast in reach from {pc(lk['reachable_share'], 1)} of the route samples")
+        f0 = L["LTV1"]["lk"]
+        ubs = [num(L[c]["fs"]["worst_hop_kbps"], 0) for c in CLASSES]
+        ub = ", ".join(ubs[:-1]) + " and " + ubs[-1]
+        return (f"Per class, at {num(f0['freq_ghz'], 1)}{NB}GHz under the flat-ground two-ray law with the smooth-Moon horizon check (Section 4.2): "
+                f"the data rate at the {unit(f0['worst_hop_m'] / 1000.0, 'km', 0)} worst hop or, where two antennas of the class are beyond their horizon "
+                f"at that distance, at the longest hop the horizon allows; the modelled latency of a 100-byte message (10{NB}ms per hop plus transmit "
+                f"time at that rate plus the scaled safety check, against the one-second decision the model assumes); and the share of route samples "
+                f"from which the mast is in reach. In that order: " + "; ".join(bits) + f". Under free-space loss, which is an upper bound, the "
+                f"worst hop would carry {ub}{KBPS}, in the same order of classes (Table 6).")
     fill("P3-E48-RESULTS-LINK", e48_link, "E48")
+
+    def e48_link_law():
+        """4.2: the propagation law, the horizon check, the link constants and the mast-reach share (design `radio`, E48 `classes.*.link`)."""
+        L = e48_links()
+        rd = r.design(48, "radio")
+        f0 = L["LTV1"]["lk"]
+        check(abs(_fin(rd["worst_hop_m"]) - _fin(f0["worst_hop_m"])) < 1e-9, "the worst hop of the design file is the one the link budget uses")
+        return (f"The hop is {unit(f0['worst_hop_m'] / 1000.0, 'km', 0)} long, between two antennas of the class's own height (for the base computer, the mast "
+                f"down to a {unit(L['BASE']['lk']['peer_antenna_m'], 'm', 1)} robot antenna). Its loss follows the flat-ground two-ray law: free-space loss "
+                f"up to the breakpoint 4h<sub>1</sub>h<sub>2</sub>/&lambda; and, beyond it, 40&nbsp;log<sub>10</sub>&nbsp;d &minus; 20&nbsp;log<sub>10</sub>(h<sub>1</sub>h<sub>2</sub>) "
+                f"with the distance d and the antenna heights h<sub>1</sub>, h<sub>2</sub> in metres, never less than free-space loss and independent of "
+                f"frequency (Derived from a direct ray and a ground-reflected ray with a reflection coefficient of &minus;1 at grazing incidence; a NASA "
+                f"Johnson Space Center model of lunar surface propagation shows the same fourth-power law and its independence of frequency at long range "
+                f"[21]). A hop longer than the smooth-Moon horizon of its two antennas, &radic;(2Rh<sub>1</sub>) + &radic;(2Rh<sub>2</sub>) [63], carries "
+                f"nothing; for a class in that case the rate is reported at the longest hop the horizon allows. The rate is the Shannon capacity of a "
+                f"{unit(rd['bandwidth_mhz'], 'MHz', 0)} channel with {unit(rd['antenna_gain_dbi'], 'dBi', 0)} antennas, a {unit(rd['noise_figure_db'], 'dB', 0)} "
+                f"noise figure and a {unit(rd['implementation_margin_db'], 'dB', 0)} margin (Assumed). The rate under free-space loss at the same hop is kept "
+                f"beside it as an upper bound.")
+    fill("P3-E48-LINK-LAW-SENTENCE", e48_link_law, "E48 link law (B-89)")
+
+    def e48_revision_date():
+        y, m, d = (int(x) for x in str(r.s48("revision", "date")).split("-"))
+        return f"{d} {('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December')[m - 1]} {y}"
+    fill("P3-E48-REVISION-DATE", e48_revision_date, "E48 revision (B-89)")
+
+    def e48_correction():
+        """Section 7: what the first version's free-space loss overstated, from the file's two link blocks."""
+        L = e48_links()
+        gone = [c for c in CLASSES if L[c]["beyond"]]
+        kept = [c for c in CLASSES if not L[c]["beyond"] and c != "BASE"]
+        if not gone:
+            raise Pending("no class is beyond the horizon at the worst hop; the correction paragraph of Section 7 needs rewording")
+        ratio = {c: _fin(L[c]["fs"]["worst_hop_kbps"]) / _fin(L[c]["lk"]["worst_hop_kbps_if_visible"]) for c in gone}
+        check(min(ratio.values()) > 100, "free-space loss overstated the small classes' rate at the worst hop by more than two orders of magnitude (7)")
+        check(len(gone) == 2 and all(L[c]["lk"]["antenna_m"] == min(L[x]["lk"]["antenna_m"] for x in CLASSES) for c in gone),
+              "the classes beyond the horizon are the two with the lowest antennas (7)")
+        check(len({L[c]["hz"] for c in gone}) == 1 and len({(L[c]["fs"]["worst_hop_kbps"], L[c]["lk"]["worst_hop_kbps"]) for c in kept}) == 1,
+              "the classes beyond the horizon share one horizon, and the crew and cargo rovers one pair of rates (7)")
+        k0 = kept[0]
+        check(_fin(L[k0]["lk"]["worst_hop_kbps"]) < _fin(L[k0]["fs"]["worst_hop_kbps"]) and
+              _fin(L["BASE"]["lk"]["worst_hop_kbps"]) < _fin(L["BASE"]["fs"]["worst_hop_kbps"]), "the corrected rates are lower than the first version's (7)")
+        return (f"At the {unit(L[k0]['d'] / 1000.0, 'km', 0)} worst hop it gave " + " and ".join(f"the {CLASS_NAME[c]} {rate(L[c]['fs']['worst_hop_kbps'])}" for c in gone) +
+                f"; under the flat-ground law that hop would carry " + " and ".join(rate(L[c]["lk"]["worst_hop_kbps_if_visible"]) for c in gone) +
+                f" if the two antennas could see each other, " + " and ".join(num(ratio[c], 0) for c in gone) + f" times less, and they cannot: two "
+                f"{unit(L[gone[0]]['lk']['antenna_m'], 'm', 1)} antennas are beyond their {unit(L[gone[0]]['hz'] / 1000.0, 'km', 2)} smooth-Moon horizon there. "
+                f"For " + " and ".join(f"the {CLASS_NAME[c]}" for c in kept) + f" the rate at that hop fell from {rate(L[k0]['fs']['worst_hop_kbps'])} to "
+                f"{rate(L[k0]['lk']['worst_hop_kbps'])}, and for the base mast's downlink from {rate(L['BASE']['fs']['worst_hop_kbps'])} to "
+                f"{rate(L['BASE']['lk']['worst_hop_kbps'])}.")
+    fill("P3-E48-CORRECTION-SENTENCE", e48_correction, "E48 revision (B-89)")
 
     def e48_failover():
         fo = r.s48("failover")
@@ -650,32 +951,36 @@ def values(r: R, allow_pending: bool):
 
     def e48_clause(kind):
         s = e48_scaled()
-        fits_all = all(s["fits"].values())
-        ok = "fits" if fits_all else "does not fit"
+        a = s["air"]
+        core_ok = all(s["fits"].values())           # the processor and the memory
         p99s = e48_round_p99_s()
         round_txt = (f"one auction round in a hundred takes {unit(p99s, 's', 2)}, above the one-second decision" if p99s > 1.0 else
                      f"an auction round stays within the one-second decision at the 99th percentile")
         if kind == "abstract":
-            return (f"Scaled by {num(s['factor'], 1)} to the reference flight processor, the safety check takes {num(s['cpu_share_worst'] * 100, 1)}{PCT} "
-                    f"of one core at the worst class and the radio traffic is {num(s['kbps_20'], 2)}{NB}kbit/s for 20 robots, within target; {round_txt}.")
+            return (f"Scaled by {num(s['factor'], 1)} to the reference flight processor, the worst class's safety check takes "
+                    f"{num(s['cpu_share_worst'] * 100, 1)}{PCT} of one core; {cnt(a['robots'])} robots' authenticated traffic {link_text(a, 'short')}; {round_txt}.")
         if kind == "intro":
-            return (f"Lunar ATC {ok} the vehicles of Section 3.2 as implemented: at the worst class the safety check takes "
-                    f"{num(s['cpu_share_worst'] * 100, 1)}{PCT} of one core of the reference processor, the on-robot part {unit(s['mem_worst_mb'], 'MB', 1)}, "
-                    f"and 20 robots generate {num(s['kbps_20'], 2)}{NB}kbit/s against a 16{NB}kbit/s-class link (Sections 5.1 to 5.3).")
+            return (f"Lunar ATC {'fits' if core_ok else 'does not fit'} the processor and the memory of the vehicles of Section 3.2 as implemented: at the "
+                    f"worst class the safety check takes {num(s['cpu_share_worst'] * 100, 1)}{PCT} of one core of the reference processor and the on-robot "
+                    f"part {unit(s['mem_worst_mb'], 'MB', 1)}. The authenticated radio traffic of {cnt(a['robots'])} robots, {num(a['load'], 2)}{KBPS} at "
+                    f"the sources, {link_text(a, 'long')}, as Sections 5.1 to 5.3 report.")
         if kind == "discussion":
-            return (f"the safety check, the on-robot memory and the radio traffic {'fit' if fits_all else 'do not all fit'} the reference processor and the link class "
-                    f"with the stated factor, the class nearest a limit being the {CLASS_NAME[s['cpu_class_worst']]}, while {round_txt}.")
+            return (f"the safety check and the on-robot memory {'fit' if core_ok else 'do not both fit'} the reference processor with the stated factor, "
+                    f"the class nearest a limit being the {CLASS_NAME[s['cpu_class_worst']]}; the authenticated radio traffic of {cnt(a['robots'])} robots "
+                    f"{link_text(a, 'long')}; and {round_txt}.")
         if kind == "comparison":
             bph = r.s48("messages", "bytes_per_robot_hour")
             ratio = 13800.0 / max(_fin(bph["1"]) / 3600.0, 1e-9)
+            bps_sec = a["bph"]["mac8"] / 3600.0
             by = r.s48("messages", "per_robot_hour_by_type", "1")
             market = sum(v for k, v in by.items() if k != "status")
-            return (f"The radio traffic of Lunar ATC, {num(s['bps_robot'], 1)}{NB}B/s per robot, is {num(ratio, 0)} times smaller than the "
+            return (f"The radio traffic of Lunar ATC at the sources, {num(s['bps_robot'], 1)}{NB}B/s per robot ({num(bps_sec, 1)}{NB}B/s with "
+                    f"authentication), is {num(ratio, 0)} times smaller ({num(13800.0 / bps_sec, 0)} times with authentication) than the "
                     f"13.8{NB}kB/s the two-rover convoy controller of [25] used; the market's own messages come to {num(market, 2)} per robot-hour "
                     f"at today's fleet.")
         if kind == "conclusion":
-            return (f"On flight hardware the safety check and radio traffic {'fit' if fits_all else 'do not fit'} the reference processor and "
-                    f"link for 20 robots; {round_txt}.")
+            return (f"On flight hardware the safety check {'fits' if core_ok else 'does not fit'} the reference processor; {cnt(a['robots'])} robots' "
+                    f"traffic {link_text(a, 'concl')}; {round_txt}.")
         if kind == "limitation":
             return (f"The factor used is {num(s['factor'], 1)} (range {num(s['range'][0], 1)}&ndash;{num(s['range'][1], 1)}), from "
                     f"{html.escape(s['laptop'])} to the {html.escape(s['processor'])}.")
@@ -1131,7 +1436,7 @@ def values(r: R, allow_pending: bool):
             pending.append(f"TABLE:{name}: {e}")
             T[name] = f'<p class="pending">[[PENDING {tag}: {caption}]]</p>'
     if broken:
-        raise SystemExit("claims contradicted by the data:\n  " + "\n  ".join(broken))
+        raise SystemExit("claims contradicted by the data:\n  " + "\n  ".join(dict.fromkeys(broken)))   # each claim once: a helper may run for several keys
     return V, T, pending
 
 
@@ -1202,15 +1507,37 @@ def table_e48_sizing(r: R):
 
 
 def table_e48_link(r: R):
-    rows = []
+    """Table 6 since B-89: the flat-ground link with its horizon, and the free-space rate as a labelled upper bound. A class beyond
+    its horizon at the worst hop prints those words, never a zero rate (the words and the bound are checked in values())."""
+    rate = lambda x: num(x, 0 if _fin(x) >= 1000 else 1)
+    rows, hop_km, base_up = [], None, None
     for c in CLASSES:
         lk = r.s48("classes", c, "link")
+        fs = r.s48("classes", c, "link_free_space_upper_bound")
+        beyond = bool(_get(lk, "beyond_horizon_at_worst_hop"))
+        hop_km = _fin(_get(lk, "worst_hop_m")) / 1000.0
+        if c == "BASE":
+            base_up = lk.get("uplink_from_small_kbps_at_worst_hop")
         rows.append([CLASS_NAME[c].capitalize(), num(lk["antenna_m"], 1), num(lk["freq_ghz"], 1), num(lk["tx_power_w"], 2),
-                     num(lk["worst_hop_kbps"], 1), num(lk["latency_budget_ms"], 0), pc(lk["reachable_share"], 1)])
-    return _tab("Table 6. Link budget per vehicle class under the models of Section 3.3: antenna height (m), frequency (GHz), transmit power (W), "
-                "data rate at the worst hop (kbit/s), modelled latency of a 100-byte message over three hops (one for the base) plus the scaled safety check (ms), and the share of the route samples "
-                "in direct view of the base mast within 5 km (multi-hop reach is higher and not measured).",
-                ["Class", "Antenna (m)", "Frequency (GHz)", "Power (W)", "Worst hop (kbit/s)", "Modelled latency (ms)", "Direct view of mast (share of route samples)"], rows, cls="wide")
+                     num(_get(lk, "mutual_horizon_m") / 1000.0, 2),
+                     "beyond the horizon" if beyond else rate(lk["worst_hop_kbps"]),
+                     f"{rate(_get(lk, 'longest_hop_kbps'))} at {num(_get(lk, 'longest_hop_m') / 1000.0, 2)}{NB}km",
+                     rate(fs["worst_hop_kbps"]), num(lk["latency_budget_ms"], 0),
+                     "&ndash; (the mast itself)" if c == "BASE" else pc(lk["reachable_share"], 1)])
+    hop = f"{num(hop_km, 0)}{NB}km"
+    note = ("Each hop is between two antennas of the class's own height; the base computer's row is the mast's downlink to a robot antenna"
+            + (f", and the uplink from a small rover at the same hop carries {rate(base_up)}{NB}kbit/s" if base_up is not None else "") +
+            ". The horizon is that of a smooth Moon; on the terrain a pair can see farther across a valley and less far behind a ridge, which the "
+            "mesh of Section 3.3 and the last column take from the terrain model, not from this horizon.")
+    return _tab(f"Table 6. Link budget per vehicle class under the flat-ground two-ray law with the smooth-Moon horizon check (Section 4.2): antenna "
+                f"height (m), frequency (GHz), transmit power (W), the smooth-Moon horizon of the hop (km), the data rate at the {hop} worst hop (kbit/s), "
+                f"the rate at the longest hop the horizon allows, the rate at the worst hop under free-space loss, which is an upper bound and was the "
+                f"first version's value (Section 7), the modelled latency of a 100-byte message over three hops (one for the base) at the longest hop's "
+                f"rate plus the scaled safety check (ms), and the share of the route samples whose link to the base mast is in terrain line of sight "
+                f"within {hop} and closes 16{NB}kbit/s on the uplink with a 10{NB}dB margin (multi-hop reach is higher and not measured).",
+                ["Class", "Antenna (m)", "Frequency (GHz)", "Power (W)", "Horizon of the hop (km)", f"Rate at the {hop} worst hop, flat ground (kbit/s)",
+                 "Rate at the longest hop the horizon allows (kbit/s)", f"Free space at {hop}, upper bound (kbit/s)", "Modelled latency (ms)",
+                 "Mast in reach (share of route samples)"], rows, cls="wide", note=note)
 
 
 def table_e46_rules(r: R):
