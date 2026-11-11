@@ -45,6 +45,34 @@
    },
    "link": {
     "antenna_m": 2.5,
+    "peer_antenna_m": 2.5,
+    "freq_ghz": 2.4,
+    "tx_power_w": 1.0,
+    "law": "flat ground (free space to 4 h1 h2 / lambda, then two-ray)",
+    "worst_hop_m": 5000.0,
+    "loss_db_worst_hop": 132.0,
+    "breakpoint_m": 200.1,
+    "mutual_horizon_m": 5894.7,
+    "beyond_horizon_at_worst_hop": false,
+    "worst_hop_kbps": 1573.6,
+    "worst_hop_kbps_if_visible": 1573.6,
+    "snr_db_worst_hop": 3.0,
+    "longest_hop_m": 5000.0,
+    "longest_hop_kbps": 1573.6,
+    "range_m_for_kbps": {
+     "16": 5894.7,
+     "1000": 5894.7
+    },
+    "latency_budget_ms": 73.4,
+    "latency_hops": 3,
+    "latency_note": "100 B per hop at the longest hop's rate (min of 5 km and the horizon) + 10 ms per hop + the flight-scaled p99 safety check",
+    "reachable_share": 0.233,
+    "reachable_share_free_space": 0.233,
+    "reachable_note": "share of route samples whose link to the BASE mast is in terrain line of sight, within 5 km, inside the smooth-Moon horizon and closes 16 kbit/s on the uplink at this class's power with a 10 dB margin (B-70 mesh)",
+    "reachable_n": 2420
+   },
+   "link_free_space_upper_bound": {
+    "antenna_m": 2.5,
     "freq_ghz": 2.4,
     "tx_power_w": 1.0,
     "worst_hop_kbps": 6976.4,
@@ -52,7 +80,8 @@
     "latency_budget_ms": 72.2,
     "latency_hops": 3,
     "reachable_share": 0.233,
-    "reachable_note": "share of route samples in direct view of the BASE mast within 5 km (B-70 mesh)"
+    "reachable_note": "share of route samples in direct view of the BASE mast within 5 km (B-70 mesh)",
+    "law": "free space (B-81); an upper bound, B-89"
    }
   },
   "CARGO": {
@@ -74,6 +103,34 @@
    },
    "link": {
     "antenna_m": 2.5,
+    "peer_antenna_m": 2.5,
+    "freq_ghz": 2.4,
+    "tx_power_w": 1.0,
+    "law": "flat ground (free space to 4 h1 h2 / lambda, then two-ray)",
+    "worst_hop_m": 5000.0,
+    "loss_db_worst_hop": 132.0,
+    "breakpoint_m": 200.1,
+    "mutual_horizon_m": 5894.7,
+    "beyond_horizon_at_worst_hop": false,
+    "worst_hop_kbps": 1573.6,
+    "worst_hop_kbps_if_visible": 1573.6,
+    "snr_db_worst_hop": 3.0,
+    "longest_hop_m": 5000.0,
+    "longest_hop_kbps": 1573.6,
+    "range_m_for_kbps": {
+     "16": 5894.7,
+     "1000": 5894.7
+    },
+    "latency_budget_ms": 71.6,
+    "latency_hops": 3,
+    "latency_note": "100 B per hop at the longest hop's rate (min of 5 km and the horizon) + 10 ms per hop + the flight-scaled p99 safety check",
+    "reachable_share": 0.233,
+    "reachable_share_free_space": 0.233,
+    "reachable_note": "share of route samples whose link to the BASE mast is in terrain line of sight, within 5 km, inside the smooth-Moon horizon and closes 16 kbit/s on the uplink at this class's power with a 10 dB margin (B-70 mesh)",
+    "reachable_n": 2420
+   },
+   "link_free_space_upper_bound": {
+    "antenna_m": 2.5,
     "freq_ghz": 2.4,
     "tx_power_w": 1.0,
     "worst_hop_kbps": 6976.4,
@@ -81,7 +138,8 @@
     "latency_budget_ms": 70.4,
     "latency_hops": 3,
     "reachable_share": 0.233,
-    "reachable_note": "share of route samples in direct view of the BASE mast within 5 km (B-70 mesh)"
+    "reachable_note": "share of route samples in direct view of the BASE mast within 5 km (B-70 mesh)",
+    "law": "free space (B-81); an upper bound, B-89"
    }
   },
   "SMALL": {
@@ -103,6 +161,34 @@
    },
    "link": {
     "antenna_m": 1.0,
+    "peer_antenna_m": 1.0,
+    "freq_ghz": 2.4,
+    "tx_power_w": 0.25,
+    "law": "flat ground (free space to 4 h1 h2 / lambda, then two-ray)",
+    "worst_hop_m": 5000.0,
+    "loss_db_worst_hop": 148.0,
+    "breakpoint_m": 32.0,
+    "mutual_horizon_m": 3728.2,
+    "beyond_horizon_at_worst_hop": true,
+    "worst_hop_kbps": 0.0,
+    "worst_hop_kbps_if_visible": 18.1,
+    "snr_db_worst_hop": -19.0,
+    "longest_hop_m": 3728.2,
+    "longest_hop_kbps": 57.9,
+    "range_m_for_kbps": {
+     "16": 3728.2,
+     "1000": 1676.8
+    },
+    "latency_budget_ms": 112.0,
+    "latency_hops": 3,
+    "latency_note": "100 B per hop at the longest hop's rate (min of 5 km and the horizon) + 10 ms per hop + the flight-scaled p99 safety check",
+    "reachable_share": 0.191,
+    "reachable_share_free_space": 0.191,
+    "reachable_note": "share of route samples whose link to the BASE mast is in terrain line of sight, within 5 km, inside the smooth-Moon horizon and closes 16 kbit/s on the uplink at this class's power with a 10 dB margin (B-70 mesh)",
+    "reachable_n": 2420
+   },
+   "link_free_space_upper_bound": {
+    "antenna_m": 1.0,
     "freq_ghz": 2.4,
     "tx_power_w": 0.25,
     "worst_hop_kbps": 5010.4,
@@ -110,7 +196,8 @@
     "latency_budget_ms": 71.0,
     "latency_hops": 3,
     "reachable_share": 0.192,
-    "reachable_note": "share of route samples in direct view of the BASE mast within 5 km (B-70 mesh)"
+    "reachable_note": "share of route samples in direct view of the BASE mast within 5 km (B-70 mesh)",
+    "law": "free space (B-81); an upper bound, B-89"
    }
   },
   "HOPPER": {
@@ -132,6 +219,34 @@
    },
    "link": {
     "antenna_m": 1.0,
+    "peer_antenna_m": 1.0,
+    "freq_ghz": 2.4,
+    "tx_power_w": 0.5,
+    "law": "flat ground (free space to 4 h1 h2 / lambda, then two-ray)",
+    "worst_hop_m": 5000.0,
+    "loss_db_worst_hop": 148.0,
+    "breakpoint_m": 32.0,
+    "mutual_horizon_m": 3728.2,
+    "beyond_horizon_at_worst_hop": true,
+    "worst_hop_kbps": 0.0,
+    "worst_hop_kbps_if_visible": 36.0,
+    "snr_db_worst_hop": -16.0,
+    "longest_hop_m": 3728.2,
+    "longest_hop_kbps": 113.5,
+    "range_m_for_kbps": {
+     "16": 3728.2,
+     "1000": 1994.1
+    },
+    "latency_budget_ms": 89.1,
+    "latency_hops": 3,
+    "latency_note": "100 B per hop at the longest hop's rate (min of 5 km and the horizon) + 10 ms per hop + the flight-scaled p99 safety check",
+    "reachable_share": 0.191,
+    "reachable_share_free_space": 0.191,
+    "reachable_note": "share of route samples whose link to the BASE mast is in terrain line of sight, within 5 km, inside the smooth-Moon horizon and closes 16 kbit/s on the uplink at this class's power with a 10 dB margin (B-70 mesh)",
+    "reachable_n": 2420
+   },
+   "link_free_space_upper_bound": {
+    "antenna_m": 1.0,
     "freq_ghz": 2.4,
     "tx_power_w": 0.5,
     "worst_hop_kbps": 5987.8,
@@ -139,7 +254,8 @@
     "latency_budget_ms": 68.4,
     "latency_hops": 3,
     "reachable_share": 0.192,
-    "reachable_note": "share of route samples in direct view of the BASE mast within 5 km (B-70 mesh)"
+    "reachable_note": "share of route samples in direct view of the BASE mast within 5 km (B-70 mesh)",
+    "law": "free space (B-81); an upper bound, B-89"
    }
   },
   "BASE": {
@@ -163,6 +279,33 @@
    },
    "link": {
     "antenna_m": 10.0,
+    "peer_antenna_m": 1.0,
+    "freq_ghz": 2.4,
+    "tx_power_w": 5.0,
+    "law": "flat ground (free space to 4 h1 h2 / lambda, then two-ray)",
+    "worst_hop_m": 5000.0,
+    "loss_db_worst_hop": 128.0,
+    "breakpoint_m": 320.2,
+    "mutual_horizon_m": 7758.8,
+    "beyond_horizon_at_worst_hop": false,
+    "worst_hop_kbps": 4716.9,
+    "worst_hop_kbps_if_visible": 4716.9,
+    "snr_db_worst_hop": 14.0,
+    "longest_hop_m": 5000.0,
+    "longest_hop_kbps": 4716.9,
+    "range_m_for_kbps": {
+     "16": 7758.8,
+     "1000": 7758.8
+    },
+    "latency_budget_ms": 20.6,
+    "latency_hops": 1,
+    "latency_note": "100 B per hop at the longest hop's rate (min of 5 km and the horizon) + 10 ms per hop + the flight-scaled p99 safety check",
+    "uplink_from_small_kbps_at_worst_hop": 1179.5,
+    "reachable_share": 1.0,
+    "reachable_note": "the mast itself"
+   },
+   "link_free_space_upper_bound": {
+    "antenna_m": 10.0,
     "freq_ghz": 2.4,
     "tx_power_w": 5.0,
     "worst_hop_kbps": 9289.1,
@@ -170,7 +313,8 @@
     "latency_budget_ms": 20.5,
     "latency_hops": 1,
     "reachable_share": 1.0,
-    "reachable_note": "the mast itself"
+    "reachable_note": "the mast itself",
+    "law": "free space (B-81); an upper bound, B-89"
    }
   }
  },
@@ -221,6 +365,76 @@
    "1": 172811.6,
    "4": 172945.4,
    "8": 173280.4
+  },
+  "secured": {
+   "bytes_per_type": {
+    "mac8": {
+     "position": 41,
+     "status": 43,
+     "intent": 38,
+     "reservation_request": 35,
+     "grant": 94,
+     "release": 31,
+     "bid": 37,
+     "award": 92,
+     "claim": 33,
+     "landing_announcement": 42
+    },
+    "mac16": {
+     "position": 49,
+     "status": 51,
+     "intent": 46,
+     "reservation_request": 43,
+     "grant": 94,
+     "release": 39,
+     "bid": 45,
+     "award": 92,
+     "claim": 41,
+     "landing_announcement": 50
+    },
+    "map": {
+     "status (E48, 1 Hz)": "POSITION 1 Hz + STATUS 0.1 Hz + INTENT 0.1 Hz",
+     "reservation_request": "RESERVE_REQ",
+     "grant": "RESERVE_GRANT (signed)",
+     "release": "RESERVE_RELEASE",
+     "bid": "TASK_BID",
+     "award": "TASK_AWARD (signed)",
+     "claim": "TASK_STATE",
+     "landing_announcement": "ALERT (landing closure), sent once + 3 repeats",
+     "ledger_entry": "not on the air (base store); 128 B kept for the ledger size"
+    },
+    "header": {
+     "space_packet": 6,
+     "lrip": 8,
+     "security_header": 6,
+     "mac": [
+      8,
+      16
+     ],
+     "signature": 64
+    },
+    "source": "note 03 sections C2 and E2 (Table B5)"
+   },
+   "per_robot_hour": {
+    "1": 4320.4,
+    "4": 4324.2,
+    "8": 4333.9
+   },
+   "bytes_per_robot_hour": {
+    "1": {
+     "mac8": 176778.8,
+     "mac16": 211340.7
+    },
+    "4": {
+     "mac8": 176987.9,
+     "mac16": 211570.5
+    },
+    "8": {
+     "mac8": 177510.4,
+     "mac16": 212144.8
+    }
+   },
+   "note": "LRIP v0.1 (note 03 C2): POSITION 1 Hz + STATUS and INTENT 0.1 Hz replace E48's 48 B status at 1 Hz; landing ALERT sent once + 3 repeats; event messages at E48's measured rates (C_AUCTION runs at 1x, 4x, 8x)"
   }
  },
  "ledger_mb_per_year": {
@@ -288,6 +502,515 @@
   "safety_core_share_flight_base_20_robots_batched": 0.4429,
   "peak_memory_mb_max_robot": 0.388,
   "link_kbps_needed_20_robots": 7.68,
-  "market_mb_per_day": 0.0049
+  "market_mb_per_day": 0.0049,
+  "link_kbps_needed_20_robots_secured_mac8": 7.86,
+  "link_kbps_needed_20_robots_secured_mac16": 9.39,
+  "airtime_kbps_20_robots_secured_mac8_scheduled": 10.06,
+  "airtime_kbps_20_robots_secured_mac8_slotted_aloha": 21.87,
+  "carries_20_robots_1hz_on_16_kbps": {
+   "scheduled": true,
+   "slotted_aloha": false,
+   "hops": 1.024
+  },
+  "airtime_note": "secured LRIP load (MAC 8 B) at the mean hop count to BASE measured in the E40 month; eta 0.8 for a base-scheduled channel, 1/e for slotted random access; other hop counts and profiles in airtime.rows"
+ },
+ "airtime": {
+  "robots": 20,
+  "channel_kbps": 16.0,
+  "rule": "R >= L x h / eta (note 03 E3): every relayed copy is another transmission in the same band",
+  "rows": [
+   {
+    "sizes": "E48 unsecured (B-81)",
+    "offered_kbps": 7.68,
+    "hops": "1",
+    "access": "scheduled (TDMA, 20 % guard)",
+    "eta": 0.8,
+    "channel_kbps_needed": 9.6,
+    "fits_16_kbps": true
+   },
+   {
+    "sizes": "E48 unsecured (B-81)",
+    "offered_kbps": 7.68,
+    "hops": "1",
+    "access": "slotted random access (1/e)",
+    "eta": 0.3679,
+    "channel_kbps_needed": 20.88,
+    "fits_16_kbps": false
+   },
+   {
+    "sizes": "E48 unsecured (B-81)",
+    "offered_kbps": 7.68,
+    "hops": "2",
+    "access": "scheduled (TDMA, 20 % guard)",
+    "eta": 0.8,
+    "channel_kbps_needed": 19.2,
+    "fits_16_kbps": false
+   },
+   {
+    "sizes": "E48 unsecured (B-81)",
+    "offered_kbps": 7.68,
+    "hops": "2",
+    "access": "slotted random access (1/e)",
+    "eta": 0.3679,
+    "channel_kbps_needed": 41.76,
+    "fits_16_kbps": false
+   },
+   {
+    "sizes": "E48 unsecured (B-81)",
+    "offered_kbps": 7.68,
+    "hops": "measured 1.024 (E40 month, mean hops to BASE)",
+    "access": "scheduled (TDMA, 20 % guard)",
+    "eta": 0.8,
+    "channel_kbps_needed": 9.83,
+    "fits_16_kbps": true
+   },
+   {
+    "sizes": "E48 unsecured (B-81)",
+    "offered_kbps": 7.68,
+    "hops": "measured 1.024 (E40 month, mean hops to BASE)",
+    "access": "slotted random access (1/e)",
+    "eta": 0.3679,
+    "channel_kbps_needed": 21.38,
+    "fits_16_kbps": false
+   },
+   {
+    "sizes": "LRIP secured, MAC 8 B",
+    "offered_kbps": 7.86,
+    "hops": "1",
+    "access": "scheduled (TDMA, 20 % guard)",
+    "eta": 0.8,
+    "channel_kbps_needed": 9.82,
+    "fits_16_kbps": true
+   },
+   {
+    "sizes": "LRIP secured, MAC 8 B",
+    "offered_kbps": 7.86,
+    "hops": "1",
+    "access": "slotted random access (1/e)",
+    "eta": 0.3679,
+    "channel_kbps_needed": 21.36,
+    "fits_16_kbps": false
+   },
+   {
+    "sizes": "LRIP secured, MAC 8 B",
+    "offered_kbps": 7.86,
+    "hops": "2",
+    "access": "scheduled (TDMA, 20 % guard)",
+    "eta": 0.8,
+    "channel_kbps_needed": 19.64,
+    "fits_16_kbps": false
+   },
+   {
+    "sizes": "LRIP secured, MAC 8 B",
+    "offered_kbps": 7.86,
+    "hops": "2",
+    "access": "slotted random access (1/e)",
+    "eta": 0.3679,
+    "channel_kbps_needed": 42.71,
+    "fits_16_kbps": false
+   },
+   {
+    "sizes": "LRIP secured, MAC 8 B",
+    "offered_kbps": 7.86,
+    "hops": "measured 1.024 (E40 month, mean hops to BASE)",
+    "access": "scheduled (TDMA, 20 % guard)",
+    "eta": 0.8,
+    "channel_kbps_needed": 10.06,
+    "fits_16_kbps": true
+   },
+   {
+    "sizes": "LRIP secured, MAC 8 B",
+    "offered_kbps": 7.86,
+    "hops": "measured 1.024 (E40 month, mean hops to BASE)",
+    "access": "slotted random access (1/e)",
+    "eta": 0.3679,
+    "channel_kbps_needed": 21.87,
+    "fits_16_kbps": false
+   },
+   {
+    "sizes": "LRIP secured, MAC 16 B",
+    "offered_kbps": 9.39,
+    "hops": "1",
+    "access": "scheduled (TDMA, 20 % guard)",
+    "eta": 0.8,
+    "channel_kbps_needed": 11.74,
+    "fits_16_kbps": true
+   },
+   {
+    "sizes": "LRIP secured, MAC 16 B",
+    "offered_kbps": 9.39,
+    "hops": "1",
+    "access": "slotted random access (1/e)",
+    "eta": 0.3679,
+    "channel_kbps_needed": 25.53,
+    "fits_16_kbps": false
+   },
+   {
+    "sizes": "LRIP secured, MAC 16 B",
+    "offered_kbps": 9.39,
+    "hops": "2",
+    "access": "scheduled (TDMA, 20 % guard)",
+    "eta": 0.8,
+    "channel_kbps_needed": 23.48,
+    "fits_16_kbps": false
+   },
+   {
+    "sizes": "LRIP secured, MAC 16 B",
+    "offered_kbps": 9.39,
+    "hops": "2",
+    "access": "slotted random access (1/e)",
+    "eta": 0.3679,
+    "channel_kbps_needed": 51.07,
+    "fits_16_kbps": false
+   },
+   {
+    "sizes": "LRIP secured, MAC 16 B",
+    "offered_kbps": 9.39,
+    "hops": "measured 1.024 (E40 month, mean hops to BASE)",
+    "access": "scheduled (TDMA, 20 % guard)",
+    "eta": 0.8,
+    "channel_kbps_needed": 12.02,
+    "fits_16_kbps": true
+   },
+   {
+    "sizes": "LRIP secured, MAC 16 B",
+    "offered_kbps": 9.39,
+    "hops": "measured 1.024 (E40 month, mean hops to BASE)",
+    "access": "slotted random access (1/e)",
+    "eta": 0.3679,
+    "channel_kbps_needed": 26.15,
+    "fits_16_kbps": false
+   }
+  ],
+  "mean_hops_to_base": {
+   "default radio": 1.024,
+   "two_ray 16 kbit/s, 10 dB": 1.024
+  },
+  "source": "note 03 sections B9 (Q9) and E3"
+ },
+ "revision": {
+  "date": "2026-11-11",
+  "task": "B-89",
+  "reason": "E48 (B-81) used free-space loss at the 5 km worst hop. On flat ground beyond the breakpoint 4 h1 h2 / lambda the loss follows the two-ray law 40 log10 d - 20 log10(h1 h2) (note 03 E1; lunar ground: Hwu et al., NASA JSC 2008, NTRS 20080015374), and two 1 m antennas are below the smooth-Moon radio horizon at 5 km (3.73 km). The link section now uses the flat-ground law with the horizon check by default; the free-space numbers are kept as a labelled upper bound. Traffic is now reported as airtime on a shared channel (hops / access efficiency, note 03 E3) and with the secured LRIP sizes of note 03 C2.",
+  "peer": "worst hop between two antennas of the class's own height (BASE: the 10 m mast to a 1 m robot antenna); the class's transmit power at both ends (BASE: the robot's 0.25 W on the uplink is the limit, so the BASE row uses the downlink at 5 W and says so)",
+  "old_new_columns": [
+   "B-81 free space (upper bound)",
+   "B-89 flat ground (default)"
+  ],
+  "old_new_per_class": {
+   "LTV1": {
+    "worst_hop_kbps": [
+     6976.4,
+     1573.6
+    ],
+    "snr_db_worst_hop": [
+     21.0,
+     3.0
+    ],
+    "latency_budget_ms": [
+     72.2,
+     73.4
+    ],
+    "reachable_share": [
+     0.233,
+     0.233
+    ]
+   },
+   "CARGO": {
+    "worst_hop_kbps": [
+     6976.4,
+     1573.6
+    ],
+    "snr_db_worst_hop": [
+     21.0,
+     3.0
+    ],
+    "latency_budget_ms": [
+     70.4,
+     71.6
+    ],
+    "reachable_share": [
+     0.233,
+     0.233
+    ]
+   },
+   "SMALL": {
+    "worst_hop_kbps": [
+     5010.4,
+     0.0
+    ],
+    "snr_db_worst_hop": [
+     14.9,
+     -19.0
+    ],
+    "latency_budget_ms": [
+     71.0,
+     112.0
+    ],
+    "reachable_share": [
+     0.192,
+     0.191
+    ],
+    "note": "two 1 m antennas are beyond their 3728 m smooth-Moon horizon at 5 km (rate if they could see each other 18.1 kbit/s); at the horizon the hop carries 57.9 kbit/s"
+   },
+   "HOPPER": {
+    "worst_hop_kbps": [
+     5987.8,
+     0.0
+    ],
+    "snr_db_worst_hop": [
+     18.0,
+     -16.0
+    ],
+    "latency_budget_ms": [
+     68.4,
+     89.1
+    ],
+    "reachable_share": [
+     0.192,
+     0.191
+    ],
+    "note": "two 1 m antennas are beyond their 3728 m smooth-Moon horizon at 5 km (rate if they could see each other 36.0 kbit/s); at the horizon the hop carries 113.5 kbit/s"
+   },
+   "BASE": {
+    "worst_hop_kbps": [
+     9289.1,
+     4716.9
+    ],
+    "snr_db_worst_hop": [
+     28.0,
+     14.0
+    ],
+    "latency_budget_ms": [
+     20.5,
+     20.6
+    ],
+    "reachable_share": [
+     1.0,
+     1.0
+    ]
+   }
+  },
+  "reachable_share_note": "B-81 counted BASE itself among 2,421 points (0.192 for 1 m antennas); B-89 counts the 2,420 other points (0.191 under both laws: every mast link in terrain view within 5 km also closes 16 kbit/s under the two-ray law)",
+  "h10_link": {
+   "columns": [
+    "B-81 unsecured, one hop",
+    "B-89 LRIP secured (MAC 8 B), one hop"
+   ],
+   "link_kbps_needed_20_robots": [
+    7.68,
+    7.86
+   ],
+   "airtime_kbps_at_measured_hops": {
+    "scheduled": 10.06,
+    "slotted_aloha": 21.87
+   }
+  },
+  "two_ray_in_the_mesh": {
+   "e40_month": {
+    "month": 7,
+    "t0_h": 4368.0,
+    "t1_h": 5112.0,
+    "base_dte_share": 0.5269,
+    "epochs": 1029,
+    "run_s": 9.1,
+    "scenario": "the B-80 'with' run (tools/atc/export_trace.py): p5 3eq, 30 % load, C_AUCTION, loss 0.10, roads atc, seed 1, the 2028 month with the least BASE direct-to-Earth visibility",
+    "distinct_links_by_antennas_m": {
+     "1-1": {
+      "n": 1,
+      "max_d_m": 0.0,
+      "coincident": 1
+     },
+     "1-10": {
+      "n": 3,
+      "max_d_m": 975.9,
+      "coincident": 1
+     },
+     "1-2.5": {
+      "n": 20,
+      "max_d_m": 893.1,
+      "coincident": 4
+     },
+     "2.5-10": {
+      "n": 13,
+      "max_d_m": 1006.6,
+      "coincident": 1
+     },
+     "2.5-2.5": {
+      "n": 18,
+      "max_d_m": 888.4,
+      "coincident": 4
+     }
+    },
+    "variants": {
+     "default": {
+      "budget": null,
+      "link_epochs": 11454,
+      "distinct_links": 55,
+      "survive_share_link_epochs": 1.0,
+      "survive_distinct": "55 of 55",
+      "lost_link_epochs_horizon": 0,
+      "lost_link_epochs_budget": 0,
+      "robot_epochs_with_base_up": 6174,
+      "robot_epochs_cut_off_share": 0.0564,
+      "mean_hops_to_base_connected": 1.024,
+      "hop_histogram": {
+       "1": 5686,
+       "2": 140
+      }
+     },
+     "16k_m10": {
+      "budget": {
+       "rate_bps": 16000.0,
+       "margin_db": 10.0
+      },
+      "link_epochs": 11454,
+      "distinct_links": 55,
+      "survive_share_link_epochs": 1.0,
+      "survive_distinct": "55 of 55",
+      "lost_link_epochs_horizon": 0,
+      "lost_link_epochs_budget": 0,
+      "robot_epochs_with_base_up": 6174,
+      "robot_epochs_cut_off_share": 0.0564,
+      "mean_hops_to_base_connected": 1.024,
+      "hop_histogram": {
+       "1": 5686,
+       "2": 140
+      }
+     },
+     "16k_m15": {
+      "budget": {
+       "rate_bps": 16000.0,
+       "margin_db": 15.0
+      },
+      "link_epochs": 11454,
+      "distinct_links": 55,
+      "survive_share_link_epochs": 1.0,
+      "survive_distinct": "55 of 55",
+      "lost_link_epochs_horizon": 0,
+      "lost_link_epochs_budget": 0,
+      "robot_epochs_with_base_up": 6174,
+      "robot_epochs_cut_off_share": 0.0564,
+      "mean_hops_to_base_connected": 1.024,
+      "hop_histogram": {
+       "1": 5686,
+       "2": 140
+      }
+     },
+     "16k_m3": {
+      "budget": {
+       "rate_bps": 16000.0,
+       "margin_db": 3.0
+      },
+      "link_epochs": 11454,
+      "distinct_links": 55,
+      "survive_share_link_epochs": 1.0,
+      "survive_distinct": "55 of 55",
+      "lost_link_epochs_horizon": 0,
+      "lost_link_epochs_budget": 0,
+      "robot_epochs_with_base_up": 6174,
+      "robot_epochs_cut_off_share": 0.0564,
+      "mean_hops_to_base_connected": 1.024,
+      "hop_histogram": {
+       "1": 5686,
+       "2": 140
+      }
+     },
+     "1M_m10": {
+      "budget": {
+       "rate_bps": 1000000.0,
+       "margin_db": 10.0
+      },
+      "link_epochs": 11454,
+      "distinct_links": 55,
+      "survive_share_link_epochs": 1.0,
+      "survive_distinct": "55 of 55",
+      "lost_link_epochs_horizon": 0,
+      "lost_link_epochs_budget": 0,
+      "robot_epochs_with_base_up": 6174,
+      "robot_epochs_cut_off_share": 0.0564,
+      "mean_hops_to_base_connected": 1.024,
+      "hop_histogram": {
+       "1": 5686,
+       "2": 140
+      }
+     }
+    }
+   },
+   "mesh_pairs": {
+    "pairs_in_file": 2929408,
+    "note": "distinct point pairs at d > 0; robot-robot, base_mast off",
+    "by_class": {
+     "LTV1": {
+      "antenna_m": 2.5,
+      "tx_power_w": 1.0,
+      "default_links": 433041,
+      "default_max_d_m": 5000.0,
+      "16k_m10": {
+       "links": 433041,
+       "survive_share": 1.0
+      },
+      "16k_m15": {
+       "links": 433041,
+       "survive_share": 1.0
+      },
+      "16k_m3": {
+       "links": 433041,
+       "survive_share": 1.0
+      },
+      "1M_m10": {
+       "links": 433041,
+       "survive_share": 1.0
+      }
+     },
+     "SMALL": {
+      "antenna_m": 1.0,
+      "tx_power_w": 0.25,
+      "default_links": 275714,
+      "default_max_d_m": 5000.0,
+      "16k_m10": {
+       "links": 256777,
+       "survive_share": 0.9313
+      },
+      "16k_m15": {
+       "links": 256777,
+       "survive_share": 0.9313
+      },
+      "16k_m3": {
+       "links": 256777,
+       "survive_share": 0.9313
+      },
+      "1M_m10": {
+       "links": 158138,
+       "survive_share": 0.5736
+      }
+     },
+     "HOPPER": {
+      "antenna_m": 1.0,
+      "tx_power_w": 0.5,
+      "default_links": 275714,
+      "default_max_d_m": 5000.0,
+      "16k_m10": {
+       "links": 256777,
+       "survive_share": 0.9313
+      },
+      "16k_m15": {
+       "links": 256777,
+       "survive_share": 0.9313
+      },
+      "16k_m3": {
+       "links": 256777,
+       "survive_share": 0.9313
+      },
+      "1M_m10": {
+       "links": 181140,
+       "survive_share": 0.657
+      }
+     }
+    }
+   },
+   "radio_py": "lunarsim.atc.radio RadioMesh.link / pair_links(propagation='two_ray', budget=...); the default (None) is unchanged"
+  },
+  "unchanged": "CPU, memory, messages per robot-hour and bytes at E48's sizes, ledger, failover: these measurements are not affected"
  }
 }

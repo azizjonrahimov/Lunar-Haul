@@ -1124,7 +1124,7 @@ uncoordinated-vs-ATC comparison with Mars round trips (Earth hand-resolution bec
 ## baseline row; tests in `tests/`; use `.venv\Scripts\python -m pytest` (console .exe scripts are broken).
 ## `lunarsim/nn/` and `experiments/phase6/nn/` belong to LEAD's agent (B-96): do not edit them.
 
-## B-89 [IN PROGRESS] Correct E48's link budget and traffic (found by note 03, 11 Nov)
+## B-89 [DONE 11:31] Correct E48's link budget and traffic (found by note 03, 11 Nov)
 `tools/atc/run_e48.py` line 320 uses free-space loss at the 5 km worst hop. On flat ground beyond the
 breakpoint 4 h1 h2 / lambda (200 m at 2.4 GHz with 2.5 m antennas) the loss follows the two-ray law
 40 log10(d) - 20 log10(h1 h2): 132 dB at 5 km for two 2.5 m antennas and 148 dB for two 1 m antennas, against
@@ -1143,7 +1143,7 @@ antennas also cannot see each other at 5 km on a smooth sphere of radius 1737.4 
 Expected by the note: rates at 5 km fall from 6,977 / 5,011 / 5,989 kbit/s to about 1,574 / 18 / 36 kbit/s
 (LTV and cargo / small / hopper). Check the note's numbers independently; report any you cannot reproduce.
 
-## B-90 [OPEN] Positioning layer (problem 1; E50). Note 01 is committed: parameters from its section D,
+## B-90 [IN PROGRESS] Positioning layer (problem 1; E50). Note 01 is committed: parameters from its section D,
 ## maths from its section E; quote the note's source tags in the code comments.
 `lunarsim/atc/pnt.py`: each vehicle carries a true position (the engine's) and an estimated one. Layers, each
 switchable: (a) dead reckoning: error grows with distance driven (percent of distance, by terrain class) plus a

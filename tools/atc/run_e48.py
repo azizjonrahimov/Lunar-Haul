@@ -83,6 +83,51 @@ DESIGN_DOC = {
 }
 
 
+# B-89 (11 Nov 2026): the link section's default becomes the flat-ground law; the design file above is unchanged
+# (pre-registered), the revision's constants live here. Sources: research note 03 (research_notes/Lunar Rover
+# Interaction Protocol/03_comms_protocol_security.md) sections C2, D, E1-E3; [HWU08] NASA JSC 2008, NTRS 20080015374.
+REVISION_B89 = {
+    "date": "2026-11-11",
+    "task": "B-89",
+    "reason": "E48 (B-81) used free-space loss at the 5 km worst hop. On flat ground beyond the breakpoint 4 h1 h2 / "
+              "lambda the loss follows the two-ray law 40 log10 d - 20 log10(h1 h2) (note 03 E1; lunar ground: Hwu et "
+              "al., NASA JSC 2008, NTRS 20080015374), and two 1 m antennas are below the smooth-Moon radio horizon "
+              "at 5 km (3.73 km). The link section now uses the flat-ground law with the horizon check by default; the "
+              "free-space numbers are kept as a labelled upper bound. Traffic is now reported as airtime on a shared "
+              "channel (hops / access efficiency, note 03 E3) and with the secured LRIP sizes of note 03 C2.",
+    "peer": "worst hop between two antennas of the class's own height (BASE: the 10 m mast to a 1 m robot antenna); "
+            "the class's transmit power at both ends (BASE: the robot's 0.25 W on the uplink is the limit, so the "
+            "BASE row uses the downlink at 5 W and says so)",
+    "rates_for_range_kbps": [16.0, 1000.0],
+    # note 03 C2 catalogue, secured with an 8-byte MAC (profile N) and a 16-byte MAC (profile B); signed messages
+    # (TASK_AWARD, RESERVE_GRANT: Ed25519, 64 B signature) are the same in both profiles
+    "lrip_bytes": {
+        "mac8": {"position": 41, "status": 43, "intent": 38, "reservation_request": 35, "grant": 94, "release": 31,
+                 "bid": 37, "award": 92, "claim": 33, "landing_announcement": 42},
+        "mac16": {"position": 49, "status": 51, "intent": 46, "reservation_request": 43, "grant": 94, "release": 39,
+                  "bid": 45, "award": 92, "claim": 41, "landing_announcement": 50},
+        "map": {"status (E48, 1 Hz)": "POSITION 1 Hz + STATUS 0.1 Hz + INTENT 0.1 Hz", "reservation_request":
+                "RESERVE_REQ", "grant": "RESERVE_GRANT (signed)", "release": "RESERVE_RELEASE", "bid": "TASK_BID",
+                "award": "TASK_AWARD (signed)", "claim": "TASK_STATE", "landing_announcement":
+                "ALERT (landing closure), sent once + 3 repeats", "ledger_entry": "not on the air (base store); 128 B "
+                "kept for the ledger size"},
+        "header": {"space_packet": 6, "lrip": 8, "security_header": 6, "mac": [8, 16], "signature": 64},
+        "source": "note 03 sections C2 and E2 (Table B5)"},
+    "position_hz": 1.0, "status_intent_hz": 0.1, "alert_repeats": 3,
+    "airtime": {"channel_kbps": 16.0, "robots": 20, "eta": {"scheduled (TDMA, 20 % guard)": 0.8,
+                                                            "slotted random access (1/e)": 1.0 / math.e},
+                "rule": "R >= L x h / eta (note 03 E3): every relayed copy is another transmission in the same band",
+                "hops": "1, 2, and the mean hop count to BASE measured in the E40 month (step month_links)"},
+    "class_power_prefix": [["LTV1", 1.0], ["CARGO", 1.0], ["MAPP", 0.25], ["HOPPER", 0.5]],
+    "month": "the B-80 'with' run (tools/atc/export_trace.py): p5 3eq, 30 % load, C_AUCTION, loss 0.10, roads atc, "
+             "seed 1, the 2028 month with the least BASE direct-to-Earth visibility",
+    "two_ray_variants": {"16k_m10": {"rate_bps": 16000.0, "margin_db": 10.0},
+                         "16k_m15": {"rate_bps": 16000.0, "margin_db": 15.0},
+                         "16k_m3": {"rate_bps": 16000.0, "margin_db": 3.0},
+                         "1M_m10": {"rate_bps": 1.0e6, "margin_db": 10.0}},
+}
+
+
 def cmd_design():
     os.makedirs(os.path.dirname(DESIGN), exist_ok=True)
     with open(DESIGN, "w", encoding="utf-8", newline="\n") as f:
@@ -338,6 +383,220 @@ def step_links():
     print("links:", {k: (v["worst_hop_kbps"], v["reachable_share"]) for k, v in out.items()})
 
 
+def _class_power(name: str) -> float:
+    for p, w in REVISION_B89["class_power_prefix"]:
+        if name.startswith(p):
+            return w
+    raise KeyError(name)
+
+
+def step_links_flat():
+    """B-89: the link section under the flat-ground law (lunarsim.atc.radio, note 03 E1) with the smooth-Moon horizon
+    check, per class at the 5 km worst hop and at the longest hop the horizon allows; ranges for 16 kbit/s and
+    1 Mbit/s; latency for a 1 s decision; share of route samples whose link to the BASE mast closes at 16 kbit/s."""
+    from lunarsim.atc import regimes as G
+    from lunarsim.atc import radio as RA
+    rd = DESIGN_DOC["radio"]
+    rm = G._mesh()
+    total = rm.n - 1
+    safety = json.load(open(_cache("safety")))
+    ant = {"LTV1": G.ANT_ROVER_M, "CARGO": G.ANT_ROVER_M, "SMALL": G.ANT_SMALL_M, "HOPPER": G.ANT_SMALL_M,
+           "BASE": G.ANT_MAST_M}
+    out = {}
+    for cls in CLASSES:
+        h1 = ant[cls]
+        h2 = G.ANT_SMALL_M if cls == "BASE" else h1
+        b = {"freq_hz": rd["freq_ghz"][cls] * 1e9, "tx_power_w": rd["tx_power_w"][cls], "gain_dbi": rd["antenna_gain_dbi"],
+             "bandwidth_hz": rd["bandwidth_mhz"] * 1e6, "noise_figure_db": rd["noise_figure_db"],
+             "margin_db": rd["implementation_margin_db"]}
+        d = rd["worst_hop_m"]
+        hor = float(RA.mutual_horizon_m(h1, h2))
+        loss = float(RA.flat_ground_loss_db(d, h1, h2, b["freq_hz"]))
+        snr = float(RA.snr_db(loss, b))
+        rate = float(RA.shannon_kbps(loss, b))
+        d_hop = min(d, hor)
+        loss_h = float(RA.flat_ground_loss_db(d_hop, h1, h2, b["freq_hz"]))
+        rate_h = float(RA.shannon_kbps(loss_h, b))
+        rng = {f"{k:g}": round(min(hor, float(RA.budget_range_m(h1, h2, dict(b, rate_bps=k * 1e3)))), 1)
+               for k in REVISION_B89["rates_for_range_kbps"]}
+        hops = 1 if cls == "BASE" else 3
+        tx_ms = 100 * 8 / max(rate_h, 1e-6)
+        proc_ms = safety.get(cls, safety["LTV1"])["p99"] / 1000.0 * DESIGN_DOC["flight"]["factor"]
+        latency = hops * (10.0 + tx_ms) + proc_ms
+        row = {"antenna_m": h1, "peer_antenna_m": h2, "freq_ghz": rd["freq_ghz"][cls],
+               "tx_power_w": rd["tx_power_w"][cls], "law": "flat ground (free space to 4 h1 h2 / lambda, then two-ray)",
+               "worst_hop_m": d, "loss_db_worst_hop": round(loss, 1), "breakpoint_m": round(float(RA.breakpoint_m(h1, h2, b["freq_hz"])), 1),
+               "mutual_horizon_m": round(hor, 1), "beyond_horizon_at_worst_hop": bool(d > hor),
+               "worst_hop_kbps": 0.0 if d > hor else round(rate, 1),
+               "worst_hop_kbps_if_visible": round(rate, 1), "snr_db_worst_hop": round(snr, 1),
+               "longest_hop_m": round(d_hop, 1), "longest_hop_kbps": round(rate_h, 1),
+               "range_m_for_kbps": rng,
+               "latency_budget_ms": round(latency, 1), "latency_hops": hops,
+               "latency_note": "100 B per hop at the longest hop's rate (min of 5 km and the horizon) + 10 ms per hop + "
+                               "the flight-scaled p99 safety check"}
+        if cls == "BASE":
+            up = dict(b, tx_power_w=rd["tx_power_w"]["SMALL"])
+            row["uplink_from_small_kbps_at_worst_hop"] = round(float(RA.shannon_kbps(loss, up)), 1)
+            row["reachable_share"] = 1.0
+            row["reachable_note"] = "the mast itself"
+        else:
+            # route samples whose link to the BASE mast closes at 16 kbit/s on the uplink (this class's power)
+            pts = np.array([j for j in range(rm.n) if j != rm.base])
+            ok = np.array([rm.link(rm.base, int(j), G.ANT_MAST_M, h1, propagation="two_ray",
+                                   budget=dict(b, rate_bps=16000.0)) for j in pts])
+            old = np.array([rm.link(rm.base, int(j), G.ANT_MAST_M, h1) for j in pts])
+            row["reachable_share"] = round(float(ok.mean()), 3)
+            row["reachable_share_free_space"] = round(float(old.mean()), 3)
+            row["reachable_note"] = ("share of route samples whose link to the BASE mast is in terrain line of sight, "
+                                     "within 5 km, inside the smooth-Moon horizon and closes 16 kbit/s on the uplink "
+                                     "at this class's power with a 10 dB margin (B-70 mesh)")
+            row["reachable_n"] = int(total)
+        out[cls] = row
+    _save("links_flat", out)
+    print("links_flat:", {k: (v["worst_hop_kbps"], v["longest_hop_kbps"], v["reachable_share"]) for k, v in out.items()})
+
+
+def step_mesh_pairs():
+    """B-89 item 4, whole file: of the mesh-v1 point pairs in terrain line of sight within 5 km (robot to robot, same
+    antenna height at both ends, no mast), how many also pass the two-ray law at each class's power and variant."""
+    from lunarsim.atc import regimes as G
+    rm = G._mesh()
+    rd = DESIGN_DOC["radio"]
+    base_b = {"freq_hz": 2.4e9, "gain_dbi": rd["antenna_gain_dbi"], "bandwidth_hz": rd["bandwidth_mhz"] * 1e6,
+              "noise_figure_db": rd["noise_figure_db"]}
+    nz = rm.d > 0
+    out = {"pairs_in_file": int(nz.sum()), "note": "distinct point pairs at d > 0; robot-robot, base_mast off", "by_class": {}}
+    for cls, h in (("LTV1", G.ANT_ROVER_M), ("SMALL", G.ANT_SMALL_M), ("HOPPER", G.ANT_SMALL_M)):
+        ok0 = rm.pair_links(h, base_mast=False) & nz
+        row = {"antenna_m": h, "tx_power_w": rd["tx_power_w"][cls], "default_links": int(ok0.sum()),
+               "default_max_d_m": round(float(rm.d[ok0].max()), 1)}
+        for var, vb in REVISION_B89["two_ray_variants"].items():
+            b = dict(base_b, tx_power_w=rd["tx_power_w"][cls], **vb)
+            ok = rm.pair_links(h, base_mast=False, propagation="two_ray", budget=b) & nz
+            row[var] = {"links": int(ok.sum()), "survive_share": round(float(ok.sum() / ok0.sum()), 4)}
+        out["by_class"][cls] = row
+    _save("mesh_pairs", out)
+    print("mesh_pairs:", json.dumps(out))
+
+
+def step_month_links():
+    """B-89 item 4: replay the B-80 'with' month and test every mesh link that was up at a decision epoch against the
+    two-ray law (horizon + budget at the weaker end's power), per variant of REVISION_B89['two_ray_variants']; hop
+    counts to BASE with and without."""
+    if HERE not in sys.path:
+        sys.path.insert(0, HERE)
+    import export_trace as XT
+    from lunarsim import Simulation
+    from lunarsim.atc import regimes as G
+    from lunarsim.atc import radio as RA
+    (month, t0, t1, share), _ = XT.dark_month()
+    spec = XT.RUNS["with"]
+    sc = XT._scenario("with", t1)
+    mech = G.mechanism(spec["regime"])
+    kw = dict(spec["kw"], start_year=XT.YEAR)
+    epochs = []
+
+    def wrapped(sim, waiting, free, **k):
+        jobs = mech(sim, waiting, free, **k)
+        st, t = sim.atc, sim.t
+        if st is not None and t0 <= t <= t1:
+            alive = [v for v in sorted(sim.vehicles, key=lambda v: v.id) if getattr(v, "alive", True)]
+            nodes = [(v.id, int(st.position(v, t)), G.antenna_m(v), _class_power(v.cls.name)) for v in alive]
+            if st.base_up(t):
+                nodes.append(("BASE", st.site_index("BASE"), G.ANT_MAST_M, DESIGN_DOC["radio"]["tx_power_w"]["BASE"]))
+            epochs.append((t, nodes, dict(st.radio_kw)))
+        return jobs
+    for a in ("anticipates", "supports_team", "regime", "__name__"):
+        if hasattr(mech, a):
+            setattr(wrapped, a, getattr(mech, a))
+    t_run = time.time()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        Simulation(sc, wrapped, seed=1, mech_kwargs=kw).run()
+    run_s = time.time() - t_run
+    rm = G._mesh()
+    rd = DESIGN_DOC["radio"]
+    base_b = {"freq_hz": 2.4e9, "gain_dbi": rd["antenna_gain_dbi"], "bandwidth_hz": rd["bandwidth_mhz"] * 1e6,
+              "noise_figure_db": rd["noise_figure_db"]}
+    variants = {"default": None, **REVISION_B89["two_ray_variants"]}
+    cache = {}
+
+    def bfs(adj, src):
+        hp, q = {src: 0}, [src]
+        for u in q:
+            for w in adj[u]:
+                if w not in hp:
+                    hp[w] = hp[u] + 1
+                    q.append(w)
+        return hp
+
+    res = {v: {"link_epochs": 0, "distinct": set(), "hops": [], "cut": 0, "robot_epochs": 0,
+               "fail_horizon": 0, "fail_budget": 0} for v in variants}
+    for t, nodes, rk in epochs:
+        for var, vb in variants.items():
+            adj = {n[0]: [] for n in nodes}
+            for i in range(len(nodes)):
+                for j in range(i + 1, len(nodes)):
+                    (ka, pa, ha, wa), (kb, pb, hb, wb) = nodes[i], nodes[j]
+                    ck = (var,) + tuple(sorted(((pa, ha, wa), (pb, hb, wb))))
+                    if ck not in cache:
+                        if vb is None:
+                            cache[ck] = (rm.link(pa, pb, ha, hb, **rk), "")
+                        else:
+                            b = dict(base_b, tx_power_w=min(wa, wb), **vb)
+                            ok = rm.link(pa, pb, ha, hb, propagation="two_ray", budget=b, **rk)
+                            why = ""
+                            if not ok and rm.link(pa, pb, ha, hb, **rk):
+                                d = 0.0 if pa == pb else float(np.hypot(*(rm.xy[pa] - rm.xy[pb])))
+                                why = "horizon" if d > float(RA.mutual_horizon_m(ha, hb)) else "budget"
+                            cache[ck] = (ok, why)
+                    ok, why = cache[ck]
+                    if ok:
+                        adj[ka].append(kb)
+                        adj[kb].append(ka)
+                        res[var]["link_epochs"] += 1
+                        res[var]["distinct"].add(ck[1:])
+                    elif why:
+                        res[var]["fail_" + why] += 1
+            if "BASE" in adj:
+                hp = bfs(adj, "BASE")
+                for n in nodes:
+                    if n[0] == "BASE":
+                        continue
+                    res[var]["robot_epochs"] += 1
+                    if n[0] in hp:
+                        res[var]["hops"].append(hp[n[0]])
+                    else:
+                        res[var]["cut"] += 1
+    d0 = res["default"]
+    dist = {}
+    for (pa, ha, _), (pb, hb, _) in sorted(d0["distinct"]):
+        k = "-".join(f"{x:g}" for x in sorted((ha, hb)))
+        d = 0.0 if pa == pb else float(np.hypot(*(rm.xy[pa] - rm.xy[pb])))
+        n, mx, zero = dist.get(k, (0, 0.0, 0))
+        dist[k] = (n + 1, max(mx, d), zero + (d == 0.0))
+    out = {"month": month, "t0_h": t0, "t1_h": t1, "base_dte_share": round(share, 4), "epochs": len(epochs),
+           "run_s": round(run_s, 1), "scenario": REVISION_B89["month"],
+           "distinct_links_by_antennas_m": {k: {"n": n, "max_d_m": round(mx, 1), "coincident": z}
+                                            for k, (n, mx, z) in sorted(dist.items())},
+           "variants": {}}
+    for var, r in res.items():
+        hops = np.array(r["hops"], dtype=float)
+        out["variants"][var] = {
+            "budget": variants[var], "link_epochs": r["link_epochs"], "distinct_links": len(r["distinct"]),
+            "survive_share_link_epochs": round(r["link_epochs"] / d0["link_epochs"], 4) if d0["link_epochs"] else None,
+            "survive_distinct": f"{len(r['distinct'])} of {len(d0['distinct'])}",
+            "lost_link_epochs_horizon": r["fail_horizon"], "lost_link_epochs_budget": r["fail_budget"],
+            "robot_epochs_with_base_up": r["robot_epochs"],
+            "robot_epochs_cut_off_share": round(r["cut"] / r["robot_epochs"], 4) if r["robot_epochs"] else None,
+            "mean_hops_to_base_connected": round(float(hops.mean()), 3) if len(hops) else None,
+            "hop_histogram": {str(int(k)): int((hops == k).sum()) for k in np.unique(hops)}}
+    _save("month_links", out)
+    print("month_links:", json.dumps({k: (v["survive_distinct"], v["survive_share_link_epochs"],
+                                          v["mean_hops_to_base_connected"], v["robot_epochs_cut_off_share"])
+                                      for k, v in out["variants"].items()}))
+
+
 def cmd_measure(max_s):
     t0 = time.time()
     if not os.path.isfile(_cache("runs")) or not json.load(open(_cache("runs"))).get("done"):
@@ -350,6 +609,12 @@ def cmd_measure(max_s):
         step_safety()
     if not os.path.isfile(_cache("links")):
         step_links()
+    if not os.path.isfile(_cache("links_flat")):
+        step_links_flat()
+    if not os.path.isfile(_cache("month_links")):
+        step_month_links()
+    if not os.path.isfile(_cache("mesh_pairs")):
+        step_mesh_pairs()
     if not os.path.isfile(_cache("safety_batch")):
         step_safety_batch()
     if time.time() - t0 > max_s * 0.6:
@@ -363,6 +628,7 @@ def cmd_build():
     runs = json.load(open(_cache("runs")))["rows"]
     safety = json.load(open(_cache("safety")))
     links = json.load(open(_cache("links")))
+    links_flat = json.load(open(_cache("links_flat")))
     fo = json.load(open(_cache("failover")))
     mb = d["messages"]["bytes"]
     msgs, bph, ledger = {}, {}, {}
@@ -402,7 +668,9 @@ def cmd_build():
                                              "working data (0.05 MB)") if cls != "BASE" else
                                             "the full year's reservation table + ledger + policies + working data",
                         "power_w": {"value": d["power_w"][cls], "flag": "Assumed"},
-                        "link": links[cls]}
+                        "link": links_flat[cls],
+                        "link_free_space_upper_bound": dict(links[cls], law="free space (B-81); an upper bound, "
+                                                                           "B-89")}
     by = {}
     for lvl in d["failover"]["mtbf_levels_h"]:
         rows = [v for k, v in fo.items() if k.split(":")[0] == f"{lvl:g}"]
@@ -442,10 +710,108 @@ def cmd_build():
                   "link_kbps_needed_20_robots": round(bph["1"] * 20 * 8 / 3600.0 / 1000.0, 2),
                   "market_mb_per_day": round(per_type["1"]["auction (bid, award, claim)"] * 24.0 * 20
                                              * (mb["bid"] + mb["award"] + mb["claim"]) / 3.0 / 1e6, 4)}
+    out["h10"].update(_b89_traffic(out, per_type, bph))
+    out["revision"] = _b89_revision(out, links, links_flat)
     with open(OUT, "w", encoding="utf-8", newline="\n") as f:
         json.dump(out, f, indent=1, default=float)
         f.write("\n")
     print(json.dumps(out["h10"], indent=1), json.dumps(out["messages"]["per_robot_hour"]), json.dumps(ledger))
+
+
+def _b89_traffic(out, per_type, bph):
+    """B-89 items 2 and 3: secured LRIP sizes beside E48's, offered load for 20 robots and the channel rate it needs
+    (airtime: L x h / eta) on a scheduled channel and on slotted random access. Adds out["messages"]["secured"] and
+    out["airtime"]; returns the H10 additions."""
+    rv = REVISION_B89
+    month = json.load(open(_cache("month_links")))
+    h_meas = month["variants"]["default"]["mean_hops_to_base_connected"]
+    h_meas_tr = month["variants"]["16k_m10"]["mean_hops_to_base_connected"]
+    sec, msgs_sec = {}, {}
+    for m, rates in per_type.items():
+        trav = rates["grant"]
+        auction = rates["auction (bid, award, claim)"]
+        land = rates["landing_announcement"]
+        n_land = 1 + rv["alert_repeats"]
+        msgs_sec[m] = round(3600.0 * rv["position_hz"] + 2 * 3600.0 * rv["status_intent_hz"] + 3 * trav + auction
+                            + land * n_land, 1)
+        sec[m] = {}
+        for prof in ("mac8", "mac16"):
+            b = rv["lrip_bytes"][prof]
+            sec[m][prof] = round(3600.0 * rv["position_hz"] * b["position"]
+                                 + 3600.0 * rv["status_intent_hz"] * (b["status"] + b["intent"])
+                                 + trav * (b["reservation_request"] + b["grant"] + b["release"])
+                                 + auction * (b["bid"] + b["award"] + b["claim"]) / 3.0
+                                 + land * n_land * b["landing_announcement"], 1)
+    out["messages"]["secured"] = {"bytes_per_type": dict(rv["lrip_bytes"]),
+                                  "per_robot_hour": msgs_sec, "bytes_per_robot_hour": sec,
+                                  "note": "LRIP v0.1 (note 03 C2): POSITION 1 Hz + STATUS and INTENT 0.1 Hz replace E48's "
+                                          "48 B status at 1 Hz; landing ALERT sent once + 3 repeats; event messages "
+                                          "at E48's measured rates (C_AUCTION runs at 1x, 4x, 8x)"}
+    air = rv["airtime"]
+    n, ch = air["robots"], air["channel_kbps"]
+    loads = {"E48 unsecured (B-81)": bph["1"], "LRIP secured, MAC 8 B": sec["1"]["mac8"],
+             "LRIP secured, MAC 16 B": sec["1"]["mac16"]}
+    hops = {"1": 1.0, "2": 2.0, f"measured {h_meas:g} (E40 month, mean hops to BASE)": float(h_meas)}
+    rows = []
+    for lk, bph1 in loads.items():
+        L = bph1 * n * 8 / 3600.0 / 1000.0
+        for hk, h in hops.items():
+            for ek, eta in air["eta"].items():
+                need = L * h / eta
+                rows.append({"sizes": lk, "offered_kbps": round(L, 2), "hops": hk, "access": ek, "eta": round(eta, 4),
+                             "channel_kbps_needed": round(need, 2), "fits_16_kbps": bool(need <= ch)})
+    out["airtime"] = {"robots": n, "channel_kbps": ch, "rule": air["rule"], "rows": rows,
+                      "mean_hops_to_base": {"default radio": h_meas, "two_ray 16 kbit/s, 10 dB": h_meas_tr},
+                      "source": "note 03 sections B9 (Q9) and E3"}
+    L8 = sec["1"]["mac8"] * n * 8 / 3600.0 / 1000.0
+    sched = L8 * h_meas / air["eta"]["scheduled (TDMA, 20 % guard)"]
+    aloha = L8 * h_meas / air["eta"]["slotted random access (1/e)"]
+    return {"link_kbps_needed_20_robots_secured_mac8": round(L8, 2),
+            "link_kbps_needed_20_robots_secured_mac16": round(sec["1"]["mac16"] * n * 8 / 3600.0 / 1000.0, 2),
+            "airtime_kbps_20_robots_secured_mac8_scheduled": round(sched, 2),
+            "airtime_kbps_20_robots_secured_mac8_slotted_aloha": round(aloha, 2),
+            "carries_20_robots_1hz_on_16_kbps": {"scheduled": bool(sched <= ch), "slotted_aloha": bool(aloha <= ch),
+                                                 "hops": h_meas},
+            "airtime_note": "secured LRIP load (MAC 8 B) at the mean hop count to BASE measured in the E40 month; "
+                            "eta 0.8 for a base-scheduled channel, 1/e for slotted random access; other hop counts "
+                            "and profiles in airtime.rows"}
+
+
+def _b89_revision(out, links, links_flat):
+    """The revision block: old (free-space, B-81) and new (flat ground, B-89) values side by side."""
+    rv = REVISION_B89
+    old_new = {}
+    for cls in CLASSES:
+        o, nw = links[cls], links_flat[cls]
+        old_new[cls] = {"worst_hop_kbps": [o["worst_hop_kbps"], nw["worst_hop_kbps"]],
+                        "snr_db_worst_hop": [o["snr_db_worst_hop"], nw["snr_db_worst_hop"]],
+                        "latency_budget_ms": [o["latency_budget_ms"], nw["latency_budget_ms"]],
+                        "reachable_share": [o["reachable_share"], nw["reachable_share"]]}
+        if nw.get("beyond_horizon_at_worst_hop"):
+            old_new[cls]["note"] = (f"two {nw['antenna_m']:g} m antennas are beyond their {nw['mutual_horizon_m']:.0f} m "
+                                    f"smooth-Moon horizon at 5 km (rate if they could see each other "
+                                    f"{nw['worst_hop_kbps_if_visible']} kbit/s); at the horizon the hop carries "
+                                    f"{nw['longest_hop_kbps']} kbit/s")
+    month = json.load(open(_cache("month_links")))
+    mesh = json.load(open(_cache("mesh_pairs")))
+    h = out["h10"]
+    return {"date": rv["date"], "task": rv["task"], "reason": rv["reason"], "peer": rv["peer"],
+            "old_new_columns": ["B-81 free space (upper bound)", "B-89 flat ground (default)"],
+            "old_new_per_class": old_new,
+            "reachable_share_note": "B-81 counted BASE itself among 2,421 points (0.192 for 1 m antennas); B-89 counts "
+                                    "the 2,420 other points (0.191 under both laws: every mast link in terrain view "
+                                    "within 5 km also closes 16 kbit/s under the two-ray law)",
+            "h10_link": {"columns": ["B-81 unsecured, one hop", "B-89 LRIP secured (MAC 8 B), one hop"],
+                         "link_kbps_needed_20_robots": [h["link_kbps_needed_20_robots"],
+                                                        h["link_kbps_needed_20_robots_secured_mac8"]],
+                         "airtime_kbps_at_measured_hops": {
+                             "scheduled": h["airtime_kbps_20_robots_secured_mac8_scheduled"],
+                             "slotted_aloha": h["airtime_kbps_20_robots_secured_mac8_slotted_aloha"]}},
+            "two_ray_in_the_mesh": {"e40_month": month, "mesh_pairs": mesh,
+                                    "radio_py": "lunarsim.atc.radio RadioMesh.link / pair_links(propagation='two_ray', "
+                                                "budget=...); the default (None) is unchanged"},
+            "unchanged": "CPU, memory, messages per robot-hour and bytes at E48's sizes, ledger, failover: these "
+                         "measurements are not affected"}
 
 
 def main(argv=None):

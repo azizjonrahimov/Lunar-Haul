@@ -2347,7 +2347,9 @@ def check_r3_knife_edge() -> List[Dict]:
 
 def check_r4_link_budget() -> List[Dict]:
     """R4: E48's link budget per class recomputed from its design file (arithmetic), its constants against the exact
-    ones, and the Shannon bound."""
+    ones, and the Shannon bound. Since B-89 the free-space numbers are E48's labelled upper bound
+    (classes.*.link_free_space_upper_bound) and classes.*.link holds the flat-ground law; the 'flat ground' row
+    recomputes the latter with its own arithmetic (research note 03 section E1)."""
     t0 = time.time()
     rd = json.load(open(_repo("data", "scenarios", "E48-design.json"), encoding="utf-8"))["radio"]
     res = json.load(open(_repo("results", "E48_sizing.json"), encoding="utf-8"))["classes"]
@@ -2355,6 +2357,7 @@ def check_r4_link_budget() -> List[Dict]:
     worst_arith, worst_const, worst_rate, over = 0.0, 0.0, 0.0, 0
     lines = []
     for cls, r in res.items():
+        r = dict(r, link=r.get("link_free_space_upper_bound", r["link"]))
         f = rd["freq_ghz"][cls] * 1e9
         pt = 10 * math.log10(rd["tx_power_w"][cls] * 1000.0)
         fspl48 = 20 * math.log10(rd["worst_hop_m"]) + 20 * math.log10(f) - 147.55
@@ -2372,7 +2375,7 @@ def check_r4_link_budget() -> List[Dict]:
         cap = rd["bandwidth_mhz"] * 1e3 * math.log2(1 + 10 ** ((snr48 + rd["implementation_margin_db"]) / 10))
         over += r["link"]["worst_hop_kbps"] > cap + 1e-9
         lines.append(f"{cls} {r['link']['worst_hop_kbps']:.1f} kbit/s")
-    return [_row("R4", "arithmetic", "E48's link budget reproduces from its design file", 0.0, worst_arith, 0.05,
+    rows = [_row("R4", "arithmetic", "E48's free-space link budget reproduces from its design file", 0.0, worst_arith, 0.05,
                  "kbit/s", "per class: P_t + 2 G - FSPL - (kTB + NF) - margin, rate = B log2(1 + SNR), with E48's own "
                  "constants; stored rates are rounded to 0.1 kbit/s: " + ", ".join(lines), "analytic",
                  "code verification", "V", "P2", ["P3"], mode="abs", source="Friis 1946; Shannon 1948; tools/atc/run_e48.py",
@@ -2386,6 +2389,43 @@ def check_r4_link_budget() -> List[Dict]:
             _row("R4", "Shannon bound", "No link carries more than B log2(1 + SNR)", 0.0, float(over), 0.0, "classes",
                  f"{len(res)} classes; the stored rate against the capacity at the SNR before the implementation margin",
                  "analytic", "code verification", "V", "P2", ["P3"], mode="abs", source="Shannon 1948", t0=t0)]
+    if all("law" in r["link"] for r in res.values()):
+        rows.append(_r4_flat_ground(rd, res))
+    return rows
+
+
+def _r4_flat_ground(rd, res) -> Dict:
+    """R4 'flat ground' (B-89): the stored flat-ground rates at the 5 km hop and at the horizon-limited hop, and the
+    beyond-horizon flags, recomputed from the design constants with independent arithmetic: loss = free space up to
+    4 h1 h2 / lambda, then max(free space, 40 log10 d - 20 log10(h1 h2)); horizon sqrt(2 R h1) + sqrt(2 R h2)."""
+    t0 = time.time()
+    c, R = 299792458.0, 1737400.0
+    worst, flags, lines = 0.0, 0, []
+    for cls, r in res.items():
+        k = r["link"]
+        h1, h2 = float(k["antenna_m"]), float(k["peer_antenna_m"])
+        f = rd["freq_ghz"][cls] * 1e9
+        pt = 10 * math.log10(rd["tx_power_w"][cls] * 1000.0)
+        noise = -174 + 10 * math.log10(rd["bandwidth_mhz"] * 1e6) + rd["noise_figure_db"]
+        hor = math.sqrt(2 * R * h1) + math.sqrt(2 * R * h2)
+
+        def rate(d):
+            fs = 20 * math.log10(4 * math.pi * d * f / c)
+            loss = fs if d <= 4 * h1 * h2 * f / c else max(fs, 40 * math.log10(d) - 20 * math.log10(h1 * h2))
+            snr = pt + 2 * rd["antenna_gain_dbi"] - loss - noise - rd["implementation_margin_db"]
+            return rd["bandwidth_mhz"] * 1e3 * math.log2(1 + 10 ** (snr / 10))
+        d = rd["worst_hop_m"]
+        worst = max(worst, abs(rate(d) - k["worst_hop_kbps_if_visible"]), abs(rate(min(d, hor)) - k["longest_hop_kbps"]))
+        flags += (d > hor) != bool(k["beyond_horizon_at_worst_hop"])
+        lines.append(f"{cls} {k['worst_hop_kbps_if_visible']:.1f} at 5 km, {k['longest_hop_kbps']:.1f} at "
+                     f"{min(d, hor):.0f} m")
+    return _row("R4", "flat ground", "E48's flat-ground link budget (B-89) reproduces from its design file", 0.0,
+                worst + 1e3 * flags, 0.05, "kbit/s", "per class: free space to 4 h1 h2 / lambda, then the two-ray "
+                "asymptote 40 log10 d - 20 log10(h1 h2); the beyond-horizon flag against sqrt(2 R h1) + sqrt(2 R h2), "
+                "R = 1,737.4 km (a wrong flag adds 1,000); stored rates rounded to 0.1 kbit/s: " + ", ".join(lines),
+                "analytic", "code verification", "V", "P2", ["P3"], mode="abs",
+                source="research note 03 section E1; Hwu et al., NASA JSC 2008 (NTRS 20080015374); tools/atc/run_e48.py",
+                t0=t0, tol_src="half the stored rounding (0.1 kbit/s)")
 
 
 def check_e4_charging() -> List[Dict]:

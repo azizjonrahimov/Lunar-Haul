@@ -1,10 +1,10 @@
 {
  "version": 1,
- "generated": "2026-10-30T12:36:01-0700",
- "commit": "e63616c6ca825c4e6ab7a4448bd46c0ecd1d729a",
+ "generated": "2026-11-11T11:27:48-0800",
+ "commit": "23b1d5dba2abca82e3037ca60df5b50359881506",
  "summary": {
-  "rows": 185,
-  "passed": 159,
+  "rows": 186,
+  "passed": 160,
   "failed": 10,
   "skipped": 16,
   "bias_flags": 1
@@ -4767,7 +4767,7 @@
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: deterministic identity, 1e-9 relative"
   },
   {
-   "name": "E48's link budget reproduces from its design file",
+   "name": "E48's free-space link budget reproduces from its design file",
    "reference": 0.0,
    "simulated": 0.049908869964383484,
    "tolerance": 0.05,
@@ -4791,7 +4791,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.01,
+   "runtime_s": 0.0,
    "tolerance_source": "half the stored rounding (0.1 kbit/s)"
   },
   {
@@ -4819,7 +4819,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.01,
+   "runtime_s": 0.0,
    "tolerance_source": "half of E48's 0.1 dB SNR reporting precision"
   },
   {
@@ -4847,8 +4847,36 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.01,
+   "runtime_s": 0.0,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "E48's flat-ground link budget (B-89) reproduces from its design file",
+   "reference": 0.0,
+   "simulated": 0.04359732763319357,
+   "tolerance": 0.05,
+   "unit": "kbit/s",
+   "basis": "per class: free space to 4 h1 h2 / lambda, then the two-ray asymptote 40 log10 d - 20 log10(h1 h2); the beyond-horizon flag against sqrt(2 R h1) + sqrt(2 R h2), R = 1,737.4 km (a wrong flag adds 1,000); stored rates rounded to 0.1 kbit/s: LTV1 1573.6 at 5 km, 1573.6 at 5000 m, CARGO 1573.6 at 5 km, 1573.6 at 5000 m, SMALL 18.1 at 5 km, 57.9 at 3728 m, HOPPER 36.0 at 5 km, 113.5 at 3728 m, BASE 4716.9 at 5 km, 4716.9 at 5000 m",
+   "passed": true,
+   "rel_error": 43597327633.19357,
+   "source": "research note 03 section E1; Hwu et al., NASA JSC 2008 (NTRS 20080015374); tools/atc/run_e48.py",
+   "mode": "abs",
+   "error": 0.04359732763319357,
+   "skipped": "",
+   "id": "R4",
+   "sub": "flat ground",
+   "technique": "analytic",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P2",
+   "papers": [
+    "P3"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 0.0,
+   "tolerance_source": "half the stored rounding (0.1 kbit/s)"
   },
   {
    "name": "The bounded model checker proves the rules on its instances and catches every mutation (E45)",

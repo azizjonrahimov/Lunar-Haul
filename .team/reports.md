@@ -7893,3 +7893,92 @@ Pages: /, /about/, /method/, /paper/, /results/, /verification/, /stories/, /atc
 1. The /protocol/ and /network/ stubs are `noindex`. F-60 and F-61 should drop that.
 2. tools/ci/budgets.json is in BACKEND's folder; I added only the three page lines you asked for.
 3. lunarsim/atc/radio.py, results/E48_sizing.json and tools/atc/run_e48.py show as modified in git. They are not mine.
+
+## B-89 DONE 11:31 (E48 link budget and traffic corrected; the note's numbers reproduced) | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**The note's numbers, checked independently.** All of them reproduce:
+- 114.0 dB free space at 5 km; 132.0 dB and 148.0 dB flat ground for two 2.5 m and two 1 m antennas.
+- Rates at 5 km: 6,977 → 1,574 kbit/s (LTV and cargo), 5,011 → 18 (small), 5,989 → 36 (hopper).
+- Breakpoint 200 m (2.5 m, 2.4 GHz); mutual horizon 3.73 km for two 1 m antennas.
+- Table E1 and worked examples A and B, and the E3 loads (7.86 / 9.39 kbit/s).
+
+Two small items:
+1. Example A's 16 kbit/s ranges come out 3.65 / 7.30 km, against the note's 3.64 / 7.29. The note rounds the allowed loss to 154.5 dB; the unrounded value is 154.53 dB.
+2. **A step at the breakpoint.** "Free space to d_b = 4 h1 h2 / lambda, then 40 log d - 20 log(h1 h2)" has a 9.9 dB step at d_b (20 log10 pi). Between d_b and 4 pi h1 h2 / lambda the asymptote is below free space, so it is more optimistic there. I use the larger of the two losses beyond d_b. The law is then continuous, never below free space, and equal to the two-ray asymptote beyond 4 pi h1 h2 / lambda (628 m for 2.5 m antennas at 2.4 GHz). No 5 km number moves. The note's E1 sentence could say this.
+
+**1. Link section (E48 default is now flat ground with the horizon check; free space kept as `link_free_space_upper_bound`).**
+The worst hop is between two antennas of the class's own height. BASE is the 10 m mast at 5 W down to a 1 m robot.
+
+| Class | Worst hop, B-81 → B-89 (kbit/s) | SNR (dB) | Latency (ms) | Mast reachable |
+|---|---|---|---|---|
+| LTV1 | 6,976 → **1,574** | 21.0 → 3.0 | 72 → 73 | 0.233 → 0.233 |
+| CARGO | 6,976 → **1,574** | 21.0 → 3.0 | 70 → 72 | 0.233 → 0.233 |
+| SMALL | 5,010 → **0: beyond the 3,728 m horizon** (18.1 if visible; 57.9 at the horizon) | 14.9 → -19.0 | 71 → 112 | 0.192 → 0.191 |
+| HOPPER | 5,988 → **0: beyond the horizon** (36.0 if visible; 113.5 at the horizon) | 18.0 → -16.0 | 68 → 89 | 0.192 → 0.191 |
+| BASE | 9,289 → **4,717** downlink (uplink from a 0.25 W small robot: 1,180) | 28.0 → 14.0 | 20.5 → 20.6 | 1 |
+
+- The latency now uses the longest hop the horizon allows: min(5 km, horizon).
+- Ranges for 16 kbit/s and 1 Mbit/s per class are in `range_m_for_kbps`. For the 1 m classes: 3,728 m at 16 kbit/s (the horizon binds); 1,677 m (small) and 1,994 m (hopper) at 1 Mbit/s.
+- The reachable share (0.192 → 0.191) is the same quantity; only the denominator changed. B-81 counted BASE among 2,421 points; B-89 counts the 2,420 others. Every mast link in terrain view within 5 km also closes 16 kbit/s under two-ray (mast 10 m to a 1 m robot: horizon 7.76 km, budget range 16 km at 0.25 W).
+
+**2. Traffic as airtime (note 03 E3: R ≥ L x h / eta), 20 robots at 1 Hz, 16 kbit/s channel.**
+The mean hop count to BASE is measured in the E40 month: 1.024 hops (5,686 robot-epochs at 1 hop, 140 at 2). 5.6 % of robot-epochs are cut off from BASE.
+
+| Sizes | Load | 1 hop, scheduled / slotted | 2 hops, scheduled / slotted | 1.024 hops, scheduled / slotted |
+|---|---|---|---|---|
+| E48 unsecured (B-81) | 7.68 | 9.60 ✓ / 20.9 ✗ | 19.2 ✗ / 41.8 ✗ | 9.83 ✓ / 21.4 ✗ |
+| LRIP secured, MAC 8 B | **7.86** | 9.82 ✓ / 21.4 ✗ | 19.6 ✗ / 42.7 ✗ | **10.06 ✓ / 21.87 ✗** |
+| LRIP secured, MAC 16 B | 9.39 | 11.7 ✓ / 25.5 ✗ | 23.5 ✗ / 51.1 ✗ | 12.0 ✓ / 26.2 ✗ |
+
+All values in kbit/s; scheduled eta = 0.8, slotted eta = 1/e.
+
+**Answer:** 16 kbit/s still carries 20 robots at 1 Hz, with authentication, only on a base-scheduled channel with one-hop beacons, as LRIP's design consequence in note 03 E3 says. It does not on slotted random access (21.9 kbit/s needed). It does not if beacons are relayed two hops (19.6).
+
+**3. Secured sizes beside the old ones.** These are in `messages.secured`, with sizes from note 03 C2:
+- E48's 48 B status at 1 Hz becomes POSITION 41 B at 1 Hz + STATUS 43 B and INTENT 38 B at 0.1 Hz.
+- RESERVE_REQ 35, RESERVE_GRANT 94 (signed), RELEASE 31, TASK_BID 37, TASK_AWARD 92 (signed), TASK_STATE 33 (claim).
+- Landing ALERT 42, sent once plus 3 repeats.
+- With a 16-byte MAC: 49 / 51 / 46 / 43 / 94 / 39 / 45 / 92 / 41 / 50.
+
+Per robot-hour at 1x: 176,779 B (MAC 8) and 211,341 B (MAC 16), against E48's 172,812 B; 4,320 messages against 3,600. The ledger entry (128 B) is not on the air.
+
+**4. `lunarsim/atc/radio.py`: opt-in `propagation="two_ray"`.**
+- `link()` and `pair_links()` take `propagation=None|"two_ray"` and `budget={freq_hz, tx_power_w, gain_dbi, bandwidth_hz, noise_figure_db, margin_db, rate_bps}`.
+- The default budget is E48's constants with a 10 dB margin at 16 kbit/s.
+- The range cap is min(d_max_m, smooth-Moon mutual horizon, budget range).
+- Module functions: `horizon_m`, `mutual_horizon_m`, `breakpoint_m`, `free_space_loss_db`, `two_ray_loss_db`, `flat_ground_loss_db`, `snr_db`, `shannon_kbps`, `allowed_loss_db`, `budget_range_m`, `range_cap_m`.
+- The default (None) is unchanged: the same comparisons. All 49 test files pass and the cached E48 measurements are byte-identical. Not wired into `regimes.DEFAULTS`, so no runner cell key changes.
+
+**Survival under two-ray:**
+- **E40 month** (the B-80 "with" run: July 2028, 1,029 decision epochs, 8.4 s): **55 of 55 distinct links survive (11,454 of 11,454 link-epochs)** at every variant: 16 kbit/s with margins 3, 10 and 15 dB, and 1 Mbit/s at 10 dB. The reason: every link that was up is at most 1.01 km long (robots sit at nearby sites; the terrain blocks the longer paths). Hop counts and cut-off shares are unchanged.
+- **Whole mesh file** (robot to robot, d > 0, terrain line of sight within 5 km): 2.5 m at 1 W: 433,041 of 433,041 survive, even at 1 Mbit/s. 1 m pairs at 16 kbit/s: **93.1 %** at any margin, because the horizon binds. At 1 Mbit/s: 57.4 % (small, 0.25 W) and 65.7 % (hopper, 0.5 W).
+
+**Files:**
+- `lunarsim/atc/radio.py` (opt-in law).
+- `tools/atc/run_e48.py`: `REVISION_B89`; new steps `links_flat`, `mesh_pairs`, `month_links`, which run in `measure` when their cache is missing; `build` adds `link_free_space_upper_bound`, `messages.secured`, `airtime`, the h10 additions and a `revision` block with old and new side by side.
+- `results/E48_sizing.json` (rebuilt). Only `classes.*.link` values changed; everything else is identical. New keys: `airtime`, `revision`.
+- `lunarsim/vv5.py`: R4 now checks the free-space upper bound, plus a new R4 "flat ground" row recomputed with independent arithmetic, passing at 0.044 kbit/s.
+- `results/vv_phase5.json`: only the R4 rows replaced. The summary is now 186 rows, 160 passed, 10 failed, 16 skipped, 1 bias flag (was 185 / 159).
+- `tests/test_radio_two_ray.py` (new, 7 tests).
+- Caches `.cache/atc/e48/{links_flat,mesh_pairs,month_links}.json`.
+- Not changed: `data/scenarios/E48-design.json` (pre-registered).
+
+**How to test:**
+- `.venv\Scripts\python -m pytest tests/test_radio_two_ray.py tests/test_mesh.py tests/test_verification_phase5.py -q`: 7 + 10 + 17 passed.
+- The full suite, file by file: 49 files, all pass. The one failure on the first pass was R4 reading the new link column; it is fixed above.
+- `.venv\Scripts\python tools/atc/run_e48.py build` regenerates the file from the caches. Delete the three new caches and run `measure` to recompute them (about 1 min; light, no heavy job).
+
+**For FRONTEND (via LEAD):** `/atc/` section 3 (`site/src/atc/main.js:44-49`) shows `classes.*.link.worst_hop_kbps / 1e3` Mbit/s. It is now the flat-ground value, and it is **0 for SMALL and HOPPER**, flagged by `link.beyond_horizon_at_worst_hop`. Show instead "beyond the 3.7 km horizon at 5 km; `longest_hop_kbps` kbit/s at `longest_hop_m`". The free-space numbers are in `link_free_space_upper_bound`. The 20-robot sentence can add `h10.link_kbps_needed_20_robots_secured_mac8` (7.86) and the airtime pair (10.06 scheduled, fits; 21.87 slotted, does not). The `/verification/` page will show 186 rows.
+
+**P3 sentences that change (LEAD rebuilds):**
+1. `P3-E48-RESULTS-LINK` (`build_p3.py` e48_link): the per-class rates above. The small robot and hopper must use `beyond_horizon_at_worst_hop` / `longest_hop_kbps`, or the sentence will print "0 kbit/s at the worst hop". The latencies change to 73 / 72 / 112 / 89 / 21 ms. Mast reachable reads 19.1 % instead of 19.2 % (denominator, see 1).
+2. Table 6 (`table_e48_link`): same values. It needs a horizon column or note, and its caption should name the flat-ground law and the free-space upper bound.
+3. Section 4.2 (`part3_methods`, the E48 paragraph): "takes ... at the mesh's worst hop" should add "under the flat-ground two-ray law with the smooth-Moon horizon check (free space as an upper bound)".
+4. Section 3.4 (the radio unit): the "assumed byte layout ... 8 B header (Assumed; no serialiser is flown)" can now cite the secured LRIP sizes of note 03 C2. "7.68 kbit/s for 20 robots" becomes 7.86 secured, and the airtime result should be added.
+5. Every "7.68 kbit/s ... within target" sentence (abstract, results, H10, conclusion) should add: within target only on a scheduled channel at one hop (10.1 kbit/s needed); not on random access (21.9) or with two-hop relaying (19.6).
+
+**Questions for LEAD:**
+1. **The horizon test on real terrain.** The mesh's DEM clearance already includes the Moon's curvature, so the 6.9 % of 1 m mesh links that `two_ray` removes are visible on the DEM but lie beyond the smooth-sphere horizon (over valleys or crater floors). On real terrain the smooth horizon is conservative, and the flat-ground premise is also wrong there. Should `two_ray` in `radio.py` get a `horizon=False` option for terrain runs, keeping the horizon only in E48's flat-ground section?
+2. **The P3 abstract.** Is "16 kbit/s carries 20 robots only on a scheduled one-hop channel" the sentence you want? It qualifies H10's link clause; it does not change it.
+
+Next: B-90.
