@@ -1,0 +1,30 @@
+{
+ "format": "lunarsim-pnt-params",
+ "version": 2,
+ "status": "FROM_NOTE_01",
+ "status_note": "Values come from section D ('Simulation parameters for the backend engineer') of research_notes/Lunar Rover Interaction Protocol/01_positioning_and_time.md (11 Nov 2026). Source keys in square brackets and the tags MOON / MARS / EARTH / SIM / REQ / CALC are that note's; 'A' is that note's mark for an assumption anchored on its sources but not measured. Parameters listed under not_in_note_01 are not in the note's table: they are the task's values or B-96 assumptions and have no opened external source.",
+ "not_in_note_01": ["report_noise_m", "report_rate_hz", "nlos_rate_per_h", "nlos_burst_s", "lq_detect_prob", "lq_false_prob", "long_range_cap_m"],
+ "params": {
+  "uwb_range_noise_m": {"value": 0.3, "sweep": [0.1, 0.7], "unit": "m, 1-sigma", "source": "note 01 D: 'UWB two-way range error, line of sight' [PLANS18, NUCH24] EARTH", "meaning": "white noise of one short-range (UWB) two-way range"},
+  "uwb_range_max_m": {"value": 100.0, "sweep": [50.0, 300.0], "unit": "m", "source": "note 01 D: 'UWB maximum range', A (no lunar value is public; vendor claim of 290 m UNVERIFIED)", "meaning": "up to this true distance the range comes from the UWB radio"},
+  "long_range_noise_m": {"value": 3.0, "sweep": [1.0, 10.0], "unit": "m, 1-sigma", "source": "note 01 D: 'Long-range two-way ranging over the base radio (S-band or cellular)', A", "meaning": "white noise of one long-range two-way range, used beyond the UWB range"},
+  "long_range_cap_m": {"value": 5000.0, "sweep": [2000.0, 10000.0], "unit": "m", "source": "note 01 D gives the limit as 'radio line of sight from existing notes'; here: the smooth-Moon mutual horizon sqrt(2 R h_a) + sqrt(2 R h_b), R = 1,737.4 km (research_notes/Lunar ATC/vehicles_comms_internals.md section 2.5, Computed), with the trace's antenna heights, and at most this cap = the engine's radio range d_max (lunarsim/atc/radio.py, provisional B-70). Terrain blocking is not modelled.", "meaning": "beyond the limit A neither ranges to B nor hears its reports"},
+  "nlos_bias_m": {"value": 1.0, "sweep": [0.0, 5.0], "unit": "m, positive, constant during a burst", "source": "note 01 D: 'Range bias when the direct path is blocked', A", "meaning": "range bias while the direct path is blocked"},
+  "nlos_rate_per_h": {"value": 2.0, "sweep": [0.5, 10.0], "unit": "bursts per hour of stream", "source": "B-96 assumption (not in note 01)", "meaning": "Poisson rate of blocked-path bursts"},
+  "nlos_burst_s": {"value": [5.0, 60.0], "sweep": [2.0, 120.0], "unit": "s, uniform", "source": "B-96 assumption (not in note 01)", "meaning": "length of one burst"},
+  "lq_detect_prob": {"value": 0.8, "sweep": [0.5, 0.95], "unit": "probability per step", "source": "B-96 assumption (not in note 01)", "meaning": "the ranging radio's link-quality flag says degraded during a burst"},
+  "lq_false_prob": {"value": 0.05, "sweep": [0.01, 0.2], "unit": "probability per step", "source": "B-96 assumption (not in note 01)", "meaning": "the flag says degraded in line of sight"},
+  "dr_error_frac": {"value": 0.02, "sweep": [0.01, 0.025], "unit": "1-sigma per axis, fraction of distance driven since the last fix", "source": "note 01 D: 'Dead-reckoning drift, firm level ground, VO + star tracker' [MAIM07] EARTH; [DAF23, ATHA24] REQ", "meaning": "dead-reckoning error growth (a scale-factor error and a heading error, each constant between fixes)"},
+  "dr_error_frac_loose_no_vo": {"value": 0.10, "sweep": [0.05, 0.30], "unit": "fraction of distance", "source": "note 01 D: 'Dead-reckoning drift, loose soil or slope above 10 deg, no VO' [HELM06] EARTH", "meaning": "not used in distribution; the out-of-distribution set uses 0.05, the low end of this range"},
+  "fix_sigma_m": {"value": 1.7, "sweep": [0.4, 3.0], "unit": "m, 1-sigma; read here as per axis (the note says horizontal)", "source": "note 01 D: 'Absolute fix accuracy, terrain matching, sunlit' [DAF23] REQ (5 m at 3-sigma); lower end [NASH24] MARS", "meaning": "position error right after an absolute terrain fix; the dark value (3 m, [ATHA24]) is not simulated"},
+  "fix_spacing_m": {"value": 100.0, "sweep": [50.0, 500.0], "unit": "m of driving, mean (Poisson in distance)", "source": "note 01 D: 'Distance between terrain-fix opportunities, sunlit highlands', A", "meaning": "absolute fixes while driving; a fix is also taken at every stop. The 120 s stop the note gives for one fix is not in the traces and is not modelled"},
+  "report_noise_m": {"value": 0.5, "sweep": [0.2, 2.0], "unit": "m, 1-sigma per axis", "source": "LEAD, task B-96 (not in note 01)", "meaning": "white noise on each broadcast position report, on top of the sender's navigation error"},
+  "report_rate_hz": {"value": 1.0, "sweep": [1.0, 10.0], "unit": "Hz", "source": "LEAD, task B-96 (not in note 01)", "meaning": "position report and ranging rate"}
+ },
+ "ood": {
+  "note": "out-of-distribution test set: the true errors change, the values A's filter assumes (above) do not",
+  "range_noise_mult": 2.0,
+  "dr_error_frac_true": 0.05,
+  "source": "LEAD, task B-96; 0.05 is the low end of note 01 D's loose-soil range, 2 x 0.3 m and 2 x 3 m are inside its ranging sweeps"
+ }
+}

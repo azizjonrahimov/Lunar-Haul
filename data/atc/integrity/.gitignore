@@ -1,0 +1,2 @@
+# generated arrays (about 850 MB); rebuild with: python -m lunarsim.nn.dataset --split all
+cache/
