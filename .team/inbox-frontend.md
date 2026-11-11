@@ -704,3 +704,47 @@ Pages deploy check.
 ##   (a job posted, bids, the winner, payment, settlement on Earth later) fed by B-76, and a Mars toggle in the
 ##   encounter sandbox once B-82 lands.
 ## - F-56 lists the papers as P1, P2, P3 with the new titles.
+
+# ===== PHASE 6 (LEAD, 11 Nov 2026): the Lunar Rover Interaction Protocol. Read `.team/PLAN-phase6.md` first. =====
+## Style reference for every new figure: `research_notes/Lunar Rover Interaction Protocol/sources/
+## explainer_style_reference.jpg` and note 00 section 3: the title is a question; the object is cut open or
+## taken apart; every label carries a real number from the model that drives the motion; one calm interaction.
+## The `anatomy` skill is installed for all projects (`~/.claude/skills/anatomy`): use it for isometric
+## cutaways. Numbers come from data files, never typed. Finish the open Phase 5 items (F-54, F-55, F-56) first
+## where their data exists; F-57 stays last.
+
+## F-64 [OPEN] UI/UX review of every page, then fixes
+Run a design review of each page (home, /world/, /atc/, /vehicles/, /lab/, /stories/, /results/, /paper/,
+/verification/, /method/, /about/) at 1280 and 390 px, light and dark where the page has both: hierarchy,
+spacing, type scale, contrast (WCAG AA), motion, loading and empty states, keyboard use. Write the findings as
+a table in the report (page, issue, severity, fix), fix the high and medium ones, keep the budgets.
+
+## F-60 [QUEUED: opens when LEAD reports notes 01-04] /protocol/ page: eight problems, eight answers
+One section per problem group (positioning, map, time, communication, the protocol, coordination, reliability
+and security, market). Each section: the question in the owner's words, our answer in two sentences, the method,
+who we would work with, one interactive figure, and a link to the paper section. Figures (data from B-99, mock
+clearly marked until then): (1) a rover's position error growing with distance and collapsing at each fix,
+layers switchable; (2) map tiles syncing hazards first when a rover returns; (3) two clocks drifting and a
+resync, with the metres of ranging error they cause; (4) a link budget you can drag (distance, antenna height,
+band) with the hill in the way and the relay path; (5) a message taken apart byte by byte, and a capability
+manifest matched to a task; (6) an auction, a failure and the takeover on one timeline; (7) a wrong position
+report being caught, with the test statistic crossing its threshold; (8) a table of who has flown what.
+
+## F-61 [QUEUED: needs B-96] /network/ page: the network, its loss landscape and the descent path
+A 3D surface of the loss over two directions in weight space with the training path drawn on it and a scrubber
+over epochs; beside it the network's layers with live activations for a chosen example, the baseline it is
+compared with, the test metrics (event-level precision and recall, detection delay), and "where it runs": the
+vehicle cutaway with the computer highlighted, the inputs it reads (ranging radio, odometry) and the output it
+gates (the safety check). Tier 0 fallback: a 2D contour plot. Follow the dataviz rules for colour.
+
+## F-62 [QUEUED] Cutaways of the navigation, radio and clock hardware
+With the anatomy skill: the rover's navigation stack as a physical object (cameras, IMU, star tracker or sun
+sensor, ranging radio and antenna, clock, computer), each part labelled with its measured or sourced number
+from note 01 and E48; labelled "our design" where it is ours and "published" where it is the maker's.
+
+## F-63 [BLOCKED: the owner must sign in with `higgsfield auth login`] Higgsfield stills and clips
+Hero stills and one short clip per story, generated with the Higgsfield CLI, each captioned "illustration,
+AI-generated". Never used as evidence and never in a results figure. Keep within the page weight budgets.
+
+## F-65 [QUEUED, after the papers are rebuilt] Paper pages and results
+/paper/ shows the revised P1-P3 with the proved / tested / assumed tables; /results/ gains the Phase 6 numbers.

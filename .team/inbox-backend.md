@@ -1116,3 +1116,84 @@ Connecting Ridge road geometry with Mars parameters as the controlled case; if a
 site (e.g. Jezero) can be read with the existing terrain code in under a day, add it as a second geometry,
 otherwise say why not. Outputs: encounter bounds per type on Mars, the delay cost of the rules, and E43's
 uncoordinated-vs-ATC comparison with Mars round trips (Earth hand-resolution becomes 6-44 min plus staff time).
+
+# ===== PHASE 6 (LEAD, 11 Nov 2026): the Lunar Rover Interaction Protocol. Read `.team/PLAN-phase6.md` first. =====
+## Rules for every B-9x task: new code is opt-in (Scenario / p5 fields default off; baselines byte-identical);
+## every parameter comes from the named research note's "Simulation parameters" table with its source in a
+## comment or in the JSON; every experiment writes `results/E5x_*.json` + a CSV table, with seeds, and a
+## baseline row; tests in `tests/`; use `.venv\Scripts\python -m pytest` (console .exe scripts are broken).
+## `lunarsim/nn/` and `experiments/phase6/nn/` belong to LEAD's agent (B-96): do not edit them.
+
+## B-90 [QUEUED: opens when LEAD reports note 01 in reports.md] Positioning layer (problem 1; E50)
+`lunarsim/atc/pnt.py`: each vehicle carries a true position (the engine's) and an estimated one. Layers, each
+switchable: (a) dead reckoning: error grows with distance driven (percent of distance, by terrain class) plus a
+heading random walk; (b) cooperative ranging to neighbours and base beacons inside radio range (covariance
+update, simple EKF or covariance intersection); (c) absolute fixes from terrain / horizon matching with a
+stated accuracy and availability (none in shadow unless lit); (d) a LunaNet navigation service with accuracy
+and availability by year. Output per vehicle per step: error (m), 95 % bound. The safety check
+(`lunarsim/atc/safety.py`) gains an optional separation margin = base margin + k x the pair's position bound.
+E50: a month at 1x, 4x, 8x fleet, layers added one at a time; report error distributions (median, p95, max),
+time above the separation budget, violations with and without the margin, and the delay cost of the margin
+against perfect position (H9, H10). Table + JSON + a per-layer trace for the site.
+
+## B-91 [QUEUED after B-90] Clocks and time (problem 3; E51)
+Per-vehicle clock with offset and drift for two oscillator classes (note 01 table), two-way time transfer at
+each contact with the stated accuracy, and the Earth-Moon rate offset as a constant term. Effects wired in:
+ranging error += c x relative clock error; road reservations are stamped in each vehicle's own clock.
+E51: sweep oscillator class x resync interval; report ranging error added, reservation conflicts caused by
+clock error alone, and the longest safe time without a resync for each use (H11).
+
+## B-93 [QUEUED: opens when LEAD reports note 03] Protocol messages and codec (problem 5; E53)
+`lunarsim/atc/lrip/`: the LRIP v0.1 message catalogue from note 03 section C as (1) a schema file
+(`lunarsim/schemas/lrip-v0.1.json`), (2) a bit-packed binary codec and a CBOR codec with round-trip tests,
+(3) the capability manifest (schema + two examples) and a `can_do(task, manifest)` matcher used by the auction
+to filter bidders, (4) the versioning rule (unknown fields skipped, major version mismatch refused) with tests,
+(5) byte counts per message including Space Packet, security and bundle overhead. Replace the size constants in
+`lunarsim/atc/messages.py` with the codec's real sizes behind an option. E53: bit rate per rover and per mesh
+link at 0.1, 1 and 10 Hz position reports for 5 to 80 rovers, with and without authentication, against the link
+rates of note 03 (H13). Conformance vectors (hex) exported for FRONTEND.
+
+## B-94 [QUEUED after B-93] Store-and-forward and lost link (problems 4 and 6; E54)
+On the radio mesh: bundles with custody, a contact plan from the mesh's predicted links, per-hop queues with a
+byte limit, expiry. The lost-link state machine of note 03 (timeouts from the table): keep driving to the end
+of the reserved segment, stop, wait, return to the last link point, release reservations and auctioned tasks at
+their timeouts; re-auction on heartbeat loss. E54: drop-and-retry versus store-and-forward versus
+store-and-forward + lost-link rule, at three radio qualities and with a 14-day Earth blackout; jobs lost,
+delay, age of information at the base, stuck reservations (H14).
+
+## B-92 [QUEUED: opens when LEAD reports note 02] Shared map (problem 2; E52)
+A base-held authoritative map of versioned tiles (layers and tile sizes from note 02 section C), per-vehicle
+copies, hazard reports from vehicles accepted by the base under the stated rule, sync on contact ordered
+hazards first with per-tile hashes. E52: a rover out of contact for 1 h to 14 days; bytes to sync versus a
+full resend, time until its hazard layer is current at each link rate, hazards hit because of a stale map
+(H12). Coordinates: one function pair ME lat/lon/radius <-> local east-north-up at the base datum with a
+round-trip test and the PA-versus-ME error as a verification row.
+
+## B-95 [QUEUED after B-93] Integrity, authentication and consensus (problem 7; E55)
+(1) Message authentication model: a t-bit MAC and an anti-replay counter per sender; forged and replayed
+messages injected at a rate; count accepted forgeries against the 2^-t bound. (2) Position-report integrity
+baseline: chi-square innovation test of a neighbour's reported position against own range (and bearing where
+the class has it), threshold from a chosen false-alarm rate; fault types: jump, slow drift, frozen report,
+systematic frame error (PA for ME). (3) Trimmed-mean consensus (W-MSR) for the shared estimate of a beacon or
+a hazard position with f faulty rovers, and a check of the mesh's robustness condition. E55: detection delay,
+event-level precision and recall per fault type, consensus error versus f and mesh density (H15 baseline, H16).
+LEAD's agent builds the fault generator and dataset for B-96 in `lunarsim/nn/`; reuse its fault definitions
+(import them) so E55 and E56 score the same events.
+
+## B-97 [QUEUED after B-95] Real-data checks
+(1) SMAP + MSL telemetry (public, from the telemanom release): run the z-score baseline and the B-96 detector
+family at event level, as a check of the method on real spacecraft data; never tune on the labelled events.
+(2) Artemis II (PDS; note 02 lists what is downloadable): a small set of OpNav or crew images of the Moon with
+SPICE truth; fit the lunar limb, recover range and direction, compare with SPICE; report the error. This tests
+our position-from-image geometry on real data. Keep downloads under 200 MB in `data/external/` (git-ignored)
+with a manifest (URL, bytes, sha256). If the images lack usable metadata, say so and stop.
+
+## B-98 [QUEUED] Verification rows for Phase 6 (`lunarsim/vv6.py`, `results/vv_phase6.json`)
+One row per formula in the notes' proof sections (link budget worked example, radio horizon, clock rate
+offset, c x dt, MAC forgery bound, chi-square threshold, dead-reckoning growth, coordinate round trip, codec
+round trips, sync byte count) and per degenerate case (all layers off equals Phase 5 bytes; perfect clocks
+equal no clock model; zero faults gives zero alarms above the false-alarm rate).
+
+## B-99 [QUEUED, last] Site data for /protocol/ and /network/
+Small JSON for each figure (E50 error traces per layer, E53 bit-rate table, E54 timeline, E55 detector curves,
+the B-96 loss surface grid and descent path), sizes and sha256 in an index, as in B-80.
