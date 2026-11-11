@@ -713,13 +713,13 @@ Pages deploy check.
 ## cutaways. Numbers come from data files, never typed. Finish the open Phase 5 items (F-54, F-55, F-56) first
 ## where their data exists; F-57 stays last.
 
-## F-64 [OPEN] UI/UX review of every page, then fixes
+## F-64 [DONE 11 Nov 10:48, uncommitted] UI/UX review of every page, then fixes
 Run a design review of each page (home, /world/, /atc/, /vehicles/, /lab/, /stories/, /results/, /paper/,
 /verification/, /method/, /about/) at 1280 and 390 px, light and dark where the page has both: hierarchy,
 spacing, type scale, contrast (WCAG AA), motion, loading and empty states, keyboard use. Write the findings as
 a table in the report (page, issue, severity, fix), fix the high and medium ones, keep the budgets.
 
-## F-60 [QUEUED: opens when LEAD reports notes 01-04] /protocol/ page: eight problems, eight answers
+## F-60 [OPEN after F-64; notes 01 to 04 are committed, section A of each holds the answers] /protocol/ page: eight problems, eight answers
 One section per problem group (positioning, map, time, communication, the protocol, coordination, reliability
 and security, market). Each section: the question in the owner's words, our answer in two sentences, the method,
 who we would work with, one interactive figure, and a link to the paper section. Figures (data from B-99, mock
