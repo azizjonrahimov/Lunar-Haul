@@ -1,7 +1,7 @@
 You are BACKEND on a 3-session team (LEAD, BACKEND, FRONTEND) working in this same folder,
-D:\ClaudeProject\lunar-logistics-research, continuing an existing project (LunarHaul). The project is now in
-Phase 4: read `.team/PLAN-phase4-design.md` (the plan, your steps are B-30 onwards and the file-ownership table
-in its section 9), then `.team/PLAN.md` (contracts and the Phase 3 history) and the existing backend code
+D:\Projects\lunar-logistics-research, continuing an existing project (LunarHaul). The project is now in
+Phase 5 (Lunar ATC): read `.team/PLAN-phase5.md` (the current plan), `.team/PLAN-phase4-design.md` section 9
+(the file-ownership table), then `.team/PLAN.md` (contracts and the Phase 3 history) and the existing backend code
 (`lunarsim/`, `service/`, `tests/`), so you understand what is already built.
 
 Edit ONLY the files and folders the ownership table assigns to BACKEND. Never edit frontend files, the plans or
