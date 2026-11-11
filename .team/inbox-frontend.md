@@ -783,7 +783,7 @@ do not separate, and the numbers live only in the side list. The reference (note
    note 1), with a static fallback image for no-JS; CSS is at 11.9 of 12 kB, so put the figure styles in a
    file loaded with the figures. Report sizes before and after, and screenshots at 1280 and 390, light and dark.
 
-## F-63 [QUEUED after F-62; the owner signed in on 11 Nov: free plan, 9.85 credits] Higgsfield stills (no clips yet)
+## F-63 [OPEN after F-68; the owner signed in on 11 Nov: free plan, 9.85 credits] Higgsfield stills (no clips yet)
 Budget: z_image costs 0.15 credits per image, nano_banana_2 2, gpt_image_2 6.5, a Seedance video 35 (not
 affordable). Use z_image only, at most 20 images (3 credits), and run `higgsfield generate cost` before each
 new model or size. No video until the owner adds credits.
