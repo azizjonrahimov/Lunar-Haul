@@ -74,3 +74,8 @@
 .st-view .st-owners[hidden] { display: none; }
 .st-view .st-owners li { display: flex; align-items: center; gap: 0.4rem; }
 .st-swatch { width: 0.75rem; height: 0.75rem; border-radius: 50%; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35); }
+
+/* F-63: the story's illustration (AI-generated, labelled) at the top of its card */
+.st-ill { margin: calc(-1 * var(--s-4)) calc(-1 * var(--s-4)) 0; }
+.st-ill img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-radius: var(--radius-panel) var(--radius-panel) 0 0; background: var(--bg-2); }
+.st-ill figcaption { font-size: 0.75rem; color: var(--ink-2); padding: var(--s-1) var(--s-4) 0; }

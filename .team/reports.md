@@ -8164,3 +8164,43 @@ The note 01 values are in src/protocol/params.js; four were added: gyro, star tr
 1. /protocol/ eager JS is at 19.6 of 20 kB. The next feature on the page needs a trim or a budget decision.
 2. I briefly ran `git rm --cached` on the deleted nav-stack.js and undid it at once with `git restore --staged`. The index has nothing staged from me; the deletion is a plain working-tree change for your commit.
 3. The legends say the mast heights (Fig 1c) and the sizes (Fig 1b) are schematic and the ruler is logarithmic. The numbers are the model's.
+
+## F-63 DONE 13:23 | site/public/illustrations/ (new: 10 WebP files), site/src/stories/stories.js, site/src/stories/stories.css, site/protocol/index.html, site/src/protocol/protocol.css | how to check: /stories/ (one still per card), /protocol/ (hero under the intro) | from BACKEND: nothing | for LEAD: notes at the end
+**Spend:** z_image only, at 16:9; `higgsfield generate cost` checked first (0.15 credits each). 8 images = 1.2 credits; the balance went from 9.85 to 8.65. No video.
+
+**What was made:**
+
+| Still | Generations | Kept |
+|---|---|---|
+| Story "What Earth's horizon costs" | 2 | the second |
+| Story "Learned vs classical landing" | 1 | it |
+| Story "How far should the pads be?" | 2 | the second |
+| Story "Why sharing rovers cuts the wait" | 2 | the second |
+| /protocol/ hero (two rovers of different designs, a beacon mast) | 1 | it |
+
+Regenerated because:
+- "Earth's horizon": the first Earth was large and high in the sky, against the story's point that Earth is low and hidden at the pole.
+- "Pads": the first base looked like an Earth polar station, with pitched-roof huts and windows; the second has domes in regolith berms, solar towers, and two bermed pads joined by a track.
+- "Sharing rovers": the first had wooden pallets and near-identical rovers.
+
+The model still draws Earth far larger than its true 2°, so that card's caption says so.
+
+**Where and how:**
+- /stories/: each published story's card opens with its still: 640 and 1280 wide WebP with srcset, lazy-loaded, width and height set (no layout shift), descriptive alt text.
+- /protocol/: the hero under the intro (fetchpriority low).
+- Every image is captioned on the page: "Illustration, AI-generated. Not a result." ("Not a real scene and not a result." on /protocol/).
+- None is used as evidence or in a results figure, and none is on the paper or results pages.
+
+**Weight:**
+- Per card 17-27 kB (640 wide) or 49-90 kB (1280 wide, used only by the 2x and wide layouts).
+- The /protocol/ hero is 25 kB (640) or 78 kB (1280).
+- Images are not in the page budgets; JS, CSS and data are unchanged (/protocol/ 19.6 of 20 kB JS, unchanged).
+
+**Checks:**
+- Headless, /stories/ and /protocol/ at 1280 light and 390 dark: 4 cards with 4 loaded images, the hero loaded, no overflow, 0 contrast fails, no image without alt, no console errors.
+- Build OK; tests 33/33; budgets OK.
+- **A bug I introduced and fixed before reporting:** the illustration map was first declared below the top-level `await list(index)` in stories.js. The story list then threw (a temporal-dead-zone error) and the page showed no cards. My console check did not catch it, because a failed top-level await in a module is not a console error; the screenshot did. It is fixed, and the re-check passed.
+
+**For LEAD:**
+1. site/public/illustrations/ is new and untracked: 10 files, 386 kB in all. Commit it with the code, or tell me to move it under a staged folder.
+2. The owner's 8.65 credits are untouched beyond this task.

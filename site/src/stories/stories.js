@@ -42,6 +42,14 @@ function intervalChart(rows, W = 360) {
     `<p class="small muted st-chart-key">Dot: the estimate. Line: the likely range (95 % interval).</p>`;
 }
 
+// F-63: one AI-generated still per story (Higgsfield z_image, 11 Nov 2026), shown as an illustration only, never as
+// evidence (public/illustrations/<id>-640|1280.webp)
+const ILLUSTRATION = {
+  'earth-horizon': { alt: 'A small cargo rover on grey lunar ground, with the Earth sitting on the horizon behind low hills.', note: 'Earth is drawn far larger than its true 2 degrees' },
+  'learned-landing': { alt: 'A small four-legged cargo lander touching down on a landing pad with a low berm, dust spreading under it.' },
+  'pads-distance': { alt: 'A small lunar base of domes in regolith berms with two solar towers, and two landing pads across the plain joined to it by a track.' },
+  'sharing-rovers': { alt: 'Three small cargo rovers of different designs driving in a line along a regolith road, two carrying metal containers.' },
+};
 const index = await getJson(DATA + 'index.json').catch(e => { $('st-list').textContent = `The stories could not load (${e.message}).`; return null; });
 if (index && !sid) await list(index);
 else if (index) await play(index.stories.find(s => s.id === sid && s.status === 'published'));
@@ -52,7 +60,10 @@ async function list(ix) {
   const docs = await Promise.all(pub.map(s => getJson(DATA + s.file).catch(() => null)));
   $('st-list').replaceChildren(...pub.map((s, i) => {
     const d = docs[i];
+    const ill = ILLUSTRATION[s.id];
     return h('article', { class: 'ui-glass st-card' },
+      ill ? h('figure', { class: 'st-ill' }, h('img', { src: `${BASE}illustrations/${s.id}-640.webp`, srcset: `${BASE}illustrations/${s.id}-640.webp 640w, ${BASE}illustrations/${s.id}-1280.webp 1280w`, sizes: '(max-width: 600px) 100vw, 420px', width: 640, height: 360, loading: 'lazy', decoding: 'async', alt: ill.alt }),
+        h('figcaption', {}, `Illustration, AI-generated${ill.note ? `; ${ill.note}` : ''}. Not a result.`)) : null,
       h('p', { class: 'ui-label' }, `${s.steps} steps · ${d?.scene?.startsWith('lander') ? 'lander lab' : 'the base in 3D'}`),
       h('h2', { class: 'st-card-title' }, h('a', { href: `?s=${encodeURIComponent(s.id)}` }, s.title)),
       d ? h('p', { class: 'st-card-sum', html: withNumbers(d.summary, d.numbers) }) : null);

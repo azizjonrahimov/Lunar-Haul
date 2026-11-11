@@ -138,3 +138,6 @@
 .an-slot { margin-top: var(--s-6); min-height: 18rem; }
 .an-slot-h { font-size: 1.05rem; margin: 0 0 var(--s-3); }
 .an-slot > img { display: block; width: 100%; height: auto; border-radius: var(--radius-panel); }
+.pr-hero { margin: var(--s-4) 0 0; max-width: 860px; }
+.pr-hero img { display: block; width: 100%; height: auto; border-radius: var(--radius-panel); background: #111; }
+.pr-hero figcaption { font-size: 0.75rem; color: var(--ink-2); margin-top: var(--s-1); }

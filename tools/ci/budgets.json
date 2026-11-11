@@ -40,7 +40,21 @@
       "fonts": [
         "assets/source-sans-3-latin-wght-italic-*.woff2"
       ],
-      "fonts_kb": 60
+      "fonts_kb": 60,
+      "data": [
+        "protocol/anatomy/nav.html",
+        "protocol/anatomy/clock.html",
+        "protocol/anatomy/radio.html"
+      ],
+      "data_gzip_kb": 80,
+      "lazy": [
+        "assets/protocol-anatomy-live-????????.js"
+      ],
+      "lazy_gzip_kb": 5,
+      "lazy_css": [
+        "protocol/anatomy/anatomy.css"
+      ],
+      "lazy_css_gzip_kb": 5
     },
     "network/index.html": {
       "js_gzip_kb": 5,
