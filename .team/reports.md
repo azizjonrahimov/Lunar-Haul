@@ -7754,3 +7754,72 @@ Files: site/src/world/atc-pair.js (new), site/src/world/v2.js, site/src/world/v2
   crystal drift measured on the Moon by LuGRE is 0 to 8e-7 (the 1 ppm was an assumption); the OSTP memo's 58.7 us/day omits the Moon's own potential, 56.02 us/day stands.
 - For BACKEND: the reservation margin is set by position error / speed (5 m at 1 m/s = 5 s), not by clock error. UWB ranging default range is 100 m (assumed), 0.3 m 1-sigma.
 - The venv was repaired (pyvenv.cfg); use `.venv\Scripts\python -m pytest`. `lunarsim/nn/`, `experiments/phase6/nn/`, `data/atc/integrity/` belong to LEAD's agent (B-96).
+
+## F-64 DONE 10:48 | site/src/styles/base.css, site/src/verify/verify.css, site/src/results/results.css, site/src/account/account.css, site/src/simulator/v3.css, site/lib/results.mjs, site/src/atc/atc.css, site/lab/rover/index.html, site/src/rover/lab.css, site/src/world/v2.js, site/src/world/v2.css | how to check: below | from BACKEND: nothing | for LEAD: three big items at the end
+**Method.** Production build served by one `vite preview`, driven by gstack's headless browser (`$B`; Aside does not run on Windows). For each page, at 1280 and 390 px, light and dark where the page has both (/world/, /vehicles/ and /lab/lander/ are instrument pages, dark only), the script measured:
+- text contrast against the composited background behind it (AA: 4.5:1, or 3:1 for large text);
+- horizontal overflow;
+- targets under 24 px;
+- text under 12 px;
+- heading order;
+- unnamed controls;
+- images without alt;
+- console errors;
+- a keyboard-focus probe (25 tabbable elements per page: every one shows a visible indicator on /, /atc/, /results/, /stories/);
+- viewport screenshots read by eye for hierarchy and spacing.
+
+Pages: /, /about/, /method/, /paper/, /results/, /verification/, /stories/, /atc/, /world/, /vehicles/, /lab/lander/, /lab/rover/ (/lab/ itself has no page, see L7).
+
+**Before the fixes:**
+- Console errors: none on any page.
+- Page-wide horizontal scroll: none.
+- Heading order: one h1 per page, no skipped levels anywhere.
+
+| # | Page | Issue | Severity | Fix |
+|---|---|---|---|---|
+| H1 | / (light) | The hero caption ("The view: one simulated year...") was 60 % black on the always-black hero: 1.02:1, invisible | High | `.hero` now carries the dark tokens (ink-2, hairline, link, focus, flags) in both themes. Now passes |
+| M1 | / (light) | Hero "Modelled" flags used the light-theme magenta on black: 3.35:1 | Medium | Same token block. Now passes |
+| M2 | /verification/ (light) | "fail" results and the red summary badge in `--tol-red`: 3.09:1 (27 texts) | Medium | Text uses `--neg` (b3261e light / ff8a80 dark). Same change for `.pill.fail` on /results/ and /account/ and the simulator's engine error line. Borders keep `--tol-red` (3:1 is enough for them). Now passes |
+| M3 | /verification/ (light) | "not run" labels and the idle badge in `--ink-3`: 3.35:1 (16 texts) | Medium | `--ink-2`. The site-wide `.stub` notes are moved too. 0 fails in 2,717 texts, light and dark |
+| M4 | /results/ | Figure alt text came from file names ("Figure lander mc", "Version 2 figure: tuned") for all 27 figures | Medium | The alt is now the caption's first sentence ("Figure: Terminal-descent Monte Carlo per lander class"). The full caption stays in the figcaption. The captions JSON can still set `alt` |
+| M5 | /lab/rover/ | In the toolbars, a label could sit at the end of one line with its select on the next ("Soil", "To", "Lighting"), at 1280 and at 390 | Medium | Each label and its control is wrapped as one inline-flex unit (ids unchanged). The select shrinks to fit on a phone |
+| M6 | /world/ (390) | 14 scene chips stacked one per row: about 1.5 screens before the 3D view. The four groups showed no names at any width | Medium | Each group has a visible name (Base size and job rule, Pad distance, Earth link, Fleet; aria-hidden, since the toolbar's aria-label already says it). Under 600 px each group is one row that scrolls sideways, so 4 rows instead of 14. Padding leaves room for the focus ring |
+| M7 | /atc/ | The "see it in 3D" links in the sizing table head were 79 x 18 px (target under 24 px) | Medium | `min-height: var(--target)` |
+| L1 | /, /atc/, /results/, labs, /world/, /vehicles/ | Provenance flags are 9.4-11 px text and 18-19 px tall buttons | Low | Kept. They are badges inline with the number they qualify (the WCAG 2.5.8 inline exception) and pass contrast |
+| L2 | /lab/lander/ | Two "on" checkboxes are 13 x 13 px | Low | Not changed: they sit inside their labels, so the click target is the whole label |
+| L3 | /lab/lander/ | The reward sliders are 16 px tall | Low | Not changed |
+| L4 | /lab/lander/ | The Monte Carlo legend dots are 3.2-4.4:1 | Low | Not changed: they are graphics and pass the 3:1 needed for non-text |
+| L5 | /lab/rover/ | The "SPEED" label (shared timescale control) is uppercase display type, while the other labels in the same toolbar are sentence case | Low | Listed, not changed (shared component on every animated page) |
+| L6 | /lab/lander/ | The "Recorded descents in 3D" paragraph is in full ink while the page lead is in ink-2, so the second paragraph reads louder than the first | Low | Listed |
+| L7 | /lab/ | No page. The preview falls back to the home page, and Pages would serve the 404. Nothing links to it | Low | Listed (a hub page needs a vite PAGES entry and a budget line) |
+| L8 | /stories/ | The fourth card sits alone in its row at 1280 | Low | Listed (it fixes itself when the fifth story lands) |
+
+**After the fixes:**
+- Re-audited /, /verification/, /results/, /atc/ and /lab/rover/ in light and dark at 1280 and 390, plus /world/ at 1280 and 390.
+- Contrast fails: 0 on every page.
+- Page-wide horizontal scroll: none, including the new sideways chip rows at 390.
+- Console errors: 0.
+- Screenshots checked: /world/ group labels at 1280 and 390, rover toolbar at 1280 and 390, the home caption readable, the /verification/ table.
+- `npm run build` OK; node tests 31/31 (`node --test tests/*.test.mjs`); `budgets.py pages` OK (/world/ JS 21.6 of 25 kB, unchanged).
+
+**Check it yourself.** Run `npm run build`, then `npx vite preview` and open:
+1. `/` in the light theme, scrolled to the bottom of the hero: the caption is readable.
+2. `/verification/` in the light theme: the fail and "not run" text.
+3. `/world/` at 390 px: four named rows that swipe sideways.
+4. `/lab/rover/` at any width: each label stays with its control.
+
+**Housekeeping.**
+- Preview server stopped, headless browser stopped, screenshots in the scratchpad only (none in the repo).
+- RAM 0.99 GB at the start. It dipped to 0.30 GB after the 3D batch and to 0.26 GB at the start of the next batch. I ran that second batch before re-checking, which broke the 0.4 GB rule. I stopped the browser after it; 2.0 GB free after.
+
+**For LEAD (big, not fixed):**
+1. **The nav is full at 1280 px.** Brand plus 13 links reach x = 1081 of 1216, so /protocol/ and /network/ (F-60, F-61) will not fit on one line. Proposal: group Lander lab, Rover lab and Simulator under "Labs", and Method, Paper, Data and About under "About". Your call before F-60 lands.
+2. **The 3D view starts below the fold.** On /world/, /vehicles/ and both labs, the loading door sits below the fold at 1280 x 800 (title, lead and controls come first). A tighter page head or a two-column head would bring the view into the first screen.
+3. **Eyebrow on /atc/.** It still reads "Phase 5 · our design, being tested in the simulation". Should it change with Phase 6?
+
+## LEAD 11 Nov: research notes 03 (comms, protocol, security) and 04 (coordination, market) are committed. B-89 is OPEN and comes FIRST.
+- Note 03 found that E48's link budget uses free-space loss at 5 km (tools/atc/run_e48.py:320). With the flat-ground two-ray law the small robot's rate at 5 km falls from about 5,011 to about 18 kbit/s,
+  and two 1 m antennas are below the radio horizon at 5 km (3.73 km). LEAD checked the arithmetic: 132 dB and 148 dB against 114 dB free space. P3's link sentences will change after B-89.
+- Secured message sizes (note 03 section C): position report 41 B on the air (13 B content), status 43 B, bid 37 B, alert 42 B; award 92 B and grant 94 B signed.
+- Note 04: CADRE has not flown (IM-3 now Q1 2027); its leader is re-chosen within 10 s (we assumed 0.5 h); LTV Phase 1 task orders went to Astrolab and Lunar Outpost on 26 May 2026.
+- For FRONTEND: F-60 opens when note 02 lands; the eight answers are in section A of each note.

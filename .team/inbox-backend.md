@@ -1124,6 +1124,25 @@ uncoordinated-vs-ATC comparison with Mars round trips (Earth hand-resolution bec
 ## baseline row; tests in `tests/`; use `.venv\Scripts\python -m pytest` (console .exe scripts are broken).
 ## `lunarsim/nn/` and `experiments/phase6/nn/` belong to LEAD's agent (B-96): do not edit them.
 
+## B-89 [OPEN, do this FIRST, before B-90] Correct E48's link budget and traffic (found by note 03, 11 Nov)
+`tools/atc/run_e48.py` line 320 uses free-space loss at the 5 km worst hop. On flat ground beyond the
+breakpoint 4 h1 h2 / lambda (200 m at 2.4 GHz with 2.5 m antennas) the loss follows the two-ray law
+40 log10(d) - 20 log10(h1 h2): 132 dB at 5 km for two 2.5 m antennas and 148 dB for two 1 m antennas, against
+114 dB free space (note 03 section E1; lunar confirmation Hwu et al., NASA JSC 2008, NTRS 20080015374). Two 1 m
+antennas also cannot see each other at 5 km on a smooth sphere of radius 1737.4 km (limit 3.73 km).
+1. Add the flat-ground law (free space below the breakpoint, two-ray above it) and the radio-horizon check as
+   the default of E48's link section; keep the free-space numbers as a labelled "upper bound" column.
+2. Traffic: report airtime, not only load at the sources: hops on a scheduled channel and slotted random
+   access (note 03 section B9 and E2). State whether 16 kbit/s still carries 20 robots at 1 Hz.
+3. Message sizes: add the secured sizes of note 03 section C (Space Packet 6 B, LRIP header 8 B, security
+   header 6 B, MAC 8 or 16 B; awards and grants signed) beside the unsecured ones.
+4. `lunarsim/atc/radio.py`: do NOT change the defaults (baselines stay byte-identical); add an opt-in
+   `propagation="two_ray"` with a margin and report how many mesh links of the E40 month survive it.
+5. Re-run E48, write the old and new values side by side in `results/E48_sizing.json` (a `revision` block with
+   the reason), and report which sentences of P3 change. LEAD rebuilds the paper.
+Expected by the note: rates at 5 km fall from 6,977 / 5,011 / 5,989 kbit/s to about 1,574 / 18 / 36 kbit/s
+(LTV and cargo / small / hopper). Check the note's numbers independently; report any you cannot reproduce.
+
 ## B-90 [OPEN] Positioning layer (problem 1; E50). Note 01 is committed: parameters from its section D,
 ## maths from its section E; quote the note's source tags in the code comments.
 `lunarsim/atc/pnt.py`: each vehicle carries a true position (the engine's) and an estimated one. Layers, each
@@ -1144,7 +1163,7 @@ ranging error += c x relative clock error; road reservations are stamped in each
 E51: sweep oscillator class x resync interval; report ranging error added, reservation conflicts caused by
 clock error alone, and the longest safe time without a resync for each use (H11).
 
-## B-93 [QUEUED: opens when LEAD reports note 03] Protocol messages and codec (problem 5; E53)
+## B-93 [OPEN after B-90] Protocol messages and codec (problem 5; E53). Note 03 is committed (section C).
 `lunarsim/atc/lrip/`: the LRIP v0.1 message catalogue from note 03 section C as (1) a schema file
 (`lunarsim/schemas/lrip-v0.1.json`), (2) a bit-packed binary codec and a CBOR codec with round-trip tests,
 (3) the capability manifest (schema + two examples) and a `can_do(task, manifest)` matcher used by the auction
