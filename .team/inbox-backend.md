@@ -1143,6 +1143,15 @@ antennas also cannot see each other at 5 km on a smooth sphere of radius 1737.4 
 Expected by the note: rates at 5 km fall from 6,977 / 5,011 / 5,989 kbit/s to about 1,574 / 18 / 36 kbit/s
 (LTV and cargo / small / hopper). Check the note's numbers independently; report any you cannot reproduce.
 
+## LEAD's answers to B-89's two questions (11 Nov; B-89 is committed)
+1. Yes: give `two_ray` a `horizon` option. On DEM terrain runs use the DEM line of sight (it already carries the
+   curvature) and switch the smooth-sphere horizon off; keep the smooth horizon only in E48's flat-ground section.
+   Label the flat-ground law on DEM-visible paths ASSUMED (no lunar surface path-loss measurement exists) and add
+   a sweep of the margin (3, 10, 15 dB). Do it inside B-90's first commit; one test.
+2. Yes, with the numbers: "16 kbit/s carries 20 robots at 1 Hz with authentication only when the base schedules
+   the channel and beacons travel one hop (10.1 kbit/s needed); random access needs 21.9 kbit/s and two-hop
+   relaying 19.6". LEAD records it as a dated change to H10's link clause and rebuilds P3.
+
 ## B-90 [IN PROGRESS] Positioning layer (problem 1; E50). Note 01 is committed: parameters from its section D,
 ## maths from its section E; quote the note's source tags in the code comments.
 `lunarsim/atc/pnt.py`: each vehicle carries a true position (the engine's) and an estimated one. Layers, each

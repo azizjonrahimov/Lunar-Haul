@@ -731,6 +731,15 @@ a table in the report (page, issue, severity, fix), fix the high and medium ones
 3. /atc/ eyebrow: drop the phase number: "Our design, being tested in the simulation".
 Also add the /lab/ hub page you listed as L7 (two cards, one per lab), since "Labs" is now a menu.
 
+## F-67 [OPEN, small, do it before going on with F-60] /atc/ sizing section after B-89 (committed)
+`results/E48_sizing.json` changed: `classes.*.link.worst_hop_kbps` is now the flat-ground value and is 0 for SMALL
+and HOPPER, flagged by `link.beyond_horizon_at_worst_hop`. In `site/src/atc/main.js` (about lines 44-49) show for
+those two "beyond the 3.7 km horizon at 5 km; <longest_hop_kbps> kbit/s at <longest_hop_m> m" (values from the
+file). Name the law in the caption (flat ground, two-ray; free space is an upper bound, in
+`link_free_space_upper_bound`). The 20-robot sentence: 7.86 kbit/s secured load
+(`h10.link_kbps_needed_20_robots_secured_mac8`), 10.06 needed on a scheduled channel (fits 16), 21.87 on random
+access (does not); read them from the `airtime` block. /verification/ will show 186 rows: check it renders.
+
 ## F-60 [IN PROGRESS; notes 01 to 04 are committed, section A of each holds the answers] /protocol/ page: eight problems, eight answers
 One section per problem group (positioning, map, time, communication, the protocol, coordination, reliability
 and security, market). Each section: the question in the owner's words, our answer in two sentences, the method,
