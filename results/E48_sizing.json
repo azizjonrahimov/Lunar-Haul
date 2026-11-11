@@ -68,7 +68,7 @@
     "latency_note": "100 B per hop at the longest hop's rate (min of 5 km and the horizon) + 10 ms per hop + the flight-scaled p99 safety check",
     "reachable_share": 0.233,
     "reachable_share_free_space": 0.233,
-    "reachable_note": "share of route samples whose link to the BASE mast is in terrain line of sight, within 5 km, inside the smooth-Moon horizon and closes 16 kbit/s on the uplink at this class's power with a 10 dB margin (B-70 mesh)",
+    "reachable_note": "share of route samples whose link to the BASE mast is in DEM line of sight (curvature included), within 5 km, and closes 16 kbit/s on the uplink at this class's power with a 10 dB margin under the flat-ground law (ASSUMED on DEM-visible paths; B-70 mesh)",
     "reachable_n": 2420
    },
    "link_free_space_upper_bound": {
@@ -126,7 +126,7 @@
     "latency_note": "100 B per hop at the longest hop's rate (min of 5 km and the horizon) + 10 ms per hop + the flight-scaled p99 safety check",
     "reachable_share": 0.233,
     "reachable_share_free_space": 0.233,
-    "reachable_note": "share of route samples whose link to the BASE mast is in terrain line of sight, within 5 km, inside the smooth-Moon horizon and closes 16 kbit/s on the uplink at this class's power with a 10 dB margin (B-70 mesh)",
+    "reachable_note": "share of route samples whose link to the BASE mast is in DEM line of sight (curvature included), within 5 km, and closes 16 kbit/s on the uplink at this class's power with a 10 dB margin under the flat-ground law (ASSUMED on DEM-visible paths; B-70 mesh)",
     "reachable_n": 2420
    },
    "link_free_space_upper_bound": {
@@ -184,7 +184,7 @@
     "latency_note": "100 B per hop at the longest hop's rate (min of 5 km and the horizon) + 10 ms per hop + the flight-scaled p99 safety check",
     "reachable_share": 0.191,
     "reachable_share_free_space": 0.191,
-    "reachable_note": "share of route samples whose link to the BASE mast is in terrain line of sight, within 5 km, inside the smooth-Moon horizon and closes 16 kbit/s on the uplink at this class's power with a 10 dB margin (B-70 mesh)",
+    "reachable_note": "share of route samples whose link to the BASE mast is in DEM line of sight (curvature included), within 5 km, and closes 16 kbit/s on the uplink at this class's power with a 10 dB margin under the flat-ground law (ASSUMED on DEM-visible paths; B-70 mesh)",
     "reachable_n": 2420
    },
    "link_free_space_upper_bound": {
@@ -242,7 +242,7 @@
     "latency_note": "100 B per hop at the longest hop's rate (min of 5 km and the horizon) + 10 ms per hop + the flight-scaled p99 safety check",
     "reachable_share": 0.191,
     "reachable_share_free_space": 0.191,
-    "reachable_note": "share of route samples whose link to the BASE mast is in terrain line of sight, within 5 km, inside the smooth-Moon horizon and closes 16 kbit/s on the uplink at this class's power with a 10 dB margin (B-70 mesh)",
+    "reachable_note": "share of route samples whose link to the BASE mast is in DEM line of sight (curvature included), within 5 km, and closes 16 kbit/s on the uplink at this class's power with a 10 dB margin under the flat-ground law (ASSUMED on DEM-visible paths; B-70 mesh)",
     "reachable_n": 2420
    },
    "link_free_space_upper_bound": {
@@ -813,7 +813,7 @@
     "t1_h": 5112.0,
     "base_dte_share": 0.5269,
     "epochs": 1029,
-    "run_s": 9.1,
+    "run_s": 7.6,
     "scenario": "the B-80 'with' run (tools/atc/export_trace.py): p5 3eq, 30 % load, C_AUCTION, loss 0.10, roads atc, seed 1, the 2028 month with the least BASE direct-to-Earth visibility",
     "distinct_links_by_antennas_m": {
      "1-1": {
@@ -859,10 +859,31 @@
        "2": 140
       }
      },
+     "16k_m3": {
+      "budget": {
+       "rate_bps": 16000.0,
+       "margin_db": 3.0,
+       "horizon": false
+      },
+      "link_epochs": 11454,
+      "distinct_links": 55,
+      "survive_share_link_epochs": 1.0,
+      "survive_distinct": "55 of 55",
+      "lost_link_epochs_horizon": 0,
+      "lost_link_epochs_budget": 0,
+      "robot_epochs_with_base_up": 6174,
+      "robot_epochs_cut_off_share": 0.0564,
+      "mean_hops_to_base_connected": 1.024,
+      "hop_histogram": {
+       "1": 5686,
+       "2": 140
+      }
+     },
      "16k_m10": {
       "budget": {
        "rate_bps": 16000.0,
-       "margin_db": 10.0
+       "margin_db": 10.0,
+       "horizon": false
       },
       "link_epochs": 11454,
       "distinct_links": 55,
@@ -881,26 +902,8 @@
      "16k_m15": {
       "budget": {
        "rate_bps": 16000.0,
-       "margin_db": 15.0
-      },
-      "link_epochs": 11454,
-      "distinct_links": 55,
-      "survive_share_link_epochs": 1.0,
-      "survive_distinct": "55 of 55",
-      "lost_link_epochs_horizon": 0,
-      "lost_link_epochs_budget": 0,
-      "robot_epochs_with_base_up": 6174,
-      "robot_epochs_cut_off_share": 0.0564,
-      "mean_hops_to_base_connected": 1.024,
-      "hop_histogram": {
-       "1": 5686,
-       "2": 140
-      }
-     },
-     "16k_m3": {
-      "budget": {
-       "rate_bps": 16000.0,
-       "margin_db": 3.0
+       "margin_db": 15.0,
+       "horizon": false
       },
       "link_epochs": 11454,
       "distinct_links": 55,
@@ -919,7 +922,28 @@
      "1M_m10": {
       "budget": {
        "rate_bps": 1000000.0,
-       "margin_db": 10.0
+       "margin_db": 10.0,
+       "horizon": false
+      },
+      "link_epochs": 11454,
+      "distinct_links": 55,
+      "survive_share_link_epochs": 1.0,
+      "survive_distinct": "55 of 55",
+      "lost_link_epochs_horizon": 0,
+      "lost_link_epochs_budget": 0,
+      "robot_epochs_with_base_up": 6174,
+      "robot_epochs_cut_off_share": 0.0564,
+      "mean_hops_to_base_connected": 1.024,
+      "hop_histogram": {
+       "1": 5686,
+       "2": 140
+      }
+     },
+     "16k_m10_smooth_horizon": {
+      "budget": {
+       "rate_bps": 16000.0,
+       "margin_db": 10.0,
+       "horizon": true
       },
       "link_epochs": 11454,
       "distinct_links": 55,
@@ -940,12 +964,17 @@
    "mesh_pairs": {
     "pairs_in_file": 2929408,
     "note": "distinct point pairs at d > 0; robot-robot, base_mast off",
+    "flag": "ASSUMED on DEM-visible paths: no lunar surface path-loss measurement exists (note 03 Q2)",
     "by_class": {
      "LTV1": {
       "antenna_m": 2.5,
       "tx_power_w": 1.0,
       "default_links": 433041,
       "default_max_d_m": 5000.0,
+      "16k_m3": {
+       "links": 433041,
+       "survive_share": 1.0
+      },
       "16k_m10": {
        "links": 433041,
        "survive_share": 1.0
@@ -954,11 +983,11 @@
        "links": 433041,
        "survive_share": 1.0
       },
-      "16k_m3": {
+      "1M_m10": {
        "links": 433041,
        "survive_share": 1.0
       },
-      "1M_m10": {
+      "16k_m10_smooth_horizon": {
        "links": 433041,
        "survive_share": 1.0
       }
@@ -968,21 +997,25 @@
       "tx_power_w": 0.25,
       "default_links": 275714,
       "default_max_d_m": 5000.0,
+      "16k_m3": {
+       "links": 275714,
+       "survive_share": 1.0
+      },
       "16k_m10": {
-       "links": 256777,
-       "survive_share": 0.9313
+       "links": 275714,
+       "survive_share": 1.0
       },
       "16k_m15": {
-       "links": 256777,
-       "survive_share": 0.9313
-      },
-      "16k_m3": {
-       "links": 256777,
-       "survive_share": 0.9313
+       "links": 259699,
+       "survive_share": 0.9419
       },
       "1M_m10": {
        "links": 158138,
        "survive_share": 0.5736
+      },
+      "16k_m10_smooth_horizon": {
+       "links": 256777,
+       "survive_share": 0.9313
       }
      },
      "HOPPER": {
@@ -990,21 +1023,25 @@
       "tx_power_w": 0.5,
       "default_links": 275714,
       "default_max_d_m": 5000.0,
+      "16k_m3": {
+       "links": 275714,
+       "survive_share": 1.0
+      },
       "16k_m10": {
-       "links": 256777,
-       "survive_share": 0.9313
+       "links": 275714,
+       "survive_share": 1.0
       },
       "16k_m15": {
-       "links": 256777,
-       "survive_share": 0.9313
-      },
-      "16k_m3": {
-       "links": 256777,
-       "survive_share": 0.9313
+       "links": 273113,
+       "survive_share": 0.9906
       },
       "1M_m10": {
        "links": 181140,
        "survive_share": 0.657
+      },
+      "16k_m10_smooth_horizon": {
+       "links": 256777,
+       "survive_share": 0.9313
       }
      }
     }

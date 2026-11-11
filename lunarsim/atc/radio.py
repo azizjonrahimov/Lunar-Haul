@@ -16,6 +16,11 @@ cap d_max_m = min(horizon, budget range of E1)"): with propagation="two_ray" a l
   (1) d <= the smooth-Moon mutual radio horizon sqrt(2 R h_a) + sqrt(2 R h_b), R = 1,737.4 km, and
   (2) d <= the range at which the flat-ground loss still closes the link budget `budget` (DEFAULT_BUDGET: the E48
       constants, 1 W, 3 dBi each end, 1 MHz, noise figure 5 dB, link margin 10 dB, 16 kbit/s).
+On the DEM mesh the smooth horizon (1) is OFF by default (horizon=False): the mesh's terrain clearance already carries
+the Moon's curvature (chord bulge), so a DEM-visible pair beyond the smooth horizon (over a valley or crater floor) is
+kept; E48's flat-ground section (no terrain) keeps the smooth horizon (range_cap_m's default horizon=True). The
+flat-ground law on DEM-visible paths is ASSUMED: no lunar surface path-loss measurement exists (note 03 Q2), and real
+ground near a DEM-visible path is not flat (LEAD, B-89 answer 1, 11 Nov 2026).
 Flat-ground loss: free space up to the breakpoint d_b = 4 h_a h_b / lambda, beyond it the two-ray asymptote
 40 log10 d - 20 log10(h_a h_b) (reflection coefficient -1 at grazing; [HWU08] NASA JSC 2008, NTRS 20080015374,
 finds the 1/R^4 law and frequency independence on lunar ground). Between d_b and 4 pi h_a h_b / lambda the asymptote
@@ -120,13 +125,16 @@ def budget_range_m(h_a, h_b, budget: Optional[Dict[str, float]] = None):
     return np.where(d_fs <= db, d_fs, np.maximum(db, np.minimum(d_fs, d_pe)))
 
 
-def range_cap_m(h_a, h_b, d_max_m, propagation: Optional[str] = None, budget: Optional[Dict[str, float]] = None):
-    """The distance limit a link must meet: d_max_m, and under two_ray also the horizon and the budget range."""
+def range_cap_m(h_a, h_b, d_max_m, propagation: Optional[str] = None, budget: Optional[Dict[str, float]] = None,
+                horizon: bool = True):
+    """The distance limit a link must meet: d_max_m, and under two_ray also the budget range and (horizon=True) the
+    smooth-Moon mutual horizon."""
     if propagation is None:
         return d_max_m
     if propagation != "two_ray":
         raise ValueError(f"propagation must be one of {PROPAGATIONS}")
-    return np.minimum(np.minimum(d_max_m, mutual_horizon_m(h_a, h_b)), budget_range_m(h_a, h_b, budget))
+    cap = np.minimum(d_max_m, budget_range_m(h_a, h_b, budget))
+    return np.minimum(cap, mutual_horizon_m(h_a, h_b)) if horizon else cap
 
 
 def unb64(d: Dict[str, Any]) -> np.ndarray:
@@ -215,9 +223,10 @@ class RadioMesh:
     def link(self, a: int, b: int, h_a: float = 2.5, h_b: float = 2.5, d_max_m: float = DEFAULT_D_MAX_M,
              margin_m: float = DEFAULT_MARGIN_M, fresnel_min: Optional[float] = None,
              freq_hz: float = DEFAULT_FREQ_HZ, propagation: Optional[str] = None,
-             budget: Optional[Dict[str, float]] = None) -> bool:
+             budget: Optional[Dict[str, float]] = None, horizon: bool = False) -> bool:
         """Can an antenna h_a m above point a and one h_b m above point b talk directly? propagation="two_ray" adds
-        the horizon and link-budget range caps (module docstring; budget keys as DEFAULT_BUDGET)."""
+        the link-budget range cap and, with horizon=True, the smooth-Moon horizon (module docstring; budget keys as
+        DEFAULT_BUDGET)."""
         a, b = int(a), int(b)
         if a == b:
             return True
@@ -230,7 +239,7 @@ class RadioMesh:
                 raise ValueError("only one mast")
             k = int(self._mast_pos[b])
             c = self.mast_combos.index((self.mast_h, float(h_b)))
-            cap = range_cap_m(h_a, h_b, d_max_m, propagation, budget)
+            cap = range_cap_m(h_a, h_b, d_max_m, propagation, budget, horizon)
             return bool(self._ok(self.mast_clear_dm[c, k], self.mast_fresnel[c, self._fi(freq_hz), k], self.mast_d[k],
                                  cap, margin_m, fresnel_min))
         if a > b:
@@ -240,14 +249,14 @@ class RadioMesh:
         except KeyError:
             return False
         c = self._combo(h_a, h_b)
-        cap = range_cap_m(h_a, h_b, d_max_m, propagation, budget)
+        cap = range_cap_m(h_a, h_b, d_max_m, propagation, budget, horizon)
         return bool(self._ok(self.clear_dm[c, k], self.fresnel[c, self._fi(freq_hz), k], self.d[k], cap, margin_m,
                              fresnel_min))
 
     def pair_links(self, h: Heights = 2.5, d_max_m: float = DEFAULT_D_MAX_M, margin_m: float = DEFAULT_MARGIN_M,
                    fresnel_min: Optional[float] = None, freq_hz: float = DEFAULT_FREQ_HZ,
                    base_mast: bool = True, propagation: Optional[str] = None,
-                   budget: Optional[Dict[str, float]] = None) -> np.ndarray:
+                   budget: Optional[Dict[str, float]] = None, horizon: bool = False) -> np.ndarray:
         """Bool per pair of the file: does the pair link with antenna h (a height, or one per point)? With
         base_mast, pairs that touch BASE use the mast at BASE instead (and its height there)."""
         hv = np.broadcast_to(np.asarray(h, dtype=np.float64), (self.n,))
@@ -260,7 +269,7 @@ class RadioMesh:
         K = np.arange(len(self.I))
         fi = self._fi(freq_hz)
         fr = self.fresnel[ci, fi, K] if fresnel_min is not None else None
-        cap = range_cap_m(hv[self.I], hv[self.J], d_max_m, propagation, budget)
+        cap = range_cap_m(hv[self.I], hv[self.J], d_max_m, propagation, budget, horizon)
         ok = self._ok(self.clear_dm[ci, K], fr, self.d, cap, margin_m, fresnel_min)
         if base_mast:
             at = self.I == self.base
@@ -268,7 +277,7 @@ class RadioMesh:
             cm = np.array([self.mast_combos.index((self.mast_h, float(x))) for x in hv[j]], np.int64)
             k = self._mast_pos[j]
             frm = self.mast_fresnel[cm, fi, k] if fresnel_min is not None else None
-            capm = range_cap_m(self.mast_h, hv[j], d_max_m, propagation, budget)
+            capm = range_cap_m(self.mast_h, hv[j], d_max_m, propagation, budget, horizon)
             ok[at] = self._ok(self.mast_clear_dm[cm, k], frm, self.mast_d[k], capm, margin_m, fresnel_min)
         return ok
 

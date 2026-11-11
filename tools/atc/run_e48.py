@@ -121,10 +121,14 @@ REVISION_B89 = {
     "class_power_prefix": [["LTV1", 1.0], ["CARGO", 1.0], ["MAPP", 0.25], ["HOPPER", 0.5]],
     "month": "the B-80 'with' run (tools/atc/export_trace.py): p5 3eq, 30 % load, C_AUCTION, loss 0.10, roads atc, "
              "seed 1, the 2028 month with the least BASE direct-to-Earth visibility",
-    "two_ray_variants": {"16k_m10": {"rate_bps": 16000.0, "margin_db": 10.0},
-                         "16k_m15": {"rate_bps": 16000.0, "margin_db": 15.0},
-                         "16k_m3": {"rate_bps": 16000.0, "margin_db": 3.0},
-                         "1M_m10": {"rate_bps": 1.0e6, "margin_db": 10.0}},
+    # On the DEM mesh the smooth horizon is off (the terrain clearance already carries the curvature; LEAD's B-89
+    # answer 1); the flat-ground law on DEM-visible paths is ASSUMED. One variant keeps the smooth horizon for comparison.
+    "two_ray_variants": {"16k_m3": {"rate_bps": 16000.0, "margin_db": 3.0, "horizon": False},
+                         "16k_m10": {"rate_bps": 16000.0, "margin_db": 10.0, "horizon": False},
+                         "16k_m15": {"rate_bps": 16000.0, "margin_db": 15.0, "horizon": False},
+                         "1M_m10": {"rate_bps": 1.0e6, "margin_db": 10.0, "horizon": False},
+                         "16k_m10_smooth_horizon": {"rate_bps": 16000.0, "margin_db": 10.0, "horizon": True}},
+    "two_ray_flag": "ASSUMED on DEM-visible paths: no lunar surface path-loss measurement exists (note 03 Q2)",
 }
 
 
@@ -443,13 +447,14 @@ def step_links_flat():
             # route samples whose link to the BASE mast closes at 16 kbit/s on the uplink (this class's power)
             pts = np.array([j for j in range(rm.n) if j != rm.base])
             ok = np.array([rm.link(rm.base, int(j), G.ANT_MAST_M, h1, propagation="two_ray",
-                                   budget=dict(b, rate_bps=16000.0)) for j in pts])
+                                   budget=dict(b, rate_bps=16000.0), horizon=False) for j in pts])
             old = np.array([rm.link(rm.base, int(j), G.ANT_MAST_M, h1) for j in pts])
             row["reachable_share"] = round(float(ok.mean()), 3)
             row["reachable_share_free_space"] = round(float(old.mean()), 3)
-            row["reachable_note"] = ("share of route samples whose link to the BASE mast is in terrain line of sight, "
-                                     "within 5 km, inside the smooth-Moon horizon and closes 16 kbit/s on the uplink "
-                                     "at this class's power with a 10 dB margin (B-70 mesh)")
+            row["reachable_note"] = ("share of route samples whose link to the BASE mast is in DEM line of sight "
+                                     "(curvature included), within 5 km, and closes 16 kbit/s on the uplink at this "
+                                     "class's power with a 10 dB margin under the flat-ground law (ASSUMED on "
+                                     "DEM-visible paths; B-70 mesh)")
             row["reachable_n"] = int(total)
         out[cls] = row
     _save("links_flat", out)
@@ -465,14 +470,15 @@ def step_mesh_pairs():
     base_b = {"freq_hz": 2.4e9, "gain_dbi": rd["antenna_gain_dbi"], "bandwidth_hz": rd["bandwidth_mhz"] * 1e6,
               "noise_figure_db": rd["noise_figure_db"]}
     nz = rm.d > 0
-    out = {"pairs_in_file": int(nz.sum()), "note": "distinct point pairs at d > 0; robot-robot, base_mast off", "by_class": {}}
+    out = {"pairs_in_file": int(nz.sum()), "note": "distinct point pairs at d > 0; robot-robot, base_mast off",
+           "flag": REVISION_B89["two_ray_flag"], "by_class": {}}
     for cls, h in (("LTV1", G.ANT_ROVER_M), ("SMALL", G.ANT_SMALL_M), ("HOPPER", G.ANT_SMALL_M)):
         ok0 = rm.pair_links(h, base_mast=False) & nz
         row = {"antenna_m": h, "tx_power_w": rd["tx_power_w"][cls], "default_links": int(ok0.sum()),
                "default_max_d_m": round(float(rm.d[ok0].max()), 1)}
         for var, vb in REVISION_B89["two_ray_variants"].items():
-            b = dict(base_b, tx_power_w=rd["tx_power_w"][cls], **vb)
-            ok = rm.pair_links(h, base_mast=False, propagation="two_ray", budget=b) & nz
+            b = dict(base_b, tx_power_w=rd["tx_power_w"][cls], **{k: v for k, v in vb.items() if k != "horizon"})
+            ok = rm.pair_links(h, base_mast=False, propagation="two_ray", budget=b, horizon=vb["horizon"]) & nz
             row[var] = {"links": int(ok.sum()), "survive_share": round(float(ok.sum() / ok0.sum()), 4)}
         out["by_class"][cls] = row
     _save("mesh_pairs", out)
@@ -543,12 +549,13 @@ def step_month_links():
                         if vb is None:
                             cache[ck] = (rm.link(pa, pb, ha, hb, **rk), "")
                         else:
-                            b = dict(base_b, tx_power_w=min(wa, wb), **vb)
-                            ok = rm.link(pa, pb, ha, hb, propagation="two_ray", budget=b, **rk)
+                            vb2 = {k: v for k, v in vb.items() if k != "horizon"}
+                            b = dict(base_b, tx_power_w=min(wa, wb), **vb2)
+                            ok = rm.link(pa, pb, ha, hb, propagation="two_ray", budget=b, horizon=vb["horizon"], **rk)
                             why = ""
                             if not ok and rm.link(pa, pb, ha, hb, **rk):
                                 d = 0.0 if pa == pb else float(np.hypot(*(rm.xy[pa] - rm.xy[pb])))
-                                why = "horizon" if d > float(RA.mutual_horizon_m(ha, hb)) else "budget"
+                                why = "horizon" if vb["horizon"] and d > float(RA.mutual_horizon_m(ha, hb)) else "budget"
                             cache[ck] = (ok, why)
                     ok, why = cache[ck]
                     if ok:

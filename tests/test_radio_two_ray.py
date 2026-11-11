@@ -77,7 +77,7 @@ def test_default_is_unchanged_and_two_ray_only_removes_links(rm):
         tr = rm.pair_links(h, propagation="two_ray")
         assert not np.any(tr & ~base)
         # a budget that closes at any range leaves exactly the horizon cut
-        big = rm.pair_links(h, propagation="two_ray", budget={"tx_power_w": 1e9})
+        big = rm.pair_links(h, propagation="two_ray", budget={"tx_power_w": 1e9}, horizon=True)
         hor = base & (rm.d <= RA.mutual_horizon_m(h, h))
         hor[rm.I == rm.base] = base[rm.I == rm.base] & (rm.d[rm.I == rm.base] <= RA.mutual_horizon_m(rm.mast_h, h))
         assert np.array_equal(big, hor)
@@ -87,6 +87,25 @@ def test_default_is_unchanged_and_two_ray_only_removes_links(rm):
         assert rm.link(int(rm.I[k]), int(rm.J[k]), 1.0, 1.0, propagation="two_ray") == bool(tr[k])
     with pytest.raises(ValueError):
         rm.link(1, 2, propagation="free_space")
+
+
+def test_horizon_option_and_margin_sweep(rm):
+    """LEAD's B-89 answer 1: on the DEM mesh the smooth horizon is off by default (the clearance carries the
+    curvature); more link margin only ever removes links (3, 10, 15 dB)."""
+    base = rm.pair_links(1.0)
+    huge = {"tx_power_w": 1e9}
+    assert np.array_equal(rm.pair_links(1.0, propagation="two_ray", budget=huge), base)          # horizon off
+    on = rm.pair_links(1.0, propagation="two_ray", budget=huge, horizon=True)
+    far = base & (rm.d > RA.mutual_horizon_m(1.0, 1.0)) & (rm.I != rm.base)
+    assert far.any() and not np.any(on & far)       # DEM-visible pairs beyond the smooth horizon exist; horizon cuts them
+    prev = None
+    for m in (3.0, 10.0, 15.0):
+        ok = rm.pair_links(1.0, propagation="two_ray", budget={"tx_power_w": 0.25, "margin_db": m})
+        assert not np.any(ok & ~base)
+        if prev is not None:
+            assert not np.any(ok & ~prev)
+        prev = ok
+    assert prev.sum() < base.sum()                   # at 15 dB and 0.25 W some 1 m links no longer close 16 kbit/s
 
 
 def test_e48_revision_block():
