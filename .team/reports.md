@@ -8052,3 +8052,49 @@ Next: B-90.
 1. B-99: the figures will read E50 error traces, E51 offsets, E52 sync bytes and times, E53 load, E54 timeline and E55 statistic traces when BACKEND exports them. The parameter file is the fallback until then.
 2. Sections 5 and 8 contain data typed from the notes: the POSITION example values, the two manifests and the survey table. They are labelled as such, and no result number is typed.
 3. Section 8's partner list keeps note 04's G.1 order: CADRE, LSIC and LOGIC first.
+
+## F-62 DONE 12:51 | site/lib/anatomy-nav.mjs (new), site/vendor/anatomy/{iso-kit.mjs, iso.css, LICENSE, README.md} (new; the anatomy kit, MIT, unmodified), site/src/protocol/{nav-stack.js, anatomy.css} (new), site/src/protocol/{main.js, params.js}, site/protocol/index.html, site/vite.config.js (<!--@anatomy:nav--> hook) | how to check: /protocol/, section 1, "What a rover carries to know where it is" | from BACKEND: nothing | for LEAD: three notes at the end
+**Where:** /protocol/ section 1, under the positioning figure. Budgets fit:
+- /protocol/ JS 18.6 of 20 kB: only a 1 kB script, because the drawing is static SVG built into the HTML at build time.
+- CSS 11.9 of 12 kB: the kit's styles plus the theme mapping.
+- /vehicles/ would have meant a lazy chunk on a 3D page that is already near its limits.
+
+**The object** (anatomy skill, Figure size: one mechanism, about 70 solids). A rover navigation deck on a bench, cut open, with every part standing on the deck and cabled to the computer:
+- **Mast:** base flange, tube with seam rings, collar, pan-tilt yoke, and a stereo camera bar with two lens hoods and lenses facing front.
+- **Star tracker:** base with screws, body, collar, a light baffle and a lens ring.
+- **Sun sensor:** base, body, window and pinhole.
+- **IMU:** flange with screws, body with a seam, lid outline, three gyro caps.
+- **Clock module:** walls cut down at the front, showing the chip-scale atomic clock and the crystal on their board.
+- **Navigation computer:** walls cut down; five boards in card guides with ejector handles and chips; the GR740 board with a finned heat sink.
+- **Ranging radio:** box with a seam, a flat UWB patch antenna, and the coordination radio's whip with a collar and tip.
+- **Cables:** six runs on the deck, ending on plug blocks or under the computer, held by seven P-clips with screws.
+- **Bench:** four feet, a groove, corner screws, rivet rows, a ruler strip with ticks, and a label plate with the one engraved label ("NAV STACK").
+- Camera azimuth 45°, elevation 30°. Sizes are schematic, and the legend says so; the numbers are not.
+
+**Interaction:** a part list under the plate on phones and beside it at 1,000 px and up. Picking a part (click, focus or hover, in the list or on the drawing) lights that part with the kit's lit style and names it in the readout corner. When untouched, a slow tour visits each part every 2.8 s while the figure is on screen. Reduced motion: no tour.
+
+**Numbers** (each flagged, with its source):
+
+| Part | Numbers | Label |
+|---|---|---|
+| Cameras | drift 2 % of distance; 4 % of updates fail | published |
+| Star tracker | heading to 0.1°, Assumed | our design |
+| Sun sensor | 1°, sunlit only | published |
+| IMU | 3 °/h on gyros alone | published |
+| UWB radio | 0.3 m up to 100 m (the range is Assumed) | published |
+| Antenna (E48 SMALL) | 57.9 kbit/s at the 3.7 km horizon, 0.25 W | our design |
+| Clock | atomic 26 µs a day (Spec); crystal 35 ms a day (Measured on the Moon) | published |
+| Computer | GR740, 256 MB (Spec); our program peaks at 0.39 MB, and one safety check takes 40 ms on the flight core (E48, Modelled) | published board, our software |
+
+The note 01 values are in src/protocol/params.js; four were added: gyro, star tracker, sun sensor, VO failures.
+
+**Checks:**
+- The skill's line-end check (scripts/lines.mjs) on a standalone render: 0 of 78 line ends float.
+- Headless Chrome, light and dark at 1280 and 390: 0 contrast fails, no overflow, no console errors. Picking "Navigation computer" lights exactly its 25 solids and sets the readout.
+- Build OK; tests 33/33; budgets OK.
+- Not run: the skill's geometry audit (kit/audit.mjs). It covers pipes, tubes and turned parts, and this figure has none; its cables are kit wires with terminal dots.
+
+**For LEAD:**
+1. /protocol/ HTML is now 207 kB (36 kB gzipped) because the SVG is inline. HTML has no budget line, but F-57's Lighthouse run on /protocol/ mobile should look at it. If it costs too much, the SVG can move to a file loaded when section 1 comes into view.
+2. The kit is vendored under site/vendor/anatomy with its MIT licence. The build no longer needs the skill installed.
+3. F-62 names one object (the navigation stack), and that is what I built. If you want separate radio and clock cutaways, say so and I'll add them as Fig 1c / 1d.

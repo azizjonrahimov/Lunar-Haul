@@ -21,6 +21,10 @@ export const P = {
   uwb_range: { value: 100, unit: ' m', flag: 'Assumed', digits: 0, source: `${N01}, D: UWB maximum range (no lunar value is public)` },
   lans: { value: 10, unit: ' m', flag: 'Spec', digits: 0, source: `${N01}, D: LunaNet navigation service with a map height, 95 % [INTEROP25, LDN25, ML24]` },
   lans_2030: { value: 60, unit: ' % of the time', flag: 'Assumed', digits: 0, source: `${N01}, D: share of time a LunaNet fix is available in 2030 (Moonlight: 15 of 24 hours) [ML24, ESA24]` },
+  gyro: { value: 3, unit: '°/h', flag: 'Measured', digits: 0, source: `${N01}, D: heading drift with gyros alone, measured on Mars [MAIM07]` },
+  star_hdg: { value: 0.1, unit: '°', flag: 'Assumed', digits: 1, source: `${N01}, D: heading error with a star tracker, bounded ("a small fraction of a degree" [DAF23])` },
+  sun_hdg: { value: 1, unit: '°', flag: 'Measured', digits: 0, source: `${N01}, D: heading error with a sun sensor, sunlit only, Earth tests [DEANS05]` },
+  vo_fail: { value: 4, unit: ' %', flag: 'Measured', digits: 0, source: `${N01}, D: share of visual-odometry updates that fail, on Mars [MAIM07]` },
   sigma_nav: { value: 2, unit: ' m', flag: 'Assumed', digits: 0, source: `${N03}, D: navigation error the rules of the road assume (project rule R9)` },
   // 2. map
   tiles: { value: 3906, unit: ' tiles', flag: 'Modelled', digits: 0, source: `${N02}, E4: a 16 km site in 256 m tiles, (16,000 / 256) squared` },

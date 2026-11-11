@@ -7,6 +7,7 @@ import { num, fmt } from '../components/num.js';
 import { P } from './params.js';
 import { horizon, flatLoss, capacity } from './radio.js';
 import './protocol.css';
+import { mountNavStack } from './nav-stack.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const S = (tag, attrs = {}, ...kids) => {
@@ -355,5 +356,6 @@ const FIGS = { pos: figPos, map: figMap, time: figTime, radio: figRadio, msg: fi
 for (const host of document.querySelectorAll('.pr-host[data-fig]')) {
   try { FIGS[host.dataset.fig](host); } catch (e) { host.append(h('p', { class: 'stub' }, `This figure could not be drawn (${e.message}).`)); console.error(e); }
 }
+mountNavStack();
 upgradeFlags(document.querySelector('main'));
 if (reducedMotion()) document.documentElement.classList.add('pr-still');
