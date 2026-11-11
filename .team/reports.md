@@ -8098,3 +8098,69 @@ The note 01 values are in src/protocol/params.js; four were added: gyro, star tr
 1. /protocol/ HTML is now 207 kB (36 kB gzipped) because the SVG is inline. HTML has no budget line, but F-57's Lighthouse run on /protocol/ mobile should look at it. If it costs too much, the SVG can move to a file loaded when section 1 comes into view.
 2. The kit is vendored under site/vendor/anatomy with its MIT licence. The build no longer needs the skill installed.
 3. F-62 names one object (the navigation stack), and that is what I built. If you want separate radio and clock cutaways, say so and I'll add them as Fig 1c / 1d.
+
+## F-68 DONE 13:16 | site/lib/anatomy-common.mjs (new), site/lib/anatomy-nav.mjs, site/lib/anatomy-clock.mjs (new), site/lib/anatomy-radio.mjs (new), site/src/protocol/anatomy-live.js (new), site/src/protocol/anatomy.css, site/src/protocol/main.js (the loader), site/src/protocol/protocol.css (slot styles), site/src/protocol/nav-stack.js (deleted, replaced by anatomy-live.js), site/protocol/index.html (three slots), site/vite.config.js (build-time hook removed), site/scripts/prepare-data.mjs (stages the figures), site/.gitignore (public/protocol/), tools/ci/budgets.json (/protocol/ data, lazy and lazy_css lines) | how to check: /protocol/ sections 1, 3 and 4 | from BACKEND: nothing | for LEAD: notes at the end
+**1. Tone.**
+- New token sets for the cutaways, in light and dark. The four side shades are now 10-15 % apart (they were 3 %), the tops lighter, the stage a blue-grey card, and the ground halo darker.
+- Restrained subsystem accents from the Tol palette, mixed about 20 % into the faces:
+  - blue: navigation sensors (cameras, star tracker, sun sensor, IMU);
+  - amber: clock;
+  - magenta: computer;
+  - green: radio.
+- Dark: a dark stage with light line work (like the bicycle slide).
+
+**2. Labels on the drawing.**
+- A leader line runs from a dot on each part to a boxed label in the side columns: an uppercase title plus the key number and unit.
+- Fig 1b labels: stereo cameras "drift 2 % of distance", star tracker "heading 0.1°", sun sensor "heading 1°", IMU "drift 3°/h", UWB "0.3 m to 100 m", antenna "57.9 kbit/s at 3.7 km", atomic clock "26 µs/day", computer "40 ms per safety check".
+- Values come from params.js and E48, as before; the flags stay in the list.
+- **Under 600 px:** the labels become numbered pins, the view crops the label columns away (the drawing grows about 1.6×), and the list (Fig 1b) or a pin key (Figs 1c and 1d) carries the words.
+
+**3. Open (Fig 1b).**
+- "Open the boxes" lifts every lid. The computer's and the clock's near side panels slide out and fade to a trace (ghosted). The computer's five boards rise out of their guides, the atomic clock lifts off its board, and the star tracker's baffle lifts to show the lens.
+- The IMU's lid shows the three gyro cans; the radio's shows the front end.
+- Eased (1.1 s). It opens once on first view; the button toggles.
+- Reduced motion: the open state appears without motion, and there is no tour.
+
+**4. Two new figures.**
+
+**Fig 1c "Two radios", section 4:**
+- **The object:** a long bench with a log ruler from 10 m to 10 km. Radio A, cut open (power amplifier, low-noise amplifier, filter can and antenna feed), stands at the left; radio B rides a carriage on two rails.
+- **Posts:** at the breakpoint (32 m / 200 m) and the horizon (3.7 / 5.9 km) for 1 m / 2.5 m antennas, from E48.
+- **Controls:**
+  - a distance slider moves B and redraws the direct ray and the ground-bounce ray (the bounce point is where hA / (hA + hB) of the run falls);
+  - an antenna-height switch swaps the whips and fades the inactive posts.
+- **Readout:** loss and kbit/s from src/protocol/radio.js (the port the node test checks against E48). Past the horizon, the direct ray turns red and dashed, with "past the 3.7 km horizon, no direct link".
+
+**Fig 1d "Two clocks", section 3:**
+- **The object:** two dial gauges on their oscillator modules, a crystal can and a chip-scale atomic clock (one needle turn = 20 ms / 20 µs). A day carriage rides a 24-hour rail with resync marks, and a resync console is cabled to both modules.
+- **Controls:** "Run a day" (16 s); resync every 10 min, 1 h, 6 h or never.
+- **What it shows:** the needles grow with drift × time since the last resync and snap back at each resync, when the console button dips. The readout gives each offset as one-way range, e.g. at 9.6 h with hourly resync: "crystal 0.91 ms = 273 km · atomic 0.68 µs = 203 m".
+
+**5. Weight** (/protocol/ gzip):
+
+| | Before (F-62) | After |
+|---|---|---|
+| HTML | 207 kB raw, 36 kB gz | 45 kB raw, 9.6 kB gz |
+| Eager JS | 18.6 kB | 19.6 of 20 kB (the dynamic import adds Vite's preload helper) |
+| Eager CSS | 11.9 kB | 9.9 of 12 kB |
+
+- Fetched only when a slot comes within 400 px of the screen:
+  - fragments: nav 29.5 kB, clock 18.1 kB, radio 15.0 kB (61.6 of 80 kB, budget line added);
+  - the stylesheet: 3.8 of 5 kB;
+  - the live chunk: 2.9 of 5 kB.
+- No JS (or a failed fetch): the slot shows a standalone light still SVG (`protocol/anatomy/*-still.svg`, open state, labels drawn), from `<noscript>`.
+- prepare-data writes all of these to site/public/protocol/ (now gitignored).
+
+**Checks:**
+- **Line-end check** (anatomy scripts/lines.mjs): 0 floating ends on all three (nav 0 of 78, clock 0 of 382, radio 0 of 22).
+- **Headless Chrome on /protocol/** at 1280 light, 1280 dark, 390 light and 390 dark:
+  - all three figures load and mount (compact at 390);
+  - Fig 1b opens on view; the clock runs; the radio at 5 km reads past the horizon;
+  - 0 contrast fails, no overflow, no console errors.
+- Screenshots read: every figure at 1280 light, 1280 dark and 390, plus the open still. They are in the session scratchpad, not in the repo.
+- Build OK; tests 33/33; budgets OK.
+
+**For LEAD:**
+1. /protocol/ eager JS is at 19.6 of 20 kB. The next feature on the page needs a trim or a budget decision.
+2. I briefly ran `git rm --cached` on the deleted nav-stack.js and undid it at once with `git restore --staged`. The index has nothing staged from me; the deletion is a plain working-tree change for your commit.
+3. The legends say the mast heights (Fig 1c) and the sizes (Fig 1b) are schematic and the ruler is logarithmic. The numbers are the model's.

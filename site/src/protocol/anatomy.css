@@ -1,36 +1,27 @@
-/* F-62: the anatomy kit's styles (vendor/anatomy/iso.css, MIT) plus the site's theme: the kit is dark by default and
-   light under the same rules the site uses (an explicit data-theme, else the system preference) */
-@import '../../vendor/anatomy/iso.css';
+/* F-62/F-68: layout of the /protocol/ cutaways. Not imported by any script: scripts/prepare-data.mjs joins it with the
+   kit's CSS (vendor/anatomy/iso.css) and the theme tokens and accents (lib/anatomy-common.mjs) into
+   public/protocol/anatomy/anatomy.css, which the page loads with the figures. */
+.an-slot { margin-top: var(--s-6); min-height: 18rem; }
+.an-slot > img { display: block; width: 100%; height: auto; border-radius: var(--radius-panel); }
+.an-slot-h { font-size: 1.05rem; margin: 0 0 var(--s-3); }
+.iso.an .iso-figure { margin: 0; }
+.iso.an .iso-plate { border-radius: var(--radius-panel); padding: 44px 16px; }
+.iso.an .iso-plate .iso-svg { max-width: 860px; }
+.iso.an .iso-legend { font-size: var(--fs-small); }
+.iso.an .iso-plate-corner { font-size: 10.5px; }
+/* narrow figures: the labels give way to numbered pins, and the list below carries the words */
+.iso.an[data-compact] .an-labels { display: none; }
+.iso.an[data-compact] .an-pins { display: inline; }
+.iso.an:not([data-compact]) .nv-n { display: none; }
+.an-label[data-on] .an-box { stroke: var(--anatomy-hi); stroke-width: 1.2; }
+.an-pin[data-on] circle { fill: var(--anatomy-hi); }
+.an-pin[data-on] text { fill: var(--anatomy-card); }
+.an .iso-solid[data-lit] > .iso-edge { stroke-width: 1.15px; }
+[data-move] { will-change: transform; }
 
-:root[data-theme="light"] .iso.nv {
-  --anatomy-page:#f2f2ef;--anatomy-card:#fbfbfa;--anatomy-text:#57575a;--anatomy-strong:#18181a;--anatomy-muted:#6c6c70;
-  --anatomy-paper:#fbfbfa;--anatomy-face:#ffffff;--anatomy-top:#ffffff;
-  --anatomy-shade-0:#dcdcd9;--anatomy-shade-1:#e5e5e2;--anatomy-shade-2:#ededea;--anatomy-shade-3:#f4f4f1;
-  --anatomy-lit-top:#ffffff;--anatomy-lit-shade:#eeeeeb;
-  --anatomy-hi:#26262a;--anatomy-mid:#8a8a8f;--anatomy-lo:#b4b4b8;--anatomy-faint:#d4d4d6;--anatomy-lit:#000000;
-  --anatomy-halo:#8a8a80;--anatomy-halo-opacity:.32;--anatomy-dot:#3a3a3e;
-}
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) .iso.nv {
-    --anatomy-page:#f2f2ef;--anatomy-card:#fbfbfa;--anatomy-text:#57575a;--anatomy-strong:#18181a;--anatomy-muted:#6c6c70;
-    --anatomy-paper:#fbfbfa;--anatomy-face:#ffffff;--anatomy-top:#ffffff;
-    --anatomy-shade-0:#dcdcd9;--anatomy-shade-1:#e5e5e2;--anatomy-shade-2:#ededea;--anatomy-shade-3:#f4f4f1;
-    --anatomy-lit-top:#ffffff;--anatomy-lit-shade:#eeeeeb;
-    --anatomy-hi:#26262a;--anatomy-mid:#8a8a8f;--anatomy-lo:#b4b4b8;--anatomy-faint:#d4d4d6;--anatomy-lit:#000000;
-    --anatomy-halo:#8a8a80;--anatomy-halo-opacity:.32;--anatomy-dot:#3a3a3e;
-  }
-}
-/* the kit's muted corner text is under 4.5:1 on its dark card; lift it */
-.iso.nv { --anatomy-muted: #9a9a9a; }
-:root[data-theme="light"] .iso.nv { --anatomy-muted: #6c6c70; }
-
-.pr-anatomy { margin-top: var(--s-6); }
-.pr-anatomy-h { font-size: 1.05rem; margin: 0 0 var(--s-3); }
-.iso.nv .iso-figure { margin: 0; }
-.iso.nv .iso-plate { border-radius: var(--radius-panel); }
-.iso.nv .iso-legend { font-size: var(--fs-small); }
-.nv-stage { cursor: default; }
-.nv-part { transition: opacity var(--dur); }
+.an-controls { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-5); align-items: flex-end; margin-top: var(--s-3); }
+.an-controls .pr-range { flex: 1 1 16rem; display: flex; flex-direction: column; gap: var(--s-1); }
+.an-controls .pr-range input { width: 100%; min-height: var(--target); accent-color: var(--accent); }
 
 /* the part list */
 .nv-list { list-style: none; padding: 0; margin: var(--s-4) 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr)); gap: var(--s-3) var(--s-5); font-size: var(--fs-small); }
@@ -38,17 +29,22 @@
 .nv-item { font: inherit; font-weight: 600; color: var(--ink); text-align: left; background: none; border: 0; border-left: 3px solid var(--hairline); padding: 0.2em 0 0.2em 0.6em; min-height: var(--target); cursor: pointer; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.5em; }
 .nv-item:hover { border-left-color: var(--ink-2); }
 .nv-item[aria-pressed="true"] { border-left-color: var(--ink); }
+.nv-n { font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-2); }
 .nv-what { color: var(--ink-2); padding-left: calc(0.6em + 3px); }
 .nv-whose { font-size: 0.72rem; font-weight: 600; padding: 0 0.5em; border-radius: 999px; border: 1px solid currentColor; }
-.nv-whose[data-whose="published"] { color: var(--ink-2); }
+.nv-whose[data-whose="published"], .nv-whose[data-whose="mixed"] { color: var(--ink-2); }
 .nv-whose[data-whose="ours"] { color: var(--link); }
-.nv-whose[data-whose="mixed"] { color: var(--ink-2); }
 
-/* wide screens: the plate and the part list side by side, the drawing no wider than it needs */
-@media (min-width: 1000px) {
-  .iso.nv { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); gap: var(--s-5); align-items: start; }
-  .iso.nv .nv-list { grid-template-columns: minmax(0, 1fr); margin-top: 0; gap: var(--s-2); }
-}
-.iso.nv .iso-plate .iso-svg { max-width: 720px; }
-/* the lit part: a heavier outline, so the pick reads in the light theme too */
-.iso.nv .iso-solid[data-lit] > .iso-edge { stroke-width: 1.15px; }
+/* the radio figure: the whip and the posts of the antenna height not chosen fade */
+.rd-whip[data-off] { display: none; }
+.rd-post[data-off] { opacity: 0.25; }
+.rd-post { transition: opacity var(--dur); }
+
+/* compact: the readout wraps inside the card; the key to the pins shows */
+.iso.an[data-compact] .iso-plate-corner[data-corner="readout"] { white-space: normal; left: 0; text-align: right; line-height: 1.35; }
+.an-pinkey { display: none; list-style: none; counter-reset: pin; padding: 0; margin: var(--s-3) 0 0; font-size: var(--fs-small); color: var(--ink-2); }
+.iso.an[data-compact] .an-pinkey { display: grid; gap: var(--s-1); }
+.an-pinkey li { counter-increment: pin; }
+.an-pinkey li::before { content: counter(pin) "  "; font-family: var(--font-mono); color: var(--ink); }
+.an-pinkey b { color: var(--ink); font-weight: 600; }
+.iso.an[data-compact] .iso-plate-corner[data-corner="hint"] { display: none; }   /* the controls under the card say it; the readout needs the width */

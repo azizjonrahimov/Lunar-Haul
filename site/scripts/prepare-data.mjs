@@ -332,3 +332,23 @@ if (existsSync(join(scenes, 'gallery.json'))) {
   cpSync(scenes, join(PUB, 'scenes'), { recursive: true, filter: f => !/\.md$/.test(f) });
   console.log(`prepare-data: scenes, ${readdirSync(scenes).filter(d => existsSync(join(scenes, d, 'scene.json'))).length} packages + gallery.json`);
 }
+
+// F-68: the /protocol/ cutaways (Fig 1b-1d), drawn with the anatomy kit (vendor/anatomy, MIT): an HTML fragment per figure
+// (fetched when its section comes into view), a standalone light still per figure (the no-JS fallback) and one stylesheet
+// (the kit's CSS, the theme tokens and accents from lib/anatomy-common.mjs, the layout rules of src/protocol/anatomy.css)
+{
+  const A = await import('../lib/anatomy-common.mjs'), dir = join(PUB, 'protocol', 'anatomy');
+  mkdirSync(dir, { recursive: true });
+  const figs = { nav: await import('../lib/anatomy-nav.mjs'), clock: await import('../lib/anatomy-clock.mjs'), radio: await import('../lib/anatomy-radio.mjs') };
+  const sizes = [];
+  for (const [id, m] of Object.entries(figs)) {
+    const fig = Object.entries(m).find(([n]) => n.endsWith('Figure'))[1], still = Object.entries(m).find(([n]) => n.endsWith('Still'))[1];
+    writeFileSync(join(dir, `${id}.html`), fig()); writeFileSync(join(dir, `${id}-still.svg`), still());
+    sizes.push(`${id} ${Math.round(statSync(join(dir, `${id}.html`)).size / 1024)} kB`);
+  }
+  const css = [readFileSync(join(SITE, 'vendor', 'anatomy', 'iso.css'), 'utf8'),
+    `.iso.an{${A.LIGHT_TOKENS}}:root[data-theme="dark"] .iso.an{${A.DARK_TOKENS}}@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .iso.an{${A.DARK_TOKENS}}}`,
+    A.ACCENT_CSS, readFileSync(join(SITE, 'src', 'protocol', 'anatomy.css'), 'utf8')].join('\n');
+  writeFileSync(join(dir, 'anatomy.css'), css);
+  console.log(`prepare-data: protocol cutaways staged (${sizes.join(', ')}; stylesheet ${Math.round(css.length / 1024)} kB)`);
+}

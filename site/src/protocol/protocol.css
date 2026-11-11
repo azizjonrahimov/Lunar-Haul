@@ -133,3 +133,8 @@
   .pr-table th, .pr-table td { display: block; border: 0; padding: 0.15em 0; }
   .pr-table td::before { content: attr(data-label) ': '; color: var(--ink-2); font-weight: 600; }
 }
+
+/* F-68: the cutaway slots, before their stylesheet arrives (space held so the page does not jump) */
+.an-slot { margin-top: var(--s-6); min-height: 18rem; }
+.an-slot-h { font-size: 1.05rem; margin: 0 0 var(--s-3); }
+.an-slot > img { display: block; width: 100%; height: auto; border-radius: var(--radius-panel); }
