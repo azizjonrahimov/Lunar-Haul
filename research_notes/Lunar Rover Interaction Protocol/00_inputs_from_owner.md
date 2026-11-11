@@ -53,3 +53,14 @@ under known lighting are a check on our illumination model.
   by LEAD without the owner's account.
 - Sci-Bot from Sci-Hub: not used. Sci-Hub distributes papers without the publishers' permission; we read
   open sources (NASA NTRS, ESA, CCSDS, arXiv, publisher open access) and cite them.
+
+## 6. Corrections after note 02 checked the archive (11 Nov)
+- Artemis II OpNav: 404 images, 2,592 x 2,048, 8-bit, uncalibrated, taken 78,000 to 366,000 km from the Moon
+  (the Moon is 70 to 328 pixels wide), none within about 22 hours of closest approach. They support disc and
+  limb navigation only, not landmark or horizon navigation as section 4 (a) hoped. Their `target` label says
+  "Moon" even when the camera looked at Earth: do not trust it.
+- Crew images: 3,687 carry control points at about 105 to 130 m per pixel; the south pole sat on the limb, so
+  they give only a coarse check of very large shadows, not the illumination check section 4 (c) hoped for.
+- The SPICE bundle is online at NAIF (0.59 GB, 32 kernels) and uses the same lunar frame as our code.
+- AI4Mars: the counts in section 1 are the Google doc's (the 2021 paper). The current release (Zenodo v0.6)
+  has about 50,000 images and 425,000 labels, Perseverance included, under CC BY 4.0.

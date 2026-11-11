@@ -7823,3 +7823,9 @@ Pages: /, /about/, /method/, /paper/, /results/, /verification/, /stories/, /atc
 - Secured message sizes (note 03 section C): position report 41 B on the air (13 B content), status 43 B, bid 37 B, alert 42 B; award 92 B and grant 94 B signed.
 - Note 04: CADRE has not flown (IM-3 now Q1 2027); its leader is re-chosen within 10 s (we assumed 0.5 h); LTV Phase 1 task orders went to Astrolab and Lunar Outpost on 26 May 2026.
 - For FRONTEND: F-60 opens when note 02 lands; the eight answers are in section A of each note.
+
+## LEAD 11 Nov: research note 02 (shared map and coordinates) is committed; all four notes are in. F-60 opens after F-64.
+- Frame: MOON_ME (DE421 realisation, 1737.4 km sphere, LOLA polar stereographic grid). Our code is consistent with it. The navigation side (LunaNet) is Principal Axis: ME and PA differ by 663 m at the pole, 659 m at our tile centre, so every coordinate in a message carries a frame id.
+- For BACKEND: the 5 m LOLA DEM has about 20 m real resolution poleward of 84 S (about 90 % of cells interpolated); height changes horizontal lengths by up to 1,128 ppm at our site, so leg lengths need 3-D positions for better than 0.1 %.
+- Sync cost at our site (note 02): digest about 8 kB; a day of hazard changes about 86 kB; the full 5 m height layer 2.87 MB. The changed-tile count and hazard tile size are assumptions to sweep in E52.
+- Artemis II: OpNav supports limb navigation only (B-97 text updated).

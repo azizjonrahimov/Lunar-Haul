@@ -1124,7 +1124,7 @@ uncoordinated-vs-ATC comparison with Mars round trips (Earth hand-resolution bec
 ## baseline row; tests in `tests/`; use `.venv\Scripts\python -m pytest` (console .exe scripts are broken).
 ## `lunarsim/nn/` and `experiments/phase6/nn/` belong to LEAD's agent (B-96): do not edit them.
 
-## B-89 [OPEN, do this FIRST, before B-90] Correct E48's link budget and traffic (found by note 03, 11 Nov)
+## B-89 [IN PROGRESS] Correct E48's link budget and traffic (found by note 03, 11 Nov)
 `tools/atc/run_e48.py` line 320 uses free-space loss at the 5 km worst hop. On flat ground beyond the
 breakpoint 4 h1 h2 / lambda (200 m at 2.4 GHz with 2.5 m antennas) the loss follows the two-ray law
 40 log10(d) - 20 log10(h1 h2): 132 dB at 5 km for two 2.5 m antennas and 148 dB for two 1 m antennas, against
@@ -1181,7 +1181,7 @@ their timeouts; re-auction on heartbeat loss. E54: drop-and-retry versus store-a
 store-and-forward + lost-link rule, at three radio qualities and with a 14-day Earth blackout; jobs lost,
 delay, age of information at the base, stuck reservations (H14).
 
-## B-92 [QUEUED: opens when LEAD reports note 02] Shared map (problem 2; E52)
+## B-92 [QUEUED after B-94; note 02 is committed: design in its section C, parameters in D] Shared map (problem 2; E52)
 A base-held authoritative map of versioned tiles (layers and tile sizes from note 02 section C), per-vehicle
 copies, hazard reports from vehicles accepted by the base under the stated rule, sync on contact ordered
 hazards first with per-tile hashes. E52: a rover out of contact for 1 h to 14 days; bytes to sync versus a
@@ -1203,9 +1203,12 @@ LEAD's agent builds the fault generator and dataset for B-96 in `lunarsim/nn/`; 
 ## B-97 [QUEUED after B-95] Real-data checks
 (1) SMAP + MSL telemetry (public, from the telemanom release): run the z-score baseline and the B-96 detector
 family at event level, as a check of the method on real spacecraft data; never tune on the labelled events.
-(2) Artemis II (PDS; note 02 lists what is downloadable): a small set of OpNav or crew images of the Moon with
-SPICE truth; fit the lunar limb, recover range and direction, compare with SPICE; report the error. This tests
-our position-from-image geometry on real data. Keep downloads under 200 MB in `data/external/` (git-ignored)
+(2) Artemis II (PDS; note 02 section on the archive): a small set of OpNav images of the Moon (2,592 x 2,048,
+8-bit, 78,000 to 366,000 km range; the Moon is 70 to 328 pixels wide) with the SPICE bundle at NAIF as truth;
+fit the lunar limb, recover range and direction, compare with SPICE; report the error. This is limb navigation
+only; say so. Do not trust the labels' `target` field (it says Moon when the camera looked at Earth). Also use
+the SPICE trajectory of 2 to 10 April 2026 as a geometry test case for `tools/comms/earth_link.py`, and load
+the lunar frames kernel explicitly (without it SPICE falls back to IAU_MOON, up to 155 m off). Keep downloads under 200 MB in `data/external/` (git-ignored)
 with a manifest (URL, bytes, sha256). If the images lack usable metadata, say so and stop.
 
 ## B-98 [QUEUED] Verification rows for Phase 6 (`lunarsim/vv6.py`, `results/vv_phase6.json`)
