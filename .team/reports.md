@@ -8011,3 +8011,44 @@ Next: B-90.
 - /atc/ `js_gzip_kb` raised from 15 to 16. Sizes now: eager 15.4 of 16 (the page chunk itself 8.7 kB); lazy 14.9 of 15, unchanged.
 
 **F-60 files are in the tree, unfinished:** site/protocol/index.html, site/src/protocol/{params,main}.js, site/src/protocol/protocol.css, the `<!--@pn:key-->` hook in site/vite.config.js, and the /protocol/ budget line (JS 20, CSS 12; measured 17.4 and 9.7). They build and pass budgets but are not browser-checked yet. Please leave them out of the F-67 commit; I'll report them with F-60.
+
+## F-60 DONE 11:50 | site/protocol/index.html (replaces the stub), site/src/protocol/{params,main,radio}.js, site/src/protocol/protocol.css, site/vite.config.js (the <!--@pn:key--> hook), site/tests/protocol-radio.test.mjs, tools/ci/budgets.json (the /protocol/ line) | how to check: /protocol/ | from BACKEND: B-99 data when ready (below) | for LEAD: three notes at the end
+**Page.**
+- Eight sections (positioning, map, time, communication, the protocol, coordination, reliability and security, market). Each has:
+  - a question as its title ("Where am I?", "Can it hear me behind the hill?" and so on);
+  - the owner's question from note 01-04 section A;
+  - our answer in two sentences, the method (experiment and hypothesis), and who we would work with (from each note's partner section);
+  - a link to the paper (/paper/, naming P1, P2 or P3; /paper/ has no per-paper anchors yet, which F-65 can add);
+  - one interactive figure with a live readout that doubles as its text version.
+- A numbered contents strip at the top. No `noindex`.
+
+**Numbers.**
+- Every number in the text comes from `src/protocol/params.js` (47 values, each with a flag and a source note and section): the build replaces `<!--@pn:key-->` with the flagged number, and the figures read the same file.
+- Flags: Measured (Moon, Mars or Earth tests), Spec (requirements), Modelled (our calculations), Assumed.
+- Figure readouts flag their computed numbers Modelled, with "computed in this figure" as the source.
+
+**Figures** (hand-written SVG, native controls, sized to their real width so text stays 11 px, redrawn on resize):
+1. **Position error along a 5 km drive (log scale):** four switchable layers (cameras and star tracker, terrain fixes, base beacons, LunaNet 2030), wheel odometry alone, and the 2 m the rules assume. Readout at the distance slider: 1.5 m with three layers against 301 m on wheels at 3 km.
+2. **The map catching up:** 3,906 tiles; the 42 changed tiles arrive hazards first along the rover's route; transfer bar by bytes; 10 kbit/s, 16 kbit/s or 1 Mbit/s.
+   - At 10 kbit/s: digest 6.5 s, hazards current 75 s, all layers 26.2 min, against 38.3 min for the whole elevation layer.
+3. **Two clocks and resyncs:** crystal or chip-scale atomic clock, resync from 10 s to 1 day; three needs turn met / not met.
+   - Example readout: crystal at 10 min gives a 243 µs worst offset, which is 73 km of one-way range.
+4. **The link budget:** a port of lunarsim/atc/radio.py (flat-ground law, horizon, SNR after margin, Shannon capacity against 16 kbit/s). Distance 100 m to 15 km, band, antenna height, a ridge (blocked = no link, as in the engine), and a 10 m relay mast.
+5. **POSITION report byte by byte:** the 41 bytes encoded from example values with the note 03 C2 layout; pick a field to light its bytes. Then a job matched against the small rover's and the hopper's manifests (note 03 C3).
+6. **One job through a failure:** announced, B wins, B goes silent at the slider time, suspect after 5 s, re-auction after 30 s, C wins. B's reservation is shown held, and the expected wait if Earth decided is given.
+7. **The 3-of-5 chi-square test:** honest, slow drift or jump, with a size slider; seeded noise, so every visitor sees the same run.
+   - With a 5 m per 10 s drift, the rover is declared suspect at 46 s, when it is 13 m off (note 03 gives 13 m as the 90 % detection size).
+8. **Who has flown what:** 18 rows from note 04 section C, filterable (flown, Earth tests, planned, simulated). It stacks into labelled rows on phones.
+- Each figure says which experiment replaces it (E50 to E55). They compute from the notes' parameters until B-99's JSON lands; switching to the files is a small change in each figure.
+
+**Checks.**
+- New node test `tests/protocol-radio.test.mjs`: the JS port reproduces the five classes' loss, SNR, capacity, horizon and longest-hop capacity in results/E48_sizing.json within the file's rounding.
+- Build OK; tests 33/33; budgets OK (/protocol/ JS 18.0 of 20 kB, CSS 9.8 of 12; the line was the stub's 5 kB).
+- Headless Chrome, light and dark at 1280 and 390, plus a resize to 900: 0 contrast fails, no overflow, no console errors, every one of the first 25 focusable elements shows a focus ring. Screenshots of every figure read.
+- I fixed what they showed: label overlaps, a broken colour key, text too small on phones, the table at 390, and a 4.35:1 label.
+- RAM stayed at 0.48 GB or more during these runs; preview server and browser stopped.
+
+**For LEAD.**
+1. B-99: the figures will read E50 error traces, E51 offsets, E52 sync bytes and times, E53 load, E54 timeline and E55 statistic traces when BACKEND exports them. The parameter file is the fallback until then.
+2. Sections 5 and 8 contain data typed from the notes: the POSITION example values, the two manifests and the survey table. They are labelled as such, and no result number is typed.
+3. Section 8's partner list keeps note 04's G.1 order: CADRE, LSIC and LOGIC first.

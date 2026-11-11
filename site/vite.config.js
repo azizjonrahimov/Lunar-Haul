@@ -6,6 +6,8 @@ import { results } from './lib/results.mjs';
 import { pipeline } from './lib/pipeline.mjs';
 import { tex } from './lib/tex.mjs';
 import { paperField, paperValue } from './lib/papers.mjs';
+import { P as PROTOCOL } from './src/protocol/params.js';
+import { num } from './src/components/num.js';
 
 // Public base: '/' locally; CI sets SITE_BASE from actions/configure-pages (/Lunar-Haul/ on GitHub Pages).
 const base = process.env.SITE_BASE || '/';
@@ -31,6 +33,7 @@ function lunarsimPages() {
           .replace(/<!--@v:(\w+):([\w-]+)-->/g, (_, id, k) => paperValue(id, k))
           .replace('<!--@pipeline-->', () => pipeline())
           .replace(/<!--@r:(\w+)-->/g, (_, k) => resultText(k))
+          .replace(/<!--@pn:(\w+)-->/g, (_, k) => { if (!PROTOCOL[k]) throw new Error(`protocol: no parameter ${k}`); return num(PROTOCOL[k]); })   // F-60: /protocol/ numbers, src/protocol/params.js
           .replace(/<!--@figure:([\w-]+)-->/g, (_, n) => figure(n))
           .replace(/<!--@icon:([\w-]+)-->/g, (_, n) => icon(n))
           .replace(/<!--@tex:([\w-]+)-->/g, (_, n) => tex(n))

@@ -4,40 +4,283 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Protocol · LunarHaul</title>
-<meta name="description" content="Coming next: the Lunar Rover Interaction Protocol, eight problems a base with rovers of several companies must solve and our answer to each.">
-<meta name="robots" content="noindex">
+<meta name="description" content="The Lunar Rover Interaction Protocol: eight problems a base with rovers of several companies must solve, our answer to each, the method, who we would work with, and a figure to try.">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="<!--@base-->favicon.svg" type="image/svg+xml">
 <script>try { var t = localStorage.getItem('lunarsim.theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
-<link rel="stylesheet" href="/src/hub.css">
 <script type="module" src="/src/main.js"></script>
+<script type="module" src="/src/protocol/main.js"></script>
 </head>
 <body>
 <!--@header-->
 <main id="main"><div class="wrap">
   <header class="page-head">
-    <p class="ui-label">In preparation</p>
+    <p class="ui-label">Our design, being tested in the simulation</p>
     <h1>The Lunar Rover Interaction Protocol</h1>
-    <p>Rovers of several companies working at one base have to agree on where they are, what the ground looks like,
-      what time it is and how to talk, and keep working when Earth is out of sight. This page will take the eight
-      problems one at a time.</p>
+    <p>Rovers of several companies working one base have to agree on where they are, what the ground looks like and
+      what time it is, talk to each other over a radio the hills keep cutting, share jobs, and keep working when Earth
+      is out of sight. Here are the eight problems, one at a time: the question, our answer, how we test it, who we
+      would work with, and one figure to try.</p>
   </header>
-  <section class="prose" aria-labelledby="pr-coming">
-    <h2 id="pr-coming">What this page will hold</h2>
-    <p>One section per problem: the question, our answer in two sentences, the method, who we would work with, one
-      figure you can play with, and a link to the paper section. The eight problems:</p>
-    <ol class="stub-list">
-      <li><b>Positioning:</b> &ldquo;Where am I?&rdquo;, and how fast a rover's position error grows between fixes.</li>
-      <li><b>A shared map and coordinate system:</b> how a returning rover catches up on new hazards.</li>
-      <li><b>Time:</b> how far apart two rovers' clocks drift, and what that does to ranging.</li>
-      <li><b>Communication:</b> radio links over the terrain, and relays when a hill is in the way.</li>
-      <li><b>The protocol itself:</b> what a message carries, byte by byte, and how a rover says what it can do.</li>
-      <li><b>Coordination as a team:</b> sharing jobs, and taking over when a rover fails.</li>
-      <li><b>Reliability and security:</b> catching a wrong position report before it causes harm.</li>
-      <li><b>Market and reality:</b> who has flown what so far.</li>
+
+  <nav class="pr-toc" aria-label="The eight problems">
+    <ol>
+      <li><a href="#positioning">Where am I?</a></li>
+      <li><a href="#map">Catching up on the map</a></li>
+      <li><a href="#time">Lunar time</a></li>
+      <li><a href="#radio">Behind the hill</a></li>
+      <li><a href="#protocol">The messages</a></li>
+      <li><a href="#coordination">A rover breaks down</a></li>
+      <li><a href="#integrity">Is that report true?</a></li>
+      <li><a href="#market">Who has flown what</a></li>
     </ol>
-    <p>Nothing on this page is a result yet. Until the experiments are in, the <a href="<!--@base-->atc/">Lunar ATC</a>
-      page shows the network design these answers build on.</p>
+  </nav>
+  <p class="pr-note small">The figures compute in your browser from the values in the research notes (each number
+    carries its flag; hover or focus it for the source). They are illustrations of the method until the experiments'
+    runs are published; each figure says which experiment replaces it.</p>
+
+  <!-- 1 -->
+  <section class="pr-sec" id="positioning" aria-labelledby="pr1-h">
+    <p class="ui-label">1 · Positioning</p>
+    <h2 id="pr1-h">Where am I?</h2>
+    <p class="pr-q">&ldquo;GPS does not work on the Moon. What replaces it?&rdquo;</p>
+    <div class="pr-grid">
+      <div class="pr-text">
+        <h3>Our answer</h3>
+        <p>A rover counts wheel turns and tracks the ground with cameras, which drifts by about <!--@pn:dr_vo-->
+          (<!--@pn:dr_wheel--> on loose soil without cameras), and it resets that drift with absolute fixes: matching
+          what it sees to orbital maps (<!--@pn:fix_terrain-->), radio ranges to the base's beacons (<!--@pn:uwb--> within
+          <!--@pn:uwb_range-->) and, from about 2030, the LunaNet navigation satellites (<!--@pn:lans-->, available about
+          <!--@pn:lans_2030-->). Every position report carries its own error estimate, and the rules of the road widen a
+          rover's safety margin when that estimate is large.</p>
+        <h3>Method</h3>
+        <p>Experiment E50 drives the fleet with each layer switched on in turn and measures the position error against
+          the separation the traffic rules assume (<!--@pn:sigma_nav-->); hypotheses H9 and H10, registered before the
+          runs.</p>
+        <h3>Who we would work with</h3>
+        <p>JPL Robotics (crater and dark-crater fixes), the JPL CADRE team (rover-to-rover ranging), Stanford's NAV Lab,
+          NASA Goddard's planetary geodesy group (the terrain models), and the LunaNet navigation teams at NASA, ESA
+          (Moonlight) and JAXA.</p>
+        <p class="pr-paper">In the papers: <a href="<!--@base-->paper/">P3 (the navigation stack) and P2 (the safety margin)</a></p>
+      </div>
+      <figure class="pr-fig" id="fig-pos" aria-labelledby="fig-pos-cap">
+        <div class="pr-host" data-fig="pos"></div>
+        <figcaption id="fig-pos-cap">Position error along a 5 km drive from the base. Switch the layers on and off;
+          each fix pulls the error back down. Illustration from note 01's values; E50 replaces it.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section class="pr-sec" id="map" aria-labelledby="pr2-h">
+    <p class="ui-label">2 · A shared map and coordinate system</p>
+    <h2 id="pr2-h">How does a returning rover catch up on the map?</h2>
+    <p class="pr-q">&ldquo;How do you synchronise after a long time out of contact?&rdquo;</p>
+    <div class="pr-grid">
+      <div class="pr-text">
+        <h3>Our answer</h3>
+        <p>The base keeps one map of versioned tiles and every rover carries a full copy it can drive on alone; after
+          time out of contact the two compare a short digest of tile versions (<!--@pn:digest--> for
+          <!--@pn:changed--> out of <!--@pn:tiles-->) and send only the changed tiles, hazards on the rover's route
+          first. A day's hazard changes are about <!--@pn:hazard_kb-->, against <!--@pn:full_kb--> for the site's
+          elevation layer sent whole, and every coordinate names its frame, because reading it in the wrong lunar frame
+          moves a south-pole base by about <!--@pn:frame_m-->.</p>
+        <h3>Method</h3>
+        <p>Experiment E52 (hypothesis H12) brings rovers back after hours to days out of contact and counts the bytes
+          and the time until their hazard map is current, against a full resend.</p>
+        <h3>Who we would work with</h3>
+        <p>NASA Goddard's planetary geodesy group (terrain models and their error maps), the LROC and ShadowCam teams at
+          Arizona State, USGS Astrogeology (the map grid and datum), NAIF at JPL (frames), and the CADRE team (its
+          multi-rover map database).</p>
+        <p class="pr-paper">In the papers: <a href="<!--@base-->paper/">P3 (the map and its synchronisation)</a></p>
+      </div>
+      <figure class="pr-fig" id="fig-map" aria-labelledby="fig-map-cap">
+        <div class="pr-host" data-fig="map"></div>
+        <figcaption id="fig-map-cap">The site's 3,906 tiles; the 42 that changed while the rover was away arrive in
+          order, hazards first. Pick the link speed. Illustration from note 02's sizes; E52 replaces it.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section class="pr-sec" id="time" aria-labelledby="pr3-h">
+    <p class="ui-label">3 · Time</p>
+    <h2 id="pr3-h">What time is it on the Moon?</h2>
+    <p class="pr-q">&ldquo;How do rovers synchronise clocks?&rdquo;</p>
+    <div class="pr-grid">
+      <div class="pr-text">
+        <h3>Our answer</h3>
+        <p>Rovers agree on one lunar time scale and exchange timing messages in both directions, so the signal delay
+          cancels; a clock on the Moon runs <!--@pn:rel--> fast against one on Earth, so lunar time cannot simply copy
+          UTC. Between resyncs each rover runs on its own oscillator: a crystal drifts about <!--@pn:tcxo-->, a
+          chip-scale atomic clock about <!--@pn:csac-->, which is ample for position time stamps (<!--@pn:need_stamp-->)
+          and road reservations (<!--@pn:need_resv-->) but not for one-way radio ranging, where 1 ns is
+          <!--@pn:ns_m-->.</p>
+        <h3>Method</h3>
+        <p>Experiment E51 (hypothesis H11) sweeps the oscillator class and the interval between resyncs and measures
+          ranging error and reservation conflicts.</p>
+        <h3>Who we would work with</h3>
+        <p>NIST's Time and Frequency Division and JPL (the lunar time-scale theory), the BIPM and the Royal Observatory
+          of Belgium (traceability to UTC), NASA SCaN (Coordinated Lunar Time), and Microchip (chip-scale atomic
+          clocks).</p>
+        <p class="pr-paper">In the papers: <a href="<!--@base-->paper/">P3 (clocks) and P2 (reservations)</a></p>
+      </div>
+      <figure class="pr-fig" id="fig-time" aria-labelledby="fig-time-cap">
+        <div class="pr-host" data-fig="time"></div>
+        <figcaption id="fig-time-cap">Two rovers' clocks drift apart until the next resync. Pick the oscillator and the
+          resync interval; each need turns green when the worst offset meets it. Illustration from note
+          01's values; E51 replaces it.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section class="pr-sec" id="radio" aria-labelledby="pr4-h">
+    <p class="ui-label">4 · Communication</p>
+    <h2 id="pr4-h">Can it hear me behind the hill?</h2>
+    <p class="pr-q">&ldquo;Which channels? And what happens behind a hill?&rdquo;</p>
+    <div class="pr-grid">
+      <div class="pr-text">
+        <h3>Our answer</h3>
+        <p>Wi-Fi and LTE near the base, a narrow-band channel everywhere, and mesh relaying between rovers on the same
+          radios, with messages stored and forwarded (the Bundle Protocol, about <!--@pn:bp_bytes--> per message) when
+          no path exists. Behind a hill the link is lost rather than weakened (a ridge costs
+          <!--@pn:ridge_lo-->&ndash;<!--@pn:ridge_hi-->), so the remedy is geometric: relay through a rover or a mast
+          that sees both sides, or store the message and wait.</p>
+        <h3>Method</h3>
+        <p>The engine's radio model decides every link on the 5 m terrain (free space, then the flat-ground law, and a
+          link budget: <!--@pn:tx_w-->, <!--@pn:gain-->, noise figure <!--@pn:nf-->, margin <!--@pn:margin-->, at
+          <!--@pn:rate-->); experiment E54 (hypothesis H14) compares store-and-forward with drop-and-retry.</p>
+        <h3>Who we would work with</h3>
+        <p>The CCSDS working groups (links, security, delay-tolerant networking, surface wireless), NASA SCaN and the
+          LunaNet team, NASA's open delay-tolerant networking software teams, the LunarRF authors at WPI, and Nokia Bell
+          Labs.</p>
+        <p class="pr-paper">In the papers: <a href="<!--@base-->paper/">P3 (the radio network)</a></p>
+      </div>
+      <figure class="pr-fig" id="fig-radio" aria-labelledby="fig-radio-cap">
+        <div class="pr-host" data-fig="radio"></div>
+        <figcaption id="fig-radio-cap">The engine's link budget (lunarsim/atc/radio.py) in your browser. Drag the
+          distance, pick the antenna height and the band, put a hill in the way, and add a relay.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section class="pr-sec" id="protocol" aria-labelledby="pr5-h">
+    <p class="ui-label">5 · The protocol itself</p>
+    <h2 id="pr5-h">What does a rover say, byte by byte?</h2>
+    <p class="pr-q">&ldquo;An &lsquo;MCP for rovers&rsquo;: what are the messages, and how does a rover say what it can
+      do?&rdquo;</p>
+    <div class="pr-grid">
+      <div class="pr-text">
+        <h3>Our answer</h3>
+        <p>Eight message types (position, status, intent, alert, task, reservation, capability, map notice) and a
+          heartbeat, each with a version number and an authentication code; a position report is
+          <!--@pn:pos_payload--> of content and <!--@pn:pos_air--> on the air, so twenty rovers reporting once a second
+          need <!--@pn:load_1hz--> (ten times a second, <!--@pn:load_10hz-->). Each rover also publishes a signed
+          capability manifest (about <!--@pn:manifest-->), the idea behind tool descriptions in the Model Context
+          Protocol, so a job can be matched to any maker's vehicle.</p>
+        <h3>Method</h3>
+        <p>Experiment E53 (hypothesis H13) loads the channel with the full message set, authentication on, at once and
+          ten times a second for twenty rovers.</p>
+        <h3>Who we would work with</h3>
+        <p>CCSDS, the Space ROS community, ZettaScale (Zenoh), and the VDA 5050 group and MassRobotics, whose
+          factory-robot standards are the closest working precedent.</p>
+        <p class="pr-paper">In the papers: <a href="<!--@base-->paper/">P1 (the protocol)</a></p>
+      </div>
+      <figure class="pr-fig" id="fig-msg" aria-labelledby="fig-msg-cap">
+        <div class="pr-host" data-fig="msg"></div>
+        <figcaption id="fig-msg-cap">One POSITION report taken apart, byte by byte, with example values; then a job
+          matched against two vehicles' capability manifests. Layout and manifests from note 03, section C.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section class="pr-sec" id="coordination" aria-labelledby="pr6-h">
+    <p class="ui-label">6 · Coordination as a team</p>
+    <h2 id="pr6-h">A rover breaks down: who takes over?</h2>
+    <p class="pr-q">&ldquo;How are tasks shared, and what happens when a rover fails?&rdquo;</p>
+    <div class="pr-grid">
+      <div class="pr-text">
+        <h3>Our answer</h3>
+        <p>Neighbours notice the silence by missed heartbeats (suspect after <!--@pn:t_suspect-->, lost after
+          <!--@pn:t_isolate-->), the job goes back to auction under a higher epoch number, and the silent rover's road
+          reservation stays blocked until someone sees it. A planner on the Moon gave the same urgent wait as a
+          full-information marketplace in our runs (<!--@pn:wait_planner-->), while a dispatcher on Earth that stops
+          when Earth sets cost <!--@pn:wait_earth--> of extra wait.</p>
+        <h3>Method</h3>
+        <p>The Phase 5 engine (experiments E40 to E43) with the lost-link ladder of E54; a failure decision left to
+          Earth would add about <!--@pn:earth_wait--> of expected delay at our base. NASA's CADRE elects a new leader
+          within <!--@pn:cadre_leader-->.</p>
+        <h3>Who we would work with</h3>
+        <p>The JPL CADRE autonomy team, the Lunar Surface Innovation Consortium, DARPA's LOGIC interface consortium, DFKI
+          and DLR (rover teams tested in the field), and the Open-RMF project.</p>
+        <p class="pr-paper">In the papers: <a href="<!--@base-->paper/">P1 (job sharing) and P2 (rules of the road)</a></p>
+      </div>
+      <figure class="pr-fig" id="fig-auc" aria-labelledby="fig-auc-cap">
+        <div class="pr-host" data-fig="auction"></div>
+        <figcaption id="fig-auc-cap">One job on one timeline: announced, bid for, won by rover B; B goes silent; the
+          others notice and C takes over. Move the moment B fails. Timers from note 03, section D.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 7 -->
+  <section class="pr-sec" id="integrity" aria-labelledby="pr7-h">
+    <p class="ui-label">7 · Reliability and security</p>
+    <h2 id="pr7-h">Is that position report true?</h2>
+    <p class="pr-q">&ldquo;What if another rover reports a wrong position, by fault or on purpose?&rdquo;</p>
+    <div class="pr-grid">
+      <div class="pr-text">
+        <h3>Our answer</h3>
+        <p>Every message carries a counter and a keyed authentication code, so forged and replayed messages are
+          rejected; a rover that is wrong anyway is caught by comparing its report with your own radio range to it. If
+          the normalised squared difference exceeds <!--@pn:gamma1--> on 3 of the last 5 reports, the rover is treated
+          as suspect and the others are told; an error of about <!--@pn:min_err--> is caught 90 % of the time.</p>
+        <h3>Method</h3>
+        <p>Experiment E55 (hypothesis H15) compares this test with a learned detector (see
+          <a href="<!--@base-->network/">the network</a>) at the same false-alarm rate; E56 (H16) tests the
+          trimmed-mean rule for values many rovers must agree on.</p>
+        <h3>Who we would work with</h3>
+        <p>The CCSDS security working group, the LunaNet security documents' authors at NASA SCaN, and the JPL CADRE
+          team.</p>
+        <p class="pr-paper">In the papers: <a href="<!--@base-->paper/">P2 (integrity) and P3 (security)</a></p>
+      </div>
+      <figure class="pr-fig" id="fig-int" aria-labelledby="fig-int-cap">
+        <div class="pr-host" data-fig="integrity"></div>
+        <figcaption id="fig-int-cap">A neighbour's reports checked against your own range to it, once a second. Pick a
+          fault; the test statistic crosses its threshold and the 3-of-5 rule flags the rover. Illustration with note
+          03's test; E55 replaces it.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 8 -->
+  <section class="pr-sec" id="market" aria-labelledby="pr8-h">
+    <p class="ui-label">8 · Market and reality</p>
+    <h2 id="pr8-h">Who has flown what?</h2>
+    <p class="pr-q">&ldquo;Who is doing this already, and who would pay?&rdquo;</p>
+    <div class="pr-grid">
+      <div class="pr-text">
+        <h3>Our answer</h3>
+        <p>Nobody has flown cooperating rovers on the Moon: NASA's CADRE (three rovers, one owner) is built and waits
+          for its lander, and the first robots of several makers on one site are planned for 2028 to 2029. Nobody we
+          found sells a coordination layer for vehicles of different makers, and in practice the customer is NASA's
+          Moon Base programme and its contractors.</p>
+        <h3>Method</h3>
+        <p>A survey of flown and planned missions, current to 11 November 2026; no experiment.</p>
+        <h3>Who we would work with</h3>
+        <p>First: the JPL CADRE team, the Lunar Surface Innovation Consortium and LOGIC. Then the OmniLRS simulator
+          authors (Luxembourg and Tohoku), DFKI, DLR, and the ESA and DLR LUNA test hall.</p>
+        <p class="pr-paper">In the papers: <a href="<!--@base-->paper/">P3 (the market)</a></p>
+      </div>
+      <figure class="pr-fig pr-fig-wide" id="fig-who" aria-labelledby="fig-who-cap">
+        <div class="pr-host" data-fig="who"></div>
+        <figcaption id="fig-who-cap">Flown, tested on Earth, or planned, as of 11 November 2026 (note 04, section C).
+          Filter by status.</figcaption>
+      </figure>
+    </div>
   </section>
 </div></main>
 <!--@footer-->

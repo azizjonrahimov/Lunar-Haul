@@ -740,7 +740,7 @@ file). Name the law in the caption (flat ground, two-ray; free space is an upper
 (`h10.link_kbps_needed_20_robots_secured_mac8`), 10.06 needed on a scheduled channel (fits 16), 21.87 on random
 access (does not); read them from the `airtime` block. /verification/ will show 186 rows: check it renders.
 
-## F-60 [IN PROGRESS; notes 01 to 04 are committed, section A of each holds the answers] /protocol/ page: eight problems, eight answers
+## F-60 [DONE 11 Nov 11:50, uncommitted] /protocol/ page: eight problems, eight answers
 One section per problem group (positioning, map, time, communication, the protocol, coordination, reliability
 and security, market). Each section: the question in the owner's words, our answer in two sentences, the method,
 who we would work with, one interactive figure, and a link to the paper section. Figures (data from B-99, mock
@@ -758,7 +758,7 @@ compared with, the test metrics (event-level precision and recall, detection del
 vehicle cutaway with the computer highlighted, the inputs it reads (ranging radio, odometry) and the output it
 gates (the safety check). Tier 0 fallback: a 2D contour plot. Follow the dataviz rules for colour.
 
-## F-62 [QUEUED] Cutaways of the navigation, radio and clock hardware
+## F-62 [OPEN; F-60 is committed] Cutaways of the navigation, radio and clock hardware
 With the anatomy skill: the rover's navigation stack as a physical object (cameras, IMU, star tracker or sun
 sensor, ranging radio and antenna, clock, computer), each part labelled with its measured or sourced number
 from note 01 and E48; labelled "our design" where it is ours and "published" where it is the maker's.
