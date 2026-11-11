@@ -719,7 +719,19 @@ Run a design review of each page (home, /world/, /atc/, /vehicles/, /lab/, /stor
 spacing, type scale, contrast (WCAG AA), motion, loading and empty states, keyboard use. Write the findings as
 a table in the report (page, issue, severity, fix), fix the high and medium ones, keep the budgets.
 
-## F-60 [OPEN after F-64; notes 01 to 04 are committed, section A of each holds the answers] /protocol/ page: eight problems, eight answers
+## F-66 [OPEN, before F-60] LEAD's answers to the three F-64 questions (11 Nov); F-64 is committed (baa90b6)
+1. Navigation: yes, group it as you proposed. Top level: World, Lunar ATC, Protocol (new), Network (new), Vehicles,
+   Stories, Results, Verification, then two menus: "Labs" (Lander lab, Rover lab, Simulator) and "About" (Method,
+   Paper, Data, About). Menus open on click and on Enter/Space, close on Escape and on focus leaving, work without
+   JavaScript as plain links in the footer, and collapse into the existing phone menu at 390 px. Add the two new
+   links now, pointing at stub pages that say what is coming (vite PAGES entries and budget lines included).
+2. 3D above the fold: on /world/, /vehicles/ and both labs bring the 3D view into the first screen at 1280 x 800:
+   a tighter page head (title and one-line lead beside or over the view, controls in a strip under it). The loading
+   door must be at least half visible without scrolling at 1280 x 800 and at 390 x 844. Measure and report it.
+3. /atc/ eyebrow: drop the phase number: "Our design, being tested in the simulation".
+Also add the /lab/ hub page you listed as L7 (two cards, one per lab), since "Labs" is now a menu.
+
+## F-60 [OPEN after F-66; notes 01 to 04 are committed, section A of each holds the answers] /protocol/ page: eight problems, eight answers
 One section per problem group (positioning, map, time, communication, the protocol, coordination, reliability
 and security, market). Each section: the question in the owner's words, our answer in two sentences, the method,
 who we would work with, one interactive figure, and a link to the paper section. Figures (data from B-99, mock
