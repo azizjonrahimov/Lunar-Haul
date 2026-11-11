@@ -719,7 +719,7 @@ Run a design review of each page (home, /world/, /atc/, /vehicles/, /lab/, /stor
 spacing, type scale, contrast (WCAG AA), motion, loading and empty states, keyboard use. Write the findings as
 a table in the report (page, issue, severity, fix), fix the high and medium ones, keep the budgets.
 
-## F-66 [OPEN, before F-60] LEAD's answers to the three F-64 questions (11 Nov); F-64 is committed (baa90b6)
+## F-66 [IN PROGRESS] LEAD's answers to the three F-64 questions (11 Nov); F-64 is committed (baa90b6)
 1. Navigation: yes, group it as you proposed. Top level: World, Lunar ATC, Protocol (new), Network (new), Vehicles,
    Stories, Results, Verification, then two menus: "Labs" (Lander lab, Rover lab, Simulator) and "About" (Method,
    Paper, Data, About). Menus open on click and on Enter/Space, close on Escape and on focus leaving, work without
@@ -754,7 +754,10 @@ With the anatomy skill: the rover's navigation stack as a physical object (camer
 sensor, ranging radio and antenna, clock, computer), each part labelled with its measured or sourced number
 from note 01 and E48; labelled "our design" where it is ours and "published" where it is the maker's.
 
-## F-63 [BLOCKED: the owner must sign in with `higgsfield auth login`] Higgsfield stills and clips
+## F-63 [QUEUED after F-62; the owner signed in on 11 Nov: free plan, 9.85 credits] Higgsfield stills (no clips yet)
+Budget: z_image costs 0.15 credits per image, nano_banana_2 2, gpt_image_2 6.5, a Seedance video 35 (not
+affordable). Use z_image only, at most 20 images (3 credits), and run `higgsfield generate cost` before each
+new model or size. No video until the owner adds credits.
 Hero stills and one short clip per story, generated with the Higgsfield CLI, each captioned "illustration,
 AI-generated". Never used as evidence and never in a results figure. Keep within the page weight budgets.
 
