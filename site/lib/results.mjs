@@ -29,6 +29,13 @@ const rel = t => {
   return s;
 };
 const titleOf = id => id.replace(/^fig\d+_/, '').replace(/_/g, ' ');
+// alt text: the caption's first sentence (what the figure shows); the full caption sits right below in <figcaption>
+const altOf = (id, c, prefix = 'Figure') => {
+  if (c.alt) return c.alt;
+  const t = inline(rel(c.caption || '')).replace(/<[^>]+>/g, '').replace(/^Figure \d+\.\s*/, '');
+  const first = (t.match(/^.+?[.:](?=\s|$)/) || [t])[0].replace(/[.:]$/, '').trim();
+  return first ? `${prefix}: ${first.length > 160 ? first.slice(0, 157) + '...' : first}` : `${prefix} ${titleOf(id)}`;
+};
 
 function img(base, png, alt) {
   const [w, h] = pngSize(join(FIG, png));
@@ -50,7 +57,7 @@ function phase3Figures(base) {
     const note = status === 'produced' ? '' : `<p class="r-note"><span class="pill note">${esc(status)}</span> ${esc(rel(c.reason || 'not produced in the latest figure run'))}</p>`;
     const meta = [c.n ? `<b>n:</b> ${esc(c.n)}` : '', c.ci ? `<b>Intervals:</b> ${esc(c.ci)}` : '', c.flags ? `<b>Flags:</b> ${esc(c.flags)}` : ''].filter(Boolean).join(' · ');
     let body;
-    if (status === 'produced' && png) body = img(base, png, c.alt || `Figure ${titleOf(id)}`);
+    if (status === 'produced' && png) body = img(base, png, altOf(id, c));
     else if (stale.length) body = `<details class="r-stale"><summary>Show the stale version from an earlier run</summary>${img(base, stale[0], `Stale figure ${titleOf(id)}`)}</details>`;
     else body = '';
     return `<figure class="r-fig" id="${esc(id)}">${body}<figcaption><b>${esc(id.match(/^fig(\d+)/) ? 'Figure ' + +id.match(/^fig(\d+)/)[1] : id)}.</b> ${inline(rel(c.caption || titleOf(id)))}
@@ -123,7 +130,7 @@ function v2Figures(base, ids) {
   if (!ids.length) return '<p class="stub">No version-2 figures in figures/.</p>';
   // in the paper's order: its figure numbers differ from the file names (fig14_timeline is Figure 5)
   const caps = v2Captions(), no = id => +((caps[id] || '').match(/Figure (\d+)\./) || [0, 99])[1];
-  return [...ids].sort((x, y) => no(x) - no(y) || (x < y ? -1 : 1)).map(id => `<figure class="r-fig" id="${esc(id)}">${img(base, id + '.png', `Version 2 figure: ${titleOf(id)}`)}<figcaption>${caps[id] || `<b>${esc(titleOf(id))}</b>`}
+  return [...ids].sort((x, y) => no(x) - no(y) || (x < y ? -1 : 1)).map(id => `<figure class="r-fig" id="${esc(id)}">${img(base, id + '.png', altOf(id, { caption: caps[id] }, 'Version 2 figure'))}<figcaption>${caps[id] || `<b>${esc(titleOf(id))}</b>`}
 <p class="small">${downloads(base, [id + '.png', ...(existsSync(join(FIG, id + '.pdf')) ? [id + '.pdf'] : [])])}</p></figcaption></figure>`).join('\n');
 }
 

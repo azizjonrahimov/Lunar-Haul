@@ -123,3 +123,5 @@
 .atc-bid-sl output { font-variant-numeric: tabular-nums; text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--ink); }
 .atc-bid-out { margin: var(--s-3) 0 var(--s-2); font-size: 1.0625rem; }
 .atc-bid-out .ui-label { display: block; margin-bottom: 0.15rem; }
+/* F-64: the "see it in 3D" links in the sizing table head were 18 px tall; WCAG 2.5.8 asks for 24 px */
+.atc-inside-t thead a.small { display: inline-flex; align-items: center; min-height: var(--target); }

@@ -80,8 +80,10 @@ function drawGallery() {
   const host = $('w2-gallery'); host.replaceChildren();
   for (const [g, label] of Object.entries(GROUP_LABEL)) {
     const scenes = gallery.scenes.filter(s => s.group === g); if (!scenes.length) continue;
-    host.append(sceneChips({ label, scenes: scenes.map(s => ({ value: s.id, label: s.title })), value: scenes.some(s => s.id === ui.scene) ? ui.scene : null,
-      onChange: id => { ui.scene = id; { const u = new URL(location.href); u.searchParams.set('scene', id); u.hash = ''; history.replaceState(null, '', u); } drawGallery(); headline(); if (sc) open(); } }).el);
+    const chips = sceneChips({ label, scenes: scenes.map(s => ({ value: s.id, label: s.title })), value: scenes.some(s => s.id === ui.scene) ? ui.scene : null,
+      onChange: id => { ui.scene = id; { const u = new URL(location.href); u.searchParams.set('scene', id); u.hash = ''; history.replaceState(null, '', u); } drawGallery(); headline(); if (sc) open(); } });
+    // F-64: the group's name shown above its chips (it was only the toolbar's aria-label), so the 14 chips read as 4 groups
+    host.append(h('div', { class: 'w2-group' }, h('span', { class: 'ui-label', 'aria-hidden': 'true' }, label), chips.el));
   }
 }
 function headline() {

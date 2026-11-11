@@ -3,6 +3,9 @@
 .r-controls select, #r-ch { font: inherit; font-size: var(--fs-small); padding: 0.35em 0.5em; border: 1px solid var(--hairline); border-radius: var(--radius); background: var(--bg); color: var(--ink); min-height: 2.25rem; }
 .lbl { font-size: var(--fs-small); color: var(--ink-2); }
 .toolbar { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; }
+/* F-64: a label and its control wrap as one unit (a label was left at a line end with its select on the next line) */
+.toolbar .fld { display: inline-flex; align-items: center; gap: var(--s-1, 0.35rem); max-width: 100%; }
+.toolbar .fld select { flex: 0 1 auto; min-width: 0; max-width: 100%; }
 .status-line { font-size: var(--fs-small); color: var(--ink-2); margin: var(--s-2) 0; min-height: 1.5em; }
 .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 .r-keys .btn { min-width: 2.5rem; justify-content: center; }

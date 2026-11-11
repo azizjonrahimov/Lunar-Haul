@@ -1,5 +1,14 @@
 /* /world/ v2 (F-36): gallery chips, the 3D view with HUD panels over it on desktops, panels below on phones. */
 .w2-gallery { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-5); margin-top: var(--s-3); min-height: 5.75rem; }   /* room for the chips before gallery.json arrives (layout shift) */
+/* F-64: each group under its visible name; on a phone each group is one row that scrolls sideways, so the 14 chips
+   take four rows instead of fourteen before the 3D view */
+.w2-group { display: flex; flex-direction: column; gap: var(--s-1); min-width: 0; }
+@media (max-width: 600px) {
+  .w2-gallery { flex-direction: column; flex-wrap: nowrap; gap: var(--s-3); }
+  .w2-group .ui-scenes { flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x proximity; overscroll-behavior-x: contain;
+    margin-inline: calc(-1 * var(--gutter)); padding: 5px var(--gutter) 8px;   /* room for the 2 px focus ring at 2 px offset */ scroll-padding-inline: var(--gutter); scrollbar-width: thin; }
+  .w2-group .ui-scene { flex: 0 0 auto; scroll-snap-align: start; white-space: nowrap; }
+}
 .w2-scene { margin: var(--s-3) 0 0; color: var(--ink-2); max-width: 60rem; min-height: 3.4em; }
 .w2-scene strong { color: var(--ink); }
 .w2-stage { position: relative; height: clamp(520px, 74vh, 780px); border-radius: var(--radius-panel); overflow: hidden; background: #000; margin-top: var(--s-3); }

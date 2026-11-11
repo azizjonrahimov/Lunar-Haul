@@ -66,7 +66,7 @@
 .engine-row { display: flex; gap: var(--s-2); flex-wrap: wrap; }
 .engine-row input { flex: 1 1 14rem; }
 .engine-state[data-state="on"] { color: var(--ink); }
-.engine-state[data-state="err"] { color: var(--tol-red); }
+.engine-state[data-state="err"] { color: var(--neg); }
 .engine-state .dot { display: none; }
 .xsrc { display: flex; gap: 0.5em; align-items: center; font-size: var(--fs-small); color: var(--ink-2); }
 

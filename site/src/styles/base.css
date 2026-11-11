@@ -134,7 +134,11 @@ body.instrument [data-theme-toggle] { display: none; }   /* 3D pages are always 
 .headline .ctx { color: var(--ink-2); font-size: var(--fs-small); display: block; }
 
 /* hero */
-.hero { position: relative; background: #050506; color: rgba(255, 255, 255, 0.87); }
+.hero { position: relative; background: #050506; color: rgba(255, 255, 255, 0.87);
+  /* the hero is always dark: give its text and flags the dark tokens in both themes (F-64: the caption was
+     60 % black on #050506 in the light theme, 1.02:1; the Modelled flags 3.35:1) */
+  color-scheme: dark; --ink-2: rgba(255, 255, 255, 0.7); --hairline: rgba(255, 255, 255, 0.12); --link: #8db3dc; --focus: #66CCEE;
+  --flag-measured: #4fbf5c; --flag-spec: #7aa6d6; --flag-modelled: #d47aac; --flag-assumed: #d8c75a; }
 .hero-stage { position: relative; height: min(72vh, 46rem); min-height: 22rem; }
 .hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .hero-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: var(--s-6) var(--gutter); text-align: center; color: rgba(255,255,255,.65); }
@@ -161,7 +165,7 @@ body.instrument [data-theme-toggle] { display: none; }   /* 3D pages are always 
 .md h2 { border-top: 1px solid var(--hairline); padding-top: var(--s-5); }
 .md table { display: block; overflow-x: auto; }   /* wide tables scroll in place on phones */
 select { max-width: 100%; }
-.stub { color: var(--ink-3); font-style: italic; }
+.stub { color: var(--ink-2); font-style: italic; }   /* F-64: was ink-3, under 4.5:1 for body text */
 
 /* motion tiering: CSS transitions only; canvas motion is gated in JS (home-hero-3d.js and the 3D pages) */
 @media (prefers-reduced-motion: no-preference) {

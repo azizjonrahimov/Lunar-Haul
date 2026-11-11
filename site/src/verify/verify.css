@@ -2,8 +2,8 @@
 .v-head { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
 .v-badge { font-weight: 650; padding: 0.3em 0.8em; border-radius: 999px; font-size: var(--fs-small); border: 1px solid currentColor; }
 .v-badge.ok { color: var(--flag-measured); }
-.v-badge.bad { color: var(--tol-red); }
-.v-badge.idle { color: var(--ink-3); }
+.v-badge.bad { color: var(--neg); }   /* F-64: --tol-red is 3.09:1 on white; --neg is the text-safe red in every theme */
+.v-badge.idle { color: var(--ink-2); }   /* F-64: ink-3 is for text >= 24 px; this was 3.35:1 */
 .status-line { font-size: var(--fs-small); color: var(--ink-2); margin: var(--s-2) 0; min-height: 1.5em; }
 .v-group h2 { font-size: var(--fs-h3); margin-top: var(--s-6); }
 .v-count { font-size: var(--fs-small); color: var(--ink-2); font-weight: 500; margin-left: 0.4em; }
@@ -14,7 +14,7 @@
 .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 650; white-space: nowrap; }
 .pill.pass { color: var(--flag-measured); border: 1px solid currentColor; }
-.pill.fail { color: var(--tol-red); border: 1px solid currentColor; }
+.pill.fail { color: var(--neg); border: 1px solid currentColor; }
 .pill.note { color: var(--ink-2); border: 1px dashed currentColor; }
 
 /* F-40: the checks arrive one by one; the area is reserved so the text below does not jump (Lighthouse CLS 0.65) */
@@ -26,8 +26,8 @@
 .v-phase5 .v-group h3 { font-size: var(--fs-h3); margin-top: var(--s-5); }
 .v5-res { font-weight: 650; font-size: var(--fs-small); }
 .v5-res.ok { color: var(--flag-measured); }
-.v5-res.bad { color: var(--tol-red); }
-.v5-res.idle { color: var(--ink-3); }
+.v5-res.bad { color: var(--neg); }
+.v5-res.idle { color: var(--ink-2); }
 .v5-cal { font: 600 0.6875rem/1 var(--font-display); padding: 0.15rem 0.4rem; border: 1px dashed var(--ink-2); border-radius: 999px; color: var(--ink-2); white-space: nowrap; }
-.v5-err { color: var(--tol-red); }
+.v5-err { color: var(--neg); }
 .v5-bias { font: 600 0.6875rem/1 var(--font-display); padding: 0.15rem 0.4rem; border: 1px solid var(--ink-2); border-radius: 999px; color: var(--ink); white-space: nowrap; }

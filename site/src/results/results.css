@@ -14,5 +14,5 @@
 .r-table td.small { white-space: normal; }
 .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 650; white-space: nowrap; }
 .pill.pass { color: var(--flag-measured); border: 1px solid currentColor; }
-.pill.fail { color: var(--tol-red); border: 1px solid currentColor; }
+.pill.fail { color: var(--neg); border: 1px solid currentColor; }
 .pill.note { color: var(--ink-2); border: 1px dashed currentColor; }
