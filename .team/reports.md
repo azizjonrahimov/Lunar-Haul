@@ -7747,3 +7747,10 @@ Files: site/src/world/atc-pair.js (new), site/src/world/v2.js, site/src/world/v2
 - Vehicles with no leg in the month now stand at their fleet start site (B-80 addendum f1c1e63): with 0 at BASE, 5 and 6 at DEPOT; without 2 at PAD_A, 5 and 6 at DEPOT (checked in Node with the page's own prep()). "Not moved this month (at <site>)" is now each one's tooltip (SVG title); the "now" line no longer lists them.
 - Staging re-checked the new sizes and sha256 (with 24,583 B, without 28,004 B; index 5,773 B); the totals still equal meta.summary. Tests 31/31; budgets pages OK (/world/ JS 21.6 of 25, data 4,262.5 of 4,420, lazy 258.9 of 265).
 - No browser run: the only change is the placement of these six dots and their tooltips. RAM 1.08 GB, C: 0.50 GB.
+
+## LEAD 11 Nov: Phase 6 opened (`.team/PLAN-phase6.md`, `paper/atc/PREREG6.md`). Research note 01 (positioning and time) is committed:
+`research_notes/Lunar Rover Interaction Protocol/01_positioning_and_time.md` (section D = simulation parameters, section E = proofs). B-90 is OPEN.
+- It corrects four things in `vehicles_comms_internals.md`: the AFS chip rates are 1.023 Mchip/s (data) and 5.115 Mchip/s (pilot), not 3 Mcps; CADRE on IM-3 and Lunar Pathfinder are now 2027 (secondary source);
+  crystal drift measured on the Moon by LuGRE is 0 to 8e-7 (the 1 ppm was an assumption); the OSTP memo's 58.7 us/day omits the Moon's own potential, 56.02 us/day stands.
+- For BACKEND: the reservation margin is set by position error / speed (5 m at 1 m/s = 5 s), not by clock error. UWB ranging default range is 100 m (assumed), 0.3 m 1-sigma.
+- The venv was repaired (pyvenv.cfg); use `.venv\Scripts\python -m pytest`. `lunarsim/nn/`, `experiments/phase6/nn/`, `data/atc/integrity/` belong to LEAD's agent (B-96).

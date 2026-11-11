@@ -1124,7 +1124,8 @@ uncoordinated-vs-ATC comparison with Mars round trips (Earth hand-resolution bec
 ## baseline row; tests in `tests/`; use `.venv\Scripts\python -m pytest` (console .exe scripts are broken).
 ## `lunarsim/nn/` and `experiments/phase6/nn/` belong to LEAD's agent (B-96): do not edit them.
 
-## B-90 [QUEUED: opens when LEAD reports note 01 in reports.md] Positioning layer (problem 1; E50)
+## B-90 [OPEN] Positioning layer (problem 1; E50). Note 01 is committed: parameters from its section D,
+## maths from its section E; quote the note's source tags in the code comments.
 `lunarsim/atc/pnt.py`: each vehicle carries a true position (the engine's) and an estimated one. Layers, each
 switchable: (a) dead reckoning: error grows with distance driven (percent of distance, by terrain class) plus a
 heading random walk; (b) cooperative ranging to neighbours and base beacons inside radio range (covariance
