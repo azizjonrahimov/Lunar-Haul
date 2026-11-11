@@ -85,4 +85,9 @@ Family for multiplicity: {H9, H10, H13, H14, H15a} are confirmatory (Holm). The 
 - H10 failing means position error, not the rules, sets traffic capacity; P2 says so.
 
 ## 6. Changes after first results
-(none yet)
+- **11 Nov 2026, E50 seeds and the budget (decided after one timing cell: 1x and 4x, seed 1).** Run time per
+  cell is 1.5 min at 1x, about 11 min at 4x and about 42 min at 8x, so E50 runs 30 seeds at 1x, 10 at 4x and 5
+  at 8x (section 2 allows fewer seeds when run time forces it, with the number stated). The seed-1 numbers were
+  seen when this was decided; they did not enter the choice, which follows run time only. The "separation
+  budget" of H9 is R1's static margin D0 = 5 m (`lunarsim/atc/safety.py`), the distance the rules already
+  keep free for position uncertainty.
