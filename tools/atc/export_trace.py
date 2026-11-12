@@ -451,6 +451,27 @@ def _commit():
         return None
 
 
+SUMMARY_OUT = os.path.join(ROOT, "results", "ATC_trace_pair_summary.json")
+
+
+def summary_doc(idx):
+    """B-80c: the trace index's window and each run's summary and settings (same paths as in the index), as a results
+    file the story schema can read (it reads numbers only from results/*.json)."""
+    return {"format": "lunarsim-atc-trace-summary", "version": 1, "source": "data/atc/trace_pair/index.json",
+            "window": idx["window"],
+            "runs": {n: {"summary": r["summary"], "settings": r["settings"]} for n, r in idx["runs"].items()}}
+
+
+def write_summary(index_path=None, out=SUMMARY_OUT):
+    index_path = index_path or os.path.join(ROOT, "data", "atc", "trace_pair", "index.json")
+    with open(index_path, encoding="utf-8") as f:
+        idx = json.load(f)
+    with open(out, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(summary_doc(idx), f, indent=1)
+        f.write("\n")
+    return out
+
+
 def main(out_dir: str, seed: int):
     (month, t0, t1, share), iv = dark_month()
     os.makedirs(out_dir, exist_ok=True)
@@ -479,6 +500,8 @@ def main(out_dir: str, seed: int):
     with open(os.path.join(out_dir, "index.json"), "w", encoding="utf-8", newline="\n") as f:
         json.dump(idx, f, indent=1)
         f.write("\n")
+    if os.path.abspath(out_dir) == os.path.abspath(os.path.join(ROOT, "data", "atc", "trace_pair")):
+        print("summary", os.path.relpath(write_summary(os.path.join(out_dir, "index.json")), ROOT))
     print("window", idx["window"])
 
 
@@ -486,7 +509,12 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=os.path.join(ROOT, "data", "atc", "trace_pair"))
     ap.add_argument("--seed", type=int, default=1)
+    ap.add_argument("--summary-only", action="store_true", help="only rewrite results/ATC_trace_pair_summary.json "
+                                                                "from the existing index (B-80c)")
     a = ap.parse_args()
+    if a.summary_only:
+        print(os.path.relpath(write_summary(os.path.join(a.out, "index.json")), ROOT))
+        raise SystemExit(0)
     import faulthandler
     faulthandler.dump_traceback_later(580, exit=True)
     main(a.out, a.seed)

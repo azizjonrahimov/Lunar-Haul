@@ -1,10 +1,10 @@
 {
  "version": 1,
- "generated": "2026-11-11T11:27:48-0800",
- "commit": "23b1d5dba2abca82e3037ca60df5b50359881506",
+ "generated": "2026-11-11T17:42:19-0800",
+ "commit": "a773dea42e60d7bfec349c1d6bf297245b0db6fb",
  "summary": {
-  "rows": 186,
-  "passed": 160,
+  "rows": 187,
+  "passed": 161,
   "failed": 10,
   "skipped": 16,
   "bias_flags": 1
@@ -5487,6 +5487,34 @@
    "bias_flag": null,
    "exposure": null,
    "runtime_s": 0.01,
+   "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
+  },
+  {
+   "name": "The trace-pair results summary equals the trace index",
+   "reference": 0.0,
+   "simulated": 0.0,
+   "tolerance": 0.0,
+   "unit": "mismatches",
+   "basis": "results/ATC_trace_pair_summary.json against data/atc/trace_pair/index.json: window, and summary and settings of 2 runs",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "tools/atc/export_trace.py",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "V1",
+   "sub": "results summary",
+   "technique": "traces",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 0.0,
    "tolerance_source": "research_notes/Lunar ATC/verification_plan.md section 2.2 rule 1: exact for counts and booleans"
   }
  ]

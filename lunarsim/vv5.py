@@ -2297,10 +2297,35 @@ def run_phase5_tranche3() -> List[Dict]:
     return rows
 
 
+def check_v1_summary() -> List[Dict]:
+    """V1 'results summary' (B-80c): results/ATC_trace_pair_summary.json equals the trace index's window and each run's
+    summary and settings (the story schema reads the with / without counters from it)."""
+    t0 = time.time()
+    ip = _repo("data", "atc", "trace_pair", "index.json")
+    sp = _repo("results", "ATC_trace_pair_summary.json")
+    if not (os.path.isfile(ip) and os.path.isfile(sp)):
+        r = _row("V1", "results summary", "The trace-pair results summary equals the trace index", float("nan"),
+                 float("nan"), 0.0, "", "no index or no summary", "traces", "code verification", "V", "P1", ["P1"],
+                 mode="abs", source="B-80c")
+        r["skipped"] = "run tools/atc/export_trace.py (or --summary-only)"
+        return [r]
+    idx = json.load(open(ip, encoding="utf-8"))
+    doc = json.load(open(sp, encoding="utf-8"))
+    bad = int(doc.get("format") != "lunarsim-atc-trace-summary") + int(doc.get("window") != idx["window"])
+    bad += int(set(doc.get("runs", {})) != set(idx["runs"]))
+    for n, r in idx["runs"].items():
+        got = doc.get("runs", {}).get(n, {})
+        bad += int(got.get("summary") != r["summary"]) + int(got.get("settings") != r["settings"])
+    return [_row("V1", "results summary", "The trace-pair results summary equals the trace index", 0.0, float(bad), 0.0,
+                 "mismatches", f"results/ATC_trace_pair_summary.json against data/atc/trace_pair/index.json: window, "
+                 f"and summary and settings of {len(idx['runs'])} runs", "traces", "code verification", "V", "P1", ["P1"],
+                 mode="abs", source="tools/atc/export_trace.py", t0=t0)]
+
+
 def run_phase5_batch3b() -> List[Dict]:
     rows: List[Dict] = []
     for f in (check_s1_separation, check_s2_injection, check_s3_minimal, check_s5_encounters, check_t1_single_lane,
-              check_t2_deterministic, check_t5_s5_s6_s7_roads, check_v_replay):
+              check_t2_deterministic, check_t5_s5_s6_s7_roads, check_v_replay, check_v1_summary):
         rows += f()
     return rows
 

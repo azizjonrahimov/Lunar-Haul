@@ -153,3 +153,10 @@ def test_tranche3_fast_rows():
     assert not bad
     skips = V.check_tranche3_skipped() + V.check_x_not_possible()
     assert all(r["skipped"] and not r["passed"] for r in skips)
+
+
+def test_v1_trace_summary_matches_index():
+    """B-80c: results/ATC_trace_pair_summary.json equals the trace index (window, each run's summary and settings)."""
+    rows = V.check_v1_summary()
+    assert len(rows) == 1 and rows[0]["id"] == "V1" and rows[0]["sub"] == "results summary"
+    assert rows[0]["skipped"] or rows[0]["passed"]

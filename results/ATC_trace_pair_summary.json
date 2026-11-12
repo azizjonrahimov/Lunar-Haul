@@ -1,0 +1,45 @@
+{
+ "format": "lunarsim-atc-trace-summary",
+ "version": 1,
+ "source": "data/atc/trace_pair/index.json",
+ "window": {
+  "month": 7,
+  "name": "July",
+  "t0_h": 4368.0,
+  "t1_h": 5112.0,
+  "base_dte_share": 0.5269,
+  "rule": "the 2028 calendar month with the least BASE direct-to-Earth visibility"
+ },
+ "runs": {
+  "with": {
+   "summary": {
+    "urgent_items_waiting": 0,
+    "idle_robot_hours": 5532.261,
+    "messages_per_hour": 2.161,
+    "earth_hand_hours": 0
+   },
+   "settings": {
+    "loss": 0.1,
+    "roads": "atc",
+    "start_year": 2028,
+    "scenario": "p5 3eq, 30 % load, team share 0.10, landing closures, fixpoint"
+   }
+  },
+  "without": {
+   "summary": {
+    "urgent_items_waiting": 1,
+    "idle_robot_hours": 5642.063,
+    "messages_per_hour": 0.0,
+    "earth_hand_hours": 8.655
+   },
+   "settings": {
+    "fallback": "strict",
+    "own_teams": true,
+    "team_lift": true,
+    "roads": "uncoordinated",
+    "start_year": 2028,
+    "scenario": "p5 3eq, 30 % load, team share 0.10, landing closures, fixpoint"
+   }
+  }
+ }
+}
