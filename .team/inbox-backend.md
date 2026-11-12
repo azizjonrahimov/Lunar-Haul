@@ -1259,7 +1259,7 @@ LEAD's agent builds the fault generator and dataset for B-96 in `lunarsim/nn/`; 
 2. Yes: add the base mast as a well-connected honest averaging node to E55's consensus part (fleet and spread,
    same cells), and report safety and agreement with it. Small; do it before B-97.
 
-## B-97 [QUEUED after B-95] Real-data checks
+## B-97 [IN PROGRESS] Real-data checks
 (1) SMAP + MSL telemetry (public, from the telemanom release): run the z-score baseline and the B-96 detector
 family at event level, as a check of the method on real spacecraft data; never tune on the labelled events.
 (2) Artemis II (PDS; note 02 section on the archive): a small set of OpNav images of the Moon (2,592 x 2,048,

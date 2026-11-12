@@ -8959,3 +8959,14 @@ Next: B-95 (integrity, authentication, consensus); it imports B-96's fault defin
 2. Should I add an E55 variant where the base mast joins as a well-connected honest averaging node? It would show how much agreement a single relay buys.
 
 Next: B-97 (real-data checks), then B-98 / B-99. B-90b waits for your 8x loop.
+
+## B-95 ADDENDUM (E55 consensus with the base mast as an honest node; LEAD's request)
+`python tools/atc/run_e55.py consensus_mast`, then `build`: the 10 m BASE mast joins as one more honest node, linked to every rover in its DEM line of sight. The results are in `results/E55_integrity.json` → `consensus_with_base_mast` and in `results/E55_table_consensus.csv` (column `mast`).
+- **Fleet geometry** (F = f, or F = 1 for f = 0):
+  - connected graphs: 0–10 % → **58–96 %**;
+  - every honest rover hearing ≥ 2F + 1: 0.00–0.26 → 0.04–0.40;
+  - **agreement: 0–10 % → 0–16 %**, no real change;
+  - safety: 1.00 throughout.
+- **Spread geometry:** nothing changes (connected ≤ 8 %, agreement 0). Spread rovers rarely see the mast.
+- **Why the mast does not buy agreement:** it turns the graph into a star. A rover that hears the mast and one or two others has its extreme values trimmed by W-MSR (F = 1), so it never moves. W-MSR needs (2F+1)-robust neighbourhoods, which means every rover hears at least 3 others, not one central node.
+- **For P2:** on this terrain a shared estimate should be computed **at the base** (a fusion centre with C8's per-report tests and C8 step 4's two-owner agreement), not by W-MSR among rovers. W-MSR is a fallback only for well-meshed clusters (e.g. several rovers at one work site).

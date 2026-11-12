@@ -137,13 +137,16 @@ def _positions(geometry):
     return idx, g
 
 
-def cmd_consensus(runs=50):
+def cmd_consensus(runs=50, mast_variant=False):
+    """mast_variant (LEAD, 11 Nov): the base computer on the 10 m BASE mast joins as one more honest node, linked to
+    every rover in its DEM line of sight (B-70 mesh mast table)."""
     from lunarsim.atc import integrity as I
     out = {"cells": []}
     t0 = time.time()
     for geometry in ("fleet", "spread"):
         pool, g = _positions(geometry)
         M = g["los"].mat[(2.5, 2.5)]
+        mast_vis = g["los"].mast[2.5]
         for N in (5, 8, 12, 20, 40):
             for f in (0, 1, 2):
                 for F in sorted({1, max(f, 1)}):
@@ -156,6 +159,13 @@ def cmd_consensus(runs=50):
                         faulty = np.zeros(N, bool)
                         faulty[rng.choice(N, f, replace=False)] = True
                         x0 = rng.normal(0.0, 1.0, N)
+                        if mast_variant:                       # node N = the mast (honest)
+                            a2 = np.zeros((N + 1, N + 1), bool)
+                            a2[:N, :N] = adj
+                            a2[:N, N] = a2[N, :N] = mast_vis[idx]
+                            adj = a2
+                            faulty = np.r_[faulty, False]
+                            x0 = np.r_[x0, rng.normal(0.0, 1.0)]
                         hist, ok = I.wmsr(adj, x0, faulty, F, steps=60)
                         r0 = hist[0].max() - hist[0].min()
                         safe.append(ok)
@@ -172,9 +182,9 @@ def cmd_consensus(runs=50):
                                 if v not in seen:
                                     seen.add(int(v))
                                     st.append(int(v))
-                        conn.append(len(seen) == N)
+                        conn.append(len(seen) == len(adj))
                     exact = [r for r in rob if r is not None]
-                    cell = {"geometry": geometry, "N": N, "f": f, "F": F, "runs": runs,
+                    cell = {"geometry": geometry, "mast": bool(mast_variant), "N": N, "f": f, "F": F, "runs": runs,
                             "safe_share": float(np.mean(safe)), "agreement_share": float(np.mean(agree)),
                             "degree_condition_share": float(np.mean(deg_ok)), "connected_share": float(np.mean(conn)),
                             "robust_2F1_share": float(np.mean(exact)) if exact else None,
@@ -191,11 +201,12 @@ def cmd_consensus(runs=50):
                     print(geometry, N, f, F, {k: cell[k] for k in ("safe_share", "agreement_share", "robust_2F1_share",
                                                                     "degree_condition_share", "safe_when_not_robust")},
                           round(time.time() - t0), "s", flush=True)
-    _save("consensus", out)
+    _save("consensus_mast" if mast_variant else "consensus", out)
 
 
 def cmd_build():
     auth, integ, cons = _load("auth"), _load("integrity"), _load("consensus")
+    cons_m = _load("consensus_mast") if os.path.isfile(os.path.join(CACHE, "consensus_mast.json")) else {"cells": []}
     rows = []
     for split, res in integ["sets"].items():
         for key, r in res.items():
@@ -211,8 +222,8 @@ def cmd_build():
     for r in rows:
         keys += [k for k in r if k not in keys]
     crow = []
-    for c in cons["cells"]:
-        crow.append({"part": "consensus", **c})
+    for c in cons["cells"] + cons_m["cells"]:
+        crow.append({"part": "consensus", **dict({"mast": False}, **c)})
     with open(OUT_CSV, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=keys)
         w.writeheader()
@@ -235,7 +246,7 @@ def cmd_build():
            "cells_with_more_liars_than_F": [{k: c[k] for k in ("geometry", "N", "f", "F", "safe_share")} for c in over]}
     h16["supported"] = bool(h16["robust_cells_all_safe"] and len(left) > 0)
     doc = {"experiment": "E55 (B-95), Phase 6, H15 baseline and H16", "note": __doc__.split("\n\n")[1].strip(),
-           "auth": auth, "integrity": integ, "consensus": cons, "h16": h16}
+           "auth": auth, "integrity": integ, "consensus": cons, "consensus_with_base_mast": cons_m, "h16": h16}
     with open(OUT_JSON, "w", encoding="utf-8", newline="\n") as f:
         json.dump(doc, f, indent=1, default=lambda x: None)
         f.write("\n")
@@ -244,12 +255,13 @@ def cmd_build():
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["auth", "integrity", "consensus", "build"])
+    ap.add_argument("cmd", choices=["auth", "integrity", "consensus", "consensus_mast", "build"])
     ap.add_argument("--max-seconds", type=float, default=540.0)
     a = ap.parse_args(argv)
     import faulthandler
     faulthandler.dump_traceback_later(a.max_seconds, exit=True)
-    {"auth": cmd_auth, "integrity": cmd_integrity, "consensus": cmd_consensus, "build": cmd_build}[a.cmd]()
+    {"auth": cmd_auth, "integrity": cmd_integrity, "consensus": cmd_consensus,
+     "consensus_mast": lambda: cmd_consensus(mast_variant=True), "build": cmd_build}[a.cmd]()
     return 0
 
 
