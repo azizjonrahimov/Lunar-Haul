@@ -359,3 +359,7 @@ if (existsSync(join(scenes, 'gallery.json'))) {
 
 // F-56 / B-90: /protocol/ figure 1 reads E50's one-month trace (lib/protocol-data.mjs)
 (await import('../lib/protocol-data.mjs')).stageE50(PUB);
+// F-56 / B-93: /protocol/ figure 5 shows LRIP v0.1's golden POSITION packet (lib/protocol-data.mjs)
+(await import('../lib/protocol-data.mjs')).stageLrip(PUB);
+// F-56 / B-91: /protocol/ figure 3 reads E51's clock results (lib/protocol-data.mjs)
+(await import('../lib/protocol-data.mjs')).stageE51(PUB);

@@ -8718,3 +8718,39 @@ Next: B-94 (store-and-forward and lost link). B-90b waits for your loop.
    - E51 / E51b (clocks) for /protocol/ figure 3;
    - E53 with its geometry column for figure 5's airtime;
    - LRIP conformance-v0.1.json (45 packets) to check figure 5's byte layout against.
+
+## F-56 NEW DATA WIRED 18:50: E51 (figure 3), LRIP conformance (figure 5), E53 (problem 5 text) | site/lib/protocol-data.mjs (compactLrip, lripLayout, compactE51, e53 and their stage functions), site/src/protocol/lrip.js (new, the decoder), site/src/protocol/figures.js (figures 3 and 5), site/protocol/index.html (captions, problem 5 Method and Our answer), site/scripts/prepare-data.mjs, site/vite.config.js (<!--@e53:geometry:auth:hz:rovers:column-->), site/src/styles/tokens.css (light Spec flag), site/tests/protocol-data.test.mjs (new), tools/ci/budgets.json (two protocol data lines) | how to check: /protocol/#fig-time, #fig-msg, problem 5's Method | from BACKEND: nothing | for LEAD: notes at the end
+**Figure 5 against the golden packets.** The figure's byte layout matched data/atc/lrip/conformance-v0.1.json field for field: 20 fields, 328 bits, 41 bytes. Its values were made-up examples, though: the packet-header sequence count was 42 where the vector has 0 (the vector's 42 is the LRIP counter), and the key index was 0x0102 where the vector's SPI is 5.
+- The figure now shows the vector itself: POSITION, profile N, 8-byte MAC, sender 291. The build stages protocol/lrip-position.json, with the layout taken from lunarsim/schemas/lrip-v0.1.json (Space Packet header, LRIP header, the POSITION fields with their scales, the security header, the MAC).
+- **Decoded in the browser** (src/protocol/lrip.js): east 76,448.30 m, north 81,451.76 m, height 821.3 m, heading 222.4°, speed 2.76 m/s, sigma 5.85 m, source 1 (visual), not moving, SPI 5, counter 42; the real MAC is 1a 22 71 10 54 b4 73 e7.
+- The readout gives the size without authentication (27 bytes) and on the broadband profile (52 bytes), from the other two POSITION vectors.
+- Numbers are flagged Spec, citing the vector and the schema.
+- **Test:** decoding the golden hex gives back the vector's own field values, plus the sender, counter, valid-at time, APID (0x500 + 1) and data length (41 - 6 - 1).
+
+**Figure 3 from E51** (protocol/e51.json from results/E51_clocks.json: lunar time scale, July 2028, 30 seeds).
+- **Controls:** crystal or chip-scale atomic clock; resync at 10 s, 1 min, 10 min, 1 h, 6 h, 1 day or never.
+- **The curve** stays the drift alone at note 01's rates, and the caption says so.
+- **The readout and the needs are E51's measurements**, including the 6.8 % of resyncs that fail for lack of a link. Examples:
+  - crystal at 10 min: one-way ranging off by 1,141 km at the 95th percentile (median 54 km); two-way 0.08 m; largest offset 353 ms; 0 of 303 close reservation pairs conflict at the 0.1 s guard;
+  - chip-scale atomic clock, never resynced: one-way still 460 km.
+- **Needs, by H11's own rule:** reservations met (0 conflicts at 0.1 s); two-way ranging met (within the 0.3 m ranging noise); one-way ranging not met at any setting.
+
+**E53 in problem 5's text**, built from the CSV at build time, with no typed numbers. The "fits" columns come out as "fits" or "does not fit", so a re-run cannot leave a wrong sentence.
+- Twenty rovers at once a second send 7.9 kbit/s, which fits narrow-band with scheduled slots and does not fit it with random access.
+- Ten times a second they send 66.9 kbit/s, which does not fit narrow-band with scheduled slots and fits broadband.
+- With the fleet spread across the site, 62 % of rovers reach the base, in 1.8 hops on average.
+- "Our answer" now calls the note-03 load (6.6 and 66 kbit/s) "note 03's estimate", so it doesn't sit unexplained beside the measured 7.9 and 66.9.
+
+**Fixed:** in light mode the Spec flag (#4477AA) was 4.35:1 on the figure panels (--bg-2), below AA. The light token is now #41729F (4.70 on --bg-2, 5.08 on white); dark is unchanged.
+
+**Checks:**
+- node tests 43/43 (4 new);
+- builds OK (RAM 1.53, 1.17 and 1.21 GB, checked before each);
+- budgets OK: /protocol/ data 77.1 of 80 kB, close to the limit;
+- headless Chrome at 1280 and 390, light and dark: all 8 figures draw, readouts as above, 0 contrast fails after the token fix, no overflow, 0 console errors. Screenshots read: figure 5 at 1280 light, figure 3 at 390 dark.
+- **Server and browser stopped.**
+
+**For LEAD:**
+1. Problem 5 says "Eight message types ... and a heartbeat", but the schema has 15 messages. That works if task, reservation and capability each count as one type, but it may want rewording.
+2. Not wired yet: E51b, the clock-steering and mixed-time-scale variants (with steering the chip-scale clock at 10 min falls from 1,918 m to 639 m one-way). It could be a toggle on figure 3 if you want it.
+3. Please commit when you're ready; data/stories/resolved/ still needs rebuilding for the story's wording fix.

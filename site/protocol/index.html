@@ -138,8 +138,9 @@
       <figure class="pr-fig" id="fig-time" aria-labelledby="fig-time-cap">
         <div class="pr-host" data-fig="time"></div>
         <figcaption id="fig-time-cap">Two rovers' clocks drift apart until the next resync. Pick the oscillator and the
-          resync interval; each need turns green when the worst offset meets it. Illustration from note
-          01's values; E51 replaces it.</figcaption>
+          resync interval. The curve is the drift alone at note 01's rates; the readout and the needs are E51's
+          measured month (results/E51_clocks.json: lunar time, July 2028, 30 seeds), which counts the resyncs that
+          failed for lack of a link.</figcaption>
       </figure>
     </div>
       <div class="an-slot" data-anat="clock">
@@ -195,12 +196,20 @@
         <p>Eight message types (position, status, intent, alert, task, reservation, capability, map notice) and a
           heartbeat, each with a version number and an authentication code; a position report is
           <!--@pn:pos_payload--> of content and <!--@pn:pos_air--> on the air, so twenty rovers reporting once a second
-          need <!--@pn:load_1hz--> (ten times a second, <!--@pn:load_10hz-->). Each rover also publishes a signed
+          need about <!--@pn:load_1hz--> by note 03's estimate (ten times a second, <!--@pn:load_10hz-->; E53's
+          measured load is below). Each rover also publishes a signed
           capability manifest (about <!--@pn:manifest-->), the idea behind tool descriptions in the Model Context
           Protocol, so a job can be matched to any maker's vehicle.</p>
         <h3>Method</h3>
         <p>Experiment E53 (hypothesis H13) loads the channel with the full message set, authentication on, at once and
-          ten times a second for twenty rovers.</p>
+          ten times a second for twenty rovers. Measured: twenty rovers reporting once a second send
+          <!--@e53:fleet:on:1.0:20:one_hop_sum_kbps--> in all, which <!--@e53:fleet:on:1.0:20:fits_nb_scheduled_p95--> the
+          narrow-band channel when the base schedules the slots and <!--@e53:fleet:on:1.0:20:fits_nb_slotted_aloha_p95-->
+          it with random access; ten times a second they send <!--@e53:fleet:on:10.0:20:one_hop_sum_kbps-->, which
+          <!--@e53:fleet:on:10.0:20:fits_nb_scheduled_p95--> the narrow-band channel with scheduled slots and
+          <!--@e53:fleet:on:10.0:20:fits_bb_scheduled_p95--> the broadband one. With the fleet spread across the
+          site, <!--@e53:spread:on:1.0:20:reachable_share--> of rovers reach the base, in
+          <!--@e53:spread:on:1.0:20:mean_hops_to_base--> hops on average.</p>
         <h3>Who we would work with</h3>
         <p>CCSDS, the Space ROS community, ZettaScale (Zenoh), and the VDA 5050 group and MassRobotics, whose
           factory-robot standards are the closest working precedent.</p>
@@ -208,8 +217,9 @@
       </div>
       <figure class="pr-fig" id="fig-msg" aria-labelledby="fig-msg-cap">
         <div class="pr-host" data-fig="msg"></div>
-        <figcaption id="fig-msg-cap">One POSITION report taken apart, byte by byte, with example values; then a job
-          matched against two vehicles' capability manifests. Layout and manifests from note 03, section C.</figcaption>
+        <figcaption id="fig-msg-cap">One POSITION report taken apart, byte by byte: LRIP v0.1's conformance vector
+          (data/atc/lrip/conformance-v0.1.json), decoded by the message schema (lunarsim/schemas/lrip-v0.1.json), its
+          authentication code real. Then a job matched against two vehicles' capability manifests (note 03, section C).</figcaption>
       </figure>
     </div>
   </section>

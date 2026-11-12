@@ -1,5 +1,5 @@
 // /protocol/ (F-60): eight figures, one per problem group (loaded lazily by main.js since F-61). Figure 1 draws E50's
-// one-month trace (F-56); the others compute in the browser from src/protocol/params.js (the research notes' values)
+// one-month trace, figure 3 E51's clock results and figure 5 LRIP v0.1's golden POSITION packet (F-56); the others compute in the browser from src/protocol/params.js (the research notes' values)
 // until BACKEND's B-99 exports replace them; the link budget is a port of
 // lunarsim/atc/radio.py. Hand-written SVG, native controls, a readout that is also the figure's text version.
 import { segmented, h, reducedMotion } from '../ui/index.js';
@@ -8,6 +8,7 @@ import { num, fmt } from '../components/num.js';
 import { P } from './params.js';
 import { horizon, flatLoss, capacity } from './radio.js';
 import { e50Runs, e50Over, e50Series, e50Middle } from './e50.js';
+import { lripDecode } from './lrip.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const S = (tag, attrs = {}, ...kids) => {
@@ -135,29 +136,52 @@ function figMap(host) {
 }
 
 // ---------------------------------------------------------------- 3. time: two clocks and a resync
-function figTime(host) {
+// The sawtooth is the drift between resyncs at note 01's rates (an illustration); the readout and the needs are E51's
+// measured results (protocol/e51.json from results/E51_clocks.json: lunar time scale, July 2028, 30 seeds), which also
+// count the resyncs that failed for lack of a link.
+async function figTime(host) {
+  const r = await fetch(`${import.meta.env.BASE_URL}protocol/e51.json`);
+  if (!r.ok) throw new Error(`protocol/e51.json: HTTP ${r.status}`);
+  const E = await r.json();
+  if (E.format !== 'lunarsim-e51-site' || E.version !== 1) throw new Error(`e51.json: format ${E.format}`);
   let W = 640; const H = 220, L = 58, R = 30, T = 14, B = 30;
-  const osc = { tcxo: ['Crystal', V('tcxo') * 1e-3 / 86400], csac: ['Chip-scale atomic clock', V('csac') * 1e-6 / 86400] };
-  const ivals = [[10, '10 s'], [60, '1 min'], [600, '10 min'], [3600, '1 h'], [86400, '1 day']];
-  let o = 'tcxo';
+  const osc = { crystal: ['Crystal', V('tcxo') * 1e-3 / 86400], csac: ['Chip-scale atomic clock', V('csac') * 1e-6 / 86400] };
+  const NAME = { 10: '10 s', 60: '1 min', 600: '10 min', 3600: '1 h', 21600: '6 h', 86400: '1 day', never: 'never' };
+  const ivals = [...new Set(E.rows.map(x => x.interval_s))];
+  let o = 'crystal';
   const seg = segmented({ legend: 'Oscillator', options: Object.entries(osc).map(([v, [l]]) => ({ value: v, label: l })), value: o, onChange: v => { o = v; draw(); } });
-  const iv = range('Time between resyncs', { min: 0, max: ivals.length - 1, step: 1, value: 2 });
-  const svg = svgBox(W, H, 'Clock offset over four resync intervals: it grows until each resync and drops to zero');
+  const iv = range('Time between resyncs', { min: 0, max: ivals.length - 1, step: 1, value: Math.max(0, ivals.indexOf(600)) });
+  const svg = svgBox(W, H, 'Clock offset between resyncs at the oscillator’s drift rate: it grows until each resync and drops to zero');
   const needs = h('ul', { class: 'pr-needs' }); const out = readout();
-  const unit = s => s >= 1e-3 ? [s * 1e3, ' ms'] : s >= 1e-6 ? [s * 1e6, ' µs'] : [s * 1e9, ' ns'];
+  const unit = s => s >= 1 ? [s, ' s'] : s >= 1e-3 ? [s * 1e3, ' ms'] : s >= 1e-6 ? [s * 1e6, ' µs'] : [s * 1e9, ' ns'];
+  const src = what => `${E.source}: ${osc[o][0].toLowerCase()}, resync every ${NAME[ivals[+iv.input.value]] || ivals[+iv.input.value]}, lunar time, ${what}`;
+  const X = (value, u, digits, what) => num({ value, unit: u, digits, flag: 'Modelled', source: src(what) });
+  const dist = (m, what) => m >= 1000 ? X(m / 1000, ' km', m < 1e4 ? 1 : 0, what) : X(m, ' m', m < 10 ? 2 : 0, what);
+  const time = (s, what) => { const [a, u] = unit(s); return X(a, u, a < 10 ? 2 : 0, what); };
   function draw() {
-    const [I, Il] = ivals[+iv.input.value], drift = osc[o][1], worst = drift * I, span = 4 * I;
+    const I = ivals[+iv.input.value], fin = typeof I === 'number', drift = osc[o][1], span = fin ? 4 * I : 4 * 86400, worst = drift * (fin ? I : span);
+    const row = E.rows.find(x => x.class === o && x.interval_s === I);
     W = widthOf(svg); fit(svg, W, H);
     const [ws, wu] = unit(worst), x = s => L + (W - L - R) * s / span, y = v => H - B - (H - T - B) * v / worst;
     svg.replaceChildren(S('line', { class: 'pr-grid-l', x1: L, x2: W - R, y1: y(0), y2: y(0) }), S('line', { class: 'pr-grid-l', x1: L, x2: W - R, y1: y(worst), y2: y(worst) }),
       S('text', { class: 'pr-tick', x: L - 6, y: y(0) + 4, 'text-anchor': 'end' }, '0'), S('text', { class: 'pr-tick', x: L - 6, y: y(worst) + 4, 'text-anchor': 'end' }, `${fmt(ws, ws < 10 ? 2 : 0)}${wu}`));
-    let d = ''; for (let k = 0; k < 4; k++) d += `M${x(k * I)},${y(0)}L${x((k + 1) * I)},${y(worst)}L${x((k + 1) * I)},${y(0)}`;
+    let d = '';
+    if (fin) for (let k = 0; k < 4; k++) d += `M${x(k * I)},${y(0)}L${x((k + 1) * I)},${y(worst)}L${x((k + 1) * I)},${y(0)}`;
+    else d = `M${x(0)},${y(0)}L${x(span)},${y(worst)}`;
     svg.append(S('path', { class: 'pr-l-main', d }));
-    for (let k = 1; k <= 4; k++) svg.append(S('text', { class: 'pr-tick', x: x(k * I), y: H - B + 18, 'text-anchor': k === 4 ? 'end' : 'middle' }, W < 420 ? `${k}` : `resync ${k}`));
-    const rangeErr = worst * 299792458;
-    const list = [[`One-way radio ranging to 1 m`, 1 / 299792458], [`Position time stamps`, V('need_stamp') / 1e3], [`Road reservations`, V('need_resv')]];
-    needs.replaceChildren(...list.map(([n, need]) => { const ok = worst <= need, [a, u] = unit(need); return h('li', { class: ok ? 'ok' : 'no' }, h('b', {}, ok ? 'met' : 'not met'), ` ${n}: needs ${fmt(a, a < 10 ? 1 : 0)}${u}`); }));
-    setRead(out, `${osc[o][0]}, resync every ${Il}: the worst offset before a resync is ${M(ws, wu, ws < 10 ? 2 : 0, 'drift rate x interval')}, which is ${rangeErr >= 1000 ? M(rangeErr / 1000, ' km', rangeErr < 1e4 ? 1 : 0, 'offset x speed of light') : M(rangeErr, ' m', rangeErr < 10 ? 2 : 0, 'offset x speed of light')} of one-way range error. Two-way ranging cancels the offset and needs no common time.`);
+    for (let k = 1; k <= 4; k++) svg.append(S('text', { class: 'pr-tick', x: x(k * span / 4), y: H - B + 18, 'text-anchor': k === 4 ? 'end' : 'middle' }, fin ? (W < 420 ? `${k}` : `resync ${k}`) : `day ${k}`));
+    if (!row) { needs.replaceChildren(); setRead(out, 'E51 has no row for this setting.'); return; }
+    const noise = E.uwb_sigma_m, guard = E.guard_s;
+    const list = [[`Road reservations (${fmt(guard, 1)} s guard)`, row['conflicts_guard_0.1'] === 0, `${row['conflicts_guard_0.1']} conflicts`],
+      [`Two-way ranging, within the ${fmt(noise, 1)} m ranging noise`, row.two_way_single_sided_m_p95 <= noise, `${fmt(row.two_way_single_sided_m_p95, 2)} m`],
+      [`One-way ranging, within the ${fmt(noise, 1)} m ranging noise`, row.one_way_m_p95 <= noise, row.one_way_m_p95 >= 1000 ? `${fmt(row.one_way_m_p95 / 1000, 0)} km` : `${fmt(row.one_way_m_p95, 1)} m`]];
+    needs.replaceChildren(...list.map(([n, ok, v]) => h('li', { class: ok ? 'ok' : 'no' }, h('b', {}, ok ? 'met' : 'not met'), ` ${n}: ${v}`)));
+    setRead(out, `${osc[o][0]}, resync ${fin ? `every ${NAME[I] || `${I} s`}` : 'never'}: the drift alone reaches ${time(worst, 'drift rate x interval (note 01)')} before each resync (the curve). `
+      + `Measured over a month in E51, where ${X(100 * row.sync_fail_share, ' %', 1, 'resyncs that failed for lack of a link')} of resyncs fail for lack of a link: `
+      + `one-way ranging is off by ${dist(row.one_way_m_p95, 'one-way ranging error, 95th percentile')} (95th percentile; median ${dist(row.one_way_m_median, 'one-way ranging error, median')}), `
+      + `two-way ranging by ${dist(row.two_way_single_sided_m_p95, 'two-way single-sided ranging error, 95th percentile')}; the largest clock offset is ${time(row.max_abs_clock_s, 'largest clock offset')}; `
+      + `${X(row['conflicts_guard_0.1'], '', 0, `reservation conflicts at the ${guard} s guard`)} of ${fmt(row.conflict_pairs_checked, 0)} close reservation pairs conflict at the ${fmt(guard, 1)} s guard (${X(row['conflicts_guard_0.01'], '', 0, 'reservation conflicts at the 0.01 s guard')} at 10 ms). `
+      + 'Two-way ranging cancels the offset and needs no common time.');
   }
   iv.input.addEventListener('input', draw);
   host.append(h('div', { class: 'pr-ctl' }, seg.el, iv.el), h('div', { class: 'pr-time' }, svg, needs), out);
@@ -211,31 +235,46 @@ function figRadio(host) {
 }
 
 // ---------------------------------------------------------------- 5. the messages: POSITION byte by byte, manifests
-function figMsg(host) {
-  // example values; the layout is note 03, section C2 (big-endian, bit fields most significant bit first)
-  const F = [
-    ['SPP version, type, flag', 'head', 5, 0b00001], ['APID (0x500 + POSITION)', 'head', 11, 0x501], ['Sequence flags and count', 'head', 16, (3 << 14) | 42], ['Packet data length', 'head', 16, 41 - 6 - 1],
-    ['LRIP version 0.1', 'lrip', 8, 0x01], ['Message type: POSITION', 'lrip', 8, 1], ['Sender id 291', 'lrip', 16, 291], ['Valid at (0.1 s since the epoch)', 'lrip', 32, 123456789],
-    ['East: 1,234.56 m', 'pay', 24, 123456], ['North: -2,045.30 m', 'pay', 24, -204530], ['Height: 12.3 m', 'pay', 16, 123], ['Heading: 271.5°', 'pay', 12, 2715], ['Speed: 0.62 m/s', 'pay', 10, 62],
-    ['Position error: 1.0 m (1 sigma)', 'pay', 8, 20], ['Source: beacon ranging', 'pay', 3, 3], ['Moving', 'pay', 1, 1], ['Spare', 'pay', 6, 0],
-    ['Key index', 'sec', 16, 0x0102], ['Counter (stops replays)', 'sec', 32, 1001], ['Authentication code (owner key; placeholder bytes)', 'mac', 64, null],
-  ];
-  const bits = [];
-  for (const [, , n, v] of F) for (let i = n - 1; i >= 0; i--) bits.push(v === null ? ((i * 7 + bits.length) % 3 === 0 ? 1 : 0) : Number((BigInt.asUintN(n, BigInt(v)) >> BigInt(i)) & 1n));
-  const bytes = []; for (let i = 0; i < bits.length; i += 8) bytes.push(bits.slice(i, i + 8).reduce((a, b) => a * 2 + b, 0));
-  let pos = 0; const span = F.map(f => { const s = pos; pos += f[2]; return [s, pos]; });
+// the field names of lunarsim/schemas/lrip-v0.1.json in words
+const LRIP_NAME = { version: 'Packet version', type: 'Packet type', sec_hdr_flag: 'Secondary header flag', apid: 'APID (0x500 + message type)',
+  seq_flags: 'Sequence flags', seq_count: 'Sequence count', data_length: 'Packet data length (bytes after the header, minus 1)',
+  ver_major: 'LRIP version, major', ver_minor: 'LRIP version, minor', msg_type: 'Message type', sender_id: 'Sender id', t_valid: 'Valid at (since the LRIP epoch)',
+  e: 'East', n: 'North', h: 'Height', heading: 'Heading', speed: 'Speed', sigma_h: 'Position error (one sigma)', nav_src: 'Position source', moving: 'Moving',
+  spare: 'Spare', spi: 'Key kind and epoch (SPI)', seq: 'Counter (stops replays)', mac8: 'Authentication code (AES-CMAC, 8 bytes)' };
+async function figMsg(host) {
+  const r = await fetch(`${import.meta.env.BASE_URL}protocol/lrip-position.json`);
+  if (!r.ok) throw new Error(`protocol/lrip-position.json: HTTP ${r.status}`);
+  const L = await r.json();
+  if (L.format !== 'lunarsim-lrip-figure' || L.version !== 1) throw new Error(`lrip-position.json: format ${L.format}`);
+  const F = L.layout.fields, raw = lripDecode(L.vector.hex, L.layout), hex = L.vector.hex;
+  const bytes = []; for (let i = 0; i < hex.length; i += 2) bytes.push(hex.slice(i, i + 2));
+  let pos = 0; const span = F.map(f => { const s = pos; pos += f.bits; return [s, pos]; });
   const PART = { head: 'packet header', lrip: 'protocol header', pay: 'position content', sec: 'security header', mac: 'authentication code' };
+  const G = (value, unit, digits, what) => num({ value, unit, digits, flag: 'Spec', source: `${L.source}: the POSITION conformance vector (profile N, 8-byte MAC), ${what}; layout ${L.schema}` });
+  const valueOf = k => {
+    const f = F[k], v = raw[k];
+    if (typeof v === 'string') return `<code>${bytes.slice(span[k][0] / 8, span[k][1] / 8).join(' ')}</code>`;
+    if (f.enum) return `${v} (${String(f.enum[v] ?? 'unknown').replace(/_/g, ' ')})`;
+    if (f.type === 'flag') return v ? 'yes' : 'no';
+    if (f.scale && f.scale !== 1) { const d = Math.max(0, -Math.floor(Math.log10(f.scale) + 1e-9)); return G(v * f.scale, f.unit === 'deg' ? '°' : ` ${f.unit}`, d, LRIP_NAME[f.name] || f.name); }
+    return f.name === 'apid' ? `0x${v.toString(16)}` : fmt(v, 0);
+  };
+  const partOf = i => F[span.findIndex(([s, e]) => i * 8 >= s && i * 8 < e)].part;
   const grid = h('div', { class: 'pr-bytes', role: 'list', 'aria-label': `POSITION report, ${bytes.length} bytes` },
-    bytes.map((b, i) => h('span', { class: `pr-byte pr-p-${F[span.findIndex(([s, e]) => i * 8 >= s && i * 8 < e)][1]}`, role: 'listitem', 'data-i': i }, b.toString(16).padStart(2, '0'))));
+    bytes.map((b, i) => h('span', { class: `pr-byte pr-p-${partOf(i)}`, role: 'listitem', 'data-i': i }, b)));
   const fields = h('div', { class: 'pr-fields', role: 'group', 'aria-label': 'Fields' });
   const out = readout();
+  const size = a => L.sizes.find(s => s.profile === a[0] && s.auth === a[1])?.bytes;
+  const content = F.filter(f => f.part === 'pay').reduce((a, f) => a + f.bits, 0) / 8;
   function pick(k) {
-    const [s, e] = span[k];
+    const [s, e] = span[k], f = F[k];
     for (const el of grid.children) { const i = +el.dataset.i; el.classList.toggle('on', i * 8 < e && i * 8 + 8 > s); }
     for (const b of fields.children) b.setAttribute('aria-pressed', String(+b.dataset.k === k));
-    setRead(out, `<b>${F[k][0]}</b>: ${F[k][2]} bits of the ${PART[F[k][1]]}, bits ${s} to ${e - 1}. The whole report is ${M(bytes.length, ' bytes', 0, 'sum of the field widths')}, of which ${M(13, ' bytes', 0, '104 payload bits')} are content.`);
+    setRead(out, `<b>${LRIP_NAME[f.name] || f.name}</b>: ${valueOf(k)}. ${f.bits} bits of the ${PART[f.part]}, bits ${s} to ${e - 1}. `
+      + `The whole report is ${G(bytes.length, ' bytes', 0, 'its length')}, of which ${G(content, ' bytes', 0, 'the POSITION fields')} are the position itself; `
+      + `without authentication it is ${G(size(['N', null]), ' bytes', 0, 'the unauthenticated vector')}, and ${G(size(['B', 'mac8']), ' bytes', 0, 'the broadband-profile vector')} on the broadband profile.`);
   }
-  F.forEach((f, k) => fields.append(h('button', { type: 'button', class: `pr-field pr-p-${f[1]}`, 'data-k': k, 'aria-pressed': 'false', onclick: () => pick(k) }, f[0])));
+  F.forEach((f, k) => { if (f.name !== 'spare') fields.append(h('button', { type: 'button', class: `pr-field pr-p-${f.part}`, 'data-k': k, 'aria-pressed': 'false', onclick: () => pick(k) }, LRIP_NAME[f.name] || f.name)); });
   // the manifests (note 03, C3): which vehicle can take a job?
   const MAN = {
     'Small rover (owner B)': { 'transport.carry': { mass_kg: 200 }, 'relay.store_forward': { buffer_mb: 64 }, 'survey.image': {}, 'team.lift': { share_kg: 90 } },
@@ -259,9 +298,9 @@ function figMsg(host) {
     const LONG = { carry: 'carry 150 kg from the depot to the base', hop: 'take 8 kg 1.5 km across a crater', psr: 'survey a shadowed crater for 30 minutes', relay: 'hold 60 MB of messages for a rover out of range' };
     mout.textContent = `The job (${LONG[j]}) asks for "${cap}". ${who.length ? `Only the ${who.join(' and the ')} lists it with enough capacity, so only it bids.` : 'No vehicle lists it.'} Unknown capabilities are skipped, so a rover never has to understand a hopper's.`;
   }
-  host.append(h('p', { class: 'ui-label' }, 'A POSITION report on the air'), grid, h('p', { class: 'pr-key small' }, Object.entries(PART).flatMap(([k, l]) => [h('span', { class: `pr-sw pr-p-${k}` }), ` ${l}  `])), fields, out,
+  host.append(h('p', { class: 'ui-label' }, `A POSITION report on the air: LRIP v0.1's conformance vector, sender ${L.vector.sender}`), grid, h('p', { class: 'pr-key small' }, Object.entries(PART).flatMap(([k, l]) => [h('span', { class: `pr-sw pr-p-${k}` }), ` ${l}  `])), fields, out,
     h('div', { class: 'pr-ctl pr-ctl-gap' }, segJ.el), cards, mout);
-  pick(8); match('carry');
+  pick(F.findIndex(f => f.name === 'e')); match('carry');
 }
 
 // ---------------------------------------------------------------- 6. a rover fails: the job changes hands
