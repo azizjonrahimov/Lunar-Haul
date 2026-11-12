@@ -65,12 +65,21 @@ VARIANTS = {"6_request_rule": {"type": 6, "prefix": "V06",
 
 
 def _batch_path(k, j, variant=None):
+    if variant == "fresh":
+        return os.path.join(PARTS, f"F{k:02d}_b{j:04d}.csv.gz")
     pre = VARIANTS[variant]["prefix"] if variant else f"T{k:02d}"
     return os.path.join(PARTS, f"{pre}_b{j:04d}.csv.gz")
 
 
+# B-108 (P2 M11): types 4-6 rerun on seeds never used (builder root 4410, run root 4411; E44 uses 44 / 4400, the
+# fixtures 4498 / 4499, E47 E44's own), same batch sizes and counts. The bounds of the main run came from the seeds on
+# which the defects were found and the metric narrowed (results/E44_defects.json).
+FRESH = {"types": (4, 5, 6), "roots": (4410, 4411)}
+
+
 def run_batch(k: int, j: int, size: int, variant=None) -> dict:
-    rng = np.random.default_rng([44, k, j])            # a variant re-uses its type's encounters, seed for seed
+    roots = FRESH["roots"] if variant == "fresh" else (44, 4400)
+    rng = np.random.default_rng([roots[0], k, j])      # a variant re-uses its type's encounters, seed for seed
     specs = [ET.build(k, rng) for _ in range(size)]
     if variant == "6_request_rule":
         for sp in specs:
@@ -82,7 +91,7 @@ def run_batch(k: int, j: int, size: int, variant=None) -> dict:
         b = E.Batch([specs[i] for i in drive], g=GRAVITY)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            oc, _ = E.run_batch(b, np.random.default_rng([4400, k, j]))
+            oc, _ = E.run_batch(b, np.random.default_rng([roots[1], k, j]))
     peak = _peak_rss_mb()
     pos = {i: q for q, i in enumerate(drive)}
     for i, sp in enumerate(specs):
@@ -124,7 +133,7 @@ def cmd_run(types, n_target, max_s, variant=None):
         for j in range(nb):
             if os.path.isfile(_batch_path(k, j, variant)):
                 continue
-            tk = variant or str(k)                          # timing key (a variant keeps its own)
+            tk = f"fresh_{k}" if variant == "fresh" else (variant or str(k))   # timing key (a variant keeps its own)
             est = tim.get(tk, tim.get(str(k), {})).get("seconds", 60.0)
             if time.time() - t0 + 1.3 * est > max_s:
                 print(f"E44: time limit before T{k} batch {j}; rerun", flush=True)
@@ -340,9 +349,61 @@ def cmd_fixtures(max_steps=600):
     print(f"fixtures: {len(index)} in {os.path.relpath(FIX_DIR, ROOT)}")
 
 
+def cmd_fresh_summarize():
+    """B-108: the bounds of types 4-6 on the fresh seeds beside the main run's (both kept), -> E44_fresh_seeds.json."""
+    old = json.load(open(OUT_BOUNDS))
+    nt = len(ET.BUILDERS)
+    alpha_k = 0.05 / nt
+    out = {"task": "B-108 (P2 M11)", "date": "2026-11-12",
+           "reason": "the main run's bounds for types 4, 5 and 6 were computed on the seeds on which the body-geometry "
+                     "and type-6 crossing defects were found and the metric narrowed (results/E44_defects.json); "
+                     "fresh seeds give bounds that the defect search did not see",
+           "seeds": {"main_run": "builder (44, type, batch), run (4400, type, batch), batches 0..n-1",
+                     "fresh": f"builder ({FRESH['roots'][0]}, type, batch), run ({FRESH['roots'][1]}, type, batch), "
+                              "batches 0..n-1; roots never used before (E44 44 / 4400, fixtures 4498 / 4499, E47 = E44)"},
+           "bound_rule": "zero violations: 1 - 0.05^(1/n_eff); x > 0: Clopper-Pearson upper (unweighted); Bonferroni "
+                         f"alpha {alpha_k:.5f} over the 12 types", "types": {}}
+    for k in FRESH["types"]:
+        fs = sorted(glob.glob(os.path.join(PARTS, f"F{k:02d}_b*.csv.gz")))
+        if not fs:
+            continue
+        d = pd.concat([pd.read_csv(f) for f in fs], ignore_index=True)
+        d["outcome"] = classify(d)
+        d["planner"] = planner_label(d)
+        dd = d[d["drivable"] == 1]
+        w = dd["weight"].to_numpy(float)
+        n_eff = float(w.sum() ** 2 / (w * w).sum()) if len(dd) else 0.0
+        x = int((dd["outcome"] == "violation").sum())
+        o = old["types"][str(k)]
+        dd_min = dd[["min_sep", "min_crew"]].min(axis=1)
+        new = {"n": int(len(d)), "n_driven": int(len(dd)), "n_eff": round(n_eff, 1), "violations": x,
+               "violations_by_kind": {f: int(dd[f].sum()) for f in VIOL},
+               "bound": (1 - 0.05 ** (1 / n_eff)) if x == 0 and n_eff > 0 else _cp_upper(x, len(dd)),
+               "bonferroni_bound": (1 - alpha_k ** (1 / n_eff)) if x == 0 and n_eff > 0 else _cp_upper(x, len(dd), alpha_k),
+               "outcomes": {c: int((d["outcome"] == c).sum()) for c in OUTCOMES},
+               "r1_breach_rate": float(dd["r1_breach"].mean()), "emergency_brake_rate": float(dd["no_safe"].mean()),
+               "min_margin_m": float(dd_min.min()), "min_margin_m_p01": float(dd_min.quantile(0.01)),
+               "batches": len(fs)}
+        if x:
+            ex = dd[dd["outcome"] == "violation"].head(20)
+            new["violating_examples"] = [{"batch": int(r.batch), "idx": int(r.idx), "params": json.loads(r.params),
+                                          "kinds": [f for f in VIOL if r[f]]} for _, r in ex.iterrows()]
+        out["types"][str(k)] = {"title": E.TYPES[k], "main_run": {f: o[f] for f in ("n", "n_driven", "n_eff", "violations", "bound",
+                                                                                   "bonferroni_bound", "outcomes", "r1_breach_rate",
+                                                                                   "min_margin_m")},
+                                "fresh_seeds": new}
+    path = os.path.join(ROOT, "results", "E44_fresh_seeds.json")
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(out, f, indent=1, default=float)
+        f.write("\n")
+    for k, v in out["types"].items():
+        print(k, "main", v["main_run"]["violations"], f"{v['main_run']['bound']:.2e}", "fresh", v["fresh_seeds"]["violations"],
+              f"{v['fresh_seeds']['bound']:.2e}", v["fresh_seeds"]["outcomes"], v["fresh_seeds"]["min_margin_m"])
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["run", "summarize", "fixtures"])
+    ap.add_argument("cmd", choices=["run", "summarize", "fixtures", "fresh", "fresh_summarize"])
     ap.add_argument("--types", default="1-12")
     ap.add_argument("--variant", default=None, choices=sorted(VARIANTS))
     ap.add_argument("--n", type=int, default=None, help="override the per-type targets (N_TARGET)")
@@ -360,6 +421,10 @@ def main(argv=None):
             cmd_run(types, a.n, a.max_seconds)
     elif a.cmd == "summarize":
         cmd_summarize()
+    elif a.cmd == "fresh":
+        cmd_run(list(FRESH["types"]), None, a.max_seconds, "fresh")
+    elif a.cmd == "fresh_summarize":
+        cmd_fresh_summarize()
     else:
         cmd_fixtures()
     return 0

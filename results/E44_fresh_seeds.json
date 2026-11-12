@@ -1,0 +1,178 @@
+{
+ "task": "B-108 (P2 M11)",
+ "date": "2026-11-12",
+ "reason": "the main run's bounds for types 4, 5 and 6 were computed on the seeds on which the body-geometry and type-6 crossing defects were found and the metric narrowed (results/E44_defects.json); fresh seeds give bounds that the defect search did not see",
+ "seeds": {
+  "main_run": "builder (44, type, batch), run (4400, type, batch), batches 0..n-1",
+  "fresh": "builder (4410, type, batch), run (4411, type, batch), batches 0..n-1; roots never used before (E44 44 / 4400, fixtures 4498 / 4499, E47 = E44)"
+ },
+ "bound_rule": "zero violations: 1 - 0.05^(1/n_eff); x > 0: Clopper-Pearson upper (unweighted); Bonferroni alpha 0.00417 over the 12 types",
+ "types": {
+  "4": {
+   "title": "crossing and merging at a junction; four-way contention (tile granularity 1-4)",
+   "main_run": {
+    "n": 10000,
+    "n_driven": 10000,
+    "n_eff": 10000.0,
+    "violations": 0,
+    "bound": 0.00029952835977664627,
+    "bonferroni_bound": 0.0005479137327527583,
+    "outcomes": {
+     "not_driven": 0,
+     "violation": 0,
+     "blocked_by_fault": 0,
+     "deadlock": 0,
+     "finished": 3654,
+     "incomplete": 6346
+    },
+    "r1_breach_rate": 0.0,
+    "min_margin_m": 1.2
+   },
+   "fresh_seeds": {
+    "n": 10000,
+    "n_driven": 10000,
+    "n_eff": 10000.0,
+    "violations": 0,
+    "violations_by_kind": {
+     "viol_contact": 0,
+     "viol_gap": 0,
+     "viol_zone": 0,
+     "viol_crew": 0,
+     "viol_r3": 0,
+     "viol_slots": 0
+    },
+    "bound": 0.00029952835977664627,
+    "bonferroni_bound": 0.0005479137327527583,
+    "outcomes": {
+     "not_driven": 0,
+     "violation": 0,
+     "blocked_by_fault": 0,
+     "deadlock": 0,
+     "finished": 3540,
+     "incomplete": 6460
+    },
+    "r1_breach_rate": 0.0,
+    "emergency_brake_rate": 0.0,
+    "min_margin_m": 1.2,
+    "min_margin_m_p01": 1.2,
+    "batches": 5
+   }
+  },
+  "5": {
+   "title": "cyclic wait on a ring of single-lane segments (3 or 4 vehicles, bays of 2 slots)",
+   "main_run": {
+    "n": 10000,
+    "n_driven": 10000,
+    "n_eff": 10000.0,
+    "violations": 0,
+    "bound": 0.00029952835977664627,
+    "bonferroni_bound": 0.0005479137327527583,
+    "outcomes": {
+     "not_driven": 0,
+     "violation": 0,
+     "blocked_by_fault": 0,
+     "deadlock": 386,
+     "finished": 3464,
+     "incomplete": 6150
+    },
+    "r1_breach_rate": 0.0,
+    "min_margin_m": 1.4552
+   },
+   "fresh_seeds": {
+    "n": 10000,
+    "n_driven": 10000,
+    "n_eff": 10000.0,
+    "violations": 0,
+    "violations_by_kind": {
+     "viol_contact": 0,
+     "viol_gap": 0,
+     "viol_zone": 0,
+     "viol_crew": 0,
+     "viol_r3": 0,
+     "viol_slots": 0
+    },
+    "bound": 0.00029952835977664627,
+    "bonferroni_bound": 0.0005479137327527583,
+    "outcomes": {
+     "not_driven": 0,
+     "violation": 0,
+     "blocked_by_fault": 0,
+     "deadlock": 361,
+     "finished": 3464,
+     "incomplete": 6175
+    },
+    "r1_breach_rate": 0.0,
+    "emergency_brake_rate": 0.0,
+    "min_margin_m": 1.4499,
+    "min_margin_m_p01": 2.6767,
+    "batches": 10
+   }
+  },
+  "6": {
+   "title": "landing closure: vehicle inside, filed route through, delay and wave-off",
+   "main_run": {
+    "n": 10000,
+    "n_driven": 10000,
+    "n_eff": 4545.0,
+    "violations": 0,
+    "bound": 0.0006589081425170118,
+    "bonferroni_bound": 0.001205131293626982,
+    "outcomes": {
+     "not_driven": 0,
+     "violation": 0,
+     "blocked_by_fault": 0,
+     "deadlock": 4,
+     "finished": 3724,
+     "incomplete": 6272
+    },
+    "r1_breach_rate": 0.001,
+    "min_margin_m": 1.0518
+   },
+   "fresh_seeds": {
+    "n": 10000,
+    "n_driven": 10000,
+    "n_eff": 4580.4,
+    "violations": 1,
+    "violations_by_kind": {
+     "viol_contact": 0,
+     "viol_gap": 0,
+     "viol_zone": 1,
+     "viol_crew": 0,
+     "viol_r3": 0,
+     "viol_slots": 0
+    },
+    "bound": 0.0004742976591654368,
+    "bonferroni_bound": 0.0007634120595816633,
+    "outcomes": {
+     "not_driven": 0,
+     "violation": 1,
+     "blocked_by_fault": 0,
+     "deadlock": 10,
+     "finished": 3781,
+     "incomplete": 6208
+    },
+    "r1_breach_rate": 0.0003,
+    "emergency_brake_rate": 0.0,
+    "min_margin_m": 0.9507,
+    "min_margin_m_p01": 3.436481,
+    "batches": 10,
+    "violating_examples": [
+     {
+      "batch": 9,
+      "idx": 968,
+      "params": {
+       "R": 1000.0,
+       "exit_s": 1229.6201,
+       "inside_cls": "HAUL",
+       "kind": "plain",
+       "n": 3
+      },
+      "kinds": [
+       "viol_zone"
+      ]
+     }
+    ]
+   }
+  }
+ }
+}

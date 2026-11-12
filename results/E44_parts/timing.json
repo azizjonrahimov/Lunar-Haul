@@ -89,5 +89,26 @@
   "seconds_total": 3140.7,
   "batches_run": 10,
   "peak_rss_mb": 109.3
+ },
+ "fresh_4": {
+  "seconds": 211.68,
+  "batch": 2000,
+  "seconds_total": 1039.7,
+  "batches_run": 5,
+  "peak_rss_mb": 134.1
+ },
+ "fresh_5": {
+  "seconds": 176.41,
+  "batch": 1000,
+  "seconds_total": 1783.6,
+  "batches_run": 10,
+  "peak_rss_mb": 132.7
+ },
+ "fresh_6": {
+  "seconds": 347.39,
+  "batch": 1000,
+  "seconds_total": 3200.4,
+  "batches_run": 10,
+  "peak_rss_mb": 109.7
  }
 }
