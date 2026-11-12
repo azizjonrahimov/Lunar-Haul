@@ -23,3 +23,6 @@ site/.terrain-dev/
 data/policies/*.csv
 service_data/
 .cache/
+
+# downloaded third-party data (B-97); manifests live in results/
+data/external/

@@ -47,9 +47,11 @@
         "protocol/anatomy/radio.html",
         "protocol/e50-trace.json",
         "protocol/e51.json",
-        "protocol/lrip-position.json"
+        "protocol/lrip-position.json",
+        "protocol/e52.json",
+        "protocol/e54.json"
       ],
-      "data_gzip_kb": 80,
+      "data_gzip_kb": 90,
       "lazy": [
         "assets/protocol-figures-????????.js",
         "assets/protocol-anatomy-live-????????.js"
