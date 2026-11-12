@@ -56,3 +56,20 @@ def test_e51_outputs():
     cr = {r["interval_s"]: r for r in d["rows"] if r["class"] == "crystal" and r["scale"] == "lunar"}
     assert cr[10]["max_abs_clock_s"] <= cr["never"]["max_abs_clock_s"]
     assert isinstance(d["h11"]["supported"], bool)
+
+
+def test_ageing_accumulates_and_steering():
+    """Ageing keeps growing the frequency error across resyncs; steering removes a constant frequency error except for
+    the estimator's error sqrt(2) tt_sigma / interval (B-91b)."""
+    A = np.array([1e-12])
+    att = np.ones(1000, bool)
+    clk = CK.Clocks(np.zeros(1), A, 0.0, 600.0, lambda i: att, 1000, np.random.default_rng(0), tt_sigma_s=0.0)
+    t_k = 600.0 * 500
+    assert clk.x(0, t_k + 300.0)[0] == pytest.approx(A[0] * t_k * 300.0 + 0.5 * A[0] * 300.0 ** 2, rel=1e-9)
+    y = np.array([5e-7])
+    off = CK.Clocks(y, np.zeros(1), 0.0, 600.0, lambda i: att, 1000, np.random.default_rng(1), tt_sigma_s=100e-9)
+    st = CK.Clocks(y, np.zeros(1), 0.0, 600.0, lambda i: att, 1000, np.random.default_rng(1), tt_sigma_s=100e-9,
+                   steer=True)
+    t = 600.0 * 300 + 590.0
+    assert abs(st.x(0, t)[0]) < 0.01 * abs(off.x(0, t)[0])
+    assert np.std(st.est_err) == pytest.approx(math.sqrt(2) * 100e-9 / 600.0, rel=0.15)

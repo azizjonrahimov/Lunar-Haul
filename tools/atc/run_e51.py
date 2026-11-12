@@ -48,7 +48,13 @@ DESIGN = {
     "classes": ["crystal", "csac"],
     "intervals_s": [10, 60, 600, 3600, 21600, 86400, None],
     "scales": ["lunar", "earth_scale"],
-    "guards_s": [0.1, 0.0],
+    "guards_s": [0.01, 0.1, 1.0, 0.0],
+    # B-91b (post-hoc, LEAD 11 Nov): a daily thermal cycle on the frequency (amplitude: crystal half of LuGRE's 0 to
+    # 8e-7 swing [LUGRE26]; CSAC its temperature term [CSAC]; period 24 h: Assumed), offset-only transfer vs a transfer
+    # that also steers frequency; and a mixed fleet (every other vehicle counts Earth seconds) with and without the
+    # 56.02 us/day correction (the second vehicle of every class on Earth seconds)
+    "b91b": {"thermal_amp": {"crystal": 4e-7, "csac": 3e-10}, "thermal_period_s": 86400.0,
+             "intervals_s": [60, 600, 3600, 21600, 86400], "mixed_intervals_s": [600, 3600, 86400, None]},
     "v_stamp_ms": 1.0,
     "uwb_sigma_m": 0.3,
     "seeds": list(range(1, 31)),
@@ -83,7 +89,7 @@ def contact_matrix(tr, rec):
     return C
 
 
-def conflicts(rec, clk, t0_s, guard_s):
+def conflicts(rec, clk, t0_s, guard_s, pair_ok=None):
     """Clock-only conflicts: conflicting (R3) pairs of single-lane reservations, nominal gap + 2 x guard < x_B - x_A
     (B the later one; module docstring)."""
     from lunarsim.atc.safety import r3_pair_conflict
@@ -101,6 +107,8 @@ def conflicts(rec, clk, t0_s, guard_s):
                 if B_[0] - A_[1] > 1.0:                     # nominal gap over an hour: clocks cannot close it
                     break
                 if A_[3] == B_[3] or not r3_pair_conflict(A_[2], B_[2], br):
+                    continue
+                if pair_ok is not None and not pair_ok(vid_col[A_[3]], vid_col[B_[3]]):
                     continue
                 n_pairs += 1
                 xa = float(clk.x(vid_col[A_[3]], t0_s + (A_[1] - rec["_t0_h"]) * 3600.0)[0])
@@ -165,7 +173,76 @@ def run_seed(seed):
                     row["worst_close_s"] = worst
                     row["conflict_pairs_checked"] = n_pairs
                 out["cells"].append(row)
+    out["cells_b"] = run_b91b(seed, rec, C, mv, step_s, t0h, t1h, dt)
     out["run_s"] = round(time.time() - t, 1)
+    return out
+
+
+def _contact_fn(C, I, t0h, t1h, dt):
+    T = C.shape[0]
+    if I is None:
+        return None, 0
+    n_att = int((t1h - t0h) * 3600.0 // I)
+    att_step = np.minimum(((np.arange(n_att) + 1) * I // dt).astype(int), T - 1)
+    return (lambda i, _s=att_step: C[_s, i]), n_att
+
+
+def run_b91b(seed, rec, C, mv, step_s, t0h, t1h, dt):
+    """B-91b cells: steering under a thermal cycle, and the mixed-scale fleet (DESIGN["b91b"])."""
+    from lunarsim.atc import clocks as CK
+    B = DESIGN["b91b"]
+    T, N = C.shape
+    out = []
+    for cls in DESIGN["classes"]:
+        rng = np.random.default_rng([seed, 91, 20 + DESIGN["classes"].index(cls)])
+        y, A = CK.draw(N, cls, rng)
+        phase = rng.uniform(0.0, 2.0 * math.pi, N)
+        for I in B["intervals_s"]:
+            contact, n_att = _contact_fn(C, I, t0h, t1h, dt)
+            for steer in (False, True):
+                clk = CK.Clocks(y, A, 0.0, I, contact, n_att, np.random.default_rng([seed, 91, 8]), steer=steer,
+                                thermal_amp=B["thermal_amp"][cls], thermal_period_s=B["thermal_period_s"], phase=phase)
+                X = np.stack([clk.x(i, step_s) for i in range(N)], axis=1)
+                one = CK.C_M_S * np.abs(X[mv])
+                row = {"part": "steering", "class": cls, "interval_s": I, "transfer": "steer" if steer else "offset",
+                       "one_way_m_p95": float(np.quantile(one, 0.95)), "max_abs_clock_s": float(np.abs(X).max()),
+                       "estimator_err_p95": float(np.quantile(np.abs(clk.est_err), 0.95)) if clk.est_err else None}
+                for g in (0.01, 0.1):
+                    row[f"conflicts_guard_{g:g}"] = conflicts(rec, clk, 0.0, g)[0]
+                out.append(row)
+        # mixed fleet: every other vehicle counts Earth seconds (y + 6.4844e-10) unless the correction is applied
+        rng = np.random.default_rng([seed, 91, 30 + DESIGN["classes"].index(cls)])
+        y, A = CK.draw(N, cls, rng)
+        # Earth seconds for the second vehicle of every class (owner A lunar, owner B Earth, owner C split): single-lane
+        # traffic is mostly the two cargo rovers, so the split must separate them
+        import run_e50 as E5
+        fleet = E5._scenario(1, t1h).fleet
+        seen, earth = {}, np.zeros(N, bool)
+        for i, f in enumerate(fleet[:N]):
+            c = str(f[1]).split("_")[0]          # class family: LTV1, CARGO, MAPP, HOPPER
+            seen[c] = seen.get(c, 0) + 1
+            earth[i] = seen[c] % 2 == 0
+        cross = lambda a, b: bool(earth[a] != earth[b])
+        for I in B["mixed_intervals_s"]:
+            contact, n_att = _contact_fn(C, I, t0h, t1h, dt)
+            for corrected in (False, True):
+                yy = y + (0.0 if corrected else CK.RATE_MOON_MINUS_EARTH) * earth
+                clk = CK.Clocks(yy, A, 0.0, I, contact, n_att, np.random.default_rng([seed, 91, 9]))
+                X = np.stack([clk.x(i, step_s) for i in range(N)], axis=1)
+                d = []
+                for k in np.nonzero(mv.any(axis=1))[0][::3]:
+                    xe, xl = X[k, earth], X[k, ~earth]
+                    if len(xe) and len(xl):
+                        d.append(np.abs(xe[:, None] - xl[None, :]).max())
+                row = {"part": "mixed", "class": cls, "interval_s": I,
+                       "scales": "lunar for all (corrected)" if corrected else "half Earth seconds, no conversion",
+                       "cross_scale_one_way_m_p95": float(CK.C_M_S * np.quantile(d, 0.95)) if d else 0.0,
+                       "cross_scale_one_way_m_max": float(CK.C_M_S * np.max(d)) if d else 0.0}
+                for g in (0.01, 0.1):
+                    n_c, worst, n_pairs = conflicts(rec, clk, 0.0, g, pair_ok=cross)
+                    row[f"cross_scale_conflicts_guard_{g:g}"] = n_c
+                    row["cross_scale_pairs_checked"] = n_pairs
+                out.append(row)
     return out
 
 
@@ -199,7 +276,8 @@ def build():
             cells[key(r)].append(r)
     rows = [{"class": "perfect", "scale": "-", "interval_s": "-", "seeds": len(S), "sync_fail_share": 0.0,
              "one_way_m_median": 0.0, "one_way_m_p95": 0.0, "one_way_m_max": 0.0, "two_way_single_sided_m_p95": 0.0,
-             "stamp_m_at_1ms_p95": 0.0, "max_abs_clock_s": 0.0, "conflicts_guard_0.1": 0, "conflicts_guard_0": 0,
+             "stamp_m_at_1ms_p95": 0.0, "max_abs_clock_s": 0.0, "conflicts_guard_0.01": 0, "conflicts_guard_0.1": 0,
+             "conflicts_guard_1": 0, "conflicts_guard_0": 0,
              "seeds_with_conflict_guard_0.1": 0, "conflict_pairs_checked": "", "worst_close_s": 0.0}]
     for (cls, scale, I), rs in cells.items():
         rows.append({"class": cls, "scale": scale, "interval_s": "never" if I is None else I, "seeds": len(rs),
@@ -210,7 +288,9 @@ def build():
                      "two_way_single_sided_m_p95": float(np.mean([r["two_way_single_sided_m_p95"] for r in rs])),
                      "stamp_m_at_1ms_p95": float(np.mean([r["stamp_m_at_1ms_p95"] for r in rs])),
                      "max_abs_clock_s": float(np.max([r["max_abs_clock_s"] for r in rs])),
+                     "conflicts_guard_0.01": int(sum(r["conflicts_guard_0.01"] for r in rs)),
                      "conflicts_guard_0.1": int(sum(r["conflicts_guard_0.1"] for r in rs)),
+                     "conflicts_guard_1": int(sum(r["conflicts_guard_1"] for r in rs)),
                      "conflicts_guard_0": int(sum(r["conflicts_guard_0"] for r in rs)),
                      "seeds_with_conflict_guard_0.1": int(sum(r["conflicts_guard_0.1"] > 0 for r in rs)),
                      "conflict_pairs_checked": int(sum(r["conflict_pairs_checked"] for r in rs)),
@@ -247,7 +327,53 @@ def build():
     with open(OUT_JSON, "w", encoding="utf-8", newline="\n") as f:
         json.dump(doc, f, indent=1, allow_nan=False, default=lambda x: None)
         f.write("\n")
+    build_b(S)
     print(json.dumps({"seeds": len(S), "h11": h11}, indent=1))
+
+
+OUT_JSON_B = os.path.join(ROOT, "results", "E51b_clocks.json")
+OUT_CSV_B = os.path.join(ROOT, "results", "E51b_table.csv")
+
+
+def build_b(S):
+    """B-91b: steering vs offset-only under the thermal cycle; the mixed-scale fleet (sums / means over seeds)."""
+    groups = defaultdict(list)
+    for s in S:
+        for r in s.get("cells_b", []):
+            k = (r["part"], r["class"], r["interval_s"], r.get("transfer") or r.get("scales"))
+            groups[k].append(r)
+    rows = []
+    for (part, cls, I, var), rs in groups.items():
+        row = {"part": part, "class": cls, "interval_s": "never" if I is None else I, "variant": var, "seeds": len(rs)}
+        for k in rs[0]:
+            if k in ("part", "class", "interval_s", "transfer", "scales"):
+                continue
+            vals = [r[k] for r in rs if r[k] is not None]
+            if not vals:
+                row[k] = ""
+            elif "conflicts" in k or k.endswith("pairs_checked"):
+                row[k] = int(sum(vals))
+            elif k.endswith("_max") or k.startswith("max_"):
+                row[k] = float(max(vals))
+            else:
+                row[k] = float(np.mean(vals))
+        rows.append(row)
+    keys = []
+    for r in rows:
+        keys += [k for k in r if k not in keys]
+    with open(OUT_CSV_B, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=keys)
+        w.writeheader()
+        for r in rows:
+            w.writerow({k: (f"{r[k]:.6g}" if isinstance(r.get(k), float) else r.get(k, "")) for k in keys})
+    doc = {"experiment": "E51b (B-91b): post-hoc variants of E51", "design": DESIGN["b91b"],
+           "estimator": "steering: yhat_k = mean frequency over the previous transfer interval, measured from the two "
+                        "transfer offsets; its error is sqrt(2) x 100 ns / interval plus the change of the frequency over "
+                        "the interval (thermal cycle, ageing); applied from t_k (lunarsim/atc/clocks.py Clocks)",
+           "seeds": [s["seed"] for s in S], "rows": rows}
+    with open(OUT_JSON_B, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(doc, f, indent=1, allow_nan=False, default=lambda x: None)
+        f.write("\n")
 
 
 def main(argv=None):

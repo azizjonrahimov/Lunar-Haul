@@ -14,6 +14,8 @@ by DEM line of sight within 5 km (B-70 mesh). Beacons (POSITION, STATUS, INTENT,
 relayed; event messages travel to BASE along shortest paths and every relay hop is another transmission (note 03 E3).
 The load of the busiest link = the largest shared-channel load at any node: every transmission by a node in its
 closed neighbourhood (itself and the nodes it hears), the base mast included. 30 draws per N; mean and p95.
+Geometry "fleet" (pre-registered, H13): positions drawn from the fleet's own trajectories (it works near the base);
+"spread" (LEAD, 11 Nov): positions uniform over all route samples, where relaying shows.
 Compared with the 16 kbit/s narrow-band channel (Phase 5 / note 03 D), the 1 Mbit/s broadband channel, and as
 airtime on a scheduled channel (eta 0.8) and slotted random access (eta 1/e).
 """
@@ -176,9 +178,11 @@ def conformance():
 def main():
     from lunarsim.atc.lrip import codec as C, manifest as M
     t0 = time.time()
-    idx_pool, g = positions()
+    idx_fleet, g = positions()
+    pools = {"fleet": idx_fleet, "spread": np.arange(len(g["xy"]))}
     rows, cells = [], {}
-    for auth in (True, False):
+    for geo, idx_pool in pools.items():
+      for auth in (True, False):
         for f in RATES_HZ:
             rate, size, bps = per_rover(f, auth)
             beacon = sum(bps[k] for k in BEACONS)
@@ -188,7 +192,7 @@ def main():
                 rng = np.random.default_rng([53, N])
                 res = [busiest(idx_pool[rng.integers(0, len(idx_pool), N)], g, beacon, event) for _ in range(DRAWS)]
                 L_ = np.array([r[0] for r in res]) * 8 / 1000.0          # kbit/s
-                row = {"auth": "on" if auth else "off", "position_hz": f, "rovers": N,
+                row = {"geometry": geo, "auth": "on" if auth else "off", "position_hz": f, "rovers": N,
                        "per_rover_kbps": round(per * 8 / 1000.0, 4),
                        "one_hop_sum_kbps": round(N * per * 8 / 1000.0, 3),
                        "busiest_link_kbps_mean": round(float(L_.mean()), 3),
@@ -201,12 +205,12 @@ def main():
                     for en, ev in ETA.items():
                         row[f"fits_{key}_{en}_p95"] = bool(row["busiest_link_kbps_p95"] / ev <= ck)
                 rows.append(row)
-                cells[(auth, f, N)] = row
+                cells[(geo, auth, f, N)] = row
     with open(OUT_CSV, "w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=list(rows[0]))
         w.writeheader()
         w.writerows(rows)
-    r20_1, r20_10 = cells[(True, 1.0, 20)], cells[(True, 10.0, 20)]
+    r20_1, r20_10 = cells[("fleet", True, 1.0, 20)], cells[("fleet", True, 10.0, 20)]
     h13 = {"rule": "auth on, 20 rovers: the busiest link's load (p95 over draws) <= 16 kbit/s at 1 Hz position reports, "
                    "and > 16 kbit/s at 10 Hz",
            "at_1hz_kbps_p95": r20_1["busiest_link_kbps_p95"], "at_10hz_kbps_p95": r20_10["busiest_link_kbps_p95"],
@@ -225,6 +229,7 @@ def main():
                                    "note03_compact": {"small_rover": 247, "hopper": 251}[nm]}
                               for nm in ("small_rover", "hopper")},
            "per_rover_at_1hz": per_type, "rows": rows, "h13": h13, "draws": DRAWS,
+           "spread_auth_1hz_20": cells[("spread", True, 1.0, 20)], "spread_auth_10hz_20": cells[("spread", True, 10.0, 20)],
            "channels_kbps": CHANNELS_KBPS, "eta": ETA, "conformance_vectors": n_vec,
            "run_s": round(time.time() - t0, 1)}
     with open(OUT_JSON, "w", encoding="utf-8", newline="\n") as fh:

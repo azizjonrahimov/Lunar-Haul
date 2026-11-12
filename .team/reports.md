@@ -8572,3 +8572,87 @@ Next: B-93 (it opens after B-90), unless you want B-90b first once your E50 loop
 2. E53's busiest link is the whole fleet because the 1x fleet works near the base. Do you want a spread-out geometry variant (rovers placed uniformly over the route samples) for P1, where relaying shows?
 
 Next: B-91b (small), then B-94.
+
+## B-91b DONE 18:32 (E51 post-hoc variants: guard sweep, frequency steering, mixed time scales) + E53 spread geometry + a correction to B-91's CSAC rows | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**Correction to B-91 (a model flaw I found while building B-91b).**
+- In `Clocks`, CSAC ageing restarted at every resync instead of accumulating since the window start. Over the month that is 9×10⁻¹⁰, the size of the CSAC's whole temperature term.
+- The model is now x(t) = r_k + ∫ y since the last transfer, with y(t) = y0 + A·(t − t0) (+ the optional B-91b thermal term) (`lunarsim/atc/clocks.py`, tested).
+- `results/E51_clocks.json` / `E51_table.csv` are rebuilt. **Crystal rows and H11 are unchanged** (the crystal has no ageing term).
+- **CSAC one-way ranging p95 rises:**
+  - at a 10 s resync, 658 m → **1.61 km**;
+  - at 1 h, 1.29 → **3.23 km**;
+  - at 1 day, 19.3 → **42.4 km**;
+  - never resynced, 460 km (unchanged);
+  - largest error at 10 s, 0.46 → 0.60 ms.
+- CSAC conflicts stay 0 with the guard. The holdover table was already right: its analytic form includes ageing from the start.
+- P3: please use the new CSAC numbers. The B-91 report's CSAC row is superseded.
+
+**Part 1. Guard sweep** (lunar scale, constant frequency, offset-only: the B-91 defaults). Clock-caused reservation conflicts over 30 seeds (302 conflicting pairs checked):
+
+| Crystal resync | guard 0.01 s | 0.1 s | 1 s | none |
+|---|---|---|---|---|
+| 10 s / 1 min / 10 min / 1 h | 0 | 0 | 0 | 1 / 6 / 9 / 17 |
+| 6 h | 2 | 0 | 0 | 24 |
+| 1 day | 7 | 1 | 0 | 25 |
+| never | 24 | 15 | **0** | 26 |
+
+- CSAC: 0 with any guard at every interval (22–25 with none).
+- **Reading:** a 1 s guard makes even a never-resynced crystal safe for a month on these roads, because its worst offset stays at 2.1 s or under and it rarely meets an opposite reservation at that moment. 0.1 s needs a resync within 6 h; 0.01 s needs one within 1 h.
+
+**Part 2. Frequency steering** (a daily thermal cycle on the frequency: crystal ±4×10⁻⁷, half of LuGRE's 0–8×10⁻⁷ swing [LUGRE26]; CSAC ±3×10⁻¹⁰, its temperature term [CSAC]; period 24 h Assumed; random phase per vehicle).
+- **Estimator:** at each transfer the vehicle estimates its frequency as the mean over the previous transfer interval, from the two transfer offsets, and applies it from then on: ŷ_k = [Y(t_k) − Y(t_k−1)] / Δ + e, e ~ N(0, √2·100 ns / Δ).
+- Its error is that noise plus the change of frequency over the interval.
+- Error p95 (crystal / CSAC): 4.8×10⁻⁹ / 4.6×10⁻⁹ at 1 min; 8.8×10⁻⁹ / 4.6×10⁻¹⁰ at 10 min; 5.2×10⁻⁸ / 9.5×10⁻¹¹ at 1 h; 3.9×10⁻⁷ / 3.0×10⁻¹⁰ at 1 day.
+
+| One-way ranging p95 | 1 min | 10 min | 1 h | 6 h | 1 day |
+|---|---|---|---|---|---|
+| crystal, offset only | 1,250 km | 1,490 km | 2,420 km | 9,880 km | 32,800 km |
+| crystal, steered | **190 km** | **276 km** | **758 km** | 6,570 km | 4,600 km |
+| CSAC, offset only | 1.63 km | 1.92 km | 3.20 km | 12.8 km | 41.0 km |
+| CSAC, steered | **5.19 km (worse)** | **639 m** | **597 m** | 4.88 km | 5.65 km |
+
+- The crystal gains 3–7× (more at long intervals, where offset-only grows with the full frequency error).
+- The CSAC gains 3× from 10 min on, but **steering on 1 min intervals makes it worse**: the estimator's noise, √2·100 ns / 60 s = 2.4×10⁻⁹, is larger than the CSAC's own frequency error.
+- Rule for the protocol: estimate frequency over a baseline long enough that √2·σ_tt / Δ is well below the oscillator's frequency error (Δ ≳ 10 min for a CSAC with 100 ns transfers).
+- Reservations: 0 conflicts with the 0.1 s guard in every steering cell. With 0.01 s, steering removes the crystal's 7 conflicts at a 1 day resync (3 → 2 at 6 h).
+- The largest offsets are unchanged at long intervals: a vehicle out of contact cannot steer.
+
+**Part 3. Mixed time scales** (the second vehicle of every class family counts Earth seconds, so owner A is lunar, B Earth, C split; 302 cross-scale reservation pairs checked). One-way ranging between vehicles on different scales, p95:
+
+| Resync | crystal, no conversion / corrected | CSAC, no conversion / corrected |
+|---|---|---|
+| 10 min | 25,580 / 25,570 km | **42.7 / 34.5 km** |
+| 1 h | 37,210 / 37,200 km | **55.3 / 46.3 km** |
+| 1 day | 82,250 / 82,220 km | **117 / 99 km** |
+| never | 440,900 / 440,800 km | **1,214 / 1,027 km** |
+
+- Cross-scale conflicts: identical with and without the correction (crystal 8 / 1 at 1 day and 19 / 14 never, guard 0.01 / 0.1 s; CSAC 0). The conflicts come from crystal drift, not from the 56.02 µs/day.
+- **Reading:** with a resync at every contact, the scale mismatch (6.48×10⁻¹⁰) hides under a crystal's drift. It shows for the atomic-clock class: +24 % ranging error at 10 min, +19 % never resynced. It becomes the dominant error once clocks are good (rubidium-class beacons: 16.8 km of light-time a day, note 01 E4).
+- So the protocol must name the scale for the vehicles that will carry good clocks. On the roads, the guard covers it.
+
+**Part 4. E53 spread geometry** (LEAD's answer; rovers uniform over all route samples; H13 stays on the pre-registered fleet geometry). Authentication on, busiest link p95 (kbit/s) at 5 / 10 / 20 / 40 / 80 rovers:
+- 1 Hz: 1.57 / 2.75 / **4.54** / 8.68 / 16.3;
+- 10 Hz: 13.4 / 23.4 / 38.6 / 73.9 / 139.
+- That is about half the fleet sum, because neighbourhoods are smaller. Relaying takes 1.1–2.2 hops to BASE.
+- But only **30 / 43 / 62 / 83 / 93 %** of rovers reach the base at all: a sparse fleet spread over the routes is cut off.
+- At 1 Hz, a scheduled 16 kbit/s channel carries up to 40 spread rovers (80 does not fit).
+
+**Files:**
+- `lunarsim/atc/clocks.py`: general integral model, steering, thermal term;
+- `tools/atc/run_e51.py`: B-91b cells, guards 0.01 / 0.1 / 1 / none, `build_b`;
+- `tools/atc/run_e53.py`: geometry fleet / spread;
+- `tests/test_clocks.py`: + accumulated ageing and steering test (5 tests);
+- results: `E51_clocks.json` / `E51_table.csv` (rebuilt), `E51b_clocks.json` / `E51b_table.csv` (new), `E53_bitrate.json` / `E53_table.csv` (rebuilt with a `geometry` column; H13 values unchanged), `data/atc/lrip/conformance-v0.1.json` (regenerated, identical vectors).
+
+**How to test:**
+- `.venv\Scripts\python -m pytest tests/test_clocks.py tests/test_lrip.py -q` passes 15.
+- `python tools/atc/run_e51.py run --seeds 1-30`, then `build`, about 11 s a seed.
+- `python tools/atc/run_e53.py`, 9 s.
+- No engine change.
+
+**For FRONTEND (via LEAD):** `E53_table.csv` has a new first column, `geometry` (fleet / spread). `E51b_table.csv` has columns part / class / interval_s / variant / seeds and the measures.
+
+**Questions for LEAD:** none.
+
+Next: B-94 (store-and-forward and lost link). B-90b waits for your loop.

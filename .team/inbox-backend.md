@@ -1219,7 +1219,7 @@ rates of note 03 (H13). Conformance vectors (hex) exported for FRONTEND.
    as a second table, with hops to BASE, the share cut off, and the busiest link as load and as airtime. Do it
    with B-91b, before B-94.
 
-## B-94 [QUEUED after B-93] Store-and-forward and lost link (problems 4 and 6; E54)
+## B-94 [IN PROGRESS] Store-and-forward and lost link (problems 4 and 6; E54)
 On the radio mesh: bundles with custody, a contact plan from the mesh's predicted links, per-hop queues with a
 byte limit, expiry. The lost-link state machine of note 03 (timeouts from the table): keep driving to the end
 of the reserved segment, stop, wait, return to the last link point, release reservations and auctioned tasks at
