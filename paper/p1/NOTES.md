@@ -57,6 +57,34 @@ research note's (High / Medium / Low). Numbers in brackets are the ones used in 
 [51] F. Cruijssen, O. Bräysy, W. Dullaert, H. Fleuren, M. Salomon. "Joint route planning under varying market conditions." *International Journal of Physical Distribution and Logistics Management* 37(4):287-304, 2007. (MOA via notes/03, Medium-High; title to confirm)
 [52] S. Holm. "A simple sequentially rejective multiple test procedure." *Scandinavian Journal of Statistics* 6(2):65-70, 1979. (added by LEAD, 28 Oct)
 [53] B. Efron, R. J. Tibshirani. *An Introduction to the Bootstrap*. Chapman & Hall, 1993. (added by LEAD, 28 Oct)
+[54] Pre-registration of the protocol experiments: `paper/atc/PREREG6.md` in the repository, written 11 November 2026 before any of its results existed; hypotheses H13 (protocol load) and H14 (lost link) apply to this paper, and its dated changes are listed in the file. Its H9 and H10 are not the H9 and H10 of [43]. (N03, project file)
+[55] Consultative Committee for Space Data Systems. *Space Packet Protocol*. CCSDS 133.0-B-2, Blue Book, June 2020. https://public.ccsds.org/Pubs/133x0b2e2.pdf (N03, opened)
+[56] Consultative Committee for Space Data Systems. *Space Data Link Security Protocol*. CCSDS 355.0-B-2, Blue Book, July 2022. https://public.ccsds.org/Pubs/355x0b2.pdf (N03, opened)
+[57] Consultative Committee for Space Data Systems. *High Data Rate Wireless Proximity Network Communications*. CCSDS 883.0-B-2, Blue Book, May 2024. https://public.ccsds.org/Pubs/883x0b2.pdf (N03, opened)
+[58] Consultative Committee for Space Data Systems. *Proximity-1 Space Link Protocol: Data Link Layer*. CCSDS 211.0-B-6, Blue Book, July 2020. https://public.ccsds.org/Pubs/211x0b6e1.pdf (N03, opened)
+[59] Consultative Committee for Space Data Systems. *Unified Space Data Link Protocol*. CCSDS 732.1-B-3, Blue Book, June 2024. https://public.ccsds.org/Pubs/732x1b3e1.pdf (N03, opened)
+[60] Internet Engineering Task Force. *Bundle Protocol Version 7*. RFC 9171, January 2022. https://www.rfc-editor.org/rfc/rfc9171.txt (N03, opened)
+[61] Internet Engineering Task Force. *Concise Binary Object Representation (CBOR)*. RFC 8949, December 2020. https://www.rfc-editor.org/rfc/rfc8949.txt (N03, opened; month and year to confirm against the RFC index)
+[62] Internet Engineering Task Force. *Edwards-Curve Digital Signature Algorithm (EdDSA)*. RFC 8032, January 2017. https://www.rfc-editor.org/rfc/rfc8032.txt (N03, opened; month and year to confirm against the RFC index)
+[63] National Institute of Standards and Technology. *Recommendation for Block Cipher Modes of Operation: The CMAC Mode for Authentication*. NIST Special Publication 800-38B. https://doi.org/10.6028/NIST.SP.800-38B (N03, opened)
+[64] Verband der Automobilindustrie (VDA) and VDMA. *VDA 5050*, version 3.0.0, 19 March 2026. https://github.com/VDA5050/VDA5050 (N03, opened)
+[65] MassRobotics. *AMR Interoperability Standard*. https://github.com/MassRobotics-AMR/AMR_Interop_Standard (N03, opened)
+[66] MAVLink project. *MAVLink Developer Guide*: Packet Serialization; Message Signing. https://github.com/mavlink/mavlink-devguide/tree/master/en/guide (N03, opened)
+[67] *Model Context Protocol specification*, revision 2025-11-25, section Tools. https://github.com/modelcontextprotocol/modelcontextprotocol (N03, opened)
+[68] Object Management Group. *DDS Interoperability Wire Protocol (DDSI-RTPS)*, version 2.5. https://www.omg.org/spec/DDSI-RTPS/2.5/PDF (N03, opened)
+[69] Liang, Yuan, Lin. "A Performance Study on the Throughput and Latency of Zenoh, MQTT, Kafka, and DDS." arXiv:2303.09419, 2023. https://arxiv.org/abs/2303.09419 (N03, opened; written by Zenoh's vendor team and a university group)
+[70] *MQTT-SN Protocol Specification*, version 1.2. https://www.oasis-open.org/committees/download.php/66091/MQTT-SN_spec_v1.2.pdf (N03, opened)
+[71] Rabideau, Russino, Branch, Dhamani, Stegun Vaquero, Chien, de la Croix, Rossi. "Planning, Scheduling, and Execution on the Moon: The CADRE Technology Demonstration Mission." AAMAS 2025, pp. 1727-1735. https://www.ifaamas.org/Proceedings/aamas2025/pdfs/p1727.pdf (N04, opened)
+[72] Saboia, Rossi, Nguyen, Lim, Aguilar, de la Croix. "CADRE MoonDB: Distributed Database for Multi-Robot Information-Sharing and Map-Merging for Lunar Exploration." MASSpace 2024. https://ai.jpl.nasa.gov/public/documents/papers/MoonDB-MASSpace-paper.pdf (N04, read in part)
+[73] Brinkmann. "NASA expects one lunar launch this year, Moon Base manager says." *Aerospace America* (AIAA), 15 September 2026. https://aerospaceamerica.aiaa.org/nasa-expects-one-lunar-launch-this-year-moon-base-manager-says/ (N04, opened)
+[74] Buckman, Choi, How. "Partial Replanning for Decentralized Dynamic Task Allocation." AIAA SciTech 2019, arXiv:1806.04836. https://arxiv.org/abs/1806.04836 (N04, opened)
+[75] Litaker, Li, Beaton, Lewis. *Lunar Terrain Vehicle (LTV) Remote Teleoperation Studies Under Four Lunar Communication Latencies*. NASA/TM-20240001217, 2024. https://ntrs.nasa.gov/api/citations/20240001217/downloads/LTV%20Teleops%20Study.pdf (N04, opened)
+[76] Fong. "Volatiles Investigating Polar Exploration Rover." Slides, NASA Ames, 29 April 2026. NTRS 20260002876. https://ntrs.nasa.gov/api/citations/20260002876/downloads/viper-2026-04-29_v2.pdf (N04, opened)
+[77] Olsen, Wood. "Fan-out: Measuring Human Control of Multiple Robots." CHI 2004, pp. 231-238. https://hci.rwth-aachen.de/materials/conferences/CHI2004/1p231.pdf (N04, opened)
+[78] IoT M2M Council. "How many self-driving vehicles can one person monitor?" 2 September 2025. A report of a Coventry University simulator study; the journal article was not opened. https://iotm2mcouncil.org/iot-library/news/connected-transportation-news/how-many-self-driving-vehicles-can-one-person-monitor/ (N04, opened; secondary)
+[79] HumanProgress. Item on Waymo's remote-assistance staffing, 3 March 2026. It quotes a newsletter; the primary letter was not opened. https://humanprogress.org/waymo-achieves-industry-leading-143-remote-operator-ratio/ (N04, opened; secondary)
+[80] Yates et al. "Age of Information: An Introduction and Survey." arXiv:2007.08564, 2020. https://arxiv.org/abs/2007.08564 (N03, opened)
+[81] Bedewy, Sun, Shroff. "The Age of Information in Multihop Networks." arXiv:1712.10061, 2017. https://arxiv.org/abs/1712.10061 (N03, opened)
 
 Missing from the research notes and needed:
 - The Hungarian method (Kuhn 1955) is named in 2.1 and 3.11 and is cited only through [1].
@@ -67,3 +95,15 @@ Missing from the research notes and needed:
 Here [43] is the pre-registration file and [44, 45] the companion papers. Entries marked "title to confirm" or "to add"
 ([24], [29], [46], [47], [51]) must be checked against the publisher's record before submission; the AI-use statement
 in part5 says so.
+
+## Phase 6 additions (11 Nov 2026): [54]-[81]
+Sources: `research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md` (N03, source list G4) and
+`04_coordination_and_market.md` (N04, source list I.4). Only sources those notes mark as opened are listed, with the
+author names as the notes give them (surnames only where the notes give no initials; add initials from the
+publisher's record before submission). The RFC dates of [61] and [62] are not in the notes and must be confirmed.
+Not listed because the notes could not open them, and therefore not cited as support in the text: the FIPA Contract
+Net specification (named in Section 3.12 with that flag); the full text of Choi, Brunet and How 2009 ([4], abstract
+page only: the 50 % bound is quoted as reported by [5] and [74]); Fisher, Nemhauser and Wolsey 1978 (named in
+Appendix B with the flag "not re-read": Proposition 1 is proved without it); de la Croix et al. 2024 ([32], kept from
+draft 1, paywalled: the CADRE facts added in Phase 6 rest on [71]-[73]). [78] and [79] are secondary reports and the
+text says so. Total 81 entries; own work [40]-[45] and [54] = 7 of 81 (9 %).

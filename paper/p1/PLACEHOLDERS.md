@@ -129,3 +129,103 @@ checked against `paper/r1/values.json`.
 and `P1-REFERENCES`; `P1-H3A-PCT-ABS` is no longer used in the text (the build notes it) and may be dropped.
 | P1-ID-FIX-SENTENCE | `results/id_fix_evidence.json` (`runs`, `identical`, `ids_reused_pre/post`, rows' `items`, `exp`) | composed |
 | P1-CHECK-FINDINGS-SENTENCE | `results/vv_phase5.json` rows L5 (`passed`, `simulated`, `sub`) | composed |
+
+## Phase 6 additions (11 Nov 2026): the protocol, E53, E54, the propositions and the proved / tested / assumed table
+
+Filled by `phase6_values`, `phase6_e53`, `phase6_e54`, `phase6_props` and `phase6_proved` in `build_p1.py`.
+
+**Abbreviations.** SCH = `lunarsim/schemas/lrip-v0.1.json`. COD = `lunarsim/atc/lrip/codec.py` (`size_table()`,
+`decode`) and `manifest.py` (`encode`, `can_do`). MAN = `data/atc/lrip/manifest-{small_rover,hopper}.json`. VEC =
+`data/atc/lrip/conformance-v0.1.json`. E53 = `results/E53_bitrate.json` and `results/E53_table.csv` (row = `geometry`
++ `auth` + `position_hz` + `rovers`). E54 = `results/E54_dtn.json` (row = `loss` + `protocol`; `h14`; `parameters`).
+E54L = `results/E54_ledger.json` (61 days; the ledger columns of the main E54 table are cut off by its 31-day window
+and are never quoted). BND = `results/ATC_auction_bounds.json`. DEV = `paper/p1/dev_notes.json` (`prop4_inputs`,
+`prop5_inputs`, `capability_filter_check`, each with its source).
+
+**Formats.** kbit/s with 3 significant figures unless stated; B = bytes, integer; s = seconds. Every "SENTENCE" and
+"CLAUSE" key is composed in the script, with its direction words (inside / above, fits / does not fit, supported /
+not supported, excludes / includes zero) chosen from the data. E54 keys go through `fill()`: a missing
+`E54_dtn.json` or `E54_ledger.json` gives a visible `[[PENDING E54]]` marker with `--allow-pending`.
+
+**Data checks added (each stops the build when it fails).** The schema's header fields fill their bytes; E53 used
+the codec's packet sizes; every message's fields fill whole bytes; a secured packet is content + 28 B; the signed
+messages are exactly the three responses; an all-stop or landing-closure ALERT is signed; the schema has four
+versioning rules and reads an unknown alert type as a hazard and an unknown mode as a fault; the manifest sizes
+recomputed here equal E53's; owner and model as text explain part of the gap to the design note's estimate; the
+matching rule accepts and refuses the example tasks as the text says; the conformance file holds every message three
+times and our codec decodes every vector; the capability filter changed no summary value; E53 covers 5 to 80 rovers
+at 0.1, 1 and 10 Hz; the per-rover load is the same in every row and is the sum over message types; events add less
+than a thousandth; H13's verdict in the file follows its rule on the fleet-geometry rows; the airtime values equal
+the file's; in the fleet geometry the busiest link carries the fleet sum; spread out it carries about half, reach
+grows with fleet size and the mesh is cut before the channel fills at 20 rovers; E54's blackout lasts 14 days and
+drop-and-retry's retry is longer than a grant's lifetime; H14's verdict follows its rule and the per-seed lost jobs
+add up to the table's counts; the results file sets stuck reservations to zero under the rule; drop-and-retry loses
+grants at about the per-hop loss rate and custody under 1 %; the transport does not change the base's age of
+information and the rule cuts it; the ledger's loss under drop-and-retry does not depend on the lifetime, and a
+lifetime longer than the longest Earth-down stretch loses none; at depth 1 no small instance fell below half the
+optimum and at greater depth none below a third; the 2 x 2 example gives 1 + epsilon against 2; Proposition 3's mean
+age and 99.9 % bound hold in a seeded simulation of its model; Proposition 4's transfer time is the engine's
+coupling time and waiting for Earth costs more than ten times the hand-over; the fan-out grows with the autonomy
+level; the position report's fields add up to 104 bits, the codec counts 13 B and 41 B, the golden packets have
+those sizes, and 12 B hold fewer bits than the fields need; the engine's base-computer constants are those the text
+types.
+
+| Key | Meaning | Source | Format |
+|---|---|---|---|
+| P1-LRIP-N-MSG | number of message types | SCH `messages` | integer |
+| P1-LRIP-SPP-B, P1-LRIP-HDR-B, P1-LRIP-SEC-B | Space Packet header, LRIP header, security header | SCH `framing.*.bytes` | B |
+| P1-LRIP-MAC-B, P1-LRIP-MAC16-B, P1-LRIP-SIG-B | authentication code (narrow-band, broadband), signature | SCH `framing.trailer` | B |
+| P1-LRIP-OVERHEAD-B, P1-LRIP-OVERHEAD-SIG-B | fixed overhead with the 8 B code / with a signature | sums of the above | B |
+| P1-LRIP-HOP-LIMIT | relay hop limit | typed design input (note 03 C1), set in the script | integer |
+| P1-LRIP-BUNDLE-B | Bundle Protocol overhead per bundle | SCH `framing.bundle_overhead_bytes` | B |
+| P1-LRIP-PATTERN-SENTENCE | which messages are published, requests, responses | SCH `messages[].pattern` | composed |
+| P1-LRIP-AWARD-B, P1-LRIP-GRANT-B, P1-LRIP-ALERT-SIGNED-B | signed award, signed grant, signed alert on the air | COD `size_table()` | B |
+| P1-TABLE-LRIP-MSG | Table A2, the message catalogue | SCH + COD `size_table(283)` | HTML table |
+| P1-LRIP-MANIFEST-EXAMPLE | the small-rover manifest, four blocks abbreviated | MAN | HTML listing; not written to values.json |
+| P1-LRIP-MANIFEST-SIZE-SENTENCE | JSON, compact and on-air sizes; the note's estimate; the reason | MAN through COD; E53 `manifest_bytes` (`note03_compact`); the same encoder with owner and model as numbers | composed |
+| P1-LRIP-CANDO-SENTENCE | the matching rule on example tasks | COD `can_do` on MAN | composed; outcomes checked |
+| P1-LRIP-CAPFILTER-SENTENCE | the auction's filter with catalogue manifests | DEV `capability_filter_check` | composed |
+| P1-LRIP-N-VECTORS, P1-LRIP-VECTORS-SENTENCE | golden packets, by profile and authentication | VEC `vectors` | integer; composed |
+| P1-LRIP-INTRO-SENTENCE, P1-LRIP-ABSTRACT-SENTENCE, P1-LRIP-CONCLUSION-SENTENCE | H13's two loads against the budget, for 1, the abstract and 8 | E53 fleet rows, 20 rovers, auth on | composed |
+| P1-E53-DRAWS | draws of rover positions per fleet size | E53 `draws` | integer |
+| P1-E53-NB-KBPS, P1-E53-BB-KBPS | narrow-band and broadband channel rates | E53 `channels_kbps` | kbit/s 0 dp |
+| P1-E53-ETA-SCHED, P1-E53-ETA-ALOHA | channel efficiencies used | E53 `eta` | 0.8; 2 dp |
+| P1-E53-PER-ROVER-1HZ, P1-E53-PER-ROVER-1HZ-BPS, P1-E53-PER-ROVER-01HZ, P1-E53-PER-ROVER-10HZ | load per rover, auth on | E53 `per_rover_kbps` | kbit/s; B/s 1 dp |
+| P1-E53-H13-SENTENCE | H13 as pre-registered, with the verdict | E53 `h13` and the fleet rows | composed |
+| P1-E53-AUTH-SENTENCE | the same link without authentication | E53 fleet rows, auth off | composed |
+| P1-E53-AIRTIME-SENTENCE | load as airtime, scheduled, random access, relayed once | E53 `h13`, `eta` | composed |
+| P1-E53-NMAX-SENTENCE | fleet at which the scheduled 16 kbit/s channel is full | floor(eta x channel / per-rover load); fleet rows | composed |
+| P1-E53-10HZ-SENTENCE | five rovers at 10 Hz; the broadband channel at 80 | E53 fleet rows | composed |
+| P1-E53-SPREAD-SENTENCE | the spread geometry: share of the fleet sum, hops, reach | E53 spread rows, auth on | composed |
+| P1-TABLE-E53-FLEET, P1-TABLE-E53-SPREAD | Tables 9 and 10 | E53 table | HTML tables |
+| P1-E54-DESIGN-SENTENCE, P1-E54-LEDGER-DESIGN | E54's methods paragraph; the ledger replay | E54 `seeds`, `jobs_per_seed`, `reservations_per_seed`, `parameters`, `blackout_days`, `ledger_bytes`; E54L lifetimes | composed |
+| P1-LRIP-LADDER-SENTENCE | the example manifest's lost-link times, checked against E54's | MAN `lost_link`; E54 `parameters` | composed |
+| P1-E54-HOLD-S, P1-E54-RDV-H | hold time and time at the last link point in the lost-link ladder | E54 `parameters.t_hold_s`, `t_rdv_s` | s; h |
+| P1-E54-H14-SENTENCE | lost jobs per seed, the paired difference, H14's first clause | E54 `h14`, rows at loss 0.25 | composed |
+| P1-E54-STUCK-SENTENCE | H14's second clause (by construction), the blocked hours avoided, the verdict | E54 `h14`, rows at loss 0.25 | composed |
+| P1-E54-GRANTS-SENTENCE | grants lost by transport and loss | E54 rows | composed |
+| P1-E54-AOI-SENTENCE, P1-E54-AOI-CLAUSE | the base's age of information; end-of-job reports | E54 rows at loss 0.25; `lost_link_*` | composed |
+| P1-E54-LEDGER-SENTENCE | the Earth-bound ledger over 61 days | E54L | composed |
+| P1-E54-ABSTRACT-CLAUSE | lost jobs with and without, for the abstract, 1 and 8 | E54 `h14` | composed |
+| P1-TABLE-E54 | Table 11 | E54 rows | HTML table |
+| P1-H6-SHORT-CLAUSE | team items delivered with and without cross-owner pairs (abstract) | P "H6 (reported): team items" team 0.10, loss 0.1 | composed |
+| P1-BOUNDS-CBBA-MIN-D1, P1-BOUNDS-CBBA-MIN-DEEP, P1-BOUNDS-CBBA-DEPTHS | lowest share of the optimum at depth 1 and at the deeper depths; those depths | BND `cbba_lite_vs_optimum` | % 1 dp; list |
+| P1-PROP2-ALOHA-N20, P1-PROP2-ALOHA-LIMIT, P1-PROP2-EXAMPLE-SENTENCE | (1 - 1/N)^(N-1) at N = 20; 1/e; Proposition 2 with E53's numbers | computed; E53 | 3 dp; composed |
+| P1-TABLE-PROP3, P1-PROP3-EXAMPLE-SENTENCE, P1-PROP3-E54-SENTENCE | Table B1 and its reading; the link to E54 | Proposition 3's formulas with `lunarsim.atc.messages.HOP_LATENCY_S` and `LOSS_LEVELS`; E54 rows | HTML table; composed |
+| P1-PROP4-EXAMPLE-SENTENCE, P1-PROP4-EARTH-SENTENCE, P1-PROP4-TOTAL-MIN, P1-PROP4-EARTH-H | Proposition 4 evaluated | DEV `prop4_inputs`; `lunarsim.engine.TEAM_SETUP_H` checked | composed; min 0 dp; h 0 dp |
+| P1-TABLE-PROP5 | Table B2 | DEV `prop5_inputs` | HTML table |
+| P1-TABLE-PROP6, P1-PROP6-BITS, P1-PROP6-NEED-BITS, P1-PROP6-JOINT-BITS, P1-PROP6-SPARE-BITS | Table B3; bits used, needed field by field, needed jointly, spare | SCH `messages[POSITION].fields`, `enums.nav_src` | HTML table; integers; 1 dp |
+| P1-PROP6-CONTENT-B, P1-PROP6-SECURED-B, P1-PROP6-MAC16-B, P1-PROP6-UNSEC-B, P1-PROP6-CBOR-B | position report: content, with the 8 B code, with the 16 B code, unsecured, the golden CBOR packet | COD `size_table()`; VEC | B |
+| P1-LEADER-N-FAIL-YEAR, P1-LEADER-ELECTION-H-YEAR | base-computer failures and hours of election a year under the engine's constants | `lunarsim.atc.regimes.DEFAULTS` (`base_mtbf_h`, `base_repair_h`, `reelect_h`) | 1 dp; h 1 dp |
+| P1-TABLE-PROVED | Table 12, proved / tested / assumed | P, F, BND, E53, E54, DEV; verdict words from the data | HTML table (the site reads it from paper.html by its heading) |
+
+**Typed inputs that stay typed in the Phase 6 text** (model inputs and literature values, each with its citation or
+flag): the 60 s lifetime of a reservation grant and the 60 s contact-plan step of E54; CADRE's figures (10 s, 25 of
+30 minutes, under 10 kg, 1 Mbit/s) [71, 72]; the teleoperation speeds [75] and VIPER's figures [76]; the supervision
+ratios [78, 79]; DDS's 20 B header and 30 s announcements [68]; MQTT-SN's 2 or 4 B header [70]; MAVLink's 13 B
+signature [66]; the guard share 0.2 of Proposition 2 (E53's eta = 0.8).
+
+**Keys filled but not used in the text** (kept in `values.json` for the site): `P1-E53-H13-1HZ`, `P1-E53-H13-10HZ`,
+`P1-E53-H13-VERDICT`, `P1-E53-NMAX-SCHED`, `P1-E53-AIR-SCHED`, `P1-E53-AIR-ALOHA`, `P1-E54-H14-VERDICT`,
+`P1-LRIP-MANIFEST-CBOR-SMALL`, `P1-LRIP-MANIFEST-CBOR-HOPPER`, `P1-PROP5-RHO`; and `P1-BOUNDS-CBBA-MIN` (the minimum
+over all depths, replaced in Section 3.11 by the per-depth keys).

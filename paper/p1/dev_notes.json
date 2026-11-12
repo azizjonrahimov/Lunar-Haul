@@ -15,5 +15,40 @@
   "source": "BACKEND's B-75 timing message, 27 Oct 2026 (working set of one run_phase5.py process)",
   "status": "to update at submission from a measured peak",
   "peak_memory_mb": 360
+ },
+ "capability_filter_check": {
+  "source": "tests/test_lrip.py::test_capability_filter_catalog_changes_nothing and .team/reports.md, B-93 (C_AUCTION, p5 3eq at k = 2.806, team share 0.10, message loss 0.10, seed 3, 45 simulated days, with and without capability_filter = 'catalog'); rerun by the P1 revision on 11 Nov 2026: 128 of 128 summary values identical, 364 items delivered",
+  "summary_values": 128,
+  "identical": 128,
+  "days": 45,
+  "seed": 3,
+  "loss": 0.1,
+  "runs": 1,
+  "delivered_share_without_manifests_below": 0.1
+ },
+ "prop4_inputs": {
+  "source": "research_notes/Lunar Rover Interaction Protocol/04_coordination_and_market.md, E.5 and table F (all Assumed there, except the heartbeat period, set to CADRE's 10 s synchronisation period, and the transfer time, the engine's TEAM_SETUP_H); Earth window and gap as the introduction quotes them from [42]",
+  "heartbeat_s": 10.0,
+  "misses_k": 5,
+  "auction_rounds": 2,
+  "round_s": 10.0,
+  "approach_km": 1.5,
+  "approach_kmh": 4.0,
+  "cargo_aboard_prob": 0.5,
+  "transfer_h": 1.0,
+  "earth_gap_d": 11.0,
+  "earth_window_d": 16.0
+ },
+ "prop5_inputs": {
+  "source": "research_notes/Lunar Rover Interaction Protocol/04_coordination_and_market.md, E.4 (request rates and handling times Assumed there, chosen near the published supervision ratios; load cap 0.7 Assumed; the VIPER figure is from [76])",
+  "rho_max": 0.7,
+  "viper_people_per_rover": 4,
+  "levels": [
+   {"name": "Supervised drive segments", "requests_per_vehicle_h": 6.0, "handling_min": 2.0},
+   {"name": "Task-level autonomy", "requests_per_vehicle_h": 1.0, "handling_min": 5.0},
+   {"name": "Fleet-level autonomy, exceptions only", "requests_per_vehicle_h": 0.2, "handling_min": 10.0},
+   {"name": "Dispatch and traffic on the Moon, people audit", "requests_per_vehicle_h": 0.05, "handling_min": 15.0}
+  ],
+  "fleets": [8, 20, 80]
  }
 }

@@ -65,10 +65,34 @@
 
 <!-- TABLE:e42 -->
 
-<h3 id="p1-sec-res-sens">5.8 Sensitivities</h3>
+<h3 id="p1-sec-res-lrip">5.8 What the protocol costs the radio (E53, H13)</h3>
+
+<p>A rover that reports its position once a second offers {{P1-E53-PER-ROVER-1HZ}} ({{P1-E53-PER-ROVER-1HZ-BPS}}) with authentication: the position report at {{P1-PROP6-SECURED-B}}, and status and intent reports once every ten seconds. Event messages add less than a thousandth of that. At 0.1&nbsp;Hz the heartbeat fills the silence and the load falls only to {{P1-E53-PER-ROVER-01HZ}}; at 10&nbsp;Hz it is {{P1-E53-PER-ROVER-10HZ}} (Table 9). {{P1-E53-H13-SENTENCE}} {{P1-E53-AUTH-SENTENCE}}</p>
+
+<p>{{P1-E53-AIRTIME-SENTENCE}} {{P1-E53-NMAX-SENTENCE}} {{P1-E53-10HZ-SENTENCE}}</p>
+
+{{P1-TABLE-E53-FLEET}}
+
+<p>{{P1-E53-SPREAD-SENTENCE}}</p>
+
+{{P1-TABLE-E53-SPREAD}}
+
+<p>These are counts. The sizes are exact, since the codec that gives them also encodes and decodes every message; the rates are those of our scenario; the links are geometric. Whether a real radio delivers that many small packets on a shared channel at these ranges is not tested here.</p>
+
+<h3 id="p1-sec-res-lost">5.9 Lost links and lost jobs (E54, H14)</h3>
+
+<p>{{P1-E54-H14-SENTENCE}} {{P1-E54-STUCK-SENTENCE}}</p>
+
+<p>{{P1-E54-GRANTS-SENTENCE}} {{P1-E54-AOI-SENTENCE}}</p>
+
+<p>{{P1-E54-LEDGER-SENTENCE}} All of this is a replay of messages over recorded positions (Section 4.8): the engine's dispatch did not see the returns, and a returning vehicle was given a direct link to the base.</p>
+
+{{P1-TABLE-E54}}
+
+<h3 id="p1-sec-res-sens">5.10 Sensitivities</h3>
 
 <p>Letting the hoppers refuel every month changed nothing that matters: the full-information marketplace's urgent wait moved by {{P1-HOPPER-O-DIFF}} ({{P1-HOPPER-O-CI}}).</p>
 
-<h3 id="p1-sec-res-negative">5.9 What did not work</h3>
+<h3 id="p1-sec-res-negative">5.11 What did not work</h3>
 
 <p>Imitating the full-information marketplace taught the bidding models nothing, because the marketplace uses the same bid rule: the hand-built bids already chose the marketplace's item in {{P1-IMIT-AGREE}} of held-out rounds, and every disagreement we examined ({{P1-IMIT-DISAGREE-30}} at 30&#8239;% load and {{P1-IMIT-DISAGREE-60}} at 60&#8239;%) was an item the marketplace gave to another robot in the same round. The network's best tuning score came in its first generation; the linear model's came in its last. The network trained by search on its output layer did not beat the hand-built bids. The relay at 80&#8239;% coverage missed its equivalence margin. {{P1-E41-DEPTH-CLAUSE}}. {{P1-FAILED-CHECKS-SENTENCE}} {{P1-CHECK-FINDINGS-SENTENCE}} <!-- build: the L5 rows (learned bids monotone) as properties of the trained policies, from the rows. --> {{P1-ID-FIX-SENTENCE}} <!-- build: the cargo-id defect of PREREG change 10 and its outcome-neutral evidence, from results/id_fix_evidence.json. --> <!-- build: the phase-5 checks tagged P1 that failed, were not run or carry a bias flag. --></p>
