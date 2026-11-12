@@ -8401,3 +8401,47 @@ Next: B-80c, then B-91.
 - `tests/test_verification_phase5.py`: `test_v1_trace_summary_matches_index`.
 - **How to test:** `.venv\Scripts\python tools/atc/export_trace.py --summary-only`, then `.venv\Scripts\python -m pytest tests/test_verification_phase5.py -q -k v1_trace_summary`.
 - **For FRONTEND:** the story can read `results/ATC_trace_pair_summary.json` → `runs.with.summary.*` / `runs.without.summary.*` and `window.name`.
+
+## F-56 CODE (NOT BUILT, NOT BROWSER-CHECKED) 17:53 | site/results/index.html, site/vite.config.js, site/lib/results-atc.mjs, site/src/results/results.css; site/src/world/atc-pair.js, site/src/world/atc-pair.css (new; the .ap- rules moved out of v2.css), site/src/world/v2.css; site/src/stories/stories.js, site/src/stories/stories.css; site/src/protocol/figures.js, site/src/protocol/e50.js (new), site/src/protocol/protocol.css, site/protocol/index.html, site/lib/protocol-data.mjs (new), site/scripts/prepare-data.mjs; tools/ci/budgets.json (one data line); data/stories/month-without-earth.json (moved from site/content/drafts/, which is deleted); site/tests/results-atc.test.mjs, site/tests/protocol-e50.test.mjs (new) | how to check: once memory allows, npm run build, then /results/, /protocol/#fig-pos, /world/?view=atc, and the story (below) | from BACKEND: nothing | for LEAD: notes at the end
+Built: no. Browser: no. Free RAM stayed between 0.4 and 0.6 GB, and you asked for no build. Checks run:
+- node tests 39/39 (3 new);
+- `node --check` parses every changed module;
+- `python -m lunarsim.stories check` passes all 5 stories (0 problems).
+
+**1. /results/ Lunar ATC section, wired.**
+- `<!--@results-atc-->` sits above `<!--@results-->` in results/index.html; vite.config.js replaces it with `atcResults(base)`.
+- Three cards headed P1, P2 and P3, each with the paper's title (h3), its headline numbers and a source line (`paper/<id>/values.json`).
+- Styles in results.css (.r-atc-*): an auto-fit grid, one column on a phone.
+- The digit test now also allows the paper names P1 to P3.
+
+**2. The story player's pair view.**
+- A story with steps whose modes.view is "atc_pair" mounts world/atc-pair.js (2D, no WebGL, no door) in place of the 3D stage. The view loads its own data from world/atc/.
+- **modes.run:** with, without or both. A single run gets the full width.
+- **modes.at:** start, end, hand (the first road conflict settled through Earth, 151.6 h into the month) or auction (the first award).
+- **modes.play:** plays the month; off under reduced motion.
+- atc-pair.js: mount() now returns a controller (show, at, play, stop). { story: true } leaves out the month's totals table, because the story's chips carry those numbers.
+- /world/?view=atc behaves as before.
+- The .ap- styles moved to atc-pair.css, which loads with the chunk. The world page's eager CSS shrinks by those rules.
+- The story list card says "one month, two ways" for such a story.
+
+**3. /protocol/ figure 1 from results/E50_trace.json.**
+- prepare-data stages protocol/e50-trace.json (lib/protocol-data.mjs, `compactE50`: 106 kB, 13.7 kB gzipped). It keeps every bin of every layer set and marks "dr+ranging+fixes+lans" as same_as "dr+ranging+fixes", because the two series are identical in 2028.
+- **The figure:** July 2028 for the two vehicles that drove most (3: 93 h, 1: 57 h).
+  - Choices: a vehicle, and a layer set (dead reckoning only; + radio ranging; + terrain fixes; + LunaNet, 2028; + LunaNet as planned for 2030).
+  - Lines: the error (solid), the vehicle's own 95 % bound (dashed), dead reckoning alone (dotted) and the 5 m budget, on a log y axis.
+  - The half hours in which the vehicle moved are shaded. A time slider drives the readout.
+- **Readout:** time, driving or parked, error, bound inside or over budget, dead reckoning at that moment, and the share of the vehicle's moving half hours with the bound above 5 m. For "LunaNet, 2028" it adds "LunaNet adds nothing here in 2028".
+- Every number is flagged Modelled and cites results/E50_trace.json. The caption says it is one month and one seed, and that the 30-seed averages are in the paper.
+- mountFigure now handles a figure that loads its data (a promise).
+- **Test** (protocol-e50.test.mjs): the reduction keeps every bin, the layers cut the median error while driving tenfold, the helpers are right, and a wrong format or a short series is refused.
+
+**4. The story in data/stories/** (you allowed the move).
+- month-without-earth.json is status **draft**, with notes updated. Its numbers now resolve from results/ATC_trace_pair_summary.json.
+- I did **not** write data/stories/resolved/. A scratch build shows the only changes would be the new file and index.json; the other four resolved stories are byte-for-byte the same. Run `python -m lunarsim.stories build` when you want it on the site.
+- Steps now carry modes.at: start, hand, auction, end, end.
+
+**For LEAD:**
+1. **Git slip:** a command of mine ran `git rm --cached site/content/drafts/month-without-earth.json`. I undid it at once with `git restore --staged`; `git diff --cached` is empty. The draft file is now deleted from the working tree (moved to data/stories/), as an ordinary file change for you to commit.
+2. **Budgets after the build:** the world ?view=atc variant may need a lazy_css line for the pair chunk's CSS, whatever name Vite gives it. When the story is published it needs a stories variant: story-data/month-without-earth.json, world/atc/*, lazy world-atc-pair-*.js. I'll add both once I can build and see the names.
+3. **Not mine:** lunarsim/atc/clocks.py and tools/atc/run_e51.py are untracked here.
+4. **Browser test plan:** the story is a draft, so to test the player before publishing I'll copy its resolved file into a scratch copy of dist with status published. No source change is needed for that.

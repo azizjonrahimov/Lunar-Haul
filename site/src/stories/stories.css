@@ -79,3 +79,9 @@
 .st-ill { margin: calc(-1 * var(--s-4)) calc(-1 * var(--s-4)) 0; }
 .st-ill img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-radius: var(--radius-panel) var(--radius-panel) 0 0; background: var(--bg-2); }
 .st-ill figcaption { font-size: 0.75rem; color: var(--ink-2); padding: var(--s-1) var(--s-4) 0; }
+
+/* F-56: the trace pair (two plan views and their controls) in place of the 3D stage */
+.st-stage.st-2d { height: auto; overflow: visible; background: transparent; border-radius: 0; }
+.st-2d .st-view { position: static; }
+.st-2d .st-labels, .st-2d .st-fallback { display: none; }
+.st-pair .ap-pair { margin-top: var(--s-3); }

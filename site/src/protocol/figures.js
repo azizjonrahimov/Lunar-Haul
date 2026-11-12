@@ -1,11 +1,13 @@
-// /protocol/ (F-60): eight figures, one per problem group (loaded lazily by main.js since F-61). Each computes in the browser from src/protocol/params.js
-// (the research notes' values) until BACKEND's B-99 exports replace them; the link budget is a port of
+// /protocol/ (F-60): eight figures, one per problem group (loaded lazily by main.js since F-61). Figure 1 draws E50's
+// one-month trace (F-56); the others compute in the browser from src/protocol/params.js (the research notes' values)
+// until BACKEND's B-99 exports replace them; the link budget is a port of
 // lunarsim/atc/radio.py. Hand-written SVG, native controls, a readout that is also the figure's text version.
 import { segmented, h, reducedMotion } from '../ui/index.js';
 import { upgradeFlags } from '../ui/tooltip.js';
 import { num, fmt } from '../components/num.js';
 import { P } from './params.js';
 import { horizon, flatLoss, capacity } from './radio.js';
+import { e50Runs, e50Over, e50Series, e50Middle } from './e50.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const S = (tag, attrs = {}, ...kids) => {
@@ -38,48 +40,58 @@ const gauss = r => () => Math.sqrt(-2 * Math.log(r() || 1e-12)) * Math.cos(2 * M
 const km = m => m >= 1000 ? `${fmt(m / 1000, m >= 10000 ? 0 : 1)} km` : `${fmt(m, 0)} m`;
 const dur = s => s < 90 ? `${fmt(s, s < 10 ? 1 : 0)} s` : s < 5400 ? `${fmt(s / 60, 1)} min` : `${fmt(s / 3600, 1)} h`;
 
-// ---------------------------------------------------------------- 1. positioning: error along a drive
-function figPos(host) {
-  let W = 640; const H = 300, L = 52, R = 16, T = 14, B = 34, D = 5000;
-  const layers = { vo: check('Cameras and star tracker (visual odometry)', true), fix: check('Terrain fixes from orbital maps', true),
-    uwb: check('Radio ranging to the base beacons', true), lans: check('LunaNet satellites (2030)', false) };
-  const cur = range('Distance driven', { min: 0, max: D, step: 50, value: 3000 });
-  const svg = svgBox(W, H, 'Position error against distance driven, on a log scale, for dead reckoning alone and with the chosen layers');
+// ---------------------------------------------------------------- 1. positioning: one month of E50 (B-90)
+// results/E50_trace.json, staged as protocol/e50-trace.json (lib/protocol-data.mjs): July 2028 at today's fleet, seed 1,
+// the two vehicles that drove most; per layer set the position error and the vehicle's own 95 % bound, the largest in
+// each half hour. Log scale, 0.1 m to 1 km; the 5 m budget dashed; the half hours in which the vehicle moved shaded.
+const E50_LABEL = { dr: 'Dead reckoning only', 'dr+ranging': '+ radio ranging', 'dr+ranging+fixes': '+ terrain fixes',
+  'dr+ranging+fixes+lans': '+ LunaNet, 2028', 'lans@2030': '+ LunaNet as planned for 2030' };
+const E50_SAY = { dr: 'dead reckoning only', 'dr+ranging': 'dead reckoning and radio ranging', 'dr+ranging+fixes': 'dead reckoning, ranging and terrain fixes',
+  'dr+ranging+fixes+lans': 'every layer, with LunaNet as it is in 2028', 'lans@2030': 'every layer, with LunaNet as planned for 2030' };
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const whenH = t => { const d = new Date(Date.UTC(2028, 0, 1) + t * 3600e3); return `${d.getUTCDate()} ${MON[d.getUTCMonth()]}, ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')} UTC`; };
+async function figPos(host) {
+  const r = await fetch(`${import.meta.env.BASE_URL}protocol/e50-trace.json`);
+  if (!r.ok) throw new Error(`protocol/e50-trace.json: HTTP ${r.status}`);
+  const doc = await r.json();
+  if (doc.format !== 'lunarsim-e50-trace-site' || doc.version !== 1) throw new Error(`e50-trace.json: format ${doc.format}`);
+  const ids = Object.keys(doc.vehicles).sort((a, b) => doc.vehicles[b].drive_h - doc.vehicles[a].drive_h), BUD = doc.budget_m, BIN = doc.bin_min / 60;
+  let W = 640, vid = ids[0], set = 'dr+ranging+fixes';
+  const H = 300, L = 52, R = 16, T = 14, B = 34;
+  const E = (value, what) => num({ value, unit: ' m', digits: value < 10 ? 1 : 0, flag: 'Modelled', source: `${doc.source}: vehicle ${vid}, ${what}` });
+  const segV = segmented({ legend: 'Vehicle', options: ids.map(id => ({ value: id, label: `Vehicle ${id} (${fmt(doc.vehicles[id].drive_h, 0)} h driving)` })), value: vid,
+    onChange: v => { vid = v; cur.input.value = e50Middle(doc.vehicles[vid]); draw(); } });
+  const segS = segmented({ legend: 'Layers', options: doc.sets.map(k => ({ value: k, label: E50_LABEL[k] || k })), value: set, onChange: v => { set = v; draw(); } });
+  const cur = range('Time in the month', { min: 0, max: doc.vehicles[vid].bins - 1, step: 1, value: e50Middle(doc.vehicles[vid]) });
+  const svg = svgBox(W, H, 'Position error over July 2028 for one vehicle, on a log scale: dead reckoning alone and with the chosen layers, the vehicle’s own 95 % bound and the 5 m budget');
   const out = readout();
-  const x = d => L + (W - L - R) * d / D, y = e => T + (H - T - B) * (1 - (Math.log10(Math.max(e, 0.1)) + 1) / 4);   // 0.1 m .. 1 km
-  const fuse = (e, f) => 1 / Math.sqrt(1 / (e * e) + 1 / (f * f));
-  const lansAvail = d => (d % 1000) < 10 * V('lans_2030');   // the share of each kilometre with a fix (illustration)
-  function run(on) {
-    const pts = []; let e = V('uwb'), last = 0;
-    const rate = (on.vo ? V('dr_vo') : V('dr_wheel')) / 100;
-    for (let d = 0; d <= D; d += 10) {
-      e += rate * 10;
-      if (on.uwb && d <= V('uwb_range')) e = fuse(e, V('uwb'));
-      if (on.fix && d - last >= V('fix_every')) { e = fuse(e, V('fix_terrain')); last = d; }
-      if (on.lans && d % 100 === 0 && lansAvail(d)) e = fuse(e, V('lans') / 1.96);
-      pts.push([d, e]);
-    }
-    return pts;
-  }
-  const line = (pts, cls) => S('path', { class: cls, d: pts.map(([d, e], i) => `${i ? 'L' : 'M'}${x(d).toFixed(1)},${y(e).toFixed(1)}`).join('') });
   function draw() {
-    const on = Object.fromEntries(Object.entries(layers).map(([k, c]) => [k, c.input.checked]));
-    const base = run({}), mine = run(on), d = +cur.input.value, at = p => p[Math.round(d / 10)][1];
+    const v = doc.vehicles[vid], n = v.bins, s = e50Series(v, set), dr = v.sets.dr, i = Math.min(n - 1, +cur.input.value), name = E50_LABEL[set] || set;
+    cur.input.max = n - 1;
     W = widthOf(svg); fit(svg, W, H); svg.replaceChildren();
+    const x = k => L + (W - L - R) * k / n, y = e => T + (H - T - B) * (1 - (Math.log10(Math.max(e, 0.1)) + 1) / 4);
+    const line = (arr, cls) => S('path', { class: cls, d: arr.map((e, k) => `${k ? 'L' : 'M'}${x(k + 0.5).toFixed(1)},${y(e).toFixed(1)}`).join('') });
+    for (const [a, b] of e50Runs(v)) svg.append(S('rect', { class: 'pr-drive', x: x(a), y: T, width: Math.max(1, x(b) - x(a)), height: H - T - B }));
     for (const e of [0.1, 1, 10, 100, 1000]) svg.append(S('line', { class: 'pr-grid-l', x1: L, x2: W - R, y1: y(e), y2: y(e) }), S('text', { class: 'pr-tick', x: L - 6, y: y(e) + 4, 'text-anchor': 'end' }, e < 1 ? e : km(e)));
-    for (let k = 0; k <= 5; k++) svg.append(S('text', { class: 'pr-tick', x: x(k * 1000), y: H - B + 18, 'text-anchor': k ? k === 5 ? 'end' : 'middle' : 'start' }, `${k} km`));
-    svg.append(S('line', { class: 'pr-limit', x1: L, x2: W - R, y1: y(V('sigma_nav')), y2: y(V('sigma_nav')) }),
-      line(base, 'pr-l-base'), line(mine, 'pr-l-main'),
-      S('line', { class: 'pr-cursor', x1: x(d), x2: x(d), y1: T, y2: H - B }),
-      S('circle', { class: 'pr-dot', cx: x(d), cy: y(at(mine)), r: 4.5 }));
-    const names = Object.entries(layers).filter(([, c]) => c.input.checked).map(([k]) => ({ vo: 'cameras', fix: 'terrain fixes', uwb: 'beacons', lans: 'LunaNet' })[k]);
-    setRead(out, `After <b>${km(d)}</b>: ${M(at(mine), ' m', at(mine) < 10 ? 1 : 0, 'one-sigma position error')} with ${names.length ? names.join(', ') : 'no layer'}; wheel odometry alone ${M(at(base), ' m', 0, 'one-sigma error, wheels on loose soil')}. `
-      + (at(mine) <= V('sigma_nav') ? 'Inside the error the rules of the road assume.' : 'Above the error the rules of the road assume: the rover’s safety margin must grow.'));
+    const days = n * BIN / 24, step = W < 480 ? 10 : 5;
+    for (let d = 0; d < days; d += step) svg.append(S('text', { class: 'pr-tick', x: x(d * 24 / BIN), y: H - B + 18, 'text-anchor': d ? 'middle' : 'start' }, `${d + 1} Jul`));
+    svg.append(S('line', { class: 'pr-limit', x1: L, x2: W - R, y1: y(BUD), y2: y(BUD) }));
+    if (set !== 'dr') svg.append(line(dr.err_m, 'pr-l-base'));
+    svg.append(line(s.b95_m, 'pr-l-bound'), line(s.err_m, 'pr-l-main'),
+      S('line', { class: 'pr-cursor', x1: x(i + 0.5), x2: x(i + 0.5), y1: T, y2: H - B }),
+      S('circle', { class: 'pr-dot', cx: x(i + 0.5), cy: y(s.err_m[i]), r: 4.5 }));
+    const share = e50Over(v, s, BUD);
+    setRead(out, `<b>${whenH(doc.t0_h + i * BIN)}</b>, vehicle ${vid} ${v.moving[i] === '1' ? 'driving' : 'parked'}, with ${E50_SAY[set] || set}: error ${E(s.err_m[i], `${name}, largest error in this half hour`)}, `
+      + `its own 95 % bound ${E(s.b95_m[i], `${name}, its 95 % bound`)} (${s.b95_m[i] <= BUD ? 'inside' : 'over'} the ${fmt(BUD, 0)} m budget)`
+      + (set !== 'dr' ? `; dead reckoning alone ${E(dr.err_m[i], 'dead reckoning only, largest error in this half hour')}` : '') + '. '
+      + `Over the month the bound is above ${fmt(BUD, 0)} m in ${num({ value: share, unit: ' %', digits: 0, flag: 'Modelled', source: `computed in this figure from ${doc.source}: vehicle ${vid}, half hours in which it moved` })} of the half hours this vehicle moved.`
+      + (v.sets[set].same_as ? ` In 2028 LunaNet adds nothing here: the curve is the one for ${E50_SAY[v.sets[set].same_as]}.` : ''));
   }
-  for (const c of [...Object.values(layers), cur]) c.input.addEventListener('input', draw);
+  cur.input.addEventListener('input', draw);
   onResize(svg, draw);
-  host.append(h('div', { class: 'pr-ctl' }, h('fieldset', { class: 'pr-checks' }, h('legend', { class: 'ui-label' }, 'Layers'), Object.values(layers).map(c => c.el)), cur.el), svg,
-    h('p', { class: 'pr-key small' }, h('span', { class: 'pr-ln pr-ln-main' }), ' with the layers chosen  ', h('span', { class: 'pr-ln pr-ln-base' }), ' wheel odometry alone  ', h('span', { class: 'pr-ln pr-ln-limit' }), ` ${V('sigma_nav')} m, the error the traffic rules assume (log scale)`), out);
+  host.append(h('div', { class: 'pr-ctl' }, segV.el, segS.el, cur.el), svg,
+    h('p', { class: 'pr-key small' }, h('span', { class: 'pr-ln pr-ln-main' }), ' error with the layers chosen  ', h('span', { class: 'pr-ln pr-ln-bound' }), ' the vehicle’s own 95 % bound  ',
+      h('span', { class: 'pr-ln pr-ln-base' }), ' dead reckoning alone  ', h('span', { class: 'pr-ln pr-ln-limit' }), ` the ${fmt(BUD, 0)} m budget  `, h('span', { class: 'pr-sw pr-sw-drive' }), ' driving (log scale)'), out);
   draw();
 }
 
@@ -353,7 +365,8 @@ function figWho(host) {
 const FIGS = { pos: figPos, map: figMap, time: figTime, radio: figRadio, msg: figMsg, auction: figAuction, integrity: figIntegrity, who: figWho };
 // draws one figure into its host (main.js calls this as each host nears the screen)
 export function mountFigure(host) {
-  try { FIGS[host.dataset.fig](host); } catch (e) { host.append(h('p', { class: 'stub' }, `This figure could not be drawn (${e.message}).`)); console.error(e); }
+  const fail = e => { host.append(h('p', { class: 'stub' }, `This figure could not be drawn (${e.message}).`)); console.error(e); };
+  try { const p = FIGS[host.dataset.fig](host); if (p?.then) p.then(() => upgradeFlags(host), fail); } catch (e) { fail(e); }
   upgradeFlags(host);
   if (reducedMotion()) document.documentElement.classList.add('pr-still');
 }

@@ -8,6 +8,7 @@ import { tex } from './lib/tex.mjs';
 import { paperField, paperValue } from './lib/papers.mjs';
 import { P as PROTOCOL } from './src/protocol/params.js';
 import { nw } from './lib/network.mjs';
+import { atcResults } from './lib/results-atc.mjs';
 import { num } from './src/components/num.js';
 
 // Public base: '/' locally; CI sets SITE_BASE from actions/configure-pages (/Lunar-Haul/ on GitHub Pages).
@@ -28,6 +29,7 @@ function lunarsimPages() {
           .replace('<!--@headline-->', () => headline())
           .replace('<!--@hero-counters-->', () => heroCounters())
           .replace('<!--@hero-css-->', () => `<style>${readFileSync(join(SITE, 'src', 'home-hero.css'), 'utf8')}</style>`)   // inlined: one render-blocking request fewer on the home page
+          .replace('<!--@results-atc-->', () => atcResults(base))   // F-56: the Lunar ATC papers' headline numbers (lib/results-atc.mjs)
           .replace('<!--@results-->', () => results(base))
           .replace(/<!--@md:([\w-]+)-->/g, (_, n) => markdown(n))
           .replace(/<!--@paper:(\w+):(\w+)-->/g, (_, id, f) => paperField(id, f))   // F-56: the Phase 5 papers, from paper/<id>/

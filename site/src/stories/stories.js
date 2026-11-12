@@ -3,6 +3,9 @@
 // number as a stat chip (value, flag and source from the resolved file), a text twin of the view (the step's visual),
 // Back / Next, a step bar and the arrow keys. The 3D stage (stage.js) loads only when the visitor presses Enter and
 // follows the steps: world scenes from the gallery or the lander lab's recorded descents. Reduced motion: cuts.
+// F-56: a story whose steps ask for modes.view "atc_pair" shows B-80's trace pair instead (world/atc-pair.js, a 2D
+// plan view, no WebGL and no door): modes.run picks the run (with, without, both), modes.at the moment (start, end,
+// hand, auction), modes.play plays the month.
 import { door, statChip, h, reducedMotion } from '../ui/index.js';
 import { detectTier } from '../stage/tier.js';
 import { esc } from '../components/num.js';
@@ -12,6 +15,7 @@ const BASE = import.meta.env.BASE_URL, DATA = BASE + 'story-data/';
 const params = new URLSearchParams(location.search), sid = params.get('s');
 async function getJson(u) { const r = await fetch(u); if (!r.ok) throw new Error(`${u}: HTTP ${r.status}`); return r.json(); }
 const status = m => { $('st-status').textContent = m; };
+const isPair = s => s.modes?.view === 'atc_pair';
 
 // text with {{r:key}} numbers emphasised (the chips below carry their flags and sources); a number keeps its value and
 // first unit word together ("204 t"), a long unit ("percentage points of relay coverage") wraps
@@ -64,7 +68,7 @@ async function list(ix) {
     return h('article', { class: 'ui-glass st-card' },
       ill ? h('figure', { class: 'st-ill' }, h('img', { src: `${BASE}illustrations/${s.id}-640.webp`, srcset: `${BASE}illustrations/${s.id}-640.webp 640w, ${BASE}illustrations/${s.id}-1280.webp 1280w`, sizes: '(max-width: 600px) 100vw, 420px', width: 640, height: 360, loading: 'lazy', decoding: 'async', alt: ill.alt }),
         h('figcaption', {}, `Illustration, AI-generated${ill.note ? `; ${ill.note}` : ''}. Not a result.`)) : null,
-      h('p', { class: 'ui-label' }, `${s.steps} steps · ${d?.scene?.startsWith('lander') ? 'lander lab' : 'the base in 3D'}`),
+      h('p', { class: 'ui-label' }, `${s.steps} steps · ${d?.steps?.some(isPair) ? 'one month, two ways' : d?.scene?.startsWith('lander') ? 'lander lab' : 'the base in 3D'}`),
       h('h2', { class: 'st-card-title' }, h('a', { href: `?s=${encodeURIComponent(s.id)}` }, s.title)),
       d ? h('p', { class: 'st-card-sum', html: withNumbers(d.summary, d.numbers) }) : null);
   }));
@@ -91,7 +95,7 @@ async function play(entry) {
   });
   sources(doc);
   render();
-  start3d(doc);
+  if (steps.some(isPair)) startPair(doc); else start3d(doc);
 
   function go(k) {
     if (k < 0 || k >= steps.length || k === i) return;
@@ -124,6 +128,22 @@ async function play(entry) {
     const gen = ++applying;
     try { status(''); await stage.apply(steps[i], doc); }
     catch (e) { if (gen === applying) status(`The 3D view could not show this step (${e.message}); the text says what it shows.`); }
+  }
+  async function startPair(d) {
+    $('st-stage').classList.add('st-2d'); $('st-canvas').hidden = true;
+    const keys = document.querySelector('.st-keys'); if (keys) keys.textContent = 'Arrow keys ← → step through (outside the month’s controls).';
+    const host = h('div', { class: 'st-pair' }, h('p', { class: 'small muted' }, 'Loading the month…'));
+    $('st-view').append(host);
+    try {
+      const m = await import('../world/atc-pair.js');
+      const ctl = await m.mount(host, BASE, { story: true });
+      stage = { apply(step) {
+        const md = step.modes || {};
+        ctl.show(isPair(step) ? md.run || 'both' : 'both'); ctl.at(md.at || 'start');
+        if (md.play && !reducedMotion()) ctl.play();
+      } };
+      await applyStage();
+    } catch (e) { host.replaceChildren(h('p', { class: 'small' }, `The month could not be loaded (${e.message}). Each step’s text says what the view would show.`)); }
   }
   async function start3d(d) {
     const tierInfo = await detectTier(), tier = tierInfo.tier;

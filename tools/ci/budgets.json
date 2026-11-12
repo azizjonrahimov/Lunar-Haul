@@ -44,7 +44,8 @@
       "data": [
         "protocol/anatomy/nav.html",
         "protocol/anatomy/clock.html",
-        "protocol/anatomy/radio.html"
+        "protocol/anatomy/radio.html",
+        "protocol/e50-trace.json"
       ],
       "data_gzip_kb": 80,
       "lazy": [

@@ -6,7 +6,7 @@
   "status": "draft",
   "summary": "In the month when Earth is least in view, robots that share jobs and roads among themselves leave {{r:with_urgent}} urgent items waiting and need {{r:with_hand}} of hand coordination from Earth; without the network the month ends with {{r:without_urgent}} urgent item waiting and {{r:without_hand}} of coordination by hand.",
   "scene": "world:P2",
-  "notes": "Draft by FRONTEND (F-56), not browser-checked. Numbers: the with/without pair of B-80 (data/atc/trace_pair/index.json, July 2028, one seed). The story schema reads JSON numbers only from results/*.json, so the counters point at results/ATC_trace_pair_summary.json, a file BACKEND would export with the index's window and runs.{with,without}.{summary,settings} under the same paths; Earth visibility already comes from results/E48_sizing.json. Scene: the story player has to show the pair (modes.view = atc_pair, run = with / without / both), which it does not do yet; world:P2 is the schema-valid default until then. Wording for LEAD to edit; LEAD moves the file to data/stories/ when accepted.",
+  "notes": "Fifth story (F-56). Numbers: results/ATC_trace_pair_summary.json (B-80c: the with/without pair of B-80, July 2028, one seed) and results/E48_sizing.json (Earth visibility that month). The story player shows the pair for steps with modes.view = atc_pair (run = with / without / both; at = start / end / hand / auction; play); world:P2 is only the schema-valid default scene. Status draft until the story player's pair view has been checked in a browser; wording for LEAD to edit.",
   "numbers": {
     "base_dte": {
       "label": "Earth in view of the base, that month",
@@ -146,7 +146,8 @@
       "modes": {
         "view": "atc_pair",
         "run": "without",
-        "play": true
+        "play": true,
+        "at": "start"
       },
       "chips": [
         "base_dte"
@@ -162,7 +163,8 @@
       },
       "modes": {
         "view": "atc_pair",
-        "run": "without"
+        "run": "without",
+        "at": "hand"
       },
       "chips": [
         "without_hand",
@@ -179,7 +181,8 @@
       },
       "modes": {
         "view": "atc_pair",
-        "run": "with"
+        "run": "with",
+        "at": "auction"
       },
       "chips": [
         "with_hand",
@@ -196,7 +199,8 @@
       },
       "modes": {
         "view": "atc_pair",
-        "run": "both"
+        "run": "both",
+        "at": "end"
       },
       "chips": [
         "idle_saved"
@@ -212,7 +216,8 @@
       },
       "modes": {
         "view": "atc_pair",
-        "run": "both"
+        "run": "both",
+        "at": "end"
       },
       "chips": [
         "with_msgs"

@@ -19,6 +19,14 @@
    "file": "learned-landing.json"
   },
   {
+   "id": "month-without-earth",
+   "title": "A month without Earth",
+   "status": "draft",
+   "steps": 5,
+   "pending": 0,
+   "file": "month-without-earth.json"
+  },
+  {
    "id": "pads-distance",
    "title": "How far should the pads be?",
    "status": "published",

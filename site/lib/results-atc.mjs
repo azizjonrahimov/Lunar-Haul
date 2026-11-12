@@ -1,8 +1,6 @@
-// F-56 (draft, not browser-checked): the Lunar ATC section of /results/: the three papers' headline numbers, read at build
-// time from paper/<id>/values.json (the papers' own values files; pre-formatted strings) and, for P3's computing and radio
-// numbers that its values file does not carry, results/E48_sizing.json. Nothing is typed. Not wired into the page yet:
-// results/index.html gets <!--@results-atc--> and vite.config.js .replace('<!--@results-atc-->', () => atcResults(base))
-// once the page can be built and looked at.
+// F-56: the Lunar ATC section of /results/ (<!--@results-atc-->): the three papers' headline numbers, read at build time
+// from paper/<id>/values.json (the papers' own values files; pre-formatted strings) and, for P3's computing and radio
+// numbers that its values file does not carry, results/E48_sizing.json. Nothing is typed.
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { paperValue, paperField } from './papers.mjs';
@@ -36,8 +34,9 @@ export function atcResults(base = '/') {
   const v = pv, E = e48(), SZ = 'results/E48_sizing.json';
   const e = (value, unit, digits, src) => num({ value, unit, digits, flag: 'Modelled', source: `${SZ}: ${src}` });
   const air = a => E?.airtime?.rows?.find(r => r.sizes.startsWith('LRIP secured, MAC 8') && String(r.hops).startsWith('measured') && r.access.startsWith(a));
-  const card = (id, items) => `<article class="r-atc-card"><h3 class="r-atc-h">${paperField(id, 'title')}</h3><ul>${items.map(t => `<li>${t}</li>`).join('')}</ul>`
-    + `<p class="small muted">From paper/${id}/values.json at build time${id === 'p3' ? ' and results/E48_sizing.json' : ''}.</p></article>`;
+  const card = (id, items) => `<article class="r-atc-card" aria-labelledby="r-atc-${id}"><p class="r-atc-k">${id.toUpperCase()}</p>`
+    + `<h3 class="r-atc-h" id="r-atc-${id}">${paperField(id, 'title')}</h3><ul>${items.map(t => `<li>${t}</li>`).join('')}</ul>`
+    + `<p class="small muted r-atc-src">Read from <code>paper/${id}/values.json</code>${id === 'p3' ? ' and <code>results/E48_sizing.json</code>' : ''} when the site is built.</p></article>`;
   const p1 = [
     `${v('p1', 'P1-N-RUNS-ALL')} pre-registered simulated years under ${v('p1', 'P1-N-REGIMES')} decision regimes.`,
     `A shared dispatcher on Earth that stops when Earth sets kept urgent cargo waiting ${v('p1', 'P1-H2-STRICT-MINUS-O')} longer than one that never stops; planning ahead before each blackout left ${v('p1', 'P1-PLAN-MINUS-O')} of that.`,
@@ -58,7 +57,7 @@ export function atcResults(base = '/') {
     sched && slot ? `Twenty robots' authenticated traffic needs ${e(sched.channel_kbps_needed, ' kbit/s', 2, 'airtime (scheduled, measured hops)')} of airtime on a channel the base schedules, and ${e(slot.channel_kbps_needed, ' kbit/s', 2, 'airtime (slotted random access, measured hops)')} with random access, against a ${e(E.airtime.channel_kbps, ' kbit/s', 0, 'airtime.channel_kbps')} channel.` : '',
     `The base's mast is in direct view at ${v('p3', 'P3-MESH-MAST-DIRECT-SHARE')} of route points; the rest goes through the mesh.`,
   ].filter(Boolean);
-  return `<section class="r-atc" aria-labelledby="r-atc-h"><h2 id="r-atc-h">Lunar ATC: the three papers in numbers</h2>`
+  return `<section class="r-atc" aria-labelledby="h-atc"><h2 id="h-atc">Lunar ATC: the three papers in numbers</h2>`
     + `<p class="prose">Headline results of the three Lunar ATC papers, read from the papers' own values files when the site is built. More on <a href="${base}atc/">the Lunar ATC page</a>, <a href="${base}world/?view=atc">a month with and without the network</a> and <a href="${base}paper/">the papers</a>.</p>`
     + `<div class="r-atc-grid">${card('p1', p1)}${card('p2', p2)}${card('p3', p3)}</div></section>`;
 }

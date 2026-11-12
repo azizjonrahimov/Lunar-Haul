@@ -141,3 +141,10 @@
 .pr-hero { margin: var(--s-4) 0 0; max-width: 860px; }
 .pr-hero img { display: block; width: 100%; height: auto; border-radius: var(--radius-panel); background: #111; }
 .pr-hero figcaption { font-size: 0.75rem; color: var(--ink-2); margin-top: var(--s-1); }
+
+/* F-56: figure 1 from E50's month: the vehicle's own 95 % bound, the half hours it moved */
+.pr-l-bound { fill: none; stroke: var(--accent); stroke-width: 1.25; stroke-opacity: 0.55; stroke-dasharray: 6 3; }
+.pr-ln-bound { border-top: 2px dashed color-mix(in srgb, var(--accent) 60%, transparent); }
+.pr-drive { fill: color-mix(in srgb, var(--ink) 7%, transparent); }
+.pr-sw { display: inline-block; width: 1.1em; height: 0.8em; vertical-align: -0.05em; border-radius: 2px; }
+.pr-sw-drive { background: color-mix(in srgb, var(--ink) 12%, transparent); }

@@ -4,9 +4,13 @@
 // in the sites.json frame, the clock shared; under each, four counters from the events. The window totals are
 // recounted from the events by the file's own definitions and checked against its summary (a mismatch line if not).
 // Loaded after a click or with ?view=atc (a lazy chunk; budgets.json variant ?view=atc).
+// F-56: mount() returns a controller, so a story step can show one run or both (run), at a moment (at: start, end,
+// hand = the first road conflict settled through Earth, auction = the first auction award) and play. { story: true }
+// leaves out the month's totals table (the story's chips carry those numbers, with their sources).
 import { h } from '../ui/index.js';
 import { createTimescale, hoursText } from '../ui/timescale.js';
 import { OWNER_COLOURS, themedVar } from './colours.js';
+import './atc-pair.css';
 
 const NS = 'http://www.w3.org/2000/svg';
 const OWN = { A: OWNER_COLOURS.CoA, B: OWNER_COLOURS.CoB, C: themedVar(OWNER_COLOURS.CoC) };
@@ -135,20 +139,22 @@ function panel(R, title) {
   return { el, draw };
 }
 
-export async function mount(root, BASE) {
+export async function mount(root, BASE, { story = false } = {}) {
   const dir = BASE + 'world/atc/';
   const ir = await fetch(dir + 'index.json'); if (!ir.ok || !/json/.test(ir.headers.get('content-type') || '')) throw new Error(`world/atc/index.json: HTTP ${ir.status}`);
   const ix = await ir.json(); if (ix.format !== 'lunarsim-atc-trace' || ix.version !== 1) throw new Error(`index.json: format ${ix.format} version ${ix.version}`);
   const order = ['without', 'with'], got = await Promise.all(order.map(n => readRun(dir, ix.runs[n])));
   const R = got.map(g => prep(g.d)), [t0, t1] = [ix.window.t0_h, ix.window.t1_h];
   const P = [panel(R[0], 'Without the network: control rooms on Earth'), panel(R[1], 'With the network: Lunar ATC')];
+  const pair = h('div', { class: 'ap-pair', 'data-run': 'both' }, ...P.map(p => p.el));
   let t = t0, playing = false, prev = 0;
   const range = h('input', { type: 'range', min: t0, max: t1, step: 0.1, value: t0, class: 'ap-range', 'aria-label': 'Time in the month' });
   const when = h('span', { class: 'ap-clock' }), play = h('button', { type: 'button', class: 'ui-btn primary' }, 'Play');
   const ts = createTimescale({ speeds: [900, 3600, 21600, 86400], value: 21600, keys: false, url: false });
   const set = v => { t = Math.min(t1, Math.max(t0, v)); range.value = t; when.textContent = clock(t); P.forEach(p => p.draw(t)); };
   const loop = now => { if (!playing) return; set(t + (now - prev) / 1000 * ts.h); prev = now; if (t >= t1) { playing = false; play.textContent = 'Play'; } else requestAnimationFrame(loop); };
-  play.addEventListener('click', () => { playing = !playing; play.textContent = playing ? 'Pause' : 'Play'; if (playing) { if (t >= t1) set(t0); prev = performance.now(); requestAnimationFrame(loop); } });
+  const run = on => { playing = on; play.textContent = playing ? 'Pause' : 'Play'; if (playing) { if (t >= t1) set(t0); prev = performance.now(); requestAnimationFrame(loop); } };
+  play.addEventListener('click', () => run(!playing));
   range.addEventListener('input', () => set(+range.value));
   // the window totals: recounted here from the events, beside the file's own summary
   const S = order.map(n => ix.runs[n].summary), bad = [];
@@ -157,13 +163,25 @@ export async function mount(root, BASE) {
     if (!ok) bad.push(`${order[i]}: ${label.toLowerCase()} recounts to ${fmt(mine, dg)}, the file says ${fmt(S[i][k], dg)}`);
     return [h('td', { class: 'n' }, fmt(mine, dg))];
   })));
+  const legend = h('p', { class: 'small muted' }, 'Owner colours: A red, B green, C yellow. Thick coloured road: a one-lane piece held by that owner’s robot; dashed: one-lane road; small rings: passing bays. Thin lines: radio links (dashed: just lost). A yellow ring round a pad: closed for a landing; a dashed ring: a crew walk; a large ring: a team-lift meeting point.');
+  // the moments a story step can ask for (deterministic, so Back and Next show the same view)
+  const first = (r, test) => { const x = r.d.decisions.find(dd => dd[0] >= t0 && test(dd)); return x ? Math.min(t1, x[0] + 0.05) : t0; };
+  const moments = { start: t0, end: t1, hand: first(R[0], dd => dd[1] === 'hand_referral'), auction: first(R[1], dd => dd[1] === 'award') };
+  const ctl = {
+    t0, t1, moments,
+    show(which = 'both') { pair.dataset.run = which; P[0].el.hidden = which === 'with'; P[1].el.hidden = which === 'without'; },
+    at(name) { run(false); set(typeof name === 'number' ? name : moments[name] ?? t0); },
+    play: on => run(on !== false), stop: () => run(false),
+  };
+  if (story) { root.replaceChildren(h('div', { class: 'ap-ctl ui-glass' }, play, ts.el, range, when), pair, legend); set(t0); return ctl; }
   root.replaceChildren(
     h('div', { class: 'ap-ctl ui-glass' }, play, ts.el, range, when),
-    h('div', { class: 'ap-pair' }, ...P.map(p => p.el)),
-    h('p', { class: 'small muted' }, 'Owner colours: A red, B green, C yellow. Thick coloured road: a one-lane piece held by that owner’s robot; dashed: one-lane road; small rings: passing bays. Thin lines: radio links (dashed: just lost). A yellow ring round a pad: closed for a landing; a dashed ring: a crew walk; a large ring: a team-lift meeting point.'),
+    pair,
+    legend,
     h('table', { class: 'w2-table ap-tot' }, h('caption', {}, `${ix.window.name} ${ix.year}, the whole month: recounted from the events`),
       h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, ''), ...order.map(n => h('th', { scope: 'col' }, n === 'with' ? 'With the network' : 'Without')))), h('tbody', {}, rows)),
     bad.length ? h('p', { class: 'ap-bad', role: 'alert' }, `These do not match the file’s own totals: ${bad.join('; ')}.`) : h('p', { class: 'small' }, 'Every total above equals the window total the file states (meta summary).'),
     h('p', { class: 'small muted' }, `Same seed (${ix.seed}), same cargo and landings, ${ix.window.name} ${ix.year} (the base sees Earth ${fmt(ix.window.base_dte_share * 100, 1)} % of that month, the least of the year). Files: ${order.map((n, i) => `${ix.runs[n].file} (${got[i].check})`).join('; ')}; built at commit ${ix.commit.slice(0, 7)}. Positions are along each road leg, linear in time.`));
   set(t0);
+  return ctl;
 }

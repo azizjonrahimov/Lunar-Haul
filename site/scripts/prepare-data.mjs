@@ -356,3 +356,6 @@ if (existsSync(join(scenes, 'gallery.json'))) {
 
 // F-61: /network/ (E56): the loss landscape, the policy and its check windows, a compact results file
 (await import('../lib/network.mjs')).stage(PUB);
+
+// F-56 / B-90: /protocol/ figure 1 reads E50's one-month trace (lib/protocol-data.mjs)
+(await import('../lib/protocol-data.mjs')).stageE50(PUB);

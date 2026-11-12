@@ -1,0 +1,214 @@
+{
+ "format": "lunarsim-story-resolved",
+ "version": 1,
+ "id": "month-without-earth",
+ "title": "A month without Earth",
+ "title_plain": "A month without Earth",
+ "status": "draft",
+ "summary": "In the month when Earth is least in view, robots that share jobs and roads among themselves leave {{r:with_urgent}} urgent items waiting and need {{r:with_hand}} of hand coordination from Earth; without the network the month ends with {{r:without_urgent}} urgent item waiting and {{r:without_hand}} of coordination by hand.",
+ "summary_plain": "In the month when Earth is least in view, robots that share jobs and roads among themselves leave 0 urgent items waiting and need 0.0 h of hand coordination from Earth; without the network the month ends with 1 urgent item waiting and 8.7 h of coordination by hand.",
+ "scene": "world:P2",
+ "notes": "Fifth story (F-56). Numbers: results/ATC_trace_pair_summary.json (B-80c: the with/without pair of B-80, July 2028, one seed) and results/E48_sizing.json (Earth visibility that month). The story player shows the pair for steps with modes.view = atc_pair (run = with / without / both; at = start / end / hand / auction; play); world:P2 is only the schema-valid default scene. Status draft until the story player's pair view has been checked in a browser; wording for LEAD to edit.",
+ "numbers": {
+  "base_dte": {
+   "value": 52.69,
+   "text": "53 %",
+   "unit": "%",
+   "flag": "Modelled",
+   "source": "results/E48_sizing.json: revision/two_ray_in_the_mesh/e40_month/base_dte_share; x 100; share of the month with Earth above the base's horizon; the least of the year (the month the trace pair shows)",
+   "label": "Earth in view of the base, that month"
+  },
+  "loss": {
+   "value": 10.0,
+   "text": "10 %",
+   "unit": "%",
+   "flag": "Assumed",
+   "source": "results/ATC_trace_pair_summary.json: runs/with/settings/loss; x 100; per-hop loss set for the run with the network",
+   "label": "Message loss on the mesh"
+  },
+  "without_urgent": {
+   "value": 1.0,
+   "text": "1",
+   "unit": "",
+   "flag": "Modelled",
+   "source": "results/ATC_trace_pair_summary.json: runs/without/summary/urgent_items_waiting",
+   "label": "Without: urgent items left waiting"
+  },
+  "with_urgent": {
+   "value": 0.0,
+   "text": "0",
+   "unit": "",
+   "flag": "Modelled",
+   "source": "results/ATC_trace_pair_summary.json: runs/with/summary/urgent_items_waiting",
+   "label": "With: urgent items left waiting"
+  },
+  "without_hand": {
+   "value": 8.655,
+   "text": "8.7 h",
+   "unit": "h",
+   "flag": "Modelled",
+   "source": "results/ATC_trace_pair_summary.json: runs/without/summary/earth_hand_hours; operator hours spent settling road conflicts by hand through Earth in the month",
+   "label": "Without: hand coordination through Earth"
+  },
+  "with_hand": {
+   "value": 0.0,
+   "text": "0.0 h",
+   "unit": "h",
+   "flag": "Modelled",
+   "source": "results/ATC_trace_pair_summary.json: runs/with/summary/earth_hand_hours",
+   "label": "With: hand coordination through Earth"
+  },
+  "without_idle": {
+   "value": 5642.063,
+   "text": "5,642 h",
+   "unit": "h",
+   "flag": "Modelled",
+   "source": "results/ATC_trace_pair_summary.json: runs/without/summary/idle_robot_hours",
+   "label": "Without: robot-hours idle"
+  },
+  "with_idle": {
+   "value": 5532.261,
+   "text": "5,532 h",
+   "unit": "h",
+   "flag": "Modelled",
+   "source": "results/ATC_trace_pair_summary.json: runs/with/summary/idle_robot_hours",
+   "label": "With: robot-hours idle"
+  },
+  "idle_saved": {
+   "value": 109.802,
+   "text": "110 h",
+   "unit": "h",
+   "flag": "Modelled",
+   "source": "“Without: robot-hours idle” minus “With: robot-hours idle” (from the unrounded values); without minus with",
+   "label": "Idle robot-hours saved"
+  },
+  "with_msgs": {
+   "value": 2.161,
+   "text": "2.2",
+   "unit": "",
+   "flag": "Modelled",
+   "source": "results/ATC_trace_pair_summary.json: runs/with/summary/messages_per_hour",
+   "label": "With: messages per hour, whole fleet"
+  }
+ },
+ "steps": [
+  {
+   "id": "dark-month",
+   "title": "The month Earth is least in view",
+   "text": "In the simulated year shown, the base sees Earth least in July: {{r:base_dte}} of the time. For the rest of the month no control room on Earth can reach a rover directly.",
+   "visual": "The base from above in July, with the Earth chip showing when Earth is in view and when it is hidden.",
+   "camera": {
+    "shot": "overview"
+   },
+   "modes": {
+    "view": "atc_pair",
+    "run": "without",
+    "play": true,
+    "at": "start"
+   },
+   "chips": [
+    "base_dte"
+   ],
+   "title_plain": "The month Earth is least in view",
+   "text_plain": "In the simulated year shown, the base sees Earth least in July: 53 % of the time. For the rest of the month no control room on Earth can reach a rover directly.",
+   "visual_plain": "The base from above in July, with the Earth chip showing when Earth is in view and when it is hidden."
+  },
+  {
+   "id": "without",
+   "title": "Without the network",
+   "text": "Each company's control room on Earth assigns its own robots while Earth is in view, and road conflicts are settled by hand through Earth: {{r:without_hand}} of hand coordination this month. When the month ends, {{r:without_urgent}} urgent item is still waiting.",
+   "visual": "Robots of one company stand idle while another company's cargo waits; a road conflict waits for Earth to rise.",
+   "camera": {
+    "shot": "overview"
+   },
+   "modes": {
+    "view": "atc_pair",
+    "run": "without",
+    "at": "hand"
+   },
+   "chips": [
+    "without_hand",
+    "without_urgent"
+   ],
+   "title_plain": "Without the network",
+   "text_plain": "Each company's control room on Earth assigns its own robots while Earth is in view, and road conflicts are settled by hand through Earth: 8.7 h of hand coordination this month. When the month ends, 1 urgent item is still waiting.",
+   "visual_plain": "Robots of one company stand idle while another company's cargo waits; a road conflict waits for Earth to rise."
+  },
+  {
+   "id": "with",
+   "title": "With Lunar ATC",
+   "text": "The robots auction pooled jobs among themselves over the radio mesh, with {{r:loss}} of messages lost on each hop, and reserve the roads together. Hand coordination through Earth: {{r:with_hand}}. Urgent items still waiting when the month ends: {{r:with_urgent}}.",
+   "visual": "Radio links between the robots, reserved road segments in colour, and jobs passing to whichever robot can finish them soonest.",
+   "camera": {
+    "shot": "overview"
+   },
+   "modes": {
+    "view": "atc_pair",
+    "run": "with",
+    "at": "auction"
+   },
+   "chips": [
+    "with_hand",
+    "with_urgent"
+   ],
+   "title_plain": "With Lunar ATC",
+   "text_plain": "The robots auction pooled jobs among themselves over the radio mesh, with 10 % of messages lost on each hop, and reserve the roads together. Hand coordination through Earth: 0.0 h. Urgent items still waiting when the month ends: 0.",
+   "visual_plain": "Radio links between the robots, reserved road segments in colour, and jobs passing to whichever robot can finish them soonest."
+  },
+  {
+   "id": "idle",
+   "title": "Fewer idle hours",
+   "text": "Across the fleet, robots sit idle {{r:with_idle}} with the network against {{r:without_idle}} without it: {{r:idle_saved}} less in one month.",
+   "visual": "The two months side by side on one clock, with the idle robots of each marked.",
+   "camera": {
+    "shot": "overview"
+   },
+   "modes": {
+    "view": "atc_pair",
+    "run": "both",
+    "at": "end"
+   },
+   "chips": [
+    "idle_saved"
+   ],
+   "title_plain": "Fewer idle hours",
+   "text_plain": "Across the fleet, robots sit idle 5,532 h with the network against 5,642 h without it: 110 h less in one month.",
+   "visual_plain": "The two months side by side on one clock, with the idle robots of each marked."
+  },
+  {
+   "id": "cost",
+   "title": "What it costs, and what this is",
+   "text": "The network talks: about {{r:with_msgs}} messages an hour across the whole fleet, a light load on the radio. This is one simulated month and one seed, a picture of the idea rather than a result; the papers give averages over thousands of simulated years.",
+   "visual": "The message counter beside the two months; a note that this is a single run.",
+   "camera": {
+    "shot": "overview"
+   },
+   "modes": {
+    "view": "atc_pair",
+    "run": "both",
+    "at": "end"
+   },
+   "chips": [
+    "with_msgs"
+   ],
+   "links": [
+    {
+     "label": "Play both months",
+     "href": "world/?view=atc"
+    },
+    {
+     "label": "The papers",
+     "href": "paper/"
+    }
+   ],
+   "title_plain": "What it costs, and what this is",
+   "text_plain": "The network talks: about 2.2 messages an hour across the whole fleet, a light load on the radio. This is one simulated month and one seed, a picture of the idea rather than a result; the papers give averages over thousands of simulated years.",
+   "visual_plain": "The message counter beside the two months; a note that this is a single run."
+  }
+ ],
+ "pending": [],
+ "sources": {
+  "results/ATC_trace_pair_summary.json": "e1505229e8b80e5f4fda392d5bb199f6537f3aa19b40521e450678cf63f65519",
+  "results/E48_sizing.json": "eb5aea073b2884b421fe60a97d4bcaaac9f9113d6c6c413a978a7a02a5fd2b3c"
+ }
+}
