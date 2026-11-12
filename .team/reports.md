@@ -8500,3 +8500,75 @@ Reading for P2/P3:
 2. Every vehicle in the Earth-scale variant uses Earth seconds. Do you want a mixed fleet instead, with half the vehicles on each scale? That would make the scale mismatch show up between vehicles, not only against the base.
 
 Next: B-93 (it opens after B-90), unless you want B-90b first once your E50 loop ends.
+
+## B-93 DONE 18:09 (LRIP v0.1 messages and codec, E53, H13) | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**What was built** (research note 03 section C)
+1. **Schema** `lunarsim/schemas/lrip-v0.1.json`:
+   - the framing: Space Packet 6 B, LRIP header 8 B, security header 6 B, trailer MAC 8 / 16 B or Ed25519 signature 64 B;
+   - the 15 messages of C2, field by field (type, bits, scale, unit), with the bit totals checked: POSITION 104, STATUS 120, ALERT 112, TASK_BID 72, ...;
+   - the enumerations, with an `unknown_as` cautious value: unknown alert type = hazard, unknown mode = fault;
+   - the versioning rules, and the manifest registry.
+2. **Codec** `lunarsim/atc/lrip/codec.py`:
+   - profile N: bit-packed, big-endian, MSB first;
+   - profile B: a CBOR array of the header and fields, through `lunarsim/atc/lrip/cbor.py`, a minimal deterministic CBOR with shortest-form heads (RFC 8949; `cbor2` is not installed);
+   - security: real AES-CMAC (NIST SP 800-38B) truncated to 8 or 16 B, and Ed25519 (RFC 8032), both through `cryptography`; the SPI carries the kind and the key epoch;
+   - every message round-trips in both profiles with and without authentication (tested on random values).
+3. **Capability manifest:**
+   - `lunarsim/schemas/lrip-manifest-v0.1.schema.json` (JSON Schema), with note 03's two examples in `data/atc/lrip/manifest-{small_rover,hopper}.json`;
+   - `lunarsim/atc/lrip/manifest.py`: compact CBOR (integer keys and strings from the registry, fixed-point decimals, "M.m" versions);
+   - `can_do(task, manifest)`: same major version, minor at least the task's, numeric params within min / max, list params a subset; unknown capabilities and params ignored;
+   - **in the auction (opt-in):** regime key `capability_filter` (default None) = "catalog" (manifests from the vehicle classes) or a dict vehicle id → manifest. An incapable robot's bid is infinite, which the marketplace skips (`auction._capability_hook`).
+4. **Versioning rule (tested):**
+   - the fields of a later minor version are skipped, and `skipped_bytes` reports them (profiles N and B);
+   - an unknown message type is counted and dropped (`Counters.unknown_type`);
+   - an unknown enumeration value reads as the cautious one;
+   - another major version raises `LripVersionError`.
+5. **Byte counts:** `codec.size_table()`. All match note 03 C2 / Table B5:
+   - MAC 8 B: POSITION 41, STATUS 43, INTENT 38, ALERT 42, TASK_ANNOUNCE 44, TASK_BID 37, TASK_STATE 33, RESERVE_REQ 35, RESERVE_RELEASE 31, CAP_QUERY 31, MAP_NOTICE 38, HELLO 30;
+   - signed: TASK_AWARD 92, RESERVE_GRANT 94, ALERT 98;
+   - POSITION 49 with a 16 B MAC, 27 unsecured.
+   - The Proximity-1 (12 B) and bundle (48 / 108 B) overheads are schema constants.
+   - **`lunarsim/atc/messages.py`:** `Channel(..., sizes="lrip_mac8" | "lrip_mac16" | "lrip_unsecured")` counts `bytes_sent` per hop with the codec's sizes (`send(hops, msg=...)`). Off by default: no byte count, delivery unchanged.
+   - One difference from the note: the compact manifests are **283 / 280 B** against its 247 / 251, because my registry keeps owner and model as text. The minified JSON is 1,200 / 1,210 B, exactly the note's.
+6. **Conformance vectors** `data/atc/lrip/conformance-v0.1.json`: 45 golden packets, every message in profile N authenticated (signed where required), profile N unsecured, and profile B. Each has hex, length and decoded fields, plus the two compact manifests. The keys are TEST KEYS (AES key, Ed25519 seed and public key in the file). A test decodes every vector back to its fields.
+7. **A bug found while making the vectors and fixed:** with auth "auto", a signature's random bytes can look like a shorter trailer's SPI, so a signed packet failed to verify. The decoder now tries the matching kinds, longest first, and keeps the one that verifies (tested on 50 signed packets).
+
+**E53** (`tools/atc/run_e53.py`, 9 s):
+- Per rover: POSITION at f Hz, STATUS / INTENT at 0.1 Hz, HELLO filling up to 1 Hz, and events at E48's measured 1x rates. Events add 0.03 bit/s, negligible next to the beacons.
+- Rovers sit at 30 draws of N positions from the 1x July trajectories (E50 trace), with 2.5 m antennas and the 10 m mast, on the DEM mesh.
+- Beacons travel one hop; events are relayed to BASE. The busiest link = the largest shared-channel load at any node.
+
+| Auth | Position rate | per rover | busiest link, p95 (kbit/s) at 5 / 10 / 20 / 40 / 80 rovers |
+|---|---|---|---|
+| on (MAC 8 B, signed awards and grants) | 0.1 Hz | 0.266 kbit/s | 1.33 / 2.66 / 5.31 / 10.6 / 21.1 |
+| on | **1 Hz** | 0.393 kbit/s (49.1 B/s) | 1.96 / 3.93 / **7.86** / 15.7 / 31.3 |
+| on | **10 Hz** | 3.34 kbit/s | 16.7 / 33.4 / **66.9** / 134 / 266 |
+| off | 1 Hz | 0.258 kbit/s | 1.29 / 2.58 / 5.17 / 10.3 / 20.6 |
+| off | 10 Hz | 2.20 kbit/s | 11.0 / 22.0 / 44.0 / 88.1 / 175 |
+
+- The busiest link carries about the sum over the whole fleet: the 1x fleet works within one radio neighbourhood of the base. Mean hops to BASE 1.01–1.03; 97–99 % of draws reach the base.
+- **H13: supported.** With authentication and 20 rovers the busiest link carries 7.86 kbit/s at 1 Hz (≤ 16) and 66.9 kbit/s at 10 Hz (> 16).
+- As airtime at 1 Hz and 20 rovers: 9.82 kbit/s on a scheduled channel (fits) and 21.4 on slotted random access (does not), the same as B-89.
+- 40 rovers at 1 Hz fit 16 kbit/s as raw load (15.7) but not as scheduled airtime (19.6). The 16 kbit/s channel tops out at about 32 authenticated rovers at 1 Hz on a scheduled channel. At 10 Hz even 5 rovers exceed 16 kbit/s; the 1 Mbit/s broadband channel carries 80 rovers at 10 Hz (266 kbit/s).
+
+**Files:**
+- new: `lunarsim/atc/lrip/{__init__,codec,cbor,manifest}.py`, `lunarsim/schemas/lrip-v0.1.json`, `lunarsim/schemas/lrip-manifest-v0.1.schema.json`, `data/atc/lrip/{manifest-small_rover,manifest-hopper,conformance-v0.1}.json`, `tools/atc/run_e53.py`, `tests/test_lrip.py` (10 tests), `results/E53_bitrate.json`, `results/E53_table.csv`;
+- changed: `lunarsim/atc/auction.py` (opt-in capability hook), `lunarsim/atc/regimes.py` (new regime key `capability_filter` default None; cell keys are built from cell kwargs, test_phase5_runner passes), `lunarsim/atc/messages.py` (opt-in byte count).
+
+**How to test:**
+- `.venv\Scripts\python -m pytest tests/test_lrip.py -q` passes 10. That includes the auction filter: with "catalog" manifests every one of 128 summary values is identical over 45 days; with no manifests, deliveries fall below 10 %.
+- The changed modules' files pass: test_phase5_runner 4, test_atc_auction 5, test_atc_regimes 12, test_atc_learned 6.
+- `python tools/atc/run_e53.py` rewrites the results and the vectors.
+- The full suite is still owed (free RAM 0.31–0.45 GB this hour).
+
+**For FRONTEND (via LEAD):**
+- /protocol/ problem 5: `data/atc/lrip/conformance-v0.1.json` (format `lrip-conformance` 0.1) has `vectors[]` with message, profile (N / B), auth (mac8 / sig / null), bytes, hex and fields. A JS decoder can be checked against it. Spare bits are zero, and the CBOR uses shortest-form integer heads.
+- `results/E53_table.csv` holds the bit-rate table.
+- The site JSON comes in B-99.
+
+**Questions for LEAD:**
+1. Should the manifest registry enumerate owner and model names (site enrolment would assign the numbers), to reach the note's ~250 B? I kept them as text, so an unknown owner still decodes.
+2. E53's busiest link is the whole fleet because the 1x fleet works near the base. Do you want a spread-out geometry variant (rovers placed uniformly over the route samples) for P1, where relaying shows?
+
+Next: B-91b (small), then B-94.

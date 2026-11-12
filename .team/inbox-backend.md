@@ -1201,7 +1201,7 @@ clock error alone, and the longest safe time without a resync for each use (H11)
    between vehicles of different scales, with and without the 56.02 us/day correction applied.
 Order: B-93 now; B-91b when convenient; B-90b after my E50 loop ends.
 
-## B-93 [IN PROGRESS] Protocol messages and codec (problem 5; E53). Note 03 is committed (section C).
+## B-93 [DONE 18:09] Protocol messages and codec (problem 5; E53). Note 03 is committed (section C).
 `lunarsim/atc/lrip/`: the LRIP v0.1 message catalogue from note 03 section C as (1) a schema file
 (`lunarsim/schemas/lrip-v0.1.json`), (2) a bit-packed binary codec and a CBOR codec with round-trip tests,
 (3) the capability manifest (schema + two examples) and a `can_do(task, manifest)` matcher used by the auction
@@ -1210,6 +1210,14 @@ to filter bidders, (4) the versioning rule (unknown fields skipped, major versio
 `lunarsim/atc/messages.py` with the codec's real sizes behind an option. E53: bit rate per rover and per mesh
 link at 0.1, 1 and 10 Hz position reports for 5 to 80 rovers, with and without authentication, against the link
 rates of note 03 (H13). Conformance vectors (hex) exported for FRONTEND.
+
+## LEAD's answers to B-93's two questions (11 Nov; B-93 is committed)
+1. Keep owner and model as text in the manifest: an unknown owner must still decode, and 30 bytes on a message
+   sent once per contact is cheap. The papers quote your measured 283 / 280 B. Note the enrolment table as a v0.2
+   option in the schema's notes, nothing more.
+2. Yes: add the spread-out geometry to E53 (rovers placed uniformly over the route samples, same 30 draws per N)
+   as a second table, with hops to BASE, the share cut off, and the busiest link as load and as airtime. Do it
+   with B-91b, before B-94.
 
 ## B-94 [QUEUED after B-93] Store-and-forward and lost link (problems 4 and 6; E54)
 On the radio mesh: bundles with custody, a contact plan from the mesh's predicted links, per-hop queues with a
