@@ -54,3 +54,6 @@
 /* the cutaway slot (its styles arrive with the figure) */
 .an-slot { margin-top: var(--s-4); min-height: 18rem; }
 .an-slot > img { display: block; width: 100%; height: auto; border-radius: var(--radius-panel); }
+/* phones: the column heads wrap so the out-of-distribution table fits; numbers stay on one line */
+.nw-table thead th { white-space: normal; vertical-align: bottom; }
+@media (max-width: 480px) { .nw-table th { white-space: normal; hyphens: auto; } .nw-table th, .nw-table td { padding: 0.35em 0.4em; } }

@@ -4,7 +4,7 @@
   "id": "month-without-earth",
   "title": "A month without Earth",
   "status": "draft",
-  "summary": "In the month when Earth is least in view, robots that share jobs and roads among themselves leave {{r:with_urgent}} urgent items waiting and need {{r:with_hand}} of hand coordination from Earth; without the network the month ends with {{r:without_urgent}} urgent item waiting and {{r:without_hand}} of coordination by hand.",
+  "summary": "In the month when Earth is least in view, robots that share jobs and roads among themselves let {{r:with_urgent}} urgent items wait more than a day and need {{r:with_hand}} of hand coordination from Earth; without the network {{r:without_urgent}} urgent item waits more than a day and road conflicts take {{r:without_hand}} of coordination by hand.",
   "scene": "world:P2",
   "notes": "Fifth story (F-56). Numbers: results/ATC_trace_pair_summary.json (B-80c: the with/without pair of B-80, July 2028, one seed) and results/E48_sizing.json (Earth visibility that month). The story player shows the pair for steps with modes.view = atc_pair (run = with / without / both; at = start / end / hand / auction; play); world:P2 is only the schema-valid default scene. Status draft until the story player's pair view has been checked in a browser; wording for LEAD to edit.",
   "numbers": {
@@ -38,7 +38,7 @@
       "note": "per-hop loss set for the run with the network"
     },
     "without_urgent": {
-      "label": "Without: urgent items left waiting",
+      "label": "Without: urgent waits over a day",
       "json": "results/ATC_trace_pair_summary.json",
       "path": [
         "runs",
@@ -47,10 +47,11 @@
         "urgent_items_waiting"
       ],
       "digits": 0,
-      "unit": ""
+      "unit": "",
+      "note": "urgent items that arrived this month and waited more than 24 h (the trace's own definition)"
     },
     "with_urgent": {
-      "label": "With: urgent items left waiting",
+      "label": "With: urgent waits over a day",
       "json": "results/ATC_trace_pair_summary.json",
       "path": [
         "runs",
@@ -59,7 +60,8 @@
         "urgent_items_waiting"
       ],
       "digits": 0,
-      "unit": ""
+      "unit": "",
+      "note": "urgent items that arrived this month and waited more than 24 h (the trace's own definition)"
     },
     "without_hand": {
       "label": "Without: hand coordination through Earth",
@@ -156,7 +158,7 @@
     {
       "id": "without",
       "title": "Without the network",
-      "text": "Each company's control room on Earth assigns its own robots while Earth is in view, and road conflicts are settled by hand through Earth: {{r:without_hand}} of hand coordination this month. When the month ends, {{r:without_urgent}} urgent item is still waiting.",
+      "text": "Each company's control room on Earth assigns its own robots while Earth is in view, and road conflicts are settled by hand through Earth: {{r:without_hand}} of hand coordination this month. {{r:without_urgent}} urgent item waits more than a day for a rover.",
       "visual": "Robots of one company stand idle while another company's cargo waits; a road conflict waits for Earth to rise.",
       "camera": {
         "shot": "overview"
@@ -174,7 +176,7 @@
     {
       "id": "with",
       "title": "With Lunar ATC",
-      "text": "The robots auction pooled jobs among themselves over the radio mesh, with {{r:loss}} of messages lost on each hop, and reserve the roads together. Hand coordination through Earth: {{r:with_hand}}. Urgent items still waiting when the month ends: {{r:with_urgent}}.",
+      "text": "The robots auction pooled jobs among themselves over the radio mesh, with {{r:loss}} of messages lost on each hop, and reserve the roads together. Hand coordination through Earth: {{r:with_hand}}. Urgent items that wait more than a day: {{r:with_urgent}}.",
       "visual": "Radio links between the robots, reserved road segments in colour, and jobs passing to whichever robot can finish them soonest.",
       "camera": {
         "shot": "overview"

@@ -8677,3 +8677,44 @@ Next: B-94 (store-and-forward and lost link). B-90b waits for your loop.
 - **H9 at 4x:** the same verdicts as at 1x. Dead reckoning exceeds 5 m in the first driving hour (supported); ranging near the base 4.31 m (supported); fixes away from the base 12.2 m (not supported).
 - **H10, "the gap grows at 4x":** not supported. The layered gap is −0.87 h at 4x against +0.007 h at 1x.
 - **The negative 4x gap is not explained by the roads,** because the layered run waits slightly more on them. The 36 s margins change the order in which the auction dispatches, and with an auction this sensitive to timing the delay moves by about an hour either way. The CI excludes 0 only just (n = 10). I read it as "no cost measurable at 4x", not as a benefit, and will look again with 8x.
+
+## F-56 BROWSER LOOK DONE 18:41, plus /network/ | data/stories/month-without-earth.json (wording fix), site/src/network/network.css (phone table), tools/ci/budgets.json (world ?view=atc lazy_css, from earlier) | how to check: /results/#h-atc, /stories/?s=month-without-earth (once published), /protocol/#fig-pos, /network/ | from BACKEND: nothing | for LEAD: notes at the end
+**Setup:** free RAM 2.08 GB, checked once. Preview of your 17:54 build, then two rebuilds of mine for the CSS fix (RAM 1.30 and 1.32 GB, checked before each). Headless Chrome at 1280 and 390 px, light and dark. The draft story was flipped to published in dist/story-data/index.json only for the pass, then restored; the source is untouched.
+- **/results/ Lunar ATC section:**
+  - 3 cards, 22 flagged numbers, nothing pending;
+  - 0 contrast fails, no overflow, one h1, no heading skips, 0 console errors in all four views;
+  - screenshots read at 1280 light and 390 dark: one column on a phone.
+- **/protocol/ figure 1 (E50):**
+  - draws in all four views, with 74 driving stretches shaded;
+  - first readout: 22 Jul 00:30, vehicle 3 driving, error 4.1 m, bound 6.0 m (over budget), dead reckoning alone 115 m, bound over 5 m in 52 % of its moving half hours;
+  - "LunaNet, 2028" shows the "adds nothing in 2028" note;
+  - vehicle 1 with dead reckoning only: 275 m, bound over budget 100 %;
+  - all 8 protocol figures draw; 0 contrast fails, no overflow, 0 errors;
+  - screenshots read at 1280 dark and 390 light.
+- **The fifth story with the with / without view** (every step, all four views):
+  - step 1: run without, playing from 1 Jul;
+  - step 2: without, at 7 Jul 07:37, the first conflict settled through Earth;
+  - step 3: with, at 1 Jul 02:27, the first auction award;
+  - steps 4 and 5: both runs side by side at 1 Aug 00:00;
+  - chips per step 1, 2, 3, 3, 1; 0 contrast fails, no overflow, 0 errors;
+  - the list card says "5 steps · one month, two ways".
+  - /world/?view=atc still works with the moved CSS: both panels, the totals table, 0 errors.
+- **Fixed, a wording error in the story:**
+  - At the month's end the view shows "Urgent items waiting now: 13" without the network, but the story said "the month ends with 1 urgent item waiting".
+  - The 1 is the trace's own count of urgent items that waited more than a day. The summary, steps 2 and 3, and both chip labels now say "wait(s) more than a day" ("Without / With: urgent waits over a day").
+  - stories check 5/5. I checked the new wording in the browser from a scratch resolve.
+  - **data/stories/resolved/ is not rebuilt:** please run `python -m lunarsim.stories build`.
+- **/network/, your first look** (all four views):
+  - all three figures and the deck load; the parity badge shows "10 of 10 reference windows match the Python runtime within 0.000001 (largest difference 1.4e-14)";
+  - landscape readout at the final model; the output gives logit 7.90 with alarms at both settings;
+  - 0 contrast fails, no overflow, 0 errors.
+  - **Fixed:** at 390 the out-of-distribution table was cut off at the right edge and needed a sideways scroll (425 px in 324). Column heads now wrap and padding is tighter under 480 px, so it fits exactly (324/324) and reads the same at 1280. Screenshots read.
+- **Budgets:** OK after both rebuilds. /world/?view=atc now counts the pair stylesheet: lazy CSS 0.9 of 3 kB.
+- **Server and browser stopped.** The four node processes still running date from 11:06 and are not mine.
+
+**For LEAD:**
+1. When you're happy with the story, flip it to published and rebuild resolved/. It also then needs a stories budget variant: story-data/month-without-earth.json, world/atc/*, lazy assets/world-atc-pair-*.js, lazy_css assets/atc-pair-????????.css. I can add it once it is published.
+2. **New data, not wired yet.** I'm starting on it now, as file work with node tests, and will check it in the browser when RAM allows:
+   - E51 / E51b (clocks) for /protocol/ figure 3;
+   - E53 with its geometry column for figure 5's airtime;
+   - LRIP conformance-v0.1.json (45 packets) to check figure 5's byte layout against.
