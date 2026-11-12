@@ -137,6 +137,9 @@ body.instrument [data-theme-toggle] { display: none; }   /* 3D pages are always 
 .flag[data-flag="Spec"] { color: var(--flag-spec); }
 .flag[data-flag="Modelled"] { color: var(--flag-modelled); }
 .flag[data-flag="Assumed"] { color: var(--flag-assumed); }
+/* F-70: flags are upgraded to buttons (ui/tooltip.js); the reset lives here too, so a page that loads ui.css only with a
+   lazy figure (/network/) never shows the browser's grey button behind a flag */
+button.flag { font-family: inherit; background: transparent; cursor: help; min-height: 0; position: relative; }
 
 /* Figure: caption, flag chip, download row */
 .fig { margin: var(--s-5) 0; }

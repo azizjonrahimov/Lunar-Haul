@@ -34,10 +34,12 @@
       <li><b>Where it does not.</b> It is not better than a logistic regression on jumps (<!--@nw:net_jump--> against
         <!--@nw:logreg_jump-->). Slow drifts defeat everyone: the best detector finds <!--@nw:drift_best-->, so at
         least <!--@nw:drift_missed--> are missed by every detector.</li>
-      <li><b>Out of distribution</b> (noisier ranging, worse dead reckoning, smaller faults) it finds fewer small
-        jumps and slow drifts than CUSUM (<!--@nw:ood_net_jump--> and <!--@nw:ood_net_drift--> against
-        <!--@nw:ood_cusum_jump--> and <!--@nw:ood_cusum_drift-->), and its false alarms rise <!--@nw:fa_ratio-->, from
-        <!--@nw:net_fa_test--> to <!--@nw:net_fa_ood-->. CUSUM pays for its recall with <!--@nw:ood_cusum_fa-->.</li>
+      <li><b>Out of distribution</b> (noisier ranging, worse dead reckoning, smaller faults) no detector keeps its
+        false-alarm rate: the network's rises <!--@nw:fa_ratio-->, from <!--@nw:net_fa_test--> to <!--@nw:net_fa_ood-->,
+        CUSUM's to <!--@nw:ood_cusum_fa-->. Side by side, the network finds <!--@nw:ood_net_jump--> of small
+        jumps and <!--@nw:ood_net_drift--> of slow drifts, CUSUM <!--@nw:ood_cusum_jump--> and <!--@nw:ood_cusum_drift-->,
+        but at such different false-alarm rates the recall is not comparable. On this evidence no detector is
+        qualified for the safety path.</li>
     </ul>
   </section>
 

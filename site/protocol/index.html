@@ -55,12 +55,15 @@
           (<!--@pn:dr_wheel--> on loose soil without cameras), and it resets that drift with absolute fixes: matching
           what it sees to orbital maps (<!--@pn:fix_terrain-->), radio ranges to the base's beacons (<!--@pn:uwb--> within
           <!--@pn:uwb_range-->) and, from about 2030, the LunaNet navigation satellites (<!--@pn:lans-->, available about
-          <!--@pn:lans_2030-->). Every position report carries its own error estimate, and the rules of the road widen a
-          rover's safety margin when that estimate is large.</p>
+          <!--@pn:lans_2030-->). Every position report carries its own horizontal error (one sigma; LRIP v0.1 carries no full
+          covariance), and the rules of the road widen a rover's safety margin when that error is large.</p>
         <h3>Method</h3>
         <p>Experiment E50 drives the fleet with each layer switched on in turn and measures the position error against
-          the separation the traffic rules assume (<!--@pn:sigma_nav-->); hypotheses H9 and H10, registered before the
-          runs.</p>
+          the separation the traffic rules assume (<!--@pn:sigma_nav-->); hypotheses H9&prime; and H10&prime; (as the papers write
+          them), registered before the runs. Stopping for terrain fixes is not free: with the stops inside the engine
+          (<!--@e50b:stop_s--> each), the delay per delivery rises by <!--@e50b:delay_diff--> (from <!--@e50b:delay_without-->
+          to <!--@e50b:delay_with-->, <!--@e50b:delay_pct-->; 95 % interval <!--@e50b:delay_lo--> to <!--@e50b:delay_hi-->), a
+          lower bound on what the layered scheme costs.</p>
         <h3>Who we would work with</h3>
         <p>JPL Robotics (crater and dark-crater fixes), the JPL CADRE team (rover-to-rover ranging), Stanford's NAV Lab,
           NASA Goddard's planetary geodesy group (the terrain models), and the LunaNet navigation teams at NASA, ESA
@@ -97,16 +100,18 @@
         <h3>Our answer</h3>
         <p>The base keeps one map of versioned tiles and every rover carries a full copy it can drive on alone; after
           time out of contact the two compare a short digest of tile versions and send only the changed tiles, hazards
-          on the rover's route first. In experiment E52, after a day away that is
+          on the rover's route first. By calculation from the assumed change rates (experiment E52), after a day away that is
           <!--@e52:24_16_hazards_first_bytes_mean--> for the <!--@e52:route_tiles--> the routes cross,
           <!--@e52:24_16_hazards_first_share_of_full_resend--> of a full resend of every layer
           (<!--@e52:full_resend-->); at 16 kbit/s the hazard layer is current after
           <!--@e52:24_16_hazards_first_t_hazards_current_s-->, against <!--@e52:24_16_oldest_first_t_hazards_current_s-->
-          oldest first. Every coordinate names its frame, because reading it in the wrong lunar frame
-          moves a south-pole base by about <!--@pn:frame_m-->.</p>
+          oldest first. The design has every coordinate name its frame, because reading it in the wrong lunar frame
+          moves a south-pole base by about <!--@pn:frame_m-->; LRIP v0.1's position report does not carry the frame,
+          datum or time scale yet (v0.2 adds them).</p>
         <h3>Method</h3>
         <p>Experiment E52 (hypothesis H12) brings rovers back after hours to days out of contact and counts the bytes
-          and the time until their hazard map is current, against a full resend.</p>
+          and the time until their hazard map is current, against a full resend. The bytes, and so H12's share of a full
+          resend, follow from the assumed change rates: a design calculation, not a test.</p>
         <h3>Who we would work with</h3>
         <p>NASA Goddard's planetary geodesy group (terrain models and their error maps), the LROC and ShadowCam teams at
           Arizona State, USGS Astrogeology (the map grid and datum), NAIF at JPL (frames), and the CADRE team (its
@@ -134,9 +139,11 @@
         <p>Rovers agree on one lunar time scale and exchange timing messages in both directions, so the signal delay
           cancels; a clock on the Moon runs <!--@pn:rel--> fast against one on Earth, so lunar time cannot simply copy
           UTC. Between resyncs each rover runs on its own oscillator: a crystal drifts about <!--@pn:tcxo-->, a
-          chip-scale atomic clock about <!--@pn:csac-->, which is ample for position time stamps (<!--@pn:need_stamp-->)
-          and road reservations (<!--@pn:need_resv-->) but not for one-way radio ranging, where 1 ns is
-          <!--@pn:ns_m-->.</p>
+          chip-scale atomic clock about <!--@pn:csac-->. That is enough for position time stamps (<!--@pn:need_stamp-->)
+          but not for one-way radio ranging, where 1 ns is <!--@pn:ns_m-->. For road reservations, experiment E51 observed
+          no conflict in <!--@e51:guard_pairs--> with clocks up to <!--@e51:guard_max_offset--> off against a
+          <!--@pn:need_resv--> guard: an observation, outside the guard proposition, which assumes offsets within the
+          guard.</p>
         <h3>Method</h3>
         <p>Experiment E51 (hypothesis H11) sweeps the oscillator class and the interval between resyncs and measures
           ranging error and reservation conflicts.</p>
@@ -149,9 +156,9 @@
       <figure class="pr-fig" id="fig-time" aria-labelledby="fig-time-cap">
         <div class="pr-host" data-fig="time"></div>
         <figcaption id="fig-time-cap">Two rovers' clocks drift apart until the next resync. Pick the oscillator and the
-          resync interval. The curve is the drift alone at note 01's rates; the readout and the needs are E51's
-          measured month (results/E51_clocks.json: lunar time, July 2028, 30 seeds), which counts the resyncs that
-          failed for lack of a link.</figcaption>
+          resync interval. The curve is the drift alone at note 01's rates; the readout and the list are E51's month
+          (results/E51_clocks.json: lunar time, July 2028, 30 seeds), which counts the resyncs that failed for lack of a
+          link. The reservation line is what was observed; the ranging errors are calculated from the clock offsets.</figcaption>
       </figure>
     </div>
       <div class="an-slot" data-anat="clock">
@@ -210,16 +217,19 @@
     <div class="pr-grid">
       <div class="pr-text">
         <h3>Our answer</h3>
-        <p>Eight message types (position, status, intent, alert, task, reservation, capability, map notice) and a
-          heartbeat, each with a version number and an authentication code; a position report is
-          <!--@pn:pos_payload--> of content and <!--@pn:pos_air--> on the air, so twenty rovers reporting once a second
+        <p>LRIP v0.1 has <!--@lrip:types--> message types (position, status, intent, alert, the task and reservation
+          messages, capability, map notice and a heartbeat; the traffic model carries most of them, not all), each with a
+          version number and an authentication code; a position report is <!--@pn:pos_payload--> of content and
+          <!--@lrip:packet--> before link framing and coding (<!--@lrip:framed--> in a Proximity-1 frame). v0.1's position report carries no frame, datum or
+          time-scale field and only a horizontal error, not a covariance; v0.2 adds them. Twenty rovers reporting once a second
           need about <!--@pn:load_1hz--> by note 03's estimate (ten times a second, <!--@pn:load_10hz-->; E53's
           measured load is below). Each rover also publishes a signed
           capability manifest (about <!--@pn:manifest-->), the idea behind tool descriptions in the Model Context
           Protocol, so a job can be matched to any maker's vehicle.</p>
         <h3>Method</h3>
         <p>Experiment E53 (hypothesis H13) loads the channel with the full message set, authentication on, at once and
-          ten times a second for twenty rovers. Measured: twenty rovers reporting once a second put
+          ten times a second for twenty rovers. Calculated from the message sizes and rates (H13 is a design
+          calculation, not a test), for positions where the fleet works, nearly all of them parked: twenty rovers reporting once a second put
           <!--@e53:fleet:on:1.0:20:busiest_link_kbps_p95--> on the busiest link, which <!--@e53:fleet:on:1.0:20:fits_nb_scheduled_p95--> the
           narrow-band channel when the base schedules the slots and <!--@e53:fleet:on:1.0:20:fits_nb_slotted_aloha_p95-->
           it with random access; ten times a second, <!--@e53:fleet:on:10.0:20:busiest_link_kbps_p95-->, which
@@ -257,7 +267,9 @@
         <h3>Our answer</h3>
         <p>Neighbours notice the silence by missed heartbeats (suspect after <!--@pn:t_suspect-->, lost after
           <!--@pn:t_isolate-->), the job goes back to auction under a higher epoch number, and the silent rover's road
-          reservation stays blocked until someone sees it. A planner on the Moon gave the same urgent wait as a
+          reservation stays reserved: after its timeout and a grace period the segment is marked unconfirmed, and another
+          vehicle may enter it only at a speed from which it can stop within its own sensor range, reporting what it
+          finds. A planner on the Moon gave the same urgent wait as a
           full-information marketplace in our runs (<!--@pn:wait_planner-->), while a dispatcher on Earth that stops
           when Earth sets cost <!--@pn:wait_earth--> of extra wait.</p>
         <h3>Method</h3>
@@ -276,7 +288,7 @@
       </figure>
       <figure class="pr-fig pr-fig-wide" id="fig-dtn-fail" aria-labelledby="fig-dtn-fail-cap">
         <div class="pr-host" data-fig="dtn" data-focus="fail"></div>
-        <figcaption id="fig-dtn-fail-cap">Measured in experiment E54: jobs lost, reservations left blocked and how stale
+        <figcaption id="fig-dtn-fail-cap">Measured in experiment E54: jobs lost, segments of silent vehicles past their timeout and how stale
           the base's picture of each vehicle gets, with and without the lost-link rule (results/E54_dtn.json). Below, one
           month message by message: seed 1 at 25 % loss per hop with Earth blacked out on days 8 to 22, each award, grant
           and job-state report a tick at the hour it was sent, red where it expired on the way

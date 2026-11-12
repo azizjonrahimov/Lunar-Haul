@@ -9365,3 +9365,168 @@ Next: B-98 (verification rows for Phase 6), then B-99 (site data). B-90b waits f
 **For FRONTEND (via LEAD):** E50's files are now "without stop time"; `results/E50b_*` are "with stop time".
 
 **Questions for LEAD:** none. Next: B-101 onwards, in your order.
+
+## REFEREE AUDIT FOR F-70 (no site change made) | the site lines that reports/referee_phase6_decisions.md (A, B) makes wrong or too strong | file:line, then the proposed wording | for LEAD
+Line numbers are as committed at e059b56. Lines marked [file] say what a results file says and change when that file is revised; the others are page text or code.
+
+**B4: "ranging near the base" (H9′ clause 2 depends on the reading)**
+1. site/lib/phase6.mjs:31 and :35 (the /results/ table): H9's chip comes out "held in part" from the clauses, and its row quotes the file's summary "supported in two clauses (dead reckoning, ranging near the base)" [file].
+   → Add a fourth outcome, **"depends on the reading"**, used when a clause's verdict depends on a reading chosen after the results. H9′'s row would read: "dead reckoning exceeds the budget within a shift: held; ranging inside 5 m near the base: depends on the reading (passes only with two or more beacons in line of sight, 23 % of driving steps; all four readings in B-101); terrain fixes away from the base: did not hold."
+2. site/protocol/index.html:62: "hypotheses H9 and H10, registered before the runs" → "hypotheses H9′ and H10′ (as the papers write them), registered before the runs" (B2).
+3. Figure 1's readout and caption (site/src/protocol/figures.js, figPos) make no near-base claim: no change.
+
+**B6: "the classical test stays in the safety path" (withdrawn)**
+4. The exact sentence is not on the site. Two places say the same thing in pictures:
+   - site/lib/anatomy-nav.mjs:249 and :262 (/network/ "Where does it run on a rover?", the deck label "Output: safety check · flags B as suspect", with "A flagged neighbour is treated as suspect: its space is widened and the others are told" and "The same rule as the chi-square test it is compared with").
+     → "Output: a warning, not yet in the safety path. On this evidence no detector is qualified for the safety path; if it were, a flagged neighbour would be treated as suspect."
+   - site/network/index.html:37–40: "Out of distribution … it finds fewer small jumps and slow drifts than CUSUM (0.23 and 0.11 against 0.67 and 0.67) … CUSUM pays for its recall with 863".
+     → "Out of distribution no detector keeps its false-alarm rate (the network's rises 26×, from 0.53 to 13.8 per pair-day; CUSUM's to 863), so their recall cannot be compared there."
+5. site/src/protocol/figures.js, figE55 (the E55 panel, "Out of distribution" view): the table compares recall across detectors whose false-alarm rates differ.
+   → Caption for that view: "Out of distribution the false-alarm rates differ by orders of magnitude, so the recall columns are not comparable."
+6. site/protocol/index.html:302–304 ("Every fixed threshold fails out of distribution…") agrees with B6: no change.
+
+**B5: reservation overlaps as a safety result (dropped)**
+7. No overlap count is quoted on /protocol/, /network/, /results/ or /stories/. Checked: the P2 card on /results/ quotes encounters, delay, referral and deadlocks only. Nothing to change.
+
+**B1: "no stuck reservation" under the lost-link rule (the rule changes)**
+8. site/src/protocol/figures.js:273 (the problem 6 table, row "Reservations stuck past their timeout": 2,566 / 2,566 / **0 (0 h blocked)**). The 0 is the withdrawn release rule.
+   → Rename the row "Reservations of silent vehicles past their timeout" and show the count and hours of segments marked unconfirmed under the rule, once E54 gives them. Until then, drop the "+ lost-link rule" cell or mark it "not available yet".
+9. site/src/protocol/figures.js:297–298 (readout under that table): "(supported). The rule fixes visibility, not loss: a vehicle that hears no one drives back to where it last had a link, so the base never waits hours to hear from it and can release its reservations on time."
+   → "H14's first clause (fewer lost jobs) held: 0.33 per seed against 0. Its second clause (no stuck reservation) is not testable as written. A silent vehicle's reservation is not released: after the timeout and the grace period its segment is marked unconfirmed, and another vehicle may enter only at caution speed. The return to the last link point shortens how long the base goes without hearing from it."
+10. site/protocol/index.html:278–280 (caption of that panel): "jobs lost, reservations left blocked and how stale the base's picture … gets, with and without the lost-link rule" → "jobs lost, segments left unconfirmed and how stale…".
+11. site/protocol/index.html:258–260 (problem 6, Our answer): "the silent rover's road reservation stays blocked until someone sees it" → "…stays reserved; after its timeout and a grace period the segment is marked unconfirmed, and another vehicle may enter it only at a speed from which it can stop within its own sensor range, reporting what it finds."
+12. Outside the four pages, same rule: site/src/atc/main.js:30 (/atc/ "If it fails … others treat its last reservation as occupied") → add "…; after the timeout it is marked unconfirmed and entered only at caution speed".
+
+**A1, B8: design calculations labelled as hypotheses that held (H12, H13, half of H14)**
+13. site/lib/phase6.mjs:39 and :35 (/results/ table):
+   - H13 is shown "held" (a threshold comparison on its fleet sum) → outcome "**design calculation**", with "how it was tested" reading "calculated from the message sizes and rates (assumed inputs)".
+   - H14 is shown "held" → "first clause held (Holm p 0.004); second clause not testable as written".
+   - The table's heading "Phase 6: which hypotheses held" and its count line need the new categories: "…3 held…" becomes e.g. "H10′ did not hold, H15a held, H14 held in its first clause, H9′ depends on the reading, H13 is a design calculation" (the family file's revision decides the exact list) [file].
+14. H12 is not in phase6_family.json (not on /results/). It appears on /protocol/:
+   - site/protocol/index.html:100–104 (problem 2, Our answer: "In experiment E52, after a day away that is 1.97 MB…, 1.06 % of a full resend…; … current after 58 s against 20 min") → "By calculation from the assumed change rates (E52), after a day away…". The time comparison is the simulation's and can stay as modelled.
+   - site/protocol/index.html:108 ("Experiment E52 (hypothesis H12) … counts the bytes …") → "…H12, a design calculation: the bytes follow from the assumed change rates…".
+   - site/src/protocol/figures.js:146 (figure 2 readout, "1.06 % of a full resend") → same label: "by calculation".
+15. H13 on /protocol/: site/protocol/index.html:221–229 (problem 5, Method: "Measured: twenty rovers reporting once a second put 7.9 kbit/s on the busiest link, which fits…") → "Calculated from the message sizes and rates (E53, H13; a design calculation): …". Add B9's basis: "for positions where the fleet works, 97 % of them parked; while driving, a vehicle has a path to the base 56.6 % of the time".
+16. B8 on /protocol/, problem 4 panel:
+   - site/src/protocol/figures.js:292 ("dropping and retrying gets little more than one try: at 25 % loss it loses 25.6 % of grants") → "Grants lost equal the per-hop loss when the retry interval is longer than the grant lifetime, a property of the rule (25.6 % at 25 % loss)".
+   - The ledger table caption in figDtn (radio focus) → "…a calculation from the blackout and the lifetime (assumed inputs)".
+17. site/lib/results-atc.mjs:58 (/results/ P3 card: "Twenty robots' authenticated traffic needs 10.06 kbit/s of airtime…") → "By calculation from the message sizes, twenty robots' authenticated traffic needs…".
+
+**B3: "41 B on the air" (it is the packet before link framing)**
+18. All the places:
+   - site/src/protocol/params.js:56 (pos_air, source "POSITION on the air with headers and an 8-byte authentication code");
+   - site/protocol/index.html:213–215 ("Eight message types … and a heartbeat, each with a version number and an authentication code; a position report is 13 B of content and 41 B on the air");
+   - site/lib/anatomy-nav.mjs:259 (the /network/ deck label "41 B on the air");
+   - site/src/protocol/figures.js:388 and :415 (figure 5: "The whole report is 41 bytes", "A POSITION report on the air").
+   → "41 B before link framing and coding (53 B in a Proximity-1 frame)" and "A POSITION packet (before link framing)". The message list on :213 → "fifteen message types in LRIP v0.1 (the traffic model carries eleven of them)…".
+19. site/protocol/index.html:105 (problem 2: "Every coordinate names its frame, because reading it in the wrong lunar frame moves a south-pole base by about 660 m") → "The design has every coordinate name its frame…; LRIP v0.1's POSITION does not carry the frame, datum or time scale yet (v0.2 adds them)".
+20. site/protocol/index.html:58 ("Every position report carries its own error estimate") → "…its own horizontal error (one sigma; no covariance in v0.1)".
+
+**B11: memory or timing called measured**
+21. On /protocol/: site/lib/anatomy-nav.mjs:213 (the navigation deck, computer label: "our program peaks at 0.39 MB") → "our program needs about 0.39 MB by an estimate (sum of parts; a measurement follows, B-105)".
+22. Outside the four pages, /atc/ "Inside each vehicle":
+   - site/src/atc/main.js:25–26: rows tagged "measured": "Computing per market round", "Memory";
+   - site/src/atc/main.js:41: the auction time, median 2.0 ms and p99 20.5 ms on the laptop, the simulator's whole-fleet dispatch call;
+   - site/src/atc/main.js:85: "At most 0.39 MB on a robot".
+   → Tag memory "estimated (sum of parts)"; call the market-round time "the simulator's whole-fleet dispatch call (not one robot's bid)", tagged "measured (simulator call)", until B-105.
+23. site/lib/results-atc.mjs:57 (/results/ P3 card: "Scaled to the reference flight processor, the heaviest safety check takes 41.8 % of one core") is a laptop timing scaled by 54.8, already called scaled. Optionally: "…by a scaled estimate (laptop timing × 54.8)".
+
+**B7: the clock guard (stated as observed)**
+24. site/protocol/index.html:137–138 (problem 3: "ample for position time stamps and road reservations") → "…ample for position time stamps; for road reservations we observed no conflict in 303 pairs with clocks up to 0.845 s off, the worst pair using 62 % of the 0.1 s guard. That is an observation, outside the guard proposition, which needs offsets within the guard".
+25. site/src/protocol/figures.js:196 (figure 3's needs list: "met Road reservations (0.1 s guard): 0 conflicts") → "no conflict observed (0 of 303 pairs)", without the "met" chip.
+
+**B12: P1's Phase 5 claims on the /results/ P1 card** (all [file]: they quote paper/p1/values.json, which the revision changes)
+26. site/lib/results-atc.mjs:42: "5,480 pre-registered simulated years under thirteen decision regimes" → "5,480 simulated years (2,029 distinct E40 runs) under thirteen regimes".
+27. site/lib/results-atc.mjs:45: "A learned correction to the bids cut the urgent wait by 16.5 %" → "A learned linear correction (the secondary model) cut the wait by 16.5 %; the registered model, a network, did not".
+28. site/lib/results-atc.mjs:46: "99.5 % of the value of sharing is cargo that owners working alone never deliver" → cut, or restate as the revised paper states it.
+29. The cards' keys follow the revised values file. A renamed or removed key fails the build, so the revision cannot slip through silently.
+
+**Checked, nothing to change:**
+- /stories/ (the fifth story's numbers are single-run counts; the other four use earlier phases' data);
+- the /network/ "Where it wins" paragraph (equal false-alarm rate on test, as B6 allows);
+- the B-97 real-data boxes;
+- figure 1;
+- problem 7's consensus sentence;
+- the E55 consensus table.
+
+**Code needed for F-70, beyond wording:**
+- phase6.mjs needs outcome categories for "depends on the reading", "design calculation" and per-clause outcomes.
+- The E54 panel needs the unconfirmed-segment counts when E54 gives them.
+- Figure 5 needs v0.2's sizes when B-100 lands.
+
+## F-70 DONE 20:59 | site/lib/phase6.mjs (decided outcomes), site/lib/results-atc.mjs (P1 and P3 cards), site/lib/protocol-data.mjs (new hooks e50b, e51, lrip), site/protocol/index.html, site/src/protocol/figures.js, site/src/protocol/params.js, site/lib/anatomy-nav.mjs (both decks), site/network/index.html, site/src/atc/main.js, site/src/protocol/protocol.css, site/src/results/results.css, site/src/styles/base.css, site/src/protocol/who.data.json (new), site/scripts/prepare-data.mjs, site/vite.config.js, site/tests/phase6.test.mjs, site/tests/protocol-data.test.mjs, tools/ci/budgets.json (protocol/who.json) | how to check: /results/#r-fam-h, /protocol/ problems 1–7, /network/ "What it found" and the deck, /atc/ "Inside each vehicle" | from BACKEND: nothing new | for LEAD: notes at the end
+All 29 audit items are applied as proposed, plus your F-70 points. Numbers still come from files: the new figures enter through build-time hooks reading results/E50b_summary.json, results/E51_clocks.json, the LRIP schema and the conformance vectors.
+
+**/results/**
+- **The hypothesis table is now "Phase 6: what the hypotheses came to".** It applies reports/referee_phase6_decisions.md (A1, B1, B2, B4, B8) through a small decision table in phase6.mjs that cites the file. Outcomes:
+  - **H9′ depends on the reading**, per clause: dead reckoning held (85 m); ranging near the base (4.2 m) depends on the reading; absolute fixes away from the base did not hold (15 m). The note quotes E50's own region rule ("…line of sight of at least 2 of the 4 beacons", chosen after the results) and says the paper reports four readings.
+  - **H10′ did not hold.**
+  - **H13 is a design calculation**, with a dashed chip; "How it was tested" says design calculation, and the file's "supported:" prefix is stripped.
+  - **H14 held in its first clause**: fewer lost jobs held; "no reservation stuck under the rule" is not testable as written, with B1's reason.
+  - **H15a held.**
+  - The lead line lists all five, and H9, H10 are written H9′, H10′.
+- **P1 card:**
+  - "5,480 simulated years across three experiments under thirteen regimes" ("pre-registered" removed). The card reads a P1-E40-N-DISTINCT key if the revised values file adds one; **2,029 is in no file yet, so it is not typed.**
+  - The urgent-wait numbers are labelled "waiting for pickup", because that is what they measure.
+  - "A learned linear correction…, the secondary model, cut the urgent wait by 16.5 %; the registered model, a small network trained the same way, did not."
+  - **The 99.5 % is dropped.**
+- **P3 card:** the airtime sentence starts "By calculation from the message sizes and rates"; the core share says "By a scaled estimate (laptop timing times the flight processor's slowdown)".
+
+**/protocol/**
+- **Problem 1:**
+  - "its own horizontal error (one sigma; LRIP v0.1 carries no full covariance)";
+  - "hypotheses H9′ and H10′";
+  - **new, from E50b:** "Stopping for terrain fixes is not free: with the stops inside the engine (120 s each), the delay per delivery rises by 0.63 h (from 17.74 h to 18.37 h, 3.5 %; 95 % interval 0.02 h to 1.29 h), a lower bound on what the layered scheme costs." The site never quoted the 0.007 h, so there was nothing to remove.
+  - No overlap count is shown.
+- **Problem 2:** "By calculation from the assumed change rates (experiment E52)…"; "The design has every coordinate name its frame…; LRIP v0.1's position report does not carry the frame, datum or time scale yet (v0.2 adds them)". The Method says H12's share is a design calculation, not a test. The figure 2 readout carries the same label.
+- **Problem 3:** "ample" is gone. The text now says enough for time stamps, not for one-way ranging, then: "For road reservations, experiment E51 observed no conflict in 303 reservation pairs with clocks up to 0.845 s off against a 0.1 s guard: an observation, outside the guard proposition…". **The 62 % guard use is in P2's appendix, not in any results file, so it is not on the page.**
+  - Figure 3's list has no "met" chips. It reads "**observed** road reservations: 0 conflicts in 303 pairs", "**calculated** two-way ranging: 0.08 m, within…" and "**calculated** one-way ranging: 1,141 km, above…". The readout says "from the clock offsets, one-way ranging would be off by…". So H11's ranging half is labelled a calculation, and the caption says so.
+- **Problem 4 panel:** grants lost are "a property of the rule" (per-hop loss when the retry interval exceeds the grant lifetime), and the ledger table is "a calculation from the blackout and the lifetimes".
+- **Problem 5:**
+  - "LRIP v0.1 has fifteen message types (…; the traffic model carries most of them, not all)". Fifteen comes from the schema; **"eleven" is in no file, so it is not typed.**
+  - "41 B before link framing and coding (53 B in a Proximity-1 frame)": 41 from the vector, 53 = 41 + the schema's proximity1_frame_bytes.
+  - "v0.1's position report carries no frame, datum or time-scale field and only a horizontal error, not a covariance; v0.2 adds them". **Your note said "no uncertainty field", but v0.1 does carry sigma_h, so the page says what is true.**
+  - Method: "Calculated from the message sizes and rates (H13 is a design calculation, not a test), for positions where the fleet works, nearly all of them parked: …".
+  - Figure 5: "A POSITION packet, before link framing" and "The packet is 41 bytes before link framing and coding".
+- **Problem 6:**
+  - the text gives the new rule (reserved; after timeout and grace, unconfirmed; entered only at a speed from which a vehicle can stop within its sensor range);
+  - the table row is now "Segments of silent vehicles past their timeout (unconfirmed under the rule)": 2,566 (7,349 h) for drop and retry and store and forward, and "not counted yet" under the lost-link rule, because the replay released them under the withdrawn rule;
+  - the readout: "H14's first clause held; its second (no stuck reservation) is not testable as written. A silent vehicle's reservation is not released…"; "release on time" is gone; the caption is updated.
+- **Problem 7, out-of-distribution view:** "the false-alarm rates differ so much that the recall columns are not comparable".
+
+**/network/**
+- The out-of-distribution point now gives false alarms and recall side by side ("no detector keeps its false-alarm rate…; at such different false-alarm rates the recall is not comparable. On this evidence no detector is qualified for the safety path.").
+- **The deck:** "Output: a warning · not in the safety path", with "On this evidence no detector is qualified for the safety path; if one were, a flagged neighbour would be treated as suspect."
+- The position-report label reads "41 B before link framing".
+
+**Decks and /atc/**
+- The computer label in /protocol/'s navigation deck reads "our program needs about 0.39 MB by an estimate (the sum of its parts)".
+- **/atc/:**
+  - "Computing per market round (the simulator's whole-fleet call, not one robot's bid)";
+  - "Memory, estimated as the sum of its parts…" with "about 0.39 MB";
+  - the memory bullet says "an estimate";
+  - the failure rule adds "after the timeout its segment is marked unconfirmed and entered only at caution speed".
+
+**Fixed along the way:**
+1. **/protocol/ lazy JS went to 25.2 of 25 kB** with the new wording. I moved figure 8's survey rows (research note 04, C) out of the chunk into src/protocol/who.data.json, staged as protocol/who.json. Lazy JS is now 24.2 kB (1 kB headroom); data is 88.2 of 90 kB.
+2. **A latent contrast bug:** the flag-button reset (transparent background) lived only in ui.css, which /network/ loads only with a lazy figure. Until then flags showed the browser's grey button: 39 failures in dark, 1 in light.
+   - I first darkened the light Assumed token for the light failure, then found the cause and reverted it.
+   - The reset is now in base.css as well.
+
+**Checks:**
+- node tests 57/57 (the decided outcomes, H9′/H10′ labels, H14's clause split; the e50b, e51 and lrip hooks);
+- budgets OK;
+- headless Chrome at 1280 and 390, light and dark, on /protocol/, /network/, /results/ and /atc/: every figure draws, no table wider than its box, 0 contrast fails (after the base.css fix), no overflow, one h1, no heading skips, 0 console errors;
+- the last change (H13's summary) was checked in the built HTML;
+- screenshots read: the /results/ table at 1280 light, figure 3 at 390 dark, the problem 6 panel at 1280 light.
+- **Server and browser stopped.**
+
+**A slip, reported:** one build ran in the same command as its RAM check, with free RAM at 0.95 GB, below your 1.0 GB floor. It finished in 4 s with no harm, but it broke the rule. After that every RAM check ran on its own; when RAM was low (0.68, 0.79, 0.81 GB) I stopped the server and browser and checked once more before any build or browser run.
+
+**For LEAD, waiting on data:**
+1. The 2,029 distinct E40 runs: a P1 values key (the card picks it up as P1-E40-N-DISTINCT).
+2. The 62 % guard use: a results field, or I leave it out.
+3. "Eleven of fifteen types in the traffic model": a field in E53 or B-100.
+4. The unconfirmed-segment count under the new rule: E54's rerun.
+5. Wait-to-delivery numbers for the P1 card: the revised values file.
+6. The four readings of H9′ clause 2: B-101.

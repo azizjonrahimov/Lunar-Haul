@@ -9,7 +9,7 @@ import { paperField, paperValue } from './lib/papers.mjs';
 import { P as PROTOCOL } from './src/protocol/params.js';
 import { nw } from './lib/network.mjs';
 import { atcResults } from './lib/results-atc.mjs';
-import { e52, e53, e55 } from './lib/protocol-data.mjs';
+import { e50b, e51, e52, e53, e55, lrip } from './lib/protocol-data.mjs';
 import { b97 } from './lib/realdata.mjs';
 import { vv6 } from './lib/phase6.mjs';
 import { num } from './src/components/num.js';
@@ -40,6 +40,9 @@ function lunarsimPages() {
           .replace('<!--@pipeline-->', () => pipeline())
           .replace(/<!--@r:(\w+)-->/g, (_, k) => resultText(k))
           .replace(/<!--@nw:(\w+)-->/g, (_, k) => nw(k))   // F-61: /network/ numbers (lib/network.mjs)
+          .replace(/<!--@e50b:(\w+)-->/g, (_, k) => e50b(k))   // F-70: the terrain-fix stop cost in /protocol/ problem 1
+          .replace(/<!--@e51:(\w+)-->/g, (_, k) => e51(k))   // F-70: the clock-guard observation in /protocol/ problem 3
+          .replace(/<!--@lrip:(\w+)-->/g, (_, k) => lrip(k))   // F-70: LRIP sizes in /protocol/ problem 5
           .replace(/<!--@e52:(\w+)-->/g, (_, k) => e52(k))   // F-56: E52 in /protocol/ problem 2 (lib/protocol-data.mjs)
           .replace(/<!--@vv6:(\w+)-->/g, (_, k) => vv6(k))   // F-69: the Phase 6 checks' lead on /verification/ (lib/phase6.mjs)
           .replace(/<!--@b97:(\w+)-->/g, (_, k) => b97(k))   // F-56: B-97's real-data boxes (lib/realdata.mjs)

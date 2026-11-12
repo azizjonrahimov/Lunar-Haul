@@ -43,3 +43,7 @@
   .r-fam-table th, .r-fam-table td { display: block; border: 0; padding: 0.15em 0; }
   .r-fam-table td::before { content: attr(data-label) ': '; color: var(--ink-2); font-weight: 600; }
 }
+.r-out-reading, .r-out-first { color: var(--warm); }
+.r-out-calc { color: var(--ink-2); border-style: dashed; }
+.r-parts { margin: 0; padding-left: 1.1em; }
+.r-parts + p, .r-fam-table td p { margin: var(--s-1) 0 0; }

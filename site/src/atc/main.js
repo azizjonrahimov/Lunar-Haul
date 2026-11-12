@@ -22,12 +22,12 @@ const CLASSES = [   // [column, 3D viewer id, E48 class]
 const ROWS = [
   ['Software parts', c => c === 'Base computer' ? 'job market (leader), ledger, failover to board B' : c === 'Lander' ? 'safety program (landing closures), radio unit' : 'safety program, planner, radio unit', 'design'],
   ['Computing per safety check', 'cpu', 'measured'],
-  ['Computing per market round', 'auction', 'measured'],
-  ['Memory (planner, checks, reservations, ledger copy)', 'mem', 'measured'],
+  ['Computing per market round (the simulator’s whole-fleet call, not one robot’s bid)', 'auction', 'measured'],
+  ['Memory, estimated as the sum of its parts (planner, checks, reservations, ledger copy)', 'mem', 'estimated'],
   ['Radio at the worst 5 km hop (flat ground)', 'link', 'derived'],
   ['Messages per robot-hour', 'msgs', 'measured'],
   ['Power', 'power', 'assumed'],
-  ['If it fails', c => c === 'Base computer' ? 'board B takes over; if both fail, the robots elect a leader' : 'stops at the next safe point; others treat its last reservation as occupied', 'design'],
+  ['If it fails', c => c === 'Base computer' ? 'board B takes over; if both fail, the robots elect a leader' : 'stops at the next safe point; others treat its last reservation as occupied, and after the timeout its segment is marked unconfirmed and entered only at caution speed', 'design'],
 ];
 const sm = (value, unit, digits, source, flag = 'Modelled') => num({ value, unit, digits, flag, source: `${SZ}: ${source}` });
 function cell(S, key, k) {
@@ -39,7 +39,7 @@ function cell(S, key, k) {
         : `${sm(share(F.factor), '', 2, `${p}.cpu_safety_check_us.p99 × flight.factor × targets.safety_hz / 1e6`)} of a flight core at ${fmt(hz, 0)} Hz (${fmt(share(F.factor_range[0]), 2)}–${fmt(share(F.factor_range[1]), 2)})`);
   }
   if (key === 'auction') { const a = C.cpu_auction_round_ms; return `median ${sm(a.median, ' ms', 1, `${p}.cpu_auction_round_ms.median`)}, p99 ${sm(a.p99, ' ms', 1, `${p}.cpu_auction_round_ms.p99`)} (laptop)`; }
-  if (key === 'mem') return `${sm(C.peak_memory_mb, ' MB', 2, `${p}.peak_memory_mb`)} of ${num({ value: F.memory_mb, unit: ' MB', digits: 0, flag: 'Spec', source: `${SZ}: flight.memory_mb (${F.processor})` })}`;
+  if (key === 'mem') return `about ${sm(C.peak_memory_mb, ' MB', 2, `${p}.peak_memory_mb (an estimate: the sum of the parts, not a measurement)`)} of ${num({ value: F.memory_mb, unit: ' MB', digits: 0, flag: 'Spec', source: `${SZ}: flight.memory_mb (${F.processor})` })}`;
   if (key === 'link') {
     const L = C.link, ant = `${fmt(L.antenna_m, L.antenna_m % 1 ? 1 : 0)} m antenna, ${fmt(L.tx_power_w, L.tx_power_w % 1 ? 2 : 0)} W`;
     // F-67 (B-89): flat-ground law with the smooth-Moon horizon check; two 1 m antennas cannot see each other at 5 km
@@ -82,7 +82,7 @@ function sizingNote(S) {
       Python is slower than flight code would be, so the computing figures are upper bounds.</p>
     <ul class="prose atc-list">
       <li><strong>Computing.</strong> The safety check of the heaviest case (${esc(H.worst_class_safety)}) takes ${sm(H.safety_core_share_flight_per_robot_10hz, '', 2, 'h10.safety_core_share_flight_per_robot_10hz')} of one flight core per robot at ${fmt(T.safety_hz, 0)} Hz; each robot checks only itself.</li>
-      <li><strong>Memory.</strong> At most ${sm(H.peak_memory_mb_max_robot, ' MB', 2, 'h10.peak_memory_mb_max_robot')} on a robot, against ${fmt(F.memory_mb, 0)} MB on the flight board.</li>
+      <li><strong>Memory.</strong> About ${sm(H.peak_memory_mb_max_robot, ' MB', 2, 'h10.peak_memory_mb_max_robot (an estimate: the sum of the parts, not a measurement)')} on a robot by an estimate, against ${fmt(F.memory_mb, 0)} MB on the flight board.</li>
       <li><strong>Radio.</strong> ${fmt(T.robots, 0)} robots need ${sm(H.link_kbps_needed_20_robots_secured_mac8, ' kbit/s', 2, 'h10.link_kbps_needed_20_robots_secured_mac8')} together with every message secured (an 8-byte authentication code). On a shared channel that load costs more airtime: ${air(S, 'scheduled')} on a channel the base schedules, and ${air(S, 'slotted')} with random access. The status message once a second is most of it: ${sm(M.bytes_per_type.status, ' B/s', 0, 'messages.bytes_per_type.status (once a second)')} per robot against a target of ${fmt(T.bytes_per_s_per_robot, 0)}. Market messages come to ${sm(H.market_mb_per_day, ' MB', 3, 'h10.market_mb_per_day')} a day. The share of route points in direct view of the mast is a share of places, not of time; relaying through other robots reaches further and was not measured.</li>
       <li><strong>Ledger.</strong> ${ledger.map(([x, v]) => `${sm(v, ' MB', 2, `ledger_mb_per_year.${x}`)} a year at ${x}× today's traffic`).join(', ')}.</li>
       <li><strong>Failover.</strong> With the base computer failing on average every ${lv.map(k => fmt(+k, 0)).join(', ')} hours, the market was without its base computer ${lv.map(k => pct(fo[k].down_share, k === lv[lv.length - 1] ? 2 : 1, `failover.by_mtbf.${k}.down_share`)).join(', ')} of the time,

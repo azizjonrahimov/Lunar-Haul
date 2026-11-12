@@ -53,7 +53,7 @@ export const P = {
   bp_bytes: { value: 48, unit: ' B', flag: 'Modelled', digits: 0, source: `${N03}, A3 and E2: Bundle Protocol overhead per message [RFC9171]` },
   // 5. protocol
   pos_payload: { value: 13, unit: ' B', flag: 'Modelled', digits: 0, source: `${N03}, C2: POSITION payload, 104 bits` },
-  pos_air: { value: 41, unit: ' B', flag: 'Modelled', digits: 0, source: `${N03}, C2: POSITION on the air with headers and an 8-byte authentication code` },
+  pos_air: { value: 41, unit: ' B', flag: 'Modelled', digits: 0, source: `${N03}, C2: the POSITION packet with headers and an 8-byte authentication code, before link framing and coding (F-70, referee decisions B3)` },
   load_1hz: { value: 6.6, unit: ' kbit/s', flag: 'Modelled', digits: 1, source: `${N03}, A9: 20 rovers sending POSITION once a second` },
   load_10hz: { value: 66, unit: ' kbit/s', flag: 'Modelled', digits: 0, source: `${N03}, A9: 20 rovers sending POSITION ten times a second` },
   manifest: { value: 250, unit: ' B', flag: 'Modelled', digits: 0, source: `${N03}, A7 and C3: a capability manifest in compact binary` },

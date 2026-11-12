@@ -252,3 +252,57 @@ export function stageB99(PUB) {
   console.log(`prepare-data: ${Object.keys(files).length} B-99 files staged to ${B99_OUT}/ (sizes and sha256 match the index)`);
   return files;
 }
+
+// F-70 / B-90b: the cost of stopping for terrain fixes, from results/E50b_summary.json (the fix stops inside the engine):
+// <!--@e50b:key--> with key delay_without, delay_with, delay_diff, delay_pct, delay_lo, delay_hi (hours, %) or stop_s.
+export const E50B_SRC = 'results/E50b_summary.json';
+let e50bdoc = null;
+export function e50b(key) {
+  e50bdoc ||= JSON.parse(readFileSync(join(ROOT, E50B_SRC), 'utf8').replace(/\bNaN\b/g, 'null'));
+  const D = e50bdoc, m = D.metrics?.delay_mean_h;
+  if (!m) throw new Error(`${E50B_SRC}: no metrics.delay_mean_h`);
+  const src = what => `${E50B_SRC}: ${what}, mean over ${m.n_seeds} seeds`, f = (value, unit, digits, what) => num({ value, unit, digits, flag: 'Modelled', source: src(what) });
+  const V = {
+    delay_without: () => f(m.without_stop_time, ' h', 2, 'delay per delivery without stop time'),
+    delay_with: () => f(m.with_stop_time, ' h', 2, 'delay per delivery with the terrain-fix stops'),
+    delay_diff: () => f(m.diff_mean, ' h', 2, 'difference, with minus without'),
+    delay_pct: () => f(100 * m.diff_mean / m.without_stop_time, ' %', 1, 'difference relative to without'),
+    delay_lo: () => f(m.diff_ci95_bootstrap[0], ' h', 2, '95 % bootstrap interval of the difference, low end'),
+    delay_hi: () => f(m.diff_ci95_bootstrap[1], ' h', 2, '95 % bootstrap interval of the difference, high end'),
+    stop_s: () => num({ value: D.design.stop_s, unit: ' s', digits: 0, flag: 'Assumed', source: `${E50B_SRC}: design.stop_s` }),
+  };
+  if (!V[key]) throw new Error(`${E50B_SRC}: unknown key ${key}`);
+  return V[key]();
+}
+
+// F-70 / B-91: the clock-guard observation in /protocol/ problem 3, from results/E51_clocks.json (decisions B7: stated as
+// observed). <!--@e51:guard_pairs--> the close reservation pairs checked; <!--@e51:guard_max_offset--> the largest clock offset
+// among the lunar-time rows with no conflict at the 0.1 s guard.
+let e51doc = null;
+export function e51(key) {
+  e51doc ||= compactE51(JSON.parse(readFileSync(join(ROOT, E51_SRC), 'utf8').replace(/\bNaN\b/g, 'null')));
+  const ok = e51doc.rows.filter(r => r['conflicts_guard_0.1'] === 0 && typeof r.max_abs_clock_s === 'number');
+  if (!ok.length) throw new Error(`${E51_SRC}: no row without a conflict at the guard`);
+  const worst = ok.reduce((a, r) => (r.max_abs_clock_s > a.max_abs_clock_s ? r : a));
+  if (key === 'guard_pairs') return num({ value: worst.conflict_pairs_checked, unit: ' reservation pairs', digits: 0, flag: 'Modelled', source: `${E51_SRC}: rows.conflict_pairs_checked (${worst.class}, resync ${worst.interval_s} s)` });
+  if (key === 'guard_max_offset') return num({ value: worst.max_abs_clock_s, unit: ' s', digits: 3, flag: 'Modelled', source: `${E51_SRC}: rows.max_abs_clock_s, the largest among the rows with no conflict at the ${e51doc.guard_s} s guard (${worst.class}, resync ${worst.interval_s} s)` });
+  throw new Error(`${E51_SRC}: unknown key ${key}`);
+}
+
+// F-70 / B-93: LRIP sizes in /protocol/ problem 5's text, from the schema and the golden vectors (decisions B3: the
+// 41 B packet is before link framing and coding). <!--@lrip:types--> the message types of v0.1 (in words),
+// <!--@lrip:packet--> the POSITION packet, <!--@lrip:framed--> the same in a Proximity-1 frame.
+const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty'];
+export function lrip(key) {
+  const schema = JSON.parse(readFileSync(join(ROOT, LRIP_SCHEMA), 'utf8')), golden = JSON.parse(readFileSync(join(ROOT, LRIP_GOLDEN), 'utf8'));
+  const pos = golden.vectors.find(v => v.message === 'POSITION' && v.profile === 'N' && v.auth === 'mac8');
+  if (!pos) throw new Error(`${LRIP_GOLDEN}: no POSITION vector for profile N with mac8`);
+  const frame = schema.framing?.proximity1_frame_bytes;
+  if (key === 'types') return WORDS[schema.messages.length] ?? String(schema.messages.length);
+  if (key === 'packet') return num({ value: pos.bytes, unit: ' B', digits: 0, flag: 'Spec', source: `${LRIP_GOLDEN}: the POSITION vector (profile N, 8-byte MAC), before link framing and coding` });
+  if (key === 'framed') {
+    if (typeof frame !== 'number') throw new Error(`${LRIP_SCHEMA}: no framing.proximity1_frame_bytes`);
+    return num({ value: pos.bytes + frame, unit: ' B', digits: 0, flag: 'Spec', source: `${LRIP_GOLDEN} POSITION packet plus ${LRIP_SCHEMA} framing.proximity1_frame_bytes (${frame} B)` });
+  }
+  throw new Error(`lrip: unknown key ${key}`);
+}

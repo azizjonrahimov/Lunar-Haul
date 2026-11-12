@@ -370,3 +370,5 @@ if (existsSync(join(scenes, 'gallery.json'))) {
 (await import('../lib/protocol-data.mjs')).stageE55(PUB);
 // F-65 / B-99: the figure data of /protocol/ and /network/, checked against its index (lib/protocol-data.mjs)
 (await import('../lib/protocol-data.mjs')).stageB99(PUB);
+// F-70: /protocol/ figure 8's survey rows (research note 04, C), kept as data rather than in the figures chunk
+{ const src = join(SITE, 'src', 'protocol', 'who.data.json'); mkdirSync(join(PUB, 'protocol'), { recursive: true }); copyFileSync(src, join(PUB, 'protocol', 'who.json')); console.log('prepare-data: protocol/who.json staged'); }

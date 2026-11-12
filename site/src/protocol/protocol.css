@@ -185,3 +185,5 @@
 .pr-sw-ok { background: color-mix(in srgb, var(--ink) 35%, transparent); width: 0.25em; }
 .pr-sw-lost { background: var(--neg); width: 0.25em; }
 .pr-curve.pr-c3 { stroke: var(--pr-c3); }
+.pr-needs li.pr-n-observed { border-color: var(--flag-measured); }
+.pr-needs li.pr-n-calculated { border-color: var(--ink-2); border-left-style: dashed; }

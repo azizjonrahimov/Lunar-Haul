@@ -142,7 +142,7 @@ async function figMap(host) {
       svgH.append(S('text', { class: 'pr-tick', x: gx + gw / 2, y: H2 - 8, 'text-anchor': 'middle' }, W < 480 ? (OUT_NAME[o] || '').replace(' days', ' d').replace(' day', ' d') : OUT_NAME[o]));
     });
     const P = E.parameters;
-    setRead(read, `After <b>${OUT_NAME[out]}</b> out of contact, at ${rate >= 1000 ? `${fmt(rate / 1000, 0)} Mbit/s` : `${rate} kbit/s`}: ${hf.bytes_mean >= 1e6 ? X(hf.bytes_mean / 1e6, ' MB', 2, 'bytes to sync') : X(hf.bytes_mean / 1000, ' kB', hf.bytes_mean < 1e5 ? 1 : 0, 'bytes to sync')} to sync `
+    setRead(read, `After <b>${OUT_NAME[out]}</b> out of contact, at ${rate >= 1000 ? `${fmt(rate / 1000, 0)} Mbit/s` : `${rate} kbit/s`}, by calculation from the assumed change rates: ${hf.bytes_mean >= 1e6 ? X(hf.bytes_mean / 1e6, ' MB', 2, 'bytes to sync') : X(hf.bytes_mean / 1000, ' kB', hf.bytes_mean < 1e5 ? 1 : 0, 'bytes to sync')} to sync `
       + `(${X(hf.tiles_changed_mean, ' tile versions', 1, 'tile versions changed')}), ${X(100 * hf.share_of_full_resend, ' %', 2, 'share of a full resend')} of a full resend of every layer (${num({ value: E.full_resend_bytes / 1e6, unit: ' MB', digits: 1, flag: 'Modelled', source: `${E.source}: full_resend_bytes` })}). `
       + `The hazard layer is current after ${T(hf.t_hazards_current_s, 'hazard layer current, hazards first')} hazards first, against ${T(of.t_hazards_current_s, 'hazard layer current, oldest first')} oldest first; every change is in after ${T(hf.t_all_s, 'all changes in')}. `
       + `Hazards met on the stale map: ${X(hf.hits_during_outage_mean, '', 2, 'hazards hit during the outage')} during the outage, ${X(hf.hits_after_contact_mean, '', 2, 'hazards hit after contact, hazards first')} after contact hazards first and ${X(of.hits_after_contact_mean, '', 2, 'hazards hit after contact, oldest first')} oldest first. `
@@ -193,13 +193,13 @@ async function figTime(host) {
     for (let k = 1; k <= 4; k++) svg.append(S('text', { class: 'pr-tick', x: x(k * span / 4), y: H - B + 18, 'text-anchor': k === 4 ? 'end' : 'middle' }, fin ? (W < 420 ? `${k}` : `resync ${k}`) : `day ${k}`));
     if (!row) { needs.replaceChildren(); setRead(out, 'E51 has no row for this setting.'); return; }
     const noise = E.uwb_sigma_m, guard = E.guard_s;
-    const list = [[`Road reservations (${fmt(guard, 1)} s guard)`, row['conflicts_guard_0.1'] === 0, `${row['conflicts_guard_0.1']} conflicts`],
-      [`Two-way ranging, within the ${fmt(noise, 1)} m ranging noise`, row.two_way_single_sided_m_p95 <= noise, `${fmt(row.two_way_single_sided_m_p95, 2)} m`],
-      [`One-way ranging, within the ${fmt(noise, 1)} m ranging noise`, row.one_way_m_p95 <= noise, row.one_way_m_p95 >= 1000 ? `${fmt(row.one_way_m_p95 / 1000, 0)} km` : `${fmt(row.one_way_m_p95, 1)} m`]];
-    needs.replaceChildren(...list.map(([n, ok, v]) => h('li', { class: ok ? 'ok' : 'no' }, h('b', {}, ok ? 'met' : 'not met'), ` ${n}: ${v}`)));
+    const ow = row.one_way_m_p95, list = [['observed', `road reservations (${fmt(guard, 1)} s guard): ${row['conflicts_guard_0.1']} conflicts in ${fmt(row.conflict_pairs_checked, 0)} pairs`],
+      ['calculated', `two-way ranging: ${fmt(row.two_way_single_sided_m_p95, 2)} m, ${row.two_way_single_sided_m_p95 <= noise ? 'within' : 'above'} the ${fmt(noise, 1)} m ranging noise`],
+      ['calculated', `one-way ranging: ${ow >= 1000 ? `${fmt(ow / 1000, 0)} km` : `${fmt(ow, 1)} m`}, ${ow <= noise ? 'within' : 'above'} the ranging noise`]];
+    needs.replaceChildren(...list.map(([k, t]) => h('li', { class: 'pr-n-' + k }, h('b', {}, k), ` ${t}`)));
     setRead(out, `${osc[o][0]}, resync ${fin ? `every ${NAME[I] || `${I} s`}` : 'never'}: the drift alone reaches ${time(worst, 'drift rate x interval (note 01)')} before each resync (the curve). `
       + `Measured over a month in E51, where ${X(100 * row.sync_fail_share, ' %', 1, 'resyncs that failed for lack of a link')} of resyncs fail for lack of a link: `
-      + `one-way ranging is off by ${dist(row.one_way_m_p95, 'one-way ranging error, 95th percentile')} (95th percentile; median ${dist(row.one_way_m_median, 'one-way ranging error, median')}), `
+      + `from the clock offsets, one-way ranging would be off by ${dist(row.one_way_m_p95, 'one-way ranging error, 95th percentile')} (95th percentile; median ${dist(row.one_way_m_median, 'one-way ranging error, median')}), `
       + `two-way ranging by ${dist(row.two_way_single_sided_m_p95, 'two-way single-sided ranging error, 95th percentile')}; the largest clock offset is ${time(row.max_abs_clock_s, 'largest clock offset')}; `
       + `${X(row['conflicts_guard_0.1'], '', 0, `reservation conflicts at the ${guard} s guard`)} of ${fmt(row.conflict_pairs_checked, 0)} close reservation pairs conflict at the ${fmt(guard, 1)} s guard (${X(row['conflicts_guard_0.01'], '', 0, 'reservation conflicts at the 0.01 s guard')} at 10 ms). `
       + 'Two-way ranging cancels the offset and needs no common time.');
@@ -270,7 +270,7 @@ async function figDtn(host) {
       ['Job-state reports: mean delay', q => secsText(q.task_state_delay_mean_s)],
       ['Job awards: mean delay', q => secsText(q.award_delay_mean_s)]]
     : [['Jobs lost (the award expired; the job is auctioned again)', q => `${fmt(q.award_lost, 0)} of ${fmt(q.award_n, 0)}`],
-      ['Reservations stuck past their timeout', q => `${fmt(q.stuck_reservations, 0)} (${fmt(q.stuck_hours, 0)} h blocked)`],
+      ['Segments of silent vehicles past their timeout (unconfirmed under the rule)', (q, k) => (k === 'sf_ll' ? 'not counted yet' : `${fmt(q.stuck_reservations, 0)} (${fmt(q.stuck_hours, 0)} h)`)],
       ['How old the base’s picture of a vehicle is: mean (worst vehicle)', q => `${secsText(q.aoi_mean_s)} (${secsText(q.aoi_worst_vehicle_s)})`],
       ['Job-state reports lost', q => share(q.task_state_lost, q.task_state_n, q.task_state_lost_share)]];
   const wrap = h('div', { class: 'pr-scroll' }), extra = h('div', { class: 'pr-dtn-extra' }), read = readout();
@@ -279,7 +279,7 @@ async function figDtn(host) {
     wrap.replaceChildren(h('table', { class: 'pr-table' },
       h('caption', { class: 'small' }, `At ${fmt(100 * loss, 0)} % loss per hop, over ${E.seeds} seeds of the recorded month (${fmt(E.jobs_per_seed, 0)} jobs and ${fmt(E.reservations_per_seed, 0)} one-lane reservations a seed). Modelled, from ${E.source}.`),
       h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, ''), ...PROTO.map(([, l]) => h('th', { scope: 'col' }, l)))),
-      h('tbody', {}, ROWS.map(([name, f]) => h('tr', {}, h('th', { scope: 'row' }, name), ...PROTO.map(([k, l]) => h('td', { 'data-label': l }, q[k] ? f(q[k]) : '–')))))));
+      h('tbody', {}, ROWS.map(([name, f]) => h('tr', {}, h('th', { scope: 'row' }, name), ...PROTO.map(([k, l]) => h('td', { 'data-label': l }, q[k] ? f(q[k], k) : '–')))))));
     if (focus === 'radio') {
       const L = E.ledger, life = [...new Set(L.rows.map(x => x.lifetime_d))].sort((a, b) => a - b);
       const cell = (d, p) => { const x = L.rows.find(y => y.lifetime_d === d && y.loss === loss && y.protocol === p); return x ? `${pct(x.lost_share)} lost` : '–'; };
@@ -289,13 +289,13 @@ async function figDtn(host) {
           h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Bundle lifetime'), h('th', { scope: 'col' }, 'Drop and retry'), h('th', { scope: 'col' }, 'Store and forward'))),
           h('tbody', {}, life.map(d => h('tr', {}, h('th', { scope: 'row' }, `Lifetime ${fmt(d, d % 1 ? 2 : 0)} days${d === 14 ? ' (note 03)' : ''}`), h('td', { 'data-label': 'Drop and retry' }, cell(d, 'drop_retry')), h('td', { 'data-label': 'Store and forward' }, cell(d, 'sf'))))))));
       const q2 = q.drop_retry, q3 = q.sf;
-      setRead(read, `A reservation grant is only useful until the vehicle reaches the one-lane road, so dropping and retrying gets little more than one try: at ${fmt(100 * loss, 0)} % loss it loses ${num({ value: 100 * q2.grant_lost_share, unit: ' %', digits: 1, flag: 'Modelled', source: `${E.source}: grants lost, drop and retry, loss ${loss}` })} of grants; store and forward with custody loses ${num({ value: 100 * q3.grant_lost_share, unit: ' %', digits: 2, flag: 'Modelled', source: `${E.source}: grants lost, store and forward, loss ${loss}` })}. `
-        + `An Earth-bound bundle must outlive the longest stretch without Earth (${num({ value: L.longest_earth_down_d, unit: ' days', digits: 2, flag: 'Modelled', source: `${E.ledger_source}: longest_earth_down_d` })}) or it expires on the way.`);
+      setRead(read, `When the retry interval is longer than a grant's lifetime, dropping and retrying loses grants at the per-hop loss, a property of the rule: at ${fmt(100 * loss, 0)} % loss, ${num({ value: 100 * q2.grant_lost_share, unit: ' %', digits: 1, flag: 'Modelled', source: `${E.source}: grants lost, drop and retry, loss ${loss}` })} of grants; store and forward with custody loses ${num({ value: 100 * q3.grant_lost_share, unit: ' %', digits: 2, flag: 'Modelled', source: `${E.source}: grants lost, store and forward, loss ${loss}` })}. `
+        + `An Earth-bound bundle must outlive the longest stretch without Earth (${num({ value: L.longest_earth_down_d, unit: ' days', digits: 2, flag: 'Modelled', source: `${E.ledger_source}: longest_earth_down_d` })}) or it expires on the way; the ledger table is a calculation from the blackout and the lifetimes.`);
     } else {
       const H = E.h14, a = H.lost_jobs_drop_retry_per_seed, b = H.lost_jobs_sf_ll_per_seed;
       extra.replaceChildren();
-      setRead(read, `Hypothesis H14, at 25 % loss with the 14-day blackout: jobs lost per seed ${num({ value: a.mean, unit: '', digits: 2, flag: 'Modelled', source: `${E.source}: h14, drop and retry, mean over ${a.n} seeds (95 % interval ${fmt(a.ci[0], 2)} to ${fmt(a.ci[1], 2)})` })} with drop and retry against ${num({ value: b.mean, unit: '', digits: 0, flag: 'Modelled', source: `${E.source}: h14, store and forward with the lost-link rule, mean over ${b.n} seeds` })} with the lost-link rule (${H.supported === false ? 'not supported' : 'supported'}). `
-        + 'The rule fixes visibility, not loss: a vehicle that hears no one drives back to where it last had a link, so the base never waits hours to hear from it and can release its reservations on time.');
+      setRead(read, `Hypothesis H14, at 25 % loss with the 14-day blackout: jobs lost per seed ${num({ value: a.mean, unit: '', digits: 2, flag: 'Modelled', source: `${E.source}: h14, drop and retry, mean over ${a.n} seeds (95 % interval ${fmt(a.ci[0], 2)} to ${fmt(a.ci[1], 2)})` })} with drop and retry against ${num({ value: b.mean, unit: '', digits: 0, flag: 'Modelled', source: `${E.source}: h14, store and forward with the lost-link rule, mean over ${b.n} seeds` })} with the lost-link rule: H14's first clause held; its second (no stuck reservation) is not testable as written. `
+        + 'A silent vehicle’s reservation is not released: its segment is marked unconfirmed and entered only at caution speed. Driving back to its last link point shortens how long the base goes without hearing from it.');
     }
   }
   host.append(h('div', { class: 'pr-ctl' }, seg.el), wrap, extra, read, ...timeline);
@@ -385,7 +385,7 @@ async function figMsg(host) {
     for (const el of grid.children) { const i = +el.dataset.i; el.classList.toggle('on', i * 8 < e && i * 8 + 8 > s); }
     for (const b of fields.children) b.setAttribute('aria-pressed', String(+b.dataset.k === k));
     setRead(out, `<b>${LRIP_NAME[f.name] || f.name}</b>: ${valueOf(k)}. ${f.bits} bits of the ${PART[f.part]}, bits ${s} to ${e - 1}. `
-      + `The whole report is ${G(bytes.length, ' bytes', 0, 'its length')}, of which ${G(content, ' bytes', 0, 'the POSITION fields')} are the position itself; `
+      + `The packet is ${G(bytes.length, ' bytes', 0, 'its length')} before link framing and coding, of which ${G(content, ' bytes', 0, 'the POSITION fields')} are the position itself; `
       + `without authentication it is ${G(size(['N', null]), ' bytes', 0, 'the unauthenticated vector')}, and ${G(size(['B', 'mac8']), ' bytes', 0, 'the broadband-profile vector')} on the broadband profile.`);
   }
   F.forEach((f, k) => { if (f.name !== 'spare') fields.append(h('button', { type: 'button', class: `pr-field pr-p-${f.part}`, 'data-k': k, 'aria-pressed': 'false', onclick: () => pick(k) }, LRIP_NAME[f.name] || f.name)); });
@@ -412,7 +412,7 @@ async function figMsg(host) {
     const LONG = { carry: 'carry 150 kg from the depot to the base', hop: 'take 8 kg 1.5 km across a crater', psr: 'survey a shadowed crater for 30 minutes', relay: 'hold 60 MB of messages for a rover out of range' };
     mout.textContent = `The job (${LONG[j]}) asks for "${cap}". ${who.length ? `Only the ${who.join(' and the ')} lists it with enough capacity, so only it bids.` : 'No vehicle lists it.'} Unknown capabilities are skipped, so a rover never has to understand a hopper's.`;
   }
-  host.append(h('p', { class: 'ui-label' }, `A POSITION report on the air: LRIP v0.1's conformance vector, sender ${L.vector.sender}`), grid, h('p', { class: 'pr-key small' }, Object.entries(PART).flatMap(([k, l]) => [h('span', { class: `pr-sw pr-p-${k}` }), ` ${l}  `])), fields, out,
+  host.append(h('p', { class: 'ui-label' }, `A POSITION packet, before link framing: LRIP v0.1's conformance vector, sender ${L.vector.sender}`), grid, h('p', { class: 'pr-key small' }, Object.entries(PART).flatMap(([k, l]) => [h('span', { class: `pr-sw pr-p-${k}` }), ` ${l}  `])), fields, out,
     h('div', { class: 'pr-ctl pr-ctl-gap' }, segJ.el), cards, mout);
   pick(F.findIndex(f => f.name === 'e')); match('carry');
 }
@@ -579,7 +579,7 @@ async function figE55(host) {
   function draw() {
     const D = E.detectors[set];
     det.replaceChildren(h('table', { class: 'pr-table' },
-      h('caption', { class: 'small' }, `${set === 'test' ? 'Test streams' : 'Out of distribution: noisier ranging, worse dead reckoning, smaller faults'}. Recall is the share of faults found. Modelled, from ${E.source}.`),
+      h('caption', { class: 'small' }, `${set === 'test' ? 'Test streams' : 'Out of distribution: noisier ranging, worse dead reckoning, smaller faults; the false-alarm rates differ so much that the recall columns are not comparable'}. Recall is the share of faults found. Modelled, from ${E.source}.`),
       h('thead', {}, h('tr', {}, ...['Detector', 'False alarms per pair-day', 'Faults found', 'Slow drifts', 'Noise inflation'].map(t => h('th', { scope: 'col' }, t)))),
       h('tbody', {}, E55_DET.filter(([k]) => D[k]).map(([k, l]) => h('tr', { class: k === '3of5@0.001' ? 'pr-row-main' : '' }, h('th', { scope: 'row' }, l),
         h('td', { 'data-label': 'False alarms per pair-day' }, fa(D[k].fa)), h('td', { 'data-label': 'Faults found' }, rc(D[k].recall.all)),
@@ -605,27 +605,11 @@ async function figE55(host) {
 }
 
 // ---------------------------------------------------------------- 8. who has flown what (note 04, section C)
-const WHO = [
-  ['flown', 'Intuitive Machines', 'USA', 'IM-1 (2024) and IM-2 (Mar 2025) landed and tipped over', 'IM-2 carried a hopper and other makers’ rovers; none deployed', 'claimed'],
-  ['flown', 'Firefly', 'USA', 'Blue Ghost 1 landed 2 Mar 2025 and worked 346 h', 'none yet; mission 2 to carry Rashid Rover 2', 'claimed'],
-  ['flown', 'ispace', 'Japan', 'Hard landings in 2023 and June 2025', 'one micro-rover per mission (lost)', 'no'],
-  ['flown', 'Lunar Outpost', 'USA', 'MAPP rover reached the surface inside IM-2, not deployed', 'one', 'no'],
-  ['flown', 'CNSA Chang’e 6', 'China', 'Far-side sample return, May to June 2024', 'lander and a 5 kg mini-rover', 'no'],
-  ['flown', 'ISRO Chandrayaan-3', 'India', 'Landed 23 Aug 2023; rover drove 101.4 m', 'lander and one rover, ground-commanded', 'no'],
-  ['earth', 'DLR ARCHES', 'Germany', 'Mount Etna, June to July 2022', 'two rovers, a drone and a lander mock-up', 'partly'],
-  ['earth', 'CoRob-X (DFKI lead)', 'EU', 'Lanzarote, Jan to Feb 2023', 'three rovers of three makers, one plan, map merging', 'yes, in one project'],
-  ['earth', 'ESA Space Resources Challenge', 'Europe', 'LUNA hall, 2025', 'per team', 'no'],
-  ['planned', 'NASA / JPL CADRE', 'USA', 'Built 2024; flies on IM-3, Q1 2027 at the earliest', 'three rovers and a base station, one owner', 'no'],
-  ['planned', 'NASA LTV Services', 'USA', 'Two crew-rover task orders, May 2026; on the Moon by 2028', 'two rovers of two makers', 'not stated'],
-  ['planned', 'NASA VIPER', 'USA', 'On the second Blue Moon Mark 1, 2027 at the earliest', 'one', 'no'],
-  ['planned', 'NASA MoonFall, PROMISE', 'USA', '2028 targets', 'about four drones; one rover', 'not stated'],
-  ['planned', 'Astrobotic / Voyager', 'USA', 'Griffin-1 no earlier than Jan 2027', 'FLIP and CubeRover on one lander', 'no'],
-  ['planned', 'CNSA Chang’e 7', 'China', 'Moved from Aug 2026 to 2027', 'lander, rover and hopper', 'no'],
-  ['planned', 'CNSA Chang’e 8 / ILRS', 'China and partners', '2028 to 2029', 'robots from at least four organisations in three countries', 'claimed'],
-  ['planned', 'ISRO / JAXA LUPEX', 'India / Japan', '2028 to 2029', 'lander and a 350 kg rover', 'two agencies'],
-  ['sim', 'LunarHaul / Lunar ATC', 'this project', 'Simulated only', '8 vehicles of 3 owners, and fleets 8 times larger', 'yes, by design'],
-];
-function figWho(host) {
+// F-70: the survey rows moved to src/protocol/who.data.json (staged as protocol/who.json), out of the lazy chunk
+async function figWho(host) {
+  const r = await fetch(`${import.meta.env.BASE_URL}protocol/who.json`);
+  if (!r.ok) throw new Error(`protocol/who.json: HTTP ${r.status}`);
+  const WHO = (await r.json()).rows;
   const KIND = { all: 'All', flown: 'Flown to the Moon', earth: 'Tested on Earth', planned: 'Planned', sim: 'Simulated' }, SHORT = { all: 'All', flown: 'Flown', earth: 'Earth tests', planned: 'Planned', sim: 'Simulated' };
   const body = h('tbody'), cap = h('caption', { class: 'visually-hidden' });
   const seg = segmented({ legend: 'Show', options: Object.entries(SHORT).map(([v, l]) => ({ value: v, label: l })), value: 'all', onChange: v => draw(v) });

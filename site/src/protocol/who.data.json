@@ -1,0 +1,159 @@
+{
+ "format": "lunarsim-protocol-who",
+ "version": 1,
+ "source": "research note 04, section C (the survey of who has flown what)",
+ "columns": [
+  "kind",
+  "name",
+  "country",
+  "flew",
+  "robots",
+  "interop"
+ ],
+ "rows": [
+  [
+   "flown",
+   "Intuitive Machines",
+   "USA",
+   "IM-1 (2024) and IM-2 (Mar 2025) landed and tipped over",
+   "IM-2 carried a hopper and other makers’ rovers; none deployed",
+   "claimed"
+  ],
+  [
+   "flown",
+   "Firefly",
+   "USA",
+   "Blue Ghost 1 landed 2 Mar 2025 and worked 346 h",
+   "none yet; mission 2 to carry Rashid Rover 2",
+   "claimed"
+  ],
+  [
+   "flown",
+   "ispace",
+   "Japan",
+   "Hard landings in 2023 and June 2025",
+   "one micro-rover per mission (lost)",
+   "no"
+  ],
+  [
+   "flown",
+   "Lunar Outpost",
+   "USA",
+   "MAPP rover reached the surface inside IM-2, not deployed",
+   "one",
+   "no"
+  ],
+  [
+   "flown",
+   "CNSA Chang’e 6",
+   "China",
+   "Far-side sample return, May to June 2024",
+   "lander and a 5 kg mini-rover",
+   "no"
+  ],
+  [
+   "flown",
+   "ISRO Chandrayaan-3",
+   "India",
+   "Landed 23 Aug 2023; rover drove 101.4 m",
+   "lander and one rover, ground-commanded",
+   "no"
+  ],
+  [
+   "earth",
+   "DLR ARCHES",
+   "Germany",
+   "Mount Etna, June to July 2022",
+   "two rovers, a drone and a lander mock-up",
+   "partly"
+  ],
+  [
+   "earth",
+   "CoRob-X (DFKI lead)",
+   "EU",
+   "Lanzarote, Jan to Feb 2023",
+   "three rovers of three makers, one plan, map merging",
+   "yes, in one project"
+  ],
+  [
+   "earth",
+   "ESA Space Resources Challenge",
+   "Europe",
+   "LUNA hall, 2025",
+   "per team",
+   "no"
+  ],
+  [
+   "planned",
+   "NASA / JPL CADRE",
+   "USA",
+   "Built 2024; flies on IM-3, Q1 2027 at the earliest",
+   "three rovers and a base station, one owner",
+   "no"
+  ],
+  [
+   "planned",
+   "NASA LTV Services",
+   "USA",
+   "Two crew-rover task orders, May 2026; on the Moon by 2028",
+   "two rovers of two makers",
+   "not stated"
+  ],
+  [
+   "planned",
+   "NASA VIPER",
+   "USA",
+   "On the second Blue Moon Mark 1, 2027 at the earliest",
+   "one",
+   "no"
+  ],
+  [
+   "planned",
+   "NASA MoonFall, PROMISE",
+   "USA",
+   "2028 targets",
+   "about four drones; one rover",
+   "not stated"
+  ],
+  [
+   "planned",
+   "Astrobotic / Voyager",
+   "USA",
+   "Griffin-1 no earlier than Jan 2027",
+   "FLIP and CubeRover on one lander",
+   "no"
+  ],
+  [
+   "planned",
+   "CNSA Chang’e 7",
+   "China",
+   "Moved from Aug 2026 to 2027",
+   "lander, rover and hopper",
+   "no"
+  ],
+  [
+   "planned",
+   "CNSA Chang’e 8 / ILRS",
+   "China and partners",
+   "2028 to 2029",
+   "robots from at least four organisations in three countries",
+   "claimed"
+  ],
+  [
+   "planned",
+   "ISRO / JAXA LUPEX",
+   "India / Japan",
+   "2028 to 2029",
+   "lander and a 350 kg rover",
+   "two agencies"
+  ],
+  [
+   "sim",
+   "LunarHaul / Lunar ATC",
+   "this project",
+   "Simulated only",
+   "8 vehicles of 3 owners, and fleets 8 times larger",
+   "yes, by design"
+  ]
+ ]
+}

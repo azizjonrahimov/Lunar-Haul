@@ -808,7 +808,7 @@ family with Holm: which hypotheses held, which did not, which are threshold comp
 /results/ under the Lunar ATC section, with the failed ones as visible as the supported ones. Node tests; browser
 check when free RAM is at least 1.0 GB.
 
-## F-70 [OPEN] The site says what the referee round left standing (your audit of 29 items is accepted)
+## F-70 [DONE 11 Nov, uncommitted] The site says what the referee round left standing (your audit of 29 items is accepted)
 Apply every item of your "REFEREE AUDIT FOR F-70" as proposed, following reports/referee_phase6_decisions.md:
 - /results/ hypothesis table: H9' "depends on the reading" (four readings come with B-101; until then say so),
   H10' did not hold, H13 "design calculation" (not a test), H14 split by clause (lost jobs: held; the

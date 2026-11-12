@@ -210,7 +210,7 @@ function rows() {
         sm ? `${e(sm.link.longest_hop_kbps, ' kbit/s', 1, 'Modelled', 'classes.SMALL.link.longest_hop_kbps')} at the ${e(sm.link.mutual_horizon_m / 1000, ' km', 1, 'Modelled', 'classes.SMALL.link.mutual_horizon_m')} horizon, ${e(sm.link.tx_power_w, ' W', 2, 'Assumed', 'classes.SMALL.link.tx_power_w')}` : 'E48 not available', 'our design'],
       ['clock', 'Clock module', 'A chip-scale atomic clock beside a crystal: time stamps and resyncs.', `Drift: atomic ${n('csac')}, crystal ${n('tcxo')}`, 'published'],
       ['computer', 'Navigation computer', `The flight board (${esc(F?.processor || 'GR740')}) runs our safety program and planner.`,
-        sm && F ? `${num({ value: F.memory_mb, unit: ' MB', digits: 0, flag: 'Spec', source: `${SZ}: flight.memory_mb (${F.processor})` })} on board; our program peaks at ${e(sm.peak_memory_mb, ' MB', 2, 'Modelled', 'classes.SMALL.peak_memory_mb')} and one safety check takes ${e(check, ' ms', 0, 'Modelled', 'classes.SMALL.cpu_safety_check_us.p99 × flight.factor')} on the flight core` : 'E48 not available', 'published board, our software'],
+        sm && F ? `${num({ value: F.memory_mb, unit: ' MB', digits: 0, flag: 'Spec', source: `${SZ}: flight.memory_mb (${F.processor})` })} on board; our program needs about ${e(sm.peak_memory_mb, ' MB', 2, 'Modelled', 'classes.SMALL.peak_memory_mb (an estimate: the sum of its parts)')} by an estimate and one safety check takes ${e(check, ' ms', 0, 'Modelled', 'classes.SMALL.cpu_safety_check_us.p99 × flight.factor')} on the flight core` : 'E48 not available', 'published board, our software'],
     ],
   };
 }
@@ -246,7 +246,7 @@ function netLabels() {
     { id: 'radio', anchor: [RAD.x + RAD.w, RAD.y + 14, 10], title: 'Input: range to B', value: `${t('uwb')} to ${t('uwb_range')}` },
     { id: 'antenna', anchor: [ANT[0], ANT[1], 122], title: "Input: B's report", value: 'once a second' },
     { id: 'computer', anchor: [CPU.x + 3, CPU.y + CPU.d, 1.5], title: 'Runs the network', value: E ? `${fmt(E.model.n_params, 0)} parameters` : '–' },
-    { id: 'safety', anchor: [42, CPU.y + CPU.d + 5, 3], title: 'Output: safety check', value: 'flags B as suspect' },
+    { id: 'safety', anchor: [42, CPU.y + CPU.d + 5, 3], title: 'Output: a warning', value: 'not in the safety path' },
   ];
 }
 function netRows() {
@@ -256,10 +256,10 @@ function netRows() {
     ['computer', 'The network, on the navigation computer', 'Reads the last 127 s of ten inputs and gives the probability that B’s reports are wrong.',
       E ? `${e(E.model.n_params, '', 0, 'model.n_params')} parameters; one window takes ${e(E.timing.numpy_reference_ms.median, ' ms', 2, 'timing.numpy_reference_ms.median')} on a laptop core (the flight core is slower; not measured)` : 'E56 not available', 'our design'],
     ['radio', 'Input: the range to B', 'A two-way radio range, compared with the range B’s report implies.', `Range error ${n('uwb')} up to ${n('uwb_range')}`, 'published'],
-    ['antenna', "Input: B's position report", 'Received over the coordination radio once a second, with B’s claimed error.', `${n('pos_air')} on the air`, 'our design'],
+    ['antenna', "Input: B's position report", 'Received over the coordination radio once a second, with B’s claimed error.', `${n('pos_air')} before link framing`, 'our design'],
     ['cameras', 'Input: own odometry', 'The rover’s own position, with its own claimed error.', `Drift ${n('dr_vo')}`, 'published'],
     ['imu', 'Input: own heading', 'Turn rate between fixes.', `Heading drift ${n('gyro')} on gyros alone`, 'published'],
-    ['safety', 'Output: the safety check', 'A flagged neighbour is treated as suspect: its space is widened and the others are told.', 'The same rule as the chi-square test it is compared with', 'our design'],
+    ['safety', 'Output: a warning, not in the safety path', 'On this evidence no detector is qualified for the safety path; if one were, a flagged neighbour would be treated as suspect.', 'Not qualified for the safety path (referee round)', 'our design'],
   ];
 }
 export function networkWhereFigure() {

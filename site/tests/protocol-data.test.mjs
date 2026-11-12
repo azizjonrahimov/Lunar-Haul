@@ -121,3 +121,23 @@ test('E53 "fits" rule on the B-99 file gives the same answers as results/E53_tab
   }
   assert.ok(n > 100, `only ${n} comparisons`);
 });
+
+test('F-70 hooks: the fix-stop cost, the clock-guard observation, the LRIP sizes', async () => {
+  const { e50b, e51, lrip } = await import('../lib/protocol-data.mjs');
+  if (existsSync(R('results/E50b_summary.json'))) {
+    const D = J('results/E50b_summary.json').metrics.delay_mean_h;
+    assert.ok(D.diff_ci95_bootstrap[0] > 0, 'the interval stays above zero');
+    assert.match(e50b('delay_diff'), /data-flag="Modelled"/);
+    assert.match(e50b('stop_s'), /data-flag="Assumed"/);
+    assert.throws(() => e50b('nope'), /unknown key/);
+  }
+  if (existsSync(R('results/E51_clocks.json'))) {
+    assert.match(e51('guard_pairs'), /reservation pairs/);
+    assert.match(e51('guard_max_offset'), / s</);
+  }
+  if (haveLrip) {
+    assert.equal(lrip('types'), 'fifteen');
+    assert.match(lrip('packet'), />41</);
+    assert.match(lrip('framed'), />53</);
+  }
+});
