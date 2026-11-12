@@ -9006,3 +9006,73 @@ Next: B-97 (real-data checks), then B-98 / B-99. B-90b waits for your 8x loop.
 **For LEAD:**
 1. Problem 4's "Method" still names E54 only in passing, and problem 6's says "with the lost-link ladder of E54". Both now have measured panels, so the text could quote H14. I left the wording to you.
 2. Figure 7 (integrity) still says "Illustration with note 03's test; E55 replaces it". Is E55 coming, or should the page point at /network/'s E56?
+
+## B-97 DONE 19:36 (real-data checks: SMAP / MSL telemetry, Artemis II limb navigation, earth_link geometry) | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**Downloads:** **195.99 MB** in `.cache/external/` (git-ignored; under the 200 MB limit; D: had 37.9 GB free). `results/B97_downloads.json` records every file (80) with its URL, bytes, sha256 and a mirror flag, plus the source and licence notes. The generic NAIF kernels were already in `.cache/comms/kernels`.
+
+**(1) SMAP / MSL telemetry** (labelled data of the telemanom release; check of the detection method only, on real spacecraft telemetry; it is not lunar rover data)
+- **Source.** The original data bucket (`s3-us-west-2.amazonaws.com/telemanom/data.zip`) answers **403**. The arrays come from a **public mirror**, the TranAD repository on GitHub (`imperial-qore/TranAD/data/SMAP_MSL`, **BSD-3-Clause**; no login). The original repository's licence reads NOASSERTION in GitHub's API.
+- **Verification (all passed, per LEAD's checklist):**
+  1. the mirror's `labeled_anomalies.csv` is **byte-identical** to telemanom's GitHub copy (sha256 057ce2d6…);
+  2. **82 channels: 55 SMAP, 27 MSL**;
+  3. **105 labelled anomalies**;
+  4. every downloaded test array has exactly `num_values` rows, and 25 (SMAP) / 55 (MSL) columns, the stated layout.
+- **Subset** for the size limit: the first 14 MSL and 14 SMAP channels in the label file (61.6 MB, 38 labelled anomalies). Column 0 is the telemetry value.
+- **Method.** z on the training mean and standard deviation, as the level and as the first difference. Detectors: the z-score, and B-96's own chi-square per step, chi-square windowed (16) and CUSUM (k 0.5), called through `lunarsim.nn.baselines` on B-96's feature layout.
+  - **Thresholds from the training data only** (the maximum training score), never from the labelled test events.
+  - B-96's logistic regression and network need its ten pair features, so they do not apply to a single telemetry channel (stated).
+  - Event level as telemanom: an anomaly is found if an alarm falls inside it; a false positive is an alarm run touching no anomaly.
+
+| Spacecraft | Residual | z-score | chi-square per step | chi-square windowed | CUSUM |
+|---|---|---|---|---|---|
+| MSL (18 events) | level | 10 found, 25 false runs (P 0.29) | 10 / 25 (0.29) | **13 / 16 (0.45)** | **13 / 15 (0.46)** |
+| SMAP (20 events) | level | 2 / 2 (0.50) | 2 / 2 (0.50) | 12 / 18 (0.40) | **16 / 26 (0.38)** |
+| MSL | difference | 10 / 147 | 10 / 147 | 10 / 32 | 10 / 29 |
+| SMAP | difference | 7 / 37 | 7 / 37 | 7 / 23 | 5 / 37 |
+
+- **Reading:** B-96's finding on simulated rover streams holds on real spacecraft telemetry. Evidence accumulated over time (windowed chi-square, CUSUM) finds far more than a single-step test at the same no-false-alarm-in-training threshold: MSL 13 against 10 of 18; SMAP 16 against 2 of 20.
+- Precision stays low (0.38–0.46). That is a property of untuned per-channel thresholds, not a claim about telemanom's published LSTM results, which I did not re-derive.
+
+**(2) Artemis II OpNav limb navigation** (cislunar range and direction from the disc; **limb navigation only, not surface navigation**)
+- **Images:** six raw 2,592 × 2,048 8-bit frames, one from each flight-day session (2, 3, 4, 6, 7, 10 April 2026), each with its label's start time.
+- **Truth:** SPICE from the Artemis II bundle (trajectory SPK and gap-fill, spacecraft attitude CK 92 MB, mission FK, fixed-camera IK, clocks), with the lunar frames kernel loaded explicitly.
+- **Fit:** Otsu segmentation, RANSAC circle on the disc boundary (the limb; the terminator is not a circle), least-squares refinement. f = 7,312 px from the IK half-angles, consistent on both axes (137 µrad per pixel).
+- **Target from geometry, not from the label:** the body inside the OpNav field of view by SPICE. Without attitude, the body whose predicted disc radius matches. **Two of the five usable discs are Earth** (3 April, 10 April: SPICE puts the Moon 137° and 142° off the boresight), although every label says Moon.
+- **Results:**
+
+| Image (UTC) | Body | Fitted / predicted radius (px) | Range: image / SPICE | Range error | Off-boresight angle: image / SPICE | Direction error |
+|---|---|---|---|---|---|---|
+| 2 Apr 13:10 | — | **unusable: every pixel 255** (saturated frame) | | | | |
+| 3 Apr 20:15 | Earth | 249.3 / 250.4 | 186,975 / 186,160 km | **+0.44 %** | 3.905 / 3.984° | **0.13°** |
+| 4 Apr 21:15 | Moon | 75.9 / 76.9 | 167,344 / 165,209 km | **+1.29 %** | 1.419 / 1.498° | **0.08°** |
+| 6 Apr 00:29 | Moon | 158.9 / 159.7 | 79,995 / 79,587 km | **+0.51 %** | (CK gap: no attitude) | range only |
+| 7 Apr 21:29 | Moon | 158.9 / 160.3 | 79,958 / 79,297 km | **+0.83 %** | 2.381 / 2.484° | **0.16°** |
+| 10 Apr 16:23 | Earth | 474.0 / 475.2 | 98,493 / 98,250 km | **+0.25 %** | 3.355 / 3.468° | **0.16°** |
+
+- The direction error uses the pixel-axis signs that fit best, because the IK does not state them. The choice was the same (+1, +1) for all four images with attitude: one 2-bit choice for the set, not per image.
+- **Systematic effects:**
+  - the fitted radius is 1.0–1.4 px small every time, so the range is biased about 0.3–1.3 % high (Otsu on a soft limb; for Earth also the atmosphere and its 0.3 % flattening, mean radius 6,371 km used);
+  - the off-boresight angle comes out 0.08–0.11° low every time, which could be the OpNav frame alignment. The FK warns its OpNav angles "placed targets outside of the FOV".
+- **For P3:** a single camera frame of a 76–475 px disc gives range to about 1 % and direction to about 0.1–0.2°, on real data, with no calibration applied. At the Moon's 80,000 km that is about 400–800 m of range and 140–220 km across track. It is cislunar navigation, as the task and note 02 say.
+
+**(3) earth_link.py geometry on the Artemis II trajectory** (2–10 April 2026, hourly)
+- `earth_link.earth_topo` (its own az / el conversion on `spkcpo` vectors in MOON_ME) against SPICE `azlcpo` for Orion seen from BASE: **max |Δaz| 5.7×10⁻¹⁴°, |Δel| 8.9×10⁻¹⁵° over 212 epochs.**
+- Orion stayed below BASE's horizon throughout (elevation −9.26° to −0.04°; its trajectory is near-equatorial).
+- **Without the lunar frames kernel** (the IAU_MOON fallback), BASE moves **77.4 m**. That is why `earth_link.py` loads `moon_de440_250416.tf` explicitly; this bundle's meta-kernel does too.
+
+**Files:**
+- new: `tools/atc/run_b97.py`, `tests/test_b97.py` (3 tests, synthetic, no downloads needed), `results/B97_realdata.json`, `results/B97_downloads.json`.
+- No engine or library change. `lunarsim/nn` is only imported.
+
+**How to test:**
+- `.venv\Scripts\python -m pytest tests/test_b97.py -q` passes 3.
+- With the downloads present: `python tools/atc/run_b97.py telemetry` (about 1 min), `artemis` (about 30 s), `geometry` (seconds).
+
+**For FRONTEND (via LEAD):** `results/B97_realdata.json` (telemetry rows; Artemis II per-image fits; geometry) is for /protocol/ problem 1's "real data" box and the /network/ method box. Label it as real data of what it is: spacecraft telemetry, and a crewed flyby's navigation camera.
+
+**Questions for LEAD:**
+1. The off-boresight bias of about 0.1° appears in every image. Should I fit a camera-frame correction from these four images and test it on others (it would need about 10 more images, 53 MB, beyond the budget), or report the bias as is?
+2. telemanom's published LSTM figures: do you want them quoted beside ours from the paper (I have not opened it this session), or left out?
+
+Next: B-98 (verification rows for Phase 6), then B-99 (site data). B-90b waits for your 8x loop.

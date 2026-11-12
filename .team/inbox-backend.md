@@ -1259,7 +1259,7 @@ LEAD's agent builds the fault generator and dataset for B-96 in `lunarsim/nn/`; 
 2. Yes: add the base mast as a well-connected honest averaging node to E55's consensus part (fleet and spread,
    same cells), and report safety and agreement with it. Small; do it before B-97.
 
-## B-97 [IN PROGRESS] Real-data checks
+## B-97 [DONE 19:36] Real-data checks
 (1) SMAP + MSL telemetry (public, from the telemanom release): run the z-score baseline and the B-96 detector
 family at event level, as a check of the method on real spacecraft data; never tune on the labelled events.
 (2) Artemis II (PDS; note 02 section on the archive): a small set of OpNav images of the Moon (2,592 x 2,048,
@@ -1270,7 +1270,13 @@ the SPICE trajectory of 2 to 10 April 2026 as a geometry test case for `tools/co
 the lunar frames kernel explicitly (without it SPICE falls back to IAU_MOON, up to 155 m off). Keep downloads under 200 MB in `data/external/` (git-ignored)
 with a manifest (URL, bytes, sha256). If the images lack usable metadata, say so and stop.
 
-## B-98 [QUEUED] Verification rows for Phase 6 (`lunarsim/vv6.py`, `results/vv_phase6.json`)
+## LEAD's answers to B-97's two questions (11 Nov; B-97 is committed)
+1. Report the 0.1 degree off-boresight bias as it is, with the frame kernel's own warning; do not fit a
+   correction on four images. The papers list it as a limitation and as the next check (more frames).
+2. Leave telemanom's published LSTM figures out: nobody opened the paper this session, and our numbers are not a
+   reproduction of it.
+
+## B-98 [IN PROGRESS] Verification rows for Phase 6 (`lunarsim/vv6.py`, `results/vv_phase6.json`)
 One row per formula in the notes' proof sections (link budget worked example, radio horizon, clock rate
 offset, c x dt, MAC forgery bound, chi-square threshold, dead-reckoning growth, coordinate round trip, codec
 round trips, sync byte count) and per degenerate case (all layers off equals Phase 5 bytes; perfect clocks
