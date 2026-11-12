@@ -24,6 +24,12 @@ commit (after the plume hold) the road layer walks each vehicle's planned legs o
   files at commit; r7 True files only from the start site or the first route sample the BASE mast sees. "uncoordinated": each owner sees only its own vehicles' reservations; a conflict with another owner's vehicle
   stops both at the conflict time until it is settled by hand from Earth (t_hand, only while BASE sees Earth).
   The other vehicle's stop extends its busy time; its already recorded deliveries are not moved (stated limitation).
+- B-90 (opt-in, off by default): pos_margin = {"k": 1.0, "bound_m": metres, or {vehicle id: [[t_h, bound_m], ...]}}
+  widens each vehicle's single-lane reservation window at both ends by k x bound / speed (research note 01 E6, via
+  safety.reservation_margin_h), so two windows on one segment are separated by >= sigma_A / v_A + sigma_B / v_B; the
+  bound series is a step function (the value of the last entry at or before t). log_reservations = True keeps every
+  single-lane reservation as (resource, t_in, t_out, margin_h, direction, vehicle id, leg key, f_in, f_out) in
+  self.res_log (nominal window, without the margin) for E50's true-occupancy check.
 """
 from __future__ import annotations
 
@@ -36,14 +42,14 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
-from .safety import Reserve, safety_check
+from .safety import Reserve, reservation_margin_h, safety_check
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 ROADS_FILE = os.path.join(ROOT, "data", "atc", "connecting_ridge", "roads-v1.json")
 SAMPLES_FILE = os.path.join(ROOT, "data", "comms", "connecting_ridge", "earth_link-v1-samples.json.gz")
 DEFAULTS = {"r7": False, "mode": "atc", "single_share": 0.15, "bay_km": 1.0, "apron_slots": 2, "t_hand": 2.0,
             "eva": {"per_week": 2, "duration_h": 6.0, "first_h": 30.0, "zone_km": 0.05, "v_crew_kmh": 1.0},
-            "start_year": None, "planet": "moon", "mars": None}
+            "start_year": None, "planet": "moon", "mars": None, "pos_margin": None, "log_reservations": False}
 # Mars (B-82, E47): Earth contact for hand-resolution of an uncoordinated conflict. Flags: S = Spec, A = Assumed.
 MARS_DEFAULTS = {
     "rtt_min": 20.0,                  # one of 6, 20, 44 min; S (light time 3-22 min each way)
@@ -197,8 +203,37 @@ class RoadLayer:
         self._covered = None
         self._cover_memo: Dict[Tuple[str, float], float] = {}
         self._mast_seen = None
+        self.res_log: List[tuple] = []
+        self._leg_len: Dict[str, float] = {}
+        pm = c.get("pos_margin")
+        self._pm = None
+        if pm is not None:
+            bm = pm.get("bound_m", 0.0)
+            series = None
+            if isinstance(bm, dict):
+                series = {int(k): (np.array([float(x[0]) for x in v]), np.array([float(x[1]) for x in v]))
+                          for k, v in bm.items()}
+            self._pm = {"k": float(pm.get("k", 1.0)), "const": float(bm) if series is None else 0.0, "series": series}
 
     # --------------------------------------------------------------------------------------------- helpers
+    def _bound(self, vid: int, t: float) -> float:
+        pm = self._pm
+        if pm["series"] is None:
+            return pm["const"]
+        ts, bs = pm["series"].get(int(vid), (None, None))
+        if ts is None or not len(ts):
+            return 0.0
+        i = int(np.searchsorted(ts, t, side="right")) - 1
+        return float(bs[max(i, 0)])
+
+    def leg_length_m(self, key: str) -> float:
+        if key not in self._leg_len:
+            _, sdoc = _load()
+            ids = sdoc["legs"].get(key, [])
+            xy = np.array([sdoc["samples"][i]["xy_m"] for i in ids], float)
+            self._leg_len[key] = float(np.hypot(*np.diff(xy, axis=0).T).sum()) if len(ids) > 1 else 0.0
+        return self._leg_len[key]
+
     def name(self, site: str) -> str:
         return f"{site}@{self.standoff}" if site in self.pads else site
 
@@ -322,6 +357,8 @@ class RoadLayer:
         self.m["jobs"] += 1
         atc = self.cfg["mode"] == "atc"
         worst = 0.0
+        pmc = getattr(self, "_pm", None)                 # B-90 opt-ins; absent on a layer built without __init__
+        logr = bool(self.cfg.get("log_reservations", False))
         for v in job.vehicles:
             segs = sim._last_segments.get(v.id) or []
             shift = 0.0
@@ -366,8 +403,13 @@ class RoadLayer:
                     self.m["traversals"] += 1
                     if cov is not None and cov <= f_in:                   # passes a covered point before entering
                         linked = sees_all = True
+                    mh = 0.0
                     while True:
                         t_in, t_out = t0s + f_in * dur, t0s + f_out * dur
+                        if pmc is not None:                               # B-90: k x bound / speed at each end
+                            v_ms = self.leg_length_m(key) / max(dur * 3600.0, 1e-9)
+                            mh = float(reservation_margin_h(self._bound(v.id, t_in), v_ms, pmc["k"]))
+                            t_in, t_out = t_in - mh, t_out + mh
                         known = self._conflicts(res, t_in, t_out, d, v, mine_only=not sees_all)
                         if known:                                         # wait at the bay before the segment
                             self.m["conflicts"] += 1
@@ -385,6 +427,8 @@ class RoadLayer:
                         shift += w
                         t0s, t1s = t0s + w, t1s + w
                     self.table.setdefault(res, []).append((t_in, t_out, d, v.owner, v.id))
+                    if logr:
+                        self.res_log.append((res, t_in + mh, t_out - mh, mh, d, v.id, key, f_in, f_out))
                 new_segs.append([a, b, t0s, t1s, load])
                 if atc and not linked and self._leg_cover(key, v) <= 1.0:   # heard the base somewhere on this leg
                     linked = sees_all = True

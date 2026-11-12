@@ -19,7 +19,7 @@ Rules (research_notes/Lunar ATC/traffic_and_safety.md, table B; flags: S = Spec/
 A = Assumed):
 - R1 keep distance (same direction): RSS minimum gap d_min(v_rear, v_front) with response time RHO_S, the follower's
   maximum acceleration A_ACC, its guaranteed braking (slope- and friction-limited) and the leader's maximum braking
-  B_MAX, plus static margin D0_M. Below d_min the only accepted action is the proper response (braking).
+  B_MAX, plus static margin D0_M (B-90, opt-in: + k_pos x the pair's 95 % position bound, Move.pos_bound). Below d_min the only accepted action is the proper response (braking).
 - R2 speed: v <= class limit, v <= the speed whose reaction + stopping distance fits the clear sight distance, and on
   downhill slopes over 10 deg the speed that stops within 15 m. Where friction cannot hold the slope, v_max = 0.
 - R3 single-lane segments: exclusive reservation for the whole segment and window (opposite directions conflict; any
@@ -99,6 +99,13 @@ def r_crew_stop(v, b):
 
 
 # ------------------------------------------------------------------------------------------------ reservations
+def reservation_margin_h(bound_m, v_ms, k_pos=1.0):
+    """B-90 (research note 01 E6): the time by which a vehicle's own reservation window is widened at each end so that
+    two windows on one segment are separated by >= sigma_A / v_A + sigma_B / v_B: k_pos x bound / speed, in hours."""
+    v = np.maximum(np.asarray(v_ms, float), 1e-6)
+    return k_pos * np.asarray(bound_m, float) / v / 3600.0
+
+
 def r3_pair_conflict(d_existing, d_request, branched):
     """R3 on one overlapping pair of reservations: opposite directions conflict; on a branched segment any overlap does."""
     return (np.asarray(d_existing) != np.asarray(d_request)) | np.asarray(branched, bool)
@@ -144,6 +151,9 @@ class Move:
     a_max: Any = 0.2                 # the vehicle's acceleration capability (m/s2)
     g: float = G_MOON
     d_crew_any: Any = None           # distance to the nearest crew in any direction (R6 slow zone); None = d_crew
+    pos_bound: Any = 0.0             # B-90 (opt-in): 95 % bound of the pair's relative position error (m), from
+                                     # lunarsim.atc.pnt.pair_bound95; R1's static margin becomes D0_M + k_pos x pos_bound
+    k_pos: float = 1.0               # B-90: multiplier on pos_bound (A; sweep); with pos_bound 0 the check is unchanged
 
 
 @dataclass
@@ -193,7 +203,7 @@ def _ok(m: Move, a, b, vmax):
     # R1: gap after the step against the leader braking at B_MAX throughout, unless this is the proper response
     vl1, xl1 = _after_step(m.v_lead, -B_MAX, m.dt)
     gap1 = m.gap_lead - x1 + xl1
-    r1 = (gap1 >= rss_dmin(v1, vl1, b)) | (a <= -b + 1e-9)
+    r1 = (gap1 >= rss_dmin(v1, vl1, b, d0=D0_M + m.k_pos * np.asarray(m.pos_bound, float))) | (a <= -b + 1e-9)
     r1 &= gap1 > 0
     # stop line (R3 / R5 / R10 without a confirmed reservation): still able to stop before it
     rs = x1 + stop_distance(v1, b) <= m.d_stop + 1e-9
