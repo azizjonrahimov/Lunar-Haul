@@ -90,10 +90,13 @@
       <div class="pr-text">
         <h3>Our answer</h3>
         <p>The base keeps one map of versioned tiles and every rover carries a full copy it can drive on alone; after
-          time out of contact the two compare a short digest of tile versions (<!--@pn:digest--> for
-          <!--@pn:changed--> out of <!--@pn:tiles-->) and send only the changed tiles, hazards on the rover's route
-          first. A day's hazard changes are about <!--@pn:hazard_kb-->, against <!--@pn:full_kb--> for the site's
-          elevation layer sent whole, and every coordinate names its frame, because reading it in the wrong lunar frame
+          time out of contact the two compare a short digest of tile versions and send only the changed tiles, hazards
+          on the rover's route first. In experiment E52, after a day away that is
+          <!--@e52:24_16_hazards_first_bytes_mean--> for the <!--@e52:route_tiles--> the routes cross,
+          <!--@e52:24_16_hazards_first_share_of_full_resend--> of a full resend of every layer
+          (<!--@e52:full_resend-->); at 16 kbit/s the hazard layer is current after
+          <!--@e52:24_16_hazards_first_t_hazards_current_s-->, against <!--@e52:24_16_oldest_first_t_hazards_current_s-->
+          oldest first. Every coordinate names its frame, because reading it in the wrong lunar frame
           moves a south-pole base by about <!--@pn:frame_m-->.</p>
         <h3>Method</h3>
         <p>Experiment E52 (hypothesis H12) brings rovers back after hours to days out of contact and counts the bytes
@@ -106,8 +109,10 @@
       </div>
       <figure class="pr-fig" id="fig-map" aria-labelledby="fig-map-cap">
         <div class="pr-host" data-fig="map"></div>
-        <figcaption id="fig-map-cap">The site's 3,906 tiles; the 42 that changed while the rover was away arrive in
-          order, hazards first. Pick the link speed. Illustration from note 02's sizes; E52 replaces it.</figcaption>
+        <figcaption id="fig-map-cap">A rover comes back after hours to days out of contact: the bytes it must fetch, and
+          the time until its hazard map is current, hazards first against oldest first. Below, the hazards it meets on
+          the stale map, during the outage and after contact. Experiment E52 (results/E52_map.json, 30 seeds); the
+          rate of new hazards and the share its own sensors miss are Assumed.</figcaption>
       </figure>
     </div>
   </section>
@@ -176,6 +181,12 @@
         <div class="pr-host" data-fig="radio"></div>
         <figcaption id="fig-radio-cap">The engine's link budget (lunarsim/atc/radio.py) in your browser. Drag the
           distance, pick the antenna height and the band, put a hill in the way, and add a relay.</figcaption>
+      </figure>
+      <figure class="pr-fig pr-fig-wide" id="fig-dtn" aria-labelledby="fig-dtn-cap">
+        <div class="pr-host" data-fig="dtn" data-focus="radio"></div>
+        <figcaption id="fig-dtn-cap">Measured in experiment E54: what reaches its destination when messages are
+          dropped and retried, stored and forwarded hop by hop, or stored and forwarded with the lost-link rule, over the
+          recorded month with a 14-day Earth blackout (results/E54_dtn.json and E54_ledger.json).</figcaption>
       </figure>
     </div>
       <div class="an-slot" data-anat="radio">
@@ -250,6 +261,11 @@
         <div class="pr-host" data-fig="auction"></div>
         <figcaption id="fig-auc-cap">One job on one timeline: announced, bid for, won by rover B; B goes silent; the
           others notice and C takes over. Move the moment B fails. Timers from note 03, section D.</figcaption>
+      </figure>
+      <figure class="pr-fig pr-fig-wide" id="fig-dtn-fail" aria-labelledby="fig-dtn-fail-cap">
+        <div class="pr-host" data-fig="dtn" data-focus="fail"></div>
+        <figcaption id="fig-dtn-fail-cap">Measured in experiment E54: jobs lost, reservations left blocked and how stale
+          the base's picture of each vehicle gets, with and without the lost-link rule (results/E54_dtn.json).</figcaption>
       </figure>
     </div>
   </section>

@@ -132,3 +132,70 @@ export function e53(geometry, auth, hz, rovers, column) {
   const [unit, digits, scale = 1] = E53_UNIT[column] || ['', 2];
   return num({ value: +v * scale, unit, digits, flag: 'Modelled', source: `${E53_SRC}: geometry ${geometry}, authentication ${auth}, ${hz} Hz, ${rovers} rovers, column ${column}` });
 }
+
+// F-56 / B-92: /protocol/ figure 2 reads E52 (results/E52_map.json): bytes and time to sync after 1 h to 14 days out of
+// contact, hazards-first against oldest-first, at four link rates; hazards hit during the outage and after contact.
+// The route tiles (60) and the full resend (185.5 MB) are computed; the change rates and the hidden share are Assumed.
+export const E52_SRC = 'results/E52_map.json';
+export const E52_OUT = 'protocol/e52.json';
+export const E52_ASSUMED = ['hazards_per_day', 'keepouts_per_day', 'road_edges_per_day', 'hidden_share'];
+export function compactE52(doc) {
+  if (!Array.isArray(doc.rows) || !doc.full_resend_bytes || !doc.route_tiles) throw new Error(`${E52_SRC}: rows, full_resend_bytes or route_tiles missing`);
+  const keep = ['out_h', 'order', 'rate_kbps', 'bytes_mean', 'share_of_full_resend', 'tiles_changed_mean', 't_hazards_current_s', 't_all_s', 'hits_during_outage_mean', 'hits_after_contact_mean'];
+  return { format: 'lunarsim-e52-site', version: 1, source: E52_SRC, experiment: doc.experiment, seeds: Array.isArray(doc.seeds) ? doc.seeds.length : doc.seeds, route_tiles: doc.route_tiles,
+    full_resend_bytes: doc.full_resend_bytes, parameters: doc.parameters, assumed: E52_ASSUMED.filter(k => k in (doc.parameters || {})), h12: doc.h12,
+    rows: doc.rows.map(r => Object.fromEntries(keep.map(k => [k, r[k]]))) };
+}
+
+// F-56 / B-94: the measured panels under /protocol/ figures 4 and 6 read E54 (results/E54_dtn.json and
+// results/E54_ledger.json): drop-and-retry, store-and-forward and store-and-forward with the lost-link rule at per-hop
+// loss 0.10 / 0.25 / 0.40 over the recorded month with a 14-day Earth blackout; and the Earth-ledger lifetimes.
+export const E54_SRC = 'results/E54_dtn.json', E54_LEDGER = 'results/E54_ledger.json';
+export const E54_OUT = 'protocol/e54.json';
+export function compactE54(dtn, ledger) {
+  if (!Array.isArray(dtn.rows) || !dtn.h14) throw new Error(`${E54_SRC}: no rows or no h14`);
+  if (!Array.isArray(ledger?.rows)) throw new Error(`${E54_LEDGER}: no rows`);
+  return { format: 'lunarsim-e54-site', version: 1, source: E54_SRC, ledger_source: E54_LEDGER, experiment: dtn.experiment, seeds: Array.isArray(dtn.seeds) ? dtn.seeds.length : dtn.seeds,   // the file lists the seed numbers
+    jobs_per_seed: dtn.jobs_per_seed, reservations_per_seed: dtn.reservations_per_seed, blackout_days: dtn.blackout_days, earth_up_share: dtn.earth_up_share,
+    h14: dtn.h14, rows: dtn.rows, ledger: { longest_earth_down_d: ledger.longest_earth_down_d, rows: ledger.rows } };
+}
+
+function stageJson(PUB, out, rel, what) {
+  mkdirSync(join(PUB, 'protocol'), { recursive: true });
+  writeFileSync(join(PUB, rel), JSON.stringify(out));
+  console.log(`prepare-data: ${rel} staged (${what})`);
+  return out;
+}
+const readJson = rel => JSON.parse(readFileSync(join(ROOT, rel), 'utf8').replace(/\bNaN\b/g, 'null'));
+export function stageE52(PUB) {
+  if (!existsSync(join(ROOT, E52_SRC))) { console.log(`prepare-data: ${E52_SRC} missing; /protocol/ figure 2 says so`); return null; }
+  const out = compactE52(readJson(E52_SRC));
+  return stageJson(PUB, out, E52_OUT, `${out.rows.length} rows`);
+}
+export function stageE54(PUB) {
+  if (!existsSync(join(ROOT, E54_SRC)) || !existsSync(join(ROOT, E54_LEDGER))) { console.log(`prepare-data: ${E54_SRC} or ${E54_LEDGER} missing; /protocol/ problems 4 and 6 say so`); return null; }
+  const out = compactE54(readJson(E54_SRC), readJson(E54_LEDGER));
+  return stageJson(PUB, out, E54_OUT, `${out.rows.length} rows, ${out.ledger.rows.length} ledger rows`);
+}
+
+// F-56 / B-92: E52 numbers in /protocol/ problem 2's text, at build time. <!--@e52:key--> with key one of
+//   route_tiles, full_resend (MB), and <out_h>_<rate>_<order>_<column> for a table row, e.g. 24_16_hazards_first_bytes_mean
+//   (bytes are given in kB or MB, times in s or min, shares in %), or hazards_per_day / hidden_share (Assumed).
+let e52doc = null;
+export function e52(key) {
+  e52doc ||= JSON.parse(readFileSync(join(ROOT, E52_SRC), 'utf8'));
+  const D = e52doc, src = `${E52_SRC}: `;
+  if (key === 'route_tiles') return num({ value: D.route_tiles, unit: ' tiles', digits: 0, flag: 'Modelled', source: src + 'route_tiles' });
+  if (key === 'full_resend') return num({ value: D.full_resend_bytes / 1e6, unit: ' MB', digits: 1, flag: 'Modelled', source: src + 'full_resend_bytes' });
+  if (key === 'hazards_per_day') return num({ value: D.parameters.hazards_per_day, unit: ' a day', digits: 0, flag: 'Assumed', source: src + 'parameters.hazards_per_day' });
+  if (key === 'hidden_share') return num({ value: 100 * D.parameters.hidden_share, unit: ' %', digits: 0, flag: 'Assumed', source: src + 'parameters.hidden_share' });
+  const m = /^(\d+)_(\d+)_(hazards_first|oldest_first)_(\w+)$/.exec(key);
+  if (!m) throw new Error(`${E52_SRC}: unknown key ${key}`);
+  const [, out, rate, order, col] = m, hit = D.rows.filter(r => r.out_h === +out && r.rate_kbps === +rate && r.order === order);
+  if (hit.length !== 1 || !(col in hit[0])) throw new Error(`${E52_SRC}: no ${col} for ${out} h, ${rate} kbit/s, ${order}`);
+  const v = hit[0][col], s = `${src}${out} h out of contact, ${rate} kbit/s, ${order.replace('_', ' ')}, ${col}, mean over ${D.seeds} seeds`;
+  if (/bytes/.test(col)) return v >= 1e6 ? num({ value: v / 1e6, unit: ' MB', digits: 2, flag: 'Modelled', source: s }) : num({ value: v / 1e3, unit: ' kB', digits: v >= 1e5 ? 0 : 1, flag: 'Modelled', source: s });
+  if (/^t_/.test(col)) return v >= 90 ? num({ value: v / 60, unit: ' min', digits: v >= 600 ? 0 : 1, flag: 'Modelled', source: s }) : num({ value: v, unit: ' s', digits: v < 10 ? 1 : 0, flag: 'Modelled', source: s });
+  if (/share/.test(col)) return num({ value: 100 * v, unit: ' %', digits: 2, flag: 'Modelled', source: s });
+  return num({ value: v, unit: '', digits: 2, flag: 'Modelled', source: s });
+}

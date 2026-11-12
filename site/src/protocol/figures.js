@@ -1,5 +1,6 @@
 // /protocol/ (F-60): eight figures, one per problem group (loaded lazily by main.js since F-61). Figure 1 draws E50's
-// one-month trace, figure 3 E51's clock results and figure 5 LRIP v0.1's golden POSITION packet (F-56); the others compute in the browser from src/protocol/params.js (the research notes' values)
+// one-month trace, figure 2 E52's map sync, figure 3 E51's clock results, figure 5 LRIP v0.1's golden POSITION packet and
+// the measured panels of problems 4 and 6 E54's message delivery (F-56); the others compute in the browser from src/protocol/params.js (the research notes' values)
 // until BACKEND's B-99 exports replace them; the link budget is a port of
 // lunarsim/atc/radio.py. Hand-written SVG, native controls, a readout that is also the figure's text version.
 import { segmented, h, reducedMotion } from '../ui/index.js';
@@ -97,41 +98,67 @@ async function figPos(host) {
 }
 
 // ---------------------------------------------------------------- 2. map: catching up after time away
-function figMap(host) {
-  const C = 63, Rw = 62, cell = 9.6, W = C * cell, H = Rw * cell;   // 62 x 63 = 3,906 tiles
-  const rates = { 10000: '10 kbit/s', 16000: '16 kbit/s', 1000000: '1 Mbit/s' };
-  let rate = 10000;
-  const seg = segmented({ legend: 'Link speed', options: Object.entries(rates).map(([v, l]) => ({ value: v, label: l })), value: '10000', onChange: v => { rate = +v; t.input.value = midHaz(); draw(); } });
-  const t = range('Time since the link came back', { min: 0, max: 1000, step: 1, value: 1000 });
-  const svg = svgBox(W, H + 46, 'The site as a grid of 3,906 tiles; the changed tiles fill in as they arrive, hazards on the route first');
-  const out = readout();
-  // the 42 changed tiles lie along three haul legs (an illustration of note 02's "tiles the legs cross")
-  const r = rng(7), legs = [[[8, 50], [31, 31]], [[31, 31], [55, 12]], [[31, 31], [50, 52]]], tiles = [];
-  for (const [[x0, y0], [x1, y1]] of legs) for (let k = 0; k < 14; k++) { const f = (k + r()) / 14; tiles.push([Math.round(x0 + (x1 - x0) * f + (r() - 0.5) * 3), Math.round(y0 + (y1 - y0) * f + (r() - 0.5) * 3)]); }
-  const onRoute = i => i < 14;   // the first leg is the returning rover's route: its hazards go first
-  const order = tiles.map((p, i) => i).sort((a, b) => onRoute(b) - onRoute(a) || a - b);
-  const bytes = { digest: V('digest'), hazard: V('hazard_kb') * 1000, trav: V('trav_kb') * 1000, elev: V('elev_kb') * 1000 };
-  const midHaz = () => { const tot = Object.values(bytes).reduce((a, b) => a + b, 0); return Math.round(1000 * (bytes.digest + bytes.hazard * 0.55) / tot); };
-  const phases = [['digest', 'Digest of tile versions'], ['hazard', 'Hazards and keep-out zones'], ['trav', 'Traversability'], ['elev', 'Height refinements']];
+// E52 (protocol/e52.json from results/E52_map.json, 30 seeds): after hours to days out of contact, the bytes to sync and
+// the time until the hazard layer is current, hazards-first against oldest-first, at four link rates; and the hazards a
+// rover meets on a stale map, during the outage and after contact. The change rates and the hidden share are Assumed.
+const OUT_NAME = { 1: '1 h', 6: '6 h', 24: '1 day', 72: '3 days', 168: '7 days', 336: '14 days' };
+const secsText = s => (s < 90 ? `${fmt(s, s < 10 ? 1 : 0)} s` : s < 5400 ? `${fmt(s / 60, s < 600 ? 1 : 0)} min` : `${fmt(s / 3600, 1)} h`);
+async function figMap(host) {
+  const r = await fetch(`${import.meta.env.BASE_URL}protocol/e52.json`);
+  if (!r.ok) throw new Error(`protocol/e52.json: HTTP ${r.status}`);
+  const E = await r.json();
+  if (E.format !== 'lunarsim-e52-site' || E.version !== 1) throw new Error(`e52.json: format ${E.format}`);
+  const outs = [...new Set(E.rows.map(x => x.out_h))].sort((a, b) => a - b), rates = [...new Set(E.rows.map(x => x.rate_kbps))].sort((a, b) => a - b);
+  let out = outs.includes(24) ? 24 : outs[0], rate = rates.includes(16) ? 16 : rates[0], W = 640;
+  const row = (o, ord, k = rate) => E.rows.find(x => x.out_h === o && x.order === ord && x.rate_kbps === k);
+  const segO = segmented({ legend: 'Time out of contact', options: outs.map(o => ({ value: String(o), label: OUT_NAME[o] || `${o} h` })), value: String(out), onChange: v => { out = +v; draw(); } });
+  const segR = segmented({ legend: 'Link speed', options: rates.map(k => ({ value: String(k), label: k >= 1000 ? `${fmt(k / 1000, 0)} Mbit/s` : `${k} kbit/s` })), value: String(rate), onChange: v => { rate = +v; draw(); } });
+  const svgT = svgBox(W, 120, 'Time until the hazard layer is current, hazards-first against oldest-first, on one axis with the time until every change is in');
+  const svgH = svgBox(W, 200, 'Hazards met on a stale map, by time out of contact: during the outage, and after contact for each sync order');
+  const read = readout();
+  const src = what => `${E.source}: ${OUT_NAME[out] || out + ' h'} out of contact, ${rate} kbit/s, ${what}, mean over ${E.seeds} seeds`;
+  const X = (value, unit, digits, what) => num({ value, unit, digits, flag: 'Modelled', source: src(what) });
+  const T = (s, what) => (s < 90 ? X(s, ' s', s < 10 ? 1 : 0, what) : s < 5400 ? X(s / 60, ' min', s < 600 ? 1 : 0, what) : X(s / 3600, ' h', 1, what));
+  const A = (k, value, unit, digits, what) => num({ value, unit, digits, flag: E.assumed.includes(k) ? 'Assumed' : 'Modelled', source: `${E.source}: parameters.${k}, ${what}` });
   function draw() {
-    const secs = s => s * 8 / rate, total = Object.values(bytes).reduce((a, b) => a + b, 0), now = secs(total) * t.input.value / 1000;
-    let acc = 0; const ends = {}; for (const [k] of phases) { acc += secs(bytes[k]); ends[k] = acc; }
-    const hazStart = ends.digest, nHaz = Math.max(0, Math.min(42, Math.floor((now - hazStart) / (ends.hazard - hazStart) * 42)));
-    svg.replaceChildren(S('defs', {}, S('pattern', { id: 'pr-tilegrid', width: cell, height: cell, patternUnits: 'userSpaceOnUse' }, S('path', { class: 'pr-tilegrid', d: `M${cell},0V${cell}H0` }))), S('rect', { class: 'pr-tiles', x: 0, y: 0, width: W, height: H }), S('rect', { fill: 'url(#pr-tilegrid)', x: 0, y: 0, width: W, height: H }));
-    const done = new Set(order.slice(0, nHaz));
-    tiles.forEach(([cx, cy], i) => svg.append(S('rect', { class: done.has(i) ? 'pr-tile-new' : onRoute(i) ? 'pr-tile-route' : 'pr-tile-old', x: cx * cell, y: cy * cell, width: cell - 1, height: cell - 1 })));
-    svg.append(S('path', { class: 'pr-route', d: `M${8 * cell},${50 * cell}L${31 * cell},${31 * cell}` }));
-    // the transfer bar under the grid
-    const bw = W - 8; let xx = 4;
-    for (const [k] of phases) { const w = bw * secs(bytes[k]) / secs(total); svg.append(S('rect', { class: `pr-bar pr-bar-${k}`, x: xx, y: H + 12, width: Math.max(1, w - 1), height: 14 })); xx += w; }
-    svg.append(S('line', { class: 'pr-cursor', x1: 4 + bw * now / secs(total), x2: 4 + bw * now / secs(total), y1: H + 6, y2: H + 32 }),
-      S('text', { class: 'pr-tick', x: 4, y: H + 44 }, 'digest · hazards · traversability · heights (bar widths are bytes)'));
-    const phaseNow = phases.find(([k]) => now < ends[k] - 1e-9);
-    setRead(out, `At ${rates[rate]}: the digest arrives after ${M(ends.digest, ' s', 1, 'digest bytes / link rate')}, the hazard map is current after ${M(ends.hazard < 90 ? ends.hazard : ends.hazard / 60, ends.hazard < 90 ? ' s' : ' min', ends.hazard < 90 ? 0 : 1, 'digest and hazard tiles / link rate')}, all three layers after ${M(ends.elev / 60, ' min', 1, 'all changed tiles / link rate')}. `
-      + `Resending the whole elevation layer would take ${M(V('full_kb') * 8000 / rate / 60, ' min', 1, 'full layer / link rate')}. Now: ${phaseNow ? phaseNow[1].toLowerCase() : 'all changes received'}, ${nHaz} of 42 changed tiles in.`);
+    const hf = row(out, 'hazards_first'), of = row(out, 'oldest_first');
+    W = widthOf(svgT);
+    // 1. the two orders on one time axis
+    fit(svgT, W, 120); svgT.replaceChildren();
+    const L = W < 480 ? 92 : 112, R = 14, x = s => L + (W - L - R) * s / hf.t_all_s;
+    const ticks = [0, 0.25, 0.5, 0.75, 1].map(f => f * hf.t_all_s);
+    for (const t of ticks) svgT.append(S('line', { class: 'pr-grid-l', x1: x(t), x2: x(t), y1: 8, y2: 92 }), S('text', { class: 'pr-tick', x: x(t), y: 110, 'text-anchor': t ? (t === hf.t_all_s ? 'end' : 'middle') : 'start' }, secsText(t)));
+    [['Hazards first', hf], ['Oldest first', of]].forEach(([name, q], i) => {
+      const y = 18 + i * 40;
+      svgT.append(S('text', { class: 'pr-tick pr-lab', x: L - 8, y: y + 15, 'text-anchor': 'end' }, name),
+        S('rect', { class: 'pr-sync-all', x: L, y, width: Math.max(1, x(q.t_all_s) - L), height: 22, rx: 3 }),
+        S('rect', { class: 'pr-sync-haz', x: L, y, width: Math.max(2, x(q.t_hazards_current_s) - L), height: 22, rx: 3 }));
+    });
+    // 2. hazards met, by time out of contact (the chosen rate)
+    fit(svgH, W, 200); svgH.replaceChildren();
+    const L2 = 34, B2 = 26, T2 = 10, H2 = 200, gw = (W - L2 - 8) / outs.length, bw = Math.min(18, (gw - 10) / 3);
+    const vals = outs.map(o => [row(o, 'hazards_first').hits_during_outage_mean, row(o, 'hazards_first').hits_after_contact_mean, row(o, 'oldest_first').hits_after_contact_mean]);
+    const max = Math.max(1, ...vals.flat()), step = max > 10 ? 5 : max > 4 ? 2 : 1, top = Math.ceil(max / step) * step, y = v => H2 - B2 - (H2 - B2 - T2) * v / top;
+    for (let v = 0; v <= top; v += step) svgH.append(S('line', { class: 'pr-grid-l', x1: L2, x2: W - 8, y1: y(v), y2: y(v) }), S('text', { class: 'pr-tick', x: L2 - 6, y: y(v) + 4, 'text-anchor': 'end' }, v));
+    outs.forEach((o, i) => {
+      const gx = L2 + i * gw, x0 = gx + (gw - 3 * bw - 4) / 2;
+      if (o === out) svgH.append(S('rect', { class: 'pr-sel', x: gx + 2, y: T2 - 4, width: gw - 4, height: H2 - B2 - T2 + 4, rx: 4 }));
+      vals[i].forEach((v, k) => svgH.append(S('rect', { class: `pr-c${k + 1}`, x: x0 + k * (bw + 2), y: y(v), width: bw, height: Math.max(v > 0 ? 1.5 : 0, y(0) - y(v)), rx: 2 },
+        S('title', {}, `${OUT_NAME[o]}: ${['during the outage', 'after contact, hazards first', 'after contact, oldest first'][k]} ${fmt(v, 2)}`))));
+      svgH.append(S('text', { class: 'pr-tick', x: gx + gw / 2, y: H2 - 8, 'text-anchor': 'middle' }, W < 480 ? (OUT_NAME[o] || '').replace(' days', ' d').replace(' day', ' d') : OUT_NAME[o]));
+    });
+    const P = E.parameters;
+    setRead(read, `After <b>${OUT_NAME[out]}</b> out of contact, at ${rate >= 1000 ? `${fmt(rate / 1000, 0)} Mbit/s` : `${rate} kbit/s`}: ${hf.bytes_mean >= 1e6 ? X(hf.bytes_mean / 1e6, ' MB', 2, 'bytes to sync') : X(hf.bytes_mean / 1000, ' kB', hf.bytes_mean < 1e5 ? 1 : 0, 'bytes to sync')} to sync `
+      + `(${X(hf.tiles_changed_mean, ' tile versions', 1, 'tile versions changed')}), ${X(100 * hf.share_of_full_resend, ' %', 2, 'share of a full resend')} of a full resend of every layer (${num({ value: E.full_resend_bytes / 1e6, unit: ' MB', digits: 1, flag: 'Modelled', source: `${E.source}: full_resend_bytes` })}). `
+      + `The hazard layer is current after ${T(hf.t_hazards_current_s, 'hazard layer current, hazards first')} hazards first, against ${T(of.t_hazards_current_s, 'hazard layer current, oldest first')} oldest first; every change is in after ${T(hf.t_all_s, 'all changes in')}. `
+      + `Hazards met on the stale map: ${X(hf.hits_during_outage_mean, '', 2, 'hazards hit during the outage')} during the outage, ${X(hf.hits_after_contact_mean, '', 2, 'hazards hit after contact, hazards first')} after contact hazards first and ${X(of.hits_after_contact_mean, '', 2, 'hazards hit after contact, oldest first')} oldest first. `
+      + `The rover's routes cross ${num({ value: E.route_tiles, unit: ' tiles', digits: 0, flag: 'Modelled', source: `${E.source}: route_tiles` })}; new hazards appear ${A('hazards_per_day', P.hazards_per_day, ' a day', 0, 'new hazards a day')} and ${A('hidden_share', 100 * P.hidden_share, ' %', 0, 'share of hazards the rover’s own sensors miss')} of them are invisible to the rover's own sensors.`);
   }
-  t.input.value = midHaz(); t.input.addEventListener('input', draw);
-  host.append(h('div', { class: 'pr-ctl' }, seg.el, t.el), svg, h('p', { class: 'pr-key small' }, h('span', { class: 'pr-sw pr-sw-new' }), ' received  ', h('span', { class: 'pr-sw pr-sw-route' }), ' changed, on the rover’s route  ', h('span', { class: 'pr-sw pr-sw-old' }), ' changed elsewhere'), out);
+  onResize(svgT, draw);
+  host.append(h('div', { class: 'pr-ctl' }, segO.el, segR.el), svgT,
+    h('p', { class: 'pr-key small' }, h('span', { class: 'pr-sw pr-sw-haz' }), ' until the hazard layer is current  ', h('span', { class: 'pr-sw pr-sw-all' }), ' until every change is in'),
+    h('p', { class: 'ui-label pr-sub' }, 'Hazards met on a stale map'), svgH,
+    h('p', { class: 'pr-key small' }, h('span', { class: 'pr-sw pr-c1' }), ' during the outage  ', h('span', { class: 'pr-sw pr-c2' }), ' after contact, hazards first  ', h('span', { class: 'pr-sw pr-c3' }), ' after contact, oldest first (mean per rover)'), read);
   draw();
 }
 
@@ -186,6 +213,60 @@ async function figTime(host) {
   iv.input.addEventListener('input', draw);
   host.append(h('div', { class: 'pr-ctl' }, seg.el, iv.el), h('div', { class: 'pr-time' }, svg, needs), out);
   draw(); onResize(svg, draw);
+}
+
+// ---------------------------------------------------------------- 4b and 6b. E54: what reaches its destination
+// E54 (protocol/e54.json from results/E54_dtn.json and E54_ledger.json, 30 seeds, the recorded month with a 14-day
+// Earth blackout): drop-and-retry, store-and-forward with custody, and store-and-forward with the lost-link rule, at a
+// chosen per-hop loss. data-focus="radio" (problem 4): grants, job-state reports, award delay, and the Earth ledger's
+// lifetimes; data-focus="fail" (problem 6): lost jobs, stuck reservations and how stale the base's picture gets.
+const PROTO = [['drop_retry', 'Drop and retry'], ['sf', 'Store and forward'], ['sf_ll', '+ lost-link rule']];
+async function figDtn(host) {
+  const r = await fetch(`${import.meta.env.BASE_URL}protocol/e54.json`);
+  if (!r.ok) throw new Error(`protocol/e54.json: HTTP ${r.status}`);
+  const E = await r.json();
+  if (E.format !== 'lunarsim-e54-site' || E.version !== 1) throw new Error(`e54.json: format ${E.format}`);
+  const focus = host.dataset.focus === 'fail' ? 'fail' : 'radio', losses = [...new Set(E.rows.map(x => x.loss))].sort((a, b) => a - b);
+  let loss = losses.includes(0.25) ? 0.25 : losses[0];
+  const seg = segmented({ legend: 'Messages lost on each hop', options: losses.map(l => ({ value: String(l), label: `${fmt(100 * l, 0)} %` })), value: String(loss), onChange: v => { loss = +v; draw(); } });
+  const pct = s => `${fmt(100 * s, s < 0.01 && s > 0 ? 2 : 1)} %`;
+  const share = (n, of, s) => h('span', { class: 'pr-cell' }, h('span', { class: 'pr-mini', style: `--w:${Math.min(100, 100 * s).toFixed(1)}%` }), `${pct(s)} (${fmt(n, 0)} of ${fmt(of, 0)})`);
+  const ROWS = focus === 'radio'
+    ? [['Reservation grants lost (the vehicle stops before the one-lane road)', q => share(q.grant_lost, q.grant_n, q.grant_lost_share)],
+      ['Job-state reports lost', q => share(q.task_state_lost, q.task_state_n, q.task_state_lost_share)],
+      ['Job-state reports: mean delay', q => secsText(q.task_state_delay_mean_s)],
+      ['Job awards: mean delay', q => secsText(q.award_delay_mean_s)]]
+    : [['Jobs lost (the award expired; the job is auctioned again)', q => `${fmt(q.award_lost, 0)} of ${fmt(q.award_n, 0)}`],
+      ['Reservations stuck past their timeout', q => `${fmt(q.stuck_reservations, 0)} (${fmt(q.stuck_hours, 0)} h blocked)`],
+      ['How old the base’s picture of a vehicle is: mean (worst vehicle)', q => `${secsText(q.aoi_mean_s)} (${secsText(q.aoi_worst_vehicle_s)})`],
+      ['Job-state reports lost', q => share(q.task_state_lost, q.task_state_n, q.task_state_lost_share)]];
+  const wrap = h('div', { class: 'pr-scroll' }), extra = h('div', { class: 'pr-dtn-extra' }), read = readout();
+  function draw() {
+    const q = Object.fromEntries(PROTO.map(([k]) => [k, E.rows.find(x => x.loss === loss && x.protocol === k)]));
+    wrap.replaceChildren(h('table', { class: 'pr-table' },
+      h('caption', { class: 'small' }, `At ${fmt(100 * loss, 0)} % loss per hop, over ${E.seeds} seeds of the recorded month (${fmt(E.jobs_per_seed, 0)} jobs and ${fmt(E.reservations_per_seed, 0)} one-lane reservations a seed). Modelled, from ${E.source}.`),
+      h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, ''), ...PROTO.map(([, l]) => h('th', { scope: 'col' }, l)))),
+      h('tbody', {}, ROWS.map(([name, f]) => h('tr', {}, h('th', { scope: 'row' }, name), ...PROTO.map(([k, l]) => h('td', { 'data-label': l }, q[k] ? f(q[k]) : '–')))))));
+    if (focus === 'radio') {
+      const L = E.ledger, life = [...new Set(L.rows.map(x => x.lifetime_d))].sort((a, b) => a - b);
+      const cell = (d, p) => { const x = L.rows.find(y => y.lifetime_d === d && y.loss === loss && y.protocol === p); return x ? `${pct(x.lost_share)} lost` : '–'; };
+      extra.replaceChildren(h('p', { class: 'ui-label pr-sub' }, 'The daily ledger bundle to Earth'),
+        h('div', { class: 'pr-scroll' }, h('table', { class: 'pr-table' },
+          h('caption', { class: 'small' }, `${fmt(L.rows[0]?.bundles ?? 0, 0)} daily bundles, with Earth blacked out from day ${fmt(E.blackout_days[0], 0)} to day ${fmt(E.blackout_days[1], 0)} on top of the base's own gaps in Earth's view: the longest stretch without Earth is ${fmt(L.longest_earth_down_d, 2)} days. Modelled, from ${E.ledger_source}.`),
+          h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Bundle lifetime'), h('th', { scope: 'col' }, 'Drop and retry'), h('th', { scope: 'col' }, 'Store and forward'))),
+          h('tbody', {}, life.map(d => h('tr', {}, h('th', { scope: 'row' }, `Lifetime ${fmt(d, d % 1 ? 2 : 0)} days${d === 14 ? ' (note 03)' : ''}`), h('td', { 'data-label': 'Drop and retry' }, cell(d, 'drop_retry')), h('td', { 'data-label': 'Store and forward' }, cell(d, 'sf'))))))));
+      const q2 = q.drop_retry, q3 = q.sf;
+      setRead(read, `A reservation grant is only useful until the vehicle reaches the one-lane road, so dropping and retrying gets little more than one try: at ${fmt(100 * loss, 0)} % loss it loses ${num({ value: 100 * q2.grant_lost_share, unit: ' %', digits: 1, flag: 'Modelled', source: `${E.source}: grants lost, drop and retry, loss ${loss}` })} of grants; store and forward with custody loses ${num({ value: 100 * q3.grant_lost_share, unit: ' %', digits: 2, flag: 'Modelled', source: `${E.source}: grants lost, store and forward, loss ${loss}` })}. `
+        + `An Earth-bound bundle must outlive the longest stretch without Earth (${num({ value: L.longest_earth_down_d, unit: ' days', digits: 2, flag: 'Modelled', source: `${E.ledger_source}: longest_earth_down_d` })}) or it expires on the way.`);
+    } else {
+      const H = E.h14, a = H.lost_jobs_drop_retry_per_seed, b = H.lost_jobs_sf_ll_per_seed;
+      extra.replaceChildren();
+      setRead(read, `Hypothesis H14, at 25 % loss with the 14-day blackout: jobs lost per seed ${num({ value: a.mean, unit: '', digits: 2, flag: 'Modelled', source: `${E.source}: h14, drop and retry, mean over ${a.n} seeds (95 % interval ${fmt(a.ci[0], 2)} to ${fmt(a.ci[1], 2)})` })} with drop and retry against ${num({ value: b.mean, unit: '', digits: 0, flag: 'Modelled', source: `${E.source}: h14, store and forward with the lost-link rule, mean over ${b.n} seeds` })} with the lost-link rule (${H.supported === false ? 'not supported' : 'supported'}). `
+        + 'The rule fixes visibility, not loss: a vehicle that hears no one drives back to where it last had a link, so the base never waits hours to hear from it and can release its reservations on time.');
+    }
+  }
+  host.append(h('div', { class: 'pr-ctl' }, seg.el), wrap, extra, read);
+  draw();
 }
 
 // ---------------------------------------------------------------- 4. radio: the engine's link budget
@@ -401,7 +482,7 @@ function figWho(host) {
   draw('all');
 }
 
-const FIGS = { pos: figPos, map: figMap, time: figTime, radio: figRadio, msg: figMsg, auction: figAuction, integrity: figIntegrity, who: figWho };
+const FIGS = { pos: figPos, map: figMap, time: figTime, radio: figRadio, msg: figMsg, auction: figAuction, integrity: figIntegrity, who: figWho, dtn: figDtn };
 // draws one figure into its host (main.js calls this as each host nears the screen)
 export function mountFigure(host) {
   const fail = e => { host.append(h('p', { class: 'stub' }, `This figure could not be drawn (${e.message}).`)); console.error(e); };

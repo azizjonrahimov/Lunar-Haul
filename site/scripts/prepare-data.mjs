@@ -363,3 +363,5 @@ if (existsSync(join(scenes, 'gallery.json'))) {
 (await import('../lib/protocol-data.mjs')).stageLrip(PUB);
 // F-56 / B-91: /protocol/ figure 3 reads E51's clock results (lib/protocol-data.mjs)
 (await import('../lib/protocol-data.mjs')).stageE51(PUB);
+// F-56 / B-92, B-94: /protocol/ figure 2 (E52) and the measured panels of problems 4 and 6 (E54)
+{ const P = await import('../lib/protocol-data.mjs'); P.stageE52(PUB); P.stageE54(PUB); }

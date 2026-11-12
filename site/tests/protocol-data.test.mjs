@@ -50,3 +50,39 @@ test('E53 in problem 5: numbers flagged, fits as words, one row only', { skip: !
   assert.throws(() => e53('nowhere', 'on', '1.0', 20, 'one_hop_sum_kbps'), /0 rows/);
   assert.throws(() => e53('fleet', 'on', '1.0', 20, 'no_such_column'), /no column/);
 });
+
+test('E52 for figure 2 and problem 2: rows, assumed inputs, H12, the text hook', { skip: !existsSync(R('results/E52_map.json')) && 'E52 missing' }, async () => {
+  const { compactE52, e52 } = await import('../lib/protocol-data.mjs');
+  const out = compactE52(J('results/E52_map.json'));
+  assert.ok(out.route_tiles > 0 && out.full_resend_bytes > 1e6);
+  for (const k of ['hazards_per_day', 'hidden_share']) assert.ok(out.assumed.includes(k), k);
+  const rates = new Set(out.rows.map(r => r.rate_kbps)), outs = new Set(out.rows.map(r => r.out_h));
+  assert.equal(out.rows.length, rates.size * outs.size * 2);
+  // hazards first is never later than oldest first, and never later than "everything in"
+  for (const r of out.rows.filter(x => x.order === 'hazards_first')) {
+    const o = out.rows.find(x => x.order === 'oldest_first' && x.out_h === r.out_h && x.rate_kbps === r.rate_kbps);
+    assert.ok(r.t_hazards_current_s <= o.t_hazards_current_s && r.t_hazards_current_s <= r.t_all_s, `${r.out_h} h ${r.rate_kbps} kbit/s`);
+  }
+  assert.match(e52('hazards_per_day'), /data-flag="Assumed"/);
+  assert.match(e52('24_16_hazards_first_bytes_mean'), /> (kB|MB)<.*data-flag="Modelled"/);
+  assert.throws(() => e52('nonsense'), /unknown key/);
+  assert.throws(() => e52('5_16_hazards_first_bytes_mean'), /no bytes_mean/);
+});
+
+test('E54 for problems 4 and 6: every loss x protocol, the ledger lifetimes, H14', { skip: !existsSync(R('results/E54_dtn.json')) && 'E54 missing' }, async () => {
+  const { compactE54 } = await import('../lib/protocol-data.mjs');
+  const out = compactE54(J('results/E54_dtn.json'), J('results/E54_ledger.json'));
+  const losses = new Set(out.rows.map(r => r.loss));
+  for (const l of losses) for (const p of ['drop_retry', 'sf', 'sf_ll']) assert.ok(out.rows.find(r => r.loss === l && r.protocol === p), `${l} ${p}`);
+  assert.equal(typeof out.h14.supported, 'boolean');
+  assert.ok(out.ledger.longest_earth_down_d > 14);
+  // a lifetime longer than the longest stretch without Earth loses nothing under store and forward
+  for (const r of out.ledger.rows.filter(x => x.protocol === 'sf' && x.lifetime_d > out.ledger.longest_earth_down_d)) assert.equal(r.lost, 0, `${r.lifetime_d} d`);
+  assert.throws(() => compactE54({ rows: [] }, { rows: [] }), /h14/);
+});
+
+test('E52 and E54: seeds is a count (the files may list the seed numbers)', { skip: !existsSync(R('results/E54_dtn.json')) && 'E54 missing' }, async () => {
+  const { compactE52, compactE54 } = await import('../lib/protocol-data.mjs');
+  assert.equal(compactE54(J('results/E54_dtn.json'), J('results/E54_ledger.json')).seeds, 30);
+  assert.equal(compactE52(J('results/E52_map.json')).seeds, 30);
+});

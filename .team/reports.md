@@ -8970,3 +8970,39 @@ Next: B-97 (real-data checks), then B-98 / B-99. B-90b waits for your 8x loop.
 - **Spread geometry:** nothing changes (connected ≤ 8 %, agreement 0). Spread rovers rarely see the mast.
 - **Why the mast does not buy agreement:** it turns the graph into a star. A rover that hears the mast and one or two others has its extreme values trimmed by W-MSR (F = 1), so it never moves. W-MSR needs (2F+1)-robust neighbourhoods, which means every rover hears at least 3 others, not one central node.
 - **For P2:** on this terrain a shared estimate should be computed **at the base** (a fusion centre with C8's per-report tests and C8 step 4's two-owner agreement), not by W-MSR among rovers. W-MSR is a fallback only for well-meshed clusters (e.g. several rovers at one work site).
+
+## F-56 E52 + E54 WIRED 19:33, browser-checked | site/lib/protocol-data.mjs (compactE52, compactE54, stageE52, stageE54, the e52 text hook), site/src/protocol/figures.js (figure 2 rebuilt; new E54 panel figDtn), site/protocol/index.html (problem 2 answer and caption; two new measured panels under figures 4 and 6), site/src/protocol/protocol.css (series colours light and dark, panel styles, captions left), site/scripts/prepare-data.mjs, site/vite.config.js (<!--@e52:key-->), site/tests/protocol-data.test.mjs (3 more tests), tools/ci/budgets.json (two protocol data lines; data limit 80 → 90 kB) | how to check: /protocol/#fig-map, #fig-dtn, #fig-dtn-fail | from BACKEND: nothing | for LEAD: notes at the end
+**Figure 2 from E52**, staged as protocol/e52.json.
+- **Controls:** time out of contact (1 h, 6 h, 1 day, 3 days, 7 days, 14 days) and link speed (10, 16, 100 kbit/s, 1 Mbit/s).
+- **Top chart:** hazards-first against oldest-first on one time axis. The blue part runs until the hazard layer is current; the grey bar runs until every change is in.
+- **Bottom chart:** hazards met on the stale map by time out of contact: during the outage, after contact hazards-first, after contact oldest-first. The chosen period is highlighted. Validated categorical palette, slots 1 to 3, redone for dark.
+- **Readout, 1 day at 16 kbit/s:** 1.97 MB to sync (126.5 tile versions), 1.06 % of a full resend of every layer (185.5 MB); hazard layer current after 58 s hazards-first against 20 min oldest-first; hazards met 0.80 during the outage, 0.03 / 0.12 after contact.
+- The file's 60 route tiles replace the note's 42-tile example. New hazards at 2 a day and the 50 % its own sensors miss are flagged **Assumed**, as B-92 says; everything else is Modelled.
+- **Problem 2's answer** now quotes E52 through <!--@e52:key--> instead of note 02's 42-of-3,906 example: after a day away, 1.97 MB for the 60 tiles, 1.06 % of 185.5 MB, 58 s against 20 min. The caption is rewritten (E52, 30 seeds, Assumed inputs named). The old note-02 parameters stay in params.js, unused.
+
+**E54 panels.** One figure function (figDtn); data-focus picks the rows. It is staged as protocol/e54.json from E54_dtn.json and E54_ledger.json. Control: messages lost per hop, 10 / 25 / 40 %, default 25 % (H14's). Columns: drop and retry, store and forward, + lost-link rule.
+- **Under figure 4, problem 4:**
+  - rows: grants lost (25.6 % / 0.03 % / 0 % at 25 %, with counts and a small bar), job-state reports lost (32.3 / 1.4 / 0.03 %), their mean delay (69 s / 9.0 min / 33 s), award delay (62 / 3.3 / 3.3 s);
+  - a second table, the daily ledger bundle to Earth by lifetime: 14 days (note 03) loses 35.5 % with store and forward, 25.81 and 30 days lose 0; drop and retry loses 93.6 % at every lifetime;
+  - the caption gives the blackout days 8 to 22 and the longest stretch without Earth, 24.81 days;
+  - the readout states the lifetime rule.
+- **Under figure 6, problem 6:**
+  - rows: jobs lost (10 / 2 / 0 of 6,028), reservations stuck past their timeout (2,566, 7,349 h blocked / same / 0), how old the base's picture of a vehicle is (88 min, worst 30.9 h / same / 45 s, worst 2.5 min), job-state reports lost;
+  - the readout gives H14 (0.33 jobs lost per seed against 0, supported) and "the rule fixes visibility, not loss".
+- **Earth figures come from E54_ledger.json only.** E54_dtn's own ledger row (690 of 930 lost) covers a 31-day window in which late bundles cannot resolve, so showing both would contradict.
+
+**Bugs found and fixed on the way:**
+- Both files list the seed numbers in "seeds", so a caption read "over 1,2,3,…,30 seeds". The unbreakable string widened the phone table to 456 px. Seeds are now stored as a count, with a test.
+- At 390 the E54 tables use the page's labelled-block layout for phones (the survey table's), so each cell now carries its column as data-label.
+- Captions are left-aligned.
+
+**Checks:**
+- node tests 50/50 (3 new);
+- five builds, each after a RAM check (1.71, 1.17, 1.05, 1.24, 1.32 and 1.13 GB);
+- budgets OK: /protocol/ data 79.9 of the new 90 kB limit. At 77.1 of 80 it had no room for the two files, so I raised it; please check you're happy with that;
+- headless Chrome at 1280 and 390, light and dark: all 10 figure hosts draw, no table wider than its column (324/324 at 390), 0 contrast fails, no overflow, 0 console errors. Screenshots read: figure 2 at 1280 light, the problem 4 panel at 1280 light and 390 dark, the problem 6 panel at 1280 light.
+- **Server and browser stopped.**
+
+**For LEAD:**
+1. Problem 4's "Method" still names E54 only in passing, and problem 6's says "with the lost-link ladder of E54". Both now have measured panels, so the text could quote H14. I left the wording to you.
+2. Figure 7 (integrity) still says "Illustration with note 03's test; E55 replaces it". Is E55 coming, or should the page point at /network/'s E56?

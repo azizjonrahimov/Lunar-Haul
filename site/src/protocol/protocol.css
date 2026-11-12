@@ -148,3 +148,23 @@
 .pr-drive { fill: color-mix(in srgb, var(--ink) 7%, transparent); }
 .pr-sw { display: inline-block; width: 1.1em; height: 0.8em; vertical-align: -0.05em; border-radius: 2px; }
 .pr-sw-drive { background: color-mix(in srgb, var(--ink) 12%, transparent); }
+
+/* F-56: figure 2 (E52) and the E54 panels. Series colours: the validated categorical palette (slots 1-3), redone for dark */
+:root { --pr-c1: #2a78d6; --pr-c2: #eb6834; --pr-c3: #1baf7a; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --pr-c1: #3987e5; --pr-c2: #d95926; --pr-c3: #199e70; } }
+:root[data-theme="dark"] { --pr-c1: #3987e5; --pr-c2: #d95926; --pr-c3: #199e70; }
+.pr-c1 { fill: var(--pr-c1); background: var(--pr-c1); }
+.pr-c2 { fill: var(--pr-c2); background: var(--pr-c2); }
+.pr-c3 { fill: var(--pr-c3); background: var(--pr-c3); }
+.pr-sync-all { fill: color-mix(in srgb, var(--ink) 14%, transparent); }
+.pr-sync-haz { fill: var(--pr-c1); }
+.pr-sw-all { background: color-mix(in srgb, var(--ink) 20%, transparent); }
+.pr-sw-haz { background: var(--pr-c1); }
+.pr-sel { fill: color-mix(in srgb, var(--ink) 6%, transparent); }
+.pr-lab { fill: var(--ink); }
+.pr-sub { margin: var(--s-4) 0 var(--s-1); }
+.pr-cell { display: inline-flex; flex-direction: column; gap: 3px; min-width: 7.5em; }
+.pr-mini { display: block; height: 4px; width: var(--w); min-width: 1px; border-radius: 2px; background: var(--pr-c2); }
+.pr-dtn-extra .pr-table { margin-top: var(--s-1); }
+@media (max-width: 480px) { .pr-cell { min-width: 0; } .pr-table th, .pr-table td { padding: 0.35em 0.4em; } .pr-table thead th { hyphens: auto; } }
+.pr-table caption { text-align: left; padding-bottom: var(--s-2); color: var(--ink-2); }
