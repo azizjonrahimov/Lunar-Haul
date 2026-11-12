@@ -94,6 +94,7 @@ def add(ctx):
     add_e56(c)
     add_e55(c)
     add_b97(c)
+    add_family(c)
     add_props(c)
     add_front(c)
     add_pta(c)
@@ -716,6 +717,9 @@ def add_e54(c):
         src = open(os.path.join(ROOT, "tools", "atc", "run_e54.py"), encoding="utf-8").read()
         check('0 if proto == "sf_ll" else n_st' in src,
               "the zero of stuck reservations under the rule is set by construction in tools/atc/run_e54.py, not measured")
+        sd = d.get("stuck_definition", "")
+        check("UNCONFIRMED release" in sd and "every vehicle leaves on schedule" in sd,
+              "E54's stuck reservations are unconfirmed releases; in the replay every vehicle leaves on schedule (the file's stuck_definition)")
         dj, lj, df = h["lost_jobs_drop_retry_per_seed"], h["lost_jobs_sf_ll_per_seed"], h["difference_sf_ll_minus_drop_retry"]
         check(h["supported"] == (df["ci"][1] < 0 and h["stuck_reservations_sf_ll"] == 0), "H14's verdict follows from its rule")
         n_res = d["reservations_per_seed"] * len(d["seeds"])
@@ -739,7 +743,9 @@ def add_e54(c):
                 f"measures is what that removes. Without the rule, {cnt(dr['stuck_reservations'])} of the "
                 f"{cnt(n_res)} reservations of the month had a holder with no radio path to the base "
                 f"{num(d['parameters']['grace_s'], 0)}{NB}s after the window ended, and stayed blocked for "
-                f"{cnt(dr['stuck_hours'])}{NB}h in all, since the base did not know where the holder was. The "
+                f"{cnt(dr['stuck_hours'])}{NB}h in all, since the base did not know where the holder was, "
+                f"although in the replay every one of those vehicles had in fact left its segment on schedule: "
+                f"what stays blocked is a release the base cannot confirm. The "
                 f"base's knowledge of a vehicle was {num(ll['aoi_mean_s'], 0)}{NB}s old on average with the rule "
                 f"(worst vehicle {num(ll['aoi_worst_vehicle_s'], 0)}{NB}s) and "
                 f"{num(dr['aoi_mean_s'] / 60.0, 0)}{NB}min without it (worst {num(dr['aoi_worst_vehicle_s'] / 3600.0, 0)}{NB}h).")
@@ -1234,6 +1240,159 @@ def add_e55(c):
     fill("P2-E55-MAST-SENTENCE", mast_sentence,
          "E55 mast variant: the share of runs that reach agreement when the base mast joins the mesh as a "
          "well-connected honest node")
+
+
+# ---------------------------------------------------------------------------------------------------------
+# The confirmatory family of PREREG6 with the Holm correction (results/phase6_family.json, B-98a) and the Phase 6
+# verification rows tagged to this paper (results/vv_phase6.json, B-98)
+# ---------------------------------------------------------------------------------------------------------
+def add_family(c):
+    fill, check, Pending = c.fill, c.check, c.Pending
+    num, pc, cnt, words, NB, PCT, MINUS = c.num, c.pc, c.cnt, c.words, c.NB, c.PCT, c.MINUS
+
+    def fam():
+        d = _load("phase6_family.json")
+        if d is None:
+            raise Pending("results/phase6_family.json (B-98a) has not landed")
+        h = d["hypotheses"]
+        # Holm, recomputed from the unadjusted p values of the three hypotheses with a sampling test
+        ps = {"H10": h["H10"]["p_intersection_union"], "H14": h["H14"]["p"], "H15a": h["H15a"]["p"]}
+        order = sorted(ps, key=ps.get)
+        adj, run = {}, 0.0
+        for i, k in enumerate(order):
+            run = max(run, min(1.0, (len(order) - i) * ps[k]))
+            adj[k] = run
+        check(all(abs(adj[k] - h[k]["holm"]["p_adjusted"]) < 1e-12 for k in ps), "the Holm-adjusted p values in the family file are reproduced")
+        check(all(h[k]["holm"]["rejected_at_0.05"] == (adj[k] < d["alpha"]) for k in ps), "each Holm decision follows from its adjusted p value")
+        cl = h["H10"]["clauses"]
+        pcl = [cl["layered within 1.5x of perfect at 1x (TOST)"]["p"], cl["the gap grows at 4x (8x pending)"]["p_one_sided"],
+               cl["dead reckoning with the margin larger at 1x"]["p_one_sided"]]
+        check(abs(max(pcl) - ps["H10"]) < 1e-12, "H10's joined p value is the largest of its three clause p values")
+        # the family file and the experiment files tell the same story
+        s = c.e50f(1)
+        check(abs(cl["the gap grows at 4x (8x pending)"]["gap_4x_h"] - s["h10"]["gap_by_mult"]["4"]["mean"]) < 1e-9
+              and abs(cl["dead reckoning with the margin larger at 1x"]["mean_diff_h"] - s["delay"]["1"]["margin_dr_minus_perfect"]["mean"]) < 1e-9,
+              "the family file's H10 clauses use E50's differences")
+        check((pcl[0] < d["alpha"]) == s["h10"]["layered_within_supported"] and (pcl[2] < d["alpha"]) == s["h10"]["dr_larger_supported"],
+              "the clause-level verdicts of H10' agree between the family file and E50")
+        check(abs(h["H14"]["mean_diff_jobs"] - c.e54f()["h14"]["difference_sf_ll_minus_drop_retry"]["mean"]) < 1e-9,
+              "the family file's H14 uses E54's difference")
+        check(abs(h["H15a"]["delay_median_diff_s"] - c.e56h15("chi2_step", "drift")["delay_median_diff_s"]["value"]) < 1e-9,
+              "the family file's H15a uses E56's difference")
+        return SimpleNamespace(d=d, h=h, adj=adj, pcl=pcl)
+    c.famf = fam
+
+    def pv(p, nd=3):
+        return f"below {num(10 ** -nd, nd)}" if p < 10 ** -nd else num(p, nd if p < 0.1 else 2)
+
+    def stats_sentence():
+        f = fam()
+        check("Holm" in f.d["family"] and f.d["alpha"] == 0.05, "the family is corrected by Holm at 0.05")
+        check("no sampling test" in f.h["H9"]["test"] and "no sampling test" in f.h["H13"]["test"], "H9 and H13 are threshold comparisons without a sampling test")
+        check("sign test" in f.h["H14"]["test"] and "TOST" in f.h["H10"]["test"] and "bootstrap" in f.h["H15a"]["test"],
+              "the three sampling tests are the ones the text names")
+        return (f"[59] names a family of confirmatory hypotheses, H9&prime;, H10&prime;, H13, H14 and H15 (a), for a "
+                f"Holm correction at &alpha; = {num(f.d['alpha'], 2)}. H9&prime; and H13 are comparisons with a "
+                f"threshold and have no sampling test; they are reported by the share of seeds or draws on the "
+                f"predicted side, and H13 belongs to the companion papers. The correction is applied over the three "
+                f"that have a test: H10&prime; by paired two one-sided tests at today's fleet, joined with its other "
+                f"two clauses by intersection and union, so that its p value is the largest of the three; H14 by an "
+                f"exact sign test on the lost jobs per seed; and H15 (a) by the bootstrap over events, whose p value "
+                f"is an upper bound when no resample reaches zero.")
+    fill("P2-FAMILY-STATS-SENTENCE", stats_sentence, "B-98a")
+
+    def h9_sentence():
+        f = fam()
+        cl = list(f.h["H9"]["clauses"].values())
+        check([x["supported"] for x in cl] == [True, True, False] and [x["seeds_on_predicted_side"] for x in cl] == [1.0, 1.0, 0.0],
+              "in H9' every seed is on the predicted side in the first two clauses and none in the third")
+        return ("Seed by seed, every seed lay on the predicted side of the budget in the first two clauses and "
+                "none did in the third.")
+    fill("P2-FAMILY-H9-SENTENCE", h9_sentence, "B-98a")
+
+    def h10_sentence():
+        f = fam()
+        rej = f.h["H10"]["holm"]["rejected_at_0.05"]
+        check(not rej and f.pcl[0] < 0.001 and f.pcl[1] > 0.05 and f.pcl[2] > 0.05,
+              "H10' is not supported as a whole: the first clause holds and the other two do not")
+        return (f"Taken as one hypothesis of the confirmatory family, H10&prime; is not supported. Its first clause "
+                f"holds (p {pv(f.pcl[0])}), but the one-sided p value is {pv(f.pcl[1])} for a larger gap at four "
+                f"times the fleet and {pv(f.pcl[2])} for a costlier dead-reckoning margin at today's fleet, and the "
+                f"three clauses joined have a Holm-adjusted p of {pv(f.adj['H10'])}.")
+    fill("P2-FAMILY-H10-SENTENCE", h10_sentence, "B-98a")
+
+    def h14_sentence():
+        f = fam()
+        h = f.h["H14"]
+        check(h["holm"]["rejected_at_0.05"] and h["seeds_more"] == 0, "H14 stands after the Holm correction, with no seed losing more jobs under the rule")
+        return (f"By an exact sign test, custody with the lost-link rule lost fewer jobs in {cnt(h['seeds_fewer'])} "
+                f"seeds, more in {'none' if h['seeds_more'] == 0 else cnt(h['seeds_more'])} and the same number in "
+                f"{cnt(h['seeds_tied'])} (p {pv(h['p'])}; Holm-adjusted {pv(f.adj['H14'])}), so the first clause "
+                f"stands in the confirmatory family.")
+    fill("P2-FAMILY-H14-SENTENCE", h14_sentence, "B-98a")
+
+    def h15a_sentence():
+        f = fam()
+        h = f.h["H15a"]
+        check(h["holm"]["rejected_at_0.05"] and "upper bound" in h["p_note"], "H15a stands after the Holm correction; its p value is an upper bound")
+        return (f"In the confirmatory family (a) stands after the Holm correction: no bootstrap resample reached "
+                f"zero, so p is at most {num(h['p'], 3)} and the adjusted value at most {num(f.adj['H15a'], 3)}.")
+    fill("P2-FAMILY-H15A-SENTENCE", h15a_sentence, "B-98a")
+
+    def limitation():
+        f = fam()
+        n4 = f.h["H10"]["clauses"]["the gap grows at 4x (8x pending)"]["n_4x"]
+        check("8x" in f.d.get("pending", ""), "the family file lists the 8x clause of H10 as pending")
+        return (f"The Holm correction of [59] covers the three confirmatory hypotheses that have a sampling test "
+                f"(Section 4.5). H9&prime; is a comparison with a threshold and has none, and the clause of "
+                f"H10&prime; on larger fleets rests on {cnt(n4)} seeds at four times the fleet, with eight times "
+                f"pending.")
+    fill("P2-FAMILY-LIMITATION", limitation, "B-98a")
+
+    # --- the Phase 6 verification rows tagged to this paper (the phase-5 format; summary recounted from the rows) ---
+    def vv6():
+        d = _load("vv_phase6.json")
+        if d is None:
+            raise Pending("results/vv_phase6.json (B-98) has not landed")
+        allr = d["rows"]
+        s = d["summary"]
+        check(s["rows"] == len(allr) and s["passed"] == sum(1 for x in allr if x["passed"] and not x["skipped"])
+              and s["failed"] == sum(1 for x in allr if not x["passed"] and not x["skipped"]),
+              "the summary of results/vv_phase6.json is the count of its rows")
+        return d, [x for x in allr if "P2" in x["papers"]]
+
+    def checks_sentence():
+        d, rows = vv6()
+        tech = {}
+        for x in rows:
+            tech[x["technique"]] = tech.get(x["technique"], 0) + 1
+        check(all(x["kind"] == "V" for x in rows), "the Phase 6 rows tagged to this paper are verifications")
+        lst = ", ".join(f"{k} ({cnt(v)})" for k, v in sorted(tech.items(), key=lambda kv: -kv[1]))
+        return (f"For the models of Sections 3.9 to 3.12, {cnt(len(rows))} rows of the Phase 6 verification suite "
+                f"(<code>lunarsim/vv6.py</code>, results in <code>results/vv_phase6.json</code>) bear on this paper, "
+                f"all of them verifications that the code does what the research notes derive, by technique {lst}: "
+                f"the growth of dead-reckoning error with distance, the chi-square thresholds, the detectable error "
+                f"and the three-of-five probability of Proposition 5, the trimmed mean with one faulty rover, the "
+                f"zero-fault behaviour of the test and of the rule, a zero error for perfect position, and the "
+                f"identity of the logistics model with every Phase 6 option switched off; the rows ran at commit "
+                f"{d['commit'][:7]}. Their outcomes are in Section 5.13.")
+    fill("P2-CHECKS6-SENTENCE", checks_sentence, "B-98")
+
+    def checks_outcome():
+        import re as _re
+        d, rows = vv6()
+        ran = [x for x in rows if not x["skipped"]]
+        bad = [x for x in ran if not x["passed"]]
+        g1 = [x for x in rows if x["id"] == "G1" and x["sub"] == "options off"]
+        check(len(g1) == 1 and g1[0]["passed"] and g1[0]["simulated"] == 0.0, "with every Phase 6 option off the Phase 5 run is reproduced")
+        n_cmp = int(_re.search(r"(\d+) summary values compared", g1[0]["basis"]).group(1))
+        out = (f"All {cnt(len(ran))} Phase 6 verification rows tagged to this paper passed." if not bad else
+               f"Of the {cnt(len(ran))} Phase 6 verification rows tagged to this paper, {cnt(len(bad))} failed: "
+               + "; ".join(x["name"] for x in bad) + ".")
+        out += (f" With every Phase 6 option off, the logistics model reproduces the Phase 5 run: "
+                f"{cnt(g1[0]['simulated'])} of {cnt(n_cmp)} summary values differ.")
+        return out
+    fill("P2-CHECKS6-OUTCOME", checks_outcome, "B-98")
 
 
 # ---------------------------------------------------------------------------------------------------------
@@ -1920,9 +2079,16 @@ def add_pta(c):
         add("Ranging keeps position error inside the margin near the base (H9&prime;)",
             tested(h9["ranging_near_supported"]),
             f"E50, {fleets}: {m_(h9['ranging_near_p95_m']['mean'], 2)} at the 95th percentile", "5.9")
+        try:
+            fam = c.famf()
+        except Pending:
+            fam = None
+        holm = lambda k: f"; Holm-adjusted p {num(fam.adj[k], 3 if fam.adj[k] < 0.1 else 2)}" if fam else ""
+        none9 = fam is not None and list(fam.h["H9"]["clauses"].values())[2]["seeds_on_predicted_side"] == 0.0
         add("Absolute fixes keep position error inside the margin away from the base (H9&prime;)",
             tested(h9["fixes_away_supported"]),
-            f"E50, {fleets}: {m_(h9['fixes_away_p95_m']['mean'], 1)} at the 95th percentile", "5.9")
+            f"E50, {fleets}: {m_(h9['fixes_away_p95_m']['mean'], 1)} at the 95th percentile"
+            + (", above the budget in every seed" if none9 else ""), "5.9")
         v1 = s["violations"]["1"]
         add("Reservations widened by k&times;bound/speed stay disjoint in true time (Proposition 2)",
             "Proved; tested",
@@ -1946,6 +2112,11 @@ def add_pta(c):
             tested(h10["dr_larger_supported"]) + " at &times;1",
             f"E50, {cnt(n1)} seeds: {h_(s['delay']['1']['margin_dr_minus_perfect']['mean'], 2, sign=True)}, interval "
             "includes zero; the &times;4 value excludes zero and is exploratory", "5.9")
+        if fam:
+            add("H10&prime; as one hypothesis of the confirmatory family",
+                tested(fam.h["H10"]["holm"]["rejected_at_0.05"]),
+                f"The three clauses joined (the largest clause p){holm('H10')}: the first clause holds, the other two do not",
+                "5.9")
         add("Delay with the terrain-fix stops counted", "Not yet tested", "E50b, pending", "5.9, 7")
         add("R1's gap widened to d<sub>0</sub> + k&times;bound keeps followers apart under position error",
             "Not yet tested",
@@ -1976,7 +2147,7 @@ def add_pta(c):
         n = d56["dataset"]["test"]["fault_streams_by_type"]["drift"]
         basis56 = f"E56 test set: {cnt(n)} simulated faults per type, {c.words(len(d56['seeds']))} training seeds, one site"
         add("The network finds slow drifts sooner than the per-step chi-square test (H15 a)",
-            "Tested: " + ("held" if a["ci95"][1] < 0 else "failed"), basis56, "5.11")
+            "Tested: " + ("held" if a["ci95"][1] < 0 else "failed"), basis56 + holm("H15a"), "5.11")
         add("On jumps the network and the chi-square test are within one second (H15 b)",
             "Tested: " + ("held" if (-1 < b["ci90"][0] and b["ci90"][1] < 1) else "failed"), basis56, "5.11")
         below = c.e56rec("ood", "net", "jump") < c.e56rec("ood", "cusum", "jump")
@@ -1988,11 +2159,12 @@ def add_pta(c):
             add("Custody and the lost-link rule lose fewer jobs than drop and retry (H14)",
                 tested(d54["h14"]["supported"]),
                 f"E54: a message-level replay of {cnt(len(d54['seeds']))} recorded months at &times;1, not a run of the "
-                "logistics model", "5.12")
+                "logistics model" + holm("H14"), "5.12")
             add("Under the lost-link rule no reservation stays blocked past its timeout",
                 "Holds by construction (a property of the rule)",
                 "The rule defines what a silent holder does, so the base releases at the timeout; E54 measures the "
-                f"blocking it removes ({cnt(d54['h14']['stuck_reservations_drop_retry'])} reservations)", "5.12")
+                f"blocking it removes ({cnt(d54['h14']['stuck_reservations_drop_retry'])} releases the base could not "
+                "confirm, of vehicles that had left)", "5.12")
         except Pending:
             add("Custody and the lost-link rule lose fewer jobs than drop and retry (H14)", "Not yet tested", "E54 pending", "5.12")
         try:
