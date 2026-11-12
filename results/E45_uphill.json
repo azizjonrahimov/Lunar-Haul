@@ -1,0 +1,1621 @@
+{
+ "task": "B-107 (P2 M9)",
+ "note": "    python tools/atc/run_e45_uphill.py run [--max-seconds 480]    # resumable, one file per cell     python tools/atc/run_e45_uphill.py build                      # -> results/E45_uphill.json, results/E45_uphill.csv",
+ "d0_m": 5.0,
+ "b_max": 0.8,
+ "b_min_flat": 0.5,
+ "n_per_cell": 2000,
+ "n_per_sweep_point": 500,
+ "cells": [
+  {
+   "planet": "mars",
+   "geom": "following",
+   "slope_deg": 10.0,
+   "delay_s": 0.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 1.1442,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 6.40646975541938,
+   "min_gap_p01_m": 6.452885452415303,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "following",
+   "slope_deg": 10.0,
+   "delay_s": 0.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 1.1442,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 6.748393667840787,
+   "min_gap_p01_m": 6.781907779842085,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "following",
+   "slope_deg": 10.0,
+   "delay_s": 1.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 1.1442,
+   "violations": 964,
+   "contacts": 0,
+   "gap_below_d0": 964,
+   "min_gap_m": 2.864459446752676,
+   "min_gap_p01_m": 3.0514973006947854,
+   "r1_breach_rate": 0.0005,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "following",
+   "slope_deg": 10.0,
+   "delay_s": 1.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 1.1442,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 5.871593293144713,
+   "min_gap_p01_m": 6.4629195333034275,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "following",
+   "slope_deg": 15.0,
+   "delay_s": 0.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 1.4602,
+   "violations": 112,
+   "contacts": 0,
+   "gap_below_d0": 112,
+   "min_gap_m": 4.92739009748837,
+   "min_gap_p01_m": 4.965389674059498,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "following",
+   "slope_deg": 15.0,
+   "delay_s": 0.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 1.4602,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 5.001001541269886,
+   "min_gap_p01_m": 5.034906890736917,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "following",
+   "slope_deg": 15.0,
+   "delay_s": 1.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 1.4602,
+   "violations": 1490,
+   "contacts": 0,
+   "gap_below_d0": 1490,
+   "min_gap_m": 0.9790692092125255,
+   "min_gap_p01_m": 1.1548731017469072,
+   "r1_breach_rate": 0.039,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "following",
+   "slope_deg": 15.0,
+   "delay_s": 1.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 1.4602,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 5.001001541269886,
+   "min_gap_p01_m": 5.034906890736917,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "following",
+   "slope_deg": 17.2,
+   "delay_s": 0.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 1.5971,
+   "violations": 324,
+   "contacts": 0,
+   "gap_below_d0": 324,
+   "min_gap_m": 4.610069686932491,
+   "min_gap_p01_m": 4.648859628461887,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "following",
+   "slope_deg": 17.2,
+   "delay_s": 0.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 1.5971,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 5.000442591932995,
+   "min_gap_p01_m": 5.031889266209907,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "following",
+   "slope_deg": 17.2,
+   "delay_s": 1.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 1.5971,
+   "violations": 1676,
+   "contacts": 0,
+   "gap_below_d0": 1676,
+   "min_gap_m": 0.7243629071021473,
+   "min_gap_p01_m": 0.9322326947048305,
+   "r1_breach_rate": 0.014,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "following",
+   "slope_deg": 17.2,
+   "delay_s": 1.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 1.5971,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 5.000442591932995,
+   "min_gap_p01_m": 5.031889266209907,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "following",
+   "slope_deg": 5.0,
+   "delay_s": 0.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 0.8233,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 7.17256185679193,
+   "min_gap_p01_m": 7.211645937269993,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "following",
+   "slope_deg": 5.0,
+   "delay_s": 0.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 0.8233,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 7.199703844294731,
+   "min_gap_p01_m": 7.278892246111625,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "following",
+   "slope_deg": 5.0,
+   "delay_s": 1.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 0.8233,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 5.385543470075163,
+   "min_gap_p01_m": 5.866554485116008,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "following",
+   "slope_deg": 5.0,
+   "delay_s": 1.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 0.8233,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 5.5582370050514385,
+   "min_gap_p01_m": 5.992122809527554,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "one_lane",
+   "slope_deg": 10.0,
+   "delay_s": 0.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 1.1442,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 6.424706480460657,
+   "min_gap_p01_m": 6.465606021709298,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "one_lane",
+   "slope_deg": 10.0,
+   "delay_s": 0.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 1.1442,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 6.748274416482246,
+   "min_gap_p01_m": 6.770047599019378,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "one_lane",
+   "slope_deg": 10.0,
+   "delay_s": 1.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 1.1442,
+   "violations": 301,
+   "contacts": 0,
+   "gap_below_d0": 301,
+   "min_gap_m": 3.008389049630864,
+   "min_gap_p01_m": 3.291132034888092,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "one_lane",
+   "slope_deg": 10.0,
+   "delay_s": 1.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 1.1442,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 6.6055818949746765,
+   "min_gap_p01_m": 6.632978418048412,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "one_lane",
+   "slope_deg": 15.0,
+   "delay_s": 0.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 1.4602,
+   "violations": 5,
+   "contacts": 0,
+   "gap_below_d0": 5,
+   "min_gap_m": 4.987660722611565,
+   "min_gap_p01_m": 5.019310137988786,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "one_lane",
+   "slope_deg": 15.0,
+   "delay_s": 0.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 1.4602,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 5.001685569493276,
+   "min_gap_p01_m": 5.029338430825915,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "one_lane",
+   "slope_deg": 15.0,
+   "delay_s": 1.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 1.4602,
+   "violations": 969,
+   "contacts": 0,
+   "gap_below_d0": 969,
+   "min_gap_m": 0.9761452022264621,
+   "min_gap_p01_m": 1.3624624557873313,
+   "r1_breach_rate": 0.1465,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "one_lane",
+   "slope_deg": 15.0,
+   "delay_s": 1.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 1.4602,
+   "violations": 71,
+   "contacts": 0,
+   "gap_below_d0": 71,
+   "min_gap_m": 4.86264069303283,
+   "min_gap_p01_m": 4.901510817979177,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "one_lane",
+   "slope_deg": 17.2,
+   "delay_s": 0.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 1.5971,
+   "violations": 394,
+   "contacts": 0,
+   "gap_below_d0": 394,
+   "min_gap_m": 4.574978329785267,
+   "min_gap_p01_m": 4.710543358175782,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "one_lane",
+   "slope_deg": 17.2,
+   "delay_s": 0.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 1.5971,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 5.000123762315184,
+   "min_gap_p01_m": 5.044100567093288,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "one_lane",
+   "slope_deg": 17.2,
+   "delay_s": 1.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 1.5971,
+   "violations": 1314,
+   "contacts": 0,
+   "gap_below_d0": 1314,
+   "min_gap_m": 0.7251200090629482,
+   "min_gap_p01_m": 1.0390397910562883,
+   "r1_breach_rate": 0.1515,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "one_lane",
+   "slope_deg": 17.2,
+   "delay_s": 1.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 1.5971,
+   "violations": 62,
+   "contacts": 0,
+   "gap_below_d0": 62,
+   "min_gap_m": 4.858649456018583,
+   "min_gap_p01_m": 4.916755164761721,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "one_lane",
+   "slope_deg": 5.0,
+   "delay_s": 0.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 0.8233,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 7.216761563207285,
+   "min_gap_p01_m": 7.229114551073181,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "one_lane",
+   "slope_deg": 5.0,
+   "delay_s": 0.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 0.8233,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 7.286459129471666,
+   "min_gap_p01_m": 7.305926307007141,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "one_lane",
+   "slope_deg": 5.0,
+   "delay_s": 1.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 0.8233,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 5.921621156898198,
+   "min_gap_p01_m": 6.1021543320884994,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "mars",
+   "geom": "one_lane",
+   "slope_deg": 5.0,
+   "delay_s": 1.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 0.8233,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 6.055757008833382,
+   "min_gap_p01_m": 6.19703339063214,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "following",
+   "slope_deg": 10.0,
+   "delay_s": 0.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 0.8,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 7.3261146189577175,
+   "min_gap_p01_m": 7.384188961284487,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "following",
+   "slope_deg": 10.0,
+   "delay_s": 0.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 0.8,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 7.3261146189577175,
+   "min_gap_p01_m": 7.384188961284487,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "following",
+   "slope_deg": 10.0,
+   "delay_s": 1.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 0.8,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 5.884731503203028,
+   "min_gap_p01_m": 6.319422208879559,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "following",
+   "slope_deg": 10.0,
+   "delay_s": 1.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 0.8,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 5.884731503203028,
+   "min_gap_p01_m": 6.319422208879559,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "following",
+   "slope_deg": 15.0,
+   "delay_s": 0.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 0.9088,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 6.9700725386635725,
+   "min_gap_p01_m": 7.017555725862482,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "following",
+   "slope_deg": 15.0,
+   "delay_s": 0.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 0.9088,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 7.185048574628212,
+   "min_gap_p01_m": 7.285091854945542,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "following",
+   "slope_deg": 15.0,
+   "delay_s": 1.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 0.9088,
+   "violations": 14,
+   "contacts": 0,
+   "gap_below_d0": 14,
+   "min_gap_m": 4.570829084341199,
+   "min_gap_p01_m": 5.053389885692098,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "following",
+   "slope_deg": 15.0,
+   "delay_s": 1.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 0.9088,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 5.430654185143425,
+   "min_gap_p01_m": 5.9239311205043075,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "following",
+   "slope_deg": 17.2,
+   "delay_s": 0.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 0.967,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 6.843995392426905,
+   "min_gap_p01_m": 6.8857402364467015,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "following",
+   "slope_deg": 17.2,
+   "delay_s": 0.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 0.967,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 7.138225318586365,
+   "min_gap_p01_m": 7.277129788173467,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "following",
+   "slope_deg": 17.2,
+   "delay_s": 1.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 0.967,
+   "violations": 335,
+   "contacts": 0,
+   "gap_below_d0": 335,
+   "min_gap_m": 4.148003908909288,
+   "min_gap_p01_m": 4.364562814566238,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "following",
+   "slope_deg": 17.2,
+   "delay_s": 1.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 0.967,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 5.841454950815091,
+   "min_gap_p01_m": 6.1217957173872355,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "following",
+   "slope_deg": 5.0,
+   "delay_s": 0.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 0.8,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 7.960902424054325,
+   "min_gap_p01_m": 8.019262209808863,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "following",
+   "slope_deg": 5.0,
+   "delay_s": 0.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 0.8,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 7.960902424054325,
+   "min_gap_p01_m": 8.019262209808863,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "following",
+   "slope_deg": 5.0,
+   "delay_s": 1.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 0.8,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 7.320011042133615,
+   "min_gap_p01_m": 7.38663385111632,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "following",
+   "slope_deg": 5.0,
+   "delay_s": 1.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 0.8,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 7.320011042133615,
+   "min_gap_p01_m": 7.38663385111632,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "one_lane",
+   "slope_deg": 10.0,
+   "delay_s": 0.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 0.8,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 7.377450934537819,
+   "min_gap_p01_m": 7.401029018641876,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "one_lane",
+   "slope_deg": 10.0,
+   "delay_s": 0.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 0.8,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 7.377450934537819,
+   "min_gap_p01_m": 7.401029018641876,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "one_lane",
+   "slope_deg": 10.0,
+   "delay_s": 1.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 0.8,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 6.312637438947263,
+   "min_gap_p01_m": 6.468723761762129,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "one_lane",
+   "slope_deg": 10.0,
+   "delay_s": 1.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 0.8,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 6.312637438947263,
+   "min_gap_p01_m": 6.468723761762129,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "one_lane",
+   "slope_deg": 15.0,
+   "delay_s": 0.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 0.909,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 7.0144687990990064,
+   "min_gap_p01_m": 7.040647307430122,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "one_lane",
+   "slope_deg": 15.0,
+   "delay_s": 0.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 0.909,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 7.348392705469223,
+   "min_gap_p01_m": 7.363821509255873,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "one_lane",
+   "slope_deg": 15.0,
+   "delay_s": 1.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 0.909,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 5.431841218227817,
+   "min_gap_p01_m": 5.650853753783191,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "one_lane",
+   "slope_deg": 15.0,
+   "delay_s": 1.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 0.909,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 5.981495711137541,
+   "min_gap_p01_m": 6.198179900479141,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "one_lane",
+   "slope_deg": 17.2,
+   "delay_s": 0.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 0.9673,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 6.857724324120909,
+   "min_gap_p01_m": 6.8999809676643835,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "one_lane",
+   "slope_deg": 17.2,
+   "delay_s": 0.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 0.9673,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 7.384732072979034,
+   "min_gap_p01_m": 7.397593231327578,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "one_lane",
+   "slope_deg": 17.2,
+   "delay_s": 1.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 0.9673,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 5.218760425620587,
+   "min_gap_p01_m": 5.389749867159441,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "one_lane",
+   "slope_deg": 17.2,
+   "delay_s": 1.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 0.9673,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 5.998170272349228,
+   "min_gap_p01_m": 6.216737131899561,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "one_lane",
+   "slope_deg": 5.0,
+   "delay_s": 0.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 0.8,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 8.010386532206724,
+   "min_gap_p01_m": 8.041464504783411,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "one_lane",
+   "slope_deg": 5.0,
+   "delay_s": 0.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 0.8,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 8.010386532206724,
+   "min_gap_p01_m": 8.041464504783411,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "one_lane",
+   "slope_deg": 5.0,
+   "delay_s": 1.0,
+   "rule": "as_is",
+   "n_driven": 2000,
+   "b_lead_mean": 0.8,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 7.4700545360766455,
+   "min_gap_p01_m": 7.518334398235983,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  },
+  {
+   "planet": "moon",
+   "geom": "one_lane",
+   "slope_deg": 5.0,
+   "delay_s": 1.0,
+   "rule": "slope_term",
+   "n_driven": 2000,
+   "b_lead_mean": 0.8,
+   "violations": 0,
+   "contacts": 0,
+   "gap_below_d0": 0,
+   "min_gap_m": 7.4700545360766455,
+   "min_gap_p01_m": 7.518334398235983,
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": 0
+  }
+ ],
+ "threshold": {
+  "moon:following": {
+   "first_slope_with_gap_below_d0_deg": 14.0,
+   "theory_b_lead_exceeds_b_max_deg": 10.67,
+   "sweep": [
+    [
+     0.0,
+     8.316073010120334
+    ],
+    [
+     0.5,
+     8.237514659144693
+    ],
+    [
+     1.0,
+     8.1543236121382
+    ],
+    [
+     1.5,
+     8.033006085050005
+    ],
+    [
+     2.0,
+     7.804235839881613
+    ],
+    [
+     2.5,
+     7.895875936067938
+    ],
+    [
+     3.0,
+     7.629325340936418
+    ],
+    [
+     3.5,
+     7.730261553823709
+    ],
+    [
+     4.0,
+     7.576269222489714
+    ],
+    [
+     4.5,
+     7.439196159191283
+    ],
+    [
+     5.0,
+     7.3222928483675105
+    ],
+    [
+     5.5,
+     7.2147537361894365
+    ],
+    [
+     6.0,
+     7.116512078135031
+    ],
+    [
+     6.5,
+     6.948152954073976
+    ],
+    [
+     7.0,
+     6.755164804357946
+    ],
+    [
+     7.5,
+     6.822978260759157
+    ],
+    [
+     8.0,
+     6.747193974858021
+    ],
+    [
+     8.5,
+     6.6619535899849325
+    ],
+    [
+     9.0,
+     6.5319563023559795
+    ],
+    [
+     9.5,
+     6.256033635081792
+    ],
+    [
+     10.0,
+     6.153253878206272
+    ],
+    [
+     10.5,
+     5.742951153658538
+    ],
+    [
+     11.0,
+     5.612430496460263
+    ],
+    [
+     11.5,
+     5.219008451374748
+    ],
+    [
+     12.0,
+     5.140521116402766
+    ],
+    [
+     12.5,
+     5.33123704710394
+    ],
+    [
+     13.0,
+     5.317013939003232
+    ],
+    [
+     13.5,
+     5.339000415481507
+    ],
+    [
+     14.0,
+     4.687864511541477
+    ],
+    [
+     14.5,
+     5.003134762848447
+    ],
+    [
+     15.0,
+     4.645466056131909
+    ],
+    [
+     15.5,
+     4.468156900107033
+    ],
+    [
+     16.0,
+     4.480065579884354
+    ],
+    [
+     16.5,
+     4.440345404581478
+    ],
+    [
+     17.0,
+     4.259057596163927
+    ]
+   ]
+  },
+  "moon:one_lane": {
+   "first_slope_with_gap_below_d0_deg": null,
+   "theory_b_lead_exceeds_b_max_deg": 10.67,
+   "sweep": [
+    [
+     0.0,
+     8.437554268381632
+    ],
+    [
+     0.5,
+     8.600109768606842
+    ],
+    [
+     1.0,
+     8.3887248686205
+    ],
+    [
+     1.5,
+     8.48849258827056
+    ],
+    [
+     2.0,
+     8.316842287571092
+    ],
+    [
+     2.5,
+     8.164461238178433
+    ],
+    [
+     3.0,
+     8.036916607858473
+    ],
+    [
+     3.5,
+     7.8560090439363535
+    ],
+    [
+     4.0,
+     7.717720242938981
+    ],
+    [
+     4.5,
+     7.5926051752169315
+    ],
+    [
+     5.0,
+     7.469393698769295
+    ],
+    [
+     5.5,
+     7.354146810714553
+    ],
+    [
+     6.0,
+     7.258444173580756
+    ],
+    [
+     6.5,
+     7.143913456895405
+    ],
+    [
+     7.0,
+     7.059079205623391
+    ],
+    [
+     7.5,
+     6.955813724200709
+    ],
+    [
+     8.0,
+     6.879520524945519
+    ],
+    [
+     8.5,
+     6.7768046554401735
+    ],
+    [
+     9.0,
+     6.704321275678012
+    ],
+    [
+     9.5,
+     6.473513651152018
+    ],
+    [
+     10.0,
+     6.43334139243558
+    ],
+    [
+     10.5,
+     6.203357711796798
+    ],
+    [
+     11.0,
+     6.104004767087304
+    ],
+    [
+     11.5,
+     6.0186222777153375
+    ],
+    [
+     12.0,
+     5.8951948062656925
+    ],
+    [
+     12.5,
+     5.868169757345015
+    ],
+    [
+     13.0,
+     5.816566966412211
+    ],
+    [
+     13.5,
+     5.679732076148298
+    ],
+    [
+     14.0,
+     5.638081463771982
+    ],
+    [
+     14.5,
+     5.442551186165474
+    ],
+    [
+     15.0,
+     5.5336426260251415
+    ],
+    [
+     15.5,
+     5.439745120648752
+    ],
+    [
+     16.0,
+     5.328034388903575
+    ],
+    [
+     16.5,
+     5.256196847935996
+    ],
+    [
+     17.0,
+     5.123822196075707
+    ]
+   ]
+  },
+  "mars:following": {
+   "first_slope_with_gap_below_d0_deg": 6.5,
+   "theory_b_lead_exceeds_b_max_deg": 4.64,
+   "sweep": [
+    [
+     0.0,
+     8.906420370475075
+    ],
+    [
+     0.5,
+     8.452718577915903
+    ],
+    [
+     1.0,
+     8.05700227754869
+    ],
+    [
+     1.5,
+     7.713971873439817
+    ],
+    [
+     2.0,
+     7.418603073123052
+    ],
+    [
+     2.5,
+     7.172179961953248
+    ],
+    [
+     3.0,
+     6.937287043445167
+    ],
+    [
+     3.5,
+     6.746076043173048
+    ],
+    [
+     4.0,
+     6.295903928475013
+    ],
+    [
+     4.5,
+     5.978199421155125
+    ],
+    [
+     5.0,
+     5.625387827677713
+    ],
+    [
+     5.5,
+     5.245403485989527
+    ],
+    [
+     6.0,
+     5.207674694754701
+    ],
+    [
+     6.5,
+     4.660691464517868
+    ],
+    [
+     7.0,
+     4.5009565156926215
+    ],
+    [
+     7.5,
+     4.230790916785111
+    ],
+    [
+     8.0,
+     3.858718988075509
+    ],
+    [
+     8.5,
+     3.5880695917369962
+    ],
+    [
+     9.0,
+     3.2699305220137944
+    ],
+    [
+     9.5,
+     3.076817758420077
+    ],
+    [
+     10.0,
+     2.8668248150963223
+    ],
+    [
+     10.5,
+     2.55611170595904
+    ],
+    [
+     11.0,
+     2.322334232256935
+    ],
+    [
+     11.5,
+     2.159088528876339
+    ],
+    [
+     12.0,
+     1.9926803770457582
+    ],
+    [
+     12.5,
+     1.9550323164226597
+    ],
+    [
+     13.0,
+     1.6855369908014382
+    ],
+    [
+     13.5,
+     1.484798844214481
+    ],
+    [
+     14.0,
+     1.370482169397178
+    ],
+    [
+     14.5,
+     1.276456841909976
+    ],
+    [
+     15.0,
+     0.9923771469167946
+    ],
+    [
+     15.5,
+     1.0095525120233901
+    ],
+    [
+     16.0,
+     0.7333529388891407
+    ],
+    [
+     16.5,
+     0.8348611446747896
+    ],
+    [
+     17.0,
+     0.7598492285990233
+    ]
+   ]
+  },
+  "mars:one_lane": {
+   "first_slope_with_gap_below_d0_deg": 8.5,
+   "theory_b_lead_exceeds_b_max_deg": 4.64,
+   "sweep": [
+    [
+     0.0,
+     9.080966557344652
+    ],
+    [
+     0.5,
+     8.619343088701726
+    ],
+    [
+     1.0,
+     8.235599139583769
+    ],
+    [
+     1.5,
+     7.8764001875209715
+    ],
+    [
+     2.0,
+     7.5747238642919115
+    ],
+    [
+     2.5,
+     7.302150307663169
+    ],
+    [
+     3.0,
+     7.087809476907751
+    ],
+    [
+     3.5,
+     6.863356361528645
+    ],
+    [
+     4.0,
+     6.593185089529129
+    ],
+    [
+     4.5,
+     6.29611459376315
+    ],
+    [
+     5.0,
+     5.925237516318475
+    ],
+    [
+     5.5,
+     5.907663798309443
+    ],
+    [
+     6.0,
+     5.624215709597252
+    ],
+    [
+     6.5,
+     5.520475083902284
+    ],
+    [
+     7.0,
+     5.316457723133112
+    ],
+    [
+     7.5,
+     5.176807620309262
+    ],
+    [
+     8.0,
+     5.06203142376927
+    ],
+    [
+     8.5,
+     4.799377410943805
+    ],
+    [
+     9.0,
+     3.457342767634316
+    ],
+    [
+     9.5,
+     3.112919497440032
+    ],
+    [
+     10.0,
+     3.0153298426525907
+    ],
+    [
+     10.5,
+     2.743646891624678
+    ],
+    [
+     11.0,
+     2.448845097595836
+    ],
+    [
+     11.5,
+     2.2732970074861214
+    ],
+    [
+     12.0,
+     2.1976750188627534
+    ],
+    [
+     12.5,
+     1.9707193486773917
+    ],
+    [
+     13.0,
+     1.9679703123421177
+    ],
+    [
+     13.5,
+     1.5627179149871608
+    ],
+    [
+     14.0,
+     1.492302330835571
+    ],
+    [
+     14.5,
+     1.3641216662542774
+    ],
+    [
+     15.0,
+     1.1602938705094061
+    ],
+    [
+     15.5,
+     1.1111430207469084
+    ],
+    [
+     16.0,
+     0.6931559736809163
+    ],
+    [
+     16.5,
+     0.8435991722530503
+    ],
+    [
+     17.0,
+     0.8211999591815697
+    ]
+   ]
+  }
+ }
+}

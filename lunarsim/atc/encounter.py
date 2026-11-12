@@ -120,6 +120,12 @@ class Spec:
     occluders: List[tuple] = field(default_factory=list)      # [(x, y, t_until)]: a hidden crew member may be there
     exit_keep_free: bool = False          # R3 variant: a hop that does not end the trip needs 2 free slots in its bay
     stop_is_goal: bool = False            # the encounter is complete when every vehicle has stopped (type 1)
+    lead_brake_physical: bool = False     # B-107 (opt-in): the braking leader brakes at its real capability,
+                                          # max(B_MAX, b_guaranteed(theta)) (uphill 0.5 + g sin|theta|), not at B_MAX
+    r1_slope_term: bool = False           # B-107 (opt-in): R1 assumes that leader braking (Move.b_front), the fix
+    actuation_delay_s: float = 0.0        # B-107 (opt-in): every vehicle except the scripted braking leader applies its
+                                          # commanded acceleration this long after the command (R1's response time RHO_S
+                                          # as a real lag; the check itself still runs at 10 Hz). 0 = no lag (E44)
     request_rule: bool = False            # variant (PREREG change 9): no request while a hold point (a closed or
                                           # closing zone) lies before the resource
 
@@ -270,6 +276,13 @@ class Batch:
         self.g_resdir = (oh * self.g_dir[..., None]).sum(3)                                 # (N, V, G, R)
         # events
         self.lead_v = np.full(N, -1, int); self.lead_t = np.full(N, np.inf)
+        self.lead_phys = np.array([bool(getattr(s, "lead_brake_physical", False)) for s in specs])   # B-107
+        self.r1_slope = np.array([bool(getattr(s, "r1_slope_term", False)) for s in specs])          # B-107
+        self.act_delay = np.array([float(getattr(s, "actuation_delay_s", 0.0)) for s in specs])      # B-107
+        L_ = int(round(float(self.act_delay.max()) / DT)) if N else 0
+        if L_ > 0:                                # command buffer (N, L, V); compacted with the batch (shape[0] = N)
+            self.abuf = np.zeros((N, L_, V))
+            self.aptr = 0
         self.fault_v = np.full(N, -1, int); self.fault_t = np.full(N, np.inf)
         self.slip_v = np.full(N, -1, int); self.slip_f = np.ones(N)
         self.drift_v = np.full(N, -1, int); self.drift_r = np.zeros(N)
@@ -647,13 +660,22 @@ def run_batch(b: Batch, rng: np.random.Generator, record: Optional[List[int]] = 
         # ---------------------------------------------------------------- 3. planner and safety program
         bg = S.b_guaranteed(b.theta, b.mu, b.g)
         rnd = rng.uniform(-S.B_MAX, A_MAX, (N, V))
-        need = np.minimum(np.minimum(gap_lead - S.rss_dmin(v, v_lead, bg), d_stop), d_crew - S.R_CREW_MARGIN_M)
+        b107 = bool(getattr(b, "r1_slope", np.zeros(1, bool)).any() or getattr(b, "lead_phys", np.zeros(1, bool)).any())
+        bfront = np.where(b.r1_slope[:, None], np.maximum(S.B_MAX, bg), S.B_MAX) if b107 else None
+        if bfront is None:
+            need = np.minimum(np.minimum(gap_lead - S.rss_dmin(v, v_lead, bg), d_stop), d_crew - S.R_CREW_MARGIN_M)
+        else:
+            need = np.minimum(np.minimum(gap_lead - S.rss_dmin(v, v_lead, bg, b_front=bfront), d_stop),
+                              d_crew - S.R_CREW_MARGIN_M)
         nominal = np.where(need < S.stop_distance(v, NOMINAL_DECEL) + 2.0, -NOMINAL_DECEL,
                            np.clip((b.v_class - v) / 2.0, -NOMINAL_DECEL, A_MAX))
         a_prop = np.select([b.planner == 0, b.planner == 1], [nominal, rnd], A_MAX)
         # scripted behaviours (leader braking, dwell, fault) are planner proposals too: they go through the check
         lb = (vi[None] == b.lead_v[:, None]) & (t >= b.lead_t[:, None])
-        a_prop = np.where(lb, -S.B_MAX, a_prop)
+        if b107:                                          # B-107: the leader brakes at its real (uphill) capability
+            a_prop = np.where(lb, -np.where(b.lead_phys[:, None], np.maximum(S.B_MAX, bg), S.B_MAX), a_prop)
+        else:
+            a_prop = np.where(lb, -S.B_MAX, a_prop)
         dwell_hit = (s >= b.dwell_s - 2.5) & ~dwell_used & np.isfinite(b.dwell_s)
         dwell_until = np.where(dwell_hit & (v <= S.MOVING_MS), t + b.dwell_d, dwell_until)
         dwell_used |= dwell_hit & (v <= S.MOVING_MS)
@@ -663,6 +685,8 @@ def run_batch(b: Batch, rng: np.random.Generator, record: Optional[List[int]] = 
                   gap_lead=gap_lead, v_lead=v_lead, d_stop=d_stop, d_crew=d_crew, must_exit=must_exit,
                   a_max=A_MAX, g=b.g)
         mv.d_crew_any = d_crew_any
+        if bfront is not None:
+            mv.b_front = bfront
         ver = safety_check(None, mv)
         v_in = v
         a = ver.a if shield else np.minimum(np.asarray(a_prop, float), A_MAX)   # shield=False: sandbox "safety off"
@@ -673,7 +697,15 @@ def run_batch(b: Batch, rng: np.random.Generator, record: Optional[List[int]] = 
         # physics: faults and slip act on the vehicle, not the command
         fault_now = (vi[None] == b.fault_v[:, None]) & (t >= b.fault_t[:, None])
         faulted |= fault_now
-        a_act = np.where((vi[None] == b.slip_v[:, None]) & (a > 0), a * b.slip_f[:, None], a)
+        if getattr(b, "abuf", None) is None:
+            a_act = np.where((vi[None] == b.slip_v[:, None]) & (a > 0), a * b.slip_f[:, None], a)
+        else:                                             # B-107: followers act on the command of RHO_S ago
+            a_del = b.abuf[:, b.aptr, :].copy()
+            b.abuf[:, b.aptr, :] = a
+            b.aptr = (b.aptr + 1) % b.abuf.shape[1]
+            lagged = (b.act_delay[:, None] > 0) & (vi[None] != b.lead_v[:, None])
+            a_ph = np.where(lagged, a_del, a)
+            a_act = np.where((vi[None] == b.slip_v[:, None]) & (a_ph > 0), a_ph * b.slip_f[:, None], a_ph)
         th = np.radians(b.theta)
         b_phys = b.mu * b.g * np.cos(th) - b.g * np.sin(th)                   # friction limit of braking (physics)
         a_act = np.maximum(a_act, -b_phys)
@@ -683,7 +715,10 @@ def run_batch(b: Batch, rng: np.random.Generator, record: Optional[List[int]] = 
         ds_ = np.maximum(v * tst + 0.5 * a_act * tst * tst, 0.0)
         ds_ = np.where(faulted | done | ~active[:, None], 0.0, ds_)
         v_new = np.where(faulted | done, 0.0, v_new)
-        r1b = np.isfinite(gap_lead) & (gap_lead < S.rss_dmin(v, v_lead, bg)) & (a > -bg + 1e-9) & live
+        if bfront is None:
+            r1b = np.isfinite(gap_lead) & (gap_lead < S.rss_dmin(v, v_lead, bg)) & (a > -bg + 1e-9) & live
+        else:                                             # B-107: the breach against the rule in force
+            r1b = np.isfinite(gap_lead) & (gap_lead < S.rss_dmin(v, v_lead, bg, b_front=bfront)) & (a > -bg + 1e-9) & live
         out["r1_breach"] += r1b.any(1)
         s_new = s + ds_
         # drift grows with distance driven (a stopped vehicle does not slide sideways): drift_r m/s at class speed

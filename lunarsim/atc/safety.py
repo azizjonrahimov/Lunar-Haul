@@ -154,6 +154,9 @@ class Move:
     pos_bound: Any = 0.0             # B-90 (opt-in): 95 % bound of the pair's relative position error (m), from
                                      # lunarsim.atc.pnt.pair_bound95; R1's static margin becomes D0_M + k_pos x pos_bound
     k_pos: float = 1.0               # B-90: multiplier on pos_bound (A; sweep); with pos_bound 0 the check is unchanged
+    b_front: Any = None              # B-107 (opt-in): the leader's braking R1 assumes (m/s2); None = B_MAX. With the
+                                     # slope term, max(B_MAX, b_guaranteed(theta)): uphill a conforming leader brakes at
+                                     # 0.5 + g sin|theta|, above B_MAX beyond 10.7 deg on the Moon, 4.6 deg on Mars
 
 
 @dataclass
@@ -201,9 +204,17 @@ def _ok(m: Move, a, b, vmax):
     # R2: admissible speed after the step
     r2 = v1 <= vmax + 1e-9
     # R1: gap after the step against the leader braking at B_MAX throughout, unless this is the proper response
-    vl1, xl1 = _after_step(m.v_lead, -B_MAX, m.dt)
-    gap1 = m.gap_lead - x1 + xl1
-    r1 = (gap1 >= rss_dmin(v1, vl1, b, d0=D0_M + m.k_pos * np.asarray(m.pos_bound, float))) | (a <= -b + 1e-9)
+    bf = getattr(m, "b_front", None)                     # B-107 opt-in; None keeps the expressions below unchanged
+    if bf is None:
+        vl1, xl1 = _after_step(m.v_lead, -B_MAX, m.dt)
+        gap1 = m.gap_lead - x1 + xl1
+        r1 = (gap1 >= rss_dmin(v1, vl1, b, d0=D0_M + m.k_pos * np.asarray(m.pos_bound, float))) | (a <= -b + 1e-9)
+    else:
+        bf = np.asarray(bf, float)
+        vl1, xl1 = _after_step(m.v_lead, -bf, m.dt)
+        gap1 = m.gap_lead - x1 + xl1
+        r1 = (gap1 >= rss_dmin(v1, vl1, b, b_front=bf, d0=D0_M + m.k_pos * np.asarray(m.pos_bound, float))) \
+            | (a <= -b + 1e-9)
     r1 &= gap1 > 0
     # stop line (R3 / R5 / R10 without a confirmed reservation): still able to stop before it
     rs = x1 + stop_distance(v1, b) <= m.d_stop + 1e-9
