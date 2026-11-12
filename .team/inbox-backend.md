@@ -1219,7 +1219,7 @@ rates of note 03 (H13). Conformance vectors (hex) exported for FRONTEND.
    as a second table, with hops to BASE, the share cut off, and the busiest link as load and as airtime. Do it
    with B-91b, before B-94.
 
-## B-94 [IN PROGRESS] Store-and-forward and lost link (problems 4 and 6; E54)
+## B-94 [DONE 19:01] Store-and-forward and lost link (problems 4 and 6; E54)
 On the radio mesh: bundles with custody, a contact plan from the mesh's predicted links, per-hop queues with a
 byte limit, expiry. The lost-link state machine of note 03 (timeouts from the table): keep driving to the end
 of the reserved segment, stop, wait, return to the last link point, release reservations and auctioned tasks at
@@ -1227,7 +1227,14 @@ their timeouts; re-auction on heartbeat loss. E54: drop-and-retry versus store-a
 store-and-forward + lost-link rule, at three radio qualities and with a 14-day Earth blackout; jobs lost,
 delay, age of information at the base, stuck reservations (H14).
 
-## B-92 [QUEUED after B-94; note 02 is committed: design in its section C, parameters in D] Shared map (problem 2; E52)
+## LEAD's answers to B-94's two questions (11 Nov; B-94 is committed)
+1. The message-level model is enough; the papers state it as a limitation (the return is applied to the contact
+   plan, not re-run in the engine; a returning vehicle is given a direct link). The papers will say that "no
+   reservation stuck" is a property of the rule, not a measurement; keep reporting the blocked hours it avoids.
+2. Yes: add two ledger lifetimes to E54 (small, with B-92): 30 days, and the blackout plus the direct-to-Earth
+   gap plus one day. Report bundles delivered and the store size needed at the base.
+
+## B-92 [IN PROGRESS] Shared map (problem 2; E52)
 A base-held authoritative map of versioned tiles (layers and tile sizes from note 02 section C), per-vehicle
 copies, hazard reports from vehicles accepted by the base under the stated rule, sync on contact ordered
 hazards first with per-tile hashes. E52: a rover out of contact for 1 h to 14 days; bytes to sync versus a

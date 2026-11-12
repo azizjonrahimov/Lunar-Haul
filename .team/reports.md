@@ -8776,3 +8776,59 @@ Next: B-94 (store-and-forward and lost link). B-90b waits for your loop.
   - every paper link on /protocol/ and /network/ points at an existing anchor, and none is left without one.
 - **Results:** node tests 47/47. No build or browser, as you asked.
 - **For LEAD:** other pages still link to plain paper/ (/atc/, /results/). I can point those at anchors in F-65 if you want.
+
+## B-94 DONE 19:01 (store-and-forward, custody, lost-link rule; E54, H14) | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**Where it is modelled, and why.** Inside the engine a lost message is "dropped and retried 3 min later", and the regimes know at once that it failed. So "jobs lost" cannot occur there by construction. B-94 is therefore a message-level simulation over the recorded month, like E50 and E51: the engine's real events on the month's contact plan (`lunarsim/atc/dtn.py`, research note 03 Q3, C5, C7, D, E7). No engine code changed, so baselines are byte-identical.
+- **Contact plan:** the vehicles plus the BASE mast, linked by DEM line of sight within 5 km (B-70), per 60 s step, along the E50 trajectories.
+- **Traffic** (from a recording hook on every job commit and job end, plus the reservation log; sizes from the B-93 codec):
+  - TASK_AWARD from the base to each job vehicle, lifetime the 1 h lease (an expired award is a **lost job**, re-auctioned);
+  - RESERVE_GRANT, 60 s lifetime by bundle (a lost one means the vehicle stops before the entry);
+  - TASK_STATE at the job's end, 1 h;
+  - a daily 10 kB ledger bundle to Earth, 14 d lifetime (note 03 D), through BASE's direct-to-Earth windows **with a 14-day blackout imposed on days 8–22**. With that blackout Earth is up only 7.9 % of the window, because July's natural DTE block falls inside the blackout;
+  - STATUS every 10 s, for the age of information.
+- **Protocols:**
+  - **drop_retry:** end to end, a try every 180 s (the engines' RETRY_H), at most 5 tries (A), never past the lifetime;
+  - **sf:** hop by hop with custody: retransmit after the 10 s custody timer (note 03 D) while the link lasts, hold while there is no path, 64 MB store, expiry at the lifetime;
+  - **sf_ll:** sf plus the C7 ladder. A vehicle unheard for T_hold (600 s) retraces at half speed to its last link point, so its isolation ends after T_hold + 2 × its driving time in the hour before the loss (82 returns a seed, saving 336 vehicle-hours of isolation a seed). The base releases reservations at their timeout and re-auctions on heartbeat loss.
+  - **Approximations (stated):** the return is applied to the contact plan, not re-run in the engine. A returning vehicle gets a direct link to the base, which is optimistic when its last link was through another vehicle.
+- **Stuck reservation:** its holder has no path to the base at t_out + 60 s grace (note 03 D) and stays unheard. Without the rule the base must keep it blocked until the holder is heard. With the rule the holder's behaviour is defined (it never stops inside a single-lane segment), so the base releases it at its timeout: **zero stuck by construction**. The blocked hours the rule avoids are reported.
+
+**Results** (30 seeds, 1x, 199 jobs and 88 single-lane reservations a seed; per-hop loss 0.10 / 0.25 / 0.40)
+
+| | drop_retry | sf | sf_ll |
+|---|---|---|---|
+| Lost jobs (expired awards), of 6,028 | 4 / **10** / 85 | 2 / 2 / 2 | **0 / 0 / 0** |
+| Award delay, mean | 21 / 62 / 118 s | 1.1 / 3.3 / 6.5 s | 1.1 / 3.3 / 6.5 s |
+| Grants lost (vehicle stops before the entry), of 6,028 | 570 / **1,543** / 2,403 | 2 / 2 / 2 | 0 / 0 / 1 |
+| TASK_STATE lost / mean delay | 1,929–2,000 / 29–119 s | 82 / 540–546 s | **2 / 31–36 s** |
+| Ledger bundles to Earth lost, of 930 | 870–871 | 690 | 690 |
+| Base's age of information, mean (worst vehicle) | 5,287 s (31 h) | 5,287 s (31 h) | **45 s (149 s)** |
+| Reservations stuck past timeout (blocked hours) | 2,566 (7,349 h) | 2,566 (7,349 h) | **0** (by construction) |
+
+**H14** (PREREG6 §4, loss 0.25, 14-day blackout): **supported.**
+- Lost jobs per seed: drop_retry 0.33 [0.17, 0.53]; sf_ll 0. Paired difference **−0.33 [−0.53, −0.17]**.
+- sf_ll leaves no reservation stuck past its timeout (drop_retry 2,566).
+
+**Reading for P1 / P3**
+- Lost jobs are rare even with drop-and-retry: 10 of 6,028 awards at loss 0.25, because the base keeps retrying while the vehicle is in reach. The large differences are elsewhere:
+  - **Grants:** a reservation grant has a 60 s lifetime, so drop-and-retry gets one try. 26 % of grants are lost at loss 0.25, and each lost grant is a vehicle stopping before a single-lane segment. Custody makes that 0.03 %.
+  - **The lost-link rule fixes visibility, not loss.** Without it one vehicle can sit unheard by the base for up to 31 h (mean age 88 min). With it the mean is 45 s, and the reservations of unheard vehicles can be released on time.
+  - **Earth:** store-and-forward saves only 20 % more ledger bundles than drop-and-retry (240 against 60 of 930 delivered), because a 14-day lifetime cannot outlast a 14-day blackout on top of July's DTE gap. The lifetime of Earth-bound bundles must exceed the longest planned blackout plus the DTE gap (a design rule for P3).
+- Store-and-forward's TASK_STATE delay (540 s mean) is the cost of holding: a vehicle ends a job out of reach and its report waits. The lost-link return cuts that to about 33 s.
+
+**Files:**
+- new: `lunarsim/atc/dtn.py` (contact plan, lost-link plan, message simulator, age of information), `tools/atc/run_e54.py`, `tests/test_dtn.py` (6 tests), `results/E54_dtn.json`, `results/E54_table.csv`;
+- no engine change.
+
+**How to test:**
+- `.venv\Scripts\python -m pytest tests/test_dtn.py -q` passes 6.
+- `python tools/atc/run_e54.py run --seeds 1-30`, then `build` (40 s a seed; caches in `.cache/atc/e54`).
+
+**For FRONTEND (via LEAD):** `results/E54_table.csv` (loss × protocol: lost / delay per message kind, age of information, stuck reservations) is for /protocol/ problems 4 and 6. B-99 will add a timeline JSON.
+
+**Questions for LEAD:**
+1. Is the message-level model enough for P1's H14 claim, or do you want the lost-link return re-run inside the engine? That is a larger change: the vehicle's detour would affect later dispatch, roughly a day of work. My suggestion: state it as a limitation.
+2. The Earth-ledger lifetime of 14 days (note 03 D) is shorter than the blackout plus July's DTE gap. Should I add a variant with a 30-day lifetime, to show the design rule?
+
+Next: B-92 (shared map). B-90b waits for your 8x loop.
