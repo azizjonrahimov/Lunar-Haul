@@ -8204,3 +8204,54 @@ The model still draws Earth far larger than its true 2°, so that card's caption
 **For LEAD:**
 1. site/public/illustrations/ is new and untracked: 10 files, 386 kB in all. Commit it with the code, or tell me to move it under a staged folder.
 2. The owner's 8.65 credits are untouched beyond this task.
+
+## F-61 DONE 16:38 | site/network/index.html (replaces the stub), site/lib/network.mjs (new), site/src/network/{main,landscape,inside,bars,tcn}.js and network.css (new), site/tests/integrity-net.test.mjs (new), site/lib/anatomy-nav.mjs (the "where it runs" variant), site/src/protocol/anatomy-loader.js (new, shared), site/src/protocol/figures.js (new: the eight figures, moved from main.js), site/src/protocol/main.js, site/src/protocol/anatomy-live.js, site/scripts/prepare-data.mjs, site/vite.config.js (<!--@nw:key-->), site/.gitignore (public/network/), tools/ci/budgets.json (/network/ and /protocol/ lines) | how to check: /network/ | from BACKEND: nothing | for LEAD: notes at the end
+**The page** (no noindex): title "Can a small network tell that a rover's position report is wrong?". The lead says plainly that everything is simulated: motion from our simulator, simulated sensors, five kinds of simulated fault.
+
+**"What it found"**, every number from results/table_E56.csv or results/E56_integrity.json through `<!--@nw:key-->`, flagged Modelled with its source:
+- **Wins:** 0.90 of all faults against 0.70 to 0.86 for the four simple tests (the lowest is the windowed chi-square, 0.70; your note said 0.71). Noise inflation 1.00 against 0.35 (chi-square) and 0.57 (CUSUM). Jumps 0.92 against 0.70 (chi-square). The median drift delay is -24.1 s against chi-square.
+- **Not better:** logistic regression on jumps (0.92 against 0.95). Slow drifts: the best detector finds 63 %, so at least 37 % are missed by every detector. That is the honest form of "about 40 % found by nobody": the files give per-detector recall, not the union.
+- **Out of distribution:** small jumps 0.23 and slow drifts 0.11 against CUSUM's 0.67 and 0.67. False alarms rise 26 times, from 0.53 to 13.8 per pair-day. CUSUM pays with 863 per pair-day.
+
+**Figures** (each loads its data and code when its section nears the screen):
+1. **Loss landscape.**
+   - The 42 × 42 validation-loss grid in the PCA plane of the path (86.5 % and 9.5 %), as a shaded surface on a 2D canvas (no WebGL needed). It turns by dragging or with the arrow keys.
+   - A contour view (marching squares, SVG) is the same grid flat, and the tier 0 fallback (used automatically when canvas 2D is missing).
+   - Adam's path (24 checkpoints) in orange, with a scrubber and "Play the path". The readout gives epoch, step, the recorded loss, the loss on the plane and the off-plane part.
+   - The text says the optimiser is Adam (lr 0.003, cosine, 16 epochs), so the line is Adam's path. It also gives the self-check gap (median 0.011, largest 0.069).
+   - Height, colour and contour levels are on a log scale (the loss spans 0.26 to 1.58 and the path lives near the floor); the legend and caption say so.
+   - Colour, per the dataviz rules: one sequential hue (blue), low loss at the step nearest the surface (light in light mode, dark in dark).
+2. **Inside the network.**
+   - A browser port of the float64 numpy runtime (src/network/tcn.js). The page checks all 10 reference windows on load: "10 of 10 reference windows match the Python runtime within 1e-06 (largest difference 1.4e-14)". New node test integrity-net.test.mjs: the same check, 34/34.
+   - Pick a fault (jump, drift, frozen, frame, noise) and a window (before or inside the fault). The strips show the 10 squashed inputs on a diverging blue/orange scale with a grey midpoint, and each layer's 24 channels on the sequential scale. Each strip is shorter by 2 × its dilation (125, 121, 113, 97, 65, 1 s left), so the receptive field closing to the last second is visible.
+   - The output gives the logit and probability, and whether it alarms at the strict (4.96) and loose (1.77) thresholds from the policy file.
+3. **Against the baselines.**
+   - Recall per fault type on the test set at 1 false alarm per pair-day, as grouped bars with 95 % intervals and the five detectors in categorical slots 1 to 5, in fixed order.
+   - **Palette check:** the validator was run on the site's surfaces. It passes every gate in light (#ffffff) and dark (#111214); light has a contrast warning, so relief is provided: a legend, a table view, and direct labels on "all faults" for the network and the strongest baseline only.
+   - One axis. Each bar has a hover title with recall, interval and median delay. Text sized to the box (short fault names when narrow).
+   - The table view adds recall · median delay for every cell and the realised false alarms.
+   - An out-of-distribution table: false alarms test and out of distribution, and recall on small jumps and slow drifts.
+4. **Where it runs** (Fig 4): the navigation deck drawn open, labelled for the network:
+   - inputs: the range to B (0.3 m to 100 m), B's report (once a second), own odometry (2 %) and own heading (3°/h);
+   - "Runs the network" (9,529 parameters);
+   - "Output: safety check" ("flags B as suspect").
+   - The part list adds 0.80 ms per window on a laptop core ("the flight core is slower; not measured") and the "published" / "our design" tags.
+   - Staged as protocol/anatomy/net.html and loaded by the same slot loader as /protocol/.
+
+**/protocol/ budget, the one you flagged:** sharing the slot loader would have put /protocol/ eager JS at 20.1 of 20 kB. Instead I moved its eight figures into a lazy chunk (figures.js, loaded when the first figure nears the screen). Eager JS is now 5.7 of 20 kB (was 19.6); lazy 17.8 of 25 kB, budget line added. All 8 figures were re-checked to draw.
+
+**Budgets:**
+- /network/: JS 6.0 of 10, CSS 5.8 of 10, data 128 of 160 kB (landscape 16, policy 57, check 27, summary 1.5, deck 26), lazy 13.2 of 20, lazy CSS 6.9 of 10.
+
+**Checks:**
+- Build OK; tests 34/34; budgets OK.
+- Headless Chrome on /network/ at 1280 light, 1280 dark, 390 light and 390 dark:
+  - all three figures and the deck load;
+  - the parity badge shows 10/10;
+  - 0 contrast fails, one h1, no heading skips, no overflow, no console errors.
+- /protocol/: 8 of 8 figures drawn in every run.
+- Screenshots read: surface and contour in both themes, inside, bars at 1280 and 390, the deck.
+
+**For LEAD:**
+1. lunarsim/atc/roads.py, lunarsim/atc/safety.py and tools/atc/e50_*.py / run_e50.py show as changed. They are BACKEND's, not mine.
+2. The page links "problem 7 on the protocol page". The protocol page's section 7 text still points to "the network" for E55, so the two pages now point at each other.

@@ -346,9 +346,13 @@ if (existsSync(join(scenes, 'gallery.json'))) {
     writeFileSync(join(dir, `${id}.html`), fig()); writeFileSync(join(dir, `${id}-still.svg`), still());
     sizes.push(`${id} ${Math.round(statSync(join(dir, `${id}.html`)).size / 1024)} kB`);
   }
+  writeFileSync(join(dir, 'net.html'), figs.nav.networkWhereFigure());   // F-61: the same deck, labelled for the integrity network
   const css = [readFileSync(join(SITE, 'vendor', 'anatomy', 'iso.css'), 'utf8'),
     `.iso.an{${A.LIGHT_TOKENS}}:root[data-theme="dark"] .iso.an{${A.DARK_TOKENS}}@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .iso.an{${A.DARK_TOKENS}}}`,
     A.ACCENT_CSS, readFileSync(join(SITE, 'src', 'protocol', 'anatomy.css'), 'utf8')].join('\n');
   writeFileSync(join(dir, 'anatomy.css'), css);
   console.log(`prepare-data: protocol cutaways staged (${sizes.join(', ')}; stylesheet ${Math.round(css.length / 1024)} kB)`);
 }
+
+// F-61: /network/ (E56): the loss landscape, the policy and its check windows, a compact results file
+(await import('../lib/network.mjs')).stage(PUB);

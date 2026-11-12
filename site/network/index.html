@@ -4,36 +4,90 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Network · LunarHaul</title>
-<meta name="description" content="Coming next: our neural network, the loss landscape its training crossed, and where it runs on a rover.">
-<meta name="robots" content="noindex">
+<meta name="description" content="A small neural network that checks another rover's position reports, trained on simulated faults: its loss landscape and Adam's path through it, what happens inside it, how it compares with the simple tests, and where it runs on a rover.">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="<!--@base-->favicon.svg" type="image/svg+xml">
 <script>try { var t = localStorage.getItem('lunarsim.theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
-<link rel="stylesheet" href="/src/hub.css">
 <script type="module" src="/src/main.js"></script>
+<script type="module" src="/src/network/main.js"></script>
 </head>
 <body>
 <!--@header-->
 <main id="main"><div class="wrap">
   <header class="page-head">
-    <p class="ui-label">In preparation</p>
-    <h1>The network</h1>
-    <p>A small neural network that watches a rover's position reports and flags the ones that look wrong, compared
-      with the simple statistical test it would replace. This page will show what it learned and how.</p>
+    <p class="ui-label">A learned check on position reports · simulated data</p>
+    <h1>Can a small network tell that a rover's position report is wrong?</h1>
+    <p>A rover hears another rover's position once a second and measures the range to it. We trained a network of
+      <!--@nw:params--> parameters to say, from the last two minutes, whether the other rover's reports are wrong, and
+      compared it with the simple tests it would replace. Everything here is simulated: motion from our simulator,
+      simulated sensors and five kinds of simulated fault.</p>
   </header>
-  <section class="prose" aria-labelledby="nw-coming">
-    <h2 id="nw-coming">What this page will hold</h2>
-    <ul class="stub-list">
-      <li><b>The loss landscape in 3D:</b> the training loss over two directions in weight space, with the path
-        gradient descent took across it and a scrubber over the training epochs.</li>
-      <li><b>Inside the network:</b> its layers, with the activations for an example you choose.</li>
-      <li><b>The honest comparison:</b> the simple method it is measured against, and the test scores that matter for
-        rare faults (how many it catches, how many alarms are false, and how long it takes to notice).</li>
-      <li><b>Where it runs:</b> the rover's computer in a cutaway, the inputs it reads (the ranging radio and wheel
-        odometry) and the safety check it feeds.</li>
+
+  <section class="nw-sec" aria-labelledby="nw-found-h">
+    <h2 id="nw-found-h">What it found</h2>
+    <ul class="nw-points prose">
+      <li><b>Where it wins.</b> On the test set, at one false alarm per pair-day, it finds <!--@nw:net_all--> of all
+        faults; the four simple tests find <!--@nw:base_min_all--> to <!--@nw:base_max_all-->. It finds noise
+        inflation (<!--@nw:net_noise-->, against <!--@nw:chi2_noise--> for chi-square and <!--@nw:cusum_noise--> for
+        CUSUM) and more jumps than the chi-square test (<!--@nw:net_jump--> against <!--@nw:chi2_jump-->). On slow
+        drifts its median delay is <!--@nw:drift_diff--> against chi-square's.</li>
+      <li><b>Where it does not.</b> It is not better than a logistic regression on jumps (<!--@nw:net_jump--> against
+        <!--@nw:logreg_jump-->). Slow drifts defeat everyone: the best detector finds <!--@nw:drift_best-->, so at
+        least <!--@nw:drift_missed--> are missed by every detector.</li>
+      <li><b>Out of distribution</b> (noisier ranging, worse dead reckoning, smaller faults) it finds fewer small
+        jumps and slow drifts than CUSUM (<!--@nw:ood_net_jump--> and <!--@nw:ood_net_drift--> against
+        <!--@nw:ood_cusum_jump--> and <!--@nw:ood_cusum_drift-->), and its false alarms rise <!--@nw:fa_ratio-->, from
+        <!--@nw:net_fa_test--> to <!--@nw:net_fa_ood-->. CUSUM pays for its recall with <!--@nw:ood_cusum_fa-->.</li>
     </ul>
-    <p>Nothing on this page is a result yet: the network is still being trained and tested.</p>
   </section>
+
+  <section class="nw-sec" aria-labelledby="nw-land-h">
+    <h2 id="nw-land-h">What did training look like?</h2>
+    <p class="prose">The loss over two directions in weight space: the plane that best fits the path of the training
+      run (its two directions carry <!--@nw:ev1--> and <!--@nw:ev2--> of the path's variance). The optimiser is Adam
+      (learning rate <!--@nw:lr-->, cosine decay, <!--@nw:epochs--> epochs), so the line is Adam's path, not plain
+      gradient descent. Away from the plane the drawn surface can differ from the loss the run recorded: median gap
+      <!--@nw:gap_med-->, largest <!--@nw:gap_max-->, early in the first epoch where the path moves fastest.</p>
+    <figure class="nw-fig" aria-labelledby="nw-land-cap">
+      <div class="nw-host" id="nw-landscape"><p class="small muted">Loading the landscape…</p></div>
+      <figcaption id="nw-land-cap">Validation loss (log scale) on a 42 × 42 grid in the plane of the path; both directions are
+        stretched to the same size on screen. The dot is the chosen checkpoint; the final model sits at the centre.
+        Drag the surface or use the arrow keys to turn it; the contour view shows the same grid flat.</figcaption>
+    </figure>
+  </section>
+
+  <section class="nw-sec" aria-labelledby="nw-in-h">
+    <h2 id="nw-in-h">What does it do with two minutes of data?</h2>
+    <p class="prose">Ten inputs per second, all things the rover already knows, go through six causal convolutions
+      that look ever further back (dilations 1 to 32), so the last second of the last layer sees the whole 127 s
+      window. A last step turns that into one number: the probability that the other rover's reports are wrong. The
+      network below runs in your browser on the same weights the experiment used.</p>
+    <figure class="nw-fig" aria-labelledby="nw-in-cap">
+      <div class="nw-host" id="nw-inside"><p class="small muted">Loading the network…</p></div>
+      <figcaption id="nw-in-cap">Each strip is one layer: a row per channel, a column per second, darker = stronger.
+        Inputs use a two-sided scale (blue negative, orange positive). Windows from the validation set.</figcaption>
+    </figure>
+  </section>
+
+  <section class="nw-sec" aria-labelledby="nw-base-h">
+    <h2 id="nw-base-h">Is it better than the simple tests?</h2>
+    <p class="prose">Every detector's threshold was set on validation data to one false alarm per pair-day; the test
+      set was scored once. The bars are the share of faults found, with their 95 % intervals.</p>
+    <figure class="nw-fig">
+      <div class="nw-host" id="nw-bars"><p class="small muted">Loading the results…</p></div>
+    </figure>
+  </section>
+
+  <section class="nw-sec" aria-labelledby="nw-where-h">
+    <h2 id="nw-where-h">Where does it run on a rover?</h2>
+    <div class="an-slot" data-anat="net">
+      <noscript><img src="<!--@base-->protocol/anatomy/nav-still.svg" width="760" height="470" alt="The rover navigation deck, opened: cameras, star tracker, sun sensor, IMU, clock, computer and radio."></noscript>
+    </div>
+  </section>
+
+  <p class="small muted nw-src">Sources: results/E56_README.md, results/table_E56.csv, results/E56_integrity.json,
+    data/atc/integrity/landscape.json and data/policies/integrity_net_v1.json. See also
+    <a href="<!--@base-->protocol/#integrity">problem 7 on the protocol page</a>.</p>
 </div></main>
 <!--@footer-->
 </body>

@@ -215,13 +215,13 @@ function rows() {
   };
 }
 
-function drawing(open) {
+function drawing(open, variant = 'nav') {
   const parts = { cameras: mast(), star: star(open), sun: sun(), imu: imu(open), radio: radio(open), clock: clock(open), computer: computer(open) };
   const sys = { cameras: 'nav', star: 'nav', sun: 'nav', imu: 'nav', radio: 'radio', clock: 'clock', computer: 'cpu' };
   const centre = { cameras: [...MAST, 0], star: [...STAR, 0], sun: [...SUN, 0], imu: [IMU.x + 19, IMU.y + 19, 0], clock: [CLK.x + 20, CLK.y + 15, 0], computer: [CPU.x + 42, CPU.y + 30, 0], radio: [RAD.x + 15, RAD.y + 14, 0] };
   const order = Object.keys(parts).sort((a, b) => depth(centre[a]) - depth(centre[b]));
   const R = rows();
-  const lab = labels(P, [
+  const lab = labels(P, variant === 'net' ? netLabels(R) : [
     { id: 'cameras', anchor: [MAST[0] - 30, MAST[1], MAST_TOP + 15], title: 'Stereo cameras', value: `drift ${t('dr_vo')}` },
     { id: 'star', anchor: [STAR[0] + 11, STAR[1], 16], title: 'Star tracker', value: `heading ${t('star_hdg')}` },
     { id: 'sun', anchor: [SUN[0] + 6, SUN[1], 8], title: 'Sun sensor', value: `heading ${t('sun_hdg')}` },
@@ -233,6 +233,42 @@ function drawing(open) {
   ], H);
   const body = [base(), cables(), clips(), ...order.map(id => `<g class="nv-part" data-part="${id}" data-sys="${sys[id]}"${id === 'radio' ? ' data-also="antenna"' : ''}>${parts[id]}</g>`), lab].join('');
   return { body, R };
+}
+
+// F-61: the same deck as "where the integrity network runs": its inputs (the range to B, B's report, own odometry and
+// heading), the computer that runs it, and its output to the safety check
+const E56 = () => { const p = join(ROOT, 'results', 'E56_integrity.json'); return existsSync(p) ? JSON.parse(readFileSync(p, 'utf8').replace(/\bNaN\b/g, 'null')) : null; };
+function netLabels() {
+  const E = E56();
+  return [
+    { id: 'cameras', anchor: [MAST[0] - 30, MAST[1], MAST_TOP + 15], title: 'Input: own odometry', value: `drift ${t('dr_vo')}` },
+    { id: 'imu', anchor: [IMU.x, IMU.y + 19, 18], title: 'Input: own heading', value: `drift ${t('gyro')}` },
+    { id: 'radio', anchor: [RAD.x + RAD.w, RAD.y + 14, 10], title: 'Input: range to B', value: `${t('uwb')} to ${t('uwb_range')}` },
+    { id: 'antenna', anchor: [ANT[0], ANT[1], 122], title: "Input: B's report", value: 'once a second' },
+    { id: 'computer', anchor: [CPU.x + 3, CPU.y + CPU.d, 1.5], title: 'Runs the network', value: E ? `${fmt(E.model.n_params, 0)} parameters` : '–' },
+    { id: 'safety', anchor: [42, CPU.y + CPU.d + 5, 3], title: 'Output: safety check', value: 'flags B as suspect' },
+  ];
+}
+function netRows() {
+  const E = E56(), SE = 'results/E56_integrity.json';
+  const e = (value, unit, digits, src) => num({ value, unit, digits, flag: 'Modelled', source: `${SE}: ${src}` });
+  return [
+    ['computer', 'The network, on the navigation computer', 'Reads the last 127 s of ten inputs and gives the probability that B’s reports are wrong.',
+      E ? `${e(E.model.n_params, '', 0, 'model.n_params')} parameters; one window takes ${e(E.timing.numpy_reference_ms.median, ' ms', 2, 'timing.numpy_reference_ms.median')} on a laptop core (the flight core is slower; not measured)` : 'E56 not available', 'our design'],
+    ['radio', 'Input: the range to B', 'A two-way radio range, compared with the range B’s report implies.', `Range error ${n('uwb')} up to ${n('uwb_range')}`, 'published'],
+    ['antenna', "Input: B's position report", 'Received over the coordination radio once a second, with B’s claimed error.', `${n('pos_air')} on the air`, 'our design'],
+    ['cameras', 'Input: own odometry', 'The rover’s own position, with its own claimed error.', `Drift ${n('dr_vo')}`, 'published'],
+    ['imu', 'Input: own heading', 'Turn rate between fixes.', `Heading drift ${n('gyro')} on gyros alone`, 'published'],
+    ['safety', 'Output: the safety check', 'A flagged neighbour is treated as suspect: its space is widened and the others are told.', 'The same rule as the chi-square test it is compared with', 'our design'],
+  ];
+}
+export function networkWhereFigure() {
+  const { body } = drawing(true, 'net');
+  const svg = k.figureSvg({ width: W, height: H, label: 'The rover navigation deck, opened, labelled with what the integrity network reads (the range to the other rover, its position report, own odometry and heading), the computer that runs it, and the safety check its output feeds.', body });
+  return plate({ kind: 'nav', fig: 'Fig 4', title: 'Where it runs', hint: 'Pick a part', readout: 'The network, on the navigation computer',
+    keys: [{ mark: 'lit', label: 'The part picked' }, { mark: 'raised', label: 'Sizes are schematic; the numbers are not' }],
+    caption: 'The network runs beside the safety program on the navigation computer. It reads only what the rover already has, and its output is one more input to the rule that marks a neighbour as suspect.',
+    svg, list: partList(netRows(), 'What the network reads and feeds') });
 }
 
 const LABEL = 'A rover navigation deck on a bench: a mast with two cameras at the back left, a star tracker and a small sun sensor at the back right, the IMU in the middle, a clock module and the navigation computer at the front, and the ranging radio with its antenna at the front right, all cabled to the computer. Opening the figure lifts the lids and moves the side panels away. Labels give each part\'s key number.';

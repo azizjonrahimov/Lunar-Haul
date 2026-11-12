@@ -48,17 +48,38 @@
       ],
       "data_gzip_kb": 80,
       "lazy": [
+        "assets/protocol-figures-????????.js",
         "assets/protocol-anatomy-live-????????.js"
       ],
-      "lazy_gzip_kb": 5,
+      "lazy_gzip_kb": 25,
       "lazy_css": [
         "protocol/anatomy/anatomy.css"
       ],
       "lazy_css_gzip_kb": 5
     },
     "network/index.html": {
-      "js_gzip_kb": 5,
+      "js_gzip_kb": 10,
       "css_gzip_kb": 10,
+      "data": [
+        "network/landscape.json",
+        "network/integrity_net_v1.json",
+        "network/integrity_net_v1.check.json",
+        "network/e56.json",
+        "protocol/anatomy/net.html"
+      ],
+      "data_gzip_kb": 160,
+      "lazy": [
+        "assets/network-landscape-????????.js",
+        "assets/network-inside-????????.js",
+        "assets/network-bars-????????.js",
+        "assets/protocol-anatomy-live-????????.js"
+      ],
+      "lazy_gzip_kb": 20,
+      "lazy_css": [
+        "protocol/anatomy/anatomy.css",
+        "assets/ui-????????.css"
+      ],
+      "lazy_css_gzip_kb": 10,
       "fonts": [
         "assets/source-sans-3-latin-wght-italic-*.woff2"
       ],

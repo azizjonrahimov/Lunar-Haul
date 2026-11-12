@@ -751,7 +751,7 @@ band) with the hill in the way and the relay path; (5) a message taken apart byt
 manifest matched to a task; (6) an auction, a failure and the takeover on one timeline; (7) a wrong position
 report being caught, with the test statistic crossing its threshold; (8) a table of who has flown what.
 
-## F-61 [IN PROGRESS] /network/ page: the network, its loss landscape and the descent path
+## F-61 [DONE 11 Nov 16:38, uncommitted] /network/ page: the network, its loss landscape and the descent path
 Data (all committed): `data/atc/integrity/landscape.json` (42 x 42 loss grid in the PCA plane of the training
 path, the path with epochs and losses, explained variance 86.5 % + 9.5 %, the architecture as layers), the
 policy `data/policies/integrity_net_v1.json` with `integrity_net_v1.check.json` (10 windows, tolerance 1e-6: a

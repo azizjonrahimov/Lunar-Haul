@@ -50,6 +50,10 @@ function mountNav(root) {
   const btn = root.querySelector('.an-open'); let t = 0, opened = false, auto = true;
   const pose = u => { t = u; for (const m of movers) { m.el.setAttribute('transform', `translate(${r1(m.v[0] * u)} ${r1(m.v[1] * u)})`); if (m.fade !== null) m.el.setAttribute('opacity', String(1 - u * (1 - m.fade))); } };
   const set = open => { opened = open; btn.setAttribute('aria-pressed', String(open)); btn.textContent = open ? 'Close the boxes' : 'Open the boxes'; glide(t, open ? 1 : 0, 1100, pose); read(open ? 'Opened: lids lifted, side panels set aside' : 'Closed', true); };
+  if (!btn) {   // a variant drawn open, without the control (the /network/ deck)
+    new IntersectionObserver(es => { visible = es[es.length - 1].isIntersecting; run(); }, { threshold: 0.35 }).observe(root);
+    show(order[0]); return;
+  }
   btn.addEventListener('click', () => { auto = false; set(!opened); });
   new IntersectionObserver(es => {
     visible = es[es.length - 1].isIntersecting; run();
