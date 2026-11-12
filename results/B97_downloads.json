@@ -1,0 +1,586 @@
+{
+ "task": "B-97",
+ "location": ".cache/external/ (git-ignored)",
+ "total_bytes": 195994642,
+ "limit_bytes": 200000000,
+ "sources": {
+  "telemanom (SMAP / MSL)": {
+   "original": "https://github.com/khundman/telemanom (data bucket https://s3-us-west-2.amazonaws.com/telemanom/data.zip answers 403)",
+   "mirror": "https://github.com/imperial-qore/TranAD/tree/main/data/SMAP_MSL",
+   "mirror_licence": "BSD-3-Clause (GitHub licence API for imperial-qore/TranAD)",
+   "original_licence": "NOASSERTION per the GitHub licence API (see the repository's LICENSE file)",
+   "is_mirror": true,
+   "checks_passed": [
+    "labeled_anomalies.csv byte-identical to the original (sha256 057ce2d6...)",
+    "82 channels: 55 SMAP, 27 MSL",
+    "105 labelled anomalies",
+    "every downloaded test array has num_values rows; 25 (SMAP) / 55 (MSL) columns"
+   ]
+  },
+  "Artemis II SPICE": "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/artemis2/artemis2_spice/ (doi:10.17189/7ezn-0294)",
+  "Artemis II OpNav images": "PDS Imaging Node Atlas, https://pds-imaging.jpl.nasa.gov/api/data/atlas:pds4:artemis2:artemis2:/artemis2_orion_camera/data_raw_image/",
+  "generic NAIF kernels": "already in .cache/comms/kernels (tools/comms/earth_link.py), not counted here"
+ },
+ "files": [
+  {
+   "file": ".cache/external/artemis2/opnav/art002e000254_onav_raw_v01.tif",
+   "bytes": 5312660,
+   "sha256": "6ddee446b3a7977f7450111222c2893a19e49039cd2885d5de98d1d64ed67392",
+   "url": "https://pds-imaging.jpl.nasa.gov/api/data/atlas:pds4:artemis2:artemis2:/artemis2_orion_camera/data_raw_image/fd01/art002e000254_onav_raw_v01.tif",
+   "mirror": false
+  },
+  {
+   "file": ".cache/external/artemis2/opnav/art002e000254_onav_raw_v01.xml",
+   "bytes": 9624,
+   "sha256": "30cf12c2e656b64030e9d5a48b43c473a00cac973ffc68523c77e9e221640e14",
+   "url": "https://pds-imaging.jpl.nasa.gov/api/data/atlas:pds4:artemis2:artemis2:/artemis2_orion_camera/data_raw_image/fd01/art002e000254_onav_raw_v01.xml",
+   "mirror": false
+  },
+  {
+   "file": ".cache/external/artemis2/opnav/art002e030057_onav_raw_v01.tif",
+   "bytes": 5312660,
+   "sha256": "6aeb4718b20e7da2ec193ea7e71b3714483b17c8e1e2d25b7d90d0d7fb70a805",
+   "url": "https://pds-imaging.jpl.nasa.gov/api/data/atlas:pds4:artemis2:artemis2:/artemis2_orion_camera/data_raw_image/fd03/art002e030057_onav_raw_v01.tif",
+   "mirror": false
+  },
+  {
+   "file": ".cache/external/artemis2/opnav/art002e030057_onav_raw_v01.xml",
+   "bytes": 9624,
+   "sha256": "ed5d8375115b9b0ef28f2fad95f410fd9eb0c5fde69d1ef84fa10503e6b6ee68",
+   "url": "https://pds-imaging.jpl.nasa.gov/api/data/atlas:pds4:artemis2:artemis2:/artemis2_orion_camera/data_raw_image/fd03/art002e030057_onav_raw_v01.xml",
+   "mirror": false
+  },
+  {
+   "file": ".cache/external/artemis2/opnav/art002e030166_onav_raw_v01.tif",
+   "bytes": 5312660,
+   "sha256": "49c1775b226440be2487a25abc6572527f1224513bf493216f1e6560a4ce1eff",
+   "url": "https://pds-imaging.jpl.nasa.gov/api/data/atlas:pds4:artemis2:artemis2:/artemis2_orion_camera/data_raw_image/fd04/art002e030166_onav_raw_v01.tif",
+   "mirror": false
+  },
+  {
+   "file": ".cache/external/artemis2/opnav/art002e030166_onav_raw_v01.xml",
+   "bytes": 9624,
+   "sha256": "0cf8b2311492b2cf4643ba5a7c50118e34a77ae17d578023da5e574304a951ee",
+   "url": "https://pds-imaging.jpl.nasa.gov/api/data/atlas:pds4:artemis2:artemis2:/artemis2_orion_camera/data_raw_image/fd04/art002e030166_onav_raw_v01.xml",
+   "mirror": false
+  },
+  {
+   "file": ".cache/external/artemis2/opnav/art002e030313_onav_raw_v01.tif",
+   "bytes": 5312660,
+   "sha256": "14d1b471e66b37fbcf6cb2f99f110020aefa7356ce9720776a6cc1be1a1e1c69",
+   "url": "https://pds-imaging.jpl.nasa.gov/api/data/atlas:pds4:artemis2:artemis2:/artemis2_orion_camera/data_raw_image/fd05/art002e030313_onav_raw_v01.tif",
+   "mirror": false
+  },
+  {
+   "file": ".cache/external/artemis2/opnav/art002e030313_onav_raw_v01.xml",
+   "bytes": 9624,
+   "sha256": "03dc4dc37909ba18c01f9fe4678270b4789e65d7ee72e56a8980ebadc1bd9042",
+   "url": "https://pds-imaging.jpl.nasa.gov/api/data/atlas:pds4:artemis2:artemis2:/artemis2_orion_camera/data_raw_image/fd05/art002e030313_onav_raw_v01.xml",
+   "mirror": false
+  },
+  {
+   "file": ".cache/external/artemis2/opnav/art002e030457_onav_raw_v01.tif",
+   "bytes": 5312660,
+   "sha256": "063fc87ecc4da01fce49a8f2c9f3f937323e2bd62b5ceae3fc9e29cff344f205",
+   "url": "https://pds-imaging.jpl.nasa.gov/api/data/atlas:pds4:artemis2:artemis2:/artemis2_orion_camera/data_raw_image/fd07/art002e030457_onav_raw_v01.tif",
+   "mirror": false
+  },
+  {
+   "file": ".cache/external/artemis2/opnav/art002e030457_onav_raw_v01.xml",
+   "bytes": 9624,
+   "sha256": "a4d5ea8ce7e5215c665dd53556b9a82ffe0dd3b093a7f5eef1c0c0b3e5a779a3",
+   "url": "https://pds-imaging.jpl.nasa.gov/api/data/atlas:pds4:artemis2:artemis2:/artemis2_orion_camera/data_raw_image/fd07/art002e030457_onav_raw_v01.xml",
+   "mirror": false
+  },
+  {
+   "file": ".cache/external/artemis2/opnav/art002e030752_onav_raw_v01.tif",
+   "bytes": 5312660,
+   "sha256": "b150bb35d1b2ad196defbd3a50d8d90d7a86ab87d2609a6ec69a969700412293",
+   "url": "https://pds-imaging.jpl.nasa.gov/api/data/atlas:pds4:artemis2:artemis2:/artemis2_orion_camera/data_raw_image/fd10/art002e030752_onav_raw_v01.tif",
+   "mirror": false
+  },
+  {
+   "file": ".cache/external/artemis2/opnav/art002e030752_onav_raw_v01.xml",
+   "bytes": 9625,
+   "sha256": "8fc5d8157507fc745bc9b08fe33f021aff22e7660702221d6479bd9ea55188f9",
+   "url": "https://pds-imaging.jpl.nasa.gov/api/data/atlas:pds4:artemis2:artemis2:/artemis2_orion_camera/data_raw_image/fd10/art002e030752_onav_raw_v01.xml",
+   "mirror": false
+  },
+  {
+   "file": ".cache/external/artemis2/spice/art002_fixedcam_v0.ti",
+   "bytes": 18744,
+   "sha256": "ceb5e33bdd59f28a06b06ff3461c1f51911e41f5e4ad3ce3aa6aca9e9500c77d",
+   "url": "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/artemis2/artemis2_spice/spice_kernels/ik/art002_fixedcam_v0.ti",
+   "mirror": false
+  },
+  {
+   "file": ".cache/external/artemis2/spice/art002_met_v0.tsc",
+   "bytes": 2971,
+   "sha256": "f45697eddb551e88a4c6b8697834171262b87af3c2d271e1212e37fa481ca608",
+   "url": "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/artemis2/artemis2_spice/spice_kernels/sclk/art002_met_v0.tsc",
+   "mirror": false
+  },
+  {
+   "file": ".cache/external/artemis2/spice/art002_nom_v0.tsc",
+   "bytes": 2932,
+   "sha256": "d8d0d290a1725ea18794461c84489ff2e6603200db7a3369247fad48440ca003",
+   "url": "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/artemis2/artemis2_spice/spice_kernels/sclk/art002_nom_v0.tsc",
+   "mirror": false
+  },
+  {
+   "file": ".cache/external/artemis2/spice/art002_rec_260402_260410_jsc_bet_revf.bsp",
+   "bytes": 5693440,
+   "sha256": "b8b3ebc4d703c3a73c9651b9da36114c3ef0b2c75f92873dd4970f32367aa7be",
+   "url": "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/artemis2/artemis2_spice/spice_kernels/spk/art002_rec_260402_260410_jsc_bet_revf.bsp",
+   "mirror": false
+  },
+  {
+   "file": ".cache/external/artemis2/spice/art002_rec_260402_260410_jsc_bet_revf_gapfill.bsp",
+   "bytes": 50176,
+   "sha256": "ac9e3f21302a6a510757fff41a9f8a55df907b75fb2142b8fdfc44a599ddc9b9",
+   "url": "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/artemis2/artemis2_spice/spice_kernels/spk/art002_rec_260402_260410_jsc_bet_revf_gapfill.bsp",
+   "mirror": false
+  },
+  {
+   "file": ".cache/external/artemis2/spice/art002_sc_rec_260402_260410_betv0_v1.bc",
+   "bytes": 96567296,
+   "sha256": "ede1c7b0d4b0ad4174512574720412135e0cfc42337f2dcc8730335c9ac13631",
+   "url": "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/artemis2/artemis2_spice/spice_kernels/ck/art002_sc_rec_260402_260410_betv0_v1.bc",
+   "mirror": false
+  },
+  {
+   "file": ".cache/external/artemis2/spice/art002_struct_v1.bsp",
+   "bytes": 32768,
+   "sha256": "1e9ba54947036bb6985b136b699d156badce10e7084d94744a270dfd1248294b",
+   "url": "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/artemis2/artemis2_spice/spice_kernels/spk/art002_struct_v1.bsp",
+   "mirror": false
+  },
+  {
+   "file": ".cache/external/artemis2/spice/art002_v0.tf",
+   "bytes": 57135,
+   "sha256": "88756b0d2a2aa71be2dadde3a7f6d8a54a78931f647516c26684494efcddbe02",
+   "url": "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/artemis2/artemis2_spice/spice_kernels/fk/art002_v0.tf",
+   "mirror": false
+  },
+  {
+   "file": ".cache/external/artemis2/spice/artemis2_v01.tm",
+   "bytes": 3007,
+   "sha256": "41496a5829f1e12479d9bdfa3346de22ad8b9672d13c0b88d44eda34df315a76",
+   "url": "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/artemis2/artemis2_spice/spice_kernels/mk/artemis2_v01.tm",
+   "mirror": false
+  },
+  {
+   "file": ".cache/external/artemis2/spice/moon_assoc_me.tf",
+   "bytes": 8468,
+   "sha256": "52c622043ce0447d575e59ee01642f1894921e68c10f934ceff065f362da6c1c",
+   "url": "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/artemis2/artemis2_spice/spice_kernels/fk/moon_assoc_me.tf",
+   "mirror": false
+  },
+  {
+   "file": ".cache/external/telemanom/labeled_anomalies_mirror.csv",
+   "bytes": 3956,
+   "sha256": "057ce2d6c8875982bf4e5404aefea14efdcbce413d80826d2b737c95b59b7539",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/labeled_anomalies.csv",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/labeled_anomalies_official.csv",
+   "bytes": 3956,
+   "sha256": "057ce2d6c8875982bf4e5404aefea14efdcbce413d80826d2b737c95b59b7539",
+   "url": "https://raw.githubusercontent.com/khundman/telemanom/master/labeled_anomalies.csv",
+   "mirror": false
+  },
+  {
+   "file": ".cache/external/telemanom/test/C-1.npy",
+   "bytes": 996288,
+   "sha256": "ea8bf028555a09a45b5fd5003958c8500da46b12178c963186293db14e3c8aab",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/test/C-1.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/test/C-2.npy",
+   "bytes": 902568,
+   "sha256": "dca3a5cc07ec3899c2b9c6bc28a889d9872a670d08677065d39da1326c14c2b4",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/test/C-2.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/test/E-1.npy",
+   "bytes": 1703328,
+   "sha256": "b3426072dcf0b153bc34acefc827e2a8933d1c3d86ae20674504ad1ad7000f86",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/test/E-1.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/test/E-10.npy",
+   "bytes": 1701128,
+   "sha256": "d1d28e86edff75219683e0d18c5342fdc240fc17a263bee47065c7e7b03f6d49",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/test/E-10.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/test/E-11.npy",
+   "bytes": 1702928,
+   "sha256": "7e92f952316e2996e6dad1595eff26fc88be8a37c026f11b6d55e4df27af7a81",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/test/E-11.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/test/E-12.npy",
+   "bytes": 1702528,
+   "sha256": "d00acd9fb12fb9e97315d266963e8dedb051a29f8fa0bf3f4cdcc5f27c7029d1",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/test/E-12.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/test/E-2.npy",
+   "bytes": 1706528,
+   "sha256": "47f7e5bafc9bbc8f4f3f3547f2e77f794ab24bcaaa9662c7020fd18c2384129b",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/test/E-2.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/test/E-3.npy",
+   "bytes": 1661528,
+   "sha256": "86865b2a9b95eb854d7a75755d27001dc8337d0f24d45fcf4202b7dcd796f13c",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/test/E-3.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/test/E-4.npy",
+   "bytes": 1670928,
+   "sha256": "d0e6cc6c43e986b49a1eea5c7b37efc0f15bf73b96b816a11d84b5755e28f750",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/test/E-4.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/test/E-5.npy",
+   "bytes": 1658928,
+   "sha256": "e1d0d97f898c474cccf04c7ff9cb57e319a215bf2ef51c61302ba944c69d3ceb",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/test/E-5.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/test/E-6.npy",
+   "bytes": 1660128,
+   "sha256": "cc791f2bb1b9ef88af2702eacf2265c4b9991eb2c224c8faffcdbe8fac53baa2",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/test/E-6.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/test/E-7.npy",
+   "bytes": 1662128,
+   "sha256": "229a2fa46dc670b911e35fd939f4380eae71fd112c8e7957f0a30c2113afe408",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/test/E-7.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/test/E-8.npy",
+   "bytes": 1706528,
+   "sha256": "75c44c1016aa13059013cb85bfca05289de9f7b844b9c0a0090a181fa420f713",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/test/E-8.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/test/E-9.npy",
+   "bytes": 1660528,
+   "sha256": "567a05e4c2bf3b80778f9f2ddb2e310a3b48e48c01eb653b43dda22575dfb759",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/test/E-9.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/test/F-7.npy",
+   "bytes": 2223888,
+   "sha256": "8474d57429c8541ad5efd4635c8751e3d90fb1feeba3a4b94958cada77f90665",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/test/F-7.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/test/M-1.npy",
+   "bytes": 1002008,
+   "sha256": "58e16675dc0bada099130d02bd29279ea20c764bf3415bb5adefd626ef94dd56",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/test/M-1.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/test/M-2.npy",
+   "bytes": 1002008,
+   "sha256": "1bee2419bc4b5d9a7a71e830c1af5c98837ab31640da553f8f0d3eff9e86af49",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/test/M-2.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/test/M-3.npy",
+   "bytes": 936008,
+   "sha256": "3c43c068fddbf661c6e7cbd933f8b10adcef9cd446818a160ef7c62994fb3d3a",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/test/M-3.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/test/M-4.npy",
+   "bytes": 896848,
+   "sha256": "bac52a304556631942d5e548a4ecc1cbf3aae3409aeb5c8eaaf3126b1ae83ac2",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/test/M-4.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/test/M-5.npy",
+   "bytes": 1013448,
+   "sha256": "e4d8cf724bf78d94daae0dc66d5f1a3023545229e15ab9aa3877c267a41b57b5",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/test/M-5.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/test/M-6.npy",
+   "bytes": 901688,
+   "sha256": "4138b2b33f919eb0791b0d2f5337f605bcfc533b07ed91015bfbbcda1c08a612",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/test/M-6.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/test/P-1.npy",
+   "bytes": 1701128,
+   "sha256": "5dbed44bbd0a643e5e3131578c233e73428c70cc678ea9727dde4f3a2da53ce1",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/test/P-1.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/test/P-10.npy",
+   "bytes": 2684128,
+   "sha256": "2a34698f41fd1a16324f26d86a9443f3c633e7554f524e53d4773b40ca83a52a",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/test/P-10.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/test/P-15.npy",
+   "bytes": 1256768,
+   "sha256": "2284348ac1fc998b5aa76c5bbfbeff977f36b17f9602b6654dc65552b50954ae",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/test/P-15.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/test/S-1.npy",
+   "bytes": 1466328,
+   "sha256": "76dbe1a9717b1fc4e6e7119883c4ccdf984764a1e8599b225a4241b67d043652",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/test/S-1.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/test/S-2.npy",
+   "bytes": 804008,
+   "sha256": "fb9651f2d378bfceef7d694cbe3cb7eafd36b8113241da247b98da53caefaeea",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/test/S-2.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/test/T-4.npy",
+   "bytes": 975608,
+   "sha256": "330499f248367f9bb3eae4eadc105fa9d44bfee3913a3d4b066f9dd3c43a4156",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/test/T-4.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/test/T-5.npy",
+   "bytes": 976048,
+   "sha256": "164cc73b9f82861959f61c54828c3ac70e6ffcc005b38c84a620c125106a6041",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/test/T-5.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/train/C-1.npy",
+   "bytes": 949648,
+   "sha256": "31fd0a2a44f5beac2c64e1484d5c96ea4adecdd1b52013775e215b01260975ee",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/C-1.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/train/C-2.npy",
+   "bytes": 336288,
+   "sha256": "5d05b47d790135de8d91ca2918d95892c3f52fbfa567fe5b637d51aaa8b91871",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/C-2.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/train/E-1.npy",
+   "bytes": 576128,
+   "sha256": "adef4d2a83660467f41fdb1d586b63ced4ff59e5516f07e2efae824d9129a023",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/E-1.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/train/E-10.npy",
+   "bytes": 576128,
+   "sha256": "df543a47b41d33c52eefb7c320c3b03f0979d89ba2be29730601886d2b7cbf2d",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/E-10.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/train/E-11.npy",
+   "bytes": 576128,
+   "sha256": "34c59f1e07a46a971e0546014c248b03ecf7f6a38cdc81d34481165164aaa27c",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/E-11.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/train/E-12.npy",
+   "bytes": 576128,
+   "sha256": "8eaefcc79039f9c781bc66b2cc2933f97599d63dfdcad4fe4fb9b8170f28d27d",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/E-12.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/train/E-2.npy",
+   "bytes": 576128,
+   "sha256": "8709cde1ac1d574fb0c85b2eb5c02c58dabed541aa3f90053adedd42c5ebaafb",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/E-2.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/train/E-3.npy",
+   "bytes": 576128,
+   "sha256": "611bed41517fcdc3ad6648f36d22026cf4877d3be542b498a96a42a9c34a08c6",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/E-3.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/train/E-4.npy",
+   "bytes": 576128,
+   "sha256": "d1046979a23e31d3da6563332c3e5eaa106d73d50729e3be04b7ef53ecbe139b",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/E-4.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/train/E-5.npy",
+   "bytes": 576128,
+   "sha256": "bc1b6ed3f1e939bb29899088ecc328cb7516487752a1c8668434de50932e8ee3",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/E-5.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/train/E-6.npy",
+   "bytes": 576128,
+   "sha256": "810daf92496572d7f2046e70a23109836e6b23bc0df1c9236dcc61015849376b",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/E-6.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/train/E-7.npy",
+   "bytes": 553928,
+   "sha256": "ae811efa8fce18d8bb99770929d3782e62cb0bd96bbbe37bb73f00e1c9104afc",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/E-7.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/train/E-8.npy",
+   "bytes": 576128,
+   "sha256": "b84fe984f4aa107444094cd3e1b6f10401420cdda1cd1e7dcf3bce65498b322d",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/E-8.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/train/E-9.npy",
+   "bytes": 576128,
+   "sha256": "91b75853f36b902e8b933682f031dd0552c365e5b9f2048d867c987a0b3206d0",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/E-9.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/train/F-7.npy",
+   "bytes": 1104968,
+   "sha256": "f1c908cad80a8bf6cb7117d736d1a22927522572ca7987128bc4f8419c886411",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/F-7.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/train/M-1.npy",
+   "bytes": 972088,
+   "sha256": "453bfb0edbbdfd3654098a652fad3a49f07fde9242993078dbe8f1bae1751612",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/M-1.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/train/M-2.npy",
+   "bytes": 971648,
+   "sha256": "61b50d819aaa87f57ba8a90163c3fabf815e8c6a1f242ab60d410d5edd8f42fa",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/M-2.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/train/M-3.npy",
+   "bytes": 896408,
+   "sha256": "c48a3f877d939f604cad977aa259595726cbf34f0193e423285545f512c2b3f3",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/M-3.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/train/M-4.npy",
+   "bytes": 913568,
+   "sha256": "a21e75cebb452724be26f5ca5f463c2b86588bcac25217c4cae27d563a81b0d1",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/M-4.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/train/M-5.npy",
+   "bytes": 894208,
+   "sha256": "a8512b5b0edc1515539539fe93eb731bf7e2528d9322b39782bf1781f5ca66a6",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/M-5.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/train/M-6.npy",
+   "bytes": 688728,
+   "sha256": "681fab71a4c910ceddc519b96e00adbc31e53f485284a62cfae8de2eb5358f26",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/M-6.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/train/P-1.npy",
+   "bytes": 574528,
+   "sha256": "78b6eec2b3cb1e6711d07ce994c7375de94b036d839c0f06fe258f446dff667a",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/P-1.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/train/P-10.npy",
+   "bytes": 1895648,
+   "sha256": "b537ea82e001d9eaaa611ee41e79fdcc4d5a8387fd27392e65678cc4c808a692",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/P-10.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/train/P-15.npy",
+   "bytes": 1620208,
+   "sha256": "4a325d0b70aaa431f0c452472b5a30c3720b6881cd1c0bf4e7e73e821dc4c824",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/P-15.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/train/S-1.npy",
+   "bytes": 563728,
+   "sha256": "196c8413ba0319ea6366273b1d558c07d87c286425e1611768fcb95df37fb309",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/S-1.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/train/S-2.npy",
+   "bytes": 407568,
+   "sha256": "48844faca56f15e5a698f1c0eee114b544f3b87dcaa134b8f0327e025eeac131",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/S-2.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/train/T-4.npy",
+   "bytes": 999808,
+   "sha256": "d137cceeedfd2c0759b9217ccb15cb29d7c8c0458d2d2515f84f54d5f0655c4c",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/T-4.npy",
+   "mirror": true
+  },
+  {
+   "file": ".cache/external/telemanom/train/T-5.npy",
+   "bytes": 999808,
+   "sha256": "dee9cf73d88fedd63896b51c627880a5693645ba641806bbcfbae294e3e30376",
+   "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/T-5.npy",
+   "mirror": true
+  }
+ ]
+}

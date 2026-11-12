@@ -1,0 +1,444 @@
+{
+ "task": "B-97 real-data checks",
+ "note": "python tools/atc/run_b97.py telemetry     # SMAP / MSL telemetry: the z-score baseline and B-96's detector family\n    python tools/atc/run_b97.py artemis       # Artemis II OpNav limb fits against the SPICE trajectory and attitude\n    python tools/atc/run_b97.py geometry      # earth_link.py's topocentric geometry on the Artemis II trajectory\n    python tools/atc/run_b97.py manifest      # results/B97_downloads.json (URL, bytes, sha256, mirror flag, licence)\n    -> results/B97_realdata.json",
+ "telemetry": {
+  "channels": [
+   "C-1",
+   "C-2",
+   "E-1",
+   "E-10",
+   "E-11",
+   "E-12",
+   "E-2",
+   "E-3",
+   "E-4",
+   "E-5",
+   "E-6",
+   "E-7",
+   "E-8",
+   "E-9",
+   "F-7",
+   "M-1",
+   "M-2",
+   "M-3",
+   "M-4",
+   "M-5",
+   "M-6",
+   "P-1",
+   "P-10",
+   "P-15",
+   "S-1",
+   "S-2",
+   "T-4",
+   "T-5"
+  ],
+  "rows": [
+   {
+    "spacecraft": "MSL",
+    "residual": "diff",
+    "detector": "chi2_step",
+    "events": 18,
+    "found": 10,
+    "fp_runs": 147,
+    "channels": 14,
+    "recall": 0.5555555555555556,
+    "precision": 0.06369426751592357,
+    "f0.5": 0.07739938080495357
+   },
+   {
+    "spacecraft": "MSL",
+    "residual": "diff",
+    "detector": "chi2_window_16",
+    "events": 18,
+    "found": 10,
+    "fp_runs": 32,
+    "channels": 14,
+    "recall": 0.5555555555555556,
+    "precision": 0.23809523809523808,
+    "f0.5": 0.26881720430107525
+   },
+   {
+    "spacecraft": "MSL",
+    "residual": "diff",
+    "detector": "cusum_k0.5",
+    "events": 18,
+    "found": 10,
+    "fp_runs": 29,
+    "channels": 14,
+    "recall": 0.5555555555555556,
+    "precision": 0.2564102564102564,
+    "f0.5": 0.28735632183908044
+   },
+   {
+    "spacecraft": "MSL",
+    "residual": "diff",
+    "detector": "zscore",
+    "events": 18,
+    "found": 10,
+    "fp_runs": 147,
+    "channels": 14,
+    "recall": 0.5555555555555556,
+    "precision": 0.06369426751592357,
+    "f0.5": 0.07739938080495357
+   },
+   {
+    "spacecraft": "MSL",
+    "residual": "level",
+    "detector": "chi2_step",
+    "events": 18,
+    "found": 10,
+    "fp_runs": 25,
+    "channels": 14,
+    "recall": 0.5555555555555556,
+    "precision": 0.2857142857142857,
+    "f0.5": 0.3164556962025316
+   },
+   {
+    "spacecraft": "MSL",
+    "residual": "level",
+    "detector": "chi2_window_16",
+    "events": 18,
+    "found": 13,
+    "fp_runs": 16,
+    "channels": 14,
+    "recall": 0.7222222222222222,
+    "precision": 0.4482758620689655,
+    "f0.5": 0.4850746268656716
+   },
+   {
+    "spacecraft": "MSL",
+    "residual": "level",
+    "detector": "cusum_k0.5",
+    "events": 18,
+    "found": 13,
+    "fp_runs": 15,
+    "channels": 14,
+    "recall": 0.7222222222222222,
+    "precision": 0.4642857142857143,
+    "f0.5": 0.5
+   },
+   {
+    "spacecraft": "MSL",
+    "residual": "level",
+    "detector": "zscore",
+    "events": 18,
+    "found": 10,
+    "fp_runs": 25,
+    "channels": 14,
+    "recall": 0.5555555555555556,
+    "precision": 0.2857142857142857,
+    "f0.5": 0.3164556962025316
+   },
+   {
+    "spacecraft": "SMAP",
+    "residual": "diff",
+    "detector": "chi2_step",
+    "events": 20,
+    "found": 7,
+    "fp_runs": 37,
+    "channels": 14,
+    "recall": 0.35,
+    "precision": 0.1590909090909091,
+    "f0.5": 0.17857142857142855
+   },
+   {
+    "spacecraft": "SMAP",
+    "residual": "diff",
+    "detector": "chi2_window_16",
+    "events": 20,
+    "found": 7,
+    "fp_runs": 23,
+    "channels": 14,
+    "recall": 0.35,
+    "precision": 0.23333333333333334,
+    "f0.5": 0.25
+   },
+   {
+    "spacecraft": "SMAP",
+    "residual": "diff",
+    "detector": "cusum_k0.5",
+    "events": 20,
+    "found": 5,
+    "fp_runs": 37,
+    "channels": 14,
+    "recall": 0.25,
+    "precision": 0.11904761904761904,
+    "f0.5": 0.13297872340425532
+   },
+   {
+    "spacecraft": "SMAP",
+    "residual": "diff",
+    "detector": "zscore",
+    "events": 20,
+    "found": 7,
+    "fp_runs": 37,
+    "channels": 14,
+    "recall": 0.35,
+    "precision": 0.1590909090909091,
+    "f0.5": 0.17857142857142855
+   },
+   {
+    "spacecraft": "SMAP",
+    "residual": "level",
+    "detector": "chi2_step",
+    "events": 20,
+    "found": 2,
+    "fp_runs": 2,
+    "channels": 14,
+    "recall": 0.1,
+    "precision": 0.5,
+    "f0.5": 0.2777777777777778
+   },
+   {
+    "spacecraft": "SMAP",
+    "residual": "level",
+    "detector": "chi2_window_16",
+    "events": 20,
+    "found": 12,
+    "fp_runs": 18,
+    "channels": 14,
+    "recall": 0.6,
+    "precision": 0.4,
+    "f0.5": 0.4285714285714286
+   },
+   {
+    "spacecraft": "SMAP",
+    "residual": "level",
+    "detector": "cusum_k0.5",
+    "events": 20,
+    "found": 16,
+    "fp_runs": 26,
+    "channels": 14,
+    "recall": 0.8,
+    "precision": 0.38095238095238093,
+    "f0.5": 0.42553191489361697
+   },
+   {
+    "spacecraft": "SMAP",
+    "residual": "level",
+    "detector": "zscore",
+    "events": 20,
+    "found": 2,
+    "fp_runs": 2,
+    "channels": 14,
+    "recall": 0.1,
+    "precision": 0.5,
+    "f0.5": 0.2777777777777778
+   }
+  ],
+  "threshold_rule": "per channel, the maximum score on the training data (no training alarm)"
+ },
+ "artemis2": {
+  "camera": {
+   "focal_px": 7312.36184726775,
+   "fx": 7312.6589772041525,
+   "fy": 7312.064717331346,
+   "urad_per_px": 136.7547204154904
+  },
+  "images": [
+   {
+    "image": "art002e000254_onav_raw_v01.tif",
+    "utc": "2026-04-02T13:10:07Z",
+    "otsu": null,
+    "pixel_stats": {
+     "min": 255,
+     "max": 255,
+     "mean": 255.0
+    },
+    "fit": "unusable: every pixel is 255 (saturated or blank frame)"
+   },
+   {
+    "image": "art002e030057_onav_raw_v01.tif",
+    "utc": "2026-04-03T20:15:07Z",
+    "otsu": 100,
+    "pixel_stats": {
+     "min": 0,
+     "max": 255,
+     "mean": 2.9993572470582563
+    },
+    "limb_px": {
+     "cx": 1762.2833149485305,
+     "cy": 1200.1785219986848,
+     "r": 249.30697376138028
+    },
+    "limb_inlier_share": 0.41807147673634526,
+    "boundary_px": 1483,
+    "off_boresight_deg_image": 3.9046353324715475,
+    "target_basis": "SPICE: the body inside the OpNav field of view",
+    "target": "EARTH",
+    "radius_km_used": 6371.0,
+    "range_km_image": 186974.81674495546,
+    "range_km_spice": 186160.21715981868,
+    "range_err_km": 814.599585136777,
+    "range_err_rel": 0.004375798425489817,
+    "r_px_predicted": 250.3991672456721,
+    "other_body_off_boresight_deg": {
+     "MOON": 136.5713211500778
+    },
+    "off_boresight_deg_spice": 3.9836057553606374,
+    "off_boresight_err_deg": -0.07897042288908995,
+    "direction_err_deg_best_signs": 0.1292367813293158,
+    "pixel_axis_signs": [
+     1,
+     1
+    ]
+   },
+   {
+    "image": "art002e030166_onav_raw_v01.tif",
+    "utc": "2026-04-04T21:14:45Z",
+    "otsu": 92,
+    "pixel_stats": {
+     "min": 0,
+     "max": 255,
+     "mean": 2.7926750654055748
+    },
+    "limb_px": {
+     "cx": 1420.4219725784467,
+     "cy": 1154.7167900063305,
+     "r": 75.92249721147492
+    },
+    "limb_inlier_share": 0.9837587006960556,
+    "boundary_px": 431,
+    "off_boresight_deg_image": 1.4192782168318578,
+    "target_basis": "SPICE: the body inside the OpNav field of view",
+    "target": "MOON",
+    "radius_km_used": 1737.4,
+    "range_km_image": 167344.1035906601,
+    "range_km_spice": 165208.73203842525,
+    "range_err_km": 2135.3715522348357,
+    "range_err_rel": 0.012925294721941077,
+    "r_px_predicted": 76.9039257120721,
+    "other_body_off_boresight_deg": {
+     "EARTH": 117.95531454959169
+    },
+    "off_boresight_deg_spice": 1.4983876856337317,
+    "off_boresight_err_deg": -0.07910946880187386,
+    "direction_err_deg_best_signs": 0.08210315853691559,
+    "pixel_axis_signs": [
+     1,
+     1
+    ]
+   },
+   {
+    "image": "art002e030313_onav_raw_v01.tif",
+    "utc": "2026-04-06T00:28:34Z",
+    "otsu": 80,
+    "pixel_stats": {
+     "min": 0,
+     "max": 255,
+     "mean": 4.511891117802373
+    },
+    "limb_px": {
+     "cx": 1555.8354455111514,
+     "cy": 1059.1587712261835,
+     "r": 158.85341788455187
+    },
+    "limb_inlier_share": 0.5184815184815185,
+    "boundary_px": 1001,
+    "off_boresight_deg_image": 2.0580109507414193,
+    "target_basis": "no attitude: the body whose predicted disc radius matches the fit",
+    "target": "MOON",
+    "radius_km_used": 1737.4,
+    "range_km_image": 79995.09930061185,
+    "range_km_spice": 79587.10140117756,
+    "range_err_km": 407.9978994342964,
+    "range_err_rel": 0.005126432452636851,
+    "r_px_predicted": 159.668156479917,
+    "other_body_off_boresight_deg": {
+     "EARTH": null
+    },
+    "attitude": "no attitude (SpiceNOFRAMECONNECT): range check only"
+   },
+   {
+    "image": "art002e030457_onav_raw_v01.tif",
+    "utc": "2026-04-07T21:28:34Z",
+    "otsu": 77,
+    "pixel_stats": {
+     "min": 0,
+     "max": 255,
+     "mean": 2.5576354603708524
+    },
+    "limb_px": {
+     "cx": 1312.303827843747,
+     "cy": 1327.0275270524066,
+     "r": 158.9281519729945
+    },
+    "limb_inlier_share": 0.4235705950991832,
+    "boundary_px": 857,
+    "off_boresight_deg_image": 2.3805513846268833,
+    "target_basis": "SPICE: the body inside the OpNav field of view",
+    "target": "MOON",
+    "radius_km_used": 1737.4,
+    "range_km_image": 79957.50029722156,
+    "range_km_spice": 79296.9263918727,
+    "range_err_km": 660.5739053488651,
+    "range_err_rel": 0.00833038473754222,
+    "r_px_predicted": 160.25271785648323,
+    "other_body_off_boresight_deg": {
+     "EARTH": 105.91858981744252
+    },
+    "off_boresight_deg_spice": 2.4840089308085576,
+    "off_boresight_err_deg": -0.10345754618167424,
+    "direction_err_deg_best_signs": 0.16220383560323312,
+    "pixel_axis_signs": [
+     1,
+     1
+    ]
+   },
+   {
+    "image": "art002e030752_onav_raw_v01.tif",
+    "utc": "2026-04-10T16:23:05Z",
+    "otsu": 75,
+    "pixel_stats": {
+     "min": 0,
+     "max": 255,
+     "mean": 6.879358739028742
+    },
+    "limb_px": {
+     "cx": 1523.8927334364855,
+     "cy": 1386.2988368635436,
+     "r": 473.98913821546876
+    },
+    "limb_inlier_share": 0.15586400101871897,
+    "boundary_px": 7853,
+    "off_boresight_deg_image": 3.3552478983912333,
+    "target_basis": "SPICE: the body inside the OpNav field of view",
+    "target": "EARTH",
+    "radius_km_used": 6371.0,
+    "range_km_image": 98493.45181232515,
+    "range_km_spice": 98249.70032779414,
+    "range_err_km": 243.751484531007,
+    "range_err_rel": 0.0024809387073728454,
+    "r_px_predicted": 475.17003559291504,
+    "other_body_off_boresight_deg": {
+     "MOON": 142.35878465281402
+    },
+    "off_boresight_deg_spice": 3.4677249855377967,
+    "off_boresight_err_deg": -0.11247708714656346,
+    "direction_err_deg_best_signs": 0.15926438106408838,
+    "pixel_axis_signs": [
+     1,
+     1
+    ]
+   }
+  ],
+  "pixel_axis_signs_consistent": true,
+  "scope": "limb navigation only (cislunar range from the disc), not surface navigation"
+ },
+ "geometry": {
+  "epochs": 212,
+  "base_lat_lon": [
+   -89.43899005542804,
+   222.7607899517747
+  ],
+  "orion_elevation_range_deg": [
+   -9.260134219387375,
+   -0.04141415219572326
+  ],
+  "orion_visible_share": 0.0,
+  "max_abs_az_diff_deg": 5.684341886080802e-14,
+  "max_abs_el_diff_deg": 8.881784197001252e-15,
+  "moon_me_vs_iau_moon_shift_at_base_m": 77.43021360638402,
+  "note": "earth_topo (earth_link.py) against SPICE azlcpo for Orion seen from BASE; the frame shift is BASE's position moved by the MOON_ME -> IAU_MOON rotation at mid-period (the fallback without the lunar frames kernel)"
+ }
+}
