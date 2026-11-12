@@ -331,6 +331,20 @@
   "stuck_reservations_drop_retry": 2566,
   "supported": true
  },
+ "link_shares": {
+  "seeds": 30,
+  "linked_share_all_time": 0.9317394713261649,
+  "linked_share_driving_time": 0.566360139904384,
+  "linked_share_driving_time_min_max": [
+   0.47747231767850323,
+   0.6288840262582057
+  ],
+  "seed1": {
+   "linked_share_all_time": 0.9792254704301075,
+   "linked_share_driving_time": 0.5449158819172575
+  },
+  "note": "share of vehicle-steps with a radio path to the BASE mast (contact plan of the month, 60 s steps); mean over seeds"
+ },
  "parameters": {
   "custody_timer_s": 10.0,
   "retry_s": 180.0,

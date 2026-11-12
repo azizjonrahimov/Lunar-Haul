@@ -8,7 +8,7 @@ Datum O (note 02 C2): the BASE site of the Connecting Ridge pack, grid X = x + o
 Heights stay relative to the sphere, never to a tangent plane (a plane drops below it by d^2 / 2R: 0.29 m at 1 km).
 
 PA versus ME: MOON_ME (DE421 mean-Earth / polar axis) and MOON_PA (principal axes) differ by a constant rotation; the
-NAIF frame kernel gives it as three angles, 67.8526", 78.6944", 0.2914" about axes 3, 2, 1 [NAIF-FK], composed as
+NAIF frame kernel gives it as three angles, 67.8526", 78.6944", 0.2785" about axes 3, 2, 1 [NAIF-FK], composed as
 SPICE composes TK frames (frame rotations). Note 02 E1: |delta| = 662.86 m at the south pole, 659.22 m at the tile
 centre (89.4632 S, 222.5104 E), 875.23 m at latitude 0, longitude 0 (SPICE pxform, checked in note 02).
 """
@@ -22,7 +22,9 @@ import numpy as np
 R_MOON = 1737400.0                           # note 02 D "Reference sphere radius" [LROWP08]
 ORIGIN_XY = (-19000.0, -20000.0)             # data/terrain/connecting_ridge/meta.json origin_xy_m
 ARCSEC = math.pi / (180.0 * 3600.0)
-PA_ME_ANGLES_ARCSEC = (67.8526, 78.6944, 0.2914)   # [NAIF-FK] TKFRAME angles, axes (3, 2, 1)
+PA_ME_ANGLES_ARCSEC = (67.8526, 78.6944, 0.2785)   # [NAIF-FK] moon_de440_250416.tf TKFRAME_31009_ANGLES, axes (3, 2, 1)
+                                             # (note 02 E1's 0.2914" is the x component of the composed rotation
+                                             # vector, not the kernel's third angle; corrected 11 Nov, B-99)
 PA_ME_AXES = (3, 2, 1)
 
 

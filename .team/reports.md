@@ -8906,6 +8906,9 @@ Next: B-92 (shared map). B-90b waits for your 8x loop.
 
 Next: B-95 (integrity, authentication, consensus); it imports B-96's fault definitions from `lunarsim/nn/faults.py`. B-90b waits for your loop.
 
+
+**CORRECTION 11 Nov (found in the P3 revision, checked against the files):** (1) the flat manifest is **120,760 B** (three 256 m layers of 63 x 63 tiles at 10 B, plus 13 x 13 radio tiles), not "159 kB". (2) Stale-map hits after contact reach **1.65** (oldest-first at 10 kbit/s after 7 days out), not "at most 1.2" (that was the 16 kbit/s column). (3) lunarsim/atc/geo.py labelled 0.2914 arcsec as the NAIF frame kernel's third angle; the kernel (moon_de440_250416.tf, TKFRAME_31009_ANGLES) has **0.2785 arcsec** (0.2914 is the x component of the composed rotation vector, as note 02 E1 says). Fixed in geo.py and in vv6's row text; the shifts still match SPICE within 0.05 m (662.86 / 659.22 / 875.23 m; tile-centre east -444.26, north +487.04, up -0.125 m, now closer to the note's -444.3 / +487.0); vv_phase6.json rebuilt, 54 of 54 rows pass; tests/test_smap.py passes.
+
 ## B-95 DONE 19:21 (integrity, authentication, consensus; E55, H15 baseline, H16) | files | how to test | API/format changes FRONTEND must know | questions for LEAD
 
 `lunarsim/atc/integrity.py` and `tools/atc/run_e55.py`. Research note 03 C8, E4, E5, E6. The faults and streams are B-96's, imported from `lunarsim/nn/faults.py` and `lunarsim.nn.dataset` (nothing in `lunarsim/nn/` edited), so E55 and E56 score the same events. No engine change.
@@ -9083,6 +9086,9 @@ Next: B-97 (real-data checks), then B-98 / B-99. B-90b waits for your 8x loop.
 
 Next: B-98 (verification rows for Phase 6), then B-99 (site data). B-90b waits for your 8x loop.
 
+
+**CORRECTION 11 Nov (found in the P3 revision, checked against results/B97_realdata.json):** (1) "At the Moon's 80,000 km that is about 400-800 m of range" is wrong by a factor of 1,000: the range errors at about 80,000 km are **408 and 661 km (0.51 and 0.83 %)**, and over the five usable frames **244 to 2,135 km** (0.25 to 1.29 %); the file and the table above are right. (2) The fitted radius is **0.81 to 1.32 px** small (1.09, 0.98, 0.81, 1.32, 1.18 px), not "1.0 to 1.4".
+
 ## F-56 E55 WIRED 19:39, browser-checked | site/lib/protocol-data.mjs (compactE55, stageE55, the e55 text hook), site/src/protocol/figures.js (new measured panel figE55), site/protocol/index.html (problem 7: Our answer, Method, figure 7 caption, new panel), site/src/protocol/protocol.css (one rule), site/scripts/prepare-data.mjs, site/vite.config.js (<!--@e55:key-->), site/tests/protocol-data.test.mjs (one more test), tools/ci/budgets.json (one protocol data line; no limit change) | how to check: /protocol/#pr7-h and #fig-e55 | from BACKEND: nothing | for LEAD: notes at the end
 **Page text, problem 7, saying what B-95 says.** Every number goes through <!--@e55:key--> from results/E55_integrity.json.
 - **Persistence:** "The persistence is what makes the textbook threshold usable: tested one report at a time, it raises 53.3 false alarms per pair-day on our simulated streams; at 3 of the last 5, 0.10."
@@ -9174,6 +9180,9 @@ Next: B-98 (verification rows for Phase 6), then B-99 (site data). B-90b waits f
 **For FRONTEND (via LEAD):** `results/vv_phase6.json` uses the vv_phase5 format, with ids grouped P / M / C / G (positioning and time / map and coordinates / communication, protocol and security / degenerate cases). The /verification/ reader can stage it next to phase 5.
 
 **Questions for LEAD:** none. Next: B-99 (site data).
+
+
+**CORRECTION 11 Nov:** vv6's options-off row (G1) compares **144** summary values (C_AUCTION with the road layer, 30 days), all identical: "0 of 144", as P2's build reads from the file. The "0 of 128" in this report and my message came from B-93's capability-filter test (no road layer, fewer keys). **Addition (LEAD's request):** results/E54_dtn.json now has `link_shares` from all 30 seeds (`python tools/atc/run_e54.py linkshare`, then `build`): linked to the base **93.2 % of all vehicle-time** and **56.6 % of driving time** (47.7-62.9 % over seeds); seed 1: 97.9 % and 54.5 % (the values quoted in the stuck explanation).
 
 ## F-56 B-97 REAL DATA WIRED + /paper/ CHECKED 19:47, browser-checked | site/lib/realdata.mjs (new: <!--@b97:telemetry|artemis|geometry-->), site/network/index.html (new section), site/protocol/index.html (real-data box under problem 1), site/src/protocol/protocol.css (.pr-real), site/src/styles/tokens.css (light Measured flag), site/vite.config.js, site/tests/realdata.test.mjs (new) | how to check: /network/#nw-real-h, /protocol/ problem 1's "Does the geometry hold on real pictures?", /paper/#p1 | from BACKEND: nothing | for LEAD: notes at the end
 **/network/, new section "Does the idea hold on real data?"**

@@ -136,7 +136,7 @@ def check_m() -> List[Dict]:
                              ("lat 0 lon 0", 0.0, 0.0, 875.23)):
         rows.append(R("M2", sub, "PA read as ME: the shift (SPICE pxform values in note 02)", ref,
                       float(np.linalg.norm(G.frame_mixup_shift(la, lo))), 0.05, "m",
-                      "NAIF FK angles 67.8526 / 78.6944 / 0.2914 arcsec, axes 3-2-1", "lunarsim/atc/geo.py",
+                      "NAIF FK angles 67.8526 / 78.6944 / 0.2785 arcsec (moon_de440_250416.tf), axes 3-2-1", "lunarsim/atc/geo.py",
                       f"{N02} section E1 (SPICE to 0.01 m; 0.05 m allows the composition order)", t0=t0))
     t0 = time.time()
     dd = 50000.0

@@ -222,6 +222,32 @@ def run_seed(seed):
     return out
 
 
+def cmd_linkshare(seeds, max_s):
+    """B-98a follow-up (LEAD): per seed, the share of vehicle-time linked to the base, of all time and of driving
+    time (the contact plan of run_seed), cached as link_s<seed>.json; build() averages them."""
+    import run_e50 as E5
+    from lunarsim.atc import dtn as DT
+    t0 = time.time()
+    os.makedirs(CACHE, exist_ok=True)
+    month, t0h, t1h, share = E5._window()
+    for s in seeds:
+        p = os.path.join(CACHE, f"link_s{s}.json")
+        if os.path.isfile(p):
+            continue
+        if time.time() - t0 > max_s * 0.6:
+            print(f"stop before seed {s}: time budget", flush=True)
+            return
+        rec = record(s, t0h, t1h)
+        tr = E5.trajectories(rec, t0h, t1h)
+        g = E5._geo()
+        hb = DT.base_hops(DT.contact_plan(tr, g["los"], g["ids"]["BASE"]))
+        mv = tr.ds > 0
+        json.dump({"seed": s, "linked_all": float((hb >= 0).mean()), "linked_driving": float((hb[mv] >= 0).mean()),
+                   "driving_share": float(mv.mean())}, open(p, "w"))
+        print(f"link s{s} done", flush=True)
+    print("all requested seeds done", flush=True)
+
+
 def cmd_run(seeds, max_s):
     t0 = time.time()
     os.makedirs(CACHE, exist_ok=True)
@@ -247,7 +273,7 @@ def _boot(x, seed=0):
 
 
 def build():
-    files = sorted(glob.glob(os.path.join(CACHE, "s*.json")), key=lambda p: int(os.path.basename(p)[1:-5]))
+    files = sorted(glob.glob(os.path.join(CACHE, "s[0-9]*.json")), key=lambda p: int(os.path.basename(p)[1:-5]))
     S = [json.load(open(p)) for p in files]
     if not S:
         raise SystemExit("no E54 seeds")
@@ -290,13 +316,22 @@ def build():
            "stuck_reservations_drop_retry": int(sum(r["stuck_reservations"] for r in dr))}
     d = h14["difference_sf_ll_minus_drop_retry"]
     h14["supported"] = bool(d["ci"][1] < 0 and h14["stuck_reservations_sf_ll"] == 0)
+    L = [json.load(open(p)) for p in sorted(glob.glob(os.path.join(CACHE, "link_s*.json")))]
+    link = ({"seeds": len(L), "linked_share_all_time": float(np.mean([x["linked_all"] for x in L])),
+             "linked_share_driving_time": float(np.mean([x["linked_driving"] for x in L])),
+             "linked_share_driving_time_min_max": [float(min(x["linked_driving"] for x in L)),
+                                                   float(max(x["linked_driving"] for x in L))],
+             "seed1": next(({"linked_share_all_time": x["linked_all"], "linked_share_driving_time": x["linked_driving"]}
+                            for x in L if x["seed"] == 1), None),
+             "note": "share of vehicle-steps with a radio path to the BASE mast (contact plan of the month, 60 s steps); "
+                     "mean over seeds"} if L else None)
     doc = {"experiment": "E54 (B-94), Phase 6, H14 (paper/atc/PREREG6.md)", "note": __doc__.split("\n\n")[1].strip(),
            "seeds": [s["seed"] for s in S], "jobs_per_seed": float(np.mean([s["jobs"] for s in S])),
            "earth_up_share": float(np.mean([s["earth_up_share"] for s in S])),
            "reservations_per_seed": float(np.mean([s["reservations"] for s in S])),
            "lost_link_returns_per_seed": float(np.mean([s["lost_link"]["returns"] for s in S])),
            "lost_link_isolation_h_saved_per_seed": float(np.mean([s["lost_link"]["isolation_h_saved"] for s in S])),
-           "rows": rows, "h14": h14, "parameters": __import__("lunarsim.atc.dtn", fromlist=["DEFAULTS"]).DEFAULTS,
+           "rows": rows, "h14": h14, "link_shares": link, "parameters": __import__("lunarsim.atc.dtn", fromlist=["DEFAULTS"]).DEFAULTS,
            "stuck_definition": __doc__[__doc__.index("Stuck reservations"):].split("\n\n")[0].replace("\n", " "),
            "blackout_days": BLACKOUT_DAYS, "ledger_bytes": LEDGER_BYTES}
     with open(OUT_JSON, "w", encoding="utf-8", newline="\n") as f:
@@ -307,7 +342,7 @@ def build():
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["run", "build", "ledger"])
+    ap.add_argument("cmd", choices=["run", "build", "ledger", "linkshare"])
     ap.add_argument("--seeds", default="1-30")
     ap.add_argument("--max-seconds", type=float, default=480.0)
     a = ap.parse_args(argv)
@@ -316,6 +351,9 @@ def main(argv=None):
     if a.cmd == "run":
         lo, hi = (a.seeds.split("-") + [a.seeds])[:2]
         cmd_run(list(range(int(lo), int(hi) + 1)), a.max_seconds)
+    elif a.cmd == "linkshare":
+        lo, hi = (a.seeds.split("-") + [a.seeds])[:2]
+        cmd_linkshare(list(range(int(lo), int(hi) + 1)), a.max_seconds)
     elif a.cmd == "ledger":
         ledger()
     else:
