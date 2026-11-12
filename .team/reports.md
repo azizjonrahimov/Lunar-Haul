@@ -8754,3 +8754,25 @@ Next: B-94 (store-and-forward and lost link). B-90b waits for your loop.
 1. Problem 5 says "Eight message types ... and a heartbeat", but the schema has 15 messages. That works if task, reservation and capability each count as one type, but it may want rewording.
 2. Not wired yet: E51b, the clock-steering and mixed-time-scale variants (with steering the chip-scale clock at 10 min falls from 1,918 m to 639 m one-way). It could be a toggle on figure 3 if you want it.
 3. Please commit when you're ready; data/stories/resolved/ still needs rebuilding for the story's wording fix.
+
+## F-65 PREP DONE 18:56 (no build, as asked) | site/content/paper.md (anchors, three "Proved, tested, assumed" slots), site/lib/papers.mjs (provedTable, the proved field), site/src/styles/base.css (heading scroll margin), site/protocol/index.html and site/network/index.html (links to the exact paper), site/tests/papers-proved.test.mjs (new) | how to check: node --test tests/papers-proved.test.mjs (in site/); after a build, /paper/#p1 to #p3 | from BACKEND: nothing | for LEAD: notes at the end
+- **Anchors on /paper/:**
+  - The three paper headings in content/paper.md are now raw `<h3 id="p1">` to `id="p3"`; the markdown renderer gives headings no ids. They look the same.
+  - base.css gives `h2[id], h3[id], h4[id]` a 4.5rem scroll margin, so a jump lands below the sticky header.
+- **Links:**
+  - Each of /protocol/'s eight "In the papers" lines is now one link per paper to its anchor, e.g. `<a href="paper/#p3">P3 (clocks)</a> and <a href="paper/#p2">P2 (reservations)</a>`.
+  - /network/'s source line adds "in the papers, P2 (position uncertainty and integrity)" → paper/#p2.
+- **The reader** (lib/papers.mjs):
+  - `<!--@paper:<id>:proved-->` / `paperField(id, 'proved')` finds the heading matching "proved, tested, assumed" (h2 to h4; commas and "and" optional; &nbsp; allowed) in paper/<id>/paper.html.
+  - It takes the first `<table>` after that heading and before the next heading of the same or a higher level. The caption is kept, ids are dropped (they would clash on /paper/), and a "From paper/<id>/paper.html" line is added.
+  - No heading, no table in that section, or no paper gives "(pending)". Unfilled values still fail the build, as for the other paper fields.
+  - Each paper section in paper.md has a "#### Proved, tested, assumed" heading with the marker, before "Cite P<n>".
+  - **Visible effect:** until the revised papers land, the next build shows "(pending)" under those three headings on /paper/. If you'd rather not show that, I can hide the heading until a table exists.
+- **Tests** (papers-proved.test.mjs):
+  - the table is found by its heading, with ids dropped and the caption kept, and the wording variants match;
+  - an absent heading, or no table before the next heading, gives null;
+  - the three real papers give a table or "(pending)", never an error;
+  - /paper/ has exactly #p1 to #p3, each with its marker;
+  - every paper link on /protocol/ and /network/ points at an existing anchor, and none is left without one.
+- **Results:** node tests 47/47. No build or browser, as you asked.
+- **For LEAD:** other pages still link to plain paper/ (/atc/, /results/). I can point those at anchors in F-65 if you want.

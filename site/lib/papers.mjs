@@ -69,7 +69,29 @@ export function paperField(id, field) {
     const t = strip(title).replace(/&amp;/g, '&');
     return `<pre><code>@misc{rahimov2026${id},\n  title  = {${t}},\n  author = {Rahimov, Azizjon},\n  year   = {2026},\n  note   = {Preprint, October 2026},\n  url    = {https://github.com/azizjonrahimov/Lunar-Haul}\n}</code></pre>`;
   }
+  if (field === 'proved') return paperProved(id);
   throw new Error(`unknown paper field ${field}`);
+}
+
+// <!--@paper:<id>:proved--> (F-65): the paper's "Proved, tested, assumed" table, found by its heading (h2 to h4; "and"
+// and commas optional) as the first <table> after it and before the next heading of the same or a higher level.
+// Ids are dropped (the paper's own anchors would clash on /paper/) and the paper's caption kept; the reader is told the
+// table is the paper's. Absent table or paper: "(pending)".
+export const PROVED_HEADING = /proved,?\s+tested,?\s+(?:and\s+)?assumed/i;
+export function provedTable(html, id = 'paper') {
+  if (!html) return null;
+  const heads = [...html.matchAll(/<h([2-4])\b[^>]*>([\s\S]*?)<\/h\1>/g)];
+  const k = heads.findIndex(m => PROVED_HEADING.test(strip(m[2]).replace(/&(?:amp;)?nbsp;|\s+/g, ' ')));
+  if (k < 0) return null;
+  const level = +heads[k][1], from = heads[k].index + heads[k][0].length;
+  const next = heads.slice(k + 1).find(m => +m[1] <= level), region = html.slice(from, next ? next.index : html.length);
+  const t = /<table\b[\s\S]*?<\/table>/.exec(region);
+  if (!t) return null;
+  return finished(id, 'the proved, tested, assumed table', t[0].replace(/\s+id="[^"]*"/g, ''));
+}
+function paperProved(id) {
+  const t = provedTable(load(id).html, id);
+  return t ? `<div class="paper-proved">${t}<p class="small muted">From paper/${id}/paper.html when the site is built.</p></div>` : PENDING;
 }
 
 // <!--@v:<id>:KEY--> a value as the paper prints it (HTML with its own spaces and minus signs)

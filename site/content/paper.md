@@ -5,7 +5,7 @@
 Three papers on Lunar ATC, the network that lets robots of different companies share jobs and roads at the south
 pole without waiting for Earth. All three are preprints (October 2026).
 
-### P1 · <!--@paper:p1:title-->
+<h3 id="p1">P1 · <!--@paper:p1:title--></h3>
 
 Azizjon Rahimov, Roatify Research · preprint, October 2026 · <!--@paper:p1:pdf--> ·
 [Paper source, data and pre-registration](https://github.com/azizjonrahimov/Lunar-Haul/tree/main/paper/p1)
@@ -24,11 +24,15 @@ Every number below is read from the paper's values file (`paper/p1/values.json`)
 - **Learned bids.** A learned linear correction to the bids, with <!--@v:p1:P1-LIN-N-WEIGHTS--> weights, cut the urgent wait by <!--@v:p1:P1-H4-LIN-DIFF-30--> against hand-built bids (<!--@v:p1:P1-H4-LIN-PCT-30-->; 95 % CI <!--@v:p1:P1-H4-LIN-CI-30-->). A <!--@v:p1:P1-MLP-N-PARAMS-->-parameter network trained the same way did not: its difference was <!--@v:p1:P1-H4-MLP-DIFF-30--> (95 % CI <!--@v:p1:P1-H4-MLP-CI-30-->). The [Lunar ATC page](../atc/#atc-bid-h) runs the linear correction in your browser.
 - **What sharing is worth.** <!--@v:p1:P1-H1-UNDELIVERED-SHARE--> of the gap between owners working alone and the pooled fleet is cargo that owners alone never deliver; lifts by two owners' rovers account for <!--@v:p1:P1-H1-TEAM-SHARE--> of it.
 
+#### Proved, tested, assumed
+
+<!--@paper:p1:proved-->
+
 #### Cite P1
 
 <!--@paper:p1:bibtex-->
 
-### P2 · <!--@paper:p2:title-->
+<h3 id="p2">P2 · <!--@paper:p2:title--></h3>
 
 Azizjon Rahimov, Roatify Research · preprint, October 2026 · <!--@paper:p2:pdf--> ·
 [Paper source, data and pre-registration](https://github.com/azizjonrahimov/Lunar-Haul/tree/main/paper/p2)
@@ -39,11 +43,15 @@ Azizjon Rahimov, Roatify Research · preprint, October 2026 · <!--@paper:p2:pdf
 
 The safety program it tests can be watched at work in the [encounter sandbox](../atc/#sandbox).
 
+#### Proved, tested, assumed
+
+<!--@paper:p2:proved-->
+
 #### Cite P2
 
 <!--@paper:p2:bibtex-->
 
-### P3 · <!--@paper:p3:title-->
+<h3 id="p3">P3 · <!--@paper:p3:title--></h3>
 
 Azizjon Rahimov, Roatify Research · preprint, October 2026 · <!--@paper:p3:pdf--> ·
 [Paper source, data and pre-registration](https://github.com/azizjonrahimov/Lunar-Haul/tree/main/paper/p3)
@@ -53,6 +61,10 @@ Azizjon Rahimov, Roatify Research · preprint, October 2026 · <!--@paper:p3:pdf
 **Keywords:** <!--@paper:p3:keywords-->
 
 The market it tests is walked through, with its payments, on the [Lunar ATC page](../atc/#atc-market-h).
+
+#### Proved, tested, assumed
+
+<!--@paper:p3:proved-->
 
 #### Cite P3
 
