@@ -8255,3 +8255,35 @@ The model still draws Earth far larger than its true 2°, so that card's caption
 **For LEAD:**
 1. lunarsim/atc/roads.py, lunarsim/atc/safety.py and tools/atc/e50_*.py / run_e50.py show as changed. They are BACKEND's, not mine.
 2. The page links "problem 7 on the protocol page". The protocol page's section 7 text still points to "the network" for E55, so the two pages now point at each other.
+
+## F-56 TEXT DRAFTS DONE 16:45 (NOT BROWSER-CHECKED: no build, preview or browser, per LEAD) | site/lib/results-atc.mjs (new), site/content/drafts/month-without-earth.json (new), site/tests/results-atc.test.mjs (new) | how to check: node --test tests/results-atc.test.mjs (in site/) | from BACKEND: one small export, below | for LEAD: notes at the end
+**1. /results/ Lunar ATC section: the reader (lib/results-atc.mjs, `atcResults(base)`).**
+- **Not wired into the page yet.** To wire it: add `<!--@results-atc-->` to results/index.html and `.replace('<!--@results-atc-->', () => atcResults(base))` to vite.config.js, then build and look.
+- Three cards, one per paper, titled from the built paper.html. The headline numbers are the ones each abstract quotes, read from paper/<id>/values.json (the papers' own pre-formatted values) and each flagged Modelled with "paper/<id>/values.json, <KEY>" as its source.
+  - **P1:** 5,480 simulated years under thirteen regimes. Earth dispatch that stops costs 89.9 h, and planning ahead leaves 7.3 h. The robots' auction at loss 0.1 is 0.84 h less than the marketplace, its interval −2.6 to 0.7 h including zero. Learned bids save 16.5 %. 99.5 % of sharing's value is cargo never delivered alone.
+  - **P2:** 274,580 encounters and 650 runs. +0.1 % delay per delivery at today's fleet and +7.9 % at four times. Referral to Earth costs 5.1-fold. No deadlocks.
+  - **P3:** three owners and 1,080 simulated years; the mast is in direct view at 23.3 % of route points. From results/E48_sizing.json, because P3's values file does not carry them: the safety check takes 41.8 % of a flight core, and airtime is 10.06 against 21.87 kbit/s against a 16 kbit/s channel.
+- Not quoted, because they are not in any values file: P2's 3.9 % ring deadlocks and 47,085 searched states; P3's bid-shading 7.7 M USD.
+
+**2. The fifth story, "A month without Earth"** (site/content/drafts/month-without-earth.json, story-v1, status draft).
+- Five steps:
+  1. The month Earth is least in view (53 % of the time).
+  2. Without the network: 8.7 h of hand coordination through Earth, 1 urgent item left waiting.
+  3. With Lunar ATC: robots auction pooled jobs over the mesh at 10 % loss per hop; 0.0 h by hand, 0 waiting.
+  4. Fewer idle hours: 5,532 h against 5,642 h, 110 h less.
+  5. What it costs and what this is: about 2.2 messages an hour, and "one simulated month and one seed, a picture rather than a result", with links to the replay and the papers.
+- Every number is a `{{r:key}}` with its source; the prose has no typed digits.
+- **Checked with lunarsim.stories.check:** no errors and nothing pending (schema, typed digits, scene and highlight references), and resolve_numbers gives the values above. Run against a temporary root holding the export below.
+- **Needs from BACKEND (via you):** the story schema reads JSON numbers only from results/*.json, and the four counters live in data/atc/trace_pair/index.json.
+  - Please have BACKEND write **results/ATC_trace_pair_summary.json**: `{"format": "lunarsim-atc-trace-summary", "version": 1, "source": "data/atc/trace_pair/index.json", "window": <index.window>, "runs": {"with": {"summary": ..., "settings": ...}, "without": {...}}}` (the index's own fields, same paths).
+  - The draft points at that file. Earth visibility already comes from results/E48_sizing.json (revision.two_ray_in_the_mesh.e40_month.base_dte_share, the same month).
+- **Scene:** scene references are limited to world, lander and rover, and the pair is not a scene package. The draft uses world:P2 as the schema-valid default and asks for the pair through step modes (view atc_pair, run with / without / both). The story player does not do that yet; it is the browser part of F-56.
+- When you accept it: move it to data/stories/ and run `python -m lunarsim.stories build`.
+
+**3. Tests** (site/tests/results-atc.test.mjs):
+- every results key exists in its values file;
+- the section renders with no "(pending)", at least 14 flagged numbers and no typed digits outside them;
+- the story draft declares every placeholder and chip and has no typed digits.
+- **Results:** 36/36 node tests (2 new).
+
+**Not done (waits for memory):** the build, the browser look, wiring the section into /results/, and the story player's pair view.
