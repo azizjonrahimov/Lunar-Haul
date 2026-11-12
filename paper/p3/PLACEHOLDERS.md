@@ -1,4 +1,7 @@
-# P3 placeholders (draft 3 after referee round 2, 30 Oct 2026; E48 link and traffic correction of 11 Nov 2026)
+# P3 placeholders (draft 3 after referee round 2, 30 Oct 2026; E48 link and traffic correction of 11 Nov 2026; internal referee round of 11-12 Nov 2026)
+
+Since the referee round no `[[PENDING` marker may reach `paper.html`: the build passes without `--allow-pending`, awaited results print as
+one plain sentence each (section "Keys of the referee round" at the end of this file), and the build stops if a marker would print.
 
 `build_p3.py` fills every `{{P3-...}}` in `part1`-`part5` and fails on any unfilled placeholder and on any nan/inf.
 Keys whose experiment has not run (E46, E48, the B-79 checks) are filled with a visible `[[PENDING ...]]` marker only
@@ -203,3 +206,58 @@ file's real schema (today those functions only raise the pending).
 | P3-CHECKS6-SENTENCE (3.10), P3-CHECKS6-OUTCOME-SENTENCE (5.14) | VV6 = `results/vv_phase6.json`: the rows whose `papers` holds P3 (`id`, `kind`, `technique`, `passed`, `skipped`, `error` / `rel_error`, `tolerance`), `summary`, `commit`; the row `G1` (`basis`: the count before "summary values compared"; `simulated`: the count that differ; `unit`) (checked: the summary recounted from the rows, every passed flag recomputed, the ids are the positioning, time, map, link and degenerate-case rows, all of kind V) | composed |
 | P3-E55-BASE-NODE-SENTENCE (5.11), no longer pending | E55 `consensus_with_base_mast.cells` against `consensus.cells`, fleet geometry, the cells with f at most F: the range of `connected_share` with and without the mast and of `agreement_share` with it (checked: the same cells; connected more often with the mast in every cell; agreement under half the runs). Table 18's row on agreement by averaging uses the same cells | composed |
 
+
+## Keys of the referee round (11 Nov 2026, after reports/referee_phase6_p3.md and reports/referee_phase6_decisions.md)
+
+Sources added: E50C = `results/E50_errors.csv` (per seed and region); REF = `reports/referee_phase6_p3.md` (the referee's own rerun, read
+from the report and attributed to it in the text, never presented as a result of this paper); SCH = `lunarsim/schemas/lrip-v0.1.json`;
+E46P = `results/E46_parts/*_alone.json.gz` and `*_pooled.json.gz`; D46 = `data/scenarios/E46-design.json`; E50b = `results/E50b_summary.json`.
+
+### Awaited keys (decision A4: no pending marker prints)
+
+`fill_await(key, fn, plain, task)` in `build_p3.py`: while the file or field is absent the key is one plain sentence that says what is not in
+and where it will go, and the build lists the key under "awaited". When the block is in its file and the composing function is not yet
+written, the build stops (`--allow-pending` builds a draft with the plain sentence). The build also stops if a `[[PENDING` or `[[CHECK`
+string would reach `paper.html`, in the text or in a comment.
+
+| Key | Awaits | File and block it will read |
+|---|---|---|
+| P3-E50-READINGS-SENTENCE (5.8) | B-101: H9' clause 2 under four readings of "near the base" on all seeds | `results/E50_near_base.json`, block `readings` (proposed name) |
+| P3-E50-8X-SENTENCE (5.8) | E50 at eight times the fleet | `results/E50_summary.json`, `errors."8"` (its composer exists and fills itself) |
+| P3-E48-MEMORY-SENTENCE (5.1) | B-105: the memory in use, measured with tracemalloc | `results/E48_sizing.json`, block `measured_memory` |
+| P3-E48-ROBOT-ROUND-SENTENCE (5.1) | B-105: one robot's bid computation timed apart from the simulator's round, per fleet size | `results/E48_sizing.json`, block `per_robot_round` |
+| P3-E48-SPHERICAL-SENTENCE (5.3) | B-104: the loss and the rate over a spherical ground at the hops of Table 7 (the project's check of the referee's figures), a new column of Table 7 | `results/E48_sizing.json`, `classes.<class>.link_spherical_ground` (proposed name; the build probes `classes.LTV1`) |
+| P3-E53-DRIVING-HOPS-SENTENCE (5.2) | B-103: hop count and reach to the base over driving steps only, with 1.0 m antennas for the small classes | `results/E53_bitrate.json`, new block `driving_hops` (proposed name) |
+| P3-LRIP-V02-SENTENCE (5.11) | B-100: the sizes and bit rates of LRIP version 0.2 (frame, datum and time-scale identifiers and a covariance in the position report) | `results/E53_bitrate.json`, new block `v02` (proposed name) |
+
+### Composed keys added in the referee round
+
+| Key | Source | Format |
+|---|---|---|
+| P3-E46-MONEY-SENTENCE (3.9) | the scenario file `vot_usd_per_h`, `operator_cost_per_h`; D46 `shipper_value.what`, `.flag`, `private_costs.true_cost` (checked: 5,000 / 1,000 / 100 USD an hour by priority, undelivered items censored at the horizon, wear half the unit cost per life hour, operator time at 1,000 USD an hour) | composed; design inputs, Assumed |
+| P3-E46-CENSOR-SENTENCE (5.6) | E46P: per owner, split and seed `owners.<o>.items`, `.delivered`, `.delay_usd` of the alone and the pooled runs; E46 pairs `b_mean` (the alone profit) (checked: one run per seed; alone, owner C delivers under a tenth of its items and A and B most of theirs; the alone delay cost is within the alone loss) | composed |
+| P3-E46-SHAPLEY-NOTE (5.7) | E46 fit `transfers.3eq.C.mean`; E46 cells `settled_earth_musd` of the posted price with equal shares (checked: the transfer is more than five times the cash) | composed |
+| P3-LIMIT-LINK-SENTENCE (7) | E48 `airtime`, `messages.secured.bytes_per_type.mac8`; E50C seed 1 (parked and driving steps); E54 `link_shares` | composed; "above" / "within" from the data |
+| P3-LIMIT-LRIP-SENTENCE (7) | SCH (the checks of P3-SEC-LAYOUT-SENTENCE); E53 `sizes.POSITION.mac8`, the fleet rows at 20 rovers and 1 Hz, `per_rover_at_1hz.on` | composed |
+| P3-LIMIT-NEAR-SENTENCE (7) | E50C (the share of driving steps with two or more beacons in view; the share of those steps over the budget); REF finding M5 (the reading within 1 km and the three sensitivity values, attributed to the referee) | composed |
+| P3-MESH-FRESNEL-SENTENCE (3.3), P3-MESH-FRESNEL-CLAUSE (6.3) | M `los_by_distance_band` `2.5-2.5` `2-5 km`: `fresnel_0.6_2.4GHz`, `fresnel_0.6_400MHz`, `los_0m` (checked: 400 MHz below 2.4 GHz below bare line of sight; the file's note names the 0.6 threshold) | composed |
+| P3-E50B-SENTENCE (5.8), no longer pending | E50b `design` (`stop_s`, `base`), `seeds`, `e50_reproduced_all_seeds`, `metrics.delay_mean_h`, `.road_wait_h`, `.violations` (`without_stop_time`, `with_stop_time`, `diff_mean`, `diff_ci95_bootstrap`, `paired_t_p`, `seeds_higher`, `seeds_lower`, `n_seeds`), `stops` (`engine_fix_stop_h_mean`, `perfect_run_fix_stop_h_mean`, `fixes_inside_single_lane_share`) (checked: E50's seeds and stop time; the arm without stop time reproduces E50; the difference is with minus without; the navigation replay's fix time equals E50's; less fix time is inserted than the replay has, hence "a lower bound"; no violation with stop time) | composed: "rose" / "fell", "excludes" / "includes" zero, "did not change" from the data; labelled exploratory |
+
+### Keys whose composition changed in the referee round (same key, new sources or wording)
+
+| Key | What changed | Added source and checks |
+|---|---|---|
+| P3-E50-DESIGN-SENTENCE, P3-E50-RESULTS-ERRORS | the region rule stated as chosen with the experiment, with its share of driving steps; the matched filter; the share of steps over the budget, the largest errors and the own-bound share inside the region | E50C (near plus away is every driving step; the per-seed table gives the summary's percentile) |
+| P3-H9-VERDICT-SENTENCE, P3-FAMILY-SENTENCE and its siblings, the P3-P6 clauses, TABLE:pta | H9 and H10 of the second registration written with a prime; clause 2 "depends on the reading"; Holm with all five hypotheses counted and H14's sign test two-sided, recomputed | REF finding M5: the four readings of seeds 1 to 6 and three sensitivity values, parsed from the report (checked: its first row reproduces E50's seeds 1 to 6; the three other readings are above the budget in every seed) |
+| P3-H11-VERDICT-SENTENCE, P3-H12-VERDICT-SENTENCE, P3-H13-VERDICT-SENTENCE | the ranging half of H11, H12 and H13 reported as design calculations | E51 `constants.tt_sigma_s` x c against `design.uwb_sigma_m`; E52: changed tiles over all tiles equals the share, and the paired means times the link rate are constant; E53: 20 x the per-rover rate equals the busiest link |
+| P3-DTN-MODEL-SENTENCE, P3-E54-DESIGN-SENTENCE, P3-E54-RESULTS-SENTENCE, P3-H14-VERDICT-SENTENCE, TABLE:E54_dtn | the lost-link rule of decision B1 (a silent holder's segment is marked unconfirmed, not released); H14's second clause "not testable as written"; the retry budget; the returns a seed | E54 `stuck_definition` (checked: an unconfirmed release, not a vehicle in the segment), `lost_link_returns_per_seed`, `reservations_per_seed` |
+| P3-E54-LEDGER-SENTENCE, P3-E54-LEDGER-CLAUSE | the count as a calendar calculation: 11 of 31 bundles, the same in every seed | E54 `earth_up_share`, `blackout_days`; E48 `revision.two_ray_in_the_mesh.e40_month.base_dte_share` (checked: bundles and losses are whole multiples of the seeds) |
+| P3-SEC-LAYOUT-SENTENCE, P3-E53-DESIGN-SENTENCE | what version 0.1 serialises; 11 of 15 types in the traffic model; 12 B of Proximity-1 framing; the parked share of the positions | SCH `messages[POSITION].fields`, `framing.lrip_header`, `framing.proximity1_frame_bytes` (checked: 104 bits; no field named frame, datum, scale or covariance); E53 `per_rover_at_1hz.on` against `sizes` |
+| P3-E48-RESULTS-CPU, P3-E48-ROUND-SENTENCE, P3-H10-VERDICT-SENTENCE, the P3-E48 clauses, TABLE:E48_sizing | the four class timings as one measurement; the memory as a sum of estimates; the round as the simulator's whole-fleet dispatch call | E48 `classes.*.peak_memory_note` (checked: names the four summands), `classes.*.cpu_auction_round_ms` equal in every class, `runs.multiples` |
+| P3-E48-RESULTS-AIRTIME, P3-MESH-HOPS-SENTENCE, the link wording everywhere | the link claim conditional on one hop, with its basis; the load with all three reports at 1 Hz (41 + 43 + 38 B/s) | E50C seed 1 (parked and driving steps); E54 `link_shares` (`linked_share_driving_time`, `linked_share_driving_time_min_max`, `linked_share_all_time`) |
+| P3-PROP1-EXAMPLE, TABLE:E48_link, P3-PROP2-EXAMPLE, P3-PROP4-EXAMPLE, P3-PROP6-EXAMPLE, P3-PROP8-EXAMPLE | the gaps the referee named; the referee's spherical-ground loss and rates, attributed; the construction site in Proposition 8 | REF finding M14, parsed (checked: its flat-ground side equals Table 7's longest-hop loss and rates; its ratios lie in its stated range); the route sample `CONSTR`; E50 `errors.1.dr+ranging.near.median_m` |
+| TABLE:nav | flags corrected to the research notes (the navigation service's target against its simulated 17.2 m; the dark-fix failure share Assumed; the 6.6 % dropped; "typically under 2 %" as a design assumption; the beacon survey as an assumption on the site model) | typed flags, from note 01 section D and note 02 |
+| TABLE:pta | a fourth status, "calculated from assumed inputs" (six rows, checked), "not testable as written", and one row per awaited task | as the keys above |
+
+Typed in the referee round with no file behind them: the commit times and hashes of the second registration and of its first result (Section 4.1;
+from `git log`), and the three numbers 10 m, 1 m and 50 m that name the referee's sensitivity cases.

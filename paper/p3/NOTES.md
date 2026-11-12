@@ -25,7 +25,7 @@ The earlier papers are [40, 41, 42] in P2's numbering and [56, 57, 58] here; the
 [13] Firefly Aerospace. Blue Ghost. https://fireflyspace.com/blue-ghost; NASASpaceflight, January 2025. (VCI, High)
 [14] ESA. "Argonaut lunar lander family grows." https://www.esa.int/Science_Exploration/Human_and_Robotic_Exploration/Argonaut_lunar_lander_family_grows; Thales Alenia Space press release, 30 January 2025. (VCI, High/Medium)
 [15] NASA. *LunaNet Interoperability Specification*, version 5, 29 January 2025. https://www.nasa.gov/wp-content/uploads/2025/02/lunanet-interoperability-specification-v5-baseline.pdf (VCI, High)
-[16] M. C. Scardelletti et al. "Lunar Surface Relay." ICSSC 2023. NTRS 20230013361. https://ntrs.nasa.gov/api/citations/20230013361/downloads/ICSSC-2023_LSR_paper%20rev7k.pdf (VCI, High; full author list and title to add)
+[16] M. C. Scardelletti et al. "Lunar Surface Network Relay Terminal: A Lunar Communications Platform." ICSSC 2023. NTRS 20230013361. https://ntrs.nasa.gov/api/citations/20230013361/downloads/ICSSC-2023_LSR_paper%20rev7k.pdf (VCI, High; full author list and title to add)
 [17] Nokia. "Nokia's cellular network ready for Moon as Intuitive Machines completes final lunar lander installation." 7 January 2025. https://www.nokia.com/about-us/news/releases/2025/01/07/; Converge Digest, 11 March 2025; Fierce Network; Mobile World Live, March 2025 (the outcome on IM-2). (VCI, Medium: press as summarised; the primary page returned HTTP 403)
 [18] Astrobotic. *Lunar Landers Payload User's Guide*, 2021. https://science.nasa.gov/wp-content/uploads/2023/11/astrobotic-lunar-landers-pug.pdf (VCI, High)
 [19] J. Esper, G. Heckler, J. Verville, G. Ryden. "NASA's Lunar Communications Relay and Navigation Systems (LCRNS)." SpaceOps 2025. NTRS 20250003321. (P1 [38], High)
@@ -75,8 +75,8 @@ NOTE: [37] is not in the research notes; it is the standard reference for the Sh
 [57] A. Rahimov. *Where the Lander Lands: Landing Precision, Pad Standoff, Plume Keep-Out and Rover Autonomy Priced in Lunar Surface Logistics*. Preprint, version 3, October 2026. (P2 [41])
 [58] A. Rahimov. *What Earth's Horizon Costs a Lunar Base: Terrain-Masked Communication Windows in South-Pole Cargo Logistics*. Preprint, October 2026. (P2 [42])
 [59] Pre-registration, paper/atc/PREREG.md in the repository, written 27 October 2026, with dated changes. (P2 [43])
-[60] A. Rahimov. *Working Together Without Earth: Job Sharing, Team Lifts and Learned Bidding Among Lunar Robots of Different Owners*. Preprint, October 2026 (companion paper P1).
-[61] A. Rahimov. *Rules of the Road on the Moon and Mars: Traffic Rules for Surface Robots of Different Owners, Checked and Priced*. Preprint, October 2026 (companion paper P2).
+[60] A. Rahimov. *Working Together Without Earth: Job Sharing, Team Lifts and Learned Bidding Among Lunar Robots of Different Owners*. Preprint, October 2026; revised November 2026 (companion paper P1).
+[61] A. Rahimov. *Rules of the Road on the Moon and Mars: Traffic Rules for Surface Robots of Different Owners, Checked and Priced*. Preprint, October 2026; revised November 2026 (companion paper P2).
 [62] B. Efron, R. J. Tibshirani. *An Introduction to the Bootstrap*. Chapman & Hall, 1993. (P2 [55])
 [63] NASA Space Math. Horizon distance on a sphere. https://spacemath.gsfc.nasa.gov/Geometry/3Page19.pdf (VCI, High; the lunar values are Computed in the note)
 [64] NSSDC. Apollo Lunar Roving Vehicle. https://nssdc.gsfc.nasa.gov/planetary/lunar/apollo_lrv.html (VCI, High)
@@ -139,8 +139,15 @@ NOTE: entries [67] to [114] were added in the revision of 11 Nov 2026 (Phase 6).
 [113] Johns Hopkins Applied Physics Laboratory. Press release on the Lunar Operating Guidelines for Infrastructure Consortium (LOGIC), 11 October 2023. https://www.jhuapl.edu/news/news-releases/231011b-lunar-technology-development; Space ROS, site and demonstrations repository. https://space.ros.org/ (LRIP-04 L17, L18)
 [114] NASA, ESA, JAXA. *LunaNet Signal-In-Space Recommended Standard: Augmented Forward Signal*, Volume A, version 1, 29 January 2025. https://www.nasa.gov/wp-content/uploads/2025/02/lunanet-signal-in-space-recommended-standard-augmented-forward-signal-vol-a.pdf (LRIP-01 AFS1)
 
+NOTE: [16] title corrected on 12 Nov 2026 to the one in the source list of LRIP note 01 ([LSR23]). [117] to [121] were added in the referee round: [117] and [118] are opened sources of LRIP note 03 (G4); [119], [120] are secondary sources that LRIP notes 01 and 04 record as read and that the text names as secondary; [121] is the source string of the E48 design file, which no research note records as opened, and the text says so.
+
 [115] Artemis II Lunar Science Team. *Artemis II Lunar Science Data User Guide*, version 1.0, 7 October 2026. NASA Planetary Data System, Geosciences Node. doi:10.17189/dtpt-2857; the optical-navigation frames are in the bundle artemis2_orion_camera at the PDS Imaging Node. (LRIP-02 A2-GUIDE, A2-ATLAS)
 [116] A. Bailey, B. Semenov. "Artemis II Mission SPICE Bundle." NAIF, NASA JPL. doi:10.17189/7ezn-0294 (LRIP-02 A2-SPICE)
+[117] VDA and VDMA. *VDA 5050*, version 3.0.0, 19 March 2026. https://github.com/VDA5050/VDA5050 (LRIP-03 VDA5050)
+[118] MassRobotics. *AMR Interoperability Standard*. https://github.com/MassRobotics-AMR/AMR_Interop_Standard (LRIP-03 MASSROB)
+[119] Wikipedia. "IM-3" (a secondary source, read 11 November 2026). https://en.wikipedia.org/wiki/IM-3 (LRIP-01 WIKI-IM3)
+[120] Wikipedia. "Griffin Mission One" (a secondary source, last edited 9 November 2026). https://en.wikipedia.org/wiki/Griffin_Mission_One (LRIP-04 M7)
+[121] Cobham Gaisler. GR740 benchmark results, ESA DSP Day 2016 (as cited in the design file of experiment E48; not recorded as opened in the research notes). https://indico.esa.int/event/102/contributions/62/ (LRIP none)
 
 ## Reference statistics (draft 0; the revision of 11 Nov 2026 brings the list to 116 entries, of which 67 and 68 are own work)
 
@@ -280,3 +287,17 @@ foundations [29]-[33], [37] are older and reported as such). Entries needing pub
   most F the graph is connected in 58 to 96 % of runs, and the lowest cell overall, 44 %, has two faulty rovers against a rule set for one.
 - **Pending in this build:** E50 at eight times the fleet (`errors."8"` of the E50 file) and E50b. The 8x sentence composes itself when the
   cells land; E50b's composing function only raises the pending and has to be written against the file's real schema.
+
+## Referee round of 11-12 Nov 2026 (reports/referee_phase6_p3.md, decisions in reports/referee_phase6_decisions.md)
+
+- **What changed.** Per finding: `reports/referee_phase6_p3_response.md`. No number that a results file holds changed; what several are called did.
+  New composed keys and the awaited keys are in PLACEHOLDERS.md. E50b (B-90b) and E50's eight-times cells landed during the revision and are reported.
+- **Referee's own numbers.** The four readings of H9' clause 2, three sensitivity values and the spherical-ground loss and rates are read by the
+  build from the referee report and attributed to the referee wherever they print; tasks B-101 and B-104 replace them.
+- **References.** [16] title corrected; [60], [61] dated "revised November 2026"; [117] VDA 5050 and [118] MassRobotics added (opened, note 03);
+  [119], [120] secondary pages named as such; [121] the GR740 benchmark as the E48 design file cites it (not opened in any note).
+  Still without a date, initials or a full title, because the notes do not hold them: [2], [3], [10], [13], [14], [20], [22], [63], [64], [86],
+  [99], [100], [116] (dates); [24], [41], [53], [69] to [72], [74], [81] to [84], [103], [104] (authors or initials); [7], [11], [17], [21], [35]
+  (composite entries). The arXiv identifier of [103] is as note 03 gives it and was not re-checked on the web.
+- **Not done.** O3 (199 jobs against 200.9 awards a seed, unexplained), O6 (CoreMark on the laptop), the split of the paper (the lead's decision:
+  a roadmap paragraph and explicit halves instead).

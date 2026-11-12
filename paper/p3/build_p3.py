@@ -132,6 +132,13 @@ class Pending(Exception):
     pass
 
 
+class Landed(Exception):
+    """An awaited result is now in its file, and its composing function has not been written against the file's schema."""
+
+
+AWAITED: List[str] = []          # the awaited keys of this build, printed by build(); none of them prints a marker (decision A4)
+
+
 # ---------------------------------------------------------------------------------------------------------
 # B-79: the phase-5 verification checks (results/vv_phase5.json, the schema agreed with FRONTEND on 30 Oct)
 # ---------------------------------------------------------------------------------------------------------
@@ -395,6 +402,50 @@ class R:
 
 
 # ---------------------------------------------------------------------------------------------------------
+# the referee's spherical-ground figures (reports/referee_phase6_p3.md, finding M14; decision B10)
+# ---------------------------------------------------------------------------------------------------------
+REFEREE_P3 = os.path.join(ROOT, "reports", "referee_phase6_p3.md")
+
+
+def referee_m14(r: "R", check):
+    """The loss and the rates the referee computed with the smooth-sphere method of ITU-R P.526 [20] at the hops of Table 7. They are
+    the referee's numbers, read from the report and attributed to it wherever they print; the project's own computation is task B-104
+    (results/E48_sizing.json, a spherical-ground block per class). The paper's side of each pair is checked against the E48 file."""
+    _need(REFEREE_P3, "the referee report")
+    txt = open(REFEREE_P3, encoding="utf-8").read()
+    f = lambda x: float(str(x).replace(",", ""))
+    a = re.search(r"\(([\d.]+) dB against the paper's ([\d.]+)\) and [\d.]+ dB at ([\d.]+) km for 1\.0 m antennas \(([\d.]+) against ([\d.]+)\)", txt)
+    b = re.search(r"about ([\d,]+) instead of ([\d,.]+) kbit/s for the rovers, ([\d,]+) instead of ([\d.]+) for the small rover, ([\d,]+) instead of "
+                  r"([\d.]+) for the hopper and ([\d,]+) instead of ([\d,]+) for the mast", txt)
+    if not a or not b:
+        raise Pending("the spherical-ground figures of finding M14 were not found in the referee report")
+    loss = {"LTV1": (f(a.group(1)), f(a.group(2))), "SMALL": (f(a.group(4)), f(a.group(5)))}
+    rates = {c: (f(b.group(2 * i + 1)), f(b.group(2 * i + 2))) for i, c in enumerate(("LTV1", "SMALL", "HOPPER", "BASE"))}
+    lk = {c: r.s48("classes", c, "link") for c in ("LTV1", "SMALL", "HOPPER", "BASE")}
+    two = lambda d, h1, h2: 40 * math.log10(d) - 20 * math.log10(h1 * h2)
+    check(abs(two(_fin(lk["LTV1"]["longest_hop_m"]), 2.5, 2.5) - loss["LTV1"][1]) < 0.06 and
+          abs(two(_fin(lk["SMALL"]["longest_hop_m"]), 1.0, 1.0) - loss["SMALL"][1]) < 0.06 and abs(f(a.group(3)) * 1000 - _fin(lk["SMALL"]["longest_hop_m"])) < 6,
+          "the flat-ground losses the referee compares with are this paper's at the longest hop of Table 7 (Proposition 1)")
+    check(all(abs(rates[c][1] - _fin(lk[c]["longest_hop_kbps"])) < 0.6 for c in rates),
+          "the flat-ground rates the referee compares with are those of Table 7")
+    ratio = [rates[c][1] / rates[c][0] for c in rates]
+    dl = [loss[c][0] - loss[c][1] for c in loss]
+    check(1.35 <= min(ratio) and max(ratio) <= 2.45 and 3.5 <= min(dl) and max(dl) <= 5.5,
+          "by the referee's computation the loss is 4 to 5 dB higher and the rates 1.4 to 2.4 times lower than Table 7's")
+    bulge = {c: _fin(lk[c]["longest_hop_m"]) ** 2 / (8.0 * R_MOON) for c in ("LTV1", "SMALL")}
+    q = re.search(r"every Table 7 rate is about ([\d.]+) to ([\d.]+) times too high", txt)
+    if not q:
+        raise Pending("the referee's range of rate ratios (finding M14) was not found in the report")
+    said = (f(q.group(1)), f(q.group(2)))
+    check(said[0] - 0.06 <= min(ratio) and max(ratio) <= said[1] + 0.06, "the referee's stated range of rate ratios covers the ratios of the rates the report lists")
+    rate_txt = lambda x: num(x, 0 if x >= 100 else 1)
+    words_ = (f"about {', '.join(rate_txt(rates[c][0]) for c in ('LTV1', 'SMALL', 'HOPPER'))} and {rate_txt(rates['BASE'][0])}{NB}kbit/s in place of "
+              f"{', '.join(rate_txt(rates[c][1]) for c in ('LTV1', 'SMALL', 'HOPPER'))} and {rate_txt(rates['BASE'][1])} for the crew and cargo rovers, the small "
+              f"rover, the hopper and the mast")
+    return {"loss": loss, "rates": rates, "ratio": (min(ratio), max(ratio)), "said": said, "bulge": bulge, "lk": lk, "rates_txt": words_}
+
+
+# ---------------------------------------------------------------------------------------------------------
 # Phase 6: position, time, the shared map, the stack and its security (PREREG6; research notes 01 to 04)
 # ---------------------------------------------------------------------------------------------------------
 E50_SETS = ("dr", "dr+ranging", "dr+ranging+fixes", "lans@2030")
@@ -431,7 +482,7 @@ def dur(s):
     return f"{sig(s / 86400.0, 2 if s / 86400.0 < 10 else 3)}{NB}days"
 
 
-def values_p6(r: R, V, fill, check):
+def values_p6(r: R, V, fill, check, fill_await, landed):
     """Every Phase 6 key. Returns the Phase 6 tables as name -> (builder, tag, caption)."""
     from lunarsim.atc import pnt as PNT
     from lunarsim.atc import safety as SAFETY
@@ -452,11 +503,12 @@ def values_p6(r: R, V, fill, check):
                 f"over the base radio out to {unit(PD['radio_range_m'] / 1000.0, 'km', 0)}, to {words(len(PD['beacons']))} beacons surveyed to "
                 f"{unit(PD['beacon_sigma_m'], 'm', 2)} and to at most {words(PD['max_peers'])} other vehicles in line of sight. A terrain fix is good to "
                 f"{unit(PD['fix_sigma_lit_m'], 'm', 1)} in sunlight and {unit(PD['fix_sigma_dark_m'], 'm', 0)} in the dark, where {pc(PD['fix_fail_dark'], 0)} "
-                f"of attempts fail; an opportunity comes every {unit(PD['fix_spacing_lit_m'], 'm', 0)} in sunlight and every "
+                f"of attempts are taken to fail (Assumed); an opportunity comes every {unit(PD['fix_spacing_lit_m'], 'm', 0)} in sunlight and every "
                 f"{unit(PD['fix_spacing_dark_m'], 'm', 0)} in shadow, costs a stop of {unit(PD['fix_stop_s'], 's', 0)}, and is taken when the vehicle's own "
                 f"95{PCT} bound exceeds {unit(PD['fix_trigger_m'], 'm', 1)}; a vehicle that arrives at a site takes one there. The navigation service "
-                f"gives {unit(PD['lans_95_m'], 'm', 0)} (95{PCT}) with the height taken from the map, for a share of each day of "
-                f"{num(av[2028], 0)} in 2028, {num(av[2029], 1)} in 2029, {num(av[2030], 1)} in 2030 and {num(av[2031], 1)} from 2031 (Assumed). "
+                f"is given the providers' target of {unit(PD['lans_95_m'], 'm', 0)} (95{PCT}) with the height taken from the map [79], where their own "
+                f"simulation gives 17.2{NB}m [77], for a share of each day of {num(av[2028], 0)} in 2028, {num(av[2029], 1)} in 2029, {num(av[2030], 1)} "
+                f"in 2030 and {num(av[2031], 1)} from 2031 (both Assumed). "
                 f"The budget all of this is held against is {unit(PD['budget_m'], 'm', 0)}, the distance rule R1 of [61] keeps free for position "
                 f"uncertainty.")
     fill("P3-NAV-LAYERS-SENTENCE", nav_layers, "pnt.py defaults")
@@ -465,6 +517,63 @@ def values_p6(r: R, V, fill, check):
     def e50(mult, lset, region, metric):
         return r.p6("E50", "errors", mult, lset, region, metric)
 
+    _steps: Dict[str, Any] = {}
+
+    def e50_steps():
+        """results/E50_errors.csv at today's fleet, the ranging layer set: per seed the driving steps overall, where two or more beacons
+        are in line of sight ('near') and elsewhere ('away'), and the parked steps. Gives the shares the referee asked for (M2, M5)."""
+        if _steps:
+            return _steps
+        path = os.path.join(RES, "E50_errors.csv")
+        _need(path, "E50's per-seed error table")
+        c = pd.read_csv(path)
+        c = c[(c["mult"] == 1) & (c["layer_set"] == "dr+ranging")]
+        g = {reg: c[c["region"] == reg].set_index("seed").sort_index() for reg in ("all", "near", "away", "parked")}
+        seeds = list(r.p6("E50", "seeds", "1"))
+        check(list(g["all"].index) == seeds and bool(((g["near"]["n_steps"] + g["away"]["n_steps"]) == g["all"]["n_steps"]).all()),
+              "E50's per-seed table has every seed of today's fleet, and near plus away is every driving step")
+        check(abs(float(g["near"]["p95_m"].mean()) - _fin(e50("1", "dr+ranging", "near", "p95_m")["mean"])) < 1e-3,
+              "E50's per-seed table gives the summary's 95th percentile where two or more beacons are in view")
+        s1 = seeds[0]
+        _steps.update({"g": g, "seeds": seeds,
+                       "near_share": float(g["near"]["n_steps"].sum()) / float(g["all"]["n_steps"].sum()),
+                       "near_over": float(g["near"]["share_err_over_budget"].mean()),
+                       "near_max_mean": float(g["near"]["max_m"].mean()), "near_max": float(g["near"]["max_m"].max()),
+                       "near_p95_max": float(g["near"]["p95_m"].max()),
+                       "parked_share_s1": float(g["parked"]["n_steps"][s1]) / float(g["parked"]["n_steps"][s1] + g["all"]["n_steps"][s1]),
+                       "parked_s1": int(g["parked"]["n_steps"][s1]), "driving_s1": int(g["all"]["n_steps"][s1])})
+        return _steps
+
+    REFEREE = os.path.join(ROOT, "reports", "referee_phase6_p3.md")
+
+    def referee_m5():
+        """The referee's rerun of seeds 1 to 6 under four readings of 'near the base', and its three sensitivity values (finding M5 of
+        reports/referee_phase6_p3.md). These are the referee's numbers, read from the report and attributed to it in the text; they are
+        not a results file of this paper, and task B-101 (results/E50_near_base.json) replaces them on all seeds."""
+        _need(REFEREE, "the referee report")
+        txt = open(REFEREE, encoding="utf-8").read()
+        pat = r"^\| (Two or more beacons|One or more beacons|Within 1 km|Within 5 km)[^|]*\| ([\d.]+) % \| ([\d.]+) \| (\d+) of (\d+) \|"
+        rows = [(a, float(b) / 100.0, float(c), int(d), int(e)) for a, b, c, d, e in re.findall(pat, txt, re.M)]
+        if [x[0] for x in rows] != ["Two or more beacons", "One or more beacons", "Within 1 km", "Within 5 km"]:
+            raise Pending("the four readings of finding M5 were not found in the referee report")
+        st = e50_steps()
+        six = st["seeds"][:6]
+        g = st["g"]
+        own_p95 = float(g["near"]["p95_m"][six].mean())
+        own_share = float(g["near"]["n_steps"][six].sum()) / float(g["all"]["n_steps"][six].sum())
+        check(abs(own_p95 - rows[0][2]) < 0.006 and abs(own_share - rows[0][1]) < 0.0006 and rows[0][3] == rows[0][4] == 6,
+              "the referee's rerun of seeds 1 to 6 reproduces E50 under the analysis's own reading (5.8)")
+        check(all(x[2] > PD["budget_m"] and x[3] == 0 for x in rows[1:]) and rows[0][2] < PD["budget_m"],
+              "in the referee's rerun the clause holds under the analysis's reading and under none of the three others (5.8)")
+        sens = {}
+        for key, p in (("radio", r"at 10 m the paper's own region gives ([\d.]+) m \((\d) of (\d) seeds inside\)"),
+                       ("survey", r"1 m in place of 0\.15 m \(see M9\) gives ([\d.]+) m \((\d) of (\d) seeds inside\)"),
+                       ("uwb", r"50 m in place of 100 m gives ([\d.]+) m \((\d) of (\d) seeds inside\)")):
+            m_ = re.search(p, txt)
+            if not m_:
+                raise Pending(f"the referee's sensitivity value ({key}) was not found in the report")
+            sens[key] = (float(m_.group(1)), int(m_.group(2)), int(m_.group(3)))
+        return rows, sens
     def e50_design():
         d = r.p6("E50", "design")
         seeds = r.p6("E50", "seeds")
@@ -477,6 +586,7 @@ def values_p6(r: R, V, fill, check):
         check(all(abs(_fin(e50(m, "dr+ranging+fixes+lans", "all", "p95_m")["mean"]) - _fin(e50(m, "dr+ranging+fixes", "all", "p95_m")["mean"])) < 1e-9
                   for m in seeds), "with the service's 2028 availability of zero the fourth layer set equals the third (4.2)")
         ns = {m: len(v) for m, v in seeds.items()}
+        st = e50_steps()
         check(all(int(e50(m, "dr", "all", "p95_m")["n"]) == n for m, n in ns.items()), "E50's seed counts are those of its cells")
         ran = " and ".join(f"{cnt(n)} at {MULT_NAME[m]}" for m, n in ns.items())
         return (f"The run is the auction regime of [60] with the road layer of [61] on, three owners with equal shares, the middle load and a message "
@@ -485,8 +595,13 @@ def values_p6(r: R, V, fill, check):
                 f"with ranging, with ranging and terrain fixes, and with the navigation service added, which in 2028 is never available, so that set "
                 f"equals the third and a variant with the service as assumed for {int(d['lans_variant_year'])} is run beside it. Errors start at zero "
                 f"at the window's start (every vehicle surveyed then, Assumed). Seeds: {ran}, fewer at the larger fleets because of run time, as the "
-                f"dated changes of [67] record. A vehicle-step is near the base when its route sample is in radio line of sight of at least two of "
-                f"the four beacons, and away from it otherwise.")
+                f"dated changes of [67] record. The results are split by region: a vehicle-step is called near the base when its route sample is in "
+                f"radio line of sight of at least two of the four beacons, and away from it otherwise. That rule was chosen with the experiment; it is "
+                f"not in the registration, whose words are &ldquo;within radio range of the base beacons&rdquo;, and it covers {pc(st['near_share'], 1)} "
+                f"of the driving steps (Section 5.8 reports the clause under other readings; a dated entry of [67] records the choice). The replay is "
+                f"a covariance analysis with a matched filter: the errors are drawn from the same linear-Gaussian model that the filter assumes, with the "
+                f"bias of a leg as a filter state, no outlier, no range bias from a blocked path, no wrong fix accepted as good, and the beacons' survey "
+                f"errors treated as white. The error it reports is therefore the best any estimator could do if the model were the world.")
     fill("P3-E50-DESIGN-SENTENCE", e50_design, "E50")
 
     def e50_errors():
@@ -502,17 +617,23 @@ def values_p6(r: R, V, fill, check):
                 a, n_, w = (e50(m, s, reg, "p95_m") for reg in ("all", "near", "away"))
                 if s == "dr":
                     check(abs(n_["mean"] - w["mean"]) < 0.05 * a["mean"], f"E50 {m}x: dead reckoning alone is the same near the base and away from it (5.8)")
-                    bits.append(f"{E50_SET_NAME[s]} {mci(a, 0)}, the same near the base and away from it")
+                    bits.append(f"{E50_SET_NAME[s]} {mci(a, 0)}, the same in both regions")
                     continue
-                bits.append(f"{E50_SET_NAME[s]} {mci(a, 1 if a['mean'] >= 10 else 2)} overall, {mci(n_, 2 if n_['mean'] < 10 else 1)} near the base and "
-                            f"{mci(w, 1 if w['mean'] >= 10 else 2)} away from it")
+                bits.append(f"{E50_SET_NAME[s]} {mci(a, 1 if a['mean'] >= 10 else 2)} overall, {mci(n_, 2 if n_['mean'] < 10 else 1)} in the first region and "
+                            f"{mci(w, 1 if w['mean'] >= 10 else 2)} in the second")
             sh = [pc(e50(m, s, "all", "share_b95_over_budget")["mean"], 0) for s in E50_SETS]
             share = ", ".join(sh[:-1]) + " and " + sh[-1]
-            out.append(f"At {MULT_NAME[m]} ({cnt(len(seeds[m]))} seeds) the 95th percentile of the position error over driving vehicle-steps was: "
+            out.append(f"At {MULT_NAME[m]} ({cnt(len(seeds[m]))} seeds) the 95th percentile of the position error over driving vehicle-steps, overall, "
+                       f"where two or more of the four beacons are in line of sight (the first region) and elsewhere (the second), was: "
                        + "; ".join(bits) + f". Under dead reckoning alone that percentile was {unit(hours[0], 'm', 0)} in the first driving hour and "
                        f"{unit(hours[7], 'm', 0)} in the eighth. The vehicle's own 95{PCT} bound was above the {unit(PD['budget_m'], 'm', 0)} budget for "
                        f"{share} of the driving steps, in the same order of layer sets.")
-        return " ".join(out) + " Table 10 gives the medians and the fix stops."
+        st = e50_steps()
+        nr = r.p6("E50", "errors", "1", "dr+ranging", "near")
+        return (" ".join(out) + f" The first region holds {pc(st['near_share'], 1)} of the driving steps at today's fleet. Inside it, with ranging, "
+                f"{pc(st['near_over'], 1)} of the steps still had an error above the budget, the largest error of a seed was {unit(st['near_max_mean'], 'm', 0)} "
+                f"on average and {unit(st['near_max'], 'm', 0)} at most, and the vehicle's own 95{PCT} bound, which is what a rule can act on, was above the "
+                f"budget in {pc(nr['share_b95_over_budget']['mean'], 0)} of the steps. Table 10 gives the medians and the fix stops.")
     fill("P3-E50-RESULTS-ERRORS", e50_errors, "E50")
 
     def h9_parts():
@@ -536,20 +657,45 @@ def values_p6(r: R, V, fill, check):
         return "supported" if all(flags) else ("not supported" if not any(flags) else "supported at some fleet sizes and not at others")
 
     def h9_verdict():
+        """5.8: H9' clause by clause. Clause 2 is reported under every reading and its verdict is 'depends on the reading' (decisions A2
+        and B4 of the referee round; PREREG6 section 6). The six-seed values of the three other readings are the referee's."""
         p = h9_parts()
         ms = list(p)
         at = lambda key, nd=2: ", ".join(f"{mci(p[m]['h'][key], nd)} at {MULT_NAME[m]}" for m in ms)
         lans = [p[m]["lans_away"] for m in ms]
         lans_in = [_fin(x["ci"][1]) < p[m]["b"] for x, m in zip(lans, ms)]
-        return (f"H9 of [67] has three clauses, each tested against the {unit(p[ms[0]]['b'], 'm', 0)} budget. Dead reckoning alone passes the budget within one "
-                f"eight-hour shift of driving: {sup([p[m]['dr'] for m in ms])} (in driving hour "
+        rows, sens = referee_m5()
+        st = e50_steps()
+        share = lambda x: "every driving step" if x > 0.9995 else f"{pc(x, 1)} of driving steps"
+        inside = lambda a, b: f"{'none' if a == 0 else ('all' if a == b else words(a))} of the {words(b)} seeds inside"
+        what = {"Two or more beacons": "under that reading", "One or more beacons": "where one or more beacons are in line of sight",
+                "Within 1 km": "within 1&nbsp;km of the base", "Within 5 km": "within the 5&nbsp;km radio range of the mesh"}
+        ref = "; ".join(f"{unit(x[2], 'm', 2 if x[2] < 10 else 1)} {what[x[0]]} ({share(x[1])}, {inside(x[3], x[4])})" for x in rows)
+        s_txt = (f"a range error of 10&nbsp;m over the base radio in place of {unit(PD['radio_sigma_m'], 'm', 0)} gives {unit(sens['radio'][0], 'm', 1)} "
+                 f"({inside(sens['radio'][1], sens['radio'][2])}), a beacon survey error of 1&nbsp;m in place of {unit(PD['beacon_sigma_m'], 'm', 2)} gives "
+                 f"{unit(sens['survey'][0], 'm', 1)} ({inside(sens['survey'][1], sens['survey'][2])}), and an ultra-wideband reach of 50&nbsp;m in place of "
+                 f"{unit(PD['uwb_range_m'], 'm', 0)} gives {unit(sens['uwb'][0], 'm', 1)} ({inside(sens['uwb'][1], sens['uwb'][2])})")
+        check(all(p[m]["near"] for m in ms) and st["near_p95_max"] < p[ms[0]]["b"],
+              "under the analysis's own reading H9' clause 2 is inside the budget at every fleet size run, and in every seed at today's fleet (5.8)")
+        return (f"H9&prime; of [67] has three clauses, each against the {unit(p[ms[0]]['b'], 'm', 0)} budget. First, dead reckoning alone passes the budget "
+                f"within one eight-hour shift of driving: {sup([p[m]['dr'] for m in ms])} (in driving hour "
                 + " and ".join(f"{int(p[m]['h']['dr_first_driving_hour_p95_over_budget'])} at {MULT_NAME[m]}" for m in ms) +
-                f"). With ranging the 95th percentile stays inside the budget near the base: {sup([p[m]['near'] for m in ms])} ({at('ranging_near_p95_m')}). "
-                f"With terrain fixes it stays inside the budget away from the base: {sup([p[m]['away'] for m in ms])} ({at('fixes_away_p95_m', 1)}); with the "
-                f"navigation service as assumed for 2030 the value away from the base is "
+                f"). Second, with ranging the 95th percentile stays inside the budget &ldquo;within radio range of the base beacons&rdquo;: the verdict "
+                f"depends on the reading of those words, which the registration does not define. Under the reading the analysis used, two or more of "
+                f"the four beacons in line of sight ({pc(st['near_share'], 1)} of driving steps), the percentile is {at('ranging_near_p95_m')}, inside the "
+                f"budget (in every seed at today's fleet). In the referee's rerun of seeds 1 to 6 at today's fleet, made with this paper's code and parameters and "
+                f"changing only the region, it was {ref}. The reading was chosen after the results, as a dated entry of [67] records, so the clause "
+                f"is reported under each reading and is neither supported nor refuted. Inside the analysis's own region it also rests on three assumed "
+                f"inputs; in the same rerun {s_txt}. Third, with terrain fixes the percentile stays inside the budget away from the base, that is, "
+                f"where fewer than two beacons are in line of sight: {sup([p[m]['away'] for m in ms])} ({at('fixes_away_p95_m', 1)}); with the "
+                f"navigation service as assumed for 2030 the value there is "
                 + " and ".join(f"{mci(x, 2)} at {MULT_NAME[m]}" for x, m in zip(lans, ms)) +
                 f", {'inside' if all(lans_in) else ('still outside' if not any(lans_in) else 'inside at one fleet size only')} the budget.")
     fill("P3-H9-VERDICT-SENTENCE", h9_verdict, "E50")
+    P6_FILES["E50N"], P6_TASK["E50N"] = "E50_near_base.json", "B-101"
+    fill_await("P3-E50-READINGS-SENTENCE", lambda: landed("results/E50_near_base.json (B-101)", lambda: r.p6("E50N", "readings")),
+               "The same four readings computed on every seed and fleet size are not in this version; they will replace the referee's six-seed "
+               "values in this paragraph.", "B-101 (results/E50_near_base.json, the four readings of H9' clause 2 on all seeds)")
 
     def e50_fixstops():
         ms = list(r.p6("E50", "seeds"))
@@ -563,16 +709,52 @@ def values_p6(r: R, V, fill, check):
                 f". E50 replays recorded trajectories and does not move the vehicles, so the delay it reports for the widened margins, which the companion "
                 f"paper quotes [61], does not include those stops; a dated change of [67] labels it &ldquo;without stop time&rdquo;.")
     fill("P3-E50-FIXSTOP-SENTENCE", e50_fixstops, "E50")
-    fill("P3-E50-8X-SENTENCE", lambda: f"At eight times the fleet the same percentiles were " +
-         "; ".join(f"{E50_SET_NAME[s]} {mci(e50('8', s, 'all', 'p95_m'))}" for s in E50_SETS) + ".", "E50 at 8x")
-    fill("P3-E50B-SENTENCE", lambda: str(r.p6("E50b", "sentence")), "E50b (B-90b): the delay with the fix stops in the engine")
+    fill_await("P3-E50-8X-SENTENCE", lambda: f"At eight times the fleet the same percentiles were " +
+               "; ".join(f"{E50_SET_NAME[s]} {mci(e50('8', s, 'all', 'p95_m'))}" for s in E50_SETS) + ".",
+               "The cells at eight times the fleet, five seeds, are not in this version; their percentiles will be reported here.",
+               "E50 at eight times the fleet (results/E50_summary.json, errors.8)")
+
+    def e50b():
+        """5.8: E50b (B-90b, results/E50b_summary.json), the delay with the terrain-fix stops inside the engine. Exploratory: registered
+        after E50's first results (PREREG6 section 6) and run after them. Every direction word is chosen from the file."""
+        d, mt, st = r.p6("E50b", "design"), r.p6("E50b", "metrics"), r.p6("E50b", "stops")
+        seeds = list(r.p6("E50b", "seeds"))
+        check(abs(_fin(d["stop_s"]) - PD["fix_stop_s"]) < 1e-9 and "fleet x1" in str(d["base"]) and seeds == list(r.p6("E50", "seeds", "1")),
+              "E50b runs E50's scenario and seeds at today's fleet with the stop time of the navigation model (5.8)")
+        check(bool(r.p6("E50b", "e50_reproduced_all_seeds")), "E50b's arm without stop time reproduces E50's cells in every seed (5.8)")
+        dl, rw, vi = mt["delay_mean_h"], mt["road_wait_h"], mt["violations"]
+        n = int(dl["n_seeds"])
+        check(n == len(seeds) and int(dl["seeds_higher"]) + int(dl["seeds_lower"]) <= n, "E50b's delay is paired over all its seeds (5.8)")
+        check(abs(_fin(dl["with_stop_time"]) - _fin(dl["without_stop_time"]) - _fin(dl["diff_mean"])) < 1e-9, "E50b: the delay difference is with minus without (5.8)")
+        lo, hi = (_fin(x) for x in dl["diff_ci95_bootstrap"])
+        up = _fin(dl["diff_mean"]) > 0
+        rel = _fin(dl["diff_mean"]) / _fin(dl["without_stop_time"])
+        rlo, rhi = (_fin(x) for x in rw["diff_ci95_bootstrap"])
+        road_same = rlo <= 0 <= rhi
+        ins, nav = _fin(st["engine_fix_stop_h_mean"]), _fin(st["perfect_run_fix_stop_h_mean"])
+        check(abs(nav - _fin(r.p6("E50", "errors", "1", "dr+ranging+fixes", "fix_stop_h_per_month")["mean"])) < 0.01,
+              "E50b: the fix time of the navigation replay is E50's fix-stop time at today's fleet (5.8)")
+        check(0 < ins < nav, "E50b inserts part of the navigation replay's fix time, so its delay difference is a lower bound (5.8, 7)")
+        check(_fin(vi["with_stop_time"]) == 0, "E50b: no run with stop time has a violation (5.8)")
+        zero = "excludes" if (lo > 0 or hi < 0) else "includes"
+        return (f"A follow-up run, E50b, put the stops into the engine; it was registered after E50's first results and run after them, so it is "
+                f"exploratory [67]. At today's fleet, on the same {cnt(n)} seeds, whose arm without stop time reproduces E50's cells exactly, the delay per "
+                f"delivery {'rose' if up else 'fell'} from {unit(dl['without_stop_time'], 'h', 2)} without stop time to {unit(dl['with_stop_time'], 'h', 2)} "
+                f"with it, by {unit(abs(_fin(dl['diff_mean'])), 'h', 2)} {ci(lo, hi, 2)} or {pc(abs(rel), 1)}; the bootstrap interval {zero} zero, a paired "
+                f"t-test gives p = {num(dl['paired_t_p'], 3)}, and the delay was higher in {cnt(dl['seeds_higher'])} seeds and lower in {cnt(dl['seeds_lower'])}. "
+                f"The time spent waiting at roads {'did not change' if road_same else 'changed'} ({unit(rw['diff_mean'], 'h', 2, sign=True)} {ci(rlo, rhi, 2)}), "
+                f"and no run with stop time had a violation. This is the price of the terrain-fix layer in delay, and it is a lower bound: the engine "
+                f"inserted {unit(ins, 'h', 1)} of stops a month, {pc(ins / nav, 0)} of the {unit(nav, 'h', 1)} of fix time in the navigation replay, because "
+                f"the other stops fall on repositioning drives, which do not pass through the road layer; a stop that falls inside a single-lane "
+                f"segment ({pc(st['fixes_inside_single_lane_share'], 0)} of the fixes) is taken just after the segment's exit.")
+    fill("P3-E50B-SENTENCE", e50b, "E50b (B-90b): the delay with the fix stops in the engine")
 
     def table_nav():
         rows = [
             ["Wheel odometry, inertial unit and stereo cameras with lamps (visual odometry)", "Every driving class; the hopper on the ground",
              f"Drift {pc(PD['dr_firm'], 0)} of distance on firm level ground; {pc(PD['dr_loose'], 0)} on loose soil or slopes above "
              f"{num(PD['slope_loose_deg'], 0)}&deg;; {pc(PD['dr_shadow'], 0)} in shadow",
-             "Measured on Earth (firm ground, also the requirement of the lunar crater-matching work); Measured on Earth (loose soil); Assumed (shadow; one simulation gives 6.6&#8239;%)", "[69, 70, 72, 74]"],
+             "Measured on Earth (firm ground, 1 to 2.5&#8239;%; the lunar crater-matching work takes &ldquo;typically under 2&#8239;%&rdquo; as a design assumption); Measured on Earth (loose soil); Assumed (shadow)", "[69, 70, 71, 72]"],
             ["Star tracker, Sun sensor as backup", "As above", f"Heading held to {num(PD['heading_sigma_deg'], 1)}&deg;; a gyroscope alone drifts "
              f"{num(PD['gyro_drift_deg_h'], 0)}&deg; an hour", "Assumed (the source says a small fraction of a degree); Measured on Mars (gyroscope)", "[70, 69]"],
             ["Ranging radio, two-way (ultra-wideband)", "Every class and every beacon", f"{unit(PD['uwb_sigma_m'], 'm', 1)} per range within "
@@ -580,22 +762,25 @@ def values_p6(r: R, V, fill, check):
             ["Two-way ranging over the base radio", "As above", f"{unit(PD['radio_sigma_m'], 'm', 0)} per range out to "
              f"{unit(PD['radio_range_m'] / 1000.0, 'km', 0)}, in terrain line of sight", "Assumed", "&ndash;"],
             ["Surveyed beacons", "The base mast, the depot, the power plant and one landing pad", f"{cap1(words(len(PD['beacons'])))} beacons, each surveyed to "
-             f"{unit(PD['beacon_sigma_m'], 'm', 2)}", "Assumed (number and places); Measured (the map's geolocation error after track adjustment)", "[76]"],
+             f"{unit(PD['beacon_sigma_m'], 'm', 2)}", "Assumed (number, places, and that the beacons are surveyed on the 5&nbsp;m site model, whose laser tracks are placed to "
+             "0.1 to 0.2&nbsp;m horizontally after adjustment; the wider polar product states 1&nbsp;m, Section 3.7)", "[76, 90]"],
             ["Cameras or lidar with the orbital map on board (terrain fix)", "Every driving class",
              f"{unit(PD['fix_sigma_lit_m'], 'm', 1)} in sunlight; {unit(PD['fix_sigma_dark_m'], 'm', 0)} in the dark with {pc(PD['fix_fail_dark'], 0)} of attempts "
              f"failing; every {unit(PD['fix_spacing_lit_m'], 'm', 0)} sunlit, {unit(PD['fix_spacing_dark_m'], 'm', 0)} in shadow; a stop of "
-             f"{unit(PD['fix_stop_s'], 's', 0)}", "Spec (a requirement of 5&nbsp;m at three sigma); simulation and field tests (dark); Assumed (spacing, stop)",
+             f"{unit(PD['fix_stop_s'], 's', 0)}", "Spec (sunlit: a requirement of 5&nbsp;m at three sigma); simulation and field tests on Earth (accuracy in the dark); "
+             "Assumed (the share of failed attempts, the spacing, the stop)",
              "[70, 71, 73]"],
             ["Receiver for the lunar navigation service", "Every class, once the service exists",
              f"{unit(PD['lans_95_m'], 'm', 0)} (95&#8239;%) with the map's height; share of the day with a fix "
              + ", ".join(f"{num(PD['lans_availability'][y], 1 if PD['lans_availability'][y] else 0)} in {y}" for y in (2028, 2029, 2030, 2031)),
-             "Simulation by the providers (accuracy); Assumed (availability by year)", "[77, 78, 79, 80]"],
-            ["Oscillator and two-way time transfer to the base", "Every class", "See Section 3.6", "Measured on the lunar surface (crystal); Spec (atomic)", "[82, 86]"],
+             "Assumed (accuracy: the providers' target; their own simulation gives 17.2&nbsp;m); Assumed (availability by year)", "[77, 78, 79, 80]"],
+            ["Oscillator and two-way time transfer to the base", "Every class", "See Section 3.6", "Assumed distribution over vehicles, taken from the excursion of one "
+             "crystal measured on the lunar surface; Spec (atomic)", "[82, 86]"],
         ]
         return _tab("Table 4. What a vehicle carries to know where it is, as E50 models it (<code>lunarsim/atc/pnt.py</code>). The number is the value "
                     "the model uses; the flag says what stands behind it, in the words of Table 3 and Section 3. E50 gives every vehicle the same set and "
-                    "does not model a hopper's flight separately (Assumed). No part in this table has been measured on the lunar surface except the crystal "
-                    "oscillator of the last row.", ["Part", "Carried by", "The number that characterises it", "Flag", "Source"], rows, cls="wide")
+                    "does not model a hopper's flight separately (Assumed). No part in this table has been measured on the lunar surface; the crystal "
+                    "of the last row is one receiver's, measured there once.", ["Part", "Carried by", "The number that characterises it", "Flag", "Source"], rows, cls="wide")
     T6["nav"] = (table_nav, "pnt.py", "Table 4, navigation parts")
 
     def table_e50():
@@ -638,7 +823,7 @@ def values_p6(r: R, V, fill, check):
         check(abs(c["rate"] * DAY_US - 56.02) < 0.01 and abs((c["LG"] - c["Lorb"]) * DAY_US - 58.7) < 0.05,
               "the derived rate is 56.02 microseconds a day, and 58.7 without the Moon's own potential (3.6)")
         check(all(abs(c["rate"] * DAY_US - x) < 0.01 for x in (56.0199, 56.025, 56.0256)), "the three published rates agree with the derivation to 0.01 microseconds a day (3.6)")
-        return (f"Proposition 3 derives the offset term by term and gives {num(c['rate'] * DAY_US, 3)}&nbsp;&micro;s a day, a rate of "
+        return (f"Proposition 3 derives the offset term by term and gives {num(c['rate'] * DAY_US, 2)}&nbsp;&micro;s a day, a rate of "
                 f"{num(c['rate'] * 1e10, 4)}&nbsp;&times;&nbsp;10<sup>&minus;10</sup>, which is the constant the clock model of E51 uses; left uncorrected it is "
                 f"{num(c['rate'] * 86400.0 * C_LIGHT / 1000.0, 1)}&nbsp;km of light time a day, and without the Moon's own potential it would be "
                 f"{num((c['LG'] - c['Lorb']) * DAY_US, 1)}&nbsp;&micro;s a day.")
@@ -653,9 +838,10 @@ def values_p6(r: R, V, fill, check):
         k = r.p6("E51", "constants")
         cr, cs = k["classes"]["crystal"], k["classes"]["csac"]
         check(_fin(cr["y_lo"]) == 0 and _fin(cr["ageing_per_month"]) == 0, "the crystal's frequency error starts at zero and it has no ageing term (3.6)")
-        return (f"The model has two classes. A temperature-compensated crystal has a constant frequency error drawn per vehicle between 0 and "
-                f"{e10(cr['y_hi'])}, the range the crystal of the LuGRE receiver showed on the lunar surface as it warmed from 25 to 45&nbsp;&deg;C [82] "
-                f"(Measured on the Moon, read from a figure's axis). A chip-scale atomic clock has a frequency error with a standard deviation of "
+        return (f"The model has two classes. A temperature-compensated crystal has a constant frequency error drawn per vehicle, uniformly between 0 and "
+                f"{e10(cr['y_hi'])} and so of one sign. That range is the excursion the crystal of one receiver, LuGRE's, showed on the lunar surface as it "
+                f"warmed from 25 to 45&nbsp;&deg;C [82] (read from a figure's axis); using one crystal's excursion as the spread of constant offsets across "
+                f"vehicles is our modelling choice (Assumed). A chip-scale atomic clock has a frequency error with a standard deviation of "
                 f"{e10(cs['y_sigma'])}, its temperature term, and ages by {e10(cs['ageing_per_month'])} a month [86] (Spec; the data sheet says the model is "
                 f"not rated for space). A vehicle is synchronised by a two-way time transfer whenever it has a radio path to the base mast, which leaves "
                 f"a residual of {unit(_fin(k['tt_sigma_s']) * 1e9, 'ns', 0)} (Assumed) and corrects the offset, not the frequency (Assumed; Section 5.9 "
@@ -686,7 +872,8 @@ def values_p6(r: R, V, fill, check):
                 f"{unit(d['v_stamp_ms'], 'm/s', 0)}; the largest clock error; and the reservation conflicts caused by clock error alone. Such a conflict is a pair "
                 f"of conflicting single-lane reservations, of {cnt(pairs)} such pairs in the {cnt(len(d['seeds']))} seeds, whose two clock errors close the nominal "
                 f"gap between them by more than twice the guard; the guard is {unit(k['guard_s'], 's', 1)}, with a row for no guard. This is a check on the logged "
-                f"reservations, not a new run of the engine. Four things were added after the first results and are labelled post hoc (Section 4.6): guards of "
+                f"reservations, not a new run of the engine, and it is made at today's fleet only: the fleets of four and eight times, where reservations "
+                f"are more frequent, were not checked. Four things were added after the first results and are labelled post hoc (Section 4.6): guards of "
                 f"0.01 and 1&nbsp;s; every vehicle on Earth seconds; a transfer that also steers frequency, with a daily thermal cycle of {e10(b['thermal_amp']['crystal'])} on the crystal and "
                 f"{e10(b['thermal_amp']['csac'])} on the atomic clock (Assumed period of 24&nbsp;h); and a mixed fleet in which half the vehicles count Earth "
                 f"seconds, with and without the conversion of Proposition 3.")
@@ -717,8 +904,8 @@ def values_p6(r: R, V, fill, check):
         c0 = e51row("crystal", 10)
         check(c0["one_way_m_p95"] > 1000 * _fin(c0["one_way_m_median"]), "the crystal's 95th percentile at a 10 s resync is set by vehicles out of contact (5.9)")
         return (" ".join(out) + f" With perfect clocks every measure is zero, the baseline. The crystal's 95th percentile is set by vehicles that are out "
-                f"of contact and free-run however often a transfer is attempted: at a 10&nbsp;s resync its median is {dist(c0['one_way_m_median'], 2)} and "
-                f"its largest clock error {dur(c0['max_abs_clock_s'])} (Table 11). Two-way ranging, which Section 3.5 uses, is unaffected by the "
+                f"of contact and free-run however often a transfer is attempted, vehicles that could not range to the base either: at a 10&nbsp;s resync its "
+                f"median is {dist(c0['one_way_m_median'], 2)} and its largest clock error {dur(c0['max_abs_clock_s'])} (Table 11). Two-way ranging, which Section 3.5 uses, is unaffected by the "
                 f"interval because the clock offset cancels in it.")
     fill("P3-E51-RESULTS-SENTENCE", e51_results, "E51")
 
@@ -745,23 +932,34 @@ def values_p6(r: R, V, fill, check):
 
                 f"{txt(s1)}{nxt('1', s1)}, with a guard of 0.1&nbsp;s {txt(s01)}{nxt('0.1', s01)}, and with a guard of 0.01&nbsp;s {txt(s001)}{nxt('0.01', s001)}; "
                 f"with no guard it caused {cnt(min(tab['0']))} to {cnt(max(tab['0']))} at every interval. Its largest clock error when never resynchronised was "
-                f"{dur(worst)}. The atomic clock caused none with any guard at any interval, and {cnt(min(cs['0']))} to {cnt(max(cs['0']))} with none.")
+                f"{dur(worst)}. The atomic clock caused none with any guard at any interval, and {cnt(min(cs['0']))} to {cnt(max(cs['0']))} with none. The column "
+                f"without a guard needs care: it counts a pair as soon as the two clock errors close the nominal gap at all, and for reservations booked back "
+                f"to back, with no nominal gap, that is the sign of the difference of two clock errors, however small. It is a count of back-to-back pairs "
+                f"and not of conflicts a vehicle would meet, which is why the better clock shows more of them than the crystal at a 10&nbsp;s resync.")
     fill("P3-E51-GUARD-SENTENCE", e51_guards, "E51")
 
     def h11_verdict():
+        """5.9: H11' in its two halves. The first is an observation on the logged reservations; the second is a property of the assumed
+        transfer residual and could not have failed (finding M6; decision A1): it is called a design calculation."""
         h = r.p6("E51", "h11")
         uwb = _fin(r.p6("E51", "design", "uwb_sigma_m"))
         ivs = [10, 60, 600, 3600, 21600, 86400]
         both = [i for i in ivs if int(e51row("crystal", i)["conflicts_guard_0.1"]) == 0 and int(e51row("crystal", i)["seeds_with_conflict_guard_0.1"]) == 0
                 and _fin(e51row("crystal", i)["one_way_m_p95"]) > uwb]
         check(both == list(h["intervals_meeting_both"]) and bool(h["supported"]) == bool(both), "H11's flag and intervals follow from the rows by the file's rule (5.9)")
+        res_m = _fin(r.p6("E51", "constants", "tt_sigma_s")) * C_LIGHT
+        check(res_m > 10 * uwb, "the assumed transfer residual alone is far above the ranging radio's noise, so H11's ranging half holds for any oscillator (5.9)")
+        pairs = int(e51row("crystal", 10)["conflict_pairs_checked"])
+        head = (f"H11 of [67] asks for a resync interval at which the cheaper oscillator causes no reservation conflict while its clock error still adds "
+                f"more to one-way ranging than the ranging radio's own noise of {unit(uwb, 'm', 1)}. ")
+        calc = (f"The second half is not a test. The time transfer is assumed to leave {unit(res_m / C_LIGHT * 1e9, 'ns', 0)}, which is {unit(res_m, 'm', 0)} of "
+                f"range, so the clock error exceeds the radio's noise for any oscillator, a perfect one included: it is a design calculation on that "
+                f"assumed residual and could not have come out otherwise (a dated entry of [67]).")
         if not both:
-            return (f"H11 of [67] asks for a resync interval at which the cheaper oscillator causes no reservation conflict while its clock error still adds "
-                    f"more than the ranging radio's own noise of {unit(uwb, 'm', 1)}: not supported, no interval of the sweep meets both.")
-        return (f"H11 of [67] asks for a resync interval at which the cheaper oscillator causes no reservation conflict while its clock error still adds more "
-                f"to one-way ranging than the ranging radio's own noise of {unit(uwb, 'm', 1)}: supported. With the 0.1&nbsp;s guard every interval from "
-                f"{IVL[both[0]]} to {IVL[both[-1]]} gives zero clock-caused conflicts in every seed, while the crystal's one-way ranging error at the 95th "
-                f"percentile is {dist(e51row('crystal', both[0])['one_way_m_p95'])} or more.")
+            return head + "The first half was not observed: no interval of the sweep has zero clock-caused conflicts with the 0.1&nbsp;s guard. " + calc
+        return (head + f"The first half was observed: with the 0.1&nbsp;s guard every interval from {IVL[both[0]]} to {IVL[both[-1]]} gave no clock-caused "
+                f"conflict in any seed, over the {cnt(pairs)} pairs of conflicting single-lane reservations in the recorded months. " + calc +
+                f" By the registered rule the hypothesis counts as supported; it is exploratory and outside the confirmatory family.")
     fill("P3-H11-VERDICT-SENTENCE", h11_verdict, "E51")
 
     def e51b_row(part, cls, ivl, variant):
@@ -856,14 +1054,23 @@ def values_p6(r: R, V, fill, check):
         bs = [_fin(v["budget_s"]) for v in hc.values()]
         check(7.0 <= math.log10(max(bs) / min(bs)) < 8.0, "the budgets of the uses of time span seven orders of magnitude (3.6)")
         rows = []
+        tt, n_below = _fin(r.p6("E51", "constants", "tt_sigma_s")), 0
         for use in hc:
             b = _fin(hc[use]["budget_s"])
             bud = f"{sig(b * 1e9, 3)}&nbsp;ns" if b < 1e-6 else (f"{sig(b * 1e6, 2)}&nbsp;&micro;s" if b < 1e-3 else (f"{sig(b * 1e3, 2)}&nbsp;ms" if b < 0.1 else f"{sig(b, 2)}&nbsp;s"))
-            rows.append([html.escape(cap1(use.split(" (")[0])), bud, dur(hc[use]["p5_over_vehicles_s"]), dur(ha[use]["p5_over_vehicles_s"])])
-        return _tab("Table 12. Holdover: the longest time without a resync for which 95&#8239;% of the drawn vehicles keep each use inside its budget (E51; "
-                    "Proposition 4 gives the same times analytically at the 95th-percentile frequency error, and the build checks the two against each "
-                    "other). The budgets are derived in Proposition 4 and its remarks, except the two slot budgets, which are the cellular requirement [87] "
-                    "and a 10&nbsp;ms slot with a 1&#8239;% guard.", ["Use", "Clock error allowed", "Crystal holds it for", "Atomic clock holds it for"], rows)
+            below = b < tt
+            n_below += int(below)
+            rows.append([html.escape(cap1(use.split(" (")[0])), bud + (f" (below the assumed transfer residual of {unit(tt * 1e9, 'ns', 0)}: not reachable)" if below else ""),
+                         dur(hc[use]["p5_over_vehicles_s"]), dur(ha[use]["p5_over_vehicles_s"])])
+        check(n_below == 2, "two budgets of Table 12 lie below the assumed transfer residual and are marked not reachable (5.9)")
+        nveh = {int(v["n_vehicles"]) for v in hc.values()}
+        return _tab(f"Table 12. Holdover: the longest time without a resync for which 95&#8239;% of the drawn clocks keep each use inside its budget. The "
+                    f"times are the closed form of Proposition 4, part (c), applied to {' and '.join(cnt(n) for n in sorted(nveh))} drawn clocks of each class; they "
+                    f"are a calculation, not a simulation of the fleet, and the analytic value the build compares them with is the same formula at the "
+                    f"95th-percentile frequency error. The formula sets the residual of the synchronisation to zero, while the model's transfer leaves "
+                    f"{unit(tt * 1e9, 'ns', 0)}: the uses whose budget is below that residual are outside it at the instant of synchronisation and are "
+                    f"marked. The budgets are derived in Proposition 4 and its remarks, except the two slot budgets, which are the cellular requirement "
+                    f"[87] and a 10&nbsp;ms slot with a 1&#8239;% guard.", ["Use", "Clock error allowed", "Crystal holds it for", "Atomic clock holds it for"], rows)
     T6["E51_holdover"] = (table_holdover, "E51", "Table 12, holdover per use")
 
     # --- C. the shared map and its frame (3.7, 4.2, 5.10): Proposition 5's numbers, the tile sizes and E52 --------------
@@ -944,7 +1151,8 @@ def values_p6(r: R, V, fill, check):
                 f"as rover-made elevation, at 4 bits a cell (Assumed). These are computed from tile sizes, not from a flown map [68]. The 16&nbsp;km site has "
                 f"{cnt(s['N'])} such tiles a layer. With {cnt(s['n'])} of them changed in a day (Assumed: half the tiles the haul routes cross), the hash-tree "
                 f"walk costs at most {cnt(s['tree'])}&nbsp;B a layer by Proposition 6, against {cnt(s['flat'])}&nbsp;B for a flat list of every tile's version "
-                f"and hash; the tree is the smaller as long as fewer than {cnt(math.floor(s['cross']))} tiles changed. The tiles themselves then come to "
+                f"and hash; the tree is the smaller for up to {cnt(math.floor(s['cross']))} changed tiles (the bound is n below {num(s['cross'], 1)}). Both counts "
+                f"are hash bytes in one direction, without the replies that say which children differ and without message headers. The tiles themselves then come to "
                 f"{kb(s['n'] * _fin(lay['hazard']['bytes']))} of hazards, which go first, and {num(s['day'] / 1e6, 2)}&nbsp;MB for the three layers together.")
     fill("P3-MAP-SYNC-SENTENCE", map_sync, "E52 layers")
 
@@ -994,6 +1202,8 @@ def values_p6(r: R, V, fill, check):
     fill("P3-E52-RESULTS-SENTENCE", e52_results, "E52")
 
     def h12_verdict():
+        """5.10: H12 is a design calculation, not a test (finding M6; decisions A1 and B8; PREREG6 section 6): the share is the assumed
+        change rate over the tile count, and a subset sent first is always finished first."""
         h = r.p6("E52", "h12")
         share = _fin(h["share_of_full_resend_24h"])
         pr = h["paired_24h"]
@@ -1001,12 +1211,21 @@ def values_p6(r: R, V, fill, check):
         c2 = all(int(v["seeds_hazards_first_sooner"]) == int(v["n"]) and _fin(v["mean_s"]) < 0 for v in pr.values())
         check(bool(h["supported"]) == (c1 and c2) and all(bool(x) for x in h["sooner_at_every_rate"].values()) == c2 and
               abs(share - _fin(e52row(24, "hazards_first", 16)["share_of_full_resend"])) < 1e-5, "H12's flag follows from its two clauses (5.10)")
+        s = map_sizes()
+        n_day, n_all = 3 * s["n"], 3 * s["N"]
+        check(abs(n_day / n_all - share) < 2e-4, "H12's share of a full resend is the assumed changed tiles over the tiles of the three layers (5.10)")
         rates = sorted(pr, key=float)
-        return (f"H12 of [67] has two clauses for a rover that was out of contact for 24&nbsp;h. A hazards-first sync of changed tiles needs under 10&#8239;% of "
-                f"the bytes of a full resend: {'supported' if c1 else 'not supported'} ({pc(share, 2)}). It brings the hazard layer current sooner than "
-                f"oldest-first at every link rate: {'supported' if c2 else 'not supported'}, "
-                + ("in every seed, " if c2 else "") + "by a paired mean of "
-                + ", ".join(f"{dur(abs(_fin(pr[k]['mean_s'])))} at {cnt(float(k))}{KBPS6}" for k in rates) + ".")
+        prod = [abs(_fin(pr[k]["mean_s"])) * float(k) for k in rates]
+        check(max(prod) / min(prod) < 1.01, "H12: the paired differences between the two orders are in inverse ratio to the link rate (5.10)")
+        return (f"H12 of [67] was registered as a hypothesis with two clauses for a rover that was out of contact for 24&nbsp;h. Neither is a test: both "
+                f"are design calculations on the assumed inputs and could not have failed, and a dated entry of [67] records it. First, that a "
+                f"hazards-first sync of changed tiles needs under 10&#8239;% of the bytes of a full resend: with {cnt(s['n'])} route tiles assumed to change a "
+                f"day in each of three layers of {cnt(s['N'])} tiles, the changed tiles are {cnt(n_day)} of {cnt(n_all)}, {pc(n_day / n_all, 2)} of the map, so a "
+                f"sync of changed tiles is {pc(share, 2)} of a full resend; the result is the assumption. Second, that it brings the hazard layer current "
+                f"sooner than oldest-first at every link rate: a subset sent first is always finished first, {'in every seed' if c2 else 'though not in every seed here'}, "
+                f"and the paired means, "
+                + ", ".join(f"{dur(abs(_fin(pr[k]['mean_s'])))} at {cnt(float(k))}{KBPS6}" for k in rates) +
+                f", are in exact inverse ratio to the link rate. What E52 adds to the arithmetic is the sizes of Table 13 and the count of stale-map hits.")
     KBPS6 = NB + "kbit/s"
     fill("P3-H12-VERDICT-SENTENCE", h12_verdict, "E52")
 
@@ -1056,19 +1275,98 @@ def values_p6(r: R, V, fill, check):
         check(signed == ["CAP_MANIFEST", "RESERVE_GRANT", "TASK_AWARD"], "awards, grants and manifests are the messages signed by default (3.8)")
         return {"sz": sz, "hdr": hdr, "n": len(sz), "signed": signed}
 
+    SCHEMA = os.path.join(ROOT, "lunarsim", "schemas", "lrip-v0.1.json")
+
+    def lrip_position():
+        """What version 0.1 of the protocol serialises in a POSITION message and in its header (lunarsim/schemas/lrip-v0.1.json, the file
+        the codec lunarsim/atc/lrip/codec.py packs from). Finding M4 and decision B3: no frame, datum or time-scale identifier and no
+        covariance is in the packet; the design requires them and version 0.2 adds them (task B-100)."""
+        _need(SCHEMA, "the LRIP v0.1 schema")
+        sc = json.load(open(SCHEMA, encoding="utf-8"))
+        pos = [m_ for m_ in sc["messages"] if m_["name"] == "POSITION"]
+        check(str(sc["version"]) == "0.1" and len(pos) == 1 and len(sc["messages"]) == 15, "the schema is LRIP version 0.1 with 15 message types, one of them POSITION (3.8)")
+        f = {x[0]: x for x in pos[0]["fields"]}
+        bits = sum(int(x[2]) for x in pos[0]["fields"])
+        check(list(f) == ["e", "n", "h", "heading", "speed", "sigma_h", "nav_src", "moving", "spare"] and bits == 104,
+              "POSITION v0.1 is east, north, height, heading, speed, one scalar uncertainty, a source code, a moving flag and spare bits: 104 bits (3.8)")
+        hdr = sc["framing"]["lrip_header"]
+        names = " ".join(str(x[0]) for x in pos[0]["fields"]) + " " + " ".join(str(x[0]) for x in hdr["fields"])      # field names: the height's note says "site datum"
+        check(not re.search(r"frame|datum|cov|scale", names, re.I) and [x[0] for x in hdr["fields"]] == ["ver_major", "ver_minor", "msg_type", "sender_id", "t_valid"],
+              "neither POSITION v0.1 nor the protocol header has a frame, datum or time-scale identifier or a covariance (3.5 to 3.8)")
+        check("site time base" in str(hdr["t_valid_note"]) and abs(_fin(hdr["t_valid_unit_s"]) - 0.1) < 1e-12 and int(hdr["bytes"]) == 8,
+              "the 8-byte protocol header carries one time stamp in tenths of a second on the site time base (3.6, 3.8)")
+        check(bits // 8 == int(r.p6("E53", "sizes", "POSITION", "payload")), "the schema's POSITION is the 13 B the codec's size table counts (3.8)")
+        return {"f": f, "bits": bits, "hdr": hdr, "p1": int(sc["framing"]["proximity1_frame_bytes"]), "rate": str(pos[0]["default_rate"]), "n": len(sc["messages"])}
+
+    def traffic_types():
+        """Which of the protocol's message types the traffic model of E53 sends (per_rover_at_1hz), and which it leaves out."""
+        sz = r.p6("E53", "sizes")
+        sent = list(r.p6("E53", "per_rover_at_1hz", "on"))
+        out = [k for k in sz if k not in sent]
+        check(set(sent) <= set(sz) and len(sent) == 11 and len(sz) == 15 and
+              sorted(out) == ["CAP_MANIFEST", "CAP_QUERY", "MAP_NOTICE", "TASK_ANNOUNCE"],
+              "the traffic model sends 11 of the 15 message types; the task announcement, the capability query and manifest and the map notice are not in it (3.8, 5.11)")
+        return sent, out
+
     def sec_layout():
         s = lrip_sizes()
         sz = s["sz"]
         mb = r.p6("E53", "manifest_bytes")
+        ps = lrip_position()
+        f = ps["f"]
+        sent, out = traffic_types()
+        P = sz["POSITION"]
+        res = lambda k, u: f"{int(f[k][2])} bits at {num(f[k][3], 2 if _fin(f[k][3]) < 0.1 else 1)}{NB}{u}"
+        per_byte = 8.0 * 20 / 1000.0
         return (f"The messages are implemented and serialised, unlike the assumed layouts of Section 3.4: {words(s['n']) if s['n'] < 10 else cnt(s['n'])} message "
                 f"types in one schema with two encodings, bit-packed for the narrow channel and CBOR for the broadband one, with real AES-CMAC and Ed25519 "
-                f"and {cnt(r.p6('E53', 'conformance_vectors'))} conformance vectors in the repository. A position report has {cnt(sz['POSITION']['payload'])}&nbsp;B "
-                f"of content and is {cnt(sz['POSITION']['unsecured'])}&nbsp;B with its packet and protocol headers, {cnt(sz['POSITION']['mac8'])}&nbsp;B on the air "
-                f"with the security header and the 8-byte code, and {cnt(sz['POSITION']['mac16'])}&nbsp;B with the 16-byte code; a status report is "
+                f"and {cnt(r.p6('E53', 'conformance_vectors'))} conformance vectors in the repository. What version 0.1 serialises has to be said exactly, because "
+                f"it is less than the design of Sections 3.5 to 3.7 asks for. A position report holds east and north in the site grid ({res('e', 'm')} each), the "
+                f"height above the site datum ({res('h', 'm')}), heading ({int(f['heading'][2])} bits), speed ({int(f['speed'][2])} bits), one scalar one-sigma "
+                f"horizontal uncertainty ({res('sigma_h', 'm')}), a {int(f['nav_src'][2])}-bit code for the navigation source, a moving flag and "
+                f"{int(f['spare'][2])} spare bits: {cnt(ps['bits'])} bits, {cnt(P['payload'])}&nbsp;B. The {cnt(ps['hdr']['bytes'])}-byte protocol header adds the "
+                f"version, the message type, the sender and one time stamp in tenths of a second &ldquo;on the site time base&rdquo;. Neither carries a "
+                f"frame identifier, a datum identifier or a time-scale identifier, and the report carries no covariance. The design requires all four; "
+                f"version 0.2 of the protocol adds them (task B-100, not yet done), and until its sizes are in, every byte and bit rate of this paper "
+                f"is a version 0.1 figure. Each byte added to the report adds {num(per_byte, 2)}&nbsp;kbit/s to the load of 20 rovers at the sources (a "
+                f"calculation). The report is {cnt(P['unsecured'])}&nbsp;B with its packet and protocol headers, {cnt(P['mac8'])}&nbsp;B "
+                f"with the security header and the 8-byte code, and {cnt(P['mac16'])}&nbsp;B with the 16-byte code; these are packet sizes before link "
+                f"framing and coding, and a Proximity-1 frame adds {cnt(ps['p1'])}&nbsp;B [94]. A status report is "
                 f"{cnt(sz['STATUS']['mac8'])}&nbsp;B, a bid {cnt(sz['TASK_BID']['mac8'])}&nbsp;B, a reservation request {cnt(sz['RESERVE_REQ']['mac8'])}&nbsp;B, and the "
                 f"signed award and grant {cnt(sz['TASK_AWARD']['signed'])} and {cnt(sz['RESERVE_GRANT']['signed'])}&nbsp;B. A capability manifest is "
-                f"{cnt(mb['small_rover']['json'])}&nbsp;B as JSON and {cnt(mb['small_rover']['compact_cbor'])}&nbsp;B in compact binary for the small rover.")
+                f"{cnt(mb['small_rover']['json'])}&nbsp;B as JSON and {cnt(mb['small_rover']['compact_cbor'])}&nbsp;B in compact binary for the small rover. "
+                f"The traffic model of Section 4.2 sends {cnt(len(sent))} of the {cnt(s['n'])} types: the three reports, the alert, the bid, the award and the task "
+                f"state, the three reservation messages and the heartbeat; the task announcement, the capability query and manifest and the map notice "
+                f"are not in it.")
     fill("P3-SEC-LAYOUT-SENTENCE", sec_layout, "E53 sizes")
+    def limit_lrip():
+        """Section 7: what the serialised protocol lacks (finding M4, decision B3)."""
+        lrip_position()
+        sz = r.p6("E53", "sizes")
+        on, off = e53row("fleet", "on", 1.0, 20), e53row("fleet", "off", 1.0, 20)
+        sent, out = traffic_types()
+        return (f"The position report of version 0.1 carries no frame, datum or time-scale identifier and no covariance, although Sections 3.5 to 3.7 "
+                f"require them. Every byte count and bit rate of this paper, the {cnt(sz['POSITION']['mac8'])}&nbsp;B report, the "
+                f"{pc(_fin(on['per_rover_kbps']) / _fin(off['per_rover_kbps']) - 1.0, 0)} that authentication adds and the "
+                f"{num(on['busiest_link_kbps_p95'], 2)}&nbsp;kbit/s of 20 robots, is a version 0.1 figure, before link framing and coding; version 0.2 "
+                f"will be larger (task B-100). The traffic model sends {cnt(len(sent))} of the {cnt(len(sz))} message types.")
+    fill("P3-LIMIT-LRIP-SENTENCE", limit_lrip, "E53, the schema")
+
+    def limit_near():
+        """Section 7: how much of the driving 'near the base' is, and how the clause moves with three inputs (finding M5)."""
+        st = e50_steps()
+        rows, sens = referee_m5()
+        return (f"The region in which ranging holds the position budget, two or more beacons in line of sight, covers {pc(st['near_share'], 0)} of driving "
+                f"steps and was chosen after the results. Within a kilometre of the base the 95th percentile was {unit(rows[2][2], 'm', 1)} in the "
+                f"referee's rerun of six seeds, and the same rerun gives {unit(sens['radio'][0], 'm', 1)} inside the region at a range error of 10&nbsp;m, "
+                f"{unit(sens['survey'][0], 'm', 1)} at a beacon survey error of 1&nbsp;m and {unit(sens['uwb'][0], 'm', 1)} at an ultra-wideband reach of "
+                f"50&nbsp;m. The four readings on all seeds are awaited (task B-101). Inside the region {pc(st['near_over'], 1)} of the steps still exceed "
+                f"the budget.")
+    fill("P3-LIMIT-NEAR-SENTENCE", limit_near, "E50, the referee report")
+
+    fill_await("P3-LRIP-V02-SENTENCE", lambda: landed("the LRIP v0.2 sizes (B-100)", lambda: r.p6("E53", "v02")),
+               "The sizes and bit rates of version 0.2, with the identifiers and the covariance in the report, are not in this version of the paper; "
+               "they will be reported here beside the version 0.1 figures.", "B-100 (results/E53_bitrate.json, new block v02: LRIP v0.2 sizes and rates)")
 
     def e53_design():
         eta = r.p6("E53", "eta")
@@ -1079,11 +1377,17 @@ def values_p6(r: R, V, fill, check):
         ns = sorted({int(x["rovers"]) for x in rows})
         hz = sorted({_fin(x["position_hz"]) for x in rows})
         check(ns == [5, 10, 20, 40, 80] and hz == [0.1, 1.0, 10.0] and {x["geometry"] for x in rows} == {"fleet", "spread"}, "E53's fleet sizes, rates and geometries (4.2)")
-        return (f"E53 computes the traffic of the protocol from the serialised sizes. Each rover sends a position report at 0.1, 1 or 10&nbsp;Hz, status and "
-                f"intent reports at 0.1&nbsp;Hz, and the market and reservation events at the rates E48 measured at today's fleet. Reports travel one hop; events "
-                f"are relayed to the base. For 5, 10, 20, 40 and 80 rovers, {cnt(r.p6('E53', 'draws'))} draws place the rovers on the terrain mesh, in two "
-                f"geometries: at positions taken from the recorded trajectories of E50, where the fleet works within reach of the base (the registered "
-                f"geometry of H13), and uniformly over all route samples (added after the first results, Section 4.6). The outcome is the load on the busiest "
+        st = e50_steps()
+        ps = lrip_position()
+        check("1 Hz moving, 0.1 Hz parked" in ps["rate"], "the protocol's default position rate is 1 Hz moving and 0.1 Hz parked (4.2)")
+        return (f"E53 computes the traffic of the protocol from the serialised sizes of version 0.1. Each rover sends a position report at 0.1, 1 or "
+                f"10&nbsp;Hz whether it moves or not (the protocol's own default is 1&nbsp;Hz moving and 0.1&nbsp;Hz parked), status and intent reports at "
+                f"0.1&nbsp;Hz, and the market and reservation events at the rates E48 counted at today's fleet. Reports travel one hop; events are relayed "
+                f"to the base. For 5, 10, 20, 40 and 80 rovers, {cnt(r.p6('E53', 'draws'))} draws place the rovers on the terrain mesh, every one with a "
+                f"2.5&nbsp;m antenna although half of today's fleet carries 1.0&nbsp;m, in two geometries: at positions taken from the recorded trajectories "
+                f"of E50's first seed with every vehicle-step equally likely, which is the registered geometry of H13, and uniformly over all route samples "
+                f"(added after the first results, Section 4.6). In that trace {pc(st['parked_share_s1'], 1)} of the vehicle-steps are parked "
+                f"({cnt(st['parked_s1'])} against {cnt(st['driving_s1'])} driving), so the registered geometry is a fleet standing at its sites. The outcome is the load on the busiest "
                 f"link, the largest sum of what any one node hears, at the 95th percentile over the draws, with authentication on and off, against the "
                 f"{num(min(_fin(v) for v in ch.values()), 0)}&nbsp;kbit/s target of Section 3.4 as load and as airtime at the access efficiencies of E48.")
     fill("P3-E53-DESIGN-SENTENCE", e53_design, "E53")
@@ -1107,7 +1411,7 @@ def values_p6(r: R, V, fill, check):
         sz = lrip_sizes()["sz"]
         pay = [int(sz[k]["payload"]) for k in ("POSITION", "STATUS", "INTENT")]
         sec_b = int(sz["POSITION"]["mac8"]) - int(sz["POSITION"]["unsecured"])
-        return (f"With authentication a rover that reports its position once a second generates {num(_fin(on['per_rover_kbps']) * 1000 / 8, 1)}&nbsp;B/s, "
+        return (f"At the sizes of version 0.1 and with authentication, a rover that reports its position once a second generates {num(_fin(on['per_rover_kbps']) * 1000 / 8, 1)}&nbsp;B/s, "
                 f"{num(on['per_rover_kbps'], 3)}{KBPS6}, against {num(_fin(off['per_rover_kbps']) * 1000 / 8, 1)}&nbsp;B/s without it: the security header and "
                 f"the code add {pc(add, 0)} to the bit rate, because they are {cnt(sec_b)}&nbsp;B on reports of {cnt(min(pay))} to {cnt(max(pay))}&nbsp;B of content. For 20 rovers in the fleet "
                 f"geometry the busiest link carries {num(on['busiest_link_kbps_p95'], 2)}{KBPS6} at 1&nbsp;Hz with authentication and "
@@ -1121,15 +1425,26 @@ def values_p6(r: R, V, fill, check):
     fill("P3-E53-RESULTS-SENTENCE", e53_results, "E53")
 
     def h13_verdict():
+        """5.11: H13 is a design calculation, not a test (finding M6; decisions A1 and B8; PREREG6 section 6): the busiest link carries
+        the fleet's sum, sizes times rates, in every draw."""
         h = r.p6("E53", "h13")
         a1, a10 = _fin(h["at_1hz_kbps_p95"]), _fin(h["at_10hz_kbps_p95"])
-        check(abs(a1 - _fin(e53row("fleet", "on", 1.0, 20)["busiest_link_kbps_p95"])) < 1e-6 and abs(a10 - _fin(e53row("fleet", "on", 10.0, 20)["busiest_link_kbps_p95"])) < 1e-6,
-              "H13 is tested on the fleet geometry, 20 rovers, authentication on (5.11)")
+        on = e53row("fleet", "on", 1.0, 20)
+        check(abs(a1 - _fin(on["busiest_link_kbps_p95"])) < 1e-6 and abs(a10 - _fin(e53row("fleet", "on", 10.0, 20)["busiest_link_kbps_p95"])) < 1e-6,
+              "H13 is computed on the fleet geometry, 20 rovers, authentication on (5.11)")
         c1, c2 = a1 <= 16.0, a10 > 16.0
         check(bool(h["supported"]) == (c1 and c2), "H13's flag follows from its two clauses (5.11)")
-        return (f"H13 of [67]: with authentication on and 20 rovers the busiest link carries no more than 16{KBPS6} at 1&nbsp;Hz position reports, "
-                f"{'supported' if c1 else 'not supported'} ({num(a1, 2)}{KBPS6}), and more than that at 10&nbsp;Hz, {'supported' if c2 else 'not supported'} "
-                f"({num(a10, 1)}{KBPS6}). The clause is about load; as airtime the 1&nbsp;Hz case holds on a scheduled channel only, as above.")
+        per = _fin(on["per_rover_kbps"]) * 1000.0 / 8.0
+        check(abs(20 * per * 8 / 1000.0 - a1) < 0.005 and abs(a1 - _fin(on["one_hop_sum_kbps"])) < 1e-6,
+              "H13's load at 1 Hz is 20 rovers times the per-rover rate: the fleet's sum (5.11)")
+        alo, sched = _fin(h["airtime_1hz_slotted_aloha_kbps"]), _fin(h["airtime_1hz_scheduled_kbps"])
+        return (f"H13 of [67] says that with authentication on and 20 rovers the busiest link carries no more than 16{KBPS6} at 1&nbsp;Hz position reports "
+                f"and more at 10&nbsp;Hz. It is not a test but a design calculation, as a dated entry of [67] records: in the registered geometry every "
+                f"rover is in one radio neighbourhood, so the busiest link carries the fleet's sum in every draw, 20 &times; {num(per, 1)}&nbsp;B/s &times; 8 = "
+                f"{num(a1, 2)}{KBPS6} at 1&nbsp;Hz and {num(a10, 1)}{KBPS6} at 10&nbsp;Hz, the product of the serialised sizes and the assumed rates that "
+                f"Section 5.2 already gives. It could not have come out otherwise. Its comparison is of load with the target; as airtime, the comparison "
+                f"that change 11 of [59] adopted, the 1&nbsp;Hz case is {'within' if alo <= 16.0 else 'above'} the target on slotted random access "
+                f"({num(alo, 2)}{KBPS6}) and {'within' if sched <= 16.0 else 'above'} it on a channel the base schedules ({num(sched, 2)}{KBPS6}).")
     fill("P3-H13-VERDICT-SENTENCE", h13_verdict, "E53")
 
     def e53_spread(kind):
@@ -1184,8 +1499,11 @@ def values_p6(r: R, V, fill, check):
               abs(_fin(p["return_speed_factor"]) - 0.5) < 1e-9, "the lost-link ladder's times are 10 min and 1 h, the return is at half speed, the lease is 1 h (3.8)")
         return (f"In the model of E54 a custodian retransmits after {unit(p['custody_timer_s'], 's', 0)} while the link lasts and holds the bundle, in a store of "
                 f"{unit(_fin(p['queue_bytes']) / 1e6, 'MB', 0)}, while there is no path; a vehicle unheard for {unit(_fin(p['t_hold_s']) / 60, 'min', 0)} retraces "
-                f"its path at half speed to the last point where it had a link; and the base releases a silent vehicle's reservation {unit(p['grace_s'], 's', 0)} "
-                f"after its timeout and returns its task to the auction when the {unit(_fin(p['lease_s']) / 3600, 'h', 0)} lease expires (Assumed values, [68]).")
+                f"its path at half speed to the last point where it had a link; a segment whose holder is still unheard {unit(p['grace_s'], 's', 0)} after "
+                f"the reservation's timeout is marked unconfirmed; and the silent vehicle's task returns to the auction when its "
+                f"{unit(_fin(p['lease_s']) / 3600, 'h', 0)} lease expires (Assumed values, [68]). E54 was run with the rule as first written, in which the base "
+                f"released the reservation at that moment; the release is withdrawn, as above, and Section 5.12 reports what E54's counts mean under the rule "
+                f"as it now stands.")
     fill("P3-DTN-MODEL-SENTENCE", dtn_model, "E54 parameters")
 
     def e54_design():
@@ -1197,18 +1515,23 @@ def values_p6(r: R, V, fill, check):
         return (f"E54 is a simulation at the level of messages over the recorded month of E50, not a new run of the logistics engine: inside the engine a lost "
                 f"message is retried and the regimes know at once that it failed, so a lost job cannot occur there. The contact plan is the terrain mesh along "
                 f"the recorded trajectories, per 60&nbsp;s step. The traffic is the month's real events: a task award from the base to each job's vehicle, which "
-                f"lives for the {unit(_fin(p['lease_s']) / 3600, 'h', 0)} lease, and whose expiry is a lost job; a reservation grant, which lives 60&nbsp;s; a "
+                f"lives for the {unit(_fin(p['lease_s']) / 3600, 'h', 0)} lease, and whose expiry is counted as a lost job (hypothetically: in the recorded run every "
+                f"job was done); a reservation grant, which lives 60&nbsp;s; a "
                 f"task-state report at the job's end; a daily ledger bundle of {unit(_fin(r.p6('E54', 'ledger_bytes')) / 1000, 'kB', 0)} to Earth with a lifetime of "
                 f"14 days; and a status report every {unit(p['status_period_s'], 's', 0)}, from which the age of the base's information is taken. Earth is "
                 f"blacked out from day {num(bo[0], 0)} to day {num(bo[1], 0)} on top of the month's own direct-to-Earth gaps. Three protocols carry the traffic: "
-                f"drop-and-retry end to end, a try every {unit(p['retry_s'], 's', 0)} and at most {words(p['max_tries'])} tries; store-and-forward hop by hop with "
-                f"custody; and store-and-forward with the lost-link rule of Section 3.8. The per-hop loss is {', '.join(num(x, 2) for x in losses[:-1])} or "
+                f"drop-and-retry end to end, a try every {unit(p['retry_s'], 's', 0)} and at most {words(p['max_tries'])} tries, so that it gives up after "
+                f"{unit((int(p['max_tries']) - 1) * _fin(p['retry_s']) / 60.0, 'min', 0)} on an award that lives an hour (the retry budget is our choice; the "
+                f"registration does not fix it, and it was not swept); store-and-forward hop by hop with "
+                f"custody; and store-and-forward with the lost-link ladder of Section 3.8. The per-hop loss is {', '.join(num(x, 2) for x in losses[:-1])} or "
                 f"{num(losses[-1], 2)}, on {cnt(len(r.p6('E54', 'seeds')))} seeds with {num(r.p6('E54', 'jobs_per_seed'), 0)} jobs and "
                 f"{num(r.p6('E54', 'reservations_per_seed'), 0)} single-lane reservations a seed. Two things are approximations: the return of a silent vehicle is "
                 f"applied to the contact plan and is not driven in the engine, and a returning vehicle is given a direct link to the base, which is optimistic "
-                f"when its last link went through another vehicle. A reservation counts as stuck when its holder has no path to the base "
-                f"{unit(p['grace_s'], 's', 0)} after its timeout; under the lost-link rule the base releases it then, so the count is zero by the rule's "
-                f"construction, not by measurement. The ledger is simulated separately over 61 days, so that every bundle created in the month resolves, with "
+                f"when its last link went through another vehicle. E54 also counts the reservations whose holder has no path to the base "
+                f"{unit(p['grace_s'], 's', 0)} after the reservation's timeout: the base cannot confirm that the segment is clear, although in the replay every "
+                f"vehicle left on schedule. Under the rule as it now stands these are the segments marked unconfirmed. The run itself used the rule as first "
+                f"written, which released them and so recorded none by construction; that zero is not a result. The registration also lists the wait of "
+                f"urgent cargo among E54's outcomes; a replay of messages does not move cargo, so that outcome is not reported. The ledger is simulated separately over 61 days, so that every bundle created in the month resolves, with "
                 f"lifetimes of 14 days, 30 days, and the longest Earth outage plus one day.")
     fill("P3-E54-DESIGN-SENTENCE", e54_design, "E54")
 
@@ -1222,6 +1545,9 @@ def values_p6(r: R, V, fill, check):
               "E54: custody alone does not change the age of the base's information; the lost-link rule cuts it (5.12)")
         check(int(l["stuck_reservations"]) == 0 and int(d["stuck_reservations"]) == int(s["stuck_reservations"]) > 0, "E54: reservations stay stuck without the lost-link rule only (5.12)")
         lo, hi = e54row(0.1, "drop_retry"), e54row(0.4, "drop_retry")
+        ret, days = _fin(r.p6("E54", "lost_link_returns_per_seed")), 31.0
+        check("until it is heard" in str(r.p6("E54", "stuck_definition")) and "UNCONFIRMED" in str(r.p6("E54", "stuck_definition")),
+              "E54's count is of reservations whose release the base cannot confirm, not of vehicles still in a segment (5.12)")
         return (f"At a per-hop loss of {num(L, 2)}, drop-and-retry lost {cnt(d['award_lost'])} of {cnt(d['award_n'])} task awards "
                 f"({cnt(lo['award_lost'])} at a loss of 0.10 and {cnt(hi['award_lost'])} at 0.40), store-and-forward with custody {cnt(s['award_lost'])} and, with the "
                 f"lost-link rule, {cnt(l['award_lost'])}; the mean delay of an award was {dur(d['award_delay_mean_s'])}, {dur(s['award_delay_mean_s'])} and "
@@ -1232,24 +1558,40 @@ def values_p6(r: R, V, fill, check):
                 f"average, the time a report waits in a vehicle that ended its job out of reach, against {dur(l['task_state_delay_mean_s'])} with the lost-link "
                 f"rule. The base's information about a vehicle was {dur(s['aoi_mean_s'])} old on average without the rule, and up to "
                 f"{dur(s['aoi_worst_vehicle_s'])} for the worst vehicle, with either transport; with the rule it was {dur(l['aoi_mean_s'])} and "
-                f"{dur(l['aoi_worst_vehicle_s'])}. Without the rule {cnt(d['stuck_reservations'])} reservations stayed blocked past their timeout, "
-                f"{cnt(d['stuck_hours'])} blocked hours in all; with it none did, by construction (Table 15).")
+                f"{dur(l['aoi_worst_vehicle_s'])}. E54 counted {cnt(d['stuck_reservations'])} reservations whose holder had no path to the base "
+                f"{unit(r.p6('E54', 'parameters', 'grace_s'), 's', 0)} after the reservation's timeout, {cnt(d['stuck_hours'])} hours in all until the holder was "
+                f"heard, about {pc(int(d['stuck_reservations']) / (_fin(r.p6('E54', 'reservations_per_seed')) * len(r.p6('E54', 'seeds'))), 0)} of the "
+                f"single-lane reservations, because those segments lie on routes the mast does not see. Under the rule as it now stands these are the "
+                f"segments marked unconfirmed, which another vehicle may enter only at caution speed. The run with the ladder recorded none, because the "
+                f"rule as first written released them at that moment; that zero followed from the rule's definition and is withdrawn as a result, the "
+                f"count with the ladder in force was not recomputed, and the cost of crossing an unconfirmed segment at caution speed is not priced. The "
+                f"ladder sent a silent vehicle back along its path {num(ret, 1)} times a seed, about {num(ret / days, 1)} a day for the "
+                f"{words(len(r.fleet()))} vehicles; the replay does not drive those returns, each at half speed, and no delay figure contains them (Table 15).")
     fill("P3-E54-RESULTS-SENTENCE", e54_results, "E54")
 
     def h14_verdict():
+        """5.12: H14 clause by clause. The first is tested; the second is not testable as written (decision B1 of the referee round;
+        PREREG6 section 6): the zero followed from the rule's definition, and the rule that produced it is withdrawn."""
         h = r.p6("E54", "h14")
         dd = h["difference_sf_ll_minus_drop_retry"]
         c1 = _fin(dd["ci"][1]) < 0
         c2 = int(h["stuck_reservations_sf_ll"]) == 0
         check(bool(h["supported"]) == (c1 and c2) and "loss 0.25" in str(h["rule"]), "H14's flag follows from its two clauses at loss 0.25 (5.12)")
-        check(abs(_fin(h["lost_jobs_drop_retry_per_seed"]["mean"]) * len(r.p6("E54", "seeds")) - int(e54row(0.25, "drop_retry")["award_lost"])) < 1e-6,
+        d, s_, l = (e54row(0.25, k) for k in ("drop_retry", "sf", "sf_ll"))
+        check(abs(_fin(h["lost_jobs_drop_retry_per_seed"]["mean"]) * len(r.p6("E54", "seeds")) - int(d["award_lost"])) < 1e-6,
               "H14's lost jobs per seed are the expired awards of the table (5.12)")
-        check(_fin(e54row(0.25, "drop_retry")["award_lost_share"]) < 0.01, "lost jobs are rare under drop-and-retry at loss 0.25 (5.12)")
-        return (f"H14 of [67], at a message loss of 0.25 with a 14-day Earth blackout: store-and-forward with the lost-link rule loses fewer jobs than "
-                f"drop-and-retry, {'supported' if c1 else 'not supported'} ({num(h['lost_jobs_sf_ll_per_seed']['mean'], 2)} against "
-                f"{num(h['lost_jobs_drop_retry_per_seed']['mean'], 2)} {ci(*h['lost_jobs_drop_retry_per_seed']['ci'], 2)} lost jobs a seed; paired difference "
-                f"{num(dd['mean'], 2)} {ci(dd['ci'][0], dd['ci'][1], 2)}), and leaves no reservation stuck past its timeout, "
-                f"{'supported' if c2 else 'not supported'}, which is a property of the rule and not a measurement. Lost jobs are rare under either transport.")
+        check(_fin(d["award_lost_share"]) < 0.01, "lost jobs are rare under drop-and-retry at loss 0.25 (5.12)")
+        own = int(s_["award_lost"]) - int(l["award_lost"])
+        return (f"H14 of [67], at a message loss of 0.25 with a 14-day Earth blackout, has two clauses. That store-and-forward with the lost-link rule "
+                f"loses fewer jobs than drop-and-retry is {'supported' if c1 else 'not supported'}: {num(h['lost_jobs_sf_ll_per_seed']['mean'], 2)} against "
+                f"{num(h['lost_jobs_drop_retry_per_seed']['mean'], 2)} {ci(*h['lost_jobs_drop_retry_per_seed']['ci'], 2)} lost jobs a seed, a paired difference "
+                f"of {num(dd['mean'], 2)} {ci(dd['ci'][0], dd['ci'][1], 2)}. The size of that difference is the comparator's: {cnt(d['award_lost'])} awards of "
+                f"{cnt(d['award_n'])} expired under a retry budget we chose, custody alone lost {cnt(s_['award_lost'])} and the ladder "
+                f"{'none' if int(l['award_lost']) == 0 else cnt(l['award_lost'])}, so the ladder's own contribution is {words(own)} award{'s' if own != 1 else ''} in "
+                f"{cnt(len(r.p6('E54', 'seeds')))} months, with a returning vehicle given a direct link. That the rule leaves no reservation stuck past its "
+                f"timeout is not testable as written, as a dated entry of [67] records: the zero in the run followed from the definition of the rule as "
+                f"first written, which released a silent vehicle's reservation, and that release is unsafe if the vehicle is disabled inside the "
+                f"segment. The rule now marks the segment unconfirmed, and what E54 gives for it is the count above.")
     fill("P3-H14-VERDICT-SENTENCE", h14_verdict, "E54")
 
     def e54_ledger(kind):
@@ -1270,15 +1612,29 @@ def values_p6(r: R, V, fill, check):
         dr = [one(x, "drop_retry") for x in lifes]
         check(len({int(x["lost"]) for x in dr}) == 1 and all(len({int(x["lost"]) for x in rows if x["protocol"] == "sf" and abs(_fin(x["lifetime_d"]) - lf) < 0.006}) == 1
                                                               for lf in lifes), "the ledger's losses do not depend on the lifetime under drop-and-retry, nor on the loss level under custody (5.12)")
+        ns = len(r.p6("E54", "seeds"))
+        per_seed, lost_seed = int(s14["bundles"]) // ns, int(s14["lost"]) // ns
+        check(int(s14["bundles"]) == per_seed * ns and int(s14["lost"]) == lost_seed * ns and per_seed == 31,
+              "the ledger's lost bundles are the same days in every seed: one bundle a day of a 31-day month (5.12)")
+        up_plain = _fin(r.s48("revision", "two_ray_in_the_mesh", "e40_month", "base_dte_share"))
+        up_black = _fin(r.p6("E54", "earth_up_share"))
+        bo = r.p6("E54", "blackout_days")
+        check(up_black < up_plain, "the imposed blackout lowers the share of the month with Earth in view (5.12)")
+        if kind == "numbers":
+            return {"lost": lost_seed, "per_seed": per_seed, "life": lifes[0], "down": down}
         if kind == "results":
-            return (f"For the ledger to Earth, the longest stretch without Earth in the simulated period was {num(down, 1)} days, the imposed blackout plus the "
-                    f"direct-to-Earth gaps around it. With store-and-forward a bundle lifetime of {num(lifes[0], 0)} days lost {cnt(s14['lost'])} of "
-                    f"{cnt(s14['bundles'])} daily ledger bundles ({pc(s14['lost_share'], 0)}); a lifetime of {num(lifes[1], 1)} days or of {num(lifes[2], 0)} days "
-                    f"lost {'none' if int(s25['lost']) == 0 else cnt(s25['lost'])}, with a mean delay of {num(s30['delay_mean_d'], 1)} days and a longest of {num(s30['delay_max_d'], 1)}. "
-                    f"Drop-and-retry lost {pc(dr[0]['lost_share'], 0)} whatever the lifetime, because its {words(r.p6('E54', 'parameters', 'max_tries'))} tries are "
-                    f"over within minutes.")
-        return (f"a ledger bundle that lives {num(lifes[0], 0)} days does not outlast an Earth outage of {num(down, 1)} days, and {pc(s14['lost_share'], 0)} of the "
-                f"month's ledger was lost with store-and-forward, none with a lifetime of {num(lifes[1], 1)} days")
+            return (f"The ledger to Earth is a calendar calculation, not a sample of {cnt(ns)} seeds. One bundle is made a day, {cnt(per_seed)} in the month. "
+                    f"The longest stretch without Earth in the simulated period is {num(down, 1)} days, the imposed blackout laid over the month's own "
+                    f"direct-to-Earth gaps: Earth is in view of the base for {pc(up_plain, 1)} of that month without the blackout and {pc(up_black, 1)} with it. "
+                    f"A bundle that lives {num(lifes[0], 0)} days cannot outlast that gap, so with store-and-forward {cnt(lost_seed)} of the {cnt(per_seed)} "
+                    f"bundles ({pc(s14['lost_share'], 0)}) expire, the same {cnt(lost_seed)} in every seed and at every loss level; with a lifetime of "
+                    f"{num(lifes[1], 1)} days or of {num(lifes[2], 0)} days {'none' if int(s25['lost']) == 0 else cnt(s25['lost'])} does, with a mean delay of "
+                    f"{num(s30['delay_mean_d'], 1)} days and a longest of {num(s30['delay_max_d'], 1)}. Drop-and-retry loses {pc(dr[0]['lost_share'], 0)} whatever "
+                    f"the lifetime, because its {words(r.p6('E54', 'parameters', 'max_tries'))} tries are over within minutes. The blackout was placed on days "
+                    f"{num(bo[0], 0)} to {num(bo[1], 0)} of the window by the experiment's design and was not moved; where it falls against the month's own gaps "
+                    f"decides the {num(down, 1)} days, and with them the count.")
+        return (f"a ledger bundle that lives {num(lifes[0], 0)} days does not outlast an Earth outage of {num(down, 1)} days, so {cnt(lost_seed)} of the month's "
+                f"{cnt(per_seed)} daily bundles expire with store-and-forward and none with a lifetime of {num(lifes[1], 1)} days, a calculation from the calendar")
     fill("P3-E54-LEDGER-SENTENCE", lambda: e54_ledger("results"), "E54 ledger lifetimes")
     fill("P3-E54-LEDGER-CLAUSE", lambda: e54_ledger("clause"), "E54 ledger lifetimes")
 
@@ -1290,13 +1646,15 @@ def values_p6(r: R, V, fill, check):
                 rows.append([num(loss, 2), cap1(PROTO[k]), f"{cnt(x['award_lost'])} of {cnt(x['award_n'])}", dur(x["award_delay_mean_s"]),
                              f"{cnt(x['grant_lost'])} ({pc(x['grant_lost_share'], 1 if _fin(x['grant_lost_share']) >= 0.001 else 2)})",
                              f"{cnt(x['task_state_lost'])}; {dur(x['task_state_delay_mean_s'])}", f"{dur(x['aoi_mean_s'])}; {dur(x['aoi_worst_vehicle_s'])}",
-                             f"{cnt(x['stuck_reservations'])}; {cnt(x['stuck_hours'])}"])
+                             ("not computed (the run released them)" if k == "sf_ll" else f"{cnt(x['stuck_reservations'])}; {cnt(x['stuck_hours'])}")])
         return _tab(f"Table 15. Store-and-forward and the lost-link rule, E54, summed over {cnt(len(r.p6('E54', 'seeds')))} seeds of the recorded month: task awards "
-                    f"lost (a lost award is a lost job) and their mean delay, reservation grants lost, task-state reports lost and their mean delay, the "
-                    f"age of the base's information about a vehicle (mean; worst vehicle), and reservations still blocked past their timeout with the hours "
-                    f"they stayed blocked. A message-level simulation; the zero in the last column under the lost-link rule is the rule's construction.",
+                    f"lost (an expired award is counted as a lost job; in the recorded run every job was done) and their mean delay, reservation grants lost, "
+                    f"task-state reports lost and their mean delay, the age of the base's information about a vehicle (mean; worst vehicle), and the "
+                    f"reservations whose holder had no path to the base 60&nbsp;s after the timeout, with the hours until it was heard: the segments that the "
+                    f"lost-link rule marks unconfirmed. A message-level simulation. The run with the ladder used the rule as first written, which released "
+                    f"those reservations, so it holds no count for that row.",
                     ["Per-hop loss", "Protocol", "Awards lost", "Award delay", "Grants lost", "Task states lost; mean delay", "Age of information: mean; worst vehicle",
-                     "Reservations stuck; blocked hours"], rows, cls="wide")
+                     "Segments unconfirmed; hours"], rows, cls="wide")
     T6["E54_dtn"] = (table_e54, "E54", "Table 15, store-and-forward and the lost-link rule")
     def e55_auth():
         """5.11 and Proposition 7: forged codes accepted against 2^-t, replays accepted under the counter and the freshness window."""
@@ -1352,14 +1710,19 @@ def values_p6(r: R, V, fill, check):
         ag = [_fin(c["agreement_share"]) for c in with_.values()]
         check(all(_fin(with_[k]["connected_share"]) > _fin(without[k]["connected_share"]) for k in with_) and max(ag) < 0.5,
               "with the base mast as a node the fleet's graph is connected more often in every cell, and the honest rovers still agree in under half the runs (5.11)")
+        over = lambda cells: [_fin(c["safe_share"]) for c in cells if c["geometry"] == "fleet" and int(c["f"]) == 2 and int(c["F"]) == 1]
+        so, sw = over(r.p6("E55", "consensus", "cells")), over(r.p6("E55", "consensus_with_base_mast", "cells"))
+        check(len(so) == len(sw) > 0 and max(sw) < min(so), "with two faulty rovers against a rule set for one, the mast lowers the share of runs that stay inside the honest range (5.11)")
         if kind == "basis":
             return (f"A variant of E55 with the base mast as an honest node: the graph connected in {pc(min(cw), 0)} to {pc(max(cw), 0)} of the runs, agreement in "
                     f"{pc(min(ag), 0)} to {pc(max(ag), 0)}")
         return (f"With the base mast added as an honest node (a variant run after the first results), and no more faulty rovers than the rule is set for, the "
                 f"graph of the fleet geometry was connected in {pc(min(cw), 0)} to {pc(max(cw), 0)} of the runs, up from {pc(min(co), 0)} to {pc(max(co), 0)}, but the "
                 f"honest rovers still reached agreement in only "
-                f"{pc(min(ag), 0)} to {pc(max(ag), 0)}: agreement by averaging needs more than one relay, so in this design a shared estimate is computed at the "
-                f"base, and the companion paper gives the details [61].")
+                f"{pc(min(ag), 0)} to {pc(max(ag), 0)}: agreement by averaging needs more than one relay. A well-connected node also spreads a false value: with "
+                f"two faulty rovers against a rule set for one, the share of runs in which the honest rovers stayed inside the honest range fell from "
+                f"{pc(min(so), 0)} to {pc(max(so), 0)} without the mast to {pc(min(sw), 0)} to {pc(max(sw), 0)} with it. In this design a shared estimate is "
+                f"therefore computed at the base, which is then the node that must not be wrong, and the companion paper gives the details [61].")
     fill("P3-E55-BASE-NODE-SENTENCE", e55_base_node, "E55 variant: the base as the averaging node")
     def b97_parts():
         im = r.p6("B97", "artemis2", "images")
@@ -1378,6 +1741,8 @@ def values_p6(r: R, V, fill, check):
         im, bad, ok, att = b97_parts()
         cam = r.p6("B97", "artemis2", "camera")
         g = r.p6("B97", "geometry")
+        vis, el = _fin(g["orion_visible_share"]), [_fin(x) for x in g["orion_elevation_range_deg"]]
+        check(el[0] <= el[1] and (vis == 0) == (el[1] < 0), "the spacecraft of the Earth-link check is below the base's horizon when its visible share is zero (4.2)")
         mon = ("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
         day = lambda x: f"{int(x['utc'][8:10])} {mon[int(x['utc'][5:7]) - 1]} {x['utc'][:4]}"
         return (f"Two checks use real data, and each is named for what it is. The first takes {words(len(im))} raw frames of the optical-navigation camera of "
@@ -1386,10 +1751,14 @@ def values_p6(r: R, V, fill, check):
                 f"the mission's instrument kernel, {cnt(cam['focal_px'])} pixels; the truth is the mission's own trajectory and attitude kernels [116]. Nothing is "
                 f"calibrated, and the body in view is taken from the geometry, not from the archive label. This is limb navigation of a crewed spacecraft in "
                 f"cislunar space, {cnt(round(min(_fin(x['range_km_spice']) for x in ok), -3))} to {cnt(round(max(_fin(x['range_km_spice']) for x in ok), -3))}&nbsp;km from "
-                f"the body in view; it is not surface navigation and not rover data. It tests the camera model, the "
-                f"frames and the kernels that position-from-image code rests on. The second check compares the Earth-link geometry code of [58], which the Earth "
+                f"the body in view; it is not surface navigation and not rover data. It tests a camera model, the frames and the kernels of the kind "
+                f"that position-from-image code would rest on; no result of this paper uses such code, because the terrain fix of E50 is a Gaussian "
+                f"draw. The second check compares the Earth-link geometry code of [58], which the Earth "
                 f"windows of this paper come from, with the SPICE toolkit's own routine for azimuth and elevation, for the spacecraft seen from the base at "
-                f"{cnt(g['epochs'])} hourly epochs of its trajectory, and measures how far the base moves when the lunar frame kernel is left out (Section 3.7).")
+                f"{cnt(g['epochs'])} hourly epochs of its trajectory, and measures how far the base moves when the lunar frame kernel is left out (Section 3.7). "
+                f"The spacecraft is below the base's horizon at {'every one' if vis == 0 else pc(1 - vis, 0)} of those epochs (elevation "
+                f"{num(el[0], 2)}&deg; to {num(el[1], 2)}&deg;), so the check exercises the transformation to azimuth and elevation and not the terrain mask "
+                f"that makes the Earth windows.")
     fill("P3-B97-DESIGN-SENTENCE", b97_design, "B-97")
 
     def b97_results():
@@ -1424,7 +1793,8 @@ def values_p6(r: R, V, fill, check):
                 f"range and, at the direction errors above, about {sig(ct[0], 2)} to {sig(ct[1], 2)}&nbsp;km across the line of sight. That says the geometry chain "
                 f"recovers a real body's range to about a percent and its direction to a tenth or two of a degree from one uncalibrated frame. It says "
                 f"nothing about the {unit(PD['fix_sigma_lit_m'], 'm', 1)} of a rover's terrain fix (Table 4): that matches craters metres away against a map, a "
-                f"different measurement at a different scale. Earth-link geometry: over {cnt(g['epochs'])} epochs the code agreed with the toolkit's routine to "
+                f"different measurement at a different scale. Earth-link geometry: over {cnt(g['epochs'])} epochs the code's azimuth and elevation agreed with the "
+                f"routine of the toolkit it is built on to "
                 f"{e10(max(_fin(g['max_abs_az_diff_deg']), _fin(g['max_abs_el_diff_deg'])), 0)}&deg;; without the lunar frame kernel the base moved by "
                 f"{unit(shift, 'm', 1)}, the silent error of Section 3.7 measured at our site.")
     fill("P3-B97-RESULTS-SENTENCE", b97_results, "B-97")
@@ -1449,17 +1819,28 @@ def values_p6(r: R, V, fill, check):
             out.append(f"for {who} at {unit(h1, 'm', 1)} the breakpoint is at {unit(db, 'm', 1)}, the two laws meet at {unit(dc, 'm', 1)}, the loss at "
                        f"{unit(d / 1000.0, 'km', 0)} is {unit(l2, 'dB', 1)} and the mutual horizon is {unit(hz / 1000.0, 'km', 2)}, so that hop is "
                        f"{'beyond' if d > hz else 'within'} the horizon")
+        m14 = referee_m14(r, check)
         worst = 10 * math.log10(math.sin(0.5) ** 2 / 0.25)
         check(abs(worst + 0.365) < 0.001, "Proposition 1: the asymptote differs from the exact two-ray factor by 0.36 dB at the meeting point")
         return (f"Worked example, the constants of E48: at {num(f / 1e9, 1)}&nbsp;GHz the wavelength is {unit(lam, 'm', 4)} and free-space loss at "
-                f"{unit(d / 1000.0, 'km', 0)} is {unit(fs, 'dB', 1)}; " + "; ".join(out) + f". The build checks each of these against the link budget's file.")
+                f"{unit(d / 1000.0, 'km', 0)} is {unit(fs, 'dB', 1)}; " + "; ".join(out) + f". The build checks each of these against the link budget's file. "
+                f"These hops do not meet the assumption that the ground is flat. The sphere's bulge at mid-path, d<sup>2</sup>/8R, is "
+                f"{unit(m14['bulge']['LTV1'], 'm', 2)} of the rover antennas' {unit(m14['lk']['LTV1']['antenna_m'], 'm', 1)} at "
+                f"{unit(_fin(m14['lk']['LTV1']['longest_hop_m']) / 1000.0, 'km', 0)}, and {unit(m14['bulge']['SMALL'], 'm', 2)}, the antenna height itself, at the "
+                f"{unit(_fin(m14['lk']['SMALL']['longest_hop_m']) / 1000.0, 'km', 2)} horizon of two {unit(m14['lk']['SMALL']['antenna_m'], 'm', 1)} antennas, where "
+                f"Table 7 evaluates the law for the small classes. The referee of this paper computed the loss there with the smooth-sphere method of "
+                f"our own reference [20]: {unit(m14['loss']['LTV1'][0], 'dB', 1)} against the {unit(m14['loss']['LTV1'][1], 'dB', 1)} above for the rover "
+                f"antennas, and {unit(m14['loss']['SMALL'][0], 'dB', 1)} against {unit(m14['loss']['SMALL'][1], 'dB', 1)} for the small ones, 4 to 5&nbsp;dB "
+                f"higher, which makes the rates of Table 7 about {num(m14['said'][0], 1)} to {num(m14['said'][1], 1)} times too high ({m14['rates_txt']}). Those are the referee's "
+                f"figures with a standard method, not a result of this paper; the project's own computation is task B-104. Near the horizon the law is "
+                f"therefore not conservative, and the 0.36&nbsp;dB of the derivation bounds its error against the flat two-ray model only.")
     fill("P3-PROP1-EXAMPLE", prop1, "E48 link")
 
     def prop2():
         rd = r.design(48, "radio")
         B, G, F, M = _fin(rd["bandwidth_mhz"]) * 1e6, _fin(rd["antenna_gain_dbi"]), _fin(rd["noise_figure_db"]), _fin(rd["implementation_margin_db"])
         N = -174.0 + 10 * math.log10(B) + F
-        out = []
+        out, lt, sm = [], None, None
         for c, who in (("LTV1", "crew rover"), ("SMALL", "small rover")):
             lk = r.s48("classes", c, "link")
             pt = 10 * math.log10(_fin(lk["tx_power_w"]) * 1000.0)
@@ -1467,11 +1848,19 @@ def values_p6(r: R, V, fill, check):
             cap = B * math.log2(1 + 10 ** (snr / 10)) / 1000.0
             check(abs(cap - _fin(lk["worst_hop_kbps_if_visible"])) < 0.005 * cap + 0.06 and abs(snr - _fin(lk["snr_db_worst_hop"])) < 0.06,
                   f"Proposition 2: the {who}'s rate and signal-to-noise ratio at the worst hop equal the E48 file's")
+            if c == "LTV1":
+                lt = lk
+            else:
+                sm = lk
             out.append(f"the {who} at {unit(lk['tx_power_w'], 'W', 2)} ({num(pt, 1)}&nbsp;dBm) has a signal-to-noise ratio of {unit(snr, 'dB', 1, sign=True)} after "
                        f"the margin and a rate of {num(cap, 0 if cap >= 100 else 1)}{KBPS6}" + ("" if not bool(lk["beyond_horizon_at_worst_hop"]) else
                                                                                            " if its two antennas could see each other, which by Proposition 1 they cannot"))
         return (f"Worked example, the constants of E48: a bandwidth of {unit(B / 1e6, 'MHz', 0)}, antenna gains of {unit(G, 'dBi', 0)}, a noise figure of "
-                f"{unit(F, 'dB', 0)} and a margin of {unit(M, 'dB', 0)} give a noise power of {unit(N, 'dBm', 0)}; at the worst hop " + " and ".join(out) + ".")
+                f"{unit(F, 'dB', 0)} and a margin of {unit(M, 'dB', 0)} give a noise power of {unit(N, 'dBm', 0)}; at the worst hop " + " and ".join(out) +
+                f". The last sentence of the statement needs its assumption: on a route with a {unit(_fin(lt['longest_hop_m']) / 1000.0, 'km', 0)} hop between "
+                f"two rovers ({num(lt['longest_hop_kbps'], 0)}{KBPS6}) and a {unit(_fin(sm['longest_hop_m']) / 1000.0, 'km', 2)} hop between two small rovers "
+                f"({num(sm['longest_hop_kbps'], 1)}{KBPS6}) the lowest rate is on the shorter hop. Every rate here and in Table 7 is the Shannon bound of the "
+                f"channel after the margin, not what a modem delivers.")
     fill("P3-PROP2-EXAMPLE", prop2, "E48 link")
 
     def prop3():
@@ -1482,7 +1871,9 @@ def values_p6(r: R, V, fill, check):
                 f"a = 3.84399&nbsp;&times;&nbsp;10<sup>8</sup>&nbsp;m, R<sub>M</sub> = 1,737.4&nbsp;km and L<sub>G</sub> = 6.969290134&nbsp;&times;&nbsp;10<sup>&minus;10</sup> [23]: "
                 f"&mu; = {num(c['mu'], 6)} and v<sup>2</sup> = {num(c['v2'] / 1e6, 4)}&nbsp;&times;&nbsp;10<sup>6</sup>&nbsp;m<sup>2</sup>/s<sup>2</sup>; the three terms "
                 f"are L<sub>G</sub> = {us(c['LG'])}, L<sub>L</sub> = {us(c['LL'])} and L<sub>orb</sub> = {us(c['Lorb'])}&nbsp;&micro;s a day, and the rate is "
-                f"{us(c['LG'])} &minus; {us(c['LL'])} &minus; {us(c['Lorb'])} = {num(c['rate'] * DAY_US, 3)}&nbsp;&micro;s a day, {num(c['rate'] * 1e10, 4)}&nbsp;&times;&nbsp;10<sup>&minus;10</sup>. "
+                f"{us(c['LG'])} &minus; {us(c['LL'])} &minus; {us(c['Lorb'])} = {num(c['rate'] * DAY_US, 2)}&nbsp;&micro;s a day, {num(c['rate'] * 1e10, 4)}&nbsp;&times;&nbsp;10<sup>&minus;10</sup>; "
+                f"more decimals would not mean anything, because a kilometre of site height moves the rate by about 0.002 and the eccentricity term "
+                f"left out is 0.11 periodic. "
                 f"The clock model of E51 uses this constant, and the build checks the two against each other.")
     fill("P3-PROP3-EXAMPLE", prop3, "E51 constants")
 
@@ -1501,8 +1892,14 @@ def values_p6(r: R, V, fill, check):
                 f"0.1&nbsp;s of a reservation for {dur(hc[res]['analytic_y95_s'])} and the {sig(_fin(hc[rng]['budget_s']) * 1e9, 3)}&nbsp;ns of a 1&nbsp;m one-way "
                 f"range for {dur(hc[rng]['analytic_y95_s'])}; the atomic clock at y = {e10(y['csac'], 1)} with A = {e10(A, 1)} per second holds them for "
                 f"{dur(ha[res]['analytic_y95_s'])} and {dur(ha[rng]['analytic_y95_s'])}. With a reply delay of {unit(tr * 1000, 'ms', 0)} and the crystal's largest "
-                f"rate difference, single-sided two-way ranging is wrong by at most {unit(bound, 'm', 2)}; E51 measured {unit(two, 'm', 3)} at the 95th percentile. "
-                f"The build recomputes every analytic holdover of Table 12 from the formula and compares the simulated ones with them.")
+                f"rate difference, single-sided two-way ranging is wrong by at most {unit(bound, 'm', 2)}; E51 gave {unit(two, 'm', 3)} at the 95th percentile. "
+                f"Table 12 lists {dur(ha[res]['p5_over_vehicles_s'])} and {dur(ha[rng]['p5_over_vehicles_s'])} for the atomic clock where this example has "
+                f"{dur(ha[res]['analytic_y95_s'])} and {dur(ha[rng]['analytic_y95_s'])}: the table takes the fifth percentile of the holdover over the drawn "
+                f"clocks, the example the formula at the 95th-percentile frequency error, and the build checks that the two agree within 6&#8239;%. Both are "
+                f"the same closed form, so that agreement is of a formula with itself. Part (c) sets the residual x<sub>0</sub> to zero. The model's own "
+                f"time transfer leaves {unit(_fin(k['tt_sigma_s']) * 1e9, 'ns', 0)}, which is {unit(_fin(k['tt_sigma_s']) * C_LIGHT, 'm', 0)} of one-way range, so "
+                f"the budgets of 1&nbsp;m and 10&nbsp;m of one-way range are exceeded at the instant of synchronisation and their holdover times are not "
+                f"reachable with that transfer (Table 12 marks them).")
     fill("P3-PROP4-EXAMPLE", prop4, "E51 holdover")
 
     def prop5():
@@ -1516,10 +1913,15 @@ def values_p6(r: R, V, fill, check):
 
     def prop6():
         s = map_sizes()
+        hdr_auth = lrip_sizes()["hdr"] + 14          # packet and protocol headers plus the security header and the 8-byte code (3.8)
+        check(0.75 < hdr_auth / (4.0 * s["h"]) < 1.0, "Proposition 6: headers and code of one message per opened node come close to doubling the walk")
         worst = max(r.p6("E52", "rows"), key=lambda x: _fin(x["tree_overhead_bytes"]))
         return (f"Worked example, one 256&nbsp;m layer of the 16&nbsp;km site: N = {cnt(s['N'])}, D = {cnt(s['D'])}, h = {cnt(s['h'])}&nbsp;B, v = {cnt(s['v'])}&nbsp;B. "
                 f"With n = {cnt(s['n'])} changed tiles the tree costs at most {cnt(s['h'])}&nbsp;&times;&nbsp;(1 + 4&nbsp;&times;&nbsp;{cnt(s['n'])}&nbsp;&times;&nbsp;{cnt(s['D'])}) = "
-                f"{cnt(s['tree'])}&nbsp;B and the flat list {cnt(s['flat'])}&nbsp;B; the tree is the smaller for n below {cnt(math.floor(s['cross']))}. In E52 the "
+                f"{cnt(s['tree'])}&nbsp;B and the flat list {cnt(s['flat'])}&nbsp;B; the tree is the smaller for n below {num(s['cross'], 1)}, that is, for up to "
+                f"{cnt(math.floor(s['cross']))} changed tiles (at n = {cnt(math.floor(s['cross']))} it costs {cnt(s['h'] * (1 + 4 * math.floor(s['cross']) * s['D']))}&nbsp;B). "
+                f"The count leaves out the replies and the framing: if every opened node travels as one authenticated message of {cnt(hdr_auth)}&nbsp;B of headers "
+                f"and code around its {cnt(4 * s['h'])}&nbsp;B of hashes, the walk nearly doubles. In E52 the "
                 f"largest walk was {cnt(worst['tree_overhead_bytes'])}&nbsp;B for {num(worst['tiles_changed_mean'], 0)} changed tile versions over the layers, far "
                 f"inside the bound because changed tiles lie together along the routes; the build checks every row of E52 against the bound.")
     fill("P3-PROP6-EXAMPLE", prop6, "E52")
@@ -1559,9 +1961,10 @@ def values_p6(r: R, V, fill, check):
             check(abs(direct - closed) < 1e-6 * direct, "Proposition 8: the closed form 2 sqrt(N) / sqrt(N^2 - |S|^2) equals the trace of the inverse normal matrix")
             return closed
         ev = 2 / math.sqrt(N)
-        sites = [("ISRU", "the oxygen plant"), ("SCI_1", "the science site"), ("PSR", "the shadowed crater")]
+        sites = [("CONSTR", "the construction site"), ("ISRU", "the oxygen plant"), ("SCI_1", "the science site"), ("PSR", "the shadowed crater")]
         hd = {k: hdop(xy[ids[k]]) for k, _ in sites}
         check(all(v > ev for v in hd.values()) and hd["PSR"] > 3 * ev, "Proposition 8: seen from the far sites the four beacons give a dilution well above the even-spread value")
+        check(hd["CONSTR"] == max(hd.values()), "Proposition 8: the construction site, nearest the base and almost on the beacons' line, has the largest dilution of the four sites")
         base = bxy[names.index("BASE")]
         span = max(float(np.linalg.norm(a - b)) for a in bxy for b in bxy)
         # how far the beacons are from one line: the smaller singular value of the centred coordinates
@@ -1569,14 +1972,22 @@ def values_p6(r: R, V, fill, check):
         check(sv[1] < 0.2 * sv[0], "Proposition 8: E50's four beacons lie nearly on one line")
         sr = PD["radio_sigma_m"]
         away = e50("1", "dr+ranging", "away", "p95_m")
+        near_med = _fin(e50("1", "dr+ranging", "near", "median_m")["mean"])
+        check(near_med < sr * min(hd.values()), "E50's median error where two or more beacons are seen is below the single-epoch bound at every example site: a sequential filter is not bound by it")
+        km = lambda k: unit(float(np.linalg.norm(xy[ids[k]] - base)) / 1000.0, 'km', 2 if float(np.linalg.norm(xy[ids[k]] - base)) < 1000 else 1)
+        bnd = lambda k: unit(sr * hd[k], 'm', 0 if sr * hd[k] >= 10 else 1)
         return (f"Worked example, the four beacons of E50 (the base mast, the depot, the power plant and one landing pad): they span {unit(span / 1000.0, 'km', 2)} "
-                f"and lie nearly on one line. Evenly spread around a vehicle they would give a dilution of {num(ev, 1)}. The dilution is "
-                + "; ".join(f"{num(hd[k], 1)} seen from {nm}, {unit(float(np.linalg.norm(xy[ids[k]] - base)) / 1000.0, 'km', 1)} from the base" for k, nm in sites) +
-                f". With the {unit(sr, 'm', 0)} range error of the base radio the bound on the horizontal error (one sigma) is then "
-                + ", ".join(f"{unit(sr * hd[k], 'm', 0 if sr * hd[k] >= 10 else 1)}" for k, _ in sites[:-1]) +
-                f" and {unit(sr * hd[sites[-1][0]], 'm', 0 if sr * hd[sites[-1][0]] >= 10 else 1)} at those three sites when all four beacons are in view. "
-                f"E50's ranging layer left {unit(away['mean'], 'm', 0)} at the 95th percentile away from the base, a figure of the size these bounds allow that "
-                f"also contains the steps with fewer than four beacons in view.")
+                f"and lie nearly on one line. Evenly spread around a vehicle they would give a dilution of {num(ev, 1)}. With all four in view the dilution is "
+                + "; ".join(f"{num(hd[k], 1)} seen from {nm}, {km(k)} from the base" for k, nm in sites) +
+                f". It does not simply rise with distance: the site nearest the base is the worst of the four, because it lies almost on the beacons' "
+                f"line (case iii). With the {unit(sr, 'm', 0)} range error of the base radio the bound on the horizontal error of one epoch (one sigma) is "
+                + ", ".join(bnd(k) for k, _ in sites[:-1]) + f" and {bnd(sites[-1][0])} at those four sites. Three things limit what this says about E50. "
+                f"The bound assumes all four beacons in view, while E50's region away from the base is where fewer than two are: it says nothing about "
+                f"the {unit(away['mean'], 'm', 0)} that E50's ranging layer left there at the 95th percentile. It is a bound for a single epoch of ranges with "
+                f"no prior, while E50 runs a sequential filter with a dead-reckoning prior, which is not bound by it: where two or more beacons are seen "
+                f"E50's median error is {unit(near_med, 'm', 1)}, below the single-epoch bound at every one of these sites. And it takes the base radio's "
+                f"range error for every range, while E50 also has ultra-wideband ranges of {unit(PD['uwb_sigma_m'], 'm', 1)} within "
+                f"{unit(PD['uwb_range_m'], 'm', 0)}.")
     fill("P3-PROP8-EXAMPLE", prop8, "E50 beacons")
 
     # --- H. the "Proved, tested, assumed" table (Section 8): one row per claim, the status from the data where it depends on results ----
@@ -1593,7 +2004,9 @@ def values_p6(r: R, V, fill, check):
                 f"that is reported and not removed")
 
     def table_pta():
-        P, T, A, N = "Proved", "Tested", "Assumed", "Not yet tested"
+        """Table 18. Since the referee round of 11 Nov 2026 it has a fourth status, 'calculated from assumed inputs' (decision A1): a result
+        that could not have come out otherwise is not called tested. The awaited tasks are rows of the last group."""
+        P, T, C, A, N = "Proved", "Tested", "Calculated from assumed inputs", "Assumed", "Not yet tested"
 
         sv = lambda ok: "supported" if ok else "not supported"
         h9 = h9_parts()
@@ -1604,94 +2017,147 @@ def values_p6(r: R, V, fill, check):
         c = clock_rate()
         s = map_sizes()
         fz = r.p6("E55", "auth", "forgery")
-        a = None
-        try:
-            a = V["P3-E48-CONCLUSION-CLAUSE"]
-        except KeyError:
-            pass
         fo = r.s48("failover")
         twice = sum(int(v["jobs_assigned_twice"]) for v in fo["by_mtbf"].values())
         n_fo = sum(int(v["seeds"]) for v in fo["by_mtbf"].values())
-        h11, h12, h13, h14 = (bool(r.p6(e, k, "supported")) for e, k in (("E51", "h11"), ("E52", "h12"), ("E53", "h13"), ("E54", "h14")))
+        h14 = r.p6("E54", "h14")
+        c14 = _fin(h14["difference_sf_ll_minus_drop_retry"]["ci"][1]) < 0
         x8 = have("E50", "errors", "8", "dr", "all", "p95_m")
+        st = e50_steps()
+        rows5, _sens = referee_m5()
+        near = h9["1"]["h"]["ranging_near_p95_m"]
+        m14 = referee_m14(r, check)
+        k51 = r.p6("E51", "constants")
+        res_m = _fin(k51["tt_sigma_s"]) * C_LIGHT
+        pairs51 = int(e51row("crystal", 10)["conflict_pairs_checked"])
+        h12s = _fin(r.p6("E52", "h12", "share_of_full_resend_24h"))
+        h13 = r.p6("E53", "h13")
+        d54 = e54row(0.25, "drop_retry")
+        led = e54_ledger("numbers")
+        e48h, fl = r.s48("h10"), r.s48("flight")
+        p99s = _fin(r.s48("classes", "LTV1", "cpu_auction_round_ms", "p99")) * _fin(fl["factor"]) / 1000.0
+        ls = r.p6("E54", "link_shares")
+        eb = r.p6("E50b", "metrics", "delay_mean_h")
+        ebs = r.p6("E50b", "stops")
         rows = [
             # proved
             ["Beyond the breakpoint the loss over flat ground is 40&nbsp;log&nbsp;d &minus; 20&nbsp;log(h<sub>1</sub>h<sub>2</sub>), whatever the frequency; two antennas "
-             "see each other no farther than &radic;(2Rh<sub>1</sub>) + &radic;(2Rh<sub>2</sub>)", P,
-             "Two rays, reflection coefficient &minus;1, flat ground, smooth sphere. Not a measurement: no path loss has been measured on the Moon", "Proposition 1; Sections 4.2, 5.3"],
-            ["The rate at the longest hop bounds the rate of every shorter hop from below", P, "White Gaussian noise, ideal coding", "Proposition 2"],
+             "see each other no farther than &radic;(2Rh<sub>1</sub>) + &radic;(2Rh<sub>2</sub>)", P + " (for a plane)",
+             "Two rays, reflection coefficient &minus;1, flat ground; a smooth sphere for the horizon. Table 7 applies the law at hops where the horizon is close; "
+             "there the referee's computation with the method of [20] gives 4 to 5&nbsp;dB more loss, and the project's own check is task B-104. Not a "
+             "measurement: no path loss has been measured on the Moon", "Proposition 1; Sections 4.2, 5.3"],
+            ["On a route whose hops have the same antenna heights, power and gains, the rate at the longest hop bounds the rate of every shorter hop from below", P,
+             "White Gaussian noise, ideal coding: a Shannon bound, not the rate of a modem", "Proposition 2"],
             [f"A clock on the lunar surface gains {num(c['rate'] * DAY_US, 2)}&nbsp;&micro;s a day on one on Earth's geoid", P,
              "Point masses, circular orbit, first order, Sun left out; agrees with three published values to 0.01&nbsp;&micro;s a day", "Proposition 3; Section 3.6"],
-            ["One-way ranging turns 1&nbsp;ns into 0.30&nbsp;m; two-way ranging needs no shared clock; the holdover formula", P, "Constant frequency error and linear ageing, no random noise",
-             "Proposition 4; Table 12"],
+            ["One-way ranging turns 1&nbsp;ns into 0.30&nbsp;m; two-way ranging needs no shared clock; the holdover formula", P,
+             "Constant frequency error and linear ageing, no random noise; the holdover formula takes the residual of the synchronisation as zero", "Proposition 4; Table 12"],
             [f"Coordinates read in the wrong lunar frame are off by {unit(f['pole'], 'm', 0)} at the south pole", P,
              "A constant rotation between the two frames, from the NAIF kernel; agrees with the repository's coordinate code to 0.05&nbsp;m", "Proposition 5; Section 3.7"],
-            [f"A hash-tree walk finds n changed tiles in at most h(1 + 4nD) bytes ({cnt(s['tree'])}&nbsp;B for {cnt(s['n'])} tiles)", f"{P}; {T.lower()}",
-             f"No hash collisions. Every row of E52 is within the bound ({n52} seeds)", "Proposition 6; Section 5.10"],
+            [f"A hash-tree walk finds n changed tiles in at most h(1 + 4nD) hash bytes ({cnt(s['tree'])}&nbsp;B for {cnt(s['n'])} tiles)", f"{P}; {T.lower()}",
+             f"No hash collisions; hash bytes in one direction, without replies and framing. Every row of E52 is within the bound ({n52} seeds)", "Proposition 6; Section 5.10"],
             ["A forged message passes a t-bit code with probability 2<sup>&minus;t</sup>; a replay is rejected by any receiver that accepted the original or a later message", f"{P}; {T.lower()}",
              f"An ideal code, a counter never reused under one key. Counted at 8 and 16 bits with the real AES-CMAC: {cnt(fz['8']['accepted'])} of {cnt(fz['8']['attempts'])} and "
              f"{cnt(fz['16']['accepted'])} of {cnt(fz['16']['attempts'])}; no replay accepted (E55). The 64-bit value is the formula's", "Proposition 7; Section 5.11"],
             ["Beacons seen within a narrow angle dilute a ranging fix by at least 2/(&radic;N&nbsp;sin&nbsp;2&alpha;); beacons on one line give nothing across it", P,
-             "Two-way ranges with equal independent Gaussian errors, all beacons in view", "Proposition 8"],
+             "Two-way ranges with equal independent Gaussian errors, all beacons in view, one epoch with no prior: not a bound on E50's sequential filter, and "
+             "silent on the region where fewer than two beacons are in view", "Proposition 8"],
             ["The operator's budget is zero under the posted price and under no payments", P, "By construction of the rule: the tariff is paid through", "Section 5.5"],
             # tested
-            [f"Positioning (H9): dead reckoning alone passes the {unit(PD['budget_m'], 'm', 0)} budget within a shift, {sv(all(h9[m]['dr'] for m in ms))}; ranging holds it near the base, "
-             f"{sv(all(h9[m]['near'] for m in ms))}; terrain fixes hold it away from the base, {sv(all(h9[m]['away'] for m in ms))}", T,
-             f"E50, a replay of recorded trajectories: {seeds50}. A comparison with a threshold, no sampling test. Every sensor value is from Earth or Mars tests, "
-             f"a requirement or an assumption (Table 4)", "Section 5.8"],
-            [f"Time (H11): a crystal resynchronised at every contact causes no reservation conflict while its error swamps one-way ranging, {sv(h11)}", T,
-             f"E51, a check on logged reservations: {n51} seeds at today's fleet; guard swept from 0.01 to 1&nbsp;s", "Section 5.9"],
+            [f"Positioning (H9&prime;, first clause): dead reckoning alone passes the {unit(PD['budget_m'], 'm', 0)} budget within a shift, {sv(all(h9[m]['dr'] for m in ms))}", T,
+             f"E50, a replay of recorded trajectories through a filter matched to its own error model: {seeds50}. A comparison with a threshold, no sampling test. "
+             f"Every sensor value is from Earth or Mars tests, a requirement or an assumption (Table 4)", "Section 5.8"],
+            [f"Positioning (H9&prime;, second clause): with ranging the 95th percentile of the position error is {unit(near['mean'], 'm', 1)} where two or more of the "
+             f"four beacons are in line of sight, {pc(st['near_share'], 0)} of driving steps", T + "; the registered clause depends on the reading",
+             f"E50 under the analysis's reading of &ldquo;within radio range of the base beacons&rdquo;, chosen after the results. In the referee's rerun of six "
+             f"seeds: {unit(rows5[1][2], 'm', 1)} with one or more beacons in line of sight, {unit(rows5[2][2], 'm', 1)} within 1&nbsp;km of the base, "
+             f"{unit(rows5[3][2], 'm', 1)} within 5&nbsp;km. All seeds under four readings: task B-101", "Section 5.8"],
+            [f"Positioning (H9&prime;, third clause): terrain fixes hold the budget where fewer than two beacons are in line of sight, {sv(all(h9[m]['away'] for m in ms))}", T,
+             f"E50, as above ({unit(h9['1']['h']['fixes_away_p95_m']['mean'], 'm', 1)} at today's fleet)", "Section 5.8"],
+            [f"With the terrain-fix stops inside the engine the delay per delivery {'rises' if _fin(eb['diff_mean']) > 0 else 'falls'} by "
+             f"{unit(abs(_fin(eb['diff_mean'])), 'h', 2)} ({pc(abs(_fin(eb['diff_mean'])) / _fin(eb['without_stop_time']), 1)})", T + ", exploratory",
+             f"E50b: {cnt(eb['n_seeds'])} seeds at today's fleet, run after the first results. A lower bound: "
+             f"{pc(_fin(ebs['engine_fix_stop_h_mean']) / _fin(ebs['perfect_run_fix_stop_h_mean']), 0)} of the fix time is inserted", "Section 5.8"],
+            [f"Time (H11, first half): a crystal resynchronised at every contact causes no reservation conflict with a guard of {unit(k51['guard_s'], 's', 1)}", T + " (observed)",
+             f"E51, a check on logged reservations: {cnt(pairs51)} pairs in {n51} seeds at today's fleet only; guard swept from 0.01 to 1&nbsp;s", "Section 5.9"],
+            ["Time (H11, second half): the clock error adds more to one-way ranging than the ranging radio's own noise", C,
+             f"The assumed residual of the time transfer, {unit(_fin(k51['tt_sigma_s']) * 1e9, 'ns', 0)}, is {unit(res_m, 'm', 0)} of range: true of any oscillator, "
+             f"a perfect one included", "Section 5.9"],
             ["Frequency steering and mixed time scales (the variants of E51)", f"{T}, post hoc", f"E51b: {cnt(len(r.p6('E51b', 'seeds')))} seeds; added after the first results", "Section 5.9"],
-            [f"The shared map (H12): hazards-first sync after a day needs under 10&#8239;% of a full resend and is current sooner than oldest-first, {sv(h12)}", T,
-             f"E52, a model of the map's bookkeeping on the real routes: {n52} seeds; the change rates are assumed and not swept", "Section 5.10"],
-            [f"The protocol's traffic (H13): 20 authenticated rovers load the busiest link with no more than 16&nbsp;kbit/s at 1&nbsp;Hz and with more at 10&nbsp;Hz, {sv(h13)}", T,
-             f"E53, computed from serialised message sizes: {cnt(r.p6('E53', 'draws'))} draws of rover positions for 5 to 80 rovers. A comparison with a threshold, "
-             f"no sampling test", "Section 5.11"],
-            [f"Store-and-forward with the lost-link rule loses fewer jobs than drop-and-retry (H14), {sv(h14)}", T,
-             f"E54, a message-level simulation on the recorded month, not an engine run: {n54} seeds at today's fleet; {family_sentence('pta14')}. That no reservation stays "
-             f"stuck under the rule is the rule's construction, not a measurement", "Section 5.12"],
-            ["Sizing (H10 of [59], exploratory): " + (re.sub(r"^On flight hardware ", "", a) if a else "pending"), T,
-             f"E48: {cnt(r.s48('runs', 'n'))} instrumented runs at one, four and eight times the fleet on a laptop, scaled to the flight processor by an assumed factor; the link by "
-             f"computation from event counts and a one-month trace of one seed", "Sections 5.1 to 5.3"],
+            [f"The shared map (H12): after a day out of contact a sync of changed tiles is {pc(h12s, 2)} of a full resend, and hazards first is current sooner than oldest first", C,
+             f"{cnt(s['n'])} route tiles assumed to change a day in each of three layers of {cnt(s['N'])}; a subset sent first is always finished first. E52 adds the "
+             f"sizes and the stale-map hits ({n52} seeds); the change rates are not swept", "Section 5.10"],
+            [f"The protocol's traffic (H13): 20 authenticated rovers load the busiest link with {num(h13['at_1hz_kbps_p95'], 2)}&nbsp;kbit/s at 1&nbsp;Hz and "
+             f"{num(h13['at_10hz_kbps_p95'], 1)} at 10&nbsp;Hz", C,
+             "The serialised sizes of protocol version 0.1 times the assumed report rates, summed over a fleet in one radio neighbourhood; the same in every draw", "Section 5.11"],
+            [f"Store-and-forward with the lost-link rule loses fewer jobs than drop-and-retry (H14, first clause), {sv(c14)}", T,
+             f"E54, a message-level simulation on the recorded month, not an engine run: {n54} seeds at today's fleet; {family_sentence('pta14')}. "
+             f"{cnt(d54['award_lost'])} awards of {cnt(d54['award_n'])} under drop-and-retry, at a retry budget we chose", "Section 5.12"],
+            ["The lost-link rule leaves no reservation stuck past its timeout (H14, second clause)", "Not testable as written",
+             f"The zero followed from the rule as first written, which released a silent holder's reservation; that release is withdrawn. E54 gives "
+             f"{cnt(d54['stuck_reservations'])} segments and {cnt(d54['stuck_hours'])} hours that the rule now marks unconfirmed; caution-speed traversal is not priced", "Sections 3.8, 5.12"],
+            [f"{cap1(words(led['lost']))} of the month's {cnt(led['per_seed'])} daily ledger bundles expire with a {num(led['life'], 0)}-day lifetime", C,
+             f"A {num(led['life'], 0)}-day lifetime against {num(led['down'], 1)} days without Earth, set by where the imposed blackout falls in the month; the same in every seed", "Section 5.12"],
+            [f"Sizing (H10 of [59], exploratory): the safety check takes {pc(e48h['safety_core_share_flight_per_robot_10hz'], 1)} of one core of the reference processor", T,
+             f"E48: one Python function timed on a laptop over the same moves for every class, with no reservation entries in the call, and scaled by an assumed factor", "Section 5.1"],
+            [f"The simulator's dispatch call for the whole fleet takes {unit(p99s, 's', 2)} at the 99th percentile, scaled", T,
+             f"E48: {cnt(r.s48('classes', 'LTV1', 'cpu_auction_round_ms', 'n'))} calls pooled over one, four and eight times the fleet; not one vehicle's share of a round, "
+             f"which task B-105 times", "Section 5.1"],
+            [f"The on-robot data come to {unit(e48h['peak_memory_mb_max_robot'], 'MB', 2)}", C,
+             "A sum of estimates at assumed layouts: a day of the reservation table, a year of the ledger, the policy files and an allowance; nothing was measured "
+             "(task B-105 measures it)", "Section 5.1"],
+            [f"The authenticated traffic of 20 robots, {num(e48h['link_kbps_needed_20_robots_secured_mac8'], 2)}&nbsp;kbit/s at the sources, would need "
+             f"{num(e48h['airtime_kbps_20_robots_secured_mac8_scheduled'], 2)}&nbsp;kbit/s of a base-scheduled channel if every robot were within one hop of the base", C,
+             f"Event counts of the instrumented runs times serialised sizes and assumed rates. The hop count is from positions that are "
+             f"{pc(st['parked_share_s1'], 0)} parked; a driving vehicle has a path to the base {pc(ls['linked_share_driving_time'], 1)} of the time (E54). "
+             f"Hops for driving vehicles: task B-103", "Sections 5.2, 5.11"],
             [f"After a rebuild of the base computer's table no job is assigned twice ({'none' if twice == 0 else cnt(twice)} found)", T,
              f"E48 failover sweep: {cnt(n_fo)} seed-runs over three failure rates", "Section 5.4"],
-            ["Incentives (H5): " + V.get("P3-H5-ABSTRACT-CLAUSE", "pending"), T, f"E46: {V.get('P3-E46-N-RUNS', 'pending')} simulated years, three owners, two splits, 30 seeds; payments priced after one allocation",
-             "Sections 5.5 to 5.7"],
+            ["Incentives (H5): " + V.get("P3-H5-ABSTRACT-CLAUSE", "pending"), T, f"E46: {V.get('P3-E46-N-RUNS', 'pending')} simulated years, three owners, two splits, 30 seeds; payments priced "
+             "after one allocation. The third clause asks whether pooling is superadditive in the simulator", "Sections 5.5 to 5.7"],
             ["The mast sees " + V["P3-MESH-MAST-DIRECT-SHARE"] + " of the route points directly, and rovers form one network from 2&nbsp;km range", "Computed",
-             "Line of sight on the 5&nbsp;m terrain model, whose effective resolution is about 20&nbsp;m; not a radio measurement", "Section 3.3"],
+             "Line of sight on the 5&nbsp;m terrain model, whose effective resolution is about 20&nbsp;m, with a grazing ray counted as a link; not a radio measurement", "Section 3.3"],
+            ["Agreement by averaging among the rovers, with and without the base mast as a node", T,
+             e55_base_node("basis") + "; averaging on the sparse mesh rarely converges, so shared estimates are computed at the base", "Section 5.11"],
+            ["Range and direction of the Moon or Earth from one image of its limb, against the kernels of the Artemis&nbsp;II flyby; the Earth-link azimuth and elevation "
+             "against the SPICE toolkit", T + " on real data",
+             b97_basis() + "; a crewed flyby's navigation camera, not rover data, and not a test of a rover's terrain fix or of the terrain mask", "Section 5.13"],
             # assumed
             ["The factor from the laptop to the flight processor", A, "Reported with its range; a flight implementation could differ by more", "Sections 5.1, 7"],
             ["The radio: 2.4&nbsp;GHz, transmit powers, antenna heights and gains, noise figure, margin, 5&nbsp;km range, hop latency, message loss", A,
              "Loss swept in [60]; margins of 3, 10 and 15&nbsp;dB on the mesh's links; the free-space rate kept as an upper bound", "Sections 3.3, 4.2"],
             ["The two-ray law on paths the terrain shows as visible", A, "One NASA model supports it for lunar ground; no measurement", "Sections 3.3, 7"],
-            ["The navigation model's parameters and the navigation service's availability by year", A,
-             "One value each, with one variant (the service as of 2030); the ranges of the research note were not run", "Table 4"],
-            ["The oscillators: the crystal's range is measured on the lunar surface, the atomic clock's is a data-sheet value; the transfer residual and the guard", "Measured; Spec; " + A,
-             "Guard swept; frequency steering as a variant", "Sections 3.6, 5.9"],
+            ["The navigation model's parameters and the navigation service's accuracy and availability by year", A,
+             "One value each, with one variant (the service as of 2030); the ranges of the research note were not run. The referee's rerun varied three of them (Section 5.8)", "Table 4"],
+            ["The oscillators: the crystal's spread over vehicles is taken from one crystal's excursion on the lunar surface, the atomic clock's is a data-sheet value; the "
+             "transfer residual and the guard", A + "; Spec", "Guard swept; frequency steering as a variant", "Sections 3.6, 5.9"],
             ["The map's change rates and the share of hazards a rover cannot see", A, "Not swept", "Section 4.2"],
-            ["The base as trust anchor; a site key changed daily; the lost-link ladder's times", A, "Not swept; no standard names a trust anchor for a site with several owners", "Section 3.8"],
-            ["Private costs, the audit multiple, the base computer's failure rate, the re-election delay", A, "The failure rate at three levels; the private-cost spread declared and not swept", "Sections 3.9, 4.2"],
+            ["The base as trust anchor; a site key changed daily; the lost-link ladder's times; the retry budget of drop-and-retry", A,
+             "Not swept; no standard names a trust anchor for a site with several owners", "Sections 3.8, 4.2"],
+            ["The value of delivery time by priority, the censoring of undelivered cargo at the year's end, the operator's cost per hour, private costs, the audit multiple", A,
+             "One value each; the private-cost spread declared and not swept", "Section 3.9"],
+            ["The base computer's failure rate and the re-election delay", A, "The failure rate at three levels", "Section 4.2"],
             # not yet tested
             ["Any of this on radio hardware", N, "Stage 2 of Table 16", "Section 6.5"],
             ["Path loss between rover-height antennas on the Moon", N, "No measurement exists; the one flown cellular network connected no device", "Section 3.8"],
-            ["The software on a flight-class processor", N, "The scaling factor stands in for it", "Section 7"],
-            ["Position error at eight times the fleet", T if x8 else N, "E50 at 8x: " + ("in the file" if x8 else "still running; 5 seeds planned"), "Section 5.8"],
-            ["The delay with terrain-fix stops inside the engine", T if have("E50b") else N, "E50b" + ("" if have("E50b") else ": not yet run"), "Section 5.8"],
-            ["Agreement by averaging among the rovers, with and without the base mast as a node", T if have("E55", "consensus_with_base_mast", "cells") else N,
-             (e55_base_node("basis") if have("E55", "consensus_with_base_mast", "cells") else "A variant of E55: not yet run") +
-             "; averaging on the sparse mesh rarely converges, so shared estimates are computed at the base", "Section 5.11"],
-            ["Range and direction of the Moon or Earth from one image of its limb, against the kernels of the Artemis&nbsp;II flyby; the Earth-link geometry "
-             "against the SPICE toolkit", (T + " on real data") if have("B97") else N,
-             (b97_basis() if have("B97") else "Task B-97: not yet run") + "; a crewed flyby's navigation camera, not rover data, and not a test of a rover's terrain fix",
-             "Section 5.13"],
-            ["The lost-link return driven inside the engine; ranging and terrain fixes on the lunar surface; a hopper's navigation in flight", N, "Named as limitations", "Section 7"],
+            ["The loss over a spherical ground at the hops of Table 7, by the project's own computation", N, "Task B-104; the referee's figures are in Proposition 1", "Section 5.3"],
+            ["The software on a flight-class processor; the memory in use; one robot's bid computation", N, "The scaling factor and the estimates stand in for them; task B-105 measures the last two on the laptop", "Sections 5.1, 7"],
+            ["Protocol version 0.2, with the frame, datum and time-scale identifiers and a covariance in the position report", N, "Task B-100; every size here is version 0.1's", "Sections 3.8, 5.11"],
+            ["Hops and reach to the base for driving vehicles, with 1.0&nbsp;m antennas for the small classes", N, "Task B-103", "Sections 5.2, 5.11"],
+            ["Position error at eight times the fleet", T if x8 else N, "E50 at eight times the fleet: " + ("in the file" if x8 else "five seeds, not in this version"), "Section 5.8"],
+            ["The lost-link return and the caution-speed crossing of an unconfirmed segment driven inside the engine; ranging and terrain fixes on the lunar surface; a "
+             "hopper's navigation in flight", N, "Named as limitations", "Section 7"],
             ["More than three owners; misreports other than bid scaling; a vehicle with a valid key that lies about its position", N,
              "The last is tested in the companion paper [61]", "Section 7"],
         ]
-        return _tab("Table 18. Proved, tested, assumed: every claim of this paper with what stands behind it. &ldquo;Proved&rdquo; means derived in Appendix A under the stated "
-                    "assumption; &ldquo;tested&rdquo; means measured in a simulation experiment, with its seeds and fleet; &ldquo;assumed&rdquo; means a value we chose, with what "
-                    "was swept; &ldquo;not yet tested&rdquo; is listed, not left out. Nothing in this table is a measurement on the Moon. The status of each hypothesis and of "
-                    "each pending run is written by the build script from the results files.", ["Claim", "Status", "What stands behind it", "Where"], rows, cls="wide")
+        n_calc = sum(1 for x in rows if x[1] == C)
+        check(n_calc == 6, "Table 18 has six rows calculated from assumed inputs: H11's ranging half, H12, H13, the ledger count, the on-robot data and the link's airtime")
+        return _tab("Table 18. Proved, tested, calculated, assumed: every claim of this paper with what stands behind it. &ldquo;Proved&rdquo; means derived in Appendix A "
+                    "under the stated assumption; &ldquo;tested&rdquo; means that a simulation experiment could have come out otherwise, with its seeds and fleet; "
+                    "&ldquo;calculated from assumed inputs&rdquo; means arithmetic on stated inputs, a property of a rule or a count fixed by the design, which could "
+                    "not have come out otherwise and is therefore not called a test; &ldquo;assumed&rdquo; means a value we chose, with what was swept; &ldquo;not yet "
+                    "tested&rdquo; is listed, not left out, with the task that will deliver it where one exists. Nothing in this table is a measurement on the Moon. "
+                    "The status of each hypothesis is written by the build script from the results files.", ["Claim", "Status", "What stands behind it", "Where"], rows, cls="wide")
     T6["pta"] = (table_pta, "Phase 6 results", "Table 18, proved, tested, assumed")
 
     # --- I. the Phase 6 clauses of the abstract, the introduction, the discussion and the conclusion: every word of direction from the data --
@@ -1716,32 +2182,57 @@ def values_p6(r: R, V, fill, check):
         check(near_in == one["near"] and away_in == one["away"], "the Phase 6 clauses use H9's verdicts at today's fleet")
         lost_dr, lost_ll = _fin(h14["lost_jobs_drop_retry_per_seed"]["mean"]), _fin(h14["lost_jobs_sf_ll_per_seed"]["mean"])
         m_ = lambda x, nd=1: unit(x["mean"], "m", nd)
+        st = e50_steps()
+        rows5, _sens = referee_m5()
+        km1 = rows5[2]                                   # the referee's reading "within 1 km of the base", seeds 1 to 6
+        check(km1[0] == "Within 1 km" and km1[2] > b, "in the referee's rerun ranging does not hold the budget within a kilometre of the base")
+        ls = r.p6("E54", "link_shares")
+        drive = _fin(ls["linked_share_driving_time"])
+        eb = r.p6("E50b", "metrics", "delay_mean_h")
+        eb_rel = _fin(eb["diff_mean"]) / _fin(eb["without_stop_time"])
+        eb_up = _fin(eb["diff_mean"]) > 0
+        pairs51 = int(c10["conflict_pairs_checked"])
+        s_map = map_sizes()
+        d54 = e54row(0.25, "drop_retry")
         if kind == "abstract":
-            return (f"Under the market, ranging keeps position {'within' if near_in else 'outside'} the {unit(b, 'm', 0)} budget near the base ({m_(near)}) "
-                    f"{'and' if away_in == near_in else 'but'} terrain fixes {'do' if away_in else 'do not'} away from it ({m_(away)}); a crystal clock "
-                    f"{'suffices' if h11 else 'does not suffice'} for reservations, not ranging; authentication adds {pc(add, 0)} to the bit rate.")
+            return (f"Ranging {'holds' if near_in else 'does not hold'} the 95th percentile of position error at {m_(near)} where two or more base "
+                    f"beacons are in line of sight, {pc(st['near_share'], 0)} of driving steps, but not within a kilometre of the base "
+                    f"({unit(km1[2], 'm', 1)}, a referee's rerun); terrain fixes leave {m_(away)} elsewhere. Authentication adds {pc(add, 0)} "
+                    f"to the bit rate of protocol version 0.1, whose position report lacks identifiers the design requires.")
         if kind == "conclusion":
-            return (f"Under the market, ranging {'holds' if near_in else 'does not hold'} the {unit(b, 'm', 0)} position budget near the base "
-                    f"{'and' if away_in == near_in else 'but'} terrain fixes {'do' if away_in else 'do not'} away from it; authentication adds {pc(add, 0)} to the bit rate.")
+            return (f"Ranging {'holds' if near_in else 'does not hold'} the {unit(b, 'm', 0)} position budget where two or more beacons are in line of "
+                    f"sight ({pc(st['near_share'], 0)} of driving steps), not under wider readings of near the base, and terrain fixes "
+                    f"{'hold' if away_in else 'do not hold'} it elsewhere. Authentication adds {pc(add, 0)} to the bit rate of protocol version 0.1, which "
+                    f"lacks identifiers its design requires.")
         if kind == "intro":
             return (f"Of the layers under the market, with the hypotheses of [67]: dead reckoning alone passes the {unit(b, 'm', 0)} separation budget within "
-                    f"{'the first driving hour' if int(one['h']['dr_first_driving_hour_p95_over_budget']) == 1 else 'a shift'} and ranging holds {m_(near, 2)} at the 95th "
-                    f"percentile near the base (H9's first two clauses, {ok(one['dr'] and one['near'])}), while terrain fixes leave {m_(away)} away from the base, and "
-                    f"{m_(lans, 2)} even with a navigation service as assumed for 2030 (third clause, {ok(one['away'])}). A crystal oscillator resynchronised whenever "
-                    f"the base is heard causes no reservation conflict with a guard of {unit(guard, 's', 1)}, although its error adds {dist(c10['one_way_m_p95'])} or "
-                    f"more to one-way ranging (H11, {ok(h11)}). After a day out of contact a hazards-first sync brings a rover's map up to date with "
-                    f"{pc(e52['share_of_full_resend'], 2)} of a full resend (H12, {ok(h12)}). Authentication adds {pc(add, 0)} to the bit rate, and 20 rovers still load "
-                    f"the busiest link with {num(on['busiest_link_kbps_p95'], 2)}{KBPS6} at 1&nbsp;Hz (H13, {ok(h13)}). Store-and-forward with a lost-link rule lost "
-                    f"{'no job' if lost_ll == 0 else num(lost_ll, 2) + ' jobs a seed'} where drop-and-retry lost {num(lost_dr, 2)} a seed (H14, "
-                    f"{ok(bool(h14['supported']))}). {cap1(e54_ledger('clause'))}.")
+                    f"{'the first driving hour' if int(one['h']['dr_first_driving_hour_p95_over_budget']) == 1 else 'a shift'} (H9&prime;, first clause, "
+                    f"{ok(one['dr'])}). Whether ranging holds the budget near the base (second clause) depends on the reading of the registered words: the "
+                    f"95th percentile is {m_(near, 2)} where two or more of the four beacons are in line of sight, {pc(st['near_share'], 1)} of driving steps, "
+                    f"and in the referee's rerun of six seeds it was {unit(km1[2], 'm', 1)} within a kilometre of the base. Terrain fixes leave {m_(away)} "
+                    f"elsewhere, and {m_(lans, 2)} even with a navigation service as assumed for 2030 (third clause, {ok(one['away'])}); with the fix stops "
+                    f"inside the engine the delay per delivery {'rises' if eb_up else 'falls'} by {unit(abs(_fin(eb['diff_mean'])), 'h', 2)}, {pc(abs(eb_rel), 1)}, "
+                    f"a lower bound from an exploratory run. A crystal oscillator resynchronised whenever the base is heard caused no reservation conflict "
+                    f"with a guard of {unit(guard, 's', 1)} in {cnt(pairs51)} reservation pairs (H11's first half, observed); that its error exceeds the "
+                    f"ranging radio's noise follows from the assumed transfer residual and is a design calculation. Two registered hypotheses are design "
+                    f"calculations and are reported as such: by the assumed change rate the changed tiles of a day are {pc(e52['share_of_full_resend'], 2)} "
+                    f"of a full resend (H12), and 20 rovers load the busiest link with {num(on['busiest_link_kbps_p95'], 2)}{KBPS6} at 1&nbsp;Hz, their sizes "
+                    f"times their rates (H13). Authentication adds {pc(add, 0)} to the bit rate of protocol version 0.1, whose position report does not yet "
+                    f"carry the frame, datum and time-scale identifiers or the covariance that the design requires. Store-and-forward with a lost-link rule "
+                    f"lost {'no job' if lost_ll == 0 else num(lost_ll, 2) + ' jobs a seed'} where drop-and-retry lost {num(lost_dr, 2)} a seed (H14's first "
+                    f"clause, {ok(_fin(h14['difference_sf_ll_minus_drop_retry']['ci'][1]) < 0)}; {cnt(d54['award_lost'])} awards of {cnt(d54['award_n'])}, at a "
+                    f"retry budget we chose); its second clause is not testable as written, and the rule now marks a silent holder's segment unconfirmed "
+                    f"instead of releasing its reservation. {cap1(e54_ledger('clause'))}.")
         if kind == "discussion":
-            return (f"Near the base, in view of the beacons, ranging holds the 95th percentile of the position error at {m_(near, 2)}, "
-                    f"{'inside' if near_in else 'outside'} the {unit(b, 'm', 0)} budget; a crystal resynchronised at every contact "
-                    f"{'causes no reservation conflict' if h11 else 'still causes reservation conflicts'} with a guard of {unit(guard, 's', 1)}; a day of map changes "
-                    f"is {num(_fin(e52['bytes_mean']) / 1e6, 2)}&nbsp;MB; and the authenticated reports of 20 rovers need {num(sched, 2)}{KBPS6} of a scheduled channel. "
-                    f"Away from the base, terrain fixes leave the 95th percentile at {m_(away)} ({m_(lans, 2)} with a navigation service as assumed for 2030, "
-                    f"{'inside' if lans_in else 'still outside'} the budget), and of 20 rovers spread over the routes only {pc(sp20['reachable_share'], 0)} reach the "
-                    f"base at all.")
+            return (f"Where two or more of the four beacons are in line of sight, ranging holds the 95th percentile of the position error at {m_(near, 2)}, "
+                    f"{'inside' if near_in else 'outside'} the {unit(b, 'm', 0)} budget; that region is {pc(st['near_share'], 1)} of the driving steps, and "
+                    f"under wider readings of &ldquo;near the base&rdquo; the budget is not held (Section 5.8). In the recorded months a crystal "
+                    f"resynchronised at every contact {'caused no reservation conflict' if h11 else 'still caused reservation conflicts'} with a guard of "
+                    f"{unit(guard, 's', 1)}; a day of map changes is {num(_fin(e52['bytes_mean']) / 1e6, 2)}&nbsp;MB at the assumed change rate; and the "
+                    f"authenticated reports of 20 rovers would need {num(sched, 2)}{KBPS6} of a scheduled channel if every rover were within one hop of "
+                    f"the base. Elsewhere, terrain fixes leave the 95th percentile at {m_(away)} ({m_(lans, 2)} with a navigation service as assumed for "
+                    f"2030, {'inside' if lans_in else 'still outside'} the budget), a driving vehicle has a radio path to the base in {pc(drive, 1)} of its "
+                    f"steps, and of 20 rovers spread over the routes only {pc(sp20['reachable_share'], 0)} reach the base at all.")
         raise KeyError(kind)
     for kind, key in (("abstract", "P3-P6-ABSTRACT-CLAUSE"), ("intro", "P3-P6-INTRO-CLAUSE"), ("discussion", "P3-P6-DISCUSSION-CLAUSE"),
                       ("conclusion", "P3-P6-CONCLUSION-CLAUSE")):
@@ -1801,34 +2292,55 @@ def values_p6(r: R, V, fill, check):
         hy, adj, rej = f["hy"], f["adj"], f["rej"]
         sv = lambda ok: "supported" if ok else "not supported"
         bound = "at most " if "upper bound" in str(hy["H15a"].get("p_note", "")) else ""
+        # S2: what the adjusted values would be with all five hypotheses counted (the two without a test taken last), and two-sided for H14
+        p = f["p"]
+        five = {}
+        run = 0.0
+        for i, k in enumerate(sorted(("H14", "H15a"), key=lambda k: p[k])):
+            run = max(run, min(1.0, (5 - i) * p[k]))
+            five[k] = run
+        two14 = min(1.0, 2.0 * p["H14"])
+        two = {}
+        run = 0.0
+        p2 = {"H14": two14, "H15a": p["H15a"], "H10": p["H10"]}
+        for i, k in enumerate(sorted(p2, key=lambda k: p2[k])):
+            run = max(run, min(1.0, (3 - i) * p2[k]))
+            two[k] = run
+        check(all(v <= f["alpha"] for v in five.values()) and two["H14"] <= f["alpha"],
+              "counting all five hypotheses in Holm's step, or taking H14's sign test two-sided, changes no verdict (4.1)")
         if kind == "design":
-            return (f"The confirmatory family of [67] is H9, H10, H13, H14 and H15a. Holm's step-down procedure at a level of {num(f['alpha'], 2)} is applied over "
-                    f"the {words(len(f['tested']))} of them that have a sampling test, H10, H14 and H15a; H9 and H13 compare a value with a threshold and have no "
-                    f"such test, so they are reported with the share of seeds or position draws on the predicted side. In the family H14 is {sv(rej['H14'])} "
-                    f"(adjusted p = {pval(adj['H14'])}), H15a is {sv(rej['H15a'])} (adjusted p {bound}{pval(adj['H15a'])}) and H10 is "
-                    f"{sv(rej['H10'])}{' as a whole' if not rej['H10'] else ''} (adjusted p = {pval(adj['H10'])}); H10 and H15a are the companion paper's [61]. "
-                    f"H11 and H12 are exploratory and outside the family.")
+            return (f"The confirmatory family of [67] is its H9, H10, H13, H14 and H15a, of which the first two are written H9&prime; and H10&prime; here. "
+                    f"Holm's step-down procedure at a level of {num(f['alpha'], 2)} is applied over the {words(len(f['tested']))} of them that have a sampling "
+                    f"test, H10&prime;, H14 and H15a. That reduction is ours, made after the results: the registration says only that the five are "
+                    f"confirmatory, with Holm. H9&prime; compares a value with a threshold and H13 is a calculation, so neither has a p-value. In the family H14 "
+                    f"is {sv(rej['H14'])} (adjusted p = {pval(adj['H14'])}), H15a is {sv(rej['H15a'])} (adjusted p {bound}{pval(adj['H15a'])}) and H10&prime; is "
+                    f"{sv(rej['H10'])}{' as a whole' if not rej['H10'] else ''} (adjusted p = {pval(adj['H10'])}); H10&prime; and H15a are the companion paper's "
+                    f"[61]. With all five counted and the two without a test taken last, the adjusted values would be {bound}{pval(five['H15a'])} for H15a "
+                    f"and {pval(five['H14'])} for H14, and no verdict changes. H11 and H12 are exploratory and outside the family.")
         if kind == "h9":
             c9, k9 = hy["H9"]["clauses"], f["k9"]
-            return (f"H9 is a comparison with a threshold and has no sampling test; at today's fleet its first clause holds in "
-                    f"{share_words(c9[k9[0]]['seeds_on_predicted_side'], 'seed')}, its second in {share_words(c9[k9[1]]['seeds_on_predicted_side'], 'seed')} and its "
-                    f"third in {share_words(c9[k9[2]]['seeds_on_predicted_side'], 'seed')}.")
+            return (f"H9&prime; is a comparison with a threshold and has no sampling test; at today's fleet its first clause holds in "
+                    f"{share_words(c9[k9[0]]['seeds_on_predicted_side'], 'seed')}, its second in {share_words(c9[k9[1]]['seeds_on_predicted_side'], 'seed')} "
+                    f"under the analysis's reading, and its third in {share_words(c9[k9[2]]['seeds_on_predicted_side'], 'seed')}.")
         if kind == "h13":
             c13 = hy["H13"]["clauses"]
             both = min(_fin(c13["1 Hz"]["draws_on_predicted_side"]), _fin(c13["10 Hz"]["draws_on_predicted_side"]))
-            return f"It too is a comparison with a threshold, without a sampling test, and it holds in {share_words(both, 'draw')} at both rates."
+            return (f"It has no sampling test, and the family's file shows why: the value is on the same side of the threshold in "
+                    f"{share_words(both, 'draw')} at both rates, because it is the same sum in every draw.")
         if kind == "h14":
             h = hy["H14"]
-            return (f"For the confirmatory family the difference is tested by an exact sign test on lost jobs per seed: fewer with the rule in "
-                    f"{cnt(h['seeds_fewer'])} seeds, more in {'none' if int(h['seeds_more']) == 0 else cnt(h['seeds_more'])} and tied in {cnt(h['seeds_tied'])}, "
-                    f"p = {pval(f['p']['H14'])}, and {pval(adj['H14'])} after Holm's adjustment, {'below' if rej['H14'] else 'above'} the level of {num(f['alpha'], 2)}.")
+            return (f"For the confirmatory family the difference is tested by an exact one-sided sign test on lost jobs per seed, added after the results: "
+                    f"fewer with the rule in {cnt(h['seeds_fewer'])} seeds, more in {'none' if int(h['seeds_more']) == 0 else cnt(h['seeds_more'])} and tied in "
+                    f"{cnt(h['seeds_tied'])}, p = {pval(f['p']['H14'])}, and {pval(adj['H14'])} after Holm's adjustment, {'below' if rej['H14'] else 'above'} the "
+                    f"level of {num(f['alpha'], 2)}; two-sided the same test gives {pval(two14)}, and {pval(two['H14'])} after the adjustment.")
         if kind == "limit":
-            return (f"Holm's step covers only the {words(len(f['tested']))} hypotheses of the confirmatory family that have a sampling test. H9 and H13 are comparisons "
-                    f"with a threshold, reported by seeds and draws, and carry no error rate; H10, which is {sv(rej['H10'])}{' as a whole' if not rej['H10'] else ''}, "
-                    f"and H15a are reported in the companion paper [61]. The p-value of H14 comes from a sign test that was added for the family after the "
-                    f"results were in (Section 4.6).")
+            return (f"Holm's step covers only the {words(len(f['tested']))} hypotheses of the second registration's confirmatory family that have a sampling "
+                    f"test, a reduction made after the results. H9&prime; is a comparison with a threshold, reported by seeds, and H13 is a calculation; "
+                    f"neither carries an error rate. H10&prime;, which is {sv(rej['H10'])}{' as a whole' if not rej['H10'] else ''}, and H15a are reported in the "
+                    f"companion paper [61]. The p-value of H14 comes from a one-sided sign test that was added for the family after the results were in "
+                    f"(Section 4.6).")
         if kind == "pta14":
-            return f"Holm-adjusted p = {pval(adj['H14'])} over the family's {words(len(f['tested']))} tested hypotheses, by an exact sign test over seeds"
+            return f"Holm-adjusted p = {pval(adj['H14'])} over the family's {words(len(f['tested']))} tested hypotheses, by an exact one-sided sign test over seeds"
         raise KeyError(kind)
     for kind, key in (("design", "P3-FAMILY-SENTENCE"), ("h9", "P3-FAMILY-H9-SENTENCE"), ("h13", "P3-FAMILY-H13-SENTENCE"), ("h14", "P3-FAMILY-H14-SENTENCE"),
                       ("limit", "P3-FAMILY-LIMIT-SENTENCE")):
@@ -1913,6 +2425,27 @@ def values(r: R, allow_pending: bool):
             pending.append(f"{key}: {e}")
             V[key] = f'<span class="pending">[[PENDING {tag}]]</span>'
 
+    def fill_await(key, fn: Callable[[], str], plain: str, task: str):
+        """A key whose result a named BACKEND task will deliver (referee round of 11 Nov 2026, decision A4: no pending marker may
+        print). While the file or the field is absent (fn raises Pending) the key is `plain`, one sentence that says what is not in and
+        where it will go; the build lists it under "awaited". When the data are there and the composing function is not (fn raises
+        Landed), the build stops, so that a result that has landed is never reported as missing; --allow-pending builds a draft."""
+        try:
+            V[key] = fn()
+        except Pending as e:
+            AWAITED.append(f"{key}: awaits {task} ({e})")
+            V[key] = plain
+        except Landed as e:
+            if not allow_pending:
+                raise SystemExit(f"{key}: {e}; write its composing function in build_p3.py (PLACEHOLDERS.md, 'Awaited keys')")
+            AWAITED.append(f"{key}: LANDED, composer not written ({e})")
+            V[key] = plain
+
+    def landed(what, getter):
+        """For an awaited block whose schema is not known yet: Pending while it is absent, Landed once it is there."""
+        getter()
+        raise Landed(f"{what} is now in its results file")
+
     # --- the vehicles (3.2) ---------------------------------------------------------------------------------------
     classes = r.cat["classes"]
     fleet = r.fleet()
@@ -1945,6 +2478,14 @@ def values(r: R, allow_pending: bool):
     V["P3-MESH-LOS-10-2TO5"] = pc(los["1.0-1.0"]["2-5 km"]["los_0m"], 1)
     check(los["2.5-2.5"]["0-0.5 km"]["los_0m"] > los["2.5-2.5"]["2-5 km"]["los_0m"] > los["1.0-1.0"]["2-5 km"]["los_0m"],
           "line of sight falls with distance and with antenna height (abstract, 3.3)")
+    fz = los["2.5-2.5"]["2-5 km"]
+    check(fz["fresnel_0.6_400MHz"] < fz["fresnel_0.6_2.4GHz"] < fz["los_0m"] and "Fresnel = first-zone ratio >= 0.6" in str(m["note"]),
+          "fewer pairs keep 0.6 of the first Fresnel zone clear than have bare line of sight, and fewer still at 400 MHz (3.3, 6.3)")
+    V["P3-MESH-FRESNEL-SENTENCE"] = (f"A stricter test is in the same file and is not used by the mesh: with 0.6 of the first Fresnel zone clear at the worst "
+                                     f"point, the share for two rover antennas at 2&ndash;5{NB}km falls to {pc(fz['fresnel_0.6_2.4GHz'], 1)} at 2.4{NB}GHz and to "
+                                     f"{pc(fz['fresnel_0.6_400MHz'], 1)} at 400{NB}MHz, where the zone is wider (Assumed threshold).")
+    V["P3-MESH-FRESNEL-CLAUSE"] = (f"only {pc(fz['fresnel_0.6_400MHz'], 1)} of rover pairs at 2&ndash;5{NB}km keep 0.6 of the first Fresnel zone clear at "
+                                   f"400{NB}MHz, against {pc(fz['fresnel_0.6_2.4GHz'], 1)} at 2.4{NB}GHz")
     md = m["mast_direct"]["rover_2.5m"]
     direct = (m["n_points"] - md["n_no_direct_los"]) / m["n_points"]
     V["P3-MESH-MAST-DIRECT-SHARE"] = pc(direct, 1)
@@ -2062,48 +2603,48 @@ def values(r: R, allow_pending: bool):
               "access efficiencies: a scheduled channel with a 20 % guard time and slotted random access at 1/e (4.2)")
         return _air
 
+    def one_hop_basis():
+        """What the one-hop condition of the link claim rests on (finding M2, decision B9): the hop count is taken over positions that are
+        mostly parked (E50's trace of seed 1, results/E50_errors.csv), while a driving vehicle has a radio path to the base for a smaller
+        share of the time (results/E54_dtn.json, link_shares)."""
+        path = os.path.join(RES, "E50_errors.csv")
+        _need(path, "E50's per-seed error table")
+        c = pd.read_csv(path)
+        c = c[(c["mult"] == 1) & (c["seed"] == 1) & (c["layer_set"] == "dr")]
+        parked, driving = int(c[c["region"] == "parked"]["n_steps"].iloc[0]), int(c[c["region"] == "all"]["n_steps"].iloc[0])
+        ls = r.p6("E54", "link_shares")
+        drive, allt = _fin(ls["linked_share_driving_time"]), _fin(ls["linked_share_all_time"])
+        lo, hi = (_fin(x) for x in ls["linked_share_driving_time_min_max"])
+        check(parked / (parked + driving) > 0.95 and drive < allt and lo <= drive <= hi,
+              "the positions behind the hop count are mostly parked, and a driving vehicle has a path to the base less often than a vehicle at any time (3.3, 5.2)")
+        check("radio path to the BASE mast" in str(ls["note"]) and int(ls["seeds"]) == len(r.p6("E54", "seeds")), "E54's link shares are of vehicle-steps with a radio path to the base mast, over its seeds")
+        return {"parked": parked, "driving": driving, "parked_share": parked / (parked + driving), "drive": drive, "all": allt, "lo": lo, "hi": hi}
+
     def side(x, target_word="it"):
         """'within' / 'above' the link target, from the row."""
         return ("within " if x["fits"] else "above ") + target_word
 
     def link_text(a, form):
-        """The qualified link claim, one wording per place, its direction chosen from the three airtime cases."""
+        """The link claim, one wording per place. Since the referee round it is conditional: the traffic would need this much of a
+        base-scheduled channel if every robot were within one hop of the base, and the basis of that condition is stated beside it."""
         T = f"{num(a['target'], 0)}{KBPS}"
         s_, r_, t_ = a["sched"], a["rand"], a["two"]
         k = lambda x: num(x["need"], 2)
-        only = s_["fits"] and not r_["fits"] and not t_["fits"]
-        every = s_["fits"] and r_["fits"] and t_["fits"]
-        yn = lambda x: "fits" if x["fits"] else "does not fit"
+        ob = one_hop_basis()
+        both_over = (not r_["fits"]) and (not t_["fits"])
         if form == "short":       # the abstract
-            if only:
-                return (f"fits the {T} target only on a base-scheduled, one-hop channel ({k(s_)}{KBPS}), not on random access ({k(r_)}) "
-                        f"or two-hop relaying ({k(t_)})")
-            if every:
-                return f"fits the {T} target on a base-scheduled channel ({k(s_)}{KBPS}), on random access ({k(r_)}) and with two-hop relaying ({k(t_)})"
-            if not s_["fits"]:
-                return f"does not fit the {T} target even on a base-scheduled, one-hop channel ({k(s_)}{KBPS} needed)"
-            return (f"fits the {T} target on a base-scheduled, one-hop channel ({k(s_)}{KBPS}); on random access it {yn(r_)} ({k(r_)}) and "
-                    f"with two-hop relaying it {yn(t_)} ({k(t_)})")
-        if form == "concl":       # the conclusion: the condition, without the numbers (Section 5.2 holds them)
-            if only:
-                return f"fits the {T} link only on a base-scheduled, one-hop channel"
-            if every:
-                return f"fits the {T} link"
-            if not s_["fits"]:
-                return f"does not fit the {T} link"
-            return f"fits the {T} link on a base-scheduled, one-hop channel"
+            return (f"would need {k(s_)}{KBPS} of a base-scheduled channel if every robot were within one hop of the base; a driving robot has "
+                    f"a path to it {pc(ob['drive'], 0)} of the time")
+        if form == "concl":       # the conclusion
+            return (f"{'fits' if s_['fits'] else 'does not fit'} the {T} link {'only ' if both_over and s_['fits'] else ''}on a base-scheduled channel with "
+                    f"every robot one hop from the base, which holds at sites and not on the road")
         if form == "long":        # introduction, discussion
-            at = f"{k(s_)}{KBPS} needed at the measured mean of {num(a['hops'], 3)} hops"
-            if only:
-                return (f"fits the {T} target only when the base schedules the channel and the reports travel one hop ({at}), and does not fit on "
-                        f"slotted random access ({k(r_)}{KBPS}) or when every report is relayed two hops ({k(t_)}{KBPS})")
-            if every:
-                return (f"fits the {T} target on a channel the base schedules ({at}), on slotted random access ({k(r_)}{KBPS}) and when every "
-                        f"report is relayed two hops ({k(t_)}{KBPS})")
-            if not s_["fits"]:
-                return f"does not fit the {T} target even when the base schedules the channel and the reports travel one hop ({at})"
-            return (f"fits the {T} target when the base schedules the channel and the reports travel one hop ({at}); on slotted random access it "
-                    f"{yn(r_)} ({k(r_)}{KBPS}) and when every report is relayed two hops it {yn(t_)} ({k(t_)}{KBPS})")
+            other = (f"{k(r_)}{KBPS} on slotted random access and {k(t_)}{KBPS} if every report were relayed two hops, "
+                     + ("both above it" if both_over else f"{side(r_)} and {side(t_)} respectively"))
+            return (f"would need {k(s_)}{KBPS} of a channel that the base schedules if every robot were within one hop of the base, "
+                    f"{side(s_, 'the ' + T + ' target')}, and {other}. The one-hop condition is taken from positions that are parked in "
+                    f"{pc(ob['parked_share'], 0)} of vehicle-steps; a driving vehicle has a radio path to the base {pc(ob['drive'], 1)} of the time, so the "
+                    f"condition holds for robots standing at sites and not for a fleet on the move")
         raise KeyError(form)
 
     def e48_scaled():
@@ -2141,39 +2682,49 @@ def values(r: R, allow_pending: bool):
         mk = r.s48("h10", "market_mb_per_day")
         fits["market"] = _fin(mk) <= _fin(r.s48("targets", "market_mb_per_day"))
         T = f"{num(a['target'], 0)}{KBPS}"
-        parts = [f"the safety check at {num(s['cpu_share_worst'] * 100, 1)}{PCT} of one core of the reference processor at the worst class "
-                 f"(the {CLASS_NAME[s['cpu_class_worst']]})",
-                 f"the on-robot part at {unit(s['mem_worst_mb'], 'MB', 1)} of {unit(s['mem_capacity_mb'], 'MB')}",
-                 f"the market's messages at {unit(mk, 'MB', 3)} a day against the {unit(r.s48('targets', 'market_mb_per_day'), 'MB')} target",
-                 f"and the authenticated radio traffic of {cnt(a['robots'])} robots, {num(a['load'], 2)}{KBPS} at the sources, needing "
-                 f"{num(a['sched']['need'], 2)}{KBPS} of a channel the base schedules at the measured mean of {num(a['hops'], 3)} hops "
-                 f"({side(a['sched'], 'the ' + T + ' target')}), {num(a['rand']['need'], 2)}{KBPS} on slotted random access ({side(a['rand'])}) and "
-                 f"{num(a['two']['need'], 2)}{KBPS} when every report is relayed two hops ({side(a['two'])}), as Section 5.2 reports"]
-        core_ok = all(fits.values())
-        link_every = all(a[x]["fits"] for x in ("sched", "rand", "two"))
-        link_only = a["sched"]["fits"] and not a["rand"]["fits"] and not a["two"]["fits"]
-        if core_ok and link_every:
-            verdict = "H10, exploratory, holds on every count: "
-        elif core_ok and a["sched"]["fits"]:
-            verdict = ("H10, exploratory, holds for the processor, the memory and the market's messages, and for the link "
-                       + ("only when the base schedules the channel and the reports travel one hop: " if link_only else
-                          "when the base schedules the channel and the reports travel one hop, with one of the two other channel cases over the target: "))
-        else:
-            over = [k for k, v in fits.items() if not v] + ([] if a["sched"]["fits"] else ["link"])
-            verdict = "H10, exploratory, does not hold on every count (" + ", ".join(over) + " over the limit): "
-        return (verdict + ", ".join(parts) + f"; the scaling factor is {num(s['factor'], 1)} (range {num(s['range'][0], 1)}&ndash;{num(s['range'][1], 1)}), and "
-                "the bidding, which H10 also names, has no registered capacity (Section 5.1 reports the scaled round against the one-second decision).")
+        ob = one_hop_basis()
+        w = lambda ok: "within" if ok else "above"
+        return (f"H10 of [59], exploratory, is reported count by count. The processor: the safety check takes {num(s['cpu_share_worst'] * 100, 1)}{PCT} of "
+                f"one core of the reference processor at 10{NB}Hz, {w(fits['cpu'])} it. The memory: the on-robot data are estimated, not measured, at "
+                f"{unit(s['mem_worst_mb'], 'MB', 1)} of {unit(s['mem_capacity_mb'], 'MB')}. The market's messages: {unit(mk, 'MB', 3)} a day, {w(fits['market'])} "
+                f"the {unit(r.s48('targets', 'market_mb_per_day'), 'MB')} target. The link: the authenticated radio traffic of {cnt(a['robots'])} robots, "
+                f"{num(a['load'], 2)}{KBPS} at the sources, would need {num(a['sched']['need'], 2)}{KBPS} of a channel the base schedules if every robot were "
+                f"within one hop of the base ({side(a['sched'], 'the ' + T + ' target')}), {num(a['rand']['need'], 2)}{KBPS} on slotted random access "
+                f"({side(a['rand'])}) and {num(a['two']['need'], 2)}{KBPS} if every report were relayed two hops ({side(a['two'])}); the one-hop condition "
+                f"holds for robots standing at sites, and a driving robot has a path to the base {pc(ob['drive'], 1)} of the time (Section 5.2). The scaling "
+                f"factor is {num(s['factor'], 1)} (range {num(s['range'][0], 1)}&ndash;{num(s['range'][1], 1)}), and the bidding, which H10 also names, has no "
+                f"registered capacity.")
     fill("P3-H10-VERDICT-SENTENCE", h10_sentence, "E48")
 
     def e48_round():
+        """5.1: what was timed for the auction is the simulator's dispatch call for the whole fleet, pooled over the fleet sizes
+        (tools/atc/run_e48.py: `mech(sim, cand, free)` in every timing run); it is not one vehicle's computation (finding M1, decision B11)."""
         s = e48_scaled()
-        worst = max((c for c in CLASSES if c != "BASE"), key=lambda c: r.s48("classes", c, "cpu_auction_round_ms")["p99"])
-        a = r.s48("classes", worst, "cpu_auction_round_ms")
-        med, p99 = a["median"] * s["factor"] / 1000.0, a["p99"] * s["factor"] / 1000.0
+        a = r.s48("classes", "LTV1", "cpu_auction_round_ms")
+        check(all(r.s48("classes", c, "cpu_auction_round_ms") == a for c in CLASSES), "the dispatch-call timing is one pooled figure, repeated in every class row of the file (5.1)")
+        ru = r.s48("runs")
+        check(list(ru["multiples"]) == [1, 4, 8], "the dispatch call is timed in the runs at one, four and eight times the fleet (5.1)")
+        med, p99 = _fin(a["median"]) * s["factor"] / 1000.0, _fin(a["p99"]) * s["factor"] / 1000.0
         over = p99 > 1.0
-        return (f"Scaled by the same factor, an auction round on the {CLASS_NAME[worst]} takes {unit(med, 's', 2)} at the median and {unit(p99, 's', 2)} "
-                f"at the 99th percentile, {'above' if over else 'within'} the one-second decision that the link model of Section 5.3 assumes.")
+        return (f"What was timed for the auction is the simulator's dispatch call for the whole fleet: every free vehicle and every waiting item, with "
+                f"the simulator's own model of the message exchange, {cnt(a['n'])} calls pooled over the timing runs at one, four and eight times the fleet. "
+                f"Scaled by the same factor it takes {unit(med, 's', 2)} at the median and {unit(p99, 's', 2)} at the 99th percentile, "
+                f"{'above' if over else 'within'} the one-second decision that the link model of Section 5.3 assumes; the results file does not split it by "
+                f"fleet size. No single vehicle executes that call, and one vehicle's share of a round was not timed.")
     fill("P3-E48-ROUND-SENTENCE", e48_round, "E48")
+    fill_await("P3-E48-MEMORY-SENTENCE", lambda: landed("the measured memory (B-105)", lambda: r.s48("measured_memory")),
+               "A measurement of the memory in use, taken while the program runs, is not in this version; it will be reported here beside the estimate.",
+               "B-105 (results/E48_sizing.json, block measured_memory)")
+    fill_await("P3-E48-ROBOT-ROUND-SENTENCE", lambda: landed("one robot's bid computation (B-105)", lambda: r.s48("per_robot_round")),
+               "The time of one robot's bid computation, apart from the simulator's round, is not in this version either; it will be reported here, "
+               "per fleet size.", "B-105 (results/E48_sizing.json, block per_robot_round)")
+    fill_await("P3-E48-SPHERICAL-SENTENCE", lambda: landed("the spherical-ground link column (B-104)", lambda: r.s48("classes", "LTV1", "link_spherical_ground")),
+               "The project's own computation of the loss over a spherical ground at these hops is not in this version; it will be added to Table 7 "
+               "as a column beside the flat-ground rates.", "B-104 (results/E48_sizing.json, classes.*.link_spherical_ground)")
+    P6_FILES_E53 = ("E53", "driving_hops")
+    fill_await("P3-E53-DRIVING-HOPS-SENTENCE", lambda: landed("hops and reach for driving vehicles (B-103)", lambda: r.p6(*P6_FILES_E53)),
+               "The hop count and the reach to the base over driving steps only, with 1.0&nbsp;m antennas for the small classes, are not in this "
+               "version; they will be reported here.", "B-103 (results/E53_bitrate.json, new block driving_hops)")
 
     def e48_reference():
         fl, lp = r.design(48, "flight"), r.design(48, "laptop")
@@ -2182,14 +2733,15 @@ def values(r: R, allow_pending: bool):
                 f"is an {html.escape(lp['processor'])} at {num(lp['benchmark'], 0)} {html.escape(lp['benchmark_name'])}, itself assumed "
                 f"({html.escape(lp['benchmark_note'])}); the factor is their ratio, {num(fl['factor'], 1)}, with the range "
                 f"{num(fl['factor_range'][0], 1)}&ndash;{num(fl['factor_range'][1], 1)} from the laptop's CoreMark range, and the CPU share uses "
-                f"the 99th-percentile call time at every call, so it is an upper bound (Assumed).")
+                f"the 99th-percentile call time at every call, which overstates the mean load (Assumed). The flight processor's benchmark is quoted as "
+                f"the experiment's design file gives it [121]; our research notes do not record that its source was opened.")
     fill("P3-E48-REFERENCE-SENTENCE", e48_reference, "E48 design")
 
     def e48_mtbf():
         fo = r.design(48, "failover")
         lv = ", ".join(unit(x, "h", 0) for x in fo["mtbf_levels_h"])
         return (f"The failover sweep runs the base computer at an MTBF of {lv}, a repair time of {unit(fo['repair_h'], 'h', 0)} and a re-election delay "
-                f"of {unit(fo['reelect_h'], 'h', 1)}, on {words(len(fo['seeds']))} seeds of {html.escape(fo['regime'])}, flagged {html.escape(fo['flag'])}; "
+                f"of {unit(fo['reelect_h'], 'h', 1)}, on {words(len(fo['seeds']))} seeds of the leader regime of [60] at the middle load, all three values Assumed; "
                 f"the re-election delay is an input, not a measurement.")
     fill("P3-E48-MTBF-SENTENCE", e48_mtbf, "E48 design")
 
@@ -2217,28 +2769,35 @@ def values(r: R, allow_pending: bool):
     fill("P3-E48-TRAFFIC-NOTE", e48_traffic_note, "E48")
 
     def e48_cpu():
+        """5.1 (findings M1 and S1): the four class timings are one measurement; the memory is a sum of estimates, not a measurement."""
         s = e48_scaled()
         robots = [c for c in CLASSES if c != "BASE"]
         sc = {c: r.s48("classes", c, "cpu_safety_check_us") for c in robots}
         med = [sc[c]["median"] for c in robots]
         p99 = [sc[c]["p99"] for c in robots]
-        worst = max(robots, key=lambda c: sc[c]["p99"])
-        mem = {c: r.s48("classes", c, "peak_memory_mb") for c in robots}
-        a = r.s48("classes", worst, "cpu_auction_round_ms")
-        b = r.s48("classes", "BASE", "cpu_auction_round_ms")
+        mem = {c: _fin(r.s48("classes", c, "peak_memory_mb")) for c in robots}
+        note = str(r.s48("classes", robots[0], "peak_memory_note"))
+        check(all(x in note for x in ("24 h reservation-table window", "ledger copy", "bid policies", "working data (0.05 MB)")) and len(set(mem.values())) == 1,
+              "the on-robot memory figure is a sum of estimates (a day of the reservation table, a year's ledger copy, the policy files, 0.05 MB of working data), the same for every class (5.1)")
+        check((max(med) - min(med)) / min(med) < 0.02, "the four class timings of the safety check differ by under 2 % at the median: one measurement (5.1)")
+        a = r.s48("classes", robots[0], "cpu_auction_round_ms")
         n_calls = {sc[c]["n"] for c in robots}
-        return (f"Measured on {html.escape(s['laptop'])} and scaled to the {html.escape(s['processor'])} by a factor of {num(s['factor'], 1)} "
-                f"(range {num(s['range'][0], 1)}&ndash;{num(s['range'][1], 1)}, Assumed): across the four robot classes a safety check took "
+        bs = r.s48("classes", "BASE", "cpu_safety_check_us")
+        return (f"Timed on {html.escape(s['laptop'])} and scaled to the {html.escape(s['processor'])} by a factor of {num(s['factor'], 1)} "
+                f"(range {num(s['range'][0], 1)}&ndash;{num(s['range'][1], 1)}, Assumed): a safety check took "
                 f"{unit(min(med), '&micro;s', 0)}&ndash;{unit(max(med), '&micro;s', 0)} at the median and {unit(min(p99), '&micro;s', 0)}&ndash;"
-                f"{unit(max(p99), '&micro;s', 0)} at the 99th percentile over {' and '.join(cnt(n) for n in sorted(n_calls))} calls per class, "
-                f"worst on the {CLASS_NAME[worst]}; an auction round took {unit(a['median'], 'ms', 2)} at the median and {unit(a['p99'], 'ms', 1)} "
-                f"at the 99th percentile over {cnt(a['n'])} rounds; the on-robot part peaked at "
-                + (unit(max(mem.values()), 'MB', 2) if abs(max(mem.values()) - min(mem.values())) < 0.005 else
-                   f"{unit(min(mem.values()), 'MB', 2)}&ndash;{unit(max(mem.values()), 'MB', 2)}")
-                + f". The base computer's reservation check over the shared table, a different function from the "
-                f"vehicles' safety check, took {unit(r.s48('classes', 'BASE', 'cpu_safety_check_us')['median'], '&micro;s', 0)} at the median and "
-                f"{unit(r.s48('classes', 'BASE', 'cpu_safety_check_us')['p99'], '&micro;s', 0)} at the 99th percentile, and its auction round "
-                f"{unit(b['median'], 'ms', 2)} and {unit(b['p99'], 'ms', 1)} (Table 6).")
+                f"{unit(max(p99), '&micro;s', 0)} at the 99th percentile over {' and '.join(cnt(n) for n in sorted(n_calls))} calls in each of four timings. "
+                f"The four timings are labelled by vehicle class and are one measurement: the same function on the same pool of moves from the encounter "
+                f"fixtures, with only the class's speed changed and with no reservation entries or heard broadcasts in the call. Their differences are "
+                f"timer noise; no class is the worst, and the largest 99th percentile is the value used. The call is Python on single numbers, so it "
+                f"measures this implementation and not the rules in a flight language. The simulator's dispatch call for the whole fleet took "
+                f"{unit(a['median'], 'ms', 2)} at the median and {unit(a['p99'], 'ms', 1)} at the 99th percentile over {cnt(a['n'])} calls pooled over the fleet "
+                f"sizes. The on-robot data are estimated, not measured, at {unit(max(mem.values()), 'MB', 2)}: the bytes of a 24-hour window of the reservation "
+                f"table and of a year's ledger copy at the assumed layouts, the two policy files as stored on disk, and 0.05{NB}MB allowed for working "
+                f"data; the program, its interpreter and its stack are not counted. The base computer's reservation check over the shared table, a "
+                f"different function from the vehicles' safety check, took {unit(bs['median'], '&micro;s', 0)} at the median and {unit(bs['p99'], '&micro;s', 0)} "
+                f"at the 99th percentile, and its data are estimated at {unit(r.s48('classes', 'BASE', 'peak_memory_mb'), 'MB', 2)}, with the full year's table "
+                f"(Table 6).")
     fill("P3-E48-RESULTS-CPU", e48_cpu, "E48")
 
     def e48_messages():
@@ -2314,6 +2873,8 @@ def values(r: R, allow_pending: bool):
         types = "; ".join(f"{html.escape(k.replace('_', ' '))} {unit(v, 'B')}" for k, v in s8.items())
         wide = ", ".join(num(v, 0) for v in s16.values())
         hist = a["hist"]
+        ob = one_hop_basis()
+        three = sum(int(s8[x]) for x in ("position", "status", "intent"))
         hist_txt = ("robot-epochs with a path to it: " + ", ".join(f"{cnt(v)} at {words(k)} hop{'s' if k != 1 else ''}" for k, v in sorted(hist.items())) +
                     f"; {pc(a['cut'], 1)} of the robot-epochs with the base computer up had no path and are not in the mean, and over all route points "
                     f"the median is {words(conn[key]['median_hops'])} hops, Section 3.3")
@@ -2325,8 +2886,34 @@ def values(r: R, allow_pending: bool):
                 f"in the month's trace of Section 4.2 ({hist_txt}), {cnt(a['robots'])} robots need {num(a['sched']['need'], 2)}{KBPS} of a channel the base "
                 f"schedules, {side(a['sched'], 'the ' + T + ' target')}, and {num(a['rand']['need'], 2)}{KBPS} on slotted random access, {side(a['rand'])}. "
                 f"At exactly one hop the scheduled channel needs {num(a['one']['need'], 2)}{KBPS}, {side(a['one'], 'the target')}; if every report is "
-                f"relayed two hops it needs {num(a['two']['need'], 2)}{KBPS}, {side(a['two'])}.")
+                f"relayed two hops it needs {num(a['two']['need'], 2)}{KBPS}, {side(a['two'])}. Every one of these figures is conditional. A base cannot give "
+                f"a time slot to, or hear a one-hop report from, a vehicle that has no path to it, and the hop count above is a mean over the robots' "
+                f"positions at the decision epochs of one seed's month. In E50's trace of the same seed those positions are parked in "
+                f"{pc(ob['parked_share'], 1)} of vehicle-steps ({cnt(ob['parked'])} parked against {cnt(ob['driving'])} driving), while the bytes are reports sent "
+                f"once a second by every vehicle. While driving, a vehicle had a radio path to the base in {pc(ob['drive'], 1)} of its steps "
+                f"({pc(ob['lo'], 1)} to {pc(ob['hi'], 1)} over the seeds), against {pc(ob['all'], 1)} over all time (E54's contact plan of the month). The "
+                f"claim is therefore this: the authenticated traffic of {cnt(a['robots'])} robots, {num(a['load'], 2)}{KBPS} at the sources, would need "
+                f"{num(a['sched']['need'], 2)}{KBPS} of a base-scheduled channel if every robot were within one hop of the base; in the recorded month that "
+                f"holds for robots standing at sites, and a driving robot has a path to the base {pc(ob['drive'], 0)} of the time. The report rates matter "
+                f"as much as the hops. The traffic counted has position at 1{NB}Hz and status and intent at 0.1{NB}Hz; if all three reports went at "
+                f"1{NB}Hz a robot would send {' + '.join(cnt(s8[x]) for x in ('position', 'status', 'intent'))} = {cnt(three)}{NB}B/s and {cnt(a['robots'])} "
+                f"robots {num(three * a['robots'] * 8 / 1000.0, 2)}{KBPS} at the sources, {'above' if three * a['robots'] * 8 / 1000.0 > a['target'] else 'within'} "
+                f"the target before any airtime factor (a calculation from the serialised sizes, not a run).")
     fill("P3-E48-RESULTS-AIRTIME", e48_airtime, "E48 airtime (B-89)")
+
+    def limit_link():
+        """Section 7: the link claim's condition and its basis (findings M2 and S16)."""
+        a, ob = e48_air(), one_hop_basis()
+        s8 = sec_sizes("mac8")
+        three = sum(int(s8[x]) for x in ("position", "status", "intent")) * a["robots"] * 8 / 1000.0
+        T = f"{num(a['target'], 0)}{KBPS}"
+        return (f"The {T} target is met only on a base-scheduled channel on which every robot is within one hop of the base. That condition is taken "
+                f"from positions that are parked in {pc(ob['parked_share'], 0)} of vehicle-steps, while the traffic is that of vehicles reporting once a "
+                f"second whether they move or not; a driving vehicle has a radio path to the base {pc(ob['drive'], 0)} of the time (Section 5.2). The "
+                f"traffic model gives every rover a 2.5{NB}m antenna, although half the fleet carries 1.0{NB}m, and sends status and intent at "
+                f"0.1{NB}Hz; with all three reports at 1{NB}Hz the load at the sources alone, {num(three, 2)}{KBPS}, is "
+                f"{'above' if three > a['target'] else 'within'} the target. The hop count and the reach over driving steps only are awaited (task B-103).")
+    fill("P3-LIMIT-LINK-SENTENCE", limit_link, "E48, E50, E54")
 
     def horizon_sentence():
         """3.3 (item 1 of the 11 Nov list): the smooth-Moon horizons, recomputed; sqrt(2 R h), Proposition 1."""
@@ -2372,12 +2959,16 @@ def values(r: R, allow_pending: bool):
     def mesh_hops_sentence():
         """3.3 against 5.2 (item 4): the two-hop median over all route points and the month's mean of about one hop."""
         a = e48_air()
+        ob = one_hop_basis()
         check(a["hops"] < 1.1 < float(conn[key]["median_hops"]), "the month's mean hop count is near one and the median over all route points is two (3.3, 5.2)")
         return (f"The median of {words(conn[key]['median_hops'])} hops is over all {cnt(m['n_points'])} route points, each counted once. The fleet does not "
                 f"stand on them evenly: in the one-month trace of Section 4.2 the robots with a path to the base computer were {num(a['hops'], 3)} hops from "
                 f"it on average, because the work is near the base, and {pc(a['cut'], 1)} of the robot-epochs had no path at all and are in no average. "
-                f"Both numbers are true; the first describes the terrain and the second where this fleet works. What follows is that the one-hop condition "
-                f"of the link claim (Section 5.2) holds for a fleet that works within reach of the mast and not for one spread over the routes.")
+                f"Both numbers are true; the first describes the terrain and the second where this fleet stands. The second is a mean over positions at "
+                f"decision epochs, and in the recorded month a vehicle is parked in {pc(ob['parked_share'], 0)} of its steps. While it drives it has a radio "
+                f"path to the base in {pc(ob['drive'], 1)} of its steps, against {pc(ob['all'], 1)} over all time (E54, Section 5.12). What follows is that "
+                f"the one-hop condition of the link claim (Section 5.2) holds for robots standing at sites within reach of the mast, and not for a "
+                f"vehicle on the road nor for a fleet spread over the routes.")
     fill("P3-MESH-HOPS-SENTENCE", mesh_hops_sentence, "E48 airtime (B-89)")
 
     def rate(x):
@@ -2521,10 +3112,14 @@ def values(r: R, allow_pending: bool):
         dr, fo = r.design(48, "runs"), r.design(48, "failover")
         n_t, n_f = len(dr["seeds"]) * len(dr["multiples"]), len(fo["seeds"]) * len(fo["mtbf_levels_h"])
         check(n_t + n_f == int(ru["n"]), "E48 runs = timing runs + failover runs")
+        check(all(x in str(dr["regime"]) for x in ("C_AUCTION", "message loss 0.1", "roads atc")) and
+              all(x in str(fo["regime"]) for x in ("C_LEADER", "message loss 0.1", "30 % load", "1x", "one year")),
+              "E48's timing runs are the auction regime with the road layer and its failover runs the leader regime, both at a message loss of 0.1 (4.2)")
         return (f"{cnt(ru['n'])} runs were instrumented: {words(n_t)} timing runs, seeds {', '.join(str(x) for x in dr['seeds'])} at "
-                f"{', '.join(str(x) for x in dr['multiples'])} times today's fleet ({html.escape(dr['regime'])}), and {words(n_f)} failover runs, seeds "
-                f"{dr_seeds(fo['seeds'])} at the three MTBF levels ({html.escape(fo['regime'])}); the auction round and the peak memory are measured "
-                f"once per run, not per class.")
+                f"{', '.join(str(x) for x in dr['multiples'])} times today's fleet (the auction regime of [60] with the road layer of [61], message loss "
+                f"0.1), and {words(n_f)} failover runs, seeds {dr_seeds(fo['seeds'])} at the three MTBF levels (the leader regime of [60], message loss "
+                f"0.1, the middle load, today's fleet, one year); the dispatch call is timed in every timing run and pooled, "
+                f"and the on-robot data are estimated once, from the runs at today's fleet.")
     fill("P3-E48-DESIGN-SENTENCE", e48_design, "E48")
     fill("P3-E48-COMPUTE-SENTENCE", lambda: f"The instrumented runs of E48 took {unit(r.s48('runs', 'run_s_mean'), 's', 0)} each on average and "
          f"{unit(r.s48('runs', 'cpu_h'), 'h', 1)} of processor time in all.", "E48")
@@ -2539,20 +3134,24 @@ def values(r: R, allow_pending: bool):
         a = s["air"]
         core_ok = all(s["fits"].values())           # the processor and the memory
         p99s = e48_round_p99_s()
-        round_txt = (f"one auction round in a hundred takes {unit(p99s, 's', 2)}, above the one-second decision" if p99s > 1.0 else
-                     f"an auction round stays within the one-second decision at the 99th percentile")
+        round_txt = (f"the simulator's dispatch call for the whole fleet, pooled over one to eight times the fleet and scaled, takes {unit(p99s, 's', 2)} at "
+                     f"the 99th percentile; one vehicle's share of a round was not timed")
+        round_short = (f"the simulator's whole-fleet dispatch call, pooled over fleet sizes, takes {unit(p99s, 's', 2)} at the 99th percentile; one "
+                       f"vehicle's share was not timed")
         if kind == "abstract":
-            return (f"Scaled by {num(s['factor'], 1)} to the reference flight processor, the worst class's safety check takes "
-                    f"{num(s['cpu_share_worst'] * 100, 1)}{PCT} of one core; {cnt(a['robots'])} robots' authenticated traffic {link_text(a, 'short')}; {round_txt}.")
+            return (f"Scaled by {num(s['factor'], 1)} to flight hardware, the safety check takes {num(s['cpu_share_worst'] * 100, 1)}{PCT} of one core; "
+                    f"{round_short}. {cap1(words(a['robots']) if a['robots'] < 10 else {20: 'twenty'}.get(a['robots'], cnt(a['robots'])))} robots' authenticated traffic, "
+                    f"{num(a['load'], 2)}{KBPS} at the sources, {link_text(a, 'short')}.")
         if kind == "intro":
-            return (f"Lunar ATC {'fits' if core_ok else 'does not fit'} the processor and the memory of the vehicles of Section 3.2 as implemented: at the "
-                    f"worst class the safety check takes {num(s['cpu_share_worst'] * 100, 1)}{PCT} of one core of the reference processor and the on-robot "
-                    f"part {unit(s['mem_worst_mb'], 'MB', 1)}. The authenticated radio traffic of {cnt(a['robots'])} robots, {num(a['load'], 2)}{KBPS} at "
-                    f"the sources, {link_text(a, 'long')}, as Sections 5.1 to 5.3 report.")
+            return (f"As implemented, the safety check {'fits' if s['fits']['cpu'] else 'does not fit'} the reference flight processor: it takes "
+                    f"{num(s['cpu_share_worst'] * 100, 1)}{PCT} of one core, from one function timed on a laptop and scaled by an assumed factor. The on-robot "
+                    f"data are estimated, not measured, at {unit(s['mem_worst_mb'], 'MB', 1)}. The time of an auction round on one vehicle is not known: "
+                    f"{round_txt}. The authenticated radio traffic of {cnt(a['robots'])} robots, {num(a['load'], 2)}{KBPS} at the sources, "
+                    f"{link_text(a, 'long')} (Sections 5.1 to 5.3).")
         if kind == "discussion":
-            return (f"the safety check and the on-robot memory {'fit' if core_ok else 'do not both fit'} the reference processor with the stated factor, "
-                    f"the class nearest a limit being the {CLASS_NAME[s['cpu_class_worst']]}; the authenticated radio traffic of {cnt(a['robots'])} robots "
-                    f"{link_text(a, 'long')}; and {round_txt}.")
+            return (f"the safety check {'fits' if s['fits']['cpu'] else 'does not fit'} one core of the reference processor with the stated factor, and the "
+                    f"on-robot data are small by an estimate that was not measured; {round_txt}; and the authenticated radio traffic of {cnt(a['robots'])} "
+                    f"robots {link_text(a, 'long')}.")
         if kind == "comparison":
             bph = r.s48("messages", "bytes_per_robot_hour")
             ratio = 13800.0 / max(_fin(bph["1"]) / 3600.0, 1e-9)
@@ -2564,8 +3163,9 @@ def values(r: R, allow_pending: bool):
                     f"13.8{NB}kB/s the two-rover convoy controller of [25] used; the market's own messages come to {num(market, 2)} per robot-hour "
                     f"at today's fleet.")
         if kind == "conclusion":
-            return (f"On flight hardware the safety check {'fits' if core_ok else 'does not fit'} the reference processor; {cnt(a['robots'])} robots' "
-                    f"traffic {link_text(a, 'concl')}; {round_txt}.")
+            return (f"Scaled to flight hardware the safety check {'fits' if s['fits']['cpu'] else 'does not fit'} one core. "
+                    f"{cap1({20: 'twenty'}.get(a['robots'], cnt(a['robots'])))} robots' traffic {link_text(a, 'concl')}. The simulator's whole-fleet dispatch call "
+                    f"takes {unit(p99s, 's', 2)} at the 99th percentile; one vehicle's share was not timed.")
         if kind == "limitation":
             return (f"The factor used is {num(s['factor'], 1)} (range {num(s['range'][0], 1)}&ndash;{num(s['range'][1], 1)}), from "
                     f"{html.escape(s['laptop'])} to the {html.escape(s['processor'])}.")
@@ -2591,8 +3191,8 @@ def values(r: R, allow_pending: bool):
                 r.s48(*fld)
             except Pending:
                 missing.append(".".join(fld))
-        return "Every measurement of Section 4.2 was made." if not missing else \
-            "E48 did not make these measurements of Section 4.2: " + "; ".join(html.escape(x) for x in missing) + "."
+        return "Every quantity of Section 4.2 is in E48's results file." if not missing else \
+            "E48's results file lacks these quantities of Section 4.2: " + "; ".join(html.escape(x) for x in missing) + "."
     fill("P3-E48-STATUS-SENTENCE", e48_status, "E48")
 
     # --- E46 -----------------------------------------------------------------------------------------------------------
@@ -2617,12 +3217,14 @@ def values(r: R, allow_pending: bool):
         d = r.f46("design")
         n, ns, nsp = int(r.f46("n_rows")), len(d["seeds"]), len(d["splits"])
         kinds = n / (ns * nsp)
-        check(kinds == int(kinds), "E46 run count = seeds x splits x run kinds")
+        check(kinds == int(kinds) and int(kinds) == 1 + 3 * len(d["k_levels"]) + 5, "E46 run count = seeds x splits x run kinds: the pooled run, three owners by the scaling factors, the oracle, the owners alone and three pairs")
         check(all(x in d["rules"] for x in RULES) and len(d["rules"]) == len(RULES), "E46 ran the four rules of 3.9")
         return (f"{cnt(n)} physical runs, {cnt(ns)} seeds by {cnt(nsp)} splits by {cnt(kinds)} run kinds (the pooled market, the oracle, "
                 f"the owners alone, the three pair coalitions and one owner at a time scaling its asks by each of the {cnt(len(d['k_levels']))} "
                 f"factors); payments are computed afterwards from each run's job log, so the four rules and the {cnt(len(d['q_levels']))} audit "
-                f"shares share one allocation per seed and cost no further runs, giving {cnt(r.f46('n_cells'))} cells of {cnt(ns)} seeds. "
+                f"shares share one allocation per seed and cost no further runs, giving {cnt(r.f46('n_cells'))} cells of {cnt(ns)} seeds. Of the "
+                f"{cnt(n)} simulated years, {cnt(ns * nsp * (1 + 3 * len(d['k_levels'])))} are runs of the market (the pooled run and the scaling runs) and "
+                f"{cnt(n - ns * nsp * (1 + 3 * len(d['k_levels'])))} are the oracle, the owners alone and the pair coalitions. "
                 f"The first-price cell is the one restored by change 7 of [59].")
     fill("P3-E46-DESIGN-SENTENCE", e46_design, "E46")
     fill("P3-E46-COMPUTE-SENTENCE", lambda: f"A simulated year of E46 took {unit(r.f46('run_s_mean'), 's', 0)} on average and the experiment "
@@ -2635,6 +3237,79 @@ def values(r: R, allow_pending: bool):
                 f"the carriers' true costs are recovered over ten calibration seeds (101&ndash;110) that the main runs do not use; "
                 f"the audit penalty multiple is m = {num(r.f46('audit_penalty_multiple'), 0)} (Assumed; the design file declares 2&ndash;5 and E46 runs one value).")
     fill("P3-E46-TARIFF-SENTENCE", e46_tariff, "E46")
+
+    def e46_money():
+        """3.9 (finding M7): the three parameters every profit, budget, Shapley value and transfer of this paper is priced with, from the
+        scenario file and the experiment's design file, each with its flag."""
+        vot = {int(k): _fin(v) for k, v in r.scn["vot_usd_per_h"].items()}
+        op = _fin(r.scn["operator_cost_per_h"])
+        sv, pc_ = r.design(46, "shipper_value"), r.design(46, "private_costs")
+        check(vot == {1: 5000.0, 2: 1000.0, 3: 100.0} and all(x in str(sv["what"]) for x in ("5,000", "1,000", "100 USD/h", "censored at the horizon")),
+              "the value of time is 5,000, 1,000 and 100 USD an hour by priority, with undelivered items censored at the horizon, in the scenario and in E46's design (3.9)")
+        check(op == 1000.0 and all(x in str(pc_["true_cost"]) for x in ("wear share 0.5 of unit cost per life hour", "1,000 USD/h")),
+              "a carrier's true cost is half the unit cost per life hour plus operator time at 1,000 USD an hour (3.9)")
+        check("Spec of the scenario" in str(sv["flag"]), "the design file flags the value of time as the scenario's specification (3.9)")
+        return (f"Every amount of money in this paper is priced with three parameters of the scenario, none of them swept. The delay of an item is "
+                f"priced at the value of time of its priority, {cnt(vot[1])}, {cnt(vot[2])} and {cnt(vot[3])} USD an hour for priorities 1, 2 and 3. An item "
+                f"that is not delivered by the end of the year is priced as if it were delivered at that moment, so its delay is censored at the "
+                f"horizon. A carrier's true cost is its wear, half the vehicle's unit cost per hour of life used, plus its operator's time at "
+                f"{cnt(op)} USD an hour. All three are Assumed: they are the scenario values of [56], which the experiment's design file flags as "
+                f"the scenario's specification, and none has an outside source.")
+    fill("P3-E46-MONEY-SENTENCE", e46_money, "E46 design, the scenario")
+
+    def e46_parts(split, kind):
+        """Per owner, over the seeds of one split: the share of its items delivered within the year and its delay cost, from the run parts
+        (results/E46_parts/<split>_s<seed>_<kind>.json.gz, block `owners`)."""
+        import glob as _glob
+        import gzip as _gzip
+        fs = sorted(_glob.glob(os.path.join(RES, "E46_parts", f"{split}_s*_{kind}.json.gz")))
+        if not fs:
+            raise Pending(f"the run parts of E46 ({split}, {kind}) are not in results/E46_parts")
+        check(len(fs) == len(r.f46("design", "seeds")), f"E46 parts: one {kind} run per seed ({split})")
+        out = {o: {"share": [], "delay": []} for o in "ABC"}
+        for f in fs:
+            x = json.load(_gzip.open(f, "rt", encoding="utf-8"))
+            for o in "ABC":
+                w = x["owners"][o]
+                out[o]["share"].append(_fin(w["delivered"]) / _fin(w["items"]))
+                out[o]["delay"].append(_fin(w["delay_usd"]))
+        return {o: {"share": float(np.mean(v["share"])), "delay": float(np.mean(v["delay"]))} for o, v in out.items()}
+
+    def e46_censor():
+        """5.6 (finding M7): how much of each owner's alone loss is delay, and how much of its cargo is never delivered alone and so is
+        priced by the censoring rule. The run files hold items and delay per owner, not the delay cost of the undelivered items alone."""
+        bits = []
+        worst = None
+        for sp in SPLITS:
+            al, po = e46_parts(sp, "alone"), e46_parts(sp, "pooled")
+            loss = {o: -alone_mean(sp, o) for o in "ABC"}
+            check(all(0 < al[o]["delay"] <= loss[o] * 1.001 for o in "ABC"), f"each owner's alone loss contains its alone delay cost ({sp})")
+            check(al["C"]["share"] < 0.1 < min(al["A"]["share"], al["B"]["share"]) and po["C"]["share"] > 0.9,
+                  f"alone, owner C delivers a small share of its items and the others most of theirs; pooled, C's items are delivered ({sp})")
+            bits.append(f"with {SPLIT_NAME[sp]} owners A, B and C delivered {pc(al['A']['share'], 1)}, {pc(al['B']['share'], 1)} and {pc(al['C']['share'], 1)} "
+                        f"of their items within the year when working alone, and their delay cost was {pc(al['A']['delay'] / loss['A'], 0)}, "
+                        f"{pc(al['B']['delay'] / loss['B'], 0)} and {pc(al['C']['delay'] / loss['C'], 0)} of the alone loss")
+            if sp == "3eq":
+                worst = (al["C"], po["C"], loss["C"])
+        return (f"What the alone loss is made of can be read from the run files: " + "; ".join(bits) + f". Owner C's two small rovers and two hoppers "
+                f"cannot carry most of its cargo, so alone about {pc(1 - worst[0]['share'], 0)} of its items stand undelivered at the year's end, and its "
+                f"alone loss of {musd(worst[2], 0)} with equal shares is almost entirely the assumed hourly rate applied, up to the horizon, to cargo that "
+                f"never moves; in the pooled market {pc(worst[1]['share'], 1)} of the same items are delivered. The run files hold items and delay per "
+                f"owner, not the delay cost of the undelivered items alone, so the censored part is given as a share of items.")
+    fill("P3-E46-CENSOR-SENTENCE", e46_censor, "E46 run parts")
+
+    def e46_shapley_note():
+        """5.7 (finding S4): what H5's third clause tests, and the size of the transfers beside the tariff cash."""
+        tr = abs(_fin(_get(r.f46("transfers"), "3eq", "C")["mean"]))
+        cash = _fin(r.cell46("posted", "3eq")["settled_earth_musd"]) * M
+        check(tr > 5 * cash, "the Shapley transfer of owner C is many times the tariff cash settled under the posted price (5.7)")
+        return (f"The third clause is a test of pooling and not of a payment rule. Under the posted price the quantity compared with alone is the "
+                f"owner's Shapley value, and the transfer is defined as that value less the owner's cash, so the tariff cancels from every owner's "
+                f"payoff: the posted price sets the cash that flows before the transfer and nothing else, and the rule is better named Shapley sharing. "
+                f"A Shapley value is at least the stand-alone value whenever the coalitions' values are superadditive, so the clause asks whether "
+                f"pooling vehicles is superadditive in the simulator, which the companion paper already reports [60]. The transfers are large beside the "
+                f"cash: owner C's {musd(tr, 0)} a year with equal shares is {num(tr / cash, 0)} times the {musd(cash, 1)} of tariff cash settled.")
+    fill("P3-E46-SHAPLEY-NOTE", e46_shapley_note, "E46")
 
     def e46_loss():
         ml = r.design(46, "message_loss")
@@ -2921,8 +3596,9 @@ def values(r: R, allow_pending: bool):
         gmax = max(c1e["gain"], c1u["gain"])
         incl = "includes" if (c1e["lo"] <= 0 <= c1e["hi"] or c1u["lo"] <= 0 <= c1u["hi"]) else "excludes"
         if kind == "abstract":
-            return (f"First-price bid shading gained at most {musd(gmax, 1)} a year with an interval {'including' if incl == 'includes' else 'excluding'} zero, so that clause of H5 is {v1}; "
-                    f"the second price {'reduced' if v2 == 'supported' else 'did not reduce'} it ({v2}); the Shapley clause is {v3}.")
+            rest = f"the other two {v2}" if v2 == v3 else f"the second-price clause {v2}, the Shapley clause {v3}"
+            return (f"First-price shading gained at most {musd(gmax, 1)} a year, interval {'including' if incl == 'includes' else 'excluding'} zero "
+                    f"(H5's first clause {v1}; {rest}).")
         if kind == "intro":
             return (f"H5's first clause, that first-price bids reward shading, is {v1}; its second, that the second price reduces the gain, is {v2}; "
                     f"its third, that the posted price with Shapley sharing leaves no owner worse off than alone, is {v3} (Section 5.7).")
@@ -2946,9 +3622,8 @@ def values(r: R, allow_pending: bool):
             ow, one, worse = e46_vs_none("summary")
             vs = ("" if not worse else (f", but owner {ow[0]} fell below the no-payment market under every paid rule" if one else
                                         f", but {cnt(len(worse))} owner-rule-split cases fell below the no-payment market"))
-            return (f"Every owner beat its alone profit under {rules_txt}{vs}; "
-                    f"{('the bid rules ran ' + bid_sign.pop()) if len(bid_sign) == 1 else ('first price ran ' + sign_word(bud['first']['3eq']) + ' and the second price ' + sign_word(bud['second']['3eq']))}, "
-                    f"the posted price {sign_word(bud['posted']['3eq'], 'ran a surplus', 'ran a deficit', 'broke even')}.")
+            return (f"Every owner beat working alone under {rules_txt}{vs}; "
+                    f"{('the bid rules ran ' + bid_sign.pop()) if len(bid_sign) == 1 else ('first price ran ' + sign_word(bud['first']['3eq']) + ' and the second price ' + sign_word(bud['second']['3eq']))}.")
         if kind == "intro":
             ow, one, worse = e46_vs_none("summary")
             vs = ("" if not worse else (f", though owner {ow[0]} was worse off than under no payments under every paid rule" if one else
@@ -2957,10 +3632,10 @@ def values(r: R, allow_pending: bool):
                     f"{sign_word(bud['first']['3eq'])} under first price, {sign_word(bud['second']['3eq'])} under the second price and "
                     f"{sign_word(bud['posted']['3eq'])} under the posted price (Sections 5.5 to 5.7).")
         if kind == "discussion":
-            return (f"{rules_txt} left every owner's mean profit above its alone profit; the operator ran {sign_word(bud['first']['3eq'])} "
-                    f"under first price ({musd_m(abs(bud['first']['3eq']))} a year with equal shares), {sign_word(bud['second']['3eq'])} under the "
-                    f"second price ({musd_m(abs(bud['second']['3eq']))}, {num(abs(sec_ratio), 1) if sec_ratio else 'n/a'} times first price's) and "
-                    f"{sign_word(bud['posted']['3eq'])} under the posted price; the largest gain from scaling bids was {musd(gmax, 2, sign=True)} a year, "
+            return (f"{rules_txt} left every owner's mean profit above its alone profit; the operator's budget under first price, "
+                    f"{musd_m(bud['first']['3eq'], 2, sign=True)} a year with equal shares, is the gap between the calibration seeds and the test seeds "
+                    f"and not a property of the rule (Section 7); under the second price the operator ran {sign_word(bud['second']['3eq'])} of "
+                    f"{musd_m(abs(bud['second']['3eq']))}, and under the posted price {sign_word(bud['posted']['3eq'])}; the largest gain from scaling bids was {musd(gmax, 2, sign=True)} a year, "
                     f"and audits at 20{PCT} {('removed it under ' + ' and '.join(RULE_NAME[x] for x in removed)) if removed else 'did not remove it under either bid rule'}.")
         if kind == "comparison":
             small = r.pair46("coalition ABC - alone, owner C (3uneq)", "profit_usd")
@@ -3008,7 +3683,7 @@ def values(r: R, allow_pending: bool):
             "; ".join(f"the cell {html.escape(s['label'])} has {cnt(s['have'])} of {cnt(s['n'])} seeds" for s in short).capitalize() + "."
     fill("P3-E46-STATUS-SENTENCE", e46_status, "E46")
 
-    T6 = values_p6(r, V, fill, check)
+    T6 = values_p6(r, V, fill, check, fill_await, landed)
     V["P3-REFERENCES"] = references()
     T = {"vehicles": table_vehicles(r, in_fleet)}
     builders = {"E48_sizing": (lambda: table_e48_sizing(r), "E48", "Table 6, sizing per vehicle class"),
@@ -3078,21 +3753,29 @@ def table_vehicles(r: R, in_fleet):
 
 
 def table_e48_sizing(r: R):
-    rows = []
-    for c in CLASSES:
-        cl = r.s48("classes", c)
-        sc = cl.get("cpu_safety_check_us")
-        a = cl["cpu_auction_round_ms"]
-        rows.append([CLASS_NAME[c].capitalize(), f"{num(sc['median'], 1)} / {num(sc['p99'], 1)}" if sc else "&ndash;",
-                     f"{num(a['median'], 2)} / {num(a['p99'], 1)}", num(cl["peak_memory_mb"], 1),
-                     f"{num(cl['power_w']['value'], 1)}, {html.escape(cl['power_w']['flag'])}" if "power_w" in cl else "&ndash;"])
+    """Table 6 since the referee round: the four class timings are one measurement and print as one row with their range; the
+    simulator's dispatch call is one pooled figure and stands in the caption, not in a column; the memory is an estimate."""
+    robots = [c for c in CLASSES if c != "BASE"]
+    sc = {c: r.s48("classes", c, "cpu_safety_check_us") for c in robots}
+    med, p99 = [_fin(sc[c]["median"]) for c in robots], [_fin(sc[c]["p99"]) for c in robots]
+    mem = sorted({_fin(r.s48("classes", c, "peak_memory_mb")) for c in robots})
+    pw = "; ".join(f"{CLASS_NAME[c]} {num(r.s48('classes', c, 'power_w')['value'], 0)}" for c in robots)
+    b = r.s48("classes", "BASE")
+    a = b["cpu_auction_round_ms"]
+    rows = [["A robot of any class (crew rover, cargo rover, small rover, hopper): one function, timed four times on the same moves",
+             f"{num(min(med), 1)}&ndash;{num(max(med), 1)} / {num(min(p99), 1)}&ndash;{num(max(p99), 1)}",
+             num(mem[0], 2) if len(mem) == 1 else f"{num(mem[0], 2)}&ndash;{num(mem[-1], 2)}", f"{pw} (Assumed)"],
+            ["Base computer: its reservation check over the shared table", f"{num(b['cpu_safety_check_us']['median'], 1)} / {num(b['cpu_safety_check_us']['p99'], 1)}",
+             num(b["peak_memory_mb"], 2), f"{num(b['power_w']['value'], 0)} ({html.escape(b['power_w']['flag'])})"]]
     f = r.s48("flight")
-    return _tab(f"Table 6. Sizing per vehicle class, measured on our implementation ({html.escape(r.s48('laptop', 'processor'))}) and, where "
-                f"stated, scaled to the {html.escape(f['processor'])} by {num(f['factor'], 1)} (Assumed, range {num(f['factor_range'][0], 1)}"
-                f"&ndash;{num(f['factor_range'][1], 1)}). CPU per safety check in microseconds and per auction round in milliseconds, median / "
-                f"99th percentile; peak memory of the on-robot part in MB; power with its flag. The auction round and the peak memory are measured "
-                f"once per run and repeated in every row; the base computer's timed check is its reservation check over the shared table.",
-                ["Class", "Safety check, base: reservation check (&micro;s)", "Auction round (ms)", "Peak memory (MB)", "Power (W)"], rows, cls="wide")
+    return _tab(f"Table 6. Sizing, timed on our implementation ({html.escape(r.s48('laptop', 'processor'))}) and, where stated in the text, scaled to the "
+                f"{html.escape(f['processor'])} by {num(f['factor'], 1)} (Assumed, range {num(f['factor_range'][0], 1)}&ndash;{num(f['factor_range'][1], 1)}). "
+                f"Processor time per safety check in microseconds, median / 99th percentile, as the range over the four class timings, which differ by "
+                f"timer noise only; the on-robot data in MB, estimated and not measured (a 24-hour window of the reservation table, a year's ledger "
+                f"copy, the policy files and 0.05&nbsp;MB allowed for working data; for the base computer the full year's table); power with its flag. "
+                f"The simulator's dispatch call for the whole fleet took {num(a['median'], 2)} / {num(a['p99'], 1)}&nbsp;ms over {cnt(a['n'])} calls pooled "
+                f"over one, four and eight times the fleet; it belongs to no class and to no single vehicle and is therefore not a column.",
+                ["What was timed", "Safety check; base: reservation check (&micro;s)", "On-robot data, estimated (MB)", "Power (W)"], rows, cls="wide")
 
 
 def table_e48_link(r: R):
@@ -3114,18 +3797,23 @@ def table_e48_link(r: R):
                      rate(fs["worst_hop_kbps"]), num(lk["latency_budget_ms"], 0),
                      "&ndash; (the mast itself)" if c == "BASE" else pc(lk["reachable_share"], 1)])
     hop = f"{num(hop_km, 0)}{NB}km"
+    m14 = referee_m14(r, lambda cond, claim: None)      # the checks on the referee's figures run in values_p6 (Proposition 1)
     note = ("Each hop is between two antennas of the class's own height; the base computer's row is the mast's downlink to a robot antenna"
             + (f", and the uplink from a small rover at the same hop carries {rate(base_up)}{NB}kbit/s" if base_up is not None else "") +
             ". The horizon is that of a smooth Moon; on the terrain a pair can see farther across a valley and less far behind a ridge, which the "
-            "mesh of Section 3.3 and the last column take from the terrain model, not from this horizon.")
+            "mesh of Section 3.3 and the last column take from the terrain model, not from this horizon. The hops used are close to that horizon, "
+            "where the ground is not flat on the scale of the antennas: by the referee's computation with the smooth-sphere method of [20] the loss "
+            f"there is 4 to 5{NB}dB higher and every rate about {num(m14['said'][0], 1)} to {num(m14['said'][1], 1)} times lower ({m14['rates_txt']}; "
+            "Proposition 1). Those figures are the referee's; a column with the project's own computation awaits task B-104.")
     return _tab(f"Table 7. Link budget per vehicle class under the flat-ground two-ray law with the smooth-Moon horizon check (Section 4.2): antenna "
-                f"height (m), frequency (GHz), transmit power (W), the smooth-Moon horizon of the hop (km), the data rate at the {hop} worst hop (kbit/s), "
+                f"height (m), frequency (GHz), transmit power (W), the smooth-Moon horizon of the hop (km), the rate at the {hop} worst hop (kbit/s), "
                 f"the rate at the longest hop the horizon allows, the rate at the worst hop under free-space loss, which is an upper bound and was the "
                 f"first version's value (Section 7), the modelled latency of a 100-byte message over three hops (one for the base) at the longest hop's "
                 f"rate plus the scaled safety check (ms), and the share of the route samples whose link to the base mast is in terrain line of sight "
-                f"within {hop} and closes 16{NB}kbit/s on the uplink with a 10{NB}dB margin (multi-hop reach is higher and not measured).",
-                ["Class", "Antenna (m)", "Frequency (GHz)", "Power (W)", "Horizon of the hop (km)", f"Rate at the {hop} worst hop, flat ground (kbit/s)",
-                 "Rate at the longest hop the horizon allows (kbit/s)", f"Free space at {hop}, upper bound (kbit/s)", "Modelled latency (ms)",
+                f"within {hop} and closes 16{NB}kbit/s on the uplink with a 10{NB}dB margin (multi-hop reach is higher and not measured). Every rate is "
+                f"the Shannon bound of the channel after the margin, not the rate of a modem.",
+                ["Class", "Antenna (m)", "Frequency (GHz)", "Power (W)", "Horizon of the hop (km)", f"Shannon bound at the {hop} worst hop, flat ground (kbit/s)",
+                 "Shannon bound at the longest hop the horizon allows (kbit/s)", f"Shannon bound in free space at {hop}, upper bound (kbit/s)", "Modelled latency (ms)",
                  "Mast in reach (share of route samples)"], rows, cls="wide", note=note)
 
 
@@ -3270,9 +3958,14 @@ def build(no_pdf: bool, allow_pending: bool):
     open(out, "w", encoding="utf-8", newline="\n").write(doc)
     json.dump({k: v for k, v in V.items() if k != "P3-REFERENCES"},
               open(os.path.join(HERE, "values.json"), "w", encoding="utf-8"), indent=1, ensure_ascii=False)
-    print("wrote", out, f"({len(V)} values, {len(used)} placeholders used, {len(pending)} pending)")
+    if not allow_pending and re.search(r"\[\[(PENDING|CHECK)", doc):
+        raise SystemExit("a [[PENDING or [[CHECK marker would print (decision A4 of the referee round): " +
+                         re.search(r".{60}\[\[(PENDING|CHECK).{60}", doc, re.S).group(0))
+    print("wrote", out, f"({len(V)} values, {len(used)} placeholders used, {len(pending)} pending, {len(AWAITED)} awaited)")
     for p in pending:
         print("  pending:", p)
+    for p in AWAITED:
+        print("  awaited:", p)
     if not no_pdf and os.path.exists(CHROME):
         cmd = [CHROME, "--headless=new", "--disable-gpu", "--no-pdf-header-footer", "--allow-file-access-from-files",
                f"--print-to-pdf={PDF}", "file:///" + out.replace("\\", "/")]
