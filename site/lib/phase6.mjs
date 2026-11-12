@@ -45,6 +45,18 @@ export const DECISIONS = {
 };
 const OUT = { held: 'held', partly: 'held in part', not: 'did not hold', reading: 'depends on the reading', calc: 'design calculation', first: 'held in its first clause', untestable: 'not testable as written' };
 const fmtM = v => `${fmt(v, v < 10 ? 1 : 0)} m`;
+const fmtH = v => `${fmt(v, 2).replace(/^-/, '−')} h`, fmtP = v => (v < 0.001 ? '< 0.001' : fmt(v, 2));
+// F-70c: a clause decided by its own sampling test (H10′): held when its p is below alpha; the values the file gives
+// for it, the fleet sizes read from its gap_<m>x_h keys (4x and 8x since B-90's 8x addendum)
+function testedClause(name, c, alpha) {
+  const p = typeof c.p === 'number' ? c.p : c.p_one_sided;
+  const gaps = Object.keys(c).map(k => /^gap_(\d+)x_h$/.exec(k)).filter(Boolean).map(m => +m[1]).sort((x, y) => x - y);
+  let v;
+  if (gaps.length) v = 'gap ' + gaps.map(m => `${fmtH(c[`gap_${m}x_h`])} at ${m}x${typeof c[`n_${m}x`] === 'number' ? ` with ${c[`n_${m}x`]} seeds` : ''}`).join(', ');
+  else if (typeof c.margin_h === 'number') v = `difference ${fmtH(c.mean_diff_h)} against a margin of ${fmtH(c.margin_h)}`;
+  else v = `difference ${fmtH(c.mean_diff_h)}, p ${fmtP(p)}`;
+  return [name, p < alpha ? 'held' : 'not', v];
+}
 
 export function familyRows(F, D = DECISIONS) {
   return Object.entries(F.hypotheses).map(([id, h]) => {
@@ -57,6 +69,9 @@ export function familyRows(F, D = DECISIONS) {
         outcome = 'reading';
         note = `the near-base clause passes only under the reading “${F.region_rule || 'two or more beacons in line of sight'}”, chosen after the results; the paper reports it under four readings (decisions B4)`;
       }
+    } else if (h.clauses && Object.values(h.clauses).some(c => typeof (c.p ?? c.p_one_sided) === 'number')) {
+      parts = Object.entries(h.clauses).map(([name, c]) => testedClause(name, c, F.alpha ?? 0.05));
+      note = h.p_intersection_union !== undefined ? 'the clauses are joined by intersection-union: the hypothesis holds only if every clause does' : note;
     }
     if (dec.parts) {
       parts = dec.parts.map(([name, how]) => [name, how === 'holm' ? base : how, '']);
@@ -76,7 +91,7 @@ export function familyTable() {
   const E50 = read('results/E50_summary.json'); if (E50?.design?.region_rule) F.region_rule = E50.design.region_rule.replace(/^near base = /, '');
   const rows = familyRows(F), p = v => (v < 0.001 ? '< 0.001' : fmt(v, 3));
   const what = r => r.parts
-    ? `<ul class="r-parts">${r.parts.map(([n, o, v]) => `<li>${esc(n)}${v ? ` (${esc(v)})` : ''}: <b>${OUT[o]}</b></li>`).join('')}</ul>${r.note ? `<p class="muted">${esc(r.note)}.</p>` : ''}`
+    ? `<ul class="r-parts">${r.parts.map(([n, o, v]) => `<li>${esc(n)}${v && !/^[a-z]/i.test(v) ? ` (${esc(v)})` : ''}: <b>${OUT[o]}</b>${/^[a-z]/i.test(v) ? `; ${esc(v)}` : ''}</li>`).join('')}</ul>${r.note ? `<p class="muted">${esc(r.note)}.</p>` : ''}`
     : `${esc(r.summary)}${r.note ? `<p class="muted">${esc(r.note)}.</p>` : ''}`;
   const tally = rows.map(r => `${r.label} ${OUT[r.outcome]}`).join('; ');
   return `<section class="r-fam" aria-labelledby="r-fam-h"><h3 id="r-fam-h">Phase 6: what the hypotheses came to</h3>

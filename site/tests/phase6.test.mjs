@@ -34,6 +34,11 @@ test('Phase 6 hypotheses: outcomes from the file, failures shown like successes'
   assert.equal(by.H14.outcome, 'first');
   assert.deepEqual(by.H14.parts.map(([, o]) => o), ['held', 'untestable']);
   assert.equal(by.H10.outcome, 'not');
+  // F-70c: H10′'s clauses with their own tests; the growing-gap clause read at every fleet size in the file (4x and 8x)
+  assert.deepEqual(by.H10.parts.map(([, o]) => o), ['held', 'not', 'not']);
+  const gap = by.H10.parts.find(([n]) => /gap grows/.test(n));
+  for (const k of Object.keys(F.hypotheses.H10.clauses[gap[0]]).filter(k => /^gap_\d+x_h$/.test(k))) assert.match(gap[2], new RegExp(` at ${k.slice(4, -2)}( |,|$)`), k);
+  assert.doesNotMatch(familyTable(), /Still to come/);
   const html = familyTable();
   for (const r of rows) assert.match(html, new RegExp(`<th scope="row">${r.label}</th><td[^>]*><span class="r-out r-out-${r.outcome}">`), r.id);
   assert.doesNotMatch(html, /which hypotheses held/);
