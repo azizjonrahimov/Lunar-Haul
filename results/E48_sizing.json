@@ -1049,5 +1049,323 @@
    "radio_py": "lunarsim.atc.radio RadioMesh.link / pair_links(propagation='two_ray', budget=...); the default (None) is unchanged"
   },
   "unchanged": "CPU, memory, messages per robot-hour and bytes at E48's sizes, ledger, failover: these measurements are not affected"
+ },
+ "revision_b104": {
+  "date": "2026-11-12",
+  "task": "B-104 (P3 M14; decisions B10)",
+  "method": "ITU-R P.526 section 3.2 (diffraction loss for any distance over a smooth sphere): beyond the marginal line-of-sight distance sqrt(2 ae)(sqrt(h1) + sqrt(h2)) the first-term loss of section 3.1.1, F(X) + G(Y1) + G(Y2) with X = 2.188 beta f^(1/3) ae^(-2/3) d, Y = 9.575e-3 beta f^(2/3) ae^(-1/3) h, beta = 1; inside it, A = (1 - h / h_req) A_h where h is the path clearance over the sphere and h_req = 0.552 of the first Fresnel zone, A_h the first-term loss at the modified radius that puts the path at grazing; ae = the Moon's radius (1,737.4 km, no atmosphere)",
+  "source_note": "the research notes record P.526 as opened for the knife-edge method (vehicles_comms_internals 2.5); sections 3.1-3.2 were implemented from the Recommendation's text without a note recording them opened; the implementation reproduces the referee's two values (137.0 dB at 5 km for two 2.5 m antennas, 146.6 dB at 3.73 km for two 1.0 m antennas)",
+  "columns": [
+   "free space",
+   "flat ground (the model)",
+   "spherical ground (P.526)"
+  ],
+  "airtime_needed_kbps": 10.06,
+  "per_class": {
+   "LTV1": {
+    "antenna_m": 2.5,
+    "peer_antenna_m": 2.5,
+    "worst_hop": {
+     "d_m": 5000.0,
+     "loss_db": {
+      "free_space": 114.0,
+      "flat_ground": 132.0,
+      "spherical_ground": 137.0
+     },
+     "spherical_minus_flat_db": 5.0,
+     "kbps": {
+      "free_space": 6977.1,
+      "flat_ground": 1573.6,
+      "spherical_ground": 700.7
+     },
+     "flat_over_spherical_rate": 2.25
+    },
+    "longest_hop": {
+     "d_m": 5000.0,
+     "loss_db": {
+      "free_space": 114.0,
+      "flat_ground": 132.0,
+      "spherical_ground": 137.0
+     },
+     "spherical_minus_flat_db": 5.0,
+     "kbps": {
+      "free_space": 6977.1,
+      "flat_ground": 1573.6,
+      "spherical_ground": 700.7
+     },
+     "flat_over_spherical_rate": 2.25
+    },
+    "range_m_for_kbps_spherical": {
+     "16": 8806.8,
+     "1000": 4641.5
+    },
+    "range_m_for_kbps_flat": {
+     "16": 5894.7,
+     "1000": 5894.7
+    },
+    "reachable_share_spherical": 0.233,
+    "verdicts_flat_vs_spherical": {
+     "carries_20_robot_airtime_at_longest_hop": [
+      true,
+      true
+     ],
+     "16_kbps_at_longest_hop": [
+      true,
+      true
+     ],
+     "1_Mbps_at_longest_hop": [
+      true,
+      false
+     ],
+     "reachable_share": [
+      0.233,
+      0.233
+     ]
+    }
+   },
+   "CARGO": {
+    "antenna_m": 2.5,
+    "peer_antenna_m": 2.5,
+    "worst_hop": {
+     "d_m": 5000.0,
+     "loss_db": {
+      "free_space": 114.0,
+      "flat_ground": 132.0,
+      "spherical_ground": 137.0
+     },
+     "spherical_minus_flat_db": 5.0,
+     "kbps": {
+      "free_space": 6977.1,
+      "flat_ground": 1573.6,
+      "spherical_ground": 700.7
+     },
+     "flat_over_spherical_rate": 2.25
+    },
+    "longest_hop": {
+     "d_m": 5000.0,
+     "loss_db": {
+      "free_space": 114.0,
+      "flat_ground": 132.0,
+      "spherical_ground": 137.0
+     },
+     "spherical_minus_flat_db": 5.0,
+     "kbps": {
+      "free_space": 6977.1,
+      "flat_ground": 1573.6,
+      "spherical_ground": 700.7
+     },
+     "flat_over_spherical_rate": 2.25
+    },
+    "range_m_for_kbps_spherical": {
+     "16": 8806.8,
+     "1000": 4641.5
+    },
+    "range_m_for_kbps_flat": {
+     "16": 5894.7,
+     "1000": 5894.7
+    },
+    "reachable_share_spherical": 0.233,
+    "verdicts_flat_vs_spherical": {
+     "carries_20_robot_airtime_at_longest_hop": [
+      true,
+      true
+     ],
+     "16_kbps_at_longest_hop": [
+      true,
+      true
+     ],
+     "1_Mbps_at_longest_hop": [
+      true,
+      false
+     ],
+     "reachable_share": [
+      0.233,
+      0.233
+     ]
+    }
+   },
+   "SMALL": {
+    "antenna_m": 1.0,
+    "peer_antenna_m": 1.0,
+    "worst_hop": {
+     "d_m": 5000.0,
+     "loss_db": {
+      "free_space": 114.0,
+      "flat_ground": 148.0,
+      "spherical_ground": 153.7
+     },
+     "spherical_minus_flat_db": 5.73,
+     "kbps": {
+      "free_space": 5011.1,
+      "flat_ground": 18.1,
+      "spherical_ground": 4.9
+     },
+     "flat_over_spherical_rate": 3.69
+    },
+    "longest_hop": {
+     "d_m": 3728.2,
+     "loss_db": {
+      "free_space": 111.5,
+      "flat_ground": 142.9,
+      "spherical_ground": 146.6
+     },
+     "spherical_minus_flat_db": 3.76,
+     "kbps": {
+      "free_space": 5838.0,
+      "flat_ground": 57.9,
+      "spherical_ground": 24.6
+     },
+     "flat_over_spherical_rate": 2.35
+    },
+    "range_m_for_kbps_spherical": {
+     "16": 4045.8,
+     "1000": 1722.2
+    },
+    "range_m_for_kbps_flat": {
+     "16": 3728.2,
+     "1000": 1676.8
+    },
+    "reachable_share_spherical": 0.191,
+    "verdicts_flat_vs_spherical": {
+     "carries_20_robot_airtime_at_longest_hop": [
+      true,
+      true
+     ],
+     "16_kbps_at_longest_hop": [
+      true,
+      true
+     ],
+     "1_Mbps_at_longest_hop": [
+      false,
+      false
+     ],
+     "reachable_share": [
+      0.191,
+      0.191
+     ]
+    }
+   },
+   "HOPPER": {
+    "antenna_m": 1.0,
+    "peer_antenna_m": 1.0,
+    "worst_hop": {
+     "d_m": 5000.0,
+     "loss_db": {
+      "free_space": 114.0,
+      "flat_ground": 148.0,
+      "spherical_ground": 153.7
+     },
+     "spherical_minus_flat_db": 5.73,
+     "kbps": {
+      "free_space": 5988.5,
+      "flat_ground": 36.0,
+      "spherical_ground": 9.7
+     },
+     "flat_over_spherical_rate": 3.71
+    },
+    "longest_hop": {
+     "d_m": 3728.2,
+     "loss_db": {
+      "free_space": 111.5,
+      "flat_ground": 142.9,
+      "spherical_ground": 146.6
+     },
+     "spherical_minus_flat_db": 3.76,
+     "kbps": {
+      "free_space": 6825.3,
+      "flat_ground": 113.5,
+      "spherical_ground": 48.9
+     },
+     "flat_over_spherical_rate": 2.32
+    },
+    "range_m_for_kbps_spherical": {
+     "16": 4586.1,
+     "1000": 1999.1
+    },
+    "range_m_for_kbps_flat": {
+     "16": 3728.2,
+     "1000": 1994.1
+    },
+    "reachable_share_spherical": 0.191,
+    "verdicts_flat_vs_spherical": {
+     "carries_20_robot_airtime_at_longest_hop": [
+      true,
+      true
+     ],
+     "16_kbps_at_longest_hop": [
+      true,
+      true
+     ],
+     "1_Mbps_at_longest_hop": [
+      false,
+      false
+     ],
+     "reachable_share": [
+      0.191,
+      0.191
+     ]
+    }
+   },
+   "BASE": {
+    "antenna_m": 10.0,
+    "peer_antenna_m": 1.0,
+    "worst_hop": {
+     "d_m": 5000.0,
+     "loss_db": {
+      "free_space": 114.0,
+      "flat_ground": 128.0,
+      "spherical_ground": 131.4
+     },
+     "spherical_minus_flat_db": 3.39,
+     "kbps": {
+      "free_space": 9289.9,
+      "flat_ground": 4716.9,
+      "spherical_ground": 3652.8
+     },
+     "flat_over_spherical_rate": 1.29
+    },
+    "longest_hop": {
+     "d_m": 5000.0,
+     "loss_db": {
+      "free_space": 114.0,
+      "flat_ground": 128.0,
+      "spherical_ground": 131.4
+     },
+     "spherical_minus_flat_db": 3.39,
+     "kbps": {
+      "free_space": 9289.9,
+      "flat_ground": 4716.9,
+      "spherical_ground": 3652.8
+     },
+     "flat_over_spherical_rate": 1.29
+    },
+    "range_m_for_kbps_spherical": {
+     "16": 11935.3,
+     "1000": 7188.3
+    },
+    "range_m_for_kbps_flat": {
+     "16": 7758.8,
+     "1000": 7758.8
+    },
+    "verdicts_flat_vs_spherical": {
+     "carries_20_robot_airtime_at_longest_hop": [
+      true,
+      true
+     ],
+     "16_kbps_at_longest_hop": [
+      true,
+      true
+     ],
+     "1_Mbps_at_longest_hop": [
+      true,
+      true
+     ]
+    }
+   }
+  },
+  "verdicts_moved": [
+   "LTV1: 1_Mbps_at_longest_hop True -> False",
+   "CARGO: 1_Mbps_at_longest_hop True -> False"
+  ]
  }
 }

@@ -6,7 +6,7 @@ Per hypothesis: the test, its statistic, the unadjusted p-value or interval wher
 decision over the hypotheses that have a sampling test (H10, H14, H15a; alpha 0.05). H9 and H13 are threshold
 comparisons without a sampling test (PREREG6: "on the predicted side of the budget" / "carries no more than"): listed
 with the share of seeds (H9) or of position draws (H13) on the predicted side.
-Sources: E50 cells (.cache/atc/e50, 1x 30 seeds, 4x 10 seeds), E53 (tools/atc/run_e53.py), E54 cells (.cache/atc/e54),
+Sources: E50 cells (.cache/atc/e50, 1x 30 seeds, 4x 10 seeds, 8x 5 seeds), E53 (tools/atc/run_e53.py), E54 cells (.cache/atc/e54),
 E56 (results/E56_integrity.json, B-96).
 """
 from __future__ import annotations
@@ -75,7 +75,7 @@ def _tost_paired(d, delta):
 
 def h10():
     from scipy import stats
-    C1, C4 = _e50(1), _e50(4)
+    C1, C4, C8 = _e50(1), _e50(4), _e50(8)
     S1 = sorted(C1)
     perf = np.array([C1[s]["perfect"]["delay_mean_h"] for s in S1])
     lay = np.array([C1[s]["margin"]["layered"]["delay_mean_h"] for s in S1])
@@ -88,18 +88,26 @@ def h10():
     S4 = sorted(C4)
     g4 = np.array([C4[s]["margin"]["layered"]["delay_mean_h"] - C4[s]["perfect"]["delay_mean_h"] for s in S4])
     g1 = float((lay - perf).mean())
-    # the gap grows at 4x: one-sided Welch test of mean(gap 4x) > mean(gap 1x)
-    t_g, p_g2 = stats.ttest_ind(g4, lay - perf, equal_var=False)
-    p_grow = float(p_g2 / 2 if t_g > 0 else 1 - p_g2 / 2)
+    S8 = sorted(C8)
+    g8 = np.array([C8[s]["margin"]["layered"]["delay_mean_h"] - C8[s]["perfect"]["delay_mean_h"] for s in S8])
+
+    def grows(gm):
+        # the gap grows at m x: one-sided Welch test of mean(gap m x) > mean(gap 1x)
+        t_g, p_g2 = stats.ttest_ind(gm, lay - perf, equal_var=False)
+        return float(p_g2 / 2 if t_g > 0 else 1 - p_g2 / 2)
+    p_grow4, p_grow8 = grows(g4), grows(g8)
+    p_grow = max(p_grow4, p_grow8)
     p_iut = max(p_tost, p_dr, p_grow)
     return {"test": "primary clause: paired TOST at 1x (margin 50 % of the perfect-position delay), t distribution, 30 "
                     "seeds; the clauses joined by intersection-union (p = the largest clause p)",
             "clauses": {
                 "layered within 1.5x of perfect at 1x (TOST)": {"mean_diff_h": m_lay, "se_h": se, "margin_h": delta,
                                                                  "p": float(p_tost)},
-                "the gap grows at 4x (8x pending)": {"gap_1x_h": g1, "gap_4x_h": float(g4.mean()), "n_4x": len(g4),
-                                                     "p_one_sided": p_grow,
-                                                     "note": "Welch one-sided, gap 4x > gap 1x; 8x not yet run"},
+                "the gap grows with the fleet (4x and 8x)": {
+                    "gap_1x_h": g1, "gap_4x_h": float(g4.mean()), "n_4x": len(g4), "gap_8x_h": float(g8.mean()),
+                    "n_8x": len(g8), "p_one_sided_4x": p_grow4, "p_one_sided_8x": p_grow8, "p_one_sided": p_grow,
+                    "note": "Welch one-sided, gap m x > gap 1x, at 4x and at 8x; the clause holds only if both do "
+                            "(p = the larger)"},
                 "dead reckoning with the margin larger at 1x": {"mean_diff_h": float(d_dr.mean()), "t": t_dr,
                                                                 "p_one_sided": p_dr}},
             "p_primary": float(p_tost), "p_intersection_union": float(p_iut)}
@@ -177,7 +185,7 @@ def main():
                                "reckoning larger' clauses do not (intersection-union)"),
                        "H14": "supported (Holm)" if fam["H14"]["holm"]["rejected_at_0.05"] else "not supported",
                        "H15a": "supported (Holm)" if fam["H15a"]["holm"]["rejected_at_0.05"] else "not supported"},
-           "pending": "E50 at 8x (5 seeds) is still running; H10's 'gap grows at 8x' clause will be added"}
+           "e50_cells": {"1x": 30, "4x": 10, "8x": 5}}
     with open(OUT, "w", encoding="utf-8", newline="\n") as f:
         json.dump(doc, f, indent=1, default=float)
         f.write("\n")

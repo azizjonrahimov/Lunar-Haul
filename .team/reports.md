@@ -9567,3 +9567,44 @@ All 29 audit items are applied as proposed, plus your F-70 points. Numbers still
 
 **Files:** `tools/atc/phase6_family.py` (8x clause), `results/phase6_family.json`, `results/E50_summary.json` (and CSVs, trace), rebuilt.
 **How to test:** `python tools/atc/run_e50.py build`; `python tools/atc/phase6_family.py` (both light).
+
+## B-104 DONE 09:17 (the radio law near the horizon; E48 gains a "spherical ground" column) | files | how to test | API/format changes | questions
+Done ahead of B-101 / B-102 / B-103 / B-105 because those need engine runs and free RAM was 0.6–0.75 GB this morning. They follow as memory allows.
+
+**Method.** ITU-R P.526 section 3.2, "diffraction loss for any distance", over a smooth Moon (a_e = 1,737.4 km, no atmosphere):
+- **Beyond** the marginal line-of-sight distance √(2a_e)(√h₁ + √h₂): the first-term loss of section 3.1.1, F(X) + G(Y₁) + G(Y₂), with X = 2.188 β f^(1/3) a_e^(−2/3) d, Y = 9.575×10⁻³ β f^(2/3) a_e^(−1/3) h, and β = 1 (K ≪ 1 at 2.4 GHz).
+- **Inside** it: A = (1 − h/h_req) A_h, with h the path clearance over the sphere and h_req = 0.552 of the first Fresnel zone. A_h is the first-term loss at the modified radius that puts the path at grazing.
+- Implemented as `lunarsim.atc.radio.spherical_loss_db` (new; no default calls it).
+- **Source caveat (rule A5):** the notes record P.526 as opened only for the knife-edge method (`vehicles_comms_internals.md` §2.5). Sections 3.1–3.2 were implemented from the Recommendation's text without a note recording them opened. The implementation reproduces the referee's two values exactly; the notes should record the sections before the paper cites them.
+
+**The referee's computation: confirmed for every class except the mast.**
+
+| Class (hop) | Loss: free space / flat (model) / spherical | Spherical − flat | Rate: flat → spherical | Flat ÷ spherical |
+|---|---|---|---|---|
+| LTV1, CARGO (2.5–2.5 m, 5 km) | 114.0 / 132.0 / **137.0 dB** | +5.0 dB | 1,573.6 → **700.7 kbit/s** | 2.25 |
+| SMALL (1.0–1.0 m, longest hop 3.73 km) | 111.5 / 142.9 / **146.6 dB** | +3.7 dB | 57.9 → **24.6** | 2.35 |
+| HOPPER (same hop) | 111.5 / 142.9 / 146.6 dB | +3.7 dB | 113.5 → **48.9** | 2.32 |
+| BASE mast (10–1.0 m, 5 km) | 114.0 / 128.0 / **131.4 dB** | +3.4 dB | 4,716.9 → **3,652.8** | 1.29 |
+| SMALL / HOPPER at 5 km (beyond their horizon) | 114.0 / 148.0 / 153.7 dB | +5.7 dB | 18.1 → 4.9; 36.0 → 9.7 | 3.7 |
+
+- The referee's "4 to 5 dB" and "1.4 to 2.4 times" are right for the vehicle hops (3.7–5.0 dB, 2.25–2.35×).
+- **The mast is the exception.** The referee's ~3,400 kbit/s is the first-term formula applied inside line of sight; I get 3,429 that way. P.526 §3.2 uses that formula only beyond the marginal line-of-sight distance, which is 7.76 km for the 10 m and 1 m pair, and interpolates inside it. That gives **3,653 kbit/s (1.29×, +3.4 dB)**.
+- Checks: at 1 km (bulge negligible) spherical = flat (104.1 dB); below the breakpoint spherical = free space; the loss is monotone in d.
+
+**Which verdicts move.**
+- **One moves, where the referee said none would:** the rovers' 5 km hop no longer carries 1 Mbit/s (1,574 → 701 kbit/s). The rovers' 1 Mbit/s range falls from 5.89 km (the horizon) to **4.64 km**. Any sentence saying "rovers carry megabit links at the 5 km hop" must change.
+- **Unchanged:**
+  - every class carries the 20-robot airtime (10.06 kbit/s) and 16 kbit/s at its longest hop;
+  - the reachable shares at 16 kbit/s are unchanged (0.233 for 2.5 m, 0.191 for 1.0 m): every terrain-visible mast link within 5 km still closes;
+  - no 1 Mbit/s verdict changes for the small rover or hopper (they did not reach it before either).
+- The 16 kbit/s range now extends beyond the horizon by diffraction: 8.8 km for the rovers, 4.0 km and 4.6 km for the small rover and hopper. The mesh caps hops at 5 km, so this changes nothing in the runs.
+
+**E48.**
+- `results/E48_sizing.json` gains `revision_b104`: per class, losses and rates in three columns (free space, flat ground, spherical ground) at the worst and the longest hop, ranges for 16 kbit/s and 1 Mbit/s under both laws, the reachable share under the spherical law, verdicts flat against spherical, and the method and source note.
+- **All other keys are byte-identical** (compared with the file before the change).
+
+**Guard (radio.py changed):** default path 0 of 144 differ from the pre-edit snapshot, vv6 G1 0 of 144.
+
+**Files:** `lunarsim/atc/radio.py` (`spherical_loss_db`, `_p526_first_term_db`, `import math`); `tools/atc/run_e48.py` (`_b104_spherical`, called in build); `results/E48_sizing.json`; `tests/test_radio_two_ray.py` (+1 test, 9 pass).
+**How to test:** `.venv\Scripts\python -m pytest tests/test_radio_two_ray.py -q`; `python tools/atc/run_e48.py build` (from caches, seconds).
+**Question for LEAD:** should the notes gain an entry recording P.526 §3.1–3.2 as opened (I can fetch the Recommendation with /browse), or should the papers cite the referee's method as computed, not as sourced?

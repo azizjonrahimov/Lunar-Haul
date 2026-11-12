@@ -122,3 +122,16 @@ def test_e48_revision_block():
     assert doc["h10"]["link_kbps_needed_20_robots_secured_mac8"] == pytest.approx(7.86, abs=0.02)
     assert doc["h10"]["link_kbps_needed_20_robots_secured_mac16"] == pytest.approx(9.39, abs=0.02)
     assert doc["h10"]["link_kbps_needed_20_robots"] == 7.68                      # B-81 value kept
+
+
+def test_spherical_ground_p526():
+    """B-104: ITU-R P.526 sections 3.1.1 / 3.2 over the smooth Moon reproduce the referee's values (P3 M14), agree
+    with the flat-ground law where the bulge is negligible, and equal free space below the breakpoint."""
+    from lunarsim.atc import radio as RA
+    assert abs(RA.spherical_loss_db(5000.0, 2.5, 2.5) - 137.0) < 0.05         # two rovers, 5 km
+    assert abs(RA.spherical_loss_db(3728.6, 1.0, 1.0) - 146.6) < 0.05         # two 1 m antennas at their horizon
+    assert abs(RA.spherical_loss_db(1000.0, 2.5, 2.5) - float(RA.flat_ground_loss_db(1000.0, 2.5, 2.5))) < 0.1
+    assert abs(RA.spherical_loss_db(150.0, 2.5, 2.5) - float(RA.free_space_loss_db(150.0))) < 1e-9
+    d = [2000.0, 4000.0, 6000.0, 8000.0]
+    L = [RA.spherical_loss_db(x, 2.5, 2.5) for x in d]
+    assert all(b > a for a, b in zip(L, L[1:]))                               # monotone in distance

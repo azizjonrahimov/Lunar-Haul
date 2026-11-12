@@ -33,6 +33,7 @@ from __future__ import annotations
 import base64
 import gzip
 import json
+import math
 import os
 from typing import Any, Dict, Optional, Sequence, Union
 
@@ -87,6 +88,51 @@ def flat_ground_loss_db(d, h_a, h_b, freq_hz: float = DEFAULT_FREQ_HZ):
     fs = free_space_loss_db(d, freq_hz)
     beyond = np.asarray(d, dtype=np.float64) > breakpoint_m(h_a, h_b, freq_hz)
     return np.where(beyond, np.maximum(fs, two_ray_loss_db(d, h_a, h_b)), fs)
+
+
+def _p526_first_term_db(d_km, h1_m, h2_m, f_mhz, ae_km, beta=1.0):
+    """ITU-R P.526 section 3.1.1 (smooth sphere, first term of the residue series): field relative to free space,
+    20 log(E/E0) = F(X) + G(Y1) + G(Y2), with X = 2.188 beta f^(1/3) ae^(-2/3) d and Y = 9.575e-3 beta f^(2/3)
+    ae^(-1/3) h (f MHz, ae km, d km, h m). beta = 1 (K << 1 at GHz frequencies; ground constants not needed).
+    Returns the diffraction loss (positive dB = below free space)."""
+    X = 2.188 * beta * f_mhz ** (1 / 3) * ae_km ** (-2 / 3) * d_km
+    F = 11.0 + 10.0 * math.log10(X) - 17.6 * X if X >= 1.6 else -20.0 * math.log10(X) - 5.6488 * X ** 1.425
+
+    def G(h):
+        B = beta * 9.575e-3 * f_mhz ** (2 / 3) * ae_km ** (-1 / 3) * h
+        if B > 2.0:
+            return 17.6 * math.sqrt(B - 1.1) - 5.0 * math.log10(B - 1.1) - 8.0
+        return 20.0 * math.log10(B + 0.1 * B ** 3)          # K -> 0: the lower limit 2 + 20 log K does not bind
+    return -(F + G(h1_m) + G(h2_m))
+
+
+def spherical_loss_db(d, h_a, h_b, freq_hz: float = DEFAULT_FREQ_HZ, radius_m: float = MOON_RADIUS_M):
+    """B-104: path loss over a smooth sphere (the Moon, no atmosphere) by ITU-R P.526 section 3.2 ("diffraction loss
+    for any distance"): free space plus A, where beyond the marginal line-of-sight distance A is the first-term
+    loss of section 3.1.1, and inside it A = (1 - h / h_req) A_h when the path clearance h is below
+    h_req = 0.552 of the first Fresnel zone (A_h: section 3.1.1 with the modified radius that puts the path at
+    grazing), else 0. Not used by any default: E48's third column ("spherical ground")."""
+    d_km = float(d) / 1000.0
+    h1, h2 = float(h_a), float(h_b)
+    ae = radius_m / 1000.0
+    f_mhz = freq_hz / 1e6
+    lam = C_M_S / freq_hz
+    fs = float(free_space_loss_db(d, freq_hz))
+    d_los = math.sqrt(2.0 * ae) * (math.sqrt(0.001 * h1) + math.sqrt(0.001 * h2))
+    if d_km >= d_los:
+        return fs + max(0.0, _p526_first_term_db(d_km, h1, h2, f_mhz, ae))
+    c = (h1 - h2) / (h1 + h2)
+    m = 250.0 * d_km ** 2 / (ae * (h1 + h2))
+    b = 2.0 * math.sqrt((m + 1) / (3 * m)) * math.cos(math.pi / 3 + math.acos(1.5 * c * math.sqrt(3 * m / (m + 1) ** 3)) / 3)
+    d1 = d_km / 2.0 * (1 + b)
+    d2 = d_km - d1
+    h = ((h1 - 500.0 * d1 ** 2 / ae) * d2 + (h2 - 500.0 * d2 ** 2 / ae) * d1) / d_km
+    h_req = 17.456 * math.sqrt(d1 * d2 * lam / d_km)
+    if h > h_req:
+        return fs
+    aem = 500.0 * (d_km / (math.sqrt(h1) + math.sqrt(h2))) ** 2
+    Ah = _p526_first_term_db(d_km, h1, h2, f_mhz, aem)
+    return fs + (0.0 if Ah < 0 else (1.0 - h / h_req) * Ah)
 
 
 def noise_dbm(bandwidth_hz: float, noise_figure_db: float) -> float:

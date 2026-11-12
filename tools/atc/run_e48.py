@@ -719,6 +719,7 @@ def cmd_build():
                                              * (mb["bid"] + mb["award"] + mb["claim"]) / 3.0 / 1e6, 4)}
     out["h10"].update(_b89_traffic(out, per_type, bph))
     out["revision"] = _b89_revision(out, links, links_flat)
+    out["revision_b104"] = _b104_spherical(out, links_flat)
     with open(OUT, "w", encoding="utf-8", newline="\n") as f:
         json.dump(out, f, indent=1, default=float)
         f.write("\n")
@@ -819,6 +820,81 @@ def _b89_revision(out, links, links_flat):
                                                 "budget=...); the default (None) is unchanged"},
             "unchanged": "CPU, memory, messages per robot-hour and bytes at E48's sizes, ledger, failover: these "
                          "measurements are not affected"}
+
+
+def _b104_spherical(out, links_flat):
+    """B-104 (P3 M14; decisions B10): a third column, "spherical ground", beside free space and the flat-ground law:
+    the loss over a smooth Moon by ITU-R P.526 sections 3.1.1 and 3.2 (lunarsim.atc.radio.spherical_loss_db), at
+    each class's worst hop (5 km) and longest hop, the Shannon rate at it, the range for 16 kbit/s and 1 Mbit/s, the
+    share of route samples whose terrain-visible link to the BASE mast closes 16 kbit/s, and which verdicts move."""
+    from lunarsim.atc import regimes as G
+    from lunarsim.atc import radio as RA
+    rd = DESIGN_DOC["radio"]
+    rm = G._mesh()
+    need = out["h10"]["airtime_kbps_20_robots_secured_mac8_scheduled"]
+    rows, moved = {}, []
+    for cls in CLASSES:
+        nw = links_flat[cls]
+        h1, h2 = nw["antenna_m"], nw["peer_antenna_m"]
+        b = {"freq_hz": rd["freq_ghz"][cls] * 1e9, "tx_power_w": rd["tx_power_w"][cls], "gain_dbi": rd["antenna_gain_dbi"],
+             "bandwidth_hz": rd["bandwidth_mhz"] * 1e6, "noise_figure_db": rd["noise_figure_db"],
+             "margin_db": rd["implementation_margin_db"]}
+        r = {"antenna_m": h1, "peer_antenna_m": h2}
+        for lab, d in (("worst_hop", nw["worst_hop_m"]), ("longest_hop", nw["longest_hop_m"])):
+            fs = float(RA.free_space_loss_db(d, b["freq_hz"]))
+            fl = float(RA.flat_ground_loss_db(d, h1, h2, b["freq_hz"]))
+            sp = RA.spherical_loss_db(d, h1, h2, b["freq_hz"])
+            r[lab] = {"d_m": d, "loss_db": {"free_space": round(fs, 1), "flat_ground": round(fl, 1),
+                                            "spherical_ground": round(sp, 1)},
+                      "spherical_minus_flat_db": round(sp - fl, 2),
+                      "kbps": {"free_space": round(float(RA.shannon_kbps(fs, b)), 1),
+                               "flat_ground": round(float(RA.shannon_kbps(fl, b)), 1),
+                               "spherical_ground": round(float(RA.shannon_kbps(sp, b)), 1)}}
+            r[lab]["flat_over_spherical_rate"] = round(r[lab]["kbps"]["flat_ground"]
+                                                       / max(r[lab]["kbps"]["spherical_ground"], 1e-9), 2)
+        rng = {}
+        for k in (16, 1000):
+            la = RA.allowed_loss_db(dict(b, rate_bps=k * 1e3))
+            lo, hi = 1.0, 30000.0
+            if RA.spherical_loss_db(hi, h1, h2, b["freq_hz"]) <= la:
+                rng[f"{k:g}"] = hi
+            else:
+                for _ in range(60):
+                    mid = 0.5 * (lo + hi)
+                    lo, hi = (mid, hi) if RA.spherical_loss_db(mid, h1, h2, b["freq_hz"]) <= la else (lo, mid)
+                rng[f"{k:g}"] = round(lo, 1)
+        r["range_m_for_kbps_spherical"] = rng
+        r["range_m_for_kbps_flat"] = nw["range_m_for_kbps"]
+        sp_l = r["longest_hop"]["kbps"]["spherical_ground"]
+        verdicts = {"carries_20_robot_airtime_at_longest_hop": [nw["longest_hop_kbps"] >= need, sp_l >= need],
+                    "16_kbps_at_longest_hop": [nw["longest_hop_kbps"] >= 16.0, sp_l >= 16.0],
+                    "1_Mbps_at_longest_hop": [nw["longest_hop_kbps"] >= 1000.0, sp_l >= 1000.0]}
+        if cls != "BASE":
+            la16 = RA.allowed_loss_db(dict(b, rate_bps=16000.0))
+            pts = [j for j in range(rm.n) if j != rm.base and rm.link(rm.base, int(j), G.ANT_MAST_M, h1)]
+            ok = sum(1 for j in pts if RA.spherical_loss_db(max(1.0, float(np.hypot(*(rm.xy[rm.base] - rm.xy[j])))),
+                                                             G.ANT_MAST_M, h1, b["freq_hz"]) <= la16)
+            r["reachable_share_spherical"] = round(ok / (rm.n - 1), 3)
+            verdicts["reachable_share"] = [nw["reachable_share"], r["reachable_share_spherical"]]
+        r["verdicts_flat_vs_spherical"] = verdicts
+        for k, (x, y) in verdicts.items():
+            if x != y:
+                moved.append(f"{cls}: {k} {x} -> {y}")
+        rows[cls] = r
+    return {"date": "2026-11-12", "task": "B-104 (P3 M14; decisions B10)",
+            "method": "ITU-R P.526 section 3.2 (diffraction loss for any distance over a smooth sphere): beyond the "
+                      "marginal line-of-sight distance sqrt(2 ae)(sqrt(h1) + sqrt(h2)) the first-term loss of section "
+                      "3.1.1, F(X) + G(Y1) + G(Y2) with X = 2.188 beta f^(1/3) ae^(-2/3) d, Y = 9.575e-3 beta "
+                      "f^(2/3) ae^(-1/3) h, beta = 1; inside it, A = (1 - h / h_req) A_h where h is the path "
+                      "clearance over the sphere and h_req = 0.552 of the first Fresnel zone, A_h the first-term loss "
+                      "at the modified radius that puts the path at grazing; ae = the Moon's radius (1,737.4 km, no "
+                      "atmosphere)",
+            "source_note": "the research notes record P.526 as opened for the knife-edge method (vehicles_comms_internals "
+                           "2.5); sections 3.1-3.2 were implemented from the Recommendation's text without a note "
+                           "recording them opened; the implementation reproduces the referee's two values (137.0 dB at "
+                           "5 km for two 2.5 m antennas, 146.6 dB at 3.73 km for two 1.0 m antennas)",
+            "columns": ["free space", "flat ground (the model)", "spherical ground (P.526)"],
+            "airtime_needed_kbps": need, "per_class": rows, "verdicts_moved": moved or ["none"]}
 
 
 def main(argv=None):
