@@ -149,6 +149,52 @@ def add_e50(c):
                                seed_max=float(p95.max()), all_inside=bool((p95 < S.D0_M).all()))
     c.e50near, c.e50frames = near_facts, frames
 
+    def readings(mult=1):
+        """B-101 (results/E50_near_base.json): the second clause of H9' under five readings of 'near the base', for
+        the ranging layer set. Checked against E50: reading (a) is the one used so far, (d) and (e) cover all driving."""
+        n = _load("E50_near_base.json")
+        if n is None:
+            raise Pending("results/E50_near_base.json (B-101) is missing")
+        s = e50(mult)
+        b = n["multiples"][str(mult)]
+        rd, sh = b["sets"]["dr+ranging"], b["share_of_driving"]
+        nf = near_facts(mult)
+        check(b["e50_reproduced_all"] is True and b["seeds"] == s["seeds"][str(mult)] and n["budget_m"] == S.D0_M,
+              f"B-101 reproduces E50's cells at {mult}x on the same seeds, against the same budget")
+        check(abs(rd["a"]["in_p95_m_mean"] - s["h9"][str(mult)]["ranging_near_p95_m"]["mean"]) < 1e-3 and abs(sh["a"]["mean"] - nf.share) < 0.005,
+              "reading (a) of B-101 is the reading E50 used (two or more beacons in line of sight)")
+        check(sh["d"]["mean"] == 1.0 and sh["e"]["mean"] == 1.0 and abs(rd["e"]["in_p95_m_mean"] - st(mult, "dr+ranging")["mean"]) < 1e-2
+              and abs(rd["d"]["in_p95_m_mean"] - rd["e"]["in_p95_m_mean"]) < 1e-6,
+              "readings (d) and (e), radio range by distance, cover all driving and give the error over all driving steps")
+        ns = len(b["seeds"])
+        check(rd["a"]["seeds_inside_budget"] == ns and all(rd[k]["seeds_inside_budget"] == 0 for k in "bcde"),
+              "the clause holds in every seed under reading (a) and in no seed under the other four")
+        check("PREREG6's words" in n["readings"]["e"] and "depends on the reading" in n["verdict"], "reading (e) is the registered wording; the file's verdict is 'depends on the reading'")
+        return SimpleNamespace(rd=rd, sh=sh, ns=ns, n=n)
+    c.e50readings = readings
+
+    def readings_sentence():
+        q = readings(1)
+        rd, sh, ns = q.rd, q.sh, q.ns
+        row = lambda k: f"{pc(sh[k]['mean'], 0)} of the driving, {m_(rd[k]['in_p95_m_mean'], 1 if k != 'a' else 2)}"
+        out = (f"The clause was then computed under five readings on the same {cnt(ns)} seeds (simulation; the cells "
+               f"reproduce E50's). (a) Two or more beacons in line of sight, the reading used: {row('a')}, inside the "
+               f"budget in {cnt(rd['a']['seeds_inside_budget'])} of {cnt(ns)} seeds. (b) One or more beacons in line "
+               f"of sight: {row('b')}, inside in no seed. (c) Within 1{NB}km of the base mast: {row('c')}, in no "
+               f"seed. (d) Within the 5{NB}km radio range of the mast, and (e) within radio range of any base beacon, "
+               f"which is the registered wording read by distance: all of the driving, "
+               f"{m_(rd['e']['in_p95_m_mean'], 1)}, in no seed. Under the registered wording the clause fails in "
+               f"every seed; it holds only under the reading that was chosen after the results.")
+        try:
+            q4 = readings(4)
+            out += (f" At four times the fleet the pattern is the same on {cnt(q4.ns)} seeds: "
+                    f"{m_(q4.rd['a']['in_p95_m_mean'], 2)} under (a), inside in every seed, and "
+                    f"{m_(q4.rd['e']['in_p95_m_mean'], 1)} under the registered wording, inside in none. The "
+                    f"eight-times cells were not run under the readings.")
+        except (Pending, KeyError):
+            pass
+        return out
+
     def model_sentence():
         check(D["budget_m"] == S.D0_M, "the separation budget of H9' is R1's static margin d0")
         check(D["lans_availability"][2028] == 0.0, "the navigation service offers no fix in 2028")
@@ -264,7 +310,7 @@ def add_e50(c):
                f"results and not before them [59]. That reading covers {pc(nf.share, 0)} of the driving steps, and "
                f"under it the error is {m_(h['ranging_near_p95_m']['mean'], 2)}, inside the budget in every seed "
                f"(largest {m_(nf.seed_max, 2)}); over all driving steps it is "
-               f"{m_(st(1, 'dr+ranging')['mean'], 1)}, outside it. " + c.awaited("near_base") + " With absolute fixes "
+               f"{m_(st(1, 'dr+ranging')['mean'], 1)}, outside it. " + readings_sentence() + " With absolute fixes "
                f"it stays inside the budget away "
                f"from the base: {verdict(h['fixes_away_supported'])} ({m_(h['fixes_away_p95_m']['mean'], 1)}")
         lans = st(1, "lans@2030", "away")
@@ -1655,8 +1701,9 @@ def add_family(c):
         cl = list(f.h["H9"]["clauses"].values())
         check([x["supported"] for x in cl] == [True, True, False] and [x["seeds_on_predicted_side"] for x in cl] == [1.0, 1.0, 0.0],
               "in H9' every seed is on the predicted side in the first two clauses and none in the third")
-        return ("Seed by seed, every seed lay on the predicted side of the budget in the first clause and, under "
-                "the reading used, in the second, and none did in the third.")
+        return ("Seed by seed, every seed lay on the predicted side of the budget in the first clause; in the "
+                "second every seed did under the reading used and none under the registered wording; and none did "
+                "in the third.")
     fill("P2-FAMILY-H9-SENTENCE", h9_sentence, "B-98a")
 
     def h10_sentence():
@@ -2195,19 +2242,23 @@ def add_front(c):
             raise Pending("E44 or E45 has not landed")
         viol = sorted(int(k) for k, t in j["types"].items() if t["violations"] > 0)
         states = sum(m["states"] for m in mc["models"].values())
-        check(viol == [9], "the one encounter type with violations is type 9, the dead-stopped vehicle")
+        check(viol == [9], "the one encounter type with violations in the main run is type 9, the dead-stopped vehicle")
+        check(c.fresh_types() == [6] and c.fresh()["types"]["6"]["fresh_seeds"]["violations"] == 1,
+              "on fresh seeds one landing-closure encounter (type 6) left a vehicle inside a closed zone")
         rf = c.ring("E44")
         check(rf["rate"][False] > 0, "the ring of one-lane segments deadlocked under the exit rule as written")
-        return 12 - len(viol), rf, states
+        return 12 - len(viol) - len(c.fresh_types()), rf, states
 
     def h7_short():
         clean, rf, states = e44_facts()
         up = c.uphill()
         check(up.gap_moon < S.D0_M, "by calculation the gap rule fails behind a leader braking uphill")
+        n6 = c.fresh()["types"]["6"]["fresh_seeds"]["n"]
         return (f"The safety program allowed no violation in {words(clean)} of twelve encounter types, all flat or "
-                f"downhill; a vehicle that stops dead in a one-lane segment defeats the gap rule, as does, "
-                f"by calculation, a leader braking uphill. A one-lane ring deadlocked in "
-                f"{pc(rf['rate'][False], 1)} of encounters under the rule as written.")
+                f"downhill: a vehicle that stops dead in a one-lane segment defeats the gap rule, as does, "
+                f"by calculation, a leader braking uphill, and one landing closure in {cnt(n6)} left a vehicle "
+                f"inside the zone. One-lane rings deadlocked in "
+                f"{pc(rf['rate'][False], 1)} of encounters.")
     fill("P2-H7-ABSTRACT-SHORT", h7_short, "E44")
 
     def facts():
@@ -2217,6 +2268,10 @@ def add_front(c):
         f.near = c.e50st(1, "dr+ranging", "near")
         f.away = c.e50st(1, "dr+ranging+fixes", "away")
         f.nf = c.e50near(1)
+        f.rd = c.e50readings(1)
+        f.all_p95 = f.rd.rd["e"]["in_p95_m_mean"]
+        check(f.all_p95 > 5 * S.D0_M and f.rd.rd["e"]["seeds_inside_budget"] == 0,
+              "within radio range of the base beacons, the registered wording, ranging does not hold the margin in any seed")
         f.h9, f.h10 = s["h9"]["1"], s["h10"]
         check(f.h9["ranging_near_supported"] and not f.h9["fixes_away_supported"],
               "ranging holds the margin where two beacons are in line of sight and terrain fixes do not hold it away from the base (abstract, introduction, conclusion)")
@@ -2244,12 +2299,13 @@ def add_front(c):
 
     def abstract_clause():
         f = facts()
-        return (f"Without satellite navigation, ranging held position error inside the {m_(S.D0_M, 0)} margin where "
-                f"two beacons were in sight ({pc(f.nf.share, 0)} of driving); terrain fixes left "
+        return (f"Without satellites, ranging held position error inside the {m_(S.D0_M, 0)} margin where "
+                f"two beacons were in sight ({pc(f.nf.share, 0)} of driving) but not over the registered radio "
+                f"range ({m_(f.all_p95, 0)}); terrain fixes left "
                 f"{m_(f.away['mean'], 0)} elsewhere, and their stops, not the reservation margins, set the cost: "
-                f"{h_(f.bd['diff_mean'], 2)} per delivery ({pc(f.bpct, 1)}, a lower bound). A "
-                f"{num(f.guard, 1)}{NB}s guard left no conflict in {cnt(f.c6['conflict_pairs_checked'])} "
-                f"reservation pairs with crystal clocks up to {num(f.c6['max_abs_clock_s'], 2)}{NB}s off, outside "
+                f"{h_(f.bd['diff_mean'], 2)} per delivery ({pc(f.bpct, 1)}, a lower bound). With a "
+                f"{num(f.guard, 1)}{NB}s guard, clocks up to {num(f.c6['max_abs_clock_s'], 2)}{NB}s off caused no "
+                f"conflict in {cnt(f.c6['conflict_pairs_checked'])} reservation pairs, outside "
                 f"the guarantee. A small network found slow position "
                 f"drifts {num(f.drift_gain, 0)}{NB}s sooner than a chi-square test, but every detector missed at "
                 f"least {pc(f.miss, 0)} of them and none kept its false-alarm rate with noisier sensors, so none "
@@ -2289,8 +2345,10 @@ def add_front(c):
                f"run again. Without a navigation satellite service, ranging to four beacons kept the 95th "
                f"percentile of position error at {m_(f.near['mean'], 1)}, inside the {m_(S.D0_M, 0)} the rules set "
                f"aside, where two or more beacons were in line of sight. That is {pc(f.nf.share, 0)} of the driving, "
-               f"and a reading of the registered &ldquo;near the base&rdquo; that we chose after the results; "
-               f"terrain fixes left {m_(f.away['mean'], 0)} away from the base, so one clause of the positioning "
+               f"and a reading of the registered &ldquo;within radio range of the base beacons&rdquo; that we chose "
+               f"after the results; within radio range as registered, which is all of the driving, the error was "
+               f"{m_(f.all_p95, 1)} and the clause failed in every seed. "
+               f"Terrain fixes left {m_(f.away['mean'], 0)} away from the base, so one clause of the positioning "
                f"hypothesis failed and the verdict on another depends on the reading (Section 5.9). A reservation "
                f"widened by the vehicle's own 95{PCT} bound, "
                f"{num(d1['margin_layered_margin_h_mean']['mean'] * 3600, 0)}{NB}s at each end with the layered "
@@ -2325,9 +2383,12 @@ def add_front(c):
         out = (f"The later experiments asked what the rules need from navigation, from clocks and from the honesty "
                f"of reports. On position the answer divides at the edge of the beacons' coverage. Where two or more "
                f"beacons are in line of sight, {pc(f.nf.share, 0)} of the driving, two-way ranging keeps a vehicle "
-               f"within the {m_(S.D0_M, 0)} that R1 already sets aside; whether that is what &ldquo;near the "
-               f"base&rdquo; means is a reading we chose after the results, and the second clause of H9&prime; "
-               f"stands or falls with it. Elsewhere terrain fixes leave a 95th-percentile error three times the "
+               f"within the {m_(S.D0_M, 0)} that R1 already sets aside. That is a reading we chose after the "
+               f"results. Under the registered wording, within radio range of the base beacons, the error is "
+               f"{m_(f.all_p95, 1)} and the second clause of H9&prime; fails in every seed; with one or more "
+               f"beacons in sight it is {m_(f.rd.rd['b']['in_p95_m_mean'], 1)} and within 1{NB}km of the mast "
+               f"{m_(f.rd.rd['c']['in_p95_m_mean'], 1)}. Ranging to four beacons at the base, then, holds the "
+               f"margin only where two of them are seen at once. Elsewhere terrain fixes leave a 95th-percentile error three times the "
                f"margin (Table 9); the weak places are the dark legs, where fix opportunities are "
                f"{m_(D['fix_spacing_dark_m'], 0)} apart and {pc(D['fix_fail_dark'], 0)} of fixes fail, and the "
                f"loose slopes, where dead reckoning drifts {pc(D['dr_loose'], 0)}. What a margin sized by each "
@@ -2466,7 +2527,7 @@ def add_front(c):
     def conclusion_clause():
         f = facts()
         return (f"Without satellite navigation, ranging held position error inside the {m_(S.D0_M, 0)} margin "
-                f"only where two beacons were in sight; the stops for terrain fixes, not the widened "
+                f"only where two beacons were in sight, not over the registered radio range; the stops for terrain fixes, not the widened "
                 f"reservations, set the cost, {h_(f.bd['diff_mean'], 2)} per delivery as a lower bound; and no "
                 f"detector of wrong position reports kept its false-alarm rate with noisier sensors.")
     fill("P2-P6-CONCLUSION-CLAUSE", conclusion_clause, "E50, E51, E56")
@@ -2475,8 +2536,9 @@ def add_front(c):
         clean, rf, states = e44_facts()
         return (f"One safety program enforcing ten rules, tested in simulation, allowed no violation in "
                 f"{words(clean)} of twelve encounter types, all flat or downhill; a vehicle that stops dead in a "
-                f"one-lane segment and, by calculation, a leader braking uphill defeat the gap rule, and a ring of "
-                f"one-lane segments can deadlock.")
+                f"one-lane segment and, by calculation, a leader braking uphill defeat the gap rule, one landing "
+                f"closure in {cnt(c.fresh()['types']['6']['fresh_seeds']['n'])} left a vehicle inside the closed "
+                f"zone, and a ring of one-lane segments can deadlock.")
     fill("P2-CONCLUSION-SAFETY-SHORT", conclusion_safety_short, "E44")
 
     def awaited_items():
@@ -2511,8 +2573,9 @@ def add_front(c):
         h9, h10 = s["h9"]["1"], s["h10"]
         failed, other = [], []
         check(h9["dr_supported"] and not h9["fixes_away_supported"], "H9': the first clause is supported and the third is not")
-        failed.append("the third clause of H9&prime;, with the verdict on its second depending on the reading of "
-                      "&ldquo;near the base&rdquo; (Section 5.9)")
+        check(c.e50readings(1).rd["e"]["seeds_inside_budget"] == 0, "H9' clause 2 fails in every seed under the registered wording")
+        failed.append("the third clause of H9&prime;, and its second under the registered wording, where it fails "
+                      "in every seed and holds only under a reading chosen after the results (Section 5.9)")
         n10 = [not h10["layered_within_supported"], None, not h10["dr_larger_supported"]]
         try:
             n10[1] = not c.e50gap4()[0]
@@ -2588,12 +2651,21 @@ def add_pta(c):
             "Proved, by exhaustive search",
             f"E45: {cnt(states)} reachable states of four layouts with up to three vehicles. Assumption: the discrete model "
             "(cells, one landing, one crew member); larger layouts are not covered", "5.7")
-        add(f"No hard violation in {c.words(len(clean))} of twelve encounter types",
+        add(f"No hard violation in {c.words(len(clean))} of twelve encounter types in the main run",
             "Tested, on the flat and downhill only",
             f"E44: {cnt(n_drv)} driven encounters, one seed each; per-type bound at most {c.sci(worst)} (Bonferroni, 95{PCT}), "
             "for the generated distributions only. A hard violation is defined in Section 3.5 (for a following vehicle: "
             "contact or a gap inside the 5&nbsp;m static margin). The bounds of types 4, 5 and 6 are on the seeds used to "
-            "find and fix defects. " + c.awaited("fresh_seeds"), "3.5, 5.6")
+            "find and fix defects, so those types were rerun on fresh seeds (next row)", "3.5, 5.6")
+        fr = c.fresh()["types"]
+        f6 = fr["6"]["fresh_seeds"]
+        add("Types 4, 5 and 6 allow no hard violation on seeds never used before",
+            "Tested: holds for types 4 and 5, fails for type 6",
+            f"Rerun in simulation, {cnt(f6['n'])} encounters per type: types 4 and 5 none, bound "
+            f"{c.sci(fr['4']['fresh_seeds']['bonferroni_bound'])} (Bonferroni) as in the main run; type 6 one encounter "
+            f"with a vehicle inside a closed zone (a hold-and-wait between R5 and R3), limit on the weighted share "
+            f"{c.sci(f6['bound_weighted'])} ({c.sci(f6['bonferroni_bound_weighted'])} Bonferroni). The request rule of "
+            "change 9 of [43] was rerun on that one encounter only, which was then clean", "5.6, 6.1")
         add("A follower does not touch a leader that stops dead in a one-lane segment",
             "Tested: fails",
             f"E44 type 9: {cnt(t9['violations'])} of {cnt(t9['n'])} inside the static margin, {cnt(t9['violations_by_kind']['viol_contact'])} "
@@ -2651,7 +2723,10 @@ def add_pta(c):
             "Tested: depends on the reading of &ldquo;near the base&rdquo;",
             f"E50, {fleets}: {m_(h9['ranging_near_p95_m']['mean'], 2)} at the 95th percentile where two or more beacons are "
             f"in line of sight ({pc(nf.share, 0)} of driving steps), a reading chosen after the results; "
-            f"{m_(c.e50st(1, 'dr+ranging')['mean'], 1)} over all driving. " + c.awaited("near_base"), "5.9")
+            f"{m_(c.e50st(1, 'dr+ranging')['mean'], 1)} within radio range of the base beacons, the registered wording "
+            f"(all of the driving), where it fails in every seed; {m_(c.e50readings(1).rd['b']['in_p95_m_mean'], 1)} with "
+            f"one or more beacons in sight and {m_(c.e50readings(1).rd['c']['in_p95_m_mean'], 1)} within 1{NB}km of the "
+            "mast, inside in no seed", "5.9")
         try:
             fam = c.famf()
         except Pending:

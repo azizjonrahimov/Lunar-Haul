@@ -148,13 +148,6 @@ AWAITED = {
     "uphill": ("E45_uphill.json", "B-107",
                "No encounter has been driven uphill, with or without a slope term in the required gap.",
                "encounters driven uphill, where the no-collision proposition does not hold"),
-    "fresh_seeds": ("E44_fresh_seeds.json", "B-108",
-                    "Types 4, 5 and 6 have not been rerun on seeds never used before.",
-                    "the bounds of encounter types 4, 5 and 6 on fresh seeds"),
-    "near_base": ("E50_near_base.json", "B-101",
-                  "The error under the other readings of the registered wording (one or more beacons in line of sight, "
-                  "a distance from the base mast, the radio range of the mast) has not been computed.",
-                  "the positioning hypothesis under the other readings of &ldquo;near the base&rdquo;"),
 }
 
 
@@ -360,6 +353,8 @@ class R:
         self.e47runs = pd.read_csv(f47["runs.csv"]) if os.path.exists(f47["runs.csv"]) else None
         d47 = os.path.join(ROOT, "data", "scenarios", "E47-design.json")
         self.e47d = jl(d47) if os.path.exists(d47) else None
+        ff = os.path.join(RES, "E44_fresh_seeds.json")                        # B-108: types 4, 5, 6 on fresh seeds
+        self.e44fresh = jl(ff) if os.path.exists(ff) else None
 
     def ring_parts(self, body="E44"):
         """Type 5 (the ring) per encounter, from the per-batch part files results/<body>_parts/T05_b*.csv.gz: the rule
@@ -878,6 +873,70 @@ def values(r: R, allow_pending: bool):
                 f"and under the variant in {cnt(b['dl'])} of {cnt(b['judged'])} ({pc(f['rate'][True], 1)}; "
                 f"{pc(f['rate_driven'][True], 1)} of {cnt(b['n'])})")
 
+    def fresh_facts():
+        """B-108 (results/E44_fresh_seeds.json): types 4, 5 and 6 rerun on seeds never used, beside the main run's
+        values. Checked: the file's main-run block is E44_bounds.json; types 4 and 5 are clean; type 6 has the one zone
+        violation, replayed, with the request-rule variant rerun on that one encounter only."""
+        d = r.e44fresh
+        if d is None:
+            raise Pending("results/E44_fresh_seeds.json (B-108) is missing")
+        j = e44()
+        for k in (4, 5, 6):
+            t = d["types"][str(k)]
+            m, f = t["main_run"], t["fresh_seeds"]
+            check(m["violations"] == t44(j, k)["violations"] and m["n_driven"] == t44(j, k)["n_driven"]
+                  and abs(m["bonferroni_bound"] - t44(j, k)["bonferroni_bound"]) < 1e-12,
+                  f"type {k}: the fresh-seed file's main-run block is E44_bounds.json")
+            check(f["n_driven"] == m["n_driven"] and sum(f["outcomes"].values()) == f["n"], f"type {k}: the fresh run has the main run's n")
+        f4, f5, f6 = (d["types"][str(k)]["fresh_seeds"] for k in (4, 5, 6))
+        check(f4["violations"] == 0 and f5["violations"] == 0 and abs(f4["bound"] - d["types"]["4"]["main_run"]["bound"]) < 1e-12,
+              "on fresh seeds types 4 and 5 have no violation and the same bound")
+        check(f6["violations"] == 1 and f6["violations_by_kind"]["viol_zone"] == 1 and f6["violations_by_kind"]["viol_contact"] == 0,
+              "on fresh seeds type 6 has one violation, a vehicle inside a closed zone, and no contact")
+        rp = f6["replay"]
+        check(len(rp) == 1 and rp[0]["deterministic"] and "hold-and-wait between R5 and R3" in rp[0]["what_happened"]
+              and rp[0]["request_rule_variant"]["viol_zone"] == 0 and rp[0]["fresh_encounters_rerun_under_variant"] == 1,
+              "the type-6 violation was replayed; the request-rule variant was rerun on that one encounter only and was clean")
+        check(f6["bound"] < d["types"]["6"]["main_run"]["bound"] < f6["bound_weighted"],
+              "type 6: the unweighted limit with one violation lies below the main run's zero-violation bound on the effective n; the weighted limit lies above it")
+        check("never used" in d["seeds"]["fresh"], "the fresh seed roots were never used before")
+        for k in (3, 10, 6):
+            check(abs(t44(j, k)["r1_breach_rate"] - {3: 0.0003, 10: 0.0003, 6: 0.001}[k]) < 1e-9, f"type {k}: the R1 breach rate is the one BACKEND confirmed")
+        return d
+
+    def fresh_types():
+        """Types with a hard violation on the fresh seeds that had none in the main run."""
+        d = fresh_facts()
+        return sorted(int(k) for k, t in d["types"].items() if t["fresh_seeds"]["violations"] > 0 and t["main_run"]["violations"] == 0)
+
+    def fresh_paragraph():
+        d = fresh_facts()
+        f4, f5, f6 = (d["types"][str(k)]["fresh_seeds"] for k in (4, 5, 6))
+        m5, m6 = d["types"]["5"]["main_run"], d["types"]["6"]["main_run"]
+        return (f"The main run's bounds of types 4, 5 and 6 are computed on the seeds on which the defects described "
+                f"below were found and fixed and on which the gap metric was narrowed, so the three types were rerun "
+                f"once on seeds never used before, {cnt(f4['n'])} simulated encounters each, with the code as it "
+                f"stands; Table 6 keeps both. Types 4 and 5 again had no hard violation, with the same bound "
+                f"({sci(f4['bound'])}; {sci(f4['bonferroni_bound'])} with the Bonferroni correction), and the ring "
+                f"deadlocked in {cnt(f5['outcomes']['deadlock'])} encounters against {cnt(m5['outcomes']['deadlock'])}. "
+                f"Type 6 had one hard violation: in 1 of the {cnt(f6['n'])} fresh landing-closure encounters a "
+                f"vehicle was still inside the zone when it closed, without contact. The encounter is deterministic "
+                f"and was replayed: a vehicle held at the zone boundary, which could not cross before the closure, "
+                f"kept its grant for a one-lane resource beyond the zone, and a vehicle inside the zone waited for "
+                f"that resource at its stop line and was still inside at the closure, a hold-and-wait between R5 and "
+                f"R3. For type 6 on the fresh seeds we quote the 95{PCT} upper limit on the weighted violation share "
+                f"at the effective n of {cnt(f6['n_eff'])}, {sci(f6['bound_weighted'])} "
+                f"({sci(f6['bonferroni_bound_weighted'])} with the Bonferroni correction), against the main run's "
+                f"zero-violation bound of {sci(m6['bound'])} ({sci(m6['bonferroni_bound'])}). The unweighted "
+                f"Clopper&ndash;Pearson limit that the registered rule gives once a violation occurs, "
+                f"{sci(f6['bound'])}, counts all {cnt(f6['n_driven'])} driven encounters where the zero-violation "
+                f"bound counts the effective n, so it comes out below a bound with no violation and the two cannot "
+                f"be compared. The request rule of change 9 of [43], under which a vehicle requests a resource only "
+                f"when no hold point that it cannot pass lies before that resource, was rerun on this one encounter, "
+                f"which was then clean; it was not run on the other {cnt(f6['n'] - 1)} fresh encounters, and nothing "
+                f"is claimed for it there. Type 6 deadlocked in {cnt(f6['outcomes']['deadlock'])} fresh encounters "
+                f"against {cnt(m6['outcomes']['deadlock'])}. ")
+
     def e44_n_encounters():
         j = e44()
         return cnt(sum(t44(j, k)["n_driven"] for k in range(1, 13)))
@@ -964,8 +1023,9 @@ def values(r: R, allow_pending: bool):
                 f"{'to a heading difference of 10&deg;' if c9()['metric_change']['method'].startswith('heading') else 'to the same road and direction'} "
                 f"(the shield's own leader test is unchanged), and types 3, 5 and 6 rerun at the same n so that every "
                 f"count is under the one final metric and classifier (change 9 of [43]). The reruns used the same "
-                f"seeds, so the bounds of types 4, 5 and 6 are computed on the encounters on which the defects were "
-                f"found and fixed and are not bounds on a fresh sample (Section 5.6). Twenty stored encounters "
+                f"seeds, so the main run's bounds of types 4, 5 and 6 are computed on the encounters on which the "
+                f"defects were found and fixed. After an internal review those three types were therefore run once "
+                f"more on seeds never used before, at the same n, and both sets are reported (Section 5.6). Twenty stored encounters "
                 f"must reproduce exactly on every build.")
     fill("P2-E44-DESIGN-SENTENCE", e44_design_sentence, "E44")
 
@@ -982,12 +1042,19 @@ def values(r: R, allow_pending: bool):
         zero, viol = e44_split(j)
         n = sum(t44(j, k)["n_driven"] for k in range(1, 13))
         bmax = max(t44(j, k)["bonferroni_bound"] for k in zero)
-        s = (f"In {cnt(n)} driven encounters of twelve types, all on the flat or downhill, the safety program "
-             f"allowed no hard violation in {words(len(zero))} types, with a 95{PCT} upper bound on the violation "
-             f"probability of {sci(bmax)} or less per type under that type's parameter distribution (for types 4, 5 "
-             f"and 6 on the seeds that were used to find and fix simulator defects)")
+        ft = fresh_types()
+        check(ft == [6], "the one type that is clean in the main run and not on fresh seeds is type 6")
+        clean = [k for k in zero if k not in ft]
+        bmax = max(t44(j, k)["bonferroni_bound"] for k in clean)
+        s = (f"In {cnt(n)} driven encounters of twelve types, all on the flat or downhill, and a rerun of three "
+             f"types on fresh seeds, the safety program allowed no hard violation in {words(len(clean))} types, "
+             f"with a 95{PCT} upper bound on the violation probability of {sci(bmax)} or less per type under that "
+             f"type's parameter distribution")
         if viol:
-            s += "; " + e44_violating_clause(j, viol)
+            s += "; " + e44_violating_clause(j, viol).replace("the exception is ", "the exceptions are ")
+        s += (", and the landing closure (type 6), where the rerun on fresh seeds found one encounter in "
+              f"{cnt(fresh_facts()['types']['6']['fresh_seeds']['n'])} in which a vehicle was still inside the zone "
+              "when it closed")
         return s + " (Section 5.6)."
     fill("P2-E44-INTRO-CLAUSE", e44_intro_clause, "E44")
 
@@ -1006,7 +1073,7 @@ def values(r: R, allow_pending: bool):
               "the undriven draws account for the whole gap between generated and driven")
         s = (f"Table 6 gives every type. Of the {cnt(n_all)} encounters generated, {cnt(n_drv)} were driven "
              f"({not_driven_clause(j)}). "
-             f"{words(len(zero)).capitalize()} of the twelve types produced no hard violation in {cnt(nz)} driven "
+             f"In this main run {words(len(zero))} of the twelve types produced no hard violation in {cnt(nz)} driven "
              f"encounters; their Bonferroni bounds run from {sci(bz[kmin])} (type {kmin}, {T12[kmin]}, effective "
              f"n {cnt(t44(j, kmin)['n_eff'])}) to {sci(bz[kmax])} (type {kmax}, {T12[kmax]}, effective n "
              f"{cnt(t44(j, kmax)['n_eff'])}). ")
@@ -1037,9 +1104,7 @@ def values(r: R, allow_pending: bool):
                       f"unweighted); the slip and drift bins of the same type produced none (Section 6.1). ")
         # the bounds of types 4 to 6 are on the seeds used to find and fix defects (the referee's M11)
         check(all(k in zero for k in (4, 5, 6)), "types 4, 5 and 6 have no violation in the final run")
-        s += ("The bounds of types 4, 5 and 6 are not confirmatory: they are computed on the seeds on which the "
-              "defects described below were found and fixed and on which the gap metric was narrowed. "
-              + awaited("fresh_seeds") + " ")
+        s += fresh_paragraph()
         # gaps below d_min while not braking fully: not hard violations, counted apart (E44_bounds.json r1_breach_rate)
         r1 = {k: t44(j, k)["r1_breach_rate"] * t44(j, k)["n_driven"] for k in range(1, 13)}
         check(all(abs(v - round(v)) < 1e-6 for v in r1.values()), "the R1 breach rate is a whole number of encounters per type")
@@ -1056,10 +1121,13 @@ def values(r: R, allow_pending: bool):
         dc_all = deadlocked_clean(j, zero)
         live = [k for k in zero if k not in dc_all]
         if viol:
-            s += (f"H7 as registered, zero violations in every type, is therefore not supported: {words(len(zero))} "
-                  f"types produced no violation, of which {words(len(live))} were also free of deadlocks"
+            s += (f"H7 as registered, zero violations in every type, is therefore not supported: in the main run "
+                  f"{words(len(zero))} types produced no violation, and on the fresh seeds type 6 produced one, so "
+                  f"{words(len(zero) - len(fresh_types()))} types have no violation in any run (nine of them were run on one seed "
+                  f"set only); of the "
+                  f"{words(len(zero))}, {words(len(live))} were also free of deadlocks"
                   + (f"; {'type ' if len(dc_all) == 1 else 'types '}{' and '.join(str(k) for k in dc_all)} "
-                     f"{'is' if len(dc_all) == 1 else 'are'} clean of violations but not live (below). "
+                     f"{'is' if len(dc_all) == 1 else 'are'} clean of violations in the main run but not live (below). "
                      if dc_all else ". "))
         else:
             s += ("H7's first clause, zero violations in every type, holds"
@@ -1170,7 +1238,7 @@ def values(r: R, allow_pending: bool):
         t9 = t44(j, 9)
         s = ""
         if viol == [9]:
-            s = (f"The one failure the simulator found is where the derivation says it should be. R1's gap is "
+            s = (f"The failure of type 9 is where the derivation says it should be. R1's gap is "
                  f"computed for a leader that brakes at no more than b<sub>max</sub>, and a vehicle that stops dead, "
                  f"a fault rather than a manoeuvre, lies outside that model [14], so a same-direction follower "
                  f"already inside a one-lane segment can come inside the 5{NB}m static margin and, in "
@@ -1196,6 +1264,14 @@ def values(r: R, allow_pending: bool):
                      else f"moved from {cnt(c9()['classification_defect']['type5_deadlocks_before'])}")
                   + " when the stall classifier was corrected (change 9 of [43]). ")
         t6 = t44(j, 6)
+        f6 = fresh_facts()["types"]["6"]["fresh_seeds"]
+        s += (f"The landing closure is the second type with a hard violation, found only when it was run on fresh "
+              f"seeds: in 1 of {cnt(f6['n'])} encounters a vehicle held at the zone boundary kept its grant for a "
+              f"one-lane resource beyond the zone, and a vehicle inside the zone waited for that resource until "
+              f"after the closure. R5 and R3 are each obeyed and together hold a vehicle where it must not be. The "
+              f"request rule of change 9 of [43] removed the violation in that one encounter, which is all it was "
+              f"run on; whether it holds on the other fresh encounters is not known. The main run, on the seeds "
+              f"used to fix the simulator, had not shown the case, which is what the fresh seeds were for. ")
         if t6["outcomes"]["deadlock"] > 0:
             s += (f"The {words(t6['outcomes']['deadlock'])} deadlocks of type 6 are a gap in the rules: a crossing "
                   f"that lies on a landing zone's boundary can be held by a vehicle stopped at the zone line, and the "
@@ -1731,7 +1807,7 @@ def values(r: R, allow_pending: bool):
         third = ("contradicted: it loses less in every Mars cell, with intervals that do not overlap the Moon's"
                  if less else "supported in every Mars cell")
         s += (f" H9's first clause, zero violations under Mars gravity, is supported on the flat in the same "
-              f"{words(len(zero))} types as H7, fails in type 9 for the same encounters, and is untested on slopes; "
+              f"{words(len(zero))} types as in H7's main run (the Mars encounters were not rerun on fresh seeds), fails in type 9 for the same encounters, and is untested on slopes; "
               f"its second, a similar rule cost, is tested only by the encounter delays, where it {rdv}; its third, "
               f"that Earth-dependent coordination loses more on Mars, is {third}.")
         return s
@@ -1818,8 +1894,8 @@ def values(r: R, allow_pending: bool):
         d = r.e47d["road_coordination"]["mars_link"]
         check(abs(d["dte_fraction"] - 0.5) < 1e-9, "the Mars base is assumed to see Earth for half of every sol")
         check(mars_lim < 10.0, "at Mars gravity the lunar brakes hold no downhill of the encounter design (10 degrees and more)")
-        return (f"At Mars gravity only flat encounters could be driven; with Earth assumed in view half of every "
-                f"sol, referral cost one-{e47_fraction()} of its lunar cost.")
+        return (f"At Mars gravity only flat encounters could be driven; with Earth assumed visible half of each "
+                f"sol, referral cost one-{e47_fraction()} as much.")
     fill("P2-H9-ABSTRACT-CLAUSE", h9_abstract_clause, "E47")
 
     def conclusion_mars_clause():
@@ -1861,6 +1937,7 @@ def values(r: R, allow_pending: bool):
     import phase6
     phase6.add(dict(V=V, T=T, F=F, fill=fill, pend=pend, check=check, Pending=Pending, r=r, num=num, h_=h_, pc=pc,
                     awaited=awaited, AWAITED=AWAITED, ring=ring_facts, ring_clause=ring_clause,
+                    fresh=fresh_facts, fresh_types=fresh_types,
                     ci=ci, cnt=cnt, words=words, sci=sci, tab=_tab, NB=NB, MINUS=MINUS, PCT=PCT,
                     table_pending=table_pending))
     if broken:
@@ -1910,10 +1987,27 @@ def table_e44(r: R, j, number=6, body="E44"):
                      sci(t["bonferroni_bound"]) + ("&dagger;" if k in (4, 5, 6) else ""), cnt(t["near_misses"]),
                      num(t["min_margin_m"], 1), cnt(o["deadlock"]), cnt(o["blocked_by_fault"]), cnt(o["finished"]),
                      cnt(o["incomplete"]), pc(t["emergency_brake_rate"], 1)])
+    fresh_note = ""
+    if body == "E44" and r.e44fresh is not None:
+        for k in (4, 5, 6):
+            f = r.e44fresh["types"][str(k)]["fresh_seeds"]
+            kinds = {kk: v for kk, v in f["violations_by_kind"].items() if v > 0}
+            viol = (cnt(f["violations"]) if not kinds else
+                    cnt(f["violations"]) + " (" + ", ".join(f"{cnt(v)} {short[kk]}" for kk, v in kinds.items()) + ")")
+            o = f["outcomes"]
+            bound = (sci(f["bonferroni_bound"]) if f["violations"] == 0 else sci(f["bonferroni_bound_weighted"]) + "&Dagger;")
+            rows.append([f"{k}, fresh seeds", html.escape(T12[k]), cnt(f["n"]), cnt(f["n_driven"]), cnt(f["n_eff"]), viol,
+                         bound, "&ndash;", num(f["min_margin_m"], 1), cnt(o["deadlock"]), cnt(o["blocked_by_fault"]),
+                         cnt(o["finished"]), cnt(o["incomplete"]), pc(f["emergency_brake_rate"], 1)])
+        fresh_note = (" The rows marked &ldquo;fresh seeds&rdquo; are the rerun of types 4, 5 and 6 on seeds never used "
+                      "before, made because of the dagger; near misses were not counted in it. &Dagger; The limit on the "
+                      "weighted violation share at the effective n; the unweighted limit on all driven encounters is "
+                      "lower than a zero-violation bound on the effective n and is not comparable with the other rows.")
     variant_note = (" &dagger; Computed on the seeds on which simulator defects were found and fixed and the gap metric "
-                    "narrowed" + ("" if body == "E44" else " (the Mars encounters are generated from E44's seeds)")
-                    + "; not a bound on a fresh sample. Type 5 pools two exit rules, R3 as written and a "
-                    "keep-one-slot-free variant; the text gives each.")
+                    "narrowed" + ("" if body == "E44" else " (the Mars encounters are generated from E44's seeds; they "
+                                                           "were not rerun on fresh seeds)")
+                    + "; not a bound on a fresh sample." + fresh_note + " Type 5 pools two exit rules, R3 as written "
+                    "and a keep-one-slot-free variant; the text gives each.")
     return _tab(f"Table {number}. {body}, encounters per type: generated, driven and effective n, hard violations (by kind), the "
                 f"95{PCT} upper bound on the per-encounter violation probability with the Bonferroni correction over "
                 "the twelve types, near misses, the smallest clearance, deadlocks, encounters blocked by a fault, "

@@ -80,3 +80,18 @@ and the build stops when the file appears, see `PLACEHOLDERS.md`, "Awaited resul
 37 findings. Fixed: 24 (M1, M3, M4, M5, M6, M7, M8, M10, M13; S2, S3, S4, S6, S7, S9, S10, S11, S13, S15; O1, O4,
 O5, O6, O7). Fixed in part: 7 (M12, S5, S8, S12, S14, S16, O3). Fixed in part and awaiting a BACKEND task: 4 (M2:
 B-102; M9: B-107; M11: B-108; S1: B-101). Not done: 2 (O2, O8).
+
+## Second pass, part 1 (12 Nov)
+
+Two BACKEND results landed and are composed from their files (simulation in both cases), with data checks; both are
+out of `AWAITED`. Build: `build_p2.py --no-pdf` passes, abstract 299 words, conclusion 250, 0 pending, no "PENDING" in
+`paper.html`. E50 at eight times the fleet had already landed and is in (first pass).
+
+| Finding | Status now | What was done | Where |
+|---|---|---|---|
+| M11 (B-108, `results/E44_fresh_seeds.json`) | closed | Types 4, 5, 6 rerun on seeds never used, 10,000 each; both seed sets in Table 6 with the reason. Types 4 and 5: no violation, bound 3.0e-4 (5.5e-4 Bonferroni) as before; ring 361 deadlocks against 386. Type 6: one hard violation in 10,000 (a vehicle inside the closed zone, no contact; replayed: hold-and-wait between R5 and R3). Quoted for type 6: the weighted limit 1.0e-3 (1.7e-3 Bonferroni); one sentence says why the unweighted 4.7e-4 is not comparable (it counts all driven encounters and falls below the zero-violation bound on the effective n). The request rule of change 9 was rerun on that one encounter only (clean); "nothing is claimed for it" on the other 9,999. Every "no violation in eleven types" is now "ten of twelve" or "in the main run". | abstract, 1, 3.5, 5.6, Table 6, 5.8, 6.1, 7, 9, Table 14 |
+| S1 (B-101, `results/E50_near_base.json`) | closed | H9' clause 2 under readings (a) to (e), ranging set, 1x: (a) 23 % of driving, 4.22 m, 30 of 30 seeds inside; (b) 57 %, 12.5 m, none; (c) 67 %, 24.7 m, none; (d) = (e) the registered wording, all driving, 50.1 m, none. 4x: 4.31 m under (a) in every seed, 32.1 m under the registered wording in none; 8x not run under the readings. Verdict "depends on the reading", and the text says the clause fails in every seed under the registered wording. | abstract, 1, 5.9, 5.13, 6.1, 9, Table 14 |
+| M8, M5 (BACKEND's confirmation) | agree | The paper's 13 of 1,892 (0.7 %) and 373 of 1,963 (19.0 %), and R1 breaches of 3, 3 and 10 in 10,000 for types 3, 10 and 6, equal BACKEND's values; the build now checks the three rates. | 5.6 |
+
+Still awaited, as plain sentences: B-102 (`results/E50_overlaps.json`, M2) and B-107 (`results/E45_uphill.json`, M9).
+Updated tally: fixed 26, fixed in part 7, awaiting a BACKEND task 2 (M2, M9), not done 2.
