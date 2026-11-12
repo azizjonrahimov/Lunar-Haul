@@ -25,6 +25,7 @@ const ROWS = [
   ['Computing per market round (the simulator’s whole-fleet call, not one robot’s bid)', 'auction', 'measured'],
   ['Memory, estimated as the sum of its parts (planner, checks, reservations, ledger copy)', 'mem', 'estimated'],
   ['Radio at the worst 5 km hop (flat ground)', 'link', 'derived'],
+  ['Radio at the worst hop over a curved Moon (ITU-R P.526)', 'sph', 'derived'],
   ['Messages per robot-hour', 'msgs', 'measured'],
   ['Power', 'power', 'assumed'],
   ['If it fails', c => c === 'Base computer' ? 'board B takes over; if both fail, the robots elect a leader' : 'stops at the next safe point; others treat its last reservation as occupied, and after the timeout its segment is marked unconfirmed and entered only at caution speed', 'design'],
@@ -40,6 +41,12 @@ function cell(S, key, k) {
   }
   if (key === 'auction') { const a = C.cpu_auction_round_ms; return `median ${sm(a.median, ' ms', 1, `${p}.cpu_auction_round_ms.median`)}, p99 ${sm(a.p99, ' ms', 1, `${p}.cpu_auction_round_ms.p99`)} (laptop)`; }
   if (key === 'mem') return `about ${sm(C.peak_memory_mb, ' MB', 2, `${p}.peak_memory_mb (an estimate: the sum of the parts, not a measurement)`)} of ${num({ value: F.memory_mb, unit: ' MB', digits: 0, flag: 'Spec', source: `${SZ}: flight.memory_mb (${F.processor})` })}`;
+  if (key === 'sph') {   // F-70b (B-104): the same worst hop over a spherical Moon, beside the flat-ground row
+    const R = S.revision_b104?.per_class?.[k]; if (!R) return '–';
+    const W = R.worst_hop, src = `revision_b104.per_class.${k}.worst_hop`;
+    const r = W.kbps.spherical_ground, db = W.spherical_minus_flat_db;   // one decimal where rounding would hide it (4.9 kbit/s, 5.73 dB)
+    return `${sm(r, ' kbit/s', r < 100 ? 1 : 0, `${src}.kbps.spherical_ground`)} at ${fmt(W.d_m / 1e3, 1)} km, ${sm(db, ' dB', Number.isInteger(db) ? 0 : 1, `${src}.spherical_minus_flat_db`)} more loss than on flat ground`;
+  }
   if (key === 'link') {
     const L = C.link, ant = `${fmt(L.antenna_m, L.antenna_m % 1 ? 1 : 0)} m antenna, ${fmt(L.tx_power_w, L.tx_power_w % 1 ? 2 : 0)} W`;
     // F-67 (B-89): flat-ground law with the smooth-Moon horizon check; two 1 m antennas cannot see each other at 5 km

@@ -306,3 +306,50 @@ export function lrip(key) {
   }
   throw new Error(`lrip: unknown key ${key}`);
 }
+
+// F-70b / B-103: the driving split of E53 (results/E53_bitrate.json driving_split; decisions B9): <!--@e53d:key--> with key
+// parked_share, drive_hops, drive_reach, drive_p95 (busiest link, 1 Hz, driving), si_air (STATUS and INTENT also at 1 Hz:
+// scheduled airtime for twenty rovers), channel (the narrow-band channel) or si_fit ("fits" / "does not fit").
+let e53full = null;
+export function e53d(key) {
+  e53full ||= JSON.parse(readFileSync(join(ROOT, 'results', 'E53_bitrate.json'), 'utf8').replace(/\bNaN\b/g, 'null'));
+  const D = e53full.driving_split, src = 'results/E53_bitrate.json: driving_split.';
+  if (!D) throw new Error('results/E53_bitrate.json: no driving_split');
+  const drv = D.e53_auth_20_rovers?.fleet_driving?.['1 Hz'], si = D.status_intent_at_1hz;
+  const nb = Object.entries(e53full.channels_kbps).find(([k]) => /narrow/.test(k))?.[1];
+  const f = (value, unit, digits, what) => num({ value, unit, digits, flag: 'Modelled', source: src + what });
+  const V = {
+    parked_share: () => f(100 * (1 - D.pool_driving_share), ' %', 0, 'pool_driving_share (one minus)'),
+    drive_hops: () => f(drv.mean_hops_to_base, '', 2, 'e53_auth_20_rovers.fleet_driving.1 Hz.mean_hops_to_base'),
+    drive_reach: () => f(100 * drv.reachable_share, ' %', 0, 'e53_auth_20_rovers.fleet_driving.1 Hz.reachable_share'),
+    drive_p95: () => f(drv.busiest_link_kbps_p95, ' kbit/s', 1, 'e53_auth_20_rovers.fleet_driving.1 Hz.busiest_link_kbps_p95'),
+    si_air: () => f(si.scheduled_airtime_p95_kbps.fleet, ' kbit/s', 1, 'status_intent_at_1hz.scheduled_airtime_p95_kbps.fleet'),
+    channel: () => num({ value: nb, unit: ' kbit/s', digits: 0, flag: 'Assumed', source: 'results/E53_bitrate.json: channels_kbps (the narrow-band channel)' }),
+    si_fit: () => (si.scheduled_airtime_p95_kbps.fleet <= nb ? 'fits' : 'does not fit'),
+  };
+  if (!V[key]) throw new Error(`E53 driving split: unknown key ${key}`);
+  return V[key]();
+}
+
+// F-70b / B-104: the radio over a curved Moon (results/E48_sizing.json revision_b104, ITU-R P.526; decisions B10):
+// <!--@b104:key--> for the big rovers' worst hop (LTV1): antenna, hop, loss_diff, rate_flat, rate_sph, target, range_flat, range_sph.
+let b104doc = null;
+export function b104(key, cls = 'LTV1') {
+  b104doc ||= JSON.parse(readFileSync(join(ROOT, 'results', 'E48_sizing.json'), 'utf8').replace(/\bNaN\b/g, 'null')).revision_b104;
+  if (!b104doc) throw new Error('results/E48_sizing.json: no revision_b104');
+  const C = b104doc.per_class[cls], W = C.worst_hop, src = `results/E48_sizing.json: revision_b104.per_class.${cls}.`;
+  const tgt = Math.max(...Object.keys(C.range_m_for_kbps_spherical).map(Number));
+  const f = (value, unit, digits, what, flag = 'Modelled') => num({ value, unit, digits, flag, source: src + what });
+  const V = {
+    antenna: () => f(C.antenna_m, ' m', 1, 'antenna_m', 'Assumed'),
+    hop: () => f(W.d_m / 1000, ' km', 0, 'worst_hop.d_m', 'Assumed'),
+    loss_diff: () => f(W.spherical_minus_flat_db, ' dB', 0, 'worst_hop.spherical_minus_flat_db'),
+    rate_flat: () => f(W.kbps.flat_ground, ' kbit/s', 0, 'worst_hop.kbps.flat_ground'),
+    rate_sph: () => f(W.kbps.spherical_ground, ' kbit/s', 0, 'worst_hop.kbps.spherical_ground'),
+    target: () => f(tgt / 1000, ' Mbit/s', 0, 'range_m_for_kbps_spherical (the highest rate listed)', 'Assumed'),
+    range_flat: () => f(C.range_m_for_kbps_flat[String(tgt)] / 1000, ' km', 2, `range_m_for_kbps_flat.${tgt}`),
+    range_sph: () => f(C.range_m_for_kbps_spherical[String(tgt)] / 1000, ' km', 2, `range_m_for_kbps_spherical.${tgt}`),
+  };
+  if (!V[key]) throw new Error(`revision_b104: unknown key ${key}`);
+  return V[key]();
+}

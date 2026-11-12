@@ -14,9 +14,11 @@ test('Lunar ATC results: every key exists in its values file and renders flagged
   }
   const html = atcResults('/');
   assert.doesNotMatch(html, /\(pending\)|\{\{/);
+  assert.doesNotMatch(html, /P1-H1-UNDELIVERED-SHARE|99\.5/, 'the withdrawn share is not read');
   assert.ok((html.match(/data-flag="Modelled"/g) || []).length >= 14, 'every number carries a flag');
   // the section's text has no digits outside the flagged numbers, the file names and the paper names (P1 to P3)
-  const text = html.replace(/<section class="r-fam"[\s\S]*?<\/section>/, '').replace(/<span class="num">.*?<\/span><\/span>/g, '')   // the Phase 6 table quotes its file (tests/phase6.test.mjs)
+  const text = html.replace(/<section class="r-fam"[\s\S]*?<\/section>/, '').replace(/<q class="r-quote"[\s\S]*?<\/q>/g, '')   // quoted paper sentences come from the values file
+   .replace(/<span class="num">.*?<\/span><\/span>/g, '')   // the Phase 6 table quotes its file (tests/phase6.test.mjs)
    .replace(/<[^>]+>/g, ' ').replace(/paper\/p\d|E48_sizing|values\.json|\bP[123]\b/g, '');
   assert.doesNotMatch(text, /\d/, `typed digits: ${text.match(/.{0,30}\d.{0,30}/)?.[0]}`);
 });

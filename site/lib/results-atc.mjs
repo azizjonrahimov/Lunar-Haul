@@ -19,24 +19,21 @@ export function pv(id, key) {
 // the sentences: [paper, list of HTML items]; every number through pv() or E48
 export const ITEMS = {
   p1: [
-    ['P1-N-RUNS-ALL', 'P1-N-REGIMES'],
+    ['P1-N-RUNS-ALL', 'P1-N-RUNS-DISTINCT-MAX', 'P1-E40-N-DISTINCT', 'P1-E40-N-RUNS', 'P1-N-REGIMES'],
     ['P1-H2-STRICT-MINUS-O', 'P1-PLAN-MINUS-O'],
     ['P1-LOSS-MAIN', 'P1-H3A-DIFF', 'P1-H3A-CI90'],
-    ['P1-H4-LIN-PCT-30'],
-    // F-70: the 99.5 % share is dropped until the revised P1 states it (referee decisions B12)
+    ['P1-H4-MLP-DIFF-30', 'P1-H4-MLP-CI-30', 'P1-H4-LIN-PCT-30'],
+    ['P1-AUCTION-MINUS-RELAY08', 'P1-AUCTION-MINUS-RELAY08-CI'],
+    // the 99.5 % share (P1-H1-UNDELIVERED-SHARE) is withdrawn by the revised P1: not read
   ],
-  p2: [['P2-E44-N-ENCOUNTERS', 'P2-N-RUNS-E43'], ['P2-H8-X1-PCT', 'P2-H8-X4-PCT'], ['P2-UNC-X1-RATIO'], ['P2-DEADLOCKS-TOTAL']],
+  p2: [['P2-E44-N-ENCOUNTERS', 'P2-N-RUNS-E43'], ['P2-H7-ABSTRACT-SHORT'], ['P2-H8-X1-PCT', 'P2-H8-X4-PCT'], ['P2-UNC-X1-RATIO'], ['P2-P6-ABSTRACT-CLAUSE']],
   p3: [['P3-N-OWNERS', 'P3-E46-N-RUNS'], ['P3-MESH-MAST-DIRECT-SHARE']],
 };
 
 function e48() { const p = join(ROOT, 'results', 'E48_sizing.json'); return existsSync(p) ? JSON.parse(readFileSync(p, 'utf8').replace(/\bNaN\b/g, 'null')) : null; }
 
-// an optional values key (one the revised paper may add): ", N <what>" when present, nothing when not
-function distinct(id, key, what) {
-  const p = join(ROOT, 'paper', id, 'values.json');
-  const V = existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')) : {};
-  return key in V ? ` (${pv(id, key)} ${what})` : '';
-}
+// a sentence the paper itself writes (a values-file key holding prose): quoted as it stands, its numbers included
+export function quote(id, key) { return `<q class="r-quote" data-src="paper/${id}/values.json ${key}">${paperValue(id, key)}</q>`; }
 
 export function atcResults(base = '/') {
   const v = pv, E = e48(), SZ = 'results/E48_sizing.json';
@@ -46,16 +43,18 @@ export function atcResults(base = '/') {
     + `<h3 class="r-atc-h" id="r-atc-${id}">${paperField(id, 'title')}</h3><ul>${items.map(t => `<li>${t}</li>`).join('')}</ul>`
     + `<p class="small muted r-atc-src">Read from <code>paper/${id}/values.json</code>${id === 'p3' ? ' and <code>results/E48_sizing.json</code>' : ''} when the site is built.</p></article>`;
   const p1 = [
-    `${v('p1', 'P1-N-RUNS-ALL')} simulated years across three experiments${distinct('p1', 'P1-E40-N-DISTINCT', 'distinct runs in the main experiment, E40')} under ${v('p1', 'P1-N-REGIMES')} decision regimes.`,
+    `${v('p1', 'P1-N-RUNS-ALL')} simulated years in three experiments, at most ${v('p1', 'P1-N-RUNS-DISTINCT-MAX')} of them distinct (${v('p1', 'P1-E40-N-DISTINCT')} distinct of ${v('p1', 'P1-E40-N-RUNS')} in the main experiment), under ${v('p1', 'P1-N-REGIMES')} decision regimes.`,
     `A shared dispatcher on Earth that stops when Earth sets kept urgent cargo waiting for pickup ${v('p1', 'P1-H2-STRICT-MINUS-O')} longer than one that never stops; planning ahead before each blackout left ${v('p1', 'P1-PLAN-MINUS-O')} of that.`,
     `The robots' own auction, at message loss ${v('p1', 'P1-LOSS-MAIN')}, kept urgent cargo waiting for pickup ${v('p1', 'P1-H3A-DIFF')} than the full-information marketplace; its interval, ${v('p1', 'P1-H3A-CI90')}, includes zero, so the runs cannot tell the two apart.`,
-    `A learned linear correction to the bids, the secondary model, cut the urgent wait by ${v('p1', 'P1-H4-LIN-PCT-30')}; the registered model, a small network trained the same way, did not.`,
+    `The registered learned bid, a small network, did not beat hand-built bids (difference ${v('p1', 'P1-H4-MLP-DIFF-30')}, interval ${v('p1', 'P1-H4-MLP-CI-30')}); a linear correction registered as secondary cut the urgent wait by ${v('p1', 'P1-H4-LIN-PCT-30')}.`,
+    `An always-up relay matched the marketplace run for run; only an intermittent relay was worse than the auction, by ${v('p1', 'P1-AUCTION-MINUS-RELAY08')} (${v('p1', 'P1-AUCTION-MINUS-RELAY08-CI')}).`,
   ];
   const p2 = [
     `The rules were checked on ${v('p2', 'P2-E44-N-ENCOUNTERS')} encounters and priced in ${v('p2', 'P2-N-RUNS-E43')} runs of the logistics model.`,
+    quote('p2', 'P2-H7-ABSTRACT-SHORT'),
     `At today's fleet they add ${v('p2', 'P2-H8-X1-PCT')} to the delay per delivery; at four times the fleet, ${v('p2', 'P2-H8-X4-PCT')}.`,
-    `Referring every road conflict to Earth instead raises the delay per delivery ${v('p2', 'P2-UNC-X1-RATIO')}-fold.`,
-    `There were ${v('p2', 'P2-DEADLOCKS-TOTAL')} deadlocks at today's fleet.`,
+    `Referring every road conflict to Earth instead, at the assumed staff time per conflict, raises the delay per delivery ${v('p2', 'P2-UNC-X1-RATIO')}-fold.`,
+    quote('p2', 'P2-P6-ABSTRACT-CLAUSE'),
   ];
   const sched = air('scheduled'), slot = air('slotted');
   const p3 = [

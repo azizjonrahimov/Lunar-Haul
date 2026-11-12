@@ -141,3 +141,19 @@ test('F-70 hooks: the fix-stop cost, the clock-guard observation, the LRIP sizes
     assert.match(lrip('framed'), />53</);
   }
 });
+
+test('F-70b hooks: the driving split (B-103) and the curved-Moon radio (B-104)', async () => {
+  const { e53d, b104 } = await import('../lib/protocol-data.mjs');
+  if (existsSync(R('results/E53_bitrate.json')) && J('results/E53_bitrate.json').driving_split) {
+    const D = J('results/E53_bitrate.json').driving_split;
+    assert.match(e53d('drive_hops'), /data-flag="Modelled"/);
+    assert.equal(e53d('si_fit'), D.status_intent_at_1hz.scheduled_airtime_p95_kbps.fleet <= 16 ? 'fits' : 'does not fit');
+    assert.throws(() => e53d('nope'), /unknown key/);
+  }
+  if (existsSync(R('results/E48_sizing.json')) && J('results/E48_sizing.json').revision_b104) {
+    const W = J('results/E48_sizing.json').revision_b104.per_class.LTV1.worst_hop;
+    assert.ok(W.kbps.spherical_ground < W.kbps.flat_ground, 'the curved Moon costs rate');
+    assert.match(b104('rate_sph'), /kbit\/s/);
+    assert.throws(() => b104('nope'), /unknown key/);
+  }
+});

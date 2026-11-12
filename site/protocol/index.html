@@ -183,7 +183,11 @@
         <h3>Method</h3>
         <p>The engine's radio model decides every link on the 5 m terrain (free space, then the flat-ground law, and a
           link budget: <!--@pn:tx_w-->, <!--@pn:gain-->, noise figure <!--@pn:nf-->, margin <!--@pn:margin-->, at
-          <!--@pn:rate-->); experiment E54 (hypothesis H14) compares store-and-forward with drop-and-retry.</p>
+          <!--@pn:rate-->); experiment E54 (hypothesis H14) compares store-and-forward with drop-and-retry.
+          The flat-ground law ignores the Moon's curvature. Over a curved Moon (ITU-R P.526) the loss between two
+          <!--@b104:antenna--> antennas <!--@b104:hop--> apart is <!--@b104:loss_diff--> higher, so the rate falls from
+          <!--@b104:rate_flat--> to <!--@b104:rate_sph-->, and <!--@b104:target--> reaches <!--@b104:range_sph--> instead of
+          <!--@b104:range_flat-->. No lunar measurement exists to settle which is closer.</p>
         <h3>Who we would work with</h3>
         <p>The CCSDS working groups (links, security, delay-tolerant networking, surface wireless), NASA SCaN and the
           LunaNet team, NASA's open delay-tolerant networking software teams, the LunarRF authors at WPI, and Nokia Bell
@@ -192,7 +196,8 @@
       </div>
       <figure class="pr-fig" id="fig-radio" aria-labelledby="fig-radio-cap">
         <div class="pr-host" data-fig="radio"></div>
-        <figcaption id="fig-radio-cap">The engine's link budget (lunarsim/atc/radio.py) in your browser. Drag the
+        <figcaption id="fig-radio-cap">The engine's link budget (lunarsim/atc/radio.py) in your browser, on flat ground
+          (the curved-Moon figures are in the text). Drag the
           distance, pick the antenna height and the band, put a hill in the way, and add a relay.</figcaption>
       </figure>
       <figure class="pr-fig pr-fig-wide" id="fig-dtn" aria-labelledby="fig-dtn-cap">
@@ -229,14 +234,18 @@
         <h3>Method</h3>
         <p>Experiment E53 (hypothesis H13) loads the channel with the full message set, authentication on, at once and
           ten times a second for twenty rovers. Calculated from the message sizes and rates (H13 is a design
-          calculation, not a test), for positions where the fleet works, nearly all of them parked: twenty rovers reporting once a second put
+          calculation, not a test), for positions where the fleet works, <!--@e53d:parked_share--> of them parked: twenty rovers reporting once a second put
           <!--@e53:fleet:on:1.0:20:busiest_link_kbps_p95--> on the busiest link, which <!--@e53:fleet:on:1.0:20:fits_nb_scheduled_p95--> the
           narrow-band channel when the base schedules the slots and <!--@e53:fleet:on:1.0:20:fits_nb_slotted_aloha_p95-->
           it with random access; ten times a second, <!--@e53:fleet:on:10.0:20:busiest_link_kbps_p95-->, which
           <!--@e53:fleet:on:10.0:20:fits_nb_scheduled_p95--> the narrow-band channel with scheduled slots and
           <!--@e53:fleet:on:10.0:20:fits_bb_scheduled_p95--> the broadband one. With the fleet spread across the
           site, <!--@e53:spread:on:1.0:20:reachable_share--> of rovers reach the base, in
-          <!--@e53:spread:on:1.0:20:mean_hops_to_base--> hops on average.</p>
+          <!--@e53:spread:on:1.0:20:mean_hops_to_base--> hops on average. While driving, reports travel
+          <!--@e53d:drive_hops--> hops on average and <!--@e53d:drive_reach--> of rovers have a path to the base; the busiest
+          link then carries <!--@e53d:drive_p95-->. With STATUS and INTENT also sent once a second, twenty rovers need
+          <!--@e53d:si_air--> of airtime even when the base schedules the slots, which <!--@e53d:si_fit--> the
+          <!--@e53d:channel--> channel.</p>
         <h3>Who we would work with</h3>
         <p>CCSDS, the Space ROS community, ZettaScale (Zenoh), and the VDA 5050 group and MassRobotics, whose
           factory-robot standards are the closest working precedent.</p>
