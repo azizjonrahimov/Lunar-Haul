@@ -720,6 +720,39 @@ def cmd_build():
     out["h10"].update(_b89_traffic(out, per_type, bph))
     out["revision"] = _b89_revision(out, links, links_flat)
     out["revision_b104"] = _b104_spherical(out, links_flat)
+    if os.path.isfile(_cache("b105")):                        # B-105 (P3 M1): measured beside estimated
+        b5 = json.load(open(_cache("b105")))
+        fac, frg = d["flight"]["factor"], d["flight"]["factor_range"]
+        pr = {}
+        for m_, r in sorted(b5.items(), key=lambda kv: int(kv[0])):
+            q = r["per_robot_round"]
+            pr[m_] = dict(q, robots=r["robots"], days=r["days"],
+                          flight_median_ms=round(q["median_ms"] * fac, 2), flight_p99_ms=round(q["p99_ms"] * fac, 1),
+                          flight_p99_ms_range=[round(q["p99_ms"] * frg[0], 1), round(q["p99_ms"] * frg[1], 1)])
+        out["per_robot_round"] = {
+            "revision": "B-105, 12 Nov 2026: the time of ONE robot's bid computation in one auction round (its loop "
+                        "over the pool in lunarsim/dispatch.py marketplace: _try_bundle per item, summed per round "
+                        "and robot; rounds counted at the auction's selector), timed in a 30-day month of E48's "
+                        "scenario per fleet multiple (seed 1, laptop), and scaled by flight.factor. classes.*."
+                        "cpu_auction_round_ms is the simulator's dispatch call for the whole fleet (every free robot "
+                        "and waiting item, with the simulated message exchange), pooled over 1x, 4x and 8x: it is "
+                        "not a vehicle's computation (P3 M1)",
+            "laptop_ms_by_multiple": pr,
+            "whole_fleet_dispatch_call_ms_pooled": out["classes"]["LTV1"]["cpu_auction_round_ms"]}
+        out["measured_memory"] = {
+            "revision": "B-105, 12 Nov 2026: tracemalloc peaks (bytes Python allocates) of the on-robot parts on one "
+                        "robot's view of a 30-day month per fleet multiple: planner working memory during one bid "
+                        "computation (p99 over sampled robot-rounds), one safety_check call, a copy of the base's "
+                        "reservation entries in the next 24 h (the larger of mid-month and month end), the month's "
+                        "ledger records, the bid policy loaded (data/policies/atc_bid_v1.json; C_AUCTION's default "
+                        "bids do not use it), and all of them held at once. The interpreter, the code and numpy "
+                        "buffers outside Python's allocator are not counted; a C implementation would hold the same "
+                        "data in less. classes.*.peak_memory_mb (0.388 MB) is an ESTIMATE, the sum of byte counts "
+                        "at assumed layouts plus 0.05 MB, and is relabelled so (P3 M1)",
+            "mb_by_multiple": {m_: dict(r["memory_mb"], robots=r["robots"],
+                                        process_peak_working_set_mb=r["process_peak_working_set_mb"])
+                               for m_, r in sorted(b5.items(), key=lambda kv: int(kv[0]))},
+            "estimate_mb_for_comparison": out["classes"]["LTV1"]["peak_memory_mb"]}
     with open(OUT, "w", encoding="utf-8", newline="\n") as f:
         json.dump(out, f, indent=1, default=float)
         f.write("\n")

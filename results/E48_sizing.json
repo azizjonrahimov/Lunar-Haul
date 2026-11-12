@@ -1367,5 +1367,150 @@
    "LTV1: 1_Mbps_at_longest_hop True -> False",
    "CARGO: 1_Mbps_at_longest_hop True -> False"
   ]
+ },
+ "per_robot_round": {
+  "revision": "B-105, 12 Nov 2026: the time of ONE robot's bid computation in one auction round (its loop over the pool in lunarsim/dispatch.py marketplace: _try_bundle per item, summed per round and robot; rounds counted at the auction's selector), timed in a 30-day month of E48's scenario per fleet multiple (seed 1, laptop), and scaled by flight.factor. classes.*.cpu_auction_round_ms is the simulator's dispatch call for the whole fleet (every free robot and waiting item, with the simulated message exchange), pooled over 1x, 4x and 8x: it is not a vehicle's computation (P3 M1)",
+  "laptop_ms_by_multiple": {
+   "1": {
+    "n": 218,
+    "median_ms": 0.45455001236405224,
+    "p99_ms": 5.340206004038892,
+    "max_ms": 7.491899887099862,
+    "rounds": 193,
+    "try_bundle_calls": 1241,
+    "robots_per_round_mean": 1.1295336787564767,
+    "robots": 8,
+    "days": 30,
+    "flight_median_ms": 24.91,
+    "flight_p99_ms": 292.6,
+    "flight_p99_ms_range": [
+     194.9,
+     341.8
+    ]
+   },
+   "4": {
+    "n": 2262,
+    "median_ms": 0.1938499917741865,
+    "p99_ms": 19.960348020831276,
+    "max_ms": 217.01709993067198,
+    "rounds": 849,
+    "try_bundle_calls": 9755,
+    "robots_per_round_mean": 2.664310954063604,
+    "robots": 32,
+    "days": 30,
+    "flight_median_ms": 10.62,
+    "flight_p99_ms": 1093.8,
+    "flight_p99_ms_range": [
+     728.6,
+     1277.5
+    ]
+   },
+   "8": {
+    "n": 6935,
+    "median_ms": 0.2009000163525343,
+    "p99_ms": 21.651149941026205,
+    "max_ms": 196.03770005051047,
+    "rounds": 1749,
+    "try_bundle_calls": 54281,
+    "robots_per_round_mean": 3.9651229273870783,
+    "robots": 64,
+    "days": 30,
+    "flight_median_ms": 11.01,
+    "flight_p99_ms": 1186.5,
+    "flight_p99_ms_range": [
+     790.3,
+     1385.7
+    ]
+   }
+  },
+  "whole_fleet_dispatch_call_ms_pooled": {
+   "median": 1.975,
+   "p99": 20.528,
+   "n": 84367
+  }
+ },
+ "measured_memory": {
+  "revision": "B-105, 12 Nov 2026: tracemalloc peaks (bytes Python allocates) of the on-robot parts on one robot's view of a 30-day month per fleet multiple: planner working memory during one bid computation (p99 over sampled robot-rounds), one safety_check call, a copy of the base's reservation entries in the next 24 h (the larger of mid-month and month end), the month's ledger records, the bid policy loaded (data/policies/atc_bid_v1.json; C_AUCTION's default bids do not use it), and all of them held at once. The interpreter, the code and numpy buffers outside Python's allocator are not counted; a C implementation would hold the same data in less. classes.*.peak_memory_mb (0.388 MB) is an ESTIMATE, the sum of byte counts at assumed layouts plus 0.05 MB, and is relabelled so (P3 M1)",
+  "mb_by_multiple": {
+   "1": {
+    "planner_working_peak_p99": 0.003514559999999996,
+    "planner_working_peak_max": 0.004232,
+    "planner_samples": 60,
+    "safety_check_peak": 0.005628,
+    "reservation_window_24h": {
+     "entries": 7,
+     "resources": 3,
+     "held": 0.000256,
+     "peak": 0.001576
+    },
+    "ledger_month": {
+     "entries": 194,
+     "held": 0.0016,
+     "peak": 0.002544
+    },
+    "bid_policy": {
+     "held": 0.073796,
+     "peak": 0.10658
+    },
+    "all_at_once_peak": 0.113556,
+    "all_at_once_held": 0.007323,
+    "all_at_once_plus_planner_p99": 0.11707056,
+    "robots": 8,
+    "process_peak_working_set_mb": 438.6
+   },
+   "4": {
+    "planner_working_peak_p99": 0.012594400000000018,
+    "planner_working_peak_max": 0.024728,
+    "planner_samples": 471,
+    "safety_check_peak": 0.005628,
+    "reservation_window_24h": {
+     "entries": 14,
+     "resources": 3,
+     "held": 0.001296,
+     "peak": 0.004032
+    },
+    "ledger_month": {
+     "entries": 854,
+     "held": 0.00688,
+     "peak": 0.007824
+    },
+    "bid_policy": {
+     "held": 0.07574,
+     "peak": 0.108516
+    },
+    "all_at_once_peak": 0.120876,
+    "all_at_once_held": 0.007323,
+    "all_at_once_plus_planner_p99": 0.13347040000000002,
+    "robots": 32,
+    "process_peak_working_set_mb": 439.4
+   },
+   "8": {
+    "planner_working_peak_p99": 0.007552,
+    "planner_working_peak_max": 0.076536,
+    "planner_samples": 3010,
+    "safety_check_peak": 0.005628,
+    "reservation_window_24h": {
+     "entries": 79,
+     "resources": 19,
+     "held": 0.002064,
+     "peak": 0.004968
+    },
+    "ledger_month": {
+     "entries": 1574,
+     "held": 0.012672,
+     "peak": 0.013616
+    },
+    "bid_policy": {
+     "held": 0.075556,
+     "peak": 0.108332
+    },
+    "all_at_once_peak": 0.127468,
+    "all_at_once_held": 0.007243,
+    "all_at_once_plus_planner_p99": 0.13502,
+    "robots": 64,
+    "process_peak_working_set_mb": 439.1
+   }
+  },
+  "estimate_mb_for_comparison": 0.388
  }
 }
