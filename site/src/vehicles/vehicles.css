@@ -51,6 +51,11 @@
   .v-story, .v-chips, .v-cam { position: static; width: auto; max-width: none; }
   .v-chips { justify-content: flex-start; }
   .v-hud .ui-story { max-width: none; }
+  /* F-57: the story and the chips are written by the script after load; until then hold about the default vehicle's
+     height (MK1 at 412 px: 265 and 130 px) so the controls below do not jump (Lighthouse mobile CLS 0.22). Only while
+     the story's text is empty (the card itself is attached at once), so a vehicle without chips leaves no gap. */
+  .v-story:has(.ui-story-text:empty) { min-height: 16.5rem; }
+  .v-story:has(.ui-story-text:empty) + .v-chips { min-height: 8rem; }
   .v-panels { grid-template-columns: minmax(0, 1fr); }
 }
 /* F-51 part 4: the look-inside panel (?embed=1): only the vehicle, its views and its part list */
