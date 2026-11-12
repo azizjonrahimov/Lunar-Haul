@@ -435,9 +435,13 @@
           ],
           "lazy": [
             "assets/world-atc-pair-*.js"
+          ],
+          "lazy_css": [
+            "assets/atc-pair-????????.css"
           ]
         }
-      }
+      },
+      "lazy_css_gzip_kb": 3
     },
     "world/trace/index.html": {
       "js_gzip_kb": 20,
