@@ -1179,7 +1179,7 @@ data/atc/trace_pair/index.json. Have `tools/atc/export_trace.py` also write
    (no engine change while 4x and 8x run).
 3. Agreed: run `build` and write the 4x / 8x addendum when I tell you the loop is done.
 
-## B-90b [IN PROGRESS] Terrain-fix stops in the engine (E50b)
+## B-90b [DONE 20:35] Terrain-fix stops in the engine (E50b)
 An opt-in option that inserts the stop (120 s per fix taken, as pnt.py decides) into the leg, so the delay and
 the reservations see it. E50b: 1x with 30 seeds, layered scheme with and without stop time, same seeds as E50;
 report delay per delivery, road waiting and violations. E50's files stay as run, labelled "without stop time".

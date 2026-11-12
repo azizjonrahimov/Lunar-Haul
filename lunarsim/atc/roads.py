@@ -30,6 +30,13 @@ commit (after the plume hold) the road layer walks each vehicle's planned legs o
   bound series is a step function (the value of the last entry at or before t). log_reservations = True keeps every
   single-lane reservation as (resource, t_in, t_out, margin_h, direction, vehicle id, leg key, f_in, f_out) in
   self.res_log (nominal window, without the margin) for E50's true-occupancy check.
+- B-90b (opt-in, off by default): fix_stops = {"stop_s": 120, "t_from_h": hours, "defer_in_single": True,
+  "legs": {leg key: {"per_traversal": c, "fractions": [f, ...]}}} inserts terrain-fix stops into drive legs that
+  start at or after t_from_h: each traversal of a leg adds c to that leg's running count, and every whole step of the
+  count is one stop of stop_s, placed at the quantiles of the leg's observed fix positions (fraction of the leg); a
+  stop that falls inside a single-lane segment is taken just after the segment's exit (a rover does not hold a single
+  lane for a fix). The stops lengthen the leg (job delay) and shift the single-lane reservation windows after them.
+  Deterministic (no random draws). Counted in road_fix_stops / road_fix_stop_h, keys present only with the option.
 """
 from __future__ import annotations
 
@@ -214,6 +221,14 @@ class RoadLayer:
                 series = {int(k): (np.array([float(x[0]) for x in v]), np.array([float(x[1]) for x in v]))
                           for k, v in bm.items()}
             self._pm = {"k": float(pm.get("k", 1.0)), "const": float(bm) if series is None else 0.0, "series": series}
+        fs = c.get("fix_stops")
+        self._fs = None
+        if fs is not None:
+            self._fs = {"stop_h": float(fs.get("stop_s", 120.0)) / 3600.0, "t_from": float(fs.get("t_from_h", 0.0)),
+                        "defer": bool(fs.get("defer_in_single", True)),
+                        "legs": {str(k): (float(v["per_traversal"]), np.sort(np.asarray(v.get("fractions") or [], float)))
+                                 for k, v in (fs.get("legs") or {}).items()}}
+            self._fs_acc: Dict[str, float] = {}
 
     # --------------------------------------------------------------------------------------------- helpers
     def _bound(self, vid: int, t: float) -> float:
@@ -225,6 +240,33 @@ class RoadLayer:
             return 0.0
         i = int(np.searchsorted(ts, t, side="right")) - 1
         return float(bs[max(i, 0)])
+
+    def _fix_stops(self, key: str, t0: float) -> List[float]:
+        """B-90b: positions (fraction of the leg) of the fix stops on this traversal of leg `key`, sorted."""
+        fs = self._fs
+        if t0 < fs["t_from"] or key not in fs["legs"]:
+            return []
+        c, fr = fs["legs"][key]
+        prev = self._fs_acc.get(key, 0.0)
+        acc = prev + c
+        self._fs_acc[key] = acc
+        j = int(math.floor(acc + 1e-9)) - int(math.floor(prev + 1e-9))
+        if j <= 0:
+            return []
+        q = [(i + 0.5) / j for i in range(j)]
+        gs = [float(np.quantile(fr, x)) for x in q] if len(fr) else q
+        if fs["defer"]:
+            segs = self.legs.get(key, ())
+            for n, g in enumerate(gs):
+                moved = True
+                while moved:
+                    moved = False
+                    for _, f_in, f_out, _d in segs:
+                        if f_in <= g <= f_out:
+                            g = f_out + 1e-9
+                            moved = True
+                gs[n] = min(g, 1.0)
+        return sorted(gs)
 
     def leg_length_m(self, key: str) -> float:
         if key not in self._leg_len:
@@ -398,6 +440,16 @@ class RoadLayer:
                     shift += ev
                 dur = t1s - t0s
                 key = f"{self.name(a)}->{self.name(b)}"
+                stops = None
+                fsc = getattr(self, "_fs", None)                  # B-90b opt-in; absent on a layer built without __init__
+                if fsc is not None:
+                    stops = self._fix_stops(key, t0s)
+                    if stops:
+                        st_h = fsc["stop_h"] * len(stops)
+                        self.m["fix_stops"] = self.m.get("fix_stops", 0) + len(stops)
+                        self.m["fix_stop_h"] = self.m.get("fix_stop_h", 0.0) + st_h
+                        t1s += st_h
+                        shift += st_h
                 cov = self._leg_cover(key, v) if atc and not linked else None
                 for res, f_in, f_out, d in self.legs.get(key, ()):        # R3 single-lane segments
                     self.m["traversals"] += 1
@@ -406,6 +458,9 @@ class RoadLayer:
                     mh = 0.0
                     while True:
                         t_in, t_out = t0s + f_in * dur, t0s + f_out * dur
+                        if stops:                                         # B-90b: stops taken before entry / exit
+                            t_in += fsc["stop_h"] * sum(1 for g in stops if g < f_in)
+                            t_out += fsc["stop_h"] * sum(1 for g in stops if g < f_out)
                         if pmc is not None:                               # B-90: k x bound / speed at each end
                             v_ms = self.leg_length_m(key) / max(dur * 3600.0, 1e-9)
                             mh = float(reservation_margin_h(self._bound(v.id, t_in), v_ms, pmc["k"]))

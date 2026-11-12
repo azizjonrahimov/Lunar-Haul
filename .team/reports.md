@@ -9316,3 +9316,52 @@ Next: B-98 (verification rows for Phase 6), then B-99 (site data). B-90b waits f
 **For LEAD:**
 1. **Little JavaScript headroom left:** /protocol/ is at its 25 kB lazy limit. The next figure there needs a limit change or a split of figures.js; I would rather split. /protocol/ data has 3 kB left.
 2. **Kept results files:** the problem 7 tables still read results/E55_integrity.json, because B-99's e55_detectors has neither the out-of-distribution set nor the mast. If BACKEND adds those to B-99, I can switch the tables too.
+
+## B-90b DONE 20:35 (terrain-fix stops in the engine; E50b at 1x, 30 seeds) | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**Guards (LEAD, 11 Nov): all held.**
+- Before any edit, and again after the last engine edit:
+  - the default-path summary (C_AUCTION, roads atc, 30 d, seed 2) against a snapshot taken before the edits: **0 of 144 differ**;
+  - vv6 G1: 0 of 144;
+  - `tests/test_roads.py`, `test_safety.py` and `test_pnt.py`: 21 passed.
+- E50's cells and `run_e50.py` are untouched. E50b has its own runner and cache (`.cache/atc/e50b/`), and patches `run_e50._scenario` in its own process only.
+- RAM was checked (≥ 1.36 GB free) before each chunk; one cell at a time.
+
+**Engine.**
+- `lunarsim/atc/roads.py` has a new opt-in, `fix_stops` (None by default, read through getattr like pos_margin). Each traversal of a leg in the window adds that leg's fixes per traversal to a running count (deterministic, no random draws). Each whole step of the count is one 120 s stop, placed at the quantiles of the leg's observed fix positions.
+- A stop that falls inside a single-lane segment is taken just after the segment's exit: a rover does not hold a single lane for a fix.
+- The stops lengthen the leg (job delay) and shift the reservation windows after them. The keys `road_fix_stops` and `road_fix_stop_h` exist only with the option on.
+- `lunarsim/atc/pnt.py` has one opt-in output, `params={"log_fixes": True}` → `counts["fix_log"]` = (step, vehicle) of each driving fix. Nothing is computed differently: seed 1's layered counts and mean error are identical to the cached E50 cell with and without it.
+
+**E50b** (`tools/atc/run_e50b.py`; E50's scenario and 30 seeds at 1x). The fix table comes from the perfect run's layered navigation, as E50's margin bound series does.
+- Arm "without stop time": E50's layered margin run. **It reproduces E50's cell exactly in all 30 seeds** (perfect delay, margin delay, road wait, violations, driving-fix count).
+- Arm "with stop time": the same run with the stops in the engine.
+
+| Per seed, mean of 30 | Without stop time (E50) | With stop time | Difference (95 % bootstrap CI) | Paired t p | Seeds higher / lower |
+|---|---|---|---|---|---|
+| Delay per delivery | 17.74 h | 18.37 h | **+0.63 h [+0.02, +1.29]** (+3.5 %) | 0.066 | 22 / 8 |
+| Urgent delay (25 seeds with urgent deliveries) | 13.56 h | 13.75 h | +0.19 h [−1.37, +1.83] | 0.83 | 18 / 7 |
+| Road waiting | 2.49 h | 2.42 h | −0.07 h [−0.31, +0.11] | 0.53 | 13 / 13 |
+| Violations | 0.033 (1 in seed 23, 0.54 s overlap) | **0 in all 30** | −0.03 | 0.33 | 0 / 1 |
+| Items delivered | 250.0 | 250.1 | +0.13 [−0.93, +1.23] | 0.81 | 8 / 6 |
+
+- **H10's primary clause still holds with stop time.** This is an exploratory sensitivity check, not part of the confirmatory family: layered-with-stops is **1.036 × the perfect-position delay** (+0.63 h, se 0.33; TOST margin 8.87 h, p 1.8×10⁻²¹).
+- **Stops inserted: 797 per seed (26.6 h of stop time a month across the fleet).** That is 71 % of the perfect run's driving-fix time (37.3 h).
+  - The rest fall on repositioning drives, which do not pass through the road layer: 282 of 1,078 in seed 1, checked one by one.
+  - Repositioning drives carry no reservations, so they cannot change violations. Their stops would only delay a vehicle's availability.
+  - Putting them in would need an engine change outside roads.py. **Stated limitation:** the delay difference is a lower bound on the stop-time cost.
+- 25 % of the observed fix positions fall inside single-lane segments. The engine takes those stops at the segment exit.
+- In the trajectories a stop is spread over its leg (segments carry no mid-leg position). Dead-reckoning error grows with distance, so the navigation run sees nearly the same error (stated).
+- **Peak memory: 440 MB at 1x** (seeds 8–30; the reading was broken for seeds 1–7 and is now fixed); 53 s per seed. **4x and 8x:** your loop's cells record run times (8x: perfect run 470–484 s) but no memory, so I cannot report it from the cache. B-105 measures it.
+
+**Files:**
+- new: `tools/atc/run_e50b.py`, `tests/test_fix_stops.py` (2 tests), `results/E50b_summary.json`, `results/E50b_runs.csv`;
+- changed: `lunarsim/atc/roads.py` (fix_stops opt-in, docstring), `lunarsim/atc/pnt.py` (log_fixes opt-in output).
+
+**How to test:**
+- `.venv\Scripts\python -m pytest tests/test_fix_stops.py tests/test_roads.py tests/test_safety.py tests/test_pnt.py -q`;
+- `python tools/atc/run_e50b.py run --seeds 1-30` (about 27 min in chunks), then `build`.
+
+**For FRONTEND (via LEAD):** E50's files are now "without stop time"; `results/E50b_*` are "with stop time".
+
+**Questions for LEAD:** none. Next: B-101 onwards, in your order.

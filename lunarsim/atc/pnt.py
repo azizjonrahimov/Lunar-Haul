@@ -339,6 +339,7 @@ def simulate(tr: Trajectories, layers: Sequence[str], seed: int, params: Optiona
               "fix_stop_h": 0.0, "fixes_failed": 0, "lans_updates": 0}
     if "dr" not in layers:
         return NavResult(layers, err, b95, E, PP, counts)
+    fix_log = [] if p.get("log_fixes") else None                # B-90b: params {"log_fixes": True} -> counts["fix_log"]
     r_dr = np.random.default_rng([int(seed), 90, 1])
     r_rg = np.random.default_rng([int(seed), 90, 2])
     r_fx = np.random.default_rng([int(seed), 90, 3])
@@ -434,6 +435,8 @@ def simulate(tr: Trajectories, layers: Sequence[str], seed: int, params: Optiona
                     if driving:
                         counts["fixes_driving"] += 1
                         counts["fix_stop_h"] += p["fix_stop_s"] / 3600.0
+                        if fix_log is not None:                       # B-90b opt-in record; no effect on the run
+                            fix_log.append((int(k), int(i)))
                     if dark and r_fx.random() < p["fix_fail_dark"]:
                         counts["fixes_failed"] += 1
                         continue
@@ -489,6 +492,8 @@ def simulate(tr: Trajectories, layers: Sequence[str], seed: int, params: Optiona
         if store_errors:
             E[k] = z[:, :2]
             PP[k] = P[:, :2, :2]
+    if fix_log is not None:
+        counts["fix_log"] = fix_log
     return NavResult(layers, err, b95, E, PP, counts)
 
 
