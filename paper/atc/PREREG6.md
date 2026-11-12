@@ -91,3 +91,10 @@ Family for multiplicity: {H9, H10, H13, H14, H15a} are confirmatory (Holm). The 
   seen when this was decided; they did not enter the choice, which follows run time only. The "separation
   budget" of H9 is R1's static margin D0 = 5 m (`lunarsim/atc/safety.py`), the distance the rules already
   keep free for position uncertainty.
+- **11 Nov 2026, H10's third clause (written after the 1x results and five 4x seeds were seen).** The text of
+  H10 does not name the fleet for "with dead reckoning alone and the widened margin the delay is larger". It is
+  read as 1x, like the first clause of the same sentence, and that is the confirmatory test. The 4x and 8x
+  values of the same comparison are reported as exploratory.
+- **11 Nov 2026, terrain-fix stops.** E50's delay does not include the time a vehicle stands still for a
+  terrain fix (about 37 h a month for the 1x fleet). A follow-up run (E50b) puts the stops into the engine and
+  reports the delay with them; E50's numbers stay as run and are labelled "without stop time".

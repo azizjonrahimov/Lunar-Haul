@@ -8287,3 +8287,117 @@ The model still draws Earth far larger than its true 2°, so that card's caption
 - **Results:** 36/36 node tests (2 new).
 
 **Not done (waits for memory):** the build, the browser look, wiring the section into /results/, and the story player's pair view.
+
+## B-90 DONE 17:40 (positioning layer + E50; 1x complete at 30 seeds, 4x at 5 of 10, 8x pending in LEAD's loop: the 4x / 8x numbers below are PARTIAL) | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**What was built**
+- **`lunarsim/atc/pnt.py`** (new): each vehicle's estimation error and its own covariance along a recorded trajectory. Every parameter is from note 01 section D, with its source tag in a comment.
+  - (a) **Dead reckoning.** A bias per drive leg, with drift by terrain class per route sample and hour:
+    - 2 % firm level ground ([MAIM07], [DAF23, ATHA24]);
+    - 10 % slope over 10° ([HELM06]; slope from roads-v1);
+    - 3 % on dark legs (A, [DAI26]; sun-link-v1, half disc, "most" leg rule).
+    - Heading: star tracker 0.1° bounded (A, [DAF23]); a gyro-only variant at 3°/h ([MAIM07]).
+  - (b) **Ranging** to 4 beacons (A: the BASE mast plus DEPOT, POWER and PAD_A, which stands for a lander beacon) and to up to 4 nearest vehicles, within DEM line of sight (B-70 mesh, 5 km):
+    - UWB 0.3 m within 100 m ([PLANS18, NUCH24] / A); base-radio ranging 3 m beyond that (A).
+    - Beacon survey error 0.15 m, fixed per beacon ([BARK21]).
+    - Beacons are fused with an EKF; peers with covariance intersection (note E2).
+  - (c) **Terrain fixes:**
+    - opportunities every 100 m sunlit / 500 m dark (A);
+    - accuracy 1.7 m sunlit ([DAF23]) and 3 m dark, with a 0.3 failure rate ([ATHA24]);
+    - a 120 s stop for each fix while driving (A, [NASH26]), taken only when the 95 % bound exceeds 2.5 m (A);
+    - a free fix on arrival at a site.
+  - (d) **LANS:** 10 m (95 %) with the map height ([INTEROP25]); availability 0 / 0.4 / 0.6 / 0.8 for 2028 / 2029 / 2030 / 2031+ ([GRAM24, ML24, ESA24, MUR26]), modelled as one window per day (A), with an optional slip.
+  - **Output** per vehicle per 60 s step: |error| and the 95 % bound (2.4477 σ_max).
+- **Two fixes found while testing, both needed for an honest filter:**
+  1. **Covariance intersection** with a single range inflates P across the line of sight. Repeated every minute it diverged (×1.17 per step). "No update" (w = 1) is now always a candidate, so the trace never grows.
+  2. **Dead-reckoning bias.** With the bias left out of the filter (the note's E2 simplification) the filter was over-confident: NEES 6.7 against 2 for a consistent filter. The leg bias is now a filter state (z = [e, f], a 4-state filter). NEES is now 1.5–2.0, and the error falls further because ranges and fixes also estimate the bias. Parked vehicles range once after stopping, not every minute; re-using the same geometry would count as new information.
+- **`lunarsim/atc/safety.py`:**
+  - `Move.pos_bound` (default 0) and `Move.k_pos` (default 1): R1's static margin becomes D0_M + k_pos x the pair's 95 % bound.
+  - `reservation_margin_h(bound, v, k)`: note 01 E6, k x bound / speed.
+  - With pos_bound = 0 the check is unchanged (tested).
+- **`lunarsim/atc/roads.py`** (opt-in, default off):
+  - `pos_margin = {k, bound_m: number or {vid: [[t_h, bound], ...]}}` widens each single-lane reservation by k x bound / speed at both ends.
+  - `log_reservations` keeps the nominal windows for E50's true-time check.
+  - `apply()` reads both with defaults (the `_pm` fix, after LEAD's heads-up: vv5 builds a RoadLayer without `__init__`).
+- **`tools/atc/run_e50.py` + `tools/atc/e50_build.py`:** the resumable E50 runner (stages per cell: perfect run, navigation, then a run and a navigation for each margin) and the build.
+
+**E50 design.** The scenario is B-80's: p5 3eq, 30 % load, C_AUCTION, loss 0.10, roads atc, the July 2028 window.
+- **Margins:** each vehicle's hourly-maximum 95 % bound from the perfect run, k = 1. Dead reckoning alone, and the layered scheme of 2028 (dr + ranging + fixes; LANS share is 0 in 2028).
+- **A violation:** two conflicting single-lane reservations (R3) that overlap in true time, after each window is shifted by along-track error / speed.
+- **Errors** start at zero at the window start (every vehicle surveyed then: Assumed).
+
+**Results.** Means over seeds with bootstrap 95 % CIs (20,000 resamples). p95 of |error| over driving vehicle-steps:
+
+| Layer set | 1x p95 (m), 30 seeds | 1x median | near base p95 | away p95 | bound > 5 m | 4x p95 (5 seeds, partial) |
+|---|---|---|---|---|---|---|
+| dead reckoning | 643 [563, 728] | 293 | 644 | 643 | 100 % | 737 [605, 854] |
+| + ranging | 50.1 [45.9, 55.6] | 3.87 | **4.22 [4.12, 4.31]** | 57.1 | 76 % | 33.1 [30.2, 36.0] |
+| + terrain fixes (= + LANS in 2028) | 12.6 [12.1, 13.2] | 1.70 | 3.50 | **15.2 [14.5, 16.0]** | 42 % | 10.7 [10.1, 11.2] |
+| + LANS as in 2030 (variant) | 6.30 [5.95, 6.66] | 1.30 | 2.86 | 7.54 [7.09, 8.00] | 21 % | 5.83 [5.53, 6.14] |
+
+- "Near base" means in view of at least 2 of the 4 beacons.
+- Dead reckoning alone: p95 by driving hour 85, 154, 185, 217, 260, 265, 283, 308 m.
+- **Terrain-fix stops: 37.3 h a month for the 1x fleet** (8 vehicles), 169 h at 4x. They are not in the engine's delay below (stated limitation).
+
+**Violations and delay**
+
+| | 1x (30 seeds) | 4x (5 seeds, partial) |
+|---|---|---|
+| Violations a month, no margin (dr / + ranging / + fixes / LANS 2030) | 1.87 / 0.57 / 0.70 / 0.77 | 65.8 / 68.8 / 64.2 / 70.6 |
+| Violations with the margin (dr / layered) | 0.03 / 0.03 | 0 / 1.2 |
+| Delay per delivery, perfect (h) | 17.73 [15.82, 19.93] | 11.22 [7.17, 16.40] |
+| Layered margin − perfect (h) | **+0.007 [0.000, 0.017]** | −1.03 [−2.62, −0.08] |
+| Dead-reckoning margin − perfect (h) | **+0.12 [−0.08, 0.31]** | **+2.90 [1.34, 4.46]** |
+| Mean margin per end (h): dr / layered | 0.41 / 0.01 | 0.45 / 0.01 |
+| Road waiting (h): perfect / dr / layered | 2.47 / 7.57 / 2.49 | 314 / 600 / 319 |
+
+- **Why there are violations without a margin even at small errors.** A waiting vehicle's reservation starts exactly when the one before it ends. Any along-track error then makes the true windows overlap, usually by seconds. That is the case the E6 margin exists for: with it the count falls to 0–1.2, with mean overlap 0.0–8.1 s.
+- **The 4x layered gap of −1.03 h is not a real gain.** A 36 s margin reorders dispatch (C_AUCTION is sensitive to timing), and with n = 5 the CI only just excludes 0. I would not read it until 10 seeds.
+
+**Pre-registered tests (PREREG6 §4, D0_M = 5 m)**
+- **H9:**
+  - dead reckoning exceeds the budget in the **first** driving hour: **supported** (1x and 4x);
+  - ranging keeps the p95 inside the budget near the base: **supported** (4.22 m [4.12, 4.31] at 1x; 4.40 at 4x);
+  - absolute fixes keep it inside the budget away from the base: **not supported** (15.2 m at 1x, 12.3 at 4x; still 7.5 m with LANS in 2030).
+  - The weak points away from the base are the dark legs (fixes every 500 m, 30 % failing) and the loose slopes (10 %).
+- **H10:**
+  - layered margin within 1.5 times perfect position at 1x (TOST, margin 8.87 h): **supported** (90 % CI [0.000, 0.015] h, ratio 1.0004);
+  - the gap grows at 4x and 8x: **not supported so far** (4x −1.03 h, n = 5; 8x not run);
+  - dead reckoning with the margin larger, CI excluding 0: **not supported at 1x** (+0.12 [−0.08, 0.31]); at 4x it is +2.90 [1.34, 4.46] (partial).
+  - PREREG does not name the fleet for that clause. I read it as 1x, like the first clause; your call.
+
+**Files:**
+- new: `lunarsim/atc/pnt.py`, `tools/atc/run_e50.py`, `tools/atc/e50_build.py`, `tests/test_pnt.py` (8 tests), `results/E50_summary.json`, `E50_errors.csv`, `E50_runs.csv`, `E50_trace.json` (169 kB);
+- changed: `lunarsim/atc/safety.py`, `lunarsim/atc/roads.py`;
+- step 0 (two-ray `horizon`) is already committed (b4d469c).
+
+**How to test:**
+- `.venv\Scripts\python -m pytest tests/test_pnt.py -q` passes 8.
+- **Baseline:** 42 of 49 test files run one by one, all pass, including test_safety, test_roads, test_radio_two_ray and test_verification_phase5's road-layer tests after the `_pm` fix. Not run yet: test_stories, test_strategic_years, test_terrain, test_terrain_assets, test_verification, test_verification_phase4 and test_verification_phase5 (in full). Free RAM was 0.54–0.64 GB, under your 0.8 GB line while the E50 loop runs; I'll run them when it frees up. test_phase4_runner took 45 min under that memory pressure (17 s this morning) and passed.
+- `python tools/atc/run_e50.py build` rebuilds the results from `.cache/atc/e50` (rerun it after 4x and 8x finish).
+- **Peak memory:** 439 MB for one 1x cell (measured, Windows working set). Scaling by fleet size I estimate about 0.7 GB at 4x and about 1 GB at 8x (not measured); stored error vectors and covariances for every step dominate. If 8x runs out of memory, storing only the error vectors would halve that, but it would change the code mid-experiment, so I left it.
+
+**For FRONTEND (via LEAD):**
+- `results/E50_trace.json` (format `lunarsim-e50-trace` v1) is the per-layer trace for /protocol/ figure 1.
+  - It covers 1x, seed 1, the two vehicles that drive most: positions every 30 min, and per layer set `err_m` / `b95_m` (the maximum in each 30 min bin, 0.1 m) with `budget_m` 5.
+  - Layer-set keys: dr, dr+ranging, dr+ranging+fixes, dr+ranging+fixes+lans, lans@2030.
+- B-99 will give the final sizes and sha256 in its index.
+
+**Questions for LEAD:**
+1. H10's dead-reckoning clause: which fleet is it tested at? (I report 1x and 4x.)
+2. Should the terrain-fix stops (37 h a month at 1x) go into the delay? That needs an engine option: a stop inserted into the leg when a fix is taken. I can add it in a later task; it would make the layered scheme's delay cost visible, and it is the main cost of that layer.
+3. 4x and 8x: I'll run `build` when you say the loop is done, and append the final numbers as a B-90 addendum.
+
+Next: B-80c, then B-91.
+
+## B-80c DONE 17:42 (a results file for the fifth story) | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+- `tools/atc/export_trace.py`: `summary_doc(idx)` / `write_summary()`.
+  - The full export now also writes `results/ATC_trace_pair_summary.json`.
+  - `--summary-only` rewrites it from the existing index without rerunning the pair; that is how I made the file now, so the trace pair is untouched.
+- `results/ATC_trace_pair_summary.json` (new): `{"format": "lunarsim-atc-trace-summary", "version": 1, "source": "data/atc/trace_pair/index.json", "window": <index.window>, "runs": {"with": {"summary", "settings"}, "without": {...}}}`. These are the index's own fields at the same paths.
+  - with: urgent_items_waiting 0, idle_robot_hours 5532.261, messages_per_hour 2.161, earth_hand_hours 0. The without run's values are in the file.
+- `lunarsim/vv5.py`: a new V row, `check_v1_summary()`: V1 "results summary" checks that the file equals the index (window, plus each run's summary and settings). It passes with 0 mismatches and runs in batch 3b after `check_v_replay`.
+- `results/vv_phase5.json`: only that row inserted, after the V rows. The summary is now 187 rows, 161 passed, 10 failed, 16 skipped, 1 bias flag.
+- `tests/test_verification_phase5.py`: `test_v1_trace_summary_matches_index`.
+- **How to test:** `.venv\Scripts\python tools/atc/export_trace.py --summary-only`, then `.venv\Scripts\python -m pytest tests/test_verification_phase5.py -q -k v1_trace_summary`.
+- **For FRONTEND:** the story can read `results/ATC_trace_pair_summary.json` → `runs.with.summary.*` / `runs.without.summary.*` and `window.name`.

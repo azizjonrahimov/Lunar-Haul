@@ -1152,7 +1152,7 @@ Expected by the note: rates at 5 km fall from 6,977 / 5,011 / 5,989 kbit/s to ab
    the channel and beacons travel one hop (10.1 kbit/s needed); random access needs 21.9 kbit/s and two-hop
    relaying 19.6". LEAD records it as a dated change to H10's link clause and rebuilds P3.
 
-## B-90 [IN PROGRESS] Positioning layer (problem 1; E50). Note 01 is committed: parameters from its section D,
+## B-90 [DONE 17:40; 4x/8x addendum pending] Positioning layer (problem 1; E50). Note 01 is committed: parameters from its section D,
 ## maths from its section E; quote the note's source tags in the code comments.
 `lunarsim/atc/pnt.py`: each vehicle carries a true position (the engine's) and an estimated one. Layers, each
 switchable: (a) dead reckoning: error grows with distance driven (percent of distance, by terrain class) plus a
@@ -1165,14 +1165,27 @@ E50: a month at 1x, 4x, 8x fleet, layers added one at a time; report error distr
 time above the separation budget, violations with and without the margin, and the delay cost of the margin
 against perfect position (H9, H10). Table + JSON + a per-layer trace for the site.
 
-## B-80c [OPEN, small, any time between tasks] A results file for the fifth story (asked by FRONTEND, F-56)
+## B-80c [DONE 17:42] A results file for the fifth story (asked by FRONTEND, F-56)
 The story schema reads numbers only from results/*.json, and the with / without counters live in
 data/atc/trace_pair/index.json. Have `tools/atc/export_trace.py` also write
 `results/ATC_trace_pair_summary.json`: {"format": "lunarsim-atc-trace-summary", "version": 1, "source":
 "data/atc/trace_pair/index.json", "window": <index.window>, "runs": {"with": {"summary": ..., "settings": ...},
 "without": {...}}} (the index's own fields, same paths), with a V row checking it equals the index.
 
-## B-91 [QUEUED after B-90] Clocks and time (problem 3; E51)
+## LEAD's answers to B-90's three questions (11 Nov; B-90 is committed)
+1. H10's dead-reckoning clause is tested at 1x (confirmatory: not supported); 4x and 8x are exploratory. Recorded
+   in PREREG6 section 6.
+2. Yes, the fix stops belong in the delay. Task B-90b below, after B-91, and only after my E50 loop has finished
+   (no engine change while 4x and 8x run).
+3. Agreed: run `build` and write the 4x / 8x addendum when I tell you the loop is done.
+
+## B-90b [QUEUED after B-91 and after LEAD says the E50 loop is done] Terrain-fix stops in the engine (E50b)
+An opt-in option that inserts the stop (120 s per fix taken, as pnt.py decides) into the leg, so the delay and
+the reservations see it. E50b: 1x with 30 seeds, layered scheme with and without stop time, same seeds as E50;
+report delay per delivery, road waiting and violations. E50's files stay as run, labelled "without stop time".
+Also report peak memory at 4x and 8x from my loop's cells if the cache holds it.
+
+## B-91 [IN PROGRESS] Clocks and time (problem 3; E51)
 Per-vehicle clock with offset and drift for two oscillator classes (note 01 table), two-way time transfer at
 each contact with the stated accuracy, and the Earth-Moon rate offset as a constant term. Effects wired in:
 ranging error += c x relative clock error; road reservations are stamped in each vehicle's own clock.
