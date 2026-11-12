@@ -1,0 +1,41 @@
+part,geometry,N,f,F,runs,safe_share,agreement_share,degree_condition_share,connected_share,robust_2F1_share,robust_F1_share,safe_when_robust,safe_when_not_robust,runs_robust,robust_basis
+consensus,fleet,5,0,1,50,1.0,0.1,0.1,0.1,0.1,0.1,1.0,1.0,5,exact (2F+1)-robust
+consensus,fleet,5,1,1,50,1.0,0.1,0.1,0.06,0.06,0.06,1.0,1.0,3,exact (2F+1)-robust
+consensus,fleet,5,2,1,50,0.66,0.18,0.18,0.04,0.04,0.04,0.0,0.6875,2,exact (2F+1)-robust
+consensus,fleet,5,2,2,50,1.0,0.0,0.0,0.04,0.0,0.04,,1.0,0,exact (2F+1)-robust
+consensus,fleet,8,0,1,50,1.0,0.04,0.12,0.04,0.04,0.04,1.0,1.0,2,exact (2F+1)-robust
+consensus,fleet,8,1,1,50,1.0,0.0,0.14,0.0,0.0,0.0,,1.0,0,exact (2F+1)-robust
+consensus,fleet,8,2,1,50,0.48,0.02,0.06,0.0,0.0,0.0,,0.48,0,exact (2F+1)-robust
+consensus,fleet,8,2,2,50,1.0,0.0,0.0,0.0,0.0,0.0,,1.0,0,exact (2F+1)-robust
+consensus,fleet,12,0,1,50,1.0,0.04,0.24,0.0,,,1.0,1.0,12,degree >= 2F+1 (necessary only)
+consensus,fleet,12,1,1,50,1.0,0.02,0.26,0.0,,,1.0,1.0,13,degree >= 2F+1 (necessary only)
+consensus,fleet,12,2,1,50,0.5,0.0,0.26,0.0,,,0.3076923076923077,0.5675675675675675,13,degree >= 2F+1 (necessary only)
+consensus,fleet,12,2,2,50,1.0,0.0,0.1,0.0,,,1.0,1.0,5,degree >= 2F+1 (necessary only)
+consensus,fleet,20,0,1,50,1.0,0.0,0.22,0.0,,,1.0,1.0,11,degree >= 2F+1 (necessary only)
+consensus,fleet,20,1,1,50,1.0,0.0,0.22,0.0,,,1.0,1.0,11,degree >= 2F+1 (necessary only)
+consensus,fleet,20,2,1,50,0.6,0.0,0.3,0.0,,,0.5333333333333333,0.6285714285714286,15,degree >= 2F+1 (necessary only)
+consensus,fleet,20,2,2,50,1.0,0.02,0.22,0.0,,,1.0,1.0,11,degree >= 2F+1 (necessary only)
+consensus,fleet,40,0,1,50,1.0,0.02,0.16,0.0,,,1.0,1.0,8,degree >= 2F+1 (necessary only)
+consensus,fleet,40,1,1,50,1.0,0.0,0.22,0.0,,,1.0,1.0,11,degree >= 2F+1 (necessary only)
+consensus,fleet,40,2,1,50,0.54,0.0,0.14,0.0,,,0.5714285714285714,0.5348837209302325,7,degree >= 2F+1 (necessary only)
+consensus,fleet,40,2,2,50,1.0,0.02,0.04,0.0,,,1.0,1.0,2,degree >= 2F+1 (necessary only)
+consensus,spread,5,0,1,50,1.0,0.0,0.0,0.0,0.0,0.0,,1.0,0,exact (2F+1)-robust
+consensus,spread,5,1,1,50,1.0,0.0,0.0,0.06,0.0,0.0,,1.0,0,exact (2F+1)-robust
+consensus,spread,5,2,1,50,0.9,0.0,0.0,0.0,0.0,0.0,,0.9,0,exact (2F+1)-robust
+consensus,spread,5,2,2,50,1.0,0.0,0.0,0.0,0.0,0.0,,1.0,0,exact (2F+1)-robust
+consensus,spread,8,0,1,50,1.0,0.0,0.0,0.02,0.0,0.0,,1.0,0,exact (2F+1)-robust
+consensus,spread,8,1,1,50,1.0,0.0,0.0,0.02,0.0,0.0,,1.0,0,exact (2F+1)-robust
+consensus,spread,8,2,1,50,0.92,0.0,0.0,0.02,0.0,0.0,,0.92,0,exact (2F+1)-robust
+consensus,spread,8,2,2,50,1.0,0.0,0.0,0.02,0.0,0.0,,1.0,0,exact (2F+1)-robust
+consensus,spread,12,0,1,50,1.0,0.0,0.0,0.0,,,,1.0,0,degree >= 2F+1 (necessary only)
+consensus,spread,12,1,1,50,1.0,0.0,0.0,0.0,,,,1.0,0,degree >= 2F+1 (necessary only)
+consensus,spread,12,2,1,50,0.84,0.0,0.0,0.0,,,,0.84,0,degree >= 2F+1 (necessary only)
+consensus,spread,12,2,2,50,1.0,0.0,0.0,0.0,,,,1.0,0,degree >= 2F+1 (necessary only)
+consensus,spread,20,0,1,50,1.0,0.0,0.0,0.02,,,,1.0,0,degree >= 2F+1 (necessary only)
+consensus,spread,20,1,1,50,1.0,0.0,0.0,0.0,,,,1.0,0,degree >= 2F+1 (necessary only)
+consensus,spread,20,2,1,50,0.78,0.0,0.0,0.0,,,,0.78,0,degree >= 2F+1 (necessary only)
+consensus,spread,20,2,2,50,1.0,0.0,0.0,0.0,,,,1.0,0,degree >= 2F+1 (necessary only)
+consensus,spread,40,0,1,50,1.0,0.0,0.0,0.02,,,,1.0,0,degree >= 2F+1 (necessary only)
+consensus,spread,40,1,1,50,1.0,0.0,0.0,0.0,,,,1.0,0,degree >= 2F+1 (necessary only)
+consensus,spread,40,2,1,50,0.7,0.0,0.0,0.0,,,,0.7,0,degree >= 2F+1 (necessary only)
+consensus,spread,40,2,2,50,1.0,0.0,0.0,0.0,,,,1.0,0,degree >= 2F+1 (necessary only)

@@ -1,0 +1,5563 @@
+{
+ "experiment": "E55 (B-95), Phase 6, H15 baseline and H16",
+ "note": "python tools/atc/run_e55.py auth          # -> .cache/atc/e55/auth.json        (about a minute)\n    python tools/atc/run_e55.py integrity     # -> .cache/atc/e55/integrity.json   (loads B-96's splits one at a time)\n    python tools/atc/run_e55.py consensus     # -> .cache/atc/e55/consensus.json\n    python tools/atc/run_e55.py build         # -> results/E55_integrity.json, results/E55_table.csv",
+ "auth": {
+  "forgery": {
+   "8": {
+    "attempts": 100000,
+    "accepted": 395,
+    "rate": 0.00395,
+    "bound_2^-t": 0.00390625,
+    "expected": 390.625,
+    "s": 4.0
+   },
+   "16": {
+    "attempts": 1000000,
+    "accepted": 11,
+    "rate": 1.1e-05,
+    "bound_2^-t": 1.52587890625e-05,
+    "expected": 15.2587890625,
+    "s": 40.5
+   },
+   "64": {
+    "per_attempt": 5.421010862427522e-20,
+    "year_at_10_per_s_union_bound": 1.710871028182126e-11,
+    "note": "formula (note 03 E4); not measurable by trial"
+   },
+   "128": {
+    "per_attempt": 2.938735877055719e-39,
+    "year_at_10_per_s_union_bound": 9.274650427987848e-31,
+    "note": "formula (note 03 E4); not measurable by trial"
+   }
+  },
+  "replay": {
+   "0.1": {
+    "replays": 574,
+    "replays_accepted": 0,
+    "accepted_missed_original": 0
+   },
+   "0.25": {
+    "replays": 598,
+    "replays_accepted": 0,
+    "accepted_missed_original": 0
+   }
+  }
+ },
+ "integrity": {
+  "rule": "LRIP note 03 C8: z^2 > gamma, suspect at 3 of the last 5",
+  "sets": {
+   "val": {
+    "3of5@0.01": {
+     "gamma": 6.63,
+     "fa_per_pair_day": 24.0972820186213,
+     "per_type": {
+      "jump": {
+       "events": 204,
+       "recall": 0.8333333333333334,
+       "median_delay_s": 2.0
+      },
+      "drift": {
+       "events": 204,
+       "recall": 0.6813725490196079,
+       "median_delay_s": 107.0
+      },
+      "frozen": {
+       "events": 204,
+       "recall": 0.9705882352941176,
+       "median_delay_s": 24.0
+      },
+      "frame": {
+       "events": 204,
+       "recall": 1.0,
+       "median_delay_s": 2.0
+      },
+      "noise": {
+       "events": 204,
+       "recall": 0.4117647058823529,
+       "median_delay_s": 71.5
+      },
+      "all": {
+       "events": 1020,
+       "recall": 0.7794117647058824,
+       "median_delay_s": 13.0
+      }
+     },
+     "precision_at_1_fault_per_pair_day": 0.03133100288545009
+    },
+    "single@0.01": {
+     "gamma": 6.63,
+     "fa_per_pair_day": 272.4224353258727,
+     "per_type": {
+      "jump": {
+       "events": 204,
+       "recall": 0.9313725490196079,
+       "median_delay_s": 0.0
+      },
+      "drift": {
+       "events": 204,
+       "recall": 0.8529411764705882,
+       "median_delay_s": 62.0
+      },
+      "frozen": {
+       "events": 204,
+       "recall": 0.9803921568627451,
+       "median_delay_s": 17.5
+      },
+      "frame": {
+       "events": 204,
+       "recall": 1.0,
+       "median_delay_s": 0.0
+      },
+      "noise": {
+       "events": 204,
+       "recall": 0.9656862745098039,
+       "median_delay_s": 13.0
+      },
+      "all": {
+       "events": 1020,
+       "recall": 0.946078431372549,
+       "median_delay_s": 8.0
+      }
+     },
+     "precision_at_1_fault_per_pair_day": 0.003460817115948762
+    },
+    "3of5@0.001": {
+     "gamma": 10.83,
+     "fa_per_pair_day": 0.12471294695660086,
+     "per_type": {
+      "jump": {
+       "events": 204,
+       "recall": 0.7352941176470589,
+       "median_delay_s": 2.0
+      },
+      "drift": {
+       "events": 204,
+       "recall": 0.5735294117647058,
+       "median_delay_s": 116.0
+      },
+      "frozen": {
+       "events": 204,
+       "recall": 0.9558823529411765,
+       "median_delay_s": 29.0
+      },
+      "frame": {
+       "events": 204,
+       "recall": 1.0,
+       "median_delay_s": 2.0
+      },
+      "noise": {
+       "events": 204,
+       "recall": 0.1568627450980392,
+       "median_delay_s": 73.5
+      },
+      "all": {
+       "events": 1020,
+       "recall": 0.6843137254901961,
+       "median_delay_s": 12.0
+      }
+     },
+     "precision_at_1_fault_per_pair_day": 0.8458481639679164
+    },
+    "single@0.001": {
+     "gamma": 10.83,
+     "fa_per_pair_day": 45.508055681921576,
+     "per_type": {
+      "jump": {
+       "events": 204,
+       "recall": 0.8382352941176471,
+       "median_delay_s": 0.0
+      },
+      "drift": {
+       "events": 204,
+       "recall": 0.6911764705882353,
+       "median_delay_s": 99.0
+      },
+      "frozen": {
+       "events": 204,
+       "recall": 0.9656862745098039,
+       "median_delay_s": 22.0
+      },
+      "frame": {
+       "events": 204,
+       "recall": 1.0,
+       "median_delay_s": 0.0
+      },
+      "noise": {
+       "events": 204,
+       "recall": 0.7941176470588235,
+       "median_delay_s": 34.0
+      },
+      "all": {
+       "events": 1020,
+       "recall": 0.8578431372549019,
+       "median_delay_s": 13.0
+      }
+     },
+     "precision_at_1_fault_per_pair_day": 0.01850159619681753
+    },
+    "3of5@0.0001": {
+     "gamma": 15.14,
+     "fa_per_pair_day": 0.0,
+     "per_type": {
+      "jump": {
+       "events": 204,
+       "recall": 0.6666666666666666,
+       "median_delay_s": 2.0
+      },
+      "drift": {
+       "events": 204,
+       "recall": 0.5098039215686274,
+       "median_delay_s": 115.0
+      },
+      "frozen": {
+       "events": 204,
+       "recall": 0.946078431372549,
+       "median_delay_s": 34.0
+      },
+      "frame": {
+       "events": 204,
+       "recall": 1.0,
+       "median_delay_s": 2.0
+      },
+      "noise": {
+       "events": 204,
+       "recall": 0.06372549019607843,
+       "median_delay_s": 131.0
+      },
+      "all": {
+       "events": 1020,
+       "recall": 0.6372549019607843,
+       "median_delay_s": 12.5
+      }
+     },
+     "precision_at_1_fault_per_pair_day": 1.0
+    },
+    "single@0.0001": {
+     "gamma": 15.14,
+     "fa_per_pair_day": 5.490053073726989,
+     "per_type": {
+      "jump": {
+       "events": 204,
+       "recall": 0.7696078431372549,
+       "median_delay_s": 0.0
+      },
+      "drift": {
+       "events": 204,
+       "recall": 0.5882352941176471,
+       "median_delay_s": 113.0
+      },
+      "frozen": {
+       "events": 204,
+       "recall": 0.9558823529411765,
+       "median_delay_s": 28.0
+      },
+      "frame": {
+       "events": 204,
+       "recall": 1.0,
+       "median_delay_s": 0.0
+      },
+      "noise": {
+       "events": 204,
+       "recall": 0.5196078431372549,
+       "median_delay_s": 57.5
+      },
+      "all": {
+       "events": 1020,
+       "recall": 0.7666666666666667,
+       "median_delay_s": 15.0
+      }
+     },
+     "precision_at_1_fault_per_pair_day": 0.1225349222080435
+    },
+    "_s": 0.8
+   },
+   "test": {
+    "3of5@0.01": {
+     "gamma": 6.63,
+     "fa_per_pair_day": 15.722050721947214,
+     "per_type": {
+      "jump": {
+       "events": 400,
+       "recall": 0.81,
+       "median_delay_s": 2.0
+      },
+      "drift": {
+       "events": 400,
+       "recall": 0.685,
+       "median_delay_s": 91.0
+      },
+      "frozen": {
+       "events": 400,
+       "recall": 0.975,
+       "median_delay_s": 27.0
+      },
+      "frame": {
+       "events": 400,
+       "recall": 0.995,
+       "median_delay_s": 2.0
+      },
+      "noise": {
+       "events": 400,
+       "recall": 0.38,
+       "median_delay_s": 85.0
+      },
+      "all": {
+       "events": 2000,
+       "recall": 0.769,
+       "median_delay_s": 13.0
+      }
+     },
+     "precision_at_1_fault_per_pair_day": 0.046631352541810556
+    },
+    "single@0.01": {
+     "gamma": 6.63,
+     "fa_per_pair_day": 379.97034107774857,
+     "per_type": {
+      "jump": {
+       "events": 400,
+       "recall": 0.905,
+       "median_delay_s": 0.0
+      },
+      "drift": {
+       "events": 400,
+       "recall": 0.8225,
+       "median_delay_s": 56.0
+      },
+      "frozen": {
+       "events": 400,
+       "recall": 0.985,
+       "median_delay_s": 18.0
+      },
+      "frame": {
+       "events": 400,
+       "recall": 1.0,
+       "median_delay_s": 0.0
+      },
+      "noise": {
+       "events": 400,
+       "recall": 0.96,
+       "median_delay_s": 12.0
+      },
+      "all": {
+       "events": 2000,
+       "recall": 0.9345,
+       "median_delay_s": 8.0
+      }
+     },
+     "precision_at_1_fault_per_pair_day": 0.002453368661201274
+    },
+    "3of5@0.001": {
+     "gamma": 10.83,
+     "fa_per_pair_day": 0.09785999140159408,
+     "per_type": {
+      "jump": {
+       "events": 400,
+       "recall": 0.735,
+       "median_delay_s": 2.0
+      },
+      "drift": {
+       "events": 400,
+       "recall": 0.6175,
+       "median_delay_s": 110.0
+      },
+      "frozen": {
+       "events": 400,
+       "recall": 0.9525,
+       "median_delay_s": 35.0
+      },
+      "frame": {
+       "events": 400,
+       "recall": 0.995,
+       "median_delay_s": 2.0
+      },
+      "noise": {
+       "events": 400,
+       "recall": 0.085,
+       "median_delay_s": 114.5
+      },
+      "all": {
+       "events": 2000,
+       "recall": 0.677,
+       "median_delay_s": 12.0
+      }
+     },
+     "precision_at_1_fault_per_pair_day": 0.8737062275927017
+    },
+    "single@0.001": {
+     "gamma": 10.83,
+     "fa_per_pair_day": 53.28942245660549,
+     "per_type": {
+      "jump": {
+       "events": 400,
+       "recall": 0.815,
+       "median_delay_s": 0.0
+      },
+      "drift": {
+       "events": 400,
+       "recall": 0.695,
+       "median_delay_s": 86.0
+      },
+      "frozen": {
+       "events": 400,
+       "recall": 0.975,
+       "median_delay_s": 26.0
+      },
+      "frame": {
+       "events": 400,
+       "recall": 0.995,
+       "median_delay_s": 0.0
+      },
+      "noise": {
+       "events": 400,
+       "recall": 0.75,
+       "median_delay_s": 34.0
+      },
+      "all": {
+       "events": 2000,
+       "recall": 0.846,
+       "median_delay_s": 13.0
+      }
+     },
+     "precision_at_1_fault_per_pair_day": 0.01562747571939882
+    },
+    "3of5@0.0001": {
+     "gamma": 15.14,
+     "fa_per_pair_day": 0.0,
+     "per_type": {
+      "jump": {
+       "events": 400,
+       "recall": 0.6625,
+       "median_delay_s": 2.0
+      },
+      "drift": {
+       "events": 400,
+       "recall": 0.555,
+       "median_delay_s": 117.0
+      },
+      "frozen": {
+       "events": 400,
+       "recall": 0.93,
+       "median_delay_s": 39.0
+      },
+      "frame": {
+       "events": 400,
+       "recall": 0.9925,
+       "median_delay_s": 2.0
+      },
+      "noise": {
+       "events": 400,
+       "recall": 0.025,
+       "median_delay_s": 98.5
+      },
+      "all": {
+       "events": 2000,
+       "recall": 0.633,
+       "median_delay_s": 10.0
+      }
+     },
+     "precision_at_1_fault_per_pair_day": 1.0
+    },
+    "single@0.0001": {
+     "gamma": 15.14,
+     "fa_per_pair_day": 4.7654798814097505,
+     "per_type": {
+      "jump": {
+       "events": 400,
+       "recall": 0.7425,
+       "median_delay_s": 0.0
+      },
+      "drift": {
+       "events": 400,
+       "recall": 0.62,
+       "median_delay_s": 102.5
+      },
+      "frozen": {
+       "events": 400,
+       "recall": 0.955,
+       "median_delay_s": 33.0
+      },
+      "frame": {
+       "events": 400,
+       "recall": 0.995,
+       "median_delay_s": 0.0
+      },
+      "noise": {
+       "events": 400,
+       "recall": 0.5525,
+       "median_delay_s": 62.0
+      },
+      "all": {
+       "events": 2000,
+       "recall": 0.773,
+       "median_delay_s": 18.0
+      }
+     },
+     "precision_at_1_fault_per_pair_day": 0.13956898220297273
+    },
+    "_s": 1.2
+   },
+   "ood": {
+    "3of5@0.01": {
+     "gamma": 6.63,
+     "fa_per_pair_day": 447.9690950629456,
+     "per_type": {
+      "jump": {
+       "events": 400,
+       "recall": 0.63,
+       "median_delay_s": 48.0
+      },
+      "drift": {
+       "events": 400,
+       "recall": 0.59,
+       "median_delay_s": 77.0
+      },
+      "frozen": {
+       "events": 400,
+       "recall": 0.9825,
+       "median_delay_s": 20.0
+      },
+      "frame": {
+       "events": 400,
+       "recall": 1.0,
+       "median_delay_s": 2.0
+      },
+      "noise": {
+       "events": 400,
+       "recall": 0.865,
+       "median_delay_s": 35.0
+      },
+      "all": {
+       "events": 2000,
+       "recall": 0.8135,
+       "median_delay_s": 18.0
+      }
+     },
+     "precision_at_1_fault_per_pair_day": 0.0018126817059068428
+    },
+    "single@0.01": {
+     "gamma": 6.63,
+     "fa_per_pair_day": 1225.3832017904995,
+     "per_type": {
+      "jump": {
+       "events": 400,
+       "recall": 0.775,
+       "median_delay_s": 4.0
+      },
+      "drift": {
+       "events": 400,
+       "recall": 0.7475,
+       "median_delay_s": 5.0
+      },
+      "frozen": {
+       "events": 400,
+       "recall": 0.9925,
+       "median_delay_s": 5.0
+      },
+      "frame": {
+       "events": 400,
+       "recall": 1.0,
+       "median_delay_s": 0.0
+      },
+      "noise": {
+       "events": 400,
+       "recall": 0.98,
+       "median_delay_s": 3.0
+      },
+      "all": {
+       "events": 2000,
+       "recall": 0.899,
+       "median_delay_s": 2.0
+      }
+     },
+     "precision_at_1_fault_per_pair_day": 0.0007331102079826052
+    },
+    "3of5@0.001": {
+     "gamma": 10.83,
+     "fa_per_pair_day": 69.00515468245543,
+     "per_type": {
+      "jump": {
+       "events": 400,
+       "recall": 0.2625,
+       "median_delay_s": 91.0
+      },
+      "drift": {
+       "events": 400,
+       "recall": 0.2475,
+       "median_delay_s": 182.0
+      },
+      "frozen": {
+       "events": 400,
+       "recall": 0.965,
+       "median_delay_s": 31.0
+      },
+      "frame": {
+       "events": 400,
+       "recall": 0.9975,
+       "median_delay_s": 2.0
+      },
+      "noise": {
+       "events": 400,
+       "recall": 0.515,
+       "median_delay_s": 111.5
+      },
+      "all": {
+       "events": 2000,
+       "recall": 0.5975,
+       "median_delay_s": 22.0
+      }
+     },
+     "precision_at_1_fault_per_pair_day": 0.008584442687221389
+    },
+    "single@0.001": {
+     "gamma": 10.83,
+     "fa_per_pair_day": 1128.4845925151499,
+     "per_type": {
+      "jump": {
+       "events": 400,
+       "recall": 0.7075,
+       "median_delay_s": 11.0
+      },
+      "drift": {
+       "events": 400,
+       "recall": 0.6925,
+       "median_delay_s": 15.0
+      },
+      "frozen": {
+       "events": 400,
+       "recall": 0.9925,
+       "median_delay_s": 11.0
+      },
+      "frame": {
+       "events": 400,
+       "recall": 1.0,
+       "median_delay_s": 0.0
+      },
+      "noise": {
+       "events": 400,
+       "recall": 0.95,
+       "median_delay_s": 9.0
+      },
+      "all": {
+       "events": 2000,
+       "recall": 0.8685,
+       "median_delay_s": 6.0
+      }
+     },
+     "precision_at_1_fault_per_pair_day": 0.0007690243253027169
+    },
+    "3of5@0.0001": {
+     "gamma": 15.14,
+     "fa_per_pair_day": 10.947603834875377,
+     "per_type": {
+      "jump": {
+       "events": 400,
+       "recall": 0.0975,
+       "median_delay_s": 115.0
+      },
+      "drift": {
+       "events": 400,
+       "recall": 0.08,
+       "median_delay_s": 70.5
+      },
+      "frozen": {
+       "events": 400,
+       "recall": 0.9375,
+       "median_delay_s": 39.0
+      },
+      "frame": {
+       "events": 400,
+       "recall": 0.9975,
+       "median_delay_s": 2.0
+      },
+      "noise": {
+       "events": 400,
+       "recall": 0.1575,
+       "median_delay_s": 131.0
+      },
+      "all": {
+       "events": 2000,
+       "recall": 0.454,
+       "median_delay_s": 16.0
+      }
+     },
+     "precision_at_1_fault_per_pair_day": 0.039818959382828124
+    },
+    "single@0.0001": {
+     "gamma": 15.14,
+     "fa_per_pair_day": 804.0156704802355,
+     "per_type": {
+      "jump": {
+       "events": 400,
+       "recall": 0.6275,
+       "median_delay_s": 23.0
+      },
+      "drift": {
+       "events": 400,
+       "recall": 0.655,
+       "median_delay_s": 33.5
+      },
+      "frozen": {
+       "events": 400,
+       "recall": 0.9875,
+       "median_delay_s": 19.0
+      },
+      "frame": {
+       "events": 400,
+       "recall": 1.0,
+       "median_delay_s": 0.0
+      },
+      "noise": {
+       "events": 400,
+       "recall": 0.9225,
+       "median_delay_s": 23.0
+      },
+      "all": {
+       "events": 2000,
+       "recall": 0.8385,
+       "median_delay_s": 13.0
+      }
+     },
+     "precision_at_1_fault_per_pair_day": 0.001041803634439378
+    },
+    "_s": 1.4
+   }
+  },
+  "e56_reference": {
+   "test": {
+    "chi2_step": {
+     "threshold": [
+      19.105655670166016
+     ],
+     "fa_per_pair_day": {
+      "mean": 0.6783508979892723,
+      "sd_seeds": 0.0,
+      "ci95": [
+       0.18112052239145796,
+       1.4173562819320344
+      ]
+     },
+     "fa_per_hour_in_blocks_with_driving": 0.020689655172413793,
+     "fa_per_hour_in_blocks_without_driving": 0.017543859649122806,
+     "fa_per_pair_day_by_class": {
+      "uwb": 0.0,
+      "long": 0.8144834913982586
+     },
+     "events": {
+      "jump": {
+       "n_events": 400,
+       "recall": {
+        "mean": 0.6975,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.6525,
+         0.7425
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.5069590033479329,
+       "precision_on_fault_streams": {
+        "mean": 1.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         1.0,
+         1.0
+        ]
+       },
+       "delay_median_s": {
+        "mean": 0.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.0,
+         0.0
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 36.600000000000136,
+        "sd_seeds": 0.0,
+        "ci95": [
+         10.992500000000001,
+         81.0
+        ]
+       }
+      },
+      "drift": {
+       "n_events": 400,
+       "recall": {
+        "mean": 0.575,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.53,
+         0.6225625
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.45877016637755785,
+       "precision_on_fault_streams": {
+        "mean": 0.9956709956709957,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.9863620797011208,
+         1.0
+        ]
+       },
+       "delay_median_s": {
+        "mean": 109.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         94.5,
+         127.0
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 296.59999999999997,
+        "sd_seeds": 0.0,
+        "ci95": [
+         253.58499999999998,
+         388.0
+        ]
+       }
+      },
+      "frozen": {
+       "n_events": 400,
+       "recall": {
+        "mean": 0.9425,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.9175,
+         0.965
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.5814847011339583,
+       "precision_on_fault_streams": {
+        "mean": 1.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         1.0,
+         1.0
+        ]
+       },
+       "delay_median_s": {
+        "mean": 37.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         33.0,
+         40.0
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 108.40000000000003,
+        "sd_seeds": 0.0,
+        "ci95": [
+         94.0,
+         126.0
+        ]
+       }
+      },
+      "frame": {
+       "n_events": 400,
+       "recall": {
+        "mean": 0.995,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.9875,
+         1.0
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.5946152723828633,
+       "precision_on_fault_streams": {
+        "mean": 1.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         1.0,
+         1.0
+        ]
+       },
+       "delay_median_s": {
+        "mean": 0.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.0,
+         0.0
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 0.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.0,
+         0.0
+        ]
+       }
+      },
+      "noise": {
+       "n_events": 400,
+       "recall": {
+        "mean": 0.355,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.305,
+         0.4
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.34354254754195357,
+       "precision_on_fault_streams": {
+        "mean": 1.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         1.0,
+         1.0
+        ]
+       },
+       "delay_median_s": {
+        "mean": 86.5,
+        "sd_seeds": 0.0,
+        "ci95": [
+         60.0,
+         125.0
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 311.9000000000001,
+        "sd_seeds": 0.0,
+        "ci95": [
+         229.19500000000002,
+         385.0
+        ]
+       }
+      },
+      "all": {
+       "n_events": 2000,
+       "recall": {
+        "mean": 0.713,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.693,
+         0.7325
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.5124516044301984,
+       "precision_on_fault_streams": {
+        "mean": 0.9992992291520673,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.9978431616795497,
+         1.0
+        ]
+       },
+       "delay_median_s": {
+        "mean": 18.5,
+        "sd_seeds": 0.0,
+        "ci95": [
+         15.0,
+         22.0
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 163.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         143.0,
+         183.0
+        ]
+       }
+      }
+     },
+     "events_by_class": {
+      "uwb": {
+       "jump": {
+        "n_events": 192,
+        "recall": {
+         "mean": 0.6875,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.625,
+          0.75
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "delay_median_s": {
+         "mean": 0.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          0.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 13.30000000000004,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          46.0
+         ]
+        }
+       },
+       "drift": {
+        "n_events": 159,
+        "recall": {
+         "mean": 0.559748427672956,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.4716981132075472,
+          0.6352201257861635
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "delay_median_s": {
+         "mean": 104.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          86.0,
+          123.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 309.6000000000002,
+         "sd_seeds": 0.0,
+         "ci95": [
+          229.20000000000002,
+          457.0
+         ]
+        }
+       },
+       "frozen": {
+        "n_events": 75,
+        "recall": {
+         "mean": 0.8533333333333334,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.76,
+          0.9333333333333333
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "delay_median_s": {
+         "mean": 26.5,
+         "sd_seeds": 0.0,
+         "ci95": [
+          23.0,
+          29.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 40.10000000000001,
+         "sd_seeds": 0.0,
+         "ci95": [
+          32.800000000000004,
+          57.60500000000001
+         ]
+        }
+       },
+       "frame": {
+        "n_events": 134,
+        "recall": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "delay_median_s": {
+         "mean": 0.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          0.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 0.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          0.0
+         ]
+        }
+       },
+       "noise": {
+        "n_events": 118,
+        "recall": {
+         "mean": 0.559322033898305,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.4661016949152542,
+          0.652542372881356
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "delay_median_s": {
+         "mean": 52.5,
+         "sd_seeds": 0.0,
+         "ci95": [
+          35.0,
+          71.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 171.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          130.2,
+          314.0
+         ]
+        }
+       },
+       "all": {
+        "n_events": 678,
+        "recall": {
+         "mean": 0.7153392330383481,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.682853982300885,
+          0.7492625368731564
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "delay_median_s": {
+         "mean": 0.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          10.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 139.20000000000005,
+         "sd_seeds": 0.0,
+         "ci95": [
+          119.39499999999998,
+          184.0
+         ]
+        }
+       }
+      },
+      "long": {
+       "jump": {
+        "n_events": 208,
+        "recall": {
+         "mean": 0.7067307692307693,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.6490384615384616,
+          0.7644230769230769
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "delay_median_s": {
+         "mean": 0.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          0.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 62.60000000000002,
+         "sd_seeds": 0.0,
+         "ci95": [
+          13.392500000000036,
+          121.63000000000002
+         ]
+        }
+       },
+       "drift": {
+        "n_events": 241,
+        "recall": {
+         "mean": 0.5850622406639004,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.5228215767634855,
+          0.6473029045643154
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.9929577464788732,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.977773631840796,
+          1.0
+         ]
+        },
+        "delay_median_s": {
+         "mean": 114.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          95.92500000000001,
+          141.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 289.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          237.98250000000002,
+          372.50500000000017
+         ]
+        }
+       },
+       "frozen": {
+        "n_events": 325,
+        "recall": {
+         "mean": 0.963076923076923,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.9415384615384615,
+          0.9815384615384616
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "delay_median_s": {
+         "mean": 41.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          38.0,
+          46.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 121.60000000000002,
+         "sd_seeds": 0.0,
+         "ci95": [
+          103.1950000000001,
+          129.0
+         ]
+        }
+       },
+       "frame": {
+        "n_events": 266,
+        "recall": {
+         "mean": 0.9924812030075187,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.981203007518797,
+          1.0
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "delay_median_s": {
+         "mean": 0.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          0.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 0.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          0.0
+         ]
+        }
+       },
+       "noise": {
+        "n_events": 282,
+        "recall": {
+         "mean": 0.2695035460992908,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.2198581560283688,
+          0.32269503546099293
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "delay_median_s": {
+         "mean": 159.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          95.0,
+          183.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 355.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          260.39750000000004,
+          431.82500000000005
+         ]
+        }
+       },
+       "all": {
+        "n_events": 1322,
+        "recall": {
+         "mean": 0.7118003025718608,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.6883509833585476,
+          0.7329803328290468
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.9989384288747346,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.9967355821545157,
+          1.0
+         ]
+        },
+        "delay_median_s": {
+         "mean": 24.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          20.5,
+          29.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 171.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          152.985,
+          193.015
+         ]
+        }
+       }
+      }
+     }
+    },
+    "cusum": {
+     "threshold": [
+      0.6218922138214111
+     ],
+     "fa_per_pair_day": {
+      "mean": 2.02542539179889,
+      "sd_seeds": 0.0,
+      "ci95": [
+       1.456489230583457,
+       2.724547599228092
+      ]
+     },
+     "fa_per_hour_in_blocks_with_driving": 0.39655172413793105,
+     "fa_per_hour_in_blocks_without_driving": 0.017543859649122806,
+     "fa_per_pair_day_by_class": {
+      "uwb": 0.582112079458591,
+      "long": 2.315071922662193
+     },
+     "events": {
+      "jump": {
+       "n_events": 400,
+       "recall": {
+        "mean": 0.7725,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.73,
+         0.8100625
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.2760974264232725,
+       "precision_on_fault_streams": {
+        "mean": 0.9809523809523809,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.9583302238805971,
+         0.9968152866242038
+        ]
+       },
+       "delay_median_s": {
+        "mean": 0.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.0,
+         0.0
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 9.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         4.400000000000034,
+         22.007499999999943
+        ]
+       }
+      },
+      "drift": {
+       "n_events": 400,
+       "recall": {
+        "mean": 0.565,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.5175,
+         0.6125
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.21811089475448758,
+       "precision_on_fault_streams": {
+        "mean": 0.9783549783549783,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.9529813218390804,
+         0.9957631588357291
+        ]
+       },
+       "delay_median_s": {
+        "mean": 78.5,
+        "sd_seeds": 0.0,
+        "ci95": [
+         69.5,
+         90.04999999999995
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 210.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         181.20000000000005,
+         265.0
+        ]
+       }
+      },
+      "frozen": {
+       "n_events": 400,
+       "recall": {
+        "mean": 0.97,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.9525,
+         0.985
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.32382712741093195,
+       "precision_on_fault_streams": {
+        "mean": 0.9724310776942355,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.9531990816760931,
+         0.9897442455242967
+        ]
+       },
+       "delay_median_s": {
+        "mean": 29.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         26.0,
+         32.0
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 85.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         73.0,
+         100.0025
+        ]
+       }
+      },
+      "frame": {
+       "n_events": 400,
+       "recall": {
+        "mean": 0.995,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.9875,
+         1.0
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.32942379662866056,
+       "precision_on_fault_streams": {
+        "mean": 0.9827160493827161,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.9682907448267637,
+         0.995
+        ]
+       },
+       "delay_median_s": {
+        "mean": 0.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.0,
+         0.0
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 0.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.0,
+         0.0
+        ]
+       }
+      },
+      "noise": {
+       "n_events": 400,
+       "recall": {
+        "mean": 0.5675,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.52,
+         0.6175
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.21886476247829345,
+       "precision_on_fault_streams": {
+        "mean": 0.9659574468085106,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.9380100991049689,
+         0.9913419913419913
+        ]
+       },
+       "delay_median_s": {
+        "mean": 53.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         46.0,
+         66.01249999999999
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 237.60000000000002,
+        "sd_seeds": 0.0,
+        "ci95": [
+         212.6875000000001,
+         292.4050000000001
+        ]
+       }
+      },
+      "all": {
+       "n_events": 2000,
+       "recall": {
+        "mean": 0.774,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.755,
+         0.7915
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.27648531097399004,
+       "precision_on_fault_streams": {
+        "mean": 0.9766561514195583,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.9682228114389723,
+         0.9854250493333975
+        ]
+       },
+       "delay_median_s": {
+        "mean": 14.5,
+        "sd_seeds": 0.0,
+        "ci95": [
+         11.0,
+         18.0
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 126.29999999999995,
+        "sd_seeds": 0.0,
+        "ci95": [
+         115.78999999999996,
+         141.0
+        ]
+       }
+      }
+     },
+     "events_by_class": {
+      "uwb": {
+       "jump": {
+        "n_events": 192,
+        "recall": {
+         "mean": 0.765625,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.703125,
+          0.828125
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.9932432432432432,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.9788732394366197,
+          1.0
+         ]
+        },
+        "delay_median_s": {
+         "mean": 0.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          0.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 3.8000000000000114,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          35.20000000000002
+         ]
+        }
+       },
+       "drift": {
+        "n_events": 159,
+        "recall": {
+         "mean": 0.5471698113207547,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.46540880503144655,
+          0.6226415094339622
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.9666666666666667,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.9101123595505618,
+          1.0
+         ]
+        },
+        "delay_median_s": {
+         "mean": 73.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          65.0,
+          98.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 259.6,
+         "sd_seeds": 0.0,
+         "ci95": [
+          184.45499999999993,
+          378.0
+         ]
+        }
+       },
+       "frozen": {
+        "n_events": 75,
+        "recall": {
+         "mean": 0.9066666666666666,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.84,
+          0.960333333333333
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "delay_median_s": {
+         "mean": 20.5,
+         "sd_seeds": 0.0,
+         "ci95": [
+          18.0,
+          23.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 39.300000000000004,
+         "sd_seeds": 0.0,
+         "ci95": [
+          28.0,
+          48.0
+         ]
+        }
+       },
+       "frame": {
+        "n_events": 134,
+        "recall": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "delay_median_s": {
+         "mean": 0.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          0.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 0.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          0.0
+         ]
+        }
+       },
+       "noise": {
+        "n_events": 118,
+        "recall": {
+         "mean": 0.6864406779661016,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.6016949152542372,
+          0.7711864406779662
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "delay_median_s": {
+         "mean": 32.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          21.0,
+          40.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 129.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          103.0,
+          196.0
+         ]
+        }
+       },
+       "all": {
+        "n_events": 678,
+        "recall": {
+         "mean": 0.7625368731563422,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.7300516224188791,
+          0.7949852507374632
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.9923224568138196,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.9810891516605046,
+          1.0
+         ]
+        },
+        "delay_median_s": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          4.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 107.00000000000017,
+         "sd_seeds": 0.0,
+         "ci95": [
+          82.0,
+          129.0
+         ]
+        }
+       }
+      },
+      "long": {
+       "jump": {
+        "n_events": 208,
+        "recall": {
+         "mean": 0.7788461538461539,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.7211538461538461,
+          0.8317307692307693
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.9700598802395209,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.9317886232264845,
+          1.0
+         ]
+        },
+        "delay_median_s": {
+         "mean": 0.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          0.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 10.800000000000011,
+         "sd_seeds": 0.0,
+         "ci95": [
+          5.400000000000006,
+          41.0
+         ]
+        }
+       },
+       "drift": {
+        "n_events": 241,
+        "recall": {
+         "mean": 0.5767634854771784,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.5145228215767634,
+          0.6348547717842323
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.9858156028368794,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.965034965034965,
+          1.0
+         ]
+        },
+        "delay_median_s": {
+         "mean": 82.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          69.0,
+          100.02499999999998
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 185.8,
+         "sd_seeds": 0.0,
+         "ci95": [
+          164.79000000000005,
+          225.0
+         ]
+        }
+       },
+       "frozen": {
+        "n_events": 325,
+        "recall": {
+         "mean": 0.9846153846153847,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.9692307692307692,
+          0.9969230769230769
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.9667673716012085,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.9436201780415431,
+          0.9876170546191185
+         ]
+        },
+        "delay_median_s": {
+         "mean": 33.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          29.0,
+          37.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 93.10000000000002,
+         "sd_seeds": 0.0,
+         "ci95": [
+          80.0,
+          113.0
+         ]
+        }
+       },
+       "frame": {
+        "n_events": 266,
+        "recall": {
+         "mean": 0.9924812030075187,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.981203007518797,
+          1.0
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.974169741697417,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.9498162760114489,
+          0.9925093632958801
+         ]
+        },
+        "delay_median_s": {
+         "mean": 0.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          0.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 0.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          0.0
+         ]
+        }
+       },
+       "noise": {
+        "n_events": 282,
+        "recall": {
+         "mean": 0.5177304964539007,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.46099290780141844,
+          0.5780141843971631
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.948051948051948,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.9047476475620189,
+          0.9868484719864176
+         ]
+        },
+        "delay_median_s": {
+         "mean": 69.5,
+         "sd_seeds": 0.0,
+         "ci95": [
+          55.5,
+          104.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 285.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          231.07500000000007,
+          335.81750000000005
+         ]
+        }
+       },
+       "all": {
+        "n_events": 1322,
+        "recall": {
+         "mean": 0.7798789712556732,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.7594364599092285,
+          0.800321482602118
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.9689849624060151,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.9564803446631801,
+          0.9807890843243124
+         ]
+        },
+        "delay_median_s": {
+         "mean": 21.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          18.0,
+          23.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 134.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          118.0,
+          154.005
+         ]
+        }
+       }
+      }
+     }
+    },
+    "net": {
+     "threshold": [
+      4.960936069488525,
+      4.956751346588135,
+      5.128386974334717,
+      5.337454319000244,
+      4.723123073577881
+     ],
+     "fa_per_pair_day": {
+      "mean": 0.5313302841784465,
+      "sd_seeds": 0.09616332839747743,
+      "ci95": [
+       0.286003751110528,
+       0.8247276085533439
+      ]
+     },
+     "fa_per_hour_in_blocks_with_driving": 0.21586206896551724,
+     "fa_per_hour_in_blocks_without_driving": 0.0,
+     "fa_per_pair_day_by_class": {
+      "uwb": 0.4870733726082087,
+      "long": 0.5402118352550164
+     },
+     "events": {
+      "jump": {
+       "n_events": 400,
+       "recall": {
+        "mean": 0.9195,
+        "sd_seeds": 0.012083045973594561,
+        "ci95": [
+         0.892,
+         0.942
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.6364191822134213,
+       "precision_on_fault_streams": {
+        "mean": 0.9887412259632503,
+        "sd_seeds": 0.0038508688191999166,
+        "ci95": [
+         0.9784553129284198,
+         0.997292123035416
+        ]
+       },
+       "delay_median_s": {
+        "mean": 1.2,
+        "sd_seeds": 0.4000000000000001,
+        "ci95": [
+         1.0,
+         1.6
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 3.0600000000000023,
+        "sd_seeds": 0.5425863986500182,
+        "ci95": [
+         2.6,
+         3.6
+        ]
+       }
+      },
+      "drift": {
+       "n_events": 400,
+       "recall": {
+        "mean": 0.618,
+        "sd_seeds": 0.01238951169336386,
+        "ci95": [
+         0.5704875,
+         0.6635125
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.5410732636016766,
+       "precision_on_fault_streams": {
+        "mean": 0.9850169283246993,
+        "sd_seeds": 0.00802667260320009,
+        "ci95": [
+         0.9705488352664224,
+         0.9968127620792139
+        ]
+       },
+       "delay_median_s": {
+        "mean": 84.9,
+        "sd_seeds": 0.66332495807108,
+        "ci95": [
+         73.9925,
+         96.2
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 289.26000000000005,
+        "sd_seeds": 8.715411636864895,
+        "ci95": [
+         235.62750000000003,
+         326.142
+        ]
+       }
+      },
+      "frozen": {
+       "n_events": 400,
+       "recall": {
+        "mean": 0.9770000000000001,
+        "sd_seeds": 0.004847679857416313,
+        "ci95": [
+         0.962,
+         0.9899999999999999
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.6502000829554472,
+       "precision_on_fault_streams": {
+        "mean": 0.9878946452630496,
+        "sd_seeds": 0.004814202879398926,
+        "ci95": [
+         0.9783292585366944,
+         0.9964082841066901
+        ]
+       },
+       "delay_median_s": {
+        "mean": 27.9,
+        "sd_seeds": 0.66332495807108,
+        "ci95": [
+         26.0,
+         30.2
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 71.58000000000001,
+        "sd_seeds": 3.766377570026672,
+        "ci95": [
+         64.797,
+         80.58050000000001
+        ]
+       }
+      },
+      "frame": {
+       "n_events": 400,
+       "recall": {
+        "mean": 1.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         1.0,
+         1.0
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.6554138343065,
+       "precision_on_fault_streams": {
+        "mean": 0.9990049751243781,
+        "sd_seeds": 0.0019900497512437723,
+        "ci95": [
+         0.9970443349753694,
+         1.0
+        ]
+       },
+       "delay_median_s": {
+        "mean": 0.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.0,
+         0.0
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 0.2,
+        "sd_seeds": 0.4000000000000001,
+        "ci95": [
+         0.0,
+         0.2
+        ]
+       }
+      },
+      "noise": {
+       "n_events": 400,
+       "recall": {
+        "mean": 1.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         1.0,
+         1.0
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.6554138343065,
+       "precision_on_fault_streams": {
+        "mean": 0.9930520847351577,
+        "sd_seeds": 0.0018437458476711955,
+        "ci95": [
+         0.9823405423596719,
+         1.0
+        ]
+       },
+       "delay_median_s": {
+        "mean": 11.8,
+        "sd_seeds": 0.39999999999999997,
+        "ci95": [
+         11.4,
+         12.0
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 19.820000000000004,
+        "sd_seeds": 1.8137254478007372,
+        "ci95": [
+         18.4,
+         22.6005
+        ]
+       }
+      },
+      "all": {
+       "n_events": 2000,
+       "recall": {
+        "mean": 0.9029,
+        "sd_seeds": 0.004200000000000004,
+        "ci95": [
+         0.889995,
+         0.9151
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.6321794711104586,
+       "precision_on_fault_streams": {
+        "mean": 0.9912285408032167,
+        "sd_seeds": 0.0019441638001110823,
+        "ci95": [
+         0.9871048998972126,
+         0.9952669186122911
+        ]
+       },
+       "delay_median_s": {
+        "mean": 10.6,
+        "sd_seeds": 0.48989794855663565,
+        "ci95": [
+         9.8,
+         11.2
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 71.78000000000002,
+        "sd_seeds": 2.076920797719513,
+        "ci95": [
+         64.55800000000004,
+         80.7
+        ]
+       }
+      }
+     },
+     "events_by_class": {
+      "uwb": {
+       "jump": {
+        "n_events": 192,
+        "recall": {
+         "mean": 0.9333333333333332,
+         "sd_seeds": 0.014129854131510964,
+         "ci95": [
+          0.8989583333333334,
+          0.9635416666666667
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.9956378299120235,
+         "sd_seeds": 0.006281498229733715,
+         "ci95": [
+          0.9902461233932033,
+          1.0
+         ]
+        },
+        "delay_median_s": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 2.6,
+         "sd_seeds": 0.4898979485566356,
+         "ci95": [
+          2.0,
+          3.4
+         ]
+        }
+       },
+       "drift": {
+        "n_events": 159,
+        "recall": {
+         "mean": 0.6264150943396226,
+         "sd_seeds": 0.021272370472060074,
+         "ci95": [
+          0.5433962264150943,
+          0.70062893081761
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.9640293167009515,
+         "sd_seeds": 0.018074324351748376,
+         "ci95": [
+          0.9332364007421026,
+          0.9917328070752326
+         ]
+        },
+        "delay_median_s": {
+         "mean": 75.2,
+         "sd_seeds": 2.619160170741759,
+         "ci95": [
+          61.597500000000004,
+          98.60499999999999
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 302.78000000000003,
+         "sd_seeds": 4.159038350388237,
+         "ci95": [
+          220.24700000000004,
+          395.28350000000006
+         ]
+        }
+       },
+       "frozen": {
+        "n_events": 75,
+        "recall": {
+         "mean": 0.9386666666666666,
+         "sd_seeds": 0.006531972647421796,
+         "ci95": [
+          0.8826666666666666,
+          0.9840666666666666
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.9674092676508266,
+         "sd_seeds": 0.017904538958667043,
+         "ci95": [
+          0.9347603153364286,
+          0.9945584721708008
+         ]
+        },
+        "delay_median_s": {
+         "mean": 18.5,
+         "sd_seeds": 1.1832159566199232,
+         "ci95": [
+          17.0,
+          20.2
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 32.38,
+         "sd_seeds": 3.467794688270923,
+         "ci95": [
+          27.737499999999997,
+          42.361
+         ]
+        }
+       },
+       "frame": {
+        "n_events": 134,
+        "recall": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.9970588235294118,
+         "sd_seeds": 0.00588235294117645,
+         "ci95": [
+          0.9914285714285714,
+          1.0
+         ]
+        },
+        "delay_median_s": {
+         "mean": 0.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          0.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 0.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          0.14149999999999918
+         ]
+        }
+       },
+       "noise": {
+        "n_events": 118,
+        "recall": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "delay_median_s": {
+         "mean": 11.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          10.6,
+          12.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 17.979999999999997,
+         "sd_seeds": 1.5144636014114048,
+         "ci95": [
+          14.86,
+          21.04
+         ]
+        }
+       },
+       "all": {
+        "n_events": 678,
+        "recall": {
+         "mean": 0.8867256637168142,
+         "sd_seeds": 0.0066877781998552445,
+         "ci95": [
+          0.8643067846607669,
+          0.9097345132743364
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.987903564159373,
+         "sd_seeds": 0.005063841455586611,
+         "ci95": [
+          0.9805935992750294,
+          0.994658646185911
+         ]
+        },
+        "delay_median_s": {
+         "mean": 2.8,
+         "sd_seeds": 0.39999999999999997,
+         "ci95": [
+          2.0,
+          6.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 60.460000000000015,
+         "sd_seeds": 3.0884300218719307,
+         "ci95": [
+          42.651500000000084,
+          79.9655
+         ]
+        }
+       }
+      },
+      "long": {
+       "jump": {
+        "n_events": 208,
+        "recall": {
+         "mean": 0.9067307692307693,
+         "sd_seeds": 0.011618313436148626,
+         "ci95": [
+          0.8701923076923077,
+          0.9423076923076922
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.9822896527031866,
+         "sd_seeds": 0.005335185579355399,
+         "ci95": [
+          0.9652607157990931,
+          0.9978381284510317
+         ]
+        },
+        "delay_median_s": {
+         "mean": 1.6,
+         "sd_seeds": 0.4898979485566356,
+         "ci95": [
+          1.4,
+          1.8
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 3.6,
+         "sd_seeds": 0.4898979485566356,
+         "ci95": [
+          2.7390000000000034,
+          3.8
+         ]
+        }
+       },
+       "drift": {
+        "n_events": 241,
+        "recall": {
+         "mean": 0.612448132780083,
+         "sd_seeds": 0.009677928456174788,
+         "ci95": [
+          0.5526970954356847,
+          0.6664315352697094
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "delay_median_s": {
+         "mean": 92.1,
+         "sd_seeds": 0.9165151389911681,
+         "ci95": [
+          76.7975,
+          108.5025
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 269.84000000000003,
+         "sd_seeds": 17.756756460570173,
+         "ci95": [
+          218.63799999999995,
+          322.70550000000003
+         ]
+        }
+       },
+       "frozen": {
+        "n_events": 325,
+        "recall": {
+         "mean": 0.9858461538461538,
+         "sd_seeds": 0.004605116783721743,
+         "ci95": [
+          0.9723076923076924,
+          0.9963076923076922
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.9925732444448414,
+         "sd_seeds": 0.002440630191156262,
+         "ci95": [
+          0.9835420139705854,
+          0.9993846153846153
+         ]
+        },
+        "delay_median_s": {
+         "mean": 31.5,
+         "sd_seeds": 1.2649110640673518,
+         "ci95": [
+          29.0,
+          34.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 77.1,
+         "sd_seeds": 4.393631755165631,
+         "ci95": [
+          68.53699999999999,
+          87.56100000000002
+         ]
+        }
+       },
+       "frame": {
+        "n_events": 266,
+        "recall": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "delay_median_s": {
+         "mean": 0.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          0.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 0.2,
+         "sd_seeds": 0.4000000000000001,
+         "ci95": [
+          0.2,
+          0.3
+         ]
+        }
+       },
+       "noise": {
+        "n_events": 282,
+        "recall": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.9901753694785569,
+         "sd_seeds": 0.0025994261025743723,
+         "ci95": [
+          0.9764598149655517,
+          1.0
+         ]
+        },
+        "delay_median_s": {
+         "mean": 11.9,
+         "sd_seeds": 0.19999999999999998,
+         "ci95": [
+          11.6,
+          12.4
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 21.4,
+         "sd_seeds": 2.4979991993593593,
+         "ci95": [
+          18.96,
+          24.8
+         ]
+        }
+       },
+       "all": {
+        "n_events": 1322,
+        "recall": {
+         "mean": 0.9111951588502268,
+         "sd_seeds": 0.0029722969295595185,
+         "ci95": [
+          0.8969667170953102,
+          0.9267813918305597
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.992912377227246,
+         "sd_seeds": 0.0011117261076950577,
+         "ci95": [
+          0.9877090636514508,
+          0.9972107558765286
+         ]
+        },
+        "delay_median_s": {
+         "mean": 12.1,
+         "sd_seeds": 0.19999999999999998,
+         "ci95": [
+          11.2,
+          13.102499999999997
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 75.64000000000006,
+         "sd_seeds": 3.309743192454621,
+         "ci95": [
+          66.239,
+          87.606
+         ]
+        }
+       }
+      }
+     }
+    }
+   },
+   "ood": {
+    "chi2_step": {
+     "threshold": [
+      19.105655670166016
+     ],
+     "fa_per_pair_day": {
+      "mean": 479.05251529399874,
+      "sd_seeds": 0.0,
+      "ci95": [
+       447.60708809041995,
+       507.6928767405244
+      ]
+     },
+     "fa_per_hour_in_blocks_with_driving": 16.33463035019455,
+     "fa_per_hour_in_blocks_without_driving": 12.617543859649123,
+     "fa_per_pair_day_by_class": {
+      "uwb": 14.19731882650088,
+      "long": 564.0022648490567
+     },
+     "events": {
+      "jump": {
+       "n_events": 400,
+       "recall": {
+        "mean": 0.54,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.4925,
+         0.59
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.0011259558537292235,
+       "precision_on_fault_streams": {
+        "mean": 0.3963302752293578,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.3664895067974834,
+         0.4266549801032559
+        ]
+       },
+       "delay_median_s": {
+        "mean": 59.5,
+        "sd_seeds": 0.0,
+        "ci95": [
+         42.0,
+         80.0
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 300.5,
+        "sd_seeds": 0.0,
+        "ci95": [
+         207.1950000000001,
+         333.70250000000004
+        ]
+       }
+      },
+      "drift": {
+       "n_events": 400,
+       "recall": {
+        "mean": 0.57,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.5224375,
+         0.6175625
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.001188434616441227,
+       "precision_on_fault_streams": {
+        "mean": 0.39790575916230364,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.3687642977847774,
+         0.42777427774277743
+        ]
+       },
+       "delay_median_s": {
+        "mean": 62.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         50.0,
+         79.0
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 234.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         188.995,
+         267.0
+        ]
+       }
+      },
+      "frozen": {
+       "n_events": 400,
+       "recall": {
+        "mean": 0.985,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.9725,
+         0.995
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.002051922961472578,
+       "precision_on_fault_streams": {
+        "mean": 0.4544405997693195,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.43121894498963237,
+         0.4805352798053528
+        ]
+       },
+       "delay_median_s": {
+        "mean": 24.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         22.0,
+         27.0
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 84.69999999999999,
+        "sd_seeds": 0.0,
+        "ci95": [
+         72.0,
+         105.30500000000022
+        ]
+       }
+      },
+      "frame": {
+       "n_events": 400,
+       "recall": {
+        "mean": 1.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         1.0,
+         1.0
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.0020831054273042805,
+       "precision_on_fault_streams": {
+        "mean": 0.5277044854881267,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.49998439450686644,
+         0.5555555555555556
+        ]
+       },
+       "delay_median_s": {
+        "mean": 0.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.0,
+         0.0
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 0.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.0,
+         0.0
+        ]
+       }
+      },
+      "noise": {
+       "n_events": 400,
+       "recall": {
+        "mean": 0.865,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.83,
+         0.8975
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.0018023930622121569,
+       "precision_on_fault_streams": {
+        "mean": 0.4887005649717514,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.45881552621048416,
+         0.5218719409094954
+        ]
+       },
+       "delay_median_s": {
+        "mean": 45.5,
+        "sd_seeds": 0.0,
+        "ci95": [
+         36.0,
+         55.51249999999999
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 160.5,
+        "sd_seeds": 0.0,
+        "ci95": [
+         138.14750000000006,
+         187.0
+        ]
+       }
+      },
+      "all": {
+       "n_events": 2000,
+       "recall": {
+        "mean": 0.792,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.774,
+         0.8100125
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.001650534651864771,
+       "precision_on_fault_streams": {
+        "mean": 0.4589973920602724,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.44652771932434576,
+         0.4721841936681246
+        ]
+       },
+       "delay_median_s": {
+        "mean": 20.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         18.0,
+         23.0
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 146.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         130.19500000000005,
+         158.0
+        ]
+       }
+      }
+     },
+     "events_by_class": {
+      "uwb": {
+       "jump": {
+        "n_events": 161,
+        "recall": {
+         "mean": 0.062111801242236024,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.031055900621118012,
+          0.09937888198757763
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.23255813953488372,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.13330188679245283,
+          0.35294117647058826
+         ]
+        },
+        "delay_median_s": {
+         "mean": 114.5,
+         "sd_seeds": 0.0,
+         "ci95": [
+          18.5,
+          266.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 455.2,
+         "sd_seeds": 0.0,
+         "ci95": [
+          114.07250000000002,
+          547.0
+         ]
+        }
+       },
+       "drift": {
+        "n_events": 140,
+        "recall": {
+         "mean": 0.06428571428571428,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.02857142857142857,
+          0.10714285714285714
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.2647058823529412,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.14273399014778326,
+          0.41386494252873557
+         ]
+        },
+        "delay_median_s": {
+         "mean": 34.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          16.5,
+          395.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 420.6,
+         "sd_seeds": 0.0,
+         "ci95": [
+          74.60000000000001,
+          523.0
+         ]
+        }
+       },
+       "frozen": {
+        "n_events": 65,
+        "recall": {
+         "mean": 0.9384615384615385,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.8769230769230769,
+          0.9846153846153847
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.5350877192982456,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.4666541353383459,
+          0.6161616161616161
+         ]
+        },
+        "delay_median_s": {
+         "mean": 20.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          17.0,
+          23.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 37.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          28.6,
+          58.42500000000013
+         ]
+        }
+       },
+       "frame": {
+        "n_events": 125,
+        "recall": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.8680555555555556,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.8012820512820513,
+          0.933011165974638
+         ]
+        },
+        "delay_median_s": {
+         "mean": 0.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          0.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 0.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          0.0
+         ]
+        }
+       },
+       "noise": {
+        "n_events": 123,
+        "recall": {
+         "mean": 0.6178861788617886,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.5365853658536586,
+          0.6991869918699187
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.8260869565217391,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.734675154465456,
+          0.9176470588235294
+         ]
+        },
+        "delay_median_s": {
+         "mean": 49.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          34.0,
+          68.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 217.5,
+         "sd_seeds": 0.0,
+         "ci95": [
+          152.0,
+          306.42
+         ]
+        }
+       },
+       "all": {
+        "n_events": 614,
+        "recall": {
+         "mean": 0.4576547231270358,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.4169381107491857,
+          0.4984120521172638
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.65807962529274,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.6074661902144035,
+          0.709017832678145
+         ]
+        },
+        "delay_median_s": {
+         "mean": 7.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          13.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 125.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          76.75500000000012,
+          158.21999999999989
+         ]
+        }
+       }
+      },
+      "long": {
+       "jump": {
+        "n_events": 239,
+        "recall": {
+         "mean": 0.8619246861924686,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.8158995815899581,
+          0.9037656903765691
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.4103585657370518,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.38229627241464015,
+          0.4422844191440017
+         ]
+        },
+        "delay_median_s": {
+         "mean": 58.5,
+         "sd_seeds": 0.0,
+         "ci95": [
+          42.975,
+          78.02499999999998
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 291.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          204.58500000000006,
+          333.0
+         ]
+        }
+       },
+       "drift": {
+        "n_events": 260,
+        "recall": {
+         "mean": 0.8423076923076923,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.8,
+          0.8846153846153846
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.40630797773654914,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.3790734468174697,
+          0.4351440114013815
+         ]
+        },
+        "delay_median_s": {
+         "mean": 63.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          50.0,
+          80.5
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 228.2000000000001,
+         "sd_seeds": 0.0,
+         "ci95": [
+          187.0,
+          253.0
+         ]
+        }
+       },
+       "frozen": {
+        "n_events": 335,
+        "recall": {
+         "mean": 0.9940298507462687,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.9850746268656716,
+          1.0
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.44223107569721115,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.4172853716688726,
+          0.471004243281471
+         ]
+        },
+        "delay_median_s": {
+         "mean": 26.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          23.0,
+          30.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 94.80000000000001,
+         "sd_seeds": 0.0,
+         "ci95": [
+          75.0,
+          109.0
+         ]
+        }
+       },
+       "frame": {
+        "n_events": 275,
+        "recall": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.44788273615635177,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.4217791411042945,
+          0.47660311958405543
+         ]
+        },
+        "delay_median_s": {
+         "mean": 0.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          0.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 0.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          0.0
+         ]
+        }
+       },
+       "noise": {
+        "n_events": 277,
+        "recall": {
+         "mean": 0.9747292418772563,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.9530685920577617,
+          0.9891696750902527
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.4383116883116883,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.4106052947829775,
+          0.46794037709192027
+         ]
+        },
+        "delay_median_s": {
+         "mean": 44.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          32.4875,
+          55.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 146.1,
+         "sd_seeds": 0.0,
+         "ci95": [
+          118.0,
+          168.0
+         ]
+        }
+       },
+       "all": {
+        "n_events": 1386,
+        "recall": {
+         "mean": 0.9401154401154401,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.9271284271284271,
+          0.9516774891774892
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.4308862433862434,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.4181740569837497,
+          0.44463409186922576
+         ]
+        },
+        "delay_median_s": {
+         "mean": 23.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          21.0,
+          27.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 148.79999999999995,
+         "sd_seeds": 0.0,
+         "ci95": [
+          131.0,
+          165.0
+         ]
+        }
+       }
+      }
+     }
+    },
+    "cusum": {
+     "threshold": [
+      0.6218922138214111
+     ],
+     "fa_per_pair_day": {
+      "mean": 863.4194419315581,
+      "sd_seeds": 0.0,
+      "ci95": [
+       834.6647006436637,
+       889.9162740285304
+      ]
+     },
+     "fa_per_hour_in_blocks_with_driving": 30.027237354085603,
+     "fa_per_hour_in_blocks_without_driving": 22.705263157894738,
+     "fa_per_pair_day_by_class": {
+      "uwb": 27.594526631324776,
+      "long": 1016.1618825156268
+     },
+     "events": {
+      "jump": {
+       "n_events": 400,
+       "recall": {
+        "mean": 0.665,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.615,
+         0.715
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.0007696007099878705,
+       "precision_on_fault_streams": {
+        "mean": 0.30469644902634596,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.2872786150063741,
+         0.3240505226480836
+        ]
+       },
+       "delay_median_s": {
+        "mean": 19.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         16.0,
+         22.5
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 141.5,
+        "sd_seeds": 0.0,
+        "ci95": [
+         91.60000000000002,
+         246.0
+        ]
+       }
+      },
+      "drift": {
+       "n_events": 400,
+       "recall": {
+        "mean": 0.665,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.6175,
+         0.7075625
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.0007696007099878705,
+       "precision_on_fault_streams": {
+        "mean": 0.28449197860962566,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.2693425590769165,
+         0.3007928749864234
+        ]
+       },
+       "delay_median_s": {
+        "mean": 27.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         22.0,
+         31.0
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 112.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         82.89,
+         137.01
+        ]
+       }
+      },
+      "frozen": {
+       "n_events": 400,
+       "recall": {
+        "mean": 0.985,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.9725,
+         0.9975
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.0011395128856568166,
+       "precision_on_fault_streams": {
+        "mean": 0.3361774744027304,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.3189186145278892,
+         0.3544885925988453
+        ]
+       },
+       "delay_median_s": {
+        "mean": 17.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         15.0,
+         18.0
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 61.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         50.19500000000004,
+         73.0
+        ]
+       }
+      },
+      "frame": {
+       "n_events": 400,
+       "recall": {
+        "mean": 1.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         1.0,
+         1.0
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.001156845799031874,
+       "precision_on_fault_streams": {
+        "mean": 0.3707136237256719,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.3524229074889868,
+         0.39408866995073893
+        ]
+       },
+       "delay_median_s": {
+        "mean": 0.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.0,
+         0.0
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 0.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.0,
+         0.0
+        ]
+       }
+      },
+      "noise": {
+       "n_events": 400,
+       "recall": {
+        "mean": 0.8925,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.8625,
+         0.9225
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.0010326132923784985,
+       "precision_on_fault_streams": {
+        "mean": 0.35311572700296734,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.3345513685058555,
+         0.3739322916666667
+        ]
+       },
+       "delay_median_s": {
+        "mean": 19.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         16.0,
+         22.0
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 93.40000000000003,
+        "sd_seeds": 0.0,
+        "ci95": [
+         71.0,
+         110.04999999999995
+        ]
+       }
+      },
+      "all": {
+       "n_events": 2000,
+       "recall": {
+        "mean": 0.8415,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.824,
+         0.858
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.0009736642710236458,
+       "precision_on_fault_streams": {
+        "mean": 0.3319526627218935,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.32403584731027785,
+         0.3405219742792025
+        ]
+       },
+       "delay_median_s": {
+        "mean": 12.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         10.0,
+         13.0
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 74.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         66.0,
+         83.80249999999995
+        ]
+       }
+      }
+     },
+     "events_by_class": {
+      "uwb": {
+       "jump": {
+        "n_events": 161,
+        "recall": {
+         "mean": 0.19875776397515527,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.14285714285714285,
+          0.2608695652173913
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.31683168316831684,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.24730550284629982,
+          0.3974431818181818
+         ]
+        },
+        "delay_median_s": {
+         "mean": 51.5,
+         "sd_seeds": 0.0,
+         "ci95": [
+          14.0,
+          187.98749999999865
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 435.3000000000001,
+         "sd_seeds": 0.0,
+         "ci95": [
+          288.97,
+          476.0
+         ]
+        }
+       },
+       "drift": {
+        "n_events": 140,
+        "recall": {
+         "mean": 0.12857142857142856,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.07857142857142857,
+          0.17874999999999985
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.22784810126582278,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.15217391304347827,
+          0.3260980479148181
+         ]
+        },
+        "delay_median_s": {
+         "mean": 53.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          20.0,
+          279.0874999999999
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 416.1000000000001,
+         "sd_seeds": 0.0,
+         "ci95": [
+          236.59500000000003,
+          521.0
+         ]
+        }
+       },
+       "frozen": {
+        "n_events": 65,
+        "recall": {
+         "mean": 0.9384615384615385,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.8769230769230769,
+          0.9846153846153847
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.3505747126436782,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.3054082512315271,
+          0.4
+         ]
+        },
+        "delay_median_s": {
+         "mean": 16.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          14.0,
+          19.5
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 36.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          24.89750000000001,
+          49.005000000000024
+         ]
+        }
+       },
+       "frame": {
+        "n_events": 125,
+        "recall": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.7396449704142012,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.6476683937823834,
+          0.8503401360544217
+         ]
+        },
+        "delay_median_s": {
+         "mean": 0.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          0.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 0.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          0.0
+         ]
+        }
+       },
+       "noise": {
+        "n_events": 123,
+        "recall": {
+         "mean": 0.6991869918699187,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.6178861788617886,
+          0.7804878048780488
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.7107438016528925,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.6204120819261357,
+          0.8131273797161647
+         ]
+        },
+        "delay_median_s": {
+         "mean": 31.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          19.0,
+          48.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 215.5,
+         "sd_seeds": 0.0,
+         "ci95": [
+          131.0,
+          320.0
+         ]
+        }
+       },
+       "all": {
+        "n_events": 614,
+        "recall": {
+         "mean": 0.5244299674267101,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.4820846905537459,
+          0.5635179153094463
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.5,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.45873861987069536,
+          0.545143102750809
+         ]
+        },
+        "delay_median_s": {
+         "mean": 4.5,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          9.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 163.80000000000007,
+         "sd_seeds": 0.0,
+         "ci95": [
+          69.0,
+          245.51250000000016
+         ]
+        }
+       }
+      },
+      "long": {
+       "jump": {
+        "n_events": 239,
+        "recall": {
+         "mean": 0.9790794979079498,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.9581589958158996,
+          0.99581589958159
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.30310880829015546,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.2872996300863132,
+          0.3220823357968148
+         ]
+        },
+        "delay_median_s": {
+         "mean": 18.5,
+         "sd_seeds": 0.0,
+         "ci95": [
+          15.5,
+          21.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 95.50000000000009,
+         "sd_seeds": 0.0,
+         "ci95": [
+          74.0,
+          142.0
+         ]
+        }
+       },
+       "drift": {
+        "n_events": 260,
+        "recall": {
+         "mean": 0.9538461538461539,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.9268269230769232,
+          0.9769230769230769
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.2897196261682243,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.27446023678478315,
+          0.30450669914738127
+         ]
+        },
+        "delay_median_s": {
+         "mean": 26.5,
+         "sd_seeds": 0.0,
+         "ci95": [
+          21.0,
+          29.01249999999999
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 96.60000000000002,
+         "sd_seeds": 0.0,
+         "ci95": [
+          75.00000000000003,
+          118.0
+         ]
+        }
+       },
+       "frozen": {
+        "n_events": 335,
+        "recall": {
+         "mean": 0.9940298507462687,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.9850746268656716,
+          1.0
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.3336673346693387,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.31648558252466735,
+          0.3527542372881356
+         ]
+        },
+        "delay_median_s": {
+         "mean": 17.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          15.0,
+          19.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 65.60000000000002,
+         "sd_seeds": 0.0,
+         "ci95": [
+          53.0,
+          82.0
+         ]
+        }
+       },
+       "frame": {
+        "n_events": 275,
+        "recall": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.3021978021978022,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.2870563674321503,
+          0.31828703703703703
+         ]
+        },
+        "delay_median_s": {
+         "mean": 0.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          0.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 0.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          0.0
+         ]
+        }
+       },
+       "noise": {
+        "n_events": 277,
+        "recall": {
+         "mean": 0.9783393501805054,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.9602888086642599,
+          0.9927797833935018
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.3044943820224719,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.2890524883039343,
+          0.3219364606651743
+         ]
+        },
+        "delay_median_s": {
+         "mean": 17.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          14.0,
+          20.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 71.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          55.18500000000002,
+          92.0
+         ]
+        }
+       },
+       "all": {
+        "n_events": 1386,
+        "recall": {
+         "mean": 0.9819624819624819,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.9747474747474747,
+          0.9884559884559885
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.30750112968820603,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.30026236868948075,
+          0.31473849627948824
+         ]
+        },
+        "delay_median_s": {
+         "mean": 13.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          11.0,
+          14.012499999999989
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 70.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          63.0,
+          79.0
+         ]
+        }
+       }
+      }
+     }
+    },
+    "net": {
+     "threshold": [
+      4.960936069488525,
+      4.956751346588135,
+      5.128386974334717,
+      5.337454319000244,
+      4.723123073577881
+     ],
+     "fa_per_pair_day": {
+      "mean": 13.839575550908972,
+      "sd_seeds": 4.42859344632896,
+      "ci95": [
+       10.754886363795036,
+       17.22642268456954
+      ]
+     },
+     "fa_per_hour_in_blocks_with_driving": 2.216342412451362,
+     "fa_per_hour_in_blocks_without_driving": 0.16912280701754387,
+     "fa_per_pair_day_by_class": {
+      "uwb": 3.2704700161127525,
+      "long": 15.771021891672195
+     },
+     "events": {
+      "jump": {
+       "n_events": 400,
+       "recall": {
+        "mean": 0.22600000000000003,
+        "sd_seeds": 0.036796738985948194,
+        "ci95": [
+         0.187,
+         0.26349999999999996
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.016837700620503583,
+       "precision_on_fault_streams": {
+        "mean": 0.6444618032091466,
+        "sd_seeds": 0.022034545211502665,
+        "ci95": [
+         0.5487208281714774,
+         0.7527538382099231
+        ]
+       },
+       "delay_median_s": {
+        "mean": 47.8,
+        "sd_seeds": 1.16619037896906,
+        "ci95": [
+         36.0,
+         73.1
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 317.28,
+        "sd_seeds": 12.041661014992892,
+        "ci95": [
+         241.57549999999998,
+         382.892
+        ]
+       }
+      },
+      "drift": {
+       "n_events": 400,
+       "recall": {
+        "mean": 0.11299999999999999,
+        "sd_seeds": 0.017635192088548402,
+        "ci95": [
+         0.0865,
+         0.1415125
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.008512241048138127,
+       "precision_on_fault_streams": {
+        "mean": 0.46493900842461866,
+        "sd_seeds": 0.025427237043524422,
+        "ci95": [
+         0.37486203076708957,
+         0.5689534592057995
+        ]
+       },
+       "delay_median_s": {
+        "mean": 146.4,
+        "sd_seeds": 39.14383731828038,
+        "ci95": [
+         85.495,
+         214.02499999999998
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 367.76000000000005,
+        "sd_seeds": 38.37486677501307,
+        "ci95": [
+         290.5325000000001,
+         429.8185
+        ]
+       }
+      },
+      "frozen": {
+       "n_events": 400,
+       "recall": {
+        "mean": 0.9615,
+        "sd_seeds": 0.0046368092477478634,
+        "ci95": [
+         0.9425000000000001,
+         0.9775
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.07034971556671273,
+       "precision_on_fault_streams": {
+        "mean": 0.7998579489719659,
+        "sd_seeds": 0.013197347014438442,
+        "ci95": [
+         0.7573489645474316,
+         0.8412179308158763
+        ]
+       },
+       "delay_median_s": {
+        "mean": 31.5,
+        "sd_seeds": 1.7888543819998317,
+        "ci95": [
+         28.397499999999997,
+         35.2025
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 99.54000000000002,
+        "sd_seeds": 3.97974873578724,
+        "ci95": [
+         85.75650000000003,
+         114.22050000000003
+        ]
+       }
+      },
+      "frame": {
+       "n_events": 400,
+       "recall": {
+        "mean": 1.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         1.0,
+         1.0
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.07300204840176118,
+       "precision_on_fault_streams": {
+        "mean": 0.9587956695221627,
+        "sd_seeds": 0.00468392230442509,
+        "ci95": [
+         0.9317093177435449,
+         0.9808771046302859
+        ]
+       },
+       "delay_median_s": {
+        "mean": 0.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         0.0,
+         0.0
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 0.2,
+        "sd_seeds": 0.4000000000000001,
+        "ci95": [
+         0.2,
+         0.2
+        ]
+       }
+      },
+      "noise": {
+       "n_events": 400,
+       "recall": {
+        "mean": 1.0,
+        "sd_seeds": 0.0,
+        "ci95": [
+         1.0,
+         1.0
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.07300204840176118,
+       "precision_on_fault_streams": {
+        "mean": 0.9303085402619911,
+        "sd_seeds": 0.00838064923991891,
+        "ci95": [
+         0.8882448823520391,
+         0.9657897363040348
+        ]
+       },
+       "delay_median_s": {
+        "mean": 11.6,
+        "sd_seeds": 0.48989794855663565,
+        "ci95": [
+         11.4,
+         12.2
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 21.4,
+        "sd_seeds": 1.4966629547095764,
+        "ci95": [
+         19.2,
+         24.8
+        ]
+       }
+      },
+      "all": {
+       "n_events": 2000,
+       "recall": {
+        "mean": 0.6601,
+        "sd_seeds": 0.011425410277097274,
+        "ci95": [
+         0.6411924999999999,
+         0.6801149999999999
+        ]
+       },
+       "precision_at_1_fault_per_pair_day": 0.04930758418784915,
+       "precision_on_fault_streams": {
+        "mean": 0.8437425053883919,
+        "sd_seeds": 0.007094663822845754,
+        "ci95": [
+         0.8162490201098674,
+         0.8664642731453386
+        ]
+       },
+       "delay_median_s": {
+        "mean": 11.8,
+        "sd_seeds": 0.39999999999999997,
+        "ci95": [
+         11.2,
+         12.6
+        ]
+       },
+       "delay_p90_s": {
+        "mean": 73.0,
+        "sd_seeds": 4.401817806315947,
+        "ci95": [
+         61.959999999999994,
+         86.44600000000001
+        ]
+       }
+      }
+     },
+     "events_by_class": {
+      "uwb": {
+       "jump": {
+        "n_events": 161,
+        "recall": {
+         "mean": 0.20993788819875778,
+         "sd_seeds": 0.04363768464658458,
+         "ci95": [
+          0.15279503105590062,
+          0.26835403726708074
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.7281323828208623,
+         "sd_seeds": 0.018860322935200177,
+         "ci95": [
+          0.5689400231928744,
+          0.8864405304199485
+         ]
+        },
+        "delay_median_s": {
+         "mean": 26.5,
+         "sd_seeds": 2.8635642126552705,
+         "ci95": [
+          22.4,
+          56.91249999999999
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 260.22,
+         "sd_seeds": 48.81362104986678,
+         "ci95": [
+          126.04200000000006,
+          366.0100000000001
+         ]
+        }
+       },
+       "drift": {
+        "n_events": 140,
+        "recall": {
+         "mean": 0.05285714285714286,
+         "sd_seeds": 0.005714285714285711,
+         "ci95": [
+          0.02142857142857143,
+          0.0871785714285714
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.4565280333701386,
+         "sd_seeds": 0.061186311931836004,
+         "ci95": [
+          0.25045655466498856,
+          0.6964236111111111
+         ]
+        },
+        "delay_median_s": {
+         "mean": 169.2,
+         "sd_seeds": 44.5843021701585,
+         "ci95": [
+          32.2975,
+          348.43499999999995
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 407.44000000000005,
+         "sd_seeds": 25.383270080901728,
+         "ci95": [
+          109.15750000000001,
+          521.0
+         ]
+        }
+       },
+       "frozen": {
+        "n_events": 65,
+        "recall": {
+         "mean": 0.9661538461538461,
+         "sd_seeds": 0.006153846153846132,
+         "ci95": [
+          0.9168461538461538,
+          1.0
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.7815945165945166,
+         "sd_seeds": 0.018108031723841102,
+         "ci95": [
+          0.67865718488532,
+          0.883738222790178
+         ]
+        },
+        "delay_median_s": {
+         "mean": 17.7,
+         "sd_seeds": 0.9797958971132712,
+         "ci95": [
+          15.4,
+          19.3025
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 33.48000000000001,
+         "sd_seeds": 1.8829763673503663,
+         "ci95": [
+          26.757,
+          43.64300000000003
+         ]
+        }
+       },
+       "frame": {
+        "n_events": 125,
+        "recall": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.954242958059752,
+         "sd_seeds": 0.0065153875507041725,
+         "ci95": [
+          0.8980331262939959,
+          1.0
+         ]
+        },
+        "delay_median_s": {
+         "mean": 0.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          0.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 0.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          0.2
+         ]
+        }
+       },
+       "noise": {
+        "n_events": 123,
+        "recall": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.9825886715773431,
+         "sd_seeds": 0.012563985046117096,
+         "ci95": [
+          0.9647244926798146,
+          0.9968
+         ]
+        },
+        "delay_median_s": {
+         "mean": 11.2,
+         "sd_seeds": 0.39999999999999997,
+         "ci95": [
+          10.4,
+          11.8
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 19.759999999999998,
+         "sd_seeds": 1.9365949499056327,
+         "ci95": [
+          16.398999999999997,
+          24.32
+         ]
+        }
+       },
+       "all": {
+        "n_events": 614,
+        "recall": {
+         "mean": 0.5732899022801303,
+         "sd_seeds": 0.012906588114761537,
+         "ci95": [
+          0.5338599348534202,
+          0.6127117263843649
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.8815144121607649,
+         "sd_seeds": 0.015852686243954264,
+         "ci95": [
+          0.8393645048618465,
+          0.9221681879244322
+         ]
+        },
+        "delay_median_s": {
+         "mean": 9.4,
+         "sd_seeds": 0.48989794855663565,
+         "ci95": [
+          6.697500000000001,
+          10.4
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 29.1,
+         "sd_seeds": 2.2449944320643644,
+         "ci95": [
+          25.220000000000006,
+          36.38050000000001
+         ]
+        }
+       }
+      },
+      "long": {
+       "jump": {
+        "n_events": 239,
+        "recall": {
+         "mean": 0.23682008368200838,
+         "sd_seeds": 0.036915054393494184,
+         "ci95": [
+          0.19244769874476989,
+          0.2828451882845188
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.6027570528273851,
+         "sd_seeds": 0.031291936276861096,
+         "ci95": [
+          0.4986903028710833,
+          0.7338459318467985
+         ]
+        },
+        "delay_median_s": {
+         "mean": 60.3,
+         "sd_seeds": 6.241794613730894,
+         "ci95": [
+          44.4,
+          111.8025
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 326.64000000000004,
+         "sd_seeds": 12.77882623717844,
+         "ci95": [
+          261.11900000000014,
+          399.2140000000001
+         ]
+        }
+       },
+       "drift": {
+        "n_events": 260,
+        "recall": {
+         "mean": 0.1453846153846154,
+         "sd_seeds": 0.02509154835430783,
+         "ci95": [
+          0.10692307692307693,
+          0.18692307692307691
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.46844734766072094,
+         "sd_seeds": 0.04135734545319212,
+         "ci95": [
+          0.3657509890409235,
+          0.5886646789062956
+         ]
+        },
+        "delay_median_s": {
+         "mean": 141.1,
+         "sd_seeds": 45.92210796555402,
+         "ci95": [
+          79.19,
+          204.65999999999994
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 354.1400000000001,
+         "sd_seeds": 46.034143849972956,
+         "ci95": [
+          278.591,
+          403.948
+         ]
+        }
+       },
+       "frozen": {
+        "n_events": 335,
+        "recall": {
+         "mean": 0.9605970149253732,
+         "sd_seeds": 0.004776119402985076,
+         "ci95": [
+          0.9408805970149253,
+          0.9785074626865672
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.8035710637317728,
+         "sd_seeds": 0.013288831831014813,
+         "ci95": [
+          0.7581119065277694,
+          0.8497177994362469
+         ]
+        },
+        "delay_median_s": {
+         "mean": 36.6,
+         "sd_seeds": 2.0591260281974,
+         "ci95": [
+          33.0,
+          41.1
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 108.66,
+         "sd_seeds": 4.387983591582816,
+         "ci95": [
+          93.77900000000002,
+          126.7225
+         ]
+        }
+       },
+       "frame": {
+        "n_events": 275,
+        "recall": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.9609154259021639,
+         "sd_seeds": 0.006861714321438469,
+         "ci95": [
+          0.9343078302888954,
+          0.9842873560590332
+         ]
+        },
+        "delay_median_s": {
+         "mean": 0.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          0.0,
+          0.0
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 0.2,
+         "sd_seeds": 0.4000000000000001,
+         "ci95": [
+          0.2,
+          0.2
+         ]
+        }
+       },
+       "noise": {
+        "n_events": 277,
+        "recall": {
+         "mean": 1.0,
+         "sd_seeds": 0.0,
+         "ci95": [
+          1.0,
+          1.0
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.9089479301140013,
+         "sd_seeds": 0.011923092159773382,
+         "ci95": [
+          0.8573113595073106,
+          0.9540535337850455
+         ]
+        },
+        "delay_median_s": {
+         "mean": 11.8,
+         "sd_seeds": 0.39999999999999997,
+         "ci95": [
+          11.6,
+          12.6
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 21.880000000000003,
+         "sd_seeds": 1.4344336861632885,
+         "ci95": [
+          19.360000000000003,
+          27.440000000000005
+         ]
+        }
+       },
+       "all": {
+        "n_events": 1386,
+        "recall": {
+         "mean": 0.6985569985569986,
+         "sd_seeds": 0.011655307651549006,
+         "ci95": [
+          0.6745887445887445,
+          0.7222258297258298
+         ]
+        },
+        "precision_at_1_fault_per_pair_day": null,
+        "precision_on_fault_streams": {
+         "mean": 0.8308764192129031,
+         "sd_seeds": 0.005662633302138722,
+         "ci95": [
+          0.8023585989189349,
+          0.8584766019135847
+         ]
+        },
+        "delay_median_s": {
+         "mean": 13.4,
+         "sd_seeds": 0.48989794855663565,
+         "ci95": [
+          12.4,
+          14.4
+         ]
+        },
+        "delay_p90_s": {
+         "mean": 87.66000000000001,
+         "sd_seeds": 4.680427330917535,
+         "ci95": [
+          73.917,
+          105.00200000000004
+         ]
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "detectable_error_check": {
+   "bias_sigma": 4.57,
+   "detect_prob": 0.89939,
+   "false_alarm": 0.000985
+  },
+  "k_of_n_false_alarm": {
+   "0.01": 9.850600000000002e-06,
+   "0.001": 9.985006e-09,
+   "0.0001": 9.998500060000002e-12
+  }
+ },
+ "consensus": {
+  "cells": [
+   {
+    "geometry": "fleet",
+    "N": 5,
+    "f": 0,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.1,
+    "degree_condition_share": 0.1,
+    "connected_share": 0.1,
+    "robust_2F1_share": 0.1,
+    "robust_F1_share": 0.1,
+    "safe_when_robust": 1.0,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 5,
+    "robust_basis": "exact (2F+1)-robust"
+   },
+   {
+    "geometry": "fleet",
+    "N": 5,
+    "f": 1,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.1,
+    "degree_condition_share": 0.1,
+    "connected_share": 0.06,
+    "robust_2F1_share": 0.06,
+    "robust_F1_share": 0.06,
+    "safe_when_robust": 1.0,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 3,
+    "robust_basis": "exact (2F+1)-robust"
+   },
+   {
+    "geometry": "fleet",
+    "N": 5,
+    "f": 2,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 0.66,
+    "agreement_share": 0.18,
+    "degree_condition_share": 0.18,
+    "connected_share": 0.04,
+    "robust_2F1_share": 0.04,
+    "robust_F1_share": 0.04,
+    "safe_when_robust": 0.0,
+    "safe_when_not_robust": 0.6875,
+    "runs_robust": 2,
+    "robust_basis": "exact (2F+1)-robust"
+   },
+   {
+    "geometry": "fleet",
+    "N": 5,
+    "f": 2,
+    "F": 2,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.0,
+    "connected_share": 0.04,
+    "robust_2F1_share": 0.0,
+    "robust_F1_share": 0.04,
+    "safe_when_robust": null,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 0,
+    "robust_basis": "exact (2F+1)-robust"
+   },
+   {
+    "geometry": "fleet",
+    "N": 8,
+    "f": 0,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.04,
+    "degree_condition_share": 0.12,
+    "connected_share": 0.04,
+    "robust_2F1_share": 0.04,
+    "robust_F1_share": 0.04,
+    "safe_when_robust": 1.0,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 2,
+    "robust_basis": "exact (2F+1)-robust"
+   },
+   {
+    "geometry": "fleet",
+    "N": 8,
+    "f": 1,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.14,
+    "connected_share": 0.0,
+    "robust_2F1_share": 0.0,
+    "robust_F1_share": 0.0,
+    "safe_when_robust": null,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 0,
+    "robust_basis": "exact (2F+1)-robust"
+   },
+   {
+    "geometry": "fleet",
+    "N": 8,
+    "f": 2,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 0.48,
+    "agreement_share": 0.02,
+    "degree_condition_share": 0.06,
+    "connected_share": 0.0,
+    "robust_2F1_share": 0.0,
+    "robust_F1_share": 0.0,
+    "safe_when_robust": null,
+    "safe_when_not_robust": 0.48,
+    "runs_robust": 0,
+    "robust_basis": "exact (2F+1)-robust"
+   },
+   {
+    "geometry": "fleet",
+    "N": 8,
+    "f": 2,
+    "F": 2,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.0,
+    "connected_share": 0.0,
+    "robust_2F1_share": 0.0,
+    "robust_F1_share": 0.0,
+    "safe_when_robust": null,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 0,
+    "robust_basis": "exact (2F+1)-robust"
+   },
+   {
+    "geometry": "fleet",
+    "N": 12,
+    "f": 0,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.04,
+    "degree_condition_share": 0.24,
+    "connected_share": 0.0,
+    "robust_2F1_share": null,
+    "robust_F1_share": null,
+    "safe_when_robust": 1.0,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 12,
+    "robust_basis": "degree >= 2F+1 (necessary only)"
+   },
+   {
+    "geometry": "fleet",
+    "N": 12,
+    "f": 1,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.02,
+    "degree_condition_share": 0.26,
+    "connected_share": 0.0,
+    "robust_2F1_share": null,
+    "robust_F1_share": null,
+    "safe_when_robust": 1.0,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 13,
+    "robust_basis": "degree >= 2F+1 (necessary only)"
+   },
+   {
+    "geometry": "fleet",
+    "N": 12,
+    "f": 2,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 0.5,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.26,
+    "connected_share": 0.0,
+    "robust_2F1_share": null,
+    "robust_F1_share": null,
+    "safe_when_robust": 0.3076923076923077,
+    "safe_when_not_robust": 0.5675675675675675,
+    "runs_robust": 13,
+    "robust_basis": "degree >= 2F+1 (necessary only)"
+   },
+   {
+    "geometry": "fleet",
+    "N": 12,
+    "f": 2,
+    "F": 2,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.1,
+    "connected_share": 0.0,
+    "robust_2F1_share": null,
+    "robust_F1_share": null,
+    "safe_when_robust": 1.0,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 5,
+    "robust_basis": "degree >= 2F+1 (necessary only)"
+   },
+   {
+    "geometry": "fleet",
+    "N": 20,
+    "f": 0,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.22,
+    "connected_share": 0.0,
+    "robust_2F1_share": null,
+    "robust_F1_share": null,
+    "safe_when_robust": 1.0,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 11,
+    "robust_basis": "degree >= 2F+1 (necessary only)"
+   },
+   {
+    "geometry": "fleet",
+    "N": 20,
+    "f": 1,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.22,
+    "connected_share": 0.0,
+    "robust_2F1_share": null,
+    "robust_F1_share": null,
+    "safe_when_robust": 1.0,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 11,
+    "robust_basis": "degree >= 2F+1 (necessary only)"
+   },
+   {
+    "geometry": "fleet",
+    "N": 20,
+    "f": 2,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 0.6,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.3,
+    "connected_share": 0.0,
+    "robust_2F1_share": null,
+    "robust_F1_share": null,
+    "safe_when_robust": 0.5333333333333333,
+    "safe_when_not_robust": 0.6285714285714286,
+    "runs_robust": 15,
+    "robust_basis": "degree >= 2F+1 (necessary only)"
+   },
+   {
+    "geometry": "fleet",
+    "N": 20,
+    "f": 2,
+    "F": 2,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.02,
+    "degree_condition_share": 0.22,
+    "connected_share": 0.0,
+    "robust_2F1_share": null,
+    "robust_F1_share": null,
+    "safe_when_robust": 1.0,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 11,
+    "robust_basis": "degree >= 2F+1 (necessary only)"
+   },
+   {
+    "geometry": "fleet",
+    "N": 40,
+    "f": 0,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.02,
+    "degree_condition_share": 0.16,
+    "connected_share": 0.0,
+    "robust_2F1_share": null,
+    "robust_F1_share": null,
+    "safe_when_robust": 1.0,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 8,
+    "robust_basis": "degree >= 2F+1 (necessary only)"
+   },
+   {
+    "geometry": "fleet",
+    "N": 40,
+    "f": 1,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.22,
+    "connected_share": 0.0,
+    "robust_2F1_share": null,
+    "robust_F1_share": null,
+    "safe_when_robust": 1.0,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 11,
+    "robust_basis": "degree >= 2F+1 (necessary only)"
+   },
+   {
+    "geometry": "fleet",
+    "N": 40,
+    "f": 2,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 0.54,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.14,
+    "connected_share": 0.0,
+    "robust_2F1_share": null,
+    "robust_F1_share": null,
+    "safe_when_robust": 0.5714285714285714,
+    "safe_when_not_robust": 0.5348837209302325,
+    "runs_robust": 7,
+    "robust_basis": "degree >= 2F+1 (necessary only)"
+   },
+   {
+    "geometry": "fleet",
+    "N": 40,
+    "f": 2,
+    "F": 2,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.02,
+    "degree_condition_share": 0.04,
+    "connected_share": 0.0,
+    "robust_2F1_share": null,
+    "robust_F1_share": null,
+    "safe_when_robust": 1.0,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 2,
+    "robust_basis": "degree >= 2F+1 (necessary only)"
+   },
+   {
+    "geometry": "spread",
+    "N": 5,
+    "f": 0,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.0,
+    "connected_share": 0.0,
+    "robust_2F1_share": 0.0,
+    "robust_F1_share": 0.0,
+    "safe_when_robust": null,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 0,
+    "robust_basis": "exact (2F+1)-robust"
+   },
+   {
+    "geometry": "spread",
+    "N": 5,
+    "f": 1,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.0,
+    "connected_share": 0.06,
+    "robust_2F1_share": 0.0,
+    "robust_F1_share": 0.0,
+    "safe_when_robust": null,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 0,
+    "robust_basis": "exact (2F+1)-robust"
+   },
+   {
+    "geometry": "spread",
+    "N": 5,
+    "f": 2,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 0.9,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.0,
+    "connected_share": 0.0,
+    "robust_2F1_share": 0.0,
+    "robust_F1_share": 0.0,
+    "safe_when_robust": null,
+    "safe_when_not_robust": 0.9,
+    "runs_robust": 0,
+    "robust_basis": "exact (2F+1)-robust"
+   },
+   {
+    "geometry": "spread",
+    "N": 5,
+    "f": 2,
+    "F": 2,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.0,
+    "connected_share": 0.0,
+    "robust_2F1_share": 0.0,
+    "robust_F1_share": 0.0,
+    "safe_when_robust": null,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 0,
+    "robust_basis": "exact (2F+1)-robust"
+   },
+   {
+    "geometry": "spread",
+    "N": 8,
+    "f": 0,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.0,
+    "connected_share": 0.02,
+    "robust_2F1_share": 0.0,
+    "robust_F1_share": 0.0,
+    "safe_when_robust": null,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 0,
+    "robust_basis": "exact (2F+1)-robust"
+   },
+   {
+    "geometry": "spread",
+    "N": 8,
+    "f": 1,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.0,
+    "connected_share": 0.02,
+    "robust_2F1_share": 0.0,
+    "robust_F1_share": 0.0,
+    "safe_when_robust": null,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 0,
+    "robust_basis": "exact (2F+1)-robust"
+   },
+   {
+    "geometry": "spread",
+    "N": 8,
+    "f": 2,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 0.92,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.0,
+    "connected_share": 0.02,
+    "robust_2F1_share": 0.0,
+    "robust_F1_share": 0.0,
+    "safe_when_robust": null,
+    "safe_when_not_robust": 0.92,
+    "runs_robust": 0,
+    "robust_basis": "exact (2F+1)-robust"
+   },
+   {
+    "geometry": "spread",
+    "N": 8,
+    "f": 2,
+    "F": 2,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.0,
+    "connected_share": 0.02,
+    "robust_2F1_share": 0.0,
+    "robust_F1_share": 0.0,
+    "safe_when_robust": null,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 0,
+    "robust_basis": "exact (2F+1)-robust"
+   },
+   {
+    "geometry": "spread",
+    "N": 12,
+    "f": 0,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.0,
+    "connected_share": 0.0,
+    "robust_2F1_share": null,
+    "robust_F1_share": null,
+    "safe_when_robust": null,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 0,
+    "robust_basis": "degree >= 2F+1 (necessary only)"
+   },
+   {
+    "geometry": "spread",
+    "N": 12,
+    "f": 1,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.0,
+    "connected_share": 0.0,
+    "robust_2F1_share": null,
+    "robust_F1_share": null,
+    "safe_when_robust": null,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 0,
+    "robust_basis": "degree >= 2F+1 (necessary only)"
+   },
+   {
+    "geometry": "spread",
+    "N": 12,
+    "f": 2,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 0.84,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.0,
+    "connected_share": 0.0,
+    "robust_2F1_share": null,
+    "robust_F1_share": null,
+    "safe_when_robust": null,
+    "safe_when_not_robust": 0.84,
+    "runs_robust": 0,
+    "robust_basis": "degree >= 2F+1 (necessary only)"
+   },
+   {
+    "geometry": "spread",
+    "N": 12,
+    "f": 2,
+    "F": 2,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.0,
+    "connected_share": 0.0,
+    "robust_2F1_share": null,
+    "robust_F1_share": null,
+    "safe_when_robust": null,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 0,
+    "robust_basis": "degree >= 2F+1 (necessary only)"
+   },
+   {
+    "geometry": "spread",
+    "N": 20,
+    "f": 0,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.0,
+    "connected_share": 0.02,
+    "robust_2F1_share": null,
+    "robust_F1_share": null,
+    "safe_when_robust": null,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 0,
+    "robust_basis": "degree >= 2F+1 (necessary only)"
+   },
+   {
+    "geometry": "spread",
+    "N": 20,
+    "f": 1,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.0,
+    "connected_share": 0.0,
+    "robust_2F1_share": null,
+    "robust_F1_share": null,
+    "safe_when_robust": null,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 0,
+    "robust_basis": "degree >= 2F+1 (necessary only)"
+   },
+   {
+    "geometry": "spread",
+    "N": 20,
+    "f": 2,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 0.78,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.0,
+    "connected_share": 0.0,
+    "robust_2F1_share": null,
+    "robust_F1_share": null,
+    "safe_when_robust": null,
+    "safe_when_not_robust": 0.78,
+    "runs_robust": 0,
+    "robust_basis": "degree >= 2F+1 (necessary only)"
+   },
+   {
+    "geometry": "spread",
+    "N": 20,
+    "f": 2,
+    "F": 2,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.0,
+    "connected_share": 0.0,
+    "robust_2F1_share": null,
+    "robust_F1_share": null,
+    "safe_when_robust": null,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 0,
+    "robust_basis": "degree >= 2F+1 (necessary only)"
+   },
+   {
+    "geometry": "spread",
+    "N": 40,
+    "f": 0,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.0,
+    "connected_share": 0.02,
+    "robust_2F1_share": null,
+    "robust_F1_share": null,
+    "safe_when_robust": null,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 0,
+    "robust_basis": "degree >= 2F+1 (necessary only)"
+   },
+   {
+    "geometry": "spread",
+    "N": 40,
+    "f": 1,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.0,
+    "connected_share": 0.0,
+    "robust_2F1_share": null,
+    "robust_F1_share": null,
+    "safe_when_robust": null,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 0,
+    "robust_basis": "degree >= 2F+1 (necessary only)"
+   },
+   {
+    "geometry": "spread",
+    "N": 40,
+    "f": 2,
+    "F": 1,
+    "runs": 50,
+    "safe_share": 0.7,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.0,
+    "connected_share": 0.0,
+    "robust_2F1_share": null,
+    "robust_F1_share": null,
+    "safe_when_robust": null,
+    "safe_when_not_robust": 0.7,
+    "runs_robust": 0,
+    "robust_basis": "degree >= 2F+1 (necessary only)"
+   },
+   {
+    "geometry": "spread",
+    "N": 40,
+    "f": 2,
+    "F": 2,
+    "runs": 50,
+    "safe_share": 1.0,
+    "agreement_share": 0.0,
+    "degree_condition_share": 0.0,
+    "connected_share": 0.0,
+    "robust_2F1_share": null,
+    "robust_F1_share": null,
+    "safe_when_robust": null,
+    "safe_when_not_robust": 1.0,
+    "runs_robust": 0,
+    "robust_basis": "degree >= 2F+1 (necessary only)"
+   }
+  ]
+ },
+ "h16": {
+  "rule": "F = f: every run on a (2f+1)-robust mesh stays inside the honest range; on a non-robust mesh at least one run leaves it",
+  "robust_cells_all_safe": true,
+  "nonrobust_cells_with_a_run_leaving_the_range": 0,
+  "nonrobust_cells": 20,
+  "cells_with_more_liars_than_F": [
+   {
+    "geometry": "fleet",
+    "N": 5,
+    "f": 2,
+    "F": 1,
+    "safe_share": 0.66
+   },
+   {
+    "geometry": "fleet",
+    "N": 8,
+    "f": 2,
+    "F": 1,
+    "safe_share": 0.48
+   },
+   {
+    "geometry": "fleet",
+    "N": 12,
+    "f": 2,
+    "F": 1,
+    "safe_share": 0.5
+   },
+   {
+    "geometry": "fleet",
+    "N": 20,
+    "f": 2,
+    "F": 1,
+    "safe_share": 0.6
+   },
+   {
+    "geometry": "fleet",
+    "N": 40,
+    "f": 2,
+    "F": 1,
+    "safe_share": 0.54
+   },
+   {
+    "geometry": "spread",
+    "N": 5,
+    "f": 2,
+    "F": 1,
+    "safe_share": 0.9
+   },
+   {
+    "geometry": "spread",
+    "N": 8,
+    "f": 2,
+    "F": 1,
+    "safe_share": 0.92
+   },
+   {
+    "geometry": "spread",
+    "N": 12,
+    "f": 2,
+    "F": 1,
+    "safe_share": 0.84
+   },
+   {
+    "geometry": "spread",
+    "N": 20,
+    "f": 2,
+    "F": 1,
+    "safe_share": 0.78
+   },
+   {
+    "geometry": "spread",
+    "N": 40,
+    "f": 2,
+    "F": 1,
+    "safe_share": 0.7
+   }
+  ],
+  "supported": false
+ }
+}
