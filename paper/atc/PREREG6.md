@@ -105,3 +105,15 @@ Family for multiplicity: {H9, H10, H13, H14, H15a} are confirmatory (Holm). The 
   decision rule was not changed. The restatement (safety needs at most F liars per neighbourhood; agreement
   needs robustness) is reported as an exploratory finding, with a variant in which the base mast joins as a
   well-connected honest node.
+- **11 Nov 2026, after the internal referee round (reports/referee_phase6_p1.md to _p3.md; decisions in
+  reports/referee_phase6_decisions.md).** (1) H9's second clause says "within radio range of the base
+  beacons"; the analysis used "two or more beacons in line of sight" (23 % of driving steps), a reading
+  chosen by the analyst after the results. The clause is now reported under four readings and its verdict is
+  "depends on the reading". (2) H14's second clause ("leaves no reservation stuck past its timeout") is not
+  testable as written: the zero followed from the rule's definition, and the rule as first written released a
+  silent vehicle's reservation, which is unsafe if the vehicle is disabled inside the segment. The rule is
+  changed: the segment is marked unconfirmed and may be entered only at caution speed. (3) H12 and H13 are
+  calculations on assumed inputs (tile counts; message sizes times rates) and could not have failed; they are
+  reported as design calculations, not as tests. (4) The exact sign test used for H14 in the Holm family was
+  added after the results; the registered rule (a paired interval excluding zero) gives the same verdict. (5)
+  The label clash is resolved by writing this document's H9 and H10 as H9' and H10' in the papers.

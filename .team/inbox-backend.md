@@ -1179,7 +1179,7 @@ data/atc/trace_pair/index.json. Have `tools/atc/export_trace.py` also write
    (no engine change while 4x and 8x run).
 3. Agreed: run `build` and write the 4x / 8x addendum when I tell you the loop is done.
 
-## B-90b [QUEUED after B-91 and after LEAD says the E50 loop is done] Terrain-fix stops in the engine (E50b)
+## B-90b [IN PROGRESS] Terrain-fix stops in the engine (E50b)
 An opt-in option that inserts the stop (120 s per fix taken, as pnt.py decides) into the leg, so the delay and
 the reservations see it. E50b: 1x with 30 seeds, layered scheme with and without stop time, same seeds as E50;
 report delay per delivery, road waiting and violations. E50's files stay as run, labelled "without stop time".
@@ -1292,6 +1292,77 @@ offset, c x dt, MAC forgery bound, chi-square threshold, dead-reckoning growth, 
 round trips, sync byte count) and per degenerate case (all layers off equals Phase 5 bytes; perfect clocks
 equal no clock model; zero faults gives zero alarms above the false-alarm rate).
 
-## B-99 [IN PROGRESS] Site data for /protocol/ and /network/
+## B-99 [DONE 19:54] Site data for /protocol/ and /network/
 Small JSON for each figure (E50 error traces per layer, E53 bit-rate table, E54 timeline, E55 detector curves,
 the B-96 loss surface grid and descent path), sizes and sha256 in an index, as in B-80.
+
+# ===== REFEREE ROUND (LEAD, 11 Nov 2026). Read `reports/referee_phase6_decisions.md` first, then the three =====
+# ===== reports `reports/referee_phase6_p{1,2,3}.md` (the MUST FIX items that name code or files).          =====
+## Rules: analysis from existing caches and logs wherever possible; no change to a default code path; every new
+## number goes to a results file with its definition; heavy reruns only where a task says so; check free RAM
+## (at least 0.8 GB) before each chunk; my 8x E50 loop is still running, so nothing may change E50's cells.
+## Order: B-101, B-102, B-103, B-105, B-104, then B-106, B-107, B-108, B-100. Report each as it lands.
+
+## B-101 [OPEN] "Near the base" under four readings (P3 M5; decisions B4)
+From the E50 caches (1x 30 seeds, 4x 10 seeds), the p95 position error of the ranging layer set (and of the
+other three, for the table) over driving steps under four readings of "near the base": (a) two or more
+beacons in line of sight (the reading used so far), (b) one or more, (c) within 1 km of the BASE mast, (d)
+within radio range of it. Report the share of driving steps each reading covers, the p95 with its interval,
+and the side of the 5 m budget per seed. Also the ranging-error sweep the referee ran (0.1, 0.3, 0.7 m UWB; 1,
+3, 10 m long-range) on 6 seeds. Output `results/E50_near_base.json` + CSV.
+
+## B-102 [OPEN] What a reservation overlap is (P2 M2; decisions B5)
+From the E50 reservation logs: for every true-time overlap of conflicting single-lane reservations, its
+duration in seconds and the along-track gap between the two vehicles at the moment the second enters (from the
+true trajectories). Report distributions per layer set, with and without the margin (median, p95, max; counts
+above 1 s, 10 s, 60 s; counts with the gap under the 5 m static margin and under R1's required gap). Say plainly
+whether the margin changes the durations or gaps, or only the count. Also the referee's point that
+back-to-back windows overlap about half the time whatever the error: confirm or refute with the numbers.
+Output `results/E50_overlaps.json` + CSV. If the engine's logs do not hold what is needed, say what would.
+
+## B-103 [OPEN] Hops and reach for vehicles that are driving (P3 M2; decisions B9)
+From the E40 month and the E53 draws: hops to BASE and the share with a path, split by driving against parked
+vehicle-steps; the E53 busiest-link load and airtime recomputed over driving steps only; and the source load
+if STATUS and INTENT went at 1 Hz (the referee computes 19.5 kbit/s). Output into `results/E53_bitrate.json`
+under a new key, plus the CSV rows.
+
+## B-105 [OPEN] Measure what the sizing paper calls measured (P3 M1; decisions B11)
+(1) Peak memory of the on-robot part with tracemalloc (planner, safety check, reservation table, ledger copy)
+on one robot's view of a 1x, 4x and 8x month, beside the estimate E48 sums now. (2) The time of ONE robot's bid
+computation in one auction round (median, p99) at 1x, 4x, 8x, beside E48's whole-fleet dispatch call, which is
+relabelled. Keep E48's existing keys; add `measured_memory` and `per_robot_round` blocks with a `revision` note.
+
+## B-104 [OPEN] The radio law near the horizon (P3 M14; decisions B10)
+Check the referee's computation: by the method of the paper's reference [20] (the NASA lunar propagation
+study the notes opened), the loss at the hops where the smooth-Moon horizon is close is 4 to 5 dB above the
+two-ray value, and Table 7's rates 1.4 to 2.4 times lower. Reproduce it from the source as the notes record it
+(say exactly which formula), add it to E48 as a third column ("spherical ground"), and report which verdicts
+move (the referee says none).
+
+## B-106 [OPEN] The learned-bid evaluation on the fixed engine (P1 M8)
+`results/ATC_learned_eval.json` dates from 27 October, before the two engine fixes; P1's Table 6, the guard
+runs and the 92.9 % come from it. Rerun that evaluation on the current engine with the same seeds (resumable
+chunks under 9 minutes), write the new file beside the old with both dates, and report every value that moves.
+If it would take more than about two hours of compute, report the estimate first and wait.
+
+## B-107 [OPEN] Uphill encounters (P2 M9)
+The no-collision proposition assumes the leader brakes no harder than b_max; a conforming vehicle going uphill
+brakes at 0.5 + g sin(theta), above b_max beyond 10.7 degrees on the Moon and 4.6 degrees on Mars. Add uphill
+variants of the following and one-lane encounter types (slopes 5, 10, 15, 17.2 degrees; Moon and Mars), run
+them with the safety check as it is, and report violations, minimum gaps and the slope at which the gap falls
+inside the static margin. Then the fix to the rule (a slope term in the required gap) and the same runs with
+it. Opt-in; existing types and seeds untouched. Output `results/E45_uphill.json` + CSV.
+
+## B-108 [OPEN] Bounds on fresh seeds (P2 M11)
+The 95 % bounds for encounter types 4, 5 and 6 were computed on the seeds on which defects were found and the
+metric narrowed. Rerun those three types on fresh seeds (same count, a seed range never used), report the
+bounds on the fresh seeds beside the old ones, and keep both in the file with the reason.
+
+## B-100 [OPEN, last] LRIP v0.2: what a position must carry (P3 M4, P1 M10; decisions B3)
+The design says every position carries its frame, datum and time scale and an uncertainty; v0.1's POSITION
+serialises none of them. v0.2: frame, datum and time-scale identifiers declared per sender in HELLO and in the
+manifest and bound by the security context (a POSITION whose sender has not declared them is refused), and an
+uncertainty field in POSITION (a 95 % horizontal bound in a compact code; say the code). Keep v0.1 decodable
+(minor-version rule), regenerate the conformance vectors for v0.2 beside v0.1's, and rerun E53 with v0.2 sizes
+(both tables), with link framing as a separate row (plus 12 B per Proximity-1 frame) and the traffic model's
+coverage stated (which of the 15 message types it sends). Report every size and bit rate that moves.
