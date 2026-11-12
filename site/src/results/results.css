@@ -26,3 +26,20 @@
 .r-atc-src { margin: auto 0 0; padding-top: var(--s-2); }
 .r-atc-src code { overflow-wrap: anywhere; }
 .r-atc-k { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; color: var(--ink-2); margin: 0; }
+
+/* F-69: the Phase 6 hypotheses; every outcome gets the same chip, in words */
+.r-fam { margin-top: var(--s-5); }
+.r-fam h3 { margin: 0 0 var(--s-2); }
+.r-fam-table th[scope="row"] { font-family: var(--font-num); white-space: nowrap; }
+.r-fam-table td { white-space: normal; }
+.r-out { display: inline-block; padding: 1px 8px; border: 1.5px solid currentColor; border-radius: 999px; font-size: 0.8125rem; font-weight: 650; white-space: nowrap; }
+.r-out-held { color: var(--flag-measured); }
+.r-out-partly { color: var(--warm); }
+.r-out-not { color: var(--neg); }
+@media (max-width: 600px) {   /* phones: one labelled block per hypothesis */
+  .r-fam-table, .r-fam-table tbody, .r-fam-table caption { display: block; }
+  .r-fam-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .r-fam-table tr { display: block; padding: var(--s-2) 0; border-bottom: 1px solid var(--hairline); }
+  .r-fam-table th, .r-fam-table td { display: block; border: 0; padding: 0.15em 0; }
+  .r-fam-table td::before { content: attr(data-label) ': '; color: var(--ink-2); font-weight: 600; }
+}

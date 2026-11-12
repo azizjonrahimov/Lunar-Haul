@@ -11,6 +11,11 @@ export const COMPONENTS = [
   ['D', 'Dispatch engine'], ['A', 'Auction and team lifts'], ['R', 'Radio and visibility'], ['S', 'Safety program'],
   ['T', 'Traffic'], ['E', 'Energy and battery'], ['L', 'Learned bidding policy'], ['V', '3D scene and replay'], ['X', 'Cross-cutting'],
 ];
+// Phase 6 (F-69): results/vv_phase6.json, written by lunarsim/vv6.py (B-98) in the same format; its id letters
+export const COMPONENTS_6 = [
+  ['P', 'Positioning and time'], ['M', 'Map and coordinates'], ['C', 'Communication, protocol and security'],
+  ['G', 'Degenerate cases: every Phase 6 option off, or trivial'],
+];
 const KINDS = { V: 'verification', Val: 'validation', Cal: 'reproduces calibration data' };
 const MODES = ['rel', 'abs'];
 
@@ -69,11 +74,11 @@ function checkRow(c, seen) {
   return row;
 }
 
-/* read(doc) -> {ok, error?, generated, commit, groups: [{id, label, rows, pass, fail, notRun, errors, bias}], totals, mismatch} */
-export function read(doc) {
-  if (!doc || typeof doc !== 'object' || !Array.isArray(doc.rows)) return { ok: false, error: 'not a phase-5 check file (no "rows")', groups: [] };
+/* read(doc, components = COMPONENTS) -> {ok, error?, generated, commit, groups: [{id, label, rows, pass, fail, notRun, errors, bias}], totals, mismatch} */
+export function read(doc, components = COMPONENTS) {
+  if (!doc || typeof doc !== 'object' || !Array.isArray(doc.rows)) return { ok: false, error: 'not a recorded check file (no "rows")', groups: [] };
   if (doc.version !== VERSION) return { ok: false, error: `version ${doc.version}: this page reads version ${VERSION}`, groups: [] };
-  const seen = new Set(), rows = doc.rows.map(c => checkRow(c, seen)), names = new Map(COMPONENTS);
+  const seen = new Set(), rows = doc.rows.map(c => checkRow(c, seen)), names = new Map(components);
   for (const r of rows) if (!names.has(r.group)) names.set(r.group, `Other (${r.group})`);
   const count = (rs, s) => rs.filter(r => r.status === s).length, tally = rs => ({ pass: count(rs, 'pass'), fail: count(rs, 'fail'), notRun: count(rs, 'not_run'), errors: count(rs, 'error'), bias: rs.filter(r => r.bias).length });
   const groups = [...names].map(([id, label]) => { const rs = rows.filter(r => r.group === id); return { id, label, rows: rs, ...tally(rs) }; }).filter(g => g.rows.length);

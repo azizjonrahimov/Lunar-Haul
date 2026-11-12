@@ -126,6 +126,9 @@ if (existsSync(join(src, 'height_5m.png')) && !meta.dev_standin) {
 // /verification/ phase 5 (F-55): B-79's recorded Python checks, when the file exists
 const vv5 = join(ROOT, 'results', 'vv_phase5.json');
 if (existsSync(vv5)) { mkdirSync(join(PUB, 'verify'), { recursive: true }); copyFileSync(vv5, join(PUB, 'verify', 'vv_phase5.json')); console.log('prepare-data: phase-5 checks staged'); }
+// F-69: B-98's Phase 6 checks, the same format
+const vv6 = join(ROOT, 'results', 'vv_phase6.json');
+if (existsSync(vv6)) { mkdirSync(join(PUB, 'verify'), { recursive: true }); copyFileSync(vv6, join(PUB, 'verify', 'vv_phase6.json')); console.log('prepare-data: phase-6 checks staged'); }
 
 // Python's json writes NaN / Infinity bare (e.g. a mean delay with nothing finished); they are not JSON
 const pyJson = p => JSON.parse(readFileSync(p, 'utf8').replace(/([:[,]\s*)-?(NaN|Infinity)\b/g, '$1null'));

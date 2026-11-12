@@ -4,7 +4,7 @@
 import './verify.css';
 import refs from '../../verify/refs.json';
 import { esc } from '../components/num.js';
-import { read as readPhase5 } from './phase5.js';
+import { read as readPhase5, COMPONENTS, COMPONENTS_6 } from './phase5.js';
 
 const $ = id => document.getElementById(id);
 const BASE = import.meta.env.BASE_URL, SIM = BASE + 'simulator/engine/';   // the engine files (F-37: v3 page at /simulator/, v2 at /simulator/v2/)
@@ -98,18 +98,18 @@ $('v-cross').addEventListener('click', crossCheck);
 $('v-refs').textContent = `Reference numbers for the Phase-3 checks: site/verify/refs.json, made by site/scripts/make_verify_refs.py from the Python code at commit ${refs.generated.commit.slice(0, 7)} (${refs.generated.time}).`;
 // ---------- Phase 5 (F-55): the recorded Python checks, from verify/vv_phase5.json (B-79), grouped by component ----------
 const RESULT = { pass: ['pass', 'ok'], fail: ['fail', 'bad'], not_run: ['not run', 'idle'], error: ['format error', 'bad'] };
-async function phase5() {
-  const host = $('v5-results'), badge = $('v5-badge');
+// F-69: one renderer for both recorded phases (Phase 6: verify/vv_phase6.json from B-98, groups P, M, C, G)
+async function recorded({ file, host, badge, components, missing }) {
   let r;
-  try { r = await fetch(BASE + 'verify/vv_phase5.json'); } catch { r = null; }
+  try { r = await fetch(BASE + 'verify/' + file); } catch { r = null; }
   // missing file: a 404 on Pages, an HTML fallback page on some servers (vite preview answers 200 with index.html)
   if (!r || !r.ok || !/json/.test(r.headers.get('content-type') || '')) {
     badge.textContent = 'not published yet'; badge.className = 'v-badge idle';
-    host.innerHTML = '<p class="small muted">No phase-5 checks are published yet. They come with task B-79: the engine, the auction and team lifts, radio, the safety program, traffic, energy, the learned bidding policy and the 3D replay.</p>';
+    host.innerHTML = `<p class="small muted">${missing}</p>`;
     return;
   }
-  const doc = readPhase5(await r.json().catch(() => null));
-  if (!doc.ok) { badge.textContent = 'unreadable'; badge.className = 'v-badge bad'; host.innerHTML = `<p class="small">verify/vv_phase5.json: ${esc(doc.error)}</p>`; return; }
+  const doc = readPhase5(await r.json().catch(() => null), components);
+  if (!doc.ok) { badge.textContent = 'unreadable'; badge.className = 'v-badge bad'; host.innerHTML = `<p class="small">verify/${file}: ${esc(doc.error)}</p>`; return; }
   const t = doc.totals, scored = t.pass + t.fail + t.errors;
   badge.textContent = `${t.pass} of ${scored} recorded checks pass${t.notRun ? `, ${t.notRun} not run` : ''}${t.bias ? `, ${t.bias} bias flag${t.bias === 1 ? '' : 's'}` : ''}`;
   badge.className = 'v-badge ' + (!scored ? 'idle' : t.pass === scored ? 'ok' : 'bad');
@@ -119,8 +119,11 @@ async function phase5() {
     g.rows.map(c => `<tr><td><span class="mono">${esc(c.id)}</span>${c.sub ? ` <span class="small">${esc(c.sub)}</span>` : ''} ${esc(c.name)}${c.calibration ? ' <span class="v5-cal">reproduces calibration data</span>' : ''}<div class="small muted">${esc(c.meta)}</div>${c.error ? `<div class="small v5-err">${esc(c.error)}</div>` : ''}</td>` +
       `<td class="small">${esc(c.formula)}<div class="mono small">${esc(c.reference)}</div></td><td class="mono small">${esc(c.measured)}${c.ci ? `<div class="muted">${esc(c.ci)}</div>` : ''}${c.bias ? '<div><span class="v5-bias">bias flag</span></div>' : ''}${c.run ? `<div class="muted">${esc(c.run)}</div>` : ''}</td><td class="small">${esc(c.tolerance)}${c.tolFrom ? `<div class="muted">from ${esc(c.tolFrom)}</div>` : ''}</td>` +
       `<td><span class="v5-res ${RESULT[c.status][1]}">${RESULT[c.status][0]}</span>${c.reason ? `<div class="small muted">${esc(c.reason)}</div>` : ''}</td><td class="small">${esc(c.source)}${c.papers ? ` · ${esc(c.papers)}` : ''}</td></tr>`).join('') +
-    '</tbody></table></div></section>').join('') + `<p class="small muted">Recorded ${doc.commit ? `at commit ${esc(doc.commit.slice(0, 7))} ` : ''}(${esc(doc.generated)}), results/vv_phase5.json.</p>`;
+    '</tbody></table></div></section>').join('') + `<p class="small muted">Recorded ${doc.commit ? `at commit ${esc(doc.commit.slice(0, 7))} ` : ''}(${esc(doc.generated)}), results/${file}.</p>`;
 }
 render();
 runAll();
-phase5();
+recorded({ file: 'vv_phase5.json', host: $('v5-results'), badge: $('v5-badge'), components: COMPONENTS,
+  missing: 'No phase-5 checks are published yet. They come with task B-79: the engine, the auction and team lifts, radio, the safety program, traffic, energy, the learned bidding policy and the 3D replay.' });
+recorded({ file: 'vv_phase6.json', host: $('v6-results'), badge: $('v6-badge'), components: COMPONENTS_6,
+  missing: 'No phase-6 checks are published yet. They come with task B-98: positioning and time, the map and coordinates, communication, the protocol and security.' });

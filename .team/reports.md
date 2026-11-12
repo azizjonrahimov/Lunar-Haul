@@ -9246,3 +9246,31 @@ Next: B-98 (verification rows for Phase 6), then B-99 (site data). B-90b waits f
 **Questions for LEAD:** none.
 
 **State:** B-89 to B-99 are done (including B-80c, B-90 at 1x and 4x, B-91b, B-98a and the corrections). Only two items wait for your 8x loop: the B-90 8x addendum (with `phase6_family.py` rerun for H10's 8x clause), and B-90b (terrain-fix stops in the engine). I am waiting.
+
+## F-69 DONE 19:56 | site/lib/phase6.mjs (new: <!--@vv6:lead--> and familyTable), site/src/verify/phase5.js (read(doc, components); COMPONENTS_6), site/src/verify/main.js (one renderer for both phases), site/verification/index.html (Phase 6 block), site/lib/results-atc.mjs (the table under the Lunar ATC cards), site/src/results/results.css (outcome chips; stacked on phones), site/scripts/prepare-data.mjs (stages verify/vv_phase6.json), site/vite.config.js, site/tests/phase6.test.mjs (new), site/tests/results-atc.test.mjs (its digit check skips the table, which quotes its file) | how to check: /verification/#v-phase6, /results/#r-fam-h | from BACKEND: nothing | for LEAD: notes at the end
+**/verification/, Phase 6 block** (above Phase 5, newest first).
+- Heading "Phase 6: positioning, time, map and protocol checks", with a badge filled from the file: "54 of 54 recorded checks pass".
+- **The lead names G1, built from results/vv_phase6.json:** "54 of 54 recorded checks pass. Among them G1: with every Phase 6 engine option switched off, the engine gives the Phase 5 run back exactly: 0 of 144 summary values differ (C_AUCTION, roads atc, 30 days, seed 2), so the new parts change nothing they are not asked to."
+- **The reader:** the same as Phase 5's, so a format error becomes an error row and a summary mismatch is shown. It now takes its group list, and Phase 6 uses vv6.py's: Positioning and time 11/11, Map and coordinates 9/9, Communication, protocol and security 27/27, Degenerate cases 7/7.
+
+**/results/, "Phase 6: which hypotheses held"**, under the three Lunar ATC cards.
+- **Intro:** the family as the file states it, then "Of 5 hypotheses, 3 held, 1 held in part and 1 did not."
+- **Columns:** hypothesis, outcome, what the runs showed (the file's summary), how it was tested (threshold comparison, or sampling test with Holm, then the file's test), Holm p.
+- **Outcomes, from the file's own fields** (the Holm decision first, then the clauses, then the decision text):
+  - H9: **held in part** (2 of 3 clauses; absolute fixes away from the base, every seed above the budget);
+  - H10: **did not hold** (Holm p 0.932: the primary TOST clause holds, the others do not);
+  - H13: held; H14: held (Holm p 0.004); H15a: held (Holm p 0.003).
+- **Same weight for every outcome:** each is a bordered chip in words, green "held", amber "held in part", red "did not hold", same size and place.
+- The caption carries the file's pending note (E50 at 8x, H10's "gap grows at 8x" clause).
+- On phones the table becomes one labelled block per hypothesis.
+
+**Checks:**
+- node tests 55/55 (2 new): every Phase 6 row reads, grouped P / M / C / G, no format errors, the summary agrees, and the lead names G1; every hypothesis's outcome chip is present; the outcome rules are tested on edge cases;
+- build OK (RAM 1.29, 1.28 and 1.23 GB before each); budgets OK;
+- headless Chrome at 1280 and 390, light and dark: the badge and groups are as above; the table fits (358/358 at 390 after the stacked layout; it was 473 px before); 0 contrast fails, no overflow, one h1, no heading skips, 0 console errors on both pages;
+- screenshots read: the table at 1280 light and 390 dark, the Phase 6 block at 1280 dark.
+- **Server and browser stopped.**
+
+**For LEAD:**
+1. Your note said G1 compares 128 values; the file says 144 summary values (B-98's basis line). The page quotes the file.
+2. When the 8x run lands and phase6_family.json changes, the table follows at the next build (H10's outcome comes from its Holm field).

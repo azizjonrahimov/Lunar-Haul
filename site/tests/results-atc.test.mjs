@@ -16,7 +16,8 @@ test('Lunar ATC results: every key exists in its values file and renders flagged
   assert.doesNotMatch(html, /\(pending\)|\{\{/);
   assert.ok((html.match(/data-flag="Modelled"/g) || []).length >= 14, 'every number carries a flag');
   // the section's text has no digits outside the flagged numbers, the file names and the paper names (P1 to P3)
-  const text = html.replace(/<span class="num">.*?<\/span><\/span>/g, '').replace(/<[^>]+>/g, ' ').replace(/paper\/p\d|E48_sizing|values\.json|\bP[123]\b/g, '');
+  const text = html.replace(/<section class="r-fam"[\s\S]*?<\/section>/, '').replace(/<span class="num">.*?<\/span><\/span>/g, '')   // the Phase 6 table quotes its file (tests/phase6.test.mjs)
+   .replace(/<[^>]+>/g, ' ').replace(/paper\/p\d|E48_sizing|values\.json|\bP[123]\b/g, '');
   assert.doesNotMatch(text, /\d/, `typed digits: ${text.match(/.{0,30}\d.{0,30}/)?.[0]}`);
 });
 

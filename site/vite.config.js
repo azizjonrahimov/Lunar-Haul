@@ -11,6 +11,7 @@ import { nw } from './lib/network.mjs';
 import { atcResults } from './lib/results-atc.mjs';
 import { e52, e53, e55 } from './lib/protocol-data.mjs';
 import { b97 } from './lib/realdata.mjs';
+import { vv6 } from './lib/phase6.mjs';
 import { num } from './src/components/num.js';
 
 // Public base: '/' locally; CI sets SITE_BASE from actions/configure-pages (/Lunar-Haul/ on GitHub Pages).
@@ -40,6 +41,7 @@ function lunarsimPages() {
           .replace(/<!--@r:(\w+)-->/g, (_, k) => resultText(k))
           .replace(/<!--@nw:(\w+)-->/g, (_, k) => nw(k))   // F-61: /network/ numbers (lib/network.mjs)
           .replace(/<!--@e52:(\w+)-->/g, (_, k) => e52(k))   // F-56: E52 in /protocol/ problem 2 (lib/protocol-data.mjs)
+          .replace(/<!--@vv6:(\w+)-->/g, (_, k) => vv6(k))   // F-69: the Phase 6 checks' lead on /verification/ (lib/phase6.mjs)
           .replace(/<!--@b97:(\w+)-->/g, (_, k) => b97(k))   // F-56: B-97's real-data boxes (lib/realdata.mjs)
           .replace(/<!--@e55:([\w@.]+)-->/g, (_, k) => e55(k))   // F-56: E55 in /protocol/ problem 7 (lib/protocol-data.mjs)
           .replace(/<!--@e53:(\w+):(\w+):([\d.]+):(\d+):(\w+)-->/g, (_, g, au, hz, n, col) => e53(g, au, hz, n, col))   // F-56: E53 in /protocol/ problem 5 (lib/protocol-data.mjs)

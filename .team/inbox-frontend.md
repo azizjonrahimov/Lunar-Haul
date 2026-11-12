@@ -800,7 +800,7 @@ new model or size. No video until the owner adds credits.
 Hero stills and one short clip per story, generated with the Higgsfield CLI, each captioned "illustration,
 AI-generated". Never used as evidence and never in a results figure. Keep within the page weight budgets.
 
-## F-69 [OPEN] /verification/ for Phase 6 (B-98 is committed)
+## F-69 [DONE 11 Nov, uncommitted] /verification/ for Phase 6 (B-98 is committed)
 `results/vv_phase6.json` (54 rows, all pass, same format as vv_phase5: groups P, M, C, G) joins the page: a
 Phase 6 block with the same reader, the count in the badge, and the G1 row (every Phase 6 option off gives the
 Phase 5 run, 0 of 128 values differ) named in the lead. Also show `results/phase6_family.json` (the confirmatory

@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { paperValue, paperField } from './papers.mjs';
 import { num, esc } from '../src/components/num.js';
 import { ROOT } from './pages.mjs';
+import { familyTable } from './phase6.mjs';
 
 // a pre-formatted value from a paper's values file, flagged like every number on the site
 export function pv(id, key) {
@@ -59,5 +60,5 @@ export function atcResults(base = '/') {
   ].filter(Boolean);
   return `<section class="r-atc" aria-labelledby="h-atc"><h2 id="h-atc">Lunar ATC: the three papers in numbers</h2>`
     + `<p class="prose">Headline results of the three Lunar ATC papers, read from the papers' own values files when the site is built. More on <a href="${base}atc/">the Lunar ATC page</a>, <a href="${base}world/?view=atc">a month with and without the network</a> and <a href="${base}paper/">the papers</a>.</p>`
-    + `<div class="r-atc-grid">${card('p1', p1)}${card('p2', p2)}${card('p3', p3)}</div></section>`;
+    + `<div class="r-atc-grid">${card('p1', p1)}${card('p2', p2)}${card('p3', p3)}</div>${familyTable()}</section>`;   // F-69: the Phase 6 hypotheses under the cards
 }
