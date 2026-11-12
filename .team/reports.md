@@ -9530,3 +9530,40 @@ All 29 audit items are applied as proposed, plus your F-70 points. Numbers still
 4. The unconfirmed-segment count under the new rule: E54's rerun.
 5. Wait-to-delivery numbers for the P1 card: the revised values file.
 6. The four readings of H9′ clause 2: B-101.
+
+## B-90 ADDENDUM 2 (8x) DONE 09:10 (E50 at 8x, 5 seeds, 64 vehicles; family rerun) | files | how to test | API/format changes | questions
+`python tools/atc/run_e50.py build` was run on LEAD's 5 cells at 8x (no change to any cell). It rewrote `results/E50_summary.json`, `E50_errors.csv`, `E50_runs.csv` and `E50_trace.json`; the 1x and 4x values are unchanged. `tools/atc/phase6_family.py` now has H10's growth clause at 4x and at 8x, and `results/phase6_family.json` is rebuilt.
+
+**H9' at 8x** (reading (a), as before; B-101 gives the other readings):
+- dead reckoning: over the budget in the first driving hour (supported);
+- ranging near the base: p95 **4.50 m** [4.31, 4.69] (on the predicted side);
+- terrain fixes away from the base: **11.5 m** [10.7, 12.1] (not supported, as at 1x 15.2 and 4x 12.2).
+
+**H10' at 8x:**
+
+| Delay per delivery, mean of 5 seeds | 1x (30) | 4x (10) | 8x (5) |
+|---|---|---|---|
+| perfect position | 17.73 h | 12.80 h | 13.45 h [9.51, 17.39] |
+| layered margin minus perfect | +0.007 h | −0.87 h [−2.00, −0.01] | **−0.25 h [−0.83, +0.26]** |
+| dead-reckoning margin minus perfect | +0.12 h [−0.08, +0.31] | +2.08 h [+0.95, +3.25] | **+16.4 h [+12.4, +22.4]** |
+| road waiting: perfect / layered / dead reckoning | 2.5 / 2.5 / 7.6 h | — | 983 / 1,003 / **2,475 h** |
+
+- **"The gap grows"** is not supported at 8x either: Welch one-sided p 0.77 at 8x, 0.93 at 4x.
+- The dead-reckoning margin's cost grows steeply with the fleet: 0.7 % of delay at 1x, 16 % at 4x, **122 % at 8x**. The registered clause "dead reckoning larger at 1x" stays not significant (p 0.13).
+- **Family (Holm over H10', H14, H15a):** unchanged. H10' intersection-union p 0.932 (now max of TOST 1e-75, dead-reckoning 0.128, growth 0.932 at 4x and 0.773 at 8x); H14 0.0039, H15a 0.003.
+
+**New at 8x: the layered margin no longer removes every violation.**
+- Violations per seed (true-time overlaps of conflicting single-lane windows):
+  - without a margin: 212 (dead reckoning), 174 (layered);
+  - with the margin: dead reckoning 0.2 [0, 0.6], **layered 5.2 [4.0, 6.0]** (1x 0.03, 4x 0.9).
+- The layered margin averages 0.009 h (32 s), the dead-reckoning margin 0.39 h. At 8x, windows are packed tight enough that a 32 s pad is exceeded by errors in the tail.
+- **B-102** (what an overlap is: durations and gaps) will say what these 5.2 are.
+
+**Stop time at 8x:** the layered set's driving fixes cost 354 h of stops per month across 64 vehicles; E50 does not put them in the engine. E50b (B-90b) did it at 1x only (+0.63 h delay).
+
+**Memory:** the 8x cells record time (perfect run 447–533 s), not memory (see B-105).
+
+**Note on RAM (09:10):** free memory was 0.30–0.31 GB with no E50 run active. The largest users are the Claude sessions (four of 425–538 MB) and Telegram (639 MB); the python processes seen at 09:05 were short-lived. Heavy runs (B-101 at 4x and 8x) wait until free RAM is above 0.8 GB.
+
+**Files:** `tools/atc/phase6_family.py` (8x clause), `results/phase6_family.json`, `results/E50_summary.json` (and CSVs, trace), rebuilt.
+**How to test:** `python tools/atc/run_e50.py build`; `python tools/atc/phase6_family.py` (both light).

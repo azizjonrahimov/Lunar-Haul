@@ -36,12 +36,16 @@
      "margin_h": 8.865594233681295,
      "p": 1.1788705464104612e-75
     },
-    "the gap grows at 4x (8x pending)": {
+    "the gap grows with the fleet (4x and 8x)": {
      "gap_1x_h": 0.006561927181440079,
      "gap_4x_h": -0.8676662943806861,
      "n_4x": 10,
+     "gap_8x_h": -0.24746018746765444,
+     "n_8x": 5,
+     "p_one_sided_4x": 0.9324376632595714,
+     "p_one_sided_8x": 0.7726879763267119,
      "p_one_sided": 0.9324376632595714,
-     "note": "Welch one-sided, gap 4x > gap 1x; 8x not yet run"
+     "note": "Welch one-sided, gap m x > gap 1x, at 4x and at 8x; the clause holds only if both do (p = the larger)"
     },
     "dead reckoning with the margin larger at 1x": {
      "mean_diff_h": 0.11711714233689818,
@@ -114,5 +118,9 @@
   "H14": "supported (Holm)",
   "H15a": "supported (Holm)"
  },
- "pending": "E50 at 8x (5 seeds) is still running; H10's 'gap grows at 8x' clause will be added"
+ "e50_cells": {
+  "1x": 30,
+  "4x": 10,
+  "8x": 5
+ }
 }
