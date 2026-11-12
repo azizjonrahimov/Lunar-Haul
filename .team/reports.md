@@ -9608,3 +9608,38 @@ Done ahead of B-101 / B-102 / B-103 / B-105 because those need engine runs and f
 **Files:** `lunarsim/atc/radio.py` (`spherical_loss_db`, `_p526_first_term_db`, `import math`); `tools/atc/run_e48.py` (`_b104_spherical`, called in build); `results/E48_sizing.json`; `tests/test_radio_two_ray.py` (+1 test, 9 pass).
 **How to test:** `.venv\Scripts\python -m pytest tests/test_radio_two_ray.py -q`; `python tools/atc/run_e48.py build` (from caches, seconds).
 **Question for LEAD:** should the notes gain an entry recording P.526 §3.1–3.2 as opened (I can fetch the Recommendation with /browse), or should the papers cite the referee's method as computed, not as sourced?
+
+## B-103 DONE 09:20 (hops and reach for driving vehicles) | files | how to test | API/format changes | questions
+`tools/atc/run_b103.py` adds the key `driving_split` to `results/E53_bitrate.json` and 60 rows to `results/E53_table.csv` (geometries `fleet_driving`, `fleet_parked`). **E53's existing keys and its 60 existing rows are byte-identical** (checked against copies taken before the run).
+
+**(1) The E40 month: the source of 1.024 hops** (E48 `month_links`, default link rule; reproduced: 6,174 robot-epochs, 1.024 hops).
+
+| Robot-epochs at decision epochs, base up | n | Share with a path to BASE | Mean hops (connected) |
+|---|---|---|---|
+| all | 6,174 | 94.4 % | 1.024 |
+| parked | **6,120 (99.1 %)** | 94.5 % | 1.024 (1 hop 5,646, 2 hops 140) |
+| driving | **54 (0.9 %)** | 74.1 % (40 of 54) | 1.00 |
+
+- **The 1.024 is a figure for parked robots.** Decision epochs fall when vehicles are free, so 99 % of the robot-epochs behind it are parked. Driving is 54 epochs, too few to give a driving hop count.
+
+**(2) E53's draws split by driving and parked vehicle-steps** (same pool: the 1x July trace, seed 1; 2.6 % of its vehicle-steps are driving). Authenticated, 20 rovers, 30 draws, E53's draw streams:
+
+| Pool | Position rate | Busiest link, mean / p95 | Scheduled airtime p95 (η 0.8) | Slotted random access p95 (η 1/e) | Mean hops | Share with a path |
+|---|---|---|---|---|---|---|
+| E53 "fleet" (all steps; as published) | 1 Hz | 7.48 / 7.86 kbit/s | 9.82 | 21.36 | 1.019 | 96.8 % |
+| parked steps only | 1 Hz | 7.71 / 7.86 | 9.82 | 21.36 | 1.012 | 99.3 % |
+| **driving steps only** | 1 Hz | **4.99 / 5.89** | **7.37** | **16.02** | **1.58** | **93.0 %** |
+| driving steps only | 10 Hz | 42.5 / 50.2 | 62.7 | 136.4 | 1.58 | 93.0 % |
+
+- **Driving robots need more hops (1.58 against 1.01).** The busiest link carries less because driving robots are spread along the routes and share fewer neighbourhoods. So the 16 kbit/s verdict at 1 Hz holds for driving positions too, on a scheduled channel (7.4 kbit/s p95). On slotted random access it stays at the edge (16.0).
+- **"Share with a path" here is not E54's 56.6 %.** E53 places 20 rovers with 2.5 m antennas, and the other 19 rovers act as relays. E54's 56.6 % is the share of driving time with a path to BASE in the real 1x fleet (fewer vehicles, half with 1.0 m antennas), over 30 seeds. Both should be reported, with these definitions.
+
+**(3) STATUS and INTENT at 1 Hz** (the referee's computation):
+- authenticated POSITION 41 B, STATUS 43 B, INTENT 38 B: 122 B/s per robot;
+- **19.52 kbit/s at the sources for 20 robots (confirmed)**; with HELLO dropping out and the event messages added, 19.52 kbit/s;
+- busiest link p95: 19.52 kbit/s on E53's fleet positions, 14.64 on driving positions;
+- scheduled airtime: **24.4 and 18.3 kbit/s, above 16 kbit/s in both pools.** At those rates H13's 1 Hz verdict does not hold.
+
+**Files:** new `tools/atc/run_b103.py`; `results/E53_bitrate.json` (+ `driving_split`), `results/E53_table.csv` (+ 60 rows).
+**How to test:** `python tools/atc/run_b103.py` (about 2 min; one 1x engine replay).
+**For FRONTEND (via LEAD):** E53_table.csv has two new geometry values. `data/atc/protocol/e53_bitrate.json` (B-99) still holds the old rows; I will re-export it after B-100's size changes.

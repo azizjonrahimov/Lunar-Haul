@@ -1387,5 +1387,116 @@
   "slotted_aloha": 0.36787944117144233
  },
  "conformance_vectors": 45,
- "run_s": 9.2
+ "run_s": 9.2,
+ "driving_split": {
+  "task": "B-103 (P3 M2; decisions B9)",
+  "note": "    python tools/atc/run_b103.py        # -> results/E53_bitrate.json key \"driving_split\", rows added to E53_table.csv",
+  "pool_driving_share": 0.0261,
+  "e40_month": {
+   "epochs": 1029,
+   "month": 7,
+   "note": "default link rule (mesh line of sight within 5 km), as E48 month_links 'default'; driving = the robot's route sample one minute after the epoch differs",
+   "driving": {
+    "robot_epochs": 54,
+    "path_share": 0.7407,
+    "mean_hops_connected": 1.0,
+    "hop_histogram": {
+     "1": 40
+    }
+   },
+   "parked": {
+    "robot_epochs": 6120,
+    "path_share": 0.9454,
+    "mean_hops_connected": 1.024,
+    "hop_histogram": {
+     "1": 5646,
+     "2": 140
+    }
+   },
+   "all": {
+    "robot_epochs": 6174,
+    "path_share": 0.9436,
+    "mean_hops_connected": 1.024,
+    "hop_histogram": {
+     "1": 5686,
+     "2": 140
+    }
+   },
+   "check_against_E48": {
+    "all_mean_hops": 1.024,
+    "E48_mean_hops": 1.024,
+    "all_robot_epochs": 6174,
+    "E48_robot_epochs": 6174
+   }
+  },
+  "e53_auth_20_rovers": {
+   "fleet_driving": {
+    "1 Hz": {
+     "busiest_link_kbps_mean": 4.989,
+     "busiest_link_kbps_p95": 5.893,
+     "mean_hops_to_base": 1.583,
+     "reachable_share": 0.93,
+     "scheduled_airtime_p95_kbps": 7.366,
+     "slotted_aloha_airtime_p95_kbps": 16.019
+    },
+    "10 Hz": {
+     "busiest_link_kbps_mean": 42.48,
+     "busiest_link_kbps_p95": 50.173,
+     "mean_hops_to_base": 1.583,
+     "reachable_share": 0.93,
+     "scheduled_airtime_p95_kbps": 62.716,
+     "slotted_aloha_airtime_p95_kbps": 136.384
+    }
+   },
+   "fleet_parked": {
+    "1 Hz": {
+     "busiest_link_kbps_mean": 7.713,
+     "busiest_link_kbps_p95": 7.857,
+     "mean_hops_to_base": 1.012,
+     "reachable_share": 0.9933,
+     "scheduled_airtime_p95_kbps": 9.821,
+     "slotted_aloha_airtime_p95_kbps": 21.358
+    },
+    "10 Hz": {
+     "busiest_link_kbps_mean": 65.67,
+     "busiest_link_kbps_p95": 66.897,
+     "mean_hops_to_base": 1.012,
+     "reachable_share": 0.9933,
+     "scheduled_airtime_p95_kbps": 83.621,
+     "slotted_aloha_airtime_p95_kbps": 181.845
+    }
+   }
+  },
+  "status_intent_at_1hz": {
+   "bytes_position_status_intent_auth": {
+    "POSITION": 41,
+    "STATUS": 43,
+    "INTENT": 38
+   },
+   "three_beacons_per_rover_Bps": 122,
+   "three_beacons_20_rovers_kbps": 19.52,
+   "per_rover_all_messages_kbps": 0.976,
+   "sources_20_rovers_kbps": 19.521,
+   "busiest_link_20_rovers": {
+    "fleet": {
+     "busiest_link_kbps_mean": 18.577,
+     "busiest_link_kbps_p95": 19.521
+    },
+    "fleet_driving": {
+     "busiest_link_kbps_mean": 12.396,
+     "busiest_link_kbps_p95": 14.641
+    }
+   },
+   "scheduled_airtime_p95_kbps": {
+    "fleet": 24.401,
+    "fleet_driving": 18.301
+   },
+   "note": "POSITION, STATUS and INTENT each at 1 Hz, authenticated; HELLO then not sent (it only fills up to 1 Hz); event messages as E53"
+  },
+  "e54_link_shares_30_seeds": {
+   "linked_share_all_time": 0.9317394713261649,
+   "linked_share_driving_time": 0.566360139904384
+  },
+  "run_s": 22.5
+ }
 }
