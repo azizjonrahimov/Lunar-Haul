@@ -808,5 +808,32 @@ family with Holm: which hypotheses held, which did not, which are threshold comp
 /results/ under the Lunar ATC section, with the failed ones as visible as the supported ones. Node tests; browser
 check when free RAM is at least 1.0 GB.
 
+## F-70 [OPEN] The site says what the referee round left standing (your audit of 29 items is accepted)
+Apply every item of your "REFEREE AUDIT FOR F-70" as proposed, following reports/referee_phase6_decisions.md:
+- /results/ hypothesis table: H9' "depends on the reading" (four readings come with B-101; until then say so),
+  H10' did not hold, H13 "design calculation" (not a test), H14 split by clause (lost jobs: held; the
+  stuck-reservation clause: not testable as written), H15a held; H12 and H11's ranging half labelled
+  calculations wherever they appear.
+- Lost link (problem 6 and /atc/'s failure rule): the rule is the new one: a silent holder's segment is marked
+  unconfirmed and entered only at caution speed; remove the "0 stuck" row and the "release on time" readout;
+  show the unconfirmed segments and their hours as what the replay counts.
+- "41 B on the air" in all four places becomes "41 B before link framing and coding (53 B in a Proximity-1
+  frame)", and say that v0.1's position report carries no frame, time-scale or uncertainty field (v0.2 adds
+  them).
+- /network/: the deck no longer shows the network's output gating the safety check; say that no detector is
+  qualified for the safety path on this evidence; the out-of-distribution text reports false-alarm rates and
+  recall side by side and says they are not comparable.
+- Problem 3: no "met" chip from the guard result; state it as observed (no conflict in 303 reservation pairs
+  with clocks up to 0.845 s off; outside the guard proposition); drop "ample".
+- Problem 1: fix-stop cost from results/E50b_summary.json (+0.63 h per delivery, a lower bound), not the
+  0.007 h; overlap counts are not shown as a safety result.
+- Problem 2 and 5: H12's 1.06 % and the E53 loads are labelled calculations from assumed inputs.
+- The P1 card on /results/: wait to delivery; 5,480 simulated years with 2,029 distinct runs in the main
+  experiment; the 16.5 % with "the linear model, secondary to the registered network"; drop the 99.5 % until
+  the revised P1 lands, then quote what it says.
+- /atc/: memory and market-round rows are "estimated" and "the simulator's whole-fleet call", not measured.
+Numbers still come from files. Node tests for each changed reader; browser check when free RAM is at least
+1.0 GB. When the revised papers and B-100 to B-108 land I will send a short data update.
+
 ## F-65 [DONE 11 Nov, uncommitted] Paper pages and results
 /paper/ shows the revised P1-P3 with the proved / tested / assumed tables; /results/ gains the Phase 6 numbers.
