@@ -578,9 +578,17 @@ def values(r: R, allow_pending: bool):
     # gives them for delay_mean_h, the mean delay per delivery of all cargo, which an earlier build quoted under
     # the primary outcome's name. The before/after of every tested comparison (PREREG change 5) is Table C1.
     PRIMARY = "atc_urgent_wait_mean_cens_h"
+    # Second pass (12 Nov): the availability of the relay case that the text calls "the 80 % relay", read from the
+    # coverage recorded in that cell's run rows (run_phase5's cell definition), never typed. The site reads the key.
+    cov = r.full("E40")
+    cov = cov[cov["label"] == LABELS["relay08"]]["coverage"].dropna().unique()
+    if len(cov) != 1:
+        raise ValueError(f"the relay cell {LABELS['relay08']} has {len(cov)} coverage values in E40_runs")
+    RELAY08 = sh(float(cov[0]), 0)
+    V["P1-RELAY08-SHARE"] = RELAY08
     REGIME_WORDS = {"A_EARTH strict": "owners alone from Earth, strict", "A_EARTH plan_ahead": "owners alone from Earth, plan ahead",
                     "A_MOON": "owners alone on the Moon", "B_EARTH strict": "the strict dispatcher on Earth",
-                    "B_EARTH plan_ahead": "the plan-ahead dispatcher on Earth", "B_EARTH_RELAY 0.8": "the 80&#8239;% relay",
+                    "B_EARTH plan_ahead": "the plan-ahead dispatcher on Earth", "B_EARTH_RELAY 0.8": f"the {RELAY08} relay",
                     "B_EARTH_RELAY 1.0": "the relay that is always up", "C_LEADER": "the elected leader",
                     "C_AUCTION": "the auction", "C_LEARNED_LIN": "the learned linear bids",
                     "C_LEARNED_MLP": "the learned network bids", "O_ORACLE": "the full-information marketplace"}
@@ -1038,7 +1046,7 @@ def values(r: R, allow_pending: bool):
     V["P1-H4-60-SENTENCE"] = (f"At {LOAD_HEAVY}{PCT} load " + h4_60(lin60, "linear model") + " and " +
                               h4_60(mlp60, "network") + f" (n = {int(lin60['n'])}; Table 7).")
     GROUP_NAME = {"B_strict": "the strict dispatcher on Earth", "B_plan": "the plan-ahead dispatcher on Earth",
-                  "relay08": "the 80&#8239;% relay"}
+                  "relay08": f"the {RELAY08} relay"}
     def shown(k, load):
         row = r.reg(k, load)
         return row[f"{M}_v1"] if bool(row["earth_independent"]) and f"{M}_v1" in row else row[M]
@@ -1868,6 +1876,8 @@ class P6:
         # the Phase 6 confirmatory family with Holm's correction (tools/atc/phase6_family.py)
         pfam = os.path.join(RES, "phase6_family.json")
         self.fam = json.load(open(pfam, encoding="utf-8")) if os.path.exists(pfam) else None
+        p48 = os.path.join(RES, "E48_sizing.json")
+        self.e48 = json.load(open(p48, encoding="utf-8")) if os.path.exists(p48) else None
         self.schema = jl("lunarsim", "schemas", "lrip-v0.1.json")
         self.dev = jl("paper", "p1", "dev_notes.json")
         self.conf = jl("data", "atc", "lrip", "conformance-v0.1.json")
@@ -2245,6 +2255,48 @@ def phase6_e53(p, st, V, check):
         f"The traffic model holds {len(pr)} of the {len(all_types)} message types"
         + (": " + listing(f"<code>{n}</code>" for n in absent) + " are not in it, so the count is of the periodic "
            "reports and the task and road messages and not of the full message set." if absent else "."))
+    # Second pass (12 Nov), tasks B-103 and B-104 (decisions B9, B10): the same calculation on driving steps only and
+    # with STATUS and INTENT at 1 Hz (E53_bitrate.json "driving_split"), and the link rate under a curved-Moon loss
+    # (E48_sizing.json "revision_b104"). Both are calculations on assumed inputs and are labelled so.
+    ds = e.get("driving_split")
+    if ds is None:
+        raise Pending("E53_bitrate.json has no driving_split (task B-103)")
+    dv = ds["e53_auth_20_rovers"]["fleet_driving"]["1 Hz"]
+    pk = ds["e53_auth_20_rovers"]["fleet_parked"]["1 Hz"]
+    s1 = ds["status_intent_at_1hz"]
+    ls = ds["e54_link_shares_30_seeds"]["linked_share_driving_time"]
+    check(abs(pk["busiest_link_kbps_p95"] - v1) < 1e-3, "the parked draws reproduce the fleet geometry's busiest link")
+    check(dv["mean_hops_to_base"] > pk["mean_hops_to_base"] and dv["reachable_share"] < pk["reachable_share"],
+          "driving vehicles are more hops from the base and fewer of them have a path to it")
+    check(dv["scheduled_airtime_p95_kbps"] <= nb, "on driving steps the scheduled channel still carries 20 rovers at 1 Hz")
+    s1_fit = s1["sources_20_rovers_kbps"] <= nb
+    V["P1-E53-DRIVING-SENTENCE"] = (
+        f"Two further calculations on the same inputs show how far the result depends on them. Only "
+        f"{sh(ds['pool_driving_share'], 1)} of the vehicle-steps in the pool that the fleet geometry samples are "
+        f"driving steps. Drawn from those alone, 20 rovers are {num(dv['mean_hops_to_base'], 2)} hops from the base "
+        f"on average where a path exists, {sh(dv['reachable_share'])} of them have one, and the busiest link "
+        f"carries {kbps(dv['busiest_link_kbps_p95'], 1)} at one position report a second (95th percentile; "
+        f"{kbps(dv['scheduled_airtime_p95_kbps'], 1)} as scheduled airtime), against "
+        f"{num(pk['mean_hops_to_base'], 2)} hops, {sh(pk['reachable_share'])} and "
+        f"{kbps(pk['busiest_link_kbps_p95'], 1)} for parked vehicles; over the recorded month of Section 5.9 a "
+        f"vehicle had a path to the base for {sh(ls)} of its driving time. If the status and intent reports are "
+        f"also sent once a second, the 20 rovers offer {kbps(s1['sources_20_rovers_kbps'], 2)} at the sources, which "
+        + (f"is inside the {kbps(nb, 0)} budget." if s1_fit else
+           f"is above the {kbps(nb, 0)} budget before any airtime is counted: H13's first clause holds only at the "
+           f"report rates we assumed."))
+    b104 = p.e48.get("revision_b104") if p.e48 is not None else None
+    if b104 is None:
+        raise Pending("E48_sizing.json has no revision_b104 (task B-104)")
+    wh = b104["per_class"]["LTV1"]["worst_hop"]
+    check(wh["kbps"]["spherical_ground"] < wh["kbps"]["flat_ground"] < wh["kbps"]["free_space"],
+          "the curved-Moon loss gives a lower rate than flat ground, and flat ground a lower one than free space")
+    V["P1-LINKLAW-SENTENCE"] = (
+        f"Nor does the link law enter this paper's runs: a link exists or it does not. As a calculation outside "
+        f"them, the companion paper's link budget [44] gives two rover antennas {num(wh['d_m'] / 1000)}{NB}km apart "
+        f"{kbps(wh['kbps']['flat_ground'], 0)} over flat ground and {kbps(wh['kbps']['spherical_ground'], 0)} when "
+        f"the Moon's curvature is counted ({num(wh['spherical_minus_flat_db'], 1)}{NB}dB more loss), so the "
+        f"{num(wh['d_m'] / 1000)}{NB}km range we assume is a range at which a narrow-band channel closes and a "
+        f"megabit channel may not.")
     V["P1-E53-AIR-SCHED"], V["P1-E53-AIR-ALOHA"] = kbps(air_s), kbps(air_a, 1)
     V["P1-E53-AIRTIME-SENTENCE"] = (
         f"Load at the sources is not airtime (Proposition 2). On a channel that the base schedules, with a fifth of "
@@ -2276,8 +2328,7 @@ def phase6_e53(p, st, V, check):
         f"path to it), so the scheduled {kbps(nb, 0)} channel is full at {nmax} rovers reporting once a second"
         + (f": 40 rovers fit as load ({kbps(r40, 1)}) and not as airtime ({kbps(r40 / eta_s, 1)})." if r40 <= nb < r40 / eta_s
            else ".")
-        + " Vehicles on the road are placed differently: Section 5.9 gives the share of driving time with a path to "
-          "the base.")
+        + " Vehicles on the road are placed differently, as the next paragraph shows.")
     r5 = row("fleet", "on", 10.0, 5)["busiest_link_kbps_p95"]
     r80 = row("fleet", "on", 10.0, 80)["busiest_link_kbps_p95"]
     V["P1-E53-10HZ-SENTENCE"] = (

@@ -74,3 +74,16 @@ conclusion 249, no `[[PENDING` in `paper.html`. The PDF was not rebuilt (free me
 
 - The site's /paper/ page still reads `P1-H1-UNDELIVERED-SHARE` (99.5 %) from `values.json`.
 - `compare_rerun.py` still calls `delay_mean_h` the primary outcome in its JSON.
+
+## Second pass, part 1 (12 Nov)
+
+| Item | Status | What was done | Where |
+|---|---|---|---|
+| `P1-RELAY08-SHARE` | Done | New key, "80 %", read from the `coverage` column of the cell `B_EARTH_RELAY 0.8` in `results/E40_runs*.csv` (the build stops if the cell has more than one coverage value). Used in all 11 places where the text said 80 % of that relay, and in the two composed regime names. | abstract, 1, 5.1, 5.3, 5.4, 5.11, 6.1, 6.3, 8; `values.json` |
+| B-103 (`E53_bitrate.json` `driving_split`) | Done | New `P1-E53-DRIVING-SENTENCE`, labelled a calculation: 2.6 % of the sampled vehicle-steps are driving steps; on those, 1.58 hops, 93 % with a path, busiest link 5.9 kbit/s (7.4 scheduled), against 1.01 hops, 99 % and 7.9 kbit/s parked; 57 % of driving time linked in E54's month; with STATUS and INTENT at 1 Hz the sources offer 19.52 kbit/s, above the 16 kbit/s budget, so H13's first clause holds only at the assumed report rates. The earlier pointer sentence is replaced. | 5.8, 7 |
+| B-104 (`E48_sizing.json` `revision_b104`) | Done | New `P1-LINKLAW-SENTENCE`, labelled a calculation outside the runs: rover to rover at 5 km, 1,574 kbit/s flat ground against 701 kbit/s with the Moon's curvature (5 dB more loss). P1's runs use no link law. | 5.8, 7 |
+| B-101 (`E50_near_base.json`) | Nothing to change | P1 names H9' only as reported in the companion paper [45] and states no clause or verdict of it. | 4.8 |
+| Landed files | Checked | The build does not read `E50_near_base.json` or `E44_fresh_seeds.json`; its only stop on a landed file is `lunarsim/schemas/lrip-v0.2.json` (B-100, still awaited). It passes with the updated `phase6_family.json` and `E53_table.csv`. | `build_p1.py` |
+| B-106, B-100 | Still awaited | Left as plain sentences with their placeholder paths. | 5.6, 6.5, 7 |
+
+Build: abstract 299 words, conclusion 249, 288 values, 0 pending, no `[[PENDING` in `paper.html`. PDF not rebuilt.

@@ -295,3 +295,11 @@ Proposition 4 is the schema's HELLO rate; the small instances use a toy score on
 
 **Withdrawn from the text, still filled for the site:** `P1-H1-UNDELIVERED-SHARE` (the 99.5 %; referee M3). The
 site's /paper/ page reads it from `values.json`; remove the key here once the site no longer does.
+
+## Second pass, part 1 (12 Nov 2026)
+
+| Key | Meaning | Source | Format |
+|---|---|---|---|
+| P1-RELAY08-SHARE | availability of the relay case the text calls the 80 % relay (the site reads it) | `coverage` of the cell `B_EARTH_RELAY 0.8` in `results/E40_runs*.csv` (run_phase5's cell definition) | % 0 dp |
+| P1-E53-DRIVING-SENTENCE | task B-103: the load calculation on driving steps only, and with STATUS and INTENT at 1 Hz | E53 `driving_split` | composed; "above / inside the budget" chosen from data; labelled a calculation |
+| P1-LINKLAW-SENTENCE | task B-104: rover-to-rover rate at the worst hop, flat ground against curved Moon | `results/E48_sizing.json` `revision_b104.per_class.LTV1.worst_hop` | composed; labelled a calculation |
