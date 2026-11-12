@@ -8445,3 +8445,58 @@ Built: no. Browser: no. Free RAM stayed between 0.4 and 0.6 GB, and you asked fo
 2. **Budgets after the build:** the world ?view=atc variant may need a lazy_css line for the pair chunk's CSS, whatever name Vite gives it. When the story is published it needs a stories variant: story-data/month-without-earth.json, world/atc/*, lazy world-atc-pair-*.js. I'll add both once I can build and see the names.
 3. **Not mine:** lunarsim/atc/clocks.py and tools/atc/run_e51.py are untracked here.
 4. **Browser test plan:** the story is a draft, so to test the player before publishing I'll copy its resolved file into a scratch copy of dist with status published. No source change is needed for that.
+
+## B-91 DONE 17:58 (clocks and time, E51, H11) | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**What was built**
+- **`lunarsim/atc/clocks.py`** (new): each vehicle's clock error against the base time scale. It follows note 01 B6, B7, D and E4–E6; every constant carries its source tag. Since the vehicle's last successful two-way time transfer, the error is x(t) = r + y·Δt + ½·A·Δt².
+  - r: transfer residual, 100 ns (note D, A).
+  - y: frequency error, constant per vehicle. Crystal: uniform 0–8×10⁻⁷, the range LuGRE measured on the lunar surface ([LUGRE26] MOON). CSAC: σ 3×10⁻¹⁰ ([CSAC]; its data sheet says it is not space-rated).
+  - A: ageing, CSAC 9×10⁻¹⁰ a month.
+  - The transfer corrects the offset, not the frequency (conservative).
+  - Optional Earth-scale variant: +6.4844×10⁻¹⁰ (56.02 µs/day, E4; tested: 16.8 km of light-time a day).
+  - Effects (E5, E6): one-way ranging c·|x|; two-way single-sided c·T_reply·|Δy|/2 with T_reply 1 ms; a time-stamped position v·|Δx|.
+  - `holdover_s` gives the longest time without a resync for a budget; it reproduces note 01's E6 table (tested).
+- **Contact:** a transfer succeeds only when the vehicle has a radio path to the BASE mast (BFS over vehicles in DEM line of sight, B-70 mesh, per 60 s step). Attempts fail for lack of contact 6.8 % of the time over the window. A vehicle parked out of view free-runs: the crystal's worst error reaches 0.33 s even with resync attempts every 10 s, about 4.8 days unheard.
+- **Reservations stamped in each vehicle's own clock** (this is a post-hoc check on the logged windows, so engine results are unchanged). Each reservation is truly at stamp − x. A conflict caused by clock error alone is a conflicting R3 pair whose clock shifts close the nominal gap by more than 2 × guard. The guard is 0.1 s, note 01 B7's "needed clock agreement" for road reservations; a no-guard row is also reported.
+- **`tools/atc/run_e51.py`:** resumable per seed. Each seed is E50's perfect run at 1x (the same scenario and July window), 30 seeds, about 10 s each.
+
+**Results** (30 seeds, 1x, 303 conflicting reservation pairs checked in total; lunar scale)
+
+| Class | Resync interval | One-way ranging added, p95 | Largest clock error | Position stamp at 1 m/s, p95 | Clock-only conflicts, guard 0.1 s (no guard) |
+|---|---|---|---|---|---|
+| perfect clocks (baseline) | - | 0 | 0 | 0 | 0 (0) |
+| crystal | 10 s / 10 min / 1 h | 975 / 1,140 / 1,790 km | 0.33 / 0.35 / 0.51 s | 4.3 / 4.8 / 13.5 mm | **0** (1 / 9 / 17) |
+| crystal | 6 h / 1 day / never | 9,710 / 29,500 / 345,000 km | 0.85 / 1.14 / 2.14 s | 57 / 98 / 794 mm | **0** / 1 / 15 (24 / 25 / 26) |
+| CSAC | 10 s / 1 h / 1 day / never | 658 m / 1.29 / 19.3 / 460 km | 0.46 / 0.96 / 2.9 / 3.6 ms | under 0.1 mm (1.9 mm never) | 0 at every interval (22–25) |
+
+- Two-way single-sided ranging between vehicles, p95: crystal 0.084 m, CSAC 0.11 mm. Double-sided ranging cancels even that (note E5).
+- Earth-scale variant: the crystal with a daily resync still has 0 conflicts with the guard (10 when never resynced); the CSAC has 0 throughout. One-way ranging grows: CSAC 1.9 km at 10 min.
+- **Holdover**, the longest time 95 % of the drawn vehicles hold each note 01 B7 budget (analytic at the 95th-percentile y in brackets):
+  - Crystal: one-way ranging 1 m 0.004 s; 10 m 0.044 s; TDMA 1.5 µs 2.0 s; TDMA 30 µs 40 s; logging 1 ms 22 min; position stamp 10 ms 3.7 h; road reservation 0.1 s **36.7 h** (36.5 h).
+  - CSAC: 5.5 s; 55 s; 41 min; 13.5 h; 14 days; 70 days; 258 days.
+
+**H11** (PREREG6 §4): **supported.** For the crystal, every resync interval from 10 s to 6 h gives zero clock-caused reservation conflicts (guard 0.1 s) in all 30 seeds. Its one-way ranging error (p95) is hundreds of kilometres to a beacon timed by the base clock, far above the 0.3 m UWB noise.
+
+Reading for P2/P3:
+- Clock error matters for one-way ranging and TDMA long before it matters for reservations, as the hypothesis said.
+- Two-way ranging (what E50 uses) needs no shared clock.
+- The 0.1 s guard is what makes reservations safe: without it, every interval shows conflicts of microseconds to seconds.
+- A resync whenever the base is heard (6.8 % of attempts fail) is enough for a cheap crystal on the roads.
+
+**Files:**
+- new: `lunarsim/atc/clocks.py`, `tools/atc/run_e51.py`, `tests/test_clocks.py` (4 tests), `results/E51_clocks.json`, `results/E51_table.csv`;
+- no engine, safety or roads change.
+
+**How to test:**
+- `.venv\Scripts\python -m pytest tests/test_clocks.py -q` passes 4.
+- `python tools/atc/run_e51.py run --seeds 1-30`, then `build`. The seeds are cached in `.cache/atc/e51`; about 10 s each, though one took 236 s under memory pressure.
+- Baseline: no engine code changed. The seven test files still owed from B-90 wait for RAM (0.31–0.78 GB during this task).
+
+**For FRONTEND (via LEAD):** `results/E51_table.csv` has one row per class × scale × interval plus the "perfect" baseline row; `E51_clocks.json` adds the holdover table and H11. These are for /protocol/ problem 3; B-99 will add the site JSON.
+
+**Questions for LEAD:**
+1. Two assumptions are mine; please confirm or set others for the paper. The reservation guard of 0.1 s comes from note 01 B7's needed agreement. And the transfer corrects offset only, not frequency; steering frequency would shorten every holdover above.
+2. Every vehicle in the Earth-scale variant uses Earth seconds. Do you want a mixed fleet instead, with half the vehicles on each scale? That would make the scale mismatch show up between vehicles, not only against the base.
+
+Next: B-93 (it opens after B-90), unless you want B-90b first once your E50 loop ends.

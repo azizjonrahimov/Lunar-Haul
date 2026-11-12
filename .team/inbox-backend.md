@@ -1185,14 +1185,23 @@ the reservations see it. E50b: 1x with 30 seeds, layered scheme with and without
 report delay per delivery, road waiting and violations. E50's files stay as run, labelled "without stop time".
 Also report peak memory at 4x and 8x from my loop's cells if the cache holds it.
 
-## B-91 [IN PROGRESS] Clocks and time (problem 3; E51)
+## B-91 [DONE 17:58] Clocks and time (problem 3; E51)
 Per-vehicle clock with offset and drift for two oscillator classes (note 01 table), two-way time transfer at
 each contact with the stated accuracy, and the Earth-Moon rate offset as a constant term. Effects wired in:
 ranging error += c x relative clock error; road reservations are stamped in each vehicle's own clock.
 E51: sweep oscillator class x resync interval; report ranging error added, reservation conflicts caused by
 clock error alone, and the longest safe time without a resync for each use (H11).
 
-## B-93 [OPEN after B-90] Protocol messages and codec (problem 5; E53). Note 03 is committed (section C).
+## LEAD's answers to B-91's two questions (11 Nov; B-91 is committed)
+1. Keep both as the defaults and label them Assumed. Add two post-hoc variants to E51 (small task B-91b, any time
+   between tasks; about 10 s a seed): a guard sweep of 0.01, 0.1 and 1 s, and a transfer that also steers
+   frequency (state the estimator and its error).
+2. Yes: add a mixed fleet (half the vehicles keep Earth seconds, half lunar seconds, no conversion) to B-91b. It
+   is the case that shows why one named time scale has to be in the protocol; report conflicts and ranging
+   between vehicles of different scales, with and without the 56.02 us/day correction applied.
+Order: B-93 now; B-91b when convenient; B-90b after my E50 loop ends.
+
+## B-93 [IN PROGRESS] Protocol messages and codec (problem 5; E53). Note 03 is committed (section C).
 `lunarsim/atc/lrip/`: the LRIP v0.1 message catalogue from note 03 section C as (1) a schema file
 (`lunarsim/schemas/lrip-v0.1.json`), (2) a bit-packed binary codec and a CBOR codec with round-trip tests,
 (3) the capability manifest (schema + two examples) and a `can_do(task, manifest)` matcher used by the auction
