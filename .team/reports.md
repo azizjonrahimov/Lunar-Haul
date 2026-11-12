@@ -9222,3 +9222,27 @@ Next: B-98 (verification rows for Phase 6), then B-99 (site data). B-90b waits f
 - **Server and browser stopped.**
 
 **For LEAD:** B-97 asks whether to quote telemanom's published LSTM results. The page doesn't, and says only that the simple detectors run here.
+
+## B-99 DONE 19:54 (site data for /protocol/ and /network/) | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+`python tools/atc/export_protocol.py` (22 s) writes `data/atc/protocol/`: one small JSON per figure (format `lunarsim-protocol-data` v1), and `index.json` (format `lunarsim-protocol-data-index` v1) with each file's bytes, gzip bytes and sha256, plus the commit. This is B-80's pattern; staging can check sizes and hashes as it does for the trace pair.
+
+| File | Bytes (gzip) | What | Fields |
+|---|---|---|---|
+| `e50_layers.json` | 47,324 (11,450) | E50 1x seed 1: the busiest 24 h of the most-driving vehicle (vehicle 3, driving 54 % of the window) at 2 min steps | `t_h` (from `t0_h`), `moving`, `xy_m`; `sets.{dr, dr+ranging, dr+ranging+fixes, lans@2030}.{err_m, b95_m}`; `set_labels`; `budget_m` 5; `month_1x_30_seeds` (p95, median, share of the bound over budget per set). The "+lans" set of 2028 is left out: it equals "+ fixes" (no LANS in 2028) |
+| `e53_bitrate.json` | 4,234 (1,431) | E53 bit rates | `columns` + `rows` (geometry fleet / spread, auth on / off, Hz, rovers, per-rover kbit/s, busiest-link mean and p95, hops, reachable share); `lines_kbps` 16 and 1,000; `eta`; `h13`; `sizes_bytes` per message |
+| `e54_timeline.json` | 82,675 (5,287) | E54 seed 1, loss 0.25, 14-day blackout: 564 messages (awards, grants, task states) | `messages.{kind, src, dst, t_created_h, life_h}`, `delivered_h.{drop_retry, sf, sf_ll}` (null = lost: 118 / 1 / 0); `link_share_per_hour.{plain, lost_link_return}` per vehicle; `earth_up_per_hour` |
+| `e55_detectors.json` | 5,564 (929) | detector curves on B-96's test streams, as γ sweeps 4–50 | `curves.{3of5, single}` = [γ, false alarms per pair-day, event recall, median delay s]; `e56_at_1_per_pair_day` (chi-square, CUSUM, network); `consensus` table; `auth` forgery trials |
+| `b96_landscape.json` | 44,142 (16,238) | B-96's loss landscape: the PCA plane of the training path with the path, a random slice, the interpolation line, the training curves | `landscape` = data/atc/integrity/landscape.json unchanged, with `source_sha256` |
+
+- All five files gzip below 17 kB; together they are 35 kB gzipped.
+- The E55 curves trade false alarms against recall monotonically (tested). The 3-of-5 rule reaches 0.10 false alarms per pair-day at recall 0.68 (γ 10.83), and 0 at recall 0.65 (γ 13). The single test needs γ 19.5 for 0.55 a day, at recall 0.71.
+
+**Files:** new `tools/atc/export_protocol.py`, `data/atc/protocol/{e50_layers, e53_bitrate, e54_timeline, e55_detectors, b96_landscape, index}.json`, `tests/test_protocol_data.py` (1 test).
+
+**How to test:** `.venv\Scripts\python -m pytest tests/test_protocol_data.py -q` passes 1. Rebuild with `python tools/atc/export_protocol.py` (it needs the E50 trace cache, the E54 replay of seed 1, B-96's test split and the landscape file).
+
+**For FRONTEND (via LEAD):** the formats are in the table above, for the figures of F-60 (/protocol/: problem 1 = e50, problems 4 and 6 = e54, problem 5 = e53, problem 7 = e55) and F-61 (/network/: b96 landscape). All values are simulated except where a file says otherwise.
+
+**Questions for LEAD:** none.
+
+**State:** B-89 to B-99 are done (including B-80c, B-90 at 1x and 4x, B-91b, B-98a and the corrections). Only two items wait for your 8x loop: the B-90 8x addendum (with `phase6_family.py` rerun for H10's 8x clause), and B-90b (terrain-fix stops in the engine). I am waiting.
