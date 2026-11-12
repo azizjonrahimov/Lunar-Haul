@@ -111,7 +111,8 @@ def spherical_loss_db(d, h_a, h_b, freq_hz: float = DEFAULT_FREQ_HZ, radius_m: f
     for any distance"): free space plus A, where beyond the marginal line-of-sight distance A is the first-term
     loss of section 3.1.1, and inside it A = (1 - h / h_req) A_h when the path clearance h is below
     h_req = 0.552 of the first Fresnel zone (A_h: section 3.1.1 with the modified radius that puts the path at
-    grazing), else 0. Not used by any default: E48's third column ("spherical ground")."""
+    grazing), else 0. Checked against ITU-R P.526-16 (11/2025) eqs (13)-(18b), (21)-(25). Not used by any default:
+    E48's third column ("spherical ground")."""
     d_km = float(d) / 1000.0
     h1, h2 = float(h_a), float(h_b)
     ae = radius_m / 1000.0

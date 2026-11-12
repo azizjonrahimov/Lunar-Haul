@@ -9643,3 +9643,32 @@ Done ahead of B-101 / B-102 / B-103 / B-105 because those need engine runs and f
 **Files:** new `tools/atc/run_b103.py`; `results/E53_bitrate.json` (+ `driving_split`), `results/E53_table.csv` (+ 60 rows).
 **How to test:** `python tools/atc/run_b103.py` (about 2 min; one 1x engine replay).
 **For FRONTEND (via LEAD):** E53_table.csv has two new geometry values. `data/atc/protocol/e53_bitrate.json` (B-99) still holds the old rows; I will re-export it after B-100's size changes.
+
+## B-104 ADDENDUM (P.526 checked against the text) | files | how to test | questions
+Opened with /browse (gstack's headless browser; Aside is not available on Windows): `https://www.itu.int/rec/R-REC-P.526/en`. The in-force edition is **P.526-16 (11/2025)**; P.526-15 (10/2019) is superseded but incorporated by reference in the Radio Regulations.
+- English PDF: `https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.526-16-202511-I!!PDF-E.pdf`, 2,704,574 B, saved to `.cache/external/itu/` and recorded in `results/B97_downloads.json` (81 files, 198.70 MB of the 200 MB limit).
+- **Every formula in `spherical_loss_db` matches the text.** E48's `revision_b104.source_note` and the docstring in `radio.py` now say "checked against P.526-16"; no value changed (E48 rebuilt, radio tests 9 pass).
+- The papers can drop "not yet checked against the text".
+- The 2 dB validity condition of the first-term formula, eq. (19), was not evaluated per hop. P.526 itself puts the first term within about 2 dB "even near or at the horizon … in most cases" (§3.1).
+
+### For note 03 (LEAD to add; dated 12 Nov 2026)
+**Diffraction over a smooth Moon: ITU-R P.526-16, *Propagation by diffraction* (11/2025, in force), §§ 3.1.1.2 and 3.2.** Opened 12 Nov 2026, itu.int (PDF in `.cache/external/itu/`). Used for E48's "spherical ground" column (B-104; `lunarsim.atc.radio.spherical_loss_db`). a_e = the Moon's radius, 1,737.4 km (no atmosphere, so no effective-radius factor).
+- §3.1.1.2, field relative to free space: 20 log(E/E₀) = F(X) + G(Y₁) + G(Y₂) (13). Practical units (f MHz, a_e km, d km, h m):
+  - X = 2.188 β f^(1/3) a_e^(−2/3) d (14a); Y = 9.575×10⁻³ β f^(2/3) a_e^(−1/3) h (15a).
+  - F(X) = 11 + 10 log X − 17.6 X for X ≥ 1.6 (17a); −20 log X − 5.6488 X^1.425 for X < 1.6 (17b).
+  - G(Y) = 17.6 (B − 1.1)^(1/2) − 5 log(B − 1.1) − 8 for B > 2 (18); 20 log(B + 0.1 B³) for B ≤ 2 (18a); B = βY (18b); G not below 2 + 20 log K.
+  - β = 1 for horizontal polarization at all frequencies and for vertical polarization above 20 MHz over land.
+  - K (11a): for regolith (ε ≈ 3) at 2.4 GHz, K ≈ 0.0016, so the G floor (≈ −54 dB) does not bind. The text says the formulae hold for 0.001 < K < 1.
+  - Accurate to 2 dB when X − (βY₁)^½ Δ(Y₁,K) − (βY₂)^½ Δ(Y₂,K) > X_lim (19).
+- §3.2, any distance, 10 MHz and above (self-consistent units):
+  - marginal line-of-sight distance d_los = √(2a_e)(√h₁ + √h₂) (21); if d ≥ d_los, use §3.1.1;
+  - otherwise the clearance h = [(h₁ − d₁²/2a_e) d₂ + (h₂ − d₂²/2a_e) d₁] / d (22), with d₁ = d(1 + b)/2, d₂ = d − d₁, b = 2√((m+1)/3m) cos(π/3 + ⅓ arccos((3c/2)√(3m/(m+1)³))), c = (h₁ − h₂)/(h₁ + h₂), m = d² / (4a_e(h₁ + h₂)) (22a–e);
+  - h_req = 0.552 √(d₁d₂λ/d) (23); if h > h_req, the loss is 0;
+  - else a_em = 0.5 (d / (√h₁ + √h₂))² (24), A_h = −20 log(E/E₀) by §3.1.1 with a_em, and A = (1 − h/h_req) A_h (25), with A = 0 if A_h < 0.
+- **Values at 2.4 GHz** (loss = free space + A):
+  - 2.5–2.5 m at 5 km: A = 23.0 dB, 137.0 dB (flat two-ray 132.0);
+  - 1.0–1.0 m at 3.73 km: A = 35.1 dB, 146.6 dB (flat 142.9);
+  - 10–1.0 m at 5 km: A = 17.3 dB, 131.4 dB (flat 128.0);
+  - 2.5–2.5 m at 1 km: 104.1 dB, equal to the flat law.
+
+**Files:** `tools/atc/run_e48.py` (source_note text), `lunarsim/atc/radio.py` (docstring), `results/E48_sizing.json` (rebuilt; only the note text changed), `results/B97_downloads.json` (+1 file).

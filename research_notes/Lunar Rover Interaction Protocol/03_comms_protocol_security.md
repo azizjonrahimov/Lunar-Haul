@@ -1326,3 +1326,27 @@ result are textbook items stated with their derivation or flagged.
 `research_notes/Lunar communications and visibility/earth_visibility_prior_art.md`;
 `research_notes/Lunar Rover Interaction Protocol/00_inputs_from_owner.md`; `data/scenarios/E48-design.json`;
 `lunarsim/comms.py`; `lunarsim/atc/radio.py`, `messages.py`, `safety.py`, `auction.py`.
+
+
+---
+
+## Addendum, 12 November 2026: diffraction over a smooth Moon (added by LEAD from BACKEND's B-104 check)
+
+**Diffraction over a smooth Moon: ITU-R P.526-16, *Propagation by diffraction* (11/2025, in force), §§ 3.1.1.2 and 3.2.** Opened 12 Nov 2026, itu.int (PDF in `.cache/external/itu/`). Used for E48's "spherical ground" column (B-104; `lunarsim.atc.radio.spherical_loss_db`). a_e = the Moon's radius, 1,737.4 km (no atmosphere, so no effective-radius factor).
+- §3.1.1.2, field relative to free space: 20 log(E/E₀) = F(X) + G(Y₁) + G(Y₂) (13). Practical units (f MHz, a_e km, d km, h m):
+  - X = 2.188 β f^(1/3) a_e^(−2/3) d (14a); Y = 9.575×10⁻³ β f^(2/3) a_e^(−1/3) h (15a).
+  - F(X) = 11 + 10 log X − 17.6 X for X ≥ 1.6 (17a); −20 log X − 5.6488 X^1.425 for X < 1.6 (17b).
+  - G(Y) = 17.6 (B − 1.1)^(1/2) − 5 log(B − 1.1) − 8 for B > 2 (18); 20 log(B + 0.1 B³) for B ≤ 2 (18a); B = βY (18b); G not below 2 + 20 log K.
+  - β = 1 for horizontal polarization at all frequencies and for vertical polarization above 20 MHz over land.
+  - K (11a): for regolith (ε ≈ 3) at 2.4 GHz, K ≈ 0.0016, so the G floor (≈ −54 dB) does not bind. The text says the formulae hold for 0.001 < K < 1.
+  - Accurate to 2 dB when X − (βY₁)^½ Δ(Y₁,K) − (βY₂)^½ Δ(Y₂,K) > X_lim (19).
+- §3.2, any distance, 10 MHz and above (self-consistent units):
+  - marginal line-of-sight distance d_los = √(2a_e)(√h₁ + √h₂) (21); if d ≥ d_los, use §3.1.1;
+  - otherwise the clearance h = [(h₁ − d₁²/2a_e) d₂ + (h₂ − d₂²/2a_e) d₁] / d (22), with d₁ = d(1 + b)/2, d₂ = d − d₁, b = 2√((m+1)/3m) cos(π/3 + ⅓ arccos((3c/2)√(3m/(m+1)³))), c = (h₁ − h₂)/(h₁ + h₂), m = d² / (4a_e(h₁ + h₂)) (22a–e);
+  - h_req = 0.552 √(d₁d₂λ/d) (23); if h > h_req, the loss is 0;
+  - else a_em = 0.5 (d / (√h₁ + √h₂))² (24), A_h = −20 log(E/E₀) by §3.1.1 with a_em, and A = (1 − h/h_req) A_h (25), with A = 0 if A_h < 0.
+- **Values at 2.4 GHz** (loss = free space + A):
+  - 2.5–2.5 m at 5 km: A = 23.0 dB, 137.0 dB (flat two-ray 132.0);
+  - 1.0–1.0 m at 3.73 km: A = 35.1 dB, 146.6 dB (flat 142.9);
+  - 10–1.0 m at 5 km: A = 17.3 dB, 131.4 dB (flat 128.0);
+  - 2.5–2.5 m at 1 km: 104.1 dB, equal to the flat law.

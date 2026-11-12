@@ -889,10 +889,13 @@ def _b104_spherical(out, links_flat):
                       "clearance over the sphere and h_req = 0.552 of the first Fresnel zone, A_h the first-term loss "
                       "at the modified radius that puts the path at grazing; ae = the Moon's radius (1,737.4 km, no "
                       "atmosphere)",
-            "source_note": "the research notes record P.526 as opened for the knife-edge method (vehicles_comms_internals "
-                           "2.5); sections 3.1-3.2 were implemented from the Recommendation's text without a note "
-                           "recording them opened; the implementation reproduces the referee's two values (137.0 dB at "
-                           "5 km for two 2.5 m antennas, 146.6 dB at 3.73 km for two 1.0 m antennas)",
+            "source_note": "checked against the text of Recommendation ITU-R P.526-16 (11/2025, in force; opened "
+                           "12 Nov 2026 from itu.int, .cache/external/itu): section 3.1.1.2 equations (13), (14a), (15a), "
+                           "(17a), (17b), (18), (18a), (18b), beta = 1 (horizontal polarization, or vertical above "
+                           "20 MHz over land), and section 3.2 equations (21) to (25); the G floor 2 + 20 log K "
+                           "(K about 0.0016 for regolith at 2.4 GHz) does not bind; the implementation reproduces the "
+                           "referee's two values (137.0 dB at 5 km for two 2.5 m antennas, 146.6 dB at 3.73 km for two "
+                           "1.0 m antennas)",
             "columns": ["free space", "flat ground (the model)", "spherical ground (P.526)"],
             "airtime_needed_kbps": need, "per_class": rows, "verdicts_moved": moved or ["none"]}
 

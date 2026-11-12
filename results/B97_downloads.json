@@ -1,7 +1,7 @@
 {
  "task": "B-97",
  "location": ".cache/external/ (git-ignored)",
- "total_bytes": 195994642,
+ "total_bytes": 198699216,
  "limit_bytes": 200000000,
  "sources": {
   "telemanom (SMAP / MSL)": {
@@ -19,7 +19,12 @@
   },
   "Artemis II SPICE": "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/artemis2/artemis2_spice/ (doi:10.17189/7ezn-0294)",
   "Artemis II OpNav images": "PDS Imaging Node Atlas, https://pds-imaging.jpl.nasa.gov/api/data/atlas:pds4:artemis2:artemis2:/artemis2_orion_camera/data_raw_image/",
-  "generic NAIF kernels": "already in .cache/comms/kernels (tools/comms/earth_link.py), not counted here"
+  "generic NAIF kernels": "already in .cache/comms/kernels (tools/comms/earth_link.py), not counted here",
+  "ITU-R P.526-16 (B-104)": {
+   "is_mirror": false,
+   "licence": "ITU-R Recommendation, free download from itu.int",
+   "note": "sections 3.1.1.2 and 3.2 checked against lunarsim.atc.radio.spherical_loss_db, 12 Nov 2026"
+  }
  },
  "files": [
   {
@@ -581,6 +586,13 @@
    "sha256": "dee9cf73d88fedd63896b51c627880a5693645ba641806bbcfbae294e3e30376",
    "url": "https://raw.githubusercontent.com/imperial-qore/TranAD/main/data/SMAP_MSL/train/T-5.npy",
    "mirror": true
+  },
+  {
+   "file": ".cache/external/itu/R-REC-P.526-16-202511-I-PDF-E.pdf",
+   "bytes": 2704574,
+   "sha256": "7647c3cb3873dc0389a7007f487728359551ed82468a5677b7cd09430875f23d",
+   "url": "https://www.itu.int/dms_pubrec/itu-r/rec/p/R-REC-P.526-16-202511-I!!PDF-E.pdf",
+   "mirror": false
   }
  ]
 }
