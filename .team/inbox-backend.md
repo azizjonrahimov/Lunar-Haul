@@ -1276,6 +1276,16 @@ with a manifest (URL, bytes, sha256). If the images lack usable metadata, say so
 2. Leave telemanom's published LSTM figures out: nobody opened the paper this session, and our numbers are not a
    reproduction of it.
 
+## B-98a [OPEN, with B-98] Two checks the revised P1 asked for (11 Nov)
+1. E54's blocked reservations: without the lost-link rule the file counts 2,566 of about 2,628 single-lane
+   reservations (98 %) as blocked past their timeout, 7,349 h in all. That looks high. Check the definition and
+   the count on one seed by hand (how many holders really had no path to the base at timeout + 60 s and stayed
+   unheard), fix it if it is wrong, and say in one paragraph why it is that large if it is right.
+2. The Phase 6 confirmatory family {H9, H10, H13, H14, H15a} (PREREG6 section 4): write
+   `results/phase6_family.json` with, per hypothesis, the test used, the statistic, the unadjusted p-value or
+   interval where the test has one, and the Holm-adjusted decision over those that do; H9 and H13 are threshold
+   comparisons without a sampling test: list them as such, with the per-seed share on the predicted side.
+
 ## B-98 [IN PROGRESS] Verification rows for Phase 6 (`lunarsim/vv6.py`, `results/vv_phase6.json`)
 One row per formula in the notes' proof sections (link budget worked example, radio horizon, clock rate
 offset, c x dt, MAC forgery bound, chi-square threshold, dead-reckoning growth, coordinate round trip, codec
