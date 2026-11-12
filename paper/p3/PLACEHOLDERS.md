@@ -222,12 +222,9 @@ string would reach `paper.html`, in the text or in a comment.
 
 | Key | Awaits | File and block it will read |
 |---|---|---|
-| P3-E50-READINGS-SENTENCE (5.8) | B-101: H9' clause 2 under four readings of "near the base" on all seeds | `results/E50_near_base.json`, block `readings` (proposed name) |
 | P3-E50-8X-SENTENCE (5.8) | E50 at eight times the fleet | `results/E50_summary.json`, `errors."8"` (its composer exists and fills itself) |
 | P3-E48-MEMORY-SENTENCE (5.1) | B-105: the memory in use, measured with tracemalloc | `results/E48_sizing.json`, block `measured_memory` |
 | P3-E48-ROBOT-ROUND-SENTENCE (5.1) | B-105: one robot's bid computation timed apart from the simulator's round, per fleet size | `results/E48_sizing.json`, block `per_robot_round` |
-| P3-E48-SPHERICAL-SENTENCE (5.3) | B-104: the loss and the rate over a spherical ground at the hops of Table 7 (the project's check of the referee's figures), a new column of Table 7 | `results/E48_sizing.json`, `classes.<class>.link_spherical_ground` (proposed name; the build probes `classes.LTV1`) |
-| P3-E53-DRIVING-HOPS-SENTENCE (5.2) | B-103: hop count and reach to the base over driving steps only, with 1.0 m antennas for the small classes | `results/E53_bitrate.json`, new block `driving_hops` (proposed name) |
 | P3-LRIP-V02-SENTENCE (5.11) | B-100: the sizes and bit rates of LRIP version 0.2 (frame, datum and time-scale identifiers and a covariance in the position report) | `results/E53_bitrate.json`, new block `v02` (proposed name) |
 
 ### Composed keys added in the referee round
@@ -261,3 +258,15 @@ string would reach `paper.html`, in the text or in a comment.
 
 Typed in the referee round with no file behind them: the commit times and hashes of the second registration and of its first result (Section 4.1;
 from `git log`), and the three numbers 10 m, 1 m and 50 m that name the referee's sensitivity cases.
+
+### Second pass, part 1 (12 Nov 2026): three awaited results landed and have composers
+
+Still awaited (plain sentences): P3-E48-MEMORY-SENTENCE and P3-E48-ROBOT-ROUND-SENTENCE (B-105), P3-LRIP-V02-SENTENCE (B-100). B-102 (overlap
+durations) is the companion paper's and is named in one typed sentence of Section 7. P3-E50-READINGS-SENTENCE no longer exists: the readings are
+inside P3-H9-VERDICT-SENTENCE. The referee report is no longer read by the build; every number the first pass took from it now comes from a results file.
+
+| Key | Source | Format |
+|---|---|---|
+| P3-H9-VERDICT-SENTENCE (5.8), P3-LIMIT-NEAR-SENTENCE (7), the P3-P6 clauses, TABLE:pta | E50N = `results/E50_near_base.json` (B-101): `readings`, `budget_m`, `multiples.{1,4}` (`seeds`, `e50_reproduced_all`, `share_of_driving.{a,b,c,e}.mean`, `sets.{dr+ranging, dr+ranging+fixes}.{a,b,c,d,e}`: `in_p95_m_mean`, `in_p95_m_ci95_seeds`, `seeds_inside_budget`, `seeds_with_steps`), `sweep` (`seeds`, `layer_set`, `rows` by `param` radio_sigma_m and uwb_sigma_m) (checked: E50's seeds, reproduced; d equals e and covers every driving step, so its value is E50's overall percentile; reading a is E50's near-base percentile; the clause holds in every seed under a and in none under b, c, e at both fleet sizes; the long-range ranging error decides it under a; the ultra-wideband error moves it by under 5 %) | composed; "every seed inside" / "no seed inside" from the data; the verdict "depends on the reading", with the registered wording stated as failing in every seed; eight times the fleet stated as not computed |
+| P3-E53-DRIVING-HOPS-SENTENCE (5.2), P3-LIMIT-LINK-SENTENCE (7), TABLE:pta | E53 `driving_split` (B-103): `pool_driving_share`, `e40_month` (`driving`, `all`: `robot_epochs`; `check_against_E48`), `e53_auth_20_rovers.{fleet_driving, fleet_parked}."1 Hz"` (`mean_hops_to_base`, `reachable_share`, `busiest_link_kbps_p95`, `scheduled_airtime_p95_kbps`, `slotted_aloha_airtime_p95_kbps`), `status_intent_at_1hz` (`bytes_position_status_intent_auth`, `three_beacons_20_rovers_kbps`, `sources_20_rovers_kbps`, `scheduled_airtime_p95_kbps`), `e54_link_shares_30_seeds` (checked: reproduces E48's month; driving positions need more hops, reach the base less often and load the busiest link less; the 1 Hz load is the sum of the three sizes times the fleet; E54's share is the one quoted in 5.2) | composed; "within" / "above" from the data |
+| P3-E48-SPHERICAL-SENTENCE (5.3), P3-PROP1-EXAMPLE, TABLE:E48_link (new column), TABLE:pta | E48 `revision_b104` (B-104): `method`, `source_note`, `airtime_needed_kbps`, `verdicts_moved`, `per_class.*` (`longest_hop.d_m`, `.loss_db`, `.kbps`, `range_m_for_kbps_spherical`, `range_m_for_kbps_flat`, `reachable_share_spherical`, `verdicts_flat_vs_spherical`) (checked: its flat-ground side is Table 7's longest hop and rate; spherical loss above flat above free space; the one verdict that moves is 1 Mbit/s at the rovers' longest hop; airtime, 16 kbit/s and the mast-reach shares do not move; the source note says checked against P.526-16) | composed; a calculation |

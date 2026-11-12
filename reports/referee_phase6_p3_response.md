@@ -75,3 +75,26 @@ text, a row in Table 18, an entry in Sections 6.6 and 7 and an awaited key in `P
 - S14, [81]: note 01 says the trade report was not opened, note 04 says it was (entry M3). It is cited through note 04.
 - S9(a): the comparator gives up at its fifth try, 12 minutes after the award (tries at 0, 180, ..., 720 s in `lunarsim/atc/dtn.py`), not 15.
 - M14: the ratios of the rates the report lists are 1.4 to 2.3; the report's stated range, 1.4 to 2.4, is printed as the referee's.
+
+## Second pass, part 1 (12 Nov)
+
+Three awaited results landed (B-101, B-103, B-104); their composers are written and the build fills them from the files. The referee's own
+numbers (the six-seed rerun, the three sensitivity values, the spherical-ground loss and rates) are no longer printed and the build no longer
+reads the referee report. Build: passes with `--no-pdf` and without `--allow-pending`; abstract 299 words, conclusion 250; no `[[PENDING`.
+
+| Finding | Now | What changed | Where |
+|---|---|---|---|
+| M5 | Closed | H9' clause 2 from `results/E50_near_base.json` (a simulation on assumed ranging errors, all seeds). Today's fleet, 30 seeds: 4.22 m where two or more beacons are in line of sight (23 % of driving steps, every seed inside); 12.5 m with one or more (57 %, no seed); 24.7 m within 1 km (67 %, no seed); 50.1 m under the registered wording, which covers every driving step (no seed). Four times the fleet, 10 seeds: 4.31, 8.64, 22.4, 32.1 m, the same pattern. The text says that under the registered wording the clause fails in every seed; verdict "depends on the reading". Sweep (six seeds): long-range ranging error 1 / 3 / 10 m gives 1.87 / 4.21 / 9.64 m under the narrow reading (inside, inside, outside in every seed) and 38.4 / 47.1 / 62.8 m under the registered wording; ultra-wideband error 0.1 / 0.3 / 0.7 m gives 4.16 / 4.21 / 4.25 m. Eight times the fleet: stated as not computed. The referee's survey-error and ultra-wideband-reach cases are dropped (not in B-101) and named as not swept. | 5.8, 6.1, 7, Table 18, abstract, introduction; 3.7 |
+| M2 | Closed (antenna heights and motion-tied rate named as not run) | From `E53_bitrate.json`, `driving_split` (a calculation on drawn positions): the 1.024 hops are a figure for parked robots (54 of 6,174 robot-epochs are driving); drawn from driving steps, 20 rovers are 1.58 hops from the base (1.01 from parked steps), 93 % have a path (99 %), the busiest link carries 5.89 kbit/s (7.86), scheduled airtime 7.37 kbit/s (within the target), slotted random access 16.02 (above). The 93 % is distinguished from E54's 56.6 %. Status and intent at 1 Hz: 19.52 kbit/s at the sources, scheduled airtime 24.4 and 18.3 kbit/s, both above the target: the 1 Hz case does not hold at those rates. | 5.2, 7, Table 18 |
+| M14 | Closed | From `E48_sizing.json`, `revision_b104` (a calculation with ITU-R P.526 section 3.2, checked against the text of P.526-16): at each class's longest hop 137.0 against 132.0 dB (crew and cargo rovers), 146.6 against 142.9 dB (small rover, hopper), 131.4 against 128.0 dB (mast); rates 701, 24.6, 48.9 and 3,653 kbit/s in place of 1,574, 57.9, 114 and 4,717. Table 7 has a spherical-ground column. One verdict moves: the rovers' 5 km hop no longer carries 1 Mbit/s (range at that rate 4.64 km, from 5.89 km); airtime, 16 kbit/s and the mast-reach shares do not move. The mast's figure differs from the referee's (3,653, not about 3,400: P.526 interpolates inside line of sight). | 5.3, Table 7, Appendix A (Proposition 1), 7, Table 18 |
+| S17 | Items 1 (in part), 2 (in part) and 4 done | As the three rows above; still not run: the survey error and ultra-wideband reach, 1.0 m antennas and a motion-tied rate in the traffic model, and items 3, 5 to 8. | 6.6 |
+
+Sentences that changed in the abstract: "Ranging holds the 95th percentile of position error at 4.2 m where two or more base beacons are in line of
+sight, 23 % of driving steps, and fails under the registered wording, which covers all driving (50.1 m)" replaces "... but not within a kilometre
+of the base (25.0 m, a referee's rerun)". No verdict word changed in the abstract or the conclusion.
+
+Verdicts that a new number moved: the megabit verdict of the crew and cargo rovers' longest hop (true over flat ground, false over a spherical
+ground); the 1 Hz link case if status and intent also go at 1 Hz (fails on every channel). Table 18 now has seven rows "calculated from assumed inputs".
+
+Still awaited, as plain sentences: B-100 (protocol version 0.2), B-105 (measured memory, one robot's bid computation); B-102 (overlap durations)
+is named in Section 7 as the companion paper's.
