@@ -1,8 +1,11 @@
 # P2 placeholders (draft 0, 28 Oct 2026)
 
 `build_p2.py` fills every `{{P2-...}}` in `part1`-`part5` and fails on any unfilled placeholder and on any nan/inf.
-Keys whose experiment has not run (now E50 at eight times the fleet and E50b; see the Phase 6 section) are filled with a visible `[[PENDING ...]]`
-marker only with `--allow-pending`. Families are written with `{m}` (fleet multiple 1, 2, 4, 8), `{y}` (start year
+Since the referee round of 11 Nov 2026 no pending marker may print (decision A4 of
+`reports/referee_phase6_decisions.md`): the build runs without `--allow-pending`, stops if the assembled text holds a
+`[[PENDING` string, and a result that has not landed has one plain sentence in its place (see "Awaited results" at the
+end). `--allow-pending` still exists for a draft when a results file of an experiment that has run is missing.
+Families are written with `{m}` (fleet multiple 1, 2, 4, 8), `{y}` (start
 2028, 2038), `SHARE{s}` (0, 5, 40 for the shares 0, 0.05, 0.40), `BAY{b}` (05, 2 for 0.5 and 2 km), `OWNER-{o}`
 (A, B, C) and `SINGLE-KM-{lim}` (15, 10, 8 degrees); the build maps a key to its family before checking it is listed.
 
@@ -29,6 +32,9 @@ Comparisons are named in `LABELS` of the build script; the analysis is `experime
 | P2-SINGLE-KM-DEFAULT, P2-SHARE40-SINGLE-KM | C `road_single_km` of `atc x1` and `atc x1 share 0.4` | km |
 | P2-ATC-X{m}-TRAVERSALS, P2-ATC-X{m}-CONFLICTS, P2-ATC-X{m}-BAY-WAIT-H, P2-ATC-X{m}-APRON-WAIT-H, P2-ATC-X{m}-EVA-SLOW-H, P2-ATC-X{m}-STANDDOWNS | C row `atc x{m}` | count; hours |
 | P2-ATC-X1-CONFLICTS-PER-WEEK | C `road_conflicts` of `atc x1` / 52 | 1 decimal |
+| P2-ATC-X1-LANDINGS | `results/E43_runs.lead.csv` `landings`, mean over the 30 runs of `atc x1` (the referee's M10: `plume_standdowns`, which the text had called pad closures, counts jobs held and vehicles sent to shelter); checked: the same rows give C's `plume_standdowns`, and every E43 run has `regime` O_ORACLE | count |
+| P2-R7-ATC-FOLD | (C `delay_mean_h` of `atc x1` + P `atc x1 r7 - atc x1` mean) / C `delay_mean_h` of `atc x1` | ratio, 1 decimal (abstract: delay under the strict reading of R7 as a multiple of the default) |
+| P2-UNC-X1-WAIT-PER-CONFLICT-H | C `road_hand_wait_h` / `road_hand_conflicts` of `uncoordinated x1`, 2028 | hours per referred conflict (5.4, 6.1: the Earth-window gap, not the staff time, sets the cost) |
 | P2-OWNER-{o}-BAY-WAIT-X{m}, P2-OWNER-BAY-WAIT-ORDER-CLAUSE | F `owner_bay_wait_h_atc.{m}` (only x1 is used in the text) | hours; composed: which owner waited most and least |
 | P2-DEADLOCKS-TOTAL | F `deadlocks_total_by_density` summed | word (checked = 0 for the "no deadlock" sentences) |
 | P2-DEADLOCKS-TOTAL-N | F `deadlocks_total_by_density` summed | the same count with digits, for the parenthesis in 5.1 |
@@ -94,8 +100,10 @@ P2-E50-X8-CLAUSE is used inside P2-E50-H10-SENTENCE. Abbreviations: S50 = `resul
 | P2-E50-H9-SENTENCE | S50 `h9.1`, `h9.4`, the 2030 variant | composed: verdict per clause of H9' as registered |
 | P2-E50-MARGIN-PARAGRAPH | S50 `violations`, `delay` at 1x and 4x | composed |
 | P2-E50-H10-SENTENCE | S50 `h10`, `delay` | composed: verdict per clause of H10'; the 4x reading ("no measurable cost", not a gain) is chosen from the sign, the interval and the road waiting; holds P2-E50-X8-CLAUSE |
-| P2-E50-X8-CLAUSE, P2-E50-X8-SENTENCE | S50 `errors.8`, `delay.8`, `h10.gap_by_mult.8` | composed; PENDING until the 8x seeds are in the file |
-| P2-E50B-SENTENCE | E50b (not run) | PENDING |
+| P2-E50-X8-CLAUSE, P2-E50-X8-SENTENCE | S50 `errors.8`, `delay.8`, `h10.gap_by_mult.8` | composed when the 8x seeds are in the file; until then the clause is empty and the sentence is "The eight-times cells of E50 have not finished." (awaited, see below) |
+| P2-E50B-SENTENCE | `results/E50b_summary.json` (B-90b, landed 11 Nov 20:35): `metrics.delay_mean_h` (two arms, difference, bootstrap interval, paired t p, seeds higher and lower), `metrics.road_wait_h`, `metrics.violations`, `stops` (`engine_fix_stop_h_mean`, `perfect_run_fix_stop_h_mean`, `fixes_inside_single_lane_share`), `h10_primary_with_stop_time` (`ratio_to_perfect`, `note`), `design`, `seeds`, `e50_reproduced_all_seeds`; deliveries a month from `results/E50_runs.csv` | composed; checked: E50's seeds at 1x, the arm without stops reproduces E50's layered cell, the stop time of the position run is E50's, the file calls the comparison exploratory, the delay rose, road waiting did not change, the inserted stop time is a part of the position run's (a lower bound) |
+| P2-PROP2-NUMBERS | S50 (the 95th percentile near the base with ranging as the bound), SF `A_ACC`; `lunarsim/atc/roads.py` (the speed in the margin is the leg's mean speed) | composed: the constant-speed premise of Proposition 2, a vehicle starting from rest, the stop line |
+| P2-P6-AWAITED-LIMITATION, P2-P6-AWAITED-FUTURE | `build_p2.py` `AWAITED` and S50 (whether 8x is in the file) | composed: the list of analyses asked for by the referee round that have not been run (Sections 5.13, 7 and 6.5) |
 | P2-E50-STOP-CLAUSE | S50 `errors.1.dr+ranging+fixes.fix_stop_h_per_month`; `h10.note` | hours a month; checked: the file says the stops are not in the delay |
 | P2-E51-MODEL-SENTENCE, P2-E51-DESIGN-SENTENCE | S51 `constants`, `design` | composed |
 | P2-E51-RESULTS-PARAGRAPH | S51 `rows` (lunar scale): conflicts by guard, largest error, one-way and two-way ranging error, failed resyncs | composed; the guard-sweep wording per guard is derived from the rows; checked: conflicts at every interval without a guard, none for the atomic clock with any guard |
@@ -119,11 +127,36 @@ P2-E50-X8-CLAUSE is used inside P2-E50-H10-SENTENCE. Abbreviations: S50 = `resul
 | P2-H7-ABSTRACT-SHORT, P2-CONCLUSION-SAFETY-SHORT | `results/E44_bounds.json`, `results/E45_modelcheck.json` | composed (shorter forms of the H7 clauses, for the word limits) |
 | P2-P6-ABSTRACT-CLAUSE, P2-P6-INTRO-PARAGRAPH, P2-P6-CONCLUSION-CLAUSE | S50, S51, S55, S56 | composed; every direction checked in `facts()` |
 | P2-P6-DISCUSSION-POSITION, P2-P6-DISCUSSION-TIME | S50, S51, S54, S55, S56; PN | composed: the reading of H10' and the recommendation on the detectors follow the verdicts |
-| P2-P6-FAILED-SENTENCE, P2-P6-PENDING-LIMITATION | the verdicts above; which keys are pending | composed |
+| P2-P6-FAILED-SENTENCE | the verdicts above | composed: what failed, what the runs did not resolve, what is reported as an observation (H11) and what is withdrawn (H14, second clause) |
 | TABLE:E50_errors, TABLE:E50_margin, FIG:E50_layers | S50 (Tables 9 and 10, Figure 2: inline SVG) | built HTML |
 | TABLE:E51 | S51 `rows`, lunar scale (Table 11) | built HTML |
 | TABLE:E56, FIG:E56_recall | S56 and the rule's rows from S55 (Table 12, Figure 3: inline SVG) | built HTML |
 | P2-B97-PARAGRAPH, TABLE:B97 | `results/B97_realdata.json` `telemetry.rows` (spacecraft, residual, detector: `events`, `found`, `fp_runs`, `precision`, `channels`), `threshold_rule`; `results/B97_downloads.json` (the mirror's `checks_passed`) | composed and built HTML (Table 13); checked: the label file is byte-identical, thresholds from training data only, both accumulating detectors find more than the per-step test on the level residual |
 | P2-FAMILY-STATS-SENTENCE, P2-FAMILY-H9-SENTENCE, P2-FAMILY-H10-SENTENCE, P2-FAMILY-H14-SENTENCE, P2-FAMILY-H15A-SENTENCE, P2-FAMILY-LIMITATION | `results/phase6_family.json` (`hypotheses.{H9,H10,H14,H15a}`: clause p values, `p_intersection_union`, `holm.p_adjusted`, seeds on the predicted side, sign-test counts; `alpha`; `pending`) | composed; checked: the Holm-adjusted values are recomputed from the unadjusted ones, H10's joined p is its largest clause p, and the file's differences equal those of E50, E54 and E56 |
 | P2-CHECKS6-SENTENCE, P2-CHECKS6-OUTCOME | `results/vv_phase6.json` rows whose `papers` holds P2 (`technique`, `kind`, `passed`, `skipped`; the G1 `options off` row's `simulated` and `basis`), `commit`, `summary` (recounted) | composed |
-| TABLE:PTA | every file above (Table 14: proved, tested, assumed, not yet tested; statuses read from the verdicts) | built HTML |
+| TABLE:PTA | every file above (Table 14: proved, tested, calculated from assumed inputs, observed, assumed, not yet tested; statuses read from the verdicts) | built HTML |
+
+## Awaited results (referee round of 11 Nov 2026; decision A4)
+
+`reports/referee_phase6_p2.md` asked for analyses that only BACKEND can run. None may print as a pending marker. Each
+has an entry in `AWAITED` of `build_p2.py`: the results file, the task, the one plain sentence that stands where the
+result will go, and the phrase for the list in Sections 5.13, 6.5 and 7. `awaited(name)` returns the sentence while the
+file is absent. **When the file appears the build stops** and names the entry, so that the paper cannot say "not run"
+beside a results file that exists; the pass that fills it writes a function that composes the sentence from the file,
+with data checks, calls it where `awaited(name)` is called now, and removes the entry.
+
+| Entry | Results file | Task | Where `awaited()` is called | What the sentence must then say |
+|---|---|---|---|---|
+| `overlaps` | `results/E50_overlaps.json` | B-102 | `phase6.py` `margin_paragraph` (5.9); also Table 10's note, Table 14's Proposition 2 row, 6.1 | the distribution of overlap durations (s) and of the along-track gap (m) when the second vehicle enters, with and without the margin; whether the margin changes them or only the count (decision B5) |
+| `uphill` | `results/E45_uphill.json` | B-107 | `phase6.py` `prop4` (A.4); also 5.6, 6.1 (`e44_discussion_clause`), Table 14 | violations and smallest gaps on uphill grades of 5, 10, 15 and 17.2 degrees, Moon and Mars, with the rule as it is and with a slope term in the required gap |
+| `fresh_seeds` | `results/E44_fresh_seeds.json` (the name is this paper's; B-108 says only "keep both in the file", so check it against BACKEND's report) | B-108 | `build_p2.py` `e44_results_paragraph` (5.6); also Table 6's dagger note, 3.5, Table 14 | the bounds of types 4, 5 and 6 on seeds never used, beside the present ones; then the dagger and "not confirmatory" go |
+| `near_base` | `results/E50_near_base.json` | B-101 | `phase6.py` `h9_sentence` (5.9); also Table 9's note, Table 14, 6.1 | the 95th percentile with ranging under the four readings (two or more beacons in line of sight; one or more; within 1 km of the mast; within its radio range), the share of driving steps each covers, the side of the budget per seed; the verdict stays "depends on the reading" (decision B4) |
+| E50 at eight times the fleet | `results/E50_summary.json` (`errors.8`, `delay.8`, `h10.gap_by_mult.8`) | BACKEND's 8x loop | `phase6.py` `x8_clause`, `x8_sentence` (they compose themselves when the keys appear) | as the functions say |
+| E50b | `results/E50b_summary.json` | B-90b | landed; `phase6.py` `e50b_sentence` | filled |
+
+Not in `AWAITED` because no task exists for them; the text says each is not run and Sections 6.5 and 7 list them: a
+drop-and-retry baseline whose retry interval fits inside a grant's lifetime (M7); the lost-link ladder and
+caution-speed entry inside the logistics model (M6); how often the position error is inside the vehicle's own bound,
+per seed (S14; the referee read 97.1 % for one seed from `.cache`, which is not a results file); a sweep of the
+hand-resolution time (S8); detectors at matched realised false-alarm rates with two observers, and the delay cost of
+R9's false alarms (M1, S16).
