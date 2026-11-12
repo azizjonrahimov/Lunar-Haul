@@ -62,6 +62,30 @@ Low). Entries marked "to check" are to be checked against the publisher's record
 [56] D. J. Schuirmann. "A comparison of the two one-sided tests procedure and the power approach for assessing the equivalence of average bioavailability." *Journal of Pharmacokinetics and Biopharmaceutics* 15(6):657-680, 1987. (P1 [46]; title to check)
 [57] C. J. Clopper, E. S. Pearson. "The use of confidence or fiducial limits illustrated in the case of the binomial." *Biometrika* 26(4):404-413, 1934. (TAS, High)
 [58] ISO 3691-4:2023. *Industrial trucks, Safety requirements and verification, Part 4: Driverless industrial trucks and their systems*. (TAS, Low; standard text not read, speed limit from a vendor summary)
+[59] Pre-registration of the Phase 6 experiments (positioning, time, lost link, integrity): `paper/atc/PREREG6.md` in the repository, written 11 November 2026, with dated changes. Cite by repository tag when tagged. (N00, the file itself)
+[60] Maimone, Cheng, Matthies. "Two years of visual odometry on the Mars Exploration Rovers." *Journal of Field Robotics*, 2007. https://robotics.jpl.nasa.gov/media/documents/rob-06-0081.R4.pdf (N01 [MAIM07], opened; volume and pages to add)
+[61] Helmick et al. "Slip-compensated path following for planetary exploration rovers." *Advanced Robotics*, 2006. https://robotics.jpl.nasa.gov/media/documents/advanced_robotics_2006.pdf (N01 [HELM06], opened; full author list to add)
+[62] Daftry et al. "LunarNav: Crater-based localization for long-range autonomous lunar rover navigation." IEEE Aerospace Conference, 2023. arXiv:2301.01350 (N01 [DAF23], opened)
+[63] Atha et al. "ShadowNav: Autonomous global localization for lunar navigation in darkness." 2024. arXiv:2405.01673 (N01 [ATHA24], opened)
+[64] Janicijevic et al. "Demo: Small PLaNS towards Mars: Exploiting ultra-wideband for self-localizing rover navigation." EWSN 2018. https://www.ewsn.org/file-repository/ewsn-2018/199_200_janicijevic.pdf (N01 [PLANS18], opened)
+[65] Nuechter et al. "UWB anchor based localization of a planetary rover." i-SAIRAS 2024. arXiv:2504.07658 (N01 [NUCH24], opened)
+[66] Barker et al. "Improved LOLA elevation maps for south pole landing sites: Error estimates and their impact on illumination conditions." *Planetary and Space Science*, 2021. NTRS 20205009660. (N01 [BARK21], opened)
+[67] Gramling, Crenshaw, Murata, Swinden, Melman, Stallo, Ventura-Traveset. "Towards LunaNet Lunar Augmented Navigation Service (LANS) interoperability demonstration and monitoring." SpaceOps 2025. NTRS 20250003163. (N01 [INTEROP25], opened)
+[68] Gramling, Crenshaw. *NASA's LunaNet: Lunar Communications and PNT*. International Committee on GNSS, 25 June 2024. https://www.unoosa.org/documents/pdf/icg/2024/WG-B_Lunar_PNT_Jun24/LunarPNT_Jun24_01_02.pdf (N01 [GRAM24], opened)
+[69] Parker et al. "GNSS reception at the Moon: First results of the Lunar GNSS Receiver Experiment (LuGRE)." *NAVIGATION* 73(1), 2026. doi:10.33012/navi.756 (N01 [LUGRE26], open-access copy opened)
+[70] Microchip. *CSAC SA65 Chip-Scale Atomic Clock*, data sheet. https://gps-world.biz/wp-content/uploads/2023/10/microchip-csac-sa65-1.pdf (N01 [CSAC], a copy of the data sheet opened)
+[71] Shalaby et al. "Reducing two-way ranging variance by signal-timing optimization." 2022. arXiv:2211.00538 (N01 [SHAL22], opened)
+[72] LeBlanc, Zhang, Sundaram, Koutsoukos. "Consensus of multi-agent networks in the presence of adversaries using only local information." 2012. arXiv:1205.3676 (N03 [LEBLANC12], opened; proves the conditions for the continuous-time protocol; the discrete-time journal paper of 2013 was not opened and is not cited)
+[73] Federal Aviation Administration. Notice N JO 7110.724, *UAS Lost Link*, effective 11 October 2016. https://www.faa.gov/documentLibrary/media/Notice/N_JO_7110.724_5-2-9_UAS_Lost_Link.pdf (N03 [FAA16], opened)
+[74] 14 CFR 91.185, *IFR operations: Two-way radio communications failure*. https://www.govinfo.gov/link/cfr/14/91?sectionnum=185&year=mostrecent&link-type=xml (N03 [CFR91185], opened)
+[75] VDA, VDMA. *VDA 5050: Interface for the communication between automated guided vehicles and a master control*, version 3.0.0, 19 March 2026. https://github.com/VDA5050/VDA5050 (N03 [VDA5050], opened; title to check)
+[76] Rabideau, Russino, Branch, Dhamani, Stegun Vaquero, Chien, de la Croix, Rossi. "Planning, scheduling, and execution on the Moon: The CADRE technology demonstration mission." AAMAS 2025, pp. 1727-1735. https://www.ifaamas.org/Proceedings/aamas2025/pdfs/p1727.pdf (N04 [C1], opened)
+[77] Brinkmann. "NASA expects one lunar launch this year, Moon Base manager says." *Aerospace America* (AIAA), 15 September 2026. https://aerospaceamerica.aiaa.org/nasa-expects-one-lunar-launch-this-year-moon-base-manager-says/ (N04 [M3], opened)
+[78] Litaker, Li, Beaton, Lewis. *Lunar Terrain Vehicle (LTV) Remote Teleoperation Studies Under Four Lunar Communication Latencies*. NASA/TM-20240001217, 2024. NTRS 20240001217. (N04 [L5], opened)
+[79] Ashby, Patla. "A relativistic framework to establish coordinate time on the Moon and beyond." 2024. arXiv:2402.11150 (N01 [ASH24], opened)
+[80] *Lunar Rover Interaction Protocol*, research notes 01 (positioning and time), 03 (communication, protocol and security) and 04 (coordination and market), 11 November 2026, `research_notes/Lunar Rover Interaction Protocol/` in the repository. (N00, the notes themselves; each lists the sources it opened and those it could not verify)
+[81] NASA Jet Propulsion Laboratory. "NASA's Perseverance now autonomously pinpoints its location on Mars." 18 February 2026. https://www.jpl.nasa.gov/news/nasas-perseverance-now-autonomously-pinpoints-its-location-on-mars/ (N01 [JPL26], opened)
+[82] *telemanom*: labelled anomaly data for SMAP and MSL telemetry (data release). https://github.com/khundman/telemanom ; arrays taken from the mirror https://github.com/imperial-qore/TranAD/tree/main/data/SMAP_MSL (BSD-3-Clause); every file with its URL, size and hash is in `results/B97_downloads.json`. (N00, B-97: the label file and the arrays were downloaded and verified; the paper that accompanies the release was not opened and is not cited)
 
 ## Reference statistics (draft 0)
 
@@ -69,3 +93,15 @@ To be counted by build_p2.py's note once the text is stable: entries dated 2021 
 entries needing publisher checks ([8] DOI, [16], [30], [37], [38], [46], [56]).
 
 The pre-registration file is [43] and the companion papers [44, 45].
+
+## Phase 6 additions (11 Nov 2026)
+
+Entries [59] to [81] carry the Phase 6 sections (position uncertainty, clocks, lost link, integrity of reports, the
+appendix of propositions). Tags: N01, N03, N04 = research notes 01, 03 and 04 of
+`research_notes/Lunar Rover Interaction Protocol/`, with the note's own key in brackets; N00 = a repository file.
+Only sources a note marks as opened are listed. Not cited because the notes could not open them: the discrete-time
+W-MSR journal paper (LeBlanc et al., IEEE JSAC 2013), the UWB vendor's 290 m range claim, and the IM-3 date at
+primary level in note 01 (note 04 opened the Aerospace America article, [77]). The chi-square innovation test, the
+CUSUM and covariance intersection are stated and derived in the paper without a citation, because the notes derive
+them and name no opened source. Entries needing publisher checks: [60], [61] (volume, pages, authors), [62] to [65]
+(full author lists), [75] (title).

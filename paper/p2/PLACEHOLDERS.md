@@ -1,7 +1,7 @@
 # P2 placeholders (draft 0, 28 Oct 2026)
 
 `build_p2.py` fills every `{{P2-...}}` in `part1`-`part5` and fails on any unfilled placeholder and on any nan/inf.
-Keys whose experiment has not run (now only the B-79 checks) are filled with a visible `[[PENDING ...]]`
+Keys whose experiment has not run (now E50 at eight times the fleet and E50b; see the Phase 6 section) are filled with a visible `[[PENDING ...]]`
 marker only with `--allow-pending`. Families are written with `{m}` (fleet multiple 1, 2, 4, 8), `{y}` (start year
 2028, 2038), `SHARE{s}` (0, 5, 40 for the shares 0, 0.05, 0.40), `BAY{b}` (05, 2 for 0.5 and 2 km), `OWNER-{o}`
 (A, B, C) and `SINGLE-KM-{lim}` (15, 10, 8 degrees); the build maps a key to its family before checking it is listed.
@@ -70,3 +70,58 @@ Comparisons are named in `LABELS` of the build script; the analysis is `experime
 | TABLE:E47, TABLE:E47_link | results/E47_bounds.json `types.{k}` (Table 7, E44's columns at Mars gravity); results/E47_fit.json `road_coordination.delay_mean_h`, table_E43_pairs.csv (the Moon rows, so one quantity has one interval) and table_E43_cells.csv (Table 8: uncoordinated minus ATC by round trip and relay, its share of the ATC delay, conflicts referred and Earth wait) | built HTML; pending with the E47 keys |
 | P2-ID-FIX-SENTENCE | `results/id_fix_evidence.json` (`runs`, `identical`, `ids_reused_pre/post`, rows' `items`, `exp`) | composed |
 | P2-CHECK-FINDINGS-SENTENCE, P2-SHIELD-SLOPE-SENTENCE | `results/vv_phase5.json` rows S1 (c) type 9, S5 encounter deadlocks, S2 unholdable slope flagged (`passed`, `simulated`, `reference`, `unit`) | composed |
+
+## Phase 6 (11 Nov 2026): position, clocks, lost link, integrity, propositions, Table 13
+
+Filled by `paper/p2/phase6.py`, which `build_p2.py` calls at the end of `values()`. Same rules: numbers from files,
+outcome-dependent wording composed with the direction chosen from the data, a `check()` behind every fixed phrase.
+"H9'" and "H10'" are H9 and H10 of `paper/atc/PREREG6.md`; H9 and H10 without a prime stay those of `PREREG.md`.
+Pending now: E50 at eight times the fleet and E50b. No longer used in the text but still filled: P2-H7-ABSTRACT-CLAUSE,
+P2-CONCLUSION-SAFETY-CLAUSE and P2-CONCLUSION-MARS-CLAUSE (their short forms replace them, for the word limits);
+P2-E50-X8-CLAUSE is used inside P2-E50-H10-SENTENCE. Abbreviations: S50 = `results/E50_summary.json`
+(`errors.{mult}.{layer set}.{all,near,away}`, `violations`, `delay`, `h9`, `h10`, `design`, `seeds`); S51 =
+`results/E51_clocks.json` (`rows` by class, scale and interval; `constants`; `holdover`; `h11`); S51b =
+`results/E51b_clocks.json`; S54 = `results/E54_dtn.json` (`rows` by loss and protocol; `h14`; `parameters`); S55 =
+`results/E55_integrity.json` (`integrity.sets.{val,test,ood}`, `consensus.cells`, `consensus_with_base_mast.cells`,
+`h16`); S56 = `results/E56_integrity.json` (`test`, `ood`, `ood_recalibrated` by detector and rate; `dataset`;
+`model`; `thresholds_from_validation`). PN = `lunarsim/atc/pnt.py` `DEFAULTS`; SF = `lunarsim/atc/safety.py` constants.
+
+| Key | Source | Format |
+|---|---|---|
+| P2-E50-MODEL-SENTENCE, P2-E50-BUDGET | PN (drifts, ranging, fixes, navigation-service availability, `R95`); SF `D0_M` | composed (the four layers and the filter); m |
+| P2-E50-DESIGN-SENTENCE | S50 `design`, `seeds`; cell run times and the 8x seed count typed from PREREG6 section 6 | composed; says whether 8x has finished |
+| P2-E50-ERRORS-PARAGRAPH | S50 `errors` (p95 with CI, near and away, share of steps with the bound over budget, fix stops, hourly p95 of dead reckoning) at 1x and 4x | composed; checked: each layer lowers the p95, ranging holds the budget near the base only, fixes do not hold it away |
+| P2-E50-H9-SENTENCE | S50 `h9.1`, `h9.4`, the 2030 variant | composed: verdict per clause of H9' as registered |
+| P2-E50-MARGIN-PARAGRAPH | S50 `violations`, `delay` at 1x and 4x | composed |
+| P2-E50-H10-SENTENCE | S50 `h10`, `delay` | composed: verdict per clause of H10'; the 4x reading ("no measurable cost", not a gain) is chosen from the sign, the interval and the road waiting; holds P2-E50-X8-CLAUSE |
+| P2-E50-X8-CLAUSE, P2-E50-X8-SENTENCE | S50 `errors.8`, `delay.8`, `h10.gap_by_mult.8` | composed; PENDING until the 8x seeds are in the file |
+| P2-E50B-SENTENCE | E50b (not run) | PENDING |
+| P2-E50-STOP-CLAUSE | S50 `errors.1.dr+ranging+fixes.fix_stop_h_per_month`; `h10.note` | hours a month; checked: the file says the stops are not in the delay |
+| P2-E51-MODEL-SENTENCE, P2-E51-DESIGN-SENTENCE | S51 `constants`, `design` | composed |
+| P2-E51-RESULTS-PARAGRAPH | S51 `rows` (lunar scale): conflicts by guard, largest error, one-way and two-way ranging error, failed resyncs | composed; the guard-sweep wording per guard is derived from the rows; checked: conflicts at every interval without a guard, none for the atomic clock with any guard |
+| P2-E51-H11-SENTENCE | S51 `h11` (recomputed from the crystal rows) | composed |
+| P2-E51-VARIANTS-SENTENCE | S51b `rows` (steering; mixed time scales) | composed; checked: steering helps the crystal at every interval and hurts the atomic clock at 1 min |
+| P2-E54-MODEL-SENTENCE, P2-E54-DESIGN-SENTENCE | S54 `parameters`, `rows`, `blackout_days`, `seeds` | composed |
+| P2-E54-RESULTS-PARAGRAPH | S54 `rows` at loss 0.25 (and 0.10, 0.40 for grants), `h14`, `reservations_per_seed` | composed; checked: custody cuts grant loss more than a hundredfold; the zero of stuck reservations under the rule is by construction (the runner sets it), stated as such |
+| P2-E56-DATA-SENTENCE | `lunarsim/nn/faults.py` `FAULTS` (sizes in and out of distribution); S56 `dataset`, `ood_setting` | composed; checked: no seed and no pair in two splits |
+| P2-E56-MODEL-SENTENCE | S56 `baselines`, `model`, `config`, `timing`; `results/E56_runs.csv` (the search rows) | composed; checked: parameter count is the sum over layers, the wider network's gain is under the search margin |
+| P2-E56-DESIGN-SENTENCE, P2-E56-PAIR-DAYS | S56 `validation_fa_per_pair_day_at_threshold`, `false_alarm_definition`, `seeds`, `test.fault_free_pair_days_represented` | composed; count |
+| P2-E56-RESULTS-PARAGRAPH | S56 `test` (recall, delay, realised false alarms; `h15_net_against.logreg` and `.cusum`; the per-hour rate) | composed; checked: order of overall recall, the network below the regression on jumps, every detector under 70 % on slow drifts |
+| P2-E56-H15-PARAGRAPH | S56 `test.h15_net_against.chi2_step` and `.cusum`, `ood`, `ood_recalibrated` | composed: (a) to (d) as registered, each verdict from its interval |
+| P2-E55-DESIGN-SENTENCE, P2-E55-RULE-PARAGRAPH | S55 `integrity` (the 3-of-5 rule and the single test at alpha 0.001; `k_of_n_false_alarm`; `detectable_error_check`); S56 for the two reference detectors | composed; checked: the single test's rate is within what independent Gaussian tests at 1 Hz give, the rule's rate is far above the independent-test value |
+| P2-E55-H16-PARAGRAPH, P2-E55-MAST-SENTENCE | S55 `consensus.cells`, `consensus_with_base_mast.cells`, `h16` | composed: H16 not supported as written, the restatement exploratory; the mast variant by connected and agreement shares |
+| P2-PROP1-NUMBERS | PN, SF; S50 hourly p95 of dead reckoning | composed: Proposition 1's distances and times |
+| P2-PROP3-NUMBERS | SF (`G_MOON`, `MU_DEFAULT`, `B_MIN_FLAT`, `RHO_S`, `v_max_r2`); the measured teleoperation speed typed from [78] | composed; checked: the formula equals `v_max_r2`, the worked cell of note 04 E.3 is reproduced |
+| P2-PROP4-NUMBERS | SF (`rss_dmin`, `B_MAX`, `D0_M`); `results/E44_bounds.json` type 9 | composed; checked: Table 2's gap at 15 km/h is reproduced, only type 9 has violations |
+| P2-PROP5-NUMBERS | computed quantiles; S56 `thresholds_from_validation.chi2_step.day`, `ood`; S55 the rule's rate | composed; checked: note 03 E5's thresholds reproduced, the validation threshold within 5 % of the law's value |
+| P2-PROP6-NUMBERS | S51 `constants`, `holdover`, `rows` | composed; checked: every cell whose largest clock error is within the guard has zero conflicts |
+| P2-PROP7-NUMBERS | S55 `consensus.cells` | composed |
+| P2-H7-ABSTRACT-SHORT, P2-CONCLUSION-SAFETY-SHORT | `results/E44_bounds.json`, `results/E45_modelcheck.json` | composed (shorter forms of the H7 clauses, for the word limits) |
+| P2-P6-ABSTRACT-CLAUSE, P2-P6-INTRO-PARAGRAPH, P2-P6-CONCLUSION-CLAUSE | S50, S51, S55, S56 | composed; every direction checked in `facts()` |
+| P2-P6-DISCUSSION-POSITION, P2-P6-DISCUSSION-TIME | S50, S51, S54, S55, S56; PN | composed: the reading of H10' and the recommendation on the detectors follow the verdicts |
+| P2-P6-FAILED-SENTENCE, P2-P6-PENDING-LIMITATION | the verdicts above; which keys are pending | composed |
+| TABLE:E50_errors, TABLE:E50_margin, FIG:E50_layers | S50 (Tables 9 and 10, Figure 2: inline SVG) | built HTML |
+| TABLE:E51 | S51 `rows`, lunar scale (Table 11) | built HTML |
+| TABLE:E56, FIG:E56_recall | S56 and the rule's rows from S55 (Table 12, Figure 3: inline SVG) | built HTML |
+| P2-B97-PARAGRAPH, TABLE:B97 | `results/B97_realdata.json` `telemetry.rows` (spacecraft, residual, detector: `events`, `found`, `fp_runs`, `precision`, `channels`), `threshold_rule`; `results/B97_downloads.json` (the mirror's `checks_passed`) | composed and built HTML (Table 13); checked: the label file is byte-identical, thresholds from training data only, both accumulating detectors find more than the per-step test on the level residual |
+| TABLE:PTA | every file above (Table 14: proved, tested, assumed, not yet tested; statuses read from the verdicts) | built HTML |

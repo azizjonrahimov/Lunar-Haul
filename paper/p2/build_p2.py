@@ -8,6 +8,13 @@ results/ATC_roads_corridor.json (the corridor analysis), data/scenarios/p5/E43-d
 changes), the raw E43 run files (counts and run times), and paper/p2/NOTES.md (references). E44, E45 and E47 files
 (B-78, B-82) are read once they exist; until then their keys are pending.
 
+Phase 6 (11 Nov 2026): paper/p2/phase6.py, called at the end of values(), fills the sections on position uncertainty
+(E50), clocks (E51), the lost link (E54), wrong position reports and agreement (E56, E55, the real-telemetry check
+B-97), the numbers of the seven propositions of Appendix A and the "proved, tested, assumed" table, from
+results/E50_summary.json, E51_clocks.json, E51b_clocks.json, E54_dtn.json, E55_integrity.json, E56_integrity.json,
+E56_runs.csv, B97_realdata.json and B97_downloads.json, with rule and model parameters read from lunarsim/atc/safety.py,
+pnt.py and lunarsim/nn/faults.py. Its two figures are inline SVG, like fig_density(). Same rules as below.
+
 Every comparison label the text relies on is listed once in LABELS. Rows are found by label, never by position.
 Sentences whose wording depends on the outcome (the H8 verdict, the 8x clauses) are composed here from the data, and
 every fixed phrase in the parts that asserts a direction is checked against the data before the build goes on; a
@@ -31,6 +38,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 RES = os.path.join(ROOT, "results")
 sys.path.insert(0, ROOT)
+sys.path.insert(0, HERE)                         # paper/p2/phase6.py (the Phase 6 values)
 from experiments.phase5 import run_phase5 as RP  # noqa: E402
 
 PARTS = ["part1_front.html", "part2_related.html", "part3_methods.html", "part4_results.html", "part5_back.html"]
@@ -599,8 +607,8 @@ def values(r: R, allow_pending: bool):
           "provisional and its interval is wider than the design intended.")
     r7_n = int(p7["n"])
     V["P2-R7-N-CLAUSE"] = ("on all 30 seeds" if r7_n >= expected.get(("atc x1 r7", 2028), 30) else
-                           f"on the {words(r7_n)} seeds that had run when the rerun was stopped (Section 5.9)")
-    fill("P2-CHECKS-SENTENCE", lambda: vv5_checks_sentence("P2", "5.9", check), "B-79")
+                           f"on the {words(r7_n)} seeds that had run when the rerun was stopped (Section 5.13)")
+    fill("P2-CHECKS-SENTENCE", lambda: vv5_checks_sentence("P2", "5.13", check), "B-79")
     fill("P2-FAILED-CHECKS-SENTENCE", lambda: vv5_failed_sentence("P2", "3.8", check), "B-79")
     fill("P2-ID-FIX-SENTENCE", lambda: idfix_sentence(check, ("E43", "E44", "E45", "E47")), "B-79 id fix")
 
@@ -1650,6 +1658,17 @@ def values(r: R, allow_pending: bool):
         pending.append(f"TABLE:E44: {e}")
         T["E44"] = '<p class="pending">[[PENDING E44: Table 6, encounters per type with bounds]]</p>'
     F = {"E43_density": fig_density(r)}
+
+    # --- Phase 6 (paper/p2/phase6.py): position uncertainty, clocks, lost link, integrity, propositions, Table 13 ---
+    def table_pending(store, name, what, e):
+        if not allow_pending:
+            raise SystemExit(f"{name} pending ({e}); rerun with --allow-pending to build a draft")
+        pending.append(f"{name}: {e}")
+        store[name] = f'<p class="pending">[[PENDING {what}]]</p>'
+    import phase6
+    phase6.add(dict(V=V, T=T, F=F, fill=fill, pend=pend, check=check, Pending=Pending, r=r, num=num, h_=h_, pc=pc,
+                    ci=ci, cnt=cnt, words=words, sci=sci, tab=_tab, NB=NB, MINUS=MINUS, PCT=PCT,
+                    table_pending=table_pending))
     if broken:
         raise SystemExit("claims contradicted by the data:\n  " + "\n  ".join(broken))
     return V, T, F, pending
@@ -1802,7 +1821,8 @@ def references():
     out = ['<ol class="refs">']
     for m in re.finditer(r"^\[(\d+)\]\s+(.+?)(?=\n\n|\n\[\d+\]|\n## |\Z)", notes, re.S | re.M):
         txt = html.escape(" ".join(m.group(2).split()))
-        txt = re.sub(r"\s*\((TAS|P1|PWG)[^)]*\)\s*$", "", txt)
+        txt = re.sub(r"\s*\((TAS|P1|PWG|N0[0-4])[^)]*\)\s*$", "", txt)   # N0x: the Phase 6 research notes
+        txt = re.sub(r"`([^`]+)`", r"<code>\1</code>", txt)
         txt = re.sub(r"\*(.+?)\*", r"<i>\1</i>", txt)
         txt = re.sub(r"(https?://[^\s<]+)", lambda u: f'<a href="{u.group(1)}">{u.group(1)}</a>', txt)
         out.append(f'<li value="{m.group(1)}">{txt}</li>')
