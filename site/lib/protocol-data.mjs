@@ -199,3 +199,61 @@ export function e52(key) {
   if (/share/.test(col)) return num({ value: 100 * v, unit: ' %', digits: 2, flag: 'Modelled', source: s });
   return num({ value: v, unit: '', digits: 2, flag: 'Modelled', source: s });
 }
+
+// F-56 / B-95: /protocol/ problem 7 reads E55 (results/E55_integrity.json): the LRIP integrity rule as written (z^2 > gamma,
+// suspect at 3 of the last 5) against the single test and E56's calibrated chi-square and network, false alarms per
+// pair-day and recall per fault type on the test and out-of-distribution streams; W-MSR consensus by geometry, N, liars
+// f and F, with and without the base mast; forgeries accepted against 2^-t; replays.
+export const E55_SRC = 'results/E55_integrity.json';
+export const E55_OUT = 'protocol/e55.json';
+const TYPES = ['jump', 'drift', 'frozen', 'frame', 'noise', 'all'];
+export function compactE55(doc) {
+  const I = doc.integrity, C = doc.consensus?.cells, M = doc.consensus_with_base_mast?.cells;
+  if (!I?.sets || !Array.isArray(C)) throw new Error(`${E55_SRC}: integrity sets or consensus cells missing`);
+  const det = {};
+  for (const set of ['test', 'ood']) {
+    det[set] = {};
+    for (const [k, v] of Object.entries(I.sets[set] || {})) {
+      if (k.startsWith('_')) continue;
+      det[set][k] = { gamma: v.gamma, fa: v.fa_per_pair_day, recall: Object.fromEntries(TYPES.map(t => [t, v.per_type[t]?.recall])) };
+    }
+    for (const [k, v] of Object.entries(I.e56_reference?.[set] || {})) {
+      if (k !== 'chi2_step' && k !== 'net') continue;
+      det[set][`e56_${k}`] = { fa: v.fa_per_pair_day.mean, recall: Object.fromEntries(TYPES.map(t => [t, v.events[t]?.recall?.mean])) };
+    }
+  }
+  const cell = x => ({ geometry: x.geometry, mast: !!x.mast, N: x.N, f: x.f, F: x.F, runs: x.runs, safe: x.safe_share, agreement: x.agreement_share, connected: x.connected_share, degree: x.degree_condition_share });
+  const auth = doc.auth || {};
+  return { format: 'lunarsim-e55-site', version: 1, source: E55_SRC, experiment: doc.experiment, rule: I.rule, detectors: det,
+    consensus: [...C.map(cell), ...(M || []).map(x => ({ ...cell(x), mast: true }))],
+    forgery: Object.fromEntries(Object.entries(auth.forgery || {}).map(([t, v]) => [t, v.attempts ? { attempts: v.attempts, accepted: v.accepted, bound: v['bound_2^-t'] } : { per_attempt: v.per_attempt }])),
+    replay: auth.replay || {} };
+}
+export function stageE55(PUB) {
+  if (!existsSync(join(ROOT, E55_SRC))) { console.log(`prepare-data: ${E55_SRC} missing; /protocol/ problem 7 says so`); return null; }
+  const out = compactE55(readJson(E55_SRC));
+  return stageJson(PUB, out, E55_OUT, `${Object.keys(out.detectors.test).length} detectors, ${out.consensus.length} consensus cells`);
+}
+
+// <!--@e55:key--> numbers for problem 7's text: fa_<set>_<detector> (false alarms per pair-day), recall_<set>_<detector>_<type>,
+// agreement_max / agreement_max_mast (the most often the honest rovers converge, over every cell with F >= f, in %).
+let e55doc = null;
+export function e55(key) {
+  e55doc ||= compactE55(readJson(E55_SRC));
+  const D = e55doc, flag = (value, unit, digits, what) => num({ value, unit, digits, flag: 'Modelled', source: `${E55_SRC}: ${what}` });
+  let m;
+  if ((m = /^fa_(test|ood)_(.+)$/.exec(key))) {
+    const d = D.detectors[m[1]][m[2]]; if (!d) throw new Error(`${E55_SRC}: no detector ${m[2]} on ${m[1]}`);
+    return flag(d.fa, '', d.fa < 1 ? 2 : d.fa < 100 ? 1 : 0, `${m[2]}, ${m[1]} set, false alarms per pair-day`);
+  }
+  if ((m = /^recall_(test|ood)_(.+)_(jump|drift|frozen|frame|noise|all)$/.exec(key))) {
+    const d = D.detectors[m[1]][m[2]]; if (!d) throw new Error(`${E55_SRC}: no detector ${m[2]} on ${m[1]}`);
+    return flag(d.recall[m[3]], '', 2, `${m[2]}, ${m[1]} set, recall on ${m[3]} faults`);
+  }
+  if (key === 'agreement_max' || key === 'agreement_max_mast') {
+    const mast = key.endsWith('mast'), cells = D.consensus.filter(c => c.mast === mast && c.F >= c.f);
+    if (!cells.length) throw new Error(`${E55_SRC}: no consensus cells${mast ? ' with the mast' : ''}`);
+    return flag(100 * Math.max(...cells.map(c => c.agreement)), ' %', 0, `consensus${mast ? ' with the base mast' : ''}, the largest share of runs in which the honest rovers agree, over every cell with F at least f`);
+  }
+  throw new Error(`${E55_SRC}: unknown key ${key}`);
+}

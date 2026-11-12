@@ -1,6 +1,6 @@
 // /protocol/ (F-60): eight figures, one per problem group (loaded lazily by main.js since F-61). Figure 1 draws E50's
 // one-month trace, figure 2 E52's map sync, figure 3 E51's clock results, figure 5 LRIP v0.1's golden POSITION packet and
-// the measured panels of problems 4 and 6 E54's message delivery (F-56); the others compute in the browser from src/protocol/params.js (the research notes' values)
+// the measured panels of problems 4, 6 and 7 E54's message delivery and E55's integrity results (F-56); the others compute in the browser from src/protocol/params.js (the research notes' values)
 // until BACKEND's B-99 exports replace them; the link budget is a port of
 // lunarsim/atc/radio.py. Hand-written SVG, native controls, a readout that is also the figure's text version.
 import { segmented, h, reducedMotion } from '../ui/index.js';
@@ -447,6 +447,53 @@ function figIntegrity(host) {
   draw();
 }
 
+// ---------------------------------------------------------------- 7b. E55: the integrity rule measured
+// E55 (protocol/e55.json from results/E55_integrity.json): the LRIP rule as written against the single test and E56's
+// detectors (test or out of distribution); the trimmed-mean consensus by geometry, with and without the base mast, at a
+// chosen fleet size; forgeries and replays in the readout.
+const E55_DET = [['3of5@0.001', 'The protocol’s rule: 3 of the last 5 reports over γ 10.83'], ['single@0.001', 'The same threshold, one report at a time'],
+  ['3of5@0.01', '3 of 5, looser (γ 6.63)'], ['3of5@0.0001', '3 of 5, stricter (γ 15.14)'], ['e56_chi2_step', 'Chi-square calibrated on validation data (E56)'], ['e56_net', 'The learned network (E56)']];
+async function figE55(host) {
+  const r = await fetch(`${import.meta.env.BASE_URL}protocol/e55.json`);
+  if (!r.ok) throw new Error(`protocol/e55.json: HTTP ${r.status}`);
+  const E = await r.json();
+  if (E.format !== 'lunarsim-e55-site' || E.version !== 1) throw new Error(`e55.json: format ${E.format}`);
+  let set = 'test', N = 12;
+  const Ns = [...new Set(E.consensus.map(c => c.N))].sort((a, b) => a - b);
+  if (!Ns.includes(N)) N = Ns[0];
+  const segS = segmented({ legend: 'Streams', options: [{ value: 'test', label: 'Test set' }, { value: 'ood', label: 'Out of distribution' }], value: set, onChange: v => { set = v; draw(); } });
+  const segN = segmented({ legend: 'Rovers', options: Ns.map(n => ({ value: String(n), label: String(n) })), value: String(N), onChange: v => { N = +v; draw(); } });
+  const det = h('div', { class: 'pr-scroll' }), con = h('div', { class: 'pr-scroll' }), read = readout();
+  const fa = v => (v === undefined || v === null ? '–' : fmt(v, v < 1 ? 2 : v < 100 ? 1 : 0));
+  const rc = v => (v === undefined || v === null ? '–' : fmt(v, 2));
+  const pc = v => (v === undefined || v === null ? '–' : `${fmt(100 * v, 0)} %`);
+  function draw() {
+    const D = E.detectors[set];
+    det.replaceChildren(h('table', { class: 'pr-table' },
+      h('caption', { class: 'small' }, `${set === 'test' ? 'Test streams' : 'Out of distribution: noisier ranging, worse dead reckoning, smaller faults'}. Recall is the share of faults found. Modelled, from ${E.source}.`),
+      h('thead', {}, h('tr', {}, ...['Detector', 'False alarms per pair-day', 'Faults found', 'Slow drifts', 'Noise inflation'].map(t => h('th', { scope: 'col' }, t)))),
+      h('tbody', {}, E55_DET.filter(([k]) => D[k]).map(([k, l]) => h('tr', { class: k === '3of5@0.001' ? 'pr-row-main' : '' }, h('th', { scope: 'row' }, l),
+        h('td', { 'data-label': 'False alarms per pair-day' }, fa(D[k].fa)), h('td', { 'data-label': 'Faults found' }, rc(D[k].recall.all)),
+        h('td', { 'data-label': 'Slow drifts' }, rc(D[k].recall.drift)), h('td', { 'data-label': 'Noise inflation' }, rc(D[k].recall.noise)))))));
+    const cellOf = (g, mast, f, F) => E.consensus.find(c => c.geometry === g && c.mast === mast && c.N === N && c.f === f && c.F === F);
+    const rows = [['fleet', false, 'Rovers where the fleet works'], ['fleet', true, '… with the base mast'], ['spread', false, 'Rovers spread over the routes'], ['spread', true, '… with the base mast']];
+    con.replaceChildren(h('table', { class: 'pr-table' },
+      h('caption', { class: 'small' }, `${N} rovers, liars sending far-off values; the trimmed mean drops the F highest and lowest values it hears. "Safe": every honest value stays inside the honest range. "Agree": the honest values come within 1 % of each other. Modelled, from ${E.source}.`),
+      h('thead', {}, h('tr', {}, ...['Where the rovers are', 'Safe, 1 liar (F 1)', 'Safe, 2 liars (F 1)', 'Agree, 1 liar', 'Network connected'].map(t => h('th', { scope: 'col' }, t)))),
+      h('tbody', {}, rows.filter(([g, m]) => cellOf(g, m, 1, 1)).map(([g, m, l]) => { const a = cellOf(g, m, 1, 1), b = cellOf(g, m, 2, 1);
+        return h('tr', {}, h('th', { scope: 'row' }, l), h('td', { 'data-label': 'Safe, 1 liar (F 1)' }, pc(a?.safe)), h('td', { 'data-label': 'Safe, 2 liars (F 1)' }, pc(b?.safe)),
+          h('td', { 'data-label': 'Agree, 1 liar' }, pc(a?.agreement)), h('td', { 'data-label': 'Network connected' }, pc(a?.connected))); }))));
+    const F8 = E.forgery['8'], F16 = E.forgery['16'], rp = Object.entries(E.replay);
+    const X = (value, digits, what) => num({ value, unit: '', digits, flag: 'Modelled', source: `${E.source}: ${what}` });
+    setRead(read, `Forged messages with a truncated authentication code get through about as often as chance says: ${F8 ? `${X(F8.accepted, 0, 'auth.forgery 8 bits, accepted')} of ${fmt(F8.attempts, 0)} with 8 bits (chance: ${fmt(F8.attempts * F8.bound, 0)})` : ''}`
+      + `${F16 ? `, ${X(F16.accepted, 0, 'auth.forgery 16 bits, accepted')} of ${fmt(F16.attempts, 0)} with 16 bits (chance: ${fmt(F16.attempts * F16.bound, 1)})` : ''}; the protocol uses 64 bits. `
+      + `Replayed messages accepted: ${rp.map(([l, v]) => `${X(v.replays_accepted, 0, `auth.replay at loss ${l}`)} of ${fmt(v.replays, 0)} at ${fmt(100 * l, 0)} % loss`).join(' and ')}.`);
+  }
+  host.append(h('p', { class: 'ui-label pr-sub' }, 'Spotting a wrong position report'), h('div', { class: 'pr-ctl' }, segS.el), det,
+    h('p', { class: 'ui-label pr-sub' }, 'Agreeing on a shared value by averaging among rovers'), h('div', { class: 'pr-ctl' }, segN.el), con, read);
+  draw();
+}
+
 // ---------------------------------------------------------------- 8. who has flown what (note 04, section C)
 const WHO = [
   ['flown', 'Intuitive Machines', 'USA', 'IM-1 (2024) and IM-2 (Mar 2025) landed and tipped over', 'IM-2 carried a hopper and other makers’ rovers; none deployed', 'claimed'],
@@ -482,7 +529,7 @@ function figWho(host) {
   draw('all');
 }
 
-const FIGS = { pos: figPos, map: figMap, time: figTime, radio: figRadio, msg: figMsg, auction: figAuction, integrity: figIntegrity, who: figWho, dtn: figDtn };
+const FIGS = { pos: figPos, map: figMap, time: figTime, radio: figRadio, msg: figMsg, auction: figAuction, integrity: figIntegrity, who: figWho, dtn: figDtn, e55: figE55 };
 // draws one figure into its host (main.js calls this as each host nears the screen)
 export function mountFigure(host) {
   const fail = e => { host.append(h('p', { class: 'stub' }, `This figure could not be drawn (${e.message}).`)); console.error(e); };

@@ -49,7 +49,8 @@
         "protocol/e51.json",
         "protocol/lrip-position.json",
         "protocol/e52.json",
-        "protocol/e54.json"
+        "protocol/e54.json",
+        "protocol/e55.json"
       ],
       "data_gzip_kb": 90,
       "lazy": [

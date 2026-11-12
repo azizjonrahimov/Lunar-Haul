@@ -168,3 +168,4 @@
 .pr-dtn-extra .pr-table { margin-top: var(--s-1); }
 @media (max-width: 480px) { .pr-cell { min-width: 0; } .pr-table th, .pr-table td { padding: 0.35em 0.4em; } .pr-table thead th { hyphens: auto; } }
 .pr-table caption { text-align: left; padding-bottom: var(--s-2); color: var(--ink-2); }
+.pr-row-main th, .pr-row-main td { font-weight: 600; }

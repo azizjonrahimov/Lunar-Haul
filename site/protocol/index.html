@@ -282,10 +282,19 @@
           rejected; a rover that is wrong anyway is caught by comparing its report with your own radio range to it. If
           the normalised squared difference exceeds <!--@pn:gamma1--> on 3 of the last 5 reports, the rover is treated
           as suspect and the others are told; an error of about <!--@pn:min_err--> is caught 90 % of the time.</p>
+        <p>The persistence is what makes the textbook threshold usable: tested one report at a time, it raises
+          <!--@e55:fa_test_single@0.001--> false alarms per pair-day on our simulated streams; at 3 of the last 5,
+          <!--@e55:fa_test_3of5@0.001-->. Every fixed threshold fails out of distribution (noisier sensors, smaller
+          faults): <!--@e55:fa_ood_3of5@0.001--> false alarms per pair-day for the rule and
+          <!--@e55:fa_ood_single@0.001--> for the single test. Values many rovers must agree on are not averaged among
+          the rovers: on our sparse mesh the trimmed mean keeps liars from pushing the shared value out of the honest
+          range, but the honest rovers agree in at most <!--@e55:agreement_max--> of runs
+          (<!--@e55:agreement_max_mast--> with the base mast as one more node), so shared estimates are computed at the
+          base.</p>
         <h3>Method</h3>
-        <p>Experiment E55 (hypothesis H15) compares this test with a learned detector (see
-          <a href="<!--@base-->network/">the network</a>) at the same false-alarm rate; E56 (H16) tests the
-          trimmed-mean rule for values many rovers must agree on.</p>
+        <p>Experiment E55 (hypotheses H15 and H16) scores the rule as written, with no tuning, on the same simulated
+          streams and faults as the learned detector of E56 (see <a href="<!--@base-->network/">the network</a>), and
+          tests the trimmed-mean rule for values many rovers must agree on, with and without the base mast.</p>
         <h3>Who we would work with</h3>
         <p>The CCSDS security working group, the LunaNet security documents' authors at NASA SCaN, and the JPL CADRE
           team.</p>
@@ -294,8 +303,14 @@
       <figure class="pr-fig" id="fig-int" aria-labelledby="fig-int-cap">
         <div class="pr-host" data-fig="integrity"></div>
         <figcaption id="fig-int-cap">A neighbour's reports checked against your own range to it, once a second. Pick a
-          fault; the test statistic crosses its threshold and the 3-of-5 rule flags the rover. Illustration with note
-          03's test; E55 replaces it.</figcaption>
+          fault; the test statistic crosses its threshold and the 3-of-5 rule flags the rover. An illustration of note
+          03's test; E55's measured results are below.</figcaption>
+      </figure>
+      <figure class="pr-fig pr-fig-wide" id="fig-e55" aria-labelledby="fig-e55-cap">
+        <div class="pr-host" data-fig="e55"></div>
+        <figcaption id="fig-e55-cap">Measured in experiment E55 (results/E55_integrity.json): the protocol's rule as
+          written against the same threshold without persistence and E56's detectors, and the trimmed-mean consensus on
+          our terrain with and without the base mast.</figcaption>
       </figure>
     </div>
   </section>

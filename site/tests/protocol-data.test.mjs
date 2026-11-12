@@ -86,3 +86,21 @@ test('E52 and E54: seeds is a count (the files may list the seed numbers)', { sk
   assert.equal(compactE54(J('results/E54_dtn.json'), J('results/E54_ledger.json')).seeds, 30);
   assert.equal(compactE52(J('results/E52_map.json')).seeds, 30);
 });
+
+test('E55 for problem 7: detectors on test and out of distribution, consensus cells, the text hook', { skip: !existsSync(R('results/E55_integrity.json')) && 'E55 missing' }, async () => {
+  const { compactE55, e55 } = await import('../lib/protocol-data.mjs');
+  const out = compactE55(J('results/E55_integrity.json'));
+  for (const set of ['test', 'ood']) for (const k of ['3of5@0.001', 'single@0.001', 'e56_chi2_step', 'e56_net']) assert.ok(out.detectors[set][k], `${set} ${k}`);
+  // the report's reading: persistence cuts the false alarms of the same threshold, and out of distribution every fixed threshold rises
+  const t = out.detectors.test, o = out.detectors.ood;
+  assert.ok(t['3of5@0.001'].fa < 1 && t['single@0.001'].fa > 10 * t['3of5@0.001'].fa);
+  assert.ok(o['3of5@0.001'].fa > 10 * t['3of5@0.001'].fa && o['single@0.001'].fa > t['single@0.001'].fa);
+  // with F at least f the trimmed mean is safe in every cell; with or without the mast
+  assert.ok(out.consensus.some(c => c.mast) && out.consensus.some(c => !c.mast));
+  for (const c of out.consensus.filter(x => x.F >= x.f)) assert.equal(c.safe, 1, `${c.geometry} N ${c.N} f ${c.f} F ${c.F} mast ${c.mast}`);
+  assert.ok(out.forgery['8'].accepted > 0 && out.forgery['8'].bound > 0);
+  assert.match(e55('fa_test_3of5@0.001'), /data-flag="Modelled"/);
+  assert.match(e55('agreement_max'), / %</);
+  assert.throws(() => e55('fa_test_nope'), /no detector/);
+  assert.throws(() => e55('what'), /unknown key/);
+});

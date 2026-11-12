@@ -9076,3 +9076,35 @@ Next: B-97 (real-data checks), then B-98 / B-99. B-90b waits for your 8x loop.
 2. telemanom's published LSTM figures: do you want them quoted beside ours from the paper (I have not opened it this session), or left out?
 
 Next: B-98 (verification rows for Phase 6), then B-99 (site data). B-90b waits for your 8x loop.
+
+## F-56 E55 WIRED 19:39, browser-checked | site/lib/protocol-data.mjs (compactE55, stageE55, the e55 text hook), site/src/protocol/figures.js (new measured panel figE55), site/protocol/index.html (problem 7: Our answer, Method, figure 7 caption, new panel), site/src/protocol/protocol.css (one rule), site/scripts/prepare-data.mjs, site/vite.config.js (<!--@e55:key-->), site/tests/protocol-data.test.mjs (one more test), tools/ci/budgets.json (one protocol data line; no limit change) | how to check: /protocol/#pr7-h and #fig-e55 | from BACKEND: nothing | for LEAD: notes at the end
+**Page text, problem 7, saying what B-95 says.** Every number goes through <!--@e55:key--> from results/E55_integrity.json.
+- **Persistence:** "The persistence is what makes the textbook threshold usable: tested one report at a time, it raises 53.3 false alarms per pair-day on our simulated streams; at 3 of the last 5, 0.10."
+- **Out of distribution:** "Every fixed threshold fails out of distribution (noisier sensors, smaller faults): 69.0 false alarms per pair-day for the rule and 1,128 for the single test."
+- **Consensus:** "Values many rovers must agree on are not averaged among the rovers: on our sparse mesh the trimmed mean keeps liars from pushing the shared value out of the honest range, but the honest rovers agree in at most 10 % of runs (16 % with the base mast as one more node), so shared estimates are computed at the base."
+  - The 10 % and 16 % are the largest agreement share over every cell with F ≥ f, computed at build time. The report's "0–18 %" includes an f = 2, F = 1 cell.
+- **Method fixed:** it wrongly said "E56 (H16) tests the trimmed-mean rule". It now reads: E55 (H15 and H16) scores the rule as written, untuned, on E56's streams and faults, and tests the trimmed mean with and without the mast.
+- **Figure 7's caption:** "an illustration of note 03's test; E55's measured results are below".
+
+**The panel, fig-e55** (staged as protocol/e55.json, 1.6 kB gzipped).
+- **Spotting a wrong position report**, test set or out of distribution:
+  - rows: the protocol's rule (3 of 5 over γ 10.83, in bold), the same threshold one report at a time, 3 of 5 looser and stricter, E56's calibrated chi-square, E56's network;
+  - columns: false alarms per pair-day, faults found, slow drifts, noise inflation;
+  - test: rule 0.10 / 0.68; single 53.3 / 0.85; chi-square 0.68 / 0.71; network 0.53 / 0.90;
+  - out of distribution: rule 69.0, single 1,128.
+- **Agreeing on a shared value**, choosing 5, 8, 12, 20 or 40 rovers:
+  - rows: fleet and spread geometry, each with and without the mast;
+  - columns: safe with 1 liar (F 1), safe with 2 liars (F 1), agree with 1 liar, network connected;
+  - at 12 rovers: fleet 100 / 50 / 2 / 0 %; with the mast 100 / 6 / 4 / 82 %; spread 100 / 84 / 0 / 0 %.
+- **Readout:** forgeries 395 of 100,000 at 8 bits (chance 391) and 11 of 1,000,000 at 16 bits (chance 15.3), "the protocol uses 64 bits"; replays accepted 0 of 574 and 0 of 598.
+
+**Checks:**
+- node tests 51/51 (the new one also checks the report's reading: persistence cuts the false alarms tenfold or more, every fixed threshold rises out of distribution, and safety is 1.00 in every cell with F ≥ f);
+- build OK after a RAM check (1.62 GB);
+- **budgets OK: /protocol/ data 81.5 of 90 kB.** Nothing to trim and no limit change;
+- headless Chrome at 1280 and 390, light and dark: 11 figure hosts draw, the tables fit (324/324 at 390 in the labelled-block layout), 0 contrast fails, no overflow, 0 console errors. Screenshots read: the panel at 1280 light and 390 dark.
+- **Server and browser stopped.**
+
+**For LEAD:**
+1. **A reading not in B-95's report:** with more liars than F (f = 2, F = 1), the base mast makes safety worse for the fleet geometry: 50 % → 6 % of runs at N = 12 (the CSV says the same). A better-connected mesh lets the extra liar reach more honest rovers. The panel shows the number as it is, without comment. P2 may want a sentence, or BACKEND a look.
+2. H16 is "not supported as stated" per B-95. The page doesn't give an H16 verdict, only the findings; tell me if you want the verdict and the restatement shown.
