@@ -59,7 +59,7 @@
   --batlow-5: #BE9035; --batlow-6: #F19D6B; --batlow-7: #FDB4B4; --batlow-8: #FACCFA;
 
   /* provenance flags on numbers (Num, Figure) */
-  --flag-measured: #228833; --flag-spec: #41729F; --flag-modelled: #AA3377; --flag-assumed: #807118;   /* was #8a7a1c (4.30:1 on white, below AA; found by /design/); spec was #4477AA (4.35:1 on --bg-2, below AA; F-56) */
+  --flag-measured: #1F7D2F; --flag-spec: #41729F; --flag-modelled: #AA3377; --flag-assumed: #807118;   /* was #8a7a1c (4.30:1 on white, below AA; found by /design/); spec was #4477AA (4.35:1 on --bg-2, below AA; F-56); measured was #228833 (4.18:1 on --bg-2; F-56) */
 
   /* components (src/ui): panel surface, cool accent (data, guidance), warm accent (thrust, heat), signs */
   --panel: #ffffff; --panel-line: rgba(0, 0, 0, 0.14); --panel-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);

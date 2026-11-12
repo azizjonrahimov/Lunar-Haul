@@ -8657,6 +8657,9 @@ Next: B-91b (small), then B-94.
 
 Next: B-94 (store-and-forward and lost link). B-90b waits for your loop.
 
+
+**CORRECTION 11 Nov (found in the P2 revision, checked by LEAD):** frequency steering helps the crystal by **1.5 to 7.1 times** in E51b_table.csv (6.6x at 1 min, 5.4x at 10 min, 3.2x at 1 h, **1.5x at 6 h**, 7.1x at 1 day), not "3-7x" as written above and in the message to LEAD.
+
 ## B-90 ADDENDUM 1 (E50 at 4x, all 10 seeds; 8x still running in LEAD's loop) + the seven owed test files
 **Baseline complete:** the seven files that waited for RAM all pass (test_stories 13, test_strategic_years 3, test_terrain 10, test_terrain_assets 14, test_verification 19, test_verification_phase4 4, test_verification_phase5 18). All 49 test files now pass against the B-89…B-93 working tree.
 
@@ -8960,6 +8963,9 @@ Next: B-95 (integrity, authentication, consensus); it imports B-96's fault defin
 
 Next: B-97 (real-data checks), then B-98 / B-99. B-90b waits for your 8x loop.
 
+
+**CORRECTION 11 Nov (found in the P2 revision, checked by LEAD):** "the single test at the theoretical gamma is unusable on realistic streams: honest navigation errors make z heavier-tailed than a unit Gaussian" is wrong reasoning. At alpha 1e-3 with a test every second, B-96's false-alarm count (60 s bins with any alarm) already gives 1 - 0.999^60 = 5.8 % of the 1,440 bins a day, about 84 alarms per pair-day, for ideal independent unit-Gaussian tests. So the 53 a day is the expected rate, not evidence of a heavy tail. What departs from theory is the 3-of-5 rule: 0.10 a day observed against about 0.0009 a day for independent tests (1e-8 per window x 86,400 windows), because flags arrive in runs (the innovations are correlated in time). The verdict on the single test stands (unusable at that threshold), for the plain reason that its threshold is per test, not per day.
+
 ## B-95 ADDENDUM (E55 consensus with the base mast as an honest node; LEAD's request)
 `python tools/atc/run_e55.py consensus_mast`, then `build`: the 10 m BASE mast joins as one more honest node, linked to every rover in its DEM line of sight. The results are in `results/E55_integrity.json` → `consensus_with_base_mast` and in `results/E55_table_consensus.csv` (column `mast`).
 - **Fleet geometry** (F = f, or F = 1 for f = 0):
@@ -9168,3 +9174,42 @@ Next: B-98 (verification rows for Phase 6), then B-99 (site data). B-90b waits f
 **For FRONTEND (via LEAD):** `results/vv_phase6.json` uses the vv_phase5 format, with ids grouped P / M / C / G (positioning and time / map and coordinates / communication, protocol and security / degenerate cases). The /verification/ reader can stage it next to phase 5.
 
 **Questions for LEAD:** none. Next: B-99 (site data).
+
+## F-56 B-97 REAL DATA WIRED + /paper/ CHECKED 19:47, browser-checked | site/lib/realdata.mjs (new: <!--@b97:telemetry|artemis|geometry-->), site/network/index.html (new section), site/protocol/index.html (real-data box under problem 1), site/src/protocol/protocol.css (.pr-real), site/src/styles/tokens.css (light Measured flag), site/vite.config.js, site/tests/realdata.test.mjs (new) | how to check: /network/#nw-real-h, /protocol/ problem 1's "Does the geometry hold on real pictures?", /paper/#p1 | from BACKEND: nothing | for LEAD: notes at the end
+**/network/, new section "Does the idea hold on real data?"**
+- Label: "Real spacecraft telemetry · a satellite and a Mars rover · not lunar data".
+- **Text:**
+  - on NASA's SMAP satellite and the Curiosity rover (MSL), with telemanom's labelled anomalies, at the same threshold (set per channel at the highest score seen in training), a detector that adds up evidence finds more than a one-step one: 13 of 18 on MSL with the 16-step chi-square against 10 with the z-score, 16 of 20 on SMAP against 2;
+  - "the same finding as on our simulated rover streams";
+  - "real spacecraft telemetry, not lunar rover data, and only the simple detectors run on it": the network needs two rovers' pair features.
+- **Table:** z-score, one-step chi-square, 16-step chi-square and CUSUM against MSL and SMAP, as found of N with the false alarm runs. The caption notes that on the first difference every detector does worse (at best 10 of 18 and 7 of 20).
+- Key numbers are flagged **Measured** (real data), from results/B97_realdata.json. No new data file: it is rendered at build time, so /network/ data is unchanged.
+
+**/protocol/ problem 1, a box after the text and figure 1** (green left border).
+- Label: "Real data · a crewed flyby's navigation camera · limb navigation in cislunar space, not on the surface"; heading "Does the geometry hold on real pictures?".
+- **Text:**
+  - Artemis II's optical navigation camera; a circle fitted to each disc's edge gives distance and direction, checked against the mission's SPICE trajectory and attitude;
+  - "**navigation from the limb in space between Earth and Moon, not navigation on the surface**";
+  - "Two of the five usable discs are **Earth**, although the archive labels them Moon: the body was identified from the geometry";
+  - uncalibrated, distance within 0.25 to 1.29 % and direction within 0.16°.
+- **Table:** six frames by UTC.
+  - 2 Apr is unusable (every pixel 255).
+  - Each usable frame gives the body from the geometry, the distance (image / SPICE), the distance error, and the direction error ("no attitude for this frame" on 6 Apr).
+- **Geometry paragraph:**
+  - the Earth-link code agrees with SPICE to 10⁻¹³ degrees over 212 hourly epochs on Orion's trajectory, with Orion below the base's horizon throughout (−9.26° to −0.04°);
+  - without the lunar frames kernel the base would sit 77.4 m away.
+- "Archive labels them Moon" comes from B-97's report; the JSON has no label field.
+
+**Fixed:** in light mode the Measured flag (#228833) was 4.18:1 on the box's --bg-2, below AA. The light token is now #1F7D2F (4.81 on --bg-2, 5.21 on white); dark is unchanged. This is the same kind of fix as the Spec flag earlier.
+
+**/paper/:** P1's "Proved, tested, assumed" table shows under P1: Table 12, 26 rows, with its caption, read from paper/p1/paper.html. #p1 lands below the sticky header (top 72 px).
+- **Note:** the build also shows P2's (Table 14, 36 rows; committed, 567f8af) and **P3's** (Table 18, 36 rows). P3's paper.html is **uncommitted** in the working tree (paper/p3/* modified, the revision in progress). A build from a clean checkout would show "(pending)" for P3 until that revision is committed.
+
+**Checks:**
+- node tests 53/53 (2 new): the labels are present, the accumulating detectors find at least as many as the one-step ones, two of five discs are Earth, and the flags say Measured;
+- budgets OK (/network/ data 128 of 160 unchanged, /protocol/ 81.5 of 90, /paper/ fine);
+- headless Chrome at 1280 and 390, light and dark, on /network/, /protocol/ and /paper/: tables fit (358/358 and 322/322 at 390), no overflow, one h1, no heading skips, 0 console errors; 0 contrast fails after the token fix (rebuilt at RAM 1.00 GB, rechecked in light at both widths);
+- screenshots read: the /protocol/ box at 1280 light, /network/ at 390 dark, /paper/'s P1 table at 1280 light.
+- **Server and browser stopped.**
+
+**For LEAD:** B-97 asks whether to quote telemanom's published LSTM results. The page doesn't, and says only that the simple detectors run here.

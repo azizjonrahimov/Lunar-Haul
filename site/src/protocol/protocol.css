@@ -169,3 +169,7 @@
 @media (max-width: 480px) { .pr-cell { min-width: 0; } .pr-table th, .pr-table td { padding: 0.35em 0.4em; } .pr-table thead th { hyphens: auto; } }
 .pr-table caption { text-align: left; padding-bottom: var(--s-2); color: var(--ink-2); }
 .pr-row-main th, .pr-row-main td { font-weight: 600; }
+/* F-56: B-97's real-data box under problem 1 */
+.pr-real { margin: var(--s-5) 0; padding: var(--s-4); border: 1px solid var(--hairline); border-left: 3px solid var(--flag-measured); border-radius: var(--radius-panel); background: var(--bg-2); }
+.pr-real h3 { margin: var(--s-1) 0 var(--s-2); }
+.pr-real p { max-width: var(--measure); }
