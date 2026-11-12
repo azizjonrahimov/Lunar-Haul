@@ -273,8 +273,10 @@ foundations [29]-[33], [37] are older and reported as such). Entries needing pub
   file gives 408 and 661 km (0.5 to 0.8 % of 79,000 km), and the fitted radius is 0.8 to 1.3 pixels small, not 1.0 to 1.4; the B-92
   report gives the flat manifest as 159 kB, the E52 rows hold 120,760 B; E52's stale-map hits after contact reach 1.65 at 10 kbit/s with
   oldest-first (1.2 at 16 kbit/s).
-- **Not applied, and said so in the paper:** the Holm step of PREREG6's confirmatory family (the files hold intervals, no p-values).
-- **Pending in this build:** E50 at eight times the fleet (`errors."8"` of the E50 file), E50b, the E55 variant with the base as averaging
-  node. The 8x sentence composes itself when the cells land; the composing functions of the other two only raise the pending and have to be
-  written against the files' real schemas.
-
+- **Holm (follow-up of the same day).** `results/phase6_family.json` now holds the confirmatory family with Holm over the three hypotheses that
+  have a sampling test (H10, H14, H15a); the paper states it in 4.1, 4.6, 5.8, 5.11, 5.12, 7 and Table 18 through P3-FAMILY-* keys, and the build
+  recomputes the adjusted p-values and H14's sign test. The Phase 6 verification rows (`results/vv_phase6.json`, 35 tagged P3) are cited in
+  3.10 and 5.14. The E55 variant with the base mast as a node is composed from `consensus_with_base_mast.cells`; over the fleet cells with f at
+  most F the graph is connected in 58 to 96 % of runs, and the lowest cell overall, 44 %, has two faulty rovers against a rule set for one.
+- **Pending in this build:** E50 at eight times the fleet (`errors."8"` of the E50 file) and E50b. The 8x sentence composes itself when the
+  cells land; E50b's composing function only raises the pending and has to be written against the file's real schema.

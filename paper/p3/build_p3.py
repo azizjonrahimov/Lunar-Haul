@@ -78,9 +78,9 @@ SPLIT_NAME = {"3eq": "equal shares", "3uneq": "50/35/15 shares"}
 PREREG6 = os.path.join(ROOT, "paper", "atc", "PREREG6.md")
 P6_FILES = {"E50": "E50_summary.json", "E51": "E51_clocks.json", "E51b": "E51b_clocks.json", "E53": "E53_bitrate.json",
             "E54": "E54_dtn.json", "E54L": "E54_ledger.json", "E50b": "E50b_summary.json", "E52": "E52_map.json",
-            "E55": "E55_integrity.json", "E55b": "E55_base_node.json", "B97": "B97_realdata.json"}
+            "E55": "E55_integrity.json", "B97": "B97_realdata.json", "FAM": "phase6_family.json", "VV6": "vv_phase6.json"}
 P6_TASK = {"E50": "B-90", "E51": "B-91", "E51b": "B-91b", "E53": "B-93", "E54": "B-94", "E54L": "B-94, ledger lifetimes",
-           "E50b": "B-90b", "E52": "B-92", "E55": "B-95", "E55b": "B-95, base-node variant", "B97": "B-97"}
+           "E50b": "B-90b", "E52": "B-92", "E55": "B-95", "B97": "B-97", "FAM": "tools/atc/phase6_family.py", "VV6": "B-98"}
 
 C_LIGHT = 299792458.0            # m/s
 R_MOON = 1737.4e3                # m, the reference sphere of the LOLA products and of radio.py
@@ -1340,7 +1340,27 @@ def values_p6(r: R, V, fill, check):
                 f"over the routes, so the rule needs more links, relays or masts, or the base as the averaging node. The pre-registered test of the rule, H16 of "
                 f"[67], is {'supported' if bool(r.p6('E55', 'h16', 'supported')) else 'not supported as stated'}, and the companion paper reports it [61].")
     fill("P3-E55-CONSENSUS-SENTENCE", e55_consensus, "E55 consensus")
-    fill("P3-E55-BASE-NODE-SENTENCE", lambda: str(r.p6("E55b", "sentence")), "E55 variant: the base as the averaging node")
+    def e55_base_node(kind="sentence"):
+        """The variant of E55 in which the base mast joins as an honest node: `consensus_with_base_mast.cells` against `consensus.cells`."""
+        key = lambda c: (c["geometry"], int(c["N"]), int(c["f"]), int(c["F"]))
+        # the cells in which the faulty rovers do not outnumber what the rule is set for (f <= F), the regime the rule is meant for
+        with_ = {key(c): c for c in r.p6("E55", "consensus_with_base_mast", "cells") if c["geometry"] == "fleet" and int(c["f"]) <= int(c["F"])}
+        without = {key(c): c for c in r.p6("E55", "consensus", "cells") if c["geometry"] == "fleet" and int(c["f"]) <= int(c["F"])}
+        check(set(with_) == set(without) and all(bool(c.get("mast")) for c in with_.values()), "the base-node variant has the same fleet cells as E55's consensus part (5.11)")
+        cw = [_fin(c["connected_share"]) for c in with_.values()]
+        co = [_fin(c["connected_share"]) for c in without.values()]
+        ag = [_fin(c["agreement_share"]) for c in with_.values()]
+        check(all(_fin(with_[k]["connected_share"]) > _fin(without[k]["connected_share"]) for k in with_) and max(ag) < 0.5,
+              "with the base mast as a node the fleet's graph is connected more often in every cell, and the honest rovers still agree in under half the runs (5.11)")
+        if kind == "basis":
+            return (f"A variant of E55 with the base mast as an honest node: the graph connected in {pc(min(cw), 0)} to {pc(max(cw), 0)} of the runs, agreement in "
+                    f"{pc(min(ag), 0)} to {pc(max(ag), 0)}")
+        return (f"With the base mast added as an honest node (a variant run after the first results), and no more faulty rovers than the rule is set for, the "
+                f"graph of the fleet geometry was connected in {pc(min(cw), 0)} to {pc(max(cw), 0)} of the runs, up from {pc(min(co), 0)} to {pc(max(co), 0)}, but the "
+                f"honest rovers still reached agreement in only "
+                f"{pc(min(ag), 0)} to {pc(max(ag), 0)}: agreement by averaging needs more than one relay, so in this design a shared estimate is computed at the "
+                f"base, and the companion paper gives the details [61].")
+    fill("P3-E55-BASE-NODE-SENTENCE", e55_base_node, "E55 variant: the base as the averaging node")
     def b97_parts():
         im = r.p6("B97", "artemis2", "images")
         bad = [x for x in im if str(x.get("fit", "")).startswith("unusable")]
@@ -1617,17 +1637,19 @@ def values_p6(r: R, V, fill, check):
             # tested
             [f"Positioning (H9): dead reckoning alone passes the {unit(PD['budget_m'], 'm', 0)} budget within a shift, {sv(all(h9[m]['dr'] for m in ms))}; ranging holds it near the base, "
              f"{sv(all(h9[m]['near'] for m in ms))}; terrain fixes hold it away from the base, {sv(all(h9[m]['away'] for m in ms))}", T,
-             f"E50, a replay of recorded trajectories: {seeds50}. Every sensor value is from Earth or Mars tests, a requirement or an assumption (Table 4)", "Section 5.8"],
+             f"E50, a replay of recorded trajectories: {seeds50}. A comparison with a threshold, no sampling test. Every sensor value is from Earth or Mars tests, "
+             f"a requirement or an assumption (Table 4)", "Section 5.8"],
             [f"Time (H11): a crystal resynchronised at every contact causes no reservation conflict while its error swamps one-way ranging, {sv(h11)}", T,
              f"E51, a check on logged reservations: {n51} seeds at today's fleet; guard swept from 0.01 to 1&nbsp;s", "Section 5.9"],
             ["Frequency steering and mixed time scales (the variants of E51)", f"{T}, post hoc", f"E51b: {cnt(len(r.p6('E51b', 'seeds')))} seeds; added after the first results", "Section 5.9"],
             [f"The shared map (H12): hazards-first sync after a day needs under 10&#8239;% of a full resend and is current sooner than oldest-first, {sv(h12)}", T,
              f"E52, a model of the map's bookkeeping on the real routes: {n52} seeds; the change rates are assumed and not swept", "Section 5.10"],
             [f"The protocol's traffic (H13): 20 authenticated rovers load the busiest link with no more than 16&nbsp;kbit/s at 1&nbsp;Hz and with more at 10&nbsp;Hz, {sv(h13)}", T,
-             f"E53, computed from serialised message sizes: {cnt(r.p6('E53', 'draws'))} draws of rover positions for 5 to 80 rovers", "Section 5.11"],
+             f"E53, computed from serialised message sizes: {cnt(r.p6('E53', 'draws'))} draws of rover positions for 5 to 80 rovers. A comparison with a threshold, "
+             f"no sampling test", "Section 5.11"],
             [f"Store-and-forward with the lost-link rule loses fewer jobs than drop-and-retry (H14), {sv(h14)}", T,
-             f"E54, a message-level simulation on the recorded month, not an engine run: {n54} seeds at today's fleet. That no reservation stays stuck under the rule is the rule's "
-             f"construction, not a measurement", "Section 5.12"],
+             f"E54, a message-level simulation on the recorded month, not an engine run: {n54} seeds at today's fleet; {family_sentence('pta14')}. That no reservation stays "
+             f"stuck under the rule is the rule's construction, not a measurement", "Section 5.12"],
             ["Sizing (H10 of [59], exploratory): " + (re.sub(r"^On flight hardware ", "", a) if a else "pending"), T,
              f"E48: {cnt(r.s48('runs', 'n'))} instrumented runs at one, four and eight times the fleet on a laptop, scaled to the flight processor by an assumed factor; the link by "
              f"computation from event counts and a one-month trace of one seed", "Sections 5.1 to 5.3"],
@@ -1655,7 +1677,9 @@ def values_p6(r: R, V, fill, check):
             ["The software on a flight-class processor", N, "The scaling factor stands in for it", "Section 7"],
             ["Position error at eight times the fleet", T if x8 else N, "E50 at 8x: " + ("in the file" if x8 else "still running; 5 seeds planned"), "Section 5.8"],
             ["The delay with terrain-fix stops inside the engine", T if have("E50b") else N, "E50b" + ("" if have("E50b") else ": not yet run"), "Section 5.8"],
-            ["Agreement by averaging with the base as the averaging node", T if have("E55b") else N, "A variant of E55" + ("" if have("E55b") else ": not yet run"), "Section 5.11"],
+            ["Agreement by averaging among the rovers, with and without the base mast as a node", T if have("E55", "consensus_with_base_mast", "cells") else N,
+             (e55_base_node("basis") if have("E55", "consensus_with_base_mast", "cells") else "A variant of E55: not yet run") +
+             "; averaging on the sparse mesh rarely converges, so shared estimates are computed at the base", "Section 5.11"],
             ["Range and direction of the Moon or Earth from one image of its limb, against the kernels of the Artemis&nbsp;II flyby; the Earth-link geometry "
              "against the SPICE toolkit", (T + " on real data") if have("B97") else N,
              (b97_basis() if have("B97") else "Task B-97: not yet run") + "; a crewed flyby's navigation camera, not rover data, and not a test of a rover's terrain fix",
@@ -1724,6 +1748,143 @@ def values_p6(r: R, V, fill, check):
         fill(key, lambda kind=kind: p6_clause(kind), "Phase 6 results")
     fill("P3-P6-COMPUTE-SENTENCE", lambda: f"Of the experiments of the revision, E52 takes {unit(r.p6('E52', 'run_s'), 's', 0)} and E53 "
          f"{unit(r.p6('E53', 'run_s'), 's', 0)}; E50's run time per seed and fleet size, which set its seed counts, is in the dated changes of [67].", "E52, E53")
+
+    # --- J. the confirmatory family of PREREG6 with Holm (results/phase6_family.json) and the Phase 6 verification rows -----------
+    def family():
+        """The family file, with Holm's adjusted p-values recomputed and each hypothesis's inputs compared with its own results file."""
+        hy = r.p6("FAM", "hypotheses")
+        alpha = _fin(r.p6("FAM", "alpha"))
+        check(set(hy) == {"H9", "H10", "H13", "H14", "H15a"}, "the confirmatory family is H9, H10, H13, H14 and H15a (4.1)")
+        tested = sorted(k for k, v in hy.items() if "holm" in v)
+        check(tested == ["H10", "H14", "H15a"], "Holm is applied over H10, H14 and H15a, the hypotheses with a sampling test (4.1)")
+        p = {"H10": _fin(hy["H10"]["p_intersection_union"]), "H14": _fin(hy["H14"]["p"]), "H15a": _fin(hy["H15a"]["p"])}
+        order = sorted(tested, key=lambda k: p[k])
+        adj, run = {}, 0.0
+        for i, k in enumerate(order):
+            run = max(run, min(1.0, (len(order) - i) * p[k]))
+            adj[k] = run
+        for k in tested:
+            check(abs(adj[k] - _fin(hy[k]["holm"]["p_adjusted"])) < 1e-12 and bool(hy[k]["holm"]["rejected_at_0.05"]) == (adj[k] <= alpha),
+                  f"Holm's adjusted p-value and decision for {k} follow from the family's three p-values")
+        h14 = hy["H14"]
+        fewer, more, tied = int(h14["seeds_fewer"]), int(h14["seeds_more"]), int(h14["seeds_tied"])
+        n = fewer + more
+        sign_p = sum(math.comb(n, i) for i in range(fewer, n + 1)) * 0.5 ** n
+        e54h = r.p6("E54", "h14")
+        check(abs(sign_p - p["H14"]) < 1e-12 and fewer + more + tied == len(r.p6("E54", "seeds")) and
+              abs(_fin(h14["mean_diff_jobs"]) - _fin(e54h["difference_sf_ll_minus_drop_retry"]["mean"])) < 1e-9,
+              "H14's p-value is the exact one-sided sign test over E54's seeds, on the paired difference E54 reports")
+        check((adj["H14"] <= alpha) == (_fin(e54h["difference_sf_ll_minus_drop_retry"]["ci"][1]) < 0),
+              "the sign test with Holm and the registered paired interval give the same verdict on H14 (4.6)")
+        c9 = hy["H9"]["clauses"]
+        k9 = list(c9)
+        e9 = h9_parts()["1"]
+        check(len(k9) == 3 and [bool(c9[k]["supported"]) for k in k9] == [e9["dr"], e9["near"], e9["away"]] and
+              abs(_fin(c9[k9[1]]["value_m"]) - _fin(e9["h"]["ranging_near_p95_m"]["mean"])) < 1e-9 and
+              abs(_fin(c9[k9[2]]["value_m"]) - _fin(e9["h"]["fixes_away_p95_m"]["mean"])) < 1e-9, "the family file's H9 clauses are E50's at today's fleet")
+        c13 = hy["H13"]["clauses"]
+        check(abs(_fin(c13["1 Hz"]["busiest_kbps_p95"]) - _fin(r.p6("E53", "h13", "at_1hz_kbps_p95"))) < 1e-3 and
+              abs(_fin(c13["10 Hz"]["busiest_kbps_p95"]) - _fin(r.p6("E53", "h13", "at_10hz_kbps_p95"))) < 1e-3,
+              "the family file's H13 values are E53's (to the three decimals the E53 file keeps)")
+        return {"hy": hy, "alpha": alpha, "adj": adj, "p": p, "tested": tested, "k9": k9, "rej": {k: adj[k] <= alpha for k in tested}}
+
+    def share_words(x, unit_word):
+        x = _fin(x)
+        return f"every {unit_word}" if x == 1.0 else (f"no {unit_word}" if x == 0.0 else f"{pc(x, 0)} of the {unit_word}s")
+
+    def pval(x):
+        x = _fin(x)
+        return num(x, 2) if x >= 0.095 else (num(x, 3) if x >= 0.0005 else e10(x, 0))
+
+    def family_sentence(kind):
+        f = family()
+        hy, adj, rej = f["hy"], f["adj"], f["rej"]
+        sv = lambda ok: "supported" if ok else "not supported"
+        bound = "at most " if "upper bound" in str(hy["H15a"].get("p_note", "")) else ""
+        if kind == "design":
+            return (f"The confirmatory family of [67] is H9, H10, H13, H14 and H15a. Holm's step-down procedure at a level of {num(f['alpha'], 2)} is applied over "
+                    f"the {words(len(f['tested']))} of them that have a sampling test, H10, H14 and H15a; H9 and H13 compare a value with a threshold and have no "
+                    f"such test, so they are reported with the share of seeds or position draws on the predicted side. In the family H14 is {sv(rej['H14'])} "
+                    f"(adjusted p = {pval(adj['H14'])}), H15a is {sv(rej['H15a'])} (adjusted p {bound}{pval(adj['H15a'])}) and H10 is "
+                    f"{sv(rej['H10'])}{' as a whole' if not rej['H10'] else ''} (adjusted p = {pval(adj['H10'])}); H10 and H15a are the companion paper's [61]. "
+                    f"H11 and H12 are exploratory and outside the family.")
+        if kind == "h9":
+            c9, k9 = hy["H9"]["clauses"], f["k9"]
+            return (f"H9 is a comparison with a threshold and has no sampling test; at today's fleet its first clause holds in "
+                    f"{share_words(c9[k9[0]]['seeds_on_predicted_side'], 'seed')}, its second in {share_words(c9[k9[1]]['seeds_on_predicted_side'], 'seed')} and its "
+                    f"third in {share_words(c9[k9[2]]['seeds_on_predicted_side'], 'seed')}.")
+        if kind == "h13":
+            c13 = hy["H13"]["clauses"]
+            both = min(_fin(c13["1 Hz"]["draws_on_predicted_side"]), _fin(c13["10 Hz"]["draws_on_predicted_side"]))
+            return f"It too is a comparison with a threshold, without a sampling test, and it holds in {share_words(both, 'draw')} at both rates."
+        if kind == "h14":
+            h = hy["H14"]
+            return (f"For the confirmatory family the difference is tested by an exact sign test on lost jobs per seed: fewer with the rule in "
+                    f"{cnt(h['seeds_fewer'])} seeds, more in {'none' if int(h['seeds_more']) == 0 else cnt(h['seeds_more'])} and tied in {cnt(h['seeds_tied'])}, "
+                    f"p = {pval(f['p']['H14'])}, and {pval(adj['H14'])} after Holm's adjustment, {'below' if rej['H14'] else 'above'} the level of {num(f['alpha'], 2)}.")
+        if kind == "limit":
+            return (f"Holm's step covers only the {words(len(f['tested']))} hypotheses of the confirmatory family that have a sampling test. H9 and H13 are comparisons "
+                    f"with a threshold, reported by seeds and draws, and carry no error rate; H10, which is {sv(rej['H10'])}{' as a whole' if not rej['H10'] else ''}, "
+                    f"and H15a are reported in the companion paper [61]. The p-value of H14 comes from a sign test that was added for the family after the "
+                    f"results were in (Section 4.6).")
+        if kind == "pta14":
+            return f"Holm-adjusted p = {pval(adj['H14'])} over the family's {words(len(f['tested']))} tested hypotheses, by an exact sign test over seeds"
+        raise KeyError(kind)
+    for kind, key in (("design", "P3-FAMILY-SENTENCE"), ("h9", "P3-FAMILY-H9-SENTENCE"), ("h13", "P3-FAMILY-H13-SENTENCE"), ("h14", "P3-FAMILY-H14-SENTENCE"),
+                      ("limit", "P3-FAMILY-LIMIT-SENTENCE")):
+        fill(key, lambda kind=kind: family_sentence(kind), "phase6_family.json")
+
+    def vv6_rows():
+        """The Phase 6 verification rows tagged to this paper, after the summary is recounted and every passed flag recomputed (as vv5_load does)."""
+        d = {k: r.p6("VV6", k) for k in ("rows", "summary", "commit")}
+        allr, s = d["rows"], d["summary"]
+        ran = [x for x in allr if not x.get("skipped")]
+        check(int(s["rows"]) == len(allr) and int(s["passed"]) == sum(1 for x in ran if x.get("passed")) and
+              int(s["failed"]) == sum(1 for x in ran if not x.get("passed")) and int(s["skipped"]) == len(allr) - len(ran),
+              "vv_phase6.json: the summary's counts equal the rows")
+        for x in ran:
+            tol, err = x.get("tolerance"), (x.get("rel_error") if x.get("mode") == "rel" else x.get("error"))
+            if tol is not None and err is not None:
+                check(bool(x.get("passed")) == (abs(float(err)) <= float(tol)), f"Phase 6 check {x.get('id')} {x.get('sub')}: the passed flag agrees with its error and tolerance")
+        rows = [x for x in allr if "P3" in (x.get("papers") or [])]
+        if not rows:
+            raise Pending("no check in results/vv_phase6.json is tagged P3")
+        return d, rows
+
+    def vv6_sentence(kind):
+        d, rows = vv6_rows()
+        ids = {str(x["id"]) for x in rows}
+        check(ids <= {"P1", "P2", "P3", "P4", "P5", "P6", "P7", "M1", "M2", "M3", "M4", "M5", "C1", "C2", "C3", "C7", "G1", "G2", "G3"} and
+              {"P4", "M2", "M4", "C2", "C3", "C7", "G1"} <= ids, "the Phase 6 checks tagged P3 are the positioning, time, map, link and degenerate-case rows (3.10)")
+        check(all(x.get("kind") == "V" for x in rows), "the Phase 6 checks tagged P3 are all verifications (3.10)")
+        tech = {}
+        for x in rows:
+            tech[x.get("technique", "unstated")] = tech.get(x.get("technique", "unstated"), 0) + 1
+        tech_txt = ", ".join(f"{html.escape(str(k))} ({cnt(v)})" for k, v in sorted(tech.items(), key=lambda kv: (-kv[1], str(kv[0]))))
+        g1 = [x for x in rows if x["id"] == "G1"]
+        if len(g1) != 1:
+            raise KeyError(f"vv_phase6.json: {len(g1)} rows with id G1")
+        m = re.search(r"(\d+) summary values compared", str(g1[0].get("basis", "")))
+        check(bool(m) and str(g1[0].get("unit")) == "summary values differing", "the options-off row counts differing summary values and states how many it compared")
+        n_cmp, n_diff = int(m.group(1)), int(round(_fin(g1[0]["simulated"])))
+        if kind == "design":
+            commit = str(d.get("commit") or "")
+            return (f"The revision has its own suite (<code>lunarsim/vv6.py</code>, results in <code>results/vv_phase6.json</code>): {cnt(len(rows))} of its rows bear "
+                    f"on this paper, all verifications that the code does what the derivations say, by Sargent's technique {tech_txt}. They are one row per formula "
+                    f"behind Appendix A and Sections 3.5 to 3.8, the growth of dead-reckoning error, the dilution of precision, the lunar clock rate and the clock "
+                    f"model's constant, range from clock error, holdover, the coordinate round trip, the frame shift, the map projection, the hash-tree bound, the "
+                    f"link budget's worked example, the radio horizon, the rate at the worst hop and the forgery rate of a short code, and three degenerate "
+                    f"cases: every engine option of the revision off against the earlier engine, on {cnt(n_cmp)} summary values of a run, perfect clocks, and the "
+                    f"perfect layer set" + (f"; they ran at commit <code>{html.escape(commit[:7])}</code>" if commit else "") + ".")
+        bad = [x for x in rows if not x.get("skipped") and not x.get("passed")]
+        skipped = [x for x in rows if x.get("skipped")]
+        head = (f"Every one of the {cnt(len(rows))} checks of the revision's suite tagged to this paper passed" if not bad and not skipped else
+                f"Of the {cnt(len(rows))} checks of the revision's suite tagged to this paper, {cnt(len(bad))} failed "
+                f"({'; '.join(html.escape(str(x['id']) + ' ' + str(x.get('name', ''))) for x in bad)}) and {cnt(len(skipped))} were not run")
+        return (head + f"; with every engine option of the revision off, {'none' if n_diff == 0 else cnt(n_diff)} of the {cnt(n_cmp)} summary values compared "
+                f"{'differs' if n_diff <= 1 else 'differ'} from the earlier engine's run.")
+    fill("P3-CHECKS6-SENTENCE", lambda: vv6_sentence("design"), "vv_phase6.json (B-98)")
+    fill("P3-CHECKS6-OUTCOME-SENTENCE", lambda: vv6_sentence("outcome"), "vv_phase6.json (B-98)")
 
     # <<P6-NEXT>>
     return T6
