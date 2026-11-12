@@ -122,6 +122,8 @@ def dispatch(st, sim, waiting, free, inner_kw) -> List[Any]:
         adj_fn, flush = _learned_hooks(st, sim, waiting, free, inner_kw, adj, comps, sel)
         if c.get("bid_mult"):                                  # B-76 (E46): owners name their own carrier cost
             adj_fn = _market_hook(adj_fn, c["bid_mult"])
+        if c.get("capability_filter"):                         # B-93 (opt-in): LRIP capability manifests
+            adj_fn = _capability_hook(adj_fn, c["capability_filter"])
         jc = D.marketplace(sim, known, fc, selector=sel, team_hook=_team_hook(st, sim, hops), round_limit=limit,
                            bid_adjust=adj_fn, **inner_kw)
         flush()
@@ -151,6 +153,29 @@ def _market_hook(base, mult):
             return b
         job = Job([v], bundle, route)
         return b + (m - 1.0) * sim.job_cost_usd(job, sim.job_plan(job, sim.t)[0])
+    return adjust
+
+
+def _capability_hook(base, spec):
+    """B-93 (opt-in): a robot bids only on bundles its LRIP capability manifest says it can do (note 03 C3, C5:
+    task/announce reaches "capable vehicles"); an incapable robot's bid is infinite, which the marketplace skips.
+    spec "catalog": manifests generated from the vehicle classes (lunarsim.atc.lrip.manifest.from_vehicle_class: the
+    same capacity the engine checks, so results do not change); or a dict vehicle id -> manifest."""
+    import math
+    from .lrip import manifest as M
+    cache = {}
+
+    def manifest_of(v):
+        if isinstance(spec, dict):
+            return spec.get(v.id, spec.get(str(v.id)))
+        if v.id not in cache:
+            cache[v.id] = M.from_vehicle_class(v.id, v.owner, v.cls)
+        return cache[v.id]
+
+    def adjust(sim, v, bundle, route, bid):
+        if not M.can_do(M.task_for_bundle(v, bundle), manifest_of(v)):
+            return math.inf
+        return base(sim, v, bundle, route, bid) if base is not None else bid
     return adjust
 
 

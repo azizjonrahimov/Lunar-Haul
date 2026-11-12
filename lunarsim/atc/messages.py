@@ -7,6 +7,10 @@ everything, mean bad run `mean_burst` transmissions, stationary loss `loss`). A 
 the same decision epoch (`retries` = 0); it is sent again at the next one.
 
 Constants (Assumed, B-72 task): hop latency 10 ms (Wi-Fi / LTE practice); mean burst 10 messages.
+
+B-93 (opt-in): `sizes` = "lrip_mac8" | "lrip_mac16" | "lrip_unsecured" counts bytes on the air with the LRIP codec's
+real packet sizes (lunarsim/atc/lrip): every hop of a message of type `msg` (an LRIP message name; default
+`default_msg`) adds its packet size to `bytes_sent`. Off by default (no byte count; delivery unchanged).
 """
 from __future__ import annotations
 
@@ -21,7 +25,8 @@ LOSS_LEVELS = (0.0, 0.10, 0.25, 0.40)
 
 class Channel:
     def __init__(self, loss: float = 0.0, model: str = "bernoulli", mean_burst: float = MEAN_BURST,
-                 retries: int = 0, rng: Optional[np.random.Generator] = None):
+                 retries: int = 0, rng: Optional[np.random.Generator] = None, sizes: Optional[str] = None,
+                 default_msg: str = "STATUS"):
         if not 0.0 <= loss < 1.0:
             raise ValueError("message loss must be in [0, 1)")
         if model not in ("bernoulli", "burst"):
@@ -36,9 +41,18 @@ class Channel:
         self.messages = 0
         self.lost = 0
         self.latency_s = 0.0
+        self.bytes_sent = 0
+        self.sizes, self.default_msg = sizes, default_msg
+        self._size: dict = {}
+        if sizes is not None:
+            from .lrip import codec
+            col = {"lrip_mac8": "mac8", "lrip_mac16": "mac16", "lrip_unsecured": "unsecured"}[sizes]
+            self._size = {k: v[col] if col == "unsecured" or k not in ("TASK_AWARD", "RESERVE_GRANT") else v["signed"]
+                          for k, v in codec.size_table().items()}
 
-    def _hop_ok(self) -> bool:
+    def _hop_ok(self, size: int = 0) -> bool:
         self.sent += 1
+        self.bytes_sent += size
         if self.loss <= 0.0:
             return True
         if self.model == "bernoulli":
@@ -46,15 +60,16 @@ class Channel:
         self.bad = (self.rng.random() >= self.p_bg) if self.bad else (self.rng.random() < self.p_gb)
         return not self.bad
 
-    def send(self, hops: int) -> Tuple[bool, float]:
+    def send(self, hops: int, msg: Optional[str] = None) -> Tuple[bool, float]:
         """Deliver one message over `hops` hops (0 = local, always delivered). Returns (delivered, latency s)."""
         self.messages += 1
+        size = self._size.get(msg or self.default_msg, 0) if self.sizes is not None else 0
         if hops <= 0:
             return True, 0.0
         for _ in range(self.retries + 1):
             ok = True
             for _h in range(int(hops)):
-                if not self._hop_ok():
+                if not self._hop_ok(size):
                     ok = False
                     break
             if ok:

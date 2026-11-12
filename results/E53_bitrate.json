@@ -1,0 +1,785 @@
+{
+ "experiment": "E53 (B-93), Phase 6, H13 (paper/atc/PREREG6.md)",
+ "note": "python tools/atc/run_e53.py            # -> results/E53_bitrate.json, results/E53_table.csv,\n                                           #    data/atc/lrip/conformance-v0.1.json (hex vectors for FRONTEND)",
+ "sizes": {
+  "POSITION": {
+   "payload": 13,
+   "unsecured": 27,
+   "mac8": 41,
+   "mac16": 49,
+   "signed": 97,
+   "default": 41
+  },
+  "STATUS": {
+   "payload": 15,
+   "unsecured": 29,
+   "mac8": 43,
+   "mac16": 51,
+   "signed": 99,
+   "default": 43
+  },
+  "INTENT": {
+   "payload": 10,
+   "unsecured": 24,
+   "mac8": 38,
+   "mac16": 46,
+   "signed": 94,
+   "default": 38
+  },
+  "ALERT": {
+   "payload": 14,
+   "unsecured": 28,
+   "mac8": 42,
+   "mac16": 50,
+   "signed": 98,
+   "default": 42
+  },
+  "TASK_ANNOUNCE": {
+   "payload": 16,
+   "unsecured": 30,
+   "mac8": 44,
+   "mac16": 52,
+   "signed": 100,
+   "default": 44
+  },
+  "TASK_BID": {
+   "payload": 9,
+   "unsecured": 23,
+   "mac8": 37,
+   "mac16": 45,
+   "signed": 93,
+   "default": 37
+  },
+  "TASK_AWARD": {
+   "payload": 8,
+   "unsecured": 22,
+   "mac8": 36,
+   "mac16": 44,
+   "signed": 92,
+   "default": 92
+  },
+  "TASK_STATE": {
+   "payload": 5,
+   "unsecured": 19,
+   "mac8": 33,
+   "mac16": 41,
+   "signed": 89,
+   "default": 33
+  },
+  "RESERVE_REQ": {
+   "payload": 7,
+   "unsecured": 21,
+   "mac8": 35,
+   "mac16": 43,
+   "signed": 91,
+   "default": 35
+  },
+  "RESERVE_GRANT": {
+   "payload": 10,
+   "unsecured": 24,
+   "mac8": 38,
+   "mac16": 46,
+   "signed": 94,
+   "default": 94
+  },
+  "RESERVE_RELEASE": {
+   "payload": 3,
+   "unsecured": 17,
+   "mac8": 31,
+   "mac16": 39,
+   "signed": 87,
+   "default": 31
+  },
+  "CAP_QUERY": {
+   "payload": 3,
+   "unsecured": 17,
+   "mac8": 31,
+   "mac16": 39,
+   "signed": 87,
+   "default": 31
+  },
+  "CAP_MANIFEST": {
+   "payload": 283,
+   "unsecured": 297,
+   "mac8": 311,
+   "mac16": 319,
+   "signed": 367,
+   "default": 367
+  },
+  "MAP_NOTICE": {
+   "payload": 10,
+   "unsecured": 24,
+   "mac8": 38,
+   "mac16": 46,
+   "signed": 94,
+   "default": 38
+  },
+  "HELLO": {
+   "payload": 2,
+   "unsecured": 16,
+   "mac8": 30,
+   "mac16": 38,
+   "signed": 86,
+   "default": 30
+  }
+ },
+ "manifest_bytes": {
+  "small_rover": {
+   "json": 1200,
+   "compact_cbor": 283,
+   "note03_compact": 247
+  },
+  "hopper": {
+   "json": 1210,
+   "compact_cbor": 280,
+   "note03_compact": 251
+  }
+ },
+ "per_rover_at_1hz": {
+  "on": {
+   "POSITION": {
+    "rate_hz": 1.0,
+    "bytes": 41,
+    "bps": 328.0
+   },
+   "STATUS": {
+    "rate_hz": 0.1,
+    "bytes": 43,
+    "bps": 34.4
+   },
+   "INTENT": {
+    "rate_hz": 0.1,
+    "bytes": 38,
+    "bps": 30.4
+   },
+   "RESERVE_REQ": {
+    "rate_hz": 0.0,
+    "bytes": 35,
+    "bps": 0.0
+   },
+   "RESERVE_GRANT": {
+    "rate_hz": 0.0,
+    "bytes": 94,
+    "bps": 0.0
+   },
+   "RESERVE_RELEASE": {
+    "rate_hz": 0.0,
+    "bytes": 31,
+    "bps": 0.0
+   },
+   "TASK_BID": {
+    "rate_hz": 3e-05,
+    "bytes": 37,
+    "bps": 0.01
+   },
+   "TASK_AWARD": {
+    "rate_hz": 3e-05,
+    "bytes": 92,
+    "bps": 0.02
+   },
+   "TASK_STATE": {
+    "rate_hz": 3e-05,
+    "bytes": 33,
+    "bps": 0.01
+   },
+   "ALERT": {
+    "rate_hz": 0.0,
+    "bytes": 42,
+    "bps": 0.0
+   },
+   "HELLO": {
+    "rate_hz": 0.0,
+    "bytes": 30,
+    "bps": 0.0
+   }
+  },
+  "off": {
+   "POSITION": {
+    "rate_hz": 1.0,
+    "bytes": 27,
+    "bps": 216.0
+   },
+   "STATUS": {
+    "rate_hz": 0.1,
+    "bytes": 29,
+    "bps": 23.2
+   },
+   "INTENT": {
+    "rate_hz": 0.1,
+    "bytes": 24,
+    "bps": 19.2
+   },
+   "RESERVE_REQ": {
+    "rate_hz": 0.0,
+    "bytes": 21,
+    "bps": 0.0
+   },
+   "RESERVE_GRANT": {
+    "rate_hz": 0.0,
+    "bytes": 24,
+    "bps": 0.0
+   },
+   "RESERVE_RELEASE": {
+    "rate_hz": 0.0,
+    "bytes": 17,
+    "bps": 0.0
+   },
+   "TASK_BID": {
+    "rate_hz": 3e-05,
+    "bytes": 23,
+    "bps": 0.0
+   },
+   "TASK_AWARD": {
+    "rate_hz": 3e-05,
+    "bytes": 22,
+    "bps": 0.0
+   },
+   "TASK_STATE": {
+    "rate_hz": 3e-05,
+    "bytes": 19,
+    "bps": 0.0
+   },
+   "ALERT": {
+    "rate_hz": 0.0,
+    "bytes": 28,
+    "bps": 0.0
+   },
+   "HELLO": {
+    "rate_hz": 0.0,
+    "bytes": 16,
+    "bps": 0.0
+   }
+  }
+ },
+ "rows": [
+  {
+   "auth": "on",
+   "position_hz": 0.1,
+   "rovers": 5,
+   "per_rover_kbps": 0.2656,
+   "one_hop_sum_kbps": 1.328,
+   "busiest_link_kbps_mean": 1.284,
+   "busiest_link_kbps_p95": 1.328,
+   "mean_hops_to_base": 1.007,
+   "reachable_share": 0.9733,
+   "fits_nb_raw_p95": true,
+   "fits_nb_scheduled_p95": true,
+   "fits_nb_slotted_aloha_p95": true,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "on",
+   "position_hz": 0.1,
+   "rovers": 10,
+   "per_rover_kbps": 0.2656,
+   "one_hop_sum_kbps": 2.656,
+   "busiest_link_kbps_mean": 2.568,
+   "busiest_link_kbps_p95": 2.656,
+   "mean_hops_to_base": 1.017,
+   "reachable_share": 0.9833,
+   "fits_nb_raw_p95": true,
+   "fits_nb_scheduled_p95": true,
+   "fits_nb_slotted_aloha_p95": true,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "on",
+   "position_hz": 0.1,
+   "rovers": 20,
+   "per_rover_kbps": 0.2656,
+   "one_hop_sum_kbps": 5.312,
+   "busiest_link_kbps_mean": 5.056,
+   "busiest_link_kbps_p95": 5.312,
+   "mean_hops_to_base": 1.019,
+   "reachable_share": 0.9683,
+   "fits_nb_raw_p95": true,
+   "fits_nb_scheduled_p95": true,
+   "fits_nb_slotted_aloha_p95": true,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "on",
+   "position_hz": 0.1,
+   "rovers": 40,
+   "per_rover_kbps": 0.2656,
+   "one_hop_sum_kbps": 10.625,
+   "busiest_link_kbps_mean": 10.226,
+   "busiest_link_kbps_p95": 10.625,
+   "mean_hops_to_base": 1.018,
+   "reachable_share": 0.9775,
+   "fits_nb_raw_p95": true,
+   "fits_nb_scheduled_p95": true,
+   "fits_nb_slotted_aloha_p95": false,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "on",
+   "position_hz": 0.1,
+   "rovers": 80,
+   "per_rover_kbps": 0.2656,
+   "one_hop_sum_kbps": 21.249,
+   "busiest_link_kbps_mean": 20.408,
+   "busiest_link_kbps_p95": 21.13,
+   "mean_hops_to_base": 1.031,
+   "reachable_share": 0.9867,
+   "fits_nb_raw_p95": false,
+   "fits_nb_scheduled_p95": false,
+   "fits_nb_slotted_aloha_p95": false,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "on",
+   "position_hz": 1.0,
+   "rovers": 5,
+   "per_rover_kbps": 0.3928,
+   "one_hop_sum_kbps": 1.964,
+   "busiest_link_kbps_mean": 1.899,
+   "busiest_link_kbps_p95": 1.964,
+   "mean_hops_to_base": 1.007,
+   "reachable_share": 0.9733,
+   "fits_nb_raw_p95": true,
+   "fits_nb_scheduled_p95": true,
+   "fits_nb_slotted_aloha_p95": true,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "on",
+   "position_hz": 1.0,
+   "rovers": 10,
+   "per_rover_kbps": 0.3928,
+   "one_hop_sum_kbps": 3.928,
+   "busiest_link_kbps_mean": 3.797,
+   "busiest_link_kbps_p95": 3.928,
+   "mean_hops_to_base": 1.017,
+   "reachable_share": 0.9833,
+   "fits_nb_raw_p95": true,
+   "fits_nb_scheduled_p95": true,
+   "fits_nb_slotted_aloha_p95": true,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "on",
+   "position_hz": 1.0,
+   "rovers": 20,
+   "per_rover_kbps": 0.3928,
+   "one_hop_sum_kbps": 7.857,
+   "busiest_link_kbps_mean": 7.477,
+   "busiest_link_kbps_p95": 7.857,
+   "mean_hops_to_base": 1.019,
+   "reachable_share": 0.9683,
+   "fits_nb_raw_p95": true,
+   "fits_nb_scheduled_p95": true,
+   "fits_nb_slotted_aloha_p95": false,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "on",
+   "position_hz": 1.0,
+   "rovers": 40,
+   "per_rover_kbps": 0.3928,
+   "one_hop_sum_kbps": 15.714,
+   "busiest_link_kbps_mean": 15.124,
+   "busiest_link_kbps_p95": 15.714,
+   "mean_hops_to_base": 1.018,
+   "reachable_share": 0.9775,
+   "fits_nb_raw_p95": true,
+   "fits_nb_scheduled_p95": false,
+   "fits_nb_slotted_aloha_p95": false,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "on",
+   "position_hz": 1.0,
+   "rovers": 80,
+   "per_rover_kbps": 0.3928,
+   "one_hop_sum_kbps": 31.427,
+   "busiest_link_kbps_mean": 30.183,
+   "busiest_link_kbps_p95": 31.251,
+   "mean_hops_to_base": 1.031,
+   "reachable_share": 0.9867,
+   "fits_nb_raw_p95": false,
+   "fits_nb_scheduled_p95": false,
+   "fits_nb_slotted_aloha_p95": false,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "on",
+   "position_hz": 10.0,
+   "rovers": 5,
+   "per_rover_kbps": 3.3448,
+   "one_hop_sum_kbps": 16.724,
+   "busiest_link_kbps_mean": 16.167,
+   "busiest_link_kbps_p95": 16.724,
+   "mean_hops_to_base": 1.007,
+   "reachable_share": 0.9733,
+   "fits_nb_raw_p95": false,
+   "fits_nb_scheduled_p95": false,
+   "fits_nb_slotted_aloha_p95": false,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "on",
+   "position_hz": 10.0,
+   "rovers": 10,
+   "per_rover_kbps": 3.3448,
+   "one_hop_sum_kbps": 33.448,
+   "busiest_link_kbps_mean": 32.333,
+   "busiest_link_kbps_p95": 33.448,
+   "mean_hops_to_base": 1.017,
+   "reachable_share": 0.9833,
+   "fits_nb_raw_p95": false,
+   "fits_nb_scheduled_p95": false,
+   "fits_nb_slotted_aloha_p95": false,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "on",
+   "position_hz": 10.0,
+   "rovers": 20,
+   "per_rover_kbps": 3.3448,
+   "one_hop_sum_kbps": 66.897,
+   "busiest_link_kbps_mean": 63.664,
+   "busiest_link_kbps_p95": 66.897,
+   "mean_hops_to_base": 1.019,
+   "reachable_share": 0.9683,
+   "fits_nb_raw_p95": false,
+   "fits_nb_scheduled_p95": false,
+   "fits_nb_slotted_aloha_p95": false,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "on",
+   "position_hz": 10.0,
+   "rovers": 40,
+   "per_rover_kbps": 3.3448,
+   "one_hop_sum_kbps": 133.794,
+   "busiest_link_kbps_mean": 128.776,
+   "busiest_link_kbps_p95": 133.794,
+   "mean_hops_to_base": 1.018,
+   "reachable_share": 0.9775,
+   "fits_nb_raw_p95": false,
+   "fits_nb_scheduled_p95": false,
+   "fits_nb_slotted_aloha_p95": false,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "on",
+   "position_hz": 10.0,
+   "rovers": 80,
+   "per_rover_kbps": 3.3448,
+   "one_hop_sum_kbps": 267.587,
+   "busiest_link_kbps_mean": 256.995,
+   "busiest_link_kbps_p95": 266.082,
+   "mean_hops_to_base": 1.031,
+   "reachable_share": 0.9867,
+   "fits_nb_raw_p95": false,
+   "fits_nb_scheduled_p95": false,
+   "fits_nb_slotted_aloha_p95": false,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "off",
+   "position_hz": 0.1,
+   "rovers": 5,
+   "per_rover_kbps": 0.1536,
+   "one_hop_sum_kbps": 0.768,
+   "busiest_link_kbps_mean": 0.742,
+   "busiest_link_kbps_p95": 0.768,
+   "mean_hops_to_base": 1.007,
+   "reachable_share": 0.9733,
+   "fits_nb_raw_p95": true,
+   "fits_nb_scheduled_p95": true,
+   "fits_nb_slotted_aloha_p95": true,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "off",
+   "position_hz": 0.1,
+   "rovers": 10,
+   "per_rover_kbps": 0.1536,
+   "one_hop_sum_kbps": 1.536,
+   "busiest_link_kbps_mean": 1.485,
+   "busiest_link_kbps_p95": 1.536,
+   "mean_hops_to_base": 1.017,
+   "reachable_share": 0.9833,
+   "fits_nb_raw_p95": true,
+   "fits_nb_scheduled_p95": true,
+   "fits_nb_slotted_aloha_p95": true,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "off",
+   "position_hz": 0.1,
+   "rovers": 20,
+   "per_rover_kbps": 0.1536,
+   "one_hop_sum_kbps": 3.072,
+   "busiest_link_kbps_mean": 2.924,
+   "busiest_link_kbps_p95": 3.072,
+   "mean_hops_to_base": 1.019,
+   "reachable_share": 0.9683,
+   "fits_nb_raw_p95": true,
+   "fits_nb_scheduled_p95": true,
+   "fits_nb_slotted_aloha_p95": true,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "off",
+   "position_hz": 0.1,
+   "rovers": 40,
+   "per_rover_kbps": 0.1536,
+   "one_hop_sum_kbps": 6.144,
+   "busiest_link_kbps_mean": 5.914,
+   "busiest_link_kbps_p95": 6.144,
+   "mean_hops_to_base": 1.018,
+   "reachable_share": 0.9775,
+   "fits_nb_raw_p95": true,
+   "fits_nb_scheduled_p95": true,
+   "fits_nb_slotted_aloha_p95": false,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "off",
+   "position_hz": 0.1,
+   "rovers": 80,
+   "per_rover_kbps": 0.1536,
+   "one_hop_sum_kbps": 12.288,
+   "busiest_link_kbps_mean": 11.802,
+   "busiest_link_kbps_p95": 12.219,
+   "mean_hops_to_base": 1.031,
+   "reachable_share": 0.9867,
+   "fits_nb_raw_p95": true,
+   "fits_nb_scheduled_p95": true,
+   "fits_nb_slotted_aloha_p95": false,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "off",
+   "position_hz": 1.0,
+   "rovers": 5,
+   "per_rover_kbps": 0.2584,
+   "one_hop_sum_kbps": 1.292,
+   "busiest_link_kbps_mean": 1.249,
+   "busiest_link_kbps_p95": 1.292,
+   "mean_hops_to_base": 1.007,
+   "reachable_share": 0.9733,
+   "fits_nb_raw_p95": true,
+   "fits_nb_scheduled_p95": true,
+   "fits_nb_slotted_aloha_p95": true,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "off",
+   "position_hz": 1.0,
+   "rovers": 10,
+   "per_rover_kbps": 0.2584,
+   "one_hop_sum_kbps": 2.584,
+   "busiest_link_kbps_mean": 2.498,
+   "busiest_link_kbps_p95": 2.584,
+   "mean_hops_to_base": 1.017,
+   "reachable_share": 0.9833,
+   "fits_nb_raw_p95": true,
+   "fits_nb_scheduled_p95": true,
+   "fits_nb_slotted_aloha_p95": true,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "off",
+   "position_hz": 1.0,
+   "rovers": 20,
+   "per_rover_kbps": 0.2584,
+   "one_hop_sum_kbps": 5.168,
+   "busiest_link_kbps_mean": 4.919,
+   "busiest_link_kbps_p95": 5.168,
+   "mean_hops_to_base": 1.019,
+   "reachable_share": 0.9683,
+   "fits_nb_raw_p95": true,
+   "fits_nb_scheduled_p95": true,
+   "fits_nb_slotted_aloha_p95": true,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "off",
+   "position_hz": 1.0,
+   "rovers": 40,
+   "per_rover_kbps": 0.2584,
+   "one_hop_sum_kbps": 10.337,
+   "busiest_link_kbps_mean": 9.949,
+   "busiest_link_kbps_p95": 10.337,
+   "mean_hops_to_base": 1.018,
+   "reachable_share": 0.9775,
+   "fits_nb_raw_p95": true,
+   "fits_nb_scheduled_p95": true,
+   "fits_nb_slotted_aloha_p95": false,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "off",
+   "position_hz": 1.0,
+   "rovers": 80,
+   "per_rover_kbps": 0.2584,
+   "one_hop_sum_kbps": 20.673,
+   "busiest_link_kbps_mean": 19.855,
+   "busiest_link_kbps_p95": 20.557,
+   "mean_hops_to_base": 1.031,
+   "reachable_share": 0.9867,
+   "fits_nb_raw_p95": false,
+   "fits_nb_scheduled_p95": false,
+   "fits_nb_slotted_aloha_p95": false,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "off",
+   "position_hz": 10.0,
+   "rovers": 5,
+   "per_rover_kbps": 2.2024,
+   "one_hop_sum_kbps": 11.012,
+   "busiest_link_kbps_mean": 10.645,
+   "busiest_link_kbps_p95": 11.012,
+   "mean_hops_to_base": 1.007,
+   "reachable_share": 0.9733,
+   "fits_nb_raw_p95": true,
+   "fits_nb_scheduled_p95": true,
+   "fits_nb_slotted_aloha_p95": false,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "off",
+   "position_hz": 10.0,
+   "rovers": 10,
+   "per_rover_kbps": 2.2024,
+   "one_hop_sum_kbps": 22.024,
+   "busiest_link_kbps_mean": 21.29,
+   "busiest_link_kbps_p95": 22.024,
+   "mean_hops_to_base": 1.017,
+   "reachable_share": 0.9833,
+   "fits_nb_raw_p95": false,
+   "fits_nb_scheduled_p95": false,
+   "fits_nb_slotted_aloha_p95": false,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "off",
+   "position_hz": 10.0,
+   "rovers": 20,
+   "per_rover_kbps": 2.2024,
+   "one_hop_sum_kbps": 44.048,
+   "busiest_link_kbps_mean": 41.919,
+   "busiest_link_kbps_p95": 44.048,
+   "mean_hops_to_base": 1.019,
+   "reachable_share": 0.9683,
+   "fits_nb_raw_p95": false,
+   "fits_nb_scheduled_p95": false,
+   "fits_nb_slotted_aloha_p95": false,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "off",
+   "position_hz": 10.0,
+   "rovers": 40,
+   "per_rover_kbps": 2.2024,
+   "one_hop_sum_kbps": 88.097,
+   "busiest_link_kbps_mean": 84.793,
+   "busiest_link_kbps_p95": 88.097,
+   "mean_hops_to_base": 1.018,
+   "reachable_share": 0.9775,
+   "fits_nb_raw_p95": false,
+   "fits_nb_scheduled_p95": false,
+   "fits_nb_slotted_aloha_p95": false,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  },
+  {
+   "auth": "off",
+   "position_hz": 10.0,
+   "rovers": 80,
+   "per_rover_kbps": 2.2024,
+   "one_hop_sum_kbps": 176.193,
+   "busiest_link_kbps_mean": 169.219,
+   "busiest_link_kbps_p95": 175.202,
+   "mean_hops_to_base": 1.031,
+   "reachable_share": 0.9867,
+   "fits_nb_raw_p95": false,
+   "fits_nb_scheduled_p95": false,
+   "fits_nb_slotted_aloha_p95": false,
+   "fits_bb_raw_p95": true,
+   "fits_bb_scheduled_p95": true,
+   "fits_bb_slotted_aloha_p95": true
+  }
+ ],
+ "h13": {
+  "rule": "auth on, 20 rovers: the busiest link's load (p95 over draws) <= 16 kbit/s at 1 Hz position reports, and > 16 kbit/s at 10 Hz",
+  "at_1hz_kbps_p95": 7.857,
+  "at_10hz_kbps_p95": 66.897,
+  "supported": true,
+  "airtime_1hz_scheduled_kbps": 9.821,
+  "airtime_1hz_slotted_aloha_kbps": 21.358
+ },
+ "draws": 30,
+ "channels_kbps": {
+  "narrow-band (Phase 5 target)": 16.0,
+  "broadband": 1000.0
+ },
+ "eta": {
+  "scheduled": 0.8,
+  "slotted_aloha": 0.36787944117144233
+ },
+ "conformance_vectors": 45,
+ "run_s": 8.8
+}

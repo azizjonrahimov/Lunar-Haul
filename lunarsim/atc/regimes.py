@@ -96,6 +96,9 @@ DEFAULTS: Dict[str, Any] = {
                                      # BASE mast does not see drive to the nearest one it sees); not a PREREG cell
     # B-76 (E46, the market): an owner's ask = its true cost x this multiplier (private cost x bid scaling); None = off
     "bid_mult": None,
+    # B-93 (opt-in): bids only from robots whose LRIP capability manifest can do the bundle ("catalog" = manifests from
+    # the vehicle classes, or a dict vehicle id -> manifest); None = off
+    "capability_filter": None,
 }
 REGIME_KEYS = set(DEFAULTS)
 RETRY_H = 0.05                       # Assumed: a robot whose message was lost is reconsidered 3 min later

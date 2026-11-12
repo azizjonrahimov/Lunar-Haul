@@ -1,0 +1,33 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "lrip-manifest-v0.1",
+ "title": "LRIP v0.1 capability manifest (human JSON form; compact CBOR on the wire: lunarsim/atc/lrip/manifest.py)",
+ "description": "Research note 03 section C3. Unknown capabilities and unknown params are ignored by a reader, so additionalProperties stays open everywhere; rev increases on every change; STATUS carries its CRC-16; the owner signs the compact bytes. Examples: data/atc/lrip/manifest-small_rover.json, manifest-hopper.json.",
+ "type": "object",
+ "required": ["lrip", "rev", "vehicle", "capabilities"],
+ "properties": {
+  "lrip": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+$"},
+  "rev": {"type": "integer", "minimum": 0},
+  "vehicle": {"type": "object", "required": ["id", "owner", "class"],
+              "properties": {"id": {"type": "integer", "minimum": 0, "maximum": 65535}, "owner": {"type": "string"},
+                             "model": {"type": "string"}, "class": {"type": "string"}}},
+  "physical": {"type": "object", "additionalProperties": {"type": "number"}},
+  "energy": {"type": "object"},
+  "comms": {"type": "array", "items": {"type": "object", "properties": {"band": {"type": "string"}, "std": {"type": "string"},
+                                                                         "tx_w": {"type": "number"}, "relay": {"type": "boolean"}}}},
+  "nav": {"type": "object"},
+  "messages": {"type": "object", "properties": {"pub": {"type": "array", "items": {"type": "string"}},
+                                                "sub": {"type": "array", "items": {"type": "string"}}}},
+  "capabilities": {"type": "array", "items": {
+    "type": "object", "required": ["name", "ver"],
+    "properties": {"name": {"type": "string", "pattern": "^[a-z0-9_]+(\\.[a-z0-9_]+)+$"},
+                   "ver": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+$"},
+                   "params": {"type": "object", "additionalProperties": {
+                     "oneOf": [{"type": "object", "properties": {"max": {"type": "number"}, "min": {"type": "number"}}},
+                               {"type": "array", "items": {"type": "string"}},
+                               {"type": ["number", "string", "boolean"]}]}}}}},
+  "hazard": {"type": "object"},
+  "lost_link": {"type": "object", "properties": {"t_hold_s": {"type": "number"}, "t_return_s": {"type": "number"},
+                                                  "t_rendezvous_s": {"type": "number"}, "policy": {"type": "string"}}}
+ }
+}
