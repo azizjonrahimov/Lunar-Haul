@@ -8832,3 +8832,73 @@ Next: B-94 (store-and-forward and lost link). B-90b waits for your loop.
 2. The Earth-ledger lifetime of 14 days (note 03 D) is shorter than the blackout plus July's DTE gap. Should I add a variant with a 30-day lifetime, to show the design rule?
 
 Next: B-92 (shared map). B-90b waits for your 8x loop.
+
+## B-92 DONE 19:13 (shared map and coordinates, E52, H12) + B-94 addendum (Earth-ledger lifetimes) | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**Coordinates** (`lunarsim/atc/geo.py`; research note 02 C1, C2, E1, E2)
+- MOON_ME lat / lon / height (1,737.4 km sphere) ↔ Cartesian ↔ local east-north-up at a datum (`Datum.me_to_enu` / `enu_to_me`).
+- The LOLA south polar stereographic grid ↔ lat / lon (`grid_to_latlon`, `latlon_to_grid`, `grid_scale`), and the pack's local frame (`site_to_latlon`, origin −19,000 / −20,000 m from meta.json).
+- The BASE datum: 89.43899° S, 222.76079° E.
+- **Checks against the note (tests):**
+  - the tile centre reads 89.4632° S, 222.5104° E;
+  - the ENU basis e / n / u equals note E1's to 1e-4;
+  - the ENU round trip is better than 1 µm over 200 random points;
+  - the grid round trip is exact to 1e-9°;
+  - the stereographic scale is 207 ppm at 50 km, and ρ − d = 3.45 m.
+- **PA versus ME** (`frame_mixup_shift`; NAIF frame-kernel angles 67.8526″ / 78.6944″ / 0.2914″, axes 3-2-1, composed as SPICE composes TK frames): **662.86 m** at the pole, **659.22 m** at the tile centre, **875.23 m** at (0, 0), all within 0.05 m of note 02's SPICE `pxform` values. At the tile centre: east −444.34, north +486.97, up −0.125 m (note: −444.3 / +487.0 / −0.125). This is the verification row B-98 will carry.
+
+**Shared map** (`lunarsim/atc/smap.py`; note 02 C3–C7, D, E4, E5)
+- Layers with wire sizes from note 02 D: hazard 2,048 B per 256 m tile; traversability 11,796 B; level-1 elevation 32,768 B; radio 2 kB per 1,280 m tile; road edges 40 B; keep-outs 300 B.
+- A 16 km site, 63 × 63 tiles (the note counts 62.5² = 3,906).
+- Versions, SHA-256 tile hashes (8 B in digests), quadtree node hashes, and the hash-tree walk. Its byte count is within note E4's bound h(1 + 4nD), 8,072 B at n = 42 (tested).
+- A sync plan in note 02 B5's order ("hazards_first": keep-outs, hazard tiles on the route, other hazards, roads, traversability, radio, elevation) or "oldest_first".
+- The C6 contribution rule (`Authority.submit`): frame / datum check, position σ ≤ 2 m, median height difference ≤ 1 m; provisional at once; confirmed by a second owner or another pass; growth radius 3σ. Every decision is logged (tested).
+
+**E52** (`tools/atc/run_e52.py`, 30 seeds, 2 s)
+- Route tiles: 60 tiles of 256 m crossed by the real legs between the sites and the 1 km pads. The note estimated 84 for its abstract graph.
+- Changes (note 02 D): 42 route tiles a day get new hazard, traversability and elevation versions. New hazards at 2 a day, keep-outs at 0.3 a day and road edges at 5 a day are Assumed.
+- The rover loops the routes at 1 m/s. Half the hazards are invisible to its own sensors (Assumed). Packet loss 0.2 (note 02 D).
+- **Full resend** of every raster layer: **185.5 MB**.
+
+| Out of contact | Bytes to sync (hazards-first) | Share of a full resend | Hazards current at 16 kbit/s, hazards-first / oldest-first | at 100 kbit/s | Everything at 16 kbit/s | Hazards hit during the outage | after contact (16 kbit/s), hazards-first / oldest-first |
+|---|---|---|---|---|---|---|---|
+| 1 h | 78 kB | 0.04 % | 2.9 / 24.7 s | 0.5 / 4.0 s | 49 s | 0.02 | 0 / 0 |
+| 6 h | 489 kB | 0.26 % | 15 / 273 s | 2.5 / 44 s | 306 s | 0.13 | 0 / 0 |
+| 1 day | 1.97 MB | **1.06 %** | **58 / 1,203 s** | 9.2 / 193 s | 20 min | 0.80 | 0.03 / 0.12 |
+| 3 days | 2.74 MB | 1.48 % | 79 / 1,689 s | 13 / 270 s | 29 min | 2.6 | 0 / 0.15 |
+| 7 days | 2.81 MB | 1.51 % | 81 / 1,728 s | 13 / 276 s | 29 min | 6.7 | 0 / 1.23 |
+| 14 days | 2.81 MB | 1.51 % | 81 / 1,739 s | 13 / 278 s | 29 min | 13.8 | 0 / 1.15 |
+
+- The bytes saturate after about 3 days, when every route tile has changed (180 tiles over 3 layers).
+- The flat manifest is 159 kB against a tree walk of a few kB.
+
+**H12** (PREREG6 §4): **supported.**
+- After 24 h, the hazards-first sync is 1.06 % of a full resend (< 10 %).
+- It brings the hazard layer current sooner than oldest-first at every rate (10 / 16 / 100 / 1,000 kbit/s), in all 30 seeds. Paired means −1,833 / −1,146 / −183 / −18 s.
+
+**Reading for P3:** the sync order matters (20× faster hazards). But nearly all stale-map hazard hits happen **during** the outage: 0.8 after a day and 13.8 after 14 days, against at most 1.2 after contact. So a rover far from the base must get hazard updates from the rovers it meets (the C7 peer merge) or stay in reach. Sync design alone does not protect a long-isolated rover.
+
+**B-94 addendum: Earth-ledger lifetimes** (LEAD's answer; `python tools/atc/run_e54.py ledger` → `results/E54_ledger.json`)
+- The daily 10 kB ledger bundle to Earth, simulated over 61 days so every bundle created in the 31-day window resolves.
+- **The longest Earth-down stretch is 24.81 days:** the imposed 14-day blackout plus the natural direct-to-Earth gap around it.
+- At loss 0.25, of 930 bundles:
+  - lifetime 14 days: store-and-forward loses **35 %**;
+  - 30 days: loses **0** (mean delay 10.8 d, worst 24.8 d);
+  - 24.81 + 1 = 25.81 days: loses **0**;
+  - drop-and-retry loses 94 % whatever the lifetime (5 tries in 15 min).
+- **The design rule holds:** an Earth-bound bundle's lifetime must exceed the longest planned Earth outage, blackout plus DTE gap, by a margin. Note 03 D's 14 days is too short for this site.
+
+**Files:**
+- new: `lunarsim/atc/geo.py`, `lunarsim/atc/smap.py`, `tools/atc/run_e52.py`, `tests/test_smap.py` (7 tests), `results/E52_map.json`, `results/E52_table.csv`, `results/E54_ledger.json`;
+- changed: `tools/atc/run_e54.py` (`ledger` command).
+- No engine change.
+
+**How to test:**
+- `.venv\Scripts\python -m pytest tests/test_smap.py tests/test_dtn.py -q` passes 13.
+- `python tools/atc/run_e52.py` (2 s); `python tools/atc/run_e54.py ledger` (seconds).
+
+**For FRONTEND (via LEAD):** `results/E52_table.csv` (out_h × order × rate: bytes, share of full resend, times, hits) is for /protocol/ problem 2.
+
+**Questions for LEAD:** none. The hazard rate (2 a day) and the hidden share (0.5) are Assumed; I can sweep them if P3 needs it.
+
+Next: B-95 (integrity, authentication, consensus); it imports B-96's fault definitions from `lunarsim/nn/faults.py`. B-90b waits for your loop.

@@ -1234,7 +1234,7 @@ delay, age of information at the base, stuck reservations (H14).
 2. Yes: add two ledger lifetimes to E54 (small, with B-92): 30 days, and the blackout plus the direct-to-Earth
    gap plus one day. Report bundles delivered and the store size needed at the base.
 
-## B-92 [IN PROGRESS] Shared map (problem 2; E52)
+## B-92 [DONE 19:13] Shared map (problem 2; E52)
 A base-held authoritative map of versioned tiles (layers and tile sizes from note 02 section C), per-vehicle
 copies, hazard reports from vehicles accepted by the base under the stated rule, sync on contact ordered
 hazards first with per-tile hashes. E52: a rover out of contact for 1 h to 14 days; bytes to sync versus a
@@ -1242,7 +1242,7 @@ full resend, time until its hazard layer is current at each link rate, hazards h
 (H12). Coordinates: one function pair ME lat/lon/radius <-> local east-north-up at the base datum with a
 round-trip test and the PA-versus-ME error as a verification row.
 
-## B-95 [QUEUED after B-93] Integrity, authentication and consensus (problem 7; E55)
+## B-95 [IN PROGRESS] Integrity, authentication and consensus (problem 7; E55)
 (1) Message authentication model: a t-bit MAC and an anti-replay counter per sender; forged and replayed
 messages injected at a rate; count accepted forgeries against the 2^-t bound. (2) Position-report integrity
 baseline: chi-square innovation test of a neighbour's reported position against own range (and bearing where

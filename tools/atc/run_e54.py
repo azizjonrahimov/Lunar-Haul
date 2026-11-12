@@ -2,6 +2,7 @@
 
     python tools/atc/run_e54.py run --seeds 1-30 [--max-seconds 480]     # resumable, one cache file per seed
     python tools/atc/run_e54.py build                                    # -> results/E54_dtn.json, E54_table.csv
+    python tools/atc/run_e54.py ledger                                   # -> results/E54_ledger.json (lifetimes)
 
 Per seed: the E50 scenario at 1x (p5 3eq, 30 % load, C_AUCTION, loss 0.10, roads atc, July 2028), with the engine's
 events recorded: every job commit (its vehicles and time) and the end of each vehicle's last leg of the job, every
@@ -301,7 +302,7 @@ def build():
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["run", "build"])
+    ap.add_argument("cmd", choices=["run", "build", "ledger"])
     ap.add_argument("--seeds", default="1-30")
     ap.add_argument("--max-seconds", type=float, default=480.0)
     a = ap.parse_args(argv)
@@ -310,9 +311,59 @@ def main(argv=None):
     if a.cmd == "run":
         lo, hi = (a.seeds.split("-") + [a.seeds])[:2]
         cmd_run(list(range(int(lo), int(hi) + 1)), a.max_seconds)
+    elif a.cmd == "ledger":
+        ledger()
     else:
         build()
     return 0
+
+
+
+
+# ------------------------------------------------------------------------------------------------ ledger variants
+def ledger(seeds=range(1, 31)):
+    """B-94 addendum (LEAD, 11 Nov): the daily Earth-ledger bundle with lifetimes 14 d (note 03 D), 30 d, and the
+    longest Earth-down interval (blackout + the direct-to-Earth gap around it) + 1 day. Base -> Earth only, so no
+    vehicle contact plan is needed: simulated over 61 days from the window start so every bundle created in the
+    31-day window either arrives or truly expires. -> results/E54_ledger.json"""
+    import run_e50 as E5
+    from lunarsim.atc import dtn as DT
+    from lunarsim.atc.dtn import BASE, Msg
+    month, t0h, t1h, share = E5._window()
+    dt = 60.0
+    span_h = 61 * 24.0
+    eu = earth_up_fn(t0h, t0h + span_h, dt)
+    down, run, gap = ~eu, 0, 0
+    for x in down:
+        run = run + 1 if x else 0
+        gap = max(gap, run)
+    gap_s = gap * dt
+    lifetimes = {"14 d (note 03 D)": 14 * 86400.0, "30 d": 30 * 86400.0,
+                 f"longest Earth-down {gap_s / 86400.0:.2f} d + 1 d": gap_s + 86400.0}
+    A = np.zeros((len(eu), 1, 1), bool)
+    days = int((t1h - t0h) // 24)
+    out = {"longest_earth_down_d": gap_s / 86400.0, "earth_up_share_61d": float(eu.mean()), "rows": []}
+    for lname, life in lifetimes.items():
+        for loss in LOSSES:
+            for proto in ("drop_retry", "sf"):
+                deliv, lost, delay = [], [], []
+                for s in seeds:
+                    msgs = [Msg(d, "ledger_earth", BASE, -2, d * 86400.0, LEDGER_BYTES, life) for d in range(days)]
+                    res = DT.simulate(A, msgs, proto, loss, np.random.default_rng([s, 94, 11, int(loss * 100)]), dt,
+                                      earth_up=lambda k: bool(eu[min(k, len(eu) - 1)]))
+                    deliv.append(sum(m.t_done is not None for m in res))
+                    lost.append(sum(m.t_done is None for m in res))
+                    delay += [(m.t_done - m.t0) / 86400.0 for m in res if m.t_done is not None]
+                out["rows"].append({"lifetime": lname, "lifetime_d": round(life / 86400.0, 2), "loss": loss,
+                                    "protocol": proto, "bundles": days * len(list(seeds)),
+                                    "delivered": int(sum(deliv)), "lost": int(sum(lost)),
+                                    "lost_share": round(sum(lost) / (days * len(list(seeds))), 4),
+                                    "delay_mean_d": round(float(np.mean(delay)), 2) if delay else None,
+                                    "delay_max_d": round(float(np.max(delay)), 2) if delay else None})
+    with open(os.path.join(ROOT, "results", "E54_ledger.json"), "w", encoding="utf-8", newline="\n") as f:
+        json.dump(out, f, indent=1)
+        f.write("\n")
+    return out
 
 
 if __name__ == "__main__":
