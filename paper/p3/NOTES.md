@@ -35,7 +35,7 @@ The earlier papers are [40, 41, 42] in P2's numbering and [56, 57, 58] here; the
 NOTE: [21] titles added on 11 Nov 2026 from the source list of `research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md` (G4, [HWU08] and [GRC23], both opened on that date); the Hwu initials are the VCI note's, the Glenn authors' initials are in neither note. [21] is now also the source cited for the flat-ground two-ray law of Section 4.2 (note 03 Q2 and E1: the JSC model shows the 1/R^4 law and its independence of frequency at long range; it is a model, not a lunar measurement).
 
 [22] NASA. Delay/Disruption Tolerant Networking page. https://www.nasa.gov/communicating-with-missions/delay-disruption-tolerant-networking/ (VCI, High)
-[23] N. Ashby, B. Patla. Lunar clock rate relative to Earth. *Astronomical Journal* 168:3, 2024; APS Physics summary https://physics.aps.org/articles/v17/140 (VCI, High; title to add)
+[23] N. Ashby, B. Patla. "A Relativistic Framework to Establish Coordinate Time on the Moon and Beyond." *Astronomical Journal* 168:3, 2024. arXiv:2402.11150, https://arxiv.org/pdf/2402.11150; APS Physics summary https://physics.aps.org/articles/v17/140 (VCI, High; title from LRIP note 01, where the preprint was opened)
 [24] UNOOSA ICG Working Group B, Lunar PNT, June 2024 slides (draft lunar UHF band 390-405 MHz). https://www.unoosa.org/documents/pdf/icg/2024/WG-B_Lunar_PNT_Jun24/LunarPNT_Jun24_02_01.pdf (VCI, Medium; draft)
 [25] A. Krawciw et al. "Sharing the Load: Autonomous Multi-Rover Cargo Transport." arXiv:2510.18766v2, 2026. (VCI/MOA, High; the 13.8 kB/s convoy figure is quoted in MOA section 5)
 [26] G. Rabideau, J. Russino, A. Branch, N. Dhamani, T. Stegun Vaquero, J.-P. de la Croix, F. Rossi. "Multi-Robot Cooperative Autonomy on the Moon: The CADRE Technology Demonstration Mission." ASTRA 2025. https://ai.jpl.nasa.gov/public/documents/papers/CADRE-ASTRA-2025-Extended-Abstract.pdf (MOA, High)
@@ -88,7 +88,62 @@ NOTE: draft 3 (referee round 2, finding 28): the spaces before semicolons in [1]
 
 [66] J. Rios et al. *UAS Service Supplier Network Performance: Results and Analysis from Flight Testing Multiple USS Providers in NASA's TCL4 Demonstration*. NASA/TM-2020-220462, January 2020. https://ntrs.nasa.gov/citations/20200000531 (TAS, High)
 
-## Reference statistics (draft 0)
+NOTE: entries [67] to [114] were added in the revision of 11 Nov 2026 (Phase 6). Each is a source that one of the four research notes of `research_notes/Lunar Rover Interaction Protocol/` lists as opened on that date; the tag at the end of an entry (LRIP-01 to LRIP-04 and the note's own key) is not rendered. Sources the notes mark UNVERIFIED are not cited. Secondary sources are named as such in the entry and in the text. Authors' initials are given only where the notes have them.
+
+[67] Pre-registration of the Phase 6 experiments, paper/atc/PREREG6.md in the repository, written 11 November 2026, with dated changes. (LRIP, own work)
+[68] Lunar Rover Interaction Protocol, research notes 01 to 04 (positioning and time; shared map and coordinates; communication, protocol and security; coordination and market), research_notes/Lunar Rover Interaction Protocol/ in the repository, 11 November 2026: the design, its parameters with their sources, and what could not be verified. (LRIP, own work)
+[69] Maimone, Cheng, Matthies. "Two Years of Visual Odometry on the Mars Exploration Rovers." *Journal of Field Robotics*, 2007. https://robotics.jpl.nasa.gov/media/documents/rob-06-0081.R4.pdf (LRIP-01 MAIM07)
+[70] Daftry et al. "LunarNav: Crater-based Localization for Long-range Autonomous Lunar Rover Navigation." IEEE Aerospace Conference 2023. https://arxiv.org/pdf/2301.01350 (LRIP-01 DAF23)
+[71] Atha et al. "ShadowNav: Autonomous Global Localization for Lunar Navigation in Darkness." 2024. https://arxiv.org/pdf/2405.01673 (LRIP-01 ATHA24)
+[72] Helmick et al. "Slip-Compensated Path Following for Planetary Exploration Rovers." *Advanced Robotics*, 2006. https://robotics.jpl.nasa.gov/media/documents/advanced_robotics_2006.pdf (LRIP-01 HELM06)
+[73] NASA JPL. "NASA's Perseverance Now Autonomously Pinpoints Its Location on Mars." 18 February 2026. https://www.jpl.nasa.gov/news/nasas-perseverance-now-autonomously-pinpoints-its-location-on-mars/; J. Nash et al. "Censible: A Robust and Practical Global Localization Framework for Planetary Surface Missions." ICRA 2024. https://www-robotics.jpl.nasa.gov/media/documents/2024_Global_Localization_ICRA.pdf; J. Nash, V. Verma et al. "A Software-Based Approach to Radiation Mitigation for Planetary Missions." IEEE Aerospace Conference 2026. https://www-robotics.jpl.nasa.gov/media/documents/2026_Global_Localization_Memory_Workaround_IEEE_Aero__final.pdf (LRIP-01 JPL26, NASH24, NASH26)
+[74] Dai, Casadesus Vila, Gao. "Visual SLAM with DEM Anchoring for Lunar Surface Navigation." 2026. https://arxiv.org/pdf/2603.17229 (LRIP-01 DAI26)
+[75] Janicijevic et al. "Demo: Small PLaNS Towards Mars: Exploiting Ultra-wideband for Self-localizing Rover Navigation." EWSN 2018. https://www.ewsn.org/file-repository/ewsn-2018/199_200_janicijevic.pdf; A. Nuechter et al. "UWB Anchor Based Localization of a Planetary Rover." i-SAIRAS 2024. https://arxiv.org/pdf/2504.07658 (LRIP-01 PLANS18, NUCH24)
+[76] M. Barker et al. "Improved LOLA Elevation Maps for South Pole Landing Sites: Error Estimates and Their Impact on Illumination Conditions." *Planetary and Space Science*, 2021. https://ntrs.nasa.gov/api/citations/20205009660/downloads/Mike%20Barker_%20Paper_%20Improved%20Lola.pdf (LRIP-01 BARK21)
+[77] C. Gramling, Crenshaw, Murata, Swinden, Melman, Stallo, Ventura-Traveset. "Towards LunaNet Lunar Augmented Navigation Service (LANS) Interoperability Demonstration and Monitoring." SpaceOps 2025. https://ntrs.nasa.gov/api/citations/20250003163/downloads/LANS%20Interop%20Demo-SpOps2025%20ID429%20v4Final.pdf (LRIP-01 INTEROP25)
+[78] C. Gramling, Crenshaw. "NASA's LunaNet: Lunar Communications and PNT." UN ICG Working Group B, 25 June 2024. https://www.unoosa.org/documents/pdf/icg/2024/WG-B_Lunar_PNT_Jun24/LunarPNT_Jun24_01_02.pdf (LRIP-01 GRAM24)
+[79] ESA. "ESA's Moonlight programme: Pioneering the path for lunar exploration." 15 October 2024. https://www.esa.int/Applications/Connectivity_and_Secure_Communications/ESA_s_Moonlight_programme_Pioneering_the_path_for_lunar_exploration; J. Ventura-Traveset. "Moonlight Navigation Services" (slides), 2024. https://bsgn.esa.int/wp-content/uploads/2024/02/07-Moonlight_LCNS_S4I_2024_Javier-Ventura-Traveset.pdf (LRIP-01 ESA24, ML24)
+[80] M. Murata. "Japan LNSS and Towards LunaNet LANS Interoperability Demonstration." ICG-IOAG Cislunar PNT Workshop, 10 February 2026. https://ioag.org/Cislunar2026/Tuesday/02%20Lunar/1125%20LNSS_LANS_demo_Cislunar_PNT_Workshop.pdf (LRIP-01 MUR26)
+[81] Brinkmann. "NASA expects one lunar launch this year, Moon Base manager says." *Aerospace America* (AIAA), 15 September 2026. https://aerospaceamerica.aiaa.org/nasa-expects-one-lunar-launch-this-year-moon-base-manager-says/ (LRIP-04 M3)
+[82] Parker et al. "GNSS Reception at the Moon: First Results of the Lunar GNSS Receiver Experiment (LuGRE)." *NAVIGATION* 73(1), 2026. doi:10.33012/navi.756 (LRIP-01 LUGRE26; an open-access copy was read)
+[83] Kopeikin, Kaplan. "Lunar Time in General Relativity." 2024. https://arxiv.org/pdf/2407.04862 (LRIP-01 KK24)
+[84] Turyshev, Williams, Boggs, Park. "Relativistic Time Transformations Between the Solar System Barycenter, Earth, and Moon." 2024. https://arxiv.org/pdf/2406.16147 (LRIP-01 TUR25)
+[85] White House Office of Science and Technology Policy. "Policy on Celestial Time Standardization in Support of the National Cislunar Science and Technology Strategy." 2 April 2024. https://bidenwhitehouse.archives.gov/wp-content/uploads/2024/04/Celestial-Time-Standardization-Policy.pdf (LRIP-01 OSTP24)
+[86] Microchip. CSAC SA65 chip-scale atomic clock, data sheet (a copy was read). https://gps-world.biz/wp-content/uploads/2023/10/microchip-csac-sa65-1.pdf (LRIP-01 CSAC)
+[87] ITU-T Recommendation G.8271/Y.1366. *Time and phase synchronization aspects of telecommunication networks*. 2020. (LRIP-01 G8271)
+[88] NAIF, NASA JPL (N. Bachman). "SPICE Lunar Reference Frame Specification Kernel", moon_de440_250416.tf, 16 April 2025. https://naif.jpl.nasa.gov/pub/naif/generic_kernels/fk/satellites/moon_de440_250416.tf (LRIP-02 NAIF-FK)
+[89] NASA. "Lunar Reference Frames." 2024 Moon to Mars Architecture Concept Review white paper. https://www.nasa.gov/wp-content/uploads/2024/12/acr24-lunar-reference-frames.pdf (LRIP-02 ACR24)
+[90] M. Barker et al. "A New View of the Lunar South Pole from the Lunar Orbiter Laser Altimeter (LOLA)." *Planetary Science Journal* 4:183, 2023. https://doi.org/10.3847/PSJ/acf3e1; NASA Goddard Planetary Geodesy Data Archive, "High-Resolution LOLA Topography for Lunar South Pole Sites", https://pgda.gsfc.nasa.gov/products/78 (LRIP-02 BARKER23, PGDA78)
+[91] A. Fienga on behalf of IAG Joint Working Group 1.1.3. "The International Lunar Reference System." arXiv:2607.27762, 30 July 2026. https://arxiv.org/abs/2607.27762; C. Gramling et al. "Reference Frames for Interoperability within LunaNet." ICG Cislunar PNT Workshop, Vienna, 11 February 2026. https://ioag.org/Cislunar2026/Wednesday/04a%20Lunar%20Reference%20Frame/0930%20ICG%202026%20Workshop-%20Day2%200930-0950-Reference%20Frames%20v1.pdf (LRIP-02 ILURS26, ICG26-RF)
+[92] LROC team. "LROC RDR Data Products Software Interface Specification", version 1.6, 22 August 2020. https://pds.lroc.im-ldi.com/data/LRO-L-LROC-5-RDR-V1.0/LROLRC_2001/DOCUMENT/RDRSIS.PDF; ShadowCam, "About" page, https://shadowcam.im-ldi.com/about; NASA Goddard Planetary Geodesy Data Archive, "Enhanced Topography Models for Selected Lunar South Pole Regions with Shape-from-Shading", https://pgda.gsfc.nasa.gov/products/104 (LRIP-02 LROC-SIS, SHADOWCAM, PGDA104)
+[93] H. Sanjuan et al. "Merkle-CRDTs: Merkle-DAGs meet CRDTs." 2020. https://arxiv.org/abs/2004.00107 (LRIP-02 MERKLE)
+[94] CCSDS. *Proximity-1 Physical Layer*, CCSDS 211.1-B-4, December 2013; *Proximity-1 Data Link Layer*, CCSDS 211.0-B-6, July 2020; *Proximity-1 Coding and Synchronization*, CCSDS 211.2-B-3, October 2019. https://public.ccsds.org/Pubs/211x1b4e1.pdf (LRIP-03 P1-PHY, P1-DLL, P1-CS)
+[95] CCSDS. *Space Packet Protocol*, CCSDS 133.0-B-2, June 2020; *AOS Space Data Link Protocol*, CCSDS 732.0-B-4, October 2021; *Unified Space Data Link Protocol*, CCSDS 732.1-B-3, June 2024. https://public.ccsds.org/Pubs/133x0b2e2.pdf (LRIP-03 SPP, AOS, USLP)
+[96] CCSDS. *Space Data Link Security*, CCSDS 355.0-B-2, July 2022; *SDLS Extended Procedures*, CCSDS 355.1-B-1, February 2020; *Cryptographic Algorithms*, CCSDS 352.0-B-2, August 2019. https://public.ccsds.org/Pubs/355x0b2.pdf (LRIP-03 SDLS, SDLS-EP, CRYPTO)
+[97] CCSDS. *High Data Rate Wireless Proximity Network Communications*, CCSDS 883.0-B-2, May 2024. https://public.ccsds.org/Pubs/883x0b2.pdf (LRIP-03 WPN)
+[98] IETF. RFC 9171, *Bundle Protocol Version 7*; RFC 9172 (BPSec); RFC 9173 (default security contexts); January 2022. https://www.rfc-editor.org/rfc/rfc9171.txt; CCSDS 734.2-B-1, the Bundle Protocol book for version 6, September 2015; CCSDS 734.3-B-1, *Schedule-Aware Bundle Routing*, July 2019. (LRIP-03 RFC9171, RFC9172, RFC9173, BP6, SABR)
+[99] NIST Special Publication 800-38B (CMAC). https://doi.org/10.6028/NIST.SP.800-38B; NIST Special Publication 800-38D (GCM). https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf (LRIP-03 NIST38B, NIST38D)
+[100] IETF. RFC 8032 (EdDSA); RFC 8949 (CBOR). https://www.rfc-editor.org/rfc/rfc8032.txt (LRIP-03 RFC8032, RFC8949)
+[101] Nokia. Press release of 10 March 2025 on its cellular network on the IM-2 lander. https://www.nokia.com/newsroom/nokia-and-intuitive-machines-deliver-first-cellular-network-to-the-moon-achieve-some-key-mission-objectives/ (LRIP-03 NOKIA25)
+[102] NASA. Release on the completion of CAPSTONE's extended mission, 6 July 2026. https://nasa.gov/technology/space-comms/nasas-capstone-completes-extended-mission-testing-lunar-technologies (LRIP-03 NASA-CAP)
+[103] Santorelli, Wyglinski. "LunarRF: A Terrain-Aware Propagation Engine and Pole-Wide 3GPP Surface Coverage Atlas of the Lunar South Pole." Preprint, 19 October 2026, not peer reviewed. https://arxiv.org/abs/2610.34554 (LRIP-03 LUNARRF)
+[104] LeBlanc, Zhang, Sundaram, Koutsoukos. "Consensus of Multi-Agent Networks in the Presence of Adversaries Using Only Local Information." 2012. https://arxiv.org/abs/1205.3676 (LRIP-03 LEBLANC12; the authors' open report, the journal paper being paywalled)
+[105] FAA Notice N JO 7110.724, "UAS Lost Link", 11 October 2016. https://www.faa.gov/documentLibrary/media/Notice/N_JO_7110.724_5-2-9_UAS_Lost_Link.pdf; United States Code of Federal Regulations, 14 CFR 91.185. (LRIP-03 FAA16, CFR91185)
+[106] G. Rabideau, J. Russino, A. Branch, N. Dhamani, T. Stegun Vaquero, Chien, J.-P. de la Croix, F. Rossi. "Planning, Scheduling, and Execution on the Moon: The CADRE Technology Demonstration Mission." AAMAS 2025, pp. 1727-1735. https://www.ifaamas.org/Proceedings/aamas2025/pdfs/p1727.pdf; NASA JPL, "NASA's Mini Rover Team Is Packed for Lunar Journey", 11 February 2025. https://www.jpl.nasa.gov/news/nasas-mini-rover-team-is-packed-for-lunar-journey/ (LRIP-04 C1, C8)
+[107] NASA. News release 26-095, "NASA Awards Moon Base Transportation, Technology, Science Projects", 7 November 2026. https://www.nasa.gov/news-release/nasa-awards-moon-base-transportation-technology-science-projects/ (LRIP-04 M4)
+[108] Wikipedia. "Chang'e 8" (a secondary source, read 11 November 2026; it cites SpaceNews of 27 January and 25 April 2025, which were not opened). https://en.wikipedia.org/wiki/Chang%27e_8 (LRIP-04 M11)
+[109] Press reports of consultancy forecasts, the reports themselves not opened: SpaceQ, "PwC report: lunar economy projected to generate up to US$127 billion by 2050", 15 May 2026. https://spaceq.ca/pwc-report-lunar-economy-projected-to-generate-up-to-us127-billion-by-2050/; Fortune, on Deloitte's "Building the Lunar Economy", 26 August 2026. https://fortune.com/2026/08/26/spacex-moon-musk-lunar-economy-566-billion-deloitte/; ESA Space Economy, "PwC's Lunar market assessment", November 2021. https://space-economy.esa.int/article/119/pwcs-lunar-market-assessment-market-trends-and-challenges-in-the-development-of-a-lunar-economy (LRIP-04 K1, K3, K2)
+[110] Colvin, Crane, Lindbergh, Lal. *Demand Drivers of the Lunar and Cislunar Economy*. IDA Science and Technology Policy Institute, Document D-13219, April 2020 (the executive summary was read). https://www.ida.org/-/media/feature/publications/d/de/demand-drivers-of-the-lunar-and-cislunar-economy/d-13219.pdf (LRIP-04 K4)
+[111] Richard, Kamohara, Uno, Santra, van der Meer, Olivares-Mendez, Yoshida. "OmniLRS: A Photorealistic Simulator for Lunar Robotics." arXiv:2309.08997. https://arxiv.org/abs/2309.08997; NASA Glenn, "NASA Tests Lunar Communications Network in Lava Field", 8 December 2022. https://www.nasa.gov/centers-and-facilities/glenn/nasa-tests-lunar-communications-network-in-lava-field/; LUNA Analog Facility (DLR and ESA), "Working and testing in LUNA". https://luna-analog-facility.de/en/for-users/working-and-testing-in-luna/; NASA SSERVI, Lunar Lab and Regolith Testbed. https://sservi.nasa.gov/testbed/ (LRIP-04 L9, L16, L14, L15)
+[112] DLR. "Robotics team practises lunar exploration on Mount Etna." 1 July 2022. https://www.dlr.de/en/latest/news/2022/03/20220701_robotics-team-practises-lunar-exploration-on-mount-etna; GMV, "Final field testing completed for CoRob-X", 28 February 2023. https://www.gmv.com/en-es/communication/news/final-field-testing-completed-corob-x (LRIP-04 L11, L12)
+[113] Johns Hopkins Applied Physics Laboratory. Press release on the Lunar Operating Guidelines for Infrastructure Consortium (LOGIC), 11 October 2023. https://www.jhuapl.edu/news/news-releases/231011b-lunar-technology-development; Space ROS, site and demonstrations repository. https://space.ros.org/ (LRIP-04 L17, L18)
+[114] NASA, ESA, JAXA. *LunaNet Signal-In-Space Recommended Standard: Augmented Forward Signal*, Volume A, version 1, 29 January 2025. https://www.nasa.gov/wp-content/uploads/2025/02/lunanet-signal-in-space-recommended-standard-augmented-forward-signal-vol-a.pdf (LRIP-01 AFS1)
+
+[115] Artemis II Lunar Science Team. *Artemis II Lunar Science Data User Guide*, version 1.0, 7 October 2026. NASA Planetary Data System, Geosciences Node. doi:10.17189/dtpt-2857; the optical-navigation frames are in the bundle artemis2_orion_camera at the PDS Imaging Node. (LRIP-02 A2-GUIDE, A2-ATLAS)
+[116] A. Bailey, B. Semenov. "Artemis II Mission SPICE Bundle." NAIF, NASA JPL. doi:10.17189/7ezn-0294 (LRIP-02 A2-SPICE)
+
+## Reference statistics (draft 0; the revision of 11 Nov 2026 brings the list to 116 entries, of which 67 and 68 are own work)
+
 
 66 entries. Own work: [56]-[61] = 6 of 66 (9 %), of which [59] is the pre-registration file and [60, 61] the
 companion papers. Dated 2021 or later: to be counted once the text is stable (the vehicle and network sources
@@ -175,3 +230,51 @@ foundations [29]-[33], [37] are older and reported as such). Entries needing pub
   < 1 MB/day)"; none of these appears in the research notes, so they are typed as Assumed design targets from H10
   and the task, not as sourced numbers.
 - The site's F-54 table gives the lander a Lunar ATC unit; the plan and B-81 do not.
+
+## Revision of 11 Nov 2026 (Phase 6: the Lunar Rover Interaction Protocol in P3)
+
+- **What was added.** Sections 3.5 to 3.8 (position without GPS with Table 4; time; the shared map and its frame; the communication stack and
+  its security with Table 5), a Phase 6 paragraph in 4.1, the experiments E50, E51, E52, E53, E54, E55 (authentication) and the real-data checks
+  of B-97 in 4.2, their choices-after-results in 4.6, Sections 5.8 to 5.13 with Tables 10 to 15, a fourth-part paragraph in 6.1, three rules
+  in 6.3, Section 6.5 (market and reality; Tables 16 and 17), eight new limitation paragraphs in 7, Section 8 (Table 18: proved, tested,
+  assumed, not yet tested), Appendix A (Propositions 1 to 8), references [67] to [116].
+- **What was renumbered.** The marketplace 3.5 to 3.9; checks 3.6 to 3.10; "What did not work" 5.8 to 5.14; Future work 6.5 to 6.6; the
+  Conclusion 8 to 9; Tables 5, 6, 7, 8 to 6, 7, 8, 9 (so that tables are numbered in the order they appear).
+- **Typed, with a citation and a flag:** every literature number of 3.5 to 3.8 and 6.5 (the navigation service's dates and simulated accuracy,
+  the sensors' Earth and Mars figures, the three published clock rates and the memorandum's 58.7, the frame statements and the LOLA
+  products' accuracy and resolution, the standards of Table 5 with issue and date, what has flown, contract ceilings and market totals).
+  **Typed and covered by a build check:** the byte layout of an authenticated message (6 + 8 or 16, or a 64-byte signature), the map's
+  acceptance limits and site size, E51's guards and intervals, E50's scenario. **Typed design values with no file behind them:** the 10 s
+  freshness window, the daily site key, the hop limit, the ladder's order of steps (research note 03, section C). **Placeholders:** every
+  result, every model input that `pnt.py`, `clocks.py` constants (through E51), `smap.py` (through E52), the E53 size table and the E54
+  parameters hold, and every number of a worked example in Appendix A.
+- **Word limits.** The abstract builds at 300 words and the conclusion at 250. To make room, the post hoc clauses
+  P3-H5-POWER-ABSTRACT-CLAUSE and P3-H5-POWER-CONCLUSION-CLAUSE left both (they remain in 5.7 and 6.1), the abstract's sentence on the
+  companion papers was folded into the question, and the impact sentence was shortened. The E48 link clause of the correction of this
+  morning is unchanged in both. The build now enforces both limits even when a key elsewhere is pending.
+- **The eleven items left open by the correction of this morning, as fixed:** (1) 3.3's "about 8.5 km" is now computed, 8.84 km, with the
+  1.0 m antenna's horizon beside it (P3-HORIZON-SENTENCE); (2) 6.3's UHF sentence now says that a lower band does not lengthen a flat-ground
+  hop and changes diffraction around terrain; (3) "floods ... hop by hop" in 3.4, 3.9 and 6.3 is replaced by the two kinds of traffic,
+  reports one hop on the scheduled channel and events relayed, with the first version's wording named; (4) a new paragraph in 3.3 sets the
+  two-hop median over all route points beside the month's 1.024 hops and adds E53's spread geometry; (5) 3.3 states that the terrain mesh
+  keeps 1.0 m pairs beyond the 3.73 km smooth-Moon horizon and quotes `revision.two_ray_in_the_mesh` (6.9 % of 1.0 m links removed with the
+  horizon check on; all links close 16 kbit/s at 3 and 10 dB; 94.2 % and 99.1 % at 15 dB); (6) Section 7 no longer says the link budget uses
+  a diffraction model; (7) CADRE's election is stated as an appointer every 10 s, at most 10 s without a planner, 25 minutes awake in every
+  30, in 2.3 and 3.4 and in the comment of 6.2, with [106]; (8) the introduction says the vehicles are planned and have names, and the
+  conclusion "planned"; (9) PROMISE (late 2028, NASA release of 7 Nov 2026 [107]) is named in 1, 3.2, 6.5 and 7 as not in the catalogue;
+  (10) the front matter says "revised November 2026"; (11) `references()` keeps trailing punctuation outside a URL's link.
+- **Differences found between the notes, the reports and the files** (the paper follows the files): the two-ray asymptote differs from the
+  exact two-ray factor by 0.36 dB at the meeting point, not 0.37 (a typed value the build's check caught); note 02 E4 counts 3,906 tiles and
+  a 2-byte version while its C4 defines 32-bit versions, and E52 uses 63 x 63 = 3,969 tiles and 10 B per tile in the flat list, which the
+  paper follows (the tree's bound does not contain the version length); `lunarsim/atc/geo.py` labels 0.2914 arcseconds as the frame
+  kernel's third angle, but the kernel has 0.2785 (0.2914 is the first component of the composed matrix's rotation vector); the shifts
+  agree to 0.05 m and the paper uses the kernel's angles; the B-91b report says steering helps the crystal "3 to 7 times", the E51b rows
+  give 1.5 to 7.1 (1.5 at a 6 h interval); the B-97 report and the lead's message give "400 to 800 m" of range error at 80,000 km, the
+  file gives 408 and 661 km (0.5 to 0.8 % of 79,000 km), and the fitted radius is 0.8 to 1.3 pixels small, not 1.0 to 1.4; the B-92
+  report gives the flat manifest as 159 kB, the E52 rows hold 120,760 B; E52's stale-map hits after contact reach 1.65 at 10 kbit/s with
+  oldest-first (1.2 at 16 kbit/s).
+- **Not applied, and said so in the paper:** the Holm step of PREREG6's confirmatory family (the files hold intervals, no p-values).
+- **Pending in this build:** E50 at eight times the fleet (`errors."8"` of the E50 file), E50b, the E55 variant with the base as averaging
+  node. The 8x sentence composes itself when the cells land; the composing functions of the other two only raise the pending and have to be
+  written against the files' real schemas.
+

@@ -1,7 +1,7 @@
 
 <h2 id="p3-sec-results">5. Results</h2>
 
-<p>Sections 5.1 to 5.4 give E48: processor time and memory per vehicle class against the flight-processor capacities (H10), the radio traffic and the ledger, the link budget per class, and failover. Sections 5.5 to 5.7 give E46: the four payment rules, individual rationality per owner, and manipulation with audits (H5). Section 5.8 lists what did not work. Table 5 holds every sizing value, Table 6 the link budget, Table 7 every cell mean of E46 and Table 8 every owner's Shapley value in every coalition against working alone; the text describes them in that order. Intervals are 95&#8239;% bootstrap intervals over seeds unless stated. Nothing in this section is interpreted; Section 6 does that.</p>
+<p>Sections 5.1 to 5.4 give E48: processor time and memory per vehicle class against the flight-processor capacities (H10), the radio traffic and the ledger, the link budget per class, and failover. Sections 5.5 to 5.7 give E46: the four payment rules, individual rationality per owner, and manipulation with audits (H5). Sections 5.8 to 5.13 give the experiments of the November 2026 revision: position error by layer (E50, H9), clocks (E51, H11), the shared map (E52, H12), the protocol's traffic and its authentication (E53 and E55, H13), store-and-forward with the lost-link rule (E54, H14), and two checks on real data; Tables 10 to 15 hold their values. Section 5.14 lists what did not work and what is not yet run. Table 6 holds every sizing value, Table 7 the link budget, Table 8 every cell mean of E46 and Table 9 every owner's Shapley value in every coalition against working alone; the text describes them in that order. Intervals are 95&#8239;% bootstrap intervals over seeds unless stated. Nothing in this section is interpreted; Section 6 does that.</p>
 
 <h3>5.1 Processor time and memory per vehicle class (H10)</h3>
 
@@ -23,7 +23,7 @@
 
 <h3>5.4 Failover</h3>
 
-<p>{{P3-E48-RESULTS-FAILOVER}} <!-- PENDING E48: per MTBF level, the base computer's downtime share, the share of time without any leader at the assumed re-election delay (copied from the design, not measured), the number of times the base computer's assignment table was rebuilt after repair and the count of jobs found assigned twice after a rebuild (must be zero; if not, it is a defect and goes to Section 5.8); the effect of the sweep on the urgent wait if B-81 reports it. --></p>
+<p>{{P3-E48-RESULTS-FAILOVER}} <!-- PENDING E48: per MTBF level, the base computer's downtime share, the share of time without any leader at the assumed re-election delay (copied from the design, not measured), the number of times the base computer's assignment table was rebuilt after repair and the count of jobs found assigned twice after a rebuild (must be zero; if not, it is a defect and goes to Section 5.14); the effect of the sweep on the urgent wait if B-81 reports it. --></p>
 
 <h3>5.5 The four payment rules</h3>
 
@@ -41,6 +41,48 @@
 
 <p>{{P3-E46-RESULTS-MANIP}} <!-- PENDING E46: per rule with money, the largest gain any owner obtained by scaling, the factor that gave it and the owner, with its interval; the cost to the system in urgent wait on the same seeds; the first-price rule is the reference the registered clauses compare against (Section 4.1). --> {{P3-E46-RESULTS-AUDITS}} <!-- PENDING E46: per rule and audit share q, what the audits recovered of the gain, and the gain net of expected penalties with its sign. --> {{P3-H5-VERDICT-SENTENCE}} <!-- build: composed clause by clause from the E46 fit against the rules of Section 4.1; "supported" / "not supported" / "not tested" from the data and the design, never typed. --> {{P3-H5-POWER-CLAUSE}} <!-- build: the cash part of the largest gain with its interval, labelled post hoc; the registered measure includes the deviator's own delay --></p>
 
-<h3>5.8 What did not work</h3>
+<!-- REVISION of November 2026 (Phase 6): Sections 5.8 to 5.10 are new; "What did not work" moved from 5.8 to 5.14. -->
 
-<p>{{P3-E46-STATUS-SENTENCE}} <!-- build: any E46 cell with fewer rows than its design block, from the run files; or "Every cell of E46 ran all its seeds." --> {{P3-E48-STATUS-SENTENCE}} <!-- build: any measurement of Section 4.2 that E48_sizing.json does not hold, listed; or "Every measurement of Section 4.2 was made." --> {{P3-FAILED-CHECKS-SENTENCE}} {{P3-ID-FIX-SENTENCE}} <!-- build: the cargo-id defect of PREREG change 10 and its outcome-neutral evidence, from results/id_fix_evidence.json. --> <!-- build: any check of Section 3.6 that failed, or "Every check of Section 3.6 passed." --> The link budget of the first version of this paper used free-space loss at the worst hop, and its link verdict compared the target with the traffic at the sources, without authentication or relaying; both were corrected on {{P3-E48-REVISION-DATE}} (Sections 4.6 and 7), and Sections 5.1 to 5.3 give the corrected values. Nothing else is withheld: every cell that ran is in Table 7 and every measurement made is in Tables 5 and 6.</p>
+<h3>5.8 Position error by layer (H9)</h3>
+
+<p>{{P3-E50-RESULTS-ERRORS}} <!-- build: per fleet multiple and layer set the 95th percentile overall, near the base and away from it, with intervals; the dead-reckoning percentile by driving hour; the share of steps with the own bound over the budget --> {{P3-H9-VERDICT-SENTENCE}} <!-- build: the three clauses of H9, "supported" / "not supported" recomputed from the intervals and checked against the file's flags --> {{P3-E50-FIXSTOP-SENTENCE}} <!-- build: hours a month the fleet stands for terrain fixes, per fleet multiple --> {{P3-E50B-SENTENCE}} <!-- PENDING E50b (B-90b): the delay per delivery with the stops inside the engine --> {{P3-E50-8X-SENTENCE}} <!-- PENDING: E50 at eight times the fleet (5 seeds, still running) --></p>
+
+<!-- TABLE:E50_errors -->
+
+<h3>5.9 Clocks, ranging and reservations (H11)</h3>
+
+<p>{{P3-E51-RESULTS-SENTENCE}} <!-- build: per oscillator class the one-way ranging error at four resync intervals, the largest clock error, the position-stamp error and two-way ranging, from results/E51_clocks.json rows (lunar scale); the atomic-clock rows are the corrected ones of B-91b --> {{P3-E51-GUARD-SENTENCE}} <!-- build: the conflict counts per guard and interval; the longest conflict-free interval per guard is computed, never typed --> {{P3-H11-VERDICT-SENTENCE}} <!-- build: H11 recomputed from the rows by the file's rule and compared with its flag --> {{P3-E51B-STEERING-SENTENCE}} <!-- build: E51b, steering against offset-only per interval; "cut" / "made it worse" from the ratio --> {{P3-E51B-MIXED-SENTENCE}} <!-- build: E51b, mixed scales with and without the conversion --> Table 12 gives the holdover of each oscillator per use.</p>
+
+<!-- TABLE:E51_clocks -->
+
+<!-- TABLE:E51_holdover -->
+
+<h3>5.10 Bringing a map up to date (H12)</h3>
+
+<p>{{P3-E52-RESULTS-SENTENCE}} <!-- build: bytes, share of a full resend, the hash-tree walk, the time to a current hazard layer in both orders, and the stale-map hits during and after the outage, from results/E52_map.json rows --> {{P3-H12-VERDICT-SENTENCE}} <!-- build: H12's two clauses recomputed from the file and compared with its flag --></p>
+
+<!-- TABLE:E52_map -->
+
+<h3>5.11 What authentication costs, and what the channel carries (H13)</h3>
+
+<p>{{P3-E53-RESULTS-SENTENCE}} <!-- build: bytes a second per rover with and without authentication, the busiest link at 1 and 10 Hz, the airtime on the two channel types with "within" / "above" from the data, the largest fleet that fits --> {{P3-H13-VERDICT-SENTENCE}} <!-- build: H13's two clauses recomputed from the rows and compared with the file's flag --> {{P3-E53-SPREAD-SENTENCE}} <!-- build: the spread geometry against the fleet geometry: busiest link, hops, share of rovers that reach the base --></p>
+
+<p>{{P3-E55-AUTH-SENTENCE}} <!-- build: forged messages accepted at 8 and 16 bits against 2^-t (within two standard deviations, checked), the formula's value at 64 bits, and the replays accepted, from results/E55_integrity.json auth --> {{P3-E55-CONSENSUS-SENTENCE}} <!-- build: the share of draws in which every honest rover hears three others, per geometry, from results/E55_integrity.json consensus.cells --> {{P3-E55-BASE-NODE-SENTENCE}} <!-- PENDING: the E55 variant with the base as the averaging node --></p>
+
+<!-- TABLE:E53_bitrate -->
+
+<h3>5.12 Store-and-forward and the lost link (H14)</h3>
+
+<p>{{P3-E54-RESULTS-SENTENCE}} <!-- build: per message kind the losses and delays under the three protocols at loss 0.25, the age of the base's information and the stuck reservations, from results/E54_dtn.json rows --> {{P3-H14-VERDICT-SENTENCE}} <!-- build: H14's two clauses recomputed and compared with the file's flag --> {{P3-E54-LEDGER-SENTENCE}} <!-- build: the Earth ledger over 61 days from results/E54_ledger.json: the longest Earth outage and the bundles lost per lifetime and protocol --></p>
+
+<!-- TABLE:E54_dtn -->
+
+<!-- P6-RESULTS-NEXT -->
+
+<h3>5.13 Checks on real data</h3>
+
+<p>{{P3-B97-RESULTS-SENTENCE}} <!-- build: the Artemis II limb fits against the mission's kernels (range and direction errors, the two systematic biases, the bodies in view) and the Earth-link geometry against SPICE, from results/B97_realdata.json; checked: every range high, every off-axis angle low, the scope string, agreement to 1e-12 degree --></p>
+
+<h3>5.14 What did not work, and what is not yet run</h3>
+
+<p>Not yet run: E50 at eight times the fleet and E50b (Section 5.8), and the consensus variant with the base as the averaging node (Section 5.11). Two results of the revision were corrected before this paper used them. The atomic-clock rows of E51 first restarted the clock's ageing at every resynchronisation; the model now lets it accumulate, the rows of Table 11 are the corrected ones, and the crystal's rows and H11 did not change. The first table of E54 counted ledger bundles that were still on their way at the end of the 31-day window as lost; the ledger was simulated again over 61 days, and Section 5.12 quotes that run only. {{P3-E46-STATUS-SENTENCE}} <!-- build: any E46 cell with fewer rows than its design block, from the run files; or "Every cell of E46 ran all its seeds." --> {{P3-E48-STATUS-SENTENCE}} <!-- build: any measurement of Section 4.2 that E48_sizing.json does not hold, listed; or "Every measurement of Section 4.2 was made." --> {{P3-FAILED-CHECKS-SENTENCE}} {{P3-ID-FIX-SENTENCE}} <!-- build: the cargo-id defect of PREREG change 10 and its outcome-neutral evidence, from results/id_fix_evidence.json. --> <!-- build: any check of Section 3.10 that failed, or "Every check of Section 3.10 passed." --> The link budget of the first version of this paper used free-space loss at the worst hop, and its link verdict compared the target with the traffic at the sources, without authentication or relaying; both were corrected on {{P3-E48-REVISION-DATE}} (Sections 4.6 and 7), and Sections 5.1 to 5.3 give the corrected values. Nothing else is withheld: every cell that ran is in Table 8 and every measurement made is in Tables 6 and 7.</p>
