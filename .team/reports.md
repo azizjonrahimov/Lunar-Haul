@@ -8656,3 +8656,24 @@ Next: B-91b (small), then B-94.
 **Questions for LEAD:** none.
 
 Next: B-94 (store-and-forward and lost link). B-90b waits for your loop.
+
+## B-90 ADDENDUM 1 (E50 at 4x, all 10 seeds; 8x still running in LEAD's loop) + the seven owed test files
+**Baseline complete:** the seven files that waited for RAM all pass (test_stories 13, test_strategic_years 3, test_terrain 10, test_terrain_assets 14, test_verification 19, test_verification_phase4 4, test_verification_phase5 18). All 49 test files now pass against the B-89…B-93 working tree.
+
+**E50 at 4x (10 seeds; `python tools/atc/run_e50.py build`; results/E50_*.json / csv rebuilt).** p95 position error while driving:
+
+| Layer set | p95 | near base | away | bound > 5 m |
+|---|---|---|---|---|
+| dead reckoning | 793 m [707, 869] | 788 | 793 | 100 % |
+| + ranging | 32.1 m [29.9, 34.2] | **4.31 [4.18, 4.46]** | 36.3 | 76 % |
+| + terrain fixes (= + LANS in 2028) | 10.6 m [10.1, 11.1] | 3.52 | **12.2 [11.6, 12.9]** | 45 % |
+| + LANS as in 2030 | 5.82 m [5.53, 6.09] | 2.81 | 6.76 | 23 % |
+
+- Terrain-fix stops: 169 h a month (32 vehicles).
+- **Violations a month without a margin: 68–72** for every layer set, back-to-back reservations as explained in the main report. With the margin: dead reckoning 0, layered 0.9 [0.2, 1.7].
+- **Delay per delivery:** perfect 12.80 h [6.96, 21.34].
+  - Dead-reckoning margin minus perfect: **+2.08 h [0.95, 3.25]** (road waiting 605 h against 310 h).
+  - Layered margin minus perfect: **−0.87 h [−2.00, −0.01]** (road waiting 314.7 h against 310.2 h).
+- **H9 at 4x:** the same verdicts as at 1x. Dead reckoning exceeds 5 m in the first driving hour (supported); ranging near the base 4.31 m (supported); fixes away from the base 12.2 m (not supported).
+- **H10, "the gap grows at 4x":** not supported. The layered gap is −0.87 h at 4x against +0.007 h at 1x.
+- **The negative 4x gap is not explained by the roads,** because the layered run waits slightly more on them. The 36 s margins change the order in which the auction dispatches, and with an auction this sensitive to timing the delay moves by about an hour either way. The CI excludes 0 only just (n = 10). I read it as "no cost measurable at 4x", not as a benefit, and will look again with 8x.
