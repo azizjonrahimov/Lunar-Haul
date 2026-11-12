@@ -18,7 +18,13 @@ meetings) are composed here from the data, and every fixed phrase in the parts t
 "recovers most", "fails", "all fell") is checked against the data before the build goes on; a failed check lists
 every broken claim and stops.
 
-E41 has not run yet. Keys that depend on it (and on the 60 % cells of E40) are filled with a visible
+Referee revision of 12 Nov 2026: the raw run rows and the rows archived before PREREG change 5 are read as well
+(R.full, R.arch), for the before/after of the primary outcome and of every tested comparison, the distinct-run
+counts, the seed rule, H6 in items and the unregistered direct comparisons. Two inputs await a task and have a
+placeholder path in dev_notes.json (B-106: learned_eval.rerun_file; B-100: lrip_v02.schema_file); see
+PLACEHOLDERS.md, 'Inputs that await a task'. No pending marker may print (decision A4).
+
+Keys whose experiment has not run (E41, the 60 % cells of E40) are filled with a visible
 [[PENDING ...]] marker only with --allow-pending; without the flag the build fails, as build_r1 would.
 
 The build fails if any placeholder is left unfilled or if a filled value contains nan or inf.
@@ -42,6 +48,7 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 RES = os.path.join(ROOT, "results")
 sys.path.insert(0, ROOT)
 from experiments.phase5 import run_phase5 as RP  # noqa: E402  (cell lists and the run-file union; nothing runs)
+from experiments.phase5 import analyse_e40 as AE  # noqa: E402  (the same pairing and bootstrap as the pairs table)
 
 PARTS = ["part1_front.html", "part2_related.html", "part3_methods.html", "part4_results.html", "part5_back.html"]
 PDF = os.path.join(HERE, "working_together_without_earth_p1.pdf")
@@ -248,19 +255,51 @@ def vv5_checks_sentence(tag, results_section, check):
         parts.append(f"{words(kinds['Cal'])} calibration reproduction{'s' if kinds['Cal'] != 1 else ''}")
     return (f"In addition, {cnt(len(rows))} checks of the engine's phase-5 verification suite (<code>lunarsim/vv5.py</code>, results in "
             f"<code>results/vv_phase5.json</code> and on the live site's verification page) bear on this paper: " + ", ".join(parts) +
-            f", by Sargent's technique {tech_txt}. Deterministic identities are held to 10<sup>&minus;9</sup> relative or exact; stochastic checks "
+            f", by technique: {tech_txt}. Deterministic identities are held to 10<sup>&minus;9</sup> relative or exact; stochastic checks "
             f"pass when the error is within a tolerance set in advance, and a 99&#8239;% batch-means interval that misses the reference is recorded "
             f"as a bias flag, not a failure" + (f"; the checks ran at commit <code>{html.escape(commit[:7])}</code>" if commit else "") +
             f". Their outcomes are in Section {results_section}.")
 
 
-def vv5_failed_sentence(tag, methods_section, check):
+def vv5_failed_sentence(tag, methods_section, check, brief=False):
     d, rows = vv5_load(tag, check)
     ran = [x for x in rows if not x.get("skipped")]
     failed = [x for x in ran if not x.get("passed")]
     skipped = [x for x in rows if x.get("skipped")]
     bias = [x for x in ran if x.get("bias_flag")]
     label = lambda x: f"{html.escape(str(x.get('id')))}{(' ' + html.escape(str(x.get('sub')))) if x.get('sub') else ''}"
+    if brief:
+        # Referee S16(b): the failures in plain words, grouped by check; the checks that were not run are counted,
+        # with their reasons left in the results file (they are internal notes, not results).
+        reg = {"A_EARTH plan_ahead": "owners alone from Earth with plan ahead", "A_EARTH strict": "owners alone from Earth, strict",
+               "A_MOON": "owners alone on the Moon", "B_EARTH strict": "the strict dispatcher on Earth"}
+        pol = {"atc_bid_v1": "the network", "atc_bid_linear_v1": "the linear model"}
+        groups = {}
+        for x in failed:
+            groups.setdefault(str(x.get("id")), []).append(x)
+        bits = []
+        for cid, xs in groups.items():
+            subs = [str(x.get("sub", "")) for x in xs]
+            if cid == "D10" and all(s.startswith("pairing ") and s[len("pairing "):] in reg for s in subs):
+                bits.append(f"{words(len(xs))} are the pairing check D10 (pairing by seed reduces the variance of the difference "
+                            f"from the full-information marketplace) for " + listing(reg[s[len('pairing '):]] for s in subs) +
+                            f", whose delay varies mostly between start years (Section 4.5)")
+            elif cid == "L5" and all(s in pol for s in subs):
+                bits.append(f"{words(len(xs))} are the monotonicity check L5 (the learned bid is monotone in approach time, mass "
+                            f"and battery charge) for " + listing(pol[s] for s in subs))
+            else:
+                bits.append(f"{words(len(xs))} " + ("is" if len(xs) == 1 else "are") + f" check {html.escape(cid)} ("
+                            + listing(html.escape(s) for s in subs) + ")")
+        out = (f"Of the {cnt(len(rows))} phase-5 checks of Section {methods_section} tagged to this paper, "
+               + (f"{cnt(len(failed))} failed: " + "; ".join(bits) + f". The other {cnt(len(ran) - len(failed))} that ran passed"
+                  if failed else f"every one of the {cnt(len(ran))} that ran passed"))
+        if skipped:
+            out += (f"; {cnt(len(skipped))} " + ("was" if len(skipped) == 1 else "were") + " not run, because the check does not "
+                    "apply to this model or was left out, each with its reason in <code>results/vv_phase5.json</code>")
+        if bias:
+            out += (f"; {words(len(bias))} met " + ("its" if len(bias) == 1 else "their") + " tolerance with a 99&#8239;% "
+                    "interval that misses the reference, recorded as a bias flag (" + ", ".join(label(x) for x in bias) + ")")
+        return out + "."
     if failed:
         how = lambda x: ("the condition did not hold" if float(x.get("tolerance") or 0) == 0 and x.get("mode") == "abs"
                          else f"error {_vv5_err(x)} against a tolerance of {x.get('tolerance')}")
@@ -334,18 +373,25 @@ def vv5_pairing_sentence(tag, methods_section, check):
     weak = [x for x in pr if not x.get("passed")]
     reg = lambda x: html.escape(str(x["sub"])[len("pairing "):])
     vr = lambda xs: (min(float(x["detail"]["vrf"]) for x in xs), max(float(x["detail"]["vrf"]) for x in xs))
+    dem = [x for x in d.get("rows", []) if x.get("id") == "D10" and x.get("sub") == "E40 demand identical"][0]
+    check("10 % load" in str(dem.get("basis", "")) and all("80 paired runs" in str(x.get("basis", "")) and
+                                                           "mean delay per delivery" in str(x.get("basis", "")) for x in pr),
+          "the D10 pairing rows are at 10 % load, on the mean delay per delivery, over 80 paired runs")
     s = (f"The pairing holds for demand, landings and initial faults: in the engine's phase-5 checks (D10, Section {methods_section}) every regime's "
-         f"E40 run had the same demand as the oracle's on the same seed and start year" + (f" across {n_pairs} regime pairs" if n_pairs else "") +
-         "; the per-job intervention and fault redraws are shared in draw order and diverge once the allocations differ, in every regime. ")
+         f"E40 run had the same demand as the full-information marketplace's on the same seed and start year" + (f" across {n_pairs} regime pairs" if n_pairs else "") +
+         "; the per-job intervention and fault redraws are shared in draw order and diverge once the allocations differ, in every regime. "
+         "How much the pairing buys was measured at 10&#8239;% load, on the mean delay per delivery and not on the primary outcome, over the 80 rows "
+         "of each cell, which include the repeated runs of the regimes that never wait for Earth. ")
     if good:
         lo, hi = vr(good)
-        s += (f"Against the oracle, pairing cut the variance of the paired difference in mean delay per delivery to {num(lo, 2)}&ndash;{num(hi, 2)} "
+        s += (f"Against the marketplace, pairing cut the variance of the paired difference to {num(lo, 2)}&ndash;{num(hi, 2)} "
               f"of the unpaired sum for {', '.join(reg(x) for x in good)}")
     if weak:
         lo, hi = vr(weak)
-        s += ((", and" if good else "Against the oracle, pairing cut it") + f" only to {num(lo, 2)}&ndash;{num(hi, 2)} for {', '.join(reg(x) for x in weak)}, "
-              "whose delay varies mostly between start years; their paired intervals are little narrower than unpaired ones would be, and the bootstrap "
-              "over pairs includes that variation.")
+        s += ((", and" if good else "Against the marketplace, pairing cut it") + f" only to {num(lo, 2)}&ndash;{num(hi, 2)} for {', '.join(reg(x) for x in weak)}, "
+              "whose delay varies mostly between start years; their paired intervals are little narrower than unpaired ones would be. A bootstrap "
+              "over pairs treats the runs of one start year as independent, so for H2 we also give the interval obtained by resampling whole start "
+              "years (Section 5.3).")
     else:
         s += "."
     return s
@@ -396,6 +442,45 @@ class R:
                 d["label"] = d["cell"].str.extract(r"label=([^;]+)")[0]
             self.runs[exp] = d
         self.e41 = {os.path.basename(f): pd.read_csv(f) for f in glob.glob(os.path.join(RES, "table_E41_*.csv"))}
+        # Table 6, the guard runs and the imitation statistics come from the evaluation of 27 October, made on the
+        # engine before PREREG changes 4 and 5. Task B-106 reruns the out-of-range cells and the guard runs; when its
+        # file exists (dev_notes.json "learned_eval"."rerun_file") `ood` and `guards` are read from it and the label
+        # in the caption and the text changes with it.
+        le = self.dev["learned_eval"]
+        check_path = os.path.join(ROOT, le["file"])
+        if os.path.abspath(check_path) != os.path.abspath(os.path.join(RES, "ATC_learned_eval.json")):
+            raise ValueError("dev_notes.json learned_eval.file is not results/ATC_learned_eval.json")
+        rp = os.path.join(ROOT, le["rerun_file"])
+        self.L_rerun = json.load(open(rp, encoding="utf-8")) if os.path.exists(rp) else None
+        self._full, self._arch = {}, {}
+
+    KEY = ["cell", "seed", "start_year"]
+
+    def full(self, exp):
+        """Every column of an experiment's current run rows (the union of its run files), with the block added."""
+        if exp not in self._full:
+            files = RP.run_files(exp)
+            if not files:
+                raise Pending(f"{exp} has not run")
+            d = pd.concat([pd.read_csv(f, float_precision="round_trip") for f in files], ignore_index=True)
+            d = d.drop_duplicates(self.KEY, keep="last")
+            if "label" not in d:
+                d["label"] = d["cell"].str.extract(r"label=([^;]+)")[0]
+            self._full[exp] = AE.add_block(d)
+        return self._full[exp]
+
+    def arch(self, exp):
+        """The rows archived before PREREG change 5 (results/archive/<exp>_runs*.pre-fixpoint-*.csv)."""
+        if exp not in self._arch:
+            files = sorted(glob.glob(os.path.join(RES, "archive", f"{exp}_runs*.pre-fixpoint-*.csv")))
+            if not files:
+                raise Pending(f"no archived rows of {exp} from before change 5")
+            d = pd.concat([pd.read_csv(f, float_precision="round_trip") for f in files], ignore_index=True)
+            d = d.drop_duplicates(self.KEY, keep="last")
+            if "label" not in d:
+                d["label"] = d["cell"].str.extract(r"label=([^;]+)")[0]
+            self._arch[exp] = AE.add_block(d)
+        return self._arch[exp]
 
     def pair(self, key, load, block=None, **fmt):
         """The pairs row for a label (LABELS key or literal), a load and a block; by default the `valid` row."""
@@ -488,27 +573,126 @@ def values(r: R, allow_pending: bool):
             V[key] = f'<span class="pending">[[PENDING {tag}]]</span>'
 
     # --- PREREG change 5 (4.6): the dispatch fixed-point rerun, before/after from compare_rerun.py ---------------
+    # Referee M2: the row movements are computed here for the paper's primary outcome (the censored mean urgent
+    # wait), from the archived and the current rows matched by cell, seed and start year. compare_rerun.py's JSON
+    # gives them for delay_mean_h, the mean delay per delivery of all cargo, which an earlier build quoted under
+    # the primary outcome's name. The before/after of every tested comparison (PREREG change 5) is Table C1.
+    PRIMARY = "atc_urgent_wait_mean_cens_h"
+    REGIME_WORDS = {"A_EARTH strict": "owners alone from Earth, strict", "A_EARTH plan_ahead": "owners alone from Earth, plan ahead",
+                    "A_MOON": "owners alone on the Moon", "B_EARTH strict": "the strict dispatcher on Earth",
+                    "B_EARTH plan_ahead": "the plan-ahead dispatcher on Earth", "B_EARTH_RELAY 0.8": "the 80&#8239;% relay",
+                    "B_EARTH_RELAY 1.0": "the relay that is always up", "C_LEADER": "the elected leader",
+                    "C_AUCTION": "the auction", "C_LEARNED_LIN": "the learned linear bids",
+                    "C_LEARNED_MLP": "the learned network bids", "O_ORACLE": "the full-information marketplace"}
+
+    def moved_rows(exp):
+        new, old = r.full(exp), r.arch(exp)
+        m = new.merge(old, on=R.KEY, suffixes=("_new", "_old"))
+        d = (m[f"{PRIMARY}_new"] - m[f"{PRIMARY}_old"]).dropna()
+        i = d.abs().idxmax()
+        return {"n_old": len(old), "n": len(d), "mean": float(d.mean()), "abs": float(d.abs().mean()),
+                "max": float(d.abs().max()), "label": str(m.loc[i, "label_new"]),
+                "load": int(m.loc[i, "load_new"]) if "load_new" in m else LOAD_MAIN}
+
+    def raw_pair(df, a, b, load=LOAD_MAIN, metric=PRIMARY, block=None, scale=1.0):
+        """A paired difference from raw run rows, with analyse_e40's pairing and bootstrap (the pairs table's own)."""
+        d, _ = AE.paired(df, dict(label=a, load=load), dict(label=b, load=load), metric, None, block)
+        bb = AE.boot(d * scale)
+        if bb["n"] < 2:
+            raise Pending(f"{a} - {b} at {load} %: {bb['n']} matched runs")
+        base = df[(df["label"] == b) & (df["load"] == load)]
+        if block:
+            base = base[base["run_block"] == block]
+        return {"n": bb["n"], "mean": bb["mean"], "lo": bb["ci"][0], "hi": bb["ci"][1], "lo90": bb["ci90"][0],
+                "hi90": bb["ci90"][1], "p": bb["p"], "b_mean": float(base[metric].mean() * scale)}
+
+    # (name, experiment, a, b, block, metric, scale, unit, rule): the tested comparisons and the two secondary ones
+    def _tost(q, o_mean):
+        return "inside the margin" if -0.1 * o_mean < q["lo90"] and q["hi90"] < 0.1 * o_mean else "not inside the margin"
+    BA = [("H1, sharing", "E40", "B_EARTH_RELAY 1.0", "A_EARTH full coverage", "v1", PRIMARY, 1.0, "h",
+           lambda q, o: "supported" if q["hi"] < 0 else "not supported"),
+          ("H2, availability (pooled years)", "E40", "B_EARTH strict", "O_ORACLE", None, PRIMARY, 1.0, "h",
+           lambda q, o: "supported" if q["lo"] > 0.1 * o else "not supported"),
+          ("H2, secondary: plan ahead", "E40", "B_EARTH plan_ahead", "O_ORACLE", None, PRIMARY, 1.0, "h",
+           lambda q, o: "recovers part" if q["lo"] > 0 else "recovers all"),
+          ("H2, secondary: relay 0.8 (equivalence, 90&#8239;% interval)", "E40", "B_EARTH_RELAY 0.8", "O_ORACLE", None, PRIMARY, 1.0, "h",
+           lambda q, o: _tost(q, o)),
+          ("H3a, auction (equivalence, 90&#8239;% interval)", "E40", "C_AUCTION", "O_ORACLE", "v1", PRIMARY, 1.0, "h",
+           lambda q, o: _tost(q, o)),
+          ("H4, linear model", "E40", "C_LEARNED_LIN", "C_AUCTION", "v1", PRIMARY, 1.0, "h",
+           lambda q, o: "supported" if q["hi"] < 0 else "not supported"),
+          ("H4, network", "E40", "C_LEARNED_MLP", "C_AUCTION", "v1", PRIMARY, 1.0, "h",
+           lambda q, o: "supported" if q["hi"] < 0 else "not supported"),
+          ("H6, cross-owner pairs (share of cargo mass, team share 0.25)", "E42", "C_AUCTION team 25 any loss 0.1",
+           "C_AUCTION team 25 same_owner loss 0.1", None, "delivered_share", 100.0, "pp",
+           lambda q, o: "supported" if q["lo"] > 0 else "not supported")]
+
+    def before_after():
+        rows = []
+        for name, exp, a, b, blk, metric, scale, unit, rule in BA:
+            out = {}
+            for tag, df in (("before", r.arch(exp)), ("after", r.full(exp))):
+                q = raw_pair(df, a, b, metric=metric, block=blk, scale=scale)
+                o = df[(df["label"] == "O_ORACLE") & (df["load"] == LOAD_MAIN)]
+                if blk:
+                    o = o[o["run_block"] == blk]
+                q["verdict"] = rule(q, float(o[PRIMARY].mean()) if len(o) else float("nan"))
+                out[tag] = q
+            rows.append((name, unit, out["before"], out["after"]))
+        return rows
+
     def fixpoint_sentence():
-        missing = [e for e in ("E40", "E42", "E41") if e not in r.ba]
-        if missing:
-            raise Pending(f"the before/after of {', '.join(missing)} (compare_rerun.py) has not landed")
-        parts = []
-        for e in ("E40", "E42", "E41"):
-            b = r.ba[e]
-            parts.append(f"{e}: {b['n_matched']:,} rows matched, the primary outcome moved by "
-                         f"{num(b['primary_mean_change_h'], 2, sign=True)}{NB}h on average and "
-                         f"{num(b['primary_mean_abs_change_h'], 1)}{NB}h in absolute value, at most "
-                         f"{num(b['primary_max_abs_change_h'], 0)}{NB}h in one run")
-        tot_old = sum(r.ba[e]["n_old"] for e in r.ba)
+        mv = {e: moved_rows(e) for e in ("E40", "E42", "E41")}
+        rows = before_after()
+        first = {"H1": "H1, sharing", "H2": "H2, availability", "H3a": "H3a, auction", "H4": "H4, linear", "H6": "H6, cross-owner"}
+        by = {k: next((b, a) for name, unit, b, a in rows if name.startswith(v)) for k, v in first.items()}
+        # the "after" side must be the pairs table's own value (the same rows, pairing and bootstrap)
+        for key, lab in (("H1", "H1"), ("H2", "H2_pooled"), ("H3a", "H3a"), ("H4", "H4_LIN")):
+            check(abs(by[key][1]["mean"] - r.pair(lab, LOAD_MAIN)["mean"]) < 1e-3 and
+                  abs(by[key][1]["lo"] - r.pair(lab, LOAD_MAIN)["lo"]) < 1e-3,
+                  f"the after value of {key} recomputed from the raw rows equals table_E40_pairs.csv")
+        changed = [name for name, unit, b, a in rows if b["verdict"] != a["verdict"]]
+        ba = lambda q, nd=2: f"{num(q['mean'], nd, sign=True)} ({num(q['lo'], nd)} to {num(q['hi'], nd)})"
+        e40, e42, e41 = mv["E40"], mv["E42"], mv["E41"]
+        tot_old = sum(v["n_old"] for v in mv.values())
+        where = lambda v: f", {REGIME_WORDS.get(v['label'], 'one cell')} at {v['load']}{PCT} load" if v["label"] in REGIME_WORDS else ""
         return (f"The dispatcher's consolidation hold re-posted a wake-up for every held lane on every call, so the "
                 f"event queue grew with fleet size and, because one dispatch call does not reach a fixed point, the "
                 f"duplicates also changed assignments. The fix, pre-registered as change 5 before any rerun row, posts "
                 f"one wake-up per lane and lot and repeats dispatch at the same instant until nothing changes. Every "
                 f"block of E40, E41 and E42 was rerun with it; the {tot_old:,} earlier rows are archived and "
-                f"reproducible with the fix off, and every number in this paper is from the rerun rows. Against the "
-                f"archived rows with the same cell and seed ({'; '.join(parts)}). The per-cell before/after tables "
-                f"are results/E40_fixpoint_before_after.csv and the E41 and E42 files beside it.")
+                f"reproducible with the fix off, and every number from E40, E41 and E42 in this paper is from the "
+                f"rerun rows. Against the archived row of the same cell, seed and start year, the primary outcome "
+                f"moved by {num(e40['mean'], 2, sign=True)}{NB}h on average and {num(e40['abs'], 1)}{NB}h in absolute "
+                f"value in E40 ({e40['n']:,} rows with a value; at most {num(e40['max'], 0)}{NB}h in one run"
+                f"{where(e40)}), by {num(e42['mean'], 2, sign=True)}{NB}h and {num(e42['abs'], 1)}{NB}h in E42 "
+                f"({e42['n']:,} rows; at most {num(e42['max'], 0)}{NB}h) and by {num(e41['mean'], 2, sign=True)}{NB}h "
+                f"and {num(e41['abs'], 1)}{NB}h in the {e41['n']:,} rows of E41 that existed before the fix (at most "
+                f"{num(e41['max'], 0)}{NB}h). An earlier version of this section quoted smaller figures; they were "
+                f"for the mean delay per delivery of all cargo and not for the primary outcome. Table C1 in "
+                f"Appendix C gives every tested comparison before and after the fix, as change 5 promised. "
+                + ("No verdict changed. " if not changed else
+                   f"The verdict changed for {listing(html.unescape(c) for c in changed)}. ")
+                + f"The paired differences moved from {ba(by['H3a'][0])} to {ba(by['H3a'][1])}{NB}h for H3a, from "
+                  f"{ba(by['H4'][0])} to {ba(by['H4'][1])}{NB}h for H4's linear model, from {ba(by['H2'][0], 1)} to "
+                  f"{ba(by['H2'][1], 1)}{NB}h for H2 and from {ba(by['H6'][0], 1)} to {ba(by['H6'][1], 1)} "
+                  f"percentage points for H6.")
     fill("P1-FIXPOINT-SENTENCE", fixpoint_sentence, "change 5 before/after")
+
+    def fixpoint_table():
+        rows = []
+        for name, unit, b, a in before_after():
+            lohi = (lambda q: (q["lo90"], q["hi90"])) if "90" in name else (lambda q: (q["lo"], q["hi"]))
+            u = f"{NB}h" if unit == "h" else f"{NB}pp"
+            cell = lambda q: f"{num(q['mean'], 2, sign=True)}{u} [{num(lohi(q)[0], 2)}, {num(lohi(q)[1], 2)}]"
+            rows.append([name, f"{b['n']}", cell(b), b["verdict"], cell(a), a["verdict"]])
+        return _tab("<b>Table C1.</b> Every tested comparison before and after the engine fix of change 5 "
+                    "(Section 4.6): the paired mean difference at the middle load with its 95&#8239;% bootstrap "
+                    "interval (the 90&#8239;% interval for the two equivalence claims), from the archived rows and "
+                    "from the rerun rows, with the same pairing and bootstrap as Table 7. H2 is shown pooled over "
+                    "the start years; pp is percentage points.",
+                    ["Comparison", "n", "Before the fix", "Outcome", "After the fix", "Outcome"], rows, cls="wide")
+    fill("P1-TABLE-FIXPOINT", fixpoint_table, "change 5 before/after")
 
     # --- design -------------------------------------------------------------------------------------------
     V["P1-LOAD-MAIN"] = pc(LOAD_MAIN, 0)
@@ -524,6 +708,55 @@ def values(r: R, allow_pending: bool):
     fill("P1-E41-N-RUNS", lambda: f"{r.runs_of('E41', LABELS['E41_rally_on'])['run_s'].size and n_runs['E41']:,}",
          "E41")
     V["P1-N-RUNS-ALL"] = f"{sum(n_runs.values()):,}"
+
+    # Referee M11: rows are not all distinct runs. A row repeats another row of its cell when it has the same seed and
+    # the same value, to nine decimals, of every outcome column below (the start year and the columns that only
+    # describe that year's Earth windows are left out). The Earth-independent regimes repeat by construction
+    # (PREREG change 4); owners alone on the Moon repeats whenever no apron conflict went to Earth.
+    OUTCOMES = [PRIMARY, "atc_urgent_wait_mean_h", "delivered_kg", "delivered_items", "delay_mean_h", "jobs",
+                "tonne_days_waiting", "backlog_kg", "km_total", "energy_kwh"]
+
+    def distinct(exp):
+        out = {}
+        for cell, g in r.full(exp).groupby("cell"):
+            k = g[["seed"] + OUTCOMES].round(9).fillna(-999.0)
+            out[(str(g["label"].iloc[0]), int(g["load"].iloc[0]))] = (len(g), len(k.drop_duplicates()))
+        return out
+    D40 = distinct("E40")
+    rows40, dist40 = sum(n for n, d in D40.values()), sum(d for n, d in D40.values())
+    check(rows40 == n_runs["E40"], "the distinct-run count covers every E40 row")
+    ei_rep = {k: n - d for k, (n, d) in D40.items() if k[0] in RP.EARTH_INDEPENDENT and n != d}
+    other_rep = {k: (n, d) for k, (n, d) in D40.items() if k[0] not in RP.EARTH_INDEPENDENT and n != d}
+    check(all(v == 50 for v in ei_rep.values()), "an Earth-independent cell run on both blocks repeats its 50 block-two runs")
+    check(all(n == d for e in ("E41", "E42") for n, d in distinct(e).values()), "no row of E41 or E42 repeats another of its cell")
+    # E41's default cell and E42's cell at team share 0.10 and loss 0.10 are E40's auction cell again, by design
+    a40 = r.full("E40")
+    a40 = a40[(a40["label"] == LABELS["auction"]) & (a40["load"] == LOAD_MAIN) & (a40["run_block"] == "v1")].set_index("seed")[OUTCOMES]
+    again = 0
+    for exp, lab in (("E41", LABELS["E41_rally_on"]), ("E42", "C_AUCTION team 10 any loss 0.1")):
+        g = r.full(exp)
+        g = g[g["label"] == lab].set_index("seed")[OUTCOMES]
+        check(len(g) == len(a40) and float((g - a40).abs().max().max()) < 1e-9, f"{exp} {lab} repeats E40's auction cell run for run")
+        again += len(g)
+    n_rep = rows40 - dist40
+    V["P1-E40-N-DISTINCT"] = f"{dist40:,}"
+    V["P1-N-RUNS-REPEATS"] = f"{n_rep:,}"
+    V["P1-N-RUNS-DISTINCT-MAX"] = f"{sum(n_runs.values()) - n_rep - again:,}"
+    moon = {load: D40[(LABELS["A_moon"], load)] for load in (LOAD_LIGHT, LOAD_MAIN, LOAD_HEAVY)}
+    rest = {k: v for k, v in other_rep.items() if k[0] != LABELS["A_moon"]}
+    V["P1-RUNS-SENTENCE"] = (
+        f"Rows are not all distinct runs. Of E40's {rows40:,} rows, {dist40:,} are distinct: {n_rep:,} repeat another "
+        f"row of their cell exactly (the same seed and the same outcomes). {sum(ei_rep.values()):,} of the repeats are "
+        f"the second block of the {len(ei_rep)} cells whose regime never waits for Earth (Section 4.6), which no "
+        f"comparison counts. The rest are in cells that do depend on Earth: owners alone on the Moon, whose only use "
+        f"of Earth is the hand coordination of apron conflicts, has "
+        + listing(f"{moon[l][1]} distinct runs of {moon[l][0]} at {l}{PCT} load" for l in moon)
+        + ("" if not rest else ", and " + listing(f"{REGIME_WORDS.get(k[0], k[0])} at {k[1]}{PCT} load has {d} of {n}"
+                                                  for k, (n, d) in sorted(rest.items())))
+        + f". Table 5 gives the distinct count beside the rows. A further {again} rows of E41 and E42 rerun E40's "
+          f"auction cell by design, as a check that the experiments agree, so the {sum(n_runs.values()):,} rows hold "
+          f"at most {sum(n_runs.values()) - n_rep - again:,} distinct simulated years.")
+    r.distinct40 = D40
     cal = r.load["calibration"]["variants"]
     for lv in ("10", "30", "60"):
         k = cal[lv]["k"]
@@ -608,8 +841,23 @@ def values(r: R, allow_pending: bool):
     # delivered-only paired difference over the censored one (both "H1 (reported)" rows, v1)
     h1d = r.pair("H1_delivered_only", LOAD_MAIN)
     undel = 1 - abs(h1d["mean"]) / abs(h1["mean"])
-    check(undel > 0.9, "almost the whole H1 gap is cargo owners alone never delivered")
-    V["P1-H1-UNDELIVERED-SHARE"] = sh(undel, 1)        # one decimal: "almost the whole gap" must not read "100 %"
+    # Referee M3: withdrawn from the paper. The ratio joins a censored and a delivered-only difference, which are
+    # means over different item sets and do not add, and it was printed beside the delivered-only figure of another
+    # comparison (owners alone with strict fallback against the marketplace). The key stays in values.json only
+    # because the site's /paper/ page still reads it; the text states each comparison as what it is.
+    V["P1-H1-UNDELIVERED-SHARE"] = sh(undel, 1)
+    check(h1d["block"] == "v1" and h1d["hi"] < 0, "on delivered items owners alone with Earth always in view wait longer (H1 pair)")
+    V["P1-H1-DELIV-DIFF"], V["P1-H1-DELIV-DIFF-CI"] = h_(-h1d["mean"], 1), ci_abs(h1d, 1)
+    V["P1-A-DELIV-MINUS-O-CI"] = ci_h(ad["lo"], ad["hi"], 0)
+    V["P1-A-DELIV-N"] = f"{int(ad['n'])}"
+    oy = r.pair("H2_old_yardstick", LOAD_MAIN)
+    V["P1-A-CENS-MINUS-O-30"] = h_(oy["mean"], 0)
+    # what owner C delivers alone, and what the fleet leaves undelivered (the inputs behind H1's size)
+    f40 = r.full("E40")
+    af = f40[(f40["label"] == LABELS["A_full"]) & (f40["load"] == LOAD_MAIN) & (f40["run_block"] == "v1")]
+    po = f40[(f40["label"] == LABELS["relay10"]) & (f40["load"] == LOAD_MAIN) & (f40["run_block"] == "v1")]
+    check(af["own_C_delivered_t"].mean() < 0.02 * po["own_C_delivered_t"].mean(), "alone, owner C delivers almost none of its cargo")
+    V["P1-OWNER-C-ALONE-T"], V["P1-OWNER-C-POOLED-T"] = t_(af["own_C_delivered_t"].mean(), 1), t_(po["own_C_delivered_t"].mean())
     # the split agreed with BACKEND (B-75): lifts by pairs of different owners' rovers against single-robot jobs
     # pooled across owners together with the pooled dispatcher; the two parts sum to the E40 gap
     team, pool = r.pair("H1_team", LOAD_MAIN), r.pair("H1_pool", LOAD_MAIN)
@@ -647,8 +895,44 @@ def values(r: R, allow_pending: bool):
     rel_fit = r.fit("hypotheses", "H2", str(LOAD_MAIN), "plan_ahead_and_relay_0.8")[LABELS["relay08"]]
     check(not rel_fit["within_10pct_tost"] and relay["lo"] > 0, "the 80 % relay misses its equivalence margin")
     V["P1-PLAN-MINUS-O"], V["P1-PLAN-MINUS-O-CI"] = h_(plan["mean"]), ci_h(plan["lo"], plan["hi"])
-    # the 90 % interval: the equivalence margin of 4.5 is judged on it (the referee round asked for the same interval)
-    V["P1-RELAY08-MINUS-O"], V["P1-RELAY08-MINUS-O-CI"] = h_(relay["mean"]), ci_h(relay["lo90"], relay["hi90"])
+    # the 95 % interval like every other in the section; the 90 % interval, on which the equivalence margin of 4.5 is
+    # judged, is printed beside it with its level (referee row 78: it had been printed alone, without its level)
+    V["P1-RELAY08-MINUS-O"], V["P1-RELAY08-MINUS-O-CI"] = h_(relay["mean"]), ci_h(relay["lo"], relay["hi"])
+    V["P1-RELAY08-MINUS-O-CI90"] = ci_h(relay["lo90"], relay["hi90"])
+    # Referee S2: the pooled interval resamples the 80 pairs as if independent, although most of the variance is
+    # between the nine start years and seeds 1-10 appear in six years each. Resampling whole start years:
+    f40 = r.full("E40")
+    ja = f40[(f40["label"] == LABELS["B_strict"]) & (f40["load"] == LOAD_MAIN)][["seed", "start_year", PRIMARY]]
+    jb = f40[(f40["label"] == LABELS["O"]) & (f40["load"] == LOAD_MAIN)][["seed", "start_year", PRIMARY]]
+    jj = ja.merge(jb, on=["seed", "start_year"], suffixes=("_a", "_b"))
+    jj["d"] = jj[f"{PRIMARY}_a"] - jj[f"{PRIMARY}_b"]
+    check(len(jj) == int(h2["n"]) and abs(jj["d"].mean() - h2["mean"]) < 1e-3, "the H2 pairs rebuilt from the raw rows are the table's")
+    groups = [g["d"].to_numpy(float) for _, g in jj.groupby("start_year")]
+    rngc = np.random.default_rng(40)
+    cm = np.array([np.concatenate([groups[i] for i in rngc.integers(0, len(groups), len(groups))]).mean()
+                   for _ in range(AE.B)])
+    yc_lo, yc_hi = float(np.quantile(cm, 0.025)), float(np.quantile(cm, 0.975))
+    check(yc_lo > margin, "H2 clears its margin when whole start years are resampled")
+    check(yc_hi - yc_lo > h2["hi"] - h2["lo"], "the year-clustered interval is the wider one")
+    V["P1-H2-YEARCLUSTER-CI"] = ci_h(yc_lo, yc_hi)
+    V["P1-H2-N-YEARS"] = words(len(groups))
+    V["P1-H2-N-PER-YEAR"] = f"{min(len(g) for g in groups)} to {max(len(g) for g in groups)}"
+    V["P1-H2-OLD-YARDSTICK-MET"] = ("would not have been met" if h2["mean"] < r.fit("hypotheses", "H2", str(LOAD_MAIN), "original_yardstick_half_A_minus_O")
+                                    else "would have been met")
+    # Referee M13 and O1: the direct comparisons a reader looks for, paired on the 30 seeds of block one (the auction
+    # is Earth-independent, so the second block would repeat its runs). Not registered.
+    ar = raw_pair(f40, LABELS["auction"], LABELS["relay08"], block="v1")
+    ap = raw_pair(f40, LABELS["auction"], LABELS["B_plan"], block="v1")
+    a1 = raw_pair(f40, LABELS["auction"], LABELS["relay10"], block="v1")
+    check(ar["hi"] < 0 and ap["hi"] < 0, "the auction waits less than the 80 % relay and than plan-ahead (block one)")
+    check(a1["lo"] < 0 < a1["hi"], "the auction is not distinguishable from the relay that is always up")
+    ro = f40[(f40["label"] == LABELS["relay10"]) & (f40["load"] == LOAD_MAIN)].merge(
+        f40[(f40["label"] == LABELS["O"]) & (f40["load"] == LOAD_MAIN)], on=["seed", "start_year"])
+    check(len(ro) == 80 and float((ro[f"{PRIMARY}_x"] - ro[f"{PRIMARY}_y"]).abs().max()) == 0.0,
+          "the relay that is always up equals the marketplace run for run")
+    V["P1-AUCTION-MINUS-RELAY08"], V["P1-AUCTION-MINUS-RELAY08-CI"] = h_(-ar["mean"], 1), ci_abs(ar, 1)
+    V["P1-AUCTION-MINUS-PLAN"], V["P1-AUCTION-MINUS-PLAN-CI"] = h_(-ap["mean"], 1), ci_abs(ap, 1)
+    V["P1-AUCTION-DIRECT-N"] = f"{ar['n']}"
     bo = "atc_backlog_end_blackout_t_mean"
     check(reg30["B_strict"][bo] > reg30["O"][bo], "the blackout backlog is larger under strict fallback")
     V["P1-B-STRICT-BACKLOG-30"], V["P1-O-BACKLOG-30"] = t_(reg30["B_strict"][bo], 1), t_(reg30["O"][bo], 1)
@@ -701,8 +985,8 @@ def values(r: R, allow_pending: bool):
     # "matched" only when equivalence is shown; a zero-covering interval that is too wide is reported as such
     V["P1-H3A-ABSTRACT-CLAUSE"] = (f"came within {pc(abs(100 * h3['share_of_b']), 1)} of the full-information "
                                    f"marketplace, equivalent within the pre-registered margin" if equiv else
-                                   f"came within {h_(abs(h3['mean']), 1)} of the full-information marketplace, a "
-                                   f"difference not distinguishable from zero but too wide to show equivalence"
+                                   f"came within {h_(abs(h3['mean']), 1)} of the full-information marketplace, not "
+                                   f"distinguishable from zero but too wide to show equivalence"
                                    if h3["lo"] < 0 < h3["hi"] else
                                    f"was {'better' if h3['hi'] < 0 else 'worse'} than the full-information marketplace "
                                    f"by {pc(abs(100 * h3['share_of_b']), 1)}")
@@ -782,13 +1066,30 @@ def values(r: R, allow_pending: bool):
                                    "&plusmn;2&#8239;% margin")
     else:
         V["P1-H4-LIGHT-CLAUSE"] = "and there the linear model was worse than the hand-built bids"
-    g = r.L["guards"][str(LOAD_HEAVY)]
+    # Referee M8: Table 6, the guard runs and the imitation statistics are from the evaluation file of 27 October,
+    # made on the engine before PREREG changes 4 and 5; the rerun (task B-106) is read when its file exists.
+    le = r.dev["learned_eval"]
+    LS = r.L_rerun if r.L_rerun is not None else r.L
+    r.learned_src = LS
+    if r.L_rerun is not None:
+        V["P1-LEARNED-EVAL-LABEL"] = "rerun on the current engine"
+        V["P1-LEARNED-EVAL-SENTENCE"] = ("Table 6 and the guard runs are from the rerun of those cells on the current "
+                                         "engine; the imitation statistics of Section 5.11 are from the first "
+                                         f"evaluation, of {le['file_date']}, made before changes 4 and 5.")
+    else:
+        V["P1-LEARNED-EVAL-LABEL"] = f"from the evaluation of {le['file_date']}, on the engine before changes 4 and 5"
+        V["P1-LEARNED-EVAL-SENTENCE"] = (
+            f"Table 6, the guard runs and the imitation statistics of Section 5.11 are not from the rerun rows: they "
+            f"come from the evaluation of the learned bids made on {le['file_date']}, on the engine before the two "
+            f"fixes of changes 4 and 5 (Section 4.6), which the pre-registration describes as statistically valid "
+            f"but not bit-exact [43]. They have not been rerun on the current engine.")
+    g = LS["guards"][str(LOAD_HEAVY)]
     for k in ("delay_prio2_mean_h", "delay_mean_bulk", "delay_mean_h", "tonne_days_waiting"):
         check(g[k]["linear"] < g[k]["hand"], f"guard {k} fell with the learned bids at 60 %")
     check(abs(g["delivered_kg"]["linear"] / g["delivered_kg"]["hand"] - 1) < 0.005, "tonnes delivered did not change")
     V["P1-GUARD-TONNEDAYS-PCT"] = pc(100 * (g["tonne_days_waiting"]["linear"] / g["tonne_days_waiting"]["hand"] - 1), 0,
                                      sign=True)
-    ood = r.L["ood"]
+    ood = LS["ood"]
     diffs = {k: v["linear"]["vs_hand_h"] for k, v in ood.items()}
     check(all(d["mean"] < 0 for d in diffs.values()), "the linear model kept the same sign in every OOD cell")
     V["P1-OOD-N-CELLS"] = words(len(diffs))
@@ -860,6 +1161,26 @@ def values(r: R, allow_pending: bool):
     V["P1-RALLY-ON-DEV-T"] = t_(dev["rally_dev_run"]["leader_delivered_t_with_rule"])
     V["P1-CHECK-N-ROWS"] = f"{dev['regression_check']['rows_rerun_identical']}"
     V["P1-CHECK-N-TESTS"] = f"{dev['regression_check']['pytest_tests']}"
+    # referee row 42: the count that passed when those rows were rerun (B-74), and the suite's size at this revision
+    V["P1-CHECK-N-TESTS-NOW"] = f"{dev['regression_check']['pytest_collected']}"
+    V["P1-CHECK-TESTS-DATE"] = html.escape(dev["regression_check"]["pytest_collected_date"])
+    check(dev["regression_check"]["pytest_collected"] >= dev["regression_check"]["pytest_tests"], "the test suite has not shrunk")
+    # Referee S8: how many urgent items a run holds (the primary outcome is a mean over them)
+    ui = {}
+    for load in (LOAD_LIGHT, LOAD_MAIN, LOAD_HEAVY):
+        gl = r.full("E40")
+        gl = gl[gl["load"] == load]
+        go = gl[(gl["label"] == LABELS["O"]) & (gl["run_block"] == "v1")]["atc_urgent_items"]
+        ui[load] = (float(go.mean()), int(gl["atc_urgent_items"].min()), int(gl["atc_urgent_items"].max()))
+    n_empty = int((r.full("E40")["atc_urgent_items"] == 0).sum())
+    V["P1-URGENT-ITEMS-SENTENCE"] = (
+        "A run holds few urgent items: on average "
+        + listing(f"{num(ui[l][0], 0)} at {l}{PCT} load (from {ui[l][1]} to {ui[l][2]} over all E40 runs)" for l in ui)
+        + ", counted in the full-information marketplace's block-one runs"
+        + (f"; {words(n_empty)} run at light load had none and has no value of the outcome" if n_empty == 1 else
+           f"; {words(n_empty)} runs had none" if n_empty else "")
+        + ". The light-load results therefore rest on means of about "
+        + f"{num(ui[LOAD_LIGHT][0], 0)} items a run.")
     V["P1-PEAK-MB"] = f"{dev['runtime']['peak_memory_mb']}{NB}MB"
     run_s = pd.concat([d["run_s"] for d in r.runs.values()])
     hi_s = float(run_s.max())
@@ -877,14 +1198,43 @@ def values(r: R, allow_pending: bool):
     # the registered rule (half-width over 10 % of the mean: add seeds in tens) against H3a's comparison, disclosed
     half90 = (h3["hi90"] - h3["lo90"]) / 2
     tenpct = 0.1 * abs(h3["b_mean"])
-    V["P1-SEEDS-ADDED"] = ("No seeds were added: every cell holds the 30 seeds of the design"
-                           + (" (and the 50 runs of the second block where it applies)" if any(
-                               k.endswith("|v3") for k in npc) else "") + "."
-                           + (f" The rule was not applied to H3a's comparison, whose 90{PCT} half-width of "
-                              f"{h_(half90, 2)} exceeds 10{PCT} of the marketplace mean ({h_(tenpct, 2)}); by the rule "
-                              f"ten more seeds should have been run for it. We report the equivalence test as it "
-                              f"stands rather than extend the sample after seeing the result (Section 7)."
-                              if half90 > tenpct else ""))
+    # Referee M6: the rule read on each E40 cell's mean of the primary outcome (the valid runs: block one for an
+    # Earth-independent regime, all 80 otherwise), with the percentile bootstrap used everywhere else.
+    f40 = r.full("E40")
+    over, near, per_load = [], [], {}
+    for (load, label), gcell in f40.groupby(["load", "label"]):
+        gv = gcell[gcell["run_block"] == "v1"] if label in RP.EARTH_INDEPENDENT else gcell
+        bb = AE.boot(gv[PRIMARY].dropna().to_numpy(float))
+        ratio = (bb["ci"][1] - bb["ci"][0]) / 2 / bb["mean"]
+        per_load.setdefault(int(load), [0, 0])[1] += 1
+        if ratio > 0.10:
+            over.append((int(load), label))
+            per_load[int(load)][0] += 1
+        if abs(ratio - 0.10) < 0.005:
+            near.append((int(load), label))
+    n_cells40 = sum(v[1] for v in per_load.values())
+    check(n_cells40 == n_cells["E40"], "the seed rule is read on every E40 cell")
+    check(len(over) > n_cells40 / 2, "the half-width exceeds 10 % of the mean in most E40 cells")
+    # the same rule read on the paired differences of the confirmatory comparisons, against 10 % of the reference mean
+    conf = [("H1", h1, "lo", "hi"), ("H2", h2, "lo", "hi"), ("H3a", h3, "lo90", "hi90"), ("H4 (linear)", lin30, "lo", "hi"),
+            ("H4 (network)", mlp30, "lo", "hi")]
+    wide = [nm for nm, q, a, b in conf if (q[b] - q[a]) / 2 > 0.1 * abs(q["b_mean"])]
+    V["P1-SEEDS-N-OVER"], V["P1-SEEDS-N-CELLS"] = f"{len(over)}", f"{n_cells40}"
+    V["P1-SEEDS-ADDED"] = (
+        f"The rule was not applied: no seeds were added in any cell, and every cell holds the 30 seeds of the design"
+        + (" (and the 50 runs of the second block where it applies)" if any(k.endswith("|v3") for k in npc) else "")
+        + f". Read on each cell's mean of the primary outcome, the 95{PCT} half-width exceeded 10{PCT} of the mean in "
+          f"{len(over)} of the {n_cells40} E40 cells: "
+        + listing(f"{per_load[l][0]} of {per_load[l][1]} at {l}{PCT} load" for l in sorted(per_load))
+        + (f" ({words(len(near))} cells lie within half a percentage point of the threshold, so the count depends that "
+           f"much on the resampling)" if near else "")
+        + ". Read on the paired differences, against 10" + PCT + " of the reference regime's mean, it was exceeded for "
+        + (listing(wide) if wide else "none of the confirmatory comparisons")
+        + f" (for H3a a 90{PCT} half-width of {h_(half90, 2)} against {h_(tenpct, 2)}). By the rule ten more seeds at a "
+          f"time should have been run in those cells. We did not extend any sample after seeing results, so every "
+          f"interval in this paper is from the fixed design of 30 seeds, or of 80 runs where a regime depends on "
+          f"Earth (Section 7).")
+    check(half90 > tenpct, "H3a's 90 % half-width exceeds 10 % of the marketplace mean")
     check(not r.rerun["flagged"], "the rerun after the ordering fix changed no cell")
 
     # --- E41 (pending until it runs) -------------------------------------------------------------------------
@@ -947,8 +1297,9 @@ def values(r: R, allow_pending: bool):
               listing(f"{h_(at40[reg]['mean'])} ({ci_h(at40[reg]['lo'], at40[reg]['hi'])}) for {NAME4[reg]}"
                       for reg in REG4) +
               ", that is " + listing(f"{num(slope[reg]['pct_of_loss0_per_point'], 2)}" for reg in REG4) +
-              f"{PCT} of the loss-free wait per point of loss, against about 0.3{PCT} of makespan per point for the "
-              "best allocators in Lott and Honary's benchmark [11].")
+              f"{PCT} of the loss-free wait per point of loss. The best allocators in Lott and Honary's benchmark "
+              f"lose about 0.3{PCT} of makespan per point [11]; makespan and cargo wait are different quantities, so "
+              "the two slopes are set side by side and not compared.")
         above = [reg for reg in REG4 if cross.get(reg)]
         below = [reg for reg in REG4 if not cross.get(reg)]
         by_loss = sorted({cross[reg] for reg in above}, key=float)
@@ -979,6 +1330,18 @@ def values(r: R, allow_pending: bool):
         check(bool(h3b["supported"]) == all(d5[L]["lo"] > 0 for L in d5), "H3b verdict follows the two intervals")
         verdict = "supported" if h3b["supported"] else "not supported"
         stale = st5["atc_claims_stale"] - st1["atc_claims_stale"]
+        # Referee S11: no cell has depth 2 or 5 without loss, and the stale claims barely move between the two losses
+        sc = {(dp, L): r.cell41(f"C_AUCTION depth {dp} loss {L}")["atc_claims_stale"] for dp in (2, 5) for L in ("0.25", "0.4")}
+        flat = all(abs(sc[(dp, "0.4")] - sc[(dp, "0.25")]) < 0.05 * sc[(dp, "0.25")] for dp in (2, 5))
+        no_loss0 = not any(str(x).startswith("C_AUCTION depth") and str(x).endswith("loss 0") for x in r.c41["label"])
+        check(no_loss0, "E41 has no bundle-depth cell without message loss")
+        s11 = (f" The design has no cell with depth 2 or 5 and no loss, so it cannot say how much of this penalty is due "
+               f"to loss and how much to bundling under this demand"
+               + (f"; the stale claims are almost the same at loss 0.25 and 0.40 ({num(sc[(2, '0.25')], 0)} and "
+                  f"{num(sc[(2, '0.4')], 0)} a year at depth 2, {num(sc[(5, '0.25')], 0)} and {num(sc[(5, '0.4')], 0)} at "
+                  f"depth 5), which points to bundling" if flat else "")
+               + ". The finding of Lott and Honary that the best depth falls under loss [10] can therefore be neither "
+                 "confirmed nor contradicted here.")
         return (f"Bundles of up to five jobs {'hurt' if h3b['supported'] else 'did not hurt'} the auction: against "
                 f"depth 1, depth 5 {moved(d5['0.25'], 'the urgent wait')} at loss 0.25 and "
                 f"{moved(d5['0.4'], 'it')} at loss 0.40, and depth 2 {moved(d2['0.25'], 'it')} at loss 0.25 and "
@@ -987,7 +1350,7 @@ def values(r: R, allow_pending: bool):
                 f"from {num(st1['atc_claims_stale'], 0)} to {num(st5['atc_claims_stale'], 0)} per year at depth 5 "
                 f"and loss 0.40. H3b, that depth 5 is worse than depth 1 at loss 0.25 to 0.40, is {verdict}. "
                 f"For the learned bids at loss 0.40, depth 5 "
-                + listing(f"{moved(learned[reg], 'the wait of ' + NAME4[reg])}" for reg in learned) + ".")
+                + listing(f"{moved(learned[reg], 'the wait of ' + NAME4[reg])}" for reg in learned) + "." + s11)
 
     def e41_range_sentence():
         f = need_f41()
@@ -1035,6 +1398,22 @@ def values(r: R, allow_pending: bool):
                if undecided else "") + ".")
         return " ".join((s1, s2, s3))
 
+    def h3a_rally_sentence():
+        """Referee S3: the auction's robots are sent back towards the mast and the marketplace's are not."""
+        on, perf = r.cell41("C_AUCTION loss 0.1"), r.cell41("C_AUCTION range perfect")
+        pp = r.pair41("C_AUCTION range perfect - C_AUCTION loss 0.1")
+        above = perf[M] - h3["b_mean"]
+        check(perf["atc_rallies"] < 0.05 * on["atc_rallies"], "with a radio that reaches every robot almost no robot returns to the mast")
+        check(above > 0 and h3["mean"] < 0, "with a perfect radio the auction waits longer than the marketplace; by default, less")
+        return (f"The comparison is confounded by the lost-link rule. The on-Moon regimes send an idle robot that nobody "
+                f"hears back to a site the mast sees, {num(on['atc_rallies'], 0)} times a year in the auction's runs, and "
+                f"the marketplace has no such move. Where the radio reaches every robot the returns fall to "
+                f"{num(perf['atc_rallies'], 0)} a year and the auction's wait is {h_(perf[M])}, {h_(above)} above the "
+                f"marketplace's and {h_(pp['mean'])} ({ci_h(pp['lo'], pp['hi'])}) above its own default cell "
+                f"(Section 5.5). The auction's small advantage in the point estimate is therefore more likely an "
+                f"effect of that repositioning than of where the decision is made. The marketplace was not run with "
+                f"the same move, so the two cannot be separated here.")
+    fill("P1-H3A-RALLY-SENTENCE", h3a_rally_sentence, "E41")
     fill("P1-E41-LOSS-SENTENCE", e41_loss_sentence, "E41")
     fill("P1-E41-DEPTH-SENTENCE", e41_depth_sentence, "E41")
     fill("P1-E41-RANGE-SENTENCE", e41_range_sentence, "E41")
@@ -1048,7 +1427,7 @@ def values(r: R, allow_pending: bool):
 
     fill("P1-E41-DEPTH-CLAUSE", e41_depth_clause, "E41")
     fill("P1-CHECKS-SENTENCE", lambda: vv5_checks_sentence("P1", "5.11", check), "B-79")
-    fill("P1-FAILED-CHECKS-SENTENCE", lambda: vv5_failed_sentence("P1", "3.11", check), "B-79")
+    fill("P1-FAILED-CHECKS-SENTENCE", lambda: vv5_failed_sentence("P1", "3.11", check, brief=True), "B-79")
     fill("P1-ID-FIX-SENTENCE", lambda: idfix_sentence(check, ("E40", "E41", "E42")), "B-79 id fix")
 
     def l5_sentence():
@@ -1060,10 +1439,11 @@ def values(r: R, allow_pending: bool):
         if not failed:
             return "The learned bids were monotone in approach time, mass and battery on every probe (L5)."
         bits = []
+        pol = {"atc_bid_v1": "the network", "atc_bid_linear_v1": "the linear model"}
         for x in failed:
-            bits.append(f"{html.escape(str(x.get('sub')))} in {num(100 * x['simulated'], 0)}{PCT} of the probes")
+            bits.append(f"{pol.get(str(x.get('sub')), html.escape(str(x.get('sub'))))} in {num(100 * x['simulated'], 0)}{PCT} of the probes")
         return (f"The L5 failures are properties of the trained policies, not of the code: the learned bid was not monotone in approach time, "
-                f"mass and battery for " + " and ".join(bits) + ", as the policies were tuned on urgent wait and not constrained to monotone bids (Section 3.5).")
+                f"mass and battery for " + " and ".join(bits) + ", as the policies were tuned on urgent wait and not constrained to monotone bids (Section 3.10).")
     fill("P1-CHECK-FINDINGS-SENTENCE", l5_sentence, "B-79 tranche 3")
     fill("P1-PAIRING-SENTENCE", lambda: vv5_pairing_sentence("P1", "3.11", check), "B-79")
     fill("P1-E41-REPLICATION-SENTENCE", lambda: (
@@ -1085,16 +1465,41 @@ def values(r: R, allow_pending: bool):
                          f"(paired difference {num(100 * ti['mean'], 0)} percentage points, 95&#8239;% CI "
                          f"{num(100 * ti['lo'], 0)} to {num(100 * ti['hi'], 0)}, n = {int(ti['n'])})")
             check(ti["lo"] > 0, f"cross-owner pairs raise the share of team items delivered at team share 0.{team}")
-        all_items = [r.pair("H6", LOAD_MAIN, team=t, loss="0.1") for t in ("10", "25")]
-        check(all(a["lo"] > 0 for a in all_items), "cross-owner pairs raise the share of all items delivered")
+        # Referee M5: the tested metric is delivered_share, kilograms delivered over kilograms ready (engine.py), a
+        # share of mass. The item counts are computed here from the E42 rows. Referee M12(a): the share of team
+        # items a single owner can lift is an input (the mass range against the one same-owner pair of 2,080 kg).
+        mass = [r.pair("H6", LOAD_MAIN, team=t, loss="0.1") for t in ("10", "25")]
+        check(all(a["metric"] == "delivered_share" for a in mass), "the H6 rows are on delivered_share (mass)")
+        check(all(a["lo"] > 0 for a in mass), "cross-owner pairs raise the share of cargo mass delivered")
+        check(f6["test"]["comparison"] == LABELS["H6"].format(team="25", loss="0.1"), "the Holm family's H6 row is team share 0.25, loss 0.10")
+        e42 = r.full("E42")
+        cellname = lambda t, scope: f"C_AUCTION team {t} {scope} loss 0.1"
+        items = [raw_pair(e42, cellname(t, "any"), cellname(t, "same_owner"), metric="delivered_items") for t in ("10", "25")]
+        check(all(a["lo"] > 0 for a in items), "cross-owner pairs raise the number of items delivered")
+        so = {t: e42[e42["label"] == cellname(t, "same_owner")] for t in ("10", "25")}
+        lift = {t: (so[t]["p5_team_items_same_owner_liftable"].mean(), so[t]["p5_team_items"].mean(),
+                    so[t]["p5_team_items_delivered"].mean()) for t in so}
+        check(all(abs(lift[t][2] - lift[t][0]) < 0.25 for t in lift),
+              "same-owner pairs deliver about as many team items as lie within the one same-owner pair's capacity")
         held = all(r.pair("H6", LOAD_MAIN, team=t, loss=l)["lo"] > 0 for t in ("10", "25") for l in ("0.25", "0.4"))
         return (
             "Allowing pairs of different owners raised the share of team items delivered " + " and ".join(parts) +
-            " at message loss 0.10, and the share of all items delivered by " +
-            listing(f"{num(100 * a['mean'], 1)} percentage points ({num(100 * a['lo'], 1)} to "
-                    f"{num(100 * a['hi'], 1)}) at team share 0.{t}" for a, t in zip(all_items, ("10", "25"))) +
-            f". H6's first part, registered on the share of all items at team share 0.25, is supported "
-            f"(Holm-adjusted p {p_eq(holm[LABELS['holm_H6']])}, Table 7). The gain "
+            " at message loss 0.10. The starting share is an input and not a finding: of the "
+            + listing(f"{num(lift[t][1], 1)} team items a year at team share 0.{t}, {num(lift[t][0], 1)} "
+                      f"({sh(lift[t][0] / lift[t][1])})" for t in ("10", "25"))
+            + " weigh no more than the one same-owner pair can lift (FLEX with CLV-1, 2,080&nbsp;kg), by the mass range "
+              "we assumed, and the same-owner auction delivered "
+            + listing(num(lift[t][2], 1) for t in ("10", "25")) +
+            ". H6 is registered on &ldquo;the share of items delivered&rdquo; and names no team share [43]. The "
+            "engine's measure is a share of mass, the kilograms delivered over the kilograms ready: it rose by "
+            + listing(f"{num(100 * a['mean'], 1)} percentage points ({num(100 * a['lo'], 1)} to "
+                      f"{num(100 * a['hi'], 1)}) at team share 0.{t}" for a, t in zip(mass, ("10", "25"))) +
+            ". Counted in items, cross-owner pairs delivered "
+            + listing(f"{num(a['mean'], 1)} more items a year ({num(a['lo'], 1)} to {num(a['hi'], 1)}) on "
+                      f"{num(a['b_mean'], 0)} at team share 0.{t}" for a, t in zip(items, ("10", "25"))) +
+            f". Every interval excludes zero, so H6's first part is supported in kilograms and in items. The Holm "
+            f"family tests it on the mass share at team share 0.25, a cell the registration does not name "
+            f"(adjusted p {p_eq(holm[LABELS['holm_H6']])}, Table 7); 0.10 is the design's default. The gain "
             + ("held" if held else "did not hold in every cell") + " at loss 0.25 and 0.40 (Table 8).")
 
     fill("P1-H6-SHARE-SENTENCE", h6_sentence, "E42")
@@ -1138,6 +1543,14 @@ def values(r: R, allow_pending: bool):
             return "it had none at either loss"
         return (f"it had {compare(noc['0.25'], base['0.25'])} at loss 0.25 ({num(noc['0.25'], 1)}) and "
                 f"{compare(noc['0.4'], base['0.4'])} at 0.40 ({num(noc['0.4'], 1)})")
+    # Referee M12(b)-(d): what in the meeting results follows from the handshake model of lunarsim/atc/auction.py
+    # (_team_hook: no message is sent twice; _failed_meeting: each failure waits exactly the timeout; the arbitrated
+    # variant retries timeout / RETRY_H times per vehicle).
+    from lunarsim.atc import auction as AUC
+    arb_tries = max(1, int(AUC.TIMEOUT_H / AUC.RETRY_H))
+    prod = {"0.5": tof["0.5"] * 0.5, "1": tof["1"] * 1.0, "2": tof["2"] * 2.0}
+    wait_is_product = all(abs(prod[t] - w) <= 0.02 * max(w, 1e-9) for t, w in (("0.5", to["0.5"]), ("1", to1), ("2", to["2"])))
+    check(wait_is_product, "meeting wait equals failed meetings times the timeout in the three timeout cells")
     V["P1-H6-MEETINGS-SENTENCE"] = (
         f"Failed meetings {'rose' if rises else 'did not rise steadily'} with message loss: at team share 0.25 the "
         f"auction with the commit step and a 1&nbsp;h timeout had on average {num(base['0.1'], 1)} failed meetings "
@@ -1146,31 +1559,43 @@ def values(r: R, allow_pending: bool):
         + ("cut" if fewer_with else "did not cut") + " failed meetings by "
         + listing(f"{num(-cm[l]['mean'], 1)} ({num(-cm[l]['hi'], 1)} to {num(-cm[l]['lo'], 1)}) at loss "
                   f"{'0.40' if l == '0.4' else l}" for l in noc) +
-        f", so the second part of H6, that failed meetings rise without a commit step, is "
-        + ("supported" if fewer_with else "not supported") +
-        f". The step is not free: the urgent wait with it was "
+        ". That is the direction the second part of H6 names, but it is a property of the model and not an "
+        "independent measurement. No message is repeated inside a handshake. With the commit step a meeting fails "
+        "only when the proposal and the answer arrive and the commit is lost; without it a meeting fails whenever "
+        "the single proposal is lost. If a message gets through with probability <i>s</i>, the two cases have "
+        "probability <i>s</i><sup>2</sup>(1&nbsp;&minus;&nbsp;<i>s</i>) and 1&nbsp;&minus;&nbsp;<i>s</i>, and the "
+        "second is the larger for every <i>s</i> below one. We therefore report the second part of H6 as following "
+        "from the message count and not as supported by a test. What the runs do measure is the step's price: the "
+        "urgent wait with it was "
         + listing(f"{h_(cw[l]['mean'], 1)} ({ci_h(cw[l]['lo'], cw[l]['hi'])}) "
                   f"{'longer' if cw[l]['mean'] > 0 else 'shorter'} at loss {'0.40' if l == '0.4' else l}" for l in noc)
         + (", a cost that excludes zero at both losses" if cost else "") +
-        f", because a meeting that the step refuses is a lift that waits. {timeout_lead} at "
-        f"loss 0.25 the hours robots spent "
-        f"waiting at meeting points were {num(to['0.5'], 1)} with a 0.5&nbsp;h timeout, {num(to1, 1)} with 1&nbsp;h "
-        f"and {num(to['2'], 1)} with 2&nbsp;h{timeout_tail}. The exploratory variant in which the base computer arbitrates each "
-        + ("meeting had no failed meetings at either loss." if all(v == 0 for v in arb.values()) else
-           f"meeting had {num(arb['0.25'], 1)} and {num(arb['0.4'], 1)} failed meetings at loss 0.25 and 0.40."))
+        f", because a meeting that the step refuses is a lift that waits. The timeout sets the waiting and cannot "
+        f"buy fewer failures in this model, where a partner that missed the commit never comes: the hours robots "
+        f"spent waiting at meeting points are the failed meetings times the timeout, {num(to['0.5'], 1)} with a "
+        f"0.5&nbsp;h timeout, {num(to1, 1)} with 1&nbsp;h and {num(to['2'], 1)} with 2&nbsp;h at loss 0.25. The "
+        f"exploratory variant in which the base computer arbitrates each "
+        + ("meeting had no failed meetings at either loss" if all(v == 0 for v in arb.values()) else
+           f"meeting had {num(arb['0.25'], 1)} and {num(arb['0.4'], 1)} failed meetings at loss 0.25 and 0.40")
+        + f". It repeats its message to each vehicle up to {arb_tries} times within the timeout, where the commit "
+          f"variant repeats nothing, so that comparison is one of retry budgets and not of protocols.")
     check(to["0.5"] < to1 < to["2"], "meeting wait grows with the timeout")
     # one clause for the abstract, 6.1 and the conclusion: the team-share-0.10 lift in team items and the commit step's
     # effect, with the same rule as the meetings sentence (supported if failures without the step exceed 1.1x)
     t10 = r.pair("H6_team_items", LOAD_MAIN, team="10", loss="0.1")
+    check(not trades, "a longer timeout does not buy fewer failed meetings")
+    # Referee M12(a): the same-owner share is an input (the mass range against the one same-owner pair), so the
+    # clauses name it as such and report what cross-owner pairs delivered.
     V["P1-H6-ABSTRACT-CLAUSE"] = (
-        f"Pairs of different owners' robots lifting heavy crates raised the share of team items delivered "
-        f"from {sh(t10['b_mean'])} to {sh(t10['b_mean'] + t10['mean'])}; a commit step before each meeting "
-        + ("cut failed meetings under loss" if fewer_with else "did not cut failed meetings")
-        + (", at a cost in urgent wait" if cost else ""))
+        f"of the crates that need two rovers, {sh(t10['b_mean'])} are within the one same-owner pair's capacity by "
+        f"construction, and pairs of different owners' robots delivered {sh(t10['b_mean'] + t10['mean'])}; a commit "
+        f"step before each meeting "
+        + ("cost urgent wait" if cost else "had no measurable cost in urgent wait")
+        + ", and its lower count of failed meetings follows from the handshake's message count")
 
     check(t10["lo"] > 0, "cross-owner pairs raise the share of team items delivered (abstract clause)")
-    V["P1-H6-SHORT-CLAUSE"] = (f"Pairs of different owners' robots raised the share of team items delivered "
-                               f"from {sh(t10['b_mean'])} to {sh(t10['b_mean'] + t10['mean'])}")
+    V["P1-H6-SHORT-CLAUSE"] = (f"Of crates that need two rovers, {sh(t10['b_mean'])} fit the one same-owner pair "
+                               f"by construction; cross-owner pairs delivered {sh(t10['b_mean'] + t10['mean'])}")
 
     # --- tables and the figure ---------------------------------------------------------------------------
     V["P1-TABLE-REGIMES"] = table_regimes(r)
@@ -1184,12 +1609,15 @@ def values(r: R, allow_pending: bool):
     phase6_e54(p6, V, fill, check)
     phase6_props(p6, st6, r, V, fill, check)
     phase6_proved(p6, r, V, fill, check, {"equiv": equiv, "fewer_with": fewer_with}, e53)
+    # Referee M10 and decision B3: a design calculation, the packet before link framing and coding, and the limit
+    # P3's abstract states (a scheduled channel, one hop)
     V["P1-LRIP-ABSTRACT-SENTENCE"] = (
-        f"The robots' messages are specified and implemented as {V['P1-LRIP-N-MSG']} types with a capability "
-        f"manifest: an authenticated position report is {V['P1-PROP6-SECURED-B']}, and 20 "
-        f"rovers reporting once a second load the busiest link with {kbps(e53['v1'], 1)}, "
-        f"{'inside' if e53['v1'] <= e53['nb'] else 'above'} a {kbps(e53['nb'], 0)} budget, against "
-        f"{kbps(e53['v10'], 1)} at ten a second")
+        f"The robots' {V['P1-LRIP-N-MSG']} message types are written down and their encoding implemented: an "
+        f"authenticated position report is a {V['P1-PROP6-SECURED-B']} packet before link framing and coding; by "
+        f"calculation 20 rovers reporting once a second offer {kbps(e53['v1'], 1)}, which "
+        + (f"fits a {kbps(e53['nb'], 0)} channel only if the base schedules it and reports travel one hop"
+           if e53["sched_only"] else
+           f"{'fits' if e53['v1'] <= e53['nb'] else 'does not fit'} a {kbps(e53['nb'], 0)} channel"))
     if broken:
         raise SystemExit("the text asserts what the data contradict:\n  " + "\n  ".join(broken))
     return V, T, pending
@@ -1210,7 +1638,7 @@ def _tab(caption, head, rows, cls="", note=""):
 
 def table_regimes(r: R):
     """Table 5: every E40 cell at each load (the 60 % block shows how many runs it has so far)."""
-    rows = []
+    rows, notes = [], {}
     M = "atc_urgent_wait_mean_cens_h"
     if f"{M}_v1" not in r.r.columns:
         raise KeyError("table_E40_regimes.csv has no *_v1 columns; rerun experiments/phase5/analyse_e40.py")
@@ -1223,10 +1651,21 @@ def table_regimes(r: R):
         d["_shown"] = np.where(d["earth_independent"].astype(bool), d[f"{M}_v1"], d[M])
         d = d.sort_values("_shown", ascending=False)
         first = True
+        full = r.full("E40")
         for _, c in d.iterrows():
             indep = bool(c["earth_independent"])
             lab = html.escape(c["label"]) + ("&dagger;" if indep else "")
             n = f"{int(c['n_v1'])}" if indep else f"{int(c['n'])}"
+            if not indep:                     # referee M11 and row 65: distinct runs, and runs with an urgent item
+                nd = r.distinct40[(c["label"], int(load))][1]
+                g = full[(full["label"] == c["label"]) & (full["load"] == load)]
+                nv = int(g[M].notna().sum())
+                if nd != int(c["n"]):
+                    n += f" ({nd} distinct)&Dagger;"
+                    notes["distinct"] = True
+                if nv != int(c["n"]):
+                    n += f" ({nv} with an urgent item)&sect;"
+                    notes["empty"] = True
             v = (lambda k: c[f"{k}_v1"]) if indep else (lambda k: c[k])
             rows.append([f"{load}" if first else "", lab, n, num(v(M), 1),
                          num(v("atc_urgent_wait_p95_cens_h"), 0), sh(v("atc_urgent_within24_share")),
@@ -1239,17 +1678,28 @@ def table_regimes(r: R):
                 ["Load (%)", "Regime", "Runs", "Urgent wait (h)", "p95 (h)", "Within 24 h", "Delivered (t)",
                  "Backlog (t)", "Fleet busy"], rows, cls="wide",
                 note="&dagger; Earth-independent regime: a seed gives the same run in every start year, so only the "
-                     "30 runs of block one are counted and shown (change 4 of the pre-registration [43]).")
+                     "30 runs of block one are counted and shown (change 4 of the pre-registration [43])."
+                     + (" &Dagger; Some rows of this cell repeat another row exactly (the same seed and outcomes in "
+                        "another start year); the means are over all rows, and the cell is in no tested comparison."
+                        if notes.get("distinct") else "")
+                     + (" &sect; One run had no urgent item, so the urgent-wait columns are means over the other runs."
+                        if notes.get("empty") else ""))
 
 
 def table_ood(r: R):
     rows = []
-    for cell, v in r.L["ood"].items():
+    src = getattr(r, "learned_src", r.L)
+    le = r.dev["learned_eval"]
+    origin = ("rerun on the current engine" if r.L_rerun is not None else
+              f"from the evaluation of the learned bids of {le['file_date']}, made before the main runs and on the "
+              f"engine before the two fixes of changes 4 and 5 (Section 4.6); these six cells have not been rerun on "
+              f"the current engine")
+    for cell, v in src["ood"].items():
         d = v["linear"]["vs_hand_h"]
         rows.append([html.escape(cell), num(v["hand"]["urgent_mean_h"], 1), num(v["linear"]["urgent_mean_h"], 1),
                      f"{num(d['mean'], 2, sign=True)} [{num(d['ci95'][0], 2)}, {num(d['ci95'][1], 2)}]", f"{d['n']}"])
-    return _tab("<b>Table 6.</b> The linear bids outside their training range, from the evaluation of the learned "
-                "bids before the main runs: mean urgent wait (h) with hand-built and learned bids, and the paired "
+    return _tab(f"<b>Table 6.</b> The linear bids outside their training range, {origin}: mean urgent wait (h) with "
+                "hand-built and learned bids, and the paired "
                 "difference with its 95&#8239;% interval, on ten evaluation seeds the model never saw. 2eq and 5eq "
                 "split the same eight vehicles and the demand equally among two and five owners. Where E41 reran a cell on 30 seeds (loss 0.25 and 0.40, "
                 "Section 5.5) and E40 on 30 seeds (load 10&#8239;%, Section 5.6), those values supersede these.",
@@ -1264,6 +1714,9 @@ def table_pairs(r: R, holm):
            ("H4, network", r.pair("H4_MLP", LOAD_MAIN), LABELS["holm_H4_MLP"], -1),
            ("H6", r.fit("hypotheses", "H6", "test"), LABELS["holm_H6"], +1)]
     rows = []
+    # referee S16(c, d): the block in words, and the comparison without the hypothesis label the first column gives
+    BLOCK_WORDS = {"v1": "one (30 seeds)", "all": "one and two (80 runs)"}
+    comp_words = lambda c: html.escape(re.sub(r"^H\d+[a-z]?( \([a-z ]+\))?: ", "", str(c)))
     for name, row, hk, sign in fam:
         adj = holm[hk]
         ok = adj < 0.05 and np.sign(row["mean"]) == sign
@@ -1271,18 +1724,27 @@ def table_pairs(r: R, holm):
         val = (f"{num(100 * row['mean'], 1, sign=True)} pp [{num(100 * row['lo'], 1)}, {num(100 * row['hi'], 1)}]"
                if not unit else f"{num(row['mean'], 1, sign=True)}{unit} [{num(row['lo'], 1)}, {num(row['hi'], 1)}]")
         blk = "v1" if name == "H6" else row["block"]      # E42 has block one only
-        rows.append([name, html.escape(row["comparison"]), blk, f"{int(row['n'])}", val,
-                     pfmt(row["p"]), pfmt(adj),
-                     "supported" if ok else ("wrong direction" if adj < 0.05 else "not supported")])
+        outcome = "supported" if ok else ("wrong direction" if adj < 0.05 else "not supported")
+        if name == "H4, linear":      # referee M4: PREREG change 3; the row entered the family after B-74's evaluation
+            outcome += "; the secondary model, added to the family after its result on these seeds was seen"
+        if name == "H4, network":
+            outcome += "; the registered model"
+        if name == "H6":              # referee M5: the metric is a share of mass, at a team share the registration does not name
+            outcome += "; on the share of cargo mass, at team share 0.25"
+        rows.append([name, comp_words(row["comparison"]), BLOCK_WORDS[blk], f"{int(row['n'])}", val,
+                     pfmt(row["p"]), pfmt(adj), outcome])
     # the registered 60 % halves of H1 and H4: raw p only, outside the Holm family
     for name, row in (("H1, 60&#8239;%", r.pair("H1", LOAD_HEAVY)), ("H4, linear, 60&#8239;%", r.pair("H4_LIN", LOAD_HEAVY)),
                       ("H4, network, 60&#8239;%", r.pair("H4_MLP", LOAD_HEAVY))):
         val = f"{num(row['mean'], 1, sign=True)}{NB}h [{num(row['lo'], 1)}, {num(row['hi'], 1)}]"
-        rows.append([name, html.escape(row["comparison"]), row["block"], f"{int(row['n'])}", val, pfmt(row["p"]),
+        rows.append([name, comp_words(row["comparison"]), BLOCK_WORDS[row["block"]], f"{int(row['n'])}", val, pfmt(row["p"]),
                      "&ndash;", "supported" if row["hi"] < 0 else "not supported"])
     return _tab("<b>Table 7.</b> The confirmatory family at the middle load: paired mean difference with its "
-                "95&#8239;% bootstrap interval, the two-sided bootstrap p and Holm's adjusted p. H3a is an "
-                "equivalence claim and is tested in Section 5.4. The last three rows are the registered 60&#8239;% "
+                "95&#8239;% bootstrap interval (hours of mean urgent wait; percentage points, pp, of cargo mass "
+                "delivered for H6), the two-sided bootstrap p and Holm's adjusted p. The family differs from the "
+                "registered one in two ways (Section 4.6): H3a, an equivalence claim, is tested outside it in "
+                "Section 5.4, and H4 has two rows. Regime codes are those of Table 3; a comparison is the first "
+                "regime minus the second. The last three rows are the registered 60&#8239;% "
                 "halves of H1 and H4, outside the Holm family, with the raw p only.",
                 ["Hypothesis", "Comparison", "Block", "n", "Difference [95&#8239;% CI]", "p", "Holm p", "Outcome"],
                 rows, cls="wide")
@@ -1291,15 +1753,35 @@ def table_pairs(r: R, holm):
 def table_e42(r: R):
     cells = r.fit("E42", "cells")
     rows = []
+
+    def cell_words(label):
+        """Referee S16(d): an E42 cell in words instead of its internal label."""
+        m = re.match(r"^(C_AUCTION|A_EARTH strict own teams) team (\d+)(?: (any|same_owner) loss ([\d.]+))?(.*)$", label)
+        if not m:
+            raise KeyError(f"E42 cell label {label!r} has an unexpected form")
+        who = "Auction" if m.group(1) == "C_AUCTION" else "Owners alone from Earth, strict"
+        out = [who, f"team share {int(m.group(2)) / 100:.2f}"]
+        if m.group(3):
+            out += ["pairs of any owners" if m.group(3) == "any" else "same-owner pairs only", f"loss {float(m.group(4)):.2f}"]
+        extra = m.group(5).strip()
+        ex = {"": None, "no commit": "no commit step", "timeout 0.5": "timeout 0.5&nbsp;h", "timeout 2": "timeout 2&nbsp;h",
+              "arbitrated (exploratory)": "meetings arbitrated by the base (exploratory)"}
+        if extra not in ex:
+            raise KeyError(f"E42 cell label {label!r}: unknown variant {extra!r}")
+        if ex[extra]:
+            out.append(ex[extra])
+        return ", ".join(out)
     for label, c in cells.items():
-        rows.append([html.escape(label), f"{c['n']}", num(c["atc_urgent_wait_mean_cens_h"], 1),
+        rows.append([cell_words(label), f"{c['n']}", num(c["atc_urgent_wait_mean_cens_h"], 1),
                      num(c["delivered_kg"] / 1000, 0),
                      f"{num(c['p5_team_items_delivered'], 1)} of {num(c['p5_team_items'], 1)}",
                      num(c["atc_failed_meetings"], 1), num(c["atc_team_no_agreement"], 1),
                      num(c["atc_meeting_wait_h"], 1)])
     return _tab("<b>Table 8.</b> Every E42 cell at the middle load: mean urgent wait (h), tonnes delivered, team "
                 "items delivered out of those offered, failed meetings, meetings with no agreement and the hours "
-                "robots waited at meeting points, all per simulated year.",
+                "robots waited at meeting points, all per simulated year. Unless a row says otherwise the meeting "
+                "uses the commit step and a 1&nbsp;h timeout. The hours waited are the failed meetings times the "
+                "timeout, by the model.",
                 ["Cell", "n", "Urgent wait (h)", "Delivered (t)", "Team items", "Failed meetings", "No agreement",
                  "Meeting wait (h)"], rows, cls="wide")
 
@@ -1387,6 +1869,7 @@ class P6:
         pfam = os.path.join(RES, "phase6_family.json")
         self.fam = json.load(open(pfam, encoding="utf-8")) if os.path.exists(pfam) else None
         self.schema = jl("lunarsim", "schemas", "lrip-v0.1.json")
+        self.dev = jl("paper", "p1", "dev_notes.json")
         self.conf = jl("data", "atc", "lrip", "conformance-v0.1.json")
         self.man = {k: jl("data", "atc", "lrip", f"manifest-{k}.json") for k in ("small_rover", "hopper")}
         from lunarsim.atc import lrip, messages, regimes
@@ -1504,6 +1987,29 @@ def phase6_values(r, V, fill, check):
     V["P1-LRIP-ALERT-SIGNED-B"] = nbytes(st["ALERT"]["signed"])
     V["P1-LRIP-AWARD-B"], V["P1-LRIP-GRANT-B"] = nbytes(st["TASK_AWARD"]["default"]), nbytes(st["RESERVE_GRANT"]["default"])
 
+    # Decision B3 (referee M10, P3 M4): what v0.1's POSITION serialises, and what it lacks. Version 0.2 adds the
+    # missing identifiers (task B-100). Until its schema exists the paper says so in one plain sentence; when the
+    # file named in dev_notes.json appears the build stops, so that the sentence and the sizes are filled from it.
+    posm = next(m for m in msgs if m["name"] == "POSITION")
+    pnames = [f[0] for f in posm["fields"]]
+    check(pnames == ["e", "n", "h", "heading", "speed", "sigma_h", "nav_src", "moving", "spare"],
+          "v0.1's POSITION holds east, north, height, heading, speed, one horizontal sigma, the navigation source and a moving flag")
+    check(not any(k in n.lower() for n in pnames for k in ("frame", "datum", "epoch", "scale", "cov")),
+          "v0.1's POSITION has no frame, datum, time-scale or covariance field")
+    v02 = p.dev["lrip_v02"]
+    if os.path.exists(os.path.join(ROOT, v02["schema_file"])):
+        raise SystemExit(f"{v02['schema_file']} exists (task {v02['task']}): P1 still says that v0.2's sizes are not "
+                         f"available. Fill P1-LRIP-V02-SENTENCE and the position-report sizes from it "
+                         f"(PLACEHOLDERS.md, 'Inputs that await a task').")
+    sig_f = next(f for f in posm["fields"] if f[0] == "sigma_h")
+    V["P1-LRIP-V02-SENTENCE"] = (
+        f"The position report of v0.1 serialises east, north and height in the site grid, heading, speed, one "
+        f"horizontal one-sigma value in steps of {sig_f[3]:g}{NB}m, the navigation source and a moving flag. It "
+        f"carries no identifier of the coordinate frame or datum, no identifier of the time scale and no covariance, "
+        f"so two vehicles agree on them only by sharing the site's configuration. Version 0.2 of the schema adds "
+        f"them; its sizes were not available when this paper was built, and the {nbytes(st['POSITION']['mac8'])} of "
+        f"the position report and every load computed from it will rise with it.")
+
     rows = []
     for m in msgs:
         nm, d = m["name"], st[m["name"]]
@@ -1513,11 +2019,15 @@ def phase6_values(r, V, fill, check):
                      f"{d['default']}" + (" (signed)" if m.get("signed") else ""), html.escape(m["carried_by"])])
     V["P1-TABLE-LRIP-MSG"] = _tab(
         f"<b>Table A2.</b> The {len(msgs)} messages of LRIP v0.1, read from the schema file: how each is sent, its "
-        f"default rate, its content in bits and bytes, and its size on the air in the narrow-band profile, that is "
-        f"the content plus {nbytes(spp + hdr + sec + mac8)} of headers and authentication code, or plus "
-        f"{nbytes(spp + hdr + sec + sig)} where a signature replaces the code. <code>CAP_MANIFEST</code> is the "
-        f"small-rover example of Section 3.12.",
-        ["ID", "Message", "Pattern", "Default rate", "Content (bits)", "Content (B)", "On the air (B)", "Carried by"],
+        f"default rate, its content in bits and bytes, and its size as a packet in the narrow-band profile, before "
+        f"link framing and channel coding: the content plus {nbytes(spp + hdr + sec + mac8)} of headers and "
+        f"authentication code, or plus {nbytes(spp + hdr + sec + sig)} where a signature replaces the code. Inside a "
+        f"Proximity-1 frame each packet gains {nbytes(fr['proximity1_frame_bytes'])}. <code>CAP_MANIFEST</code> is "
+        f"the small-rover example of Section 3.12. In the last column a bundle is a Bundle Protocol bundle [60] and "
+        f"CFDP is the file delivery protocol of the same family of space standards; in the design a bid is encrypted "
+        f"inside its bundle until the auction closes, which the codec of v0.1 does not implement.",
+        ["ID", "Message", "Pattern", "Default rate", "Content (bits)", "Content (B)",
+         "Packet (B), before link framing and coding", "Carried by"],
         rows, cls="wide",
         note=f"An <code>ALERT</code> that is an all-stop or a landing closure from the base is signed and is then "
              f"{nbytes(st['ALERT']['signed'])}.")
@@ -1548,7 +2058,7 @@ def phase6_values(r, V, fill, check):
     V["P1-LRIP-MANIFEST-SIZE-SENTENCE"] = (
         f"As minified JSON the two example manifests are {json_b['small_rover']:,} and {nbytes(json_b['hopper'])}; "
         f"in the compact form they are {nbytes(man_b['small_rover'])} (small rover) and {nbytes(man_b['hopper'])} "
-        f"(hopper), and the small rover's is {nbytes(st['CAP_MANIFEST']['default'])} on the air, signed. The design "
+        f"(hopper), and the small rover's is a signed packet of {nbytes(st['CAP_MANIFEST']['default'])}. The design "
         f"note had estimated {mb['small_rover']['note03_compact']} and {nbytes(mb['hopper']['note03_compact'])}. The "
         f"measured sizes are larger mainly because the implementation keeps the owner and model names as text, so "
         f"that a manifest from an owner the reader has never met still decodes: with the two names replaced by "
@@ -1591,15 +2101,28 @@ def phase6_values(r, V, fill, check):
         f"The release holds {len(vec)} golden packets: every message in the narrow-band profile with authentication "
         f"({nN_mac} with the {nbytes(mac8)} code, {nN_sig} signed), the same {nN_un} without security, and "
         f"{nB} in the broadband profile, each as hexadecimal bytes with the field values it must decode to, and the "
-        f"two example manifests in compact form. The keys in the file are test keys.")
+        f"two example manifests in compact form. The keys in the file are test keys."
+        + ("" if any(x["profile"] == "B" and x["auth"] == "mac16" for x in vec) else
+           f" The broadband vectors carry the {nbytes(mac8)} code; the {nbytes(mac16)} code that Table A1 gives for "
+           f"broadband has no vector yet."))
     cf = r.dev["capability_filter_check"]
     check(cf["identical"] == cf["summary_values"] and cf["runs"] == 1, "the capability filter changed no summary value")
+    # Referee S13(f): the companion papers quote another check (every Phase 6 option off equals the Phase 5 run)
+    g1_note = ""
+    pv6 = os.path.join(RES, "vv_phase6.json")
+    if os.path.exists(pv6):
+        g1 = [x for x in json.load(open(pv6, encoding="utf-8")).get("rows", []) if x.get("id") == "G1" and x.get("sub") == "options off"]
+        mg = re.search(r"(\d+) days, seed (\d+): (\d+) summary values", str(g1[0].get("basis", ""))) if g1 else None
+        if mg:
+            g1_note = (f" This is not the check that the companion papers quote, in which every option added for the "
+                       f"protocol is switched off and the run equals the earlier engine's in {mg.group(3)} summary "
+                       f"values over {mg.group(1)} days on seed {mg.group(2)} [44, 45].")
     V["P1-LRIP-CAPFILTER-SENTENCE"] = (
         f"With manifests generated from the vehicle classes, switching the filter on changed none of the "
         f"{cf['summary_values']} summary values of a {cf['days']}-day run of the auction (one run, seed {cf['seed']}, "
         f"message loss {cf['loss']:.2f}), because those manifests state exactly the capacity the engine already "
         f"checks; with no manifests at all, deliveries fell below {sh(cf['delivered_share_without_manifests_below'])} "
-        f"of that run's.")
+        f"of that run's." + g1_note)
     return p, st
 
 
@@ -1646,25 +2169,39 @@ def phase6_e53(p, st, V, check):
     check(sup == bool(h["supported"]), "H13's verdict in E53_bitrate.json follows its pre-registered rule")
     V["P1-E53-H13-1HZ"], V["P1-E53-H13-10HZ"] = kbps(v1), kbps(v10, 1)
     V["P1-E53-H13-VERDICT"] = "supported" if sup else "not supported"
-    verdict = ("Both clauses of H13 hold, and it is supported as pre-registered [54]." if sup else
-               "H13's first clause fails, so it is not supported: the earlier budget was too small." if v1 > nb else
-               "H13's second clause fails, so it is not supported as pre-registered [54].")
+    # Referee M10 and decisions A1, B3, B8: H13 is a design calculation. Reports are not relayed, so no node can hear
+    # more than the fleet's summed load, 20 x the per-rover load, in any geometry; and the design note that the
+    # second pre-registration names as its parameter source had the same arithmetic before E53 ran.
+    fleet_sum = 20 * per[("on", 1.0)]
+    check(abs(v1 - r1["one_hop_sum_kbps"]) < 1e-3 and abs(v1 - fleet_sum) < 0.002 * v1,
+          "H13's 95th percentile at 1 Hz is the fleet's summed load (20 x the per-rover load, to the table's rounding)")
+    check(fleet_sum <= nb, "the fleet's summed load at 1 Hz is below the budget, so H13's first clause holds in any geometry")
+    dn = p.dev["h13_design_note"]
+    check(abs(dn["kbps_20_at_1hz"] - v1) < 0.1 and abs(dn["per_robot_Bps"] - per[("on", 1.0)] * 1000 / 8) < 0.5,
+          "the design note's figures at 1 Hz are E53's to the precision the note gives")
+    side = ("on the predicted side of the threshold in both clauses" if sup else
+            "above the threshold in its first clause: the earlier budget was too small" if v1 > nb else
+            "on the predicted side in its first clause and not in its second")
     V["P1-E53-H13-SENTENCE"] = (
         f"With authentication on and 20 rovers, the busiest link carried {kbps(v1)} at one position report a second "
         f"(95th percentile over the {e['draws']} draws; mean {kbps(r1['busiest_link_kbps_mean'])}), "
         f"{'inside' if v1 <= nb else 'above'} the {kbps(nb, 0)} of the earlier budget, and {kbps(v10, 1)} at ten "
-        f"a second, {'above' if v10 > nb else 'inside'} it. {verdict}")
+        f"a second, {'above' if v10 > nb else 'inside'} it. H13 is {side}, and we report it as a design calculation "
+        f"and not as a test [54]. Its first clause is arithmetic on the sizes and rates we assumed and holds in any "
+        f"geometry: reports are not relayed, so no node can hear more than the fleet's sum, 20 &times; "
+        f"{kbps(per[('on', 1.0)], 3)} = {kbps(fleet_sum)}, which is the 95th percentile above. The design note from "
+        f"which the second pre-registration took its parameters had already computed "
+        f"{num(dn['per_robot_Bps'])}{NB}B/s per robot, {kbps(dn['kbps_20_at_1hz'], 1)} for 20 robots and "
+        f"{kbps(dn['kbps_20_at_10hz'], 1)} for their position reports alone at ten a second; E53 confirms those "
+        f"figures with the codec's sizes and adds the mesh.")
     V["P1-LRIP-INTRO-SENTENCE"] = (
-        f"Twenty rovers reporting once a second load the busiest radio link with {kbps(v1)}, "
-        f"{'inside' if v1 <= nb else 'above'} the {kbps(nb, 0)} we had budgeted, and at ten reports a second with "
-        f"{kbps(v10, 1)}, which {'does not fit' if v10 > nb else 'still fits'}; the pre-registered hypothesis on this "
-        f"point (H13) is {'supported' if sup else 'not supported'} (Section 5.8).")
+        f"By the sizes and rates we assumed, twenty rovers reporting once a second offer {kbps(v1)}, "
+        f"{'inside' if v1 <= nb else 'above'} the {kbps(nb, 0)} we had budgeted, and {kbps(v10, 1)} at ten reports a "
+        f"second, which {'does not fit' if v10 > nb else 'still fits'}. This is a design calculation and not a test, "
+        f"and it holds only on a channel that the base schedules, with reports travelling one hop (Section 5.8).")
     V["P1-LRIP-CONCLUSION-SENTENCE"] = (
-        f"{len(p.schema['messages'])} message types "
-        + (f"fit a {kbps(nb, 0)} channel for 20 rovers at one authenticated position report a second and not at ten"
-           if sup else
-           f"load a {kbps(nb, 0)} channel with {kbps(v1)} for 20 rovers at one authenticated position report a second "
-           f"and {kbps(v10, 1)} at ten"))
+        f"the periodic reports and the task and road messages of 20 rovers offer {kbps(v1, 1)} at one authenticated "
+        f"position report a second")
     o1, o10 = row("fleet", "off", 1.0, 20)["busiest_link_kbps_p95"], row("fleet", "off", 10.0, 20)["busiest_link_kbps_p95"]
     same = (o1 <= nb) == (v1 <= nb) and (o10 > nb) == (v10 > nb)
     V["P1-E53-AUTH-SENTENCE"] = (
@@ -1678,6 +2215,36 @@ def phase6_e53(p, st, V, check):
     check(air_s <= nb < min(air_a, air_2) and v10 > nb,
           "the budget holds at 1 Hz on a scheduled channel and fails at 10 Hz, on random access and when reports are relayed")
     fit = lambda x: "fits" if x <= nb else "does not fit"
+    sched_only = air_s <= nb < min(air_a, air_2)
+    V["P1-LRIP-CONCLUSION-SENTENCE"] += (
+        f", which fits a {kbps(nb, 0)} channel only if the base schedules it and reports travel one hop" if sched_only
+        else f", which {fit(v1)} a {kbps(nb, 0)} channel")
+    # Referee M10(c): the sizes are Space Packets with their security fields. A link frame and channel coding come
+    # on top. Inside a Proximity-1 frame every message gains the schema's proximity1_frame_bytes.
+    fb = int(p.schema["framing"]["proximity1_frame_bytes"])
+    per_fr = sum(v["rate_hz"] * (v["bytes"] + fb) for v in pr.values())                  # B/s per rover, framed
+    check(abs(sum(v["rate_hz"] * v["bytes"] for v in pr.values()) * 8 / 1000 - per[("on", 1.0)]) < 1e-3,
+          "rates times packet sizes give the per-rover load")
+    fr20 = 20 * per_fr * 8 / 1000
+    nmax0, nmax_fr = math.floor(eta_s * nb / per[("on", 1.0)]), math.floor(eta_s * nb / (per_fr * 8 / 1000))
+    check(fr20 / eta_s <= nb, "with Proximity-1 framing 20 rovers still fit the scheduled channel")
+    V["P1-LRIP-FRAME-B"] = nbytes(fb)
+    V["P1-E53-FRAMING-SENTENCE"] = (
+        f"These are packet sizes before link framing and channel coding. Inside a Proximity-1 frame every message "
+        f"gains {nbytes(fb)} (a synchronisation marker, the frame header and a checksum, as our design note counts "
+        f"them from the Proximity-1 standards [58]): a rover then offers "
+        f"{num(per_fr, 1)}{NB}B/s and 20 rovers {kbps(fr20, 1)}, a scheduled channel must run at "
+        f"{kbps(fr20 / eta_s, 1)}, and the {kbps(nb, 0)} channel is full at {nmax_fr} rovers and not at {nmax0}. "
+        f"Channel coding is counted in neither figure.")
+    # Referee M10(d): the traffic model holds only some of the message types
+    all_types = [m["name"] for m in p.schema["messages"]]
+    absent = [n for n in all_types if n not in pr]
+    check(len(pr) + len(absent) == len(all_types), "every message type is in the traffic model or named as absent")
+    V["P1-E53-N-TYPES"] = f"{len(pr)}"
+    V["P1-E53-TYPES-SENTENCE"] = (
+        f"The traffic model holds {len(pr)} of the {len(all_types)} message types"
+        + (": " + listing(f"<code>{n}</code>" for n in absent) + " are not in it, so the count is of the periodic "
+           "reports and the task and road messages and not of the full message set." if absent else "."))
     V["P1-E53-AIR-SCHED"], V["P1-E53-AIR-ALOHA"] = kbps(air_s), kbps(air_a, 1)
     V["P1-E53-AIRTIME-SENTENCE"] = (
         f"Load at the sources is not airtime (Proposition 2). On a channel that the base schedules, with a fifth of "
@@ -1701,12 +2268,16 @@ def phase6_e53(p, st, V, check):
     r40 = row("fleet", "on", 1.0, 40)["busiest_link_kbps_p95"]
     V["P1-E53-NMAX-SCHED"] = f"{nmax}"
     V["P1-E53-NMAX-SENTENCE"] = (
-        f"In this geometry the busiest link hears the whole fleet (mean hops to the base "
+        f"This geometry draws positions from the trajectories of the eight simulated vehicles with every "
+        f"vehicle-step equally likely, so the draws follow where the fleet spends its time, which is near the base, "
+        f"and that sampling is why the busiest link hears the whole fleet (mean hops to the base "
         f"{rng_txt([row('fleet', 'on', 1.0, n)['mean_hops_to_base'] for n in NS], lambda x: num(x, 2))}; "
         f"{rng_txt([row('fleet', 'on', 1.0, n)['reachable_share'] for n in NS], lambda x: sh(x))} of rovers with a "
         f"path to it), so the scheduled {kbps(nb, 0)} channel is full at {nmax} rovers reporting once a second"
         + (f": 40 rovers fit as load ({kbps(r40, 1)}) and not as airtime ({kbps(r40 / eta_s, 1)})." if r40 <= nb < r40 / eta_s
-           else "."))
+           else ".")
+        + " Vehicles on the road are placed differently: Section 5.9 gives the share of driving time with a path to "
+          "the base.")
     r5 = row("fleet", "on", 10.0, 5)["busiest_link_kbps_p95"]
     r80 = row("fleet", "on", 10.0, 80)["busiest_link_kbps_p95"]
     V["P1-E53-10HZ-SENTENCE"] = (
@@ -1758,10 +2329,12 @@ def phase6_e53(p, st, V, check):
     V["P1-TABLE-E53-SPREAD"] = _tab(
         "<b>Table 10.</b> E53, spread geometry (added after the pre-registration, not used for H13): rovers placed "
         "uniformly over the route samples, authentication on.", ["Quantity"] + [f"{n} rovers" for n in NS], rows)
-    return {"v1": v1, "v10": v10, "nb": nb, "sup": sup, "nmax": nmax, "per1": per[("on", 1.0)], "draws": e["draws"]}
+    return {"v1": v1, "v10": v10, "nb": nb, "sup": sup, "nmax": nmax, "per1": per[("on", 1.0)], "draws": e["draws"],
+            "sched_only": sched_only, "n_types": len(pr), "n_all": len(all_types), "fr20": fr20,
+            "hops": [row("fleet", "on", 1.0, n)["mean_hops_to_base"] for n in NS]}
 
 
-E54_NAMES = {"drop_retry": "drop and retry", "sf": "store and forward", "sf_ll": "store and forward + lost-link rule"}
+E54_NAMES = {"drop_retry": "drop and retry", "sf": "store and forward", "sf_ll": "store and forward + return to the last link point"}
 
 
 def phase6_e54(p, V, fill, check):
@@ -1773,24 +2346,38 @@ def phase6_e54(p, V, fill, check):
         e = p.e54
         prm = e["parameters"]
         b0, b1 = e["blackout_days"]
+        n = len(e["seeds"])
         check(abs((b1 - b0) - 14.0) < 1e-9, "E54's imposed Earth blackout lasts 14 days")
         check(prm["retry_s"] > 60.0, "drop-and-retry's retry interval is longer than a grant's 60 s lifetime")
+        span_min = (prm["max_tries"] - 1) * prm["retry_s"] / 60.0
+        check(span_min * 60 < prm["lease_s"], "drop-and-retry gives up before the lease ends")
+        g = p.row54(0.25, "sf")
+        n_res = round(e["reservations_per_seed"] * n)
+        check(g["grant_n"] == g["award_n"] and g["grant_n"] > 2 * n_res,
+              "the replay generates a grant for every award, more than twice the recorded single-lane reservations")
         return (
-            f"The month is July 2028 as the engine recorded it for the auction at the middle load, with today's "
-            f"fleet and the road rules of [45], on {len(e['seeds'])} seeds ({num(e['jobs_per_seed'])} jobs and "
+            f"The month is July 2028 as the engine recorded it for the auction at the middle load, with the fleet of "
+            f"eight vehicles and the road rules of [45], on {n} seeds ({num(e['jobs_per_seed'])} jobs and "
             f"{num(e['reservations_per_seed'])} single-lane road reservations a seed). Three ways of carrying the messages are compared at per-hop loss 0.10, 0.25 and 0.40. "
             f"<i>Drop and retry</i> sends end to end along the current shortest path, again every "
             f"{secs(prm['retry_s'])}, at most {prm['max_tries']} times and never past the message's lifetime. "
             f"<i>Store and forward</i> moves a message hop by hop with custody [60]: a lost transmission is repeated "
             f"after {secs(prm['custody_timer_s'])} while the link lasts, a message with no path waits in a "
-            f"{num(prm['queue_bytes'] / 1e6)}{NB}MB store, and it expires at its lifetime. The third adds the "
-            f"<i>lost-link rule</i> of Section 3.13: a vehicle that has had no path to the base for "
-            f"{secs(prm['t_hold_s'])} retraces its path at half speed to the last point where it had one, and the "
-            f"base releases its reservations at their timeout. The messages are those of the recorded run: an award "
-            f"to each vehicle of a job (lifetime the {num(prm['lease_s'] / 3600)}{NB}h lease; an award that expires "
-            f"undelivered is a lost job, auctioned again), a reservation grant (lifetime 60{NB}s), a report at the "
-            f"end of each job, and a status report every {secs(prm['status_period_s'])} for the base's age of "
-            f"information. A {num(b1 - b0)}-day Earth blackout is imposed on days {num(b0)} to {num(b1)}.")
+            f"{num(prm['queue_bytes'] / 1e6)}{NB}MB store, and it expires at its lifetime. Both sets of retry "
+            f"settings are Assumed and were not swept: the baseline's {words(prm['max_tries'])} tries end "
+            f"{num(span_min)} minutes into a lifetime of {num(prm['lease_s'] / 60)} minutes, while store and forward "
+            f"repeats for all of it. The third adds the <i>lost-link return</i> of Section 3.13: a vehicle that has "
+            f"had no path to the base for {secs(prm['t_hold_s'])} retraces its path at half speed to the last point "
+            f"where it had one. The messages are generated from the recorded run: an award to each vehicle of a job "
+            f"(its lifetime is the lease of {num(prm['lease_s'] / 3600)}{NB}h, the time after which an awarded job "
+            f"returns to the pool; an award that expires undelivered is a lost job, auctioned again), a reservation "
+            f"grant with every award (lifetime 60{NB}s; {g['grant_n']:,} grants against the {n_res:,} single-lane "
+            f"reservations of the recorded runs, so more than half of them belong to jobs with no such reservation), "
+            f"a report at the end of each job, and a status report every {secs(prm['status_period_s'])} for the "
+            f"base's age of information. A {num(b1 - b0)}-day Earth blackout is imposed on days {num(b0)} to "
+            f"{num(b1)}, as H14 names it. It can affect only messages addressed to Earth, which here are the daily "
+            f"records of who did what (the ledger); awards, grants, reports and status travel between the base and "
+            f"the vehicles and do not depend on it.")
     fill("P1-E54-DESIGN-SENTENCE", design, "E54")
     fill("P1-E54-HOLD-S", lambda: (p.h14(), secs(p.e54["parameters"]["t_hold_s"]))[1], "E54")
     fill("P1-E54-RDV-H", lambda: (p.h14(), f"{num(p.e54['parameters']['t_rdv_s'] / 3600)}{NB}h")[1], "E54")
@@ -1807,49 +2394,77 @@ def phase6_e54(p, V, fill, check):
 
     def h14_sentence():
         h = p.h14()
+        e, prm = p.e54, p.e54["parameters"]
         dr, ll, d = h["lost_jobs_drop_retry_per_seed"], h["lost_jobs_sf_ll_per_seed"], h["difference_sf_ll_minus_drop_retry"]
         rdr, rsf, rll = (p.row54(LOSS, k) for k in ("drop_retry", "sf", "sf_ll"))
         fewer = d["ci"][1] < 0
-        check(bool(h["supported"]) == (fewer and h["stuck_reservations_sf_ll"] == 0), "H14's verdict follows its rule")
+        check(bool(h["supported"]) == (fewer and h["stuck_reservations_sf_ll"] == 0), "H14's verdict in the file follows its rule")
         check(round(dr["mean"] * dr["n"]) == rdr["award_lost"] and round(ll["mean"] * ll["n"]) == rll["award_lost"],
               "the lost jobs per seed add up to the table's counts")
         none = rll["award_lost"] == 0
+        # Referee M9(a): how much of the baseline's loss is five independent losses in a row on a one-hop path
+        k = int(prm["max_tries"])
+        p5 = {l: p.row54(l, "drop_retry")["award_n"] * l ** k for l in (0.10, 0.25, 0.40)}
+        lost = {l: p.row54(l, "drop_retry")["award_lost"] for l in p5}
+        check(all(p5[l] <= lost[l] for l in p5), "five losses in a row account for no more than the baseline's lost awards")
+        check(p5[LOSS] > 0.5 * lost[LOSS] and p5[0.40] > 0.5 * lost[0.40],
+              "five losses in a row account for more than half of the baseline's lost awards at loss 0.25 and 0.40")
+        hops = [float(x) for x in p.t53[(p.t53["geometry"] == "fleet") & (p.t53["auth"] == "on")
+                                        & np.isclose(p.t53["position_hz"], 1.0)]["mean_hops_to_base"]]
+        tries_sf = prm["lease_s"] / prm["custody_timer_s"]
+        span_min = (k - 1) * prm["retry_s"] / 60.0
         return (
-            f"At per-hop loss {LOSS:.2f} with the 14-day blackout, drop and retry lost {rdr['award_lost']} of "
+            f"At per-hop loss {LOSS:.2f}, drop and retry lost {rdr['award_lost']} of "
             f"{rdr['award_n']:,} awards, {num(dr['mean'], 2)} jobs a seed (95&#8239;% CI {num(dr['ci'][0], 2)} to "
-            f"{num(dr['ci'][1], 2)}). Store and forward lost {rsf['award_lost']}, and with the lost-link rule "
-            f"{'none' if none else rll['award_lost']}. The paired difference between the third and the first is "
+            f"{num(dr['ci'][1], 2)}). Store and forward lost {rsf['award_lost']}, and "
+            f"{'none' if none else rll['award_lost']} when unheard vehicles were assumed to return to their last link "
+            f"point. The paired difference between the third and the first is "
             f"{num(d['mean'], 2)} jobs a seed (95&#8239;% CI {num(d['ci'][0], 2)} to {num(d['ci'][1], 2)}, "
-            f"n&nbsp;=&nbsp;{d['n']}), which {'excludes' if fewer else 'includes'} zero: the first clause of H14 is "
-            f"{'supported' if fewer else 'not supported'}. Lost jobs are rare under either transport, because the "
-            f"base keeps trying for the whole lease while the vehicle is in reach.")
+            f"n&nbsp;=&nbsp;{d['n']}), which {'excludes' if fewer else 'includes'} zero: the first clause of H14 "
+            f"{'holds' if fewer else 'does not hold'} against this baseline. The baseline decides much of that. Drop "
+            f"and retry gives up after {words(k)} tries, {num(span_min)} minutes into a lease of "
+            f"{num(prm['lease_s'] / 60)} minutes, while store and forward can repeat {num(tries_sf)} times in the "
+            f"same hour; neither setting was swept. Paths are almost always one hop (a mean of "
+            f"{num(min(hops), 2)} to {num(max(hops), 2)} hops to the base in E53), so custody at relays plays little "
+            f"part, and {words(k)} independent losses in a row have probability <i>p</i><sup>{k}</sup>: "
+            f"{rdr['award_n']:,}&nbsp;&times;&nbsp;{LOSS:.2f}<sup>{k}</sup> = {num(p5[LOSS], 1)} of the "
+            f"{lost[LOSS]} lost awards, {num(p5[0.40], 0)} of the {lost[0.40]} lost at loss 0.40 and "
+            f"{num(p5[0.10], 2)} of the {lost[0.10]} at 0.10. The others are vehicles that had no path for the whole "
+            f"lease, of which store and forward itself lost {rsf['award_lost']}. The comparison is therefore mostly "
+            f"one of {words(k)} tries in {num(span_min)} minutes against {num(tries_sf)} tries in an hour, and a "
+            f"baseline that retried every {secs(prm['custody_timer_s'])} without a cap was not run. The 14-day Earth "
+            f"blackout that H14 names cannot affect this clause (Section 4.8).")
     fill("P1-E54-H14-SENTENCE", h14_sentence, "E54")
-    fill("P1-E54-H14-VERDICT", lambda: "supported" if p.h14()["supported"] else "not supported", "E54")
+    fill("P1-E54-H14-VERDICT", lambda: ("first clause holds against the stated baseline; second clause not testable as written"
+                                        if p.h14()["difference_sf_ll_minus_drop_retry"]["ci"][1] < 0 else
+                                        "first clause does not hold; second clause not testable as written"), "E54")
 
     def stuck_sentence():
         h, e = p.h14(), p.e54
         rdr, rll = p.row54(LOSS, "drop_retry"), p.row54(LOSS, "sf_ll")
         check(rll["stuck_reservations"] == 0 and rll["stuck_hours"] == 0, "the results file sets stuck reservations to zero under the rule")
-        check(rdr["stuck_reservations"] == h["stuck_reservations_drop_retry"] > 0, "without the rule some reservations stay blocked")
+        check(rdr["stuck_reservations"] == h["stuck_reservations_drop_retry"] > 0, "without the return some reservations end with their holder out of reach")
         check("UNCONFIRMED release" in str(e.get("stuck_definition", "")) and "leaves on schedule" in str(e.get("stuck_definition", "")),
               "the results file defines a stuck reservation as an unconfirmed release, with every vehicle leaving on schedule")
         n = len(e["seeds"])
         return (
-            f"H14's second clause, that the rule leaves no reservation blocked past its timeout, holds by "
-            f"construction and is not a measurement: a vehicle that follows the rule never stops inside a single-lane "
-            f"segment, so the base may release its reservation at the timeout whether or not it hears the vehicle. "
-            f"What the replay measures is what the rule avoids. Without it, "
+            f"H14's second clause, that the rule leaves no reservation stuck past its timeout, is not testable as "
+            f"written, and we report no verdict on it [54]. The zero that the results file holds for it follows from "
+            f"the rule as first written, under which the base released a silent vehicle's reservation at its "
+            f"timeout. That rule is withdrawn: releasing the segment is unsafe if the vehicle is disabled inside it. "
+            f"Under the rule of Section 3.13 the segment is marked unconfirmed and may be entered only at caution "
+            f"speed. What the replay gives is a count. Without the return to the last link point, "
             f"{rdr['stuck_reservations']:,} of the {round(e['reservations_per_seed'] * n):,} reservations in the {n} "
             f"seeds ended while their holder had no path to the base "
-            f"{secs(e['parameters']['grace_s'])} after the timeout. These are releases the base could not confirm, "
-            f"not vehicles still inside a segment: in the replay every vehicle leaves on schedule, but the base "
-            f"cannot know that, so it keeps the segment blocked until the holder is heard again, "
-            f"{num(rdr['stuck_hours'])}{NB}h in all, {num(rdr['stuck_hours'] / n)}{NB}h a "
-            f"seed. With the first clause measured and the second a property of the rule, H14 is "
-            f"{'supported' if h['supported'] else 'not supported'} [54].")
+            f"{secs(e['parameters']['grace_s'])} after the timeout. In the replay every vehicle had left its segment "
+            f"on schedule, but the base cannot know that, so these segments stay unconfirmed until the holder is "
+            f"heard again: {num(rdr['stuck_hours'])}{NB}h in all, {num(rdr['stuck_hours'] / n)}{NB}h a seed. How "
+            f"many stay unconfirmed when vehicles return to their last link point was not counted, and what crossing "
+            f"an unconfirmed segment at caution speed costs in delay is not priced.")
     fill("P1-E54-STUCK-SENTENCE", stuck_sentence, "E54")
 
     def grants_sentence():
+        e = p.e54
         g = {l: {k: p.row54(l, k) for k in E54_NAMES} for l in (0.10, 0.25, 0.40)}
         dr = {l: g[l]["drop_retry"]["grant_lost_share"] for l in g}
         check(all(abs(dr[l] - l) < 0.02 for l in dr), "drop-and-retry loses grants at about the per-hop loss rate")
@@ -1857,13 +2472,31 @@ def phase6_e54(p, V, fill, check):
               "custody loses under 1 % of grants at every loss")
         sf, ll = g[LOSS]["sf"], g[LOSS]["sf_ll"]
         return (
-            f"The larger effects are elsewhere. A reservation grant lives 60{NB}s, so drop and retry has one try, "
-            f"and it lost grants at about the per-hop loss rate itself: {pc(100 * dr[0.10], 1)}, "
-            f"{pc(100 * dr[0.25], 1)} and {pc(100 * dr[0.40], 1)} at loss 0.10, 0.25 and 0.40. Each lost grant is a "
-            f"vehicle that stops before a single-lane segment. With custody, {sf['grant_lost']} of "
-            f"{sf['grant_n']:,} grants were lost at loss {LOSS:.2f} ({pc(100 * sf['grant_lost_share'], 2)}), and "
-            f"{'none' if ll['grant_lost'] == 0 else ll['grant_lost']} with the lost-link rule.")
+            f"One further difference is a consequence of two settings and not a finding. A reservation grant lives "
+            f"60{NB}s and drop and retry repeats after {secs(e['parameters']['retry_s'])}, so it has one try on one "
+            f"hop and loses grants at the per-hop loss rate itself: {pc(100 * dr[0.10], 1)}, "
+            f"{pc(100 * dr[0.25], 1)} and {pc(100 * dr[0.40], 1)} at loss 0.10, 0.25 and 0.40. With custody, "
+            f"{sf['grant_lost']} of {sf['grant_n']:,} grants were lost at loss {LOSS:.2f} "
+            f"({pc(100 * sf['grant_lost_share'], 2)}), and "
+            f"{'none' if ll['grant_lost'] == 0 else ll['grant_lost']} with the return to the last link point. These "
+            f"are counts of messages: a grant was generated for every award, and more than half of the jobs have no "
+            f"single-lane reservation (Section 4.8), so a lost grant here is not a vehicle stopped before a segment.")
     fill("P1-E54-GRANTS-SENTENCE", grants_sentence, "E54")
+
+    def cost_sentence():
+        """Referee M9(b): what the replay leaves out of the lost-link return."""
+        e = p.e54
+        ls = e["link_shares"]["linked_share_driving_time"]
+        check(0 < ls < 1, "vehicles have a path to the base for part of their driving time only")
+        return (
+            f"The return is applied by editing the contact plan while the recorded job timeline stays: for the "
+            f"radio a returning vehicle stands at its last link point, and for the logistics it is driving its job "
+            f"at the same time. The replay therefore counts what the return gains in contact and not what it costs "
+            f"in interrupted jobs. That cost is not small: the rule produced "
+            f"{num(e['lost_link_returns_per_seed'])} returns a seed against {num(e['jobs_per_seed'])} jobs, and in "
+            f"the recorded month a vehicle had a path to the base for only {sh(ls)} of its driving time, so the "
+            f"ladder of Section 3.13 read literally would interrupt a large share of drives.")
+    fill("P1-E54-COST-SENTENCE", cost_sentence, "E54")
 
     def aoi_sentence():
         e = p.e54
@@ -1873,12 +2506,12 @@ def phase6_e54(p, V, fill, check):
         check(sf["task_state_lost"] < dr["task_state_lost"] and sf["task_state_delay_mean_s"] > dr["task_state_delay_mean_s"]
               and ll["task_state_delay_mean_s"] < sf["task_state_delay_mean_s"], "holding delivers more end-of-job reports, later")
         return (
-            f"The lost-link rule changes what the base knows, not what the radio loses. Without it the base's "
+            f"The return to the last link point changes what the base knows, not what the radio loses. Without it the base's "
             f"picture of a vehicle was on average {num(sf['aoi_mean_s'] / 60)}{NB}min old "
             f"({secs(sf['aoi_mean_s'])}) under either transport, and the worst-placed vehicle went unheard for "
             f"{num(sf['aoi_worst_vehicle_s'] / 3600)}{NB}h. With it the mean age was {secs(ll['aoi_mean_s'])} and the "
-            f"worst vehicle's {secs(ll['aoi_worst_vehicle_s'])}: the rule produced "
-            f"{num(e['lost_link_returns_per_seed'])} returns a seed and removed "
+            f"worst vehicle's {secs(ll['aoi_worst_vehicle_s'])}: the return was made "
+            f"{num(e['lost_link_returns_per_seed'])} times a seed and removed "
             f"{num(e['lost_link_isolation_h_saved_per_seed'])} vehicle-hours of isolation a seed. The end-of-job "
             f"reports show the cost of holding a message: drop and retry lost {sh(dr['task_state_lost_share'])} of "
             f"them, store and forward lost {sh(sf['task_state_lost_share'], 1)} and delivered the rest "
@@ -1893,6 +2526,10 @@ def phase6_e54(p, V, fill, check):
             raise Pending("the 61-day ledger replay (results/E54_ledger.json) has not run")
         down = L["longest_earth_down_d"]
         rows = L["rows"]
+        n_seeds = len(p.e54["seeds"]) if p.e54 is not None else 30
+        check(all(x["bundles"] % n_seeds == 0 for x in rows) and len({x["bundles"] for x in rows}) == 1,
+              "the ledger file holds the same number of bundles in every row, a multiple of the seeds")
+        n_b = rows[0]["bundles"] // n_seeds
         dr = [x["lost_share"] for x in rows if x["protocol"] == "drop_retry"]
         sf = {}
         for x in rows:
@@ -1905,7 +2542,8 @@ def phase6_e54(p, V, fill, check):
         check(short == [14.0] and len(long_) == 2, "one ledger lifetime is shorter than the longest Earth-down stretch and two are longer")
         check(all(max(sf[d]) == 0 for d in long_) and max(sf[14.0]) > 0, "a lifetime longer than the longest Earth-down stretch loses no ledger bundle")
         return (
-            f"The daily ledger bundle to Earth was replayed over 61 days, in which the longest stretch without Earth "
+            f"The daily ledger bundle to Earth was replayed over 61 days ({n_b} bundles; the replay does not "
+            f"depend on the seed, and the file repeats it for each), in which the longest stretch without Earth "
             f"was {num(down, 1)} days (the imposed blackout together with the natural gaps next to it). Drop and "
             f"retry lost {sh(np.mean(dr))} of the bundles whatever their lifetime. Store and forward lost "
             f"{sh(max(sf[14.0]))} with the 14-day lifetime first chosen and none with a lifetime of "
@@ -1932,19 +2570,24 @@ def phase6_e54(p, V, fill, check):
                 rows.append([f"{l:.2f}", name, f"{x['award_lost']}", num(x["award_delay_mean_s"], 1),
                              f"{x['grant_lost']:,}", f"{x['task_state_lost']:,}", num(x["task_state_delay_mean_s"]),
                              num(x["aoi_mean_s"]), num(x["aoi_worst_vehicle_s"] / 3600, 2),
-                             "0 (by construction)" if k == "sf_ll" else f"{x['stuck_reservations']:,} ({num(x['stuck_hours'])}{NB}h)"])
+                             "not counted" if k == "sf_ll" else f"{x['stuck_reservations']:,} ({num(x['stuck_hours'])}{NB}h)"])
         x = p.row54(0.25, "sf")
+        prm = p.e54["parameters"]
         return _tab(
-            f"<b>Table 11.</b> E54: a message-level replay of one recorded month, {len(p.e54['seeds'])} seeds, with a "
-            f"14-day Earth blackout. Counts are sums over the seeds, out of {x['award_n']:,} awards, "
-            f"{x['grant_n']:,} grants and {x['task_state_n']:,} end-of-job reports. The age of information is the "
-            f"age of the newest status report the base holds for a vehicle. The last column counts reservations that "
-            f"ended while their holder was out of the base's reach, so that the base could not confirm the release, "
-            f"with the hours it then kept the segment closed; no vehicle was still inside a segment. Its zeros under "
-            f"the rule are a property of the rule and not a measurement: the base releases at the timeout.",
+            f"<b>Table 11.</b> E54: a message-level replay of one recorded month, {len(p.e54['seeds'])} seeds. Counts "
+            f"are sums over the seeds, out of {x['award_n']:,} awards, {x['grant_n']:,} grants (one generated for "
+            f"every award) and {x['task_state_n']:,} end-of-job reports. Drop and retry makes at most "
+            f"{prm['max_tries']} tries {secs(prm['retry_s'])} apart; store and forward repeats every "
+            f"{secs(prm['custody_timer_s'])} until the message's lifetime ends (both Assumed, not swept). The age of "
+            f"information is the age of the newest status report the base holds for a vehicle. The last column "
+            f"counts reservations that ended while their holder was out of the base's reach, so that the segment "
+            f"stays unconfirmed, with the hours until the holder was heard again; no vehicle was still inside a "
+            f"segment. It does not depend on the transport or the loss rate, and it was not counted for the rows "
+            f"with the return to the last link point, in which the return is applied to the contact plan and not "
+            f"to the vehicles' jobs.",
             ["Per-hop loss", "Transport", "Awards lost (lost jobs)", "Award delay, mean (s)", "Grants lost",
              "End-of-job reports lost", "their delay, mean (s)", "Age at the base, mean (s)", "worst vehicle (h)",
-             "Releases the base could not confirm (hours the segment stayed closed)"], rows, cls="wide")
+             "Segments left unconfirmed (hours unconfirmed)"], rows, cls="wide")
     fill("P1-TABLE-E54", table, "E54")
 
     def family_sentence():
@@ -1957,11 +2600,13 @@ def phase6_e54(p, V, fill, check):
               "Holm's correction covers H10, H14 and H15a; H9 and H13 are listed without a test")
         check(abs(F["alpha"] - 0.05) < 1e-12, "the family is corrected at alpha 0.05")
         return (
-            f"Both sit in that file's confirmatory family with H9, H10 and H15a, which are tested in the companion "
-            f"paper [45], where H9 and H10 are written H9&prime; and H10&prime;. Holm's procedure [52] at &alpha;&nbsp;=&nbsp;{F['alpha']:g} is applied to the three "
-            f"hypotheses of the family that have a sampling test, H10, H14 and H15a. H9 and H13 are comparisons with "
-            f"a threshold and are listed without a test; for H13 we report in how many of the draws each clause holds. "
-            f"For the correction H14 is tested by an exact sign test on the lost jobs per seed.")
+            f"Both sit in that file's confirmatory family with H9&prime;, H10&prime; and H15a, which are reported in "
+            f"the companion paper [45]. The registration asks for Holm's procedure [52] across all five. It is "
+            f"applied at &alpha;&nbsp;=&nbsp;{F['alpha']:g} to the three that have a sampling test, H10&prime;, H14 "
+            f"and H15a; H9&prime; and H13 are comparisons with a threshold and are listed without a test, which is "
+            f"a change from the registered family. For the correction H14 is tested by an exact sign test on the "
+            f"lost jobs per seed. That test was added after the results were seen; the registered rule, a paired "
+            f"interval that excludes zero, gives the same verdict [54].")
     fill("P1-P6-FAMILY-SENTENCE", family_sentence, "Phase 6 family")
 
     def holm_sentence():
@@ -1973,20 +2618,36 @@ def phase6_e54(p, V, fill, check):
               and abs(f14["mean_diff_jobs"] - h["difference_sf_ll_minus_drop_retry"]["mean"]) < 1e-9,
               "the family file tests the same per-seed lost jobs as E54")
         check(f14["holm"]["p_adjusted"] >= f14["p"], "Holm's adjusted p is not below the raw p")
-        ok14 = bool(f14["holm"]["rejected_at_0.05"]) and f14["mean_diff_jobs"] < 0 and f14["stuck_reservations_sf_ll"] == 0
-        check(ok14 == ("supported" in F["summary"]["H14"] and "not supported" not in F["summary"]["H14"].lower()),
-              "H14's verdict in the family file follows its Holm p")
+        # Referee S1: the file's p is one-sided (0.5^9 with no seed the other way); every other p here is two-sided
+        nz = f14["seeds_fewer"] + f14["seeds_more"]
+        one_sided = sum(math.comb(nz, i) for i in range(f14["seeds_fewer"], nz + 1)) / 2 ** nz
+        check(abs(one_sided - f14["p"]) < 1e-9, "the family file's sign-test p for H14 is the one-sided exact p")
+        two_sided = min(1.0, 2 * one_sided)
+        ps = sorted([("H14", two_sided), ("H15a", float(f15["p"])), ("H10", float(f10["p_intersection_union"]))], key=lambda q: q[1])
+        adj, run = {}, 0.0
+        for i, (nm, pv) in enumerate(ps):
+            run = max(run, min(1.0, (len(ps) - i) * pv))
+            adj[nm] = run
+        check(abs(adj["H15a"] - f15["holm"]["p_adjusted"]) < 1e-9 and abs(adj["H10"] - f10["holm"]["p_adjusted"]) < 1e-9,
+              "Holm's procedure recomputed here gives the family file's adjusted p for H15a and H10'")
+        ok14 = bool(f14["holm"]["rejected_at_0.05"]) and adj["H14"] < 0.05 and f14["mean_diff_jobs"] < 0
         check(bool(f15["holm"]["rejected_at_0.05"]) and not bool(f10["holm"]["rejected_at_0.05"])
-              and "not supported" in F["summary"]["H10"], "in the family H15a is supported and H10 is not supported as a whole")
+              and "not supported" in F["summary"]["H10"], "in the family H15a is supported and H10' is not supported as a whole")
+        upper = "upper bound" in str(f15.get("p_note", ""))
+        open10 = any("pending" in str(k) or "not yet run" in json.dumps(v) for k, v in f10["clauses"].items())
         more = "none" if f14["seeds_more"] == 0 else f"{f14['seeds_more']}"
         return (
             f"In the family of the second pre-registration, the difference in lost jobs is tested by an exact sign "
-            f"test over the {n} seeds: fewer with store and forward and the rule in {f14['seeds_fewer']} seeds, more "
-            f"in {more}, the same in {f14['seeds_tied']} (p&nbsp;{p_eq(f14['p'])}). Holm's correction over the three "
-            f"hypotheses of that family with a sampling test gives an adjusted p of {pfmt(f14['holm']['p_adjusted'])}, "
-            f"so H14 is {'supported' if ok14 else 'not supported'} after the correction. Of the other two, H15a is "
-            f"supported (adjusted p&nbsp;{p_eq(f15['holm']['p_adjusted'])}) and H10 is not supported as a whole "
-            f"(adjusted p&nbsp;{p_eq(f10['holm']['p_adjusted'])}); both are reported in the companion paper [45].")
+            f"test over the {n} seeds: fewer with store and forward and the return in {f14['seeds_fewer']} seeds, "
+            f"more in {more}, the same in {f14['seeds_tied']} (one-sided p&nbsp;{p_eq(f14['p'])}; two-sided "
+            f"p&nbsp;{p_eq(two_sided)}). Holm's correction over the three hypotheses of that family with a sampling "
+            f"test gives an adjusted p of {pfmt(f14['holm']['p_adjusted'])} on the one-sided p and "
+            f"{pfmt(adj['H14'])} on the two-sided one, so the first clause of H14 "
+            f"{'stands' if ok14 else 'does not stand'} after the correction, against the baseline described above. "
+            f"Of the other two, H15a is supported (adjusted p&nbsp;{'at most ' + pfmt(f15['holm']['p_adjusted']) if upper else p_eq(f15['holm']['p_adjusted'])}) "
+            f"and H10&prime; is not supported as a whole (adjusted p&nbsp;{p_eq(f10['holm']['p_adjusted'])}"
+            + (", on the fleet sizes run when the family file was built, which do not include the largest" if open10 else "")
+            + "); both are reported in the companion paper [45].")
     fill("P1-E54-HOLM-SENTENCE", holm_sentence, "Phase 6 family")
 
     def h13_draws_sentence():
@@ -1999,25 +2660,43 @@ def phase6_e54(p, V, fill, check):
         a, b = c["1 Hz"]["draws_on_predicted_side"], c["10 Hz"]["draws_on_predicted_side"]
         every = a == 1.0 and b == 1.0
         check(every == ("every draw" in F["summary"]["H13"]), "the family file's H13 summary matches its draws")
-        return ((f"Each clause held in every one of the {p.e53['draws']} draws" if every else
+        return ((f"That each clause held in every one of the {p.e53['draws']} draws carries no information for the "
+                 f"first clause, which no draw could have failed" if every else
                  f"The first clause held in {sh(a)} of the {p.e53['draws']} draws and the second in {sh(b)}")
-                + ". H13 is a comparison with a threshold and has no sampling test, so Holm's correction of the second "
-                  "pre-registration's family does not include it.")
+                + ". H13 has no sampling test, and Holm's correction of the second pre-registration's family does "
+                  "not include it.")
     fill("P1-E53-DRAWS-SENTENCE", h13_draws_sentence, "Phase 6 family")
 
     def abstract_clause():
-        h = p.h14()
-        dr, ll, d = h["lost_jobs_drop_retry_per_seed"], h["lost_jobs_sf_ll_per_seed"], h["difference_sf_ll_minus_drop_retry"]
+        h, prm = p.h14(), p.e54["parameters"]
+        d = h["difference_sf_ll_minus_drop_retry"]
+        rdr, rsf, rll = (p.row54(LOSS, k) for k in ("drop_retry", "sf", "sf_ll"))
         if d["ci"][1] < 0:
-            return (f"store-and-forward with a lost-link rule lost {'no' if ll['mean'] == 0 else num(ll['mean'], 2)} "
-                    f"awarded jobs where drop-and-retry lost {num(dr['mean'], 2)} a seed")
-        return "store-and-forward with a lost-link rule did not lose measurably fewer awarded jobs than drop-and-retry"
+            return (f"drop-and-retry capped at {words(prm['max_tries'])} tries lost {rdr['award_lost']} of "
+                    f"{rdr['award_n']:,} awards at {num(100 * LOSS)}{PCT} message loss; store-and-forward that "
+                    f"retries for the whole lease lost {rsf['award_lost']}, and "
+                    f"{'none' if rll['award_lost'] == 0 else rll['award_lost']} when unheard vehicles were assumed "
+                    f"to return to their last link point")
+        return "store-and-forward did not lose measurably fewer awarded jobs than drop-and-retry"
     fill("P1-E54-ABSTRACT-CLAUSE", abstract_clause, "E54")
+
+    def short_clause():
+        """The same counts in fewer words, for the abstract and the conclusion (their word limits)."""
+        h, prm = p.h14(), p.e54["parameters"]
+        rdr, rsf, rll = (p.row54(LOSS, k) for k in ("drop_retry", "sf", "sf_ll"))
+        if h["difference_sf_ll_minus_drop_retry"]["ci"][1] < 0:
+            return (f"drop-and-retry capped at {words(prm['max_tries'])} tries lost {rdr['award_lost']} of "
+                    f"{rdr['award_n']:,} awards at {num(100 * LOSS)}{PCT} loss, store-and-forward {rsf['award_lost']}, "
+                    f"and {'none' if rll['award_lost'] == 0 else rll['award_lost']} when unheard vehicles were assumed "
+                    f"to return to their last link point")
+        return "store-and-forward did not lose measurably fewer awarded jobs than drop-and-retry"
+    fill("P1-E54-SHORT-CLAUSE", short_clause, "E54")
 
     def aoi_clause():
         sf, ll = p.row54(LOSS, "sf"), p.row54(LOSS, "sf_ll")
         return (f"the base's picture of a vehicle was {num(sf['aoi_mean_s'] / 60)}{NB}min old on average without the "
-                f"lost-link rule and {secs(ll['aoi_mean_s'])} with it")
+                f"return to the last link point and {secs(ll['aoi_mean_s'])} with it, a gain counted without the "
+                f"jobs the return would interrupt")
     fill("P1-E54-AOI-CLAUSE", aoi_clause, "E54")
 
 
@@ -2073,36 +2752,59 @@ def phase6_props(p, st, r, V, fill, check):
     fill("P1-PROP3-E54-SENTENCE", prop3_e54, "E54")
 
     # --- Proposition 4: hand-over after a failure (inputs: dev_notes.json, each with its source) -----------------
+    # Referee S5: the example uses the protocol's own heartbeat (HELLO at 1 Hz whenever nothing else was sent), and
+    # it includes what Section 3.13 puts between "silent" and the re-auction: a second, longer timeout to which the
+    # design gives no value, bounded by the lease after which a silent vehicle's job returns to the pool (E54's).
     q4 = r.dev["prop4_inputs"]
     Thb, k = q4["heartbeat_s"], int(q4["misses_k"])
+    hello = next(m for m in p.schema["messages"] if m["name"] == "HELLO")
+    check(hello["default_rate"].startswith("1 Hz") and abs(Thb - 1.0) < 1e-9,
+          "Proposition 4's heartbeat period is the protocol's HELLO rate, 1 Hz")
     det_mean, det_max = (k - 0.5) * Thb, k * Thb
-    fa = lambda pl, kk: 86400.0 / Thb * (1 - pl) * pl ** kk                    # false "silent" marks per pair and day
+    fa = lambda pl, kk: 86400.0 / Thb * (1 - pl) * pl ** kk                    # false "silent" marks per watcher and day
     kmin = lambda pl: next(kk for kk in range(1, 200) if fa(pl, kk) < 1.0)
     auct = q4["auction_rounds"] * q4["round_s"]
     appr_min = q4["approach_km"] / q4["approach_kmh"] * 60.0
     xfer_min = q4["cargo_aboard_prob"] * q4["transfer_h"] * 60.0
-    total_min = (det_mean + auct) / 60.0 + appr_min + xfer_min
+    sight_min = (det_mean + auct) / 60.0 + appr_min + xfer_min                  # if a sighting confirms the failure at once
     from lunarsim.engine import TEAM_SETUP_H
     check(abs(TEAM_SETUP_H - q4["transfer_h"]) < 1e-9, "Proposition 4's transfer time is the engine's coupling time")
     G, W = q4["earth_gap_d"] * 24.0, q4["earth_window_d"] * 24.0
     earth_h = G * G / (2 * (G + W))
-    check(earth_h * 60 > 10 * total_min, "waiting for Earth costs more than ten times the hand-over on the Moon")
-    V["P1-PROP4-EXAMPLE-SENTENCE"] = (
-        f"With a heartbeat every {secs(Thb)} (Assumed; the period at which CADRE's rovers send their state to the "
-        f"leader [71]) and <i>k</i>&nbsp;=&nbsp;{k}, detection takes {secs(det_mean)} on average and at most "
-        f"{secs(det_max)}. A pair of live rovers raises {num(fa(0.10, k), 2)} false marks a day at loss 0.10 and "
-        f"{num(fa(0.40, k))} at 0.40; keeping them below one a day needs <i>k</i>&nbsp;=&nbsp;{kmin(0.10)}, "
-        f"{kmin(0.25)} and {kmin(0.40)} at loss 0.10, 0.25 and 0.40. With {words(q4['auction_rounds'])} auction rounds "
-        f"of {secs(q4['round_s'])}, a new winner {q4['approach_km']:g}{NB}km away at {q4['approach_kmh']:g}{NB}km/h, "
-        f"and cargo aboard the failed rover with probability {q4['cargo_aboard_prob']:g} and a "
-        f"{q4['transfer_h']:g}{NB}h transfer (all Assumed), the expected extra wait is {secs(det_mean)} + "
-        f"{secs(auct)} + {num(appr_min, 1)}{NB}min + {num(xfer_min)}{NB}min = {num(total_min, 1)}{NB}min, of which "
-        f"detection and auction are {secs(det_mean + auct)}: a shorter heartbeat would buy nothing.")
-    V["P1-PROP4-EARTH-SENTENCE"] = (
+
+    def prop4_example():
+        if p.e54 is None:
+            raise Pending("E54 (results/E54_dtn.json) has not run: Proposition 4's lease is read from it")
+        lease_min = p.e54["parameters"]["lease_s"] / 60.0
+        total_min = lease_min + auct / 60.0 + appr_min + xfer_min
+        check(earth_h * 60 > 10 * total_min, "waiting for Earth costs more than ten times the hand-over on the Moon")
+        check(det_mean + auct < 60, "detection and auction are seconds, so the lease sets the hand-over")
+        return total_min, lease_min, (
+            f"The protocol's heartbeat is {secs(Thb)}: a vehicle sends <code>HELLO</code> whenever it would otherwise "
+            f"send nothing in a second (Table A2). With <i>k</i>&nbsp;=&nbsp;{k} (Assumed), a failed vehicle is "
+            f"marked silent after {secs(det_mean, 1)} on average and at most {secs(det_max)}. One rover watching one "
+            f"live rover raises {num(fa(0.10, k), 2)} false marks a day at loss 0.10 and {num(fa(0.40, k))} at 0.40; "
+            f"keeping them below one a day needs <i>k</i>&nbsp;=&nbsp;{kmin(0.10)}, {kmin(0.25)} and {kmin(0.40)} at "
+            f"loss 0.10, 0.25 and 0.40. Being marked silent does not hand the job over. By Section 3.13 the base "
+            f"marks the vehicle failed only after a second, longer timeout or a sighting, and the design gives that "
+            f"timeout no value; a silent vehicle's job returns to the pool when its lease ends, at most "
+            f"{num(lease_min)}{NB}min after it was last heard with the lease of E54. With that lease, "
+            f"{words(q4['auction_rounds'])} auction rounds of {secs(q4['round_s'])}, a new winner "
+            f"{q4['approach_km']:g}{NB}km away at {q4['approach_kmh']:g}{NB}km/h, and cargo aboard the failed rover "
+            f"with probability {q4['cargo_aboard_prob']:g} and a {q4['transfer_h']:g}{NB}h transfer (all Assumed), "
+            f"the expected extra wait is up to {num(lease_min)}{NB}min + {secs(auct)} + {num(appr_min, 1)}{NB}min + "
+            f"{num(xfer_min)}{NB}min = {num(total_min, 1)}{NB}min, about {h_(total_min / 60)}. If a sighting "
+            f"confirmed the failure at once it would be {secs(det_mean, 1)} + {secs(auct)} + "
+            f"{num(appr_min, 1)}{NB}min + {num(xfer_min)}{NB}min = {num(sight_min, 1)}{NB}min. Detection and auction "
+            f"are seconds in both cases, so a shorter heartbeat would buy nothing; the lease sets the wait.")
+    fill("P1-PROP4-EXAMPLE-SENTENCE", lambda: prop4_example()[2], "E54")
+    fill("P1-PROP4-EARTH-SENTENCE", lambda: (
         f"With gaps of {q4['earth_gap_d']:g} days and windows of {q4['earth_window_d']:g} days at this base [42], "
-        f"the wait for Earth alone is {num(earth_h, 1)}{NB}h, {num(earth_h * 60 / total_min)} times the whole "
-        f"hand-over on the Moon.")
-    V["P1-PROP4-TOTAL-MIN"], V["P1-PROP4-EARTH-H"] = f"{num(total_min)}{NB}min", f"{num(earth_h)}{NB}h"
+        f"the wait for Earth alone is {num(earth_h, 1)}{NB}h, {num(earth_h * 60 / prop4_example()[0])} times the "
+        f"hand-over on the Moon with the lease and {num(earth_h * 60 / sight_min)} times the one after a sighting."),
+        "E54")
+    fill("P1-PROP4-TOTAL-H", lambda: h_(prop4_example()[0] / 60), "E54")
+    V["P1-PROP4-EARTH-H"] = f"{num(earth_h)}{NB}h"
 
     # --- Proposition 5: operators against fleet size and autonomy level (a model; inputs in dev_notes.json) -----
     q5 = r.dev["prop5_inputs"]
@@ -2120,8 +2822,9 @@ def phase6_props(p, st, r, V, fill, check):
     V["P1-TABLE-PROP5"] = _tab(
         f"<b>Table B2.</b> Proposition 5 evaluated: vehicles per operator and operators on console for "
         f"{listing(fleets)} vehicles, by autonomy level, with operators loaded to at most {rho:g} of their time. "
-        f"The request rates and handling times are Assumed, chosen near the published ratios named in the text; "
-        f"the first row is VIPER's planned staffing, not the formula.",
+        f"The request rates and handling times are Assumed and were chosen so that the result lands near the "
+        f"published ratios named in the text: the table checks that the formula can be made consistent with those "
+        f"ratios, and it predicts nothing. The first row is VIPER's planned staffing, not the formula.",
         ["Autonomy level", "Requests per vehicle-hour", "Minutes per request", "Vehicles per operator"]
         + [f"Operators for {n}" for n in fleets], rows)
 
@@ -2167,6 +2870,22 @@ def phase6_props(p, st, r, V, fill, check):
         "number of values the field must tell apart, and the bits that number needs.",
         ["Field", "Range and step", "Bits", "Values", "Bits needed"], rows)
     V["P1-PROP6-BITS"], V["P1-PROP6-NEED-BITS"], V["P1-PROP6-JOINT-BITS"] = f"{total}", f"{need}", f"{joint:.1f}"
+    # Referee S6: for most fields the number of values is 2^bits because the range was set by the bit width
+    real = [f for f in pos["fields"] if f[1] != "spare"]
+    defin = [f[0] for f, n in zip(real, counts) if n == 1 << f[2]]
+    other = [f[0] for f, n in zip(real, counts) if n != 1 << f[2]]
+    check(len(real) == len(counts) and len(defin) + len(other) == len(real), "every field of the position report is classed")
+    step_pos = next(f[3] for f in real if f[0] == "e")
+    step_sig = next(f[3] for f in real if f[0] == "sigma_h")
+    V["P1-PROP6-DEFINITIONAL-SENTENCE"] = (
+        f"What the count proves is limited. For {words(len(defin))} of the {words(len(real))} fields ("
+        + listing(f"<code>{n}</code>" for n in defin) + f") the number of values is two to the power of the field's "
+        f"bits, because we set the range by the bit width; for those the lower bound is definitional. Only "
+        + listing(f"<code>{n}</code>" for n in other) + f" have a count that is not a power of two, which is why the "
+        f"joint count is {joint:.1f} and not {need} bits. The steps are also not matched to one another: the "
+        f"position step is {num(100 * step_pos)}{NB}cm and the step of its own uncertainty {num(100 * step_sig)}{NB}cm. "
+        f"A coarser position step or a smaller site grid would save bits, so {nbytes(sizes['payload'])} is the size "
+        f"of this layout and not a lower bound for a position report in general.")
     V["P1-PROP6-SPARE-BITS"] = f"{total - need}"
     V["P1-PROP6-CONTENT-B"], V["P1-PROP6-SECURED-B"] = nbytes(sizes["payload"]), nbytes(sizes["mac8"])
     V["P1-PROP6-MAC16-B"], V["P1-PROP6-UNSEC-B"] = nbytes(sizes["mac16"]), nbytes(sizes["unsecured"])
@@ -2182,7 +2901,10 @@ def phase6_props(p, st, r, V, fill, check):
 
 
 def phase6_proved(p, r, V, fill, check, ctx, e53):
-    """The "Proved, tested, assumed" table (Section 6.6): one row per claim; verdict words come from the data."""
+    """The "Proved, tested, assumed" table (Section 6.6): one row per claim; verdict words come from the data.
+    Decision A1 of the referee round: a result that could not have come out otherwise (arithmetic on assumed inputs,
+    a property of a rule or of the model, a count fixed by the design) is "calculated from assumed inputs" or "a
+    property of the model", never "tested" or "supported"."""
     def table():
         n1, n2 = int(r.pair("H1", LOAD_MAIN)["n"]), int(r.pair("H2_pooled", LOAD_MAIN)["n"])
         n3, n4 = int(r.pair("H3a", LOAD_MAIN)["n"]), int(r.pair("H4_LIN", LOAD_MAIN)["n"])
@@ -2190,87 +2912,119 @@ def phase6_proved(p, r, V, fill, check, ctx, e53):
         n_years = len(r.fit("hypotheses", "H2", str(LOAD_MAIN), "visibility"))
         h14 = p.h14()
         d14 = h14["difference_sf_ll_minus_drop_retry"]
-        f13, f14 = p.family()["hypotheses"]["H13"], p.family()["hypotheses"]["H14"]
+        f14 = p.family()["hypotheses"]["H14"]
+        prm = p.e54["parameters"]
+        rdr = p.row54(0.25, "drop_retry")
+        n_res = round(p.e54["reservations_per_seed"] * len(p.e54["seeds"]))
         bn = r.bounds
+        check("10 x 10 square" in str(bn.get("model", "")), "the small instances use a toy score on a 10 x 10 square")
         cf = r.dev["capability_filter_check"]
         reg = p.regimes.DEFAULTS
+        le = r.dev["learned_eval"]
+        mlp30, lin30 = r.pair("H4_MLP", LOAD_MAIN), r.pair("H4_LIN", LOAD_MAIN)
+        check(mlp30["hi"] >= 0 and lin30["hi"] < 0, "H4: the network's interval includes zero, the linear model's does not")
         R = [
             ("Pooling vehicles across owners cuts the mean urgent wait (H1)",
-             f"Tested: E40, {n1} paired seeds, {LOAD_MAIN}{PCT} load, both sides with Earth always in view. Supported.",
-             "5.2"),
+             f"Tested: E40, {n1} paired seeds, {LOAD_MAIN}{PCT} load, both sides with Earth always in view. Supported. "
+             f"The size of the difference follows from two inputs: one owner has no cargo rover, and cargo not "
+             f"delivered counts with its wait to the end of the one-year run.", "5.2, 7"),
             ("A pooled dispatcher on Earth that stops at every blackout keeps urgent cargo waiting longer than one "
              "that never stops, by more than 10&#8239;% (H2)",
-             f"Tested: E40, {n2} paired runs over {words(n_years)} start years. Supported.", "5.3"),
+             f"Tested: E40, {n2} paired runs over {words(n_years)} start years, on the yardstick as revised in "
+             f"change 2 after a five-seed development run. Supported; the yardstick first registered "
+             f"{V['P1-H2-OLD-YARDSTICK-MET']}.", "5.3, 4.6"),
             ("The robots' auction is within &plusmn;10&#8239;% of the full-information marketplace at message loss "
              "0.10 (H3a)",
              f"Tested: E40, {n3} paired seeds. Equivalence {'shown' if ctx['equiv'] else 'not shown'}"
              + ("." if ctx["equiv"] else "; the difference is also not distinguishable from zero."
-                if r.pair("H3a", LOAD_MAIN)["lo"] < 0 < r.pair("H3a", LOAD_MAIN)["hi"] else "."), "5.4"),
-            ("Learned bids beat hand-built bids on held-out seeds (H4)",
-             f"Tested: E40, {n4} held-out seeds. Supported for the linear model; not supported for the network, which "
-             f"was trained with less freedom.", "5.6, 7"),
-            ("Pairs of different owners raise the share of items delivered; without a commit step failed meetings "
-             "rise under loss (H6)",
-             f"Tested: E42, {n6} seeds per cell. First part supported; second part "
-             f"{'supported' if ctx['fewer_with'] else 'not supported'}.", "5.7"),
+                if r.pair("H3a", LOAD_MAIN)["lo"] < 0 < r.pair("H3a", LOAD_MAIN)["hi"] else ".")
+             + " Confounded: the auction's idle robots return towards the mast and the marketplace's do not.", "5.4"),
+            ("Learned bids beat hand-built bids on seeds not used for training or selection (H4)",
+             f"Tested: E40, {n4} seeds. Not supported for the network, the registered model, which was trained with "
+             f"less freedom. Supported for the linear model, which the registration names as the secondary model "
+             f"and which entered the Holm family after its result on these seeds had been seen.", "5.6, 4.6, 7"),
+            ("Pairs of different owners raise the share of items delivered (H6, first part)",
+             f"Tested: E42, {n6} seeds per cell. Supported, on the share of cargo mass and on items. The share of "
+             f"team items that same-owner pairs can lift is an input.", "5.7"),
+            ("Without a commit step failed meetings rise under loss (H6, second part)",
+             "A property of the model: no message is repeated inside a handshake, so the two failure probabilities "
+             "follow from the message count. Measured in E42: what the commit step costs in urgent wait.", "5.7"),
+            ("In the auction the lowest bid of each connected part of the network always wins its load; message loss "
+             "adds parallel winners and wasted trips",
+             "A property of the model: the auction is simulated round by round, not message by message. A "
+             "message-level implementation, in which the best bid can go unheard, could do worse.", "3.7, 7"),
             ("Message loss, bundle depth, radio range, the lost-link rule and a second mast move the on-Moon regimes "
              "as reported (H3b, H3c, exploratory)",
-             "Tested: E41, 30 seeds per cell, one factor at a time around the auction at the middle load.", "5.5"),
+             "Tested: E41, 30 seeds per cell, one factor at a time around the auction at the middle load. No cell "
+             "has deeper bundles without loss.", "5.5"),
+            ("The linear bids keep their sign outside the training range; other cargo does not pay for the gain",
+             f"Tested on ten seeds per cell, {V['P1-LEARNED-EVAL-LABEL']}.", "5.6"),
             ("With perfect links and depth 1 the auction reproduces the marketplace's event trace; with every new "
              "feature off the engine reproduces the earlier papers",
              f"Tested: exact comparison of event traces, and {r.dev['regression_check']['rows_rerun_identical']} "
              f"earlier result rows rerun with no difference.", "3.11"),
             ("One auction round with one job per robot reaches at least half the best total score (Proposition 1a)",
              f"Proved. Assumes non-negative pair scores, the best remaining pair fixed first, and bids that reach "
-             f"every bidder; the score is measured down from a ceiling bid, not in cost, and loads of several items "
-             f"are outside it. Checked on {bn['instances']} small instances (lowest share "
-             f"{sh(bn['cbba_lite_vs_optimum']['1']['score_share_min'], 1)}).", "Appendix B, 3.11"),
+             f"every bidder; loads of several items are outside it. The score is measured down from a ceiling bid: "
+             f"the proposition gives no bound on cost or waiting, where a greedy round can be arbitrarily worse "
+             f"than the best. Checked on {bn['instances']} small instances with a toy score on a square, not the "
+             f"engine's bids (lowest share {sh(bn['cbba_lite_vs_optimum']['1']['score_share_min'], 1)}).",
+             "Appendix B, 3.11"),
             ("Bundles of several jobs: at least 1/2 of the best score when the bundle limit does not bind, 1/3 when "
              "it does (Proposition 1b, 1c)",
-             "Proved under diminishing marginal gain. The 50&#8239;% published for the general case is quoted as "
-             "reported in [5, 74]; the original proof [4] was not read. Deeper bundles are not this paper's default.",
-             "Appendix B, 2.1"),
-            (f"A position report is {V['P1-PROP6-CONTENT-B']} of content and {V['P1-PROP6-SECURED-B']} secured, and "
-             f"no fixed-length code of its fields is shorter than {V['P1-PROP6-NEED-BITS']} bits (Proposition 6)",
-             f"Proved: a count over the schema's fields. Tested: the codec's sizes, and {len(p.conf['vectors'])} "
-             f"golden packets decoded each time the paper is built.", "Appendix B, 3.12"),
-            (f"The full message set fits the {kbps(e53['nb'], 0)} budget for 20 rovers at one position report a "
-             f"second with authentication, and not at ten (H13)",
-             f"Tested: E53, {e53['draws']} draws of rover positions, fleet geometry, sizes counted by the codec. "
-             f"{'Supported' if e53['sup'] else 'Not supported'}"
-             + (", in every draw" if all(c["draws_on_predicted_side"] == 1.0 for c in f13["clauses"].values()) else "")
-             + ". A comparison with a threshold, without a sampling test; a count of bytes, with no radio and no "
-               "channel access simulated.", "5.8"),
+             "Proved under diminishing marginal gain, which was not verified for the engine's bid. The 50&#8239;% "
+             "published for the general case is quoted as reported in [5, 74]; the original proof [4] was not read. "
+             "Deeper bundles are not this paper's default.", "Appendix B, 2.1"),
+            (f"A position report is {V['P1-PROP6-CONTENT-B']} of content and a packet of {V['P1-PROP6-SECURED-B']} "
+             f"with authentication, before link framing and coding (Proposition 6)",
+             f"Counted over the schema's fields. The lower bound of {V['P1-PROP6-NEED-BITS']} bits is definitional "
+             f"for most fields, whose ranges were set by their bit widths. Tested: the codec's sizes, and "
+             f"{len(p.conf['vectors'])} golden packets decoded each time the paper is built.", "Appendix B, 3.12"),
+            (f"The periodic reports and the task and road messages of 20 rovers fit the {kbps(e53['nb'], 0)} budget "
+             f"at one position report a second with authentication, and not at ten (H13)",
+             f"Calculated from assumed inputs (message sizes times rates), not a test: the first clause holds in any "
+             f"geometry, and the design note had the result before E53 ran. On the predicted side of the threshold "
+             f"in {'both clauses' if e53['sup'] else 'one clause'}. It covers {e53['n_types']} of the "
+             f"{e53['n_all']} message types, as packets before link framing and coding, and holds only on a "
+             f"scheduled channel with reports travelling one hop.", "5.8"),
             ("A shared channel must run at <i>R</i>&nbsp;&ge;&nbsp;<i>L</i><i>h</i>/&eta; (Proposition 2)",
              f"Proved. Assumed: &eta;&nbsp;=&nbsp;{p.e53['eta']['scheduled']:g} for a scheduled channel, not swept; "
              f"the random-access value is derived.", "Appendix B, 5.8"),
             ("Age of a relayed report under per-hop loss, and under store and forward (Proposition 3)",
              "Proved. Part (a) assumes independent loss per hop and no retry, and is checked against a seeded "
-             "simulation of that model each time the paper is built; bursty loss is not covered.", "Appendix B"),
-            ("Store and forward with the lost-link rule loses fewer awarded jobs than drop and retry (H14)",
-             f"Tested: E54, {d14['n']} seeds, a message-level replay of one recorded month at today's fleet, per-hop "
-             f"loss 0.25, 14-day Earth blackout. {'Supported' if f14['holm']['rejected_at_0.05'] and h14['supported'] else 'Not supported'}"
-             f", with a Holm-adjusted p of {pfmt(f14['holm']['p_adjusted'])} over the three hypotheses of the second "
-             f"pre-registration's family that have a sampling test. Not an engine run: the return is applied to the "
-             f"contact plan.",
-             "5.9, 7"),
-            ("Under the lost-link rule the base can release every reservation at its timeout",
-             "By construction of the rule, not measured. Measured in E54: without the rule, the releases the base "
-             "could not confirm and the hours it kept those segments closed; no vehicle was still inside one.", "5.9"),
+             "simulation of that model each time the paper is built; bursty loss is not covered, and no experiment "
+             "here relays reports over more than one hop.", "Appendix B"),
+            ("Store and forward loses fewer awarded jobs than drop and retry (H14, first clause)",
+             f"Tested: E54, {d14['n']} seeds, a message-level replay of one recorded month with the fleet of eight "
+             f"vehicles, per-hop loss 0.25. Holds against a baseline that gives up after {prm['max_tries']} tries in "
+             f"{num((prm['max_tries'] - 1) * prm['retry_s'] / 60)} minutes of a {num(prm['lease_s'] / 60)}-minute "
+             f"lease (Assumed, not swept), with a Holm-adjusted p of {pfmt(f14['holm']['p_adjusted'])} on a "
+             f"one-sided sign test added after the results. Not an engine run.", "5.9, 7"),
+            ("The lost-link rule leaves no reservation stuck past its timeout (H14, second clause)",
+             f"Not testable as written; no verdict. The rule first written, which released a silent vehicle's "
+             f"reservation, is withdrawn. Counted in E54 without the return to the last link point: "
+             f"{rdr['stuck_reservations']:,} of {n_res:,} reservations ended with their holder out of reach.", "5.9"),
+            ("A silent vehicle's reserved segment is not released: it is marked unconfirmed and may be entered only "
+             "at caution speed",
+             "Assumed (a rule of the protocol). The delay that caution-speed traversal costs is not priced.",
+             "3.13, 5.9"),
             ("Expected extra wait of a job after a rover fails, decided on the Moon and decided on Earth "
              "(Proposition 4)",
-             "Proved as formulas, assuming independent heartbeat loss and fixed gaps and windows. Inputs assumed. Not "
-             "tested: no rover failure is simulated.", "Appendix B, 3.13"),
+             "Proved as formulas, assuming independent heartbeat loss and fixed gaps and windows. Calculated from "
+             "assumed inputs. Not tested: no rover failure is simulated.", "Appendix B, 3.13"),
             ("Operators needed against fleet size and autonomy level (Proposition 5)",
-             "A model, not a result: request rates and handling times are assumed near published supervision ratios "
-             "[76&ndash;79]. Not tested.", "Appendix B"),
+             "Calculated from assumed inputs that were chosen to land near published supervision ratios "
+             "[76&ndash;79]: a consistency check, not a prediction. Not tested.", "Appendix B"),
             ("The capability filter with manifests made from the vehicle classes changes no outcome",
              f"Tested once: one {cf['days']}-day run, seed {cf['seed']}, {cf['identical']} of {cf['summary_values']} "
-             f"summary values identical.", "3.12"),
+             f"summary values identical. The case it is meant for, a vehicle of a class the dispatcher has never "
+             f"seen, was not run.", "3.12"),
             ("Robots that nobody hears drive to a rally point the mast can see",
              "Assumed (our rule). Swept: switched off in E41.", "3.9, 5.5"),
             ("Radio links exist on line of sight within 5&nbsp;km; a hop loses a message with probability 0.10",
              "Assumed. Swept in E41: range 2, 5, 10&nbsp;km and unlimited; loss 0 to 0.40 and bursty.", "3.4, 3.5, 5.5"),
+            ("Three owners with a third of the cargo each, one of them without a cargo rover",
+             "Assumed, not varied in E40 to E42.", "3.2, 7"),
             (f"The base computer fails every {num(reg['base_mtbf_h'])}{NB}h, is repaired in {num(reg['base_repair_h'])}"
              f"{NB}h, and a new leader takes {reg['reelect_h']:g}{NB}h to elect",
              "Assumed, not swept. CADRE's design re-chooses a leader within 10&nbsp;s [71].", "3.6, 3.13"),
@@ -2287,6 +3041,7 @@ def phase6_proved(p, r, V, fill, check, ctx, e53):
         body = "\n".join(f"<tr><td>{a}</td><td>{b}</td><td>{c}</td></tr>" for a, b, c in R)
         return ('<table class="wide" id="p1-tab-proved"><caption><b>Table 12.</b> Every claim of this paper with its '
                 'status: proved (with the assumption), tested (with the experiment, its runs and its scenario), '
+                'calculated from assumed inputs or a property of the model (it could not have come out otherwise), '
                 'assumed (with the sweep, if any) or not tested.</caption>\n<tr><th>Claim</th><th>Status</th>'
                 '<th>Section</th></tr>\n' + body + "\n</table>")
     fill("P1-TABLE-PROVED", table, "E54")

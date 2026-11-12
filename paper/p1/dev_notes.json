@@ -1,19 +1,21 @@
 {
- "note": "Numbers quoted in P1 that no results file holds: development-run values and run-log counts, each with its source. build_p1.py reads them from here so that nothing is typed into the text. Update the 'to update at submission' entries from the final run log.",
+ "note": "Numbers quoted in P1 that no results file holds: development-run values and run-log counts, each with its source, and the paths of two inputs that await a task (learned_eval, lrip_v02). build_p1.py reads them from here so that nothing is typed into the text.",
  "rally_dev_run": {
   "source": ".team/reports.md, B-72 (five-seed development run, C_LEADER at 30 % load, 2028, before the lost-link rally rule was added)",
   "leader_delivered_t_without_rule": 58,
   "leader_delivered_t_with_rule": 1487
  },
  "regression_check": {
-  "source": ".team/reports.md, B-71 to B-74 (rows of v2/v3/R-1 results rerun with every phase-5 feature off; pytest count at B-74)",
-  "status": "to update at submission from the final run log",
+  "source": ".team/reports.md, B-71 to B-74 (rows of v2/v3/R-1 results rerun with every phase-5 feature off; pytest count at B-74); pytest_collected: `.venv\\Scripts\\python -m pytest tests --collect-only -q` on 11 Nov 2026 (the P1 referee revision), collected only, not run",
+  "status": "pytest_tests is the count that passed at B-74 (27 Oct 2026); pytest_collected is the suite's size at the referee revision",
   "rows_rerun_identical": 20,
-  "pytest_tests": 547
+  "pytest_tests": 547,
+  "pytest_collected": 658,
+  "pytest_collected_date": "11 November 2026"
  },
  "runtime": {
   "source": "BACKEND's B-75 timing message, 27 Oct 2026 (working set of one run_phase5.py process)",
-  "status": "to update at submission from a measured peak",
+  "status": "a working-set reading reported by BACKEND, not a measured peak (task B-105 measures memory with tracemalloc for P3)",
   "peak_memory_mb": 360
  },
  "capability_filter_check": {
@@ -27,8 +29,8 @@
   "delivered_share_without_manifests_below": 0.1
  },
  "prop4_inputs": {
-  "source": "research_notes/Lunar Rover Interaction Protocol/04_coordination_and_market.md, E.5 and table F (all Assumed there, except the heartbeat period, set to CADRE's 10 s synchronisation period, and the transfer time, the engine's TEAM_SETUP_H); Earth window and gap as the introduction quotes them from [42]",
-  "heartbeat_s": 10.0,
+  "source": "research_notes/Lunar Rover Interaction Protocol/04_coordination_and_market.md, E.5 and table F (all Assumed there), except: the heartbeat period, which is the protocol's own (HELLO at 1 Hz whenever nothing else was sent: lunarsim/schemas/lrip-v0.1.json and E53's traffic model; changed from 10 s at the referee revision, S5); the transfer time, the engine's TEAM_SETUP_H; and the lease after which a silent vehicle's job returns to the pool, read by the build from results/E54_dtn.json (parameters.lease_s). Earth window and gap as the introduction quotes them from [42]",
+  "heartbeat_s": 1.0,
   "misses_k": 5,
   "auction_rounds": 2,
   "round_s": 10.0,
@@ -44,11 +46,49 @@
   "rho_max": 0.7,
   "viper_people_per_rover": 4,
   "levels": [
-   {"name": "Supervised drive segments", "requests_per_vehicle_h": 6.0, "handling_min": 2.0},
-   {"name": "Task-level autonomy", "requests_per_vehicle_h": 1.0, "handling_min": 5.0},
-   {"name": "Fleet-level autonomy, exceptions only", "requests_per_vehicle_h": 0.2, "handling_min": 10.0},
-   {"name": "Dispatch and traffic on the Moon, people audit", "requests_per_vehicle_h": 0.05, "handling_min": 15.0}
+   {
+    "name": "Supervised drive segments",
+    "requests_per_vehicle_h": 6.0,
+    "handling_min": 2.0
+   },
+   {
+    "name": "Task-level autonomy",
+    "requests_per_vehicle_h": 1.0,
+    "handling_min": 5.0
+   },
+   {
+    "name": "Fleet-level autonomy, exceptions only",
+    "requests_per_vehicle_h": 0.2,
+    "handling_min": 10.0
+   },
+   {
+    "name": "Dispatch and traffic on the Moon, people audit",
+    "requests_per_vehicle_h": 0.05,
+    "handling_min": 15.0
+   }
   ],
-  "fleets": [8, 20, 80]
+  "fleets": [
+   8,
+   20,
+   80
+  ]
+ },
+ "learned_eval": {
+  "source": "results/ATC_learned_eval.json: file dated 27 Oct 2026 20:16, one commit (c90676f, 27 Oct 2026), before PREREG change 4 (28 Oct, the ordering fix) and change 5 (28 Oct, dispatch to a fixed point). It is the source of Table 6, the guard runs and the imitation statistics. Task B-106 reruns the six out-of-range cells and the guard runs on the current engine; when its file exists at rerun_file, build_p1.py reads `ood` and `guards` from it and changes the label.",
+  "file": "results/ATC_learned_eval.json",
+  "file_date": "27 October 2026",
+  "rerun_file": "results/ATC_learned_eval_rerun.json",
+  "rerun_task": "B-106"
+ },
+ "lrip_v02": {
+  "source": "reports/referee_phase6_decisions.md, B3: LRIP v0.2 adds a frame and datum identifier, a time-scale identifier and a covariance to POSITION (task B-100). When the schema exists at schema_file the build stops and asks for the sentence P1-LRIP-V02-SENTENCE to be filled from it.",
+  "schema_file": "lunarsim/schemas/lrip-v0.2.json",
+  "task": "B-100"
+ },
+ "h13_design_note": {
+  "source": "research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md, section E2 (table row for 20 robots: 0.66 / 6.56 / 65.6 kbit/s; text: '49 B/s per robot with an 8-byte MAC ... or 7.9 kbit/s ... for 20 robots'). The note was committed at 10:50 on 11 Nov 2026 (02e9674), 36 minutes after PREREG6.md (b1e2266, 10:14), which names it as its parameter source, and before E53 ran (a618519, 18:10).",
+  "per_robot_Bps": 49,
+  "kbps_20_at_1hz": 7.9,
+  "kbps_20_at_10hz": 65.6
  }
 }

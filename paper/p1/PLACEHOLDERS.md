@@ -230,3 +230,68 @@ signature [66]; the guard share 0.2 of Proposition 2 (E53's eta = 0.8).
 `P1-E53-H13-VERDICT`, `P1-E53-NMAX-SCHED`, `P1-E53-AIR-SCHED`, `P1-E53-AIR-ALOHA`, `P1-E54-H14-VERDICT`,
 `P1-LRIP-MANIFEST-CBOR-SMALL`, `P1-LRIP-MANIFEST-CBOR-HOPPER`, `P1-PROP5-RHO`; and `P1-BOUNDS-CBBA-MIN` (the minimum
 over all depths, replaced in Section 3.11 by the per-depth keys).
+
+## Referee revision (12 Nov 2026): reports/referee_phase6_p1.md and reports/referee_phase6_decisions.md
+
+New sources. RAW = the raw run rows, read in full by `R.full(exp)` (`results/E4x_runs*.csv`), and ARCH = the rows
+archived before PREREG change 5, read by `R.arch(exp)` (`results/archive/<exp>_runs*.pre-fixpoint-*.csv`). Paired
+differences from them use `analyse_e40.paired` and `analyse_e40.boot` (the pairs table's own pairing and bootstrap,
+20,000 resamples, seed 40), through `raw_pair`. DEV gains `learned_eval`, `lrip_v02`, `h13_design_note` and
+`regression_check.pytest_collected`.
+
+**Inputs that await a task (decision A4: no pending marker prints).**
+- Task B-106 (rerun of Table 6's six cells and the guard runs on the current engine). Placeholder path:
+  `results/ATC_learned_eval_rerun.json` (DEV `learned_eval.rerun_file`), with the structure of
+  `ATC_learned_eval.json` (`ood`, `guards`). When it exists the build reads `ood` and `guards` from it and
+  `P1-LEARNED-EVAL-LABEL`, `P1-LEARNED-EVAL-SENTENCE` and Table 6's caption change by themselves. Then also edit the
+  typed sentences that say "have not been rerun": part4 5.11 ("figures from the first evaluation"), part5 6.5 and the
+  Limitations entry "Table 6 and the guard runs predate the engine fixes".
+- Task B-100 (LRIP v0.2: frame, time-scale identifier and covariance in POSITION). Placeholder path:
+  `lunarsim/schemas/lrip-v0.2.json` (DEV `lrip_v02.schema_file`). When it exists the build STOPS with a message: fill
+  `P1-LRIP-V02-SENTENCE` and the position-report sizes from it, and edit part5 6.5 and the Limitations entry "The
+  protocol is counted and replayed".
+
+**Data checks added (each stops the build).** The after side of Table C1 equals `table_E40_pairs.csv`; an
+Earth-independent cell repeats exactly its 50 block-two runs; no row of E41 or E42 repeats another of its cell;
+E41's default cell and E42's cell at team share 0.10 and loss 0.10 repeat E40's auction cell run for run; the H2
+pairs rebuilt from RAW are the table's; H2 clears its margin under the year-clustered interval; the auction waits
+less than the 80 % relay and than plan-ahead and is not distinguishable from the always-up relay, which equals the
+marketplace run for run; alone, owner C delivers under 2 % of what it delivers pooled; the seed rule is read on every
+E40 cell; the H6 rows are on `delivered_share`; same-owner pairs deliver about as many team items as fit the one
+same-owner pair; meeting wait equals failed meetings times the timeout; a longer timeout buys no fewer failures;
+H13's value is the fleet sum and the design note's figures agree with E53's; v0.1's POSITION has the nine named
+fields and none for frame, datum, time scale or covariance; the replay generates a grant per award, more than twice
+the recorded reservations; drop-and-retry gives up before the lease ends; five losses in a row account for more than
+half of the baseline's lost awards at loss 0.25 and 0.40 and never for more than all; the sign-test p in the family
+file is the one-sided exact p and Holm recomputed here reproduces the file's other two adjusted p; the heartbeat of
+Proposition 4 is the schema's HELLO rate; the small instances use a toy score on a square.
+
+| Key | Meaning | Source | Format |
+|---|---|---|---|
+| P1-FIXPOINT-SENTENCE (recomposed) | change 5: movement of the PRIMARY outcome (censored mean urgent wait) per experiment, and the before/after of H3a, H4 linear, H2, H6 | RAW against ARCH matched by cell, seed, start year | composed; "No verdict changed" only if the outcome column of Table C1 is equal before and after in every row |
+| P1-TABLE-FIXPOINT | Table C1 (Appendix C): every tested comparison before and after change 5 | RAW, ARCH | HTML table |
+| P1-N-RUNS-DISTINCT-MAX, P1-N-RUNS-REPEATS, P1-E40-N-DISTINCT, P1-RUNS-SENTENCE | rows against distinct runs. A row repeats another of its cell when seed and ten outcome columns (`OUTCOMES`) are equal to nine decimals; plus the 60 rows of E41 and E42 that rerun E40's auction cell | RAW | integers; composed |
+| P1-H1-DELIV-DIFF, P1-H1-DELIV-DIFF-CI | delivered-only difference of the H1 pair itself (owners alone, full coverage, minus relay 1.0, block one) | P "H1 (reported): delivered-only urgent wait", v1 | h 1 dp; CI |
+| P1-A-DELIV-MINUS-O-CI, P1-A-DELIV-N, P1-A-CENS-MINUS-O-30 | the other comparison (owners alone strict minus the marketplace): delivered-only interval, n, and its censored difference | P "H2 (not tested)" rows | CI 0 dp; integer; h 0 dp |
+| P1-OWNER-C-ALONE-T, P1-OWNER-C-POOLED-T | tonnes of owner C's cargo delivered alone (full coverage) and pooled (relay 1.0), block one, 30 % | RAW `own_C_delivered_t` | t |
+| P1-RELAY08-MINUS-O-CI (now the 95 % interval), P1-RELAY08-MINUS-O-CI90 | relay 0.8 minus marketplace | P `lo`/`hi`; `lo90`/`hi90` | CI |
+| P1-H2-YEARCLUSTER-CI, P1-H2-N-YEARS, P1-H2-N-PER-YEAR, P1-H2-OLD-YARDSTICK-MET | H2's interval when whole start years are resampled (20,000 resamples, seed 40); start years; runs per year; whether the first-registered yardstick would have been met | RAW; F | CI; word; range; phrase chosen from data |
+| P1-AUCTION-MINUS-RELAY08, P1-AUCTION-MINUS-RELAY08-CI, P1-AUCTION-MINUS-PLAN, P1-AUCTION-MINUS-PLAN-CI, P1-AUCTION-DIRECT-N | unregistered direct comparisons on block one, printed as how much shorter the auction's wait is | RAW via `raw_pair` | h 1 dp; CI; n |
+| P1-H3A-RALLY-SENTENCE | the lost-link return as a confound of H3a | E41 cells and pairs ("C_AUCTION range perfect") | composed |
+| P1-SEEDS-ADDED (recomposed), P1-SEEDS-N-OVER, P1-SEEDS-N-CELLS | the registered seed rule read on every E40 cell (bootstrap half-width of the cell mean over 10 % of the mean; valid runs) and on the confirmatory paired differences | RAW; P | composed; integers |
+| P1-URGENT-ITEMS-SENTENCE | urgent items per run by load | RAW `atc_urgent_items` | composed |
+| P1-CHECK-N-TESTS-NOW, P1-CHECK-TESTS-DATE | tests collected at this revision, and when | DEV `regression_check` | integer; date |
+| P1-LEARNED-EVAL-LABEL, P1-LEARNED-EVAL-SENTENCE | where Table 6 and the guard runs come from | DEV `learned_eval`; the rerun file if present | composed |
+| P1-H6-SHARE-SENTENCE, P1-H6-MEETINGS-SENTENCE, P1-H6-SHORT-CLAUSE, P1-H6-ABSTRACT-CLAUSE (recomposed) | H6 in kilograms and in items; the same-owner share as an input; the meeting results that follow from the handshake | P; RAW E42 (`delivered_items`, `p5_team_items*`); `lunarsim.atc.auction` (`TIMEOUT_H`, `RETRY_H`) | composed |
+| P1-LRIP-V02-SENTENCE | what v0.1's POSITION serialises and lacks | SCH; DEV `lrip_v02` | composed |
+| P1-LRIP-FRAME-B, P1-E53-FRAMING-SENTENCE | Proximity-1 framing per message and the loads with it | SCH `framing.proximity1_frame_bytes`; E53 `per_rover_at_1hz` | B; composed |
+| P1-E53-N-TYPES, P1-E53-TYPES-SENTENCE | message types in E53's traffic model | E53 `per_rover_at_1hz` against SCH | integer; composed |
+| P1-E53-H13-SENTENCE, P1-E53-DRAWS-SENTENCE, P1-LRIP-INTRO/ABSTRACT/CONCLUSION-SENTENCE (recomposed) | H13 as a design calculation | E53; DEV `h13_design_note` | composed |
+| P1-E54-SHORT-CLAUSE | the abstract's and conclusion's E54 clause (the counts of P1-E54-ABSTRACT-CLAUSE in fewer words) | E54 rows at loss 0.25 | composed |
+| P1-E54-COST-SENTENCE | what the replay leaves out of the lost-link return | E54 `lost_link_returns_per_seed`, `jobs_per_seed`, `link_shares` | composed |
+| P1-E54-DESIGN/H14/STUCK/GRANTS/HOLM-SENTENCE, P1-E54-ABSTRACT-CLAUSE, P1-E54-AOI-CLAUSE, P1-TABLE-E54, P1-P6-FAMILY-SENTENCE (recomposed) | E54 with the baseline's limits, the p^5 arithmetic, the unconfirmed segments (decision B1), the one-sided p | E54; `phase6_family.json` | composed |
+| P1-PROP4-TOTAL-H (replaces P1-PROP4-TOTAL-MIN) | hand-over on the Moon with the lease | DEV `prop4_inputs`; E54 `parameters.lease_s` | h 1 dp |
+| P1-PROP6-DEFINITIONAL-SENTENCE | which fields' value counts are set by their bit width | SCH | composed |
+
+**Withdrawn from the text, still filled for the site:** `P1-H1-UNDELIVERED-SHARE` (the 99.5 %; referee M3). The
+site's /paper/ page reads it from `values.json`; remove the key here once the site no longer does.
