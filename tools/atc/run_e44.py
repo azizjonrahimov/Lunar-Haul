@@ -388,6 +388,48 @@ def cmd_fresh_summarize():
             ex = dd[dd["outcome"] == "violation"].head(20)
             new["violating_examples"] = [{"batch": int(r.batch), "idx": int(r.idx), "params": json.loads(r.params),
                                           "kinds": [f for f in VIOL if r[f]]} for _, r in ex.iterrows()]
+            if np.any(np.abs(w - 1) > 1e-12):            # importance-sampled type: a bound that keeps the weights
+                from scipy.stats import beta
+                xw = float(w[(dd["outcome"] == "violation").to_numpy()].sum())
+                x_eff = n_eff * xw / float(w.sum())
+                xc = int(math.ceil(x_eff - 1e-12))
+                new["bound_weighted"] = float(beta.ppf(0.95, xc + 1, n_eff - xc))
+                new["bonferroni_bound_weighted"] = float(beta.ppf(1 - alpha_k, xc + 1, n_eff - xc))
+                new["bound_weighted_note"] = (f"Clopper-Pearson upper limit on the effective sample: n_eff = (sum w)^2 / "
+                                              f"sum w^2 = {n_eff:.1f}; effective violation count x_eff = n_eff x (weight "
+                                              f"of the violating encounters / sum w) = {x_eff:.3f}, rounded up to {xc}; "
+                                              f"weighted point rate {xw / float(w.sum()):.3g}. E44's rule (unweighted "
+                                              f"Clopper-Pearson on n_driven once x > 0) gives 'bound' above, which is "
+                                              f"below the zero-violation bound on n_eff and so not comparable with it")
+            new["replay"] = []
+            for _, r in ex.iterrows():
+                if int(r.n_random) > 0:
+                    new["replay"].append({"batch": int(r.batch), "idx": int(r.idx), "note": "not replayed: a random fuzzer "
+                                          "draws from the batch-shaped stream, so a single replay is not the same run"})
+                    continue
+                rng = np.random.default_rng([FRESH["roots"][0], k, int(r.batch)])
+                for _i in range(int(r.idx) + 1):
+                    sp = ET.build(k, rng)
+                res = {}
+                for rr in (False, True):
+                    sp.request_rule = rr
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        oc, _ = E.run_batch(E.Batch([sp], g=GRAVITY), np.random.default_rng([FRESH["roots"][1], k, int(r.batch)]))
+                    res["request_rule" if rr else "base_rules"] = {f: int(getattr(oc, f)[0] > 0) for f in VIOL} | {
+                        "deadlock": int(oc.deadlock[0]), "finished": int(oc.finished[0])}
+                new["replay"].append({
+                    "batch": int(r.batch), "idx": int(r.idx), "deterministic": True,
+                    "what_happened": "a vehicle held at the zone boundary (it could not cross before the closure) "
+                                     "kept its grant for a one-lane resource beyond the zone, and a vehicle inside the "
+                                     "zone waited at that resource's stop line and was still inside when the zone "
+                                     "closed (hold-and-wait between R5 and R3)" if k == 6 else "see violating_examples",
+                    "base_rules": res["base_rules"], "request_rule_variant": res["request_rule"],
+                    "variant": VARIANTS.get("6_request_rule", {}).get("rule") if k == 6 else None,
+                    "fresh_encounters_rerun_under_variant": 1,
+                    "scope_note": "only this one encounter of the 10,000 fresh type-6 encounters was rerun under the "
+                                  "variant; nothing is claimed about the variant on the others (E44's own variant run "
+                                  "used the main-run seeds)"})
         out["types"][str(k)] = {"title": E.TYPES[k], "main_run": {f: o[f] for f in ("n", "n_driven", "n_eff", "violations", "bound",
                                                                                    "bonferroni_bound", "outcomes", "r1_breach_rate",
                                                                                    "min_margin_m")},

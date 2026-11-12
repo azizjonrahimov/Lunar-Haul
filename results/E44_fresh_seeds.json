@@ -171,6 +171,40 @@
        "viol_zone"
       ]
      }
+    ],
+    "bound_weighted": 0.0010352640622723244,
+    "bonferroni_bound_weighted": 0.0016660378468549065,
+    "bound_weighted_note": "Clopper-Pearson upper limit on the effective sample: n_eff = (sum w)^2 / sum w^2 = 4580.4; effective violation count x_eff = n_eff x (weight of the violating encounters / sum w) = 0.219, rounded up to 1; weighted point rate 4.78e-05. E44's rule (unweighted Clopper-Pearson on n_driven once x > 0) gives 'bound' above, which is below the zero-violation bound on n_eff and so not comparable with it",
+    "replay": [
+     {
+      "batch": 9,
+      "idx": 968,
+      "deterministic": true,
+      "what_happened": "a vehicle held at the zone boundary (it could not cross before the closure) kept its grant for a one-lane resource beyond the zone, and a vehicle inside the zone waited at that resource's stop line and was still inside when the zone closed (hold-and-wait between R5 and R3)",
+      "base_rules": {
+       "viol_contact": 0,
+       "viol_gap": 0,
+       "viol_zone": 1,
+       "viol_crew": 0,
+       "viol_r3": 0,
+       "viol_slots": 0,
+       "deadlock": 0,
+       "finished": 0
+      },
+      "request_rule_variant": {
+       "viol_contact": 0,
+       "viol_gap": 0,
+       "viol_zone": 0,
+       "viol_crew": 0,
+       "viol_r3": 0,
+       "viol_slots": 0,
+       "deadlock": 0,
+       "finished": 0
+      },
+      "variant": "a vehicle requests a resource only when no hold point it cannot pass (a closed or closing landing zone) lies before that resource",
+      "fresh_encounters_rerun_under_variant": 1,
+      "scope_note": "only this one encounter of the 10,000 fresh type-6 encounters was rerun under the variant; nothing is claimed about the variant on the others (E44's own variant run used the main-run seeds)"
+     }
     ]
    }
   }
