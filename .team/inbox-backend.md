@@ -1165,6 +1165,13 @@ E50: a month at 1x, 4x, 8x fleet, layers added one at a time; report error distr
 time above the separation budget, violations with and without the margin, and the delay cost of the margin
 against perfect position (H9, H10). Table + JSON + a per-layer trace for the site.
 
+## B-80c [OPEN, small, any time between tasks] A results file for the fifth story (asked by FRONTEND, F-56)
+The story schema reads numbers only from results/*.json, and the with / without counters live in
+data/atc/trace_pair/index.json. Have `tools/atc/export_trace.py` also write
+`results/ATC_trace_pair_summary.json`: {"format": "lunarsim-atc-trace-summary", "version": 1, "source":
+"data/atc/trace_pair/index.json", "window": <index.window>, "runs": {"with": {"summary": ..., "settings": ...},
+"without": {...}}} (the index's own fields, same paths), with a V row checking it equals the index.
+
 ## B-91 [QUEUED after B-90] Clocks and time (problem 3; E51)
 Per-vehicle clock with offset and drift for two oscillator classes (note 01 table), two-way time transfer at
 each contact with the stated accuracy, and the Earth-Moon rate offset as a constant term. Effects wired in:
