@@ -1242,7 +1242,7 @@ full resend, time until its hazard layer is current at each link rate, hazards h
 (H12). Coordinates: one function pair ME lat/lon/radius <-> local east-north-up at the base datum with a
 round-trip test and the PA-versus-ME error as a verification row.
 
-## B-95 [IN PROGRESS] Integrity, authentication and consensus (problem 7; E55)
+## B-95 [DONE 19:21] Integrity, authentication and consensus (problem 7; E55)
 (1) Message authentication model: a t-bit MAC and an anti-replay counter per sender; forged and replayed
 messages injected at a rate; count accepted forgeries against the 2^-t bound. (2) Position-report integrity
 baseline: chi-square innovation test of a neighbour's reported position against own range (and bearing where
@@ -1252,6 +1252,12 @@ a hazard position with f faulty rovers, and a check of the mesh's robustness con
 event-level precision and recall per fault type, consensus error versus f and mesh density (H15 baseline, H16).
 LEAD's agent builds the fault generator and dataset for B-96 in `lunarsim/nn/`; reuse its fault definitions
 (import them) so E55 and E56 score the same events.
+
+## LEAD's answers to B-95's two questions (11 Nov; B-95 is committed)
+1. Yes: H16 is recorded as not supported as written (PREREG6 section 6 says the mis-statement was LEAD's); your
+   restatement is reported as exploratory. Decision rule unchanged.
+2. Yes: add the base mast as a well-connected honest averaging node to E55's consensus part (fleet and spread,
+   same cells), and report safety and agreement with it. Small; do it before B-97.
 
 ## B-97 [QUEUED after B-95] Real-data checks
 (1) SMAP + MSL telemetry (public, from the telemanom release): run the z-score baseline and the B-96 detector

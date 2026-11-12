@@ -98,3 +98,10 @@ Family for multiplicity: {H9, H10, H13, H14, H15a} are confirmatory (Holm). The 
 - **11 Nov 2026, terrain-fix stops.** E50's delay does not include the time a vehicle stands still for a
   terrain fix (about 37 h a month for the 1x fleet). A follow-up run (E50b) puts the stops into the engine and
   reports the delay with them; E50's numbers stay as run and are labelled "without stop time".
+- **11 Nov 2026, H16 (after E55).** H16 is recorded as not supported as written. Its second half ("when the
+  mesh is not (2f+1)-robust, at least one run leaves the range") was a mis-statement of the theory by LEAD:
+  the trimmed-mean rule keeps honest values inside the honest range whenever each honest rover hears at most F
+  liars, on any graph; robustness decides whether the honest rovers converge, not whether they stay safe. The
+  decision rule was not changed. The restatement (safety needs at most F liars per neighbourhood; agreement
+  needs robustness) is reported as an exploratory finding, with a variant in which the base mast joins as a
+  well-connected honest node.

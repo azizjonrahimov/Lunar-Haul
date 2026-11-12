@@ -8902,3 +8902,60 @@ Next: B-92 (shared map). B-90b waits for your 8x loop.
 **Questions for LEAD:** none. The hazard rate (2 a day) and the hidden share (0.5) are Assumed; I can sweep them if P3 needs it.
 
 Next: B-95 (integrity, authentication, consensus); it imports B-96's fault definitions from `lunarsim/nn/faults.py`. B-90b waits for your loop.
+
+## B-95 DONE 19:21 (integrity, authentication, consensus; E55, H15 baseline, H16) | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+`lunarsim/atc/integrity.py` and `tools/atc/run_e55.py`. Research note 03 C8, E4, E5, E6. The faults and streams are B-96's, imported from `lunarsim/nn/faults.py` and `lunarsim.nn.dataset` (nothing in `lunarsim/nn/` edited), so E55 and E56 score the same events. No engine change.
+
+**(1) Authentication** (real AES-CMAC through `cryptography`, truncated to t bits; anti-replay counter per sender and key; 10 s freshness)
+- **Forgeries accepted:**
+  - t = 8 bits: **395 of 100,000** (2⁻⁸ predicts 391);
+  - t = 16 bits: **11 of 1,000,000** (2⁻¹⁶ predicts 15.3; within Poisson);
+  - t = 64 bits: 5.4×10⁻²⁰ per attempt, 1.7×10⁻¹¹ for ten attempts a second for a year (formula, note 03 E4);
+  - t = 128 bits: 2.9×10⁻³⁹ per attempt.
+- **Replays** (20 senders at 1 Hz, 10 receivers, loss 0.10 / 0.25, a replay a second with 0–60 s delay, 10 minutes): **0 of 574 and 0 of 598 accepted**. Within 0–60 s a receiver has almost always accepted a newer sequence number from that sender.
+- The one case the rule lets through, a receiver that missed the original getting the replay within 10 s ("true but stale"), is tested directly.
+
+**(2) The LRIP integrity rule as written** (note 03 C8: z² > γ, suspect at 3 of the last 5 tests, γ from α with no tuning) on B-96's validation, test and out-of-distribution streams, with B-96's event scoring (`baselines.detect`, `fa_per_day`, stratum-weighted). Test set, per fault type:
+
+| Detector | False alarms / pair-day | recall: jump | drift | frozen | frame | noise | all | median delay (all) |
+|---|---|---|---|---|---|---|---|---|
+| **LRIP 3-of-5, α 10⁻³ (γ 10.83)** | **0.10** | 0.735 | 0.618 | 0.953 | 0.995 | 0.085 | **0.677** | 12 s |
+| LRIP 3-of-5, α 10⁻² (γ 6.63) | 15.7 | | | | | | 0.769 | |
+| LRIP 3-of-5, α 10⁻⁴ (γ 15.14) | 0.0 | | | | | | 0.633 | |
+| single test at γ 10.83 (no persistence) | **53.3** | | | | | | 0.846 | |
+| E56 chi-square per step, calibrated on validation to 1 / pair-day (γ 19.1) | 0.68 | 0.698 | 0.575 | 0.943 | 0.995 | 0.355 | 0.713 | |
+| E56 network | 0.53 | 0.920 | 0.618 | 0.977 | 1.000 | 1.000 | 0.903 | |
+
+- Out of distribution (noisier sensors), the 3-of-5 rule at α 10⁻³ raises **69 false alarms per pair-day**; the single test raises 1,128.
+- Note 03 E5 checked by Monte Carlo: a bias of 4.57σ is caught with probability 0.899 at a false alarm of 0.00099. The k-of-n false-alarm formula gives 1.0×10⁻⁸ (α 10⁻³) and 9.9×10⁻⁶ (α 10⁻²), as the note states.
+- **Reading (H15 baseline):**
+  - The note's theoretical threshold alone (single test) is unusable on realistic streams: honest navigation errors make z heavier-tailed than a unit Gaussian, so 53 false alarms per pair-day. The 3-of-5 persistence fixes that: 0.10 per pair-day with no tuning.
+  - It is then about as good as the validation-calibrated chi-square: a little better on jumps and drifts, much worse on noise inflation, and 0.68 against 0.71 overall.
+  - It fails out of distribution, as every fixed threshold does. The network is the best detector on test, as E56 found.
+  - Scoring a rule with no tuned parameter on B-96's test set does not breach E56's "test scored once" protocol: nothing was chosen on it.
+
+**(3) Consensus (W-MSR)** on the DEM mesh:
+- N rovers at 1x fleet positions ("fleet") or spread uniformly over the route samples ("spread"); honest values N(0, 1 m); f liars sending ±50 m polarising values; F = 1 and F = f; 60 steps; 50 runs a cell.
+- Robustness: exact enumeration for N ≤ 8; the degree condition (every honest rover hears ≥ 2F + 1) for all N.
+- **Safety** (every honest value stays inside the initial honest range at every step): **1.00 in every cell with F ≥ f**, robust mesh or not.
+- **More liars than F** (f = 2, F = 1): safe in only **0.48–0.66** of runs (fleet) and **0.70–0.92** (spread).
+- **Agreement** (honest range below 1 % of the initial one): **0–18 %** of runs, even with no liars. Few rovers hear 3 others: the degree condition holds in 0–30 % of fleet runs and 0 % of spread runs, and exact 3-robustness in 0–10 % (N ≤ 8).
+- **H16** (PREREG6 §4): **not supported as stated.** On (2f+1)-robust meshes every run stayed safe, as predicted. But on non-robust meshes **no run left the honest range** whenever F ≥ f, so the "fails when it does not" half is false.
+- This is what note 03 E6's theory says: W-MSR's safety needs at most F liars in each honest rover's neighbourhood, not robustness; robustness decides **agreement**.
+- **The correct reading for P2:** with F set to the number of liars, the trimmed mean never lets a liar push the shared value out of the honest range on any mesh. On our sparse mesh the honest rovers usually do not converge either, because few hear three others. Agreement needs more links (relays, masts) or the base as the averaging node.
+
+**Files:**
+- new: `lunarsim/atc/integrity.py`, `tools/atc/run_e55.py`, `tests/test_integrity.py` (6 tests), `results/E55_integrity.json`, `results/E55_table.csv` (integrity), `results/E55_table_consensus.csv`.
+
+**How to test:**
+- `.venv\Scripts\python -m pytest tests/test_integrity.py -q` passes 6.
+- `python tools/atc/run_e55.py auth` (45 s), then `integrity` (about 2 min; loads B-96's splits one at a time, peak below 1 GB; free RAM was 1.66 GB), then `consensus` (70 s), then `build`.
+
+**For FRONTEND (via LEAD):** `results/E55_table.csv` (detector × set: false alarms and recall per type) and `E55_table_consensus.csv` (geometry × N × f × F: safe / agreement / robust shares) are for /protocol/ problem 7. B-99 will add detector curves.
+
+**Questions for LEAD:**
+1. **H16:** record it as failed as written, with the theory-consistent restatement ("safety iff at most F liars per neighbourhood; agreement needs robustness") as an exploratory finding? I did not change the decision rule.
+2. Should I add an E55 variant where the base mast joins as a well-connected honest averaging node? It would show how much agreement a single relay buys.
+
+Next: B-97 (real-data checks), then B-98 / B-99. B-90b waits for your 8x loop.
