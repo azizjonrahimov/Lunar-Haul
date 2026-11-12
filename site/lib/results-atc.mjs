@@ -4,16 +4,17 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { paperValue, paperField } from './papers.mjs';
-import { num, esc } from '../src/components/num.js';
+import { num, esc, FLAGS } from '../src/components/num.js';
 import { ROOT } from './pages.mjs';
 import { familyTable } from './phase6.mjs';
 
-// a pre-formatted value from a paper's values file, flagged like every number on the site
-export function pv(id, key) {
+// a pre-formatted value from a paper's values file, flagged like every number on the site: Modelled unless the value
+// is a setting of the experiment (F-70d: the relay's 80 % availability is an input, so Assumed)
+export function pv(id, key, flag = 'Modelled') {
   const v = paperValue(id, key);
   if (/pending/.test(v)) return v;
-  const tip = `Modelled: produced by the LunarHaul simulation. Source: paper/${id}/values.json, ${key}`;
-  return `<span class="num"><span class="v">${v}</span><span class="flag" data-flag="Modelled" title="${esc(tip)}">Modelled</span><span class="visually-hidden"> (${esc(tip)})</span></span>`;
+  const tip = `${FLAGS[flag]}. Source: paper/${id}/values.json, ${key}`;
+  return `<span class="num"><span class="v">${v}</span><span class="flag" data-flag="${flag}" title="${esc(tip)}">${flag}</span><span class="visually-hidden"> (${esc(tip)})</span></span>`;
 }
 
 // the sentences: [paper, list of HTML items]; every number through pv() or E48
@@ -23,7 +24,7 @@ export const ITEMS = {
     ['P1-H2-STRICT-MINUS-O', 'P1-PLAN-MINUS-O'],
     ['P1-LOSS-MAIN', 'P1-H3A-DIFF', 'P1-H3A-CI90'],
     ['P1-H4-MLP-DIFF-30', 'P1-H4-MLP-CI-30', 'P1-H4-LIN-PCT-30'],
-    ['P1-AUCTION-MINUS-RELAY08', 'P1-AUCTION-MINUS-RELAY08-CI'],
+    ['P1-RELAY08-SHARE', 'P1-AUCTION-MINUS-RELAY08', 'P1-AUCTION-MINUS-RELAY08-CI'],
     // the 99.5 % share (P1-H1-UNDELIVERED-SHARE) is withdrawn by the revised P1: not read
   ],
   p2: [['P2-E44-N-ENCOUNTERS', 'P2-N-RUNS-E43'], ['P2-H7-ABSTRACT-SHORT'], ['P2-H8-X1-PCT', 'P2-H8-X4-PCT'], ['P2-UNC-X1-RATIO'], ['P2-P6-ABSTRACT-CLAUSE']],
@@ -47,7 +48,7 @@ export function atcResults(base = '/') {
     `A shared dispatcher on Earth that stops when Earth sets kept urgent cargo waiting for pickup ${v('p1', 'P1-H2-STRICT-MINUS-O')} longer than one that never stops; planning ahead before each blackout left ${v('p1', 'P1-PLAN-MINUS-O')} of that.`,
     `The robots' own auction, at message loss ${v('p1', 'P1-LOSS-MAIN')}, kept urgent cargo waiting for pickup ${v('p1', 'P1-H3A-DIFF')} than the full-information marketplace; its interval, ${v('p1', 'P1-H3A-CI90')}, includes zero, so the runs cannot tell the two apart.`,
     `The registered learned bid, a small network, did not beat hand-built bids (difference ${v('p1', 'P1-H4-MLP-DIFF-30')}, interval ${v('p1', 'P1-H4-MLP-CI-30')}); a linear correction registered as secondary cut the urgent wait by ${v('p1', 'P1-H4-LIN-PCT-30')}.`,
-    `An always-up relay matched the marketplace run for run; only an intermittent relay was worse than the auction, by ${v('p1', 'P1-AUCTION-MINUS-RELAY08')} (${v('p1', 'P1-AUCTION-MINUS-RELAY08-CI')}).`,
+    `An always-up relay matched the marketplace run for run; only a relay up ${v('p1', 'P1-RELAY08-SHARE', 'Assumed')} of the time was worse than the auction, by ${v('p1', 'P1-AUCTION-MINUS-RELAY08')} (${v('p1', 'P1-AUCTION-MINUS-RELAY08-CI')}).`,
   ];
   const p2 = [
     `The rules were checked on ${v('p2', 'P2-E44-N-ENCOUNTERS')} encounters and priced in ${v('p2', 'P2-N-RUNS-E43')} runs of the logistics model.`,

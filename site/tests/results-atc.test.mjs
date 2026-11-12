@@ -15,6 +15,7 @@ test('Lunar ATC results: every key exists in its values file and renders flagged
   const html = atcResults('/');
   assert.doesNotMatch(html, /\(pending\)|\{\{/);
   assert.doesNotMatch(html, /P1-H1-UNDELIVERED-SHARE|99\.5/, 'the withdrawn share is not read');
+  assert.match(html, /a relay up <span class="num"><span class="v">[^<]*<\/span><span class=\"flag\" data-flag=\"Assumed\"[^>]*P1-RELAY08-SHARE[\s\S]*? of the time was worse/, 'F-70d: the relay share is read from P1 and flagged as an input');
   assert.ok((html.match(/data-flag="Modelled"/g) || []).length >= 14, 'every number carries a flag');
   // the section's text has no digits outside the flagged numbers, the file names and the paper names (P1 to P3)
   const text = html.replace(/<section class="r-fam"[\s\S]*?<\/section>/, '').replace(/<q class="r-quote"[\s\S]*?<\/q>/g, '')   // quoted paper sentences come from the values file
