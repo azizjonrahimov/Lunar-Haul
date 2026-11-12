@@ -203,6 +203,7 @@ types.
 | P1-E54-HOLD-S, P1-E54-RDV-H | hold time and time at the last link point in the lost-link ladder | E54 `parameters.t_hold_s`, `t_rdv_s` | s; h |
 | P1-E54-H14-SENTENCE | lost jobs per seed, the paired difference, H14's first clause | E54 `h14`, rows at loss 0.25 | composed |
 | P1-E54-STUCK-SENTENCE | H14's second clause (by construction), the blocked hours avoided, the verdict | E54 `h14`, rows at loss 0.25 | composed |
+| P1-P6-FAMILY-SENTENCE, P1-E54-HOLM-SENTENCE, P1-E53-DRAWS-SENTENCE | the Phase 6 confirmatory family: which hypotheses Holm covers (4.8); H14's sign test and Holm p, with H10 and H15a (5.9); H13's draws on the predicted side (5.8) | `results/phase6_family.json` (`hypotheses.*.holm`, `H14.seeds_*`, `H13.clauses.*.draws_on_predicted_side`, `summary`), checked against E54 `h14` and the E53 rows | composed; pending if the file is missing |
 | P1-E54-GRANTS-SENTENCE | grants lost by transport and loss | E54 rows | composed |
 | P1-E54-AOI-SENTENCE, P1-E54-AOI-CLAUSE | the base's age of information; end-of-job reports | E54 rows at loss 0.25; `lost_link_*` | composed |
 | P1-E54-LEDGER-SENTENCE | the Earth-bound ledger over 61 days | E54L | composed |

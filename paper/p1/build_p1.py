@@ -1383,6 +1383,9 @@ class P6:
         # and are never quoted)
         p54l = os.path.join(RES, "E54_ledger.json")
         self.e54l = json.load(open(p54l, encoding="utf-8")) if os.path.exists(p54l) else None
+        # the Phase 6 confirmatory family with Holm's correction (tools/atc/phase6_family.py)
+        pfam = os.path.join(RES, "phase6_family.json")
+        self.fam = json.load(open(pfam, encoding="utf-8")) if os.path.exists(pfam) else None
         self.schema = jl("lunarsim", "schemas", "lrip-v0.1.json")
         self.conf = jl("data", "atc", "lrip", "conformance-v0.1.json")
         self.man = {k: jl("data", "atc", "lrip", f"manifest-{k}.json") for k in ("small_rover", "hopper")}
@@ -1409,6 +1412,11 @@ class P6:
         if self.e54 is None:
             raise Pending("E54 (results/E54_dtn.json) has not run")
         return self.e54["h14"]
+
+    def family(self):
+        if self.fam is None:
+            raise Pending("the Phase 6 family (results/phase6_family.json) has not been built")
+        return self.fam
 
     def vectors_decoded(self):
         """How many golden packets our codec decodes to their recorded fields (the test of tests/test_lrip.py)."""
@@ -1930,12 +1938,72 @@ def phase6_e54(p, V, fill, check):
             f"<b>Table 11.</b> E54: a message-level replay of one recorded month, {len(p.e54['seeds'])} seeds, with a "
             f"14-day Earth blackout. Counts are sums over the seeds, out of {x['award_n']:,} awards, "
             f"{x['grant_n']:,} grants and {x['task_state_n']:,} end-of-job reports. The age of information is the "
-            f"age of the newest status report the base holds for a vehicle. The last column is not a measurement in "
-            f"its third row of each block: under the rule the base releases a reservation at its timeout.",
+            f"age of the newest status report the base holds for a vehicle. The last column counts reservations that "
+            f"ended while their holder was out of the base's reach, so that the base could not confirm the release, "
+            f"with the hours it then kept the segment closed; no vehicle was still inside a segment. Its zeros under "
+            f"the rule are a property of the rule and not a measurement: the base releases at the timeout.",
             ["Per-hop loss", "Transport", "Awards lost (lost jobs)", "Award delay, mean (s)", "Grants lost",
              "End-of-job reports lost", "their delay, mean (s)", "Age at the base, mean (s)", "worst vehicle (h)",
-             "Reservations blocked past timeout"], rows, cls="wide")
+             "Releases the base could not confirm (hours the segment stayed closed)"], rows, cls="wide")
     fill("P1-TABLE-E54", table, "E54")
+
+    def family_sentence():
+        F = p.family()
+        H = F["hypotheses"]
+        tested = sorted(k for k, v in H.items() if "holm" in v)
+        untested = sorted(k for k, v in H.items() if "holm" not in v)
+        check(sorted(H) == ["H10", "H13", "H14", "H15a", "H9"], "the Phase 6 family holds H9, H10, H13, H14 and H15a")
+        check(tested == ["H10", "H14", "H15a"] and untested == ["H13", "H9"],
+              "Holm's correction covers H10, H14 and H15a; H9 and H13 are listed without a test")
+        check(abs(F["alpha"] - 0.05) < 1e-12, "the family is corrected at alpha 0.05")
+        return (
+            f"Both sit in that file's confirmatory family with H9, H10 and H15a, which are tested in the companion "
+            f"paper [45], where H9 and H10 are written H9&prime; and H10&prime;. Holm's procedure [52] at &alpha;&nbsp;=&nbsp;{F['alpha']:g} is applied to the three "
+            f"hypotheses of the family that have a sampling test, H10, H14 and H15a. H9 and H13 are comparisons with "
+            f"a threshold and are listed without a test; for H13 we report in how many of the draws each clause holds. "
+            f"For the correction H14 is tested by an exact sign test on the lost jobs per seed.")
+    fill("P1-P6-FAMILY-SENTENCE", family_sentence, "Phase 6 family")
+
+    def holm_sentence():
+        F, h = p.family(), p.h14()
+        H = F["hypotheses"]
+        f14, f10, f15 = H["H14"], H["H10"], H["H15a"]
+        n = f14["seeds_fewer"] + f14["seeds_more"] + f14["seeds_tied"]
+        check(n == h["difference_sf_ll_minus_drop_retry"]["n"]
+              and abs(f14["mean_diff_jobs"] - h["difference_sf_ll_minus_drop_retry"]["mean"]) < 1e-9,
+              "the family file tests the same per-seed lost jobs as E54")
+        check(f14["holm"]["p_adjusted"] >= f14["p"], "Holm's adjusted p is not below the raw p")
+        ok14 = bool(f14["holm"]["rejected_at_0.05"]) and f14["mean_diff_jobs"] < 0 and f14["stuck_reservations_sf_ll"] == 0
+        check(ok14 == ("supported" in F["summary"]["H14"] and "not supported" not in F["summary"]["H14"].lower()),
+              "H14's verdict in the family file follows its Holm p")
+        check(bool(f15["holm"]["rejected_at_0.05"]) and not bool(f10["holm"]["rejected_at_0.05"])
+              and "not supported" in F["summary"]["H10"], "in the family H15a is supported and H10 is not supported as a whole")
+        more = "none" if f14["seeds_more"] == 0 else f"{f14['seeds_more']}"
+        return (
+            f"In the family of the second pre-registration, the difference in lost jobs is tested by an exact sign "
+            f"test over the {n} seeds: fewer with store and forward and the rule in {f14['seeds_fewer']} seeds, more "
+            f"in {more}, the same in {f14['seeds_tied']} (p&nbsp;{p_eq(f14['p'])}). Holm's correction over the three "
+            f"hypotheses of that family with a sampling test gives an adjusted p of {pfmt(f14['holm']['p_adjusted'])}, "
+            f"so H14 is {'supported' if ok14 else 'not supported'} after the correction. Of the other two, H15a is "
+            f"supported (adjusted p&nbsp;{p_eq(f15['holm']['p_adjusted'])}) and H10 is not supported as a whole "
+            f"(adjusted p&nbsp;{p_eq(f10['holm']['p_adjusted'])}); both are reported in the companion paper [45].")
+    fill("P1-E54-HOLM-SENTENCE", holm_sentence, "Phase 6 family")
+
+    def h13_draws_sentence():
+        F = p.family()
+        c = F["hypotheses"]["H13"]["clauses"]
+        r1, r10 = p.row53("fleet", "on", 1.0, 20), p.row53("fleet", "on", 10.0, 20)
+        check(abs(c["1 Hz"]["busiest_kbps_p95"] - r1["busiest_link_kbps_p95"]) < 1e-3
+              and abs(c["10 Hz"]["busiest_kbps_p95"] - r10["busiest_link_kbps_p95"]) < 1e-3,
+              "the family file's H13 values are those of E53")
+        a, b = c["1 Hz"]["draws_on_predicted_side"], c["10 Hz"]["draws_on_predicted_side"]
+        every = a == 1.0 and b == 1.0
+        check(every == ("every draw" in F["summary"]["H13"]), "the family file's H13 summary matches its draws")
+        return ((f"Each clause held in every one of the {p.e53['draws']} draws" if every else
+                 f"The first clause held in {sh(a)} of the {p.e53['draws']} draws and the second in {sh(b)}")
+                + ". H13 is a comparison with a threshold and has no sampling test, so Holm's correction of the second "
+                  "pre-registration's family does not include it.")
+    fill("P1-E53-DRAWS-SENTENCE", h13_draws_sentence, "Phase 6 family")
 
     def abstract_clause():
         h = p.h14()
@@ -2122,6 +2190,7 @@ def phase6_proved(p, r, V, fill, check, ctx, e53):
         n_years = len(r.fit("hypotheses", "H2", str(LOAD_MAIN), "visibility"))
         h14 = p.h14()
         d14 = h14["difference_sf_ll_minus_drop_retry"]
+        f13, f14 = p.family()["hypotheses"]["H13"], p.family()["hypotheses"]["H14"]
         bn = r.bounds
         cf = r.dev["capability_filter_check"]
         reg = p.regimes.DEFAULTS
@@ -2168,8 +2237,10 @@ def phase6_proved(p, r, V, fill, check, ctx, e53):
             (f"The full message set fits the {kbps(e53['nb'], 0)} budget for 20 rovers at one position report a "
              f"second with authentication, and not at ten (H13)",
              f"Tested: E53, {e53['draws']} draws of rover positions, fleet geometry, sizes counted by the codec. "
-             f"{'Supported' if e53['sup'] else 'Not supported'}. A count of bytes: no radio and no channel access "
-             f"was simulated.", "5.8"),
+             f"{'Supported' if e53['sup'] else 'Not supported'}"
+             + (", in every draw" if all(c["draws_on_predicted_side"] == 1.0 for c in f13["clauses"].values()) else "")
+             + ". A comparison with a threshold, without a sampling test; a count of bytes, with no radio and no "
+               "channel access simulated.", "5.8"),
             ("A shared channel must run at <i>R</i>&nbsp;&ge;&nbsp;<i>L</i><i>h</i>/&eta; (Proposition 2)",
              f"Proved. Assumed: &eta;&nbsp;=&nbsp;{p.e53['eta']['scheduled']:g} for a scheduled channel, not swept; "
              f"the random-access value is derived.", "Appendix B, 5.8"),
@@ -2178,11 +2249,14 @@ def phase6_proved(p, r, V, fill, check, ctx, e53):
              "simulation of that model each time the paper is built; bursty loss is not covered.", "Appendix B"),
             ("Store and forward with the lost-link rule loses fewer awarded jobs than drop and retry (H14)",
              f"Tested: E54, {d14['n']} seeds, a message-level replay of one recorded month at today's fleet, per-hop "
-             f"loss 0.25, 14-day Earth blackout. {'Supported' if h14['supported'] else 'Not supported'}; the interval "
-             f"is not adjusted for multiplicity. Not an engine run: the return is applied to the contact plan.",
+             f"loss 0.25, 14-day Earth blackout. {'Supported' if f14['holm']['rejected_at_0.05'] and h14['supported'] else 'Not supported'}"
+             f", with a Holm-adjusted p of {pfmt(f14['holm']['p_adjusted'])} over the three hypotheses of the second "
+             f"pre-registration's family that have a sampling test. Not an engine run: the return is applied to the "
+             f"contact plan.",
              "5.9, 7"),
-            ("Under the lost-link rule no reservation stays blocked past its timeout",
-             "By construction of the rule, not measured. Measured in E54: the blocked hours the rule avoids.", "5.9"),
+            ("Under the lost-link rule the base can release every reservation at its timeout",
+             "By construction of the rule, not measured. Measured in E54: without the rule, the releases the base "
+             "could not confirm and the hours it kept those segments closed; no vehicle was still inside one.", "5.9"),
             ("Expected extra wait of a job after a rover fails, decided on the Moon and decided on Earth "
              "(Proposition 4)",
              "Proved as formulas, assuming independent heartbeat loss and fixed gaps and windows. Inputs assumed. Not "
