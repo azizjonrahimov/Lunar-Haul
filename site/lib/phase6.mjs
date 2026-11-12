@@ -7,7 +7,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from './pages.mjs';
-import { esc, fmt } from '../src/components/num.js';
+import { esc, fmt, num } from '../src/components/num.js';
 
 export const VV6_SRC = 'results/vv_phase6.json', FAMILY_SRC = 'results/phase6_family.json';
 const read = rel => (existsSync(join(ROOT, rel)) ? JSON.parse(readFileSync(join(ROOT, rel), 'utf8').replace(/([:[,]\s*)-?(NaN|Infinity)\b/g, '$1null')) : null);
@@ -45,6 +45,39 @@ export const DECISIONS = {
 };
 const OUT = { held: 'held', partly: 'held in part', not: 'did not hold', reading: 'depends on the reading', calc: 'design calculation', first: 'held in its first clause', untestable: 'not testable as written' };
 const fmtM = v => `${fmt(v, v < 10 ? 1 : 0)} m`;
+
+// F-71 (B-101): H9′'s second clause, "ranging stays inside the budget near the base", under every reading of "near the
+// base" (results/E50_near_base.json, fleet at 1x, dead reckoning plus ranging). A simulation on assumed ranging errors.
+export const NEAR_SRC = 'results/E50_near_base.json';
+const NEAR_KIND = 'a simulation on assumed ranging errors';
+const WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+export function nearBase() {
+  const D = read(NEAR_SRC);
+  if (!D?.multiples?.['1']?.sets?.['dr+ranging']) throw new Error(`${NEAR_SRC}: no 1x dead reckoning plus ranging set`);
+  const M = D.multiples['1'], S = M.sets['dr+ranging'], src = `${NEAR_SRC}: multiples.1`;
+  const rows = Object.entries(D.readings).map(([r, label]) => ({
+    r, registered: /PREREG6/.test(label),
+    label: label.replace(/\s*\((used so far|PREREG6[^)]*)\)/g, '').replace(/\bBASE\b/g, 'base'),
+    share: num({ value: 100 * M.share_of_driving[r].mean, unit: ' %', digits: 0, flag: 'Modelled', source: `${src}.share_of_driving.${r}.mean (${NEAR_KIND})` }),
+    p95: num({ value: S[r].in_p95_m_mean, unit: ' m', digits: 1, flag: 'Modelled', source: `${src}.sets.dr+ranging.${r}.in_p95_m_mean (${NEAR_KIND})` }),
+    inside: S[r].seeds_inside_budget, seeds: S[r].seeds_with_steps,
+  }));
+  const reg = rows.find(x => x.registered), held = rows.filter(x => x.inside === x.seeds);
+  if (!reg) throw new Error(`${NEAR_SRC}: no reading marked as PREREG6's words`);
+  const budget = num({ value: D.budget_m, unit: ' m', digits: 0, flag: 'Spec', source: `${NEAR_SRC}: budget_m (the separation the traffic rules assume)` });
+  const seedsSay = x => (x.inside === 0 ? 'fails in every seed' : x.inside === x.seeds ? 'holds in every seed' : `holds in ${x.inside} of ${x.seeds} seeds`);
+  return { rows, reg, held, budget, seedsSay, count: rows.length, verdict: D.verdict || '' };
+}
+// <!--@nb:clause2--> on /protocol/ problem 1: the clause in one sentence, every number from the file
+export function nb(key) {
+  if (key !== 'clause2') throw new Error(`near base: unknown key ${key}`);
+  const N = nearBase(), h = N.held[0];
+  if (!/depends on the reading/.test(N.verdict)) throw new Error(`${NEAR_SRC}: verdict is no longer "depends on the reading"`);
+  const first = h ? `Read as “${esc(h.label)}” (${h.share} of driving), the error’s 95th percentile is ${h.p95} and the clause ${N.seedsSay(h)}` : 'No reading keeps it inside the budget';
+  return `Whether ranging keeps the error inside the budget near the base depends on what “near” means. ${first}; read as the registered
+          wording, “${esc(N.reg.label)}”, it is ${N.reg.p95} against ${N.budget} and ${N.seedsSay(N.reg)}. The papers report all ${WORDS[N.count] || N.count}
+          readings, so the second clause of H9&prime; depends on the reading (${NEAR_KIND}).`;
+}
 const fmtH = v => `${fmt(v, 2).replace(/^-/, '−')} h`, fmtP = v => (v < 0.001 ? '< 0.001' : fmt(v, 2));
 // F-70c: a clause decided by its own sampling test (H10′): held when its p is below alpha; the values the file gives
 // for it, the fleet sizes read from its gap_<m>x_h keys (4x and 8x since B-90's 8x addendum)
@@ -67,7 +100,9 @@ export function familyRows(F, D = DECISIONS) {
       parts = Object.entries(h.clauses).map(([name, c]) => [name, dec.clauses?.[name] || (c.supported ? 'held' : 'not'), typeof c.value_m === 'number' ? fmtM(c.value_m) : '']);
       if (parts.some(([, o]) => o === 'reading')) {
         outcome = 'reading';
-        note = `the near-base clause passes only under the reading “${F.region_rule || 'two or more beacons in line of sight'}”, chosen after the results; the paper reports it under four readings (decisions B4)`;
+        const N = nearBase(), i = parts.findIndex(([, o]) => o === 'reading');
+        parts[i] = [parts[i][0], 'reading', '', `<ul class="r-parts r-readings">${N.rows.map(x => `<li>${esc(x.label)}${x.registered ? ' (the registered wording)' : ''}, ${x.share} of driving: ${x.p95}, ${N.seedsSay(x)}</li>`).join('')}</ul>`];
+        note = `the near-base clause holds only under ${N.held.length ? N.held.map(x => `the reading “${x.label}”`).join(' and ') : 'no reading'}, chosen after the results; under the registered wording it ${N.seedsSay(N.reg)}; the papers report all ${WORDS[N.count] || N.count} readings (decisions B4)`;
       }
     } else if (h.clauses && Object.values(h.clauses).some(c => typeof (c.p ?? c.p_one_sided) === 'number')) {
       parts = Object.entries(h.clauses).map(([name, c]) => testedClause(name, c, F.alpha ?? 0.05));
@@ -88,10 +123,9 @@ export function familyRows(F, D = DECISIONS) {
 export function familyTable() {
   const F = read(FAMILY_SRC);
   if (!F) return '';
-  const E50 = read('results/E50_summary.json'); if (E50?.design?.region_rule) F.region_rule = E50.design.region_rule.replace(/^near base = /, '');
   const rows = familyRows(F), p = v => (v < 0.001 ? '< 0.001' : fmt(v, 3));
   const what = r => r.parts
-    ? `<ul class="r-parts">${r.parts.map(([n, o, v]) => `<li>${esc(n)}${v && !/^[a-z]/i.test(v) ? ` (${esc(v)})` : ''}: <b>${OUT[o]}</b>${/^[a-z]/i.test(v) ? `; ${esc(v)}` : ''}</li>`).join('')}</ul>${r.note ? `<p class="muted">${esc(r.note)}.</p>` : ''}`
+    ? `<ul class="r-parts">${r.parts.map(([n, o, v, sub]) => `<li>${esc(n)}${v && !/^[a-z]/i.test(v) ? ` (${esc(v)})` : ''}: <b>${OUT[o]}</b>${/^[a-z]/i.test(v) ? `; ${esc(v)}` : ''}${sub || ''}</li>`).join('')}</ul>${r.note ? `<p class="muted">${esc(r.note)}.</p>` : ''}`
     : `${esc(r.summary)}${r.note ? `<p class="muted">${esc(r.note)}.</p>` : ''}`;
   const tally = rows.map(r => `${r.label} ${OUT[r.outcome]}`).join('; ');
   return `<section class="r-fam" aria-labelledby="r-fam-h"><h3 id="r-fam-h">Phase 6: what the hypotheses came to</h3>

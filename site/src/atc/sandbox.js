@@ -54,7 +54,7 @@ function e44Table() {
   const clean = keys.filter(q => T[q].violations === 0).length;
   const viol = keys.filter(q => T[q].violations > 0);
   const g = mars && E47.design.gravity_m_s2, same = mars && E47.headline.type9_dead_stop_violations_moon_same_encounters;
-  $('atc-e44-lead').innerHTML = `${mars ? `On Mars (experiment E47, task B-82: gravity ${num({ value: g.value, unit: ' m/s²', digits: 2, flag: g.flag, source: 'data/scenarios/E47-design.json: encounters.gravity_m_s2' })}, the lunar vehicles and rules unchanged, the same random draws as on the Moon), of` : 'Of'}
+  $('atc-e44-lead').innerHTML = `${mars ? `On Mars (experiment E47, task B-82: gravity ${num({ value: g.value, unit: ' m/s²', digits: 2, flag: g.flag, source: 'data/scenarios/E47-design.json: encounters.gravity_m_s2' })}, the lunar vehicles and rules unchanged, the same random draws as on the Moon), of` : 'In the main run, of'}
     ${m(sum(t => t.n), '', 0, `${SRC}: Σ n`)} simulated encounters, ${m(sum(t => t.n_driven), '', 0, `${SRC}: Σ n_driven`)} were driven
     (the rest were slopes ${mars ? "the lunar brakes could not hold under Mars gravity" : "no vehicle could hold"}). ${clean} of the ${keys.length} types had no violation at all.
     ${viol.map(q => `Type ${q} had ${m(T[q].violations, '', 0, `${src(q)}.violations`)} encounters with a violation (${m(T[q].violations_by_kind.viol_contact, '', 0, `${src(q)}.violations_by_kind.viol_contact`)} with contact)`).join('; ')}${mars && T[9]?.violations ? `, the same ${m(same, '', 0, `${FIT_E47}: headline.type9_dead_stop_violations_moon_same_encounters`)} encounters that lost their margin on the Moon` : ''}.`;

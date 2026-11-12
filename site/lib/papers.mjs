@@ -67,7 +67,11 @@ export function paperField(id, field) {
   if (field === 'bibtex') {
     if (!title) return PENDING;
     const t = strip(title).replace(/&amp;/g, '&');
-    return `<pre><code>@misc{rahimov2026${id},\n  title  = {${t}},\n  author = {Rahimov, Azizjon},\n  year   = {2026},\n  note   = {Preprint, October 2026},\n  url    = {https://github.com/azizjonrahimov/Lunar-Haul}\n}</code></pre>`;
+    // F-71: the dates from the paper's own byline ("Preprint, October 2026, revised November 2026"), not typed here
+    const by = /Preprint, ([A-Z][a-z]+) (\d{4})(?:[,;] revised ([A-Z][a-z]+ \d{4}))?/.exec(html);
+    if (!by) throw new Error(`paper/${id}: no "Preprint, <month> <year>" in the byline`);
+    const note = `Preprint, ${by[1]} ${by[2]}${by[3] ? `, revised ${by[3]}` : ''}`;
+    return `<pre><code>@misc{rahimov${by[2]}${id},\n  title  = {${t}},\n  author = {Rahimov, Azizjon},\n  year   = {${by[2]}},\n  note   = {${note}},\n  url    = {https://github.com/azizjonrahimov/Lunar-Haul}\n}</code></pre>`;
   }
   if (field === 'proved') return paperProved(id);
   throw new Error(`unknown paper field ${field}`);

@@ -332,7 +332,8 @@ export function e53d(key) {
 }
 
 // F-70b / B-104: the radio over a curved Moon (results/E48_sizing.json revision_b104, ITU-R P.526; decisions B10):
-// <!--@b104:key--> for the big rovers' worst hop (LTV1): antenna, hop, loss_diff, rate_flat, rate_sph, target, range_flat, range_sph.
+// <!--@b104:key--> for the big rovers' worst hop (LTV1): antenna, hop, loss_diff, rate_flat, rate_sph, target, range_flat, range_sph,
+// carry ("no longer carries" / "still carries": the target rate at the worst hop, F-71).
 let b104doc = null;
 export function b104(key, cls = 'LTV1') {
   b104doc ||= JSON.parse(readFileSync(join(ROOT, 'results', 'E48_sizing.json'), 'utf8').replace(/\bNaN\b/g, 'null')).revision_b104;
@@ -349,6 +350,13 @@ export function b104(key, cls = 'LTV1') {
     target: () => f(tgt / 1000, ' Mbit/s', 0, 'range_m_for_kbps_spherical (the highest rate listed)', 'Assumed'),
     range_flat: () => f(C.range_m_for_kbps_flat[String(tgt)] / 1000, ' km', 2, `range_m_for_kbps_flat.${tgt}`),
     range_sph: () => f(C.range_m_for_kbps_spherical[String(tgt)] / 1000, ' km', 2, `range_m_for_kbps_spherical.${tgt}`),
+    // F-71: whether the worst hop still carries the highest listed rate over a curved Moon, for the crew and the cargo
+    // rover alike (P3 states it for both); the two must agree or the build stops
+    carry: () => {
+      const says = k => { const R = b104doc.per_class[k]; return R.range_m_for_kbps_spherical[String(tgt)] < R.worst_hop.d_m ? 'no longer carries' : 'still carries'; };
+      if (says('LTV1') !== says('CARGO')) throw new Error('revision_b104: the crew and cargo rovers differ at the worst hop');
+      return says(cls);
+    },
   };
   if (!V[key]) throw new Error(`revision_b104: unknown key ${key}`);
   return V[key]();

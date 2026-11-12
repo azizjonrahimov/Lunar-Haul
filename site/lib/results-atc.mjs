@@ -68,3 +68,26 @@ export function atcResults(base = '/') {
     + `<p class="prose">Headline results of the three Lunar ATC papers, read from the papers' own values files when the site is built. More on <a href="${base}atc/">the Lunar ATC page</a>, <a href="${base}world/?view=atc">a month with and without the network</a> and <a href="${base}paper/">the papers</a>.</p>`
     + `<div class="r-atc-grid">${card('p1', p1)}${card('p2', p2)}${card('p3', p3)}</div>${familyTable()}</section>`;   // F-69: the Phase 6 hypotheses under the cards
 }
+
+// F-71 (B-108): <!--@e44f:lead--> on /atc/ section 5: encounter types rerun on fresh seeds (results/E44_fresh_seeds.json),
+// random draws the defect search never saw. Every number from the file; a simulation.
+const FRESH_SRC = 'results/E44_fresh_seeds.json';
+const KIND = { viol_contact: 'contact', viol_gap: 'a gap below the margin', viol_zone: 'a vehicle still inside a closed landing zone at closure',
+  viol_crew: 'a vehicle too close to crew', viol_r3: 'two vehicles inside a one-lane road', viol_slots: 'an over-full pad or junction' };
+const WORD = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+export function e44fresh(key) {
+  if (key !== 'lead') throw new Error(`E44 fresh seeds: unknown key ${key}`);
+  const D = JSON.parse(readFileSync(join(ROOT, FRESH_SRC), 'utf8')), T = D.types, ids = Object.keys(T).sort((a, b) => a - b);
+  const m = (value, what, unit = '', digits = 0) => num({ value, unit, digits, flag: 'Modelled', source: `${FRESH_SRC}: ${what} (a simulation)` });
+  const and = xs => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
+  const clean = ids.filter(t => T[t].fresh_seeds.violations === 0), bad = ids.filter(t => T[t].fresh_seeds.violations > 0);
+  const n = t => m(T[t].fresh_seeds.n, `types.${t}.fresh_seeds.n`);
+  let s = `On fresh seeds (task B-108: random draws never used before, for the ${WORD[ids.length] || ids.length} types whose main-run bounds were computed on the seeds where defects were found and fixed), `;
+  if (clean.length) s += `type${clean.length > 1 ? 's' : ''} ${and(clean)} again had no violation in ${new Set(clean.map(t => T[t].fresh_seeds.n)).size === 1 ? n(clean[0]) : and(clean.map(n))} encounters${clean.length > 1 ? ' each' : ''}`;
+  if (bad.length) s += `${clean.length ? '; ' : ''}` + bad.map(t => {
+    const F = T[t].fresh_seeds, kinds = Object.entries(F.violations_by_kind || {}).filter(([, v]) => v > 0).map(([k]) => KIND[k] || k);
+    const wb = typeof F.bound_weighted === 'number' ? `, a 95 % upper bound of ${m(100 * F.bound_weighted, `types.${t}.fresh_seeds.bound_weighted`, ' %', 2)} per encounter (weighted)` : '';
+    return `type ${t} had ${m(F.violations, `types.${t}.fresh_seeds.violations`)} in ${n(t)}: ${and(kinds)}${wb}`;
+  }).join('; ');
+  return s.replace(/, $/, '') + '.';
+}

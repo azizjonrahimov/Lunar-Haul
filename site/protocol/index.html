@@ -60,7 +60,7 @@
         <h3>Method</h3>
         <p>Experiment E50 drives the fleet with each layer switched on in turn and measures the position error against
           the separation the traffic rules assume (<!--@pn:sigma_nav-->); hypotheses H9&prime; and H10&prime; (as the papers write
-          them), registered before the runs. Stopping for terrain fixes is not free: with the stops inside the engine
+          them), registered before the runs. <!--@nb:clause2--> Stopping for terrain fixes is not free: with the stops inside the engine
           (<!--@e50b:stop_s--> each), the delay per delivery rises by <!--@e50b:delay_diff--> (from <!--@e50b:delay_without-->
           to <!--@e50b:delay_with-->, <!--@e50b:delay_pct-->; 95 % interval <!--@e50b:delay_lo--> to <!--@e50b:delay_hi-->), a
           lower bound on what the layered scheme costs.</p>
@@ -184,10 +184,11 @@
         <p>The engine's radio model decides every link on the 5 m terrain (free space, then the flat-ground law, and a
           link budget: <!--@pn:tx_w-->, <!--@pn:gain-->, noise figure <!--@pn:nf-->, margin <!--@pn:margin-->, at
           <!--@pn:rate-->); experiment E54 (hypothesis H14) compares store-and-forward with drop-and-retry.
-          The flat-ground law ignores the Moon's curvature. Over a curved Moon (ITU-R P.526) the loss between two
+          The flat-ground law ignores the Moon's curvature. By calculation over a curved Moon (ITU-R P.526), the loss between two
           <!--@b104:antenna--> antennas <!--@b104:hop--> apart is <!--@b104:loss_diff--> higher, so the rate falls from
-          <!--@b104:rate_flat--> to <!--@b104:rate_sph-->, and <!--@b104:target--> reaches <!--@b104:range_sph--> instead of
-          <!--@b104:range_flat-->. No lunar measurement exists to settle which is closer.</p>
+          <!--@b104:rate_flat--> to <!--@b104:rate_sph-->: the crew and cargo rovers' worst hop <!--@b104:carry-->
+          <!--@b104:target-->, which reaches <!--@b104:range_sph--> instead of <!--@b104:range_flat-->. No lunar measurement
+          exists to settle which ground model is closer.</p>
         <h3>Who we would work with</h3>
         <p>The CCSDS working groups (links, security, delay-tolerant networking, surface wireless), NASA SCaN and the
           LunaNet team, NASA's open delay-tolerant networking software teams, the LunarRF authors at WPI, and Nokia Bell
