@@ -44,10 +44,10 @@ test('E51 for figure 3: lunar rows for both oscillators, H11 kept', { skip: !exi
   assert.ok(out.guard_s > 0 && out.uwb_sigma_m > 0);
 });
 
-test('E53 in problem 5: numbers flagged, fits as words, one row only', { skip: !existsSync(R('results/E53_table.csv')) && 'E53 missing' }, () => {
-  assert.match(e53('fleet', 'on', '1.0', 20, 'one_hop_sum_kbps'), /data-flag="Modelled".*E53_table\.csv/);
+test('E53 in problem 5: numbers flagged, fits as words, one row only', { skip: !existsSync(R('data/atc/protocol/e53_bitrate.json')) && 'B-99 missing' }, () => {
+  assert.match(e53('fleet', 'on', '1.0', 20, 'busiest_link_kbps_p95'), /data-flag="Modelled".*e53_bitrate\.json/);
   assert.match(e53('fleet', 'on', '1.0', 20, 'fits_nb_scheduled_p95'), /^(fits|does not fit)$/);
-  assert.throws(() => e53('nowhere', 'on', '1.0', 20, 'one_hop_sum_kbps'), /0 rows/);
+  assert.throws(() => e53('nowhere', 'on', '1.0', 20, 'busiest_link_kbps_p95'), /0 rows/);
   assert.throws(() => e53('fleet', 'on', '1.0', 20, 'no_such_column'), /no column/);
 });
 
@@ -103,4 +103,21 @@ test('E55 for problem 7: detectors on test and out of distribution, consensus ce
   assert.match(e55('agreement_max'), / %</);
   assert.throws(() => e55('fa_test_nope'), /no detector/);
   assert.throws(() => e55('what'), /unknown key/);
+});
+
+test('E53 "fits" rule on the B-99 file gives the same answers as results/E53_table.csv, row by row', { skip: !(existsSync(R('results/E53_table.csv')) && existsSync(R('data/atc/protocol/e53_bitrate.json'))) && 'E53 files missing' }, async () => {
+  const { e53Fits } = await import('../lib/protocol-data.mjs');
+  const D = J('data/atc/protocol/e53_bitrate.json'), c = k => D.columns.indexOf(k);
+  const [head, ...lines] = readFileSync(R('results/E53_table.csv'), 'utf8').trim().split(/\r?\n/), keys = head.split(',');
+  let n = 0;
+  for (const l of lines) {
+    const r = Object.fromEntries(l.split(',').map((v, i) => [keys[i], v]));
+    const row = D.rows.find(q => q[c('geometry')] === r.geometry && q[c('auth')] === r.auth && +q[c('position_hz')] === +r.position_hz && +q[c('rovers')] === +r.rovers);
+    if (!row) continue;
+    for (const [band, access] of [['nb', 'scheduled'], ['nb', 'slotted_aloha'], ['bb', 'scheduled'], ['bb', 'slotted_aloha']]) {
+      const k = `fits_${band}_${access}_p95`; if (!(k in r)) continue;
+      assert.equal(e53Fits(D, row, band, access), r[k] === 'True', `${r.geometry} ${r.auth} ${r.position_hz} Hz ${r.rovers}: ${k}`); n++;
+    }
+  }
+  assert.ok(n > 100, `only ${n} comparisons`);
 });

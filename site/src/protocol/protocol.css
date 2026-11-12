@@ -173,3 +173,15 @@
 .pr-real { margin: var(--s-5) 0; padding: var(--s-4); border: 1px solid var(--hairline); border-left: 3px solid var(--flag-measured); border-radius: var(--radius-panel); background: var(--bg-2); }
 .pr-real h3 { margin: var(--s-1) 0 var(--s-2); }
 .pr-real p { max-width: var(--measure); }
+/* F-65: the E55 trade-off curve */
+.pr-curve { fill: none; stroke-width: 2; }
+.pr-curve.pr-c1 { stroke: var(--pr-c1); }
+.pr-curve.pr-c2 { stroke: var(--pr-c2); }
+.pr-ring { fill: none; stroke: var(--ink); stroke-width: 1.5; }
+.pr-e56 { fill: var(--ink); stroke: var(--bg-2); stroke-width: 1.5; }
+.pr-sw-e56 { background: var(--ink); border-radius: 50%; width: 0.8em; }
+.pr-tick-ok { stroke: color-mix(in srgb, var(--ink) 28%, transparent); stroke-width: 1; }
+.pr-tick-lost { stroke: var(--neg); stroke-width: 1.5; }
+.pr-sw-ok { background: color-mix(in srgb, var(--ink) 35%, transparent); width: 0.25em; }
+.pr-sw-lost { background: var(--neg); width: 0.25em; }
+.pr-curve.pr-c3 { stroke: var(--pr-c3); }

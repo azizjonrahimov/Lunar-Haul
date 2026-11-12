@@ -360,8 +360,6 @@ if (existsSync(join(scenes, 'gallery.json'))) {
 // F-61: /network/ (E56): the loss landscape, the policy and its check windows, a compact results file
 (await import('../lib/network.mjs')).stage(PUB);
 
-// F-56 / B-90: /protocol/ figure 1 reads E50's one-month trace (lib/protocol-data.mjs)
-(await import('../lib/protocol-data.mjs')).stageE50(PUB);
 // F-56 / B-93: /protocol/ figure 5 shows LRIP v0.1's golden POSITION packet (lib/protocol-data.mjs)
 (await import('../lib/protocol-data.mjs')).stageLrip(PUB);
 // F-56 / B-91: /protocol/ figure 3 reads E51's clock results (lib/protocol-data.mjs)
@@ -370,3 +368,5 @@ if (existsSync(join(scenes, 'gallery.json'))) {
 { const P = await import('../lib/protocol-data.mjs'); P.stageE52(PUB); P.stageE54(PUB); }
 // F-56 / B-95: the measured panel of problem 7 (E55)
 (await import('../lib/protocol-data.mjs')).stageE55(PUB);
+// F-65 / B-99: the figure data of /protocol/ and /network/, checked against its index (lib/protocol-data.mjs)
+(await import('../lib/protocol-data.mjs')).stageB99(PUB);

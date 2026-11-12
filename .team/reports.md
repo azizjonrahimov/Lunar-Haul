@@ -9274,3 +9274,45 @@ Next: B-98 (verification rows for Phase 6), then B-99 (site data). B-90b waits f
 **For LEAD:**
 1. Your note said G1 compares 128 values; the file says 144 summary values (B-98's basis line). The page quotes the file.
 2. When the 8x run lands and phase6_family.json changes, the table follows at the next build (H10's outcome comes from its Holm field).
+
+## F-65 DONE 20:17 | site/lib/protocol-data.mjs (checkB99, stageB99; the e53 text hook now reads B-99; the old E50 reducer removed), site/lib/network.mjs (landscape from B-99, with the source_sha256 check), site/src/network/main.js, site/src/protocol/figures.js (figure 1 from e50_layers; new figBitrate, e54Timeline, e55Curve; old E50 code removed), site/protocol/index.html (captions, problem 5 text, the bit-rate figure), site/src/protocol/protocol.css, site/scripts/prepare-data.mjs, site/tests/protocol-e50.test.mjs (rewritten for B-99), site/tests/protocol-data.test.mjs (E53 test moved to B-99, plus a rule check), tools/ci/budgets.json (data lines) | how to check: /protocol/ (figures 1, 5b, the problem 6 and 7 panels), /network/#nw-landscape, /paper/ | from BACKEND: nothing | for LEAD: notes at the end
+**Staging with the index check:** prepare-data checks every file in data/atc/protocol/ against index.json before staging it unchanged to protocol/b99/ (stageB99).
+- **A failure stops the build:** a size mismatch, a sha256 mismatch, a listed file missing, or a file not in format lunarsim-protocol-data v1.
+- **Tested** on a temporary copy: one changed byte gives "sha256", one added byte gives "bytes", a deleted file gives "missing".
+
+**Where B-99 replaced a direct read:**
+- **/protocol/ figure 1** now draws e50_layers.json: the busiest 24 h of vehicle 3 at 2-minute steps, with the four layer sets labelled as the file labels them, including "+ terrain fixes (LANS has no fix in 2028)".
+  - The readout adds the file's month over 30 seeds. With terrain fixes: 95th percentile 13 m, median 1.7 m, bound over 5 m 42 % of the time.
+  - The old staging of results/E50_trace.json, its reducer and its budget line are gone.
+- **/network/'s landscape** comes from b96_landscape.json, the page fetching protocol/b99/b96_landscape.json and using its landscape field. Its numbers (86.5 %, the self-check gap, lr, epochs) read from it at build time.
+  - The build fails if its source_sha256 is not the current data/atc/integrity/landscape.json's.
+  - network/landscape.json is no longer staged.
+- **Problem 5's E53 sentences** now read e53_bitrate.json, the same file as the new chart. They quote the busiest link's 95th percentile (7.9 kbit/s at 20 rovers and 1 Hz, 66.9 kbit/s at 10 Hz; the same values as before).
+  - "fits" is E53's rule: load ≤ capacity × access efficiency (the file's eta).
+  - **New test:** that rule on B-99's file gives the same answer as every fits column of results/E53_table.csv, row by row (over 100 comparisons).
+
+**New charts from B-99** (each file had a view the page did not have):
+- **Problem 5, "How much radio the fleet needs"** (e53_bitrate): the busiest link's load against 5 to 80 rovers at 0.1, 1 and 10 reports a second, log-log. Lines mark usable capacity: narrow-band random access 5.9, narrow-band scheduled 12.8, broadband scheduled 800 kbit/s. Toggles: where the fleet works or spread over the routes; authentication on or off.
+- **Problem 6, "One month, message by message"**, under the E54 table (e54_timeline): seed 1, each award, grant and job-state report as a tick at the hour it was sent, red where it expired. Drop and retry 118 lost (50 grants, 63 job-state reports, 5 awards); store and forward 1; + lost-link rule 0.
+- **Problem 7, "Faults found against false alarms, as the threshold moves"**, on top of the E55 panel (e55_detectors): the 3-of-5 and single-test curves as γ sweeps 4 to 50 (false alarms per pair-day on a log axis, zeros at the left edge), the protocol's γ 10.83 ringed, and E56's chi-square, CUSUM and network at one false alarm a day.
+
+**Kept on results files, on purpose:** B-99's files do not carry them.
+- E55's out-of-distribution table and the mast consensus (both on the page at your request) stay on results/E55_integrity.json.
+- E54's 30-seed table and the ledger lifetimes stay on E54_dtn / E54_ledger (B-99's timeline is one seed).
+- E51, E52 and the LRIP figure have no B-99 file.
+
+**/paper/:** all three "Proved, tested, assumed" tables show: P1 Table 12 (26 rows), P2 Table 14 (37), P3 Table 18 (36); none pending.
+- The revised abstracts read from each paper.html: P1 "Rovers and robots planned for the lunar south pole belong to different companies…", P2 "Rovers of several companies will soon share the roads…", P3 "The rovers, hoppers and landers planned for a lunar south-pole base in 2028–2032…".
+- The PDF links carry their page counts and sizes from the files: P1 46 pages, 1,321 kB; P2 51 pages, 1,435 kB; P3 60 pages, 1,479 kB.
+
+**Checks:**
+- node tests 56/56;
+- builds OK, each after a RAM check (1.34, 1.43, 1.27, 1.19 and 1.74 GB). Twice RAM fell below the floor (0.48 and 0.94 GB); I stopped the server and browser, checked once more, and went on only at or above 1.0;
+- budgets OK. **/protocol/ lazy JS is 25.0 of 25 kB:** the new charts first took it to 25.2. I trimmed rather than raise it: an unused helper, the bit-rate readout that repeated the text, and the charts' long fixed explanations moved into the figure captions (HTML). /protocol/ data is 87.0 of 90 kB. /network/ data is 128.1 of 160 kB;
+- headless Chrome at 1280 and 390, light and dark, on /protocol/, /network/ and /paper/: all 12 protocol figure hosts draw, no table wider than its box, 0 contrast fails, no overflow, one h1, no heading skips, 0 console errors;
+- screenshots read: the E55 curve at 1280 light, the bit-rate chart at 1280 dark (its 10 Hz line was missing a stroke; fixed and rechecked), the problem 6 panel at 390 light, figure 1 at 390 dark.
+- **Server and browser stopped.**
+
+**For LEAD:**
+1. **Little JavaScript headroom left:** /protocol/ is at its 25 kB lazy limit. The next figure there needs a limit change or a split of figures.js; I would rather split. /protocol/ data has 3 kB left.
+2. **Kept results files:** the problem 7 tables still read results/E55_integrity.json, because B-99's e55_detectors has neither the out-of-distribution set nor the mast. If BACKEND adds those to B-99, I can switch the tables too.

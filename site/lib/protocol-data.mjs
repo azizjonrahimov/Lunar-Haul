@@ -1,51 +1,12 @@
-// /protocol/ data staged at build time (prepare-data). E50 (B-90) trace for figure 1: results/E50_trace.json
-// (lunarsim-e50-trace v1: one month at 1x, seed 1, the two vehicles that drove most; per layer set err_m and b95_m,
-// the maximum over each 30 min bin) reduced to what the figure draws: per vehicle the hours driven, a 0/1 string of
-// the bins in which it moved (its position changed before the next bin) and, per layer set, err_m and b95_m.
-// Layer sets whose two series equal another set's are marked same_as (in 2028 the satellite layer adds nothing).
+// /protocol/ data staged at build time (prepare-data) and read for the page text: LRIP (figure 5), E51 (figure 3), E52
+// (figure 2), E53 (problem 5's text), E54 (problems 4 and 6), E55 (problem 7) and B-99's figure files (checkB99, stageB99).
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { createHash } from 'node:crypto';
 import { ROOT } from './pages.mjs';
 import { lripDecode } from '../src/protocol/lrip.js';
 import { num } from '../src/components/num.js';
 export { lripDecode };
-
-export const E50_SRC = 'results/E50_trace.json';
-export const E50_OUT = 'protocol/e50-trace.json';
-export const E50_SETS = ['dr', 'dr+ranging', 'dr+ranging+fixes', 'dr+ranging+fixes+lans', 'lans@2030'];
-
-export function compactE50(doc) {
-  if (doc.format !== 'lunarsim-e50-trace' || doc.version !== 1) throw new Error(`${E50_SRC}: format ${doc.format} version ${doc.version}`);
-  const vehicles = {};
-  for (const [id, v] of Object.entries(doc.vehicles)) {
-    const n = v.xy_m.length, sets = {};
-    for (const k of E50_SETS) {
-      const s = v.sets[k];
-      if (!s) throw new Error(`${E50_SRC}: vehicle ${id} has no layer set ${k}`);
-      if (s.err_m.length !== n || s.b95_m.length !== n) throw new Error(`${E50_SRC}: vehicle ${id} ${k}: ${s.err_m.length} / ${s.b95_m.length} bins, positions ${n}`);
-      sets[k] = { err_m: s.err_m, b95_m: s.b95_m };
-    }
-    for (let i = 1; i < E50_SETS.length; i++) {
-      const a = sets[E50_SETS[i]], same = E50_SETS.slice(0, i).find(k => !sets[k].same_as && JSON.stringify([sets[k].err_m, sets[k].b95_m]) === JSON.stringify([a.err_m, a.b95_m]));
-      if (same) sets[E50_SETS[i]] = { same_as: same };
-    }
-    const moving = v.xy_m.map((p, i) => (i + 1 < n && (p[0] !== v.xy_m[i + 1][0] || p[1] !== v.xy_m[i + 1][1]) ? '1' : '0')).join('');
-    vehicles[id] = { drive_h: v.drive_h, bins: n, moving, sets };
-  }
-  return { format: 'lunarsim-e50-trace-site', version: 1, source: E50_SRC, experiment: doc.experiment, mult: doc.mult, seed: doc.seed,
-    t0_h: doc.t0_h, bin_min: doc.bin_min, budget_m: doc.budget_m, sets: E50_SETS, vehicles };
-}
-
-export function stageE50(PUB) {
-  const src = join(ROOT, E50_SRC);
-  if (!existsSync(src)) { console.log(`prepare-data: ${E50_SRC} missing; /protocol/ figure 1 says so`); return null; }
-  const out = compactE50(JSON.parse(readFileSync(src, 'utf8')));
-  mkdirSync(join(PUB, 'protocol'), { recursive: true });
-  const text = JSON.stringify(out);
-  writeFileSync(join(PUB, E50_OUT), text);
-  console.log(`prepare-data: ${E50_OUT} staged (${Math.round(text.length / 1024)} kB, ${Object.keys(out.vehicles).length} vehicles)`);
-  return out;
-}
 
 // F-56 / B-93: /protocol/ figure 5 shows a real LRIP v0.1 POSITION report: the golden vector POSITION / profile N /
 // mac8 of data/atc/lrip/conformance-v0.1.json, laid out by lunarsim/schemas/lrip-v0.1.json (Space Packet primary
@@ -113,24 +74,28 @@ export function stageE51(PUB) {
   return out;
 }
 
-// F-56 / B-93: E53 (results/E53_table.csv) numbers in /protocol/ problem 5's text, at build time:
-// <!--@e53:geometry:auth:position_hz:rovers:column--> gives a flagged number; a fits_* column gives "fits" or "does not fit".
-export const E53_SRC = 'results/E53_table.csv';
-let e53rows = null;
-const E53_UNIT = { one_hop_sum_kbps: [' kbit/s', 1], busiest_link_kbps_p95: [' kbit/s', 1], busiest_link_kbps_mean: [' kbit/s', 1], per_rover_kbps: [' kbit/s', 2], mean_hops_to_base: ['', 1], reachable_share: [' %', 0, 100] };
+// F-65 / B-99: E53 numbers in /protocol/ problem 5's text, at build time, from B-99's e53_bitrate.json (the file the
+// bit-rate figure draws): <!--@e53:geometry:auth:position_hz:rovers:column--> gives a flagged number; a fits_<nb|bb>_<access>
+// column gives "fits" or "does not fit" by E53's rule, the busiest link's 95th-percentile load against the channel's
+// capacity times its access efficiency (tests/protocol-data.test.mjs checks the rule against results/E53_table.csv).
+export const E53_SRC = 'data/atc/protocol/e53_bitrate.json';
+let e53doc = null;
+const E53_UNIT = { busiest_link_kbps_p95: [' kbit/s', 1], busiest_link_kbps_mean: [' kbit/s', 1], per_rover_kbps: [' kbit/s', 2], mean_hops_to_base: ['', 1], reachable_share: [' %', 0, 100] };
+export function e53Fits(D, row, band, access) {
+  const line = Object.entries(D.lines_kbps).find(([k]) => (band === 'nb' ? /narrow/ : /broad/).test(k))?.[1], eta = D.eta[access];
+  if (!(line > 0) || !(eta > 0)) throw new Error(`${E53_SRC}: no line or efficiency for ${band} ${access}`);
+  return row[D.columns.indexOf('busiest_link_kbps_p95')] <= line * eta;
+}
 export function e53(geometry, auth, hz, rovers, column) {
-  if (!e53rows) {
-    const [head, ...lines] = readFileSync(join(ROOT, E53_SRC), 'utf8').trim().split(/\r?\n/);
-    const keys = head.split(',');
-    e53rows = lines.map(l => Object.fromEntries(l.split(',').map((v, i) => [keys[i], v])));
-  }
-  const hit = e53rows.filter(r => r.geometry === geometry && r.auth === auth && +r.position_hz === +hz && +r.rovers === +rovers);
+  e53doc ||= JSON.parse(readFileSync(join(ROOT, E53_SRC), 'utf8'));
+  const D = e53doc, c = k => D.columns.indexOf(k);
+  const hit = D.rows.filter(r => r[c('geometry')] === geometry && r[c('auth')] === auth && +r[c('position_hz')] === +hz && +r[c('rovers')] === +rovers);
   if (hit.length !== 1) throw new Error(`${E53_SRC}: ${hit.length} rows for ${geometry} ${auth} ${hz} Hz ${rovers} rovers`);
-  const v = hit[0][column];
-  if (v === undefined) throw new Error(`${E53_SRC}: no column ${column}`);
-  if (column.startsWith('fits_')) { if (v !== 'True' && v !== 'False') throw new Error(`${E53_SRC}: ${column} = ${v}`); return v === 'True' ? 'fits' : 'does not fit'; }
+  const m = /^fits_(nb|bb)_(scheduled|slotted_aloha)(?:_p95)?$/.exec(column);
+  if (m) return e53Fits(D, hit[0], m[1], m[2]) ? 'fits' : 'does not fit';
+  if (c(column) < 0) throw new Error(`${E53_SRC}: no column ${column}`);
   const [unit, digits, scale = 1] = E53_UNIT[column] || ['', 2];
-  return num({ value: +v * scale, unit, digits, flag: 'Modelled', source: `${E53_SRC}: geometry ${geometry}, authentication ${auth}, ${hz} Hz, ${rovers} rovers, column ${column}` });
+  return num({ value: +hit[0][c(column)] * scale, unit, digits, flag: 'Modelled', source: `${E53_SRC}: geometry ${geometry}, authentication ${auth}, ${hz} Hz, ${rovers} rovers, ${column}` });
 }
 
 // F-56 / B-92: /protocol/ figure 2 reads E52 (results/E52_map.json): bytes and time to sync after 1 h to 14 days out of
@@ -256,4 +221,34 @@ export function e55(key) {
     return flag(100 * Math.max(...cells.map(c => c.agreement)), ' %', 0, `consensus${mast ? ' with the base mast' : ''}, the largest share of runs in which the honest rovers agree, over every cell with F at least f`);
   }
   throw new Error(`${E55_SRC}: unknown key ${key}`);
+}
+
+// F-65 / B-99: BACKEND's site data for /protocol/ and /network/ (data/atc/protocol/, format lunarsim-protocol-data v1),
+// checked against its index (bytes and sha256 per file, as for the trace pair) and staged unchanged to
+// public/protocol/b99/. A size or sha256 mismatch, or a file the index lists that is missing, stops the build.
+export const B99_DIR = 'data/atc/protocol', B99_OUT = 'protocol/b99';
+export function checkB99(dir = join(ROOT, B99_DIR)) {
+  const ix = JSON.parse(readFileSync(join(dir, 'index.json'), 'utf8'));
+  if (ix.format !== 'lunarsim-protocol-data-index' || ix.version !== 1) throw new Error(`${B99_DIR}/index.json: format ${ix.format} version ${ix.version}`);
+  const out = {};
+  for (const [name, want] of Object.entries(ix.files)) {
+    const p = join(dir, name);
+    if (!existsSync(p)) throw new Error(`${B99_DIR}/${name}: listed in the index but missing`);
+    const buf = readFileSync(p), sha = createHash('sha256').update(buf).digest('hex');
+    if (buf.length !== want.bytes) throw new Error(`${B99_DIR}/${name}: ${buf.length} bytes, the index says ${want.bytes}`);
+    if (sha !== want.sha256) throw new Error(`${B99_DIR}/${name}: sha256 ${sha.slice(0, 12)}…, the index says ${want.sha256.slice(0, 12)}…`);
+    const doc = JSON.parse(buf.toString('utf8'));
+    if (doc.format !== 'lunarsim-protocol-data' || doc.version !== 1) throw new Error(`${B99_DIR}/${name}: format ${doc.format} version ${doc.version}`);
+    out[name] = { buf, doc };
+  }
+  return { index: ix, files: out };
+}
+export function stageB99(PUB) {
+  if (!existsSync(join(ROOT, B99_DIR, 'index.json'))) { console.log(`prepare-data: ${B99_DIR} missing; the B-99 figures say so`); return null; }
+  const { index, files } = checkB99();
+  mkdirSync(join(PUB, B99_OUT), { recursive: true });
+  for (const [name, f] of Object.entries(files)) writeFileSync(join(PUB, B99_OUT, name), f.buf);
+  writeFileSync(join(PUB, B99_OUT, 'index.json'), JSON.stringify(index));
+  console.log(`prepare-data: ${Object.keys(files).length} B-99 files staged to ${B99_OUT}/ (sizes and sha256 match the index)`);
+  return files;
 }

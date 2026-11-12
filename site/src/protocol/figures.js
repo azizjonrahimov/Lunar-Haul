@@ -8,7 +8,7 @@ import { upgradeFlags } from '../ui/tooltip.js';
 import { num, fmt } from '../components/num.js';
 import { P } from './params.js';
 import { horizon, flatLoss, capacity } from './radio.js';
-import { e50Runs, e50Over, e50Series, e50Middle } from './e50.js';
+import { e50Runs, e50Middle } from './e50.js';
 import { lripDecode } from './lrip.js';
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -40,58 +40,52 @@ const check = (label, on) => {
 const rng = seed => () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 const gauss = r => () => Math.sqrt(-2 * Math.log(r() || 1e-12)) * Math.cos(2 * Math.PI * r());
 const km = m => m >= 1000 ? `${fmt(m / 1000, m >= 10000 ? 0 : 1)} km` : `${fmt(m, 0)} m`;
-const dur = s => s < 90 ? `${fmt(s, s < 10 ? 1 : 0)} s` : s < 5400 ? `${fmt(s / 60, 1)} min` : `${fmt(s / 3600, 1)} h`;
 
-// ---------------------------------------------------------------- 1. positioning: one month of E50 (B-90)
-// results/E50_trace.json, staged as protocol/e50-trace.json (lib/protocol-data.mjs): July 2028 at today's fleet, seed 1,
-// the two vehicles that drove most; per layer set the position error and the vehicle's own 95 % bound, the largest in
-// each half hour. Log scale, 0.1 m to 1 km; the 5 m budget dashed; the half hours in which the vehicle moved shaded.
-const E50_LABEL = { dr: 'Dead reckoning only', 'dr+ranging': '+ radio ranging', 'dr+ranging+fixes': '+ terrain fixes',
-  'dr+ranging+fixes+lans': '+ LunaNet, 2028', 'lans@2030': '+ LunaNet as planned for 2030' };
-const E50_SAY = { dr: 'dead reckoning only', 'dr+ranging': 'dead reckoning and radio ranging', 'dr+ranging+fixes': 'dead reckoning, ranging and terrain fixes',
-  'dr+ranging+fixes+lans': 'every layer, with LunaNet as it is in 2028', 'lans@2030': 'every layer, with LunaNet as planned for 2030' };
+// ---------------------------------------------------------------- 1. positioning: E50 (B-90), from B-99's figure file
+// data/atc/protocol/e50_layers.json (B-99), staged unchanged as protocol/b99/e50_layers.json after the index check: the
+// busiest 24 h of the most-driving vehicle at 2 min steps. Log scale, 0.1 m to 1 km; the 5 m budget dashed; driving shaded.
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const whenH = t => { const d = new Date(Date.UTC(2028, 0, 1) + t * 3600e3); return `${d.getUTCDate()} ${MON[d.getUTCMonth()]}, ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')} UTC`; };
 async function figPos(host) {
-  const r = await fetch(`${import.meta.env.BASE_URL}protocol/e50-trace.json`);
-  if (!r.ok) throw new Error(`protocol/e50-trace.json: HTTP ${r.status}`);
-  const doc = await r.json();
-  if (doc.format !== 'lunarsim-e50-trace-site' || doc.version !== 1) throw new Error(`e50-trace.json: format ${doc.format}`);
-  const ids = Object.keys(doc.vehicles).sort((a, b) => doc.vehicles[b].drive_h - doc.vehicles[a].drive_h), BUD = doc.budget_m, BIN = doc.bin_min / 60;
-  let W = 640, vid = ids[0], set = 'dr+ranging+fixes';
+  // F-65: B-99's e50_layers.json (protocol/b99/, checked against its index): the busiest 24 h of the most-driving vehicle at
+  // 2 min steps, per layer set the error and the vehicle's own 95 % bound; and the month over 30 seeds per layer set
+  const r = await fetch(`${import.meta.env.BASE_URL}protocol/b99/e50_layers.json`);
+  if (!r.ok) throw new Error(`protocol/b99/e50_layers.json: HTTP ${r.status}`);
+  const D = await r.json();
+  if (D.format !== 'lunarsim-protocol-data' || D.version !== 1 || !D.sets) throw new Error(`e50_layers.json: format ${D.format}`);
+  const SRC = 'data/atc/protocol/e50_layers.json', keys = Object.keys(D.sets), BUD = D.budget_m, n = D.t_h.length;
+  const v = { bins: n, moving: D.moving.join('') };
+  let W = 640, set = keys.includes('dr+ranging+fixes') ? 'dr+ranging+fixes' : keys[0];
   const H = 300, L = 52, R = 16, T = 14, B = 34;
-  const E = (value, what) => num({ value, unit: ' m', digits: value < 10 ? 1 : 0, flag: 'Modelled', source: `${doc.source}: vehicle ${vid}, ${what}` });
-  const segV = segmented({ legend: 'Vehicle', options: ids.map(id => ({ value: id, label: `Vehicle ${id} (${fmt(doc.vehicles[id].drive_h, 0)} h driving)` })), value: vid,
-    onChange: v => { vid = v; cur.input.value = e50Middle(doc.vehicles[vid]); draw(); } });
-  const segS = segmented({ legend: 'Layers', options: doc.sets.map(k => ({ value: k, label: E50_LABEL[k] || k })), value: set, onChange: v => { set = v; draw(); } });
-  const cur = range('Time in the month', { min: 0, max: doc.vehicles[vid].bins - 1, step: 1, value: e50Middle(doc.vehicles[vid]) });
-  const svg = svgBox(W, H, 'Position error over July 2028 for one vehicle, on a log scale: dead reckoning alone and with the chosen layers, the vehicle’s own 95 % bound and the 5 m budget');
+  const label = k => { const s = D.set_labels?.[k] || k; return s[0].toUpperCase() + s.slice(1); };
+  const SAY = { dr: 'dead reckoning only', 'dr+ranging': 'dead reckoning and ranging', 'dr+ranging+fixes': 'dead reckoning, ranging and terrain fixes', 'lans@2030': 'every layer, LunaNet as in 2030' }, say = k => SAY[k] || label(k);
+  const E = (value, what) => num({ value, unit: ' m', digits: value < 10 ? 1 : 0, flag: 'Modelled', source: `${SRC}: vehicle ${D.vehicle}, ${what}` });
+  const segS = segmented({ legend: 'Layers', options: keys.map(k => ({ value: k, label: label(k) })), value: set, onChange: x => { set = x; draw(); } });
+  const cur = range('Time in the day', { min: 0, max: n - 1, step: 1, value: e50Middle(v) });
+  const svg = svgBox(W, H, 'Position error over the vehicle’s busiest day, on a log scale: dead reckoning alone and with the chosen layers, the vehicle’s own 95 % bound and the 5 m budget');
   const out = readout();
   function draw() {
-    const v = doc.vehicles[vid], n = v.bins, s = e50Series(v, set), dr = v.sets.dr, i = Math.min(n - 1, +cur.input.value), name = E50_LABEL[set] || set;
-    cur.input.max = n - 1;
+    const s = D.sets[set], dr = D.sets.dr, i = Math.min(n - 1, +cur.input.value), name = label(set), mo = D.month_1x_30_seeds?.[set];
     W = widthOf(svg); fit(svg, W, H); svg.replaceChildren();
     const x = k => L + (W - L - R) * k / n, y = e => T + (H - T - B) * (1 - (Math.log10(Math.max(e, 0.1)) + 1) / 4);
     const line = (arr, cls) => S('path', { class: cls, d: arr.map((e, k) => `${k ? 'L' : 'M'}${x(k + 0.5).toFixed(1)},${y(e).toFixed(1)}`).join('') });
     for (const [a, b] of e50Runs(v)) svg.append(S('rect', { class: 'pr-drive', x: x(a), y: T, width: Math.max(1, x(b) - x(a)), height: H - T - B }));
     for (const e of [0.1, 1, 10, 100, 1000]) svg.append(S('line', { class: 'pr-grid-l', x1: L, x2: W - R, y1: y(e), y2: y(e) }), S('text', { class: 'pr-tick', x: L - 6, y: y(e) + 4, 'text-anchor': 'end' }, e < 1 ? e : km(e)));
-    const days = n * BIN / 24, step = W < 480 ? 10 : 5;
-    for (let d = 0; d < days; d += step) svg.append(S('text', { class: 'pr-tick', x: x(d * 24 / BIN), y: H - B + 18, 'text-anchor': d ? 'middle' : 'start' }, `${d + 1} Jul`));
+    const every = W < 480 ? 8 : 4;
+    for (let hh = 0; hh <= 24; hh += every) { const k = D.t_h.findIndex(t => t >= hh); if (k < 0) continue; svg.append(S('text', { class: 'pr-tick', x: x(k), y: H - B + 18, 'text-anchor': hh ? 'middle' : 'start' }, hh ? `+${hh} h` : whenH(D.t0_h).replace(' UTC', ''))); }
     svg.append(S('line', { class: 'pr-limit', x1: L, x2: W - R, y1: y(BUD), y2: y(BUD) }));
     if (set !== 'dr') svg.append(line(dr.err_m, 'pr-l-base'));
     svg.append(line(s.b95_m, 'pr-l-bound'), line(s.err_m, 'pr-l-main'),
       S('line', { class: 'pr-cursor', x1: x(i + 0.5), x2: x(i + 0.5), y1: T, y2: H - B }),
       S('circle', { class: 'pr-dot', cx: x(i + 0.5), cy: y(s.err_m[i]), r: 4.5 }));
-    const share = e50Over(v, s, BUD);
-    setRead(out, `<b>${whenH(doc.t0_h + i * BIN)}</b>, vehicle ${vid} ${v.moving[i] === '1' ? 'driving' : 'parked'}, with ${E50_SAY[set] || set}: error ${E(s.err_m[i], `${name}, largest error in this half hour`)}, `
+    setRead(out, `<b>${whenH(D.t0_h + D.t_h[i])}</b>, vehicle ${D.vehicle} ${D.moving[i] ? 'driving' : 'parked'}, with ${say(set)}: error ${E(s.err_m[i], `${name}, error`)}, `
       + `its own 95 % bound ${E(s.b95_m[i], `${name}, its 95 % bound`)} (${s.b95_m[i] <= BUD ? 'inside' : 'over'} the ${fmt(BUD, 0)} m budget)`
-      + (set !== 'dr' ? `; dead reckoning alone ${E(dr.err_m[i], 'dead reckoning only, largest error in this half hour')}` : '') + '. '
-      + `Over the month the bound is above ${fmt(BUD, 0)} m in ${num({ value: share, unit: ' %', digits: 0, flag: 'Modelled', source: `computed in this figure from ${doc.source}: vehicle ${vid}, half hours in which it moved` })} of the half hours this vehicle moved.`
-      + (v.sets[set].same_as ? ` In 2028 LunaNet adds nothing here: the curve is the one for ${E50_SAY[v.sets[set].same_as]}.` : ''));
+      + (set !== 'dr' ? `; dead reckoning alone ${E(dr.err_m[i], 'dead reckoning, error')}` : '') + '. '
+      + (mo ? `Over the whole month and ${num({ value: 30, unit: ' seeds', digits: 0, flag: 'Modelled', source: `${SRC}: month_1x_30_seeds` })}, with ${say(set)} the error’s 95th percentile is ${num({ value: mo.p95_m, unit: ' m', digits: mo.p95_m < 10 ? 1 : 0, flag: 'Modelled', source: `${SRC}: month_1x_30_seeds.${set}.p95_m` })} (median ${num({ value: mo.median_m, unit: ' m', digits: 1, flag: 'Modelled', source: `${SRC}: month_1x_30_seeds.${set}.median_m` })}) and the bound is over ${fmt(BUD, 0)} m ${num({ value: 100 * mo.share_b95_over_budget, unit: ' %', digits: 0, flag: 'Modelled', source: `${SRC}: month_1x_30_seeds.${set}.share_b95_over_budget` })} of the time.` : ''));
   }
   cur.input.addEventListener('input', draw);
   onResize(svg, draw);
-  host.append(h('div', { class: 'pr-ctl' }, segV.el, segS.el, cur.el), svg,
+  host.append(h('div', { class: 'pr-ctl' }, segS.el, cur.el), svg,
     h('p', { class: 'pr-key small' }, h('span', { class: 'pr-ln pr-ln-main' }), ' error with the layers chosen  ', h('span', { class: 'pr-ln pr-ln-bound' }), ' the vehicle’s own 95 % bound  ',
       h('span', { class: 'pr-ln pr-ln-base' }), ' dead reckoning alone  ', h('span', { class: 'pr-ln pr-ln-limit' }), ` the ${fmt(BUD, 0)} m budget  `, h('span', { class: 'pr-sw pr-sw-drive' }), ' driving (log scale)'), out);
   draw();
@@ -221,12 +215,51 @@ async function figTime(host) {
 // chosen per-hop loss. data-focus="radio" (problem 4): grants, job-state reports, award delay, and the Earth ledger's
 // lifetimes; data-focus="fail" (problem 6): lost jobs, stuck reservations and how stale the base's picture gets.
 const PROTO = [['drop_retry', 'Drop and retry'], ['sf', 'Store and forward'], ['sf_ll', '+ lost-link rule']];
+// F-65: one seed's month, message by message, from B-99's e54_timeline.json (seed 1, loss 0.25, the 14-day Earth
+// blackout): each award, grant and job-state report as a tick at the hour it was sent; red if it expired on the way
+function e54Timeline(T) {
+  const M = T.messages, n = M.kind.length, days = Math.ceil(Math.max(...M.t_created_h) / 24);
+  const svg = svgBox(640, 150, 'One simulated month, message by message: each message a tick at the hour it was sent, red where it was lost, for each delivery rule');
+  const KIND = { award: 'job award', grant: 'reservation grant', task_state: 'job-state report' };
+  const rows = PROTO.filter(([k]) => Array.isArray(M.delivered_h[k]));
+  const lostBy = k => { const c = {}; M.delivered_h[k].forEach((d, i) => { if (d === null) c[M.kind[i]] = (c[M.kind[i]] || 0) + 1; }); return c; };
+  function draw() {
+    const W = widthOf(svg), L = W < 480 ? 100 : 128, R = 54, T0 = 8, RH = 34, H = T0 + rows.length * RH + 24;
+    fit(svg, W, H); svg.replaceChildren();
+    const x = t => L + (W - L - R) * t / (days * 24);
+    for (let d = 0; d <= days; d += 7) svg.append(S('line', { class: 'pr-grid-l', x1: x(d * 24), x2: x(d * 24), y1: T0, y2: T0 + rows.length * RH }), S('text', { class: 'pr-tick', x: x(d * 24), y: H - 6, 'text-anchor': d ? 'middle' : 'start' }, `day ${d}`));
+    rows.forEach(([k, l], j) => {
+      const y0 = T0 + j * RH + 6, del = M.delivered_h[k];
+      svg.append(S('text', { class: 'pr-tick pr-lab', x: L - 8, y: y0 + 15, 'text-anchor': 'end' }, l));
+      let ok = '', bad = '';
+      for (let i = 0; i < n; i++) { const xx = x(M.t_created_h[i]).toFixed(1); if (del[i] === null) bad += `M${xx},${y0}v22`; else ok += `M${xx},${y0 + 6}v10`; }
+      svg.append(S('path', { class: 'pr-tick-ok', d: ok }), S('path', { class: 'pr-tick-lost', d: bad }));
+      const lost = del.filter(d => d === null).length;
+      svg.append(S('text', { class: 'pr-tick pr-lab', x: W - R + 6, y: y0 + 15 }, `${lost} lost`));
+    });
+  }
+  onResize(svg, draw);
+  const say = rows.map(([k, l]) => { const c = lostBy(k), tot = Object.values(c).reduce((a, b) => a + b, 0); return `${l}: ${tot ? Object.entries(c).map(([kk, v]) => `${v} ${KIND[kk] || kk}${v === 1 ? '' : 's'}`).join(', ') : 'none'}`; }).join('; ');
+  const key = h('p', { class: 'pr-key small' }, h('span', { class: 'pr-sw pr-sw-ok' }), ' delivered  ', h('span', { class: 'pr-sw pr-sw-lost' }), ` lost. Lost: ${say}.`);
+  draw();
+  return [svg, key];
+}
+
 async function figDtn(host) {
   const r = await fetch(`${import.meta.env.BASE_URL}protocol/e54.json`);
   if (!r.ok) throw new Error(`protocol/e54.json: HTTP ${r.status}`);
   const E = await r.json();
   if (E.format !== 'lunarsim-e54-site' || E.version !== 1) throw new Error(`e54.json: format ${E.format}`);
-  const focus = host.dataset.focus === 'fail' ? 'fail' : 'radio', losses = [...new Set(E.rows.map(x => x.loss))].sort((a, b) => a - b);
+  const focus = host.dataset.focus === 'fail' ? 'fail' : 'radio';
+  let timeline = [];
+  if (focus === 'fail') {   // F-65: one seed's month from B-99, under the table
+    const rt = await fetch(`${import.meta.env.BASE_URL}protocol/b99/e54_timeline.json`);
+    if (!rt.ok) throw new Error(`protocol/b99/e54_timeline.json: HTTP ${rt.status}`);
+    const TL = await rt.json();
+    if (TL.format !== 'lunarsim-protocol-data' || !TL.messages) throw new Error(`e54_timeline.json: format ${TL.format}`);
+    timeline = [h('p', { class: 'ui-label pr-sub' }, 'One month, message by message'), ...e54Timeline(TL)];
+  }
+  const losses = [...new Set(E.rows.map(x => x.loss))].sort((a, b) => a - b);
   let loss = losses.includes(0.25) ? 0.25 : losses[0];
   const seg = segmented({ legend: 'Messages lost on each hop', options: losses.map(l => ({ value: String(l), label: `${fmt(100 * l, 0)} %` })), value: String(loss), onChange: v => { loss = +v; draw(); } });
   const pct = s => `${fmt(100 * s, s < 0.01 && s > 0 ? 2 : 1)} %`;
@@ -265,7 +298,7 @@ async function figDtn(host) {
         + 'The rule fixes visibility, not loss: a vehicle that hears no one drives back to where it last had a link, so the base never waits hours to hear from it and can release its reservations on time.');
     }
   }
-  host.append(h('div', { class: 'pr-ctl' }, seg.el), wrap, extra, read);
+  host.append(h('div', { class: 'pr-ctl' }, seg.el), wrap, extra, read, ...timeline);
   draw();
 }
 
@@ -384,6 +417,46 @@ async function figMsg(host) {
   pick(F.findIndex(f => f.name === 'e')); match('carry');
 }
 
+// ---------------------------------------------------------------- 5b. E53: how much radio the fleet needs
+// B-99's e53_bitrate.json: the busiest link's load (95th percentile over position draws) against the number of rovers,
+// at 0.1, 1 and 10 reports a second, for the fleet's own positions or rovers spread over the routes, with authentication on
+// or off; the channel lines are capacity times access efficiency (the file's eta: 0.8 when the base schedules the slots,
+// 1/e for random access), the rule E53 uses for "fits".
+async function figBitrate(host) {
+  const r = await fetch(`${import.meta.env.BASE_URL}protocol/b99/e53_bitrate.json`);
+  if (!r.ok) throw new Error(`protocol/b99/e53_bitrate.json: HTTP ${r.status}`);
+  const D = await r.json();
+  if (D.format !== 'lunarsim-protocol-data' || !Array.isArray(D.rows)) throw new Error(`e53_bitrate.json: format ${D.format}`);
+  const c = k => D.columns.indexOf(k), GE = c('geometry'), AU = c('auth'), HZ = c('position_hz'), N = c('rovers'), P95 = c('busiest_link_kbps_p95');
+  if ([GE, AU, HZ, N, P95].some(i => i < 0)) throw new Error('e53_bitrate.json: columns');
+  let geo = 'fleet', auth = 'on';
+  const NB = Object.entries(D.lines_kbps).find(([k]) => /narrow/.test(k))?.[1], BB = Object.entries(D.lines_kbps).find(([k]) => /broad/.test(k))?.[1];
+  const segG = segmented({ legend: 'Where the rovers are', options: [{ value: 'fleet', label: 'Where the fleet works' }, { value: 'spread', label: 'Spread over the routes' }], value: geo, onChange: v => { geo = v; draw(); } });
+  const segA = segmented({ legend: 'Authentication code', options: [{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }], value: auth, onChange: v => { auth = v; draw(); } });
+  const svg = svgBox(640, 280, 'Load on the busiest radio link against the number of rovers, for three reporting rates, with the narrow-band and broadband channel lines');
+  const Ns = [...new Set(D.rows.map(x => x[N]))].sort((a, b) => a - b), rates = [...new Set(D.rows.map(x => x[HZ]))].sort((a, b) => a - b);
+  const lines = [[NB * D.eta.slotted_aloha, 'narrow-band, random access'], [NB * D.eta.scheduled, 'narrow-band, base schedules the slots'], [BB * D.eta.scheduled, 'broadband, scheduled']];
+  function draw() {
+    const W = widthOf(svg), H = 280, L = 48, R = 14, T = 12, B = 34;
+    fit(svg, W, H); svg.replaceChildren();
+    const x = n => L + (W - L - R) * Math.log2(n / Ns[0]) / Math.log2(Ns[Ns.length - 1] / Ns[0]), LY = [0.5, 2000];
+    const y = v => T + (H - T - B) * (1 - (Math.log10(v) - Math.log10(LY[0])) / (Math.log10(LY[1]) - Math.log10(LY[0])));
+    for (const v of [1, 10, 100, 1000]) svg.append(S('line', { class: 'pr-grid-l', x1: L, x2: W - R, y1: y(v), y2: y(v) }), S('text', { class: 'pr-tick', x: L - 6, y: y(v) + 4, 'text-anchor': 'end' }, v >= 1000 ? '1 M' : `${v} k`));
+    for (const n of Ns) svg.append(S('text', { class: 'pr-tick', x: x(n), y: H - B + 16, 'text-anchor': n === Ns[0] ? 'start' : n === Ns[Ns.length - 1] ? 'end' : 'middle' }, `${n}`));
+    for (const [v, l] of lines) svg.append(S('line', { class: 'pr-limit', x1: L, x2: W - R, y1: y(v), y2: y(v) }), S('text', { class: 'pr-tick pr-lab', x: W - R - 4, y: y(v) - 4, 'text-anchor': 'end' }, `${l} (${fmt(v, 1)} kbit/s)`));
+    rates.forEach((hz, i) => {
+      const pts = Ns.map(n => D.rows.find(q => q[GE] === geo && q[AU] === auth && q[HZ] === hz && q[N] === n)).filter(Boolean);
+      const cls = `pr-c${i + 1}`;
+      svg.append(S('path', { class: `pr-curve ${cls}`, d: pts.map((q, k) => `${k ? 'L' : 'M'}${x(q[N]).toFixed(1)},${y(q[P95]).toFixed(1)}`).join('') }));
+      for (const q of pts) svg.append(S('circle', { class: cls, cx: x(q[N]), cy: y(q[P95]), r: 3.5 }, S('title', {}, `${q[N]} rovers, ${fmt(hz, hz < 1 ? 1 : 0)} reports a second: ${fmt(q[P95], 1)} kbit/s on the busiest link`)));
+    });
+  }
+  onResize(svg, draw);
+  host.append(h('div', { class: 'pr-ctl' }, segG.el, segA.el), svg,
+    h('p', { class: 'pr-key small' }, ...rates.flatMap((hz, i) => [h('span', { class: `pr-sw pr-c${i + 1}` }), ` ${fmt(hz, hz < 1 ? 1 : 0)} a second  `]), h('span', { class: 'pr-ln pr-ln-limit' }), ' usable capacity (capacity × access efficiency).'));
+  draw();
+}
+
 // ---------------------------------------------------------------- 6. a rover fails: the job changes hands
 function figAuction(host) {
   let W = 640; const H = 230, L = 70, R = 14, T0 = 0, T1 = 180;
@@ -453,11 +526,47 @@ function figIntegrity(host) {
 // chosen fleet size; forgeries and replays in the readout.
 const E55_DET = [['3of5@0.001', 'The protocol’s rule: 3 of the last 5 reports over γ 10.83'], ['single@0.001', 'The same threshold, one report at a time'],
   ['3of5@0.01', '3 of 5, looser (γ 6.63)'], ['3of5@0.0001', '3 of 5, stricter (γ 15.14)'], ['e56_chi2_step', 'Chi-square calibrated on validation data (E56)'], ['e56_net', 'The learned network (E56)']];
+// F-65: the trade-off of B-99's e55_detectors.json: faults found against false alarms per pair-day as the threshold γ
+// sweeps, for the 3-of-5 rule and the single test; E56's detectors at their 1-per-pair-day points. Zero false alarms sit on
+// the left edge (a log axis has no zero).
+function e55Curve(C) {
+  const svg = svgBox(640, 280, 'Faults found against false alarms per pair-day as the threshold sweeps, for the protocol’s 3-of-5 rule and the single test, with three other detectors as points');
+  const read = h('p', { class: 'pr-key small' });
+  const col = C.curve_columns, ix = k => col.indexOf(k), G = ix('gamma'), FA = ix('false_alarms_per_pair_day'), RC = ix('event_recall_all');
+  if (G < 0 || FA < 0 || RC < 0) throw new Error('e55_detectors.json: curve columns');
+  const LO = 0.01, HI = 2000;
+  function draw() {
+    const W = widthOf(svg), H = 280, L = 44, R = 14, T = 12, B = 34;
+    fit(svg, W, H); svg.replaceChildren();
+    const x = f => L + (W - L - R) * (Math.log10(Math.max(f, LO)) - Math.log10(LO)) / (Math.log10(HI) - Math.log10(LO));
+    const y = rc => T + (H - T - B) * (1 - (rc - 0.5) / 0.5);
+    for (const f of [LO, 0.1, 1, 10, 100, 1000]) svg.append(S('line', { class: 'pr-grid-l', x1: x(f), x2: x(f), y1: T, y2: H - B }), S('text', { class: 'pr-tick', x: x(f), y: H - B + 16, 'text-anchor': f === LO ? 'start' : 'middle' }, f === LO ? '0' : fmt(f, f < 1 ? 1 : 0)));
+    for (const rc of [0.5, 0.6, 0.7, 0.8, 0.9, 1]) svg.append(S('line', { class: 'pr-grid-l', x1: L, x2: W - R, y1: y(rc), y2: y(rc) }), S('text', { class: 'pr-tick', x: L - 6, y: y(rc) + 4, 'text-anchor': 'end' }, fmt(rc, 1)));
+    svg.append(S('line', { class: 'pr-limit', x1: x(1), x2: x(1), y1: T, y2: H - B }), S('text', { class: 'pr-tick', x: x(1) + 4, y: T + 10 }, '1 a day'));
+    [['3of5', 'pr-c1'], ['single', 'pr-c2']].forEach(([k, cls]) => {
+      const pts = (C.curves[k] || []).map(r => [x(r[FA]), y(r[RC]), r]);
+      svg.append(S('path', { class: `pr-curve ${cls}`, d: pts.map(([a, b], i) => `${i ? 'L' : 'M'}${a.toFixed(1)},${b.toFixed(1)}`).join('') }));
+      for (const [a, b, r] of pts) svg.append(S('circle', { class: cls, cx: a, cy: b, r: 3.5 }, S('title', {}, `${k === '3of5' ? '3 of 5' : 'single test'}, γ ${fmt(r[G], 2)}: ${fmt(r[FA], r[FA] < 1 ? 2 : 0)} false alarms per pair-day, ${fmt(r[RC], 2)} of faults found`)));
+      const p = (C.curves[k] || []).find(r => Math.abs(r[G] - 10.83) < 0.01);
+      if (k === '3of5' && p) svg.append(S('circle', { class: 'pr-ring', cx: x(p[FA]), cy: y(p[RC]), r: 8 }), S('text', { class: 'pr-tick pr-lab', x: x(p[FA]) + 11, y: y(p[RC]) + 14 }, 'the protocol, γ 10.83'));
+    });
+    const NAME = { chi2_step: 'chi-square', cusum: 'CUSUM', net: 'network' };
+    for (const [k, p] of Object.entries(C.e56_at_1_per_pair_day || {})) svg.append(S('circle', { class: 'pr-e56', cx: x(p.fa_per_pair_day), cy: y(p.recall), r: 4.5 }),
+      S('text', { class: 'pr-tick pr-lab', x: x(p.fa_per_pair_day) + 8, y: y(p.recall) - 6 }, NAME[k] || k));
+  }
+  onResize(svg, draw);
+  read.append(h('span', { class: 'pr-sw pr-c1' }), ' 3 of the last 5 reports over γ  ', h('span', { class: 'pr-sw pr-c2' }), ' one report at a time  ', h('span', { class: 'pr-sw pr-sw-e56' }), ' E56’s detectors at one false alarm a day.');
+  draw();
+  return [svg, read];
+}
+
 async function figE55(host) {
-  const r = await fetch(`${import.meta.env.BASE_URL}protocol/e55.json`);
+  const [r, rcv] = await Promise.all([fetch(`${import.meta.env.BASE_URL}protocol/e55.json`), fetch(`${import.meta.env.BASE_URL}protocol/b99/e55_detectors.json`)]);
   if (!r.ok) throw new Error(`protocol/e55.json: HTTP ${r.status}`);
-  const E = await r.json();
+  if (!rcv.ok) throw new Error(`protocol/b99/e55_detectors.json: HTTP ${rcv.status}`);
+  const E = await r.json(), C = await rcv.json();
   if (E.format !== 'lunarsim-e55-site' || E.version !== 1) throw new Error(`e55.json: format ${E.format}`);
+  if (C.format !== 'lunarsim-protocol-data' || !C.curves) throw new Error(`e55_detectors.json: format ${C.format}`);
   let set = 'test', N = 12;
   const Ns = [...new Set(E.consensus.map(c => c.N))].sort((a, b) => a - b);
   if (!Ns.includes(N)) N = Ns[0];
@@ -489,7 +598,8 @@ async function figE55(host) {
       + `${F16 ? `, ${X(F16.accepted, 0, 'auth.forgery 16 bits, accepted')} of ${fmt(F16.attempts, 0)} with 16 bits (chance: ${fmt(F16.attempts * F16.bound, 1)})` : ''}; the protocol uses 64 bits. `
       + `Replayed messages accepted: ${rp.map(([l, v]) => `${X(v.replays_accepted, 0, `auth.replay at loss ${l}`)} of ${fmt(v.replays, 0)} at ${fmt(100 * l, 0)} % loss`).join(' and ')}.`);
   }
-  host.append(h('p', { class: 'ui-label pr-sub' }, 'Spotting a wrong position report'), h('div', { class: 'pr-ctl' }, segS.el), det,
+  host.append(h('p', { class: 'ui-label pr-sub' }, 'Faults found against false alarms, as the threshold moves'), ...e55Curve(C),
+    h('p', { class: 'ui-label pr-sub' }, 'Spotting a wrong position report'), h('div', { class: 'pr-ctl' }, segS.el), det,
     h('p', { class: 'ui-label pr-sub' }, 'Agreeing on a shared value by averaging among rovers'), h('div', { class: 'pr-ctl' }, segN.el), con, read);
   draw();
 }
@@ -529,7 +639,7 @@ function figWho(host) {
   draw('all');
 }
 
-const FIGS = { pos: figPos, map: figMap, time: figTime, radio: figRadio, msg: figMsg, auction: figAuction, integrity: figIntegrity, who: figWho, dtn: figDtn, e55: figE55 };
+const FIGS = { pos: figPos, map: figMap, time: figTime, radio: figRadio, msg: figMsg, auction: figAuction, integrity: figIntegrity, who: figWho, dtn: figDtn, e55: figE55, bitrate: figBitrate };
 // draws one figure into its host (main.js calls this as each host nears the screen)
 export function mountFigure(host) {
   const fail = e => { host.append(h('p', { class: 'stub' }, `This figure could not be drawn (${e.message}).`)); console.error(e); };

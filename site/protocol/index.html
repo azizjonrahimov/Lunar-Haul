@@ -69,10 +69,10 @@
       </div>
       <figure class="pr-fig" id="fig-pos" aria-labelledby="fig-pos-cap">
         <div class="pr-host" data-fig="pos"></div>
-        <figcaption id="fig-pos-cap">One simulated month (July 2028, today's fleet, one seed) for the two vehicles that
-          drove most: the position error and the vehicle's own 95 % bound, the largest in each half hour, with each set
-          of layers. Shaded: the half hours the vehicle moved. From experiment E50 (results/E50_trace.json); the
-          averages over 30 seeds are in the paper.</figcaption>
+        <figcaption id="fig-pos-cap">The busiest day of the vehicle that drove most in one simulated month (July 2028,
+          today's fleet, one seed), every 2 minutes: the position error and the vehicle's own 95 % bound with each set of
+          layers. Shaded: the time it was driving. The readout adds the whole month over 30 seeds. From experiment E50
+          (data/atc/protocol/e50_layers.json).</figcaption>
       </figure>
     </div>
     <aside class="pr-real" aria-labelledby="pr1-real-h">
@@ -219,10 +219,10 @@
           Protocol, so a job can be matched to any maker's vehicle.</p>
         <h3>Method</h3>
         <p>Experiment E53 (hypothesis H13) loads the channel with the full message set, authentication on, at once and
-          ten times a second for twenty rovers. Measured: twenty rovers reporting once a second send
-          <!--@e53:fleet:on:1.0:20:one_hop_sum_kbps--> in all, which <!--@e53:fleet:on:1.0:20:fits_nb_scheduled_p95--> the
+          ten times a second for twenty rovers. Measured: twenty rovers reporting once a second put
+          <!--@e53:fleet:on:1.0:20:busiest_link_kbps_p95--> on the busiest link, which <!--@e53:fleet:on:1.0:20:fits_nb_scheduled_p95--> the
           narrow-band channel when the base schedules the slots and <!--@e53:fleet:on:1.0:20:fits_nb_slotted_aloha_p95-->
-          it with random access; ten times a second they send <!--@e53:fleet:on:10.0:20:one_hop_sum_kbps-->, which
+          it with random access; ten times a second, <!--@e53:fleet:on:10.0:20:busiest_link_kbps_p95-->, which
           <!--@e53:fleet:on:10.0:20:fits_nb_scheduled_p95--> the narrow-band channel with scheduled slots and
           <!--@e53:fleet:on:10.0:20:fits_bb_scheduled_p95--> the broadband one. With the fleet spread across the
           site, <!--@e53:spread:on:1.0:20:reachable_share--> of rovers reach the base, in
@@ -237,6 +237,12 @@
         <figcaption id="fig-msg-cap">One POSITION report taken apart, byte by byte: LRIP v0.1's conformance vector
           (data/atc/lrip/conformance-v0.1.json), decoded by the message schema (lunarsim/schemas/lrip-v0.1.json), its
           authentication code real. Then a job matched against two vehicles' capability manifests (note 03, section C).</figcaption>
+      </figure>
+      <figure class="pr-fig pr-fig-wide" id="fig-bitrate" aria-labelledby="fig-bitrate-cap">
+        <div class="pr-host" data-fig="bitrate"></div>
+        <figcaption id="fig-bitrate-cap">Measured in experiment E53: the load on the busiest radio link as the fleet grows, for
+          three reporting rates, against what the narrow-band and broadband channels can carry. Rovers across, kbit/s up,
+          both on log scales; the numbers for twenty rovers are in the text (data/atc/protocol/e53_bitrate.json).</figcaption>
       </figure>
     </div>
   </section>
@@ -271,7 +277,10 @@
       <figure class="pr-fig pr-fig-wide" id="fig-dtn-fail" aria-labelledby="fig-dtn-fail-cap">
         <div class="pr-host" data-fig="dtn" data-focus="fail"></div>
         <figcaption id="fig-dtn-fail-cap">Measured in experiment E54: jobs lost, reservations left blocked and how stale
-          the base's picture of each vehicle gets, with and without the lost-link rule (results/E54_dtn.json).</figcaption>
+          the base's picture of each vehicle gets, with and without the lost-link rule (results/E54_dtn.json). Below, one
+          month message by message: seed 1 at 25 % loss per hop with Earth blacked out on days 8 to 22, each award, grant
+          and job-state report a tick at the hour it was sent, red where it expired on the way
+          (data/atc/protocol/e54_timeline.json).</figcaption>
       </figure>
     </div>
   </section>
@@ -314,9 +323,11 @@
       </figure>
       <figure class="pr-fig pr-fig-wide" id="fig-e55" aria-labelledby="fig-e55-cap">
         <div class="pr-host" data-fig="e55"></div>
-        <figcaption id="fig-e55-cap">Measured in experiment E55 (results/E55_integrity.json): the protocol's rule as
-          written against the same threshold without persistence and E56's detectors, and the trimmed-mean consensus on
-          our terrain with and without the base mast.</figcaption>
+        <figcaption id="fig-e55-cap">Measured in experiment E55: first, faults found (up) against false alarms per pair-day
+          (log, across) as the threshold γ sweeps from 4 to 50 on the test streams, with E56's detectors tuned to one false
+          alarm a day (data/atc/protocol/e55_detectors.json); then the protocol's rule as written against the same
+          threshold without persistence and E56's detectors, and the trimmed-mean consensus on our terrain with and without
+          the base mast (results/E55_integrity.json).</figcaption>
       </figure>
     </div>
   </section>

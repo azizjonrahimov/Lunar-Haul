@@ -808,5 +808,5 @@ family with Holm: which hypotheses held, which did not, which are threshold comp
 /results/ under the Lunar ATC section, with the failed ones as visible as the supported ones. Node tests; browser
 check when free RAM is at least 1.0 GB.
 
-## F-65 [QUEUED, after the papers are rebuilt] Paper pages and results
+## F-65 [DONE 11 Nov, uncommitted] Paper pages and results
 /paper/ shows the revised P1-P3 with the proved / tested / assumed tables; /results/ gains the Phase 6 numbers.

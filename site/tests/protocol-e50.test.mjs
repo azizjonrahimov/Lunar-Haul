@@ -1,45 +1,46 @@
-// F-56: /protocol/ figure 1 reads E50's one-month trace. The build's reduction (lib/protocol-data.mjs) keeps every
-// bin of every layer set, marks a set identical to an earlier one, and the figure's helpers (src/protocol/e50.js)
-// find the driving stretches and the share of them over the budget.
+// F-65: /protocol/ and /network/ read B-99's figure files (data/atc/protocol/), staged only when every file matches its
+// index (bytes and sha256). Figure 1 reads e50_layers.json; its helpers (src/protocol/e50.js) find the driving stretches.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
-import { compactE50, E50_SETS } from '../lib/protocol-data.mjs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { checkB99 } from '../lib/protocol-data.mjs';
 import { e50Runs, e50Middle, e50Over, e50Series } from '../src/protocol/e50.js';
 
-const SRC = new URL('../../results/E50_trace.json', import.meta.url);
+const DIR = new URL('../../data/atc/protocol/', import.meta.url);
+const have = existsSync(new URL('index.json', DIR));
 
-test('E50 trace: reduced for the figure without losing a bin', { skip: !existsSync(SRC) && 'results/E50_trace.json missing' }, () => {
-  const raw = JSON.parse(readFileSync(SRC, 'utf8')), out = compactE50(raw);
-  assert.equal(out.format, 'lunarsim-e50-trace-site');
-  assert.equal(out.budget_m, raw.budget_m);
-  assert.deepEqual(Object.keys(out.vehicles).sort(), Object.keys(raw.vehicles).sort());
-  for (const [id, v] of Object.entries(out.vehicles)) {
-    const r = raw.vehicles[id];
-    assert.equal(v.moving.length, r.xy_m.length);
-    for (const k of E50_SETS) {
-      const s = e50Series(v, k);
-      assert.deepEqual(s.err_m, r.sets[k].err_m, `${id} ${k}: err_m`);
-      assert.deepEqual(s.b95_m, r.sets[k].b95_m, `${id} ${k}: b95_m`);
-    }
-    // the layers help: with every layer the error while driving is far below dead reckoning's
-    const med = a => a.slice().sort((x, y) => x - y)[a.length >> 1];
-    const drv = k => e50Series(v, k).err_m.filter((_, i) => v.moving[i] === '1');
-    assert.ok(med(drv('dr+ranging+fixes')) < med(drv('dr')) / 10, `${id}: layers do not cut the error`);
-  }
+test('B-99 files: every one matches the index; a changed byte or a missing file stops the build', { skip: !have && 'B-99 missing' }, () => {
+  const { files, index } = checkB99();
+  assert.deepEqual(Object.keys(files).sort(), Object.keys(index.files).sort());
+  const tmp = mkdtempSync(join(tmpdir(), 'b99-'));
+  try {
+    for (const f of readdirSync(DIR)) writeFileSync(join(tmp, f), readFileSync(new URL(f, DIR)));
+    const name = Object.keys(index.files)[0], p = join(tmp, name), buf = readFileSync(p);
+    buf[buf.length - 2] = buf[buf.length - 2] === 0x20 ? 0x0a : 0x20;   // same size, other bytes
+    writeFileSync(p, buf);
+    assert.throws(() => checkB99(tmp), /sha256/);
+    writeFileSync(p, Buffer.concat([buf, Buffer.from(' ')]));
+    assert.throws(() => checkB99(tmp), /bytes/);
+    rmSync(p);
+    assert.throws(() => checkB99(tmp), /missing/);
+  } finally { rmSync(tmp, { recursive: true, force: true }); }
+});
+
+test('e50_layers for figure 1: one series per step, the month over 30 seeds, the layers help', { skip: !have && 'B-99 missing' }, () => {
+  const D = checkB99().files['e50_layers.json'].doc, n = D.t_h.length;
+  assert.equal(D.moving.length, n);
+  for (const [k, s] of Object.entries(D.sets)) { assert.equal(s.err_m.length, n, k); assert.equal(s.b95_m.length, n, k); assert.ok(D.month_1x_30_seeds[k], k); }
+  const M = D.month_1x_30_seeds;
+  assert.ok(M['dr+ranging+fixes'].p95_m < M['dr+ranging'].p95_m && M['dr+ranging'].p95_m < M.dr.p95_m);
+  assert.ok(D.budget_m > 0);
 });
 
 test('E50 helpers: driving runs, the first moment, the share over budget', () => {
   const v = { bins: 8, moving: '01100111', sets: { a: { err_m: [], b95_m: [9, 9, 1, 9, 9, 1, 9, 9] }, b: { same_as: 'a' } } };
   assert.deepEqual(e50Runs(v), [[1, 3], [5, 8]]);
   assert.equal(e50Middle(v), 6);
-  assert.equal(e50Over(v, v.sets.a, 5), 60);   // moving bins 1, 2, 5, 6, 7: bounds 9, 1, 1, 9, 9
+  assert.equal(e50Over(v, v.sets.a, 5), 60);
   assert.equal(e50Series(v, 'b'), v.sets.a);
-});
-
-test('E50 reduction refuses a different format or a short series', () => {
-  assert.throws(() => compactE50({ format: 'x', version: 1, vehicles: {} }), /format/);
-  const sets = Object.fromEntries(E50_SETS.map(k => [k, { err_m: [1, 2], b95_m: [1, 2] }]));
-  sets.dr = { err_m: [1], b95_m: [1, 2] };
-  assert.throws(() => compactE50({ format: 'lunarsim-e50-trace', version: 1, vehicles: { 1: { drive_h: 1, xy_m: [[0, 0], [1, 1]], sets } } }), /bins/);
 });

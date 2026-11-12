@@ -3,11 +3,26 @@
 // typed. stage(PUB) copies what the page fetches into public/network/ (prepare-data.mjs).
 import { readFileSync, existsSync, mkdirSync, copyFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { createHash } from 'node:crypto';
+import { checkB99 } from './protocol-data.mjs';
 import { num } from '../src/components/num.js';
 import { csv, ROOT } from './pages.mjs';
 
 const CSV = join(ROOT, 'results', 'table_E56.csv'), JSONF = join(ROOT, 'results', 'E56_integrity.json');
 const LAND = join(ROOT, 'data', 'atc', 'integrity', 'landscape.json');
+// F-65: the landscape comes from B-99's copy (data/atc/protocol/b96_landscape.json, checked against its index), which
+// must carry the current landscape.json (its source_sha256), so the page and the figure read the same bytes
+export const LAND_B99 = 'data/atc/protocol/b96_landscape.json';
+function landscapeB99() {
+  if (!existsSync(join(ROOT, LAND_B99))) return null;
+  const doc = checkB99().files['b96_landscape.json']?.doc;
+  if (!doc?.landscape) throw new Error(`${LAND_B99}: no landscape`);
+  if (existsSync(LAND)) {
+    const sha = createHash('sha256').update(readFileSync(LAND)).digest('hex');
+    if (sha !== doc.source_sha256) throw new Error(`${LAND_B99} was made from another landscape.json (source_sha256 ${String(doc.source_sha256).slice(0, 12)}…, the file is ${sha.slice(0, 12)}…): rerun tools/atc/export_protocol.py`);
+  }
+  return doc.landscape;
+}
 const POL = join(ROOT, 'data', 'policies', 'integrity_net_v1.json'), CHK = join(ROOT, 'data', 'policies', 'integrity_net_v1.check.json');
 export const DETECTORS = [['net', 'Network'], ['chi2_step', 'Chi-square per step'], ['chi2_window', 'Chi-square windowed'], ['cusum', 'CUSUM'], ['logreg', 'Logistic regression']];
 export const FAULTS = ['jump', 'drift', 'frozen', 'frame', 'noise', 'all'];
@@ -18,7 +33,7 @@ function load() {
   if (!existsSync(CSV) || !existsSync(JSONF)) return (cache = { ok: false });
   const rows = csv(readFileSync(CSV, 'utf8'));
   const E = JSON.parse(readFileSync(JSONF, 'utf8').replace(/\bNaN\b/g, 'null'));
-  const L = existsSync(LAND) ? JSON.parse(readFileSync(LAND, 'utf8')) : null;
+  const L = landscapeB99();
   const r = (set, det, fault, rate = '1/pair-day', cls = 'all') => rows.find(x => x.set === set && x.detector === det && x.fault === fault && x.rate === rate && x.range_class === cls);
   return (cache = { ok: true, rows, E, L, r });
 }
@@ -52,12 +67,12 @@ export function nw(key) {
     drift_diff: () => { const h = E.test?.h15_net_against?.chi2_step?.drift?.delay_median_diff_s; return h ? M(h.value, ' s', 1, 'results/E56_integrity.json: test.h15_net_against.chi2_step.drift.delay_median_diff_s') : '–'; },
     params: () => M(E.model?.n_params ?? L?.model?.n_params, '', 0, 'results/E56_integrity.json: model.n_params'),
     numpy_ms: () => M(E.timing?.numpy_reference_ms?.median, ' ms', 2, 'results/E56_integrity.json: timing.numpy_reference_ms.median (laptop CPU, one window)'),
-    ev1: () => M(L.pca.explained_variance[0] * 100, ' %', 1, 'data/atc/integrity/landscape.json: pca.explained_variance[0]'),
-    ev2: () => M(L.pca.explained_variance[1] * 100, ' %', 1, 'data/atc/integrity/landscape.json: pca.explained_variance[1]'),
-    gap_med: () => M(L.pca.self_check.projection_gap_abs.median, '', 3, 'data/atc/integrity/landscape.json: pca.self_check.projection_gap_abs.median'),
-    gap_max: () => M(L.pca.self_check.projection_gap_abs.max, '', 3, 'data/atc/integrity/landscape.json: pca.self_check.projection_gap_abs.max'),
-    lr: () => M(L.optimiser.lr, '', 3, 'data/atc/integrity/landscape.json: optimiser.lr'),
-    epochs: () => M(L.optimiser.epochs, '', 0, 'data/atc/integrity/landscape.json: optimiser.epochs'),
+    ev1: () => M(L.pca.explained_variance[0] * 100, ' %', 1, 'data/atc/protocol/b96_landscape.json: landscape.pca.explained_variance[0]'),
+    ev2: () => M(L.pca.explained_variance[1] * 100, ' %', 1, 'data/atc/protocol/b96_landscape.json: landscape.pca.explained_variance[1]'),
+    gap_med: () => M(L.pca.self_check.projection_gap_abs.median, '', 3, 'data/atc/protocol/b96_landscape.json: landscape.pca.self_check.projection_gap_abs.median'),
+    gap_max: () => M(L.pca.self_check.projection_gap_abs.max, '', 3, 'data/atc/protocol/b96_landscape.json: landscape.pca.self_check.projection_gap_abs.max'),
+    lr: () => M(L.optimiser.lr, '', 3, 'data/atc/protocol/b96_landscape.json: landscape.optimiser.lr'),
+    epochs: () => M(L.optimiser.epochs, '', 0, 'data/atc/protocol/b96_landscape.json: landscape.optimiser.epochs'),
   };
   if (!K[key]) throw new Error(`network: no number ${key}`);
   return K[key]();
@@ -78,8 +93,7 @@ function e56Compact() {
 export function stage(PUB) {
   if (!load().ok) { console.log('prepare-data: E56 results missing, /network/ shows placeholders'); return; }
   const dir = join(PUB, 'network'); mkdirSync(dir, { recursive: true });
-  copyFileSync(LAND, join(dir, 'landscape.json'));
   copyFileSync(POL, join(dir, 'integrity_net_v1.json')); copyFileSync(CHK, join(dir, 'integrity_net_v1.check.json'));
   writeFileSync(join(dir, 'e56.json'), JSON.stringify(e56Compact()));
-  console.log('prepare-data: /network/ staged (landscape, policy and check, E56 summary)');
+  console.log('prepare-data: /network/ staged (policy and check, E56 summary; the landscape is B-99’s, in protocol/b99/)');
 }

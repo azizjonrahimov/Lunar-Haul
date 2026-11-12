@@ -7,7 +7,7 @@ import { upgradeFlags } from '../ui/tooltip.js';
 const BASE = import.meta.env.BASE_URL;
 const json = f => fetch(`${BASE}network/${f}`).then(r => { if (!r.ok) throw new Error(`${f}: ${r.status}`); return r.json(); });
 const loaders = {
-  'nw-landscape': host => Promise.all([json('landscape.json'), import('./landscape.js')]).then(([L, m]) => m.mountLandscape(host, L)),
+  'nw-landscape': host => Promise.all([fetch(`${BASE}protocol/b99/b96_landscape.json`).then(r => { if (!r.ok) throw new Error(`b96_landscape.json: ${r.status}`); return r.json(); }), import('./landscape.js')]).then(([D, m]) => { if (D.format !== 'lunarsim-protocol-data' || !D.landscape) throw new Error('b96_landscape.json: no landscape'); return m.mountLandscape(host, D.landscape); }),   // F-65: B-99's copy
   'nw-inside': host => Promise.all([json('integrity_net_v1.json'), json('integrity_net_v1.check.json'), import('./inside.js')]).then(([p, c, m]) => m.mountInside(host, p, c)),
   'nw-bars': host => Promise.all([json('e56.json'), import('./bars.js')]).then(([E, m]) => m.mountBars(host, E)),
 };
