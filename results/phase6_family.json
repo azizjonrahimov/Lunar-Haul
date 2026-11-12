@@ -1,0 +1,118 @@
+{
+ "family": "PREREG6 section 4: {H9, H10, H13, H14, H15a} confirmatory, Holm at alpha 0.05 over the hypotheses with a sampling test (H10, H14, H15a)",
+ "alpha": 0.05,
+ "hypotheses": {
+  "H9": {
+   "test": "threshold comparison (no sampling test): p95 position error against the 5 m budget, per layer, E50 1x, 30 seeds",
+   "budget_m": 5.0,
+   "clauses": {
+    "dead reckoning exceeds the budget within one 8-h shift": {
+     "statistic": "p95 in the first driving hour, mean over seeds",
+     "value_m": 85.22339922587076,
+     "seeds_on_predicted_side": 1.0,
+     "supported": true
+    },
+    "ranging stays inside the budget near the base": {
+     "statistic": "p95 near the base, mean over seeds",
+     "value_m": 4.215645329554874,
+     "seeds_on_predicted_side": 1.0,
+     "supported": true
+    },
+    "absolute fixes keep it inside away from the base": {
+     "statistic": "p95 away from the base, mean over seeds",
+     "value_m": 15.234429089228302,
+     "seeds_on_predicted_side": 0.0,
+     "supported": false
+    }
+   },
+   "decision": "supported in two clauses (dead reckoning, ranging near the base); NOT supported in the third (absolute fixes away from the base: every seed above the budget)"
+  },
+  "H10": {
+   "test": "primary clause: paired TOST at 1x (margin 50 % of the perfect-position delay), t distribution, 30 seeds; the clauses joined by intersection-union (p = the largest clause p)",
+   "clauses": {
+    "layered within 1.5x of perfect at 1x (TOST)": {
+     "mean_diff_h": 0.006561927181440079,
+     "se_h": 0.004694085603096999,
+     "margin_h": 8.865594233681295,
+     "p": 1.1788705464104612e-75
+    },
+    "the gap grows at 4x (8x pending)": {
+     "gap_1x_h": 0.006561927181440079,
+     "gap_4x_h": -0.8676662943806861,
+     "n_4x": 10,
+     "p_one_sided": 0.9324376632595714,
+     "note": "Welch one-sided, gap 4x > gap 1x; 8x not yet run"
+    },
+    "dead reckoning with the margin larger at 1x": {
+     "mean_diff_h": 0.11711714233689818,
+     "t": 1.1602047681571703,
+     "p_one_sided": 0.12771407296733817
+    }
+   },
+   "p_primary": 1.1788705464104612e-75,
+   "p_intersection_union": 0.9324376632595714,
+   "holm": {
+    "p_adjusted": 0.9324376632595714,
+    "rejected_at_0.05": false,
+    "p_adjusted_if_H10_primary_clause_only": 3.5366116392313837e-75
+   }
+  },
+  "H13": {
+   "test": "threshold comparison (no sampling test): busiest-link load with authentication, 20 rovers, against 16 kbit/s (E53, 30 position draws)",
+   "clauses": {
+    "1 Hz": {
+     "busiest_kbps_mean": 7.4771038068148155,
+     "busiest_kbps_p95": 7.856836977777779,
+     "draws_on_predicted_side": 1.0
+    },
+    "10 Hz": {
+     "busiest_kbps_mean": 63.66350380681482,
+     "busiest_kbps_p95": 66.89683697777777,
+     "draws_on_predicted_side": 1.0
+    }
+   },
+   "decision": "supported: every draw <= 16 kbit/s at 1 Hz and > 16 kbit/s at 10 Hz"
+  },
+  "H14": {
+   "test": "exact sign test on per-seed lost jobs (expired awards), sf_ll minus drop_retry, loss 0.25, 14-day blackout, 30 seeds; plus 'no reservation stuck under sf_ll' (a property of the rule)",
+   "mean_diff_jobs": -0.3333333333333333,
+   "seeds_fewer": 9,
+   "seeds_more": 0,
+   "seeds_tied": 21,
+   "p": 0.001953125,
+   "stuck_reservations_sf_ll": 0,
+   "holm": {
+    "p_adjusted": 0.00390625,
+    "rejected_at_0.05": true,
+    "p_adjusted_if_H10_primary_clause_only": 0.001998001998001998
+   }
+  },
+  "H15a": {
+   "test": "network minus per-step chi-square, median detection delay on slow drifts at 1 false alarm per pair-day (E56, B-96): bootstrap over events, 1,000 resamples",
+   "delay_median_diff_s": -24.099999999999994,
+   "ci95": [
+    -35.105,
+    -14.900000000000006
+   ],
+   "ci90": [
+    -32.8,
+    -15.995000000000005
+   ],
+   "p": 0.000999000999000999,
+   "p_note": "bootstrap: no resample reached 0, so p <= 1 / (B + 1) (an upper bound)",
+   "holm": {
+    "p_adjusted": 0.002997002997002997,
+    "rejected_at_0.05": true,
+    "p_adjusted_if_H10_primary_clause_only": 0.001998001998001998
+   }
+  }
+ },
+ "summary": {
+  "H9": "supported in two clauses (dead reckoning, ranging near the base); NOT supported in the third (absolute fixes away from the base: every seed above the budget)",
+  "H13": "supported: every draw <= 16 kbit/s at 1 Hz and > 16 kbit/s at 10 Hz",
+  "H10": "not supported as a whole: the primary clause holds (TOST), the 'gap grows' and 'dead reckoning larger' clauses do not (intersection-union)",
+  "H14": "supported (Holm)",
+  "H15a": "supported (Holm)"
+ },
+ "pending": "E50 at 8x (5 seeds) is still running; H10's 'gap grows at 8x' clause will be added"
+}

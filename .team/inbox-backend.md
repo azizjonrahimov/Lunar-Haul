@@ -1276,7 +1276,7 @@ with a manifest (URL, bytes, sha256). If the images lack usable metadata, say so
 2. Leave telemanom's published LSTM figures out: nobody opened the paper this session, and our numbers are not a
    reproduction of it.
 
-## B-98a [OPEN, with B-98] Two checks the revised P1 asked for (11 Nov)
+## B-98a [DONE 19:43] Two checks the revised P1 asked for (11 Nov)
 1. E54's blocked reservations: without the lost-link rule the file counts 2,566 of about 2,628 single-lane
    reservations (98 %) as blocked past their timeout, 7,349 h in all. That looks high. Check the definition and
    the count on one seed by hand (how many holders really had no path to the base at timeout + 60 s and stayed
@@ -1286,12 +1286,12 @@ with a manifest (URL, bytes, sha256). If the images lack usable metadata, say so
    interval where the test has one, and the Holm-adjusted decision over those that do; H9 and H13 are threshold
    comparisons without a sampling test: list them as such, with the per-seed share on the predicted side.
 
-## B-98 [IN PROGRESS] Verification rows for Phase 6 (`lunarsim/vv6.py`, `results/vv_phase6.json`)
+## B-98 [DONE 19:43] Verification rows for Phase 6 (`lunarsim/vv6.py`, `results/vv_phase6.json`)
 One row per formula in the notes' proof sections (link budget worked example, radio horizon, clock rate
 offset, c x dt, MAC forgery bound, chi-square threshold, dead-reckoning growth, coordinate round trip, codec
 round trips, sync byte count) and per degenerate case (all layers off equals Phase 5 bytes; perfect clocks
 equal no clock model; zero faults gives zero alarms above the false-alarm rate).
 
-## B-99 [QUEUED, last] Site data for /protocol/ and /network/
+## B-99 [IN PROGRESS] Site data for /protocol/ and /network/
 Small JSON for each figure (E50 error traces per layer, E53 bit-rate table, E54 timeline, E55 detector curves,
 the B-96 loss surface grid and descent path), sizes and sha256 in an index, as in B-80.

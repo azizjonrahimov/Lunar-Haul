@@ -9108,3 +9108,63 @@ Next: B-98 (verification rows for Phase 6), then B-99 (site data). B-90b waits f
 **For LEAD:**
 1. **A reading not in B-95's report:** with more liars than F (f = 2, F = 1), the base mast makes safety worse for the fleet geometry: 50 % → 6 % of runs at N = 12 (the CSV says the same). A better-connected mesh lets the extra liar reach more honest rovers. The panel shows the number as it is, without comment. P2 may want a sentence, or BACKEND a look.
 2. H16 is "not supported as stated" per B-95. The page doesn't give an H16 verdict, only the findings; tell me if you want the verdict and the restatement shown.
+
+## B-98 + B-98a DONE 19:43 (Phase 6 verification rows; E54 stuck-reservation check; the confirmatory family) | files | how to test | API/format changes FRONTEND must know | questions for LEAD
+
+**B-98: `lunarsim/vv6.py` → `results/vv_phase6.json`, 54 rows, 54 pass.** Same row format and writer as `vv_phase5.json` (vv5 `_row` / `write_json`), so the verification page reads it unchanged. Every row's `tolerance_source` names the note section it checks.
+- **P (note 01):**
+  - P1: dead-reckoning growth: Monte Carlo rms / d = hypot(k, ψ), 10 %.
+  - P2: E2's scalar steady state equals the iterated filter (identity).
+  - P3: HDOP = 2/√N; two beacons at d/b = 5 give 7.14.
+  - P4: the relativistic rate recomputed from E4's constants, 56.025 µs/day, and the clocks module's constant.
+  - P5: 1 ns = 0.2998 m; two-way single-sided 0.15 m.
+  - P6: holdover table values.
+  - P7: the 2.4477σ bound holds 95 %.
+- **M (note 02):** M1 the ENU round trip (10 µm; float64 latitude near the pole loses two digits, stated); M2 PA vs ME at the pole / tile centre / (0, 0) against SPICE; M3 stereographic scale (207 ppm) and ρ − d (3.45 m); M4 the tree-walk bound and the 24 h hazard payload; M5 E5's disagreement example (1.42 m).
+- **C (note 03):**
+  - C1: link budget worked example A;
+  - C2: radio horizons;
+  - C3: the E48 5 km rates;
+  - C4: six message sizes;
+  - C5: codec round trips (280 random packets, profiles N and B) and CBOR heads;
+  - C6: offered load (7.86) and scheduled airtime (9.8);
+  - C7: MAC forgery at 8 bits against 2⁻⁸ (measured);
+  - C8: χ² thresholds, the detectable error (0.90 at 4.57σ), 3-of-5 (1.0×10⁻⁸);
+  - C9: E7's age of information (renewal Monte Carlo);
+  - C10: W-MSR safety with one liar.
+- **G (degenerate):**
+  - G1: every Phase 6 engine option off (pos_margin, log_reservations, capability_filter) gives the Phase 5 run: 0 of 128 summary values differ (30 days, C_AUCTION, roads atc). A channel without LRIP sizes counts 0 bytes.
+  - G2: perfect clocks give zero error.
+  - G3: the "perfect" layer set gives zero error; LANS absent in 2028 changes nothing.
+  - G4: zero faults: the single test alarms at its α (9.7×10⁻⁴ in 2 million); 3-of-5 raises 0 alarms in 2 million.
+
+**B-98a (1): E54's blocked reservations.** The count is right under its definition; no number changes.
+- I checked seed 1 by hand: 91 single-lane reservations, and in 85 the holder had no path to the base at t_out + 60 s.
+- **Why it is large.** The single-lane segments lie on routes the BASE mast does not see. Vehicles are linked 97.9 % of all time but only 54.5 % of driving time, and in seed 1, 61 of the 91 reservations are on one segment of the CONSTR→ISRU leg. Its exit is route sample 190, out of the mast's view, so a vehicle leaving it is still unheard 60 s later.
+- **What it measures.** Without a lost-link rule the base cannot confirm the release, so under note 03 C7 it must keep a silent vehicle's reserved volume blocked until it is heard. These are **unconfirmed releases, not vehicles physically still in the segment**: in the replay every vehicle leaves on schedule.
+- With the rule the release is safe at the timeout, so 0 is a property of the rule. `tools/atc/run_e54.py`'s docstring and `results/E54_dtn.json` (new field `stuck_definition`) now say this. The other values are unchanged (H14 supported, 2,566 / 7,349 h).
+- **Suggested P1 wording:** "2,566 of 2,628 reservations (98 %) ended while their holder was out of the base's reach, so without a lost-link rule the base could not confirm the release and had to keep the segment blocked, 7,349 h in all; with the rule, releases are safe at the timeout."
+
+**B-98a (2): `results/phase6_family.json`** (`tools/atc/phase6_family.py`). Holm at α 0.05 over the three hypotheses with a sampling test:
+
+| Hypothesis | Test | Statistic | p (unadjusted) | Holm p | Decision |
+|---|---|---|---|---|---|
+| H9 | threshold comparison, no sampling test (E50 1x, 30 seeds) | dead reckoning, first driving hour p95 85.2 m; ranging near base 4.22 m; fixes away 15.2 m | — | — | 2 of 3 clauses supported (100 % of seeds on the predicted side), the fixes clause not (0 % of seeds) |
+| H10 | paired TOST at 1x (margin 50 % of the perfect delay = 8.87 h), joined with the other clauses by intersection-union | TOST: +0.0066 h (se 0.0047); gap 4x −0.87 h against 1x +0.0066 h; DR margin +0.117 h (t 1.16) | TOST 1.2×10⁻⁷⁵; gap grows (Welch, one-sided) 0.932; DR larger (one-sided) 0.128; **intersection-union 0.932** | 0.932 | **not supported as a whole** (the primary clause holds; with that clause alone, Holm p is far below 0.05) |
+| H13 | threshold comparison, no sampling test (E53, 30 draws) | busiest link at 20 rovers: 1 Hz p95 7.86 kbit/s; 10 Hz p95 66.9 | — | — | supported (100 % of draws on the predicted side at both rates) |
+| H14 | exact sign test, per-seed lost jobs, sf_ll − drop_retry (loss 0.25, 30 seeds) | fewer in 9 seeds, more in 0, tied 21; mean −0.33 jobs | 0.0020 | **0.0039** | **supported** |
+| H15a | E56 bootstrap over events (1,000 resamples), network − χ² median drift delay | −24.1 s, 95 % [−35.1, −14.9] | ≤ 0.001 (no resample reached 0) | **0.003** | **supported** |
+
+- Pending: E50 at 8x, which adds H10's "gap grows at 8x" clause. I will rerun `phase6_family.py` with the 8x addendum.
+
+**Files:**
+- new: `lunarsim/vv6.py`, `tests/test_vv6.py` (2 tests), `results/vv_phase6.json`, `tools/atc/phase6_family.py`, `results/phase6_family.json`;
+- changed: `tools/atc/run_e54.py` (docstring, `stuck_definition` field), `results/E54_dtn.json` (rebuilt, values unchanged).
+
+**How to test:**
+- `.venv\Scripts\python -m pytest tests/test_vv6.py -q` passes 2 (24 s).
+- `python -m lunarsim.vv6` (8 s); `python tools/atc/phase6_family.py` (10 s).
+
+**For FRONTEND (via LEAD):** `results/vv_phase6.json` uses the vv_phase5 format, with ids grouped P / M / C / G (positioning and time / map and coordinates / communication, protocol and security / degenerate cases). The /verification/ reader can stage it next to phase 5.
+
+**Questions for LEAD:** none. Next: B-99 (site data).

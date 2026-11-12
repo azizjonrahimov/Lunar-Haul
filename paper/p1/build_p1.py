@@ -1823,16 +1823,20 @@ def phase6_e54(p, V, fill, check):
         rdr, rll = p.row54(LOSS, "drop_retry"), p.row54(LOSS, "sf_ll")
         check(rll["stuck_reservations"] == 0 and rll["stuck_hours"] == 0, "the results file sets stuck reservations to zero under the rule")
         check(rdr["stuck_reservations"] == h["stuck_reservations_drop_retry"] > 0, "without the rule some reservations stay blocked")
+        check("UNCONFIRMED release" in str(e.get("stuck_definition", "")) and "leaves on schedule" in str(e.get("stuck_definition", "")),
+              "the results file defines a stuck reservation as an unconfirmed release, with every vehicle leaving on schedule")
         n = len(e["seeds"])
         return (
             f"H14's second clause, that the rule leaves no reservation blocked past its timeout, holds by "
             f"construction and is not a measurement: a vehicle that follows the rule never stops inside a single-lane "
             f"segment, so the base may release its reservation at the timeout whether or not it hears the vehicle. "
-            f"What the replay measures is what the rule avoids. Without it, the holders of "
+            f"What the replay measures is what the rule avoids. Without it, "
             f"{rdr['stuck_reservations']:,} of the {round(e['reservations_per_seed'] * n):,} reservations in the {n} "
-            f"seeds had no path to the base "
-            f"{secs(e['parameters']['grace_s'])} after the timeout, and their segments stayed blocked until the "
-            f"holder was heard again, {num(rdr['stuck_hours'])}{NB}h in all, {num(rdr['stuck_hours'] / n)}{NB}h a "
+            f"seeds ended while their holder had no path to the base "
+            f"{secs(e['parameters']['grace_s'])} after the timeout. These are releases the base could not confirm, "
+            f"not vehicles still inside a segment: in the replay every vehicle leaves on schedule, but the base "
+            f"cannot know that, so it keeps the segment blocked until the holder is heard again, "
+            f"{num(rdr['stuck_hours'])}{NB}h in all, {num(rdr['stuck_hours'] / n)}{NB}h a "
             f"seed. With the first clause measured and the second a property of the rule, H14 is "
             f"{'supported' if h['supported'] else 'not supported'} [54].")
     fill("P1-E54-STUCK-SENTENCE", stuck_sentence, "E54")

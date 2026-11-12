@@ -19,10 +19,14 @@ single-lane reservation. Over the month's contact plan (lunarsim/atc/dtn.py), me
 Protocols: drop_retry, sf (store-and-forward with custody), sf_ll (sf + the lost-link ladder); per-hop loss 0.10,
 0.25, 0.40 (lunarsim.atc.messages LOSS_LEVELS). Sizes from the LRIP codec (B-93).
 Stuck reservations: a reservation whose holder has no path to the base at t_out + grace (60 s) and stays unheard;
-without the lost-link rule the base must keep it blocked until the holder is heard (stuck past its timeout for that
-long); with the rule the holder's behaviour is defined (it finishes or never enters a single-lane segment and stops
-at the next safe point), so the base releases it at its timeout: 0 stuck by construction, and the hours that would
-otherwise have been blocked are reported.
+without the lost-link rule the base cannot confirm the release and must keep the silent vehicle's reserved volume
+blocked until it is heard (note 03 C7) - an UNCONFIRMED release, not a vehicle physically still in the segment (in the
+replay every vehicle leaves on schedule); with the rule the holder's behaviour is defined (it finishes or never
+enters a single-lane segment and stops at the next safe point), so the base releases it at its timeout: 0 stuck by
+construction (a property of the rule), and the hours that would otherwise have been blocked are reported. The count
+is large (98 %) because the single-lane segments lie on routes the BASE mast does not see: vehicles are linked 97.9 %
+of all time but only 54.5 % of driving time, and in seed 1 61 of the 91 reservations are on one segment of the
+CONSTR -> ISRU leg whose exit (route sample 190) is out of the mast's view (B-98a check).
 H14 (PREREG6): at loss 0.25 with the 14-day blackout, sf_ll loses fewer jobs than drop_retry (paired bootstrap CI
 of the difference excludes 0) and leaves no reservation stuck past its timeout.
 """
@@ -293,6 +297,7 @@ def build():
            "lost_link_returns_per_seed": float(np.mean([s["lost_link"]["returns"] for s in S])),
            "lost_link_isolation_h_saved_per_seed": float(np.mean([s["lost_link"]["isolation_h_saved"] for s in S])),
            "rows": rows, "h14": h14, "parameters": __import__("lunarsim.atc.dtn", fromlist=["DEFAULTS"]).DEFAULTS,
+           "stuck_definition": __doc__[__doc__.index("Stuck reservations"):].split("\n\n")[0].replace("\n", " "),
            "blackout_days": BLACKOUT_DAYS, "ledger_bytes": LEDGER_BYTES}
     with open(OUT_JSON, "w", encoding="utf-8", newline="\n") as f:
         json.dump(doc, f, indent=1)
