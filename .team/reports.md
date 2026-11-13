@@ -10262,3 +10262,34 @@ So the papers' "the E54 replay was not rerun at v0.2" can become "rerun at v0.2 
 changes". Byte totals per message kind are in the new rows (*_bytes).
 Tests: tests/test_dtn.py, test_protocol_data.py, test_lrip.py, test_lrip_v02.py: 22 passed. No engine edit (guard not needed).
 Questions: none.
+
+## F-75 (FRONTEND) — the site follows P1's new title (52e7fd7) and P2's revised abstract and conclusion (60dea9d)
+1. P1 title. The site reads it from the built paper; /results/ P1 card heading and /paper/ show "Working Together Without
+   Earth: Job Sharing, Team Lifts, Learned Bidding and a Message Protocol for Lunar Robots of Different Owners". No site
+   source (pages, BibTeX, meta, content) and no built page in site/dist carries the old title (0 files; a test in
+   tests/f75.test.mjs walks site/ for it). Outside the site: paper/p3/paper.html and NOTES.md (P3's pass), and the history
+   mentions in paper/p1/PLACEHOLDERS.md and reports/referee_phase6_p1_response.md (stay).
+2. P2. The card lock named P2-H7-ABSTRACT-SHORT and P2-P6-ABSTRACT-CLAUSE; the card quotes both from values.json, reread in
+   place and re-locked (site/lib/card-keys.lock.json). Sentences whose meaning changed:
+   - P2 card, uphill: "...without contact, until the rule gained a slope term." -> "...without contact; a slope term removed
+     this when following, leaving up to 0.14 m in a Mars convoy with a 1 s lag."
+   - P2 card, positioning cost: "0.63 h per delivery (3.5 %, a lower bound)" -> "0.63 h per delivery (a lower bound)"; the
+     rest of that quote is the paper's rewording only ("not reservation margins", "slow drifts", "missed at least 37 %").
+   - /atc/ type-5 finding (new sentence after it): "Where a deadlock is judged (no random planner), the ring locked up in 13
+     of 1,892 (0.7 %) under the rule as written and in 373 of 1,963 (19.0 %) with a variant keeping one bay slot free; the
+     Deadlocks column adds both." With the Mars switch: "... on Mars, ... 2 of 368 (0.5 %) ... 68 of 395 (17.2 %) ...".
+     Before, the page showed only the pooled 386 in the table. Counted at build from results/E44_parts and E47_parts
+     (type 5, per encounter, split by params.keep_free, judged = no random planner), as build_p2.py ring_facts counts them;
+     the build stops if the two rules do not add up to the bounds file's driven count and deadlocks. Written into
+     /atc/ as two <template>s by a vite hook (<!--@ring:E44-->, <!--@ring:E47-->); the lazy chunk copies in the one
+     for the current body, which keeps the /atc/ lazy JS inside its 15 kB budget (14.9).
+   - /atc/ uphill sentence (e45up) already said the slope term removes every following shortfall and the Mars convoy keeps
+     at most 0.14 m: unchanged.
+3. PDF sizes on /paper/, read at build: P1 53 pages, 1,439 kB; P2 62 pages, 1,647 kB; P3 74 pages, 1,665 kB. On disk
+   P1 is 1,439,848 B (the message said 1,439,285 B), P2 1,646,581 B, P3 1,664,825 B.
+Checks: free RAM 1.08-1.23 GB before each build and the preview; build clean; node tests 76/76; budgets pages: OK.
+/atc/ (Moon and Mars findings), /results/ and /paper/ in dark and light at 1280 and 390: overflow 0, contrast failures 0,
+one h1, no heading skips, console errors 0. Server and browser stopped.
+Files: site/lib/ring.mjs (new), site/vite.config.js, site/atc/index.html, site/src/atc/sandbox.js,
+site/lib/card-keys.lock.json, site/tests/f75.test.mjs (new). (site/scripts/prepare-data.mjs: touched and restored, no
+net change.)

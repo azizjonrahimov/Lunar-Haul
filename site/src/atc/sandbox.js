@@ -75,7 +75,9 @@ function e44Table() {
     h('caption', { class: 'visually-hidden' }, `The twelve encounter types ${mars ? 'on Mars (E47)' : 'on the Moon (E44)'} and what the safety program allowed`),
     h('thead', {}, h('tr', {}, ...['Type', 'What happens', 'Drawn', 'Driven', 'With a violation', 'Deadlocks', 'Smallest clearance', 'Emergency brake', 'Violation risk, 95 % bound'].map(x => h('th', { scope: 'col' }, x)))),
     h('tbody', {}, rows)));
-  $('atc-findings').replaceChildren(...Object.entries(FINDING).sort((a, b) => a[0] - b[0]).map(([q, txt]) => h('li', {}, h('strong', {}, `Type ${q}: `), txt)));
+  const ring = $(`atc-ring-${world}`)?.innerHTML.trim();   // F-75: written at build from the part files (lib/ring.mjs)
+  $('atc-findings').replaceChildren(...Object.entries(FINDING).sort((a, b) => a[0] - b[0]).map(([q, txt]) => h('li', { html: `<strong>Type ${q}: </strong>${txt}${+q === 5 && ring ? ' ' + ring : ''}` })));
+  upgradeFlags($('atc-findings'));
   upgradeFlags($('atc-e44')); upgradeFlags($('atc-e44-lead'));
 }
 

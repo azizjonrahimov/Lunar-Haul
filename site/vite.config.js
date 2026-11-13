@@ -9,6 +9,7 @@ import { paperField, paperValue } from './lib/papers.mjs';
 import { P as PROTOCOL } from './src/protocol/params.js';
 import { nw } from './lib/network.mjs';
 import { atcResults, e44fresh, e45up, p1learned } from './lib/results-atc.mjs';
+import { ringSentence } from './lib/ring.mjs';
 import { b104, e50b, e50ov, e51, e52, e53, e53v1, e53air, e53d, e55, lrip, lrip2 } from './lib/protocol-data.mjs';
 import { b97 } from './lib/realdata.mjs';
 import { nb, vv6 } from './lib/phase6.mjs';
@@ -33,6 +34,7 @@ function lunarsimPages() {
           .replace('<!--@hero-counters-->', () => heroCounters())
           .replace('<!--@hero-css-->', () => `<style>${readFileSync(join(SITE, 'src', 'home-hero.css'), 'utf8')}</style>`)   // inlined: one render-blocking request fewer on the home page
           .replace('<!--@e44f:lead-->', () => e44fresh('lead'))
+          .replace(/<!--@ring:(E44|E47)-->/g, (_, b) => ringSentence(b))   // F-75: the ring by exit rule (results/<body>_parts), /atc/ type-5 finding
           .replace(/<!--@e45u:(\w+)-->/g, (_, k) => e45up(k))   // F-72: R1 with the slope term and the uphill runs (results/E45_uphill.json), /atc/ section 5   // F-71: encounter types on fresh seeds (results/E44_fresh_seeds.json), /atc/ section 5
           .replace('<!--@results-atc-->', () => atcResults(base))   // F-56: the Lunar ATC papers' headline numbers (lib/results-atc.mjs)
           .replace('<!--@results-->', () => results(base))
