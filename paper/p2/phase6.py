@@ -173,6 +173,68 @@ def add_e50(c):
         return SimpleNamespace(rd=rd, sh=sh, ns=ns, n=n)
     c.e50readings = readings
 
+    def overlaps():
+        """B-102 (results/E50_overlaps.json): what a reservation overlap is. Per fleet multiple and run: duration, the
+        along-track gap when the second vehicle truly enters, the share of back-to-back (abutting) pairs that overlap,
+        counts with the gap under d0 and under R1's d_min. Checked: the counts are E50's."""
+        o = _load("E50_overlaps.json")
+        if o is None:
+            raise Pending("results/E50_overlaps.json (B-102) is missing")
+        out = {}
+        for mult in ("1", "4"):
+            b = o["multiples"][mult]
+            s = e50(int(mult))
+            check(b["e50_reproduced_all"] is True and b["seeds"] == s["seeds"][mult], f"B-102 reproduces E50's cells at {mult}x")
+            for k in LAYER_KEYS:
+                check(abs(b["runs"][f"no_margin:{k}"]["overlaps_per_seed"] - s["violations"][mult]["no_margin"][k]["mean"]) < 1e-9,
+                      f"B-102's overlap count without a margin is E50's ({mult}x, {k})")
+            runs = b["runs"]
+            check(all(r["counts_per_seed"]["gap_under_d0_5m"] == 0 and r["counts_per_seed"]["gap_under_r1_dmin"] == 0 for r in runs.values()),
+                  f"at {mult}x no overlap brought two vehicles within the static margin or within R1's required gap")
+            nm = [runs[f"no_margin:{k}"] for k in LAYER_KEYS]
+            out[mult] = SimpleNamespace(
+                runs=runs, n=len(b["seeds"]),
+                abut=[r["back_to_back"]["abutting_share_overlapping"] for r in nm],
+                abut_n=nm[0]["back_to_back"]["abutting_pairs_per_seed"],
+                sep=max(r["back_to_back"]["separated_share_overlapping"] for r in runs.values()),
+                dur=[r["duration_s"]["median"] for r in nm], gap=[r["gap_at_entry_m"]["median"] for r in nm],
+                head=max(r["head_on_share"] or 0.0 for r in runs.values()))
+        check("8" not in o["multiples"], "B-102 did not analyse the eight-times cells")
+        a4 = out["4"]
+        check(0.4 < min(a4.abut) and max(a4.abut) < 0.55, "at 4x back-to-back windows overlap about half the time for every layer set")
+        check(a4.dur[0] > 20 * a4.dur[1] > 20 * a4.dur[3] > 0, "the duration of an overlap falls with better navigation")
+        check(max(a4.gap) / min(a4.gap) < 1.15, "the gap at entry does not follow navigation")
+        return out
+    c.e50overlaps = overlaps
+
+    def overlaps_sentence():
+        o = overlaps()
+        a1, a4 = o["1"], o["4"]
+        lay = a4.runs["with_margin:layered"]
+        check(abs(lay["gap_at_entry_m"]["median"] - a4.gap[2]) < 0.05 * a4.gap[2], "the margin does not change the gap at entry")
+        check(a4.head < 0.02 and a1.head < 0.02, "nearly all overlaps are same-direction pairs")
+        return (f"A separate analysis of the same simulated runs measured each overlap, at today's fleet and at four "
+                f"times (it reproduces E50's counts in every cell; the eight-times cells were not analysed). Windows "
+                f"filed back to back, with a nominal gap under a second, overlapped in true time in "
+                f"{pc(min(a4.abut), 0)} to {pc(max(a4.abut), 0)} of cases at four times the fleet, where a seed holds "
+                f"{cnt(a4.abut_n)} such pairs, for the four layer sets, and in {pc(min(a1.abut), 0)} to "
+                f"{pc(max(a1.abut), 0)} at today's fleet, where there are {cnt(a1.abut_n * a1.n)} such pairs in "
+                f"{cnt(a1.n)} seeds; pairs filed apart overlapped in at most {pc(max(a1.sep, a4.sep), 0)}. The count "
+                f"therefore measures how many back-to-back pairs the month held. How long an overlap lasts does "
+                f"follow navigation: at four times the fleet the median was {num(a4.dur[0], 0)}{NB}s with dead "
+                f"reckoning alone, {num(a4.dur[1], 0)}{NB}s with ranging, {num(a4.dur[2], 1)}{NB}s with terrain fixes "
+                f"and {num(a4.dur[3], 1)}{NB}s with the navigation service of 2030. No overlap, with or without a "
+                f"margin, at either fleet size, brought the two vehicles within the {m_(S.D0_M, 0)} static margin or "
+                f"within R1's required gap. When the second vehicle truly entered, the first was about "
+                f"{m_(round(a4.gap[2], -1), 0)} ahead of it (medians of {m_(min(a4.gap), 0)} to {m_(max(a4.gap), 0)}), a "
+                f"distance set by the length of the segments and not by navigation, and {pc(1 - max(a1.head, a4.head), 0)} "
+                f"of the overlaps were pairs travelling in the same direction on branched segments. An overlap is an "
+                f"event in the reservation accounts and not a close approach. The margin separates the filed "
+                f"windows, so the back-to-back overlaps go and the count falls; it does not change the gap at entry "
+                f"({m_(lay['gap_at_entry_m']['median'], 0)} with the layered margin at four times the fleet), and the "
+                f"few overlaps that remain last about as long as those of the fix layer without a margin (median "
+                f"{num(lay['duration_s']['median'], 1)}{NB}s).")
+
     def readings_sentence():
         q = readings(1)
         rd, sh, ns = q.rd, q.sh, q.ns
@@ -365,7 +427,7 @@ def add_e50(c):
                f"in the unfavourable order, about half the time, however small the errors are.{byc} At today's "
                f"fleet the count was {num(nm['dr']['mean'], 2)} a month with dead reckoning alone and "
                f"{num(min(rng), 2)} to {num(max(rng), 2)} with the other layer sets; it says how many back-to-back "
-               f"pairs the month held. " + c.awaited("overlaps") + f" With each window widened by the vehicle's own "
+               f"pairs the month held. " + overlaps_sentence() + f" With each window widened by the vehicle's own "
                f"bound an overlap remains only where an error was larger than the bound that was filed: "
                f"{num(wm['dr']['mean'], 2)} a month under the dead-reckoning "
                f"margin ({per(wm['dr']['mean'])}) and {num(wm['layered']['mean'], 2)} under the layered margin "
@@ -2058,10 +2120,15 @@ def add_props(c):
                 f"d<sub>min</sub> behind a leader that brakes fully on that grade ends {m_(up.gap_moon, 1)} from it "
                 f"on the Moon: inside the {m_(d0, 0)} static margin, which is a hard violation by this paper's own "
                 f"definition, with no fault and no rule broken. At Mars gravity on the same grade the final gap is "
-                f"{m_(up.gap_mars, 1)}. This is a calculation; " + c.awaited("uphill").replace("No encounter", "no encounter")
-                + f" Part (b) is therefore established for the flat and for downhill grades only, which is where the "
-                f"encounters were driven, and the remedy, b<sub>max</sub> taken on the slope or the full-stopping-"
-                f"distance gap above, is not in the rule. Two more things are assumed without being listed. Part (b) "
+                f"{m_(up.gap_mars, 1)}. That is the worst case of the formulas, a follower that accelerates through "
+                f"its whole response time.</p>" + chr(10) + chr(10) + "<p>" + c.uphill_paragraph()
+                + f" Part (b) as stated, with a fixed b<sub>max</sub>, is therefore established for the flat and for "
+                f"downhill grades only, which is where the twelve encounter types were driven. With the slope term, "
+                f"(vii) reads &ldquo;no harder than the larger of b<sub>max</sub> and its guaranteed braking on the "
+                f"grade&rdquo;, the proof goes through unchanged, and the simulation agrees with it when following. "
+                f"R1 with the slope term is the rule we propose (Table 2); in the code it is an option, and the "
+                f"twelve types were run without it, on the flat and downhill, where it changes nothing. Two more "
+                f"things are assumed without being listed. Part (b) "
                 f"takes the follower to know the true gap and the leader's speed; under position error the widened "
                 f"gap d<sub>0</sub> + k{NB}b<sub>AB</sub> of Section 3.9 is meant to cover that, and the encounters "
                 f"did not exercise it. And part (a) is close to the definition of the rule: (iii) assumes that a "
@@ -2252,13 +2319,13 @@ def add_front(c):
     def h7_short():
         clean, rf, states = e44_facts()
         up = c.uphill()
-        check(up.gap_moon < S.D0_M, "by calculation the gap rule fails behind a leader braking uphill")
+        us = c.uphill_sim()
+        check(us.min_moon < S.D0_M and us.min_mars < S.D0_M, "uphill, a braking leader took followers inside the static margin under R1 as it was")
         n6 = c.fresh()["types"]["6"]["fresh_seeds"]["n"]
         return (f"The safety program allowed no violation in {words(clean)} of twelve encounter types, all flat or "
-                f"downhill: a vehicle that stops dead in a one-lane segment defeats the gap rule, as does, "
-                f"by calculation, a leader braking uphill, and one landing closure in {cnt(n6)} left a vehicle "
-                f"inside the zone. One-lane rings deadlocked in "
-                f"{pc(rf['rate'][False], 1)} of encounters.")
+                f"downhill: a vehicle that stops dead in a one-lane segment defeats the gap rule, and one landing "
+                f"closure in {cnt(n6)} left a vehicle inside the zone. Uphill, a braking leader took followers "
+                f"inside the {m_(S.D0_M, 0)} margin, without contact, until the rule gained a slope term.")
     fill("P2-H7-ABSTRACT-SHORT", h7_short, "E44")
 
     def facts():
@@ -2306,7 +2373,7 @@ def add_front(c):
                 f"{h_(f.bd['diff_mean'], 2)} per delivery ({pc(f.bpct, 1)}, a lower bound). With a "
                 f"{num(f.guard, 1)}{NB}s guard, clocks up to {num(f.c6['max_abs_clock_s'], 2)}{NB}s off caused no "
                 f"conflict in {cnt(f.c6['conflict_pairs_checked'])} reservation pairs, outside "
-                f"the guarantee. A small network found slow position "
+                f"the guarantee. A network found slow position "
                 f"drifts {num(f.drift_gain, 0)}{NB}s sooner than a chi-square test, but every detector missed at "
                 f"least {pc(f.miss, 0)} of them and none kept its false-alarm rate with noisier sensors, so none "
                 f"qualifies for the safety path.")
@@ -2395,9 +2462,11 @@ def add_front(c):
                f"vehicle's own bound buys in safety we cannot yet say. Proposition 2 guarantees disjoint windows "
                f"while each error stays inside its bound and the vehicle passes the ends of the segment at speed, "
                f"and E50 counted how often the filed bound was exceeded (Table 10). The count of overlaps without a "
-               f"margin is fixed by the way back-to-back windows are filed and measures no hazard, and the "
-               f"durations and distances that would measure one have not been computed. What the margin costs is "
-               f"clearer. With the layered estimate it is "
+               f"margin is fixed by the way back-to-back windows are filed and measures no hazard: no overlap, with "
+               f"or without the margin, brought two vehicles within the static margin, and the first vehicle was "
+               f"about {m_(round(c.e50overlaps()['4'].gap[2], -1), 0)} ahead when the second entered. The margin removes "
+               f"overlapping windows from the reservation accounts; it does not move vehicles further apart. What "
+               f"the margin costs is clearer. With the layered estimate it is "
                f"{num(d1['margin_layered_margin_h_mean']['mean'] * 3600, 0)}{NB}s at each end and the widened "
                f"windows cost {h_(f.gap['mean'], 3)} per delivery at today's fleet")
         try:
@@ -2526,7 +2595,7 @@ def add_front(c):
 
     def conclusion_clause():
         f = facts()
-        return (f"Without satellite navigation, ranging held position error inside the {m_(S.D0_M, 0)} margin "
+        return (f"Without satellites, ranging held position error inside the {m_(S.D0_M, 0)} margin "
                 f"only where two beacons were in sight, not over the registered radio range; the stops for terrain fixes, not the widened "
                 f"reservations, set the cost, {h_(f.bd['diff_mean'], 2)} per delivery as a lower bound; and no "
                 f"detector of wrong position reports kept its false-alarm rate with noisier sensors.")
@@ -2536,9 +2605,10 @@ def add_front(c):
         clean, rf, states = e44_facts()
         return (f"One safety program enforcing ten rules, tested in simulation, allowed no violation in "
                 f"{words(clean)} of twelve encounter types, all flat or downhill; a vehicle that stops dead in a "
-                f"one-lane segment and, by calculation, a leader braking uphill defeat the gap rule, one landing "
-                f"closure in {cnt(c.fresh()['types']['6']['fresh_seeds']['n'])} left a vehicle inside the closed "
-                f"zone, and a ring of one-lane segments can deadlock.")
+                f"one-lane segment defeats the gap rule, one landing closure in "
+                f"{cnt(c.fresh()['types']['6']['fresh_seeds']['n'])} left a vehicle inside the zone, and a "
+                f"ring of one-lane segments can deadlock. Uphill, a braking leader took followers inside the static "
+                f"margin, without contact, until a slope term was added to the gap rule.")
     fill("P2-CONCLUSION-SAFETY-SHORT", conclusion_safety_short, "E44")
 
     def awaited_items():
@@ -2672,11 +2742,18 @@ def add_pta(c):
             "contacts. Proposition 4 names the assumption that fails (the leader brakes at no more than b<sub>max</sub>); "
             "the full-stopping-distance gap that would close it was not run", "5.6, A.4")
         up = c.uphill()
-        add("A follower keeps clear of a conforming leader that brakes on an uphill grade",
-            "Calculated from the rule's formulas: fails; not yet tested",
-            f"Full braking uphill exceeds b<sub>max</sub> above {num(up.lim_moon, 1)}&deg; (Moon) and {num(up.lim_mars, 1)}&deg; "
-            f"(Mars); on the {num(up.slope_max, 1)}&deg; route maximum the final gap at 15{NB}km/h is {m_(up.gap_moon, 1)} "
-            f"(Moon), inside the static margin. " + c.awaited("uphill"), "A.4")
+        us = c.uphill_sim()
+        add("A follower keeps the static margin behind a conforming leader that brakes on an uphill grade",
+            "Tested: fails under R1 as it was (no contact); holds with the slope term when following",
+            f"Simulation, {cnt(us.n)} encounters a cell, Moon and Mars, grades to {num(up.slope_max, 1)}&deg;, followers at "
+            f"the rule's limit. R1 as it was: gaps inside the static margin from "
+            f"{num(us.th['moon:following']['first_slope_with_gap_below_d0_deg'], 0)}&deg; (Moon, following, with a 1{NB}s "
+            f"actuation lag; smallest {num(us.min_moon, 2)}{NB}m) and from "
+            f"{num(us.th['mars:following']['first_slope_with_gap_below_d0_deg'], 1)}&deg; at Mars gravity (smallest "
+            f"{num(us.min_mars, 2)}{NB}m); never in the lunar one-lane convoy. With the slope term: none when following; "
+            f"up to {num(max(x for _, x in us.res_counts), 0)} of {cnt(us.n)} in the Mars one-lane convoy with the lag, at "
+            f"most {num(S.D0_M - us.res_min, 2)}{NB}m inside, traced to the lag model. By the formulas the worst case on the "
+            f"route maximum is {m_(up.gap_moon, 1)} (Moon)", "A.4, 6.1")
         rf = c.ring("E44")
         add("The exit-bay rule does not deadlock",
             "Proved for unbounded bays; tested with finite bays: fails on a ring",
@@ -2748,8 +2825,15 @@ def add_pta(c):
         add("The count of reservation overlaps without a margin",
             "Calculated: a property of the count, not a safety measure",
             "A waiting vehicle's window starts where the conflicting one ends, so a back-to-back pair overlaps about half "
-            f"the time whatever the error: {num(v1['no_margin']['dr+ranging+fixes']['mean'], 2)} a month at &times;1. "
-            + c.awaited("overlaps"), "3.9, 5.9")
+            f"the time whatever the error: {num(v1['no_margin']['dr+ranging+fixes']['mean'], 2)} a month at &times;1", "3.9, 5.9")
+        ov = c.e50overlaps()
+        add("What a reservation overlap is, and what the margin does to it",
+            "Tested (analysis of the E50 runs at &times;1 and &times;4; &times;8 not analysed)",
+            f"Back-to-back windows overlap in {pc(min(ov['4'].abut), 0)} to {pc(max(ov['4'].abut), 0)} of cases at &times;4 "
+            f"whatever the layer set; duration follows navigation (medians {num(ov['4'].dur[0], 0)}{NB}s to "
+            f"{num(ov['4'].dur[3], 1)}{NB}s); no overlap brought two vehicles within the static margin or R1's gap; the "
+            f"gap at entry is about {m_(round(ov['4'].gap[2], -1), 0)}, with or without the margin. The margin lowers the count and "
+            "changes neither the gap nor the nature of an overlap; the count is not a safety result", "5.9")
         add("The layered margin's delay is within 1.5 times the perfect-position delay at today's fleet (H10&prime;)",
             tested(h10["layered_within_supported"]),
             f"E50, {cnt(n1)} seeds, &times;1: ratio {num(h10['ratio_layered_over_perfect_1x'], 4)}; the registered margin "

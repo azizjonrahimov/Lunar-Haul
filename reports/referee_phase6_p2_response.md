@@ -95,3 +95,16 @@ out of `AWAITED`. Build: `build_p2.py --no-pdf` passes, abstract 299 words, conc
 
 Still awaited, as plain sentences: B-102 (`results/E50_overlaps.json`, M2) and B-107 (`results/E45_uphill.json`, M9).
 Updated tally: fixed 26, fixed in part 7, awaiting a BACKEND task 2 (M2, M9), not done 2.
+
+## Second pass, part 2 (12 Nov)
+
+B-102 and B-107 landed and are composed from their files with data checks; `AWAITED` is now empty. Kind of evidence:
+simulation in both cases (B-102 is an analysis of the E50 runs; B-107 new encounter runs).
+
+| Finding | Status now | What was done | Where |
+|---|---|---|---|
+| M2 (B-102, `results/E50_overlaps.json`) | closed | 5.9: windows filed back to back overlap in 43 % to 52 % of cases at 4x (134 such pairs a seed) for all four layer sets, 40 % to 60 % at 1x (42 pairs in 30 seeds); pairs filed apart at most 4 %: the count measures back-to-back pairs. Duration follows navigation (4x medians 417 s, 15 s, 6.7 s, 3.8 s). No overlap, with or without the margin, brought two vehicles within 5 m or within R1's gap; the first vehicle was about 440 m ahead at entry; 99 % are same-direction pairs on branched segments. The margin lowers the count and changes neither the gap at entry (441 m) nor the nature of an overlap. 8x: "were not analysed". The count stays out of the safety results. | 5.9, 6.1, Table 14 |
+| M9 (B-107, `results/E45_uphill.json`) | closed | "By calculation" is replaced by the simulated result. A.4: 64 cells of 2,000 encounters, followers at the rule's limit, with and without a 1 s actuation lag. R1 as it was: no contact anywhere; gaps inside the 5 m margin on the Moon when following with the lag from 14 deg (14 of 2,000 at 15 deg, 335 at 17.2 deg, smallest 4.15 m), never in the lunar convoy; at Mars gravity with the lag from 6.5 deg (following) and 8.5 deg (convoy), down to 0.72 m, and at 15 deg and above without the lag. Slope term: none when following; 71 and 62 of 2,000 in the Mars convoy with the lag, at most 0.14 m inside (smallest 4.86 m), traced to the lag model, not patched. R1 in Table 2 is stated with the slope term as the proposed rule; the text says the twelve types were run without it, on the flat and downhill, where it is inactive (checked). The calculation (3.0 m on the route maximum) stays as the worst case of the formulas. | abstract, Table 2, 3.5, 6.1, 6.4, 7, 9, A.4, Table 14 |
+
+Updated tally (37 findings): fixed 28, fixed in part 7 (M12, S5, S8, S12, S14, S16, O3), awaiting a BACKEND task 0, not
+done 2 (O2, O8).

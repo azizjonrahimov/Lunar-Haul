@@ -34,6 +34,7 @@ import os
 import re
 import subprocess
 import sys
+from types import SimpleNamespace
 from typing import Any, Dict, List
 
 import numpy as np
@@ -141,13 +142,6 @@ class Pending(Exception):
 # exists; the pass that fills it replaces the entry's use by a sentence composed from the file, with data checks.
 # name: (results file, backend task, the sentence in the place of the result, the phrase for the list)
 AWAITED = {
-    "overlaps": ("E50_overlaps.json", "B-102",
-                 "How long the overlaps last without the margin, and how far apart the two vehicles are when the second "
-                 "one enters, has not been computed, so the margin's effect on duration and distance is not known.",
-                 "the durations of the reservation overlaps and the distance between the two vehicles when they occur"),
-    "uphill": ("E45_uphill.json", "B-107",
-               "No encounter has been driven uphill, with or without a slope term in the required gap.",
-               "encounters driven uphill, where the no-collision proposition does not hold"),
 }
 
 
@@ -904,6 +898,69 @@ def values(r: R, allow_pending: bool):
             check(abs(t44(j, k)["r1_breach_rate"] - {3: 0.0003, 10: 0.0003, 6: 0.001}[k]) < 1e-9, f"type {k}: the R1 breach rate is the one BACKEND confirmed")
         return d
 
+    def uphill_sim():
+        """B-107 (results/E45_uphill.json): uphill following and a one-lane convoy, Moon and Mars, four grades, 2,000
+        simulated encounters a cell, followers at the rule's limit, with and without a 1 s actuation lag, under R1 as it
+        was and with the slope term (the leader's braking taken as max(B_MAX, b_guaranteed(theta)))."""
+        import lunarsim.atc.safety as S
+        path = os.path.join(RES, "E45_uphill.json")
+        if not os.path.exists(path):
+            raise Pending("results/E45_uphill.json (B-107) is missing")
+        d = json.load(open(path, encoding="utf-8"))
+        cells = {(c["planet"], c["geom"], c["rule"], c["delay_s"], c["slope_deg"]): c for c in d["cells"]}
+        g = lambda p, ge, ru, lag, sl: cells[(p, ge, ru, float(lag), float(sl))]
+        check(len(cells) == 64 and all(c["n_driven"] == d["n_per_cell"] for c in cells.values()) and d["d0_m"] == S.D0_M
+              and d["b_max"] == S.B_MAX, "the uphill run has 64 cells of 2,000 driven encounters under the paper's d0 and b_max")
+        check(all(c["contacts"] == 0 for c in cells.values()), "no vehicle touched another in any uphill cell")
+        check(all(c["violations"] == c["gap_below_d0"] for c in cells.values()), "every uphill violation is a gap inside the static margin")
+        check(all(c["gap_below_d0"] == 0 for k, c in cells.items() if k[0] == "moon" and k[1] == "one_lane"),
+              "on the Moon the one-lane convoy never comes inside the static margin")
+        check(all(c["gap_below_d0"] == 0 for k, c in cells.items() if k[0] == "moon" and k[3] == 0.0),
+              "on the Moon no shortfall occurs without the actuation lag")
+        check(all(c["gap_below_d0"] == 0 for k, c in cells.items() if k[2] == "slope_term" and k[1] == "following"),
+              "with the slope term no following encounter comes inside the static margin, on either body")
+        res = {k: c for k, c in cells.items() if k[2] == "slope_term" and c["gap_below_d0"] > 0}
+        check(res and all(k[0] == "mars" and k[1] == "one_lane" and k[3] == 1.0 for k in res),
+              "with the slope term the only shortfalls left are in the Mars one-lane convoy with the lag")
+        th = d["threshold"]
+        check(th["moon:one_lane"]["first_slope_with_gap_below_d0_deg"] is None, "the Moon one-lane sweep shows no shortfall")
+        check(all(float(S.b_guaranteed(t, mu, gg)) <= S.B_MAX for t in (0.0, 10.0, 15.0, 20.0) for mu in (0.3, 0.45, 0.6)
+                  for gg in (S.G_MOON, S.G_MARS)), "on the flat and downhill the slope term is inactive (guaranteed braking never exceeds b_max)")
+        asis = [c for k, c in cells.items() if k[2] == "as_is"]
+        return SimpleNamespace(d=d, g=g, th=th, res=res, n=d["n_per_cell"],
+                               min_mars=min(c["min_gap_m"] for k, c in cells.items() if k[2] == "as_is" and k[0] == "mars"),
+                               min_moon=min(c["min_gap_m"] for k, c in cells.items() if k[2] == "as_is" and k[0] == "moon"),
+                               res_min=min(c["min_gap_m"] for c in res.values()),
+                               res_counts=sorted((k[4], c["gap_below_d0"]) for k, c in res.items()))
+
+    def uphill_paragraph():
+        import lunarsim.atc.safety as S
+        u = uphill_sim()
+        g, th, n = u.g, u.th, u.n
+        m15, m17 = g("moon", "following", "as_is", 1, 15.0), g("moon", "following", "as_is", 1, 17.2)
+        nolag = [c for c in (g("mars", ge, "as_is", 0, sl) for ge in ("following", "one_lane") for sl in (5.0, 10.0, 15.0, 17.2))]
+        check(all((c["gap_below_d0"] > 0) == (c["slope_deg"] >= 15.0) for c in nolag), "on Mars without the lag shortfalls occur at 15 degrees and above only")
+        return (f"Uphill encounters were then simulated: following on a two-lane road and a convoy inside one "
+                f"one-lane segment, at lunar and Mars gravity, on grades of 5&deg;, 10&deg;, 15&deg; and 17.2&deg;, "
+                f"{cnt(n)} encounters a cell, with every follower held at the rule's limit, once with commands that "
+                f"act at once, as in the main run, and once with an actuation lag of 1{NB}s, R1's response time. Under "
+                f"R1 as it was, no vehicle touched another in any cell, but followers came inside the "
+                f"{num(S.D0_M, 0)}{NB}m static margin, which is a hard violation. On the Moon this happened only when "
+                f"following with the lag, from {num(th['moon:following']['first_slope_with_gap_below_d0_deg'], 0)}&deg; "
+                f"({cnt(m15['gap_below_d0'])} of {cnt(n)} encounters at 15&deg;, {cnt(m17['gap_below_d0'])} at "
+                f"17.2&deg;, smallest gap {num(u.min_moon, 2)}{NB}m), and never in the one-lane convoy. At Mars gravity "
+                f"with the lag it happened from {num(th['mars:following']['first_slope_with_gap_below_d0_deg'], 1)}&deg; "
+                f"when following and {num(th['mars:one_lane']['first_slope_with_gap_below_d0_deg'], 1)}&deg; in the "
+                f"convoy, down to a gap of {num(u.min_mars, 2)}{NB}m, and at 15&deg; and above even without the lag. "
+                f"With a slope term in R1, the leader's braking taken as the larger of b<sub>max</sub> and its "
+                f"guaranteed braking on the grade, no follower came inside the margin when following, on either "
+                f"body, at any grade, with or without the lag. In the Mars convoy with the lag "
+                + " and ".join(f"{cnt(x)} of {cnt(n)} encounters at {num(sl, 1)}&deg;" for sl, x in u.res_counts)
+                + f" still ended inside it, by at most {num(S.D0_M - u.res_min, 2)}{NB}m (smallest gap "
+                f"{num(u.res_min, 2)}{NB}m). A trace puts that remainder on the lag model, in which a vehicle that "
+                f"commands braking still applies one 0.1{NB}s step more of its earlier commands than R1's response "
+                f"time allows; it was not patched.")
+
     def fresh_types():
         """Types with a hard violation on the fresh seeds that had none in the main run."""
         d = fresh_facts()
@@ -991,8 +1048,9 @@ def values(r: R, allow_pending: bool):
                 f"{num(bsv, 1)}{NB}m/s<sup>2</sup> service brake is smaller than g{NB}sin{NB}20&deg; = "
                 f"{num(gs20, 2)}{NB}m/s<sup>2</sup>, so it cannot hold the slope for which the reference vehicle is "
                 f"specified [16], and the assumed brake is at odds with the sourced slope. Slopes are downhill only "
-                f"and only in type 1 (and in the fuzzer's draws of it): types 2 to 11 run on the flat, and no "
-                f"encounter is driven uphill (Appendix A.4). "
+                f"and only in type 1 (and in the fuzzer's draws of it): types 2 to 11 run on the flat, and none of "
+                f"the twelve types is driven uphill; uphill following was simulated separately, after an internal "
+                f"review (Appendix A.4). "
                 + e44_violation_definition() +
                 f"Each type's bound is the 95{PCT} upper limit on the "
                 f"probability of a hard violation under that type's parameter distribution: with no violation "
@@ -1245,10 +1303,17 @@ def values(r: R, allow_pending: bool):
                  f"{cnt(t9['violations_by_kind']['viol_contact'])} of {cnt(t9['n_driven'])} encounters, touch. A "
                  f"dead-stop margin, the follower's own stopping distance at its current speed, would close the case "
                  f"at a cost in segment capacity; we did not run it, and the count stands as a limit of "
-                 f"braking-based separation. The simulator could not have found the other case the derivation "
-                 f"names: a conforming leader that brakes on an uphill grade also exceeds b<sub>max</sub> (Appendix "
-                 f"A.4), and every encounter was driven on the flat or downhill, so the absence of a violation in "
-                 f"the following type says nothing about uphill roads, which this base has. ")
+                 f"braking-based separation. The twelve types could not have found the other case the derivation "
+                 f"names, a conforming leader that brakes on an uphill grade and so exceeds b<sub>max</sub>, because "
+                 f"every one of their encounters is on the flat or downhill. A separate simulation of uphill "
+                 f"following found it (Appendix A.4): under R1 as it was, no contact, but followers inside the "
+                 f"static margin from {num(uphill_sim().th['moon:following']['first_slope_with_gap_below_d0_deg'], 0)}&deg; "
+                 f"on the Moon and {num(uphill_sim().th['mars:following']['first_slope_with_gap_below_d0_deg'], 1)}&deg; "
+                 f"at Mars gravity when the follower's actuation lags by a second. A slope term in R1 removed every "
+                 f"such case when following and left a remainder of at most "
+                 f"{num(5.0 - uphill_sim().res_min, 2)}{NB}m in the Mars one-lane convoy, which comes from the lag "
+                 f"model. We therefore state R1 with the slope term as the proposed rule (Table 2); the twelve types "
+                 f"were run without it, on ground where it is inactive. ")
         elif viol:
             s = ("The simulator's failures, " + e44_violating_clause(j, viol).replace("the exceptions are ", "")
                  .replace("the exception is ", "") + ", are reported as found. ")
@@ -1937,7 +2002,7 @@ def values(r: R, allow_pending: bool):
     import phase6
     phase6.add(dict(V=V, T=T, F=F, fill=fill, pend=pend, check=check, Pending=Pending, r=r, num=num, h_=h_, pc=pc,
                     awaited=awaited, AWAITED=AWAITED, ring=ring_facts, ring_clause=ring_clause,
-                    fresh=fresh_facts, fresh_types=fresh_types,
+                    fresh=fresh_facts, fresh_types=fresh_types, uphill_sim=uphill_sim, uphill_paragraph=uphill_paragraph,
                     ci=ci, cnt=cnt, words=words, sci=sci, tab=_tab, NB=NB, MINUS=MINUS, PCT=PCT,
                     table_pending=table_pending))
     if broken:
