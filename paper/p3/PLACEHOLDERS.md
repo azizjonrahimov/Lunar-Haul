@@ -287,3 +287,9 @@ The `fill_await` mechanism stays in `build_p3.py` and has no key at present; the
 
 Typed in P3-SEC-LAYOUT-SENTENCE and checked against the schema's note string, not computed: the bound's formula (0.05 m times 2 to the power of a
 quarter of the code) and its top value (1.95 km).
+
+### Second pass, part 4 (12 Nov 2026): the driving split at version 0.2 sizes
+
+| Key | Source | Format |
+|---|---|---|
+| P3-E53-DRIVING-HOPS-SENTENCE (5.2), P3-LIMIT-LINK-SENTENCE (7), the last sentence of P3-LRIP-V02-SENTENCE (5.11) | E53 `lrip_v02.driving_split` (task B-110): `note`, `pool_driving_share`, `e53_auth_20_rovers.{lrip, proximity1}.{fleet_driving, fleet_parked}."1 Hz"` (`busiest_link_kbps_p95`, `scheduled_airtime_p95_kbps`, `slotted_aloha_airtime_p95_kbps`, `mean_hops_to_base`, `reachable_share`), `status_intent_at_1hz.{lrip, proximity1}` (`three_beacons_20_rovers_kbps`, `sources_20_rovers_kbps`, `busiest_link_20_rovers.{fleet, fleet_driving}.scheduled_airtime_p95_kbps`); the month's robot-epochs and E54's link share still from `driving_split` (B-103) (checked: hops and reach equal those of the v0.1 split; the busiest link carries more with v0.2's heartbeat; the same pool of driving steps; the three reports weigh the same in both versions and v0.2 adds the heartbeat) | composed; "within" / "above" per channel from the larger or the smaller of the plain and the framed value; "above the target in every case" from the four airtimes |

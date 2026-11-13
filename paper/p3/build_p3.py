@@ -1464,8 +1464,8 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
                 f"{num(f20['busiest_link_kbps_p95'], 2)}{KBPS6} and need {num(fr['airtime_1hz_scheduled_kbps'], 2)}{KBPS6} of a scheduled channel, "
                 f"{w(fr['airtime_1hz_scheduled_kbps'])} the target, and {'do not fit' if not bool(f20['fits_nb_slotted_aloha_p95']) else 'fit'} it on slotted "
                 f"random access; channel coding is not counted. The two comparisons of H13 come out the same under version 0.2. These are calculations "
-                f"on a traffic model; the split by driving positions and the case with status and intent at 1&nbsp;Hz (Section 5.2) were computed with "
-                f"the sizes of version 0.1 only, which differ from version 0.2 by the heartbeat.")
+                f"on a traffic model; the split by driving positions and the case with status and intent at 1&nbsp;Hz (Section 5.2) are given at the "
+                f"sizes of version 0.2. The replay of messages in E54 (Section 5.12) was not rerun with version 0.2.")
     fill("P3-LRIP-V02-SENTENCE", lrip_v02_sentence, "E53 lrip_v02 (B-100)")
 
     def e53_design():
@@ -2948,14 +2948,27 @@ def values(r: R, allow_pending: bool):
         a = e48_air()
         check(abs(_fin(mo["check_against_E48"]["all_mean_hops"]) - a["hops"]) < 1e-9 and int(mo["all"]["robot_epochs"]) == int(mo["check_against_E48"]["E48_robot_epochs"]),
               "the driving split reproduces E48's month: the same robot-epochs and the same mean hop count (5.2)")
-        dr, pk = e["fleet_driving"]["1 Hz"], e["fleet_parked"]["1 Hz"]
+        d2 = r.p6("E53", "lrip_v02", "driving_split")          # the same split at the packet sizes of protocol version 0.2 (task B-110)
+        e2, f2 = d2["e53_auth_20_rovers"]["lrip"], d2["e53_auth_20_rovers"]["proximity1"]
+        for k_ in ("fleet_driving", "fleet_parked"):
+            check(abs(_fin(e2[k_]["1 Hz"]["mean_hops_to_base"]) - _fin(e[k_]["1 Hz"]["mean_hops_to_base"])) < 1e-9 and
+                  abs(_fin(e2[k_]["1 Hz"]["reachable_share"]) - _fin(e[k_]["1 Hz"]["reachable_share"])) < 1e-9 and
+                  _fin(e2[k_]["1 Hz"]["busiest_link_kbps_p95"]) > _fin(e[k_]["1 Hz"]["busiest_link_kbps_p95"]),
+                  f"{k_}: hops and reach do not depend on the protocol version, and the busiest link carries more with version 0.2's heartbeat (5.2)")
+        check("v0.2 packet sizes" in str(d2["note"]) and "12 B per packet" in str(d2["note"]) and abs(_fin(d2["pool_driving_share"]) - _fin(ds["pool_driving_share"])) < 1e-9,
+              "the version 0.2 split uses the same pool of driving steps, v0.2 packet sizes and 12 B of Proximity-1 framing (5.2)")
+        dr, pk = e2["fleet_driving"]["1 Hz"], e2["fleet_parked"]["1 Hz"]
+        drf = f2["fleet_driving"]["1 Hz"]
         T = a["target"]
         w = lambda x: "within" if _fin(x) <= T else "above"
         check(_fin(dr["mean_hops_to_base"]) > _fin(pk["mean_hops_to_base"]) and _fin(dr["busiest_link_kbps_p95"]) < _fin(pk["busiest_link_kbps_p95"]) and
               _fin(dr["reachable_share"]) < _fin(pk["reachable_share"]),
               "drawn from driving steps the rovers need more hops, reach the base less often and load the busiest link less than drawn from parked steps (5.2)")
+        si2, sif = d2["status_intent_at_1hz"]["lrip"], d2["status_intent_at_1hz"]["proximity1"]
         si = ds["status_intent_at_1hz"]
-        air = si["scheduled_airtime_p95_kbps"]
+        check(abs(_fin(si2["three_beacons_20_rovers_kbps"]) - _fin(si["three_beacons_20_rovers_kbps"])) < 1e-9 and _fin(si2["sources_20_rovers_kbps"]) > _fin(si2["three_beacons_20_rovers_kbps"]),
+              "with all three reports at 1 Hz the three reports weigh the same in both versions and version 0.2 adds the heartbeat (5.2)")
+        allair = [_fin(x["busiest_link_20_rovers"][g]["scheduled_airtime_p95_kbps"]) for x in (si2, sif) for g in ("fleet", "fleet_driving")]
         ob = one_hop_basis()
         check(abs(_fin(ds["e54_link_shares_30_seeds"]["linked_share_driving_time"]) - ob["drive"]) < 1e-9, "the driving split quotes E54's share of driving time with a path (5.2)")
         check(abs(_fin(si["three_beacons_20_rovers_kbps"]) - sum(int(v) for v in si["bytes_position_status_intent_auth"].values()) * a["robots"] * 8 / 1000.0) < 0.006,
@@ -2967,14 +2980,21 @@ def values(r: R, allow_pending: bool):
                 f"vehicle-steps), with the traffic model's 2.5{NB}m antennas, the rovers that reach the base are {num(dr['mean_hops_to_base'], 2)} hops from "
                 f"it on average, against {num(pk['mean_hops_to_base'], 2)} from parked steps; {pc(dr['reachable_share'], 0)} have a path, against "
                 f"{pc(pk['reachable_share'], 0)}; and the busiest link carries {num(dr['busiest_link_kbps_p95'], 2)}{KBPS} at the 95th percentile, against "
-                f"{num(pk['busiest_link_kbps_p95'], 2)}, because driving rovers are spread along the routes and share fewer neighbourhoods. As airtime that "
-                f"is {num(dr['scheduled_airtime_p95_kbps'], 2)}{KBPS} on a scheduled channel, {w(dr['scheduled_airtime_p95_kbps'])} the target, and "
-                f"{num(dr['slotted_aloha_airtime_p95_kbps'], 2)}{KBPS} on slotted random access, {w(dr['slotted_aloha_airtime_p95_kbps'])} it. The "
+                f"{num(pk['busiest_link_kbps_p95'], 2)}, because driving rovers are spread along the routes and share fewer neighbourhoods; the loads are at the "
+                f"packet sizes of protocol version 0.2 (Section 3.8), and the hops and the share with a path do not depend on the version. As airtime "
+                f"that is {num(dr['scheduled_airtime_p95_kbps'], 2)}{KBPS} on a scheduled channel ({num(drf['scheduled_airtime_p95_kbps'], 2)} with every "
+                f"packet in a Proximity-1 frame), {w(max(_fin(dr['scheduled_airtime_p95_kbps']), _fin(drf['scheduled_airtime_p95_kbps'])))} the target, and "
+                f"{num(dr['slotted_aloha_airtime_p95_kbps'], 1)}{KBPS} on slotted random access ({num(drf['slotted_aloha_airtime_p95_kbps'], 1)} framed), "
+                f"{w(min(_fin(dr['slotted_aloha_airtime_p95_kbps']), _fin(drf['slotted_aloha_airtime_p95_kbps'])))} it. The "
                 f"{pc(dr['reachable_share'], 0)} is not the {pc(ob['drive'], 1)} above: here 20 rovers with 2.5{NB}m antennas relay for one another, "
                 f"there the real fleet of {words(len(r.fleet()))} vehicles, half of them with 1.0{NB}m antennas, drives its recorded routes over 30 seeds. "
-                f"With status and intent at 1{NB}Hz as well, the same calculation gives {num(si['sources_20_rovers_kbps'], 2)}{KBPS} at the sources and a "
-                f"scheduled airtime of {num(air['fleet'], 1)}{KBPS} at the fleet's positions and {num(air['fleet_driving'], 1)} at driving positions, "
-                f"{'both above' if min(_fin(air['fleet']), _fin(air['fleet_driving'])) > T else 'not both above'} the target: at those rates the 1{NB}Hz "
+                f"With status and intent at 1{NB}Hz as well, the same calculation at version 0.2 sizes gives {num(si2['sources_20_rovers_kbps'], 2)}{KBPS} at the "
+                f"sources ({num(sif['sources_20_rovers_kbps'], 2)} framed) and a scheduled airtime of "
+                f"{num(si2['busiest_link_20_rovers']['fleet']['scheduled_airtime_p95_kbps'], 1)}{KBPS} at the fleet's positions and "
+                f"{num(si2['busiest_link_20_rovers']['fleet_driving']['scheduled_airtime_p95_kbps'], 1)} at driving positions "
+                f"({num(sif['busiest_link_20_rovers']['fleet']['scheduled_airtime_p95_kbps'], 1)} and "
+                f"{num(sif['busiest_link_20_rovers']['fleet_driving']['scheduled_airtime_p95_kbps'], 1)} framed), "
+                f"{'above the target in every case' if min(allair) > T else 'not above the target in every case'}: at those rates the 1{NB}Hz "
                 f"case of the link claim does not hold on any channel. The 1.0{NB}m antennas of the small classes and a report rate tied to motion were "
                 f"not run.")
     fill("P3-E53-DRIVING-HOPS-SENTENCE", e53_driving, "E53 driving_split (B-103)")
@@ -3157,8 +3177,7 @@ def values(r: R, allow_pending: bool):
     def limit_link():
         """Section 7: the link claim's condition and its basis (findings M2 and S16)."""
         a, ob = e48_air(), one_hop_basis()
-        s8 = sec_sizes("mac8")
-        three = sum(int(s8[x]) for x in ("position", "status", "intent")) * a["robots"] * 8 / 1000.0
+        three = _fin(r.p6("E53", "lrip_v02", "driving_split", "status_intent_at_1hz", "lrip", "sources_20_rovers_kbps"))
         T = f"{num(a['target'], 0)}{KBPS}"
         return (f"The {T} target is met only on a base-scheduled channel on which every robot is within one hop of the base. That condition is taken "
                 f"from positions that are parked in {pc(ob['parked_share'], 0)} of vehicle-steps, while the traffic is that of vehicles reporting once a "

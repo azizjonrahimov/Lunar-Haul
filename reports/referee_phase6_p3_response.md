@@ -139,3 +139,16 @@ bound, not a covariance" replaces the sentence on what version 0.1 lacked. Table
 | Fixed | 34 | M1 to M6, M8 to M15; S1 to S8, S10 to S13, S16; O1, O2, O5, O7 to O10 |
 | Fixed in part | 6 | M7 (the censored part of the alone loss is given in items, not in USD; the value of time is not swept); S9 (the retry budget is stated, not swept; the lost-link return is not driven in the engine); S14 (missing dates, initials and titles are not in the research notes; one arXiv identifier not re-checked; Table 2's cells print the catalogue's flags); S15 (P3's side only); S17 (items 1, 2 and 3 in part, item 4 done; the other new experiments are listed in 6.6 as not run); O4 (task numbers and the list of skipped checks kept) |
 | Not done | 4 | S18 (not split, by the lead's decision; a roadmap and explicit halves instead); O3 (199 jobs against 200.9 awards a seed, unexplained); O6 (CoreMark not run on the laptop); O11 (P1's text) |
+
+## Second pass, part 4 (12 Nov)
+
+1. The driving split is now given at the packet sizes of protocol version 0.2, from `results/E53_bitrate.json`, `lrip_v02.driving_split`
+   (Sections 5.2, 5.11 and 7). Drawn from driving steps, 20 rovers at 1 Hz: busiest link 6.28 kbit/s (was 5.89 at v0.1 sizes); scheduled
+   airtime 7.85 kbit/s, 10.19 in Proximity-1 frames (was 7.37), within the target; slotted random access 17.1, 22.2 framed (was 16.02), above
+   it. With status and intent at 1 Hz: 20.03 kbit/s at the sources, 25.98 framed (was 19.52, the three reports without the heartbeat);
+   scheduled airtime 25.0 and 18.8 kbit/s, 32.5 and 24.4 framed (was 24.4 and 18.3), above the target in every case. Hops (1.58) and the share
+   with a path (93 %) do not depend on the version and are unchanged. The sentence that these were version 0.1 figures is gone; Section 5.11
+   states that the E54 replay was not rerun with version 0.2. No verdict moved.
+2. P1's learned-bid rerun: P3 quotes no learned-bid result and no 92.9 %. Its only statement, that the linear model improved on hand-built
+   bids and the network did not (Section 3.4), agrees with P1's revised abstract; nothing was changed.
+3. Abstract 300 words, conclusion 248. The tally of the 44 findings does not move (34 fixed, 6 fixed in part, 4 not done).
