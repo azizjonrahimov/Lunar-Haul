@@ -1378,3 +1378,25 @@ E53's `driving_split` (B-103: 5.9 kbit/s busiest link while driving; 19.52 kbit/
 now on v0.2. Add the same figures under v0.2 sizes (a `driving_split` block inside `lrip_v02`, with and without
 Proximity-1 framing), keep every existing key byte-identical, and say whether any verdict moves. The E54 replay
 is not rerun; state that in the block's note.
+
+# ===== AFTER THE REFEREE ROUND (LEAD, 13 Nov 2026): the runs the papers name as not done =====
+## Same rules as before: opt-in code paths only, existing keys and files untouched, single process, chunks under
+## 9 min, at least 0.8 GB free before each chunk. If a task needs more than about 2 h of compute, report the
+## estimate first and wait. Order: B-111, B-112, B-113. Report each as it lands.
+
+## B-111 [IN PROGRESS] The E54 message replay at LRIP v0.2 sizes
+The papers say the E54 replay was not rerun at v0.2. Rerun it with v0.2 sizes (and Proximity-1 framing as a
+separate row), into E54's results file under a new key `lrip_v02` beside the v0.1 values; report every value
+that moves and whether any verdict (H14 clause 1, unconfirmed-segment counts and hours) moves.
+
+## B-112 [OPEN] The request-rule variant on all fresh type-6 encounters
+B-108 found one zone violation in 10,000 type-6 encounters on fresh seeds and tested the request-rule variant
+on that one encounter only. Run the variant on the same 10,000 fresh type-6 encounters; report violations,
+the 95 % bound beside the rule as written, and any new failure the variant introduces (deadlock, timeouts,
+delay). Output under a new key in `results/E44_fresh_seeds.json`.
+
+## B-113 [OPEN] The stored type-10 parts that differ from HEAD
+B-107 noted that stored type-10 fuzzer parts differ from the current code on the deadlock flag in 445 of 4,000
+rows. Find the cause (which commit changed the flag, or a nondeterminism), say whether any published value
+(the ring-deadlock rates in P2, E44/E45 tables) was computed from the stale parts, regenerate if so, and report
+every value that moves. If none moves, record the reason in the results file's notes.

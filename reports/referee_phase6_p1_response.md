@@ -128,3 +128,12 @@ Build: abstract 300 words, conclusion 250, 292 values, 0 pending, no `[[PENDING`
 
 Tally of the 37 findings: 27 fixed (M8 added), 9 fixed in part, 0 awaiting a task, 1 not done (O2).
 Build: abstract 300 words, conclusion 250, 0 pending, no `[[PENDING` in `paper.html`. PDF rebuilt, 53 pages.
+
+## Part 5 (13 Nov): the title
+
+The title now names the fourth contribution, the message protocol:
+"Working Together Without Earth: Job Sharing, Team Lifts, Learned Bidding and a Message Protocol for Lunar Robots of Different Owners".
+Before: "Working Together Without Earth: Job Sharing, Team Lifts and Learned Bidding Among Lunar Robots of Different Owners".
+Changed in the `<title>` element and the `<h1>` of `paper/p1/part1_front.html`; the paper has no running head and
+`values.json` has no title key (the site reads the `<h1>` of the built `paper.html`). The PDF file name is unchanged.
+No finding changes state; the tally stays 27 fixed, 9 fixed in part, 0 awaiting a task, 1 not done (O2).

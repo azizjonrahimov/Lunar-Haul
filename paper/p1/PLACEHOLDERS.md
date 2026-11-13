@@ -347,3 +347,11 @@ zero, the sixth cell ("year 2038") kept out of the count, and the statement that
 states. `P1-OOD-N-CELLS` and `P1-OOD-N-SIG` now count without "year 2038". The build STOPS if the "year 2038" cell
 ever differs from the guard runs at 30 % load (`guards.30.atc_urgent_wait_mean_cens_h`: both means, the difference,
 its interval and n), because the text says it repeats them.
+
+## Part 5 (13 Nov 2026): the title
+
+The title is not a placeholder: it is typed twice in `part1_front.html` (the `<title>` element and
+`<h1 id="p1-title">`), and the site reads it from the `<h1 id="p1-title">` of the built `paper.html`
+(`site/lib/papers.mjs`); `values.json` has no title key. Title since 13 Nov:
+"Working Together Without Earth: Job Sharing, Team Lifts, Learned Bidding and a Message Protocol for Lunar Robots of Different Owners".
+Before: "Working Together Without Earth: Job Sharing, Team Lifts and Learned Bidding Among Lunar Robots of Different Owners". The PDF file name is unchanged.
