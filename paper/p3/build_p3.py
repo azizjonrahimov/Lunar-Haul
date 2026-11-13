@@ -1216,6 +1216,14 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
         after_hf = max(_fin(e52row(o, "hazards_first", rt)["hits_after_contact_mean"]) for o in b for rt in (10, 16, 100, 1000))
         after_of = max(_fin(e52row(o, "oldest_first", rt)["hits_after_contact_mean"]) for o in b for rt in (10, 16, 100, 1000))
         check(hits[336] > 5 * max(after_hf, after_of) and after_hf <= after_of, "most stale-map hits of a long outage happen during the outage, and hazards-first has no more hits after contact than oldest-first (5.10, 6.1)")
+        sp = r.p6("E52", "superseded_2026-11-13_b118_n1")
+        old = sp["rows"]
+        old_hf = max(_fin(x["hits_after_contact_mean"]) for x in old if x["order"] == "hazards_first")
+        old_of = max(_fin(x["hits_after_contact_mean"]) for x in old if x["order"] == "oldest_first")
+        old_day = next(_fin(x["hits_during_outage_mean"]) for x in old if x["out_h"] == 24 and x["order"] == "hazards_first" and x["rate_kbps"] == 16)
+        new_by = {(x["out_h"], x["order"], x["rate_kbps"]): x for x in r.p6("E52", "rows")}
+        check(len(old) == len(new_by) and all(all(x[k] == new_by[(x["out_h"], x["order"], x["rate_kbps"])][k] for k in x if not k.startswith("hits_")) for x in old) and
+              sp["h12"] == r.p6("E52", "h12"), "the code-review correction of E52 moved only the stale-map hit counts: bytes, times and H12 are unchanged (5.10)")
         return (f"After a day out of contact the rover's copy was behind by {num(hf['tiles_changed_mean'], 0)} tile versions on average. Bringing it up to date "
                 f"took {mb(hf['bytes_mean'])}, {pc(hf['share_of_full_resend'], 2)} of a full resend, of which the hash-tree walk was "
                 f"{cnt(hf['tree_overhead_bytes'])}&nbsp;B, against {cnt(hf['flat_manifest_bytes'])}&nbsp;B for a flat list of every tile. At 16&nbsp;kbit/s the "
@@ -1225,7 +1233,9 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
                 f"changed in each of the three layers. The hazards the rover drove into because its copy was stale were, during the outage itself, "
                 f"{num(hits[1], 2)} for an hour out of contact, {num(hits[24], 2)} for a day and {num(hits[336], 1)} for fourteen days, and after contact at most "
                 f"{num(after_hf, 2)} with hazards first and {num(after_of, 2)} with the oldest change first, at any outage and link rate (means over "
-                f"{cnt(r.p6('E52', 'seeds'))} seeds; Table 13).")
+                f"{cnt(r.p6('E52', 'seeds'))} seeds; Table 13). The hit counts were corrected after a code review on 13 November 2026, which found that "
+                f"every tile of a road leg had been given the tour distance of the leg's end: before, the largest counts after contact were "
+                f"{num(old_hf, 2)} and {num(old_of, 2)} and the count for a day out of contact {num(old_day, 2)}; bytes and times did not change.")
     fill("P3-E52-RESULTS-SENTENCE", e52_results, "E52")
 
     def h12_verdict():
@@ -1622,7 +1632,14 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
         p = r.p6("E54", "parameters")
         losses = sorted({_fin(x["loss"]) for x in r.p6("E54", "rows")})
         bo = r.p6("E54", "blackout_days")
-        check(losses == [0.1, 0.25, 0.4] and {x["protocol"] for x in r.p6("E54", "rows")} == set(PROTO), "E54 runs three protocols at three loss levels (4.2)")
+        check(losses == [0.1, 0.25, 0.4] and {x["protocol"] for x in r.p6("E54", "rows")} - {"sf_ll_pre_review"} == set(PROTO),
+              "E54 runs three protocols at three loss levels, with the return rule of before the code review kept as a variant (4.2)")
+        aj = r.p6("E54", "awards_and_jobs")
+        check(abs(_fin(aj["awards_per_seed"]) - _fin(aj["jobs_per_seed"]) - _fin(aj["team_jobs_per_seed"])) < 1e-6 and int(aj["vehicles_per_job_max"]) == 2 and
+              abs(_fin(aj["awards_per_seed"]) * len(r.p6("E54", "seeds")) - int(e54row(0.25, "drop_retry")["award_n"])) < 1e-6,
+              "E54's awards a seed are its jobs plus its two-vehicle team jobs, one award per vehicle (4.2)")
+        check(str(p["return_rule"]) == "papers" and "retraces at half speed the path it drove since the loss" in str(r.p6("E54", "lost_link_rule")),
+              "E54's lost-link return is the rule the papers state (3.8, 4.2)")
         check(abs((_fin(bo[1]) - _fin(bo[0])) - 14.0) < 1e-9, "E54 imposes a 14-day Earth blackout (4.2)")
         return (f"E54 is a simulation at the level of messages over the recorded month of E50, not a new run of the logistics engine: inside the engine a lost "
                 f"message is retried and the regimes know at once that it failed, so a lost job cannot occur there. The contact plan is the terrain mesh along "
@@ -1636,8 +1653,10 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
                 f"{unit((int(p['max_tries']) - 1) * _fin(p['retry_s']) / 60.0, 'min', 0)} on an award that lives an hour (the retry budget is our choice; the "
                 f"registration does not fix it, and it was not swept); store-and-forward hop by hop with "
                 f"custody; and store-and-forward with the lost-link ladder of Section 3.8. The per-hop loss is {', '.join(num(x, 2) for x in losses[:-1])} or "
-                f"{num(losses[-1], 2)}, on {cnt(len(r.p6('E54', 'seeds')))} seeds with {num(r.p6('E54', 'jobs_per_seed'), 0)} jobs and "
-                f"{num(r.p6('E54', 'reservations_per_seed'), 0)} single-lane reservations a seed. Two things are approximations: the return of a silent vehicle is "
+                f"{num(losses[-1], 2)}, on {cnt(len(r.p6('E54', 'seeds')))} seeds with {num(aj['jobs_per_seed'], 1)} jobs, {num(aj['awards_per_seed'], 1)} awards (one "
+                f"for each vehicle of a job; {num(aj['team_jobs_per_seed'], 2)} jobs a seed are team jobs of two vehicles) and "
+                f"{num(r.p6('E54', 'reservations_per_seed'), 0)} single-lane reservations a seed. A message is lost when its lifetime ends undelivered inside "
+                f"the window, and censored, not lost, when it is still alive and undelivered at the window's end. Two things are approximations: the return of a silent vehicle is "
                 f"applied to the contact plan and is not driven in the engine, and a returning vehicle is given a direct link to the base, which is optimistic "
                 f"when its last link went through another vehicle. E54 also counts the reservations whose holder has no path to the base "
                 f"{unit(p['grace_s'], 's', 0)} after the reservation's timeout: the base cannot confirm that the segment is clear, although in the replay every "
@@ -1653,11 +1672,20 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
         check(int(d["award_n"]) == int(s["award_n"]) == int(l["award_n"]), "E54: the three protocols carry the same awards (5.12)")
         check(int(d["grant_lost"]) > 100 * max(1, int(s["grant_lost"])) and int(l["award_lost"]) <= int(s["award_lost"]) <= int(d["award_lost"]),
               "E54: custody removes nearly all lost grants, and lost awards fall from drop-and-retry to custody to the lost-link rule (5.12)")
-        check(abs(_fin(s["aoi_mean_s"]) - _fin(d["aoi_mean_s"])) < 1.0 and _fin(l["aoi_mean_s"]) < 0.05 * _fin(s["aoi_mean_s"]),
+        check(abs(_fin(s["aoi_mean_s"]) - _fin(d["aoi_mean_s"])) < 0.01 * _fin(d["aoi_mean_s"]) and _fin(l["aoi_mean_s"]) < 0.05 * _fin(s["aoi_mean_s"]),
               "E54: custody alone does not change the age of the base's information; the lost-link rule cuts it (5.12)")
         check(int(l["stuck_reservations"]) == 0 and int(d["stuck_reservations"]) == int(s["stuck_reservations"]) > 0, "E54: reservations stay stuck without the lost-link rule only (5.12)")
         lo, hi = e54row(0.1, "drop_retry"), e54row(0.4, "drop_retry")
         ret, days = _fin(r.p6("E54", "lost_link_returns_per_seed")), 31.0
+        sp = r.p6("E54", "superseded_2026-11-13_b118")
+        ol = next(x for x in sp["rows"] if abs(_fin(x["loss"]) - L) < 1e-9 and x["protocol"] == "sf_ll")
+        check(all(int(next(x for x in sp["rows"] if abs(_fin(x["loss"]) - L) < 1e-9 and x["protocol"] == k)["award_lost"]) == int(e54row(L, k)["award_lost"])
+                  for k in ("drop_retry", "sf", "sf_ll")) and sp["h14"]["difference_sf_ll_minus_drop_retry"] == r.p6("E54", "h14")["difference_sf_ll_minus_drop_retry"],
+              "the code-review corrections of E54 changed no award loss and not H14's first clause (5.12)")
+        pre = e54row(L, "sf_ll_pre_review")
+        hv = r.p6("E54", "h14_variants")
+        check(all(v["difference_sf_ll_minus_drop_retry"] == r.p6("E54", "h14")["difference_sf_ll_minus_drop_retry"] for v in hv.values() if isinstance(v, dict)) and sum(1 for v in hv.values() if isinstance(v, dict)) >= 2,
+              "H14's first clause is the same with censored messages counted as lost and under the return rule of before the review (5.12)")
         check("until it is heard" in str(r.p6("E54", "stuck_definition")) and "UNCONFIRMED" in str(r.p6("E54", "stuck_definition")),
               "E54's count is of reservations whose release the base cannot confirm, not of vehicles still in a segment (5.12)")
         return (f"At a per-hop loss of {num(L, 2)}, drop-and-retry lost {cnt(d['award_lost'])} of {cnt(d['award_n'])} task awards "
@@ -1678,7 +1706,13 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
                 f"rule as first written released them at that moment; that zero followed from the rule's definition and is withdrawn as a result, the "
                 f"count with the ladder in force was not recomputed, and the cost of crossing an unconfirmed segment at caution speed is not priced. The "
                 f"ladder sent a silent vehicle back along its path {num(ret, 1)} times a seed, about {num(ret / days, 1)} a day for the "
-                f"{words(len(r.fleet()))} vehicles; the replay does not drive those returns, each at half speed, and no delay figure contains them (Table 15).")
+                f"{words(len(r.fleet()))} vehicles; the replay does not drive those returns, each at half speed, and no delay figure contains them (Table 15). "
+                f"The values of this paragraph were corrected after a code review on 13 November 2026 (a bundle could be counted as delivered after its "
+                f"lifetime; the age of information had a floor of half a step; the return rule in the code was not the one stated in Section 3.8): "
+                f"before, the age of information with the rule was {dur(ol['aoi_mean_s'])} ({dur(ol['aoi_worst_vehicle_s'])} for the worst vehicle), the "
+                f"task-state reports took {dur(ol['task_state_delay_mean_s'])} with {cnt(ol['task_state_lost'])} lost, {cnt(ol['grant_lost'])} grants were lost "
+                f"with the rule, and the ladder made {num(sp['lost_link_returns_per_seed'], 1)} returns a seed. The award losses did not change, and under "
+                f"the earlier return rule, kept as a variant, the age of information is {dur(pre['aoi_mean_s'])}.")
     fill("P3-E54-RESULTS-SENTENCE", e54_results, "E54")
 
     def e54_v02(kind="sentence"):
@@ -1691,8 +1725,8 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
         check(list(b["values_moved_vs_v01"]) == [] and all(len(rows[v]) == len(rows["v0.1"]) and all(same(x, y) for x, y in zip(rows["v0.1"], rows[v]))
                                                          for v in ("v0.2", "v0.2_proximity1")),
               "the E54 replay at version 0.2 sizes and in Proximity-1 frames gives the version 0.1 value in every row (5.12)")
-        pub = r.p6("E54", "rows")
-        check(all(b["reproduction_of_published_v01"].values()) and len(pub) == len(rows["v0.1"]) and
+        pub = [x for x in r.p6("E54", "rows") if x["protocol"] != "sf_ll_pre_review"]
+        check(all(b["reproduction_of_main_table_v01"].values()) and len(pub) == len(rows["v0.1"]) and
               all(all(x[k] == y[k] for k in y if k in x) for x, y in zip(rows["v0.1"], pub)),
               "the version 0.1 rows of the rerun reproduce the published rows of E54 (5.12)")
         check(all(b["h14"][v] == b["h14"]["v0.1"] for v in b["h14"]) and
@@ -1728,6 +1762,7 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
         c1 = _fin(dd["ci"][1]) < 0
         c2 = int(h["stuck_reservations_sf_ll"]) == 0
         check(bool(h["supported"]) == (c1 and c2) and "loss 0.25" in str(h["rule"]), "H14's flag follows from its two clauses at loss 0.25 (5.12)")
+        check("holds BY RULE, not by measurement" in str(h["clause_2_basis"]) and bool(h["clause_1_measured"]), "the results file says H14's second clause holds by rule, not by measurement (5.12)")
         d, s_, l = (e54row(0.25, k) for k in ("drop_retry", "sf", "sf_ll"))
         check(abs(_fin(h["lost_jobs_drop_retry_per_seed"]["mean"]) * len(r.p6("E54", "seeds")) - int(d["award_lost"])) < 1e-6,
               "H14's lost jobs per seed are the expired awards of the table (5.12)")
@@ -1742,7 +1777,9 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
                 f"{cnt(len(r.p6('E54', 'seeds')))} months, with a returning vehicle given a direct link. That the rule leaves no reservation stuck past its "
                 f"timeout is not testable as written, as a dated entry of [67] records: the zero in the run followed from the definition of the rule as "
                 f"first written, which released a silent vehicle's reservation, and that release is unsafe if the vehicle is disabled inside the "
-                f"segment. The rule now marks the segment unconfirmed, and what E54 gives for it is the count above.")
+                f"segment. In the words of the results file, the clause holds by rule, not by measurement, and only the first clause is measured. The "
+                f"rule now marks the segment unconfirmed, and what E54 gives for it is the count above. The first clause gives the same difference with "
+                f"censored messages counted as lost and under the return rule the code had before the review.")
     fill("P3-H14-VERDICT-SENTENCE", h14_verdict, "E54")
 
     def e54_ledger(kind):
@@ -1826,12 +1863,25 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
         acc = sum(int(v["replays_accepted"]) for v in rp.values())
         check(acc == 0 and all(int(v["accepted_missed_original"]) == 0 for v in rp.values()), "no replayed message was accepted in E55 (5.11, Proposition 7)")
         per = " and ".join(f"{cnt(v['replays'])} at a loss of {num(float(k), 2)}" for k, v in sorted(rp.items(), key=lambda kv: float(kv[0])))
+        desc, rec = str(r.p6("E55", "replay_trial_description")), r.p6("E55", "replay_recent")
+        rr = sorted(rec["loss"].items(), key=lambda kv: float(kv[0]))
+        acc_r = sum(int(v["replays_accepted"]) for _, v in rr)
+        in_win = sum(int(v["accepted_missed_original_inside_window"]) for _, v in rr)
+        check("drawn from the whole recorded log" in desc and "about 1 %" in desc and "after the code review of 13 Nov 2026" in str(rec["added"]) and
+              "last 60 s" in str(rec["setup"]), "the first replay trial draws from the whole log (about 1 % inside the window); the second, added after the code review, replays recent messages (5.11)")
+        check(acc_r == in_win and all(int(v["accepted_other"]) == 0 for _, v in rr),
+              "every replay accepted in the recent-replay trial went to a receiver that had missed the original and was inside the window (5.11, Proposition 7)")
         return (f"The acceptance of forged messages was measured with the real AES-CMAC truncated to a short code, because the 8-byte code cannot be tried "
                 f"often enough: " + "; ".join(bits) + f". For the 64-bit code of the narrow channel the same law gives {e10(2.0 ** -64, 1)} per attempt and "
-                f"{e10(year * 2.0 ** -64, 1)} for ten attempts a second over a year (formula, not a trial). Of {cnt(tot)} recorded messages replayed after 0 to "
-                f"60&nbsp;s to receivers that keep the per-sender counter and the 10&nbsp;s freshness window, {per}, {'none was' if acc == 0 else cnt(acc) + ' were'} "
-                f"accepted. The one replay the rule admits is to a receiver that missed the original and gets the copy within the window: it then learns a "
-                f"true but stale state.")
+                f"{e10(year * 2.0 ** -64, 1)} for ten attempts a second over a year (formula, not a trial). Two replay trials were run against receivers "
+                f"that keep the per-sender counter and the 10&nbsp;s freshness window. In the first, {cnt(tot)} replays, {per}, "
+                f"{'none was' if acc == 0 else cnt(acc) + ' were'} accepted; but each replayed message was drawn at random from the whole ten-minute log "
+                f"and stamped 0 to 60&nbsp;s later, so it was usually minutes old, only about one in a hundred fell inside the window, and the zero says "
+                f"little about the window. A second trial, added after a code review on 13 November 2026, replays messages sent in the last 60&nbsp;s: "
+                + " and ".join(f"{'none' if int(v['replays_accepted']) == 0 else cnt(v['replays_accepted'])} of {cnt(v['replays'])} "
+                               f"{'was' if int(v['replays_accepted']) <= 1 else 'were'} accepted at a loss of {num(float(k), 2)}" for k, v in rr) +
+                f"; every accepted copy went to a receiver that had missed the original and was still inside the window ({cnt(in_win)} of {cnt(acc_r)}). "
+                f"That is the one replay the rule admits: the receiver then learns a true state that is at most one window old.")
     fill("P3-E55-AUTH-SENTENCE", e55_auth, "E55 authentication")
 
     def e55_consensus():
@@ -1844,10 +1894,15 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
             rng[geo] = (min(v), max(v))
         check(rng["fleet"][1] < 0.5 and rng["spread"][1] < 0.5, "on the terrain mesh the condition that every honest rover hears three others holds in under half the draws (5.11)")
         both = lambda a: pc(a[0], 0) if abs(a[0] - a[1]) < 5e-4 else f"{pc(a[0], 0)} to {pc(a[1], 0)}"
+        rb = r.p6("E55", "h16", "robust_evidence_by_basis")
+        check(bool(rb["exact_2F1_robust_N_le_8"]["runs_robust_all_safe"]) and int(rb["exact_2F1_robust_N_le_8"]["runs_robust"]) < int(rb["degree_condition_only_N_gt_8"]["runs_robust"]),
+              "H16's exactly robust evidence is a few runs, fewer than those on the degree condition only (5.11)")
         return (f"For agreement by averaging, the trimmed-mean rule of Section 3.8 needs every honest rover to hear at least three others when one value may be "
                 f"false. On the terrain mesh that held in {both(rng['fleet'])} of the draws at fleet positions and in {both(rng['spread'])} of the draws spread "
                 f"over the routes, so the rule needs more links, relays or masts, or the base as the averaging node. The pre-registered test of the rule, H16 of "
-                f"[67], is {'supported' if bool(r.p6('E55', 'h16', 'supported')) else 'not supported as stated'}, and the companion paper reports it [61].")
+                f"[67], is {'supported' if bool(r.p6('E55', 'h16', 'supported')) else 'not supported as stated'}, and the companion paper reports it [61]; "
+                f"its evidence on meshes shown to be robust is {words(rb['exact_2F1_robust_N_le_8']['runs_robust'])} runs, and "
+                f"{cnt(rb['degree_condition_only_N_gt_8']['runs_robust'])} more meet only a necessary condition.")
     fill("P3-E55-CONSENSUS-SENTENCE", e55_consensus, "E55 consensus")
     def e55_base_node(kind="sentence"):
         """The variant of E55 in which the base mast joins as an honest node: `consensus_with_base_mast.cells` against `consensus.cells`."""
@@ -2193,7 +2248,10 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
         eb = r.p6("E50b", "metrics", "delay_mean_h")
         ebs = r.p6("E50b", "stops")
         dsp = r.p6("E53", "driving_split", "e53_auth_20_rovers", "fleet_driving", "1 Hz")
-        pr5, mm5 = r.s48("per_robot_round", "laptop_ms_by_multiple"), r.s48("measured_memory", "mb_by_multiple")
+        rr_ = r.p6("E55", "replay_recent", "loss")
+        rr_acc, rr_n = sum(int(v["replays_accepted"]) for v in rr_.values()), sum(int(v["replays"]) for v in rr_.values())
+        check(rr_acc == sum(int(v["accepted_missed_original_inside_window"]) for v in rr_.values()), "Table 18: every accepted recent replay is the case Proposition 7(b) allows")
+        tp5, mm5 = r.s48("per_robot_round", "timing_passes", "by_multiple"), r.s48("measured_memory", "mb_by_multiple")
         rows = [
             # proved
             ["Beyond the breakpoint the loss over flat ground is 40&nbsp;log&nbsp;d &minus; 20&nbsp;log(h<sub>1</sub>h<sub>2</sub>), whatever the frequency; two antennas "
@@ -2214,7 +2272,8 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
              f"No hash collisions; hash bytes in one direction, without replies and framing. Every row of E52 is within the bound ({n52} seeds)", "Proposition 6; Section 5.10"],
             ["A forged message passes a t-bit code with probability 2<sup>&minus;t</sup>; a replay is rejected by any receiver that accepted the original or a later message", f"{P}; {T.lower()}",
              f"An ideal code, a counter never reused under one key. Counted at 8 and 16 bits with the real AES-CMAC: {cnt(fz['8']['accepted'])} of {cnt(fz['8']['attempts'])} and "
-             f"{cnt(fz['16']['accepted'])} of {cnt(fz['16']['attempts'])}; no replay accepted (E55). The 64-bit value is the formula's", "Proposition 7; Section 5.11"],
+             f"{cnt(fz['16']['accepted'])} of {cnt(fz['16']['attempts'])}. Replays of messages up to 60&nbsp;s old: {cnt(rr_acc)} of {cnt(rr_n)} accepted, each by a "
+             f"receiver that had missed the original and inside the window, the case the statement allows (E55). The 64-bit value is the formula's", "Proposition 7; Section 5.11"],
             ["Beacons seen within a narrow angle dilute a ranging fix by at least 2/(&radic;N&nbsp;sin&nbsp;2&alpha;); beacons on one line give nothing across it", P,
              "Two-way ranges with equal independent Gaussian errors, all beacons in view, one epoch with no prior: not a bound on E50's sequential filter, and "
              "silent on the region where fewer than two beacons are in view", "Proposition 8"],
@@ -2259,11 +2318,12 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
              f"A {num(led['life'], 0)}-day lifetime against {num(led['down'], 1)} days without Earth, set by where the imposed blackout falls in the month; the same in every seed", "Section 5.12"],
             [f"Sizing (H10 of [59], exploratory): the safety check takes {pc(e48h['safety_core_share_flight_per_robot_10hz'], 1)} of one core of the reference processor", T,
              f"E48: one Python function timed on a laptop over the same moves for every class, with no reservation entries in the call, and scaled by an assumed factor", "Section 5.1"],
-            [f"One robot's bid computation in an auction round, scaled, takes {unit(pr5['1']['flight_p99_ms'] / 1000.0, 's', 2)} at the 99th percentile at "
-             f"today's fleet, within the one-second decision, and {unit(pr5['4']['flight_p99_ms'] / 1000.0, 's', 2)} and "
-             f"{unit(pr5['8']['flight_p99_ms'] / 1000.0, 's', 2)} at four and eight times the fleet, above it", T,
-             f"E48: a laptop timing of Python in one 30-day month of one seed per fleet size, scaled by an assumed factor; the simulator's whole-fleet call "
-             f"({unit(p99s, 's', 2)}, pooled) is about one robot's share", "Section 5.1"],
+            [f"One robot's bid computation in an auction round, scaled, takes at most "
+             f"{unit(max(_fin(v) for v in tp5['1']['flight_p99_ms_by_pass']) / 1000.0, 's', 2)} at the 99th percentile at today's fleet and at most "
+             f"{unit(max(_fin(v) for m_ in ('4', '8') for v in tp5[m_]['flight_p99_ms_by_pass']) / 1000.0, 's', 2)} at four and eight times it: under the "
+             f"one-second decision at the central factor, over it only at the top of the factor's range at the larger fleets", T,
+             f"E48: three laptop passes of Python in one 30-day month of one seed per fleet size, without the memory tracer (corrected after a code review), "
+             f"scaled by an assumed factor; the simulator's whole-fleet call ({unit(p99s, 's', 2)}, pooled) is of the same size", "Section 5.1"],
             [f"The on-robot parts allocate {num(max(_fin(v['all_at_once_peak']) for v in mm5.values()), 2)}&nbsp;MB at most", T + " (measured on a laptop)",
              "E48: peaks of Python allocations in one month of one seed per fleet size; the interpreter, the code and the numerical library's buffers are "
              "not counted; most of it is the learned bid policy", "Section 5.1"],
@@ -2339,7 +2399,6 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
         h11 = bool(r.p6("E51", "h11", "supported"))
         guard = _fin(r.p6("E51", "constants", "guard_s"))
         e52 = e52row(24, "hazards_first", 16)
-        h12 = bool(r.p6("E52", "h12", "supported"))
         on, off = e53row("fleet", "on", 1.0, 20), e53row("fleet", "off", 1.0, 20)
         add = _fin(on["per_rover_kbps"]) / _fin(off["per_rover_kbps"]) - 1.0
         h13 = bool(r.p6("E53", "h13", "supported"))
@@ -2362,7 +2421,6 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
         eb_rel = _fin(eb["diff_mean"]) / _fin(eb["without_stop_time"])
         eb_up = _fin(eb["diff_mean"]) > 0
         pairs51 = int(c10["conflict_pairs_checked"])
-        s_map = map_sizes()
         d54 = e54row(0.25, "drop_retry")
         if kind == "abstract":
             return (f"Ranging {'holds' if near_in else 'does not hold'} the 95th percentile of position error at {m_(near)} where two or more base "
@@ -2545,12 +2603,20 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
         for x in rows:
             tech[x.get("technique", "unstated")] = tech.get(x.get("technique", "unstated"), 0) + 1
         tech_txt = ", ".join(f"{html.escape(str(k))} ({cnt(v)})" for k, v in sorted(tech.items(), key=lambda kv: (-kv[1], str(kv[0]))))
-        g1 = [x for x in rows if x["id"] == "G1"]
-        if len(g1) != 1:
-            raise KeyError(f"vv_phase6.json: {len(g1)} rows with id G1")
-        m = re.search(r"(\d+) summary values compared", str(g1[0].get("basis", "")))
-        check(bool(m) and str(g1[0].get("unit")) == "summary values differing", "the options-off row counts differing summary values and states how many it compared")
-        n_cmp, n_diff = int(m.group(1)), int(round(_fin(g1[0]["simulated"])))
+        g1 = [x for x in rows if x["id"] == "G1" and str(x.get("sub")) == "options off"]
+        g1on = [x for x in rows if x["id"] == "G1" and str(x.get("sub")).startswith("option on")]
+        if len(g1) != 1 or len(g1on) != 1:
+            raise KeyError(f"vv_phase6.json: {len(g1)} rows G1 'options off' and {len(g1on)} rows G1 'option on' tagged P3")
+        m = re.search(r"(\d+) days?, seed (\d+): (\d+) summary values against .*\(commit ([0-9a-f]{7})\)", str(g1[0].get("basis", "")))
+        mo = re.search(r"(\d+) of (\d+) summary values differ", str(g1on[0].get("basis", "")))
+        check(bool(m) and bool(mo) and str(g1[0].get("unit")) == "summary values differing" and bool(g1on[0].get("passed")) and
+              os.path.exists(os.path.join(RES, f"vv6_g1_reference_{m.group(4) if m else ''}.json")),
+              "the options-off row compares one run's summary values with a stored run of the code before the revision, and a second row shows that an option switched on changes them")
+        n_days, n_cmp, g1_commit, n_diff = int(m.group(1)), int(m.group(3)), m.group(4), int(round(_fin(g1[0]["simulated"])))
+        n_on = int(mo.group(1))
+        check(int(mo.group(2)) == n_cmp and n_on > 0, "the option-on row is over the same summary values and changes some of them")
+        g1_scope = (f"one scenario, one seed and {cnt(n_days)} days, {cnt(n_cmp)} summary values, against a stored run of the code before the revision "
+                    f"(commit <code>{g1_commit}</code>)")
         if kind == "design":
             commit = str(d.get("commit") or "")
             return (f"The revision has its own suite (<code>lunarsim/vv6.py</code>, results in <code>results/vv_phase6.json</code>): {cnt(len(rows))} of its rows bear "
@@ -2558,15 +2624,17 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
                     f"behind Appendix A and Sections 3.5 to 3.8, the growth of dead-reckoning error, the dilution of precision, the lunar clock rate and the clock "
                     f"model's constant, range from clock error, holdover, the coordinate round trip, the frame shift, the map projection, the hash-tree bound, the "
                     f"link budget's worked example, the radio horizon, the rate at the worst hop and the forgery rate of a short code, and three degenerate "
-                    f"cases: every engine option of the revision off against the earlier engine, on {cnt(n_cmp)} summary values of a run, perfect clocks, and the "
-                    f"perfect layer set" + (f"; they ran at commit <code>{html.escape(commit[:7])}</code>" if commit else "") + ".")
+                    f"cases: every engine option of the revision off ({g1_scope}), with a row that shows the comparison can fail, perfect clocks, and the "
+                    f"perfect layer set" + (f"; they ran at commit <code>{html.escape(commit[:7])}</code>" if commit else "") + ". That comparison was "
+                    f"rebuilt after a code review on 13 November 2026: before, it compared the default run with itself.")
         bad = [x for x in rows if not x.get("skipped") and not x.get("passed")]
         skipped = [x for x in rows if x.get("skipped")]
         head = (f"Every one of the {cnt(len(rows))} checks of the revision's suite tagged to this paper passed" if not bad and not skipped else
                 f"Of the {cnt(len(rows))} checks of the revision's suite tagged to this paper, {cnt(len(bad))} failed "
                 f"({'; '.join(html.escape(str(x['id']) + ' ' + str(x.get('name', ''))) for x in bad)}) and {cnt(len(skipped))} were not run")
-        return (head + f"; with every engine option of the revision off, {'none' if n_diff == 0 else cnt(n_diff)} of the {cnt(n_cmp)} summary values compared "
-                f"{'differs' if n_diff <= 1 else 'differ'} from the earlier engine's run.")
+        return (head + f". With every engine option of the revision off, {'none' if n_diff == 0 else cnt(n_diff)} of the summary values compared "
+                f"{'differs' if n_diff <= 1 else 'differ'} from the earlier code's run, within this scope: {g1_scope}; with one option switched on, "
+                f"{cnt(n_on)} of the {cnt(n_cmp)} differ, so the comparison can fail. It is not a statement that the revision leaves the engine unchanged in general.")
     fill("P3-CHECKS6-SENTENCE", lambda: vv6_sentence("design"), "vv_phase6.json (B-98)")
     fill("P3-CHECKS6-OUTCOME-SENTENCE", lambda: vv6_sentence("outcome"), "vv_phase6.json (B-98)")
 
@@ -2863,9 +2931,19 @@ def values(r: R, allow_pending: bool):
             check(abs(_fin(x["p99_ms"]) * f - _fin(x["flight_p99_ms"])) < 0.6 and abs(_fin(x["median_ms"]) * f - _fin(x["flight_median_ms"])) < 0.06 and
                   abs(_fin(x["p99_ms"]) * flo - _fin(x["flight_p99_ms_range"][0])) < 0.6 and abs(_fin(x["p99_ms"]) * fhi - _fin(x["flight_p99_ms_range"][1])) < 0.6 and
                   int(x["days"]) == 30, f"one robot's bid time at {m} times the fleet is the laptop time times the flight factor, from a 30-day month (5.1)")
-            t[m] = {"p99": _fin(x["flight_p99_ms"]) / 1000.0, "med": _fin(x["flight_median_ms"]), "lo": _fin(x["flight_p99_ms_range"][0]) / 1000.0,
-                    "hi": _fin(x["flight_p99_ms_range"][1]) / 1000.0, "n": int(x["n"]), "free": _fin(x["robots_per_round_mean"]), "robots": int(x["robots"]),
-                    "fits": _fin(x["flight_p99_ms"]) <= 1000.0}
+            tp = pr["timing_passes"]["by_multiple"][m]
+            ps = [_fin(v) / 1000.0 for v in tp["flight_p99_ms_by_pass"]]
+            plo, phi = (_fin(v) / 1000.0 for v in tp["flight_p99_ms_over_passes_and_factor_range"])
+            central = "inside" if max(ps) <= 1.0 else ("above" if min(ps) > 1.0 else "straddling")
+            over = "inside" if phi <= 1.0 else ("above" if plo > 1.0 else "straddling")
+            check(bool(x.get("timed_without_tracemalloc")) and len(ps) == 3 and abs(ps[0] - _fin(x["flight_p99_ms"]) / 1000.0) < 1e-3 and
+                  abs(plo - min(_fin(v) for v in tp["laptop_p99_ms_by_pass"]) * flo / 1000.0) < 1e-3 and abs(phi - max(_fin(v) for v in tp["laptop_p99_ms_by_pass"]) * fhi / 1000.0) < 1e-3 and
+                  central == str(tp["against_1s_at_central_factor"]) and over == str(tp["against_1s_over_passes_and_factor_range"]),
+                  f"one robot's bid time at {m} times the fleet: three passes timed without the memory tracer, and the file's verdicts against one second follow from them (5.1)")
+            t[m] = {"p99": _fin(x["flight_p99_ms"]) / 1000.0, "med": _fin(x["flight_median_ms"]), "lo": plo, "hi": phi, "passes": ps, "central": central, "over": over,
+                    "n": int(x["n"]), "free": _fin(x["robots_per_round_mean"]), "robots": int(x["robots"]), "fits": central == "inside"}
+        old = r.s48("superseded_2026-11-13_b118_n12", "per_robot_round", "laptop_ms_by_multiple")
+        check("tracemalloc" in str(r.s48("superseded_2026-11-13_b118_n12", "reason")), "the earlier per-robot times were superseded because the memory tracer ran during one round in twenty (5.1)")
         check(list(t) == ["1", "4", "8"] and "seed 1" in str(pr["revision"]) and "ONE robot's bid computation" in str(pr["revision"]),
               "the per-robot timing is of one robot's bid computation, seed 1, at one, four and eight times the fleet (5.1)")
         whole = _fin(pr["whole_fleet_dispatch_call_ms_pooled"]["p99"]) * f / 1000.0
@@ -2879,28 +2957,38 @@ def values(r: R, allow_pending: bool):
               abs(est - _fin(r.s48("classes", "LTV1", "peak_memory_mb"))) < 1e-9 and max(v["plus"] for v in mem.values()) < est,
               "the measured memory is tracemalloc peaks of the on-robot parts, without the interpreter, the code and numpy buffers, and below the estimate (5.1)")
         check(all(v["policy"] > 0.8 * v["all"] for v in mem.values()), "most of the measured peak is the learned bid policy (5.1)")
-        _b105.update({"t": t, "whole": whole, "mem": mem, "est": est, "f": f})
+        _b105.update({"t": t, "whole": whole, "mem": mem, "est": est, "f": f, "old": {m: _fin(v["flight_p99_ms"]) / 1000.0 for m, v in old.items()}})
         return _b105
 
     def b105_round():
+        """5.1: one robot's bid computation per fleet size, three passes timed without the memory tracer (corrected after the code review of
+        13 Nov 2026, finding N12). The verdict against the one-second decision is the file's: inside, above or straddling."""
         b = b105()
         t = b["t"]
-        fit = [m for m in t if t[m]["fits"]]
-        nofit = [m for m in t if not t[m]["fits"]]
         MN = {"1": "today's fleet", "4": "four times the fleet", "8": "eight times the fleet"}
-        check(abs(b["whole"] - max(t[m]["p99"] for m in t)) < 0.25, "the pooled whole-fleet call is about the size of one robot's 99th percentile at the larger fleets (5.1)")
-        verdict = ("within the one-second decision at every fleet size" if not nofit else
-                   (f"within the one-second decision at {' and '.join(MN[m] for m in fit)} and above it at {' and '.join(MN[m] for m in nofit)}" if fit else
-                    "above the one-second decision at every fleet size"))
+        check(abs(b["whole"] - max(max(t[m]["passes"]) for m in t)) < 0.25, "the pooled whole-fleet call is of the size of one robot's 99th percentile at the larger fleets (5.1)")
+        VW = {"inside": "under one second in every pass and over the whole range of the scaling factor",
+              "straddling": "under one second in every pass at the central factor and over it only towards the top of the factor's range",
+              "above": "over one second in every pass"}
+        key = lambda m: t[m]["central"] if t[m]["central"] != "inside" else t[m]["over"]
+        groups = {}
+        for m in t:
+            groups.setdefault(key(m), []).append(MN[m])
+        verdict = "; ".join(f"at {' and '.join(v)} it is {VW[k]}" for k, v in groups.items())
         return (f"One robot's own bid computation in an auction round, its loop over the waiting items, was then timed apart from the simulator's round, "
-                f"in one 30-day month of one seed per fleet size, and scaled by the same assumed factor. At the 99th percentile it takes "
-                + ", ".join(f"{unit(t[m]['p99'], 's', 2)} at {MN[m]} ({num(t[m]['lo'], 2)} to {num(t[m]['hi'], 2)} over the factor's range; "
-                            f"{cnt(t[m]['n'])} robot-rounds, {num(t[m]['free'], 1)} free robots a round)" for m in t) +
-                f", and {num(min(t[m]['med'] for m in t), 0)} to {unit(max(t[m]['med'] for m in t), 'ms', 0)} at the median: {verdict}. The slow rounds "
-                f"are those with many waiting items, each of which the robot tries to insert into its plan; a cap on the items a robot evaluates in a round "
-                f"would bound the time and is not in the design. The whole-fleet figure above is therefore about one robot's 99th percentile, with "
-                f"several robots free in a round at the larger fleets. This is a laptop timing of Python scaled by an assumed factor, on one "
-                f"seed, not a measurement on flight hardware.")
+                f"in one 30-day month of one seed per fleet size, three passes each with no memory tracer running, and scaled by the same assumed "
+                f"factor. At the 99th percentile the three passes give "
+                + "; ".join(f"{', '.join(num(v, 2) for v in t[m]['passes'][:-1])} and {unit(t[m]['passes'][-1], 's', 2)} at {MN[m]} ({num(t[m]['lo'], 2)} to "
+                            f"{num(t[m]['hi'], 2)} over the passes and the factor's range; {cnt(t[m]['n'])} robot-rounds, {num(t[m]['free'], 1)} free robots a "
+                            f"round)" for m in t) +
+                f", and {num(min(t[m]['med'] for m in t), 0)} to {unit(max(t[m]['med'] for m in t), 'ms', 0)} at the median. Against the one-second "
+                f"decision: {verdict}. These times were corrected after a code review on 13 November 2026, which found that one round in twenty had been "
+                f"timed with the memory tracer running: before, the figures were {num(b['old']['1'], 2)}, {num(b['old']['4'], 2)} and "
+                f"{unit(b['old']['8'], 's', 2)}, and the last two were reported as above one second. The slow rounds are those with many waiting items, "
+                f"each of which the robot tries to insert into its plan; a cap on the items a robot evaluates in a round would bound the time and is "
+                f"not in the design. The whole-fleet figure above is of the same size as one robot's 99th percentile at the larger fleets. This is a "
+                f"laptop timing of Python scaled by an assumed factor, on one seed, with a spread between passes of the size shown, not a measurement "
+                f"on flight hardware.")
 
     def b105_memory():
         b = b105()
@@ -2937,8 +3025,9 @@ def values(r: R, allow_pending: bool):
                 f"holds for robots standing at sites, and a driving robot has a path to the base {pc(ob['drive'], 1)} of the time (Section 5.2). The scaling "
                 f"factor is {num(s['factor'], 1)} (range {num(s['range'][0], 1)}&ndash;{num(s['range'][1], 1)}). The bidding, which H10 also names, has no "
                 f"registered capacity; against the one-second decision of this design one robot's bid computation, scaled, "
-                f"{'fits at every fleet size' if all(v['fits'] for v in b5['t'].values()) else ('fits at today' + chr(39) + 's fleet and not at four and eight times it' if b5['t']['1']['fits'] and not b5['t']['4']['fits'] and not b5['t']['8']['fits'] else 'does not fit at every fleet size')} "
-                f"at the 99th percentile.")
+                f"{'stays under it at the central factor at every fleet size' if all(v['fits'] for v in b5['t'].values()) else 'does not stay under it at every fleet size'} "
+                f"at the 99th percentile, and {'passes it only at the top of the factor range at four and eight times the fleet' if b5['t']['1']['over'] == 'inside' and b5['t']['4']['over'] == b5['t']['8']['over'] == 'straddling' else 'the factor range changes that at some fleet sizes'} "
+                f"(Section 5.1).")
     fill("P3-H10-VERDICT-SENTENCE", h10_sentence, "E48")
 
     def e48_round():
@@ -3445,17 +3534,21 @@ def values(r: R, allow_pending: bool):
     def e48_clause(kind):
         s = e48_scaled()
         a = s["air"]
-        core_ok = all(s["fits"].values())           # the processor and the memory
         p99s = e48_round_p99_s()
         b5 = b105()
         t5 = b5["t"]
-        check(t5["1"]["fits"] and not t5["4"]["fits"] and not t5["8"]["fits"],
-              "one robot's bid computation fits the one-second decision at today's fleet and not at four and eight times it, at the 99th percentile (abstract, 5.1, 9)")
-        round_txt = (f"one robot's bid computation in an auction round, timed on a laptop in one month of one seed and scaled by the same factor, takes "
-                     f"{unit(t5['1']['p99'], 's', 2)} at the 99th percentile at today's fleet, within the one-second decision, and {unit(t5['4']['p99'], 's', 2)} "
-                     f"and {unit(t5['8']['p99'], 's', 2)} at four and eight times the fleet, above it")
-        round_short = (f"one robot's bid takes {unit(t5['1']['p99'], 's', 2)} (99th percentile) at today's fleet and {unit(t5['8']['p99'], 's', 2)} at "
-                       f"eight times it, above the one-second decision")
+        check(all(t5[m]["central"] == "inside" for m in t5) and t5["1"]["over"] == "inside" and t5["4"]["over"] == t5["8"]["over"] == "straddling",
+              "one robot's bid computation is under one second at the central factor in every pass at every fleet size, and over it only at the top of the "
+              "factor range at four and eight times the fleet (abstract, 5.1, 6.1, 7, 9)")
+        big = [v for m in ("4", "8") for v in t5[m]["passes"]]
+        round_txt = (f"one robot's bid computation in an auction round, timed on a laptop in three passes of one month of one seed and scaled by the same "
+                     f"factor, takes {num(min(t5['1']['passes']), 2)} to {unit(max(t5['1']['passes']), 's', 2)} at the 99th percentile at today's fleet and "
+                     f"{num(min(big), 2)} to {unit(max(big), 's', 2)} at four and eight times the fleet, under the one-second decision at the central factor "
+                     f"and over it only towards the top of the factor's range at the larger fleets")
+        worst_m = max(t5, key=lambda m: max(t5[m]["passes"]))
+        round_short = (f"one robot's bid stays under one second (99th percentile, at most {unit(max(t5[worst_m]['passes']), 's', 2)} at "
+                       f"{ {'1': 'today' + chr(39) + 's fleet', '4': 'four times the fleet', '8': 'eight times the fleet'}[worst_m] }) except at the top of the "
+                       f"factor's range")
         if kind == "abstract":
             return (f"Scaled by {num(s['factor'], 1)} to flight hardware, the safety check takes {num(s['cpu_share_worst'] * 100, 1)}{PCT} of one core; "
                     f"{round_short}. {cap1(words(a['robots']) if a['robots'] < 10 else {20: 'twenty'}.get(a['robots'], cnt(a['robots'])))} robots' authenticated traffic, "
@@ -3935,12 +4028,10 @@ def values(r: R, allow_pending: bool):
         removed = [rule for rule in BID_RULES if all(au20[rule][sp] <= 0 for sp in SPLITS)]
         sec_ratio = bud["second"]["3eq"] / bud["first"]["3eq"] if bud["first"]["3eq"] else None
         if kind == "abstract":
-            bid_sign = {sign_word(bud[x]['3eq']) for x in BID_RULES}
             ow, one, worse = e46_vs_none("summary")
             vs = ("" if not worse else (f", but owner {ow[0]} fell below the no-payment market under every paid rule" if one else
                                         f", but {cnt(len(worse))} owner-rule-split cases fell below the no-payment market"))
-            return (f"Every owner beat working alone under {rules_txt}{vs}; "
-                    f"{('the bid rules ran ' + bid_sign.pop()) if len(bid_sign) == 1 else ('first price ran ' + sign_word(bud['first']['3eq']) + ' and the second price ' + sign_word(bud['second']['3eq']))}.")
+            return f"Every owner beat working alone under {rules_txt}{vs}."
         if kind == "intro":
             ow, one, worse = e46_vs_none("summary")
             vs = ("" if not worse else (f", though owner {ow[0]} was worse off than under no payments under every paid rule" if one else

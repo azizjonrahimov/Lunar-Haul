@@ -163,3 +163,33 @@ bound, not a covariance" replaces the sentence on what version 0.1 lacked. Table
    the v0.2 and framed rows equal the v0.1 rows and stops if they ever differ. Future work had no such sentence and is unchanged.
 2. Reference [60] carries P1's new title.
 3. The tally of the 44 findings does not move (34 fixed, 6 fixed in part, 4 not done). No verdict moved.
+
+## Part 6 (13 Nov): corrections after the code review
+
+Source: `reports/review_phase6_code.md` and the dated entry of PREREG6 section 6. Every value is read through the build from the corrected
+results file, and each earlier value from that file's `superseded_...` key. Build: passes with `--no-pdf`, without `--allow-pending`;
+abstract 298 words, conclusion 249; PDF not rebuilt (memory).
+
+Corrections after code review:
+- **E52 (N1), 5.10, 6.1, Table 13.** Stale-map hits after contact at most 0.40 (hazards first) and 1.72 (oldest first), were 0.08 and 1.65; one day
+  out of contact 0.78, was 0.80. Bytes, times and H12 unchanged (checked row by row).
+- **E54 (N3 to N7), 4.2, 5.12, Table 15.** Age of information with the rule 9.5 s (worst vehicle 39.9 s), was 45.5 s (2.5 min); task-state
+  reports 3.4 s with none lost, were 33.0 s with 2 lost; grants lost with the rule 3, were 0 (at loss 0.40: 29 and 22 in the table); returns
+  87.3 a seed, were 82.1. A message still alive at the window's end is now "censored", not lost. The return rule is the one the paper states;
+  the earlier rule is a variant (age of information 20.9 s). H14's first clause is unchanged under both definitions and both rules. The second
+  clause: "holds by rule, not by measurement" (the file's words), beside the statement that the release rule is withdrawn (decision B1).
+- **E55 (N9, N16), 5.11, Table 18.** The first replay trial (1,172 replays, none accepted) is said to draw from the whole log, with about one in
+  a hundred inside the window; the new trial, labelled as added after the review: none of 589 accepted at loss 0.10, 6 of 590 at 0.25, all six
+  copies a receiver had missed and inside the window. H16's exactly robust evidence: three runs, 53 on a necessary condition only.
+- **E48 (N12), 5.1, 6.1, 7, Table 18, abstract, conclusion.** One robot's bid, three passes without the memory tracer: 0.21, 0.30, 0.21 s at
+  today's fleet; 0.92, 0.83, 0.77 s at four times; 0.94, 0.77, 0.79 s at eight times: under one second at the central factor in every pass,
+  over it only towards the top of the factor's range at four and eight times the fleet. Was 0.29, 1.09 and 1.19 s, "above" at four and eight
+  times. That verdict is withdrawn wherever it stood.
+- **Verification (N2, N22), 3.10, 5.14.** 36 rows bear on P3, all pass. G1 is stated with its scope: one scenario, one seed, 30 days, 144
+  summary values, against a stored run of commit 0210c22; one option switched on changes 14 of them.
+- **Builder (review P2).** `core_ok`, `h12`, `s_map` (and `bid_sign`) were computed and never checked: deleted.
+- **E56 (N10, N11).** P3 prints no E56 recall and no false-alarm interval; H15a's adjusted p now prints as a value (0.003), not "at most".
+- **E50.** Untouched, as instructed; 4.6 and 5.14 say in one sentence that the position results predate a correction and are being regenerated.
+
+Referee finding O3 is now fixed (4.2): 200.9 awards a seed are 199.3 jobs plus 1.63 two-vehicle team jobs, one award per vehicle.
+Tally of the 44 findings: 35 fixed, 6 fixed in part, 3 not done (S18, O6, O11).
