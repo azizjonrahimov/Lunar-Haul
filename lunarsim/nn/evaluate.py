@@ -554,7 +554,79 @@ def resample_counts(write: bool = True) -> Dict[str, Any]:
     return out
 
 
+def onset_and_fa_addendum(write: bool = True, sets=("test", "ood")) -> Dict[str, Any]:
+    """B-118 N10 and N11, from the saved scores (.cache/nn/scores_final_*.npz) and the stored validation thresholds;
+    nothing is retrained or recalibrated, and every existing key of results/E56_integrity.json is left as it is.
+    N10: beside each recall (test and out-of-distribution sets, both rates, per fault type and overall), the share of
+    events with an alarm already on at the step before onset (baselines.onset_context), and the recall on the events
+    with no alarm in the 60 s before onset. N11: the false-alarm interval on all 1,000 resamples (the published one
+    used the first 200), with the same resample indices. Every recomputed recall and 200-resample interval is checked
+    against the stored value first."""
+    doc = json.load(open(RESULT, encoding="utf-8"))
+    thr = doc["thresholds_from_validation"]
+    out: Dict[str, Any] = {"note": onset_and_fa_addendum.__doc__.replace("\n    ", " "), "sets": {}}
+    for sname in sets:
+        with np.load(D.cache_path(sname)) as z:
+            mf, mn = z["mf"], z["mn"]
+        kinds = mf[:, 0].astype(int)
+        wn = mn[:, D.META.index("weight")]
+        blk: Dict[str, Any] = {}
+        for det in DETECTORS:
+            with np.load(os.path.join(T.STATE, f"scores_final_{sname}_fault.npz")) as z:
+                sf = z[det]
+            blk[det] = {}
+            for rate in B.RATES:
+                S = len(sf)
+                res = [B.detect(sf[s], mf, float(thr[det][rate][s])) for s in range(S)]
+                ctx = [B.onset_context(sf[s], mf, float(thr[det][rate][s])) for s in range(S)]
+                stored = doc[sname][det][rate]["events"]
+                ev = {}
+                for k, name in list(enumerate(F.FAULT_TYPES, 1)) + [(0, "all")]:
+                    sel = (kinds == k) if k else (kinds > 0)
+                    rec = float(np.mean([res[s][0][sel].mean() for s in range(S)]))
+                    on = float(np.mean([ctx[s][0][sel].mean() for s in range(S)]))
+                    q = [ctx[s][1] & sel for s in range(S)]
+                    rq = [res[s][0][q[s]].mean() for s in range(S) if q[s].any()]
+                    ev[name] = {"recall": rec, "recall_reproduces_stored": bool(abs(rec - stored[name]["recall"]["mean"]) < 1e-9),
+                                "share_alarm_on_at_onset": on, "recall_quiet_60s_before": float(np.mean(rq)) if rq else None,
+                                "events_quiet_60s_before_mean": float(np.mean([q[s].sum() for s in range(S)])),
+                                "events": int(sel.sum())}
+                    ev[name]["share_alarm_in_60s_before"] = 1.0 - ev[name]["events_quiet_60s_before_mean"] / ev[name]["events"]
+                blk[det][rate] = {"events": ev}
+            del sf
+            with np.load(os.path.join(T.STATE, f"scores_final_{sname}_ff.npz")) as z:
+                sn = z[det]
+            bms = [B.bin_max(sn[s]) for s in range(len(sn))]
+            del sn
+            for rate in B.RATES:
+                S = len(bms)
+                rng = np.random.default_rng([D.MASTER_SEED, 11, 0])          # evaluate_set's stream, seed 0
+                idx = rng.integers(0, len(wn), (N_BOOT, len(wn)))
+                per = np.array([[B.fa_per_day(bms[s][i], wn[i], float(thr[det][rate][s])) for i in idx]
+                                for s in range(S)])                         # [S, 1000]
+                b200, b1000 = per[:, :200].mean(0), per.mean(0)
+                st = doc[sname][det][rate]["fa_per_pair_day"]["ci95"]
+                blk[det][rate]["fa_per_pair_day_ci95_1000"] = _ci(b1000)
+                blk[det][rate]["fa_ci95_200_reproduces_stored"] = bool(np.allclose(_ci(b200), st, equal_nan=True))
+            print(f"{sname} {det} done", flush=True)
+        out["sets"][sname] = blk
+    if write:
+        doc["onset_context_and_fa_interval_b118"] = out
+        with open(RESULT, "w", encoding="utf-8", newline="\n") as f:
+            json.dump(doc, f, indent=1)
+            f.write("\n")
+    return out
+
+
 if __name__ == "__main__":
+    if "--onset-fa" in sys.argv:
+        r = onset_and_fa_addendum()
+        bad = [(s, d, rt, ft) for s, b in r["sets"].items() for d, x in b.items() for rt, y in x.items()
+               for ft, e in y["events"].items() if not e["recall_reproduces_stored"]]
+        bad += [(s, d, rt, "fa") for s, b in r["sets"].items() for d, x in b.items() for rt, y in x.items()
+                if not y["fa_ci95_200_reproduces_stored"]]
+        print("not reproduced:", bad)
+        raise SystemExit(0)
     if "--resample-counts" in sys.argv:
         r = resample_counts()
         print({s: sum(not v["reproduces_stored_interval"] for v in c.values()) for s, c in r["sets"].items()},

@@ -10882,3 +10882,37 @@ Files: lunarsim/vv6.py, results/vv_phase6.json, results/vv6_g1_reference_0210c22
   second: accepted > 0, all of the allowed kind, none other). test_integrity: 7 passed.
 - Every other key of E55_integrity.json and E55_table.csv unchanged.
 Files: lunarsim/atc/integrity.py, tools/atc/run_e55.py, tests/test_integrity.py, results/E55_integrity.json.
+
+## B-118 step 6 DONE 13:09 | N10, N11: recalls beside the share of alarms already on (out of distribution, CUSUM 0.842 -> 0.693 on quiet events); false-alarm intervals on all 1,000 resamples
+Method: python -m lunarsim.nn.evaluate --onset-fa, from the saved scores (.cache/nn/scores_final_*.npz) and the stored
+validation thresholds; nothing retrained or recalibrated. Every recomputed recall and every 200-resample false-alarm
+interval was first checked against the stored value: all reproduce (0 mismatches over 2 sets x 5 detectors x 2 rates).
+Written to results/E56_integrity.json under the new key onset_context_and_fa_interval_b118; every other key unchanged
+(checked); table_E56.csv, the models, thresholds and the policy file untouched.
+N10, per set, detector, rate and fault type: share_alarm_on_at_onset (alarm at the step before onset: detect() then
+counts the event found at once), share_alarm_in_60s_before, recall_quiet_60s_before (recall on events with no alarm
+in the 60 s before onset) and the event counts. At 1 false alarm per pair-day, all fault types:
+| set | detector | recall (published) | alarm in the 60 s before | recall, quiet minute before |
+| test | chi2 step / window | 0.713 / 0.703 | 0.0 % / 0.0 % | 0.713 / 0.703 |
+| test | CUSUM | 0.774 | 0.5 % | 0.774 |
+| test | logreg | 0.861 | 0.7 % | 0.860 |
+| test | network | 0.903 | 0.3 % | 0.903 |
+| ood | chi2 step / window | 0.792 / 0.705 | 28.5 % / 14.9 % | 0.732 / 0.673 |
+| ood | CUSUM | 0.842 | 50.7 % | 0.693 |
+| ood | logreg | 0.711 | 10.2 % | 0.682 |
+| ood | network | 0.660 | 4.0 % | 0.651 |
+So on test nothing moves beyond 0.001. Out of distribution the baselines' recalls are inflated by alarms that were
+already on (their false-alarm rates there are 14 to 890 a pair-day); on quiet events CUSUM's 0.842 is 0.693, the
+per-step chi-square's 0.792 is 0.732, and the network (0.660 -> 0.651) is still below CUSUM (0.693) and the others.
+Matches the review's 50.7 % and 0.693. /network/ and the E56 tables print the published recalls: wording for you.
+N11: fa_per_pair_day_ci95_1000 beside each published interval (which used the first 200 of the 1,000 resamples).
+Changes are small: e.g. test network 1/pair-day [0.286, 0.825] -> [0.288, 0.817]; test per-step chi-square
+[0.181, 1.417] -> [0.178, 1.320]; test windowed chi-square [0.026, 3.70] -> [0.021, 4.11]; CUSUM [1.456, 2.725] ->
+[1.423, 2.766]. The cache allowed the full recomputation, so the file states 1,000.
+Code (lunarsim/nn, confirmed by you; lines added only, nothing existing changed in behaviour):
+- baselines.py: new function onset_context() placed before detect(); detect() unchanged.
+- evaluate.py: new function onset_and_fa_addendum() and an "--onset-fa" branch at the top of the main block (with
+  step 3's compare() counts and resample_counts()).
+Test: tests/test_nn_integrity.py test_onset_context_flags_alarms_already_on (alarm across the onset counts as found
+at delay 0 and is flagged; an alarm 50 s before breaks the quiet minute; 100 s before does not). 14 passed.
+Files: lunarsim/nn/baselines.py, lunarsim/nn/evaluate.py, tests/test_nn_integrity.py, results/E56_integrity.json.

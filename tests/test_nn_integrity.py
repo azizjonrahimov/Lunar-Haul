@@ -141,6 +141,26 @@ def test_detect_counts_events_and_delays():
     assert fp.tolist() == [1, 1]
 
 
+def test_onset_context_flags_alarms_already_on():
+    """B-118 N10: an alarm that is on before the onset makes detect() count the event at once (delay 0); onset_context
+    says so, and a quiet minute before the onset is reported apart."""
+    n, t = 3, D.PRE + D.FAULT_T
+    meta = np.zeros((n, len(D.META)))
+    meta[:, D.META.index("onset")] = [400, 400, 400]
+    meta[:, D.META.index("end")] = [600, 600, 600]
+    meta[:, 0] = [1, 1, 1]
+    score = np.zeros((n, t), np.float32)
+    score[0, 380:420] = 5.0        # on across the onset: found at once
+    score[1, 350] = 5.0            # one alarm 50 s before, then a real detection
+    score[1, 430] = 5.0
+    score[2, 300] = 5.0            # 100 s before: still a quiet minute
+    found, delay, _ = B.detect(score, meta, 1.0)
+    on, quiet = B.onset_context(score, meta, 1.0)
+    assert found.tolist() == [True, True, False] and delay[0] == 0.0
+    assert on.tolist() == [True, False, False]
+    assert quiet.tolist() == [False, False, True]
+
+
 def test_model_forward_shape_and_causality():
     torch = pytest.importorskip("torch")
     torch.manual_seed(0)
