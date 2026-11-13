@@ -1373,53 +1373,56 @@
   "laptop_ms_by_multiple": {
    "1": {
     "n": 218,
-    "median_ms": 0.45455001236405224,
-    "p99_ms": 5.340206004038892,
-    "max_ms": 7.491899887099862,
+    "median_ms": 0.3943500341847539,
+    "p99_ms": 3.843307985225681,
+    "max_ms": 7.601700199302286,
     "rounds": 193,
     "try_bundle_calls": 1241,
     "robots_per_round_mean": 1.1295336787564767,
+    "timed_without_tracemalloc": true,
     "robots": 8,
     "days": 30,
-    "flight_median_ms": 24.91,
-    "flight_p99_ms": 292.6,
+    "flight_median_ms": 21.61,
+    "flight_p99_ms": 210.6,
     "flight_p99_ms_range": [
-     194.9,
-     341.8
+     140.3,
+     246.0
     ]
    },
    "4": {
     "n": 2262,
-    "median_ms": 0.1938499917741865,
-    "p99_ms": 19.960348020831276,
-    "max_ms": 217.01709993067198,
+    "median_ms": 0.18065000767819583,
+    "p99_ms": 16.77041400631384,
+    "max_ms": 58.671000180765986,
     "rounds": 849,
     "try_bundle_calls": 9755,
     "robots_per_round_mean": 2.664310954063604,
+    "timed_without_tracemalloc": true,
     "robots": 32,
     "days": 30,
-    "flight_median_ms": 10.62,
-    "flight_p99_ms": 1093.8,
+    "flight_median_ms": 9.9,
+    "flight_p99_ms": 919.0,
     "flight_p99_ms_range": [
-     728.6,
-     1277.5
+     612.1,
+     1073.3
     ]
    },
    "8": {
     "n": 6935,
-    "median_ms": 0.2009000163525343,
-    "p99_ms": 21.651149941026205,
-    "max_ms": 196.03770005051047,
+    "median_ms": 0.1984001137316227,
+    "p99_ms": 17.172662247903624,
+    "max_ms": 63.49840003531426,
     "rounds": 1749,
     "try_bundle_calls": 54281,
     "robots_per_round_mean": 3.9651229273870783,
+    "timed_without_tracemalloc": true,
     "robots": 64,
     "days": 30,
-    "flight_median_ms": 11.01,
-    "flight_p99_ms": 1186.5,
+    "flight_median_ms": 10.87,
+    "flight_p99_ms": 941.1,
     "flight_p99_ms_range": [
-     790.3,
-     1385.7
+     626.8,
+     1099.1
     ]
    }
   },
@@ -1427,16 +1430,40 @@
    "median": 1.975,
    "p99": 20.528,
    "n": 84367
+  },
+  "timing_pass": "B-118 N12 (13 Nov 2026): the times above come from a pass with no tracemalloc; the memory figures from a second pass of the same month (same seed; rounds and calls checked equal). Before, one robot-round in 20 was timed while tracemalloc ran, inside the same array. tracemalloc_effect: the traced pass's figures, which measure that bias",
+  "tracemalloc_effect": {
+   "1": {
+    "traced_median_ms": 0.4619499668478966,
+    "traced_p99_ms": 5.80851813603657,
+    "untraced_median_ms": 0.3943500341847539,
+    "untraced_p99_ms": 3.843307985225681,
+    "passes_same_run": true
+   },
+   "4": {
+    "traced_median_ms": 0.1980999659281224,
+    "traced_p99_ms": 18.346294761868126,
+    "untraced_median_ms": 0.18065000767819583,
+    "untraced_p99_ms": 16.77041400631384,
+    "passes_same_run": true
+   },
+   "8": {
+    "traced_median_ms": 0.19800005247816443,
+    "traced_p99_ms": 20.593445961130765,
+    "untraced_median_ms": 0.1984001137316227,
+    "untraced_p99_ms": 17.172662247903624,
+    "passes_same_run": true
+   }
   }
  },
  "measured_memory": {
   "revision": "B-105, 12 Nov 2026: tracemalloc peaks (bytes Python allocates) of the on-robot parts on one robot's view of a 30-day month per fleet multiple: planner working memory during one bid computation (p99 over sampled robot-rounds), one safety_check call, a copy of the base's reservation entries in the next 24 h (the larger of mid-month and month end), the month's ledger records, the bid policy loaded (data/policies/atc_bid_v1.json; C_AUCTION's default bids do not use it), and all of them held at once. The interpreter, the code and numpy buffers outside Python's allocator are not counted; a C implementation would hold the same data in less. classes.*.peak_memory_mb (0.388 MB) is an ESTIMATE, the sum of byte counts at assumed layouts plus 0.05 MB, and is relabelled so (P3 M1)",
   "mb_by_multiple": {
    "1": {
-    "planner_working_peak_p99": 0.003514559999999996,
-    "planner_working_peak_max": 0.004232,
+    "planner_working_peak_p99": 0.003629359999999995,
+    "planner_working_peak_max": 0.004512,
     "planner_samples": 60,
-    "safety_check_peak": 0.005628,
+    "safety_check_peak": 0.005604,
     "reservation_window_24h": {
      "entries": 7,
      "resources": 3,
@@ -1449,20 +1476,20 @@
      "peak": 0.002544
     },
     "bid_policy": {
-     "held": 0.073796,
-     "peak": 0.10658
+     "held": 0.073372,
+     "peak": 0.106204
     },
-    "all_at_once_peak": 0.113556,
-    "all_at_once_held": 0.007323,
-    "all_at_once_plus_planner_p99": 0.11707056,
+    "all_at_once_peak": 0.113444,
+    "all_at_once_held": 0.007147,
+    "all_at_once_plus_planner_p99": 0.11707336,
     "robots": 8,
-    "process_peak_working_set_mb": 438.6
+    "process_peak_working_set_mb": 439.0
    },
    "4": {
     "planner_working_peak_p99": 0.012594400000000018,
     "planner_working_peak_max": 0.024728,
     "planner_samples": 471,
-    "safety_check_peak": 0.005628,
+    "safety_check_peak": 0.005604,
     "reservation_window_24h": {
      "entries": 14,
      "resources": 3,
@@ -1475,20 +1502,20 @@
      "peak": 0.007824
     },
     "bid_policy": {
-     "held": 0.07574,
-     "peak": 0.108516
+     "held": 0.075292,
+     "peak": 0.108116
     },
-    "all_at_once_peak": 0.120876,
-    "all_at_once_held": 0.007323,
-    "all_at_once_plus_planner_p99": 0.13347040000000002,
+    "all_at_once_peak": 0.120764,
+    "all_at_once_held": 0.007147,
+    "all_at_once_plus_planner_p99": 0.13335840000000002,
     "robots": 32,
-    "process_peak_working_set_mb": 439.4
+    "process_peak_working_set_mb": 439.3
    },
    "8": {
     "planner_working_peak_p99": 0.007552,
     "planner_working_peak_max": 0.076536,
     "planner_samples": 3010,
-    "safety_check_peak": 0.005628,
+    "safety_check_peak": 0.005604,
     "reservation_window_24h": {
      "entries": 79,
      "resources": 19,
@@ -1501,16 +1528,165 @@
      "peak": 0.013616
     },
     "bid_policy": {
-     "held": 0.075556,
-     "peak": 0.108332
+     "held": 0.075108,
+     "peak": 0.107932
     },
-    "all_at_once_peak": 0.127468,
-    "all_at_once_held": 0.007243,
-    "all_at_once_plus_planner_p99": 0.13502,
+    "all_at_once_peak": 0.127436,
+    "all_at_once_held": 0.007147,
+    "all_at_once_plus_planner_p99": 0.134988,
     "robots": 64,
-    "process_peak_working_set_mb": 439.1
+    "process_peak_working_set_mb": 439.9
    }
   },
   "estimate_mb_for_comparison": 0.388
+ },
+ "superseded_2026-11-13_b118_n12": {
+  "reason": "B-118 N12 (code review of 13 Nov 2026): one robot-round in 20 was timed while tracemalloc ran, and those times entered the array whose 99th percentile was published. Rerun with timing and memory in separate passes of the same month. These are the blocks as published before.",
+  "superseded_on": "2026-11-13",
+  "per_robot_round": {
+   "revision": "B-105, 12 Nov 2026: the time of ONE robot's bid computation in one auction round (its loop over the pool in lunarsim/dispatch.py marketplace: _try_bundle per item, summed per round and robot; rounds counted at the auction's selector), timed in a 30-day month of E48's scenario per fleet multiple (seed 1, laptop), and scaled by flight.factor. classes.*.cpu_auction_round_ms is the simulator's dispatch call for the whole fleet (every free robot and waiting item, with the simulated message exchange), pooled over 1x, 4x and 8x: it is not a vehicle's computation (P3 M1)",
+   "laptop_ms_by_multiple": {
+    "1": {
+     "n": 218,
+     "median_ms": 0.45455001236405224,
+     "p99_ms": 5.340206004038892,
+     "max_ms": 7.491899887099862,
+     "rounds": 193,
+     "try_bundle_calls": 1241,
+     "robots_per_round_mean": 1.1295336787564767,
+     "robots": 8,
+     "days": 30,
+     "flight_median_ms": 24.91,
+     "flight_p99_ms": 292.6,
+     "flight_p99_ms_range": [
+      194.9,
+      341.8
+     ]
+    },
+    "4": {
+     "n": 2262,
+     "median_ms": 0.1938499917741865,
+     "p99_ms": 19.960348020831276,
+     "max_ms": 217.01709993067198,
+     "rounds": 849,
+     "try_bundle_calls": 9755,
+     "robots_per_round_mean": 2.664310954063604,
+     "robots": 32,
+     "days": 30,
+     "flight_median_ms": 10.62,
+     "flight_p99_ms": 1093.8,
+     "flight_p99_ms_range": [
+      728.6,
+      1277.5
+     ]
+    },
+    "8": {
+     "n": 6935,
+     "median_ms": 0.2009000163525343,
+     "p99_ms": 21.651149941026205,
+     "max_ms": 196.03770005051047,
+     "rounds": 1749,
+     "try_bundle_calls": 54281,
+     "robots_per_round_mean": 3.9651229273870783,
+     "robots": 64,
+     "days": 30,
+     "flight_median_ms": 11.01,
+     "flight_p99_ms": 1186.5,
+     "flight_p99_ms_range": [
+      790.3,
+      1385.7
+     ]
+    }
+   },
+   "whole_fleet_dispatch_call_ms_pooled": {
+    "median": 1.975,
+    "p99": 20.528,
+    "n": 84367
+   }
+  },
+  "measured_memory": {
+   "revision": "B-105, 12 Nov 2026: tracemalloc peaks (bytes Python allocates) of the on-robot parts on one robot's view of a 30-day month per fleet multiple: planner working memory during one bid computation (p99 over sampled robot-rounds), one safety_check call, a copy of the base's reservation entries in the next 24 h (the larger of mid-month and month end), the month's ledger records, the bid policy loaded (data/policies/atc_bid_v1.json; C_AUCTION's default bids do not use it), and all of them held at once. The interpreter, the code and numpy buffers outside Python's allocator are not counted; a C implementation would hold the same data in less. classes.*.peak_memory_mb (0.388 MB) is an ESTIMATE, the sum of byte counts at assumed layouts plus 0.05 MB, and is relabelled so (P3 M1)",
+   "mb_by_multiple": {
+    "1": {
+     "planner_working_peak_p99": 0.003514559999999996,
+     "planner_working_peak_max": 0.004232,
+     "planner_samples": 60,
+     "safety_check_peak": 0.005628,
+     "reservation_window_24h": {
+      "entries": 7,
+      "resources": 3,
+      "held": 0.000256,
+      "peak": 0.001576
+     },
+     "ledger_month": {
+      "entries": 194,
+      "held": 0.0016,
+      "peak": 0.002544
+     },
+     "bid_policy": {
+      "held": 0.073796,
+      "peak": 0.10658
+     },
+     "all_at_once_peak": 0.113556,
+     "all_at_once_held": 0.007323,
+     "all_at_once_plus_planner_p99": 0.11707056,
+     "robots": 8,
+     "process_peak_working_set_mb": 438.6
+    },
+    "4": {
+     "planner_working_peak_p99": 0.012594400000000018,
+     "planner_working_peak_max": 0.024728,
+     "planner_samples": 471,
+     "safety_check_peak": 0.005628,
+     "reservation_window_24h": {
+      "entries": 14,
+      "resources": 3,
+      "held": 0.001296,
+      "peak": 0.004032
+     },
+     "ledger_month": {
+      "entries": 854,
+      "held": 0.00688,
+      "peak": 0.007824
+     },
+     "bid_policy": {
+      "held": 0.07574,
+      "peak": 0.108516
+     },
+     "all_at_once_peak": 0.120876,
+     "all_at_once_held": 0.007323,
+     "all_at_once_plus_planner_p99": 0.13347040000000002,
+     "robots": 32,
+     "process_peak_working_set_mb": 439.4
+    },
+    "8": {
+     "planner_working_peak_p99": 0.007552,
+     "planner_working_peak_max": 0.076536,
+     "planner_samples": 3010,
+     "safety_check_peak": 0.005628,
+     "reservation_window_24h": {
+      "entries": 79,
+      "resources": 19,
+      "held": 0.002064,
+      "peak": 0.004968
+     },
+     "ledger_month": {
+      "entries": 1574,
+      "held": 0.012672,
+      "peak": 0.013616
+     },
+     "bid_policy": {
+      "held": 0.075556,
+      "peak": 0.108332
+     },
+     "all_at_once_peak": 0.127468,
+     "all_at_once_held": 0.007243,
+     "all_at_once_plus_planner_p99": 0.13502,
+     "robots": 64,
+     "process_peak_working_set_mb": 439.1
+    }
+   },
+   "estimate_mb_for_comparison": 0.388
+  }
  }
 }

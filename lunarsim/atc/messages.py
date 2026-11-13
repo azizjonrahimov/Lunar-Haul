@@ -47,7 +47,9 @@ class Channel:
         if sizes is not None:
             from .lrip import codec
             col = {"lrip_mac8": "mac8", "lrip_mac16": "mac16", "lrip_unsecured": "unsecured"}[sizes]
-            self._size = {k: v[col] if col == "unsecured" or k not in ("TASK_AWARD", "RESERVE_GRANT") else v["signed"]
+            # B-118 N13: the signed messages are the schema's (codec.default_auth == "sig"), not a typed list: with the
+            # list CAP_MANIFEST was counted 28 B instead of 84 B
+            self._size = {k: v[col] if col == "unsecured" or codec.default_auth(k) != "sig" else v["signed"]
                           for k, v in codec.size_table().items()}
 
     def _hop_ok(self, size: int = 0) -> bool:

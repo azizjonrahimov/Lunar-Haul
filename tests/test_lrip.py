@@ -146,6 +146,17 @@ def test_channel_byte_count_is_opt_in():
     assert b.bytes_sent == 3 * 41 + 92
 
 
+def test_channel_signs_what_the_schema_signs():
+    """B-118 N13: every message the codec signs is counted at its signed size (CAP_MANIFEST 84 B, not 28 B)."""
+    from lunarsim.atc.lrip import codec as C
+    from lunarsim.atc.messages import Channel
+    t = C.size_table()
+    ch = Channel(0.0, sizes="lrip_mac8")
+    for k in t:
+        assert ch._size[k] == (t[k]["signed"] if C.default_auth(k) == "sig" else t[k]["mac8"]), k
+    assert ch._size["CAP_MANIFEST"] == 84
+
+
 def test_capability_filter_catalog_changes_nothing():
     """The catalogue-derived manifests offer exactly the capacity the engine checks, so the filter is a no-op there;
     a manifest set without carrying capability leaves the robots without bids."""
