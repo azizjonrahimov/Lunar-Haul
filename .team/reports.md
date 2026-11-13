@@ -10661,3 +10661,24 @@ deltas, supported = true).
 Files: tools/atc/run_e52.py, tests/test_e52.py (new), results/E52_map.json, results/E52_table.csv.
 Also in the tree from B-117 (a), not yet run: lunarsim/atc/regimes.py o_rally="unheard" (opt-in).
 | /vehicles/ | 60/100/100 | 3.9 s, 1,550 ms, 0 | 100/100/100 | 0.6 s, 0 ms, 0.009 | 1.84 | none |
+(/vehicles/ was run twice: the first desktop 78 was with BACKEND's simulation chunks competing for the CPU; the second
+run gives 100. Treat single mobile scores, all taken on this slow laptop under load, as rough.)
+Against the targets (desktop):
+- Reading pages >= 95: all pass (/paper/, /results/, /verification/, /method/, /data/, /about/, /account/, /changelog/,
+  /research/earth-sky/, /atc/, /protocol/, /network/, /lab/: 98-100).
+- 3D pages >= 85: home 100, /world/ 85 (at the line), /world/trace/ 93, /stories/ 98, /vehicles/ 100 (78 on the noisy
+  first run), /lab/lander/ 100, /lab/rover/ 95, /simulator/ 96, /design/ 98.
+- Home mobile LCP 1.4 s (<= 2.5 s): pass.
+- Misses:
+  * /design/stage/ 64: a development page (noindex, not linked from the site); TBT 2.0 s is the shared 3D stage
+    building its test scene at load (ui chunk 2.0 s, stage chunk 1.9 s of script). Not a public page; not fixed.
+  * /simulator/v2/ 87 (the archived app; no target was ever set for it; 95 if counted as a reading page): CLS 0.147
+    (#tab-run .grid2 moved down when the KPI tiles filled the empty #kpis) and FCP 1.3 s (Google Fonts stylesheet,
+    render-blocking). Fixed the shift, cheap and safe: web/index.html puts ten empty aria-hidden placeholder tiles of
+    the same shape in #kpis, replaced by the first run. Checked on a local web/dist (build_web.py + a static server):
+    CLS 0.196 live vs 0.005 local at 1280 px, 0 at 390 px, ten real tiles after the run, console errors 0. The font
+    request is not changed (self-hosting is the archived app's bigger change; say if you want it).
+- Mobile (no target except home's LCP): /vehicles/ 57-60, /design/stage/ 61, /lab/lander/ 69, /world/ 73,
+  /world/trace/ 75 (TBT 1.4-4.3 s, the 3D build), /verification/ 84 (TBT 640 ms), the rest 89-100.
+- Accessibility 100 and best practices 100 on every page, mobile and desktop.
+Files changed since the first F-77 report: web/index.html (KPI placeholders), .team/reports.md.
