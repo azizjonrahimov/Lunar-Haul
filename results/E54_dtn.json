@@ -512,7 +512,9 @@
   },
   "stuck_reservations_sf_ll": 0,
   "stuck_reservations_drop_retry": 2566,
-  "supported": true
+  "supported": true,
+  "clause_1_measured": true,
+  "clause_2_basis": "B-118 N7: H14's second clause ('no reservation stuck past its timeout under sf_ll') holds BY RULE, not by measurement: under the lost-link rule the base releases a silent holder's reservation at its timeout, so the replay sets sf_ll's stuck count to 0 by construction. The drop_retry and sf counts come from the contact plan alone (holder unheard at the timeout + 60 s grace), whatever the loss level and whether the grant was delivered, so they are the same at every loss level (2,566 over 30 seeds); they count unconfirmed releases, not vehicles in a segment. Only the first clause is measured."
  },
  "link_shares": {
   "seeds": 30,
@@ -578,7 +580,9 @@
    },
    "stuck_reservations_sf_ll": 0,
    "stuck_reservations_drop_retry": 2566,
-   "supported": true
+   "supported": true,
+   "clause_1_measured": true,
+   "clause_2_basis": "B-118 N7: H14's second clause ('no reservation stuck past its timeout under sf_ll') holds BY RULE, not by measurement: under the lost-link rule the base releases a silent holder's reservation at its timeout, so the replay sets sf_ll's stuck count to 0 by construction. The drop_retry and sf counts come from the contact plan alone (holder unheard at the timeout + 60 s grace), whatever the loss level and whether the grant was delivered, so they are the same at every loss level (2,566 over 30 seeds); they count unconfirmed releases, not vehicles in a segment. Only the first clause is measured."
   },
   "pre_review_return_rule": {
    "lost_jobs_drop_retry_per_seed": {
@@ -607,7 +611,9 @@
    },
    "stuck_reservations_sf_ll": 0,
    "stuck_reservations_drop_retry": 2566,
-   "supported": true
+   "supported": true,
+   "clause_1_measured": true,
+   "clause_2_basis": "B-118 N7: H14's second clause ('no reservation stuck past its timeout under sf_ll') holds BY RULE, not by measurement: under the lost-link rule the base releases a silent holder's reservation at its timeout, so the replay sets sf_ll's stuck count to 0 by construction. The drop_retry and sf counts come from the contact plan alone (holder unheard at the timeout + 60 s grace), whatever the loss level and whether the grant was delivered, so they are the same at every loss level (2,566 over 30 seeds); they count unconfirmed releases, not vehicles in a segment. Only the first clause is measured."
   },
   "note": "H14 recomputed with lost = every undelivered award (the definition before 13 Nov 2026), and with the pre-review return rule; 'h14' above is the result"
  },
@@ -622,7 +628,7 @@
   "vehicles_per_job_max": 2,
   "note": "B-117 (i), exploratory: one TASK_AWARD per vehicle of a job (run_e54.messages), so awards = jobs + the extra vehicles of team jobs"
  },
- "code": "332a12cbff21ae1c",
+ "code": "a2e23ef3de150ce5",
  "rerun_commit": [
   "9252364",
   "b128d8e"
@@ -3239,7 +3245,9 @@
     },
     "stuck_reservations_sf_ll": 0,
     "stuck_reservations_drop_retry": 2566,
-    "supported": true
+    "supported": true,
+    "clause_1_measured": true,
+    "clause_2_basis": "B-118 N7: H14's second clause ('no reservation stuck past its timeout under sf_ll') holds BY RULE, not by measurement: under the lost-link rule the base releases a silent holder's reservation at its timeout, so the replay sets sf_ll's stuck count to 0 by construction. The drop_retry and sf counts come from the contact plan alone (holder unheard at the timeout + 60 s grace), whatever the loss level and whether the grant was delivered, so they are the same at every loss level (2,566 over 30 seeds); they count unconfirmed releases, not vehicles in a segment. Only the first clause is measured."
    },
    "v0.2": {
     "lost_jobs_drop_retry_per_seed": {
@@ -3268,7 +3276,9 @@
     },
     "stuck_reservations_sf_ll": 0,
     "stuck_reservations_drop_retry": 2566,
-    "supported": true
+    "supported": true,
+    "clause_1_measured": true,
+    "clause_2_basis": "B-118 N7: H14's second clause ('no reservation stuck past its timeout under sf_ll') holds BY RULE, not by measurement: under the lost-link rule the base releases a silent holder's reservation at its timeout, so the replay sets sf_ll's stuck count to 0 by construction. The drop_retry and sf counts come from the contact plan alone (holder unheard at the timeout + 60 s grace), whatever the loss level and whether the grant was delivered, so they are the same at every loss level (2,566 over 30 seeds); they count unconfirmed releases, not vehicles in a segment. Only the first clause is measured."
    },
    "v0.2_proximity1": {
     "lost_jobs_drop_retry_per_seed": {
@@ -3297,7 +3307,9 @@
     },
     "stuck_reservations_sf_ll": 0,
     "stuck_reservations_drop_retry": 2566,
-    "supported": true
+    "supported": true,
+    "clause_1_measured": true,
+    "clause_2_basis": "B-118 N7: H14's second clause ('no reservation stuck past its timeout under sf_ll') holds BY RULE, not by measurement: under the lost-link rule the base releases a silent holder's reservation at its timeout, so the replay sets sf_ll's stuck count to 0 by construction. The drop_retry and sf counts come from the contact plan alone (holder unheard at the timeout + 60 s grace), whatever the loss level and whether the grant was delivered, so they are the same at every loss level (2,566 over 30 seeds); they count unconfirmed releases, not vehicles in a segment. Only the first clause is measured."
    }
   },
   "values_moved_vs_v01": [],

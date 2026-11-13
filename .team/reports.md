@@ -10799,3 +10799,40 @@ B-117 (i), exploratory, now in E54_dtn.json "awards_and_jobs": 200.93 awards = 1
 two vehicles each (one TASK_AWARD per vehicle of a job; at most 2 vehicles a job). This answers P3 O3.
 Files: lunarsim/atc/dtn.py, tools/atc/run_e54.py, tests/test_dtn.py, results/E54_dtn.json, E54_table.csv,
 E54_table_v02.csv, E54_ledger.json. site/public/protocol/e54.json is staged by FRONTEND's build from the results.
+
+## B-118 step 3 DONE 13:00 | N7, N8, N16-N20: no published value moves; labels and counts added, H15a's p now computed
+- N7 (tools/atc/run_e54.py, tools/atc/phase6_family.py): H14 now says how each clause is known. results/E54_dtn.json
+  h14 (and each h14 variant and v0.2 set) gets clause_1_measured = true and clause_2_basis: the second clause holds
+  BY RULE, not by measurement (the replay sets sf_ll's stuck count to 0 by construction); the drop_retry / sf count of
+  2,566 comes from the contact plan alone, the same at every loss level and whether or not the grant arrived, and
+  counts unconfirmed releases, not vehicles in a segment. phase6_family.json H14 gets stuck_basis. Values unchanged.
+- N8 (lunarsim/nn/evaluate.py, lines added only; tools/atc/phase6_family.py): compare() now records boot_n,
+  boot_at_or_above_0 and boot_at_or_below_0 with each interval (used by any future evaluation). New
+  evaluate.resample_counts() (python -m lunarsim.nn.evaluate --resample-counts) reproduces every H15 comparison from
+  .cache/nn/eval_arrays.npz with the published random streams: all comparisons on test, ood and ood_recalibrated
+  reproduce their stored 95 % and 90 % intervals exactly (0 mismatches). Written to results/E56_integrity.json under the
+  new key h15_resample_counts_b118; every other key byte-identical (re-dump checked first). H15a (drift, net minus
+  per-step chi-square, test): 0 of 1,000 resamples at or above 0, so p = (0 + 1) / 1,001 = 0.000999, as printed before;
+  phase6_family.py now computes it from the saved count and refuses to build without it. Holm results unchanged.
+  Models, thresholds, the policy file and table_E56.csv untouched. evaluate.py lines changed: compare() +3 lines in
+  the per-key dict; new function resample_counts() and a --resample-counts branch before the argument parser.
+- N16 (tools/atc/run_e55.py): results/E55_integrity.json h16 gets robust_evidence_by_basis: exact (2F+1)-robust cells
+  (N <= 8): 8 cells, 3 runs exactly robust, all safe; degree-condition cells (N > 8): 12 cells, 53 runs meeting the
+  necessary condition only, all safe. Every other key and both CSV tables unchanged.
+- N17 (tools/atc/run_e44.py): the fresh-seed violation's replay sets "deterministic" from a comparison: two
+  single-encounter replays agree with each other and with the stored batch row. Result: true (as written before), now
+  with deterministic_basis. Rebuilt results/E44_fresh_seeds.json; the builder now keeps keys it does not write (it
+  would have dropped B-112's request_rule_fresh_6). Only the new field differs.
+- N18 (tools/atc/run_e45_uphill.py): every follower runs the adversarial planner, so no encounter is nominal-only;
+  nominal_only_violations is now null (was 0 of 0) in every cell, with nominal_only_note in results/E45_uphill.json.
+  No paper or site reader uses the field. Nothing else moved.
+- N19 (tools/atc/run_e50_near.py): a reading with no driving steps prints "no driving steps under this reading: not
+  judged". No reading has zero steps: results/E50_near_base.json rebuilt, identical.
+- N20 (tools/atc/run_e50_overlaps.py): pairs whose nominal windows overlap by 1 s or more are counted
+  (nominally_overlapping_pairs) and printed. 0 in every run at 1x and 4x; every other value identical.
+Also: the E54 cache fingerprint now covers only the code that produces cache content (not the table writer); the 60
+E54 cache files were restamped after checking that seed 1 rerun with the current code equals its cache file.
+Tests: test_dtn, test_e52, test_integrity, test_lander, test_rover, test_uphill: 66 passed.
+Files: tools/atc/run_e54.py, phase6_family.py, run_e55.py, run_e44.py, run_e45_uphill.py, run_e50_near.py,
+run_e50_overlaps.py, lunarsim/nn/evaluate.py; results/E54_dtn.json, E54_table_v02.csv, phase6_family.json,
+E56_integrity.json, E55_integrity.json, E44_fresh_seeds.json, E45_uphill.json.

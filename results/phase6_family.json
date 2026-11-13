@@ -85,6 +85,7 @@
    "seeds_tied": 21,
    "p": 0.001953125,
    "stuck_reservations_sf_ll": 0,
+   "stuck_basis": "by rule, not measured (B-118 N7): the replay sets sf_ll's stuck count to 0 by construction; see results/E54_dtn.json h14.clause_2_basis",
    "holm": {
     "p_adjusted": 0.00390625,
     "rejected_at_0.05": true,
@@ -103,7 +104,9 @@
     -15.995000000000005
    ],
    "p": 0.000999000999000999,
-   "p_note": "bootstrap: no resample reached 0, so p <= 1 / (B + 1) (an upper bound)",
+   "resamples_at_or_above_0": 0,
+   "resamples": 1000,
+   "p_note": "one-sided bootstrap p = (resamples at or above 0 + 1) / (resamples + 1), from the saved count (results/E56_integrity.json h15_resample_counts_b118; B-118 N8)",
    "holm": {
     "p_adjusted": 0.002997002997002997,
     "rejected_at_0.05": true,

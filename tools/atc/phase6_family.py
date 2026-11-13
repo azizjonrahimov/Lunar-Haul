@@ -145,17 +145,24 @@ def h14():
     return {"test": "exact sign test on per-seed lost jobs (expired awards), sf_ll minus drop_retry, loss 0.25, 14-day "
                     "blackout, 30 seeds; plus 'no reservation stuck under sf_ll' (a property of the rule)",
             "mean_diff_jobs": float(d.mean()), "seeds_fewer": n_neg, "seeds_more": n_pos, "seeds_tied": int((d == 0).sum()),
-            "p": p_sign, "stuck_reservations_sf_ll": int(stuck)}
+            "p": p_sign, "stuck_reservations_sf_ll": int(stuck),
+            "stuck_basis": "by rule, not measured (B-118 N7): the replay sets sf_ll's stuck count to 0 by construction; "
+                           "see results/E54_dtn.json h14.clause_2_basis"}
 
 
 def h15a():
     d = json.load(open(os.path.join(ROOT, "results", "E56_integrity.json")))
     x = d["test"]["h15_net_against"]["chi2_step"]["drift"]["delay_median_diff_s"]
-    B = 1000
+    c = d.get("h15_resample_counts_b118", {}).get("sets", {}).get("test", {}).get("chi2_step|drift|delay_median_diff_s")
+    if c is None or not c["reproduces_stored_interval"]:
+        raise SystemExit("E56: run python -m lunarsim.nn.evaluate --resample-counts first (B-118 N8)")
+    B = c["boot_n"]
     return {"test": "network minus per-step chi-square, median detection delay on slow drifts at 1 false alarm per "
                     "pair-day (E56, B-96): bootstrap over events, 1,000 resamples",
             "delay_median_diff_s": x["value"], "ci95": x["ci95"], "ci90": x["ci90"],
-            "p": 1.0 / (B + 1), "p_note": "bootstrap: no resample reached 0, so p <= 1 / (B + 1) (an upper bound)"}
+            "p": (c["at_or_above_0"] + 1.0) / (B + 1), "resamples_at_or_above_0": c["at_or_above_0"], "resamples": B,
+            "p_note": "one-sided bootstrap p = (resamples at or above 0 + 1) / (resamples + 1), from the saved count "
+                      "(results/E56_integrity.json h15_resample_counts_b118; B-118 N8)"}
 
 
 def holm(ps):

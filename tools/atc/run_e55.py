@@ -245,6 +245,18 @@ def cmd_build():
            "nonrobust_cells_with_a_run_leaving_the_range": len(left), "nonrobust_cells": len(nonrobust),
            "cells_with_more_liars_than_F": [{k: c[k] for k in ("geometry", "N", "f", "F", "safe_share")} for c in over]}
     h16["supported"] = bool(h16["robust_cells_all_safe"] and len(left) > 0)
+
+    def _ev(cells):
+        return {"cells": len(cells), "runs_robust": int(sum(c["runs_robust"] for c in cells)),
+                "runs_robust_all_safe": all(c["safe_when_robust"] == 1.0 for c in cells if c["runs_robust"]),
+                "runs_not_robust": int(sum(c["runs"] - c["runs_robust"] for c in cells))}
+    ff = [c for c in cons["cells"] if c["f"] >= 1 and c["F"] == c["f"]]
+    h16["robust_evidence_by_basis"] = {      # B-118 N16: the exact cells reported apart
+        "exact_2F1_robust_N_le_8": _ev([c for c in ff if c["robust_basis"].startswith("exact")]),
+        "degree_condition_only_N_gt_8": _ev([c for c in ff if not c["robust_basis"].startswith("exact")]),
+        "note": "the split behind robust_cells_all_safe: exact (2F+1)-robustness is computed for N <= 8 only; above, "
+                "'robust' means every honest node hears >= 2F + 1, a necessary condition, so those runs are not shown "
+                "to be on robust meshes. The exactly robust evidence is the runs_robust of the first block."}
     doc = {"experiment": "E55 (B-95), Phase 6, H15 baseline and H16", "note": __doc__.split("\n\n")[1].strip(),
            "auth": auth, "integrity": integ, "consensus": cons, "consensus_with_base_mast": cons_m, "h16": h16}
     with open(OUT_JSON, "w", encoding="utf-8", newline="\n") as f:

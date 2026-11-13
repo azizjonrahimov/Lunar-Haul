@@ -175,13 +175,18 @@ def stuck_reservations(rec, A, tr, t0h, vid_col, grace_s):
 
 
 def code_fingerprint():
-    """B-118 N21: a fingerprint of the code a cache file was made with (dtn, this runner, E50's runner, the codec's
-    size table); build() refuses to mix cache files with different fingerprints."""
+    """B-118 N21: a fingerprint of the code a cache file's content comes from: dtn.py, E50's runner, the codec, and
+    this runner's producing functions (not the build functions, so a change to how the table is written does not
+    invalidate the runs); build() refuses to mix cache files with different fingerprints."""
     import hashlib
+    import inspect
     h = hashlib.sha256()
-    for rel in ("lunarsim/atc/dtn.py", "tools/atc/run_e54.py", "tools/atc/run_e50.py", "lunarsim/atc/lrip/codec.py"):
+    for rel in ("lunarsim/atc/dtn.py", "tools/atc/run_e50.py", "lunarsim/atc/lrip/codec.py"):
         with open(os.path.join(ROOT, rel), "rb") as f:
             h.update(f.read().replace(b"\r\n", b"\n"))
+    for fn in (record, earth_up_fn, messages, stuck_reservations, prepare, _replay, run_seed, size_sets, run_seed_sizes):
+        h.update(inspect.getsource(fn).encode())
+    h.update(repr(CELLS).encode() + repr((PROTOCOLS, LOSSES, BLACKOUT_DAYS, LEDGER_BYTES)).encode())
     return h.hexdigest()[:16]
 
 
@@ -348,6 +353,15 @@ def cmd_v02run(seeds, max_s):
     print("all requested seeds done", flush=True)
 
 
+CLAUSE_2_BASIS = ("B-118 N7: H14's second clause ('no reservation stuck past its timeout under sf_ll') holds BY RULE, "
+                  "not by measurement: under the lost-link rule the base releases a silent holder's reservation at its "
+                  "timeout, so the replay sets sf_ll's stuck count to 0 by construction. The drop_retry and sf counts "
+                  "come from the contact plan alone (holder unheard at the timeout + 60 s grace), whatever the loss "
+                  "level and whether the grant was delivered, so they are the same at every loss level (2,566 over "
+                  "30 seeds); they count unconfirmed releases, not vehicles in a segment. Only the first clause is "
+                  "measured.")
+
+
 def _rows_h14(per_seed_cells, protocols, with_bytes=False):
     """Table rows and H14 from each seed's cells (B-118: one function for build and build_v02). Per kind: n; lost =
     expired inside the window (B-118 N4); censored = alive at the window's end; lost_incl_censored = every undelivered
@@ -388,6 +402,8 @@ def _rows_h14(per_seed_cells, protocols, with_bytes=False):
              "stuck_reservations_sf_ll": int(sum(r["stuck_reservations"] for r in ll)),
              "stuck_reservations_drop_retry": int(sum(r["stuck_reservations"] for r in dr))}
         h["supported"] = bool(h["difference_sf_ll_minus_drop_retry"]["ci"][1] < 0 and h["stuck_reservations_sf_ll"] == 0)
+        h["clause_1_measured"] = bool(h["difference_sf_ll_minus_drop_retry"]["ci"][1] < 0)
+        h["clause_2_basis"] = CLAUSE_2_BASIS
         return h
     h14 = h14_for("sf_ll", "lost")
     variants = {"lost_incl_censored": h14_for("sf_ll", "lost_incl_censored")}

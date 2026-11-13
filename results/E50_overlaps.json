@@ -84,7 +84,8 @@
        "median": 32570.48,
        "p95": 192192.25544999994,
        "max": 1450455.775
-      }
+      },
+      "nominally_overlapping_pairs": 0
      }
     },
     "no_margin:dr+ranging": {
@@ -133,7 +134,8 @@
        "median": 32570.48,
        "p95": 192192.25544999994,
        "max": 1450455.775
-      }
+      },
+      "nominally_overlapping_pairs": 0
      }
     },
     "no_margin:dr+ranging+fixes": {
@@ -182,7 +184,8 @@
        "median": 32570.48,
        "p95": 192192.25544999994,
        "max": 1450455.775
-      }
+      },
+      "nominally_overlapping_pairs": 0
      }
     },
     "no_margin:lans@2030": {
@@ -231,7 +234,8 @@
        "median": 32570.48,
        "p95": 192192.25544999994,
        "max": 1450455.775
-      }
+      },
+      "nominally_overlapping_pairs": 0
      }
     },
     "with_margin:dr": {
@@ -280,7 +284,8 @@
        "median": 27887.207,
        "p95": 190381.68789999993,
        "max": 1725115.572
-      }
+      },
+      "nominally_overlapping_pairs": 0
      }
     },
     "with_margin:layered": {
@@ -329,7 +334,8 @@
        "median": 26568.9985,
        "p95": 190316.02114999996,
        "max": 1450455.775
-      }
+      },
+      "nominally_overlapping_pairs": 0
      }
     }
    }
@@ -396,7 +402,8 @@
        "median": 10576.908,
        "p95": 66490.01239999999,
        "max": 2022534.575
-      }
+      },
+      "nominally_overlapping_pairs": 0
      }
     },
     "no_margin:dr+ranging": {
@@ -445,7 +452,8 @@
        "median": 10576.908,
        "p95": 66490.01239999999,
        "max": 2022534.575
-      }
+      },
+      "nominally_overlapping_pairs": 0
      }
     },
     "no_margin:dr+ranging+fixes": {
@@ -494,7 +502,8 @@
        "median": 10576.908,
        "p95": 66490.01239999999,
        "max": 2022534.575
-      }
+      },
+      "nominally_overlapping_pairs": 0
      }
     },
     "no_margin:lans@2030": {
@@ -543,7 +552,8 @@
        "median": 10576.908,
        "p95": 66490.01239999999,
        "max": 2022534.575
-      }
+      },
+      "nominally_overlapping_pairs": 0
      }
     },
     "with_margin:dr": {
@@ -580,7 +590,8 @@
        "median": 5223.214,
        "p95": 25321.863799999912,
        "max": 2022853.543
-      }
+      },
+      "nominally_overlapping_pairs": 0
      }
     },
     "with_margin:layered": {
@@ -629,7 +640,8 @@
        "median": 987.0615,
        "p95": 27199.510299999998,
        "max": 2023791.174
-      }
+      },
+      "nominally_overlapping_pairs": 0
      }
     }
    }

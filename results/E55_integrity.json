@@ -6282,6 +6282,21 @@
     "safe_share": 0.7
    }
   ],
-  "supported": false
+  "supported": false,
+  "robust_evidence_by_basis": {
+   "exact_2F1_robust_N_le_8": {
+    "cells": 8,
+    "runs_robust": 3,
+    "runs_robust_all_safe": true,
+    "runs_not_robust": 397
+   },
+   "degree_condition_only_N_gt_8": {
+    "cells": 12,
+    "runs_robust": 53,
+    "runs_robust_all_safe": true,
+    "runs_not_robust": 547
+   },
+   "note": "the split behind robust_cells_all_safe: exact (2F+1)-robustness is computed for N <= 8 only; above, 'robust' means every honest node hears >= 2F + 1, a necessary condition, so those runs are not shown to be on robust meshes. The exactly robust evidence is the runs_robust of the first block."
+  }
  }
 }

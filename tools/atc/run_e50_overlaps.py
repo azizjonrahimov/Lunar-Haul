@@ -270,6 +270,9 @@ def cmd_build():
                 gap = [o["gap_m"] for o in O]
                 abut = [b for b in B if abs(b[0]) < 1.0]
                 sep = [b for b in B if b[0] >= 1.0]
+                nom_ov = [b for b in B if b[0] <= -1.0]  # B-118 N20: nominal windows overlapping by >= 1 s (in neither group)
+                if nom_ov:
+                    print(f"m{m} {cond}:{name}: {len(nom_ov)} consecutive pairs overlap nominally by >= 1 s", flush=True)
                 r = {"overlaps_per_seed": len(O) / len(C), "violations_per_seed_e50": float(np.mean([c[cond][name]["violations"] for c in C])),
                      "duration_s": _dist(dur), "gap_at_entry_m": _dist(gap),
                      "nominal_gap_s": _dist([o["nominal_gap_s"] for o in O]),
@@ -283,7 +286,8 @@ def cmd_build():
                                       "abutting_share_overlapping": float(np.mean([b[1] for b in abut])) if abut else None,
                                       "separated_pairs_per_seed": len(sep) / len(C),
                                       "separated_share_overlapping": float(np.mean([b[1] for b in sep])) if sep else None,
-                                      "separated_nominal_gap_s": _dist([b[0] for b in sep])}}
+                                      "separated_nominal_gap_s": _dist([b[0] for b in sep]),
+                                      "nominally_overlapping_pairs": len(nom_ov)}}
                 blk["runs"][f"{cond}:{name}"] = r
                 rows.append({"mult": m, "condition": cond, "layer_set": name, "overlaps_per_seed": round(r["overlaps_per_seed"], 3),
                              "dur_median_s": r["duration_s"].get("median"), "dur_p95_s": r["duration_s"].get("p95"),

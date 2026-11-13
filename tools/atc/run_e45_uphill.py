@@ -114,7 +114,10 @@ def run_cell(planet, geom, slope, n, tag, rules=RULES, delay=0.0):
             "gap_below_d0": int((gapf < S.D0_M).sum()), "contacts": int((np.asarray(oc.viol_contact) > 0).sum()),
             "r1_breach_rate": float((np.asarray(oc.r1_breach) > 0).mean()),
             "emergency_brake_rate": float((np.asarray(oc.no_safe) > 0).mean()),
-            "nominal_only_violations": int(sum(int(np.any([getattr(oc, f)[i] > 0 for f in VIOL])) for i in np.nonzero(nominal)[0])),
+            # B-118 N18: every follower here runs the adversarial planner (planner [0] + [2] x (nv - 1)), so no encounter
+            # is nominal-only; None (not 0) says there is nothing to count
+            "nominal_only_violations": (int(sum(int(np.any([getattr(oc, f)[i] > 0 for f in VIOL]))
+                                                for i in np.nonzero(nominal)[0])) if nominal.any() else None),
             "nominal_only_n": int(nominal.sum())}
     ET.G_BUILD = S.G_MOON
     return out
@@ -173,7 +176,8 @@ def cmd_build():
                          "n_driven": c["n_driven"], "b_lead_mean": round(c["b_lead_mean"], 4), "violations": r["violations"],
                          "contacts": r["contacts"], "gap_below_d0": r["gap_below_d0"], "min_gap_m": r["min_gap_m"],
                          "min_gap_p01_m": r["min_gap_p01_m"], "r1_breach_rate": r["r1_breach_rate"],
-                         "nominal_only_violations": r["nominal_only_violations"]})
+                         # B-118 N18: None when the cell has no nominal-only encounter (every cell, by design)
+                         "nominal_only_violations": r["nominal_only_violations"] if r.get("nominal_only_n") else None})
     thr = {}
     for planet in PLANETS:
         for geom in GEOMS:
@@ -185,7 +189,10 @@ def cmd_build():
                                        "sweep": [[sl, gp] for sl, gp in pts]}
     doc = {"task": "B-107 (P2 M9)", "note": __doc__.strip().split("\n\n")[1].replace("\n", " "),
            "d0_m": S.D0_M, "b_max": S.B_MAX, "b_min_flat": S.B_MIN_FLAT, "n_per_cell": N_CELL, "n_per_sweep_point": N_SWEEP,
-           "cells": rows, "threshold": thr}
+           "cells": rows, "threshold": thr,
+           "nominal_only_note": "B-118 N18: every follower runs E44's adversarial planner (planner [0] + [2] x (nv - 1)), "
+                                "so no encounter is nominal-only and nominal_only_violations is null in every cell (it "
+                                "was printed as 0 of 0 before 13 Nov 2026; nothing was counted)"}
     with open(OUT_JSON, "w", encoding="utf-8", newline="\n") as f:
         json.dump(doc, f, indent=1, allow_nan=False)
         f.write("\n")

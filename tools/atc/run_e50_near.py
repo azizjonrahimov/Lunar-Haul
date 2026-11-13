@@ -209,7 +209,9 @@ def cmd_build():
                                  "out_p95_m": None if c["sets"][name][r]["out_p95_m"] is None else round(c["sets"][name][r]["out_p95_m"], 4),
                                  "inside_budget": None if c["sets"][name][r]["in_p95_m"] is None else c["sets"][name][r]["in_p95_m"] < BUDGET})
         rg = blk["sets"]["dr+ranging"]
-        blk["h9_clause2_by_reading"] = {r: ("on the predicted side in every seed" if rg[r]["seeds_inside_budget"] == rg[r]["seeds_with_steps"]
+        # B-118 N19: a reading with no driving steps in any seed has nothing to judge
+        blk["h9_clause2_by_reading"] = {r: ("no driving steps under this reading: not judged" if rg[r]["seeds_with_steps"] == 0
+                                            else "on the predicted side in every seed" if rg[r]["seeds_inside_budget"] == rg[r]["seeds_with_steps"]
                                             else "on the predicted side in no seed" if rg[r]["seeds_inside_budget"] == 0
                                             else f"on the predicted side in {rg[r]['seeds_inside_budget']} of {rg[r]['seeds_with_steps']} seeds")
                                         for r in READINGS}

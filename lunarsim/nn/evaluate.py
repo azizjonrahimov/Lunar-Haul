@@ -179,7 +179,10 @@ def compare(found_net: np.ndarray, d_net: np.ndarray, found_base: np.ndarray, d_
             ("recall_diff", fn.mean() - fb.mean(), fn[:, idx].mean(2).mean(0) - fb[idx].mean(1))):
         b = boot[np.isfinite(boot)]
         out[key] = {"value": float(point), "ci95": _ci(boot),
-                    "ci90": [float(np.percentile(b, 5)), float(np.percentile(b, 95))] if len(b) else [None, None]}
+                    "ci90": [float(np.percentile(b, 5)), float(np.percentile(b, 95))] if len(b) else [None, None],
+                    # B-118 N8: the resample counts a bootstrap p is computed from
+                    "boot_n": int(len(b)), "boot_at_or_above_0": int((b >= 0).sum()),
+                    "boot_at_or_below_0": int((b <= 0).sum())}
     out["delay_median_s"] = {"net": float(med(dn, 1).mean()), "base": float(med(db, 0))}
     out["recall"] = {"net": float(fn.mean()), "base": float(fb.mean())}
     out["n_events"] = int(len(sel))
@@ -517,7 +520,46 @@ def main(on: str = "test", force: bool = False, runs: Optional[List[str]] = None
     print("->", result_path, out["wall_s"], "s")
 
 
+def resample_counts(write: bool = True) -> Dict[str, Any]:
+    """B-118 N8: the bootstrap resample counts behind H15's comparisons (h15_block at 1 false alarm per pair-day),
+    reproduced from the saved event arrays (EVAL_CACHE) with the same random streams as the published evaluation, and
+    checked against the stored intervals. Written to results/E56_integrity.json under a new top-level key; every other
+    key is left as it is. A one-sided bootstrap p for 'network shorter' is (at_or_above_0 + 1) / (boot_n + 1)."""
+    doc = json.load(open(RESULT, encoding="utf-8"))
+    out: Dict[str, Any] = {"note": resample_counts.__doc__.split("\n\n")[0].replace("\n    ", " "), "sets": {}}
+    with np.load(EVAL_CACHE) as z:
+        for sname in ("test", "ood", "ood_recalibrated"):
+            if f"{sname}__kinds" not in z.files or sname not in doc:
+                continue
+            arr = {k[len(sname) + 2:]: z[k] for k in z.files if k.startswith(sname + "__")}
+            blk = h15_block(arr, arr["kinds"])
+            stored = doc[sname]["h15_net_against"]
+            cnt: Dict[str, Any] = {}
+            for base, by in blk.items():
+                for ft, r in by.items():
+                    for key, v in r.items():
+                        if isinstance(v, dict) and "boot_n" in v:
+                            s = stored[base][ft][key]
+                            cnt[f"{base}|{ft}|{key}"] = {
+                                "boot_n": v["boot_n"], "at_or_above_0": v["boot_at_or_above_0"],
+                                "at_or_below_0": v["boot_at_or_below_0"],
+                                "reproduces_stored_interval": bool(np.allclose(v["ci95"], s["ci95"], equal_nan=True)
+                                                                   and np.allclose(v["ci90"], s["ci90"], equal_nan=True))}
+            out["sets"][sname] = cnt
+    if write:
+        doc["h15_resample_counts_b118"] = out
+        with open(RESULT, "w", encoding="utf-8", newline="\n") as f:
+            json.dump(doc, f, indent=1)
+            f.write("\n")
+    return out
+
+
 if __name__ == "__main__":
+    if "--resample-counts" in sys.argv:
+        r = resample_counts()
+        print({s: sum(not v["reproduces_stored_interval"] for v in c.values()) for s, c in r["sets"].items()},
+              "comparisons not reproduced")
+        raise SystemExit(0)
     ap = argparse.ArgumentParser()
     ap.add_argument("--on", default="test", choices=("test", "val"))
     ap.add_argument("--force", action="store_true")

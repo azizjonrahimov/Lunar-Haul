@@ -180,6 +180,7 @@
       "batch": 9,
       "idx": 968,
       "deterministic": true,
+      "deterministic_basis": "two single-encounter replays with the batch's seeds agree with each other and with the stored batch row (violation flags, deadlock, finished)",
       "what_happened": "a vehicle held at the zone boundary (it could not cross before the closure) kept its grant for a one-lane resource beyond the zone, and a vehicle inside the zone waited at that resource's stop line and was still inside when the zone closed (hold-and-wait between R5 and R3)",
       "base_rules": {
        "viol_contact": 0,
