@@ -10483,3 +10483,41 @@ tests/test_parking.py, tests/test_nn_integrity.py, results/E21_parking.json, dat
 data/comms/connecting_ridge/parking-v3.json (hash strings). No engine file touched. Scratch:
 scratchpad/ciblock/ (ciblock.py blocker, chunk.sh, runci.py, casecheck.py), scratchpad/b114_eol.py.
 **Last chunk ended 10:08**; nothing of mine is running; FRONTEND can start the browser.
+
+## F-57 Part B (FRONTEND, 13 Nov), stopped at the 0.5 GB line; continues on your word
+Base build: SITE_BASE=/lunar-logistics-research/, heap 512 MB, vite build into the scratchpad (site/dist untouched):
+exit 0. copy-simulator.mjs writes only to site/dist, so I repeated its copy (web/dist -> simulator/v2 and engine).
+f57a.mjs on that build: 29 pages, 1,298 files, 0 broken internal links, no root-absolute URL outside the base in HTML
+or JS, the same a11y/words results as Part A, 41 external links. The base build works.
+Browser (gstack headless, one at a time, closed whenever free RAM < 0.8 GB, served from the base build with vite preview
+under /lunar-logistics-research/; every page scrolled through so the lazy sections load):
+- F-76 owed check: /atc/ shows the request-rule sentence and /paper/ P2's new fresh-seed row ("run afterwards on all
+  10,000 fresh type-6 encounters ... exploratory ... 62 %"; no "one encounter only"), light and dark, 1280 and 390.
+- Dark 1280 and dark 390, all 25 pages (24 + 404): overflow 0, one h1, no heading skips, console errors 0, except:
+  * /account/: 1 error, net::ERR_CONNECTION_REFUSED. On localhost the page tries a local account service at :8800 by
+    design (src/account/main.js); on github.io no service address is set and no request is made. Not a site fault.
+  * /lab/lander/: 3 contrast "failures" on the coloured ● legend swatches in the dispersion figure's caption (3.23,
+    4.18, 4.35 against 4.5 for text). They are legend markers beside their labels, so the 3:1 non-text rule applies
+    and all pass it, but screen readers read each ● aloud. Fix: aria-hidden="true" on the swatch span
+    (site/src/lander/lab.js). Low/medium; not yet rebuilt.
+- Light 1280: /atc/ clean (0 errors, contrast 0); then free RAM was 0.41 GB before /paper/, so I stopped: browser and
+  preview server closed. RAM was 0.77 GB a minute later.
+Not done yet: light 1280 for the other 23 pages; the rebuild of site/dist after the lander fix (plus budgets);
+Lighthouse (not measured on any page).
+Files changed: site/src/lander/lab.js (aria-hidden on the legend swatch), .team/reports.md. Tests 79/79.
+
+### F-57 Part B, continued (FRONTEND, 13 Nov): stopped again at the 0.5 GB line
+1. Rebuild of site/dist for the lander fix (heap 512 MB, free RAM 0.83 GB): npm run build exit 0 (prepare-data, vite,
+   copy-simulator); the swatch carries aria-hidden="true" in dist/assets/lab-lander-*.js. Tests 79/79; budgets.py
+   pages: OK (site total 101.6 MB of 900).
+2. Light 1280, served from the fresh site/dist (base /): /paper/, /protocol/, /network/, /results/ clean (overflow 0,
+   contrast 0, one h1, no skips, console errors 0); /atc/ was clean earlier. Before /verification/, free RAM was
+   0.46 GB with my browser and nothing else of mine running, so I stopped and closed the preview server. The drop is
+   the owner's own Chrome (about 1.1 GB across processes, a NASA PDF opened at about that time), which I have not
+   touched. (The script now closes the browser first and stops only if RAM is still under 0.5 GB without it; an
+   earlier 0.39 GB reading had my browser open.)
+   Not checked in light at 1280: /verification/, /, /about/, /account/, /changelog/, /data/, /design/,
+   /design/stage/, /lab/, /lab/lander/, /lab/rover/, /method/, /research/earth-sky/, /simulator/, /simulator/v2/,
+   /stories/, /vehicles/, /world/, /world/trace/, /404.html (all clean in dark at 1280 and 390).
+3. Lighthouse: not measured on any page (RAM under 0.8 GB).
+Files changed in F-57: site/src/lander/lab.js (aria-hidden on the legend swatch), .team/reports.md; site/dist rebuilt.
