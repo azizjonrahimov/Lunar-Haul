@@ -10836,3 +10836,30 @@ Tests: test_dtn, test_e52, test_integrity, test_lander, test_rover, test_uphill:
 Files: tools/atc/run_e54.py, phase6_family.py, run_e55.py, run_e44.py, run_e45_uphill.py, run_e50_near.py,
 run_e50_overlaps.py, lunarsim/nn/evaluate.py; results/E54_dtn.json, E54_table_v02.csv, phase6_family.json,
 E56_integrity.json, E55_integrity.json, E44_fresh_seeds.json, E45_uphill.json.
+
+## B-118 step 4 DONE 13:04 | N2 and N22 (vv6): G1 now compares with the pre-Phase-6 code and can fail; six rows call the code they cite; 56 of 56 pass
+- N2, G1 "options off": the reference is now a run of the code BEFORE Phase 6. git archive 0210c22 (lunarsim, data,
+  experiments/phase5) into the scratchpad; G1's scenario (C_AUCTION, roads atc 15 % single-lane, 30 days, seed 2) run
+  there with python -I (the imported package checked to be the archived one). Its 144 summary values are stored with
+  the commit, date and method in results/vv6_g1_reference_0210c22.json (new file). The current code with every Phase 6
+  option off (pos_margin None, log_reservations off, capability_filter None) equals it on all 144 values (0 differ).
+  New row G1 "option on changes the run": pos_margin k 1, bound 50 m makes 14 of the 144 values differ, so the row
+  above can fail. Before, G1 compared the current default run with itself.
+- N22, rows that now call the code they cite (reference unchanged unless said):
+  - C6 offered load and scheduled airtime: sizes from codec.packet_bytes (41 / 43 / 38 B, LRIP v0.1 as the note's
+    table; same sizes in v0.2) and eta from tools/atc/run_e53.py ETA (7.856 and 9.82 kbit/s, as before).
+  - C8 gamma m=1, m=2: the code's integrity.GAMMA against scipy's chi-square quantile (reference and simulated swapped
+    from before: the quantile is now the reference). New row C8 "gamma table": every entry of GAMMA (m 1 and 2, alpha
+    1e-2 to 1e-5) within 0.005 of the quantile (largest 0.0049, the 2-decimal rounding of 6.63).
+  - C9 age of information over 3 hops: dtn.age_of_information on a 3-hop chain with 1 s updates (240,000 updates) plus
+    k x 10 ms hop latency (which the function neglects), against the renewal formula 1.900 s: 1.905 s (0.26 %, tolerance
+    2 %). Before, the row ran its own inline simulation; with the old dtn code this row would have shown the 30 s floor.
+  - G4 zero faults, single test: through integrity.lrip_rule_score with k = n = 1 and GAMMA[1][1e-3] (same value as
+    before, 9.695e-4); the 3-of-5 row also takes the code's GAMMA.
+  - M4 hazard payload: from smap.sync_plan for 42 changed hazard tiles, less the 16 B tile header each (86,016 B).
+- vv6 rerun: results/vv_phase6.json 56 rows (was 54), 56 passed, 0 failed, 0 bias flags; every other row's values
+  unchanged (run times aside). tests/test_vv6.py: 2 passed.
+- For you / FRONTEND: the row count is now 56; the site and the papers should read each row's "passed" (review N2,
+  site/lib/phase6.mjs W1), not a typed verdict. P1, P2 and P3 cite G1 as "options off equals the Phase 5 run": that
+  is now true against the pre-Phase-6 code itself.
+Files: lunarsim/vv6.py, results/vv_phase6.json, results/vv6_g1_reference_0210c22.json (new).
