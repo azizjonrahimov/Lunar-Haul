@@ -62,11 +62,14 @@ def route_tiles():
             continue
         seen.add((a, b))
         pts = xy[doc["legs"][key]]
-        length += float(np.hypot(*np.diff(pts, axis=0).T).sum())
-        for p in pts:
+        # B-118 N1: the distance along the tour at each sample (before: the whole leg was added first, so every
+        # tile of a leg carried the leg's end distance)
+        cum = length + np.concatenate([[0.0], np.cumsum(np.hypot(*np.diff(pts, axis=0).T))])
+        for p, s in zip(pts, cum):
             t = S.tile_of("hazard", p[0], p[1])
             if not tour or tour[-1][0] != t:
-                tour.append((t, length))
+                tour.append((t, float(s)))
+        length = float(cum[-1])
     return tour, length
 
 
@@ -193,6 +196,9 @@ def main():
                           KEEPOUT_PER_DAY, "road_edges_per_day": ROAD_EDGES_PER_DAY, "speed_ms": SPEED_MS,
                           "hidden_share": HIDDEN, "loss": LOSS},
            "rows": table, "h12": h12, "seeds": SEEDS, "run_s": round(time.time() - t0, 1)}
+    if os.path.isfile(OUT_JSON):                                    # B-118: earlier values kept under dated keys
+        old = json.load(open(OUT_JSON, encoding="utf-8"))
+        doc.update({k: v for k, v in old.items() if k.startswith("superseded_")})
     with open(OUT_JSON, "w", encoding="utf-8", newline="\n") as f:
         json.dump(doc, f, indent=1)
         f.write("\n")

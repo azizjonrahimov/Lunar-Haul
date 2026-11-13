@@ -10521,3 +10521,143 @@ Files changed: site/src/lander/lab.js (aria-hidden on the legend swatch), .team/
    /stories/, /vehicles/, /world/, /world/trace/, /404.html (all clean in dark at 1280 and 390).
 3. Lighthouse: not measured on any page (RAM under 0.8 GB).
 Files changed in F-57: site/src/lander/lab.js (aria-hidden on the legend swatch), .team/reports.md; site/dist rebuilt.
+
+## B-115 to B-117 ESTIMATE 11:14 (BACKEND, 13 Nov): compute per item, nothing run yet; heavy chunks wait for your go
+Basis: per-run times recorded in the repo (results/E44_parts/timing.json; run_s in the E40-E43 rows; E46 B-76 report,
+7.1 s a run; timing blocks in .cache/atc/e50/m*_s*.pkl.gz; run_s in .cache/atc/e51; B-101, B-102, B-111 reports).
+Hours are wall time on this laptop, single process, plus about 15 % for chunk restarts. Development time is separate
+where code is needed (opt-in flags only; no default path changes). Free RAM now 0.97 GB.
+Class: NOW = under 3 h compute; LATER = 3 to 10 h; NOT FEASIBLE = cannot run under the current rules (reason given).
+
+| Item | Compute | Class | Reuses | Writes (new key only) | Paper sentence it would change |
+|---|---|---|---|---|---|
+| B-115 E44 types 2, 3, 4, 8, 9, 10, 12 regenerated | 1.65 h: 7,195 s of batches minus the seven batch-0 reruns B-113 already made on unchanged code (encounter code last changed 01:23, before B-113); plus 10 min rebuild | NOW | scratch b113/T*_b0000_head.csv.gz | results/E44_parts/T*.csv.gz replaced only after the per-batch proof; E44_bounds, E44_bins, E44_encounters rebuilt and diffed; E44_defects.json b113_stale_deadlock_flag gets an outcome field | none expected (every reader judges a deadlock only without a fuzzer); if one moves: P2 ring-deadlock rates, E44/E45 tables |
+| B-116 E50 8x for near_base and overlaps | 5 seeds x about 37 min (shared perfect run 480 s, trajectories 70 s, navigation 370 s, two margin runs of 450-565 s each with navigation 260 s) = 3.1 h; 4.3 h if the two scripts each repeat the perfect run | LATER, with the 8x condition below | .cache/atc/e50/m8_s1 to m8_s5 exist (your 12 Nov loop: all five E50 8x seeds, so nothing is missing for E50's own design); they hold summaries only, so the runs are repeated | E50_near_base.json multiples "8"; E50_overlaps.json 8x block; CSV rows added | P2 S1 row, 5.9, 5.13, Table 14: "8x not run under the readings"; P2's overlap paragraph at 8x (5.2 overlaps per seed remain with the layered margin) |
+| (a) P1 S3 marketplace with the same return move, 30 runs | 15 min: O_ORACLE + o_rally, plus O_ORACLE and C_AUCTION repeated on HEAD for pairing (90 runs of 3-5 s) | NOW | o_rally already exists (B-75 diagnostic in results/ATC_oracle_diag.json, older engine: O + rally 14.83 h against O 14.47 h, 418 rallies against the auction's 808) | new results file or a new key in ATC_oracle_diag.json | P1 5.4, 6.1, 7: "Not done: the marketplace with the same move"; "0.3 h above the marketplace" |
+| (b) P1 S11 two loss-free cells (C_AUCTION depth 2 and depth 5 at loss 0), 60 runs | 5 min; 15 min if the four lossy depth cells must be repeated on HEAD for pairing | NOW | E41 cell definitions | new rows under a new key beside E41 (E41_runs.lead.csv untouched) | P1 3.7, 5.5: "the design cannot attribute the penalty to loss" |
+| (c) P1 S12 ablation of the 13 weights and a tuned hand baseline | ablation: 13 x 30 seeds at 30 % load x 6 s = 40 min, plus the linear and hand references 6 min. Tuning: the linear CEM's own budget and seeds applied to the hand rule's 4 parameters (w_p1, w_p2, w_age, vot_scale), about 260 runs = 22 min; evaluation on seeds 1-30 at 30 % and 60 % load 25 min. Total 1.5 h; development 1-2 h | NOW | train_bid CEM code, seeds and budget as published | new results file; the policy files untouched | P1 5.6, 6.2, 6.3: "13 weights, which we have not interpreted"; "the baseline was never tuned" |
+| (d) P2 M7 the extra baseline run (three tries inside the 60 s grant lifetime) | 10 min (replay, retry interval 20 s, 30 seeds, 3 losses); it is one setting of (e1) | NOW | E54 runs and contact plans repeated per seed as in B-111 (40 s a seed) | E54_dtn.json new key | P2 3.11, 5.12, 6.5, Table 14: "three tries would lose 1.6 % by arithmetic"; "needs a new run" |
+| (e1) P3 S9/S17 E54 retry budget swept | 45 min: tries {1, 3, 5, 10} x interval {20, 60, 180 s}, losses 0.10, 0.25, 0.40, 30 seeds, replay | NOW | as (d) | E54_dtn.json new key | P3 4.2, 5.12, 7, 6.6: "the retry budget ... not swept" |
+| (e2) P3 S9/S17 the lost-link return driven in the engine | 30-45 min compute (30 seeds at 1x, with a link check at each step); development about half a day: an opt-in engine ladder (hold T_hold, return at half speed to the last link point, wait, re-auction at the lease), the largest code item in this list | NOW (compute) | dtn.lost_link_plan as the reference | E54_dtn.json new key | P3 4.2, 6.6: "the lost-link return is not driven in the engine"; its 82 returns a seed would enter the delay |
+| (f) P3 M7/S17 E46 value of time swept | full design: 2.13 h a level (1,080 runs x 7.1 s); four levels (x0.2, x0.5, x2, x5 of 5,000 / 1,000 / 100 USD an hour, fixed before any row) = 8.5 h. Reduced design without the 12 deviations (pooled, alone, three coalitions, O): 0.71 h a level, 2.8 h for four levels (H5 clause 3 only). Re-pricing the existing runs with the allocation fixed: minutes, labelled accounting only | full LATER; reduced NOW (just) | E46 parts for the x1 level | new results file per level; E46_parts untouched | P3 3.9, 5.6, 7, 6.6: "a sweep of the value of time (a limitation and future work)" |
+| (g) P2 S14 bound coverage per seed | 1x, 30 seeds: 30 min, shared with (j1); 4x, 10 seeds: 1 h; 8x comes free with B-116 | 1x and 4x NOW | E50 functions (no per-step bounds are stored except trace_m1_s1) | new key in E50_near_base.json, or a new file | P2 7 and Table 9: "bound coverage per seed is not in a results file" |
+| (h) P2 S8 the Mars fleet's 94 against 53 conflicts | 15 min (E47 Mars and E43 Moon, uncoordinated x1, 30 seeds each, with an opt-in conflict log); analysis 1-2 h | NOW | E43 and E47 cell definitions | new results file, labelled exploratory (a trace, not a test) | P2 5.1, 5.4, 6.1: "we have not traced the cause" |
+| (i) P3 O3 199.3 jobs against 200.9 awards a seed | under 15 min from the E54 cache (likely team jobs, one award per vehicle; to be checked) | NOW | .cache/atc/e54 | E54_dtn.json note key | P3 4.2: "199 jobs ... a seed" beside 200.9 awards |
+| (j1) P3 S17 E50 input sweeps on all seeds | 1x, 30 seeds: long-range ranging 1 and 10 m, UWB 0.1 and 0.7 m, beacon survey 0.05, 0.5 and 1.0 m, UWB reach 50 and 300 m (the note's ranges), split by distance from the base and by beacons in view: about 1.2 h (14 s a navigation run, from M5's 6-seed run) | NOW | run_e50_near sweep code | E50_near_base.json new sweep key | P3 6.6 list; the H9' sweep sentence in P2 and P3 (6 seeds -> 30) |
+| (j2) P3 S17 E52 change rates swept | under 10 min (tiles a day 10-84, keep-outs, road edges; a run takes seconds) | NOW | run_e52 | E52_map.json new key | P3 6.6: "one free parameter and one result" |
+| (j3) P3 S17 E51 at 4x and 8x | 4x, 10 seeds: 40-60 min; 8x, 5 seeds: 1-1.5 h, sharing B-116's perfect runs | 4x NOW; 8x LATER with B-116 | E50 record and trajectories | E51_clocks.json new key | P3 6.6 list; H11 at larger fleets |
+
+The 8x condition (B-116, (g) at 8x, (j3) at 8x): one 8x engine run takes 450-565 s and cannot be split, so some single
+calls exceed the 9-minute chunk rule by up to 25 s. Peak memory is about 1 to 1.5 GB (B-101's estimate), and 0.97 GB is
+free now. Under the rules as written these items are NOT FEASIBLE. They become LATER if you accept single calls of
+about 10 minutes and I wait for at least 1.5 GB free (browser closed). I would cache each 8x perfect run once and share
+it across near_base, overlaps, coverage and E51.
+
+Totals: the NOW items come to about 9 h of compute without (f), 12 h with (f) reduced: B-115 1.8 h; (a)+(b) 0.3 h;
+(c) 1.5 h; (d)+(e1) 0.9 h; (e2) 0.7 h; (g) 1.5 h; (h) 0.3 h; (i) 0.2 h; (j1)+(j2)+(j3) at 4x 2.2 h, less 0.5 h shared
+with (g) at 1x; (f) reduced 2.8 h. Each NOW item is under 3 h on its own; together they are several sittings.
+LATER: B-116 3.1 h, E51 at 8x 1.5 h, E46 full design 8.5 h.
+Pre-declared here, so not exploratory: the sweep grids above, the ablation design (zero one weight at a time, seeds 1-30,
+30 % load), the tuning (the linear CEM's budget and seeds applied to the hand parameters) and the E46 levels. Labelled
+exploratory in the files: (h), (i) and the accounting-only E46 re-pricing.
+Correction: my 5.5 h for B-115 covered the ten types not rerun after change 9, including types 1, 7 and 11, whose batch
+0 already matches HEAD. The seven types you list take 1.65 h.
+Proposed order after your go: B-115, (a), (b), (d), (e1), (i), (h), (j2), (c), (g)+(j1) at 1x, (j3) at 4x, (e2); then
+(f) and the 8x items as you decide.
+
+## F-77 (FRONTEND, 13 Nov): the live site (https://azizjonrahimov.github.io/Lunar-Haul/, deploy of b96361e)
+Method: gstack headless browser, one at a time, closed whenever free RAM < 0.8 GB (never under 0.5 GB with it closed);
+every page scrolled through so lazy sections load; console errors, every request's status, overflow, contrast (AA),
+one h1, heading order (scratchpad f77.sh).
+1. Dark, 1280 px, all 24 pages (+ a made-up URL): every page loads; console errors 0; failed requests 0. Seven requests
+   were still in flight when read (lander policy and check files, rover_bc_s0.onnx, the 5 m normal maps); fetched
+   directly, all seven return 200 under /Lunar-Haul/. Fonts, data files, lazy chunks and /simulator/v2/ all load under
+   the new base. /no-such-page/ gets the site's 404 page (one h1, its own 404 status). Overflow 0, contrast 0, one h1,
+   no heading skips on every page.
+   Content: /atc/ has the request-rule sentence; /paper/ has P1's title "Working Together Without Earth: Job Sharing,
+   Team Lifts, Learned Bidding and a Message Protocol for Lunar Robots of Different Owners", no old title, no
+   "one encounter only".
+2. Light, 1280 px, the 20 pages left from F-57: 18 clean (console 0, failed 0, overflow 0, contrast 0, one h1, no
+   skips). Two medium findings, fixed in source:
+   - /simulator/: 13 small-text items at 3.35:1 (the rail's hints, the KPI chips' "± … · 95 % CI · n = 3" lines).
+     They used --ink-3, which tokens.css reserves for text >= 24 px (as in F-64). site/src/simulator/v3.css:
+     .sim-hint, .vehhead span, .sim-ci, .sim-answer-note -> --ink-2; site/src/simulator/v3.js: the network map's
+     11 px distance labels (canvas) -> --ink-2. --muted, a chart mark colour at 3.35:1 (>= 3:1 for marks), unchanged.
+   - /simulator/v2/ (the archived app, web/): light --muted #7f828c was 3.5-3.8:1 on card headings, hints, the brand
+     tag and the footer (12 items in view). web/index.html: light --muted -> #666971, 4.5-5.5:1 on every light surface
+     (bg, panel, panel-2, line-2, accent-soft). Dark values unchanged.
+   Not re-checked in the browser: the fixes are not deployed (needs your rebuild; npm run build runs build_web.py, so
+   web/ is included). Bytes added: a few in v3.css (one comment) and in web/index.html (one comment); budgets not
+   re-run.
+3. Lighthouse 13.5.0 on the live site, 13 Nov (mobile = default simulated slow 4G and 4x CPU; desktop =
+   --preset=desktop; perf / a11y / best practices):
+   | page | mobile | mobile LCP, TBT, CLS | desktop | desktop LCP, CLS |
+   |---|---|---|---|---|
+   | /atc/ | 96/100/100 | 1.4 s, 210 ms, 0 | 100/100/100 | 0.4 s, 0.028 |
+   Targets (plan section 5, F-40): >= 85 performance on desktop for 3D pages, >= 95 for reading pages, home LCP <= 2.5 s
+   on mobile. /atc/ meets them.
+   NOT MEASURED: every other page. The run over the remaining 23 pages was stopped by Claude Code under memory
+   pressure before it wrote any result. It left Lighthouse's own headless Chrome (profile D:\Temp\lighthouse.PXP0a3,
+   9 processes), which I closed; free RAM went from 0.55 to 0.97 GB. Claude Code's rule is not to restart a stopped
+   job unasked, so I have not.
+Files changed: site/src/simulator/v3.css, site/src/simulator/v3.js, web/index.html, .team/reports.md. Tests 79/79.
+
+### F-77 Lighthouse rerun (FRONTEND, 13 Nov), live site, foreground, one page at a time
+Lighthouse 13.5.0 CLI, headless Chrome (closed after every page), https://azizjonrahimov.github.io/Lunar-Haul/.
+Mobile = default (simulated slow 4G, 4x CPU); desktop = --preset=desktop. Single runs: allow a few points of noise.
+Targets (plan, F-40): performance >= 85 on desktop for 3D pages, >= 95 for reading pages; home LCP <= 2.5 s on mobile.
+| page | mobile p/a/bp | mobile LCP, TBT, CLS | desktop p/a/bp | desktop LCP, TBT, CLS | free RAM before | failing a11y/bp audits |
+|---|---|---|---|---|---|---|
+| /atc/ | 96/100/100 | 1.4 s, 210 ms, 0 | 100/100/100 | 0.4 s, 0 ms, 0.028 | 1.14 | none |
+| /paper/ | 98/100/100 | 1.5 s, 150 ms, 0 | 100/100/100 | 0.4 s, 0 ms, 0 | 0.87 | none |
+| /protocol/ | 100/100/100 | 1.3 s, 0 ms, 0 | 100/100/100 | 0.4 s, 30 ms, 0 | 1 | none |
+| /network/ | 100/100/100 | 1.1 s, 60 ms, 0 | 100/100/100 | 0.3 s, 0 ms, 0 | 1.23 | none |
+| /results/ | 98/100/100 | 1.5 s, 160 ms, 0 | 100/100/100 | 0.4 s, 10 ms, 0 | 1.57 | none |
+| /verification/ | 84/100/100 | 1.2 s, 640 ms, 0 | 100/100/100 | 0.4 s, 20 ms, 0 | 1.78 | none |
+| / | 100/100/100 | 1.4 s, 50 ms, 0 | 100/100/100 | 0.3 s, 0 ms, 0 | 1.64 | none |
+| /about/ | 99/100/100 | 1.2 s, 140 ms, 0 | 100/100/100 | 0.3 s, 0 ms, 0 | 1.51 | none |
+| /account/ | 99/100/100 | 1.1 s, 130 ms, 0 | 100/100/100 | 0.3 s, 0 ms, 0 | 1.97 | none |
+| /changelog/ | 100/100/100 | 1.1 s, 30 ms, 0 | 100/100/100 | 0.4 s, 0 ms, 0 | 1.94 | none |
+| /data/ | 99/100/100 | 1.1 s, 110 ms, 0 | 100/100/100 | 0.3 s, 0 ms, 0 | 1.95 | none |
+| /design/ | 89/100/100 | 1.7 s, 430 ms, 0.021 | 98/100/100 | 1.0 s, 20 ms, 0.063 | 1.56 | none |
+| /design/stage/ | 61/100/100 | 2.6 s, 4,340 ms, 0 | 64/100/100 | 0.6 s, 2,030 ms, 0 | 2.01 | none |
+| /lab/ | 100/100/100 | 1.1 s, 50 ms, 0 | 100/100/100 | 0.3 s, 0 ms, 0 | 1.94 | none |
+| /lab/lander/ | 69/100/100 | 2.3 s, 1,970 ms, 0 | 100/100/100 | 0.5 s, 40 ms, 0 | 2.03 | none |
+| /lab/rover/ | 100/100/100 | 1.3 s, 0 ms, 0 | 95/100/100 | 0.3 s, 170 ms, 0 | 1.53 | none |
+| /method/ | 98/100/100 | 1.1 s, 170 ms, 0 | 100/100/100 | 0.3 s, 30 ms, 0 | 1.32 | none |
+| /research/earth-sky/ | 98/100/100 | 1.8 s, 140 ms, 0 | 100/100/100 | 0.4 s, 0 ms, 0 | 1.66 | none |
+| /simulator/ | 91/100/100 | 1.2 s, 340 ms, 0.071 | 96/100/100 | 0.5 s, 0 ms, 0.109 | 1.61 | none |
+| /simulator/v2/ | 91/100/100 | 2.7 s, 0 ms, 0 | 87/100/100 | 1.3 s, 0 ms, 0.147 | 1.54 | none |
+| /stories/ | 98/100/100 | 2.0 s, 0 ms, 0.085 | 98/100/100 | 0.4 s, 0 ms, 0.092 | 1.31 | none |
+| /vehicles/ | 57/100/100 | 4.1 s, 2,430 ms, 0 | 78/100/100 | 1.0 s, 490 ms, 0.009 | 0.97 | none |
+| /world/ | 73/100/100 | 1.8 s, 1,480 ms, 0.049 | 85/100/100 | 0.4 s, 340 ms, 0 | 1.03 | none |
+| /world/trace/ | 75/100/100 | 1.2 s, 1,410 ms, 0.008 | 93/100/100 | 0.4 s, 220 ms, 0.019 | 1.09 | none |
+
+## B-118 step 1 (N1) DONE 11:40 | E52 route-tile offsets fixed, E52 rerun: only the stale-map hit counts move; H12 and every byte and time unchanged
+Defect (default path; the fix changes the default): tools/atc/run_e52.py route_tiles added a leg's whole length before
+recording its tiles, so every tile of a leg carried the distance of the leg's end: 35 distinct offsets for 328 tile
+entries. Now each entry carries the distance at its own sample: 318 distinct offsets for 328 entries (the 10 ties are a
+leg's end and the next leg's start, same point). Tour length unchanged (62.3 km).
+Test: tests/test_e52.py (new, 2 tests). test_route_tile_offsets_are_per_sample failed before the fix ("35 distinct")
+and passes after; test_smap.py still passes (9 passed together).
+Rerun: python tools/atc/run_e52.py (30 seeds, 2 s). results/E52_map.json and results/E52_table.csv rewritten; the
+pre-fix rows and h12 are kept in E52_map.json under the new key "superseded_2026-11-13_b118_n1" with the reason. The
+writer now carries any "superseded_*" key across reruns. Every other top-level key is identical.
+What moved: only hits_during_outage_mean (32 rows) and hits_after_contact_mean (21 rows). Unchanged: bytes, shares of
+a full resend, tree overhead, times to current (hazard layer and all), H12 (share 24 h, sooner at every rate, paired
+deltas, supported = true).
+- P3 5.10, "after contact at most 0.08 with hazards first and 1.65 with the oldest change first": now 0.40 (336 h out,
+  10 kbit/s) and 1.72 (336 h, 10 kbit/s). Matches the red team's recomputation (0.40 and 1.72).
+- P3 5.10, hits during the outage: 1 h 0.017 (same); 6 h 0.133 -> 0.15; 1 day 0.80 -> 0.783; 3 days 2.6 (same);
+  7 days 6.65 -> 6.667; 14 days 13.783 -> 13.767 (prints 13.8 either way).
+- P3 Table 13, the hit columns at 16 kbit/s (during outage; after contact hazards-first / oldest-first), before -> after:
+  24 h 0.80; 0.03 / 0.12 -> 0.783; 0.03 / 0.08. 72 h 2.6; 0 / 0.15 -> 2.6; 0 / 0.20. 7 d 6.65; 0 / 1.23 -> 6.667;
+  0.08 / 0.82. 14 d 13.78; 0 / 1.15 -> 13.77; 0.38 / 1.32. 1 h and 6 h: after contact 0 / 0 either way.
+- The checks build_p3.py makes still hold: 14-day outage hits (13.77) exceed 5 x the largest after-contact count
+  (8.6), and hazards-first has no more hits after contact than oldest-first in any row (checked over all 48 rows).
+  "Hazards-first had none after contact" is no longer true at 7 and 14 days (0.08 and 0.38 at 16 kbit/s).
+- /protocol/ figure 2: site/public/protocol/e52.json is staged by FRONTEND's prepare-data (site/lib/protocol-data.mjs
+  stageE52) from results/E52_map.json at build time; no BACKEND file to regenerate. It moves at your next build.
+Files: tools/atc/run_e52.py, tests/test_e52.py (new), results/E52_map.json, results/E52_table.csv.
+Also in the tree from B-117 (a), not yet run: lunarsim/atc/regimes.py o_rally="unheard" (opt-in).
+| /vehicles/ | 60/100/100 | 3.9 s, 1,550 ms, 0 | 100/100/100 | 0.6 s, 0 ms, 0.009 | 1.84 | none |

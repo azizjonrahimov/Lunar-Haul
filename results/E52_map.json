@@ -177,7 +177,7 @@
    "t_hazards_current_s": 24.7,
    "t_all_s": 489.3,
    "hazards_present_mean": 0.53,
-   "hits_during_outage_mean": 0.133,
+   "hits_during_outage_mean": 0.15,
    "hits_after_contact_mean": 0.0
   },
   {
@@ -193,7 +193,7 @@
    "t_hazards_current_s": 15.44,
    "t_all_s": 305.8,
    "hazards_present_mean": 0.53,
-   "hits_during_outage_mean": 0.133,
+   "hits_during_outage_mean": 0.15,
    "hits_after_contact_mean": 0.0
   },
   {
@@ -209,7 +209,7 @@
    "t_hazards_current_s": 2.47,
    "t_all_s": 48.9,
    "hazards_present_mean": 0.53,
-   "hits_during_outage_mean": 0.133,
+   "hits_during_outage_mean": 0.15,
    "hits_after_contact_mean": 0.0
   },
   {
@@ -225,7 +225,7 @@
    "t_hazards_current_s": 0.25,
    "t_all_s": 4.9,
    "hazards_present_mean": 0.53,
-   "hits_during_outage_mean": 0.133,
+   "hits_during_outage_mean": 0.15,
    "hits_after_contact_mean": 0.0
   },
   {
@@ -241,7 +241,7 @@
    "t_hazards_current_s": 436.92,
    "t_all_s": 489.3,
    "hazards_present_mean": 0.53,
-   "hits_during_outage_mean": 0.133,
+   "hits_during_outage_mean": 0.15,
    "hits_after_contact_mean": 0.0
   },
   {
@@ -257,7 +257,7 @@
    "t_hazards_current_s": 273.07,
    "t_all_s": 305.8,
    "hazards_present_mean": 0.53,
-   "hits_during_outage_mean": 0.133,
+   "hits_during_outage_mean": 0.15,
    "hits_after_contact_mean": 0.0
   },
   {
@@ -273,7 +273,7 @@
    "t_hazards_current_s": 43.69,
    "t_all_s": 48.9,
    "hazards_present_mean": 0.53,
-   "hits_during_outage_mean": 0.133,
+   "hits_during_outage_mean": 0.15,
    "hits_after_contact_mean": 0.0
   },
   {
@@ -289,7 +289,7 @@
    "t_hazards_current_s": 4.37,
    "t_all_s": 4.9,
    "hazards_present_mean": 0.53,
-   "hits_during_outage_mean": 0.133,
+   "hits_during_outage_mean": 0.15,
    "hits_after_contact_mean": 0.0
   },
   {
@@ -305,8 +305,8 @@
    "t_hazards_current_s": 92.22,
    "t_all_s": 1965.5,
    "hazards_present_mean": 1.93,
-   "hits_during_outage_mean": 0.8,
-   "hits_after_contact_mean": 0.0833
+   "hits_during_outage_mean": 0.783,
+   "hits_after_contact_mean": 0.0667
   },
   {
    "out_h": 24,
@@ -321,7 +321,7 @@
    "t_hazards_current_s": 57.64,
    "t_all_s": 1228.4,
    "hazards_present_mean": 1.93,
-   "hits_during_outage_mean": 0.8,
+   "hits_during_outage_mean": 0.783,
    "hits_after_contact_mean": 0.0333
   },
   {
@@ -337,7 +337,7 @@
    "t_hazards_current_s": 9.22,
    "t_all_s": 196.5,
    "hazards_present_mean": 1.93,
-   "hits_during_outage_mean": 0.8,
+   "hits_during_outage_mean": 0.783,
    "hits_after_contact_mean": 0.0
   },
   {
@@ -353,7 +353,7 @@
    "t_hazards_current_s": 0.92,
    "t_all_s": 19.7,
    "hazards_present_mean": 1.93,
-   "hits_during_outage_mean": 0.8,
+   "hits_during_outage_mean": 0.783,
    "hits_after_contact_mean": 0.0
   },
   {
@@ -369,8 +369,8 @@
    "t_hazards_current_s": 1925.52,
    "t_all_s": 1965.5,
    "hazards_present_mean": 1.93,
-   "hits_during_outage_mean": 0.8,
-   "hits_after_contact_mean": 0.1333
+   "hits_during_outage_mean": 0.783,
+   "hits_after_contact_mean": 0.1
   },
   {
    "out_h": 24,
@@ -385,8 +385,8 @@
    "t_hazards_current_s": 1203.45,
    "t_all_s": 1228.4,
    "hazards_present_mean": 1.93,
-   "hits_during_outage_mean": 0.8,
-   "hits_after_contact_mean": 0.1167
+   "hits_during_outage_mean": 0.783,
+   "hits_after_contact_mean": 0.0833
   },
   {
    "out_h": 24,
@@ -401,8 +401,8 @@
    "t_hazards_current_s": 192.55,
    "t_all_s": 196.5,
    "hazards_present_mean": 1.93,
-   "hits_during_outage_mean": 0.8,
-   "hits_after_contact_mean": 0.1
+   "hits_during_outage_mean": 0.783,
+   "hits_after_contact_mean": 0.0667
   },
   {
    "out_h": 24,
@@ -417,7 +417,7 @@
    "t_hazards_current_s": 19.26,
    "t_all_s": 19.7,
    "hazards_present_mean": 1.93,
-   "hits_during_outage_mean": 0.8,
+   "hits_during_outage_mean": 0.783,
    "hits_after_contact_mean": 0.0
   },
   {
@@ -434,7 +434,7 @@
    "t_all_s": 2737.1,
    "hazards_present_mean": 5.53,
    "hits_during_outage_mean": 2.6,
-   "hits_after_contact_mean": 0.0
+   "hits_after_contact_mean": 0.0333
   },
   {
    "out_h": 72,
@@ -498,7 +498,7 @@
    "t_all_s": 2737.1,
    "hazards_present_mean": 5.53,
    "hits_during_outage_mean": 2.6,
-   "hits_after_contact_mean": 0.3167
+   "hits_after_contact_mean": 0.3833
   },
   {
    "out_h": 72,
@@ -514,7 +514,7 @@
    "t_all_s": 1710.7,
    "hazards_present_mean": 5.53,
    "hits_during_outage_mean": 2.6,
-   "hits_after_contact_mean": 0.15
+   "hits_after_contact_mean": 0.2
   },
   {
    "out_h": 72,
@@ -530,7 +530,7 @@
    "t_all_s": 273.7,
    "hazards_present_mean": 5.53,
    "hits_during_outage_mean": 2.6,
-   "hits_after_contact_mean": 0.0
+   "hits_after_contact_mean": 0.05
   },
   {
    "out_h": 72,
@@ -561,8 +561,8 @@
    "t_hazards_current_s": 129.34,
    "t_all_s": 2806.4,
    "hazards_present_mean": 13.73,
-   "hits_during_outage_mean": 6.65,
-   "hits_after_contact_mean": 0.0
+   "hits_during_outage_mean": 6.667,
+   "hits_after_contact_mean": 0.0833
   },
   {
    "out_h": 168,
@@ -577,8 +577,8 @@
    "t_hazards_current_s": 80.84,
    "t_all_s": 1754.0,
    "hazards_present_mean": 13.73,
-   "hits_during_outage_mean": 6.65,
-   "hits_after_contact_mean": 0.0
+   "hits_during_outage_mean": 6.667,
+   "hits_after_contact_mean": 0.0833
   },
   {
    "out_h": 168,
@@ -593,8 +593,8 @@
    "t_hazards_current_s": 12.93,
    "t_all_s": 280.6,
    "hazards_present_mean": 13.73,
-   "hits_during_outage_mean": 6.65,
-   "hits_after_contact_mean": 0.0
+   "hits_during_outage_mean": 6.667,
+   "hits_after_contact_mean": 0.0833
   },
   {
    "out_h": 168,
@@ -609,7 +609,7 @@
    "t_hazards_current_s": 1.29,
    "t_all_s": 28.1,
    "hazards_present_mean": 13.73,
-   "hits_during_outage_mean": 6.65,
+   "hits_during_outage_mean": 6.667,
    "hits_after_contact_mean": 0.0
   },
   {
@@ -625,8 +625,8 @@
    "t_hazards_current_s": 2764.91,
    "t_all_s": 2806.4,
    "hazards_present_mean": 13.73,
-   "hits_during_outage_mean": 6.65,
-   "hits_after_contact_mean": 1.65
+   "hits_during_outage_mean": 6.667,
+   "hits_after_contact_mean": 1.0333
   },
   {
    "out_h": 168,
@@ -641,8 +641,8 @@
    "t_hazards_current_s": 1728.07,
    "t_all_s": 1754.0,
    "hazards_present_mean": 13.73,
-   "hits_during_outage_mean": 6.65,
-   "hits_after_contact_mean": 1.2333
+   "hits_during_outage_mean": 6.667,
+   "hits_after_contact_mean": 0.8167
   },
   {
    "out_h": 168,
@@ -657,8 +657,8 @@
    "t_hazards_current_s": 276.49,
    "t_all_s": 280.6,
    "hazards_present_mean": 13.73,
-   "hits_during_outage_mean": 6.65,
-   "hits_after_contact_mean": 0.0
+   "hits_during_outage_mean": 6.667,
+   "hits_after_contact_mean": 0.1667
   },
   {
    "out_h": 168,
@@ -673,8 +673,8 @@
    "t_hazards_current_s": 27.65,
    "t_all_s": 28.1,
    "hazards_present_mean": 13.73,
-   "hits_during_outage_mean": 6.65,
-   "hits_after_contact_mean": 0.0
+   "hits_during_outage_mean": 6.667,
+   "hits_after_contact_mean": 0.0833
   },
   {
    "out_h": 336,
@@ -689,8 +689,8 @@
    "t_hazards_current_s": 130.01,
    "t_all_s": 2808.3,
    "hazards_present_mean": 28.03,
-   "hits_during_outage_mean": 13.783,
-   "hits_after_contact_mean": 0.0
+   "hits_during_outage_mean": 13.767,
+   "hits_after_contact_mean": 0.4
   },
   {
    "out_h": 336,
@@ -705,8 +705,8 @@
    "t_hazards_current_s": 81.26,
    "t_all_s": 1755.2,
    "hazards_present_mean": 28.03,
-   "hits_during_outage_mean": 13.783,
-   "hits_after_contact_mean": 0.0
+   "hits_during_outage_mean": 13.767,
+   "hits_after_contact_mean": 0.3833
   },
   {
    "out_h": 336,
@@ -721,7 +721,7 @@
    "t_hazards_current_s": 13.0,
    "t_all_s": 280.8,
    "hazards_present_mean": 28.03,
-   "hits_during_outage_mean": 13.783,
+   "hits_during_outage_mean": 13.767,
    "hits_after_contact_mean": 0.0
   },
   {
@@ -737,7 +737,7 @@
    "t_hazards_current_s": 1.3,
    "t_all_s": 28.1,
    "hazards_present_mean": 28.03,
-   "hits_during_outage_mean": 13.783,
+   "hits_during_outage_mean": 13.767,
    "hits_after_contact_mean": 0.0
   },
   {
@@ -753,8 +753,8 @@
    "t_hazards_current_s": 2782.67,
    "t_all_s": 2808.3,
    "hazards_present_mean": 28.03,
-   "hits_during_outage_mean": 13.783,
-   "hits_after_contact_mean": 1.3833
+   "hits_during_outage_mean": 13.767,
+   "hits_after_contact_mean": 1.7167
   },
   {
    "out_h": 336,
@@ -769,8 +769,8 @@
    "t_hazards_current_s": 1739.17,
    "t_all_s": 1755.2,
    "hazards_present_mean": 28.03,
-   "hits_during_outage_mean": 13.783,
-   "hits_after_contact_mean": 1.15
+   "hits_during_outage_mean": 13.767,
+   "hits_after_contact_mean": 1.3167
   },
   {
    "out_h": 336,
@@ -785,8 +785,8 @@
    "t_hazards_current_s": 278.27,
    "t_all_s": 280.8,
    "hazards_present_mean": 28.03,
-   "hits_during_outage_mean": 13.783,
-   "hits_after_contact_mean": 0.0
+   "hits_during_outage_mean": 13.767,
+   "hits_after_contact_mean": 0.5
   },
   {
    "out_h": 336,
@@ -801,8 +801,8 @@
    "t_hazards_current_s": 27.83,
    "t_all_s": 28.1,
    "hazards_present_mean": 28.03,
-   "hits_during_outage_mean": 13.783,
-   "hits_after_contact_mean": 0.0
+   "hits_during_outage_mean": 13.767,
+   "hits_after_contact_mean": 0.2
   }
  ],
  "h12": {
@@ -839,5 +839,812 @@
   "supported": true
  },
  "seeds": 30,
- "run_s": 2.2
+ "run_s": 2.2,
+ "superseded_2026-11-13_b118_n1": {
+  "reason": "B-118 N1 (code review 13 Nov 2026): route_tiles added each leg's whole length before recording its tiles, so every tile of a leg carried the distance of the leg's end (35 distinct offsets for 328 tile entries; now 318, the ties being a leg's end and the next leg's start). Only the crossing times moved, so only hits_during_outage_mean and hits_after_contact_mean changed; bytes, sync times, H12 and the tour length are unchanged. These are the rows as published before the fix.",
+  "superseded_on": "2026-11-13",
+  "rows": [
+   {
+    "out_h": 1,
+    "order": "hazards_first",
+    "rate_kbps": 10,
+    "seeds": 30,
+    "bytes_mean": 77636,
+    "share_of_full_resend": 0.00042,
+    "tree_overhead_bytes": 847,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 5.0,
+    "t_hazards_current_s": 4.57,
+    "t_all_s": 77.6,
+    "hazards_present_mean": 0.03,
+    "hits_during_outage_mean": 0.017,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 1,
+    "order": "hazards_first",
+    "rate_kbps": 16,
+    "seeds": 30,
+    "bytes_mean": 77636,
+    "share_of_full_resend": 0.00042,
+    "tree_overhead_bytes": 847,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 5.0,
+    "t_hazards_current_s": 2.86,
+    "t_all_s": 48.5,
+    "hazards_present_mean": 0.03,
+    "hits_during_outage_mean": 0.017,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 1,
+    "order": "hazards_first",
+    "rate_kbps": 100,
+    "seeds": 30,
+    "bytes_mean": 77636,
+    "share_of_full_resend": 0.00042,
+    "tree_overhead_bytes": 847,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 5.0,
+    "t_hazards_current_s": 0.46,
+    "t_all_s": 7.8,
+    "hazards_present_mean": 0.03,
+    "hits_during_outage_mean": 0.017,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 1,
+    "order": "hazards_first",
+    "rate_kbps": 1000,
+    "seeds": 30,
+    "bytes_mean": 77636,
+    "share_of_full_resend": 0.00042,
+    "tree_overhead_bytes": 847,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 5.0,
+    "t_hazards_current_s": 0.05,
+    "t_all_s": 0.8,
+    "hazards_present_mean": 0.03,
+    "hits_during_outage_mean": 0.017,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 1,
+    "order": "oldest_first",
+    "rate_kbps": 10,
+    "seeds": 30,
+    "bytes_mean": 77636,
+    "share_of_full_resend": 0.00042,
+    "tree_overhead_bytes": 847,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 5.0,
+    "t_hazards_current_s": 39.55,
+    "t_all_s": 77.6,
+    "hazards_present_mean": 0.03,
+    "hits_during_outage_mean": 0.017,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 1,
+    "order": "oldest_first",
+    "rate_kbps": 16,
+    "seeds": 30,
+    "bytes_mean": 77636,
+    "share_of_full_resend": 0.00042,
+    "tree_overhead_bytes": 847,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 5.0,
+    "t_hazards_current_s": 24.72,
+    "t_all_s": 48.5,
+    "hazards_present_mean": 0.03,
+    "hits_during_outage_mean": 0.017,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 1,
+    "order": "oldest_first",
+    "rate_kbps": 100,
+    "seeds": 30,
+    "bytes_mean": 77636,
+    "share_of_full_resend": 0.00042,
+    "tree_overhead_bytes": 847,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 5.0,
+    "t_hazards_current_s": 3.95,
+    "t_all_s": 7.8,
+    "hazards_present_mean": 0.03,
+    "hits_during_outage_mean": 0.017,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 1,
+    "order": "oldest_first",
+    "rate_kbps": 1000,
+    "seeds": 30,
+    "bytes_mean": 77636,
+    "share_of_full_resend": 0.00042,
+    "tree_overhead_bytes": 847,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 5.0,
+    "t_hazards_current_s": 0.4,
+    "t_all_s": 0.8,
+    "hazards_present_mean": 0.03,
+    "hits_during_outage_mean": 0.017,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 6,
+    "order": "hazards_first",
+    "rate_kbps": 10,
+    "seeds": 30,
+    "bytes_mean": 489342,
+    "share_of_full_resend": 0.00264,
+    "tree_overhead_bytes": 2514,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 31.6,
+    "t_hazards_current_s": 24.7,
+    "t_all_s": 489.3,
+    "hazards_present_mean": 0.53,
+    "hits_during_outage_mean": 0.133,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 6,
+    "order": "hazards_first",
+    "rate_kbps": 16,
+    "seeds": 30,
+    "bytes_mean": 489342,
+    "share_of_full_resend": 0.00264,
+    "tree_overhead_bytes": 2514,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 31.6,
+    "t_hazards_current_s": 15.44,
+    "t_all_s": 305.8,
+    "hazards_present_mean": 0.53,
+    "hits_during_outage_mean": 0.133,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 6,
+    "order": "hazards_first",
+    "rate_kbps": 100,
+    "seeds": 30,
+    "bytes_mean": 489342,
+    "share_of_full_resend": 0.00264,
+    "tree_overhead_bytes": 2514,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 31.6,
+    "t_hazards_current_s": 2.47,
+    "t_all_s": 48.9,
+    "hazards_present_mean": 0.53,
+    "hits_during_outage_mean": 0.133,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 6,
+    "order": "hazards_first",
+    "rate_kbps": 1000,
+    "seeds": 30,
+    "bytes_mean": 489342,
+    "share_of_full_resend": 0.00264,
+    "tree_overhead_bytes": 2514,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 31.6,
+    "t_hazards_current_s": 0.25,
+    "t_all_s": 4.9,
+    "hazards_present_mean": 0.53,
+    "hits_during_outage_mean": 0.133,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 6,
+    "order": "oldest_first",
+    "rate_kbps": 10,
+    "seeds": 30,
+    "bytes_mean": 489342,
+    "share_of_full_resend": 0.00264,
+    "tree_overhead_bytes": 2514,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 31.6,
+    "t_hazards_current_s": 436.92,
+    "t_all_s": 489.3,
+    "hazards_present_mean": 0.53,
+    "hits_during_outage_mean": 0.133,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 6,
+    "order": "oldest_first",
+    "rate_kbps": 16,
+    "seeds": 30,
+    "bytes_mean": 489342,
+    "share_of_full_resend": 0.00264,
+    "tree_overhead_bytes": 2514,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 31.6,
+    "t_hazards_current_s": 273.07,
+    "t_all_s": 305.8,
+    "hazards_present_mean": 0.53,
+    "hits_during_outage_mean": 0.133,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 6,
+    "order": "oldest_first",
+    "rate_kbps": 100,
+    "seeds": 30,
+    "bytes_mean": 489342,
+    "share_of_full_resend": 0.00264,
+    "tree_overhead_bytes": 2514,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 31.6,
+    "t_hazards_current_s": 43.69,
+    "t_all_s": 48.9,
+    "hazards_present_mean": 0.53,
+    "hits_during_outage_mean": 0.133,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 6,
+    "order": "oldest_first",
+    "rate_kbps": 1000,
+    "seeds": 30,
+    "bytes_mean": 489342,
+    "share_of_full_resend": 0.00264,
+    "tree_overhead_bytes": 2514,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 31.6,
+    "t_hazards_current_s": 4.37,
+    "t_all_s": 4.9,
+    "hazards_present_mean": 0.53,
+    "hits_during_outage_mean": 0.133,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 24,
+    "order": "hazards_first",
+    "rate_kbps": 10,
+    "seeds": 30,
+    "bytes_mean": 1965482,
+    "share_of_full_resend": 0.01059,
+    "tree_overhead_bytes": 4351,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 126.5,
+    "t_hazards_current_s": 92.22,
+    "t_all_s": 1965.5,
+    "hazards_present_mean": 1.93,
+    "hits_during_outage_mean": 0.8,
+    "hits_after_contact_mean": 0.0833
+   },
+   {
+    "out_h": 24,
+    "order": "hazards_first",
+    "rate_kbps": 16,
+    "seeds": 30,
+    "bytes_mean": 1965482,
+    "share_of_full_resend": 0.01059,
+    "tree_overhead_bytes": 4351,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 126.5,
+    "t_hazards_current_s": 57.64,
+    "t_all_s": 1228.4,
+    "hazards_present_mean": 1.93,
+    "hits_during_outage_mean": 0.8,
+    "hits_after_contact_mean": 0.0333
+   },
+   {
+    "out_h": 24,
+    "order": "hazards_first",
+    "rate_kbps": 100,
+    "seeds": 30,
+    "bytes_mean": 1965482,
+    "share_of_full_resend": 0.01059,
+    "tree_overhead_bytes": 4351,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 126.5,
+    "t_hazards_current_s": 9.22,
+    "t_all_s": 196.5,
+    "hazards_present_mean": 1.93,
+    "hits_during_outage_mean": 0.8,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 24,
+    "order": "hazards_first",
+    "rate_kbps": 1000,
+    "seeds": 30,
+    "bytes_mean": 1965482,
+    "share_of_full_resend": 0.01059,
+    "tree_overhead_bytes": 4351,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 126.5,
+    "t_hazards_current_s": 0.92,
+    "t_all_s": 19.7,
+    "hazards_present_mean": 1.93,
+    "hits_during_outage_mean": 0.8,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 24,
+    "order": "oldest_first",
+    "rate_kbps": 10,
+    "seeds": 30,
+    "bytes_mean": 1965482,
+    "share_of_full_resend": 0.01059,
+    "tree_overhead_bytes": 4351,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 126.5,
+    "t_hazards_current_s": 1925.52,
+    "t_all_s": 1965.5,
+    "hazards_present_mean": 1.93,
+    "hits_during_outage_mean": 0.8,
+    "hits_after_contact_mean": 0.1333
+   },
+   {
+    "out_h": 24,
+    "order": "oldest_first",
+    "rate_kbps": 16,
+    "seeds": 30,
+    "bytes_mean": 1965482,
+    "share_of_full_resend": 0.01059,
+    "tree_overhead_bytes": 4351,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 126.5,
+    "t_hazards_current_s": 1203.45,
+    "t_all_s": 1228.4,
+    "hazards_present_mean": 1.93,
+    "hits_during_outage_mean": 0.8,
+    "hits_after_contact_mean": 0.1167
+   },
+   {
+    "out_h": 24,
+    "order": "oldest_first",
+    "rate_kbps": 100,
+    "seeds": 30,
+    "bytes_mean": 1965482,
+    "share_of_full_resend": 0.01059,
+    "tree_overhead_bytes": 4351,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 126.5,
+    "t_hazards_current_s": 192.55,
+    "t_all_s": 196.5,
+    "hazards_present_mean": 1.93,
+    "hits_during_outage_mean": 0.8,
+    "hits_after_contact_mean": 0.1
+   },
+   {
+    "out_h": 24,
+    "order": "oldest_first",
+    "rate_kbps": 1000,
+    "seeds": 30,
+    "bytes_mean": 1965482,
+    "share_of_full_resend": 0.01059,
+    "tree_overhead_bytes": 4351,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 126.5,
+    "t_hazards_current_s": 19.26,
+    "t_all_s": 19.7,
+    "hazards_present_mean": 1.93,
+    "hits_during_outage_mean": 0.8,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 72,
+    "order": "hazards_first",
+    "rate_kbps": 10,
+    "seeds": 30,
+    "bytes_mean": 2737099,
+    "share_of_full_resend": 0.01475,
+    "tree_overhead_bytes": 4845,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 175.7,
+    "t_hazards_current_s": 126.12,
+    "t_all_s": 2737.1,
+    "hazards_present_mean": 5.53,
+    "hits_during_outage_mean": 2.6,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 72,
+    "order": "hazards_first",
+    "rate_kbps": 16,
+    "seeds": 30,
+    "bytes_mean": 2737099,
+    "share_of_full_resend": 0.01475,
+    "tree_overhead_bytes": 4845,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 175.7,
+    "t_hazards_current_s": 78.83,
+    "t_all_s": 1710.7,
+    "hazards_present_mean": 5.53,
+    "hits_during_outage_mean": 2.6,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 72,
+    "order": "hazards_first",
+    "rate_kbps": 100,
+    "seeds": 30,
+    "bytes_mean": 2737099,
+    "share_of_full_resend": 0.01475,
+    "tree_overhead_bytes": 4845,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 175.7,
+    "t_hazards_current_s": 12.61,
+    "t_all_s": 273.7,
+    "hazards_present_mean": 5.53,
+    "hits_during_outage_mean": 2.6,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 72,
+    "order": "hazards_first",
+    "rate_kbps": 1000,
+    "seeds": 30,
+    "bytes_mean": 2737099,
+    "share_of_full_resend": 0.01475,
+    "tree_overhead_bytes": 4845,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 175.7,
+    "t_hazards_current_s": 1.26,
+    "t_all_s": 27.4,
+    "hazards_present_mean": 5.53,
+    "hits_during_outage_mean": 2.6,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 72,
+    "order": "oldest_first",
+    "rate_kbps": 10,
+    "seeds": 30,
+    "bytes_mean": 2737099,
+    "share_of_full_resend": 0.01475,
+    "tree_overhead_bytes": 4845,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 175.7,
+    "t_hazards_current_s": 2701.64,
+    "t_all_s": 2737.1,
+    "hazards_present_mean": 5.53,
+    "hits_during_outage_mean": 2.6,
+    "hits_after_contact_mean": 0.3167
+   },
+   {
+    "out_h": 72,
+    "order": "oldest_first",
+    "rate_kbps": 16,
+    "seeds": 30,
+    "bytes_mean": 2737099,
+    "share_of_full_resend": 0.01475,
+    "tree_overhead_bytes": 4845,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 175.7,
+    "t_hazards_current_s": 1688.52,
+    "t_all_s": 1710.7,
+    "hazards_present_mean": 5.53,
+    "hits_during_outage_mean": 2.6,
+    "hits_after_contact_mean": 0.15
+   },
+   {
+    "out_h": 72,
+    "order": "oldest_first",
+    "rate_kbps": 100,
+    "seeds": 30,
+    "bytes_mean": 2737099,
+    "share_of_full_resend": 0.01475,
+    "tree_overhead_bytes": 4845,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 175.7,
+    "t_hazards_current_s": 270.16,
+    "t_all_s": 273.7,
+    "hazards_present_mean": 5.53,
+    "hits_during_outage_mean": 2.6,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 72,
+    "order": "oldest_first",
+    "rate_kbps": 1000,
+    "seeds": 30,
+    "bytes_mean": 2737099,
+    "share_of_full_resend": 0.01475,
+    "tree_overhead_bytes": 4845,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 175.7,
+    "t_hazards_current_s": 27.02,
+    "t_all_s": 27.4,
+    "hazards_present_mean": 5.53,
+    "hits_during_outage_mean": 2.6,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 168,
+    "order": "hazards_first",
+    "rate_kbps": 10,
+    "seeds": 30,
+    "bytes_mean": 2806413,
+    "share_of_full_resend": 0.01513,
+    "tree_overhead_bytes": 4880,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 180.0,
+    "t_hazards_current_s": 129.34,
+    "t_all_s": 2806.4,
+    "hazards_present_mean": 13.73,
+    "hits_during_outage_mean": 6.65,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 168,
+    "order": "hazards_first",
+    "rate_kbps": 16,
+    "seeds": 30,
+    "bytes_mean": 2806413,
+    "share_of_full_resend": 0.01513,
+    "tree_overhead_bytes": 4880,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 180.0,
+    "t_hazards_current_s": 80.84,
+    "t_all_s": 1754.0,
+    "hazards_present_mean": 13.73,
+    "hits_during_outage_mean": 6.65,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 168,
+    "order": "hazards_first",
+    "rate_kbps": 100,
+    "seeds": 30,
+    "bytes_mean": 2806413,
+    "share_of_full_resend": 0.01513,
+    "tree_overhead_bytes": 4880,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 180.0,
+    "t_hazards_current_s": 12.93,
+    "t_all_s": 280.6,
+    "hazards_present_mean": 13.73,
+    "hits_during_outage_mean": 6.65,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 168,
+    "order": "hazards_first",
+    "rate_kbps": 1000,
+    "seeds": 30,
+    "bytes_mean": 2806413,
+    "share_of_full_resend": 0.01513,
+    "tree_overhead_bytes": 4880,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 180.0,
+    "t_hazards_current_s": 1.29,
+    "t_all_s": 28.1,
+    "hazards_present_mean": 13.73,
+    "hits_during_outage_mean": 6.65,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 168,
+    "order": "oldest_first",
+    "rate_kbps": 10,
+    "seeds": 30,
+    "bytes_mean": 2806413,
+    "share_of_full_resend": 0.01513,
+    "tree_overhead_bytes": 4880,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 180.0,
+    "t_hazards_current_s": 2764.91,
+    "t_all_s": 2806.4,
+    "hazards_present_mean": 13.73,
+    "hits_during_outage_mean": 6.65,
+    "hits_after_contact_mean": 1.65
+   },
+   {
+    "out_h": 168,
+    "order": "oldest_first",
+    "rate_kbps": 16,
+    "seeds": 30,
+    "bytes_mean": 2806413,
+    "share_of_full_resend": 0.01513,
+    "tree_overhead_bytes": 4880,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 180.0,
+    "t_hazards_current_s": 1728.07,
+    "t_all_s": 1754.0,
+    "hazards_present_mean": 13.73,
+    "hits_during_outage_mean": 6.65,
+    "hits_after_contact_mean": 1.2333
+   },
+   {
+    "out_h": 168,
+    "order": "oldest_first",
+    "rate_kbps": 100,
+    "seeds": 30,
+    "bytes_mean": 2806413,
+    "share_of_full_resend": 0.01513,
+    "tree_overhead_bytes": 4880,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 180.0,
+    "t_hazards_current_s": 276.49,
+    "t_all_s": 280.6,
+    "hazards_present_mean": 13.73,
+    "hits_during_outage_mean": 6.65,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 168,
+    "order": "oldest_first",
+    "rate_kbps": 1000,
+    "seeds": 30,
+    "bytes_mean": 2806413,
+    "share_of_full_resend": 0.01513,
+    "tree_overhead_bytes": 4880,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 180.0,
+    "t_hazards_current_s": 27.65,
+    "t_all_s": 28.1,
+    "hazards_present_mean": 13.73,
+    "hits_during_outage_mean": 6.65,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 336,
+    "order": "hazards_first",
+    "rate_kbps": 10,
+    "seeds": 30,
+    "bytes_mean": 2808331,
+    "share_of_full_resend": 0.01514,
+    "tree_overhead_bytes": 4880,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 180.0,
+    "t_hazards_current_s": 130.01,
+    "t_all_s": 2808.3,
+    "hazards_present_mean": 28.03,
+    "hits_during_outage_mean": 13.783,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 336,
+    "order": "hazards_first",
+    "rate_kbps": 16,
+    "seeds": 30,
+    "bytes_mean": 2808331,
+    "share_of_full_resend": 0.01514,
+    "tree_overhead_bytes": 4880,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 180.0,
+    "t_hazards_current_s": 81.26,
+    "t_all_s": 1755.2,
+    "hazards_present_mean": 28.03,
+    "hits_during_outage_mean": 13.783,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 336,
+    "order": "hazards_first",
+    "rate_kbps": 100,
+    "seeds": 30,
+    "bytes_mean": 2808331,
+    "share_of_full_resend": 0.01514,
+    "tree_overhead_bytes": 4880,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 180.0,
+    "t_hazards_current_s": 13.0,
+    "t_all_s": 280.8,
+    "hazards_present_mean": 28.03,
+    "hits_during_outage_mean": 13.783,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 336,
+    "order": "hazards_first",
+    "rate_kbps": 1000,
+    "seeds": 30,
+    "bytes_mean": 2808331,
+    "share_of_full_resend": 0.01514,
+    "tree_overhead_bytes": 4880,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 180.0,
+    "t_hazards_current_s": 1.3,
+    "t_all_s": 28.1,
+    "hazards_present_mean": 28.03,
+    "hits_during_outage_mean": 13.783,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 336,
+    "order": "oldest_first",
+    "rate_kbps": 10,
+    "seeds": 30,
+    "bytes_mean": 2808331,
+    "share_of_full_resend": 0.01514,
+    "tree_overhead_bytes": 4880,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 180.0,
+    "t_hazards_current_s": 2782.67,
+    "t_all_s": 2808.3,
+    "hazards_present_mean": 28.03,
+    "hits_during_outage_mean": 13.783,
+    "hits_after_contact_mean": 1.3833
+   },
+   {
+    "out_h": 336,
+    "order": "oldest_first",
+    "rate_kbps": 16,
+    "seeds": 30,
+    "bytes_mean": 2808331,
+    "share_of_full_resend": 0.01514,
+    "tree_overhead_bytes": 4880,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 180.0,
+    "t_hazards_current_s": 1739.17,
+    "t_all_s": 1755.2,
+    "hazards_present_mean": 28.03,
+    "hits_during_outage_mean": 13.783,
+    "hits_after_contact_mean": 1.15
+   },
+   {
+    "out_h": 336,
+    "order": "oldest_first",
+    "rate_kbps": 100,
+    "seeds": 30,
+    "bytes_mean": 2808331,
+    "share_of_full_resend": 0.01514,
+    "tree_overhead_bytes": 4880,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 180.0,
+    "t_hazards_current_s": 278.27,
+    "t_all_s": 280.8,
+    "hazards_present_mean": 28.03,
+    "hits_during_outage_mean": 13.783,
+    "hits_after_contact_mean": 0.0
+   },
+   {
+    "out_h": 336,
+    "order": "oldest_first",
+    "rate_kbps": 1000,
+    "seeds": 30,
+    "bytes_mean": 2808331,
+    "share_of_full_resend": 0.01514,
+    "tree_overhead_bytes": 4880,
+    "flat_manifest_bytes": 120760,
+    "tiles_changed_mean": 180.0,
+    "t_hazards_current_s": 27.83,
+    "t_all_s": 28.1,
+    "hazards_present_mean": 28.03,
+    "hits_during_outage_mean": 13.783,
+    "hits_after_contact_mean": 0.0
+   }
+  ],
+  "h12": {
+   "rule": "after 24 h out of contact: hazards-first sync bytes < 10 % of a full resend, and the hazard layer current sooner than oldest-first at every link rate",
+   "share_of_full_resend_24h": 0.01059,
+   "sooner_at_every_rate": {
+    "10": true,
+    "16": true,
+    "100": true,
+    "1000": true
+   },
+   "paired_24h": {
+    "10": {
+     "mean_s": -1833.297733333334,
+     "seeds_hazards_first_sooner": 30,
+     "n": 30
+    },
+    "16": {
+     "mean_s": -1145.8110833333333,
+     "seeds_hazards_first_sooner": 30,
+     "n": 30
+    },
+    "100": {
+     "mean_s": -183.32977333333335,
+     "seeds_hazards_first_sooner": 30,
+     "n": 30
+    },
+    "1000": {
+     "mean_s": -18.332977333333336,
+     "seeds_hazards_first_sooner": 30,
+     "n": 30
+    }
+   },
+   "supported": true
+  }
+ }
 }
