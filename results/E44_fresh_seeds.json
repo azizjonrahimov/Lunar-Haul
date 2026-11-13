@@ -208,5 +208,126 @@
     ]
    }
   }
+ },
+ "request_rule_fresh_6": {
+  "task": "B-112 (LEAD, 13 Nov)",
+  "variant": "a vehicle requests a resource only when no hold point it cannot pass (a closed or closing landing zone) lies before that resource",
+  "seeds": "the 10,000 fresh type-6 encounters of B-108: builder (4410, 6, batch), run (4411, 6, batch); the variant sets request_rule on the same specs (parts FV06_b*.csv.gz)",
+  "paired_same_specs": true,
+  "rules_as_written": {
+   "n": 10000,
+   "n_driven": 10000,
+   "n_eff": 4580.4,
+   "batches": 10,
+   "violations": 1,
+   "violations_by_kind": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 1,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   },
+   "bound": 0.0004742976591654368,
+   "bonferroni_bound": 0.0007634120595816633,
+   "outcomes": {
+    "not_driven": 0,
+    "violation": 1,
+    "blocked_by_fault": 0,
+    "deadlock": 10,
+    "finished": 3781,
+    "incomplete": 6208
+   },
+   "deadlock_flag_any": 125,
+   "r1_breach_rate": 0.0003,
+   "emergency_brake_rate": 0.0,
+   "min_margin_m": 0.9507,
+   "min_margin_m_p01": 3.436481,
+   "delay_s_nominal_mean": 0.3889186784140969,
+   "delay_s_mean": 0.6922827657716656,
+   "t_end_s_mean": 949.3227199999999,
+   "bound_weighted": 0.0010352640622723244,
+   "bonferroni_bound_weighted": 0.0016660378468549065,
+   "violating_examples": [
+    {
+     "batch": 9,
+     "idx": 968,
+     "params": {
+      "R": 1000.0,
+      "exit_s": 1229.6201,
+      "inside_cls": "HAUL",
+      "kind": "plain",
+      "n": 3
+     },
+     "kinds": [
+      "viol_zone"
+     ]
+    }
+   ]
+  },
+  "request_rule_variant": {
+   "n": 10000,
+   "n_driven": 10000,
+   "n_eff": 4580.4,
+   "batches": 10,
+   "violations": 0,
+   "violations_by_kind": {
+    "viol_contact": 0,
+    "viol_gap": 0,
+    "viol_zone": 0,
+    "viol_crew": 0,
+    "viol_r3": 0,
+    "viol_slots": 0
+   },
+   "bound": 0.0006538186885266528,
+   "bonferroni_bound": 0.0011958252976710382,
+   "outcomes": {
+    "not_driven": 0,
+    "violation": 0,
+    "blocked_by_fault": 0,
+    "deadlock": 1,
+    "finished": 3781,
+    "incomplete": 6218
+   },
+   "deadlock_flag_any": 113,
+   "r1_breach_rate": 0.0003,
+   "emergency_brake_rate": 0.0,
+   "min_margin_m": 0.9507,
+   "min_margin_m_p01": 3.436481,
+   "delay_s_nominal_mean": 0.3889081938325991,
+   "delay_s_mean": 0.657294317810012,
+   "t_end_s_mean": 949.2851099999999
+  },
+  "outcome_changes": {
+   "deadlock -> incomplete": 9,
+   "violation -> incomplete": 1
+  },
+  "new_failures_vs_rules_as_written": {
+   "count": 0,
+   "by_outcome": {},
+   "by_planner": {}
+  },
+  "delay_change_s_paired": {
+   "all_driven": {
+    "n": 9162,
+    "mean": -0.03452655533726261,
+    "ci": [
+     -0.10362761760532636,
+     5.088708797205229e-05
+    ]
+   },
+   "nominal": {
+    "n": 1135,
+    "mean": -1.0484581497797354e-05,
+    "ci": [
+     -4.1938325991189416e-05,
+     0.0
+    ]
+   }
+  },
+  "run_time_s": 3116.3,
+  "peak_rss_mb": 110.4,
+  "bound_note": "bounds as in bound_rule above (one-sided 95 %; Bonferroni alpha over the 12 types); the variant is exploratory (PREREG change 9) and outside the Bonferroni family, its Bonferroni bound is given only to sit beside the rules-as-written value",
+  "random_fuzzer_note": "encounters with a random fuzzer draw from the batch-shaped run stream, so where the variant changes what a vehicle does, the fuzzer's later draws differ too; paired differences there are not the same random history"
  }
 }

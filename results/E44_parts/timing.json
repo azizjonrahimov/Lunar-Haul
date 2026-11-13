@@ -110,5 +110,12 @@
   "seconds_total": 3200.4,
   "batches_run": 10,
   "peak_rss_mb": 109.7
+ },
+ "fresh_6_request_rule": {
+  "seconds": 321.11,
+  "batch": 1000,
+  "seconds_total": 3116.3,
+  "batches_run": 10,
+  "peak_rss_mb": 110.4
  }
 }

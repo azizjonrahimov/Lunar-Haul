@@ -10293,3 +10293,28 @@ one h1, no heading skips, console errors 0. Server and browser stopped.
 Files: site/lib/ring.mjs (new), site/vite.config.js, site/atc/index.html, site/src/atc/sandbox.js,
 site/lib/card-keys.lock.json, site/tests/f75.test.mjs (new). (site/scripts/prepare-data.mjs: touched and restored, no
 net change.)
+
+## B-112 DONE 01:23 | request-rule variant on all 10,000 fresh type-6 encounters: 0 violations, no new failure
+Files: tools/atc/run_e44.py (opt-in FRESH_VARIANT "fresh_6_request_rule": fresh roots 4410/4411 + request_rule on the
+same specs; parts results/E44_parts/FV06_b0000-0009.csv.gz; commands fresh_variant, fresh_variant_summarize; kept out
+of VARIANTS so summarize / E44_bounds.json never reads it), results/E44_fresh_seeds.json new key "request_rule_fresh_6"
+(every other key identical, checked), results/E44_parts/timing.json (new timing key only).
+Run: 10 batches x 1,000, 286-351 s each (52 min), one batch per chunk, free RAM 1.18-1.41 GB before each, process
+peak 110 MB. Specs identical to F06 pair by pair (paired_same_specs true).
+Results (rules as written -> variant, same 10,000 encounters, all driven, n_eff 4,580.4):
+- Violations 1 -> 0. The one removed is B-108's (batch 9, idx 968), as in B-108's single replay.
+- 95 % bound: rules as written 4.74e-4 (unweighted Clopper-Pearson, E44's rule), weighted 1.04e-3 (Bonferroni 7.63e-4 /
+  1.67e-3); variant, zero violations on n_eff: 6.54e-4 (Bonferroni 1.20e-3). The comparable pair is weighted 1.04e-3 vs
+  6.54e-4 (both on n_eff). The variant is exploratory, outside the Bonferroni family.
+- Outcomes: deadlock 10 -> 1, violation 1 -> 0, incomplete 6,208 -> 6,218, finished 3,781 -> 3,781. Changes are only
+  deadlock -> incomplete (9) and violation -> incomplete (1). Those 9 are no longer stuck: the deadlock flag clears and
+  they keep moving to the time limit (t_end 314-1,327 s -> 466-3,433 s); "incomplete" is type 6's usual class (vehicles
+  held at the closed zone, 62 %). The one remaining deadlock (batch 8, idx 808) is the same encounter, unchanged, under
+  both rule sets. Deadlock flag on any row (random fuzzers included) 125 -> 113.
+- New failures (finished under the rules as written, anything else under the variant): 0.
+- Delay, paired: all driven -0.035 s [-0.104, +0.0001] (n 9,162), nominal -0.00001 s (n 1,135); nominal mean 0.389 s
+  both. R1 breach rate 0.0003 both; emergency brake 0 both; min margin 0.951 m both (p01 3.44 m both).
+So the variant removes the zone violation on the fresh seeds and introduces no deadlock, timeout or delay; it also
+clears 9 of the 10 hold-and-wait deadlocks.
+Tests: no test touches E44; no engine edit (request_rule was already an opt-in Spec flag).
+Questions: none.

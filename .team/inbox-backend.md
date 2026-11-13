@@ -1389,13 +1389,13 @@ The papers say the E54 replay was not rerun at v0.2. Rerun it with v0.2 sizes (a
 separate row), into E54's results file under a new key `lrip_v02` beside the v0.1 values; report every value
 that moves and whether any verdict (H14 clause 1, unconfirmed-segment counts and hours) moves.
 
-## B-112 [IN PROGRESS] The request-rule variant on all fresh type-6 encounters
+## B-112 [DONE 01:23] The request-rule variant on all fresh type-6 encounters
 B-108 found one zone violation in 10,000 type-6 encounters on fresh seeds and tested the request-rule variant
 on that one encounter only. Run the variant on the same 10,000 fresh type-6 encounters; report violations,
 the 95 % bound beside the rule as written, and any new failure the variant introduces (deadlock, timeouts,
 delay). Output under a new key in `results/E44_fresh_seeds.json`.
 
-## B-113 [OPEN] The stored type-10 parts that differ from HEAD
+## B-113 [IN PROGRESS] The stored type-10 parts that differ from HEAD
 B-107 noted that stored type-10 fuzzer parts differ from the current code on the deadlock flag in 445 of 4,000
 rows. Find the cause (which commit changed the flag, or a nondeterminism), say whether any published value
 (the ring-deadlock rates in P2, E44/E45 tables) was computed from the stale parts, regenerate if so, and report

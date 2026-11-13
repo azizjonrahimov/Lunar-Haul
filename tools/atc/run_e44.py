@@ -67,6 +67,8 @@ VARIANTS = {"6_request_rule": {"type": 6, "prefix": "V06",
 def _batch_path(k, j, variant=None):
     if variant == "fresh":
         return os.path.join(PARTS, f"F{k:02d}_b{j:04d}.csv.gz")
+    if variant == FRESH_VARIANT:
+        return os.path.join(PARTS, f"FV{k:02d}_b{j:04d}.csv.gz")
     pre = VARIANTS[variant]["prefix"] if variant else f"T{k:02d}"
     return os.path.join(PARTS, f"{pre}_b{j:04d}.csv.gz")
 
@@ -75,13 +77,16 @@ def _batch_path(k, j, variant=None):
 # fixtures 4498 / 4499, E47 E44's own), same batch sizes and counts. The bounds of the main run came from the seeds on
 # which the defects were found and the metric narrowed (results/E44_defects.json).
 FRESH = {"types": (4, 5, 6), "roots": (4410, 4411)}
+# B-112: the request-rule variant on the fresh type-6 encounters (same builder and run seeds as F06, request_rule on),
+# parts FV06_b*.csv.gz. Kept out of VARIANTS so cmd_summarize (E44_bounds.json) never reads it.
+FRESH_VARIANT = "fresh_6_request_rule"
 
 
 def run_batch(k: int, j: int, size: int, variant=None) -> dict:
-    roots = FRESH["roots"] if variant == "fresh" else (44, 4400)
+    roots = FRESH["roots"] if variant in ("fresh", FRESH_VARIANT) else (44, 4400)
     rng = np.random.default_rng([roots[0], k, j])      # a variant re-uses its type's encounters, seed for seed
     specs = [ET.build(k, rng) for _ in range(size)]
-    if variant == "6_request_rule":
+    if variant in ("6_request_rule", FRESH_VARIANT):
         for sp in specs:
             sp.request_rule = True
     drive = [i for i, s in enumerate(specs) if s.params.get("drivable", True)]
@@ -443,9 +448,104 @@ def cmd_fresh_summarize():
               f"{v['fresh_seeds']['bound']:.2e}", v["fresh_seeds"]["outcomes"], v["fresh_seeds"]["min_margin_m"])
 
 
+def cmd_fresh_variant_summarize():
+    """B-112: the request-rule variant on all 10,000 fresh type-6 encounters (FV06) beside the rules as written on
+    the same encounters (F06), paired by (batch, idx). -> results/E44_fresh_seeds.json key "request_rule_fresh_6";
+    every other key is left as it is."""
+    from scipy.stats import beta
+    nt = len(ET.BUILDERS)
+    alpha_k = 0.05 / nt
+    tim = json.load(open(os.path.join(PARTS, "timing.json")))
+
+    def load(pre):
+        fs = sorted(glob.glob(os.path.join(PARTS, f"{pre}_b*.csv.gz")))
+        d = pd.concat([pd.read_csv(f) for f in fs], ignore_index=True)
+        d["outcome"] = classify(d)
+        d["planner"] = planner_label(d)
+        d["min_margin_m"] = d[["min_sep", "min_crew"]].min(axis=1)
+        return d, len(fs)
+
+    def blk(d, nb):
+        dd = d[d["drivable"] == 1]
+        w = dd["weight"].to_numpy(float)
+        n_eff = float(w.sum() ** 2 / (w * w).sum())
+        viol = (dd["outcome"] == "violation").to_numpy()
+        x = int(viol.sum())
+        b = {"n": int(len(d)), "n_driven": int(len(dd)), "n_eff": round(n_eff, 1), "batches": nb, "violations": x,
+             "violations_by_kind": {f: int(dd[f].sum()) for f in VIOL},
+             "bound": (1 - 0.05 ** (1 / n_eff)) if x == 0 else _cp_upper(x, len(dd)),
+             "bonferroni_bound": (1 - alpha_k ** (1 / n_eff)) if x == 0 else _cp_upper(x, len(dd), alpha_k),
+             "outcomes": {c: int((d["outcome"] == c).sum()) for c in OUTCOMES},
+             "deadlock_flag_any": int(dd["deadlock"].sum()),
+             "r1_breach_rate": float(dd["r1_breach"].mean()), "emergency_brake_rate": float(dd["no_safe"].mean()),
+             "min_margin_m": float(dd["min_margin_m"].min()), "min_margin_m_p01": float(dd["min_margin_m"].quantile(0.01)),
+             "delay_s_nominal_mean": float(dd[dd["planner"] == "nominal"]["delay_s"].mean()),
+             "delay_s_mean": float(dd["delay_s"].mean()), "t_end_s_mean": float(dd["t_end"].mean())}
+        if x:
+            xw = float(w[viol].sum())
+            x_eff = n_eff * xw / float(w.sum())
+            xc = int(math.ceil(x_eff - 1e-12))
+            b["bound_weighted"] = float(beta.ppf(0.95, xc + 1, n_eff - xc))
+            b["bonferroni_bound_weighted"] = float(beta.ppf(1 - alpha_k, xc + 1, n_eff - xc))
+            b["violating_examples"] = [{"batch": int(r.batch), "idx": int(r.idx), "params": json.loads(r.params),
+                                        "kinds": [f for f in VIOL if r[f]]} for _, r in dd[viol].head(20).iterrows()]
+        return b
+
+    base, nb0 = load("F06")
+    var, nb1 = load("FV06")
+    key = ["batch", "idx"]
+    m = base.merge(var, on=key, suffixes=("_base", "_var"))
+    same_spec = bool((m["params_base"] == m["params_var"]).all() and (m["weight_base"] == m["weight_var"]).all())
+    md = m[(m["drivable_base"] == 1) & (m["drivable_var"] == 1)]
+    trans = md.groupby(["outcome_base", "outcome_var"]).size()
+    transitions = {f"{a} -> {b}": int(n) for (a, b), n in trans.items() if a != b}
+    nom = md[md["planner_base"] == "nominal"]
+    dlt = (md["delay_s_var"] - md["delay_s_base"]).dropna()
+    dlt_nom = (nom["delay_s_var"] - nom["delay_s_base"]).dropna()
+    rng = np.random.default_rng(112)
+
+    def boot(x):
+        x = np.asarray(x, float)
+        bm = x[rng.integers(0, len(x), (2000, len(x)))].mean(axis=1)
+        return {"n": int(len(x)), "mean": float(x.mean()), "ci": [float(np.quantile(bm, 0.025)), float(np.quantile(bm, 0.975))]}
+
+    new_fail = md[(md["outcome_var"].isin(["violation", "deadlock", "blocked_by_fault", "incomplete"])) &
+                  (md["outcome_base"] == "finished")]
+    out = {"task": "B-112 (LEAD, 13 Nov)",
+           "variant": VARIANTS["6_request_rule"]["rule"],
+           "seeds": "the 10,000 fresh type-6 encounters of B-108: builder (4410, 6, batch), run (4411, 6, batch); the "
+                    "variant sets request_rule on the same specs (parts FV06_b*.csv.gz)",
+           "paired_same_specs": same_spec, "rules_as_written": blk(base, nb0), "request_rule_variant": blk(var, nb1),
+           "outcome_changes": transitions,
+           "new_failures_vs_rules_as_written": {"count": int(len(new_fail)),
+                                                "by_outcome": new_fail["outcome_var"].value_counts().to_dict(),
+                                                "by_planner": new_fail["planner_base"].value_counts().to_dict()},
+           "delay_change_s_paired": {"all_driven": boot(dlt), "nominal": boot(dlt_nom)},
+           "run_time_s": tim.get(FRESH_VARIANT, {}).get("seconds_total"),
+           "peak_rss_mb": tim.get(FRESH_VARIANT, {}).get("peak_rss_mb"),
+           "bound_note": "bounds as in bound_rule above (one-sided 95 %; Bonferroni alpha over the 12 types); the "
+                         "variant is exploratory (PREREG change 9) and outside the Bonferroni family, its Bonferroni "
+                         "bound is given only to sit beside the rules-as-written value",
+           "random_fuzzer_note": "encounters with a random fuzzer draw from the batch-shaped run stream, so where the "
+                                 "variant changes what a vehicle does, the fuzzer's later draws differ too; paired "
+                                 "differences there are not the same random history"}
+    path = os.path.join(ROOT, "results", "E44_fresh_seeds.json")
+    doc = json.load(open(path))
+    doc["request_rule_fresh_6"] = out
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(doc, f, indent=1, default=float)
+        f.write("\n")
+    print(json.dumps({k: out[k] for k in ("paired_same_specs", "outcome_changes", "new_failures_vs_rules_as_written",
+                                          "delay_change_s_paired")}, indent=1, default=float))
+    for nm in ("rules_as_written", "request_rule_variant"):
+        b = out[nm]
+        print(nm, b["violations"], f"{b['bound']:.3e}", b.get("bound_weighted"), b["outcomes"], b["min_margin_m"])
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["run", "summarize", "fixtures", "fresh", "fresh_summarize"])
+    ap.add_argument("cmd", choices=["run", "summarize", "fixtures", "fresh", "fresh_summarize", "fresh_variant",
+                                    "fresh_variant_summarize"])
     ap.add_argument("--types", default="1-12")
     ap.add_argument("--variant", default=None, choices=sorted(VARIANTS))
     ap.add_argument("--n", type=int, default=None, help="override the per-type targets (N_TARGET)")
@@ -467,6 +567,10 @@ def main(argv=None):
         cmd_run(list(FRESH["types"]), None, a.max_seconds, "fresh")
     elif a.cmd == "fresh_summarize":
         cmd_fresh_summarize()
+    elif a.cmd == "fresh_variant":
+        cmd_run([6], None, a.max_seconds, FRESH_VARIANT)
+    elif a.cmd == "fresh_variant_summarize":
+        cmd_fresh_variant_summarize()
     else:
         cmd_fixtures()
     return 0
