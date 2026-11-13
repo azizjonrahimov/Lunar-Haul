@@ -10,6 +10,7 @@
    "bundles": 930,
    "delivered": 60,
    "lost": 870,
+   "censored": 0,
    "lost_share": 0.9355,
    "delay_mean_d": 0.0,
    "delay_max_d": 0.0
@@ -22,6 +23,7 @@
    "bundles": 930,
    "delivered": 600,
    "lost": 330,
+   "censored": 0,
    "lost_share": 0.3548,
    "delay_mean_d": 5.9,
    "delay_max_d": 13.81
@@ -34,6 +36,7 @@
    "bundles": 930,
    "delivered": 60,
    "lost": 870,
+   "censored": 0,
    "lost_share": 0.9355,
    "delay_mean_d": 0.0,
    "delay_max_d": 0.0
@@ -46,6 +49,7 @@
    "bundles": 930,
    "delivered": 600,
    "lost": 330,
+   "censored": 0,
    "lost_share": 0.3548,
    "delay_mean_d": 5.9,
    "delay_max_d": 13.81
@@ -58,6 +62,7 @@
    "bundles": 930,
    "delivered": 60,
    "lost": 870,
+   "censored": 0,
    "lost_share": 0.9355,
    "delay_mean_d": 0.0,
    "delay_max_d": 0.01
@@ -70,6 +75,7 @@
    "bundles": 930,
    "delivered": 600,
    "lost": 330,
+   "censored": 0,
    "lost_share": 0.3548,
    "delay_mean_d": 5.9,
    "delay_max_d": 13.81
@@ -82,6 +88,7 @@
    "bundles": 930,
    "delivered": 60,
    "lost": 870,
+   "censored": 0,
    "lost_share": 0.9355,
    "delay_mean_d": 0.0,
    "delay_max_d": 0.0
@@ -94,6 +101,7 @@
    "bundles": 930,
    "delivered": 930,
    "lost": 0,
+   "censored": 0,
    "lost_share": 0.0,
    "delay_mean_d": 10.84,
    "delay_max_d": 24.81
@@ -106,6 +114,7 @@
    "bundles": 930,
    "delivered": 60,
    "lost": 870,
+   "censored": 0,
    "lost_share": 0.9355,
    "delay_mean_d": 0.0,
    "delay_max_d": 0.0
@@ -118,6 +127,7 @@
    "bundles": 930,
    "delivered": 930,
    "lost": 0,
+   "censored": 0,
    "lost_share": 0.0,
    "delay_mean_d": 10.84,
    "delay_max_d": 24.81
@@ -130,6 +140,7 @@
    "bundles": 930,
    "delivered": 60,
    "lost": 870,
+   "censored": 0,
    "lost_share": 0.9355,
    "delay_mean_d": 0.0,
    "delay_max_d": 0.01
@@ -142,6 +153,7 @@
    "bundles": 930,
    "delivered": 930,
    "lost": 0,
+   "censored": 0,
    "lost_share": 0.0,
    "delay_mean_d": 10.84,
    "delay_max_d": 24.81
@@ -154,6 +166,7 @@
    "bundles": 930,
    "delivered": 60,
    "lost": 870,
+   "censored": 0,
    "lost_share": 0.9355,
    "delay_mean_d": 0.0,
    "delay_max_d": 0.0
@@ -166,6 +179,7 @@
    "bundles": 930,
    "delivered": 930,
    "lost": 0,
+   "censored": 0,
    "lost_share": 0.0,
    "delay_mean_d": 10.84,
    "delay_max_d": 24.81
@@ -178,6 +192,7 @@
    "bundles": 930,
    "delivered": 60,
    "lost": 870,
+   "censored": 0,
    "lost_share": 0.9355,
    "delay_mean_d": 0.0,
    "delay_max_d": 0.0
@@ -190,6 +205,7 @@
    "bundles": 930,
    "delivered": 930,
    "lost": 0,
+   "censored": 0,
    "lost_share": 0.0,
    "delay_mean_d": 10.84,
    "delay_max_d": 24.81
@@ -202,6 +218,7 @@
    "bundles": 930,
    "delivered": 60,
    "lost": 870,
+   "censored": 0,
    "lost_share": 0.9355,
    "delay_mean_d": 0.0,
    "delay_max_d": 0.01
@@ -214,9 +231,234 @@
    "bundles": 930,
    "delivered": 930,
    "lost": 0,
+   "censored": 0,
    "lost_share": 0.0,
    "delay_mean_d": 10.84,
    "delay_max_d": 24.81
   }
- ]
+ ],
+ "superseded_2026-11-13_b118": {
+  "reason": "B-118 step 2 (code review of 13 Nov 2026): the values published before the dtn.py fixes. N3: a store-and-forward bundle got a full set of transmissions in every step whatever time was left and its lifetime was checked only at the step's start, so grants could be delivered up to about 40 s late and counted delivered; an arrival on a step's last transmission was stamped at the next step. N4: bundles still alive at the window's end were counted lost (now 'censored'). N5: age of information was floored at dt/2 = 30 s. N6: the lost-link return used the driving time in the hour before the loss, which no text describes (now as the papers state it). C11: a relay's store limit was not checked on forwarding (no queue came near 64 MB, so no value moved by it). Kept as published, with the B-111 v0.2 block.",
+  "superseded_on": "2026-11-13",
+  "longest_earth_down_d": 24.8125,
+  "earth_up_share_61d": 0.32729963570127507,
+  "rows": [
+   {
+    "lifetime": "14 d (note 03 D)",
+    "lifetime_d": 14.0,
+    "loss": 0.1,
+    "protocol": "drop_retry",
+    "bundles": 930,
+    "delivered": 60,
+    "lost": 870,
+    "lost_share": 0.9355,
+    "delay_mean_d": 0.0,
+    "delay_max_d": 0.0
+   },
+   {
+    "lifetime": "14 d (note 03 D)",
+    "lifetime_d": 14.0,
+    "loss": 0.1,
+    "protocol": "sf",
+    "bundles": 930,
+    "delivered": 600,
+    "lost": 330,
+    "lost_share": 0.3548,
+    "delay_mean_d": 5.9,
+    "delay_max_d": 13.81
+   },
+   {
+    "lifetime": "14 d (note 03 D)",
+    "lifetime_d": 14.0,
+    "loss": 0.25,
+    "protocol": "drop_retry",
+    "bundles": 930,
+    "delivered": 60,
+    "lost": 870,
+    "lost_share": 0.9355,
+    "delay_mean_d": 0.0,
+    "delay_max_d": 0.0
+   },
+   {
+    "lifetime": "14 d (note 03 D)",
+    "lifetime_d": 14.0,
+    "loss": 0.25,
+    "protocol": "sf",
+    "bundles": 930,
+    "delivered": 600,
+    "lost": 330,
+    "lost_share": 0.3548,
+    "delay_mean_d": 5.9,
+    "delay_max_d": 13.81
+   },
+   {
+    "lifetime": "14 d (note 03 D)",
+    "lifetime_d": 14.0,
+    "loss": 0.4,
+    "protocol": "drop_retry",
+    "bundles": 930,
+    "delivered": 60,
+    "lost": 870,
+    "lost_share": 0.9355,
+    "delay_mean_d": 0.0,
+    "delay_max_d": 0.01
+   },
+   {
+    "lifetime": "14 d (note 03 D)",
+    "lifetime_d": 14.0,
+    "loss": 0.4,
+    "protocol": "sf",
+    "bundles": 930,
+    "delivered": 600,
+    "lost": 330,
+    "lost_share": 0.3548,
+    "delay_mean_d": 5.9,
+    "delay_max_d": 13.81
+   },
+   {
+    "lifetime": "30 d",
+    "lifetime_d": 30.0,
+    "loss": 0.1,
+    "protocol": "drop_retry",
+    "bundles": 930,
+    "delivered": 60,
+    "lost": 870,
+    "lost_share": 0.9355,
+    "delay_mean_d": 0.0,
+    "delay_max_d": 0.0
+   },
+   {
+    "lifetime": "30 d",
+    "lifetime_d": 30.0,
+    "loss": 0.1,
+    "protocol": "sf",
+    "bundles": 930,
+    "delivered": 930,
+    "lost": 0,
+    "lost_share": 0.0,
+    "delay_mean_d": 10.84,
+    "delay_max_d": 24.81
+   },
+   {
+    "lifetime": "30 d",
+    "lifetime_d": 30.0,
+    "loss": 0.25,
+    "protocol": "drop_retry",
+    "bundles": 930,
+    "delivered": 60,
+    "lost": 870,
+    "lost_share": 0.9355,
+    "delay_mean_d": 0.0,
+    "delay_max_d": 0.0
+   },
+   {
+    "lifetime": "30 d",
+    "lifetime_d": 30.0,
+    "loss": 0.25,
+    "protocol": "sf",
+    "bundles": 930,
+    "delivered": 930,
+    "lost": 0,
+    "lost_share": 0.0,
+    "delay_mean_d": 10.84,
+    "delay_max_d": 24.81
+   },
+   {
+    "lifetime": "30 d",
+    "lifetime_d": 30.0,
+    "loss": 0.4,
+    "protocol": "drop_retry",
+    "bundles": 930,
+    "delivered": 60,
+    "lost": 870,
+    "lost_share": 0.9355,
+    "delay_mean_d": 0.0,
+    "delay_max_d": 0.01
+   },
+   {
+    "lifetime": "30 d",
+    "lifetime_d": 30.0,
+    "loss": 0.4,
+    "protocol": "sf",
+    "bundles": 930,
+    "delivered": 930,
+    "lost": 0,
+    "lost_share": 0.0,
+    "delay_mean_d": 10.84,
+    "delay_max_d": 24.81
+   },
+   {
+    "lifetime": "longest Earth-down 24.81 d + 1 d",
+    "lifetime_d": 25.81,
+    "loss": 0.1,
+    "protocol": "drop_retry",
+    "bundles": 930,
+    "delivered": 60,
+    "lost": 870,
+    "lost_share": 0.9355,
+    "delay_mean_d": 0.0,
+    "delay_max_d": 0.0
+   },
+   {
+    "lifetime": "longest Earth-down 24.81 d + 1 d",
+    "lifetime_d": 25.81,
+    "loss": 0.1,
+    "protocol": "sf",
+    "bundles": 930,
+    "delivered": 930,
+    "lost": 0,
+    "lost_share": 0.0,
+    "delay_mean_d": 10.84,
+    "delay_max_d": 24.81
+   },
+   {
+    "lifetime": "longest Earth-down 24.81 d + 1 d",
+    "lifetime_d": 25.81,
+    "loss": 0.25,
+    "protocol": "drop_retry",
+    "bundles": 930,
+    "delivered": 60,
+    "lost": 870,
+    "lost_share": 0.9355,
+    "delay_mean_d": 0.0,
+    "delay_max_d": 0.0
+   },
+   {
+    "lifetime": "longest Earth-down 24.81 d + 1 d",
+    "lifetime_d": 25.81,
+    "loss": 0.25,
+    "protocol": "sf",
+    "bundles": 930,
+    "delivered": 930,
+    "lost": 0,
+    "lost_share": 0.0,
+    "delay_mean_d": 10.84,
+    "delay_max_d": 24.81
+   },
+   {
+    "lifetime": "longest Earth-down 24.81 d + 1 d",
+    "lifetime_d": 25.81,
+    "loss": 0.4,
+    "protocol": "drop_retry",
+    "bundles": 930,
+    "delivered": 60,
+    "lost": 870,
+    "lost_share": 0.9355,
+    "delay_mean_d": 0.0,
+    "delay_max_d": 0.01
+   },
+   {
+    "lifetime": "longest Earth-down 24.81 d + 1 d",
+    "lifetime_d": 25.81,
+    "loss": 0.4,
+    "protocol": "sf",
+    "bundles": 930,
+    "delivered": 930,
+    "lost": 0,
+    "lost_share": 0.0,
+    "delay_mean_d": 10.84,
+    "delay_max_d": 24.81
+   }
+  ]
+ }
 }

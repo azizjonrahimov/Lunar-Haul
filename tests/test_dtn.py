@@ -58,25 +58,110 @@ def test_age_of_information_matches_note03_e7():
     a4 = DT.age_of_information(A, 0.4, "drop_retry", np.random.default_rng(0), 60.0)
     s4 = DT.age_of_information(A, 0.4, "sf", np.random.default_rng(0), 60.0)
     assert a4[1] > a0[1] and s4[1] < a4[1]
-    assert a0[1] == pytest.approx(30.0, abs=1.0)        # half a step: the step-resolution bias, the same everywhere
+    # B-118 N5: every 10 s update arrives: the age is a sawtooth from 0 to 10 s, mean 5 s (was floored at dt/2 = 30 s)
+    assert a0[1] == pytest.approx(5.0, abs=0.01)
 
 
-def test_lost_link_plan_shortens_isolation():
-    T = 200
+def test_age_of_information_no_path_grows():
+    A = chain(100, range(50))                            # linked for 50 steps, then never
+    a = DT.age_of_information(A, 0.0, "sf", np.random.default_rng(0), 60.0)
+    # first half: 5 s; second half: the age grows linearly from 0 to 3,000 s, mean 1,500 s -> overall about 752.5 s
+    assert a[1] == pytest.approx(0.5 * 5.0 + 0.5 * 1500.0, rel=0.01)
+
+
+class _Tr:
+    def __init__(self, T, n):
+        self.dt_s = 60.0
+        self.ds = np.zeros((T, n))
+
+
+def _isolated_chain(T=200):
     A = chain(T, list(range(0, 20)) + list(range(150, T)))
     A[:, 0, 2] = A[:, 2, 0] = False
+    return A
 
-    class Tr:
-        dt_s = 60.0
-        ds = np.zeros((T, 2))
-    Tr.ds[10:20, 1] = 50.0                                # vehicle 1 drove 10 min before losing the link
-    A2, st = DT.lost_link_plan(A, Tr)
-    # both vehicles lose the base at step 20 (vehicle 0 only ever reached it through vehicle 1). Vehicle 1 drove 10 min
-    # before: T_hold 600 s (10 steps) + 2 x 600 s back at half speed (20 steps) -> its own link at step 50; vehicle 0
-    # did not drive: T_hold alone -> step 30
+
+def test_lost_link_plan_pre_review_rule():
+    """The rule before 13 Nov 2026, kept as a named variant: driving in the hour BEFORE the loss."""
+    A = _isolated_chain()
+    tr = _Tr(200, 2)
+    tr.ds[10:20, 1] = 50.0                                # vehicle 1 drove 10 min before losing the link
+    A2, st = DT.lost_link_plan(A, tr, {"return_rule": "pre_review"})
+    # both lose the base at step 20 (vehicle 0 only ever reached it through vehicle 1). Vehicle 1: T_hold 600 s
+    # (10 steps) + 2 x 600 s (20 steps) -> step 50; vehicle 0 did not drive: T_hold alone -> step 30
     assert not A2[49, 1, 2] and A2[50, 1, 2] and A2[149, 1, 2]
     assert not A2[29, 0, 2] and A2[30, 0, 2] and st["returns"] == 2
     assert (DT.base_hops(A)[20:150, 1] < 0).all()
+
+
+def test_lost_link_plan_papers_rule():
+    """B-118 N6 (default): retrace at half speed what was driven SINCE the loss, up to the hold timer."""
+    A = _isolated_chain()
+    tr = _Tr(200, 2)
+    tr.ds[10:20, 1] = 50.0                                # 10 min of driving before the loss: no longer counts
+    tr.ds[20:25, 1] = 50.0                                # 5 min of driving after the loss
+    A2, st = DT.lost_link_plan(A, tr)
+    # vehicle 1: 600 s hold + 2 x 300 s = 1,200 s = 20 steps -> step 40 (the pre-review rule gives step 50)
+    assert not A2[39, 1, 2] and A2[40, 1, 2] and A2[149, 1, 2]
+    assert not A2[29, 0, 2] and A2[30, 0, 2] and st["returns"] == 2
+    A3, _ = DT.lost_link_plan(A, tr, {"return_rule": "pre_review"})
+    assert not A3[49, 1, 2] and A3[50, 1, 2]
+    tr.ds[20:60, 1] = 50.0                                # driving beyond the hold timer does not count
+    A4, _ = DT.lost_link_plan(A, tr)
+    assert not A4[49, 1, 2] and A4[50, 1, 2]              # 600 + 2 x 600 s = 30 steps -> step 50
+    with pytest.raises(ValueError):
+        DT.lost_link_plan(A, tr, {"return_rule": "other"})
+
+
+def test_never_delivered_after_the_lifetime():
+    """B-118 N3: a step gives a bundle only the attempts that fit, and nothing is delivered after its lifetime."""
+    A = chain(20, range(20))
+    # created just after a step starts: before the fix the next step gave them six more tries whatever time was left
+    msgs = [Msg(i, "grant", BASE, 0, 5.0 + (i % 5), 92, 60.0) for i in range(2000)]
+    res = DT.simulate(A, msgs, "sf", 0.7, np.random.default_rng(3), 60.0)
+    done = [m for m in res if m.t_done is not None]
+    assert done and all(m.t_done <= m.t0 + m.life_s + 1e-9 for m in done)
+    assert all(m.expired for m in res if m.t_done is None)
+    dr = DT.simulate(A, msgs, "drop_retry", 0.7, np.random.default_rng(3), 60.0, {"retry_s": 20.0})
+    assert all(m.t_done <= m.t0 + m.life_s + 1e-9 for m in dr if m.t_done is not None)
+
+
+def test_delivery_recorded_in_the_step_it_happens():
+    A = chain(10, range(10))
+    m = DT.simulate(A, [Msg(0, "award", BASE, 0, 0.0, 92, 3600.0)], "sf", 0.0, np.random.default_rng(0), 60.0)[0]
+    assert m.t_done == pytest.approx(0.02)               # two hops of 10 ms
+    # with loss, an arrival on a step's last attempt keeps its own time (before: stamped at the next step's start)
+    msgs = [Msg(i, "award", BASE, 0, 0.0, 92, 3600.0) for i in range(2000)]
+    res = DT.simulate(chain(200, range(200)), msgs, "sf", 0.8, np.random.default_rng(5), 60.0)
+    assert not any(m.t_done is not None and m.t_done % 60.0 == 0.0 for m in res)
+
+
+def test_window_end_is_not_expiry():
+    """B-118 N4: a bundle alive and undelivered at the window's end is censored, not lost; so is one created after."""
+    A = chain(10, [])                                    # never a path to vehicle 0
+    msgs = [Msg(0, "award", BASE, 0, 0.0, 92, 3600.0), Msg(1, "award", BASE, 0, 700.0, 92, 3600.0),
+            Msg(2, "grant", BASE, 0, 0.0, 92, 60.0)]
+    for proto in ("sf", "drop_retry"):
+        r = DT.simulate(A, msgs, proto, 0.0, np.random.default_rng(0), 60.0)
+        assert r[0].censored and not r[0].expired and r[0].t_done is None
+        assert r[1].censored and not r[1].expired
+        assert r[2].expired and not r[2].censored         # its lifetime ended inside the window
+
+
+def test_full_relay_refuses_custody():
+    """C11: a relay whose store is full does not take the bundle; it moves on when the store frees."""
+    T = 60
+    A = np.zeros((T, 4, 4), bool)                        # v0, v1, v2, base (3)
+    A[:, 3, 1] = A[:, 1, 3] = True
+    A[:, 1, 0] = A[:, 0, 1] = True
+    A[30:, 1, 2] = A[30:, 2, 1] = True                   # v1 - v2 only from step 30
+    x = Msg(0, "task_state", 1, 2, 0.0, 92, 7200.0)      # waits at v1 until step 30
+    y = Msg(1, "award", BASE, 0, 1.0, 92, 7200.0)        # base -> v1 -> v0
+    r = DT.simulate(A, [x, y], "sf", 0.0, np.random.default_rng(0), 60.0, {"queue_bytes": 100})
+    assert r[0].t_done == pytest.approx(30 * 60.0 + 0.01)
+    assert r[1].t_done >= 30 * 60.0                      # refused by the full relay until x left
+    r2 = DT.simulate(A, [x, y], "sf", 0.0, np.random.default_rng(0), 60.0)
+    assert r2[1].t_done < 60.0                           # with the default 64 MB store it passes at once
 
 
 def test_e54_outputs():

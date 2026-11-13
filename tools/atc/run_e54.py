@@ -174,52 +174,102 @@ def stuck_reservations(rec, A, tr, t0h, vid_col, grace_s):
     return n_stuck, hours
 
 
-def run_seed(seed):
+def code_fingerprint():
+    """B-118 N21: a fingerprint of the code a cache file was made with (dtn, this runner, E50's runner, the codec's
+    size table); build() refuses to mix cache files with different fingerprints."""
+    import hashlib
+    h = hashlib.sha256()
+    for rel in ("lunarsim/atc/dtn.py", "tools/atc/run_e54.py", "tools/atc/run_e50.py", "lunarsim/atc/lrip/codec.py"):
+        with open(os.path.join(ROOT, rel), "rb") as f:
+            h.update(f.read().replace(b"\r\n", b"\n"))
+    return h.hexdigest()[:16]
+
+
+def _rerun_commit():
+    import subprocess
+    try:
+        return subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, capture_output=True, text=True,
+                              timeout=20).stdout.strip() or None
+    except Exception:
+        return None
+
+
+def prepare(seed):
+    """One engine run and its contact plans for a seed, shared by run_seed and run_seed_sizes (B-118)."""
     import run_e50 as E5
     from lunarsim.atc import dtn as DT
     month, t0h, t1h, share = E5._window()
-    t = time.time()
     rec = record(seed, t0h, t1h)
     tr = E5.trajectories(rec, t0h, t1h)
     g = E5._geo()
     A = DT.contact_plan(tr, g["los"], g["ids"]["BASE"])
     A_ll, ll_stats = DT.lost_link_plan(A, tr)
-    hb = {"A": DT.base_hops(A), "A_ll": DT.base_hops(A_ll)}
+    A_pre, pre_stats = DT.lost_link_plan(A, tr, {"return_rule": "pre_review"})
     N = A.shape[1] - 1
     vid_col = {int(v): n for n, v in enumerate(tr.ids)}
-    eu = earth_up_fn(t0h, t1h, tr.dt_s)
-    msgs = messages(rec, t0h, t1h, N, vid_col)
-    out = {"seed": seed, "n_vehicles": N, "jobs": len(rec["jobs"]), "messages": len(msgs),
-           "earth_up_share": float(eu.mean()), "lost_link": ll_stats, "cells": []}
     n_st, h_st = stuck_reservations(rec, A, tr, t0h, vid_col, DT.DEFAULTS["grace_s"])
-    out["reservations"] = len(rec["res_log"])
+    return {"rec": rec, "tr": tr, "t0h": t0h, "t1h": t1h, "N": N, "vid_col": vid_col,
+            "plans": {"A": A, "A_ll": A_ll, "A_pre": A_pre},
+            "hb": {"A": DT.base_hops(A), "A_ll": DT.base_hops(A_ll), "A_pre": DT.base_hops(A_pre)},
+            "ll_stats": ll_stats, "pre_stats": pre_stats, "eu": earth_up_fn(t0h, t1h, tr.dt_s), "n_st": n_st, "h_st": h_st}
+
+
+# the cells replayed per seed: (label, protocol for dtn.simulate, contact plan, rng index). "sf_ll_pre_review" is the
+# lost-link return as the code had it before 13 Nov 2026 (B-118 N6), on the same random stream as "sf_ll"
+CELLS = [("drop_retry", "drop_retry", "A", 0), ("sf", "sf", "A", 1), ("sf_ll", "sf", "A_ll", 2),
+         ("sf_ll_pre_review", "sf", "A_pre", 2)]
+
+
+def _replay(ctx, msgs, seed, loss, label, aoi_cache):
+    from lunarsim.atc import dtn as DT
+    _, proto, plan, ri = next(c for c in CELLS if c[0] == label)
+    eu = ctx["eu"]
+    rng = np.random.default_rng([seed, 94, int(loss * 100), ri])
+    res = DT.simulate(ctx["plans"][plan], msgs, proto, loss, rng, ctx["tr"].dt_s,
+                      earth_up=lambda k: bool(eu[min(k, len(eu) - 1)]))
+    by = defaultdict(lambda: {"n": 0, "lost": 0, "censored": 0, "undelivered": 0, "delay": [], "bytes": 0})
+    for m in res:
+        b = by[m.kind]
+        b["n"] += 1
+        b["bytes"] += m.size
+        if m.t_done is None:
+            b["undelivered"] += 1
+            if m.censored:
+                b["censored"] += 1
+            else:
+                b["lost"] += 1
+        else:
+            b["delay"].append(m.t_done - m.t0)
+    if (loss, plan, proto) not in aoi_cache:
+        aoi = DT.age_of_information(ctx["plans"][plan], loss, proto, np.random.default_rng([seed, 94, 7, int(loss * 100)]),
+                                    ctx["tr"].dt_s, hb=ctx["hb"][plan])
+        aoi_cache[(loss, plan, proto)] = (float(np.mean(aoi)), float(np.max(aoi)))
+    ll = label.startswith("sf_ll")
+    return {"loss": loss, "protocol": label,
+            "kinds": {k: {"n": v["n"], "lost": v["lost"], "censored": v["censored"], "lost_incl_censored": v["undelivered"],
+                          "bytes": v["bytes"],
+                          "delay_mean_s": float(np.mean(v["delay"])) if v["delay"] else None,
+                          "delay_p95_s": float(np.quantile(v["delay"], 0.95)) if v["delay"] else None}
+                      for k, v in by.items()},
+            "aoi_mean_s": aoi_cache[(loss, plan, proto)][0], "aoi_max_vehicle_s": aoi_cache[(loss, plan, proto)][1],
+            "stuck_reservations": 0 if ll else ctx["n_st"],
+            "stuck_hours": 0.0 if ll else ctx["h_st"],
+            "blocked_hours_released_by_rule": ctx["h_st"] if ll else 0.0}
+
+
+def run_seed(seed, ctx=None):
+    t = time.time()
+    ctx = ctx or prepare(seed)
+    msgs = messages(ctx["rec"], ctx["t0h"], ctx["t1h"], ctx["N"], ctx["vid_col"])
+    out = {"seed": seed, "n_vehicles": ctx["N"], "jobs": len(ctx["rec"]["jobs"]), "messages": len(msgs),
+           "earth_up_share": float(ctx["eu"].mean()), "lost_link": ctx["ll_stats"],
+           "lost_link_pre_review": ctx["pre_stats"], "cells": [], "reservations": len(ctx["rec"]["res_log"]),
+           "job_vehicles": [len(j["vehicles"]) for j in ctx["rec"]["jobs"]],
+           "code": code_fingerprint()}
+    aoi_cache = {}
     for loss in LOSSES:
-        for proto in PROTOCOLS:
-            plan = A_ll if proto == "sf_ll" else A
-            rng = np.random.default_rng([seed, 94, int(loss * 100), PROTOCOLS.index(proto)])
-            res = DT.simulate(plan, msgs, "drop_retry" if proto == "drop_retry" else "sf", loss, rng, tr.dt_s,
-                              earth_up=lambda k: bool(eu[min(k, len(eu) - 1)]))
-            by = defaultdict(lambda: {"n": 0, "lost": 0, "delay": []})
-            for m in res:
-                b = by[m.kind]
-                b["n"] += 1
-                if m.t_done is None:
-                    b["lost"] += 1
-                else:
-                    b["delay"].append(m.t_done - m.t0)
-            aoi = DT.age_of_information(plan, loss, "drop_retry" if proto == "drop_retry" else "sf",
-                                        np.random.default_rng([seed, 94, 7, int(loss * 100)]), tr.dt_s,
-                                        hb=hb["A_ll" if proto == "sf_ll" else "A"])
-            row = {"loss": loss, "protocol": proto,
-                   "kinds": {k: {"n": v["n"], "lost": v["lost"],
-                                 "delay_mean_s": float(np.mean(v["delay"])) if v["delay"] else None,
-                                 "delay_p95_s": float(np.quantile(v["delay"], 0.95)) if v["delay"] else None}
-                             for k, v in by.items()},
-                   "aoi_mean_s": float(np.mean(aoi)), "aoi_max_vehicle_s": float(np.max(aoi)),
-                   "stuck_reservations": 0 if proto == "sf_ll" else n_st,
-                   "stuck_hours": 0.0 if proto == "sf_ll" else h_st,
-                   "blocked_hours_released_by_rule": h_st if proto == "sf_ll" else 0.0}
-            out["cells"].append(row)
+        for label, *_ in CELLS:
+            out["cells"].append(_replay(ctx, msgs, seed, loss, label, aoi_cache))
     out["run_s"] = round(time.time() - t, 1)
     return out
 
@@ -238,62 +288,47 @@ def size_sets():
     return {"v0.1": v01, "v0.2": v02, "v0.2_proximity1": {k: v + fb for k, v in v02.items()}}
 
 
-def run_seed_sizes(seed):
+def run_seed_sizes(seed, ctx=None):
     """B-111: run_seed's replay with each of size_sets(), from one engine run and one contact plan per seed. Same rng
-    streams as run_seed (so v0.1 reproduces the published cells when the engine is unchanged). Age of information
-    does not depend on packet sizes (STATUS beacons, dtn.age_of_information) and is computed once per cell."""
-    import run_e50 as E5
-    from lunarsim.atc import dtn as DT
-    month, t0h, t1h, share = E5._window()
+    streams as run_seed (so v0.1 reproduces the main cells). Age of information does not depend on packet sizes
+    (STATUS beacons, dtn.age_of_information) and is computed once per cell. The three protocols only (no pre-review
+    variant)."""
     t = time.time()
-    rec = record(seed, t0h, t1h)
-    tr = E5.trajectories(rec, t0h, t1h)
-    g = E5._geo()
-    A = DT.contact_plan(tr, g["los"], g["ids"]["BASE"])
-    A_ll, ll_stats = DT.lost_link_plan(A, tr)
-    hb = {"A": DT.base_hops(A), "A_ll": DT.base_hops(A_ll)}
-    N = A.shape[1] - 1
-    vid_col = {int(v): n for n, v in enumerate(tr.ids)}
-    eu = earth_up_fn(t0h, t1h, tr.dt_s)
-    n_st, h_st = stuck_reservations(rec, A, tr, t0h, vid_col, DT.DEFAULTS["grace_s"])
-    out = {"seed": seed, "n_vehicles": N, "jobs": len(rec["jobs"]), "reservations": len(rec["res_log"]),
-           "lost_link": ll_stats, "sets": {}}
+    ctx = ctx or prepare(seed)
+    out = {"seed": seed, "n_vehicles": ctx["N"], "jobs": len(ctx["rec"]["jobs"]), "reservations": len(ctx["rec"]["res_log"]),
+           "lost_link": ctx["ll_stats"], "sets": {}, "code": code_fingerprint()}
     aoi_cache = {}
     for set_name, sz in size_sets().items():
-        msgs = messages(rec, t0h, t1h, N, vid_col, sz)
-        cells = []
-        for loss in LOSSES:
-            for proto in PROTOCOLS:
-                plan = A_ll if proto == "sf_ll" else A
-                rng = np.random.default_rng([seed, 94, int(loss * 100), PROTOCOLS.index(proto)])
-                res = DT.simulate(plan, msgs, "drop_retry" if proto == "drop_retry" else "sf", loss, rng, tr.dt_s,
-                                  earth_up=lambda k: bool(eu[min(k, len(eu) - 1)]))
-                by = defaultdict(lambda: {"n": 0, "lost": 0, "delay": [], "bytes": 0})
-                for m in res:
-                    b = by[m.kind]
-                    b["n"] += 1
-                    b["bytes"] += m.size
-                    if m.t_done is None:
-                        b["lost"] += 1
-                    else:
-                        b["delay"].append(m.t_done - m.t0)
-                if (loss, proto) not in aoi_cache:
-                    aoi = DT.age_of_information(plan, loss, "drop_retry" if proto == "drop_retry" else "sf",
-                                                np.random.default_rng([seed, 94, 7, int(loss * 100)]), tr.dt_s,
-                                                hb=hb["A_ll" if proto == "sf_ll" else "A"])
-                    aoi_cache[(loss, proto)] = (float(np.mean(aoi)), float(np.max(aoi)))
-                cells.append({"loss": loss, "protocol": proto,
-                              "kinds": {k: {"n": v["n"], "lost": v["lost"], "bytes": v["bytes"],
-                                            "delay_mean_s": float(np.mean(v["delay"])) if v["delay"] else None,
-                                            "delay_p95_s": float(np.quantile(v["delay"], 0.95)) if v["delay"] else None}
-                                        for k, v in by.items()},
-                              "aoi_mean_s": aoi_cache[(loss, proto)][0], "aoi_max_vehicle_s": aoi_cache[(loss, proto)][1],
-                              "stuck_reservations": 0 if proto == "sf_ll" else n_st,
-                              "stuck_hours": 0.0 if proto == "sf_ll" else h_st,
-                              "blocked_hours_released_by_rule": h_st if proto == "sf_ll" else 0.0})
+        msgs = messages(ctx["rec"], ctx["t0h"], ctx["t1h"], ctx["N"], ctx["vid_col"], sz)
+        cells = [_replay(ctx, msgs, seed, loss, label, aoi_cache) for loss in LOSSES for label in PROTOCOLS]
         out["sets"][set_name] = {"messages": len(msgs), "cells": cells}
     out["run_s"] = round(time.time() - t, 1)
     return out
+
+
+def cmd_runall(seeds, max_s):
+    """B-118: one engine run per seed feeds both caches (main cells and the size sets)."""
+    t0 = time.time()
+    os.makedirs(CACHE, exist_ok=True)
+    os.makedirs(CACHE_V02, exist_ok=True)
+    last = 120.0
+    for s in seeds:
+        p1, p2 = os.path.join(CACHE, f"s{s}.json"), os.path.join(CACHE_V02, f"s{s}.json")
+        if os.path.isfile(p1) and os.path.isfile(p2):
+            continue
+        if time.time() - t0 + 1.4 * last > max_s:
+            print(f"stop before seed {s}: time budget", flush=True)
+            return
+        ts = time.time()
+        ctx = prepare(s)
+        for p, fn in ((p1, run_seed), (p2, run_seed_sizes)):
+            o = fn(s, ctx)
+            o["rerun_commit"] = _rerun_commit()
+            json.dump(o, open(p + ".tmp", "w"), allow_nan=True)
+            os.replace(p + ".tmp", p)
+        last = time.time() - ts
+        print(f"s{s} done in {last:.0f} s", flush=True)
+    print("all requested seeds done", flush=True)
 
 
 def cmd_v02run(seeds, max_s):
@@ -313,47 +348,65 @@ def cmd_v02run(seeds, max_s):
     print("all requested seeds done", flush=True)
 
 
-def _summ(S, set_name):
-    """build()'s rows and H14 for one size set of the B-111 cache."""
+def _rows_h14(per_seed_cells, protocols, with_bytes=False):
+    """Table rows and H14 from each seed's cells (B-118: one function for build and build_v02). Per kind: n; lost =
+    expired inside the window (B-118 N4); censored = alive at the window's end; lost_incl_censored = every undelivered
+    message (the definition before 13 Nov 2026)."""
     kinds = ["award", "grant", "task_state", "ledger_earth"]
     rows, cell = [], {}
     for loss in LOSSES:
-        for proto in PROTOCOLS:
-            rs = [next(c for c in s["sets"][set_name]["cells"] if c["loss"] == loss and c["protocol"] == proto) for s in S]
+        for proto in protocols:
+            rs = [next(c for c in cs if c["loss"] == loss and c["protocol"] == proto) for cs in per_seed_cells]
             cell[(loss, proto)] = rs
             row = {"loss": loss, "protocol": proto, "seeds": len(rs)}
             for k in kinds:
-                n = sum(r["kinds"].get(k, {}).get("n", 0) for r in rs)
-                lost = sum(r["kinds"].get(k, {}).get("lost", 0) for r in rs)
+                g = lambda f: sum(r["kinds"].get(k, {}).get(f, 0) for r in rs)
+                n, lost = g("n"), g("lost")
                 d = [r["kinds"][k]["delay_mean_s"] for r in rs if r["kinds"].get(k, {}).get("delay_mean_s") is not None]
                 d95 = [r["kinds"][k]["delay_p95_s"] for r in rs if r["kinds"].get(k, {}).get("delay_p95_s") is not None]
                 row[f"{k}_n"] = n
                 row[f"{k}_lost"] = lost
                 row[f"{k}_lost_share"] = round(lost / n, 5) if n else ""
+                row[f"{k}_censored"] = g("censored")
+                row[f"{k}_lost_incl_censored"] = g("lost_incl_censored")
                 row[f"{k}_delay_mean_s"] = round(float(np.mean(d)), 3) if d else ""
                 row[f"{k}_delay_p95_s"] = round(float(np.mean(d95)), 3) if d95 else ""
-                row[f"{k}_bytes"] = int(sum(r["kinds"].get(k, {}).get("bytes", 0) for r in rs))
+                if with_bytes:
+                    row[f"{k}_bytes"] = int(g("bytes"))
             row["aoi_mean_s"] = round(float(np.mean([r["aoi_mean_s"] for r in rs])), 2)
             row["aoi_worst_vehicle_s"] = round(float(np.max([r["aoi_max_vehicle_s"] for r in rs])), 1)
             row["stuck_reservations"] = int(sum(r["stuck_reservations"] for r in rs))
             row["stuck_hours"] = round(float(sum(r["stuck_hours"] for r in rs)), 2)
             rows.append(row)
-    lost = lambda r: r["kinds"].get("award", {}).get("lost", 0)
-    dr, ll = cell[(0.25, "drop_retry")], cell[(0.25, "sf_ll")]
-    h14 = {"lost_jobs_drop_retry_per_seed": _boot([lost(a) for a in dr], 1),
-           "lost_jobs_sf_ll_per_seed": _boot([lost(b) for b in ll], 2),
-           "difference_sf_ll_minus_drop_retry": _boot([lost(b) - lost(a) for a, b in zip(dr, ll)], 3),
-           "stuck_reservations_sf_ll": int(sum(r["stuck_reservations"] for r in ll)),
-           "stuck_reservations_drop_retry": int(sum(r["stuck_reservations"] for r in dr))}
-    h14["supported"] = bool(h14["difference_sf_ll_minus_drop_retry"]["ci"][1] < 0 and h14["stuck_reservations_sf_ll"] == 0)
+
+    def h14_for(ll_label, field):
+        lost = lambda r: r["kinds"].get("award", {}).get(field, 0)
+        dr, ll = cell[(0.25, "drop_retry")], cell[(0.25, ll_label)]
+        h = {"lost_jobs_drop_retry_per_seed": _boot([lost(a) for a in dr], 1),
+             "lost_jobs_sf_ll_per_seed": _boot([lost(b) for b in ll], 2),
+             "difference_sf_ll_minus_drop_retry": _boot([lost(b) - lost(a) for a, b in zip(dr, ll)], 3),
+             "stuck_reservations_sf_ll": int(sum(r["stuck_reservations"] for r in ll)),
+             "stuck_reservations_drop_retry": int(sum(r["stuck_reservations"] for r in dr))}
+        h["supported"] = bool(h["difference_sf_ll_minus_drop_retry"]["ci"][1] < 0 and h["stuck_reservations_sf_ll"] == 0)
+        return h
+    h14 = h14_for("sf_ll", "lost")
+    variants = {"lost_incl_censored": h14_for("sf_ll", "lost_incl_censored")}
+    if "sf_ll_pre_review" in protocols:
+        variants["pre_review_return_rule"] = h14_for("sf_ll_pre_review", "lost")
+    return rows, h14, variants
+
+
+def _summ(S, set_name):
+    """build()'s rows and H14 for one size set of the B-111 cache."""
+    rows, h14, _ = _rows_h14([s["sets"][set_name]["cells"] for s in S], PROTOCOLS, with_bytes=True)
     return rows, h14
 
 
 def build_v02():
     """B-111: results/E54_dtn.json key "lrip_v02" (every other key unchanged) and results/E54_table_v02.csv; the
-    v0.1 set rebuilt from the same cache is compared with the published rows and h14 (reproduction check)."""
-    files = sorted(glob.glob(os.path.join(CACHE_V02, "s[0-9]*.json")), key=lambda p: int(os.path.basename(p)[1:-5]))
-    S = [json.load(open(p)) for p in files]
+    v0.1 set rebuilt from the same cache is compared with the main table's rows and h14 (reproduction check; since
+    B-118 both come from one engine run per seed, so they must be equal)."""
+    S = _load_cache(os.path.join(CACHE_V02, "s[0-9]*.json"))
     if not S:
         raise SystemExit("no B-111 seeds")
     old = json.load(open(OUT_JSON))
@@ -361,8 +414,9 @@ def build_v02():
     rep_rows = [{k: v for k, v in r.items() if not k.endswith("_bytes")} for r in sets["v0.1"][0]]
     old_h14 = {k: v for k, v in old["h14"].items() if k != "rule"}
     rt = lambda x: json.loads(json.dumps(x))
-    reproduced = {"rows_equal_published": rt(rep_rows) == old["rows"], "h14_equal_published": rt(sets["v0.1"][1]) == old_h14,
-                  "seeds_equal_published": [s["seed"] for s in S] == old["seeds"]}
+    main_rows = [r for r in old["rows"] if r["protocol"] in PROTOCOLS]
+    reproduced = {"rows_equal_main_table": rt(rep_rows) == main_rows, "h14_equal_main_table": rt(sets["v0.1"][1]) == old_h14,
+                  "seeds_equal_main_table": [s["seed"] for s in S] == old["seeds"]}
     moved = []
     base_rows = {(r["loss"], r["protocol"]): r for r in sets["v0.1"][0]}
     for nm in ("v0.2", "v0.2_proximity1"):
@@ -384,13 +438,13 @@ def build_v02():
            "sizes_bytes": {nm: {k: sz[nm][k] for k in ("TASK_AWARD", "RESERVE_GRANT", "TASK_STATE")} for nm in sz},
            "ledger_bytes": LEDGER_BYTES,
            "note": ("Each seed's engine run and contact plan are made once and replayed with three size tables: v0.1 "
-                    "(the published values, as a reproduction check), v0.2 and v0.2 in Proximity-1 frames (+12 B per "
+                    "(equal to the main table, as a check), v0.2 and v0.2 in Proximity-1 frames (+12 B per "
                     "LRIP packet; the daily ledger bundle keeps its 10 kB). The replay sends TASK_AWARD, RESERVE_GRANT "
                     "and TASK_STATE, whose v0.2 sizes equal v0.1 (v0.2 changed POSITION's spare bits and HELLO only), "
                     "and in lunarsim/atc/dtn.py a size enters only the 64 MB per-node store limit, which no queue comes "
                     "near; age of information uses STATUS beacons and no size. Unconfirmed-segment counts and hours "
                     "come from the contact plan, not from sizes."),
-           "reproduction_of_published_v01": reproduced,
+           "reproduction_of_main_table_v01": reproduced,
            "rows": {nm: sets[nm][0] for nm in sets}, "h14": {nm: sets[nm][1] for nm in sets},
            "values_moved_vs_v01": moved, "verdicts": verdict,
            "max_queue_bytes_bound": None,
@@ -461,50 +515,43 @@ def _boot(x, seed=0):
     return {"n": int(len(x)), "mean": float(x.mean()), "ci": [float(np.quantile(m, 0.025)), float(np.quantile(m, 0.975))]}
 
 
-def build():
-    files = sorted(glob.glob(os.path.join(CACHE, "s[0-9]*.json")), key=lambda p: int(os.path.basename(p)[1:-5]))
+def _load_cache(path_glob):
+    """Cache files in seed order; B-118 N21: all made with the current code, else refuse."""
+    files = sorted(glob.glob(path_glob), key=lambda p: int(os.path.basename(p)[1:-5]))
     S = [json.load(open(p)) for p in files]
+    fp = code_fingerprint()
+    bad = sorted({s.get("code") for s in S} - {fp}, key=str)
+    if bad:
+        raise SystemExit(f"cache made with other code ({bad}; current {fp}): rerun the seeds")
+    return S
+
+
+LOST_LINK_NOTE = ("Lost-link return (sf_ll): rule 'papers', as the papers state it, corrected after code review on "
+                  "13 Nov 2026 (B-118 N6): a vehicle with no path to the base for T_hold = 600 s retraces at half speed "
+                  "the path it drove since the loss, so it is linked again at loss + 600 s + 2 x (its recorded driving "
+                  "time between the loss and the loss + 600 s). The replay uses the recorded trajectories, so the "
+                  "vehicle does not stop at the next safe point as note 03 C7 says: the retrace distance is an upper "
+                  "reading of the rule. Rows 'sf_ll_pre_review' replay the rule the code had before 13 Nov 2026 (T_hold "
+                  "+ 2 x the driving time in the hour before the loss), on the same random stream as sf_ll.")
+OUTCOME_NOTE = ("Per kind: n messages; lost = expired undelivered inside the window (its lifetime ended); censored = "
+                "still alive and undelivered at the window's end (fate unknown, not a loss; B-118 N4); "
+                "lost_incl_censored = every undelivered message, the definition used before 13 Nov 2026. Since B-118 "
+                "(N3) a bundle is never counted delivered after its lifetime, and a step gives it only the "
+                "transmissions that fit; age of information is the exact time average of the sawtooth (N5; before, "
+                "floored at 30 s).")
+
+
+def build():
+    S = _load_cache(os.path.join(CACHE, "s[0-9]*.json"))
     if not S:
         raise SystemExit("no E54 seeds")
-    kinds = ["award", "grant", "task_state", "ledger_earth"]
-    rows = []
-    cell = {}
-    for loss in LOSSES:
-        for proto in PROTOCOLS:
-            rs = [next(c for c in s["cells"] if c["loss"] == loss and c["protocol"] == proto) for s in S]
-            cell[(loss, proto)] = rs
-            row = {"loss": loss, "protocol": proto, "seeds": len(rs)}
-            for k in kinds:
-                n = sum(r["kinds"].get(k, {}).get("n", 0) for r in rs)
-                lost = sum(r["kinds"].get(k, {}).get("lost", 0) for r in rs)
-                d = [r["kinds"][k]["delay_mean_s"] for r in rs if r["kinds"].get(k, {}).get("delay_mean_s") is not None]
-                d95 = [r["kinds"][k]["delay_p95_s"] for r in rs if r["kinds"].get(k, {}).get("delay_p95_s") is not None]
-                row[f"{k}_n"] = n
-                row[f"{k}_lost"] = lost
-                row[f"{k}_lost_share"] = round(lost / n, 5) if n else ""
-                row[f"{k}_delay_mean_s"] = round(float(np.mean(d)), 3) if d else ""
-                row[f"{k}_delay_p95_s"] = round(float(np.mean(d95)), 3) if d95 else ""
-            row["aoi_mean_s"] = round(float(np.mean([r["aoi_mean_s"] for r in rs])), 2)
-            row["aoi_worst_vehicle_s"] = round(float(np.max([r["aoi_max_vehicle_s"] for r in rs])), 1)
-            row["stuck_reservations"] = int(sum(r["stuck_reservations"] for r in rs))
-            row["stuck_hours"] = round(float(sum(r["stuck_hours"] for r in rs)), 2)
-            rows.append(row)
+    rows, h14, variants = _rows_h14([s["cells"] for s in S], PROTOCOLS + ["sf_ll_pre_review"])
     with open(OUT_CSV, "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=list(rows[0]))
+        w = csv.DictWriter(f, fieldnames=list(rows[0]), lineterminator="\n")
         w.writeheader()
         w.writerows(rows)
-    lost = lambda r: r["kinds"].get("award", {}).get("lost", 0)
-    dr, ll = cell[(0.25, "drop_retry")], cell[(0.25, "sf_ll")]
-    diff = [lost(b) - lost(a) for a, b in zip(dr, ll)]
-    h14 = {"rule": "loss 0.25, 14-day Earth blackout: lost jobs (expired awards) sf_ll minus drop_retry, paired bootstrap "
-                   "CI excludes 0 below; and no reservation stuck past its timeout under sf_ll",
-           "lost_jobs_drop_retry_per_seed": _boot([lost(a) for a in dr], 1),
-           "lost_jobs_sf_ll_per_seed": _boot([lost(b) for b in ll], 2),
-           "difference_sf_ll_minus_drop_retry": _boot(diff, 3),
-           "stuck_reservations_sf_ll": int(sum(r["stuck_reservations"] for r in ll)),
-           "stuck_reservations_drop_retry": int(sum(r["stuck_reservations"] for r in dr))}
-    d = h14["difference_sf_ll_minus_drop_retry"]
-    h14["supported"] = bool(d["ci"][1] < 0 and h14["stuck_reservations_sf_ll"] == 0)
+    h14 = dict({"rule": "loss 0.25, 14-day Earth blackout: lost jobs (expired awards) sf_ll minus drop_retry, paired "
+                        "bootstrap CI excludes 0 below; and no reservation stuck past its timeout under sf_ll"}, **h14)
     L = [json.load(open(p)) for p in sorted(glob.glob(os.path.join(CACHE, "link_s*.json")))]
     link = ({"seeds": len(L), "linked_share_all_time": float(np.mean([x["linked_all"] for x in L])),
              "linked_share_driving_time": float(np.mean([x["linked_driving"] for x in L])),
@@ -514,6 +561,7 @@ def build():
                             for x in L if x["seed"] == 1), None),
              "note": "share of vehicle-steps with a radio path to the BASE mast (contact plan of the month, 60 s steps); "
                      "mean over seeds"} if L else None)
+    jv = [s["job_vehicles"] for s in S]
     doc = {"experiment": "E54 (B-94), Phase 6, H14 (paper/atc/PREREG6.md)", "note": __doc__.split("\n\n")[1].strip(),
            "seeds": [s["seed"] for s in S], "jobs_per_seed": float(np.mean([s["jobs"] for s in S])),
            "earth_up_share": float(np.mean([s["earth_up_share"] for s in S])),
@@ -522,7 +570,24 @@ def build():
            "lost_link_isolation_h_saved_per_seed": float(np.mean([s["lost_link"]["isolation_h_saved"] for s in S])),
            "rows": rows, "h14": h14, "link_shares": link, "parameters": __import__("lunarsim.atc.dtn", fromlist=["DEFAULTS"]).DEFAULTS,
            "stuck_definition": __doc__[__doc__.index("Stuck reservations"):].split("\n\n")[0].replace("\n", " "),
-           "blackout_days": BLACKOUT_DAYS, "ledger_bytes": LEDGER_BYTES}
+           "blackout_days": BLACKOUT_DAYS, "ledger_bytes": LEDGER_BYTES,
+           "outcome_definitions": OUTCOME_NOTE, "lost_link_rule": LOST_LINK_NOTE,
+           "h14_variants": dict(variants, note="H14 recomputed with lost = every undelivered award (the definition "
+                                "before 13 Nov 2026), and with the pre-review return rule; 'h14' above is the result"),
+           "lost_link_pre_review": {
+               "returns_per_seed": float(np.mean([s["lost_link_pre_review"]["returns"] for s in S])),
+               "isolation_h_saved_per_seed": float(np.mean([s["lost_link_pre_review"]["isolation_h_saved"] for s in S]))},
+           "awards_and_jobs": {
+               "jobs_per_seed": float(np.mean([len(x) for x in jv])),
+               "awards_per_seed": float(np.mean([sum(x) for x in jv])),
+               "team_jobs_per_seed": float(np.mean([sum(1 for v in x if v > 1) for x in jv])),
+               "vehicles_per_job_max": int(max(max(x) for x in jv if x)),
+               "note": "B-117 (i), exploratory: one TASK_AWARD per vehicle of a job (run_e54.messages), so awards = "
+                       "jobs + the extra vehicles of team jobs"},
+           "code": code_fingerprint(), "rerun_commit": sorted({s.get("rerun_commit") for s in S}, key=str)}
+    if os.path.isfile(OUT_JSON):                             # B-118: earlier values stay under dated keys
+        old = json.load(open(OUT_JSON, encoding="utf-8"))
+        doc.update({k: v for k, v in old.items() if k.startswith("superseded_")})
     with open(OUT_JSON, "w", encoding="utf-8", newline="\n") as f:
         json.dump(doc, f, indent=1)
         f.write("\n")
@@ -531,7 +596,7 @@ def build():
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["run", "build", "ledger", "linkshare", "v02run", "v02build"])
+    ap.add_argument("cmd", choices=["run", "runall", "build", "ledger", "linkshare", "v02run", "v02build"])
     ap.add_argument("--seeds", default="1-30")
     ap.add_argument("--max-seconds", type=float, default=480.0)
     a = ap.parse_args(argv)
@@ -543,6 +608,9 @@ def main(argv=None):
     elif a.cmd == "linkshare":
         lo, hi = (a.seeds.split("-") + [a.seeds])[:2]
         cmd_linkshare(list(range(int(lo), int(hi) + 1)), a.max_seconds)
+    elif a.cmd == "runall":
+        lo, hi = (a.seeds.split("-") + [a.seeds])[:2]
+        cmd_runall(list(range(int(lo), int(hi) + 1)), a.max_seconds)
     elif a.cmd == "v02run":
         lo, hi = (a.seeds.split("-") + [a.seeds])[:2]
         cmd_v02run(list(range(int(lo), int(hi) + 1)), a.max_seconds)
@@ -583,21 +651,26 @@ def ledger(seeds=range(1, 31)):
     for lname, life in lifetimes.items():
         for loss in LOSSES:
             for proto in ("drop_retry", "sf"):
-                deliv, lost, delay = [], [], []
+                deliv, lost, cens, delay = [], [], [], []
                 for s in seeds:
                     msgs = [Msg(d, "ledger_earth", BASE, -2, d * 86400.0, LEDGER_BYTES, life) for d in range(days)]
                     res = DT.simulate(A, msgs, proto, loss, np.random.default_rng([s, 94, 11, int(loss * 100)]), dt,
                                       earth_up=lambda k: bool(eu[min(k, len(eu) - 1)]))
                     deliv.append(sum(m.t_done is not None for m in res))
-                    lost.append(sum(m.t_done is None for m in res))
+                    lost.append(sum(m.t_done is None and not m.censored for m in res))
+                    cens.append(sum(m.censored for m in res))
                     delay += [(m.t_done - m.t0) / 86400.0 for m in res if m.t_done is not None]
                 out["rows"].append({"lifetime": lname, "lifetime_d": round(life / 86400.0, 2), "loss": loss,
                                     "protocol": proto, "bundles": days * len(list(seeds)),
-                                    "delivered": int(sum(deliv)), "lost": int(sum(lost)),
+                                    "delivered": int(sum(deliv)), "lost": int(sum(lost)), "censored": int(sum(cens)),
                                     "lost_share": round(sum(lost) / (days * len(list(seeds))), 4),
                                     "delay_mean_d": round(float(np.mean(delay)), 2) if delay else None,
                                     "delay_max_d": round(float(np.max(delay)), 2) if delay else None})
-    with open(os.path.join(ROOT, "results", "E54_ledger.json"), "w", encoding="utf-8", newline="\n") as f:
+    p = os.path.join(ROOT, "results", "E54_ledger.json")
+    if os.path.isfile(p):                                    # B-118: earlier values stay under dated keys
+        old = json.load(open(p, encoding="utf-8"))
+        out.update({k: v for k, v in old.items() if k.startswith("superseded_")})
+    with open(p, "w", encoding="utf-8", newline="\n") as f:
         json.dump(out, f, indent=1)
         f.write("\n")
     return out

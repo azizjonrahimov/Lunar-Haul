@@ -10742,3 +10742,60 @@ Files: site/lib/network.mjs, site/lib/phase6.mjs, site/lib/protocol-data.mjs, si
   site/src/protocol/protocol.css, site/src/network/main.js, site/src/network/landscape.js, site/src/network/inside.js,
   site/src/network/bars.js, site/src/network/network.css, site/src/hub.css, site/src/world/atc-pair.js,
   site/vite.config.js, tools/ci/budgets.json, site/tests/f78.test.mjs (new), .team/reports.md.
+
+## B-118 step 2 DONE 12:48 | dtn.py N3, N4, N5, N6 (+ C11) fixed, E54 rerun: H14 unchanged; age of information, grant losses, report delays, returns and the Earth-ledger count move
+These are defects in the DEFAULT path: the defaults change and the published E54 values move. Every old value is kept
+in results/E54_dtn.json and results/E54_ledger.json under "superseded_2026-11-13_b118" (with the reason).
+Code (lunarsim/atc/dtn.py):
+- N3: store-and-forward keeps a clock per bundle (new Msg.t_next). A step gives a bundle only the transmissions that
+  start before the step ends and before its lifetime; nothing is delivered after its lifetime (also drop_retry); an
+  arrival is stamped when it happens, not at the next step.
+- N4: new outcome Msg.censored: alive and undelivered at the window's end, or created at or after it. It is not a
+  loss. E54 rows now carry per kind: lost (expired inside the window), censored, lost_incl_censored (the old
+  definition).
+- N5: age of information is the exact time average of the sawtooth over each step (was floored at dt/2 = 30 s).
+- N6 (your decision): rule "papers" is the default: linked again at loss + 600 s + 2 x (recorded driving time between
+  the loss and the loss + 600 s), windows from dt. The old rule stays callable as return_rule "pre_review" and E54
+  reports it as rows "sf_ll_pre_review" (same random stream as sf_ll). The file says the replay uses recorded
+  trajectories, so the vehicle does not stop at the next safe point (an upper reading), and labels the rule "as the
+  papers state it, corrected after code review on 13 Nov 2026" (keys lost_link_rule, outcome_definitions).
+- C11 (the review's dtn item; your list said N11, which is evaluate.py and comes in step 6): a full relay refuses
+  custody on forwarding; a destination always accepts. No E54 queue came near 64 MB (largest bound 0.37 MB), so it
+  moves nothing.
+Tests (tests/test_dtn.py, 12 pass): 7 new or changed tests fail on the old code (checked on a git-archive copy of
+HEAD) and pass now: age 5 s with every 10 s update (was asserted 30 s); age grows without a path; papers rule
+(driving after the loss counts, driving beyond the hold timer does not, an unknown rule raises); never delivered
+after the lifetime (sf and a 20 s drop_retry); arrival stamped in its own step; window end is not expiry; full relay
+refuses custody. The pre-review rule keeps its own test.
+tools/atc/run_e54.py: one engine run per seed feeds both caches (new command runall); the replay is one function
+for the main table and the v0.2 sets; cache files carry a code fingerprint and the commit at run time, and build
+refuses mixed fingerprints (N21 for E54); old caches moved to .cache/atc/e54_pre_b118 and e54_v02_pre_b118.
+Run: 30 seeds, 100-116 s a seed, 8 chunks under 9 min, free RAM 1.0-1.7 GB before each; build, v02build, ledger.
+What moved (30 seeds; before -> after):
+- Age of information at the base, with the lost-link rule (sf_ll): mean 45.49 s -> 9.51 s, worst vehicle 148.9 s
+  (2.5 min) -> 39.9 s (same at every loss level, 9.51-9.56 s). P3 5.12 and Table 15 ("45.5 s and 2.5 min"); P1's
+  age-of-information sentence. Split: the N5 fix alone (old return rule) gives 20.85 s, worst 126.4 s; the N6 rule
+  takes it to 9.51 s.
+- Without the rule (drop_retry, sf): 5,287 s -> 5,264-5,272 s; worst vehicle 30.9 h unchanged (111,304 s).
+- TASK_STATE under sf_ll: lost 2 -> 0 and mean delay 30.7 s -> 1.1 s (loss 0.10), 33.0 s -> 3.4 s (0.25), 36.3 s ->
+  6.8 s (0.40); p95 155-172 s -> 10-28 s. P3 Table 15 ("2; 30.7 s") and P3's "against 33.0 s with the lost-link
+  rule". This is the N6 rule (the pre-review rows keep 2 lost and 30.7 s).
+- RESERVE_GRANT losses (N3; grants delivered late were counted delivered): loss 0.40 sf 2 -> 29 (0.48 %), sf_ll
+  1 -> 22 (0.37 %); loss 0.25 sf_ll 0 -> 3. drop_retry unchanged (grants lost 570, 1,543, 2,403). P3 Table 15, and P2 if
+  they print sf losses.
+- Lost-link returns: 82.13 -> 87.30 a seed (2.6 -> 2.8 a day for the eight vehicles); isolation hours saved 335.6 ->
+  364.8 a seed. P3 "82.1 times a seed, about 2.6 a day".
+- Earth-ledger bundles in the E54 replay (31-day window): 690 lost (74.2 %) -> 270 expired (29.0 %) + 420 censored
+  (alive at the window's end). results/E54_ledger.json (the 61-day lifetime study) does not move: every bundle
+  resolves inside 61 days, censored 0.
+- Award and grant delays move in the second decimal (e.g. sf_ll award mean 3.33 -> 3.40 s at 0.25).
+Unchanged: jobs 199.3 a seed; reservations 87.6; unconfirmed segments 2,566 and 7,349.22 h (drop_retry, 0.25); every
+award count (0 lost under sf and sf_ll at every loss; drop_retry 4, 10, 85 as before); H14: drop_retry 0.333 lost
+jobs a seed [0.167, 0.533], sf_ll 0, difference -0.333 [-0.533, -0.167], supported. H14 is the same under the old
+loss definition and under the pre-review rule (h14_variants). The v0.2 block: v0.1, v0.2 and v0.2 + Proximity-1 rows
+equal (0 values moved), and v0.1 equals the main table (one engine run per seed). results/phase6_family.json rebuilt:
+identical.
+B-117 (i), exploratory, now in E54_dtn.json "awards_and_jobs": 200.93 awards = 199.3 jobs + 1.63 team jobs a seed with
+two vehicles each (one TASK_AWARD per vehicle of a job; at most 2 vehicles a job). This answers P3 O3.
+Files: lunarsim/atc/dtn.py, tools/atc/run_e54.py, tests/test_dtn.py, results/E54_dtn.json, E54_table.csv,
+E54_table_v02.csv, E54_ledger.json. site/public/protocol/e54.json is staged by FRONTEND's build from the results.
