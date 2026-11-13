@@ -185,11 +185,16 @@ def test_e53_outputs():
     if not os.path.isfile(p):
         pytest.skip("E53 not run")
     d = json.load(open(p))
-    assert isinstance(d["h13"]["supported"], bool)
+    # B-119: the verdict recomputed from the rows (fleet geometry, auth on, 20 rovers: p95 <= 16 kbit/s at 1 Hz,
+    # > 16 kbit/s at 10 Hz)
+    cell = {(r["geometry"], r["auth"], r["position_hz"], r["rovers"]): r for r in d["rows"]}
+    a1, a10 = cell[("fleet", "on", 1.0, 20)]["busiest_link_kbps_p95"], cell[("fleet", "on", 10.0, 20)]["busiest_link_kbps_p95"]
+    assert d["h13"]["supported"] is bool(a1 <= 16.0 and a10 > 16.0)
+    assert d["h13"]["at_1hz_kbps_p95"] == a1 and d["h13"]["at_10hz_kbps_p95"] == a10
     v = json.load(open(os.path.join(ROOT, "data", "atc", "lrip", "conformance-v0.1.json")))
     for x in v["vectors"]:                                   # every golden packet decodes to its recorded fields
         pkt = bytes.fromhex(x["hex"])
-        d2 = L.decode(pkt, auth="auto" if x["auth"] else None, keys=KEYS if False else C.Keys(
+        d2 = L.decode(pkt, auth="auto" if x["auth"] else None, keys=C.Keys(
             mac_key=bytes.fromhex(v["keys"]["aes_cmac_key_hex"]), verify_key=PK), profile=x["profile"])
         assert d2.name == x["message"] and len(pkt) == x["bytes"]
         if "manifest_cbor_hex" not in x["fields"]:

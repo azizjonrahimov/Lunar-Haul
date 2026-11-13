@@ -38,7 +38,6 @@ KEY = "driving_split"
 
 def e40_month():
     import export_trace as XT
-    import run_e48 as E48
     from lunarsim import Simulation
     from lunarsim.atc import regimes as G
     (month, t0, t1, share), _ = XT.dark_month()

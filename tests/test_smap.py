@@ -92,12 +92,29 @@ def test_contribution_rule():
     assert a.map.v["hazard"][(1, 1)] == 3 and len(a.log) == 6
 
 
+def test_confirmed_tile_is_not_provisional():
+    """B-119 C10: a valid report on an already-confirmed tile is logged as such, not as provisional; and the same owner
+    on another pass confirms (the review's two smap tests)."""
+    a = S.Authority()
+    a.submit(S.Contribution("A", (2, 2), 1.0, 0.2, pass_id=1), 1.0)
+    assert a.submit(S.Contribution("A", (2, 2), 1.0, 0.2, pass_id=2), 2.0) == "accepted: confirmed"   # other pass
+    assert a.submit(S.Contribution("C", (2, 2), 1.0, 0.2), 3.0) == "accepted: already confirmed"
+    assert a.log[-1][2] == "accepted: already confirmed" and (2, 2) in a.confirmed
+
+
 def test_e52_outputs():
     p = os.path.join(ROOT, "results", "E52_map.json")
     if not os.path.isfile(p):
         pytest.skip("E52 not run")
     d = json.load(open(p))
-    assert isinstance(d["h12"]["supported"], bool)
+    # B-119: the verdict recomputed from the rows (after 24 h: hazards-first bytes < 10 % of a full resend at
+    # 100 kbit/s, and the hazard layer current sooner than oldest-first at every link rate)
+    R = {(r["out_h"], r["order"], r["rate_kbps"]): r for r in d["rows"]}
+    share = R[(24, "hazards_first", 100)]["share_of_full_resend"]
+    rates = sorted({r["rate_kbps"] for r in d["rows"]})
+    sooner = all(R[(24, "hazards_first", k)]["t_hazards_current_s"] < R[(24, "oldest_first", k)]["t_hazards_current_s"]
+                 for k in rates)
+    assert d["h12"]["supported"] is bool(share < 0.10 and sooner)
     rows = {(r["out_h"], r["order"], r["rate_kbps"]): r for r in d["rows"]}
     assert rows[(24, "hazards_first", 16)]["t_hazards_current_s"] < rows[(24, "oldest_first", 16)]["t_hazards_current_s"]
     assert rows[(1, "hazards_first", 100)]["bytes_mean"] <= rows[(336, "hazards_first", 100)]["bytes_mean"]

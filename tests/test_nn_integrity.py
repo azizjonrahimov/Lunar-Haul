@@ -268,3 +268,24 @@ def test_exported_landscape_file():
     assert abs(centre - p["path"][-1]["val_loss"]) <= 2e-3 * abs(centre)       # equal up to 4-digit rounding
     assert p["path"][-1]["x"] == 0.0 and p["path"][-1]["y"] == 0.0
     assert len(doc["random"]["val"]) == 41 and len(doc["interp"]["alpha"]) == len(doc["interp"]["val"])
+
+
+def test_policy_refuses_other_files():
+    """The review's nn test: the integrity Policy loads its own file and refuses any other policy or a doc whose
+    features differ (its two guard clauses)."""
+    import copy
+    p = os.path.join(D.ROOT, "data", "policies", "integrity_net_v1.json")
+    if not os.path.isfile(p):
+        pytest.skip("integrity policy not exported")
+    pol = M.Policy(p)
+    assert np.isfinite(pol(np.zeros((pol.window, len(F.FEATURES))))).all()
+    with pytest.raises(ValueError):
+        M.Policy(os.path.join(D.ROOT, "data", "policies", "atc_bid_v1.json"))   # the auction's bid policy
+    doc = json.load(open(p, encoding="utf-8"))
+    for bad in (dict(doc, format="other"), dict(doc, env="other")):
+        with pytest.raises(ValueError):
+            M.Policy(doc=bad)
+    d2 = copy.deepcopy(doc)
+    d2["obs"]["names"] = list(reversed(d2["obs"]["names"]))
+    with pytest.raises(ValueError):
+        M.Policy(doc=d2)

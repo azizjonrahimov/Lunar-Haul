@@ -472,6 +472,14 @@ def cmd_evaluate(max_s: float, which: str) -> bool:
         plan = [(f"{name}|{lab}|{seed}", reg, dict(kw, loss=o.get("loss", kw["loss"])), o, seed, lab)
                 for name, o in OOD_CELLS for seed in OOD_SEEDS[:o.get("seeds", len(OOD_SEEDS))]
                 for lab, reg, kw in EVAL_CELLS if lab in ("hand", "linear")]
+    import subprocess
+    try:                                          # B-118 N21: the commit is stamped on each run when it runs
+        run_commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True,
+                                    timeout=20).stdout.strip() or None
+        dirty = bool(subprocess.run(["git", "status", "--porcelain", "--untracked-files=no"], cwd=ROOT,
+                                    capture_output=True, text=True, timeout=20).stdout.strip())
+    except Exception:
+        run_commit, dirty = None, None
     for key, reg, kw, o, seed, lab in plan:
         if key in done:
             continue
@@ -490,6 +498,7 @@ def cmd_evaluate(max_s: float, which: str) -> bool:
         if kw.get("collect"):
             r["agreement"] = _agreement(sim, lab)
         last = r["wall_s"] = round(time.time() - t, 1)
+        r["run_commit"], r["run_tree_dirty"] = run_commit, dirty
         done[key] = r
         with open(path + ".tmp", "w") as f:
             json.dump(done, f)
@@ -526,10 +535,9 @@ def cmd_table_rerun() -> Optional[Dict[str, Any]]:
         return None
     out = cmd_table(write=False)
     old = json.load(open(RESULT_ORIG))
-    try:
-        commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, timeout=20).stdout.strip()
-    except Exception:
-        commit = None
+    # B-118 N21: the commits the runs were made at (stamped on each run), not the commit at writing time
+    rc = sorted({str(r.get("run_commit") or "not recorded (run before B-118)") for r in list(ev.values()) + list(gd.values())})
+    commit = rc[0] if len(rc) == 1 else rc
     out["task"] = "B-106 (P1 M8): B-74's evaluation rerun on the current engine"
     out["dates"] = {"original": "2026-10-27 (results/ATC_learned_eval.json, commit c90676f, before the two engine fixes)",
                     "rerun": time.strftime("%Y-%m-%d"), "rerun_commit": commit}

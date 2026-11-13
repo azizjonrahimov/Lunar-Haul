@@ -32,7 +32,6 @@ import argparse
 import csv
 import gzip
 import json
-import math
 import os
 import pickle
 import sys

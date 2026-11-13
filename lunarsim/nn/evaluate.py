@@ -169,7 +169,8 @@ def compare(found_net: np.ndarray, d_net: np.ndarray, found_base: np.ndarray, d_
     def med(a, axis):
         return _nanq(a, 50, axis)
 
-    cn, cb = np.where(np.isnan(dn), 600.0, dn), np.where(np.isnan(db), 600.0, db)
+    miss_s = float(F.EVENT_S[1])                                 # B-119 C13: the longest fault, from faults.EVENT_S
+    cn, cb = np.where(np.isnan(dn), miss_s, dn), np.where(np.isnan(db), miss_s, db)
     out = {}
     for key, point, boot in (
             ("delay_median_diff_s", med(dn, 1).mean() - med(db, 0), _mean0(med(dn[:, idx], 2)) - med(db[idx], 1)),
@@ -274,6 +275,7 @@ def evaluate_set(scores_f: Dict[str, np.ndarray], meta: np.ndarray, y: np.ndarra
 def time_inference(model, n: int = 2000) -> Dict[str, Any]:
     """Seconds per window on this CPU: the torch model with one thread, and the numpy reference runtime."""
     import torch
+    n_threads = torch.get_num_threads()                          # B-119 C13: restored afterwards, not set to 2
     torch.set_num_threads(1)
     rng = np.random.default_rng(0)
     x = torch.from_numpy(rng.normal(size=(1, model.rf, len(F.FEATURES))).astype(np.float32))
@@ -293,7 +295,7 @@ def time_inference(model, n: int = 2000) -> Dict[str, Any]:
         t = time.perf_counter()
         pol(xn)
         tn.append(time.perf_counter() - t)
-    torch.set_num_threads(2)
+    torch.set_num_threads(n_threads)
     import platform
     return {"window_steps": model.rf, "torch_1thread_ms": {"median": float(np.median(ts) * 1e3),
                                                            "p99": float(np.percentile(ts, 99) * 1e3), "n": n},
@@ -398,6 +400,21 @@ def write_table(res: Dict[str, Any]) -> None:
                                         round(a["pr_auc"], 4) if cname == "all" else ""])
 
 
+def scores_fingerprint(names: List[str]) -> str:
+    """B-118 N21: what a cached score array depends on: the model checkpoints named, the scoring code (baselines,
+    model, faults), the baselines' fitted parameters and the dataset's hash."""
+    import glob as _g
+    import hashlib
+    h = hashlib.sha256(D.dataset_sha256().encode())
+    files = [os.path.join(os.path.dirname(os.path.abspath(__file__)), f) for f in ("baselines.py", "model.py", "faults.py")]
+    files += [BASELINES] + sorted(p for n in names for p in _g.glob(os.path.join(T.STATE, n, "*")) if os.path.isfile(p))
+    for p in files:
+        h.update(os.path.basename(p).encode())
+        with open(p, "rb") as f:
+            h.update(f.read().replace(b"\r\n", b"\n") if p.endswith(".py") else f.read())
+    return h.hexdigest()[:16]
+
+
 def main(on: str = "test", force: bool = False, runs: Optional[List[str]] = None, max_s: float = 530.0) -> None:
     t0 = time.time()
     rehearsal = on == "val"
@@ -419,18 +436,26 @@ def main(on: str = "test", force: bool = False, runs: Optional[List[str]] = None
 
     tag = "rehearsal" if rehearsal else "final"
 
+    fp = scores_fingerprint(runs or [final_name(s) for s in FINAL_SEEDS])
+
     def all_scores(X: np.ndarray, what: str) -> Dict[str, np.ndarray]:
         """Scores of every detector on one array; saved, so that a run that stops at the time limit resumes."""
         path = os.path.join(T.STATE, f"scores_{tag}_{what}.npz")
         if os.path.isfile(path) and not rehearsal:
             with np.load(path) as z:
-                return {k: z[k] for k in z.files}
+                got = {k: z[k] for k in z.files}
+            code = str(got.pop("_code")) if "_code" in got else None    # B-118 N21
+            if code is None:
+                print(f"  {what}: scores cached before B-118 carry no fingerprint; used as they are", flush=True)
+            elif code != fp:
+                raise SystemExit(f"{path} was made with other models or code ({code} != {fp}); delete it and rescore")
+            return got
         if time.time() - t0 > max_s - 200.0 and not rehearsal:
             raise SystemExit(3)
         out = {k: fn(X)[None] for k, fn in scorers.items()}
         out["net"] = np.array([M.score_streams(m, X) for m in models])
         if not rehearsal:
-            np.savez(path, **out)
+            np.savez(path, _code=np.array(fp), **out)
         print(f"  scored {what} ({time.time() - t0:.0f} s)", flush=True)
         return out
 

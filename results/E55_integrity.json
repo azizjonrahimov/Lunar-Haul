@@ -4787,14 +4787,21 @@
    }
   },
   "detectable_error_check": {
-   "bias_sigma": 4.57,
-   "detect_prob": 0.89939,
+   "bias_sigma": 4.572448099925457,
+   "bias_sigma_first_order": 4.572078297036526,
+   "detect_prob": 0.89976,
    "false_alarm": 0.000985
   },
   "k_of_n_false_alarm": {
    "0.01": 9.850600000000002e-06,
    "0.001": 9.985006e-09,
    "0.0001": 9.998500060000002e-12
+  },
+  "detectable_error_check_pre_b119": {
+   "bias_sigma": 4.57,
+   "detect_prob": 0.89939,
+   "false_alarm": 0.000985,
+   "note": "B-119 C12: before 13 Nov 2026 the bias was the literal 4.57 sigma whatever alpha and p_detect"
   }
  },
  "consensus": {

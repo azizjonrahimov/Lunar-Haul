@@ -40,41 +40,58 @@ def dumps(x: Any) -> bytes:
     raise TypeError(f"cbor: unsupported type {type(x).__name__}")
 
 
+MAX_DEPTH = 16                        # B-119 C4: LRIP nests at most a few levels (manifest maps in arrays)
+
+
+def _need(buf: bytes, i: int, n: int) -> None:
+    if n < 0 or i + n > len(buf):
+        raise ValueError(f"cbor: {n} byte(s) needed at offset {i}, {max(0, len(buf) - i)} left")
+
+
 def _arg(buf: bytes, i: int, info: int) -> Tuple[int, int]:
     if info < 24:
         return info, i
     size = {24: 1, 25: 2, 26: 4, 27: 8}.get(info)
     if size is None:
-        raise ValueError("cbor: indefinite lengths and floats are not used by LRIP")
+        raise ValueError("cbor: indefinite lengths, reserved values and floats are not used by LRIP")
+    _need(buf, i, size)
     return int.from_bytes(buf[i:i + size], "big"), i + size
 
 
-def _load(buf: bytes, i: int) -> Tuple[Any, int]:
+def _load(buf: bytes, i: int, depth: int = 0) -> Tuple[Any, int]:
+    if depth > MAX_DEPTH:
+        raise ValueError(f"cbor: nested deeper than {MAX_DEPTH}")
+    _need(buf, i, 1)
     b = buf[i]
     major, info = b >> 5, b & 31
     i += 1
     if major == 7:
+        if info not in (20, 21, 22):
+            raise ValueError(f"cbor: simple value {info} is not used by LRIP")
         return {20: False, 21: True, 22: None}[info], i
     n, i = _arg(buf, i, info)
     if major == 0:
         return n, i
     if major == 1:
         return -1 - n, i
-    if major == 2:
-        return bytes(buf[i:i + n]), i + n
-    if major == 3:
-        return buf[i:i + n].decode("utf-8"), i + n
-    if major == 4:
-        out = []
-        for _ in range(n):
-            v, i = _load(buf, i)
-            out.append(v)
-        return out, i
-    if major == 5:
+    if major in (2, 3):
+        _need(buf, i, n)
+        raw = bytes(buf[i:i + n])
+        return (raw if major == 2 else raw.decode("utf-8")), i + n
+    if major in (4, 5):
+        _need(buf, i, n * (1 if major == 4 else 2))        # every item takes at least one byte
+        if major == 4:
+            out = []
+            for _ in range(n):
+                v, i = _load(buf, i, depth + 1)
+                out.append(v)
+            return out, i
         d = {}
         for _ in range(n):
-            k, i = _load(buf, i)
-            v, i = _load(buf, i)
+            k, i = _load(buf, i, depth + 1)
+            if not isinstance(k, (int, str, bytes)) or isinstance(k, bool):
+                raise ValueError(f"cbor: map key of type {type(k).__name__}")
+            v, i = _load(buf, i, depth + 1)
             d[k] = v
         return d, i
     raise ValueError(f"cbor: major type {major} not used by LRIP")

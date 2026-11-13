@@ -21,7 +21,7 @@ Alarms and false alarms (one definition for every detector, the network included
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Sequence, Tuple
+from typing import Any, Dict, Tuple
 
 import numpy as np
 

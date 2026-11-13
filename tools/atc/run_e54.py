@@ -36,7 +36,6 @@ import argparse
 import csv
 import glob
 import json
-import math
 import os
 import sys
 import time
@@ -150,7 +149,6 @@ def stuck_reservations(rec, A, tr, t0h, vid_col, grace_s):
     from lunarsim.atc.dtn import hops_to
     T = A.shape[0]
     N = A.shape[1] - 1
-    linked = None
     n_stuck, hours = 0, 0.0
     cache = {}
     for res_id, a, b, mh, d, vid, key, f_in, f_out in rec["res_log"]:

@@ -1454,6 +1454,80 @@
     "untraced_p99_ms": 17.172662247903624,
     "passes_same_run": true
    }
+  },
+  "timing_passes": {
+   "note": "B-118 N12: three timing passes (no tracemalloc) of the same month per fleet multiple; p99 of one robot's bid computation per pass, scaled by flight.factor and its range. 'inside' = every pass and factor under the 1 s decision; 'above' = every one over it; 'straddling' = some over, some under",
+   "by_multiple": {
+    "1": {
+     "laptop_p99_ms_by_pass": [
+      3.843,
+      5.411,
+      3.924
+     ],
+     "laptop_median_ms_by_pass": [
+      0.3944,
+      0.408,
+      0.3991
+     ],
+     "flight_p99_ms_by_pass": [
+      210.6,
+      296.5,
+      215.0
+     ],
+     "flight_p99_ms_over_passes_and_factor_range": [
+      140.3,
+      346.3
+     ],
+     "against_1s_at_central_factor": "inside",
+     "against_1s_over_passes_and_factor_range": "inside"
+    },
+    "4": {
+     "laptop_p99_ms_by_pass": [
+      16.77,
+      15.201,
+      14.055
+     ],
+     "laptop_median_ms_by_pass": [
+      0.1807,
+      0.1772,
+      0.1754
+     ],
+     "flight_p99_ms_by_pass": [
+      919.0,
+      833.0,
+      770.2
+     ],
+     "flight_p99_ms_over_passes_and_factor_range": [
+      513.0,
+      1073.3
+     ],
+     "against_1s_at_central_factor": "inside",
+     "against_1s_over_passes_and_factor_range": "straddling"
+    },
+    "8": {
+     "laptop_p99_ms_by_pass": [
+      17.173,
+      14.036,
+      14.423
+     ],
+     "laptop_median_ms_by_pass": [
+      0.1984,
+      0.191,
+      0.1883
+     ],
+     "flight_p99_ms_by_pass": [
+      941.1,
+      769.2,
+      790.4
+     ],
+     "flight_p99_ms_over_passes_and_factor_range": [
+      512.3,
+      1099.1
+     ],
+     "against_1s_at_central_factor": "inside",
+     "against_1s_over_passes_and_factor_range": "straddling"
+    }
+   }
   }
  },
  "measured_memory": {

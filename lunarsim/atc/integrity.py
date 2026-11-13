@@ -170,11 +170,19 @@ def detectable_error_check(m: int = 1, alpha: float = 1e-3, p_detect: float = 0.
                            seed: int = 0) -> Dict[str, float]:
     """Monte Carlo of note 03 E5: for one Gaussian test with m = 1 the bias that is caught with probability p_detect
     is (z_{1-alpha/2} + z_{p_detect}) sigma = (3.29 + 1.28) sigma = 4.57 sigma (two-sided, since d2 = v^2)."""
+    # B-119 C12: the bias follows alpha and p_detect (before: a literal 4.57). Exact for any m: the bias (in sigmas,
+    # along one axis) whose noncentral chi-square exceeds gamma with probability p_detect; for m = 1 this is close to
+    # z_{1-alpha/2} + z_{p_detect} (4.57 at alpha 1e-3, p 0.9; the two-sided form adds the far tail).
+    from scipy import optimize, stats
     rng = np.random.default_rng(seed)
-    g = GAMMA[m][alpha]
-    b = 4.57
-    v = rng.normal(b, 1.0, n)
-    return {"bias_sigma": b, "detect_prob": float((v * v > g).mean()), "false_alarm": float((rng.normal(0, 1, n) ** 2 > g).mean())}
+    g = GAMMA[m][alpha] if alpha in GAMMA.get(m, {}) else float(stats.chi2.ppf(1 - alpha, m))
+    b = float(optimize.brentq(lambda x: stats.ncx2.sf(g, m, x * x) - p_detect, 1e-6, 50.0))
+    v = rng.normal(0.0, 1.0, (n, m))
+    v[:, 0] += b
+    d2 = (v * v).sum(axis=1)
+    return {"bias_sigma": b, "bias_sigma_first_order": float(stats.norm.ppf(1 - alpha / 2) + stats.norm.ppf(p_detect)),
+            "detect_prob": float((d2 > g).mean()),
+            "false_alarm": float((rng.normal(0, 1, (n, m)) ** 2).sum(axis=1).__gt__(g).mean())}
 
 
 def k_of_n_false_alarm(alpha: float, k: int = 3, n: int = 5) -> float:

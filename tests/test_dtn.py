@@ -169,4 +169,12 @@ def test_e54_outputs():
     if not os.path.isfile(p):
         pytest.skip("E54 not built")
     d = json.load(open(p))
-    assert isinstance(d["h14"]["supported"], bool) and d["h14"]["stuck_reservations_sf_ll"] == 0
+    # B-119: the verdict recomputed from the file (paired CI below 0, and no reservation stuck under sf_ll, which
+    # holds by rule); the per-seed means agree with the table's award losses at loss 0.25
+    h = d["h14"]
+    assert h["supported"] is bool(h["difference_sf_ll_minus_drop_retry"]["ci"][1] < 0 and h["stuck_reservations_sf_ll"] == 0)
+    rows = {(r["loss"], r["protocol"]): r for r in d["rows"]}
+    n = len(d["seeds"])
+    assert abs(rows[(0.25, "drop_retry")]["award_lost"] / n - h["lost_jobs_drop_retry_per_seed"]["mean"]) < 1e-9
+    assert abs(rows[(0.25, "sf_ll")]["award_lost"] / n - h["lost_jobs_sf_ll_per_seed"]["mean"]) < 1e-9
+    assert rows[(0.25, "sf_ll")]["stuck_reservations"] == h["stuck_reservations_sf_ll"] == 0

@@ -10916,3 +10916,85 @@ Code (lunarsim/nn, confirmed by you; lines added only, nothing existing changed 
 Test: tests/test_nn_integrity.py test_onset_context_flags_alarms_already_on (alarm across the onset counts as found
 at delay 0 and is flagged; an alarm 50 s before breaks the quiet minute; 100 s before does not). 14 passed.
 Files: lunarsim/nn/baselines.py, lunarsim/nn/evaluate.py, tests/test_nn_integrity.py, results/E56_integrity.json.
+
+## B-118 step 7: E50 REGENERATION DESIGN, fixed before any run (13:37, BACKEND, per LEAD's option (a))
+Why: N15 (the arrival step's partial distance now belongs to its leg: heading, class, lit flag, leg index; before, a
+new leg with a zero heading, so the filter redrew the leg's bias) and N14 (a reservation time that rounds to a step
+outside a leg uses the reserved segment's own direction for its timing shift). Both in the default path.
+What is regenerated, with the code as it stands now (pnt.py, run_e50.py; no other engine or filter change), nothing
+else changed:
+- E50 (tools/atc/run_e50.py run): 1x seeds 1-30, 4x seeds 1-10, 8x seeds 1-5 (the same seeds as published); layer
+  sets dr, dr+ranging, dr+ranging+fixes, dr+ranging+fixes+lans, and lans@2030; the two margin runs (dr; layered);
+  scenario, window (July 2028), regime C_AUCTION loss 0.10, roads atc, budget 5 m, region rule (2+ beacons in LOS),
+  shift 8 h: all as DESIGN in run_e50.py, unchanged. Random roots unchanged (engine seed = cell seed; pnt.simulate
+  seed = cell seed). The seed-1 1x trace is kept as before.
+- near_base (run_e50_near.py): 1x seeds 1-30 with the ranging sweep on seeds 1-6 (the same grid as published), 4x
+  seeds 1-10, 8x seeds 1-5 (8x is B-116, run in the same pass as E50's 8x cells).
+- overlaps (run_e50_overlaps.py): 1x seeds 1-30, 4x seeds 1-10, 8x seeds 1-5 (8x is B-116).
+- Then results/E50_*.json and .csv, E50_near_base, E50_overlaps rebuilt; phase6_family.json (H9', H10'); vv6.
+Old values: every rebuilt results file keeps its published content under "superseded_2026-11-13_b118_n15" (with the
+reason); old caches moved aside to .cache/atc/e50_pre_b118, e50_near_pre_b118, e50_ovl_pre_b118 (not deleted).
+Order: 1x (E50, near_base, overlaps) -> report; 4x -> report; 8x (tell LEAD first; 1.5 GB free; single engine calls of
+about 10 min) -> report; then phase6_family and vv6. Nothing in this list is chosen after seeing a result.
+Test (fails on the old code): tests/test_pnt.py test_arrival_step_belongs_to_its_leg.
+
+## B-119 DONE 14:23 (code; no published number moves) | C1-C14 and the section T tests
+Codec (lunarsim/atc/lrip/codec.py, cbor.py; C1-C8). CHECK, as asked: the conformance vectors regenerated with the
+changed codec are byte-identical to data/atc/lrip/conformance-v0.1.json and -v0.2.json (sha256 e5ebab68..., b399ce1a...),
+and every size table (minor 1 and 2; manifest 0, 84, 300 B) and every packet_bytes(name, auth, minor) equals the codec
+before the change (loaded from a copy). So every size in E53 is unchanged.
+- C1: Receiver.accept refuses every unauthenticated packet (LripAuthError; an unauthenticated POSITION still raises the
+  declaration rule's LripRefError), and a message the schema marks signed (TASK_AWARD, RESERVE_GRANT, CAP_MANIFEST)
+  unless it carries a signature.
+- C2 (note 03 E4): per sender and key epoch the receiver keeps the highest accepted sequence number and refuses
+  s <= s_max; with accept(pkt, now=...) it also refuses |t_valid - now| > 10 s (LripReplayError). Only an accepted
+  packet moves the counter. An older HELLO does not replace a newer declaration under the same epoch.
+- C3: a packet whose SPI key epoch differs from the receiver's is refused.
+- C4: decode raises LripDecodeError (a ValueError) for short or malformed packets, never struct.error, KeyError,
+  IndexError, TypeError, RecursionError. CBOR: length checks on every head, string and container, a depth limit (16),
+  map keys of int / str / bytes only, unknown simple values refused.
+- C5: tags compared with hmac.compare_digest.
+- C6: no keys (or no Ed25519 seed) still works but raises LripInsecureKeyWarning; never silent.
+- C7: profile B checks the header items, the field count, each field's type and range, and that the CBOR array does
+  not run into the security header.
+- C8 (stricter reading, as you said): an authenticated v0.2 HELLO with codes outside the enums revokes the sender's
+  declaration.
+Other code:
+- C9 manifest.py: only the enumerated-string keys get registry indices, so any manifest round-trips (free text equal to a
+  registry string under another key used to come back as an integer). Example manifests' bytes unchanged (in the vectors).
+- C10 smap.py: a valid report on an already-confirmed tile is logged "accepted: already confirmed".
+- C11 dtn.py: done in B-118 step 2 (a full relay refuses custody).
+- C12 integrity.py: detectable_error_check computes the bias from alpha and p_detect (noncentral chi-square, exact for
+  any m; 4.5724 sigma at alpha 1e-3, p 0.9, against the literal 4.57). E55's stored entry recomputed from the function
+  (cache entry only, E55 rebuilt): bias 4.57 -> 4.5724, detect_prob 0.89939 -> 0.89976; old values kept beside as
+  integrity.detectable_error_check_pre_b119. vv6 row C8 "detectable error" follows at the vv6 rerun after E50 (its
+  reference stays 0.90).
+- C13 (lunarsim/nn, confirmed by you): evaluate.py censors a missed event at faults.EVENT_S[1] (600 s, from the module,
+  not a literal) and restores the thread count it found instead of setting 2; train.py saves the training checkpoint as
+  tensors and plain Python and loads it with weights_only=True (checked with a round trip; a checkpoint written before
+  13 Nov cannot be resumed and the run would be retrained; training is finished, evaluation loads model.pt as before).
+- C14 unused imports removed in smap, dtn, clocks, codec, baselines, run_e50_near, run_e50_overlaps, run_e54, run_e55,
+  run_b97, export_protocol, run_b103; tests/test_lrip.py "KEYS if False else" removed. Found by a small AST check
+  (scratch b119_unused.py; tuple unpacking and loop variables, which pyflakes accepts, left as they are). Not edited:
+  lunarsim/nn/tracks.py (unused import List) and experiments/phase6/nn/run_baselines.py (unused import np), your
+  agent's files outside the three you cleared; tools/atc/run_e50.py (unused import math) waits until the E50
+  regeneration ends, because its code fingerprint covers that file.
+Tests added or changed (each new one fails on the old code, checked on a git-archive copy, and passes now):
+- test_lrip_v02.py: test_declaration_rule (rewritten for the receive rules), unauthenticated refused, replay and
+  freshness refused, other key epoch refused, short and malformed packets raise ValueError (truncations, byte flips,
+  wrong lengths, 5,000-deep nesting), CBOR rejects malformed input, HELLO newer replaces older and invalid revokes,
+  no keys warns, manifest full round trip (both examples, both versions) and free text: 14 pass.
+- test_smap.py: confirmed tile not provisional; same owner on another pass confirms.
+- test_pnt.py: ranging lowers the error and counts updates; LANS with a non-zero share; N15 arrival step.
+- test_formats.py: validate skips design records (CLI).
+- test_nn_integrity.py: Policy refuses other files and its two guard clauses; N10 onset context.
+- Results tests: the five isinstance(supported, bool) lines (test_clocks H11, test_dtn H14, test_integrity H16, test_lrip
+  H13, test_smap H12) now recompute each verdict from the file's own rows.
+- test_lrip.py: the channel signs what the schema signs (N13).
+Not done from section T: "the six untested custody cells" (I could not identify them in the review; send me the stub);
+the site tests (FRONTEND); the CI job (yours).
+Test runs, one file at a time: test_lrip 11, test_lrip_v02 14, test_smap 8, test_dtn 12, test_integrity 7,
+test_clocks 5, test_pnt 11, test_formats 70, test_nn_integrity 15, test_vv6 2, test_atc_regimes 12, test_e52 2,
+test_uphill 3: all pass.
+Note on E54: removing dtn.py's unused import (C14) and run_e54's dead local changes E54's code fingerprint, so its cache
+needs one seed-1 equality check and a restamp before the next E54 build (about 2 min, a heavy chunk; at 0.8 GB).
