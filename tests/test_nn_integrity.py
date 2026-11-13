@@ -142,7 +142,7 @@ def test_detect_counts_events_and_delays():
 
 
 def test_model_forward_shape_and_causality():
-    import torch
+    torch = pytest.importorskip("torch")
     torch.manual_seed(0)
     m = M.make_model({"arch": "tcn", "channels": 8, "kernel": 3, "dilations": [1, 2, 4], "residual": True})
     assert m.rf == 15
@@ -160,7 +160,7 @@ def test_model_forward_shape_and_causality():
 
 
 def test_policy_json_round_trip():
-    import torch
+    torch = pytest.importorskip("torch")
     torch.manual_seed(1)
     m = M.make_model({"arch": "tcn", "channels": 8, "kernel": 3, "dilations": [1, 2, 4], "residual": True})
     doc = json.loads(json.dumps(M.to_doc(m, "test")))
@@ -188,7 +188,7 @@ def test_committed_policy_matches_its_check_file():
 
 
 def test_landscape_grid_centre_is_the_final_loss():
-    import torch
+    torch = pytest.importorskip("torch")
     torch.manual_seed(3)
     m = M.make_model({"arch": "tcn", "channels": 4, "kernel": 3, "dilations": [1, 2], "residual": True})
     rng = np.random.default_rng(4)

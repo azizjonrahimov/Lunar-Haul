@@ -10375,3 +10375,111 @@ stop the build, tested on an in-memory copy, the results file is never written; 
 Checks: tests 79/79. Build and budgets pages OK were run by LEAD with a capped Node heap (free RAM 0.95 GB, below the
 1.0 GB floor for me). Browser check NOT run, for memory: /atc/ and /paper/ were not viewed at 1280/390 in light/dark.
 The RAM watcher was stopped by Claude Code under memory pressure and not restarted. Committed by LEAD as 93085ba.
+
+## F-57 Part A (FRONTEND, 13 Nov): static quality pass over site/dist (built by LEAD at 93085ba), no browser
+Tool: a parser-free node checker (scratchpad f57a.mjs, heap 192 MB) over all 29 built pages and 1,298 files.
+Links:
+- Internal href/src/srcset/poster, og:image: 0 broken (each resolves to a file or a dir with index.html in dist).
+- Base path: no HTML hard-codes a root-absolute path outside the base. In the default build every root-absolute URL
+  (Vite's /assets/..., the nav) is base-relative output, and CSS url()s are Vite-processed. The 49 root-absolute
+  literals in built JS (e.g. /atc/E46_summary.json, /catalog/catalog-v1.json, /simulator/engine/) are
+  import.meta.env.BASE_URL + path folded by the minifier: no hard-coded "/atc/"-style path in src/ or lib/, and 39
+  BASE_URL uses. The anatomy fragments load via `${BASE}protocol/anatomy/`. Workers use new URL(..., import.meta.url).
+  /simulator/v2/ (from web/dist) uses only relative paths.
+- PDFs: the P1-P3 links go to GitHub (not in dist). Stated sizes match the files: P1 53 pages, 1,440 kB
+  (1,439,848 B); P2 62, 1,647 kB (1,646,572 B); P3 74, 1,665 kB (1,664,825 B). Page counts (pypdf) also match for v2
+  (44) and v3 (75). R1 states no size or page count.
+- External: 41 unique links, HEAD (GET on 403/405), generic user agent, one try each: all 41 return 200 (the GitHub repo,
+  paper PDFs and folders, figures, data; Google Fonts CSS).
+Static accessibility (markup outside scripts and templates; JS-rendered content is not covered until Part B):
+- lang and title on every page, no image without alt, no unlabelled form control, no link or button without text,
+  no duplicate id, no heading skip. One h1 per page except /stories/, which has two (the list's "Stories" and the
+  story title); only one is displayed at a time (the other is display:none), so not a finding.
+- protocol/anatomy/{clock,nav,net,radio}.html have no lang, title or h1. They are fragments fetched into /protocol/,
+  not pages: not a finding.
+Words: no "PENDING", "TODO", P1's old title or the withdrawn 99.5 % in any page's text or attributes. "to confirm"
+appears once, /lab/rover/: "it halts to confirm every so often", which is the model's behaviour, not a placeholder.
+No double-escaped entities.
+Low (not fixed): /simulator/v2/ (the archived v2 app, web/) loads its fonts from fonts.googleapis.com. It is the only
+third-party request on the site, and the CSP or offline use could break it. Self-hosting would mean editing the
+archived web build; say if you want it.
+Fixes: none needed (no high or medium finding). Files changed: .team/reports.md only.
+Not done: the build with SITE_BASE=/lunar-logistics-research/. Free RAM was 0.54-0.62 GB, then 0.51, under the
+1.0 GB floor. Planned: prepare-data has already run, so vite only:
+SITE_BASE=/lunar-logistics-research/ NODE_OPTIONS=--max-old-space-size=512 vite build --outDir <scratch> --emptyOutDir
+(site/dist untouched), then f57a.mjs on it with that base, which also checks that every root-absolute URL in it
+starts with the base.
+
+## B-114 DONE 10:10 | pre-ship checks: CI on main has been failing since 30 Oct; 4 causes found and fixed, 1 needs LEAD (pyproject)
+How it was run: a clean `git archive HEAD` export in the scratchpad (so git-ignored files are absent, as on a CI
+checkout), the local venv (Python 3.12.3, as CI's 3.12) with an import blocker that refuses every package outside the
+closure of `pip install -e ".[full]"` (torch, rasterio, gymnasium, sb3, onnx/onnxruntime, spiceypy, fastapi/service,
+cryptography ...), pytest plugin autoload off, `-p no:cacheprovider`. Test files one by one (chunks of 8 and 2 min, free
+RAM 0.8-1.5 GB before each; peak about 400 MB, test_safety the slowest file at 100 s). The emulation reproduces the last
+real CI run on main (gh run 41118129398, 30 Oct: "1 failed, 500 passed", test_parking) exactly; that run stopped at
+pytest, so steps 2-4 never ran there.
+
+**What would fail in CI at c43db80, and the fix**
+1. `tests/test_lrip.py`, `tests/test_lrip_v02.py`: collection error, `ModuleNotFoundError: cryptography`.
+   lunarsim/atc/lrip/codec.py (B-93) imports cryptography for AES-CMAC and Ed25519; it is in no pyproject extra.
+   NOT FIXED (pyproject.toml is LEAD's): add `"cryptography>=42"` to `[project.optional-dependencies] full`.
+   Every result below assumes that line.
+2. `tests/test_parking.py::test_parking_file_matches_its_inputs` (the failure on main): parking-v1.json,
+   parking-v3.json and results/E21_parking.json recorded the sha256 of three text inputs as this Windows working tree
+   held them (CRLF), but git stores them with LF (.gitattributes eol=lf; 171 tracked files are CRLF in this working
+   tree), so a Linux checkout hashes differently: results/E21g2_rescue_any_r2.csv, then (hidden behind the first,
+   the loop stops at the first) data/terrain/connecting_ridge/meta.json and sites.json. Fixed: those three hashes now
+   are the committed (LF) content's; parking-v1.json's own hash, recorded in E21_parking.json parking_file and
+   parking-v3.json derived_from, follows. Only hash strings change (E21_parking.json 4 lines, parking-v1/-v3 one line
+   each). The working copies of the CSV, meta.json, sites.json and E21_parking.json were normalised to LF: `git status`
+   lists the CSV, meta.json and sites.json as M but `git diff` on them is empty and `git add` stages nothing.
+3. Same test, next line: `FileNotFoundError data/terrain/_cache/Site01_final_adj_5mpp_surf.tif` (git-ignored; the
+   test's comment says caches may be absent, but its `data/` prefix filter caught this cache). Fixed in the test: a
+   `/_cache/` input is checked when present and skipped only when absent; every committed input is still checked.
+4. `tests/test_nn_integrity.py`: 3 tests `import torch` with no skip (torch is in [ml], not [full]). Fixed:
+   `torch = pytest.importorskip("torch")` in those 3 tests, as test_rover_bc does; they run locally (13 passed).
+5. Step 3 `lunarsim validate data/scenarios/*.json ...`: "13 of 17 files valid", exit 1, and step 4
+   `budgets.py schemas`: "49 files, 10 problem(s)". Cause: the experiment design records E43/E46/E47/E48-design.json
+   (B-76/77/81/82, on main since 28-30 Oct) sit in data/scenarios and both validators read them as scenarios
+   (tests/test_formats.py already skips them by name). Fixed: `lunarsim.formats.is_design_doc` (no `format` key and a
+   top-level `experiment`, which no scenario has; a declared lunarsim-scenario with `experiment` is still a scenario);
+   detect_kind returns "design", `lunarsim validate` prints "SKIP ... experiment design record" and counts them apart
+   ("13 of 13 files valid (4 design records skipped)", exit 0); budgets.py schema_targets leaves them out. New test
+   test_design_records_are_the_ones_test_data_scenarios_skips (content rule = name rule, 4 files) and 2 asserts in
+   test_detect_kind. The design files themselves are unchanged.
+
+**Totals after the fixes**
+- CI emulation, clean export, [full] only (+ cryptography): 61 files, 588 tests, 576 passed, 12 skipped, 0 failed
+  (skips: torch/gymnasium/rasterio/onnxruntime/fastapi modules and tests, as CI). 8.6 min of test time.
+- Local working tree, full venv: 61 files, 667 passed, 0 skipped, 0 failed (10.9 min).
+- `python -m lunarsim verify`: 20 of 20 checks passed (1 skipped: descent replay needs [ml]), 10 s.
+- `python -m lunarsim validate data/scenarios/*.json data/sample_traces/*.json`: 13 of 13 valid, 4 design records
+  skipped, exit 0.
+- `python tools/ci/budgets.py schemas`: 45 files, 0 problems, exit 0.
+- Files run one per process, not in one pytest process as CI does; no test shares state across files that I know of.
+
+**Other CI-vs-local checks**
+- Imports: nothing else outside [full] is needed; the blocker logged only optional imports that scipy, pandas and
+  jsonschema try and handle (pyarrow, numexpr, bottleneck, idna, rfc3987 ...) plus the skipped extras above.
+- Files read: every one of the 850 repository files the emulated run opened is a tracked path with exactly that
+  case (Linux is case-sensitive); no test read the real repository, .cache/ or another git-ignored file.
+- No Windows-only paths in tests, lunarsim or tools/ci.
+- Not checked: CI's `site` job (npm build, budgets pages, site/tests/*.mjs) and pages.yml (FRONTEND's).
+
+**Phase 6 verification rows (lunarsim/vv6.py)**: rerun on HEAD's code: 54 rows, 54 pass, every field equal to
+results/vv_phase6.json; the file is NOT changed. vv6 reads no results file: each row checks a note 01-03 formula
+against the code. C4 and C5 already run on LRIP v0.2 (the codec reads lrip-v0.2.json; C5's random round trips include
+u95_code and the HELLO declaration), and no row's stated value moved (C4's six sizes and C6's POSITION 41 / STATUS 43 /
+INTENT 38 B are the same in v0.2). No rows added: the referee-round results (E44 fresh seeds and the request-rule
+variant, E45 uphill, E50 near-base and overlaps, E48 additions, the learned-bid rerun) are experiment results, not
+note 01-03 formulas, and test_vv6 requires a note source on every non-G row; P1, P2 and the site take the row count
+from the file at build. Candidates if wanted (each a file-against-file row, minutes): HELLO 30 B at minor 1 and 32 B
+at minor 2 from the codec against E53_table_v02.csv; E54 lrip_v02's v0.1 set against the published E54 rows; the
+E44_fresh_seeds bounds against 1 - 0.05^(1/n_eff) from the stored n_eff.
+**Note 03 (LEAD's)**: its message tables still give v0.1 sizes (HELLO 30 B at lines 610 and 887); v0.2 HELLO is 32 B.
+
+**Files changed**: lunarsim/formats.py, lunarsim/cli.py, tools/ci/budgets.py, tests/test_formats.py,
+tests/test_parking.py, tests/test_nn_integrity.py, results/E21_parking.json, data/comms/connecting_ridge/parking-v1.json,
+data/comms/connecting_ridge/parking-v3.json (hash strings). No engine file touched. Scratch:
+scratchpad/ciblock/ (ciblock.py blocker, chunk.sh, runci.py, casecheck.py), scratchpad/b114_eol.py.
+**Last chunk ended 10:08**; nothing of mine is running; FRONTEND can start the browser.

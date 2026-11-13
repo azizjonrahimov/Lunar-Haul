@@ -347,9 +347,19 @@ def validate_scenario(d: Any) -> List[str]:
 # ---------------------------------------------------------------------------
 # files of either kind (lunarsim validate)
 # ---------------------------------------------------------------------------
+def is_design_doc(d: Any) -> bool:
+    """An experiment design record (data/scenarios/E43-design.json, ...; written before an experiment's first row):
+    no `format` key and a top-level `experiment`, which no scenario has (Scenario has no such field). It sits beside
+    the scenarios but is not one, so `lunarsim validate` and tools/ci/budgets.py skip it (B-114)."""
+    return isinstance(d, dict) and "format" not in d and "experiment" in d
+
+
 def detect_kind(d: Any) -> str:
-    """'trace' or 'scenario': by the `format` key, else a legacy file with `jobs` and `cargo` is a trace."""
+    """'trace', 'scenario' or 'design': by the `format` key, else a legacy file with `jobs` and `cargo` is a trace and
+    an experiment design record (is_design_doc) is 'design'."""
     from .config import SCENARIO_FORMAT
+    if is_design_doc(d):
+        return "design"
     if isinstance(d, dict) and "format" in d:
         if d["format"] == TRACE_FORMAT:
             return "trace"
@@ -372,6 +382,8 @@ def validate_file(path: str) -> Tuple[str, bool, List[str]]:
         kind = detect_kind(d)
     except ValueError as e:
         return "?", False, [str(e)]
+    if kind == "design":
+        return kind, False, []
     legacy = "format" not in d
     validate_file.last_version = d.get("version", 1) if isinstance(d, dict) else None
     errs = validate_trace(d) if kind == "trace" else validate_scenario(d)

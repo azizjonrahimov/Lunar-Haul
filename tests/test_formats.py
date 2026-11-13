@@ -362,6 +362,18 @@ def test_detect_kind():
     assert detect_kind({"name": "x"}) == "scenario"
     with pytest.raises(ValueError):
         detect_kind({"format": "csv"})
+    assert detect_kind({"experiment": "E99", "cells": []}) == "design"
+    # a declared scenario that carries an `experiment` key is still a scenario (and fails as one)
+    assert detect_kind({"format": "lunarsim-scenario", "experiment": "E99"}) == "scenario"
+
+
+def test_design_records_are_the_ones_test_data_scenarios_skips():
+    # B-114: the content rule (lunarsim validate, tools/ci/budgets.py) and this file's -design.json name rule agree
+    allp = sorted(glob.glob(os.path.join(ROOT, "data", "scenarios", "*.json")))
+    by_content = {p for p in allp if detect_kind(json.load(open(p, encoding="utf-8"))) == "design"}
+    assert by_content == set(allp) - set(SCENARIO_FILES) and by_content
+    for p in by_content:
+        assert validate_file(p) == ("design", False, [])
 
 
 def test_validate_file_semantic_scenario_error(in_root, tmp_path):

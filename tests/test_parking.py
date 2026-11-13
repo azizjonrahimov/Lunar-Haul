@@ -73,7 +73,10 @@ def test_parking_file_matches_its_inputs(doc, sdoc):
     assert doc["samples_file"]["sha256"] == P.EL.sha256(P.SAMPLES_V1)
     for rel, sha in doc["inputs"].items():                    # the committed inputs (caches may be absent here)
         if rel.startswith(("data/", "results/")):
-            assert P.EL.sha256(os.path.join(ROOT, rel)) == sha, rel
+            p = os.path.join(ROOT, rel)
+            if "/_cache/" in rel and not os.path.isfile(p):       # git-ignored cache (absent on a fresh checkout)
+                continue
+            assert P.EL.sha256(p) == sha, rel
     n = doc["time"]["n"]
     assert n == sdoc["time"]["n"]
     never = {i for i, s in enumerate(sdoc["samples"]) if not sdoc["series"][s["w"][0]]}

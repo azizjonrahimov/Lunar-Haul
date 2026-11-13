@@ -232,10 +232,14 @@ def cmd_serve(a):
 
 def cmd_validate(a):
     from .formats import validate_file
-    failed = 0
+    failed = skipped = 0
     for path in a.files:
         kind, legacy, errs = validate_file(path)
         ver = getattr(validate_file, "last_version", None) or 1
+        if kind == "design":
+            skipped += 1
+            print(f"SKIP {path}  experiment design record, not a scenario")
+            continue
         if errs:
             failed += 1
             print(f"FAIL {path}" + ("" if kind == "?" else f"  {kind} v{ver}"))
@@ -244,7 +248,8 @@ def cmd_validate(a):
         else:
             print(f"OK   {path}  {kind} v{ver}" + (" legacy" if legacy else ""))
     if len(a.files) > 1:
-        print(f"{len(a.files) - failed} of {len(a.files)} files valid")
+        n = len(a.files) - skipped
+        print(f"{n - failed} of {n} files valid" + (f" ({skipped} design records skipped)" if skipped else ""))
     sys.exit(1 if failed else 0)
 
 

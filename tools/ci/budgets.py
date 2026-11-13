@@ -341,7 +341,8 @@ def schema_targets(root: str = ROOT) -> List[Tuple[str, str]]:
          (j("data", "illumination", "connecting_ridge", "sun_link-v1.json"), "sun-link-v1"),
          (j("data", "atc", "connecting_ridge", "mesh-v1.json.gz"), "mesh-v1")]
     t += [(p, "scene-v1") for p in sorted(glob.glob(j("data", "scenes", "*", "scene.json")))]
-    t += [(p, "scenario-v1") for p in sorted(glob.glob(j("data", "scenarios", "*.json")))]
+    from lunarsim.formats import is_design_doc      # experiment design records sit beside the scenarios (B-114)
+    t += [(p, "scenario-v1") for p in sorted(glob.glob(j("data", "scenarios", "*.json"))) if not is_design_doc(_load(p))]
     t += [(j("data", "scenes", "gallery.json"), "scene-gallery-v1")]
     t += [(p, "story-v1") for p in sorted(glob.glob(j("data", "stories", "*.json")))]
     for p in sorted(glob.glob(j("data", "sample_traces", "*.json"))):
