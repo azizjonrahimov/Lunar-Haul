@@ -8,7 +8,7 @@ import { tex } from './lib/tex.mjs';
 import { paperField, paperValue } from './lib/papers.mjs';
 import { P as PROTOCOL } from './src/protocol/params.js';
 import { nw } from './lib/network.mjs';
-import { atcResults, e44fresh, e45up } from './lib/results-atc.mjs';
+import { atcResults, e44fresh, e45up, p1learned } from './lib/results-atc.mjs';
 import { b104, e50b, e50ov, e51, e52, e53, e53v1, e53air, e53d, e55, lrip, lrip2 } from './lib/protocol-data.mjs';
 import { b97 } from './lib/realdata.mjs';
 import { nb, vv6 } from './lib/phase6.mjs';
@@ -41,6 +41,7 @@ function lunarsimPages() {
           .replace(/<!--@v:(\w+):([\w-]+)-->/g, (_, id, k) => paperValue(id, k))
           .replace('<!--@pipeline-->', () => pipeline())
           .replace(/<!--@r:(\w+)-->/g, (_, k) => resultText(k))
+          .replace(/<!--@p1l:(\w+)-->/g, (_, k) => p1learned(k))   // F-74: P1's learned-bid rerun and guard runs (results/ATC_learned_eval_rerun.json), /paper/
           .replace(/<!--@nw:(\w+)-->/g, (_, k) => nw(k))   // F-61: /network/ numbers (lib/network.mjs)
           .replace(/<!--@e50b:(\w+)-->/g, (_, k) => e50b(k))   // F-70: the terrain-fix stop cost in /protocol/ problem 1
           .replace(/<!--@e51:(\w+)-->/g, (_, k) => e51(k))   // F-70: the clock-guard observation in /protocol/ problem 3

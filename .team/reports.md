@@ -10190,3 +10190,25 @@ Command: `python tools/atc/train_bid.py evaluate|guard|table --rerun` (own cache
 
 **Files:** `tools/atc/train_bid.py` (`--rerun` for evaluate, ood, guard and table; `cmd_table_rerun` writes only when eval and guard are complete; `cmd_table(write=False)`); `results/ATC_learned_eval_rerun.json`.
 **Next (addendum):** ood (about 1.3 h), added to the same file, only if you still want it now.
+
+## F-74 (FRONTEND): the site follows P1's final pass (section 5.6) — DONE
+
+**Card-key lock:** the rebuild named no changed key; none of the keys the P1 card reads changed text (P1-H4-LIN-PCT-30 is still 16.5 %). The new P1 material sits in new keys and in `results/ATC_learned_eval_rerun.json`, so it is read from there.
+
+**What changed**
+- `site/lib/results-atc.mjs`: new `p1learned(key, D?)` reads `results/ATC_learned_eval_rerun.json` (B-106). It checks the intervals behind every sentence and fails the build if one moves across zero. The checks: linear below zero at both loads; network includes zero at both loads; at 60 % the urgent, normal-priority, bulk and tonne-days guards all below zero; at 30 % the urgent guard includes zero and the bulk guard is above zero; seed counts equal across cells. Every number goes through `num()`: the loads and seed counts are flagged Assumed (settings of the rerun), the results Modelled. The P1 card source line now names the rerun file.
+- `site/vite.config.js`: hook `<!--@p1l:rerun|guard-->`.
+- `site/content/paper.md` (/paper/): the learned-bid bullet gets the same two sentences; the "What sharing is worth" bullet no longer reads the withdrawn P1-H1-UNDELIVERED-SHARE (99.5 %, which /paper/ still showed; P1 no longer states it). It now reads P1-H1-DELIV-DIFF, -DELIV-DIFF-CI, -DIFF-30, -TEAM-SHARE.
+- `site/tests/f74.test.mjs` (new, 3 tests): card numbers against the file; five altered copies of the file each stop the build; /paper/ order and keys; no "free", "92.9" or "training range" on the card.
+
+**Sentences whose meaning changed**
+1. /results/ P1 card, item 4. The registered sentence is kept (network not better; linear 16.5 %), and this follows it: "The separate evaluation of the learned bids, rerun on the corrected engine on its 30 seeds, found the linear correction cutting the urgent wait by 17.7 % at 30 % load and by 40.4 % at 60 %, in agreement with that test, and the network still not distinguishable from hand-built bids." (new)
+2. /results/ P1 card, new item 5: "Whether other cargo pays for the gain was checked on 10 further runs per load. At 60 % load it does not: urgent, normal-priority and bulk cargo all waited less. At 30 % load the check is not clean: on those few runs the urgent gain could not be told from zero (-1.23 h, interval -3.91 to 1.45 h), and bulk cargo waited 0.23 h longer (interval 0.02 to 0.44 h)." (new)
+3. /paper/ "Learned bids" bullet: sentences 1 and 2 added after the registered result (E40 headline unchanged).
+4. /paper/ "What sharing is worth". It was: "99.5 % of the gap ... is cargo that owners alone never deliver; lifts by two owners' rovers account for 32 % of it." It is now: "The gain from pooling is cargo that owners working alone had not delivered by the end of the year. On cargo that both deliver, owners alone with Earth always in view waited 5.8 h longer than the pooled fleet (interval 3.7 to 7.6 h); the much larger difference in urgent wait, 1,232 h, counts urgent cargo not delivered by the end of the year with its wait up to then, so its size depends on the one-year horizon, and lifts by two owners' rovers account for 32 % of it." This follows P1's introduction and section 5.2.
+
+**Not shown, so not changed:** the site does not show 92.9 % (the /atc/ learned-correction box prints only the policy file's `training.algo`, not its imitation finding). It does not show Table 6 or any out-of-range value. The /atc/ prose on the learned correction makes no claim about urgent waits or other cargo; it already says the effect "is reported in paper P1 (Section 5.6), not on this page". No sentence anywhere says or implies the gain is free for other cargo.
+
+**/paper/ PDF:** read at build: P1 53 pages, 1,439 kB (1,438,747 B). P3's size will follow on the next build.
+
+**Checks:** build clean (no lock warning); node tests 73/73; budgets `pages: OK`. /results/ and /paper/ were checked in dark and light at 1280 and 390: overflow 0, contrast failures 0, one h1, no heading skips, console errors 0. Server and browser are stopped.
