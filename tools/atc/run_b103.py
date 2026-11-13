@@ -189,7 +189,67 @@ def main():
                       "check": e40["check_against_E48"], "e53": a20, "si1hz": status_intent_1hz}, indent=1))
 
 
+def main_v02():
+    """B-110: the driving split and the status-and-intent load with LRIP v0.2 sizes (HELLO at least every 10 s), without
+    and with Proximity-1 framing (+12 B per packet) -> E53_bitrate.json lrip_v02.driving_split (other keys unchanged)."""
+    from lunarsim.atc.lrip import codec as C
+    t_s = time.time()
+    P, g, drv_share = pools()
+    hello_min = 1.0 / C.message("HELLO")["declaration_interval_s"]
+    frame_b = C.schema()["framing"]["proximity1_frame_bytes"]
+    blk = {"task": "B-110", "note": "as B-103 (driving_split) with v0.2 packet sizes and HELLO >= 0.1 Hz; 'proximity1' adds "
+                                    f"{frame_b} B per packet; authenticated, 20 rovers, E53's draw streams",
+           "pool_driving_share": round(drv_share, 4), "e53_auth_20_rovers": {}, "status_intent_at_1hz": {}}
+    for framing in ("lrip", "proximity1"):
+        fb = frame_b if framing == "proximity1" else 0
+        blk["e53_auth_20_rovers"][framing] = {}
+        for geo, pool in list(P.items()) + [("fleet", E3.positions()[0])]:
+            key = geo if geo != "fleet" else "fleet_all"
+            blk["e53_auth_20_rovers"][framing][key] = {}
+            for f in (1.0, 10.0):
+                rate, size, bps = E3.per_rover(f, True, minor=2, hello_min_hz=hello_min, frame_b=fb)
+                beacon = sum(bps[k] for k in E3.BEACONS)
+                event = sum(v for k, v in bps.items() if k not in E3.BEACONS)
+                rng = np.random.default_rng([53, 20])
+                res = [E3.busiest(pool[rng.integers(0, len(pool), 20)], g, beacon, event) for _ in range(E3.DRAWS)]
+                L_ = np.array([r[0] for r in res]) * 8 / 1000.0
+                p95 = float(np.quantile(L_, 0.95))
+                blk["e53_auth_20_rovers"][framing][key][f"{f:g} Hz"] = {
+                    "busiest_link_kbps_mean": round(float(L_.mean()), 3), "busiest_link_kbps_p95": round(p95, 3),
+                    "mean_hops_to_base": round(float(np.nanmean([r[1] for r in res])), 3),
+                    "reachable_share": round(float(np.mean([r[2] for r in res])), 4),
+                    "scheduled_airtime_p95_kbps": round(p95 / E3.ETA["scheduled"], 3),
+                    "slotted_aloha_airtime_p95_kbps": round(p95 / E3.ETA["slotted_aloha"], 3)}
+        # STATUS and INTENT at 1 Hz like POSITION
+        rate, size, bps = E3.per_rover(1.0, True, minor=2, hello_min_hz=hello_min, frame_b=fb)
+        rate1 = dict(rate, STATUS=1.0, INTENT=1.0)
+        rate1["HELLO"] = max(hello_min, 1.0 - sum(v for k, v in rate1.items() if k != "HELLO"))
+        per1 = sum(rate1[k] * size[k] for k in rate1)
+        beacon1 = sum(rate1[k] * size[k] for k in E3.BEACONS)
+        load = {}
+        for geo, pool in (("fleet", E3.positions()[0]), ("fleet_driving", P["fleet_driving"])):
+            rng = np.random.default_rng([53, 20])
+            L_ = np.array([E3.busiest(pool[rng.integers(0, len(pool), 20)], g, beacon1, per1 - beacon1)[0]
+                           for _ in range(E3.DRAWS)]) * 8 / 1000
+            load[geo] = {"busiest_link_kbps_p95": round(float(np.quantile(L_, 0.95)), 3),
+                         "scheduled_airtime_p95_kbps": round(float(np.quantile(L_, 0.95)) / E3.ETA["scheduled"], 3)}
+        blk["status_intent_at_1hz"][framing] = {
+            "bytes": {k: size[k] for k in ("POSITION", "STATUS", "INTENT", "HELLO")},
+            "three_beacons_20_rovers_kbps": round(20 * sum(size[k] for k in ("POSITION", "STATUS", "INTENT")) * 8 / 1000, 3),
+            "sources_20_rovers_kbps": round(20 * per1 * 8 / 1000, 3), "busiest_link_20_rovers": load}
+    blk["run_s"] = round(time.time() - t_s, 1)
+    doc = json.load(open(E3.OUT_JSON))
+    doc["lrip_v02"]["driving_split"] = blk
+    with open(E3.OUT_JSON, "w", encoding="utf-8", newline="\n") as fh:
+        json.dump(doc, fh, indent=1)
+        fh.write("\n")
+    print(json.dumps(blk, indent=1)[:3500])
+
+
 if __name__ == "__main__":
     import faulthandler
     faulthandler.dump_traceback_later(540, exit=True)
-    main()
+    if len(sys.argv) > 1 and sys.argv[1] == "v02":
+        main_v02()
+    else:
+        main()
