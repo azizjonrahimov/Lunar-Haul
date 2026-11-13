@@ -117,3 +117,14 @@ Family for multiplicity: {H9, H10, H13, H14, H15a} are confirmatory (Holm). The 
   reported as design calculations, not as tests. (4) The exact sign test used for H14 in the Holm family was
   added after the results; the registered rule (a paired interval excluding zero) gives the same verdict. (5)
   The label clash is resolved by writing this document's H9 and H10 as H9' and H10' in the papers.
+- **13 Nov 2026, after a code review of the Phase 6 code (reports/review_phase6_code.md).** Corrections to
+  code, each with the earlier values kept in the results file under a dated key. (1) E52: every tile of a road
+  leg had been given the tour distance of the leg's end; the stale-map hit counts were rerun on the same 30
+  seeds (bytes, times and H12 unchanged). (2) E54, the lost-link replay: a bundle could be delivered after its
+  lifetime; bundles still pending when the window ended were counted as lost (they are now reported as
+  censored); the age of information had a floor of half a step; and the lost-link return used the driving time
+  in the hour before the loss, which no text describes. No return rule is registered here: the rule is now the
+  one the papers state (hold 600 s, then retrace what was driven since the loss at half speed), with the
+  earlier rule kept as a named variant. H14's first clause gives the same verdict under the old and the new
+  definitions and under both return rules. Further corrections from the same review are listed in that file
+  with their status.
