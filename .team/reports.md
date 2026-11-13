@@ -10143,3 +10143,50 @@ Files: site/lib/protocol-data.mjs, site/src/protocol/figures.js, site/src/protoc
 ## F-73b DONE (FRONTEND, 2026-11-12): the bit-rate figure's channel labels move into the key
 LEAD's decision: a label must not cover a data point. The three capacity lines now differ by dash (dotted: narrow-band random access; dashed: narrow-band scheduled; dash-dot: broadband scheduled), each with a tooltip, and are named under the chart in a second key line with a matching line sample and its usable capacity ("Usable capacity (capacity × access efficiency): … narrow-band, random access, 5.9 kbit/s; … narrow-band, base schedules the slots, 12.8 kbit/s; … broadband, scheduled, 800.0 kbit/s."). No text left on the plot; every point visible at 1280 and 390. The halo class from F-73 is removed. Tests 70/70; build clean; budgets pages OK (/protocol/ data 89.1/90). /protocol/ in dark and light at 1280 and 390: 0 console errors, 0 overflow, 0 contrast fails.
 Files: site/src/protocol/figures.js, site/src/protocol/protocol.css.
+
+## B-106 DONE 18:27 (learned-bid evaluation rerun on the fixed engine: eval + guard) | file: results/ATC_learned_eval_rerun.json
+Command: `python tools/atc/train_bid.py evaluate|guard|table --rerun` (own cache `.cache/atc/bid_rerun`).
+- Same seeds (evaluation 1–30 at 30 % and 60 % load; guard 1–10), same policies (not retrained); only the engine differs.
+- **`results/ATC_learned_eval.json` (27 Oct) is untouched.** The rerun file carries both dates (`dates`: original 2026-10-27, commit c90676f; rerun 2026-11-12, commit 64b5340), every value that moved (`moved`: 148 of 190 compared; 42 unchanged), and **`ood`: "not rerun"** (option (a); addendum to follow if time allows).
+- Compute: 280 runs, about 2.7 h in 21 chunks, peak 359 MB.
+
+**P1 Table 6 (urgent wait, mean over 30 seeds):**
+
+| Load, policy | 27 Oct | Rerun | vs hand bids, 27 Oct → rerun (95 % CI) |
+|---|---|---|---|
+| 30 %, oracle | 14.47 h | 14.47 h | – |
+| 30 %, hand bids | 14.21 | 14.09 | – |
+| 30 %, MLP | 14.09 | 13.93 | −0.12 [−1.43, 1.19] → **−0.16 [−1.62, 1.30]** (n.s. both) |
+| 30 %, linear | 11.82 | 11.60 | −2.39 [−3.87, −0.91] (−16.8 %) → **−2.49 [−4.15, −0.82] (−17.7 %)** |
+| 60 %, oracle | 63.92 | 63.92 | – |
+| 60 %, hand bids | 75.71 | 74.98 | – |
+| 60 %, MLP | 76.84 | 80.34 | +1.13 [−7.90, 10.16] → **+5.37 [−2.87, 13.60]** (n.s. both) |
+| 60 %, linear | 43.95 | 44.69 | −31.76 [−38.13, −25.39] (−41.9 %) → **−30.29 [−36.05, −24.53] (−40.4 %)** |
+
+- The oracle values are unchanged (it does not use the engine paths the fixes touched).
+- Regret against the oracle: hand −0.38 h at 30 % and +11.06 h at 60 %; linear −2.87 / −19.23 h.
+- **Held-out agreement with the oracle** (evaluation seeds 1–30, 30 % load): hand **88.35 %** (27 Oct 88.37 %), MLP 86.37 %, linear 70.76 %.
+
+**P1's 92.9 % was not rerun.** It is not an evaluation result: it is `imitation.hand_agreement_val`, a hard-coded record from training (DAgger iteration 0 on the tuning seeds 2000–2004, the engine of 27 Oct). The rerun file copies it and marks it `rerun_status: NOT rerun`. On the current engine the comparable figure is 88.35 %, computed on different seeds. Rerunning the 92.9 % itself would need the iteration-0 collection on the tuning seeds again; say if you want it.
+
+**Guards (hand vs linear, 10 seeds; linear minus hand, 95 % CI):**
+
+| | 27 Oct | Rerun |
+|---|---|---|
+| 30 %: urgent wait | −2.47 h [−4.75, −0.19] | **−1.23 h [−3.91, +1.45] (no longer significant)** |
+| 30 %: priority-2 delay | −2.43 [−5.70, 0.84] | +0.16 [−2.32, 2.64] |
+| 30 %: bulk delay | −0.01 [−0.24, 0.22] | **+0.23 [+0.02, +0.44] (now significantly worse)** |
+| 30 %: all-cargo delay | −0.10 [−0.32, 0.13] | +0.18 [−0.04, 0.39] |
+| 30 %: tonne-days waiting | −7.8 [−23.0, 7.5] | +14.8 [−0.5, 30.1] |
+| 60 %: urgent wait | −23.9 [−32.3, −15.5] | −23.2 [−31.8, −14.7] |
+| 60 %: priority-2 delay | −26.4 [−43.7, −9.2] | −24.6 [−40.6, −8.7] |
+| 60 %: bulk / all-cargo delay | −5.7 / −6.3 | −5.6 / −6.2 (all significant, as before) |
+| 60 %: starved items | −7.1 [−52, 38] | +1.4 [−51, 54] |
+
+**Reading.**
+- The linear correction's gain on the 30 evaluation seeds stands on the fixed engine at both loads, slightly larger at 30 % (−17.7 %) and slightly smaller at 60 % (−40.4 %).
+- **On the 10 guard seeds at 30 %, the urgent gain is no longer significant, and bulk cargo now waits 0.23 h longer (significant).** At 60 % the guards are unchanged in substance: the linear helps urgent and all cargo.
+- The MLP is not distinguishable from hand bids at either load, as before.
+
+**Files:** `tools/atc/train_bid.py` (`--rerun` for evaluate, ood, guard and table; `cmd_table_rerun` writes only when eval and guard are complete; `cmd_table(write=False)`); `results/ATC_learned_eval_rerun.json`.
+**Next (addendum):** ood (about 1.3 h), added to the same file, only if you still want it now.

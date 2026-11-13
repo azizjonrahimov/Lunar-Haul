@@ -506,7 +506,68 @@ def _paired(a, b):
     return {"mean": round(m, 3), "ci95": [round(m - half, 3), round(m + half, 3)], "n": int(len(d))}
 
 
-def cmd_table() -> Dict[str, Any]:
+RERUN_CACHE = os.path.join(ROOT, ".cache", "atc", "bid_rerun")
+RERUN_RESULT = os.path.join(ROOT, "results", "ATC_learned_eval_rerun.json")
+
+
+def cmd_table_rerun() -> Optional[Dict[str, Any]]:
+    """B-106 (P1 M8): the 27 Oct evaluation repeated on the current engine (same seeds, same policies), written beside
+    the old file only when eval and guard are complete; ood marked "not rerun" until it is."""
+    import subprocess
+    ev_p, gd_p = os.path.join(CACHE, "eval_runs.json"), os.path.join(CACHE, "guard_runs.json")
+    ev = json.load(open(ev_p)) if os.path.isfile(ev_p) else {}
+    gd = json.load(open(gd_p)) if os.path.isfile(gd_p) else {}
+    need_ev = [f"{lab}|{load}|{s}" for load in ("30", "60") for s in EVAL_SEEDS for lab, _, _ in EVAL_CELLS]
+    need_gd = [f"{lab}|{load}|{s}" for load in ("30", "60") for s in GUARD_SEEDS for lab in ("hand", "linear")]
+    miss = [k for k in need_ev if k not in ev] + [k for k in need_gd if k not in gd]
+    if miss:
+        print(f"rerun table: {len(miss)} runs missing (eval {sum(k not in ev for k in need_ev)}, guard "
+              f"{sum(k not in gd for k in need_gd)}); not written")
+        return None
+    out = cmd_table(write=False)
+    old = json.load(open(RESULT_ORIG))
+    try:
+        commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, timeout=20).stdout.strip()
+    except Exception:
+        commit = None
+    out["task"] = "B-106 (P1 M8): B-74's evaluation rerun on the current engine"
+    out["dates"] = {"original": "2026-10-27 (results/ATC_learned_eval.json, commit c90676f, before the two engine fixes)",
+                    "rerun": time.strftime("%Y-%m-%d"), "rerun_commit": commit}
+    out["rerun_note"] = ("same evaluation seeds (1-30), loads 30 % and 60 %, guard seeds 1-10, same policies "
+                         "(data/policies/atc_bid_v1.json, atc_bid_linear_v1.json, not retrained); only the engine differs")
+    if not out.get("ood"):
+        out["ood"] = "not rerun (B-106 option (a): eval and guard first; ood follows as an addendum if time allows)"
+    out["imitation"] = dict(out["imitation"], rerun_status=(
+        "NOT rerun: copied from the 27 Oct training record (DAgger iteration 0 on the tuning seeds 2000-2004, the "
+        "engine of that day); P1's 92.9 % is hand_agreement_val here. The rerun's comparable figure on the current "
+        "engine is eval.30.hand.heldout_agreement (evaluation seeds 1-30, 30 % load)"))
+
+    def flat(d, p=""):
+        r = {}
+        if isinstance(d, dict):
+            for k, v in d.items():
+                r.update(flat(v, f"{p}/{k}"))
+        elif isinstance(d, list):
+            for i, v in enumerate(d):
+                r.update(flat(v, f"{p}[{i}]"))
+        else:
+            r[p] = d
+        return r
+    fo, fn = flat({k: old.get(k) for k in ("eval", "guards", "ood")}), flat({k: out.get(k) for k in ("eval", "guards", "ood")})
+    out["moved"] = [{"key": k, "original": fo[k], "rerun": fn[k]} for k in sorted(set(fo) & set(fn))
+                    if isinstance(fo[k], (int, float)) and isinstance(fn[k], (int, float)) and fo[k] != fn[k]]
+    out["unchanged_count"] = sum(1 for k in set(fo) & set(fn) if fo[k] == fn[k])
+    with open(RERUN_RESULT, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(out, f, indent=1)
+        f.write("\n")
+    print(f"written {RERUN_RESULT}: {len(out['moved'])} values moved, {out['unchanged_count']} unchanged")
+    return out
+
+
+RESULT_ORIG = RESULT
+
+
+def cmd_table(write: bool = True) -> Dict[str, Any]:
     ev = json.load(open(os.path.join(CACHE, "eval_runs.json")))
     oo = json.load(open(os.path.join(CACHE, "ood_runs.json"))) if os.path.isfile(os.path.join(CACHE, "ood_runs.json")) else {}
     m = "atc_urgent_wait_mean_cens_h"
@@ -562,10 +623,11 @@ def cmd_table() -> Dict[str, Any]:
                 blk[k] = {"hand": round(float(np.mean(h)), 3), "linear": round(float(np.mean(l)), 3),
                           "linear_minus_hand": _paired(l, h)}
             out["guards"][load] = blk
-    with open(RESULT, "w", encoding="utf-8", newline="\n") as f:
-        json.dump(out, f, indent=1)
-        f.write("\n")
-    print(json.dumps(out["eval"], indent=1)[:3000])
+    if write:
+        with open(RESULT, "w", encoding="utf-8", newline="\n") as f:
+            json.dump(out, f, indent=1)
+            f.write("\n")
+        print(json.dumps(out["eval"], indent=1)[:3000])
     return out
 
 
@@ -575,7 +637,15 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("--kind", default="linear", choices=["linear", "mlp"])
     ap.add_argument("--iter", type=int, default=0)
     ap.add_argument("--max-seconds", type=float, default=540.0)
+    ap.add_argument("--rerun", action="store_true", help="B-106: own cache (.cache/atc/bid_rerun) and table "
+                                                          "results/ATC_learned_eval_rerun.json; the old file is untouched")
     a = ap.parse_args(argv)
+    global CACHE
+    if a.rerun:
+        if a.cmd not in ("evaluate", "ood", "guard", "table"):
+            raise SystemExit("--rerun is for evaluate, ood, guard and table")
+        CACHE = RERUN_CACHE
+        os.makedirs(CACHE, exist_ok=True)
     import faulthandler
     faulthandler.dump_traceback_later(a.max_seconds + 30, exit=True)
     if a.cmd == "collect":
@@ -592,6 +662,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         cmd_evaluate(a.max_seconds, "ood")
     elif a.cmd == "guard":
         cmd_evaluate(a.max_seconds, "guard")
+    elif a.rerun:
+        cmd_table_rerun()
     else:
         cmd_table()
     sys.path.insert(0, os.path.join(ROOT, "tools"))

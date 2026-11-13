@@ -1,0 +1,1142 @@
+{
+ "task": "B-106 (P1 M8): B-74's evaluation rerun on the current engine",
+ "note": "DAgger: iteration 0 rolls out the hand-built bids (C_AUCTION); iteration i >= 1 rolls out the MLP of iteration i - 1\n(C_LEARNED); every auction round of every rollout is labelled with the oracle's choice for each robot (the full-\ninformation pooled marketplace on the same state, lunarsim.atc.learned.oracle_assignment); rows are aggregated over\niterations. Seeds: training 1000-1009 (loads 30 % and 60 % alternating, start years 2028-2031 by seed), tuning\n2000-2004 (early stopping and model choice), evaluation 1-30 (never seen). Message loss 0.10, terrain radio, depth 1.\nNo cross-entropy-method fine-tune was run (optional in the task; see the report). Single process, --max-seconds 540.",
+ "eval": {
+  "30": {
+   "O_ORACLE": {
+    "urgent_mean_h": 14.468,
+    "p5_cargo_util": 0.2941,
+    "utilisation": 0.0756,
+    "delivered_kg": 1469348.6639,
+    "atc_starved_items": 0.6,
+    "atc_urgent_within24_share": 0.8209,
+    "atc_urgent_wait_p95_cens_h": 64.0682
+   },
+   "hand": {
+    "urgent_mean_h": 14.087,
+    "regret_vs_teacher_h": {
+     "mean": -0.382,
+     "ci95": [
+      -2.043,
+      1.28
+     ],
+     "n": 30
+    },
+    "p5_cargo_util": 0.2942,
+    "utilisation": 0.0756,
+    "delivered_kg": 1470266.2616,
+    "atc_starved_items": 0.9,
+    "atc_urgent_within24_share": 0.8333,
+    "atc_urgent_wait_p95_cens_h": 58.5346,
+    "heldout_agreement": 0.8835,
+    "heldout_groups": 79079
+   },
+   "mlp": {
+    "urgent_mean_h": 13.929,
+    "regret_vs_teacher_h": {
+     "mean": -0.539,
+     "ci95": [
+      -2.013,
+      0.935
+     ],
+     "n": 30
+    },
+    "vs_hand_h": {
+     "mean": -0.157,
+     "ci95": [
+      -1.615,
+      1.301
+     ],
+     "n": 30
+    },
+    "vs_hand_share": -0.0112,
+    "p5_cargo_util": 0.2963,
+    "utilisation": 0.0763,
+    "delivered_kg": 1472509.209,
+    "atc_starved_items": 0.9333,
+    "atc_urgent_within24_share": 0.8287,
+    "atc_urgent_wait_p95_cens_h": 58.6406,
+    "heldout_agreement": 0.8637,
+    "heldout_groups": 79178
+   },
+   "linear": {
+    "urgent_mean_h": 11.598,
+    "regret_vs_teacher_h": {
+     "mean": -2.87,
+     "ci95": [
+      -4.753,
+      -0.988
+     ],
+     "n": 30
+    },
+    "vs_hand_h": {
+     "mean": -2.489,
+     "ci95": [
+      -4.154,
+      -0.823
+     ],
+     "n": 30
+    },
+    "vs_hand_share": -0.1767,
+    "p5_cargo_util": 0.2944,
+    "utilisation": 0.0757,
+    "delivered_kg": 1470734.5549,
+    "atc_starved_items": 0.9667,
+    "atc_urgent_within24_share": 0.864,
+    "atc_urgent_wait_p95_cens_h": 50.5612,
+    "heldout_agreement": 0.7076,
+    "heldout_groups": 75715
+   }
+  },
+  "60": {
+   "O_ORACLE": {
+    "urgent_mean_h": 63.915,
+    "p5_cargo_util": 0.5991,
+    "utilisation": 0.1561,
+    "delivered_kg": 3251006.712,
+    "atc_starved_items": 117.5333,
+    "atc_urgent_within24_share": 0.5683,
+    "atc_urgent_wait_p95_cens_h": 220.0974
+   },
+   "hand": {
+    "urgent_mean_h": 74.978,
+    "regret_vs_teacher_h": {
+     "mean": 11.063,
+     "ci95": [
+      3.006,
+      19.121
+     ],
+     "n": 30
+    },
+    "p5_cargo_util": 0.6023,
+    "utilisation": 0.157,
+    "delivered_kg": 3251135.8844,
+    "atc_starved_items": 123.2333,
+    "atc_urgent_within24_share": 0.5505,
+    "atc_urgent_wait_p95_cens_h": 288.0703
+   },
+   "mlp": {
+    "urgent_mean_h": 80.343,
+    "regret_vs_teacher_h": {
+     "mean": 16.428,
+     "ci95": [
+      5.857,
+      26.999
+     ],
+     "n": 30
+    },
+    "vs_hand_h": {
+     "mean": 5.365,
+     "ci95": [
+      -2.872,
+      13.602
+     ],
+     "n": 30
+    },
+    "vs_hand_share": 0.0716,
+    "p5_cargo_util": 0.6055,
+    "utilisation": 0.1576,
+    "delivered_kg": 3251067.2458,
+    "atc_starved_items": 146.4333,
+    "atc_urgent_within24_share": 0.5686,
+    "atc_urgent_wait_p95_cens_h": 349.3266
+   },
+   "linear": {
+    "urgent_mean_h": 44.689,
+    "regret_vs_teacher_h": {
+     "mean": -19.226,
+     "ci95": [
+      -26.002,
+      -12.45
+     ],
+     "n": 30
+    },
+    "vs_hand_h": {
+     "mean": -30.289,
+     "ci95": [
+      -36.048,
+      -24.53
+     ],
+     "n": 30
+    },
+    "vs_hand_share": -0.404,
+    "p5_cargo_util": 0.5904,
+    "utilisation": 0.1535,
+    "delivered_kg": 3255518.6163,
+    "atc_starved_items": 142.5667,
+    "atc_urgent_within24_share": 0.7273,
+    "atc_urgent_wait_p95_cens_h": 203.2763
+   }
+  }
+ },
+ "ood": "not rerun (B-106 option (a): eval and guard first; ood follows as an addendum if time allows)",
+ "policies": {
+  "mlp": {
+   "file": "data/policies/atc_bid_v1.json",
+   "cem": {
+    "parameters_searched": 32,
+    "population": 12,
+    "elite": 3,
+    "generations": 5,
+    "sigma0": 0.5,
+    "smoothing": 0.7,
+    "fitness": "mean urgent wait (censored, h), C_LEARNED, loss 0.10, 30 % load, common random numbers: seeds [1000, 1002, 1004, 1006] for every candidate",
+    "selection": "mean of each generation on tuning seeds [2000, 2002, 2004]; the best one is exported",
+    "hand_tune_h": 10.0918,
+    "selected_generation": 0,
+    "selected_tune_h": 9.1767,
+    "wall_s": 3432.7
+   }
+  },
+  "linear": {
+   "file": "data/policies/atc_bid_linear_v1.json",
+   "cem": {
+    "parameters_searched": 13,
+    "population": 10,
+    "elite": 3,
+    "generations": 6,
+    "sigma0": 1.5,
+    "smoothing": 0.7,
+    "fitness": "mean urgent wait (censored, h), C_LEARNED, loss 0.10, 30 % load, common random numbers: seeds [1000, 1002, 1004, 1006] for every candidate",
+    "selection": "mean of each generation on tuning seeds [2000, 2002, 2004]; the best one is exported",
+    "hand_tune_h": 10.0918,
+    "selected_generation": 5,
+    "selected_tune_h": 8.7304,
+    "wall_s": 3181.5
+   }
+  }
+ },
+ "imitation": {
+  "teacher": "O_ORACLE: the full-information pooled marketplace on the same auction state",
+  "rows": 624640,
+  "groups": 37941,
+  "val_groups_tuning_seeds": "2000-2004",
+  "hand_agreement_val": 0.92881,
+  "best_epoch": -1,
+  "finding": "imitation reproduces the hand-built bids: their top item is the oracle's item for the robot in 92.9 % of held-out rounds, and every disagreement is an item the oracle gives another robot in the same round (318 of 318 at 30 % load, 404 of 404 at 60 %, seeds 2000/2001); both the MLP and the linear model reach their best held-out agreement with no correction (g = 0), so DAgger iterations 1-4 were not run",
+  "rerun_status": "NOT rerun: copied from the 27 Oct training record (DAgger iteration 0 on the tuning seeds 2000-2004, the engine of that day); P1's 92.9 % is hand_agreement_val here. The rerun's comparable figure on the current engine is eval.30.hand.heldout_agreement (evaluation seeds 1-30, 30 % load)"
+ },
+ "guards": {
+  "30": {
+   "atc_urgent_wait_mean_cens_h": {
+    "hand": 13.261,
+    "linear": 12.029,
+    "linear_minus_hand": {
+     "mean": -1.232,
+     "ci95": [
+      -3.91,
+      1.445
+     ],
+     "n": 10
+    }
+   },
+   "delay_prio2_mean_h": {
+    "hand": 15.529,
+    "linear": 15.69,
+    "linear_minus_hand": {
+     "mean": 0.161,
+     "ci95": [
+      -2.322,
+      2.644
+     ],
+     "n": 10
+    }
+   },
+   "delay_mean_bulk": {
+    "hand": 15.394,
+    "linear": 15.623,
+    "linear_minus_hand": {
+     "mean": 0.23,
+     "ci95": [
+      0.019,
+      0.44
+     ],
+     "n": 10
+    }
+   },
+   "delay_mean_h": {
+    "hand": 15.303,
+    "linear": 15.481,
+    "linear_minus_hand": {
+     "mean": 0.178,
+     "ci95": [
+      -0.037,
+      0.393
+     ],
+     "n": 10
+    }
+   },
+   "tonne_days_waiting": {
+    "hand": 829.728,
+    "linear": 844.521,
+    "linear_minus_hand": {
+     "mean": 14.793,
+     "ci95": [
+      -0.489,
+      30.075
+     ],
+     "n": 10
+    }
+   },
+   "atc_starved_items": {
+    "hand": 0.7,
+    "linear": 0.8,
+    "linear_minus_hand": {
+     "mean": 0.1,
+     "ci95": [
+      -0.543,
+      0.743
+     ],
+     "n": 10
+    }
+   },
+   "delivered_kg": {
+    "hand": 1468777.597,
+    "linear": 1470736.247,
+    "linear_minus_hand": {
+     "mean": 1958.65,
+     "ci95": [
+      -1907.473,
+      5824.772
+     ],
+     "n": 10
+    }
+   }
+  },
+  "60": {
+   "atc_urgent_wait_mean_cens_h": {
+    "hand": 65.093,
+    "linear": 41.874,
+    "linear_minus_hand": {
+     "mean": -23.219,
+     "ci95": [
+      -31.762,
+      -14.675
+     ],
+     "n": 10
+    }
+   },
+   "delay_prio2_mean_h": {
+    "hand": 82.504,
+    "linear": 57.9,
+    "linear_minus_hand": {
+     "mean": -24.605,
+     "ci95": [
+      -40.551,
+      -8.658
+     ],
+     "n": 10
+    }
+   },
+   "delay_mean_bulk": {
+    "hand": 46.511,
+    "linear": 40.862,
+    "linear_minus_hand": {
+     "mean": -5.649,
+     "ci95": [
+      -9.118,
+      -2.18
+     ],
+     "n": 10
+    }
+   },
+   "delay_mean_h": {
+    "hand": 47.263,
+    "linear": 41.037,
+    "linear_minus_hand": {
+     "mean": -6.226,
+     "ci95": [
+      -9.862,
+      -2.59
+     ],
+     "n": 10
+    }
+   },
+   "tonne_days_waiting": {
+    "hand": 6835.304,
+    "linear": 5791.927,
+    "linear_minus_hand": {
+     "mean": -1043.378,
+     "ci95": [
+      -1686.783,
+      -399.973
+     ],
+     "n": 10
+    }
+   },
+   "atc_starved_items": {
+    "hand": 95.7,
+    "linear": 97.1,
+    "linear_minus_hand": {
+     "mean": 1.4,
+     "ci95": [
+      -51.485,
+      54.285
+     ],
+     "n": 10
+    }
+   },
+   "delivered_kg": {
+    "hand": 3234926.018,
+    "linear": 3241833.277,
+    "linear_minus_hand": {
+     "mean": 6907.259,
+     "ci95": [
+      -5158.885,
+      18973.403
+     ],
+     "n": 10
+    }
+   }
+  }
+ },
+ "dates": {
+  "original": "2026-10-27 (results/ATC_learned_eval.json, commit c90676f, before the two engine fixes)",
+  "rerun": "2026-11-12",
+  "rerun_commit": "64b53408e6200b4dabf2e01c49bd05941a6158a3"
+ },
+ "rerun_note": "same evaluation seeds (1-30), loads 30 % and 60 %, guard seeds 1-10, same policies (data/policies/atc_bid_v1.json, atc_bid_linear_v1.json, not retrained); only the engine differs",
+ "moved": [
+  {
+   "key": "/eval/30/hand/atc_starved_items",
+   "original": 0.8333,
+   "rerun": 0.9
+  },
+  {
+   "key": "/eval/30/hand/atc_urgent_wait_p95_cens_h",
+   "original": 58.8766,
+   "rerun": 58.5346
+  },
+  {
+   "key": "/eval/30/hand/atc_urgent_within24_share",
+   "original": 0.8313,
+   "rerun": 0.8333
+  },
+  {
+   "key": "/eval/30/hand/delivered_kg",
+   "original": 1470018.6832,
+   "rerun": 1470266.2616
+  },
+  {
+   "key": "/eval/30/hand/heldout_agreement",
+   "original": 0.8837,
+   "rerun": 0.8835
+  },
+  {
+   "key": "/eval/30/hand/heldout_groups",
+   "original": 79069,
+   "rerun": 79079
+  },
+  {
+   "key": "/eval/30/hand/p5_cargo_util",
+   "original": 0.2946,
+   "rerun": 0.2942
+  },
+  {
+   "key": "/eval/30/hand/regret_vs_teacher_h/ci95[0]",
+   "original": -1.663,
+   "rerun": -2.043
+  },
+  {
+   "key": "/eval/30/hand/regret_vs_teacher_h/ci95[1]",
+   "original": 1.151,
+   "rerun": 1.28
+  },
+  {
+   "key": "/eval/30/hand/regret_vs_teacher_h/mean",
+   "original": -0.256,
+   "rerun": -0.382
+  },
+  {
+   "key": "/eval/30/hand/urgent_mean_h",
+   "original": 14.212,
+   "rerun": 14.087
+  },
+  {
+   "key": "/eval/30/hand/utilisation",
+   "original": 0.0757,
+   "rerun": 0.0756
+  },
+  {
+   "key": "/eval/30/linear/atc_starved_items",
+   "original": 0.8333,
+   "rerun": 0.9667
+  },
+  {
+   "key": "/eval/30/linear/atc_urgent_wait_p95_cens_h",
+   "original": 51.5253,
+   "rerun": 50.5612
+  },
+  {
+   "key": "/eval/30/linear/atc_urgent_within24_share",
+   "original": 0.8628,
+   "rerun": 0.864
+  },
+  {
+   "key": "/eval/30/linear/delivered_kg",
+   "original": 1471246.8546,
+   "rerun": 1470734.5549
+  },
+  {
+   "key": "/eval/30/linear/heldout_agreement",
+   "original": 0.7071,
+   "rerun": 0.7076
+  },
+  {
+   "key": "/eval/30/linear/heldout_groups",
+   "original": 75760,
+   "rerun": 75715
+  },
+  {
+   "key": "/eval/30/linear/p5_cargo_util",
+   "original": 0.2947,
+   "rerun": 0.2944
+  },
+  {
+   "key": "/eval/30/linear/regret_vs_teacher_h/ci95[0]",
+   "original": -4.431,
+   "rerun": -4.753
+  },
+  {
+   "key": "/eval/30/linear/regret_vs_teacher_h/ci95[1]",
+   "original": -0.863,
+   "rerun": -0.988
+  },
+  {
+   "key": "/eval/30/linear/regret_vs_teacher_h/mean",
+   "original": -2.647,
+   "rerun": -2.87
+  },
+  {
+   "key": "/eval/30/linear/urgent_mean_h",
+   "original": 11.822,
+   "rerun": 11.598
+  },
+  {
+   "key": "/eval/30/linear/utilisation",
+   "original": 0.0758,
+   "rerun": 0.0757
+  },
+  {
+   "key": "/eval/30/linear/vs_hand_h/ci95[0]",
+   "original": -3.867,
+   "rerun": -4.154
+  },
+  {
+   "key": "/eval/30/linear/vs_hand_h/ci95[1]",
+   "original": -0.914,
+   "rerun": -0.823
+  },
+  {
+   "key": "/eval/30/linear/vs_hand_h/mean",
+   "original": -2.391,
+   "rerun": -2.489
+  },
+  {
+   "key": "/eval/30/linear/vs_hand_share",
+   "original": -0.1682,
+   "rerun": -0.1767
+  },
+  {
+   "key": "/eval/30/mlp/atc_starved_items",
+   "original": 0.9,
+   "rerun": 0.9333
+  },
+  {
+   "key": "/eval/30/mlp/atc_urgent_wait_p95_cens_h",
+   "original": 59.183,
+   "rerun": 58.6406
+  },
+  {
+   "key": "/eval/30/mlp/atc_urgent_within24_share",
+   "original": 0.8259,
+   "rerun": 0.8287
+  },
+  {
+   "key": "/eval/30/mlp/delivered_kg",
+   "original": 1472050.8243,
+   "rerun": 1472509.209
+  },
+  {
+   "key": "/eval/30/mlp/heldout_agreement",
+   "original": 0.8628,
+   "rerun": 0.8637
+  },
+  {
+   "key": "/eval/30/mlp/heldout_groups",
+   "original": 79215,
+   "rerun": 79178
+  },
+  {
+   "key": "/eval/30/mlp/p5_cargo_util",
+   "original": 0.2957,
+   "rerun": 0.2963
+  },
+  {
+   "key": "/eval/30/mlp/regret_vs_teacher_h/ci95[0]",
+   "original": -1.875,
+   "rerun": -2.013
+  },
+  {
+   "key": "/eval/30/mlp/regret_vs_teacher_h/ci95[1]",
+   "original": 1.122,
+   "rerun": 0.935
+  },
+  {
+   "key": "/eval/30/mlp/regret_vs_teacher_h/mean",
+   "original": -0.376,
+   "rerun": -0.539
+  },
+  {
+   "key": "/eval/30/mlp/urgent_mean_h",
+   "original": 14.092,
+   "rerun": 13.929
+  },
+  {
+   "key": "/eval/30/mlp/utilisation",
+   "original": 0.0761,
+   "rerun": 0.0763
+  },
+  {
+   "key": "/eval/30/mlp/vs_hand_h/ci95[0]",
+   "original": -1.43,
+   "rerun": -1.615
+  },
+  {
+   "key": "/eval/30/mlp/vs_hand_h/ci95[1]",
+   "original": 1.19,
+   "rerun": 1.301
+  },
+  {
+   "key": "/eval/30/mlp/vs_hand_h/mean",
+   "original": -0.12,
+   "rerun": -0.157
+  },
+  {
+   "key": "/eval/30/mlp/vs_hand_share",
+   "original": -0.0085,
+   "rerun": -0.0112
+  },
+  {
+   "key": "/eval/60/hand/atc_starved_items",
+   "original": 128.6,
+   "rerun": 123.2333
+  },
+  {
+   "key": "/eval/60/hand/atc_urgent_wait_p95_cens_h",
+   "original": 284.8248,
+   "rerun": 288.0703
+  },
+  {
+   "key": "/eval/60/hand/atc_urgent_within24_share",
+   "original": 0.553,
+   "rerun": 0.5505
+  },
+  {
+   "key": "/eval/60/hand/delivered_kg",
+   "original": 3251544.1788,
+   "rerun": 3251135.8844
+  },
+  {
+   "key": "/eval/60/hand/p5_cargo_util",
+   "original": 0.6031,
+   "rerun": 0.6023
+  },
+  {
+   "key": "/eval/60/hand/regret_vs_teacher_h/ci95[0]",
+   "original": 4.034,
+   "rerun": 3.006
+  },
+  {
+   "key": "/eval/60/hand/regret_vs_teacher_h/ci95[1]",
+   "original": 19.559,
+   "rerun": 19.121
+  },
+  {
+   "key": "/eval/60/hand/regret_vs_teacher_h/mean",
+   "original": 11.797,
+   "rerun": 11.063
+  },
+  {
+   "key": "/eval/60/hand/urgent_mean_h",
+   "original": 75.711,
+   "rerun": 74.978
+  },
+  {
+   "key": "/eval/60/hand/utilisation",
+   "original": 0.1571,
+   "rerun": 0.157
+  },
+  {
+   "key": "/eval/60/linear/atc_starved_items",
+   "original": 137.3667,
+   "rerun": 142.5667
+  },
+  {
+   "key": "/eval/60/linear/atc_urgent_wait_p95_cens_h",
+   "original": 202.6788,
+   "rerun": 203.2763
+  },
+  {
+   "key": "/eval/60/linear/atc_urgent_within24_share",
+   "original": 0.7304,
+   "rerun": 0.7273
+  },
+  {
+   "key": "/eval/60/linear/delivered_kg",
+   "original": 3257128.3595,
+   "rerun": 3255518.6163
+  },
+  {
+   "key": "/eval/60/linear/p5_cargo_util",
+   "original": 0.5902,
+   "rerun": 0.5904
+  },
+  {
+   "key": "/eval/60/linear/regret_vs_teacher_h/ci95[0]",
+   "original": -26.216,
+   "rerun": -26.002
+  },
+  {
+   "key": "/eval/60/linear/regret_vs_teacher_h/ci95[1]",
+   "original": -13.713,
+   "rerun": -12.45
+  },
+  {
+   "key": "/eval/60/linear/regret_vs_teacher_h/mean",
+   "original": -19.964,
+   "rerun": -19.226
+  },
+  {
+   "key": "/eval/60/linear/urgent_mean_h",
+   "original": 43.95,
+   "rerun": 44.689
+  },
+  {
+   "key": "/eval/60/linear/vs_hand_h/ci95[0]",
+   "original": -38.132,
+   "rerun": -36.048
+  },
+  {
+   "key": "/eval/60/linear/vs_hand_h/ci95[1]",
+   "original": -25.39,
+   "rerun": -24.53
+  },
+  {
+   "key": "/eval/60/linear/vs_hand_h/mean",
+   "original": -31.761,
+   "rerun": -30.289
+  },
+  {
+   "key": "/eval/60/linear/vs_hand_share",
+   "original": -0.4195,
+   "rerun": -0.404
+  },
+  {
+   "key": "/eval/60/mlp/atc_starved_items",
+   "original": 128.3333,
+   "rerun": 146.4333
+  },
+  {
+   "key": "/eval/60/mlp/atc_urgent_wait_p95_cens_h",
+   "original": 348.4038,
+   "rerun": 349.3266
+  },
+  {
+   "key": "/eval/60/mlp/atc_urgent_within24_share",
+   "original": 0.5694,
+   "rerun": 0.5686
+  },
+  {
+   "key": "/eval/60/mlp/delivered_kg",
+   "original": 3249659.7505,
+   "rerun": 3251067.2458
+  },
+  {
+   "key": "/eval/60/mlp/p5_cargo_util",
+   "original": 0.6038,
+   "rerun": 0.6055
+  },
+  {
+   "key": "/eval/60/mlp/regret_vs_teacher_h/ci95[0]",
+   "original": 2.363,
+   "rerun": 5.857
+  },
+  {
+   "key": "/eval/60/mlp/regret_vs_teacher_h/ci95[1]",
+   "original": 23.489,
+   "rerun": 26.999
+  },
+  {
+   "key": "/eval/60/mlp/regret_vs_teacher_h/mean",
+   "original": 12.926,
+   "rerun": 16.428
+  },
+  {
+   "key": "/eval/60/mlp/urgent_mean_h",
+   "original": 76.84,
+   "rerun": 80.343
+  },
+  {
+   "key": "/eval/60/mlp/utilisation",
+   "original": 0.1572,
+   "rerun": 0.1576
+  },
+  {
+   "key": "/eval/60/mlp/vs_hand_h/ci95[0]",
+   "original": -7.902,
+   "rerun": -2.872
+  },
+  {
+   "key": "/eval/60/mlp/vs_hand_h/ci95[1]",
+   "original": 10.161,
+   "rerun": 13.602
+  },
+  {
+   "key": "/eval/60/mlp/vs_hand_h/mean",
+   "original": 1.129,
+   "rerun": 5.365
+  },
+  {
+   "key": "/eval/60/mlp/vs_hand_share",
+   "original": 0.0149,
+   "rerun": 0.0716
+  },
+  {
+   "key": "/guards/30/atc_starved_items/linear_minus_hand/ci95[0]",
+   "original": -0.267,
+   "rerun": -0.543
+  },
+  {
+   "key": "/guards/30/atc_starved_items/linear_minus_hand/ci95[1]",
+   "original": 0.467,
+   "rerun": 0.743
+  },
+  {
+   "key": "/guards/30/atc_urgent_wait_mean_cens_h/hand",
+   "original": 15.119,
+   "rerun": 13.261
+  },
+  {
+   "key": "/guards/30/atc_urgent_wait_mean_cens_h/linear",
+   "original": 12.653,
+   "rerun": 12.029
+  },
+  {
+   "key": "/guards/30/atc_urgent_wait_mean_cens_h/linear_minus_hand/ci95[0]",
+   "original": -4.745,
+   "rerun": -3.91
+  },
+  {
+   "key": "/guards/30/atc_urgent_wait_mean_cens_h/linear_minus_hand/ci95[1]",
+   "original": -0.186,
+   "rerun": 1.445
+  },
+  {
+   "key": "/guards/30/atc_urgent_wait_mean_cens_h/linear_minus_hand/mean",
+   "original": -2.466,
+   "rerun": -1.232
+  },
+  {
+   "key": "/guards/30/delay_mean_bulk/hand",
+   "original": 15.504,
+   "rerun": 15.394
+  },
+  {
+   "key": "/guards/30/delay_mean_bulk/linear",
+   "original": 15.49,
+   "rerun": 15.623
+  },
+  {
+   "key": "/guards/30/delay_mean_bulk/linear_minus_hand/ci95[0]",
+   "original": -0.244,
+   "rerun": 0.019
+  },
+  {
+   "key": "/guards/30/delay_mean_bulk/linear_minus_hand/ci95[1]",
+   "original": 0.215,
+   "rerun": 0.44
+  },
+  {
+   "key": "/guards/30/delay_mean_bulk/linear_minus_hand/mean",
+   "original": -0.014,
+   "rerun": 0.23
+  },
+  {
+   "key": "/guards/30/delay_mean_h/hand",
+   "original": 15.451,
+   "rerun": 15.303
+  },
+  {
+   "key": "/guards/30/delay_mean_h/linear",
+   "original": 15.355,
+   "rerun": 15.481
+  },
+  {
+   "key": "/guards/30/delay_mean_h/linear_minus_hand/ci95[0]",
+   "original": -0.319,
+   "rerun": -0.037
+  },
+  {
+   "key": "/guards/30/delay_mean_h/linear_minus_hand/ci95[1]",
+   "original": 0.127,
+   "rerun": 0.393
+  },
+  {
+   "key": "/guards/30/delay_mean_h/linear_minus_hand/mean",
+   "original": -0.096,
+   "rerun": 0.178
+  },
+  {
+   "key": "/guards/30/delay_prio2_mean_h/hand",
+   "original": 16.645,
+   "rerun": 15.529
+  },
+  {
+   "key": "/guards/30/delay_prio2_mean_h/linear",
+   "original": 14.217,
+   "rerun": 15.69
+  },
+  {
+   "key": "/guards/30/delay_prio2_mean_h/linear_minus_hand/ci95[0]",
+   "original": -5.701,
+   "rerun": -2.322
+  },
+  {
+   "key": "/guards/30/delay_prio2_mean_h/linear_minus_hand/ci95[1]",
+   "original": 0.843,
+   "rerun": 2.644
+  },
+  {
+   "key": "/guards/30/delay_prio2_mean_h/linear_minus_hand/mean",
+   "original": -2.429,
+   "rerun": 0.161
+  },
+  {
+   "key": "/guards/30/delivered_kg/hand",
+   "original": 1469108.416,
+   "rerun": 1468777.597
+  },
+  {
+   "key": "/guards/30/delivered_kg/linear",
+   "original": 1470473.658,
+   "rerun": 1470736.247
+  },
+  {
+   "key": "/guards/30/delivered_kg/linear_minus_hand/ci95[0]",
+   "original": -2666.911,
+   "rerun": -1907.473
+  },
+  {
+   "key": "/guards/30/delivered_kg/linear_minus_hand/ci95[1]",
+   "original": 5397.393,
+   "rerun": 5824.772
+  },
+  {
+   "key": "/guards/30/delivered_kg/linear_minus_hand/mean",
+   "original": 1365.241,
+   "rerun": 1958.65
+  },
+  {
+   "key": "/guards/30/tonne_days_waiting/hand",
+   "original": 842.972,
+   "rerun": 829.728
+  },
+  {
+   "key": "/guards/30/tonne_days_waiting/linear",
+   "original": 835.205,
+   "rerun": 844.521
+  },
+  {
+   "key": "/guards/30/tonne_days_waiting/linear_minus_hand/ci95[0]",
+   "original": -23.032,
+   "rerun": -0.489
+  },
+  {
+   "key": "/guards/30/tonne_days_waiting/linear_minus_hand/ci95[1]",
+   "original": 7.499,
+   "rerun": 30.075
+  },
+  {
+   "key": "/guards/30/tonne_days_waiting/linear_minus_hand/mean",
+   "original": -7.767,
+   "rerun": 14.793
+  },
+  {
+   "key": "/guards/60/atc_starved_items/hand",
+   "original": 98.7,
+   "rerun": 95.7
+  },
+  {
+   "key": "/guards/60/atc_starved_items/linear",
+   "original": 91.6,
+   "rerun": 97.1
+  },
+  {
+   "key": "/guards/60/atc_starved_items/linear_minus_hand/ci95[0]",
+   "original": -52.465,
+   "rerun": -51.485
+  },
+  {
+   "key": "/guards/60/atc_starved_items/linear_minus_hand/ci95[1]",
+   "original": 38.265,
+   "rerun": 54.285
+  },
+  {
+   "key": "/guards/60/atc_starved_items/linear_minus_hand/mean",
+   "original": -7.1,
+   "rerun": 1.4
+  },
+  {
+   "key": "/guards/60/atc_urgent_wait_mean_cens_h/hand",
+   "original": 67.546,
+   "rerun": 65.093
+  },
+  {
+   "key": "/guards/60/atc_urgent_wait_mean_cens_h/linear",
+   "original": 43.634,
+   "rerun": 41.874
+  },
+  {
+   "key": "/guards/60/atc_urgent_wait_mean_cens_h/linear_minus_hand/ci95[0]",
+   "original": -32.349,
+   "rerun": -31.762
+  },
+  {
+   "key": "/guards/60/atc_urgent_wait_mean_cens_h/linear_minus_hand/ci95[1]",
+   "original": -15.473,
+   "rerun": -14.675
+  },
+  {
+   "key": "/guards/60/atc_urgent_wait_mean_cens_h/linear_minus_hand/mean",
+   "original": -23.911,
+   "rerun": -23.219
+  },
+  {
+   "key": "/guards/60/delay_mean_bulk/hand",
+   "original": 46.247,
+   "rerun": 46.511
+  },
+  {
+   "key": "/guards/60/delay_mean_bulk/linear",
+   "original": 40.536,
+   "rerun": 40.862
+  },
+  {
+   "key": "/guards/60/delay_mean_bulk/linear_minus_hand/ci95[0]",
+   "original": -9.584,
+   "rerun": -9.118
+  },
+  {
+   "key": "/guards/60/delay_mean_bulk/linear_minus_hand/ci95[1]",
+   "original": -1.838,
+   "rerun": -2.18
+  },
+  {
+   "key": "/guards/60/delay_mean_bulk/linear_minus_hand/mean",
+   "original": -5.711,
+   "rerun": -5.649
+  },
+  {
+   "key": "/guards/60/delay_mean_h/hand",
+   "original": 47.062,
+   "rerun": 47.263
+  },
+  {
+   "key": "/guards/60/delay_mean_h/linear",
+   "original": 40.745,
+   "rerun": 41.037
+  },
+  {
+   "key": "/guards/60/delay_mean_h/linear_minus_hand/ci95[0]",
+   "original": -10.374,
+   "rerun": -9.862
+  },
+  {
+   "key": "/guards/60/delay_mean_h/linear_minus_hand/ci95[1]",
+   "original": -2.26,
+   "rerun": -2.59
+  },
+  {
+   "key": "/guards/60/delay_mean_h/linear_minus_hand/mean",
+   "original": -6.317,
+   "rerun": -6.226
+  },
+  {
+   "key": "/guards/60/delay_prio2_mean_h/hand",
+   "original": 83.673,
+   "rerun": 82.504
+  },
+  {
+   "key": "/guards/60/delay_prio2_mean_h/linear",
+   "original": 57.241,
+   "rerun": 57.9
+  },
+  {
+   "key": "/guards/60/delay_prio2_mean_h/linear_minus_hand/ci95[0]",
+   "original": -43.664,
+   "rerun": -40.551
+  },
+  {
+   "key": "/guards/60/delay_prio2_mean_h/linear_minus_hand/ci95[1]",
+   "original": -9.199,
+   "rerun": -8.658
+  },
+  {
+   "key": "/guards/60/delay_prio2_mean_h/linear_minus_hand/mean",
+   "original": -26.432,
+   "rerun": -24.605
+  },
+  {
+   "key": "/guards/60/delivered_kg/hand",
+   "original": 3233242.425,
+   "rerun": 3234926.018
+  },
+  {
+   "key": "/guards/60/delivered_kg/linear",
+   "original": 3235780.787,
+   "rerun": 3241833.277
+  },
+  {
+   "key": "/guards/60/delivered_kg/linear_minus_hand/ci95[0]",
+   "original": -13125.18,
+   "rerun": -5158.885
+  },
+  {
+   "key": "/guards/60/delivered_kg/linear_minus_hand/ci95[1]",
+   "original": 18201.906,
+   "rerun": 18973.403
+  },
+  {
+   "key": "/guards/60/delivered_kg/linear_minus_hand/mean",
+   "original": 2538.363,
+   "rerun": 6907.259
+  },
+  {
+   "key": "/guards/60/tonne_days_waiting/hand",
+   "original": 6837.427,
+   "rerun": 6835.304
+  },
+  {
+   "key": "/guards/60/tonne_days_waiting/linear",
+   "original": 5781.814,
+   "rerun": 5791.927
+  },
+  {
+   "key": "/guards/60/tonne_days_waiting/linear_minus_hand/ci95[0]",
+   "original": -1764.59,
+   "rerun": -1686.783
+  },
+  {
+   "key": "/guards/60/tonne_days_waiting/linear_minus_hand/ci95[1]",
+   "original": -346.635,
+   "rerun": -399.973
+  },
+  {
+   "key": "/guards/60/tonne_days_waiting/linear_minus_hand/mean",
+   "original": -1055.613,
+   "rerun": -1043.378
+  }
+ ],
+ "unchanged_count": 42
+}
