@@ -104,7 +104,7 @@ export const ACCENT_CSS = `.an [data-sys="nav"]{--acc:#4477AA}.an [data-sys="clo
 .an-leader{fill:none;stroke:var(--anatomy-mid);stroke-width:.7;vector-effect:non-scaling-stroke}
 .an-anchor{fill:var(--anatomy-hi);stroke:none}
 .an-box{fill:var(--anatomy-card);stroke:var(--anatomy-mid);stroke-width:.7;vector-effect:non-scaling-stroke}
-.an-title{font:600 8.6px/1 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.06em;text-transform:uppercase;fill:var(--anatomy-muted)}
+.an-title{font:600 9.2px/1 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.02em;text-transform:uppercase;fill:var(--anatomy-muted)}
 .an-value{font:600 9.6px/1 ui-monospace,Menlo,Consolas,monospace;fill:var(--anatomy-strong)}
 .an-pins{display:none}
 .an-pin circle{fill:var(--anatomy-card);stroke:var(--anatomy-hi);stroke-width:.8;vector-effect:non-scaling-stroke}

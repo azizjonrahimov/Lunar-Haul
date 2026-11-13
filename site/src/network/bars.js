@@ -3,10 +3,12 @@
 // dataviz validator on the site's surfaces), a table view of the same numbers with delays, and the out-of-distribution
 // table. One axis; a legend; direct labels on the "all" group only; a title on every bar for hover.
 import { h } from '../ui/index.js';
+// F-78 (review W6): the site's formatter (components/num.js), which also guards against "-0.00"
+import { fmt as fmtN } from '../components/num.js';
 
 const COL = { light: ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4'], dark: ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181'] };
 const dark = () => { const c = getComputedStyle(document.body).backgroundColor.match(/\d+/g) || [255, 255, 255]; return (+c[0] + +c[1] + +c[2]) / 3 < 128; };
-const fmt = (v, d = 2) => v === null || v === undefined || Number.isNaN(v) ? '–' : v.toLocaleString('en-GB', { minimumFractionDigits: d, maximumFractionDigits: d });
+const fmt = (v, d = 2) => fmtN(v, d);
 const FAULT_LABEL = { jump: 'jump', drift: 'slow drift', frozen: 'frozen report', frame: 'frame error', noise: 'noise inflation', all: 'all faults' };
 
 export function mountBars(host, E) {

@@ -31,7 +31,12 @@
 .nw-right { justify-content: flex-end; }
 .nw-strip { display: block; width: 100%; height: 2.2rem; image-rendering: pixelated; border-radius: 3px; }
 .nw-row-c > .nw-strip:first-child { flex: 1 1 auto; }
-.nw-feats { display: none; }
+/* F-78 (review W5): the ten input names, shown under the input strip in row order */
+.nw-row-in { flex-wrap: wrap; }
+.nw-feats { flex-basis: 100%; margin: var(--s-1) 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 0 var(--s-3); font-size: 0.75rem; color: var(--ink-2); counter-reset: f; }
+.nw-feats::before { content: 'Rows, top to bottom:'; flex-basis: 100%; color: var(--ink-2); font-weight: 600; }
+.nw-feats li { counter-increment: f; }
+.nw-feats li::before { content: counter(f) ' '; font-family: var(--font-num); color: var(--ink); }
 .nw-out { margin-top: var(--s-3); font-size: var(--fs-small); }
 .nw-out p { margin: 0 0 var(--s-1); }
 @media (max-width: 600px) { .nw-row { grid-template-columns: minmax(0, 1fr); gap: var(--s-1); } }

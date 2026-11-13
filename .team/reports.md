@@ -10682,3 +10682,63 @@ Against the targets (desktop):
   /world/trace/ 75 (TBT 1.4-4.3 s, the 3D build), /verification/ 84 (TBT 640 ms), the rest 89-100.
 - Accessibility 100 and best practices 100 on every page, mobile and desktop.
 Files changed since the first F-77 report: web/index.html (KPI placeholders), .team/reports.md.
+
+## F-78 (FRONTEND, 13 Nov): code review of Phase 6, sections W and T (reports/review_phase6_code.md)
+W1, a missing row or key stops the build with the file and key named:
+- site/lib/network.mjs: every number reads through v()/e()/l(), which throw "network: <file> has no row/value/number
+  at <key>" (no more "–"); drift_diff throws instead of printing a dash; the parameter count is labelled with the file
+  it was read from (results/E56_integrity.json model.n_params, else data/atc/protocol/b96_landscape.json
+  landscape.model.n_params); every landscape number names B-99's file; a missing landscape file throws by key.
+- site/lib/phase6.mjs vv6 (/verification/): counts the rows' own `passed` flags; throws if summary.rows/passed are
+  missing, a row has no boolean passed, the rows and the summary disagree, or G1 does not pass (the sentence says it
+  gives the Phase 5 run back). vv6 takes the file's contents as an optional argument so a test can alter a copy.
+- phase6.mjs familyRows: throws on a decision for a hypothesis or a clause the family file does not have.
+- site/lib/protocol-data.mjs compactE51: guard_s, uwb_sigma_m and contact_share are required numbers (were optional
+  chaining).
+W2: tools/ci/budgets.json /protocol/ data counts protocol/e53-v02.json (the file the bit-rate figure fetches) instead of
+  protocol/b99/e53_bitrate.json; stageB99 still checks e53_bitrate.json against the index (problem 5's text reads it at
+  build) but no longer stages it (B99_BUILD_ONLY; an older staged copy is removed). The figure's column error now names
+  protocol/e53-v02.json.
+W3: figures.js figDtn fetches e54.json and the month's timeline together (Promise.all). network/landscape.js: quad
+  corners and shading precomputed once, colours once per theme, the canvas resized only when its size changes, drag
+  and arrow keys draw at most once per frame (one pending requestAnimationFrame), the ResizeObserver redraws only on a
+  real width change.
+W4: network/main.js escapes err.message (esc from components/num.js); no other innerHTML takes an error message raw.
+W5:
+- lib/realdata.mjs: data-labels on the Artemis II table cells, the colspan row labelled "Not used" (the other pr-tables
+  already had them).
+- network/landscape.js: the contour map is drawn at the width it is shown at (12 px labels stay 12 px; at 390 px the
+  SVG is 324 wide with a 324-unit viewBox).
+- Cutaways (lib/anatomy-common.mjs, src/protocol/anatomy-live.js): titles 8.6 -> 9.2 units, letter-spacing .06 ->
+  .02 em (the longest, 21 characters, is 110 of the box's 120 units); labels show only from 840 px (scale >= 1.1),
+  pins below that, sized from the drawn scale (numbers 11 px on screen). Measured: label text >= 13 px boxes at 1280,
+  pins at 700 and 390 px readable and not overlapping.
+- The cutaway tour visits each part once and stops; the first click, focus, hover or touch stops it for good
+  (no 8 s restart).
+- /network/: the ten input names are shown under the input strip ("Rows, top to bottom:", numbered list); ui.css is
+  imported eagerly (as on /protocol/).
+- hub.css: the card focus ring and the link's outline:none apply only under @supports selector(:has(a)).
+- network/inside.js: the ramps follow the theme (sequential reversed in dark, diverging midpoint dark grey) and the
+  strips redraw on a theme change (data-theme and prefers-color-scheme).
+- protocol.css: packet field buttons get a hover border; pressed is a heavier ring (inset box-shadow), no font-weight
+  change, the part colour kept.
+- Left as they are, per your note: the left stripe on the real-data box, the labels above headings.
+W6: network/landscape.js, inside.js, bars.js and world/atc-pair.js use components/num.js fmt (the "-0.00" guard).
+Side effect fixed: with ui.css imported by /network/ too, Rolldown merged it into tooltip.js's chunk, so the CSS file
+  was named tooltip-*.css and the rover and lander lazy_css budgets ("assets/ui-*.css") failed. site/vite.config.js
+  assetFileNames keeps that stylesheet named ui-*.css (other assets keep Vite's default name).
+T: site/tests/f78.test.mjs (6 tests): every @nw key on /network/ gives a flagged number with its file as source and an
+  unknown key throws; the parameter count's source label; familyRows throws on an unknown clause and an unknown
+  hypothesis; vv6 counts from the rows and throws on a missing count, a mismatch, a missing passed flag or a failing G1;
+  compactE51 requires its constants; the budget counts e53-v02.json and the build-only file is not fetched.
+Checks: free RAM 0.95-0.99 GB before each build (heap 512 MB): npm run build exit 0 ("4 B-99 files staged ...
+  e53_bitrate.json read at build only"); tests 85/85; budgets.py pages OK. Browser (local build, one at a time, closed
+  under 0.8 GB): /network/, /protocol/, /verification/, /results/, /simulator/, /lab/lander/ in dark and light at 1280
+  and 390 px: overflow 0, contrast failures 0, one h1, no heading skips, console errors 0.
+No numbers typed; BACKEND's reruns of E52, E54, E55, E56 and the verification rows will flow through the same readers
+  (and stop the build if a row or key goes missing).
+Files: site/lib/network.mjs, site/lib/phase6.mjs, site/lib/protocol-data.mjs, site/lib/realdata.mjs,
+  site/lib/anatomy-common.mjs, site/src/protocol/figures.js, site/src/protocol/anatomy-live.js,
+  site/src/protocol/protocol.css, site/src/network/main.js, site/src/network/landscape.js, site/src/network/inside.js,
+  site/src/network/bars.js, site/src/network/network.css, site/src/hub.css, site/src/world/atc-pair.js,
+  site/vite.config.js, tools/ci/budgets.json, site/tests/f78.test.mjs (new), .team/reports.md.

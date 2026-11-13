@@ -1,6 +1,8 @@
 // F-61: /network/. The text and its numbers are built into the HTML (<!--@nw:key-->, lib/network.mjs); the three figures
 // load their data and code when their section nears the screen; the "where it runs" deck comes from the cutaway loader.
+import '../ui/ui.css';   // F-78 (review W5): .ui-label and the controls styled from the first paint, as on /protocol/
 import './network.css';
+import { esc } from '../components/num.js';
 import { mountSlots } from '../protocol/anatomy-loader.js';
 import { upgradeFlags } from '../ui/tooltip.js';
 
@@ -17,7 +19,7 @@ const io = new IntersectionObserver(entries => {
     io.unobserve(e.target);
     const host = e.target;
     loaders[host.id](host).then(() => host.querySelector(':scope > p.small.muted')?.remove())
-      .catch(err => { host.innerHTML = `<p class="stub">This figure could not load (${err.message}).</p>`; });
+      .catch(err => { host.innerHTML = `<p class="stub">This figure could not load (${esc(err.message)}).</p>`; });   // F-78 (review W4): escaped
   }
 }, { rootMargin: '300px 0px' });
 for (const id of Object.keys(loaders)) { const el = document.getElementById(id); if (el) io.observe(el); }

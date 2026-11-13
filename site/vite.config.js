@@ -113,7 +113,10 @@ export default defineConfig({
         '404': join(SITE, '404.html') },   // GitHub Pages serves 404.html for unknown paths
       // F-40: a chunk made from one module under src/<dir>/ is named <dir>-<name> (rover-lab3d-scene, stories-stage), so
       // the budgets' lazy globs (tools/ci/budgets.json) match one chunk each; shared and vendor chunks keep their names
-      output: { chunkFileNames: c => { const d = c.facadeModuleId && /[\\/]src[\\/]([^\\/]+)[\\/][^\\/]+$/.exec(c.facadeModuleId); return `assets/${d ? d[1] + '-' : ''}[name]-[hash].js`; } },
+      output: { chunkFileNames: c => { const d = c.facadeModuleId && /[\\/]src[\\/]([^\\/]+)[\\/][^\\/]+$/.exec(c.facadeModuleId); return `assets/${d ? d[1] + '-' : ''}[name]-[hash].js`; },
+        // F-78: the shared stylesheet holding src/ui/ui.css keeps the name ui-*.css whichever module its chunk is named
+        // after (with ui.css imported by /network/ too, it shares a chunk with tooltip.js); the budgets' lazy_css globs read it
+        assetFileNames: a => ((a.originalFileNames || []).some(f => /src[\\/]ui[\\/]ui\.css$/.test(f)) || (a.names || []).includes('tooltip.css') ? 'assets/ui-[hash][extname]' : 'assets/[name]-[hash][extname]') },
     },
   },
   server: { port: 5173 },

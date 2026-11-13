@@ -54,8 +54,9 @@ function artemis(D) {
   const rows = artemisRows(D), used = rows.filter(r => r.body), earth = used.filter(r => r.body === 'Earth').length;
   const errs = used.map(r => 100 * r.im.range_err_rel), dirs = used.map(r => r.im.direction_err_deg_best_signs).filter(v => typeof v === 'number');
   const tr = r => r.body
-    ? `<tr><th scope="row">${r.when}</th><td>${r.body}</td><td>${fmt(r.im.range_km_image, 0)} / ${fmt(r.im.range_km_spice, 0)} km</td><td>${r.im.range_err_rel >= 0 ? '+' : ''}${fmt(100 * r.im.range_err_rel, 2)} %</td><td>${typeof r.im.direction_err_deg_best_signs === 'number' ? `${fmt(r.im.direction_err_deg_best_signs, 2)}°` : 'no attitude for this frame'}</td></tr>`
-    : `<tr><th scope="row">${r.when}</th><td colspan="4">${esc(r.fit || 'not used')}</td></tr>`;
+    // F-78 (review W5): data-labels, so each cell keeps its column name when the table stacks on a phone (protocol.css)
+    ? `<tr><th scope="row">${r.when}</th><td data-label="Body, from the geometry">${r.body}</td><td data-label="Distance: image / SPICE">${fmt(r.im.range_km_image, 0)} / ${fmt(r.im.range_km_spice, 0)} km</td><td data-label="Distance error">${r.im.range_err_rel >= 0 ? '+' : ''}${fmt(100 * r.im.range_err_rel, 2)} %</td><td data-label="Direction error">${typeof r.im.direction_err_deg_best_signs === 'number' ? `${fmt(r.im.direction_err_deg_best_signs, 2)}°` : 'no attitude for this frame'}</td></tr>`
+    : `<tr><th scope="row">${r.when}</th><td colspan="4" data-label="Not used">${esc(r.fit || 'not used')}</td></tr>`;
   return `<p>Artemis II, a crewed flight around the Moon in April 2026, took pictures with its optical navigation camera. Fitting a circle to the
     edge of each disc gives the spacecraft's distance to the body and the body's direction; we checked both against the mission's own trajectory
     and attitude (SPICE). This is <b>navigation from the limb in space between Earth and Moon, not navigation on the surface</b>.

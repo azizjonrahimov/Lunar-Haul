@@ -246,14 +246,15 @@ function e54Timeline(T) {
 }
 
 async function figDtn(host) {
-  const r = await fetch(`${import.meta.env.BASE_URL}protocol/e54.json`);
+  const focus = host.dataset.focus === 'fail' ? 'fail' : 'radio';
+  // F-78 (review W3): the table and, for the failure figure, the month's timeline are fetched together
+  const [r, rt] = await Promise.all([fetch(`${import.meta.env.BASE_URL}protocol/e54.json`),
+    focus === 'fail' ? fetch(`${import.meta.env.BASE_URL}protocol/b99/e54_timeline.json`) : null]);
   if (!r.ok) throw new Error(`protocol/e54.json: HTTP ${r.status}`);
   const E = await r.json();
   if (E.format !== 'lunarsim-e54-site' || E.version !== 1) throw new Error(`e54.json: format ${E.format}`);
-  const focus = host.dataset.focus === 'fail' ? 'fail' : 'radio';
   let timeline = [];
   if (focus === 'fail') {   // F-65: one seed's month from B-99, under the table
-    const rt = await fetch(`${import.meta.env.BASE_URL}protocol/b99/e54_timeline.json`);
     if (!rt.ok) throw new Error(`protocol/b99/e54_timeline.json: HTTP ${rt.status}`);
     const TL = await rt.json();
     if (TL.format !== 'lunarsim-protocol-data' || !TL.messages) throw new Error(`e54_timeline.json: format ${TL.format}`);
@@ -440,7 +441,7 @@ async function figBitrate(host) {
   const FR = D.columns.indexOf('framing');
   if (FR >= 0) D.rows = D.rows.filter(x => x[FR] === 'lrip');   // the figure draws packets before link framing
   const c = k => D.columns.indexOf(k), GE = c('geometry'), AU = c('auth'), HZ = c('position_hz'), N = c('rovers'), P95 = c('busiest_link_kbps_p95');
-  if ([GE, AU, HZ, N, P95].some(i => i < 0)) throw new Error('e53_bitrate.json: columns');
+  if ([GE, AU, HZ, N, P95].some(i => i < 0)) throw new Error('protocol/e53-v02.json: columns');
   let geo = 'fleet', auth = 'on';
   const NB = Object.entries(D.lines_kbps).find(([k]) => /narrow/.test(k))?.[1], BB = Object.entries(D.lines_kbps).find(([k]) => /broad/.test(k))?.[1];
   const segG = segmented({ legend: 'Where the rovers are', options: [{ value: 'fleet', label: 'Where the fleet works' }, { value: 'spread', label: 'Spread over the routes' }], value: geo, onChange: v => { geo = v; draw(); } });

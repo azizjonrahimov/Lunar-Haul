@@ -15,7 +15,15 @@ function common(root) {
   const svg = root.querySelector('svg');
   // compact (narrow): the labels give way to pins, and the view crops the two label columns so the drawing grows
   const full = svg.getAttribute('viewBox'), [, , vw, vh] = full.split(' ').map(Number), col = +svg.dataset.col || 0;
-  const fit = () => { const narrow = root.getBoundingClientRect().width < 600; root.toggleAttribute('data-compact', narrow); svg.setAttribute('viewBox', narrow && col ? `${col} 0 ${vw - 2 * col} ${vh}` : full); };
+  // F-78 (review W5): the side labels only where they render at 10 px or more (840 px and up, scale >= 1.1); below that,
+  // numbered pins sized from the drawn scale so the numbers are 11 px on screen at any width
+  const pins = [...svg.querySelectorAll('.an-pin')].map(g => ({ c: g.querySelector('circle'), t: g.querySelector('text') }));
+  const fit = () => {
+    const w = root.getBoundingClientRect().width, narrow = w < 840, vbw = narrow && col ? vw - 2 * col : vw;
+    root.toggleAttribute('data-compact', narrow); svg.setAttribute('viewBox', narrow && col ? `${col} 0 ${vbw} ${vh}` : full);
+    const u = w > 0 ? vbw / w : 1;   // SVG units per screen pixel
+    for (const { c, t } of pins) { c.setAttribute('r', (9 * u).toFixed(1)); t.style.fontSize = `${(11 * u).toFixed(1)}px`; t.setAttribute('dy', `${(0.35 * 11 * u - 3.2).toFixed(1)}`); }
+  };
   new ResizeObserver(fit).observe(root); fit();
   const corner = root.querySelector('[data-readout]'), live = root.querySelector('.an-live');
   return { svg, read: (text, say = false) => { if (corner) corner.textContent = text; if (say && live) live.textContent = text; } };
@@ -31,7 +39,7 @@ function mountNav(root) {
   const { read } = common(root);
   const groups = [...root.querySelectorAll('.nv-part')], items = [...root.querySelectorAll('.nv-item')];
   const marks = [...root.querySelectorAll('.an-label, .an-pin')];
-  let current = null, touring = !still.matches, timer = 0, idle = 0, visible = false;
+  let current = null, touring = !still.matches, timer = 0, visible = false;
   function show(id, say = false) {
     if (id === current) return;
     current = id;
@@ -41,8 +49,11 @@ function mountNav(root) {
     const b = items.find(x => x.dataset.part === id); if (b) read(b.querySelector('.nv-name').textContent, say);
   }
   const order = items.map(b => b.dataset.part);
-  const run = () => { clearInterval(timer); timer = touring && visible ? setInterval(() => show(order[(order.indexOf(current) + 1) % order.length]), 2800) : 0; };
-  const touch = id => { show(id, true); touring = false; run(); clearTimeout(idle); if (!still.matches) idle = setTimeout(() => { touring = true; run(); }, 8000); };
+  // F-78 (review W5): the tour visits each part once (pausing while off screen) and then stops; the first touch, click,
+  // focus or hover stops it for good (WCAG 2.2.2: nothing keeps moving on its own)
+  const step = () => { const i = order.indexOf(current) + 1; if (i >= order.length) { touring = false; run(); return; } show(order[i]); };
+  const run = () => { clearInterval(timer); timer = touring && visible ? setInterval(step, 2800) : 0; };
+  const touch = id => { show(id, true); touring = false; run(); };
   for (const b of items) for (const ev of ['click', 'focus', 'pointerenter']) b.addEventListener(ev, () => touch(b.dataset.part));
   for (const g of [...groups, ...marks]) g.addEventListener('pointerenter', () => touch(g.dataset.part));
   // open: every moving group goes to its data-move offset; ghosted panels fade to data-fade

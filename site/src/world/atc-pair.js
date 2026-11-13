@@ -8,6 +8,8 @@
 // hand = the first road conflict settled through Earth, auction = the first auction award) and play. { story: true }
 // leaves out the month's totals table (the story's chips carry those numbers, with their sources).
 import { h } from '../ui/index.js';
+// F-78 (review W6): the site's formatter (components/num.js), which also guards against "-0.00"
+import { fmt as fmtN } from '../components/num.js';
 import { createTimescale, hoursText } from '../ui/timescale.js';
 import { OWNER_COLOURS, themedVar } from './colours.js';
 import './atc-pair.css';
@@ -19,7 +21,7 @@ const KIND = { drive: 'driving', reposition: 'driving empty', work: 'loading or 
 const COUNTERS = [['urgent_items_waiting', 'Urgent items waiting over 24 h', 0], ['idle_robot_hours', 'Hours robots sat idle', 1],
   ['messages_per_hour', 'Radio messages per hour', 2], ['earth_hand_hours', 'Hours of road conflicts settled by hand via Earth', 2]];
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const fmt = (v, d = 0) => v.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+const fmt = (v, d = 0) => fmtN(v, d);
 const clock = t => { const d = new Date(Date.UTC(2028, 0, 1) + t * 3600e3); return `${d.getUTCDate()} ${MON[d.getUTCMonth()]} ${d.getUTCFullYear()}, ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')} UTC`; };
 const s = (tag, attrs = {}) => { const el = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v); return el; };
 const clip = (a, b, t0, t1) => Math.max(0, Math.min(b, t1) - Math.max(a, t0));

@@ -3,6 +3,8 @@
 // (no WebGL needed) or as a contour map (SVG), with the path Adam took and a scrubber over its 24 checkpoints.
 // Colour: one sequential hue (blue), low loss at the step nearest the surface (dataviz rules); the path in orange.
 import { segmented, h } from '../ui/index.js';
+// F-78 (review W6): the site's formatter (components/num.js), which also guards against "-0.00"
+import { fmt } from '../components/num.js';
 
 const RAMP = ['#cde2fb', '#b7d3f6', '#9ec5f4', '#86b6ef', '#6da7ec', '#5598e7', '#3987e5', '#2a78d6', '#256abf', '#1c5cab', '#184f95', '#104281', '#0d366b'];
 const PATH_LIGHT = '#eb6834', PATH_DARK = '#d95926';
@@ -11,7 +13,6 @@ const hex = s => [1, 3, 5].map(i => parseInt(s.slice(i, i + 2), 16));
 const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
 // value in 0..1 -> ramp colour; in dark mode the ramp runs the other way (low values recede into the dark surface)
 const rampAt = (u, dk) => { const R = dk ? [...RAMP].reverse() : RAMP, x = Math.max(0, Math.min(1, u)) * (R.length - 1), i = Math.min(R.length - 2, Math.floor(x)); return mix(hex(R[i]), hex(R[i + 1]), x - i); };
-const fmt = (v, d) => v.toLocaleString('en-GB', { minimumFractionDigits: d, maximumFractionDigits: d });
 
 export function mountLandscape(host, L) {
   const P = L.pca, xs = P.x, ys = P.y, Z = P.val, n = xs.length, m = ys.length;
@@ -38,24 +39,32 @@ export function mountLandscape(host, L) {
     const X = u * Math.cos(a) - v * Math.sin(a), Y = u * Math.sin(a) + v * Math.cos(a);
     return [W / 2 + s * X, H * 0.64 + s * (Y * Math.sin(e) - hz * Math.cos(e)), Y];
   }
+  // F-78 (review W3): the quads' corners and shading are fixed; their colours are worked out once per theme, the canvas is
+  // resized only when its size changes, and a drag or key press draws at most once per frame
+  const QUADS = [];
+  for (let j = 0; j < m - 1; j++) for (let i = 0; i < n - 1; i++) {
+    const zc = (Z[j][i] + Z[j][i + 1] + Z[j + 1][i + 1] + Z[j + 1][i]) / 4;
+    // light shading from the slope (form only; the colour carries the loss)
+    const dzx = (Z[j][i + 1] + Z[j + 1][i + 1] - Z[j][i] - Z[j + 1][i]) / 2, dzy = (Z[j + 1][i] + Z[j + 1][i + 1] - Z[j][i] - Z[j][i + 1]) / 2;
+    QUADS.push({ g: [[i, j], [i + 1, j], [i + 1, j + 1], [i, j + 1]], zc, shade: 1 - Math.max(-0.12, Math.min(0.12, (dzx * 0.7 - dzy * 0.7) / zc * 3)) });
+  }
+  let colDark = null, cols = null, size = '', raf = 0;
+  const colours = dk => {
+    if (colDark !== dk) { colDark = dk; cols = QUADS.map(q => `rgb(${rampAt(norm(q.zc), dk).map(v => Math.min(255, Math.round(v * q.shade)))})`); }
+    return cols;
+  };
+  const later = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; drawSurface(); }); };
   function drawSurface() {
     const dpr = Math.min(1.5, devicePixelRatio || 1), W = canvas.clientWidth, H = canvas.clientHeight;
-    canvas.width = W * dpr; canvas.height = H * dpr;
+    if (`${W}x${H}x${dpr}` !== size) { size = `${W}x${H}x${dpr}`; canvas.width = W * dpr; canvas.height = H * dpr; }
     const c = canvas.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
-    const dk = dark(), quads = [];
-    for (let j = 0; j < m - 1; j++) for (let i = 0; i < n - 1; i++) {
-      const g = [[i, j], [i + 1, j], [i + 1, j + 1], [i, j + 1]], pts = g.map(([a, b]) => project(a / (n - 1), b / (m - 1), norm(Z[b][a]), W, H));
-      const zc = (Z[j][i] + Z[j][i + 1] + Z[j + 1][i + 1] + Z[j + 1][i]) / 4;
-      // light shading from the slope (form only; the colour carries the loss)
-      const dzx = (Z[j][i + 1] + Z[j + 1][i + 1] - Z[j][i] - Z[j + 1][i]) / 2, dzy = (Z[j + 1][i] + Z[j + 1][i + 1] - Z[j][i] - Z[j][i + 1]) / 2;
-      const shade = 1 - Math.max(-0.12, Math.min(0.12, (dzx * 0.7 - dzy * 0.7) / zc * 3));
-      quads.push({ pts, d: pts.reduce((s, p) => s + p[2], 0) / 4, col: rampAt(norm(zc), dk).map(v => Math.min(255, Math.round(v * shade))) });
-    }
+    const dk = dark(), col = colours(dk);
+    const quads = QUADS.map((q, k) => { const pts = q.g.map(([a, b]) => project(a / (n - 1), b / (m - 1), norm(Z[b][a]), W, H)); return { pts, d: (pts[0][2] + pts[1][2] + pts[2][2] + pts[3][2]) / 4, col: col[k] }; });
     quads.sort((a, b) => a.d - b.d);
     const grid = dk ? 'rgba(17,18,20,0.35)' : 'rgba(255,255,255,0.45)';
     for (const q of quads) {
       c.beginPath(); q.pts.forEach(([x, y], k) => k ? c.lineTo(x, y) : c.moveTo(x, y)); c.closePath();
-      c.fillStyle = `rgb(${q.col})`; c.fill(); c.strokeStyle = grid; c.lineWidth = 0.5; c.stroke();
+      c.fillStyle = q.col; c.fill(); c.strokeStyle = grid; c.lineWidth = 0.5; c.stroke();
     }
     // the path on the plane: its checkpoints at their loss on the plane, the current one ringed
     const pp = path.map(p => project(fx(p.x), fy(p.y), norm(p.val_loss_on_plane) + 0.01, W, H)), pc = dk ? PATH_DARK : PATH_LIGHT;
@@ -67,7 +76,8 @@ export function mountLandscape(host, L) {
   }
   // marching squares at evenly spaced levels -> SVG paths, plus the path
   function drawContour() {
-    const W = 600, H = 420, padL = 52, padB = 40, pw = W - padL - 12, ph = H - padB - 12, dk = dark(), levels = 12;
+    // F-78 (review W5): drawn at the width it is shown at, so its 12 px labels stay 12 px on a phone
+    const W = Math.max(300, Math.round(svg.clientWidth || host.clientWidth || 600)), H = Math.round(Math.min(W * 0.7, 480)), padL = 52, padB = 40, pw = W - padL - 12, ph = H - padB - 12, dk = dark(), levels = 12;
     const X = gx => padL + gx * pw, Y = gy => 12 + (1 - gy) * ph;
     const segs = Array.from({ length: levels }, () => []);
     for (let lv = 0; lv < levels; lv++) {
@@ -110,10 +120,14 @@ export function mountLandscape(host, L) {
   // turn the surface: drag, or arrow keys on the canvas
   let drag = null;
   canvas.addEventListener('pointerdown', e => { drag = { x: e.clientX, az }; canvas.setPointerCapture(e.pointerId); });
-  canvas.addEventListener('pointermove', e => { if (!drag) return; az = drag.az - (e.clientX - drag.x) * 0.5; drawSurface(); });
+  canvas.addEventListener('pointermove', e => { if (!drag) return; az = drag.az - (e.clientX - drag.x) * 0.5; later(); });
   canvas.addEventListener('pointerup', () => { drag = null; });
-  canvas.addEventListener('keydown', e => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); az += e.key === 'ArrowLeft' ? 10 : -10; drawSurface(); } });
-  new ResizeObserver(() => { if (view === 'surface') drawSurface(); }).observe(canvas);
+  canvas.addEventListener('keydown', e => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); az += e.key === 'ArrowLeft' ? 10 : -10; later(); } });
+  let shownW = 0;
+  new ResizeObserver(() => {
+    const w = host.clientWidth; if (w === shownW) return; shownW = w;   // only on a real change of width
+    if (view === 'surface') later(); else drawContour();
+  }).observe(host);
   new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
   // no 2D canvas (tier 0): the contour map
   if (!canvas.getContext || !canvas.getContext('2d')) { view = 'contour'; seg.set('contour'); }

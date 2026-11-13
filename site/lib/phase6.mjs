@@ -12,14 +12,22 @@ import { esc, fmt, num } from '../src/components/num.js';
 export const VV6_SRC = 'results/vv_phase6.json', FAMILY_SRC = 'results/phase6_family.json';
 const read = rel => (existsSync(join(ROOT, rel)) ? JSON.parse(readFileSync(join(ROOT, rel), 'utf8').replace(/([:[,]\s*)-?(NaN|Infinity)\b/g, '$1null')) : null);
 
-export function vv6(key) {
-  const D = read(VV6_SRC);
+export function vv6(key, D = read(VV6_SRC)) {   // D: the file's contents (a test passes an altered copy)
   if (key !== 'lead') throw new Error(`${VV6_SRC}: unknown key ${key}`);
   if (!D) return 'The Phase 6 checks are not published yet.';
-  const S = D.summary || {}, g1 = (D.rows || []).filter(r => r.id === 'G1');
+  // F-78 (review W1): the counts come from the rows' own `passed` flags and must agree with the summary; a missing count
+  // or a failing G1 stops the build (the sentence says G1 gives the Phase 5 run back)
+  const S = D.summary, R = D.rows;
+  if (!Array.isArray(R) || !R.length) throw new Error(`${VV6_SRC}: no rows`);
+  if (typeof S?.rows !== 'number' || typeof S?.passed !== 'number') throw new Error(`${VV6_SRC}: summary.rows or summary.passed missing`);
+  if (R.some(r => typeof r.passed !== 'boolean')) throw new Error(`${VV6_SRC}: a row without a boolean passed`);
+  const passed = R.filter(r => r.passed).length;
+  if (R.length !== S.rows || passed !== S.passed) throw new Error(`${VV6_SRC}: the rows give ${passed} of ${R.length} passed, the summary ${S.passed} of ${S.rows}`);
+  const g1 = R.filter(r => r.id === 'G1');
   if (!g1.length) throw new Error(`${VV6_SRC}: no G1 row`);
+  if (!g1.every(r => r.passed)) throw new Error(`${VV6_SRC}: G1 does not pass; the /verification/ sentence says it does`);
   const main = g1[0], n = /(\d[\d,]*) summary values/.exec(main.basis || '')?.[1];
-  return `${fmt(S.passed ?? 0, 0)} of ${fmt(S.rows ?? 0, 0)} recorded checks pass. Among them G1: with every Phase 6 engine option switched off, the engine `
+  return `${fmt(passed, 0)} of ${fmt(R.length, 0)} recorded checks pass. Among them G1: with every Phase 6 engine option switched off, the engine `
     + `gives the Phase 5 run back exactly${n ? `: ${fmt(main.simulated, 0)} of ${n} summary values differ` : ''} (${esc((main.basis || '').replace(/:\s*\d[\d,]* summary values compared\s*$/, ''))}), so the new parts change nothing they are not asked to.`;
 }
 
@@ -92,6 +100,11 @@ function testedClause(name, c, alpha) {
 }
 
 export function familyRows(F, D = DECISIONS) {
+  // F-78 (review W1): a decision that names a hypothesis or a clause the file does not have stops the build
+  for (const [id, dec] of Object.entries(D)) {
+    if (!F.hypotheses?.[id]) throw new Error(`${FAMILY_SRC}: no hypothesis ${id}, which ${DECISIONS_SRC} decides`);
+    for (const name of Object.keys(dec.clauses || {})) if (!F.hypotheses[id].clauses?.[name]) throw new Error(`${FAMILY_SRC}: ${id} has no clause “${name}”, which ${DECISIONS_SRC} decides`);
+  }
   return Object.entries(F.hypotheses).map(([id, h]) => {
     const dec = D[id] || {}, label = dec.label || id, base = outcomeOf(h);
     let outcome = base, parts = null, note = dec.note || '';

@@ -1,6 +1,6 @@
 // /protocol/ data staged at build time (prepare-data) and read for the page text: LRIP (figure 5), E51 (figure 3), E52
 // (figure 2), E53 (problem 5's text), E54 (problems 4 and 6), E55 (problem 7) and B-99's figure files (checkB99, stageB99).
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { ROOT } from './pages.mjs';
@@ -89,8 +89,10 @@ export function compactE51(doc) {
   const rows = doc.rows.filter(r => r.scale === 'lunar' && (r.class === 'crystal' || r.class === 'csac'))
     .map(r => ({ class: r.class, interval_s: r.interval_s, seeds: r.seeds, ...Object.fromEntries(E51_KEEP.map(k => [k, r[k]])) }));
   if (!rows.length) throw new Error(`${E51_SRC}: no lunar rows for crystal or csac`);
-  return { format: 'lunarsim-e51-site', version: 1, source: E51_SRC, experiment: doc.experiment, guard_s: doc.constants?.guard_s,
-    uwb_sigma_m: doc.design?.uwb_sigma_m, contact_share: doc.contact_share_mean, h11: doc.h11, rows };
+  // F-78 (review W1): the constants figure 3 reads are required, not dropped by optional chaining
+  const need = (v, key) => { if (typeof v !== 'number' || !Number.isFinite(v)) throw new Error(`${E51_SRC}: no number at ${key}`); return v; };
+  return { format: 'lunarsim-e51-site', version: 1, source: E51_SRC, experiment: doc.experiment, guard_s: need(doc.constants?.guard_s, 'constants.guard_s'),
+    uwb_sigma_m: need(doc.design?.uwb_sigma_m, 'design.uwb_sigma_m'), contact_share: need(doc.contact_share_mean, 'contact_share_mean'), h11: doc.h11, rows };
 }
 export function stageE51(PUB) {
   const src = join(ROOT, E51_SRC);
@@ -298,6 +300,9 @@ export function e55(key) {
 // checked against its index (bytes and sha256 per file, as for the trace pair) and staged unchanged to
 // public/protocol/b99/. A size or sha256 mismatch, or a file the index lists that is missing, stops the build.
 export const B99_DIR = 'data/atc/protocol', B99_OUT = 'protocol/b99';
+// F-78 (review W2): checked against the index but not staged: read at build only (problem 5's text); the bit-rate figure
+// draws protocol/e53-v02.json
+export const B99_BUILD_ONLY = new Set(['e53_bitrate.json']);
 export function checkB99(dir = join(ROOT, B99_DIR)) {
   const ix = JSON.parse(readFileSync(join(dir, 'index.json'), 'utf8'));
   if (ix.format !== 'lunarsim-protocol-data-index' || ix.version !== 1) throw new Error(`${B99_DIR}/index.json: format ${ix.format} version ${ix.version}`);
@@ -318,9 +323,11 @@ export function stageB99(PUB) {
   if (!existsSync(join(ROOT, B99_DIR, 'index.json'))) { console.log(`prepare-data: ${B99_DIR} missing; the B-99 figures say so`); return null; }
   const { index, files } = checkB99();
   mkdirSync(join(PUB, B99_OUT), { recursive: true });
-  for (const [name, f] of Object.entries(files)) writeFileSync(join(PUB, B99_OUT, name), f.buf);
+  const staged = Object.entries(files).filter(([name]) => !B99_BUILD_ONLY.has(name));
+  for (const name of B99_BUILD_ONLY) rmSync(join(PUB, B99_OUT, name), { force: true });   // a copy staged by an older build
+  for (const [name, f] of staged) writeFileSync(join(PUB, B99_OUT, name), f.buf);
   writeFileSync(join(PUB, B99_OUT, 'index.json'), JSON.stringify(index));
-  console.log(`prepare-data: ${Object.keys(files).length} B-99 files staged to ${B99_OUT}/ (sizes and sha256 match the index)`);
+  console.log(`prepare-data: ${staged.length} B-99 files staged to ${B99_OUT}/ (sizes and sha256 match the index; ${[...B99_BUILD_ONLY].join(', ')} read at build only)`);
   return files;
 }
 
