@@ -108,3 +108,19 @@ simulation in both cases (B-102 is an analysis of the E50 runs; B-107 new encoun
 
 Updated tally (37 findings): fixed 28, fixed in part 7 (M12, S5, S8, S12, S14, S16, O3), awaiting a BACKEND task 0, not
 done 2 (O2, O8).
+
+## Second pass, part 3 (12-13 Nov)
+
+Wording only; no finding changes status (tally stays: fixed 28, part 7, awaiting 0, not done 2).
+- Uphill remainder now in the abstract and the conclusion: the slope term removed the shortfall when following; a Mars
+  convoy with a 1 s lag kept shortfalls of at most 0.14 m (`results/E45_uphill.json`, through `uphill_sim`).
+- Ring deadlock in the conclusion with both rates and denominators: 13 of 1,892 (0.7 %) under the rule as written, 373
+  of 1,963 (19.0 %) with a variant. The numbers are read from `results/E44_parts` and `E44_bins.csv` (main run), not
+  from `E44_fresh_seeds.json`, which holds only the pooled deadlock counts. The abstract has no room for the rate.
+- The Artemis Accords closing sentence of the conclusion stays cut. The source itself was opened (the research note
+  `traffic_and_safety.md` lists the signed Accords among the primary texts read, grade High, and records that they give
+  policy without operating rules), so decision A5 would allow it; it stays out for the 250-word limit.
+- To make room, the Mars sentence left the conclusion and lost its first half in the abstract.
+- Reference [44] carries P1's new title (commit 52e7fd7): "Working Together Without Earth: Job Sharing, Team Lifts,
+  Learned Bidding and a Message Protocol for Lunar Robots of Different Owners" (`paper/p2/NOTES.md` line 50, which the
+  build reads); PDF rebuilt.

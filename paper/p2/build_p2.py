@@ -1959,8 +1959,7 @@ def values(r: R, allow_pending: bool):
         d = r.e47d["road_coordination"]["mars_link"]
         check(abs(d["dte_fraction"] - 0.5) < 1e-9, "the Mars base is assumed to see Earth for half of every sol")
         check(mars_lim < 10.0, "at Mars gravity the lunar brakes hold no downhill of the encounter design (10 degrees and more)")
-        return (f"At Mars gravity only flat encounters could be driven; with Earth assumed visible half of each "
-                f"sol, referral cost one-{e47_fraction()} as much.")
+        return (f"With Earth assumed visible half of each Mars sol, referral cost one-{e47_fraction()} as much.")
     fill("P2-H9-ABSTRACT-CLAUSE", h9_abstract_clause, "E47")
 
     def conclusion_mars_clause():

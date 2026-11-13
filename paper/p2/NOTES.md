@@ -47,7 +47,7 @@ Low). Entries marked "to check" are to be checked against the publisher's record
 [41] A. Rahimov. *Where the Lander Lands: Landing Precision, Pad Standoff, Plume Keep-Out and Rover Autonomy Priced in Lunar Surface Logistics*. Preprint, version 3, October 2026. (P1 [41])
 [42] A. Rahimov. *What Earth's Horizon Costs a Lunar Base: Terrain-Masked Communication Windows in South-Pole Cargo Logistics*. Preprint, October 2026. (P1 [42])
 [43] Pre-registration: `paper/atc/PREREG.md` in the repository at github.com/azizjonrahimov/Lunar-Haul, written 27 October 2026, with dated changes; the repository history dates the file and each change. (P1 [43])
-[44] A. Rahimov. *Working Together Without Earth: Job Sharing, Team Lifts and Learned Bidding Among Lunar Robots of Different Owners*. Preprint, October 2026, revised November 2026 (companion paper P1).
+[44] A. Rahimov. *Working Together Without Earth: Job Sharing, Team Lifts, Learned Bidding and a Message Protocol for Lunar Robots of Different Owners*. Preprint, October 2026, revised November 2026 (companion paper P1).
 [45] A. Rahimov. *The Vehicles, the Network and the Market: What Lunar ATC Puts Inside Each Vehicle and How Its Marketplace Works*. Preprint, October 2026, revised November 2026 (companion paper P3).
 [46] M. Schwammberger. *Formal Verification of Spatial Properties and Liveness of Autonomous Vehicles at Urban Intersections*. PhD thesis, University of Oldenburg, 2020. oops.uni-oldenburg.de/4961 (TAS, Medium; title to check)
 [47] A. Legay, B. Delahaye, S. Bensalem. "Statistical model checking: An overview." RV 2010, LNCS 6418, pp. 122-135. (TAS, High)

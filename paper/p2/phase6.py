@@ -2325,7 +2325,8 @@ def add_front(c):
         return (f"The safety program allowed no violation in {words(clean)} of twelve encounter types, all flat or "
                 f"downhill: a vehicle that stops dead in a one-lane segment defeats the gap rule, and one landing "
                 f"closure in {cnt(n6)} left a vehicle inside the zone. Uphill, a braking leader took followers "
-                f"inside the {m_(S.D0_M, 0)} margin, without contact, until the rule gained a slope term.")
+                f"inside the {m_(S.D0_M, 0)} margin, without contact; a slope term removed this when following, "
+                f"leaving up to {num(S.D0_M - us.res_min, 2)}{NB}m in a Mars convoy with a 1{NB}s lag.")
     fill("P2-H7-ABSTRACT-SHORT", h7_short, "E44")
 
     def facts():
@@ -2369,13 +2370,13 @@ def add_front(c):
         return (f"Without satellites, ranging held position error inside the {m_(S.D0_M, 0)} margin where "
                 f"two beacons were in sight ({pc(f.nf.share, 0)} of driving) but not over the registered radio "
                 f"range ({m_(f.all_p95, 0)}); terrain fixes left "
-                f"{m_(f.away['mean'], 0)} elsewhere, and their stops, not the reservation margins, set the cost: "
-                f"{h_(f.bd['diff_mean'], 2)} per delivery ({pc(f.bpct, 1)}, a lower bound). With a "
+                f"{m_(f.away['mean'], 0)} elsewhere, and their stops, not reservation margins, set the cost: "
+                f"{h_(f.bd['diff_mean'], 2)} per delivery (a lower bound). With a "
                 f"{num(f.guard, 1)}{NB}s guard, clocks up to {num(f.c6['max_abs_clock_s'], 2)}{NB}s off caused no "
                 f"conflict in {cnt(f.c6['conflict_pairs_checked'])} reservation pairs, outside "
-                f"the guarantee. A network found slow position "
+                f"the guarantee. A network found slow "
                 f"drifts {num(f.drift_gain, 0)}{NB}s sooner than a chi-square test, but every detector missed at "
-                f"least {pc(f.miss, 0)} of them and none kept its false-alarm rate with noisier sensors, so none "
+                f"least {pc(f.miss, 0)} and none kept its false-alarm rate with noisier sensors, so none "
                 f"qualifies for the safety path.")
     fill("P2-P6-ABSTRACT-CLAUSE", abstract_clause, "E50, E51, E56")
 
@@ -2596,19 +2597,23 @@ def add_front(c):
     def conclusion_clause():
         f = facts()
         return (f"Without satellites, ranging held position error inside the {m_(S.D0_M, 0)} margin "
-                f"only where two beacons were in sight, not over the registered radio range; the stops for terrain fixes, not the widened "
-                f"reservations, set the cost, {h_(f.bd['diff_mean'], 2)} per delivery as a lower bound; and no "
-                f"detector of wrong position reports kept its false-alarm rate with noisier sensors.")
+                f"only where two beacons were in sight; the stops for terrain fixes "
+                f"set the cost, {h_(f.bd['diff_mean'], 2)} per delivery as a lower bound; and no "
+                f"detector of wrong reports kept its false-alarm rate with noisier sensors.")
     fill("P2-P6-CONCLUSION-CLAUSE", conclusion_clause, "E50, E51, E56")
 
     def conclusion_safety_short():
         clean, rf, states = e44_facts()
         return (f"One safety program enforcing ten rules, tested in simulation, allowed no violation in "
                 f"{words(clean)} of twelve encounter types, all flat or downhill; a vehicle that stops dead in a "
-                f"one-lane segment defeats the gap rule, one landing closure in "
-                f"{cnt(c.fresh()['types']['6']['fresh_seeds']['n'])} left a vehicle inside the zone, and a "
-                f"ring of one-lane segments can deadlock. Uphill, a braking leader took followers inside the static "
-                f"margin, without contact, until a slope term was added to the gap rule.")
+                f"one-lane segment defeats the gap rule, and one landing closure in "
+                f"{cnt(c.fresh()['types']['6']['fresh_seeds']['n'])} left a vehicle inside the zone. A ring of "
+                f"one-lane segments deadlocked in {cnt(rf[False]['dl'])} of {cnt(rf[False]['judged'])} encounters "
+                f"({pc(rf['rate'][False], 1)}) under the rule as written and in {cnt(rf[True]['dl'])} of "
+                f"{cnt(rf[True]['judged'])} ({pc(rf['rate'][True], 1)}) with a variant. Uphill, a braking leader "
+                f"took followers inside the static margin, without contact; a slope term in the gap rule removed "
+                f"this when following, and a Mars convoy with a 1{NB}s lag kept shortfalls of at most "
+                f"{num(S.D0_M - c.uphill_sim().res_min, 2)}{NB}m.")
     fill("P2-CONCLUSION-SAFETY-SHORT", conclusion_safety_short, "E44")
 
     def awaited_items():
