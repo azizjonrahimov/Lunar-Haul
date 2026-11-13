@@ -721,6 +721,7 @@ def values(r: R, allow_pending: bool):
                 "not call the vehicle safety program, so the two implementations were checked separately.")
     fill("P2-SHARED-CHECK-LIMITATION", shared_check_limitation, "B-78")
 
+
     def deadlock_scope():
         # the checker (E45) found that R3's one-hop exit rule can deadlock on a ring of single-lane segments; the clause
         # says whether this base's road graph has such a ring at any share (results/ATC_roads_rings.json, BACKEND)
@@ -870,7 +871,8 @@ def values(r: R, allow_pending: bool):
     def fresh_facts():
         """B-108 (results/E44_fresh_seeds.json): types 4, 5 and 6 rerun on seeds never used, beside the main run's
         values. Checked: the file's main-run block is E44_bounds.json; types 4 and 5 are clean; type 6 has the one zone
-        violation, replayed, with the request-rule variant rerun on that one encounter only."""
+        violation, replayed. B-112 (key request_rule_fresh_6): the request-rule variant on all the fresh type-6
+        encounters, paired on the same specs; the build stops if it has a violation or the pairing counts change."""
         d = r.e44fresh
         if d is None:
             raise Pending("results/E44_fresh_seeds.json (B-108) is missing")
@@ -889,8 +891,32 @@ def values(r: R, allow_pending: bool):
               "on fresh seeds type 6 has one violation, a vehicle inside a closed zone, and no contact")
         rp = f6["replay"]
         check(len(rp) == 1 and rp[0]["deterministic"] and "hold-and-wait between R5 and R3" in rp[0]["what_happened"]
-              and rp[0]["request_rule_variant"]["viol_zone"] == 0 and rp[0]["fresh_encounters_rerun_under_variant"] == 1,
-              "the type-6 violation was replayed; the request-rule variant was rerun on that one encounter only and was clean")
+              and rp[0]["request_rule_variant"]["viol_zone"] == 0,
+              "the type-6 violation was replayed and was clean under the request-rule variant")
+        v = d.get("request_rule_fresh_6")
+        if v is None:
+            raise Pending("results/E44_fresh_seeds.json has no request_rule_fresh_6 block (B-112)")
+        va, vb = v["rules_as_written"], v["request_rule_variant"]
+        check(vb["violations"] == 0 and not any(vb["violations_by_kind"].values()),
+              "the request-rule variant has no violation on the fresh type-6 encounters")
+        check(v["paired_same_specs"] and va["n"] == vb["n"] == f6["n"] and va["n_driven"] == vb["n_driven"] == f6["n_driven"]
+              and va["n_eff"] == vb["n_eff"] == f6["n_eff"],
+              "the variant ran on the same fresh type-6 encounters as the rule as written")
+        check(va["violations"] == f6["violations"] and va["outcomes"] == f6["outcomes"]
+              and abs(va["bound_weighted"] - f6["bound_weighted"]) < 1e-12
+              and abs(va["bonferroni_bound_weighted"] - f6["bonferroni_bound_weighted"]) < 1e-12,
+              "the variant file's rule-as-written block is the fresh-seed run of type 6")
+        check(v["new_failures_vs_rules_as_written"]["count"] == 0,
+              "no encounter that finished under the rule as written fails under the request-rule variant")
+        check(v["outcome_changes"] == {"deadlock -> incomplete": 9, "violation -> incomplete": 1},
+              "the pairing counts of the request-rule variant are 9 deadlocks and 1 violation to incomplete, nothing else")
+        oa, ob = va["outcomes"], vb["outcomes"]
+        check(ob["finished"] == oa["finished"] and ob["deadlock"] == oa["deadlock"] - 9
+              and ob["incomplete"] == oa["incomplete"] + 10 and sum(ob.values()) == vb["n"],
+              "under the variant the finished count is unchanged and the ten changed encounters end incomplete")
+        check(vb["bound"] < va["bound_weighted"] and vb["bonferroni_bound"] < va["bonferroni_bound_weighted"],
+              "the variant's zero-violation bound lies below the weighted limit of the rule as written")
+        check("exploratory" in v["bound_note"], "the variant's bound is recorded as exploratory")
         check(f6["bound"] < d["types"]["6"]["main_run"]["bound"] < f6["bound_weighted"],
               "type 6: the unweighted limit with one violation lies below the main run's zero-violation bound on the effective n; the weighted limit lies above it")
         check("never used" in d["seeds"]["fresh"], "the fresh seed roots were never used before")
@@ -961,6 +987,30 @@ def values(r: R, allow_pending: bool):
                 f"commands braking still applies one 0.1{NB}s step more of its earlier commands than R1's response "
                 f"time allows; it was not patched.")
 
+    def reqrule_limitation():
+        """Limitations: the request-rule variant on the fresh type-6 encounters (B-112) and the stale deadlock flag in
+        the stored parts of the types not rerun after the classifier fix (B-113, E44_defects.json)."""
+        v = fresh_facts()["request_rule_fresh_6"]
+        vb = v["request_rule_variant"]
+        if r.e44d is None or "b113_stale_deadlock_flag" not in r.e44d:
+            raise Pending("E44_defects.json has no b113_stale_deadlock_flag record (B-113)")
+        b = [x for x in r.e44d["b113_stale_deadlock_flag"]["batch_checks"] if x["parts"] == "E44_parts"]
+        stale = sorted(x["type"] for x in b if x["columns_differing"])
+        check(len(b) == 12 and len({x["type"] for x in b}) == 12, "B-113 checked one batch of each of the twelve types")
+        check(all(x["columns_differing"] == ["deadlock"] and x["deadlock_stored_0_rerun_1"] == 0 for x in b if x["columns_differing"]),
+              "in the stale parts only the deadlock flag differs, and only from set to unset")
+        check(all(x["differing_rows_without_random_fuzzer"] == 0 for x in b),
+              "every row with a stale deadlock flag has a random fuzzer")
+        check(5 not in stale and 6 not in stale, "the parts of types 5 and 6 match the current code")
+        tl = ", ".join(str(t) for t in stale[:-1]) + f" and {stale[-1]}"
+        return (f"The request rule that removed that violation was run on all {cnt(vb['n'])} fresh type-6 encounters "
+                f"only after the violation was seen, so its clean result is exploratory, and "
+                f"{pc(vb['outcomes']['incomplete'] / vb['n'], 0)} of those encounters end incomplete under either "
+                f"rule. The stored encounter files of types {tl} carry a deadlock flag from before the classifier "
+                f"was corrected in rows with a random fuzzer (one batch per type checked, files not regenerated); no "
+                f"reported value reads those rows.")
+    fill("P2-REQRULE-LIMITATION", reqrule_limitation, "B-112")
+
     def fresh_types():
         """Types with a hard violation on the fresh seeds that had none in the main run."""
         d = fresh_facts()
@@ -970,6 +1020,8 @@ def values(r: R, allow_pending: bool):
         d = fresh_facts()
         f4, f5, f6 = (d["types"][str(k)]["fresh_seeds"] for k in (4, 5, 6))
         m5, m6 = d["types"]["5"]["main_run"], d["types"]["6"]["main_run"]
+        vv = d["request_rule_fresh_6"]
+        va, vb, dl = vv["rules_as_written"], vv["request_rule_variant"], vv["delay_change_s_paired"]["all_driven"]
         return (f"The main run's bounds of types 4, 5 and 6 are computed on the seeds on which the defects described "
                 f"below were found and fixed and on which the gap metric was narrowed, so the three types were rerun "
                 f"once on seeds never used before, {cnt(f4['n'])} simulated encounters each, with the code as it "
@@ -989,9 +1041,21 @@ def values(r: R, allow_pending: bool):
                 f"{sci(f6['bound'])}, counts all {cnt(f6['n_driven'])} driven encounters where the zero-violation "
                 f"bound counts the effective n, so it comes out below a bound with no violation and the two cannot "
                 f"be compared. The request rule of change 9 of [43], under which a vehicle requests a resource only "
-                f"when no hold point that it cannot pass lies before that resource, was rerun on this one encounter, "
-                f"which was then clean; it was not run on the other {cnt(f6['n'] - 1)} fresh encounters, and nothing "
-                f"is claimed for it there. Type 6 deadlocked in {cnt(f6['outcomes']['deadlock'])} fresh encounters "
+                f"when no hold point that it cannot pass lies before that resource, was then run on all {cnt(vb['n'])} fresh encounters, "
+                f"with the same specifications: it allowed no violation against one, and no encounter that finished "
+                f"under the rule as written failed under it. It did not make more encounters finish: "
+                f"{cnt(vb['outcomes']['finished'])} finished under either rule, and "
+                f"{words(vv['outcome_changes']['deadlock -> incomplete'])} of the "
+                f"{words(va['outcomes']['deadlock'])} deadlocks and the violating encounter ended incomplete, so "
+                f"{cnt(vb['outcomes']['incomplete'])} ({pc(vb['outcomes']['incomplete'] / vb['n'], 0)}) were "
+                f"incomplete against {cnt(va['outcomes']['incomplete'])}. The paired change in delay was "
+                f"{num(dl['mean'], 3)}{NB}s [{num(dl['ci'][0], 3)}, {num(dl['ci'][1], 4, sign=True)}{NB}s] over "
+                f"{cnt(dl['n'])} encounters; where a random fuzzer runs, the two runs do not share one random "
+                f"history. The variant's zero-violation bound is {sci(vb['bound'])} ({sci(vb['bonferroni_bound'])} "
+                f"with the Bonferroni correction) against the weighted limit of {sci(va['bound_weighted'])} "
+                f"({sci(va['bonferroni_bound_weighted'])}) under the rule as written. The variant was chosen after seeing the violation it "
+                f"removes, so this bound is exploratory, not a registered result, and type 6 still fails on fresh "
+                f"seeds under the rule as written. Under the rule as written type 6 deadlocked in {cnt(f6['outcomes']['deadlock'])} fresh encounters "
                 f"against {cnt(m6['outcomes']['deadlock'])}. ")
 
     def e44_n_encounters():
@@ -1330,12 +1394,16 @@ def values(r: R, allow_pending: bool):
                   + " when the stall classifier was corrected (change 9 of [43]). ")
         t6 = t44(j, 6)
         f6 = fresh_facts()["types"]["6"]["fresh_seeds"]
+        v6 = fresh_facts()["request_rule_fresh_6"]
         s += (f"The landing closure is the second type with a hard violation, found only when it was run on fresh "
               f"seeds: in 1 of {cnt(f6['n'])} encounters a vehicle held at the zone boundary kept its grant for a "
               f"one-lane resource beyond the zone, and a vehicle inside the zone waited for that resource until "
               f"after the closure. R5 and R3 are each obeyed and together hold a vehicle where it must not be. The "
-              f"request rule of change 9 of [43] removed the violation in that one encounter, which is all it was "
-              f"run on; whether it holds on the other fresh encounters is not known. The main run, on the seeds "
+              f"request rule of change 9 of [43] was then run on all {cnt(v6['request_rule_variant']['n'])} fresh "
+              f"encounters: it allowed no violation and failed no encounter that had finished, but it was chosen "
+              f"after seeing the violation, so the result is exploratory, and "
+              f"{pc(v6['request_rule_variant']['outcomes']['incomplete'] / v6['request_rule_variant']['n'], 0)} of "
+              f"these encounters end incomplete under either rule. The main run, on the seeds "
               f"used to fix the simulator, had not shown the case, which is what the fresh seeds were for. ")
         if t6["outcomes"]["deadlock"] > 0:
             s += (f"The {words(t6['outcomes']['deadlock'])} deadlocks of type 6 are a gap in the rules: a crossing "

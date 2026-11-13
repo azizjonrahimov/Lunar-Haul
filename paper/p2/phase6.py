@@ -2734,13 +2734,17 @@ def add_pta(c):
             "find and fix defects, so those types were rerun on fresh seeds (next row)", "3.5, 5.6")
         fr = c.fresh()["types"]
         f6 = fr["6"]["fresh_seeds"]
+        rq = c.fresh()["request_rule_fresh_6"]["request_rule_variant"]
         add("Types 4, 5 and 6 allow no hard violation on seeds never used before",
             "Tested: holds for types 4 and 5, fails for type 6",
             f"Rerun in simulation, {cnt(f6['n'])} encounters per type: types 4 and 5 none, bound "
             f"{c.sci(fr['4']['fresh_seeds']['bonferroni_bound'])} (Bonferroni) as in the main run; type 6 one encounter "
             f"with a vehicle inside a closed zone (a hold-and-wait between R5 and R3), limit on the weighted share "
             f"{c.sci(f6['bound_weighted'])} ({c.sci(f6['bonferroni_bound_weighted'])} Bonferroni). The request rule of "
-            "change 9 of [43] was rerun on that one encounter only, which was then clean", "5.6, 6.1")
+            f"change 9 of [43], run afterwards on all {cnt(rq['n'])} fresh type-6 encounters, had no violation; it was "
+            f"chosen after seeing the violation, so this is exploratory and the verdict stands; "
+            f"{c.pc(rq['outcomes']['incomplete'] / rq['n'], 0)} of these encounters end incomplete under either rule",
+            "5.6, 6.1")
         add("A follower does not touch a leader that stops dead in a one-lane segment",
             "Tested: fails",
             f"E44 type 9: {cnt(t9['violations'])} of {cnt(t9['n'])} inside the static margin, {cnt(t9['violations_by_kind']['viol_contact'])} "

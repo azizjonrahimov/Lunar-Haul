@@ -124,3 +124,22 @@ Wording only; no finding changes status (tally stays: fixed 28, part 7, awaiting
 - Reference [44] carries P1's new title (commit 52e7fd7): "Working Together Without Earth: Job Sharing, Team Lifts,
   Learned Bidding and a Message Protocol for Lunar Robots of Different Owners" (`paper/p2/NOTES.md` line 50, which the
   build reads); PDF rebuilt.
+
+## Second pass, part 4 (13 Nov)
+
+No finding changes status (tally stays: fixed 28, part 7, awaiting 0, not done 2). M11 stays closed; its row above says
+the request rule "was rerun on that one encounter only", which is now out of date:
+- The request-rule variant was run on all 10,000 fresh type-6 encounters (B-112, `results/E44_fresh_seeds.json` key
+  `request_rule_fresh_6`). Sections 5.6, 6.1, 7 and Table 14 now say so, with every value read through the build: no
+  violation against one; no encounter that finished under the rule as written fails; 3,781 finished under either rule;
+  nine of the ten deadlocks and the violating encounter end incomplete (6,218, 62 %, against 6,208); paired delay
+  change -0.035 s [-0.104, +0.0001]; bound 6.5e-4 (1.2e-3 Bonferroni) against the weighted 1.0e-3 (1.7e-3).
+- The variant stays exploratory: it was chosen after seeing the violation, its bound is not a registered result, and
+  the type-6 verdict (fails on fresh seeds under the rule as written) is unchanged. Each place says this.
+- New build checks in `fresh_facts` (`paper/p2/build_p2.py`): the build stops if the variant has a violation, if the
+  pairing counts are not 9 deadlocks and 1 violation to incomplete, if any finished encounter fails under the variant,
+  or if the file's rule-as-written block is not the fresh-seed run of type 6.
+- Limitations gains one sentence (B-113, `results/E44_defects.json` key `b113_stale_deadlock_flag`): the stored
+  encounter files of types 2, 3, 4, 8, 9, 10 and 12 carry a deadlock flag from before the classifier fix in rows with a
+  random fuzzer; no reported value reads those rows. The type list is read from the file.
+- Abstract and conclusion unchanged (neither stated the one-encounter fact). New placeholder `P2-REQRULE-LIMITATION`.
