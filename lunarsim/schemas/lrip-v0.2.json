@@ -1,0 +1,1202 @@
+{
+ "format": "lrip-schema",
+ "version": "0.2",
+ "ver_major": 0,
+ "ver_minor": 2,
+ "title": "Lunar Rover Interaction Protocol (LRIP) v0.2 message catalogue",
+ "source": "research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md section C (C1-C4) and E2; B-93; v0.2: B-100 (P3 M4, P1 M10; reports/referee_phase6_decisions.md B3)",
+ "byte_order": "all multi-byte fields big-endian, bit fields packed most significant bit first",
+ "framing": {
+  "space_packet": {
+   "bytes": 6,
+   "source": "CCSDS 133.0-B (Space Packet Protocol) section 4.1 [SPP]",
+   "fields": [
+    [
+     "version",
+     3,
+     0
+    ],
+    [
+     "type",
+     1,
+     0
+    ],
+    [
+     "sec_hdr_flag",
+     1,
+     1
+    ],
+    [
+     "apid",
+     11,
+     null
+    ],
+    [
+     "seq_flags",
+     2,
+     3
+    ],
+    [
+     "seq_count",
+     14,
+     null
+    ],
+    [
+     "data_length",
+     16,
+     null
+    ]
+   ],
+   "apid_base": 1280,
+   "apid_rule": "0x500 + msg_type (range to be registered with SANA)",
+   "data_length_rule": "bytes after the primary header minus 1"
+  },
+  "lrip_header": {
+   "bytes": 8,
+   "fields": [
+    [
+     "ver_major",
+     4
+    ],
+    [
+     "ver_minor",
+     4
+    ],
+    [
+     "msg_type",
+     8
+    ],
+    [
+     "sender_id",
+     16
+    ],
+    [
+     "t_valid",
+     32
+    ]
+   ],
+   "t_valid_unit_s": 0.1,
+   "t_valid_note": "0.1 s since the LRIP epoch on the site time base; wraps after 13.6 years"
+  },
+  "security_header": {
+   "bytes": 6,
+   "fields": [
+    [
+     "spi",
+     16
+    ],
+    [
+     "seq",
+     32
+    ]
+   ],
+   "spi_rule": "bits 15-14: kind (0 MAC 8 B, 1 MAC 16 B, 2 Ed25519 signature 64 B); bits 13-0: key epoch",
+   "source": "SDLS telecommand baseline layout, CCSDS 355.0-B Annex E2 [SDLS]"
+  },
+  "trailer": {
+   "mac8": 8,
+   "mac16": 16,
+   "signature": 64,
+   "mac": "AES-CMAC (NIST SP 800-38B) over every byte before it, truncated; 8 B is the SDLS minimum and the NIST 64-bit floor",
+   "signature_alg": "Ed25519 (RFC 8032) over every byte before it"
+  },
+  "proximity1_frame_bytes": 12,
+  "bundle_overhead_bytes": 48,
+  "bundle_bpsec_overhead_bytes": 108
+ },
+ "enums": {
+  "nav_src": {
+   "0": "dead_reckoning",
+   "1": "visual",
+   "2": "lans",
+   "3": "beacon_ranging",
+   "4": "cooperative",
+   "5": "surveyed"
+  },
+  "mode": {
+   "0": "idle",
+   "1": "driving",
+   "2": "working",
+   "3": "charging",
+   "4": "waiting",
+   "5": "hold_lost_link",
+   "6": "returning",
+   "7": "safe",
+   "8": "fault",
+   "9": "teleoperated",
+   "10": "hopping",
+   "unknown_as": 8
+  },
+  "alert_type": {
+   "1": "all_stop",
+   "2": "landing_closure",
+   "3": "hazard",
+   "4": "vehicle_fault",
+   "5": "crew_nearby",
+   "6": "position_dispute",
+   "7": "link_degraded",
+   "8": "plume",
+   "unknown_as": 3
+  },
+  "severity": {
+   "0": "info",
+   "1": "caution",
+   "2": "warning",
+   "3": "emergency"
+  },
+  "task_state": {
+   "0": "claimed",
+   "1": "started",
+   "2": "loaded",
+   "3": "delivered",
+   "4": "failed",
+   "5": "abandoned",
+   "6": "ack"
+  },
+  "verdict": {
+   "0": "granted",
+   "1": "denied",
+   "2": "queued"
+  },
+  "frame": {
+   "1": "site_grid on MOON_ME_DE440_ME421 (NAIF moon_de440_250416.tf; e/n/h in the site grid of datum_id)",
+   "2": "site_grid on MOON_PA_DE440",
+   "3": "MOON_ME_DE440_ME421 selenographic",
+   "note": "0 is never valid: a position needs a declared frame; unknown codes are refused"
+  },
+  "datum": {
+   "1": "sphere R = 1,737.4 km (IAU mean radius), site grid origin at BASE",
+   "2": "LOLA polar DEM height reference (LDEM 80S 20 m tile), site grid origin at BASE",
+   "note": "the site's registry of grid origins and height references; unknown codes are refused"
+  },
+  "time_scale": {
+   "1": "TAI",
+   "2": "UTC",
+   "3": "TT",
+   "4": "TDB",
+   "5": "TCL (lunar coordinate time)",
+   "6": "site time base steered to TAI (two-way transfer at each contact)",
+   "note": "the scale of t_valid and every time field the sender sends; unknown codes are refused"
+  }
+ },
+ "messages": [
+  {
+   "id": 1,
+   "name": "POSITION",
+   "pattern": "publish",
+   "default_rate": "1 Hz moving, 0.1 Hz parked",
+   "carried_by": "broadcast, not queued",
+   "fields": [
+    [
+     "e",
+     "int",
+     24,
+     0.01,
+     "m east in the site grid"
+    ],
+    [
+     "n",
+     "int",
+     24,
+     0.01,
+     "m north"
+    ],
+    [
+     "h",
+     "int",
+     16,
+     0.1,
+     "m above the site datum"
+    ],
+    [
+     "heading",
+     "uint",
+     12,
+     0.1,
+     "deg from grid north"
+    ],
+    [
+     "speed",
+     "uint",
+     10,
+     0.01,
+     "m/s"
+    ],
+    [
+     "sigma_h",
+     "uint",
+     8,
+     0.05,
+     "m one-sigma horizontal; 255 unknown"
+    ],
+    [
+     "nav_src",
+     "enum:nav_src",
+     3,
+     1,
+     ""
+    ],
+    [
+     "moving",
+     "flag",
+     1,
+     1,
+     ""
+    ],
+    [
+     "u95_code",
+     "uint",
+     6,
+     1,
+     "95 % horizontal bound: u95 = 0.05 m x 2^(code/4), coded upward (codec.u95_code); codes 0-61: 0.05 m to 1.95 km in steps of at most 19 %; 62: above 1.95 km; 63 unknown",
+     {
+      "since": 2,
+      "was": "spare"
+     }
+    ]
+   ]
+  },
+  {
+   "id": 2,
+   "name": "STATUS",
+   "pattern": "publish",
+   "default_rate": "0.1 Hz and on change",
+   "carried_by": "broadcast, not queued",
+   "fields": [
+    [
+     "mode",
+     "enum:mode",
+     4,
+     1,
+     ""
+    ],
+    [
+     "health",
+     "flags",
+     12,
+     1,
+     "mobility power thermal comms navigation payload brake e-stop +4 spare"
+    ],
+    [
+     "soc",
+     "uint",
+     7,
+     1,
+     "% of usable battery"
+    ],
+    [
+     "energy",
+     "uint",
+     12,
+     10,
+     "Wh remaining"
+    ],
+    [
+     "power",
+     "int",
+     10,
+     10,
+     "W, + discharging"
+    ],
+    [
+     "cargo_mass",
+     "uint",
+     11,
+     1,
+     "kg"
+    ],
+    [
+     "cargo_type",
+     "uint",
+     8,
+     1,
+     "site cargo catalogue"
+    ],
+    [
+     "task_id",
+     "uint",
+     16,
+     1,
+     "0 none"
+    ],
+    [
+     "progress",
+     "uint",
+     7,
+     1,
+     "%"
+    ],
+    [
+     "temp",
+     "int",
+     8,
+     1,
+     "deg C electronics bay"
+    ],
+    [
+     "link_snr",
+     "uint",
+     6,
+     1,
+     "dB to the best neighbour"
+    ],
+    [
+     "hops",
+     "uint",
+     3,
+     1,
+     "to the base, 7 no path"
+    ],
+    [
+     "manifest_crc",
+     "uint",
+     16,
+     1,
+     "CRC-16 of the current manifest"
+    ]
+   ]
+  },
+  {
+   "id": 3,
+   "name": "INTENT",
+   "pattern": "publish",
+   "default_rate": "0.1 Hz and on change",
+   "carried_by": "broadcast, not queued",
+   "fields": [
+    [
+     "segment_id",
+     "uint",
+     16,
+     1,
+     ""
+    ],
+    [
+     "direction",
+     "flag",
+     1,
+     1,
+     ""
+    ],
+    [
+     "reservation_id",
+     "uint",
+     16,
+     1,
+     ""
+    ],
+    [
+     "t_enter",
+     "uint",
+     12,
+     1,
+     "s after t_valid"
+    ],
+    [
+     "t_exit",
+     "uint",
+     12,
+     1,
+     "s after t_valid"
+    ],
+    [
+     "v_target",
+     "uint",
+     10,
+     0.01,
+     "m/s"
+    ],
+    [
+     "dest_site",
+     "uint",
+     8,
+     1,
+     ""
+    ],
+    [
+     "spare",
+     "spare",
+     5,
+     1,
+     ""
+    ]
+   ]
+  },
+  {
+   "id": 4,
+   "name": "ALERT",
+   "pattern": "publish, repeated",
+   "default_rate": "on event, 3 repeats, then 0.1 Hz while valid",
+   "carried_by": "broadcast and bundle",
+   "signed_when": "all_stop and landing_closure from the base",
+   "fields": [
+    [
+     "alert_id",
+     "uint",
+     8,
+     1,
+     "per sender"
+    ],
+    [
+     "type",
+     "enum:alert_type",
+     6,
+     1,
+     ""
+    ],
+    [
+     "severity",
+     "enum:severity",
+     2,
+     1,
+     ""
+    ],
+    [
+     "e",
+     "int",
+     24,
+     0.01,
+     "m"
+    ],
+    [
+     "n",
+     "int",
+     24,
+     0.01,
+     "m"
+    ],
+    [
+     "radius",
+     "uint",
+     12,
+     1,
+     "m"
+    ],
+    [
+     "valid",
+     "uint",
+     16,
+     1,
+     "s after t_valid"
+    ],
+    [
+     "subject_id",
+     "uint",
+     16,
+     1,
+     "0 none"
+    ],
+    [
+     "ack",
+     "flag",
+     1,
+     1,
+     ""
+    ],
+    [
+     "repeat",
+     "uint",
+     3,
+     1,
+     ""
+    ]
+   ]
+  },
+  {
+   "id": 5,
+   "name": "TASK_ANNOUNCE",
+   "pattern": "publish",
+   "default_rate": "on event",
+   "carried_by": "bundle",
+   "fields": [
+    [
+     "task_id",
+     "uint",
+     16,
+     1,
+     ""
+    ],
+    [
+     "task_type",
+     "uint",
+     8,
+     1,
+     ""
+    ],
+    [
+     "from_site",
+     "uint",
+     8,
+     1,
+     ""
+    ],
+    [
+     "to_site",
+     "uint",
+     8,
+     1,
+     ""
+    ],
+    [
+     "mass",
+     "uint",
+     11,
+     1,
+     "kg"
+    ],
+    [
+     "cap_mask",
+     "flags",
+     16,
+     1,
+     "required capability bits"
+    ],
+    [
+     "t_earliest",
+     "uint",
+     16,
+     10,
+     "s"
+    ],
+    [
+     "t_deadline",
+     "uint",
+     16,
+     10,
+     "s"
+    ],
+    [
+     "reserve_price",
+     "uint",
+     16,
+     1,
+     ""
+    ],
+    [
+     "bid_close",
+     "uint",
+     8,
+     1,
+     "s"
+    ],
+    [
+     "priority",
+     "uint",
+     3,
+     1,
+     ""
+    ],
+    [
+     "spare",
+     "spare",
+     2,
+     1,
+     ""
+    ]
+   ]
+  },
+  {
+   "id": 6,
+   "name": "TASK_BID",
+   "pattern": "request",
+   "default_rate": "on event",
+   "carried_by": "bundle, encrypted",
+   "fields": [
+    [
+     "task_id",
+     "uint",
+     16,
+     1,
+     ""
+    ],
+    [
+     "cost",
+     "uint",
+     16,
+     1,
+     "site unit of account"
+    ],
+    [
+     "t_start",
+     "uint",
+     12,
+     10,
+     "s after t_valid"
+    ],
+    [
+     "t_finish",
+     "uint",
+     12,
+     10,
+     "s after t_valid"
+    ],
+    [
+     "soc_after",
+     "uint",
+     7,
+     1,
+     "%"
+    ],
+    [
+     "bundle_pos",
+     "uint",
+     3,
+     1,
+     "0 single"
+    ],
+    [
+     "bid_seq",
+     "uint",
+     6,
+     1,
+     ""
+    ]
+   ]
+  },
+  {
+   "id": 7,
+   "name": "TASK_AWARD",
+   "pattern": "response",
+   "default_rate": "on event",
+   "carried_by": "bundle, custody",
+   "signed": true,
+   "fields": [
+    [
+     "task_id",
+     "uint",
+     16,
+     1,
+     ""
+    ],
+    [
+     "winner_id",
+     "uint",
+     16,
+     1,
+     ""
+    ],
+    [
+     "price",
+     "uint",
+     16,
+     1,
+     ""
+    ],
+    [
+     "lease",
+     "uint",
+     12,
+     10,
+     "s"
+    ],
+    [
+     "award_seq",
+     "uint",
+     4,
+     1,
+     ""
+    ]
+   ]
+  },
+  {
+   "id": 8,
+   "name": "TASK_STATE",
+   "pattern": "publish",
+   "default_rate": "on change",
+   "carried_by": "bundle",
+   "fields": [
+    [
+     "task_id",
+     "uint",
+     16,
+     1,
+     ""
+    ],
+    [
+     "state",
+     "enum:task_state",
+     4,
+     1,
+     ""
+    ],
+    [
+     "result",
+     "uint",
+     4,
+     1,
+     ""
+    ],
+    [
+     "progress",
+     "uint",
+     7,
+     1,
+     "%"
+    ],
+    [
+     "spare",
+     "spare",
+     1,
+     1,
+     ""
+    ],
+    [
+     "eta",
+     "uint",
+     8,
+     1,
+     "min"
+    ]
+   ]
+  },
+  {
+   "id": 9,
+   "name": "RESERVE_REQ",
+   "pattern": "request",
+   "default_rate": "on event",
+   "carried_by": "direct, else bundle",
+   "fields": [
+    [
+     "resource_id",
+     "uint",
+     16,
+     1,
+     ""
+    ],
+    [
+     "direction",
+     "flag",
+     1,
+     1,
+     ""
+    ],
+    [
+     "priority",
+     "uint",
+     3,
+     1,
+     ""
+    ],
+    [
+     "t_start",
+     "uint",
+     16,
+     1,
+     "s"
+    ],
+    [
+     "duration",
+     "uint",
+     12,
+     1,
+     "s"
+    ],
+    [
+     "req_seq",
+     "uint",
+     8,
+     1,
+     ""
+    ]
+   ]
+  },
+  {
+   "id": 10,
+   "name": "RESERVE_GRANT",
+   "pattern": "response",
+   "default_rate": "on event",
+   "carried_by": "direct, else bundle",
+   "signed": true,
+   "fields": [
+    [
+     "resource_id",
+     "uint",
+     16,
+     1,
+     ""
+    ],
+    [
+     "reservation_id",
+     "uint",
+     16,
+     1,
+     ""
+    ],
+    [
+     "verdict",
+     "enum:verdict",
+     4,
+     1,
+     ""
+    ],
+    [
+     "t_start",
+     "uint",
+     16,
+     1,
+     "s"
+    ],
+    [
+     "t_end",
+     "uint",
+     16,
+     1,
+     "s"
+    ],
+    [
+     "free_at",
+     "uint",
+     12,
+     1,
+     "s"
+    ]
+   ]
+  },
+  {
+   "id": 11,
+   "name": "RESERVE_RELEASE",
+   "pattern": "publish",
+   "default_rate": "on event",
+   "carried_by": "direct, else bundle",
+   "fields": [
+    [
+     "reservation_id",
+     "uint",
+     16,
+     1,
+     ""
+    ],
+    [
+     "reason",
+     "uint",
+     4,
+     1,
+     ""
+    ],
+    [
+     "spare",
+     "spare",
+     4,
+     1,
+     ""
+    ]
+   ]
+  },
+  {
+   "id": 12,
+   "name": "CAP_QUERY",
+   "pattern": "request",
+   "default_rate": "on first contact or new manifest_crc",
+   "carried_by": "direct",
+   "fields": [
+    [
+     "target_id",
+     "uint",
+     16,
+     1,
+     ""
+    ],
+    [
+     "known_rev",
+     "uint",
+     8,
+     1,
+     ""
+    ]
+   ]
+  },
+  {
+   "id": 13,
+   "name": "CAP_MANIFEST",
+   "pattern": "response, retained",
+   "default_rate": "on query",
+   "carried_by": "bundle or CFDP",
+   "signed": true,
+   "variable": "compact CBOR manifest (lunarsim/atc/lrip/manifest.py)",
+   "fields": []
+  },
+  {
+   "id": 14,
+   "name": "MAP_NOTICE",
+   "pattern": "publish",
+   "default_rate": "on change",
+   "carried_by": "bundle; the map itself by CFDP",
+   "fields": [
+    [
+     "tile_id",
+     "uint",
+     24,
+     1,
+     ""
+    ],
+    [
+     "layer",
+     "uint",
+     4,
+     1,
+     ""
+    ],
+    [
+     "version",
+     "uint",
+     12,
+     1,
+     ""
+    ],
+    [
+     "hash",
+     "uint",
+     32,
+     1,
+     ""
+    ],
+    [
+     "size_kb",
+     "uint",
+     8,
+     1,
+     "kB"
+    ]
+   ]
+  },
+  {
+   "id": 15,
+   "name": "HELLO",
+   "pattern": "publish",
+   "default_rate": "1 Hz when nothing else was sent, and at least once every 10 s (it carries the declaration)",
+   "carried_by": "broadcast",
+   "fields": [
+    [
+     "link_margin",
+     "uint",
+     6,
+     1,
+     "dB"
+    ],
+    [
+     "neighbours",
+     "uint",
+     5,
+     1,
+     ""
+    ],
+    [
+     "bundles_queued",
+     "uint",
+     5,
+     1,
+     ""
+    ],
+    [
+     "frame_id",
+     "enum:frame",
+     6,
+     1,
+     "frame of every position this sender sends",
+     {
+      "since": 2
+     }
+    ],
+    [
+     "datum_id",
+     "enum:datum",
+     6,
+     1,
+     "datum (grid origin and height reference)",
+     {
+      "since": 2
+     }
+    ],
+    [
+     "time_scale",
+     "enum:time_scale",
+     4,
+     1,
+     "time scale of t_valid and all time fields",
+     {
+      "since": 2
+     }
+    ]
+   ],
+   "declaration_interval_s": 10
+  }
+ ],
+ "versioning": [
+  "every message carries ver_major.ver_minor; a minor version may only append fields, use spare bits or add enumeration values and message types",
+  "a receiver decodes the fields it knows and skips the rest (the packet length says how much); an unknown message type is counted and dropped",
+  "an unknown enumeration value is read as the most cautious known value (enums.*.unknown_as)",
+  "a major version mismatch is refused",
+  "a field marked since N is absent from packets of minor version < N (a field that replaced spare bits reads as spare there), so a v0.1 packet decodes exactly as v0.1 defined it"
+ ],
+ "manifest_registry": {
+  "note": "compact CBOR manifest: every key and enumerated string replaced by its index here (never reused); decimals as fixed-point integers x 100 (keys in decimal_keys); version strings 'M.m' as M * 256 + m",
+  "keys": [
+   "lrip",
+   "rev",
+   "vehicle",
+   "id",
+   "owner",
+   "model",
+   "class",
+   "physical",
+   "mass_kg",
+   "length_m",
+   "width_m",
+   "height_m",
+   "antenna_m",
+   "v_max_mps",
+   "brake_mps2",
+   "slope_max_deg",
+   "energy",
+   "battery_wh",
+   "drive_wh_per_km",
+   "charge_w",
+   "night_survival",
+   "propellant_kg",
+   "hop_range_km",
+   "total_range_km",
+   "comms",
+   "band",
+   "std",
+   "tx_w",
+   "relay",
+   "nav",
+   "sources",
+   "sigma_h_m",
+   "ranging",
+   "type",
+   "sigma_m",
+   "range_m",
+   "messages",
+   "pub",
+   "sub",
+   "capabilities",
+   "name",
+   "ver",
+   "params",
+   "max",
+   "min",
+   "volume_m3",
+   "interface",
+   "buffer_mb",
+   "gsd_mm",
+   "bands",
+   "share_kg",
+   "range_km",
+   "pad_clear_m",
+   "dwell_min",
+   "dwell_s",
+   "lost_link",
+   "t_hold_s",
+   "t_return_s",
+   "t_rendezvous_s",
+   "policy",
+   "hazard",
+   "plume_keepout_m",
+   "notice_s",
+   "speed_mps",
+   "frame",
+   "datum",
+   "time_scale"
+  ],
+  "strings": [
+   "small_rover",
+   "hopper",
+   "ltv",
+   "cargo_rover",
+   "S",
+   "UHF",
+   "Ka",
+   "3GPP-LTE",
+   "LRIP-NB",
+   "802.11",
+   "visual_odometry",
+   "lans",
+   "uwb_ranging",
+   "terrain_relative",
+   "imu",
+   "star_tracker",
+   "uwb",
+   "none",
+   "POSITION/1",
+   "STATUS/1",
+   "INTENT/1",
+   "ALERT/1",
+   "TASK_ANNOUNCE/1",
+   "TASK_BID/1",
+   "TASK_AWARD/1",
+   "TASK_STATE/1",
+   "RESERVE_REQ/1",
+   "RESERVE_GRANT/1",
+   "RESERVE_RELEASE/1",
+   "HELLO/1",
+   "MAP_NOTICE/1",
+   "transport.carry",
+   "transport.hop",
+   "relay.store_forward",
+   "relay.high_point",
+   "survey.image",
+   "survey.psr",
+   "team.lift",
+   "tray-A",
+   "tray-B",
+   "rgb",
+   "ir",
+   "neutron",
+   "stop-return-rendezvous",
+   "land-and-hold"
+  ],
+  "version_keys": [
+   "lrip",
+   "ver"
+  ],
+  "decimal_keys": [
+   "length_m",
+   "width_m",
+   "height_m",
+   "antenna_m",
+   "v_max_mps",
+   "brake_mps2",
+   "tx_w",
+   "sigma_h_m",
+   "sigma_m",
+   "volume_m3",
+   "hop_range_km",
+   "range_km",
+   "speed_mps",
+   "max",
+   "min"
+  ]
+ },
+ "changes_from": {
+  "0.1": [
+   "POSITION: the 6 spare bits carry u95_code, a 95 % horizontal position bound on a log scale (no byte added)",
+   "HELLO: appends frame_id (6 bits), datum_id (6 bits) and time_scale (4 bits): the sender's declaration of the frame, datum and time scale of every position and time stamp it sends (2 bytes added)",
+   "HELLO is sent at least once every 10 s (declaration_interval_s), not only when nothing else was sent",
+   "enums frame, datum, time_scale added; manifest registry keys frame, datum, time_scale appended",
+   "declaration rule: a receiver accepts a POSITION only from a sender that has declared frame, datum and time scale in an authenticated HELLO or a signed manifest under the same key epoch (lunarsim/atc/lrip/codec.py Receiver)"
+  ]
+ },
+ "declaration_rule": "frame_id, datum_id and time_scale are declared per sender in HELLO (authenticated) or in the signed capability manifest (nav.frame, nav.datum, nav.time_scale), and bound to the security context: a declaration holds for the key epoch it was authenticated under. A POSITION from a sender without a declaration under its current key epoch is refused (a v0.1 sender cannot declare, so a v0.2 receiver refuses its positions; its other messages decode as before).",
+ "traffic_model_coverage": {
+  "sent_by_E53": [
+   "POSITION",
+   "STATUS",
+   "INTENT",
+   "HELLO",
+   "RESERVE_REQ",
+   "RESERVE_GRANT",
+   "RESERVE_RELEASE",
+   "TASK_BID",
+   "TASK_AWARD",
+   "TASK_STATE",
+   "ALERT"
+  ],
+  "not_sent_by_E53": [
+   "TASK_ANNOUNCE",
+   "CAP_QUERY",
+   "CAP_MANIFEST",
+   "MAP_NOTICE"
+  ],
+  "note": "11 of the 15 message types; announcements, capability queries / manifests and map notices are rare and not in the per-robot traffic model"
+ }
+}

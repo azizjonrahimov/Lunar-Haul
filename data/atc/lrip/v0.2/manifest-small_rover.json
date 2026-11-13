@@ -1,0 +1,124 @@
+{
+ "lrip": "0.2",
+ "rev": 8,
+ "vehicle": {
+  "id": 291,
+  "owner": "OWNER-B",
+  "model": "small-rover-example",
+  "class": "small_rover"
+ },
+ "physical": {
+  "mass_kg": 300,
+  "length_m": 1.6,
+  "width_m": 1.2,
+  "height_m": 0.9,
+  "antenna_m": 1.0,
+  "v_max_mps": 0.83,
+  "brake_mps2": 0.5,
+  "slope_max_deg": 20
+ },
+ "energy": {
+  "battery_wh": 2000,
+  "drive_wh_per_km": 120,
+  "charge_w": 400,
+  "night_survival": false
+ },
+ "comms": [
+  {
+   "band": "S",
+   "std": "3GPP-LTE",
+   "tx_w": 0.25,
+   "relay": true
+  },
+  {
+   "band": "UHF",
+   "std": "LRIP-NB",
+   "tx_w": 1.0,
+   "relay": true
+  }
+ ],
+ "nav": {
+  "sources": [
+   "visual_odometry",
+   "lans",
+   "uwb_ranging"
+  ],
+  "sigma_h_m": 1.0,
+  "ranging": {
+   "type": "uwb",
+   "sigma_m": 0.3,
+   "range_m": 200
+  },
+  "frame": 1,
+  "datum": 1,
+  "time_scale": 6
+ },
+ "messages": {
+  "pub": [
+   "POSITION/1",
+   "STATUS/1",
+   "INTENT/1",
+   "ALERT/1",
+   "TASK_BID/1"
+  ],
+  "sub": [
+   "ALERT/1",
+   "TASK_ANNOUNCE/1",
+   "TASK_AWARD/1",
+   "RESERVE_GRANT/1"
+  ]
+ },
+ "capabilities": [
+  {
+   "name": "transport.carry",
+   "ver": "1.0",
+   "params": {
+    "mass_kg": {
+     "max": 200
+    },
+    "volume_m3": {
+     "max": 0.5
+    },
+    "interface": [
+     "tray-A"
+    ]
+   }
+  },
+  {
+   "name": "relay.store_forward",
+   "ver": "1.0",
+   "params": {
+    "buffer_mb": {
+     "max": 64
+    }
+   }
+  },
+  {
+   "name": "survey.image",
+   "ver": "1.0",
+   "params": {
+    "gsd_mm": {
+     "min": 2
+    },
+    "bands": [
+     "rgb"
+    ]
+   }
+  },
+  {
+   "name": "team.lift",
+   "ver": "0.1",
+   "params": {
+    "share_kg": {
+     "max": 90
+    }
+   }
+  }
+ ],
+ "lost_link": {
+  "t_hold_s": 30,
+  "t_return_s": 600,
+  "t_rendezvous_s": 3600,
+  "policy": "stop-return-rendezvous"
+ }
+}

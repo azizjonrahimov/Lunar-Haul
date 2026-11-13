@@ -1,0 +1,850 @@
+{
+ "format": "lrip-conformance",
+ "version": "0.2",
+ "schema": "lunarsim/schemas/lrip-v0.2.json",
+ "keys": {
+  "note": "TEST KEYS ONLY",
+  "aes_cmac_key_hex": "000102030405060708090a0b0c0d0e0f",
+  "key_epoch": 5,
+  "ed25519_seed_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "ed25519_public_hex": "03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8"
+ },
+ "manifests": {
+  "small_rover": {
+   "json_bytes": 1235,
+   "compact_cbor_hex": "aa0002010802a40319012304674f574e45522d420573736d616c6c2d726f7665722d6578616d706c65060007a80819012c0918a00a18780b185a0c18640d18530e18320f1410a4111907d01218781319019014f4181882a4181904181a07181b1819181cf5a4181905181a08181b1864181cf5181da6181e830a0b0c181f18641820a31821101822181e182318c81840011841011842061824a2182585121314151718268415161818181b182784a31828181f1829190100182aa308a1182b194e20182da1182b1832182e811826a3182818211829190100182aa1182fa1182b191900a3182818231829190100182aa21830a1182c18c81831811828a318281825182901182aa11832a1182b1923281837a41838181e1839190258183a190e10183b182b"
+  },
+  "hopper": {
+   "json_bytes": 1245,
+   "compact_cbor_hex": "ab0002010402a40319020504674f574e45522d43056e686f707065722d6578616d706c65060107a80818fa0918960a18960b18640c18640d000e000f0f10a6111905dc1518781618c81718321319012c14f4181882a4181904181a07181b1832181cf5a4181905181a08181b1864181cf5181da6181e830d0b0e181f1901f41820a31821111822001823001840011841011842061824a2182585121314151718268415161818181b182783a3182818201829190100182aa308a1182b1903e81833a1182b18c81834a1182c191388a3182818241829190100182aa21835a1182b1911941831821829182aa318281822182901182aa20ba1182b1927101836a1182b191770183ca2183d1864183e19012c1837a41838181e183900183a00183b182c"
+  }
+ },
+ "vectors": [
+  {
+   "message": "POSITION",
+   "profile": "N",
+   "auth": "mac8",
+   "bytes": 41,
+   "hex": "0d01c0000022020101230000a8ca74a69e7c491820158b0451d4bb00050000002ab079b1c320a424bc",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "e": 76448.3,
+    "n": 81451.76,
+    "h": 821.3,
+    "heading": 222.4,
+    "speed": 2.76,
+    "sigma_h": 5.85,
+    "nav_src": 1,
+    "moving": false,
+    "u95_code": 59
+   }
+  },
+  {
+   "message": "POSITION",
+   "profile": "N",
+   "auth": null,
+   "bytes": 27,
+   "hex": "0d01c0000014020101230000a8ca74a69e7c491820158b0451d4bb",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": null,
+   "fields": {
+    "e": 76448.3,
+    "n": 81451.76,
+    "h": 821.3,
+    "heading": 222.4,
+    "speed": 2.76,
+    "sigma_h": 5.85,
+    "nav_src": 1,
+    "moving": false,
+    "u95_code": 59
+   }
+  },
+  {
+   "message": "POSITION",
+   "profile": "B",
+   "auth": "mac8",
+   "bytes": 54,
+   "hex": "0d01c000002f8d020119012319a8ca1a0074a69e1a007c49181920151908b019011418750100183b00050000002a3c7bba301f0c4d02",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "e": 76448.3,
+    "n": 81451.76,
+    "h": 821.3,
+    "heading": 222.4,
+    "speed": 2.76,
+    "sigma_h": 5.85,
+    "nav_src": 1,
+    "moving": false,
+    "u95_code": 59
+   }
+  },
+  {
+   "message": "STATUS",
+   "profile": "N",
+   "auth": "mac8",
+   "bytes": 43,
+   "hex": "0d02c0000024020201230000a8ca7e2c0e832f198d7076eac2e610fa3e00050000002a88957bf0d808252c",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "mode": 7,
+    "health": 3628,
+    "soc": 7,
+    "energy": 10490,
+    "power": 4830,
+    "cargo_mass": 397,
+    "cargo_type": 112,
+    "task_id": 30442,
+    "progress": 97,
+    "temp": 115,
+    "link_snr": 2,
+    "hops": 0,
+    "manifest_crc": 64062
+   }
+  },
+  {
+   "message": "STATUS",
+   "profile": "N",
+   "auth": null,
+   "bytes": 29,
+   "hex": "0d02c0000016020201230000a8ca7e2c0e832f198d7076eac2e610fa3e",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": null,
+   "fields": {
+    "mode": 7,
+    "health": 3628,
+    "soc": 7,
+    "energy": 10490,
+    "power": 4830,
+    "cargo_mass": 397,
+    "cargo_type": 112,
+    "task_id": 30442,
+    "progress": 97,
+    "temp": 115,
+    "link_snr": 2,
+    "hops": 0,
+    "manifest_crc": 64062
+   }
+  },
+  {
+   "message": "STATUS",
+   "profile": "B",
+   "auth": "mac8",
+   "bytes": 57,
+   "hex": "0d02c000003291020219012319a8ca07190e2c071904191901e319018d18701976ea18611873020019fa3e00050000002aa0e5bfb0c5847d95",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "mode": 7,
+    "health": 3628,
+    "soc": 7,
+    "energy": 10490,
+    "power": 4830,
+    "cargo_mass": 397,
+    "cargo_type": 112,
+    "task_id": 30442,
+    "progress": 97,
+    "temp": 115,
+    "link_snr": 2,
+    "hops": 0,
+    "manifest_crc": 64062
+   }
+  },
+  {
+   "message": "INTENT",
+   "profile": "N",
+   "auth": "mac8",
+   "bytes": 38,
+   "hex": "0d03c000001f020301230000a8cafe4bf1c113219458c9e000050000002a73a3f3eb76afb0ed",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "segment_id": 65099,
+    "direction": true,
+    "reservation_id": 58242,
+    "t_enter": 612,
+    "t_exit": 808,
+    "v_target": 7.1,
+    "dest_site": 79
+   }
+  },
+  {
+   "message": "INTENT",
+   "profile": "N",
+   "auth": null,
+   "bytes": 24,
+   "hex": "0d03c0000011020301230000a8cafe4bf1c113219458c9e0",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": null,
+   "fields": {
+    "segment_id": 65099,
+    "direction": true,
+    "reservation_id": 58242,
+    "t_enter": 612,
+    "t_exit": 808,
+    "v_target": 7.1,
+    "dest_site": 79
+   }
+  },
+  {
+   "message": "INTENT",
+   "profile": "B",
+   "auth": "mac8",
+   "bytes": 47,
+   "hex": "0d03c00000288b020319012319a8ca19fe4b0119e3821902641903281902c6184f00050000002a87f9e7514001e363",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "segment_id": 65099,
+    "direction": true,
+    "reservation_id": 58242,
+    "t_enter": 612,
+    "t_exit": 808,
+    "v_target": 7.1,
+    "dest_site": 79
+   }
+  },
+  {
+   "message": "ALERT",
+   "profile": "N",
+   "auth": "mac8",
+   "bytes": 42,
+   "hex": "0d04c0000023020401230000a8cada0728ad84bca81c4a13128d6fd900050000002aa4ac1c25cd69d90c",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "alert_id": 218,
+    "type": 1,
+    "severity": 3,
+    "e": 26658.6,
+    "n": -44134.12,
+    "radius": 1185,
+    "valid": 12584,
+    "subject_id": 55037,
+    "ack": true,
+    "repeat": 1
+   }
+  },
+  {
+   "message": "ALERT",
+   "profile": "N",
+   "auth": null,
+   "bytes": 28,
+   "hex": "0d04c0000015020401230000a8cada0728ad84bca81c4a13128d6fd9",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": null,
+   "fields": {
+    "alert_id": 218,
+    "type": 1,
+    "severity": 3,
+    "e": 26658.6,
+    "n": -44134.12,
+    "radius": 1185,
+    "valid": 12584,
+    "subject_id": 55037,
+    "ack": true,
+    "repeat": 1
+   }
+  },
+  {
+   "message": "ALERT",
+   "profile": "B",
+   "auth": "mac8",
+   "bytes": 54,
+   "hex": "0d04c000002f8e020419012319a8ca18da01031a0028ad843a004357e31904a119312819d6fd010100050000002a041eb29b4f453282",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "alert_id": 218,
+    "type": 1,
+    "severity": 3,
+    "e": 26658.6,
+    "n": -44134.12,
+    "radius": 1185,
+    "valid": 12584,
+    "subject_id": 55037,
+    "ack": true,
+    "repeat": 1
+   }
+  },
+  {
+   "message": "TASK_ANNOUNCE",
+   "profile": "N",
+   "auth": "mac8",
+   "bytes": 44,
+   "hex": "0d05c0000025020501230000a8ca0b965d318ecd7b2c08968feb9ee87e1c00050000002a3c51c1d2169b2f4b",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "task_id": 2966,
+    "task_type": 93,
+    "from_site": 49,
+    "to_site": 142,
+    "mass": 1643,
+    "cap_mask": 55648,
+    "t_earliest": 175880,
+    "t_deadline": 326040,
+    "reserve_price": 63299,
+    "bid_close": 240,
+    "priority": 7
+   }
+  },
+  {
+   "message": "TASK_ANNOUNCE",
+   "profile": "N",
+   "auth": null,
+   "bytes": 30,
+   "hex": "0d05c0000017020501230000a8ca0b965d318ecd7b2c08968feb9ee87e1c",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": null,
+   "fields": {
+    "task_id": 2966,
+    "task_type": 93,
+    "from_site": 49,
+    "to_site": 142,
+    "mass": 1643,
+    "cap_mask": 55648,
+    "t_earliest": 175880,
+    "t_deadline": 326040,
+    "reserve_price": 63299,
+    "bid_close": 240,
+    "priority": 7
+   }
+  },
+  {
+   "message": "TASK_ANNOUNCE",
+   "profile": "B",
+   "auth": "mac8",
+   "bytes": 56,
+   "hex": "0d05c00000318f020519012319a8ca190b96185d1831188e19066b19d9601944b4197f5c19f74318f00700050000002ac089d6b4bd3683a6",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "task_id": 2966,
+    "task_type": 93,
+    "from_site": 49,
+    "to_site": 142,
+    "mass": 1643,
+    "cap_mask": 55648,
+    "t_earliest": 175880,
+    "t_deadline": 326040,
+    "reserve_price": 63299,
+    "bid_close": 240,
+    "priority": 7
+   }
+  },
+  {
+   "message": "TASK_BID",
+   "profile": "N",
+   "auth": "mac8",
+   "bytes": 37,
+   "hex": "0d06c000001e020601230000a8caa5cd94ec60f505c44d00050000002af511880b14eb342c",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "task_id": 42445,
+    "cost": 38124,
+    "t_start": 15510,
+    "t_finish": 12850,
+    "soc_after": 98,
+    "bundle_pos": 1,
+    "bid_seq": 13
+   }
+  },
+  {
+   "message": "TASK_BID",
+   "profile": "N",
+   "auth": null,
+   "bytes": 23,
+   "hex": "0d06c0000010020601230000a8caa5cd94ec60f505c44d",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": null,
+   "fields": {
+    "task_id": 42445,
+    "cost": 38124,
+    "t_start": 15510,
+    "t_finish": 12850,
+    "soc_after": 98,
+    "bundle_pos": 1,
+    "bid_seq": 13
+   }
+  },
+  {
+   "message": "TASK_BID",
+   "profile": "B",
+   "auth": "mac8",
+   "bytes": 45,
+   "hex": "0d06c00000268b020619012319a8ca19a5cd1994ec19060f1905051862010d00050000002ad39553a339bebec4",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "task_id": 42445,
+    "cost": 38124,
+    "t_start": 15510,
+    "t_finish": 12850,
+    "soc_after": 98,
+    "bundle_pos": 1,
+    "bid_seq": 13
+   }
+  },
+  {
+   "message": "TASK_AWARD",
+   "profile": "N",
+   "auth": "sig",
+   "bytes": 92,
+   "hex": "0d07c0000055020701230000a8ca67185f462b95bdfb80050000002a24631ac681528dd06cf4b865896775f07dfae3ef039fd6e972c57121c56e5fe1e681673bb4a9de58c6bb3a2233245e7fb537283270b86db57db4df64bf8e7d07",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "task_id": 26392,
+    "winner_id": 24390,
+    "price": 11157,
+    "lease": 30390,
+    "award_seq": 11
+   }
+  },
+  {
+   "message": "TASK_AWARD",
+   "profile": "N",
+   "auth": null,
+   "bytes": 22,
+   "hex": "0d07c000000f020701230000a8ca67185f462b95bdfb",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": null,
+   "fields": {
+    "task_id": 26392,
+    "winner_id": 24390,
+    "price": 11157,
+    "lease": 30390,
+    "award_seq": 11
+   }
+  },
+  {
+   "message": "TASK_AWARD",
+   "profile": "B",
+   "auth": "sig",
+   "bytes": 98,
+   "hex": "0d07c000005b89020719012319a8ca196718195f46192b95190bdf0b80050000002aa80cf59582830eb859cdc8210277030b6d2c82406d3e071957c28fadecd23f00adb742b19035208052ff7e6042336b85469841d3814b34d71cf215c1e0cbdc09",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "task_id": 26392,
+    "winner_id": 24390,
+    "price": 11157,
+    "lease": 30390,
+    "award_seq": 11
+   }
+  },
+  {
+   "message": "TASK_STATE",
+   "profile": "N",
+   "auth": "mac8",
+   "bytes": 33,
+   "hex": "0d08c000001a020801230000a8ca2823539a8b00050000002acfb6f2366600f353",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "task_id": 10275,
+    "state": 5,
+    "result": 3,
+    "progress": 77,
+    "eta": 139
+   }
+  },
+  {
+   "message": "TASK_STATE",
+   "profile": "N",
+   "auth": null,
+   "bytes": 19,
+   "hex": "0d08c000000c020801230000a8ca2823539a8b",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": null,
+   "fields": {
+    "task_id": 10275,
+    "state": 5,
+    "result": 3,
+    "progress": 77,
+    "eta": 139
+   }
+  },
+  {
+   "message": "TASK_STATE",
+   "profile": "B",
+   "auth": "mac8",
+   "bytes": 38,
+   "hex": "0d08c000001f89020819012319a8ca1928230503184d188b00050000002a5bd603359ddbf661",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "task_id": 10275,
+    "state": 5,
+    "result": 3,
+    "progress": 77,
+    "eta": 139
+   }
+  },
+  {
+   "message": "RESERVE_REQ",
+   "profile": "N",
+   "auth": "mac8",
+   "bytes": 35,
+   "hex": "0d09c000001c020901230000a8ca632b694204935400050000002ae1eb3ec0ff6b5d31",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "resource_id": 25387,
+    "direction": false,
+    "priority": 6,
+    "t_start": 37920,
+    "duration": 1171,
+    "req_seq": 84
+   }
+  },
+  {
+   "message": "RESERVE_REQ",
+   "profile": "N",
+   "auth": null,
+   "bytes": 21,
+   "hex": "0d09c000000e020901230000a8ca632b6942049354",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": null,
+   "fields": {
+    "resource_id": 25387,
+    "direction": false,
+    "priority": 6,
+    "t_start": 37920,
+    "duration": 1171,
+    "req_seq": 84
+   }
+  },
+  {
+   "message": "RESERVE_REQ",
+   "profile": "B",
+   "auth": "mac8",
+   "bytes": 42,
+   "hex": "0d09c00000238a020919012319a8ca19632b0006199420190493185400050000002a758b538ad51e244e",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "resource_id": 25387,
+    "direction": false,
+    "priority": 6,
+    "t_start": 37920,
+    "duration": 1171,
+    "req_seq": 84
+   }
+  },
+  {
+   "message": "RESERVE_GRANT",
+   "profile": "N",
+   "auth": "sig",
+   "bytes": 94,
+   "hex": "0d0ac0000057020a01230000a8cac0c6fd451197fc2ee3be80050000002a32fdd83ede55b11d45fe08200c8a149bb6cae03eb921c668e6427db266a79c6aeabfb292fcdfc05f2ea1ef1183dcd81d142254ff12de2356194e19e5d1b0c704",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "resource_id": 49350,
+    "reservation_id": 64837,
+    "verdict": 1,
+    "t_start": 6527,
+    "t_end": 49902,
+    "free_at": 958
+   }
+  },
+  {
+   "message": "RESERVE_GRANT",
+   "profile": "N",
+   "auth": null,
+   "bytes": 24,
+   "hex": "0d0ac0000011020a01230000a8cac0c6fd451197fc2ee3be",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": null,
+   "fields": {
+    "resource_id": 49350,
+    "reservation_id": 64837,
+    "verdict": 1,
+    "t_start": 6527,
+    "t_end": 49902,
+    "free_at": 958
+   }
+  },
+  {
+   "message": "RESERVE_GRANT",
+   "profile": "B",
+   "auth": "sig",
+   "bytes": 101,
+   "hex": "0d0ac000005e8a020a19012319a8ca19c0c619fd450119197f19c2ee1903be80050000002afc21d5a473fdf00c0f36c9a6ca0f664b206a24e31078dd60741c3ad9902652474f7e97deedc6e90a57db071e6cde10288932dca520f673ea2c1f0e7362c6b30f",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "resource_id": 49350,
+    "reservation_id": 64837,
+    "verdict": 1,
+    "t_start": 6527,
+    "t_end": 49902,
+    "free_at": 958
+   }
+  },
+  {
+   "message": "RESERVE_RELEASE",
+   "profile": "N",
+   "auth": "mac8",
+   "bytes": 31,
+   "hex": "0d0bc0000018020b01230000a8cab5edd000050000002a81cc6641b42bb26b",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "reservation_id": 46573,
+    "reason": 13
+   }
+  },
+  {
+   "message": "RESERVE_RELEASE",
+   "profile": "N",
+   "auth": null,
+   "bytes": 17,
+   "hex": "0d0bc000000a020b01230000a8cab5edd0",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": null,
+   "fields": {
+    "reservation_id": 46573,
+    "reason": 13
+   }
+  },
+  {
+   "message": "RESERVE_RELEASE",
+   "profile": "B",
+   "auth": "mac8",
+   "bytes": 33,
+   "hex": "0d0bc000001a86020b19012319a8ca19b5ed0d00050000002a8edff2cf29059230",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "reservation_id": 46573,
+    "reason": 13
+   }
+  },
+  {
+   "message": "CAP_QUERY",
+   "profile": "N",
+   "auth": "mac8",
+   "bytes": 31,
+   "hex": "0d0cc0000018020c01230000a8cac3d4f200050000002a4fc984c18e0df008",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "target_id": 50132,
+    "known_rev": 242
+   }
+  },
+  {
+   "message": "CAP_QUERY",
+   "profile": "N",
+   "auth": null,
+   "bytes": 17,
+   "hex": "0d0cc000000a020c01230000a8cac3d4f2",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": null,
+   "fields": {
+    "target_id": 50132,
+    "known_rev": 242
+   }
+  },
+  {
+   "message": "CAP_QUERY",
+   "profile": "B",
+   "auth": "mac8",
+   "bytes": 34,
+   "hex": "0d0cc000001b86020c19012319a8ca19c3d418f200050000002a42b586b4da467d36",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "target_id": 50132,
+    "known_rev": 242
+   }
+  },
+  {
+   "message": "CAP_MANIFEST",
+   "profile": "N",
+   "auth": "sig",
+   "bytes": 376,
+   "hex": "0d0dc0000171020d01230000a8caaa0002010802a40319012304674f574e45522d420573736d616c6c2d726f7665722d6578616d706c65060007a80819012c0918a00a18780b185a0c18640d18530e18320f1410a4111907d01218781319019014f4181882a4181904181a07181b1819181cf5a4181905181a08181b1864181cf5181da6181e830a0b0c181f18641820a31821101822181e182318c81840011841011842061824a2182585121314151718268415161818181b182784a31828181f1829190100182aa308a1182b194e20182da1182b1832182e811826a3182818211829190100182aa1182fa1182b191900a3182818231829190100182aa21830a1182c18c81831811828a318281825182901182aa11832a1182b1923281837a41838181e1839190258183a190e10183b182b80050000002a971a9d038d2eb9848e3a7e851f1d43566eceecb9ca22f6e58158ee9018e3a362a0272f43ed02297ae71138a5a3eb649d9be6cb0eeddd2b1a3df6dd21a207db0b",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "manifest_cbor_hex": "aa0002010802a40319012304674f574e45522d420573736d616c6c2d726f7665722d6578616d706c65060007a80819012c0918a00a18780b185a0c18640d18530e18320f1410a4111907d01218781319019014f4181882a4181904181a07181b1819181cf5a4181905181a08181b1864181cf5181da6181e830a0b0c181f18641820a31821101822181e182318c81840011841011842061824a2182585121314151718268415161818181b182784a31828181f1829190100182aa308a1182b194e20182da1182b1832182e811826a3182818211829190100182aa1182fa1182b191900a3182818231829190100182aa21830a1182c18c81831811828a318281825182901182aa11832a1182b1923281837a41838181e1839190258183a190e10183b182b"
+   }
+  },
+  {
+   "message": "CAP_MANIFEST",
+   "profile": "N",
+   "auth": null,
+   "bytes": 306,
+   "hex": "0d0dc000012b020d01230000a8caaa0002010802a40319012304674f574e45522d420573736d616c6c2d726f7665722d6578616d706c65060007a80819012c0918a00a18780b185a0c18640d18530e18320f1410a4111907d01218781319019014f4181882a4181904181a07181b1819181cf5a4181905181a08181b1864181cf5181da6181e830a0b0c181f18641820a31821101822181e182318c81840011841011842061824a2182585121314151718268415161818181b182784a31828181f1829190100182aa308a1182b194e20182da1182b1832182e811826a3182818211829190100182aa1182fa1182b191900a3182818231829190100182aa21830a1182c18c81831811828a318281825182901182aa11832a1182b1923281837a41838181e1839190258183a190e10183b182b",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": null,
+   "fields": {
+    "manifest_cbor_hex": "aa0002010802a40319012304674f574e45522d420573736d616c6c2d726f7665722d6578616d706c65060007a80819012c0918a00a18780b185a0c18640d18530e18320f1410a4111907d01218781319019014f4181882a4181904181a07181b1819181cf5a4181905181a08181b1864181cf5181da6181e830a0b0c181f18641820a31821101822181e182318c81840011841011842061824a2182585121314151718268415161818181b182784a31828181f1829190100182aa308a1182b194e20182da1182b1832182e811826a3182818211829190100182aa1182fa1182b191900a3182818231829190100182aa21830a1182c18c81831811828a318281825182901182aa11832a1182b1923281837a41838181e1839190258183a190e10183b182b"
+   }
+  },
+  {
+   "message": "CAP_MANIFEST",
+   "profile": "B",
+   "auth": "sig",
+   "bytes": 380,
+   "hex": "0d0dc000017585020d19012319a8ca590124aa0002010802a40319012304674f574e45522d420573736d616c6c2d726f7665722d6578616d706c65060007a80819012c0918a00a18780b185a0c18640d18530e18320f1410a4111907d01218781319019014f4181882a4181904181a07181b1819181cf5a4181905181a08181b1864181cf5181da6181e830a0b0c181f18641820a31821101822181e182318c81840011841011842061824a2182585121314151718268415161818181b182784a31828181f1829190100182aa308a1182b194e20182da1182b1832182e811826a3182818211829190100182aa1182fa1182b191900a3182818231829190100182aa21830a1182c18c81831811828a318281825182901182aa11832a1182b1923281837a41838181e1839190258183a190e10183b182b80050000002ac6acdb234c6f391dc6efef9e0ee22a7196dee607368d65c9281055da672ba1a2278bea1954e1700c9a746cd40ab5b6e01f2864fec47b909f71f6bdec3df7ed08",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "manifest_cbor_hex": "aa0002010802a40319012304674f574e45522d420573736d616c6c2d726f7665722d6578616d706c65060007a80819012c0918a00a18780b185a0c18640d18530e18320f1410a4111907d01218781319019014f4181882a4181904181a07181b1819181cf5a4181905181a08181b1864181cf5181da6181e830a0b0c181f18641820a31821101822181e182318c81840011841011842061824a2182585121314151718268415161818181b182784a31828181f1829190100182aa308a1182b194e20182da1182b1832182e811826a3182818211829190100182aa1182fa1182b191900a3182818231829190100182aa21830a1182c18c81831811828a318281825182901182aa11832a1182b1923281837a41838181e1839190258183a190e10183b182b"
+   }
+  },
+  {
+   "message": "MAP_NOTICE",
+   "profile": "N",
+   "auth": "mac8",
+   "bytes": 38,
+   "hex": "0d0ec000001f020e01230000a8ca010140d0e2ad5503a97200050000002a2c94accc28d547aa",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "tile_id": 65856,
+    "layer": 13,
+    "version": 226,
+    "hash": 2908029865,
+    "size_kb": 114
+   }
+  },
+  {
+   "message": "MAP_NOTICE",
+   "profile": "N",
+   "auth": null,
+   "bytes": 24,
+   "hex": "0d0ec0000011020e01230000a8ca010140d0e2ad5503a972",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": null,
+   "fields": {
+    "tile_id": 65856,
+    "layer": 13,
+    "version": 226,
+    "hash": 2908029865,
+    "size_kb": 114
+   }
+  },
+  {
+   "message": "MAP_NOTICE",
+   "profile": "B",
+   "auth": "mac8",
+   "bytes": 44,
+   "hex": "0d0ec000002589020e19012319a8ca1a000101400d18e21aad5503a9187200050000002af9dff0b91d1b3283",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "tile_id": 65856,
+    "layer": 13,
+    "version": 226,
+    "hash": 2908029865,
+    "size_kb": 114
+   }
+  },
+  {
+   "message": "HELLO",
+   "profile": "N",
+   "auth": "mac8",
+   "bytes": 32,
+   "hex": "0d0fc0000019020f01230000a8cac0630c2500050000002a6b96a8b87a397265",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "link_margin": 48,
+    "neighbours": 3,
+    "bundles_queued": 3,
+    "frame_id": 3,
+    "datum_id": 2,
+    "time_scale": 5
+   }
+  },
+  {
+   "message": "HELLO",
+   "profile": "N",
+   "auth": null,
+   "bytes": 18,
+   "hex": "0d0fc000000b020f01230000a8cac0630c25",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": null,
+   "fields": {
+    "link_margin": 48,
+    "neighbours": 3,
+    "bundles_queued": 3,
+    "frame_id": 3,
+    "datum_id": 2,
+    "time_scale": 5
+   }
+  },
+  {
+   "message": "HELLO",
+   "profile": "B",
+   "auth": "mac8",
+   "bytes": 36,
+   "hex": "0d0fc000001d8a020f19012319a8ca1830030303020500050000002ad74a12a1d638168d",
+   "sender": 291,
+   "t_valid_s": 4321.0,
+   "seq": 42,
+   "fields": {
+    "link_margin": 48,
+    "neighbours": 3,
+    "bundles_queued": 3,
+    "frame_id": 3,
+    "datum_id": 2,
+    "time_scale": 5
+   }
+  }
+ ],
+ "declaration": "frame_id, datum_id and time_scale are declared per sender in HELLO (authenticated) or in the signed capability manifest (nav.frame, nav.datum, nav.time_scale), and bound to the security context: a declaration holds for the key epoch it was authenticated under. A POSITION from a sender without a declaration under its current key epoch is refused (a v0.1 sender cannot declare, so a v0.2 receiver refuses its positions; its other messages decode as before)."
+}

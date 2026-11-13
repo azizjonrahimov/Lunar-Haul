@@ -38,14 +38,14 @@ def close(a, b):
 
 
 def test_sizes_match_note03():
-    """Note 03 C2 / Table B5: secured bytes on the air (MAC 8 B; awards and grants signed)."""
-    st = C.size_table()
+    """Note 03 C2 / Table B5: secured bytes on the air (MAC 8 B; awards and grants signed), v0.1 packets."""
+    st = C.size_table(minor=1)
     want = {"POSITION": 41, "STATUS": 43, "INTENT": 38, "ALERT": 42, "TASK_ANNOUNCE": 44, "TASK_BID": 37,
             "TASK_AWARD": 92, "TASK_STATE": 33, "RESERVE_REQ": 35, "RESERVE_GRANT": 94, "RESERVE_RELEASE": 31,
             "CAP_QUERY": 31, "MAP_NOTICE": 38, "HELLO": 30}
     assert {k: st[k]["default"] for k in want} == want
     assert st["POSITION"]["mac16"] == 49 and st["ALERT"]["signed"] == 98 and st["POSITION"]["unsecured"] == 27
-    assert {k: C.payload_bits(k) for k in ("POSITION", "STATUS", "TASK_BID", "ALERT")} == \
+    assert {k: C.payload_bits(k, 1) for k in ("POSITION", "STATUS", "TASK_BID", "ALERT")} == \
         {"POSITION": 104, "STATUS": 120, "TASK_BID": 72, "ALERT": 112}
 
 

@@ -1,0 +1,125 @@
+{
+ "lrip": "0.2",
+ "rev": 4,
+ "vehicle": {
+  "id": 517,
+  "owner": "OWNER-C",
+  "model": "hopper-example",
+  "class": "hopper"
+ },
+ "physical": {
+  "mass_kg": 250,
+  "length_m": 1.5,
+  "width_m": 1.5,
+  "height_m": 1.0,
+  "antenna_m": 1.0,
+  "v_max_mps": 0.0,
+  "brake_mps2": 0.0,
+  "slope_max_deg": 15
+ },
+ "energy": {
+  "battery_wh": 1500,
+  "propellant_kg": 120,
+  "hop_range_km": 2.0,
+  "total_range_km": 50,
+  "charge_w": 300,
+  "night_survival": false
+ },
+ "comms": [
+  {
+   "band": "S",
+   "std": "3GPP-LTE",
+   "tx_w": 0.5,
+   "relay": true
+  },
+  {
+   "band": "UHF",
+   "std": "LRIP-NB",
+   "tx_w": 1.0,
+   "relay": true
+  }
+ ],
+ "nav": {
+  "sources": [
+   "terrain_relative",
+   "lans",
+   "imu"
+  ],
+  "sigma_h_m": 5.0,
+  "ranging": {
+   "type": "none",
+   "sigma_m": 0,
+   "range_m": 0
+  },
+  "frame": 1,
+  "datum": 1,
+  "time_scale": 6
+ },
+ "messages": {
+  "pub": [
+   "POSITION/1",
+   "STATUS/1",
+   "INTENT/1",
+   "ALERT/1",
+   "TASK_BID/1"
+  ],
+  "sub": [
+   "ALERT/1",
+   "TASK_ANNOUNCE/1",
+   "TASK_AWARD/1",
+   "RESERVE_GRANT/1"
+  ]
+ },
+ "capabilities": [
+  {
+   "name": "transport.hop",
+   "ver": "1.0",
+   "params": {
+    "mass_kg": {
+     "max": 10
+    },
+    "range_km": {
+     "max": 2.0
+    },
+    "pad_clear_m": {
+     "min": 50
+    }
+   }
+  },
+  {
+   "name": "survey.psr",
+   "ver": "1.0",
+   "params": {
+    "dwell_min": {
+     "max": 45
+    },
+    "bands": [
+     "ir",
+     "neutron"
+    ]
+   }
+  },
+  {
+   "name": "relay.high_point",
+   "ver": "0.1",
+   "params": {
+    "height_m": {
+     "max": 100
+    },
+    "dwell_s": {
+     "max": 60
+    }
+   }
+  }
+ ],
+ "hazard": {
+  "plume_keepout_m": 100,
+  "notice_s": 300
+ },
+ "lost_link": {
+  "t_hold_s": 30,
+  "t_return_s": 0,
+  "t_rendezvous_s": 0,
+  "policy": "land-and-hold"
+ }
+}

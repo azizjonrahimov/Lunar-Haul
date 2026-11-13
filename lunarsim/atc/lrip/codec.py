@@ -1,7 +1,10 @@
-"""LRIP v0.1 codec (B-93): bit-packed binary packets (profile N) and CBOR packets (profile B), with the security
-header and an AES-CMAC or Ed25519 trailer; the versioning rule; byte counts per message.
+"""LRIP codec (B-93 v0.1; B-100 v0.2): bit-packed binary packets (profile N) and CBOR packets (profile B), with the
+security header and an AES-CMAC or Ed25519 trailer; the versioning rule; byte counts per message.
 
-Schema: lunarsim/schemas/lrip-v0.1.json (research note 03 section C). A packet is
+Schema: lunarsim/schemas/lrip-v0.2.json (research note 03 section C; v0.2 adds the 95 % position bound in POSITION and
+the frame / datum / time-scale declaration in HELLO, lunarsim/schemas/lrip-v0.2.json changes_from). Packets of minor
+version 1 encode and decode exactly as v0.1 defined them (fields marked "since": 2 are absent there); `minor=1` gives
+v0.1 packets and v0.1 sizes. Receiver applies the v0.2 declaration rule. A packet is
 
     Space Packet primary header (6 B) | LRIP header (8 B) | payload | security header (6 B) | MAC (8 / 16 B) or signature (64 B)
 
@@ -20,7 +23,8 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 from . import cbor
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-SCHEMA_FILE = os.path.join(ROOT, "lunarsim", "schemas", "lrip-v0.1.json")
+SCHEMA_FILE = os.path.join(ROOT, "lunarsim", "schemas", "lrip-v0.2.json")
+SCHEMA_FILE_V01 = os.path.join(ROOT, "lunarsim", "schemas", "lrip-v0.1.json")   # kept: the v0.1 catalogue as published
 SPP_B, HDR_B, SEC_B = 6, 8, 6
 TRAILER_B = {"mac8": 8, "mac16": 16, "sig": 64, None: 0}
 SPI_KIND = {"mac8": 0, "mac16": 1, "sig": 2}
@@ -33,6 +37,10 @@ class LripVersionError(ValueError):
 
 class LripAuthError(ValueError):
     """The MAC or signature does not verify."""
+
+
+class LripRefError(ValueError):
+    """A POSITION from a sender with no frame / datum / time-scale declaration under its key epoch (v0.2 rule)."""
 
 
 _SCHEMA: Dict[str, Any] = {}
@@ -52,12 +60,27 @@ def message(name_or_id) -> Dict[str, Any]:
     return s["_by_name"][name_or_id] if isinstance(name_or_id, str) else s["_by_id"][int(name_or_id)]
 
 
-def payload_bits(name) -> int:
-    return sum(f[2] for f in message(name)["fields"])
+def fields_for(name, minor: Optional[int] = None) -> List[list]:
+    """The message's fields as packets of that minor version carry them (default: this schema's). A field marked
+    {"since": N} is absent below N; one that replaced spare bits ({"was": "spare"}) is spare there."""
+    s = schema()
+    minor = s["ver_minor"] if minor is None else min(int(minor), s["ver_minor"])
+    out = []
+    for f in message(name)["fields"]:
+        meta = f[5] if len(f) > 5 and isinstance(f[5], dict) else {}
+        if minor >= meta.get("since", 1):
+            out.append(f)
+        elif meta.get("was") == "spare":
+            out.append(["spare", "spare", f[2], 1, ""])
+    return out
 
 
-def payload_bytes(name) -> int:
-    b = payload_bits(name)
+def payload_bits(name, minor: Optional[int] = None) -> int:
+    return sum(f[2] for f in fields_for(name, minor))
+
+
+def payload_bytes(name, minor: Optional[int] = None) -> int:
+    b = payload_bits(name, minor)
     assert b % 8 == 0, f"{name}: {b} bits"
     return b // 8
 
@@ -122,17 +145,17 @@ def _value(field, raw: int):
     return int(v) if float(scale).is_integer() else round(v, 10)
 
 
-def encode_payload(name, values: Dict[str, Any]) -> bytes:
+def encode_payload(name, values: Dict[str, Any], minor: Optional[int] = None) -> bytes:
     b = _Bits()
-    for f in message(name)["fields"]:
+    for f in fields_for(name, minor):
         b.put(_raw(f, values.get(f[0], 0)), f[2])
     return b.bytes()
 
 
-def decode_payload(name, data: bytes) -> Dict[str, Any]:
+def decode_payload(name, data: bytes, minor: Optional[int] = None) -> Dict[str, Any]:
     """Known fields only; trailing bytes (fields a later minor version appended) are skipped (rule 3)."""
-    fields = message(name)["fields"]
-    nb = payload_bytes(name)
+    fields = fields_for(name, minor)
+    nb = payload_bytes(name, minor)
     if len(data) < nb:
         raise ValueError(f"{name}: payload {len(data)} B, need {nb}")
     b = _Bits(data[:nb])
@@ -192,14 +215,14 @@ def encode(name, values: Dict[str, Any], sender: int, t_valid_s: float, seq: int
     minor = s["ver_minor"] if minor is None else minor
     tv = int(round(t_valid_s / s["framing"]["lrip_header"]["t_valid_unit_s"]))
     if profile == "N":
-        pay = (body if body is not None else encode_payload(name, values)) + extra
+        pay = (body if body is not None else encode_payload(name, values, minor)) + extra
         inner = _hdr(m["id"], sender, tv, s["ver_major"], minor) + pay
     elif profile == "B":
         arr = [(s["ver_major"] << 4) | minor, m["id"], sender, tv]
         if body is not None:
             arr.append(body)
         else:
-            for f in m["fields"]:
+            for f in fields_for(name, minor):
                 if f[1] != "spare":
                     arr.append(_raw_signed(f, values.get(f[0], 0)))
         inner = cbor.dumps(arr) + extra
@@ -286,7 +309,7 @@ def decode(pkt: bytes, auth: Optional[str] = "auto", keys: Optional[Keys] = None
     kind, seq, epoch, tl = None, None, None, 0
     if auth is not None:
         if profile == "N":
-            known = SPP_B + HDR_B + (payload_bytes(m["name"]) if m["fields"] else 0)
+            known = SPP_B + HDR_B + (payload_bytes(m["name"], minor) if m["fields"] else 0)
         else:
             _, end = cbor._load(pkt, SPP_B)
             known = end
@@ -338,14 +361,14 @@ def decode(pkt: bytes, auth: Optional[str] = "auto", keys: Optional[Keys] = None
     if profile == "N":
         data = pkt[body_start:end_payload]
         if m["fields"]:
-            fields = decode_payload(m["name"], data)
-            skipped = len(data) - payload_bytes(m["name"])
+            fields = decode_payload(m["name"], data, minor)
+            skipped = len(data) - payload_bytes(m["name"], minor)
         else:
             fields, body, skipped = {}, bytes(data), 0
     else:
         arr, end = cbor._load(pkt, SPP_B)
         skipped = end_payload - end
-        names = [f for f in m["fields"] if f[1] != "spare"]
+        names = [f for f in fields_for(m["name"], minor) if f[1] != "spare"]
         fields = {}
         if m["fields"]:
             for f, raw in zip(names, arr[4:4 + len(names)]):
@@ -373,20 +396,107 @@ def default_auth(name, alert_signed: bool = False) -> str:
     return "mac8"
 
 
-def packet_bytes(name, auth: Optional[str] = "mac8", body_bytes: int = 0) -> int:
-    """Bytes on the air for one profile-N packet: 6 + 8 + payload (+ 6 + trailer when authenticated)."""
-    pay = payload_bytes(name) if message(name)["fields"] else body_bytes
+def packet_bytes(name, auth: Optional[str] = "mac8", body_bytes: int = 0, minor: Optional[int] = None) -> int:
+    """Bytes on the air for one profile-N packet: 6 + 8 + payload (+ 6 + trailer when authenticated); before link
+    framing (a Proximity-1 frame adds framing.proximity1_frame_bytes)."""
+    pay = payload_bytes(name, minor) if message(name)["fields"] else body_bytes
     return SPP_B + HDR_B + pay + ((SEC_B + TRAILER_B[auth]) if auth else 0)
 
 
-def size_table(manifest_bytes: int = 0) -> Dict[str, Dict[str, int]]:
-    """Per message: payload, unsecured, MAC 8 B, MAC 16 B, signed (profile N); + Proximity-1 and bundle overheads are
-    per message constants in the schema."""
+def size_table(manifest_bytes: int = 0, minor: Optional[int] = None) -> Dict[str, Dict[str, int]]:
+    """Per message: payload, unsecured, MAC 8 B, MAC 16 B, signed (profile N) for packets of that minor version
+    (default this schema's); + Proximity-1 and bundle overheads are per message constants in the schema."""
     out = {}
     for m in schema()["messages"]:
         nm = m["name"]
-        pb = payload_bytes(nm) if m["fields"] else manifest_bytes
-        out[nm] = {"payload": pb, "unsecured": packet_bytes(nm, None, pb), "mac8": packet_bytes(nm, "mac8", pb),
-                   "mac16": packet_bytes(nm, "mac16", pb), "signed": packet_bytes(nm, "sig", pb),
-                   "default": packet_bytes(nm, default_auth(nm), pb)}
+        pb = payload_bytes(nm, minor) if m["fields"] else manifest_bytes
+        out[nm] = {"payload": pb, "unsecured": packet_bytes(nm, None, pb, minor), "mac8": packet_bytes(nm, "mac8", pb, minor),
+                   "mac16": packet_bytes(nm, "mac16", pb, minor), "signed": packet_bytes(nm, "sig", pb, minor),
+                   "default": packet_bytes(nm, default_auth(nm), pb, minor)}
     return out
+
+
+# ------------------------------------------------------------------------------------------------ v0.2: bound, declarations
+U95_BASE_M, U95_UNKNOWN = 0.05, 63
+
+
+def u95_code(bound_m: Optional[float]) -> int:
+    """POSITION.u95_code for a 95 % horizontal bound (m): the smallest code c <= 61 with 0.05 x 2^(c/4) >= bound (coded
+    upward, so the decoded bound never understates); 62 for a bound above 0.05 x 2^(61/4) = 1.95 km; None or not
+    finite: 63 unknown."""
+    import math
+    if bound_m is None or not math.isfinite(float(bound_m)):
+        return U95_UNKNOWN
+    if bound_m <= U95_BASE_M:
+        return 0
+    c = int(math.ceil(4.0 * math.log2(float(bound_m) / U95_BASE_M) - 1e-9))
+    return c if c <= 61 else 62
+
+
+def u95_from_code(code: int) -> Optional[float]:
+    """The 95 % bound (m) a u95_code stands for (an upper value): inf for 62 (above 1.95 km), None for 63 (unknown)."""
+    c = int(code)
+    if c == U95_UNKNOWN:
+        return None
+    return float("inf") if c == 62 else U95_BASE_M * 2.0 ** (c / 4.0)
+
+
+@dataclass
+class RefDecl:
+    frame_id: int
+    datum_id: int
+    time_scale: int
+    epoch: int
+    source: str                       # "hello" or "manifest"
+    t_valid_s: float
+
+
+class Receiver:
+    """v0.2 declaration rule: frame, datum and time scale are declared per sender in an authenticated HELLO (minor >= 2)
+    or a signed capability manifest (nav.frame, nav.datum, nav.time_scale), bound to the key epoch they were
+    authenticated under; a POSITION from a sender without a declaration under its current key epoch is refused
+    (LripRefError, counted). Codes outside the schema's enums are refused, not read as a cautious value."""
+
+    def __init__(self, keys: Optional[Keys] = None, profile: str = "N"):
+        self.keys, self.profile = keys or Keys(), profile
+        self.decl: Dict[int, RefDecl] = {}
+        self.counters = Counters()
+        self.refused_positions = 0
+        self.ignored_declarations = 0
+
+    def _valid(self, frame, datum, ts) -> bool:
+        e = schema()["enums"]
+        return str(int(frame)) in e["frame"] and str(int(datum)) in e["datum"] and str(int(ts)) in e["time_scale"]
+
+    def declare_from_manifest(self, sender: int, manifest: Dict[str, Any], epoch: int, signed: bool) -> bool:
+        nav = (manifest or {}).get("nav") or {}
+        if not signed or not all(k in nav for k in ("frame", "datum", "time_scale")) or \
+                not self._valid(nav["frame"], nav["datum"], nav["time_scale"]):
+            self.ignored_declarations += 1
+            return False
+        self.decl[int(sender)] = RefDecl(int(nav["frame"]), int(nav["datum"]), int(nav["time_scale"]), int(epoch),
+                                         "manifest", float("nan"))
+        return True
+
+    def accept(self, pkt: bytes) -> Optional[Decoded]:
+        """Decode (verifying), apply the rule; a POSITION comes back with frame_id, datum_id, time_scale and the
+        decoded 95 % bound (u95_m) added to its fields."""
+        d = decode(pkt, keys=self.keys, profile=self.profile, counters=self.counters)
+        if d is None:
+            return None
+        if d.name == "HELLO" and d.ver[1] >= 2:
+            f = d.fields
+            if d.auth is not None and self._valid(f.get("frame_id", 0), f.get("datum_id", 0), f.get("time_scale", 0)):
+                self.decl[d.sender] = RefDecl(int(f["frame_id"]), int(f["datum_id"]), int(f["time_scale"]), int(d.epoch),
+                                              "hello", d.t_valid_s)
+            else:
+                self.ignored_declarations += 1
+        elif d.name == "POSITION":
+            dec = self.decl.get(d.sender)
+            if d.auth is None or dec is None or dec.epoch != d.epoch:
+                self.refused_positions += 1
+                raise LripRefError(f"POSITION from sender {d.sender}: no frame / datum / time-scale declaration under "
+                                   f"key epoch {d.epoch}")
+            d.fields.update(frame_id=dec.frame_id, datum_id=dec.datum_id, time_scale=dec.time_scale,
+                            u95_m=u95_from_code(d.fields["u95_code"]) if "u95_code" in d.fields else None)
+        return d

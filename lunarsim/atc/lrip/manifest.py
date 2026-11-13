@@ -17,6 +17,7 @@ from .codec import ROOT, schema
 
 EXAMPLES = os.path.join(ROOT, "data", "atc", "lrip")
 MANIFEST_SCHEMA = os.path.join(ROOT, "lunarsim", "schemas", "lrip-manifest-v0.1.schema.json")
+MANIFEST_SCHEMA_V02 = os.path.join(ROOT, "lunarsim", "schemas", "lrip-manifest-v0.2.schema.json")
 
 
 def _reg():
@@ -91,9 +92,11 @@ def minified_json(manifest: Dict[str, Any]) -> bytes:
     return json.dumps(manifest, separators=(",", ":")).encode()
 
 
-def example(name: str) -> Dict[str, Any]:
-    """'small_rover' or 'hopper' (note 03 C3)."""
-    with open(os.path.join(EXAMPLES, f"manifest-{name}.json"), encoding="utf-8") as f:
+def example(name: str, version: str = "0.1") -> Dict[str, Any]:
+    """'small_rover' or 'hopper' (note 03 C3); version "0.2" (B-100) adds nav.frame, nav.datum and nav.time_scale, the
+    sender's declaration of the reference of its positions and time stamps (data/atc/lrip/v0.2/)."""
+    d = EXAMPLES if version == "0.1" else os.path.join(EXAMPLES, "v" + version)
+    with open(os.path.join(d, f"manifest-{name}.json"), encoding="utf-8") as f:
         return json.load(f)
 
 

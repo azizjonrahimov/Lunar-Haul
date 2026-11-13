@@ -1498,5 +1498,1408 @@
    "linked_share_driving_time": 0.566360139904384
   },
   "run_s": 22.5
+ },
+ "lrip_v02": {
+  "task": "B-100 (P3 M4, P1 M10; decisions B3)",
+  "schema": "lunarsim/schemas/lrip-v0.2.json",
+  "changes_from_v0.1": [
+   "POSITION: the 6 spare bits carry u95_code, a 95 % horizontal position bound on a log scale (no byte added)",
+   "HELLO: appends frame_id (6 bits), datum_id (6 bits) and time_scale (4 bits): the sender's declaration of the frame, datum and time scale of every position and time stamp it sends (2 bytes added)",
+   "HELLO is sent at least once every 10 s (declaration_interval_s), not only when nothing else was sent",
+   "enums frame, datum, time_scale added; manifest registry keys frame, datum, time_scale appended",
+   "declaration rule: a receiver accepts a POSITION only from a sender that has declared frame, datum and time scale in an authenticated HELLO or a signed manifest under the same key epoch (lunarsim/atc/lrip/codec.py Receiver)"
+  ],
+  "sizes_v0.2": {
+   "POSITION": {
+    "payload": 13,
+    "unsecured": 27,
+    "mac8": 41,
+    "mac16": 49,
+    "signed": 97,
+    "default": 41
+   },
+   "STATUS": {
+    "payload": 15,
+    "unsecured": 29,
+    "mac8": 43,
+    "mac16": 51,
+    "signed": 99,
+    "default": 43
+   },
+   "INTENT": {
+    "payload": 10,
+    "unsecured": 24,
+    "mac8": 38,
+    "mac16": 46,
+    "signed": 94,
+    "default": 38
+   },
+   "ALERT": {
+    "payload": 14,
+    "unsecured": 28,
+    "mac8": 42,
+    "mac16": 50,
+    "signed": 98,
+    "default": 42
+   },
+   "TASK_ANNOUNCE": {
+    "payload": 16,
+    "unsecured": 30,
+    "mac8": 44,
+    "mac16": 52,
+    "signed": 100,
+    "default": 44
+   },
+   "TASK_BID": {
+    "payload": 9,
+    "unsecured": 23,
+    "mac8": 37,
+    "mac16": 45,
+    "signed": 93,
+    "default": 37
+   },
+   "TASK_AWARD": {
+    "payload": 8,
+    "unsecured": 22,
+    "mac8": 36,
+    "mac16": 44,
+    "signed": 92,
+    "default": 92
+   },
+   "TASK_STATE": {
+    "payload": 5,
+    "unsecured": 19,
+    "mac8": 33,
+    "mac16": 41,
+    "signed": 89,
+    "default": 33
+   },
+   "RESERVE_REQ": {
+    "payload": 7,
+    "unsecured": 21,
+    "mac8": 35,
+    "mac16": 43,
+    "signed": 91,
+    "default": 35
+   },
+   "RESERVE_GRANT": {
+    "payload": 10,
+    "unsecured": 24,
+    "mac8": 38,
+    "mac16": 46,
+    "signed": 94,
+    "default": 94
+   },
+   "RESERVE_RELEASE": {
+    "payload": 3,
+    "unsecured": 17,
+    "mac8": 31,
+    "mac16": 39,
+    "signed": 87,
+    "default": 31
+   },
+   "CAP_QUERY": {
+    "payload": 3,
+    "unsecured": 17,
+    "mac8": 31,
+    "mac16": 39,
+    "signed": 87,
+    "default": 31
+   },
+   "CAP_MANIFEST": {
+    "payload": 292,
+    "unsecured": 306,
+    "mac8": 320,
+    "mac16": 328,
+    "signed": 376,
+    "default": 376
+   },
+   "MAP_NOTICE": {
+    "payload": 10,
+    "unsecured": 24,
+    "mac8": 38,
+    "mac16": 46,
+    "signed": 94,
+    "default": 38
+   },
+   "HELLO": {
+    "payload": 4,
+    "unsecured": 18,
+    "mac8": 32,
+    "mac16": 40,
+    "signed": 88,
+    "default": 32
+   }
+  },
+  "sizes_moved": {
+   "HELLO": {
+    "v0.1": 30,
+    "v0.2": 32
+   }
+  },
+  "manifest_bytes_v0.2": {
+   "small_rover": {
+    "json": 1235,
+    "compact_cbor": 292,
+    "compact_cbor_v0.1": 283
+   },
+   "hopper": {
+    "json": 1245,
+    "compact_cbor": 289,
+    "compact_cbor_v0.1": 280
+   }
+  },
+  "hello_min_hz": 0.1,
+  "per_rover_at_1hz": {
+   "on": {
+    "POSITION": {
+     "rate_hz": 1.0,
+     "bytes": 41,
+     "bps": 328.0
+    },
+    "STATUS": {
+     "rate_hz": 0.1,
+     "bytes": 43,
+     "bps": 34.4
+    },
+    "INTENT": {
+     "rate_hz": 0.1,
+     "bytes": 38,
+     "bps": 30.4
+    },
+    "RESERVE_REQ": {
+     "rate_hz": 0.0,
+     "bytes": 35,
+     "bps": 0.0
+    },
+    "RESERVE_GRANT": {
+     "rate_hz": 0.0,
+     "bytes": 94,
+     "bps": 0.0
+    },
+    "RESERVE_RELEASE": {
+     "rate_hz": 0.0,
+     "bytes": 31,
+     "bps": 0.0
+    },
+    "TASK_BID": {
+     "rate_hz": 3e-05,
+     "bytes": 37,
+     "bps": 0.01
+    },
+    "TASK_AWARD": {
+     "rate_hz": 3e-05,
+     "bytes": 92,
+     "bps": 0.02
+    },
+    "TASK_STATE": {
+     "rate_hz": 3e-05,
+     "bytes": 33,
+     "bps": 0.01
+    },
+    "ALERT": {
+     "rate_hz": 0.0,
+     "bytes": 42,
+     "bps": 0.0
+    },
+    "HELLO": {
+     "rate_hz": 0.1,
+     "bytes": 32,
+     "bps": 25.6
+    }
+   },
+   "off": {
+    "POSITION": {
+     "rate_hz": 1.0,
+     "bytes": 27,
+     "bps": 216.0
+    },
+    "STATUS": {
+     "rate_hz": 0.1,
+     "bytes": 29,
+     "bps": 23.2
+    },
+    "INTENT": {
+     "rate_hz": 0.1,
+     "bytes": 24,
+     "bps": 19.2
+    },
+    "RESERVE_REQ": {
+     "rate_hz": 0.0,
+     "bytes": 21,
+     "bps": 0.0
+    },
+    "RESERVE_GRANT": {
+     "rate_hz": 0.0,
+     "bytes": 24,
+     "bps": 0.0
+    },
+    "RESERVE_RELEASE": {
+     "rate_hz": 0.0,
+     "bytes": 17,
+     "bps": 0.0
+    },
+    "TASK_BID": {
+     "rate_hz": 3e-05,
+     "bytes": 23,
+     "bps": 0.0
+    },
+    "TASK_AWARD": {
+     "rate_hz": 3e-05,
+     "bytes": 22,
+     "bps": 0.0
+    },
+    "TASK_STATE": {
+     "rate_hz": 3e-05,
+     "bytes": 19,
+     "bps": 0.0
+    },
+    "ALERT": {
+     "rate_hz": 0.0,
+     "bytes": 28,
+     "bps": 0.0
+    },
+    "HELLO": {
+     "rate_hz": 0.1,
+     "bytes": 18,
+     "bps": 14.4
+    }
+   }
+  },
+  "h13_check_v02": {
+   "at_1hz_kbps_p95": 8.369,
+   "at_10hz_kbps_p95": 67.409,
+   "airtime_1hz_scheduled_kbps": 10.461,
+   "same_verdict_as_v0.1": true
+  },
+  "framing_row": {
+   "note": "every packet in a Proximity-1 frame (+12 B); the published sizes are packets before link framing and coding",
+   "fleet_auth_1hz_20": {
+    "framing": "proximity1",
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 1.0,
+    "rovers": 20,
+    "per_rover_kbps": 0.5433,
+    "one_hop_sum_kbps": 10.865,
+    "busiest_link_kbps_mean": 10.34,
+    "busiest_link_kbps_p95": 10.865,
+    "mean_hops_to_base": 1.019,
+    "reachable_share": 0.9683,
+    "fits_nb_raw_p95": true,
+    "fits_nb_scheduled_p95": true,
+    "fits_nb_slotted_aloha_p95": false,
+    "fits_bb_raw_p95": true,
+    "fits_bb_scheduled_p95": true,
+    "fits_bb_slotted_aloha_p95": true
+   },
+   "airtime_1hz_scheduled_kbps": 13.581
+  },
+  "traffic_model_coverage": {
+   "sent_by_E53": [
+    "POSITION",
+    "STATUS",
+    "INTENT",
+    "HELLO",
+    "RESERVE_REQ",
+    "RESERVE_GRANT",
+    "RESERVE_RELEASE",
+    "TASK_BID",
+    "TASK_AWARD",
+    "TASK_STATE",
+    "ALERT"
+   ],
+   "not_sent_by_E53": [
+    "TASK_ANNOUNCE",
+    "CAP_QUERY",
+    "CAP_MANIFEST",
+    "MAP_NOTICE"
+   ],
+   "note": "11 of the 15 message types; announcements, capability queries / manifests and map notices are rare and not in the per-robot traffic model"
+  },
+  "rows_moved_vs_v0.1": [
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 0.1,
+    "rovers": 5,
+    "key": "per_rover_kbps",
+    "v0.1": 0.2656,
+    "v0.2": 0.2768
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 0.1,
+    "rovers": 5,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 1.328,
+    "v0.2": 1.384
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 0.1,
+    "rovers": 10,
+    "key": "per_rover_kbps",
+    "v0.1": 0.2656,
+    "v0.2": 0.2768
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 0.1,
+    "rovers": 10,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 2.656,
+    "v0.2": 2.768
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 0.1,
+    "rovers": 20,
+    "key": "per_rover_kbps",
+    "v0.1": 0.2656,
+    "v0.2": 0.2768
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 0.1,
+    "rovers": 20,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 5.312,
+    "v0.2": 5.536
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 0.1,
+    "rovers": 40,
+    "key": "per_rover_kbps",
+    "v0.1": 0.2656,
+    "v0.2": 0.2768
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 0.1,
+    "rovers": 40,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 10.625,
+    "v0.2": 11.073
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 0.1,
+    "rovers": 80,
+    "key": "per_rover_kbps",
+    "v0.1": 0.2656,
+    "v0.2": 0.2768
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 0.1,
+    "rovers": 80,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 21.13,
+    "v0.2": 22.021
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 1.0,
+    "rovers": 5,
+    "key": "per_rover_kbps",
+    "v0.1": 0.3928,
+    "v0.2": 0.4184
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 1.0,
+    "rovers": 5,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 1.964,
+    "v0.2": 2.092
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 1.0,
+    "rovers": 10,
+    "key": "per_rover_kbps",
+    "v0.1": 0.3928,
+    "v0.2": 0.4184
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 1.0,
+    "rovers": 10,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 3.928,
+    "v0.2": 4.184
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 1.0,
+    "rovers": 20,
+    "key": "per_rover_kbps",
+    "v0.1": 0.3928,
+    "v0.2": 0.4184
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 1.0,
+    "rovers": 20,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 7.857,
+    "v0.2": 8.369
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 1.0,
+    "rovers": 40,
+    "key": "per_rover_kbps",
+    "v0.1": 0.3928,
+    "v0.2": 0.4184
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 1.0,
+    "rovers": 40,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 15.714,
+    "v0.2": 16.738
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 1.0,
+    "rovers": 80,
+    "key": "per_rover_kbps",
+    "v0.1": 0.3928,
+    "v0.2": 0.4184
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 1.0,
+    "rovers": 80,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 31.251,
+    "v0.2": 33.287
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 10.0,
+    "rovers": 5,
+    "key": "per_rover_kbps",
+    "v0.1": 3.3448,
+    "v0.2": 3.3704
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 10.0,
+    "rovers": 5,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 16.724,
+    "v0.2": 16.852
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 10.0,
+    "rovers": 10,
+    "key": "per_rover_kbps",
+    "v0.1": 3.3448,
+    "v0.2": 3.3704
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 10.0,
+    "rovers": 10,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 33.448,
+    "v0.2": 33.704
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 10.0,
+    "rovers": 20,
+    "key": "per_rover_kbps",
+    "v0.1": 3.3448,
+    "v0.2": 3.3704
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 10.0,
+    "rovers": 20,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 66.897,
+    "v0.2": 67.409
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 10.0,
+    "rovers": 40,
+    "key": "per_rover_kbps",
+    "v0.1": 3.3448,
+    "v0.2": 3.3704
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 10.0,
+    "rovers": 40,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 133.794,
+    "v0.2": 134.818
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 10.0,
+    "rovers": 80,
+    "key": "per_rover_kbps",
+    "v0.1": 3.3448,
+    "v0.2": 3.3704
+   },
+   {
+    "geometry": "fleet",
+    "auth": "on",
+    "position_hz": 10.0,
+    "rovers": 80,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 266.082,
+    "v0.2": 268.119
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 0.1,
+    "rovers": 5,
+    "key": "per_rover_kbps",
+    "v0.1": 0.1536,
+    "v0.2": 0.1648
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 0.1,
+    "rovers": 5,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 0.768,
+    "v0.2": 0.824
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 0.1,
+    "rovers": 10,
+    "key": "per_rover_kbps",
+    "v0.1": 0.1536,
+    "v0.2": 0.1648
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 0.1,
+    "rovers": 10,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 1.536,
+    "v0.2": 1.648
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 0.1,
+    "rovers": 20,
+    "key": "per_rover_kbps",
+    "v0.1": 0.1536,
+    "v0.2": 0.1648
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 0.1,
+    "rovers": 20,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 3.072,
+    "v0.2": 3.296
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 0.1,
+    "rovers": 40,
+    "key": "per_rover_kbps",
+    "v0.1": 0.1536,
+    "v0.2": 0.1648
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 0.1,
+    "rovers": 40,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 6.144,
+    "v0.2": 6.592
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 0.1,
+    "rovers": 80,
+    "key": "per_rover_kbps",
+    "v0.1": 0.1536,
+    "v0.2": 0.1648
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 0.1,
+    "rovers": 80,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 12.219,
+    "v0.2": 13.11
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 1.0,
+    "rovers": 5,
+    "key": "per_rover_kbps",
+    "v0.1": 0.2584,
+    "v0.2": 0.2728
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 1.0,
+    "rovers": 5,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 1.292,
+    "v0.2": 1.364
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 1.0,
+    "rovers": 10,
+    "key": "per_rover_kbps",
+    "v0.1": 0.2584,
+    "v0.2": 0.2728
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 1.0,
+    "rovers": 10,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 2.584,
+    "v0.2": 2.728
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 1.0,
+    "rovers": 20,
+    "key": "per_rover_kbps",
+    "v0.1": 0.2584,
+    "v0.2": 0.2728
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 1.0,
+    "rovers": 20,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 5.168,
+    "v0.2": 5.456
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 1.0,
+    "rovers": 40,
+    "key": "per_rover_kbps",
+    "v0.1": 0.2584,
+    "v0.2": 0.2728
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 1.0,
+    "rovers": 40,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 10.337,
+    "v0.2": 10.913
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 1.0,
+    "rovers": 80,
+    "key": "per_rover_kbps",
+    "v0.1": 0.2584,
+    "v0.2": 0.2728
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 1.0,
+    "rovers": 80,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 20.557,
+    "v0.2": 21.703
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 10.0,
+    "rovers": 5,
+    "key": "per_rover_kbps",
+    "v0.1": 2.2024,
+    "v0.2": 2.2168
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 10.0,
+    "rovers": 5,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 11.012,
+    "v0.2": 11.084
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 10.0,
+    "rovers": 10,
+    "key": "per_rover_kbps",
+    "v0.1": 2.2024,
+    "v0.2": 2.2168
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 10.0,
+    "rovers": 10,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 22.024,
+    "v0.2": 22.168
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 10.0,
+    "rovers": 20,
+    "key": "per_rover_kbps",
+    "v0.1": 2.2024,
+    "v0.2": 2.2168
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 10.0,
+    "rovers": 20,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 44.048,
+    "v0.2": 44.336
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 10.0,
+    "rovers": 40,
+    "key": "per_rover_kbps",
+    "v0.1": 2.2024,
+    "v0.2": 2.2168
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 10.0,
+    "rovers": 40,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 88.097,
+    "v0.2": 88.673
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 10.0,
+    "rovers": 80,
+    "key": "per_rover_kbps",
+    "v0.1": 2.2024,
+    "v0.2": 2.2168
+   },
+   {
+    "geometry": "fleet",
+    "auth": "off",
+    "position_hz": 10.0,
+    "rovers": 80,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 175.202,
+    "v0.2": 176.348
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 0.1,
+    "rovers": 5,
+    "key": "per_rover_kbps",
+    "v0.1": 0.2656,
+    "v0.2": 0.2768
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 0.1,
+    "rovers": 5,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 1.062,
+    "v0.2": 1.107
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 0.1,
+    "rovers": 10,
+    "key": "per_rover_kbps",
+    "v0.1": 0.2656,
+    "v0.2": 0.2768
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 0.1,
+    "rovers": 10,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 1.86,
+    "v0.2": 1.938
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 0.1,
+    "rovers": 20,
+    "key": "per_rover_kbps",
+    "v0.1": 0.2656,
+    "v0.2": 0.2768
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 0.1,
+    "rovers": 20,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 3.068,
+    "v0.2": 3.198
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 0.1,
+    "rovers": 40,
+    "key": "per_rover_kbps",
+    "v0.1": 0.2656,
+    "v0.2": 0.2768
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 0.1,
+    "rovers": 40,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 5.872,
+    "v0.2": 6.119
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 0.1,
+    "rovers": 80,
+    "key": "per_rover_kbps",
+    "v0.1": 0.2656,
+    "v0.2": 0.2768
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 0.1,
+    "rovers": 80,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 11.039,
+    "v0.2": 11.504
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 1.0,
+    "rovers": 5,
+    "key": "per_rover_kbps",
+    "v0.1": 0.3928,
+    "v0.2": 0.4184
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 1.0,
+    "rovers": 5,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 1.571,
+    "v0.2": 1.674
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 1.0,
+    "rovers": 10,
+    "key": "per_rover_kbps",
+    "v0.1": 0.3928,
+    "v0.2": 0.4184
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 1.0,
+    "rovers": 10,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 2.75,
+    "v0.2": 2.929
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 1.0,
+    "rovers": 20,
+    "key": "per_rover_kbps",
+    "v0.1": 0.3928,
+    "v0.2": 0.4184
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 1.0,
+    "rovers": 20,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 4.538,
+    "v0.2": 4.834
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 1.0,
+    "rovers": 40,
+    "key": "per_rover_kbps",
+    "v0.1": 0.3928,
+    "v0.2": 0.4184
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 1.0,
+    "rovers": 40,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 8.683,
+    "v0.2": 9.249
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 1.0,
+    "rovers": 80,
+    "key": "per_rover_kbps",
+    "v0.1": 0.3928,
+    "v0.2": 0.4184
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 1.0,
+    "rovers": 80,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 16.325,
+    "v0.2": 17.389
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 10.0,
+    "rovers": 5,
+    "key": "per_rover_kbps",
+    "v0.1": 3.3448,
+    "v0.2": 3.3704
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 10.0,
+    "rovers": 5,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 13.379,
+    "v0.2": 13.482
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 10.0,
+    "rovers": 10,
+    "key": "per_rover_kbps",
+    "v0.1": 3.3448,
+    "v0.2": 3.3704
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 10.0,
+    "rovers": 10,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 23.414,
+    "v0.2": 23.593
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 10.0,
+    "rovers": 20,
+    "key": "per_rover_kbps",
+    "v0.1": 3.3448,
+    "v0.2": 3.3704
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 10.0,
+    "rovers": 20,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 38.633,
+    "v0.2": 38.929
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 10.0,
+    "rovers": 40,
+    "key": "per_rover_kbps",
+    "v0.1": 3.3448,
+    "v0.2": 3.3704
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 10.0,
+    "rovers": 40,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 73.922,
+    "v0.2": 74.488
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 10.0,
+    "rovers": 80,
+    "key": "per_rover_kbps",
+    "v0.1": 3.3448,
+    "v0.2": 3.3704
+   },
+   {
+    "geometry": "spread",
+    "auth": "on",
+    "position_hz": 10.0,
+    "rovers": 80,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 138.981,
+    "v0.2": 140.044
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 0.1,
+    "rovers": 5,
+    "key": "per_rover_kbps",
+    "v0.1": 0.1536,
+    "v0.2": 0.1648
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 0.1,
+    "rovers": 5,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 0.614,
+    "v0.2": 0.659
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 0.1,
+    "rovers": 10,
+    "key": "per_rover_kbps",
+    "v0.1": 0.1536,
+    "v0.2": 0.1648
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 0.1,
+    "rovers": 10,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 1.075,
+    "v0.2": 1.154
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 0.1,
+    "rovers": 20,
+    "key": "per_rover_kbps",
+    "v0.1": 0.1536,
+    "v0.2": 0.1648
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 0.1,
+    "rovers": 20,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 1.774,
+    "v0.2": 1.904
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 0.1,
+    "rovers": 40,
+    "key": "per_rover_kbps",
+    "v0.1": 0.1536,
+    "v0.2": 0.1648
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 0.1,
+    "rovers": 40,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 3.395,
+    "v0.2": 3.643
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 0.1,
+    "rovers": 80,
+    "key": "per_rover_kbps",
+    "v0.1": 0.1536,
+    "v0.2": 0.1648
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 0.1,
+    "rovers": 80,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 6.383,
+    "v0.2": 6.849
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 1.0,
+    "rovers": 5,
+    "key": "per_rover_kbps",
+    "v0.1": 0.2584,
+    "v0.2": 0.2728
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 1.0,
+    "rovers": 5,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 1.034,
+    "v0.2": 1.091
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 1.0,
+    "rovers": 10,
+    "key": "per_rover_kbps",
+    "v0.1": 0.2584,
+    "v0.2": 0.2728
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 1.0,
+    "rovers": 10,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 1.809,
+    "v0.2": 1.91
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 1.0,
+    "rovers": 20,
+    "key": "per_rover_kbps",
+    "v0.1": 0.2584,
+    "v0.2": 0.2728
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 1.0,
+    "rovers": 20,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 2.985,
+    "v0.2": 3.151
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 1.0,
+    "rovers": 40,
+    "key": "per_rover_kbps",
+    "v0.1": 0.2584,
+    "v0.2": 0.2728
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 1.0,
+    "rovers": 40,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 5.712,
+    "v0.2": 6.03
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 1.0,
+    "rovers": 80,
+    "key": "per_rover_kbps",
+    "v0.1": 0.2584,
+    "v0.2": 0.2728
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 1.0,
+    "rovers": 80,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 10.738,
+    "v0.2": 11.336
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 10.0,
+    "rovers": 5,
+    "key": "per_rover_kbps",
+    "v0.1": 2.2024,
+    "v0.2": 2.2168
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 10.0,
+    "rovers": 5,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 8.81,
+    "v0.2": 8.867
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 10.0,
+    "rovers": 10,
+    "key": "per_rover_kbps",
+    "v0.1": 2.2024,
+    "v0.2": 2.2168
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 10.0,
+    "rovers": 10,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 15.417,
+    "v0.2": 15.518
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 10.0,
+    "rovers": 20,
+    "key": "per_rover_kbps",
+    "v0.1": 2.2024,
+    "v0.2": 2.2168
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 10.0,
+    "rovers": 20,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 25.438,
+    "v0.2": 25.604
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 10.0,
+    "rovers": 40,
+    "key": "per_rover_kbps",
+    "v0.1": 2.2024,
+    "v0.2": 2.2168
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 10.0,
+    "rovers": 40,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 48.674,
+    "v0.2": 48.992
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 10.0,
+    "rovers": 80,
+    "key": "per_rover_kbps",
+    "v0.1": 2.2024,
+    "v0.2": 2.2168
+   },
+   {
+    "geometry": "spread",
+    "auth": "off",
+    "position_hz": 10.0,
+    "rovers": 80,
+    "key": "busiest_link_kbps_p95",
+    "v0.1": 91.511,
+    "v0.2": 92.11
+   }
+  ],
+  "conformance_vectors_v0.2": 45,
+  "run_s": 12.2
  }
 }
