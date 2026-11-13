@@ -118,3 +118,24 @@ estimate row stays "calculated from assumed inputs"; the "not yet tested" row ke
 Abstract (299 words): "one robot's bid takes 0.29 s (99th percentile) at today's fleet and 1.19 s at eight times it, above the one-second decision"
 replaces the whole-fleet sentence. Conclusion (249 words): the same sentence. Section 6.6 names the design change that follows and is not made: a cap
 on the items a robot evaluates in a round. Section 7's pointer to B-102 as the companion paper's is unchanged.
+
+## Second pass, part 3 (12 Nov)
+
+B-100 landed (`lunarsim/schemas/lrip-v0.2.json`, `results/E53_bitrate.json` block `lrip_v02`, `results/E53_table_v02.csv`); the composer is
+written (the key name fixed from `v02`). Nothing is awaited any more. Build: passes without `--allow-pending`; no `[[PENDING`; abstract 300
+words, conclusion 248; PDF rebuilt.
+
+| Finding | Now | What changed | Where |
+|---|---|---|---|
+| M4 | Closed | The design text now describes what version 0.2 does, not what the design wished: the position report carries a one-sigma value and a 95 % horizontal bound (six bits that were spare; 0.05 m x 2^(code/4), coded upward; codes for "above 1.95 km" and "unknown"), still 104 bits and 41 B authenticated; frame, datum and time scale are declared per sender (6, 6 and 4 bits in a heartbeat sent at least every 10 s, and in the signed manifest) and bound to the security context: a position from a sender with no declaration under its current key epoch is refused. A covariance is not carried, and the text says so in 3.5, 3.8, 6.6 and 7. Sizes that differ: heartbeat 30 to 32 B, small-rover manifest 283 to 292 B. Rates for 20 rovers at 1 Hz, version 0.1 against 0.2: per rover 49.1 against 52.3 B/s; authentication adds 52 against 53 %; busiest link 7.86 against 8.37 kbit/s; scheduled airtime 9.82 against 10.46 kbit/s; with Proximity-1 framing (+12 B a packet) 10.87 and 13.58 kbit/s, within the target scheduled and not on slotted random access. H13's two comparisons come out the same. Table 14 has two new rows (version 0.2; version 0.2 in Proximity-1 frames). Labelled a calculation on a traffic model; the conformance vectors are said to test the codec, not a radio. The driving split and the status-and-intent case are said to be version 0.1 figures (the report gives them under v0.1 only). Every "v0.1 lacks / awaiting v0.2" sentence is gone. | 3.5, 3.6, 3.7, 3.8, Table 5, 5.11, Table 14, 6.3, 6.6, 7, Table 18, abstract, introduction, conclusion |
+
+No verdict moved. Abstract: "Authentication adds 52 % to the bit rate; senders declare frame, datum and time scale, and reports carry a 95 %
+bound, not a covariance" replaces the sentence on what version 0.1 lacked. Table 18 has eight rows "calculated from assumed inputs".
+
+### Final tally of the 44 findings
+
+| Status | Count | Findings |
+|---|---|---|
+| Fixed | 34 | M1 to M6, M8 to M15; S1 to S8, S10 to S13, S16; O1, O2, O5, O7 to O10 |
+| Fixed in part | 6 | M7 (the censored part of the alone loss is given in items, not in USD; the value of time is not swept); S9 (the retry budget is stated, not swept; the lost-link return is not driven in the engine); S14 (missing dates, initials and titles are not in the research notes; one arXiv identifier not re-checked; Table 2's cells print the catalogue's flags); S15 (P3's side only); S17 (items 1, 2 and 3 in part, item 4 done; the other new experiments are listed in 6.6 as not run); O4 (task numbers and the list of skipped checks kept) |
+| Not done | 4 | S18 (not split, by the lead's decision; a roadmap and explicit halves instead); O3 (199 jobs against 200.9 awards a seed, unexplained); O6 (CoreMark not run on the laptop); O11 (P1's text) |

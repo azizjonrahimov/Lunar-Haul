@@ -1335,6 +1335,48 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
               "the traffic model sends 11 of the 15 message types; the task announcement, the capability query and manifest and the map notice are not in it (3.8, 5.11)")
         return sent, out
 
+    SCHEMA2 = os.path.join(ROOT, "lunarsim", "schemas", "lrip-v0.2.json")
+    _v2: Dict[str, Any] = {}
+
+    def lrip_v02():
+        """Version 0.2 of the protocol (task B-100): lunarsim/schemas/lrip-v0.2.json and results/E53_bitrate.json block `lrip_v02`. What a
+        position carries in v0.2: a 95 % bound in the report itself; frame, datum and time scale declared per sender in HELLO or in the
+        signed manifest and bound to the security context; no covariance. The rates are a calculation on the traffic model of E53."""
+        if _v2:
+            return _v2
+        _need(SCHEMA2, "the LRIP v0.2 schema")
+        sc = json.load(open(SCHEMA2, encoding="utf-8"))
+        pos = next(m_ for m_ in sc["messages"] if m_["name"] == "POSITION")
+        hel = next(m_ for m_ in sc["messages"] if m_["name"] == "HELLO")
+        pf = {x[0]: x for x in pos["fields"]}
+        hf = {x[0]: x for x in hel["fields"]}
+        check(str(sc["version"]) == "0.2" and "u95_code" in pf and int(pf["u95_code"][2]) == 6 and pf["u95_code"][-1].get("was") == "spare" and
+              sum(int(x[2]) for x in pos["fields"]) == 104 and not any(re.search(r"cov|frame|datum|scale", k) for k in pf),
+              "POSITION v0.2 carries a 95 % bound in the six bits that were spare, keeps its 104 bits, and carries no covariance and no identifier (3.8)")
+        note = str(pf["u95_code"][4])
+        check(all(x in note for x in ("0.05 m x 2^(code/4)", "coded upward", "62: above 1.95 km", "63 unknown")), "the 95 % bound of v0.2 is 0.05 m x 2^(code/4), coded upward, with codes for 'above 1.95 km' and 'unknown' (3.8)")
+        check([int(hf[k][2]) for k in ("frame_id", "datum_id", "time_scale")] == [6, 6, 4] and "refused" in str(sc["declaration_rule"]) and
+              "key epoch" in str(sc["declaration_rule"]) and "signed capability manifest" in str(sc["declaration_rule"]),
+              "HELLO v0.2 declares frame, datum and time scale, and a POSITION without a declaration under the sender's current key epoch is refused (3.8)")
+        b = r.p6("E53", "lrip_v02")
+        s1, s2 = r.p6("E53", "sizes"), b["sizes_v0.2"]
+        moved = sorted(k for k in s1 if s1[k] != s2[k])
+        check(moved == ["CAP_MANIFEST", "HELLO"] and set(b["sizes_moved"]) == {"HELLO"} and int(s2["POSITION"]["mac8"]) == int(s1["POSITION"]["mac8"]),
+              "from v0.1 to v0.2 only the HELLO and the manifest change size; the position report does not (3.8)")
+        on2, off2 = (sum(_fin(v["bps"]) for v in b["per_rover_at_1hz"][k].values()) for k in ("on", "off"))
+        h2 = b["h13_check_v02"]
+        check(abs(on2 * 20 / 1000.0 - _fin(h2["at_1hz_kbps_p95"])) < 0.01 and bool(h2["same_verdict_as_v0.1"]) and _fin(h2["at_1hz_kbps_p95"]) <= 16.0 < _fin(h2["at_10hz_kbps_p95"]),
+              "with v0.2 the busiest link carries 20 times the per-rover rate and H13's two comparisons come out as with v0.1 (5.11)")
+        fr = b["framing_row"]
+        check("+12 B" in str(fr["note"]) and bool(fr["fleet_auth_1hz_20"]["fits_nb_scheduled_p95"]) and not bool(fr["fleet_auth_1hz_20"]["fits_nb_slotted_aloha_p95"]) and
+              _fin(fr["airtime_1hz_scheduled_kbps"]) <= 16.0,
+              "in Proximity-1 frames the v0.2 traffic of 20 rovers at 1 Hz fits the narrow channel when scheduled and not on slotted random access (5.11)")
+        cov = b["traffic_model_coverage"]
+        check(len(cov["sent_by_E53"]) == 11 and sorted(cov["not_sent_by_E53"]) == ["CAP_MANIFEST", "CAP_QUERY", "MAP_NOTICE", "TASK_ANNOUNCE"], "the traffic model sends 11 of the 15 types under v0.2 too")
+        _v2.update({"b": b, "pf": pf, "hf": hf, "hel": hel, "s2": s2, "on": on2, "off": off2, "h": h2, "fr": fr, "p1": int(sc["framing"]["proximity1_frame_bytes"]),
+                    "interval": _fin(hel["declaration_interval_s"]), "mb": b["manifest_bytes_v0.2"]["small_rover"], "vec": int(b["conformance_vectors_v0.2"])})
+        return _v2
+
     def sec_layout():
         s = lrip_sizes()
         sz = s["sz"]
@@ -1342,41 +1384,51 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
         ps = lrip_position()
         f = ps["f"]
         sent, out = traffic_types()
+        v2 = lrip_v02()
         P = sz["POSITION"]
         res = lambda k, u: f"{int(f[k][2])} bits at {num(f[k][3], 2 if _fin(f[k][3]) < 0.1 else 1)}{NB}{u}"
-        per_byte = 8.0 * 20 / 1000.0
+        hf, s2 = v2["hf"], v2["s2"]
         return (f"The messages are implemented and serialised, unlike the assumed layouts of Section 3.4: {words(s['n']) if s['n'] < 10 else cnt(s['n'])} message "
                 f"types in one schema with two encodings, bit-packed for the narrow channel and CBOR for the broadband one, with real AES-CMAC and Ed25519 "
-                f"and {cnt(r.p6('E53', 'conformance_vectors'))} conformance vectors in the repository. What version 0.1 serialises has to be said exactly, because "
-                f"it is less than the design of Sections 3.5 to 3.7 asks for. A position report holds east and north in the site grid ({res('e', 'm')} each), the "
-                f"height above the site datum ({res('h', 'm')}), heading ({int(f['heading'][2])} bits), speed ({int(f['speed'][2])} bits), one scalar one-sigma "
-                f"horizontal uncertainty ({res('sigma_h', 'm')}), a {int(f['nav_src'][2])}-bit code for the navigation source, a moving flag and "
-                f"{int(f['spare'][2])} spare bits: {cnt(ps['bits'])} bits, {cnt(P['payload'])}&nbsp;B. The {cnt(ps['hdr']['bytes'])}-byte protocol header adds the "
-                f"version, the message type, the sender and one time stamp in tenths of a second &ldquo;on the site time base&rdquo;. Neither carries a "
-                f"frame identifier, a datum identifier or a time-scale identifier, and the report carries no covariance. The design requires all four; "
-                f"version 0.2 of the protocol adds them (task B-100, not yet done), and until its sizes are in, every byte and bit rate of this paper "
-                f"is a version 0.1 figure. Each byte added to the report adds {num(per_byte, 2)}&nbsp;kbit/s to the load of 20 rovers at the sources (a "
-                f"calculation). The report is {cnt(P['unsecured'])}&nbsp;B with its packet and protocol headers, {cnt(P['mac8'])}&nbsp;B "
-                f"with the security header and the 8-byte code, and {cnt(P['mac16'])}&nbsp;B with the 16-byte code; these are packet sizes before link "
-                f"framing and coding, and a Proximity-1 frame adds {cnt(ps['p1'])}&nbsp;B [94]. A status report is "
+                f"and {cnt(r.p6('E53', 'conformance_vectors'))} conformance vectors per version in the repository; the vectors test the codec, not a radio. "
+                f"There are two versions, and what each puts on the wire has to be said exactly. In both, a position report holds east and north in the "
+                f"site grid ({res('e', 'm')} each), the height above the site datum ({res('h', 'm')}), heading ({int(f['heading'][2])} bits), speed "
+                f"({int(f['speed'][2])} bits), one scalar one-sigma horizontal uncertainty ({res('sigma_h', 'm')}), a {int(f['nav_src'][2])}-bit code for "
+                f"the navigation source and a moving flag, and the {cnt(ps['hdr']['bytes'])}-byte protocol header adds the version, the message type, the "
+                f"sender and one time stamp in tenths of a second. Version 0.1, with which the experiments of this paper were first run, stops there: "
+                f"{int(f['spare'][2])} bits of the report are spare, and nothing in any message names the frame, the datum or the time scale. Version 0.2 "
+                f"closes that gap in two ways. The uncertainty travels in the report itself: the {int(v2['pf']['u95_code'][2])} bits that were spare carry a "
+                f"95{PCT} horizontal bound on a logarithmic scale, 0.05{NB}m times 2 to the power of a quarter of the code, rounded upward so that the "
+                f"decoded bound never understates, with one code for a bound above 1.95{NB}km and one for unknown. The frame, the datum and the time "
+                f"scale do not travel in every report: each sender declares them, in {int(hf['frame_id'][2])}, {int(hf['datum_id'][2])} and "
+                f"{int(hf['time_scale'][2])} bits, in a heartbeat sent at least every {unit(v2['interval'], 's', 0)} and in its signed manifest, and the "
+                f"declaration is bound to the security context: it holds for the key epoch under which it was authenticated, and a receiver refuses a "
+                f"position report whose sender has no declaration under its current key epoch, as it refuses an unauthenticated one. A covariance is "
+                f"not carried in either version: the report has a one-sigma value and, in version 0.2, a 95{PCT} bound, both scalars. The report is "
+                f"{cnt(ps['bits'])} bits, {cnt(P['payload'])}&nbsp;B, in both versions: {cnt(P['unsecured'])}&nbsp;B with its packet and protocol headers, "
+                f"{cnt(P['mac8'])}&nbsp;B with the security header and the 8-byte code, and {cnt(P['mac16'])}&nbsp;B with the 16-byte code; these are packet "
+                f"sizes before link framing and coding, and a Proximity-1 frame adds {cnt(ps['p1'])}&nbsp;B [94]. A status report is "
                 f"{cnt(sz['STATUS']['mac8'])}&nbsp;B, a bid {cnt(sz['TASK_BID']['mac8'])}&nbsp;B, a reservation request {cnt(sz['RESERVE_REQ']['mac8'])}&nbsp;B, and the "
-                f"signed award and grant {cnt(sz['TASK_AWARD']['signed'])} and {cnt(sz['RESERVE_GRANT']['signed'])}&nbsp;B. A capability manifest is "
-                f"{cnt(mb['small_rover']['json'])}&nbsp;B as JSON and {cnt(mb['small_rover']['compact_cbor'])}&nbsp;B in compact binary for the small rover. "
-                f"The traffic model of Section 4.2 sends {cnt(len(sent))} of the {cnt(s['n'])} types: the three reports, the alert, the bid, the award and the task "
-                f"state, the three reservation messages and the heartbeat; the task announcement, the capability query and manifest and the map notice "
-                f"are not in it.")
+                f"signed award and grant {cnt(sz['TASK_AWARD']['signed'])} and {cnt(sz['RESERVE_GRANT']['signed'])}&nbsp;B. Two sizes differ between the versions: "
+                f"the heartbeat, {cnt(sz['HELLO']['mac8'])}&nbsp;B in version 0.1 and {cnt(s2['HELLO']['mac8'])}&nbsp;B with the declaration, and the capability "
+                f"manifest of the small rover, {cnt(mb['small_rover']['compact_cbor'])} and {cnt(v2['mb']['compact_cbor'])}&nbsp;B in compact binary "
+                f"({cnt(mb['small_rover']['json'])} and {cnt(v2['mb']['json'])}&nbsp;B as JSON). The identifiers are the site's own registry (Assumed; not "
+                f"registered with any agency). The traffic model of Section 4.2 sends {cnt(len(sent))} of the {cnt(s['n'])} types: the three reports, the "
+                f"alert, the bid, the award and the task state, the three reservation messages and the heartbeat; the task announcement, the capability "
+                f"query and manifest and the map notice are not in it.")
     fill("P3-SEC-LAYOUT-SENTENCE", sec_layout, "E53 sizes")
     def limit_lrip():
-        """Section 7: what the serialised protocol lacks (finding M4, decision B3)."""
-        lrip_position()
-        sz = r.p6("E53", "sizes")
-        on, off = e53row("fleet", "on", 1.0, 20), e53row("fleet", "off", 1.0, 20)
+        """Section 7: what the protocol carries and what it does not, after version 0.2 (finding M4, decision B3; task B-100)."""
+        v2 = lrip_v02()
         sent, out = traffic_types()
-        return (f"The position report of version 0.1 carries no frame, datum or time-scale identifier and no covariance, although Sections 3.5 to 3.7 "
-                f"require them. Every byte count and bit rate of this paper, the {cnt(sz['POSITION']['mac8'])}&nbsp;B report, the "
-                f"{pc(_fin(on['per_rover_kbps']) / _fin(off['per_rover_kbps']) - 1.0, 0)} that authentication adds and the "
-                f"{num(on['busiest_link_kbps_p95'], 2)}&nbsp;kbit/s of 20 robots, is a version 0.1 figure, before link framing and coding; version 0.2 "
-                f"will be larger (task B-100). The traffic model sends {cnt(len(sent))} of the {cnt(len(sz))} message types.")
+        sz = r.p6("E53", "sizes")
+        return (f"The design of Sections 3.5 to 3.7 asked for a frame, a datum, a time scale and a covariance with every position. Version 0.2 gives "
+                f"the first three by a declaration per sender, bound to its key epoch, not by fields in each report, and it gives a scalar 95{PCT} bound "
+                f"where the design asked for a covariance; a receiver that needs the shape of the error does not get it. The identifiers are the site's "
+                f"own registry and are registered nowhere. The experiments were run with version 0.1; the figures of version 0.2 are a calculation on the "
+                f"same traffic model, which sends {cnt(len(sent))} of the {cnt(len(sz))} message types, and they are packet sizes: a Proximity-1 frame adds "
+                f"{cnt(v2['p1'])}&nbsp;B a packet and coding more. The {cnt(v2['vec'])} conformance vectors of each version test the codec against itself; no "
+                f"second implementation and no radio has read them.")
     fill("P3-LIMIT-LRIP-SENTENCE", limit_lrip, "E53, the schema")
 
     def limit_near():
@@ -1393,9 +1445,28 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
                 f"readings were not computed at eight times the fleet. Inside the region {pc(st['near_over'], 1)} of the steps still exceed the budget.")
     fill("P3-LIMIT-NEAR-SENTENCE", limit_near, "E50, B-101")
 
-    fill_await("P3-LRIP-V02-SENTENCE", lambda: landed("the LRIP v0.2 sizes (B-100)", lambda: r.p6("E53", "v02")),
-               "The sizes and bit rates of version 0.2, with the identifiers and the covariance in the report, are not in this version of the paper; "
-               "they will be reported here beside the version 0.1 figures.", "B-100 (results/E53_bitrate.json, new block v02: LRIP v0.2 sizes and rates)")
+    def lrip_v02_sentence():
+        """5.11: the sizes and rates of version 0.2 beside those of version 0.1, with link framing as a separate figure (task B-100)."""
+        v2 = lrip_v02()
+        on1, off1 = e53row("fleet", "on", 1.0, 20), e53row("fleet", "off", 1.0, 20)
+        h1, h2, fr = r.p6("E53", "h13"), v2["h"], v2["fr"]
+        add1 = _fin(on1["per_rover_kbps"]) / _fin(off1["per_rover_kbps"]) - 1.0
+        add2 = v2["on"] / v2["off"] - 1.0
+        w = lambda x: "within" if _fin(x) <= 16.0 else "above"
+        f20 = fr["fleet_auth_1hz_20"]
+        return (f"The figures above are for version 0.1. With version 0.2 the report keeps its size and the only change in the traffic is the "
+                f"heartbeat with its declaration, now sent at least every {unit(v2['interval'], 's', 0)}: a rover generates {num(v2['on'] / 8.0, 1)}&nbsp;B/s "
+                f"in place of {num(_fin(on1['per_rover_kbps']) * 1000 / 8, 1)}, authentication adds {pc(add2, 0)} in place of {pc(add1, 0)}, and for 20 "
+                f"rovers at 1&nbsp;Hz the busiest link carries {num(h2['at_1hz_kbps_p95'], 2)}{KBPS6} in place of {num(h1['at_1hz_kbps_p95'], 2)} and needs "
+                f"{num(h2['airtime_1hz_scheduled_kbps'], 2)}{KBPS6} of a scheduled channel in place of {num(h1['airtime_1hz_scheduled_kbps'], 2)}, "
+                f"{w(h2['airtime_1hz_scheduled_kbps'])} the target; at 10&nbsp;Hz it carries {num(h2['at_10hz_kbps_p95'], 1)}{KBPS6}. All of these are "
+                f"packet sizes. With every packet in a Proximity-1 frame, {cnt(v2['p1'])}&nbsp;B more, the same 20 rovers offer "
+                f"{num(f20['busiest_link_kbps_p95'], 2)}{KBPS6} and need {num(fr['airtime_1hz_scheduled_kbps'], 2)}{KBPS6} of a scheduled channel, "
+                f"{w(fr['airtime_1hz_scheduled_kbps'])} the target, and {'do not fit' if not bool(f20['fits_nb_slotted_aloha_p95']) else 'fit'} it on slotted "
+                f"random access; channel coding is not counted. The two comparisons of H13 come out the same under version 0.2. These are calculations "
+                f"on a traffic model; the split by driving positions and the case with status and intent at 1&nbsp;Hz (Section 5.2) were computed with "
+                f"the sizes of version 0.1 only, which differ from version 0.2 by the heartbeat.")
+    fill("P3-LRIP-V02-SENTENCE", lrip_v02_sentence, "E53 lrip_v02 (B-100)")
 
     def e53_design():
         eta = r.p6("E53", "eta")
@@ -1509,10 +1580,23 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
                     rows.append([{"fleet": "Fleet (registered)", "spread": "Spread (post hoc)"}[geo], cap1(auth), f"{hz:g}", num(_fin(x[5]["per_rover_kbps"]) * 1000 / 8, 1)]
                                 + [num(x[n]["busiest_link_kbps_p95"], 2 if _fin(x[n]["busiest_link_kbps_p95"]) < 100 else 0) for n in (5, 10, 20, 40, 80)]
                                 + [pc(x[20]["reachable_share"], 0), num(x[20]["mean_hops_to_base"], 2)])
+        lrip_v02()
+        path = os.path.join(RES, "E53_table_v02.csv")
+        _need(path, "the v0.2 table of E53")
+        c2 = pd.read_csv(path)
+        for framing, label in (("lrip", "Fleet, version 0.2"), ("proximity1", "Fleet, version 0.2 in Proximity-1 frames")):
+            g = c2[(c2["framing"] == framing) & (c2["geometry"] == "fleet") & (c2["auth"] == "on") & (np.isclose(c2["position_hz"], 1.0))].set_index("rovers")
+            check(list(g.index) == [5, 10, 20, 40, 80], f"E53's v0.2 table has the five fleet sizes for {framing}")
+            rows.append([label, "On", "1", num(_fin(g["per_rover_kbps"][5]) * 1000 / 8, 1)]
+                        + [num(g["busiest_link_kbps_p95"][n], 2) for n in (5, 10, 20, 40, 80)]
+                        + [pc(g["reachable_share"][20], 0), num(g["mean_hops_to_base"][20], 2)])
+        check(abs(_fin(c2[(c2["framing"] == "lrip") & (c2["geometry"] == "fleet") & (c2["auth"] == "on") & (np.isclose(c2["position_hz"], 1.0)) & (c2["rovers"] == 20)]["busiest_link_kbps_p95"].iloc[0])
+                  - _fin(r.p6("E53", "lrip_v02", "h13_check_v02", "at_1hz_kbps_p95"))) < 1e-6, "E53's v0.2 table and its v0.2 block agree at 20 rovers and 1 Hz")
         return _tab(f"Table 14. Traffic of the interaction protocol, E53: bytes a second per rover and the load on the busiest link (kbit/s, 95th percentile over "
                     f"{cnt(r.p6('E53', 'draws'))} draws of rover positions) for 5 to 80 rovers, by geometry, authentication and position-report rate, with the "
                     f"share of rovers that reach the base and their mean hop count at 20 rovers. Authentication is the 8-byte code on every message and a "
-                    f"signature on awards and grants.",
+                    f"signature on awards and grants. The first rows are version 0.1 of the protocol, packet sizes before link framing; the last two rows "
+                    f"give version 0.2 and version 0.2 with every packet in a Proximity-1 frame. A calculation on a traffic model, not a radio measurement.",
                     ["Geometry", "Authentication", "Position rate (Hz)", "Per rover (B/s)", "5 rovers", "10", "20", "40", "80", "Reach the base (20 rovers)",
                      "Mean hops (20 rovers)"], rows, cls="wide")
     T6["E53_bitrate"] = (table_e53, "E53", "Table 14, traffic of the interaction protocol")
@@ -2124,7 +2208,8 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
              f"sizes and the stale-map hits ({n52} seeds); the change rates are not swept", "Section 5.10"],
             [f"The protocol's traffic (H13): 20 authenticated rovers load the busiest link with {num(h13['at_1hz_kbps_p95'], 2)}&nbsp;kbit/s at 1&nbsp;Hz and "
              f"{num(h13['at_10hz_kbps_p95'], 1)} at 10&nbsp;Hz", C,
-             "The serialised sizes of protocol version 0.1 times the assumed report rates, summed over a fleet in one radio neighbourhood; the same in every draw", "Section 5.11"],
+             "The serialised sizes of protocol version 0.1 times the assumed report rates, summed over a fleet in one radio neighbourhood; the same in every draw; the "
+             "same comparisons come out alike with version 0.2", "Section 5.11"],
             [f"Store-and-forward with the lost-link rule loses fewer jobs than drop-and-retry (H14, first clause), {sv(c14)}", T,
              f"E54, a message-level simulation on the recorded month, not an engine run: {n54} seeds at today's fleet; {family_sentence('pta14')}. "
              f"{cnt(d54['award_lost'])} awards of {cnt(d54['award_n'])} under drop-and-retry, at a retry budget we chose", "Section 5.12"],
@@ -2184,7 +2269,10 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
              f"{num(m14['rates']['LTV1'][0], 0)}&nbsp;kbit/s, not {num(m14['rates']['LTV1'][1], 0)}, and no longer 1&nbsp;Mbit/s", C,
              "ITU-R P.526 section 3.2 for a smooth sphere, checked against the Recommendation's text; assumed radio constants; no lunar measurement", "Section 5.3; Table 7"],
             ["The software on a flight-class processor, in a flight language", N, "The scaling factor stands in for it", "Sections 5.1, 7"],
-            ["Protocol version 0.2, with the frame, datum and time-scale identifiers and a covariance in the position report", N, "Task B-100; every size here is version 0.1's", "Sections 3.8, 5.11"],
+            [f"Protocol version 0.2 (frame, datum and time scale declared per sender, a 95&#8239;% bound in every position report, no covariance): 20 "
+             f"authenticated rovers load the busiest link with {num(lrip_v02()['h']['at_1hz_kbps_p95'], 2)}&nbsp;kbit/s at 1&nbsp;Hz, and with "
+             f"{num(lrip_v02()['fr']['fleet_auth_1hz_20']['busiest_link_kbps_p95'], 2)} in Proximity-1 frames", C,
+             "Serialised sizes times assumed report rates on the traffic model of E53; the conformance vectors test the codec, not a radio", "Sections 3.8, 5.11"],
             ["Hops and reach to the base with 1.0&nbsp;m antennas for the small classes; the report rate tied to motion", N, "Not run; the traffic model gives every rover a 2.5&nbsp;m antenna", "Sections 5.2, 7"],
             ["Position error at eight times the fleet", T if x8 else N, "E50 at eight times the fleet: " + ("in the file" if x8 else "five seeds, not in this version"), "Section 5.8"],
             ["The lost-link return and the caution-speed crossing of an unconfirmed segment driven inside the engine; ranging and terrain fixes on the lunar surface; a "
@@ -2193,12 +2281,12 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
              "The last is tested in the companion paper [61]", "Section 7"],
         ]
         n_calc = sum(1 for x in rows if x[1] == C)
-        check(n_calc == 7, "Table 18 has seven rows calculated from assumed inputs: H11's ranging half, H12, H13, the ledger count, the on-robot data, the link's airtime and the spherical-ground rate")
+        check(n_calc == 8, "Table 18 has eight rows calculated from assumed inputs: H11's ranging half, H12, H13, the ledger count, the on-robot data, the link's airtime, the spherical-ground rate and the traffic of protocol version 0.2")
         return _tab("Table 18. Proved, tested, calculated, assumed: every claim of this paper with what stands behind it. &ldquo;Proved&rdquo; means derived in Appendix A "
                     "under the stated assumption; &ldquo;tested&rdquo; means that a simulation experiment could have come out otherwise, with its seeds and fleet; "
                     "&ldquo;calculated from assumed inputs&rdquo; means arithmetic on stated inputs, a property of a rule or a count fixed by the design, which could "
                     "not have come out otherwise and is therefore not called a test; &ldquo;assumed&rdquo; means a value we chose, with what was swept; &ldquo;not yet "
-                    "tested&rdquo; is listed, not left out, with the task that will deliver it where one exists. Nothing in this table is a measurement on the Moon. "
+                    "tested&rdquo; is listed, not left out. Nothing in this table is a measurement on the Moon. "
                     "The status of each hypothesis is written by the build script from the results files.", ["Claim", "Status", "What stands behind it", "Where"], rows, cls="wide")
     T6["pta"] = (table_pta, "Phase 6 results", "Table 18, proved, tested, assumed")
 
@@ -2239,14 +2327,14 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
         d54 = e54row(0.25, "drop_retry")
         if kind == "abstract":
             return (f"Ranging {'holds' if near_in else 'does not hold'} the 95th percentile of position error at {m_(near)} where two or more base "
-                    f"beacons are in line of sight, {pc(st['near_share'], 0)} of driving steps, and fails under the registered wording, which covers all driving "
+                    f"beacons are in line of sight, {pc(st['near_share'], 0)} of driving steps, and fails under the registered wording, all driving "
                     f"({unit(reg['p95'], 'm', 1)}); terrain fixes leave {m_(away)} elsewhere. Authentication adds {pc(add, 0)} "
-                    f"to the bit rate of protocol version 0.1, whose position report lacks identifiers the design requires.")
+                    f"to the bit rate; senders declare frame, datum and time scale, and reports carry a 95{PCT} bound, not a covariance.")
         if kind == "conclusion":
             return (f"Ranging {'holds' if near_in else 'does not hold'} the {unit(b, 'm', 0)} position budget where two or more beacons are in line of "
                     f"sight ({pc(st['near_share'], 0)} of driving steps), not under wider readings of near the base, and terrain fixes "
-                    f"{'hold' if away_in else 'do not hold'} it elsewhere. Authentication adds {pc(add, 0)} to the bit rate of protocol version 0.1, which "
-                    f"lacks identifiers its design requires.")
+                    f"{'hold' if away_in else 'do not hold'} it elsewhere. Authentication adds {pc(add, 0)} to the bit rate, and senders now declare frame, "
+                    f"datum and time scale.")
         if kind == "intro":
             return (f"Of the layers under the market, with the hypotheses of [67]: dead reckoning alone passes the {unit(b, 'm', 0)} separation budget within "
                     f"{'the first driving hour' if int(one['h']['dr_first_driving_hour_p95_over_budget']) == 1 else 'a shift'} (H9&prime;, first clause, "
@@ -2261,8 +2349,9 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
                     f"ranging radio's noise follows from the assumed transfer residual and is a design calculation. Two registered hypotheses are design "
                     f"calculations and are reported as such: by the assumed change rate the changed tiles of a day are {pc(e52['share_of_full_resend'], 2)} "
                     f"of a full resend (H12), and 20 rovers load the busiest link with {num(on['busiest_link_kbps_p95'], 2)}{KBPS6} at 1&nbsp;Hz, their sizes "
-                    f"times their rates (H13). Authentication adds {pc(add, 0)} to the bit rate of protocol version 0.1, whose position report does not yet "
-                    f"carry the frame, datum and time-scale identifiers or the covariance that the design requires. Store-and-forward with a lost-link rule "
+                    f"times their rates (H13). Authentication adds {pc(add, 0)} to the bit rate of protocol version 0.1. Its position report named neither frame, datum nor "
+                    f"time scale; version 0.2 has each sender declare them under its key and puts a 95{PCT} bound in every report, at "
+                    f"{num(lrip_v02()['h']['at_1hz_kbps_p95'], 2)}{KBPS6} for the same 20 rovers, and carries no covariance. Store-and-forward with a lost-link rule "
                     f"lost {'no job' if lost_ll == 0 else num(lost_ll, 2) + ' jobs a seed'} where drop-and-retry lost {num(lost_dr, 2)} a seed (H14's first "
                     f"clause, {ok(_fin(h14['difference_sf_ll_minus_drop_retry']['ci'][1]) < 0)}; {cnt(d54['award_lost'])} awards of {cnt(d54['award_n'])}, at a "
                     f"retry budget we chose); its second clause is not testable as written, and the rule now marks a silent holder's segment unconfirmed "

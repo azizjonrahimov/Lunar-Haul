@@ -223,7 +223,6 @@ string would reach `paper.html`, in the text or in a comment.
 | Key | Awaits | File and block it will read |
 |---|---|---|
 | P3-E50-8X-SENTENCE (5.8) | E50 at eight times the fleet | `results/E50_summary.json`, `errors."8"` (its composer exists and fills itself) |
-| P3-LRIP-V02-SENTENCE (5.11) | B-100: the sizes and bit rates of LRIP version 0.2 (frame, datum and time-scale identifiers and a covariance in the position report) | `results/E53_bitrate.json`, new block `v02` (proposed name) |
 
 ### Composed keys added in the referee round
 
@@ -277,3 +276,14 @@ Still awaited (one plain sentence): P3-LRIP-V02-SENTENCE (B-100).
 |---|---|---|
 | P3-E48-ROBOT-ROUND-SENTENCE (5.1), the round wording of P3-E48-ABSTRACT-CLAUSE, -INTRO-, -DISCUSSION-, -CONCLUSION-CLAUSE, P3-H10-VERDICT-SENTENCE, TABLE:pta | E48 `per_robot_round` (B-105): `revision`, `laptop_ms_by_multiple.{1,4,8}` (`n`, `median_ms`, `p99_ms`, `robots_per_round_mean`, `days`, `flight_median_ms`, `flight_p99_ms`, `flight_p99_ms_range`), `whole_fleet_dispatch_call_ms_pooled.p99` (checked: flight values = laptop values x `flight.factor` and its range; a 30-day month, seed 1; fits one second at 1x and not at 4x and 8x at the 99th percentile; the pooled whole-fleet call is within 0.25 s of one robot's largest 99th percentile) | composed; "within" / "above" the one-second decision per fleet size from the data |
 | P3-E48-MEMORY-SENTENCE (5.1), the memory wording of P3-H10-VERDICT-SENTENCE and P3-E48-INTRO-CLAUSE, TABLE:pta | E48 `measured_memory` (B-105): `revision`, `mb_by_multiple.{1,4,8}` (`all_at_once_peak`, `all_at_once_plus_planner_p99`, `bid_policy.peak`, `safety_check_peak`, `reservation_window_24h.peak`, `ledger_month.peak`, `planner_working_peak_p99`, `process_peak_working_set_mb`), `estimate_mb_for_comparison` (checked: tracemalloc, the interpreter, code and numpy buffers not counted; the estimate equals `classes.*.peak_memory_mb`; the measured peak is below it; the bid policy is over 80 % of the peak) | composed |
+
+### Second pass, part 3 (12 Nov 2026): B-100 landed; nothing is awaited
+
+The `fill_await` mechanism stays in `build_p3.py` and has no key at present; the build still stops if a `[[PENDING` or `[[CHECK` string would print.
+
+| Key | Source | Format |
+|---|---|---|
+| P3-LRIP-V02-SENTENCE (5.11), P3-SEC-LAYOUT-SENTENCE (3.8), P3-LIMIT-LRIP-SENTENCE (7), the last sentence of the P3-P6 abstract, introduction and conclusion clauses, TABLE:E53_bitrate (two new rows), TABLE:pta | SCH2 = `lunarsim/schemas/lrip-v0.2.json` (`messages[POSITION].fields` with `u95_code`, `messages[HELLO].fields` with `frame_id`, `datum_id`, `time_scale` and `declaration_interval_s`, `declaration_rule`, `framing.proximity1_frame_bytes`); E53 `lrip_v02` (`sizes_v0.2`, `sizes_moved`, `manifest_bytes_v0.2`, `per_rover_at_1hz`, `h13_check_v02`, `framing_row`, `traffic_model_coverage`, `conformance_vectors_v0.2`); `results/E53_table_v02.csv` (fleet geometry, authentication on, 1 Hz, framing `lrip` and `proximity1`, five fleet sizes) (checked: POSITION keeps 104 bits, the bound is in the six bits that were spare, no field named covariance, frame, datum or scale in it; the bound's formula and its two special codes are in the schema's note; HELLO declares in 6, 6 and 4 bits; a position without a declaration under the current key epoch is refused; only HELLO and the manifest change size; the busiest link is 20 times the per-rover rate; H13's comparisons come out as with v0.1; in Proximity-1 frames the traffic fits scheduled and not slotted; 11 of 15 types; the table and the block agree at 20 rovers) | composed; "within" / "above" from the data; labelled a calculation on a traffic model |
+
+Typed in P3-SEC-LAYOUT-SENTENCE and checked against the schema's note string, not computed: the bound's formula (0.05 m times 2 to the power of a
+quarter of the code) and its top value (1.95 km).
