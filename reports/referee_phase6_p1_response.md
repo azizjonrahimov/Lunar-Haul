@@ -103,3 +103,16 @@ M10 is now fixed in full: B-100 (LRIP v0.2) has landed and the paper describes v
 
 Updated tally of the 37 findings: 26 fixed (M10 added), 9 fixed in part, 1 awaiting a task (M8, B-106), 1 not done (O2).
 Build: abstract 299 words, conclusion 249, 288 values, 0 pending, no `[[PENDING` in `paper.html`. PDF not rebuilt.
+
+## Final pass, part 3 (12 Nov)
+
+| Item | What was done | Where |
+|---|---|---|
+| M8, now fixed in part | B-106 landed (`results/ATC_learned_eval_rerun.json`). The build reads `eval` and `guards` from it and states once that the evaluation of 27 October was rerun on the corrected engine on 12 November 2026 with the same seeds and policies, the old values being kept in the old file. Linear against hand bids, 30 seeds: -2.49 h (-4.15 to -0.82; -17.7 %) at 30 %, -30.3 h (-36.0 to -24.5; -40.4 %) at 60 %; network -0.16 h and +5.4 h (-2.9 to 13.6), not distinguishable. In part, because Table 6's six out-of-range cells are not rerun yet: they print the 27 October values with the label "predate the two engine fixes", and the build switches to the rerun's `ood` by itself when it is a table. | 4.6, 5.6, 6.5, 7, Table 6, Table 12 |
+| Guard runs | The sentence "the gain does not come from other cargo" is gone. At 60 % urgent, normal, bulk and tonne-days all fell (intervals below zero). At 30 %, on 10 seeds: urgent -1.23 h (-3.91 to 1.45), not distinguishable from zero; bulk +0.23 h (0.02 to 0.44), longer; all cargo +0.18 h (-0.04 to 0.39). The paper says it does not claim the gain is free for other cargo at the middle load; a Limitations entry is added. | 5.6, 7, Table 12 |
+| The 92.9 % | Labelled a training record (first imitation round, tuning seeds, engine of 27 October, not rerun), with the rerun's agreement on the evaluation seeds at 30 %: hand 88.35 %, network 86.37 %, linear 70.76 %. | 5.11 |
+| H4's headline numbers | Unchanged on purpose: 2.3 h, 16.5 %, Holm p 0.017 are the registered confirmatory test on E40's rows, which were already on the corrected engine. The rerun's -17.7 % is reported beside it as an agreeing second run, not substituted. Abstract and conclusion now say "cut the urgent wait". | abstract, 5.6, 8 |
+| Driving split (B-110) | Recomposed from `lrip_v02.driving_split`: on driving steps 6.3 kbit/s on the busiest link, scheduled airtime 7.85 kbit/s (10.19 in Proximity-1 frames), random access 17.1 / 22.2; with STATUS and INTENT at 1 Hz, 20.03 kbit/s at the sources (25.98 framed), above 16 kbit/s in every case. No v0.1 figure remains there. | 5.8, 7 |
+
+Tally of the 37 findings: 26 fixed, 10 fixed in part (M8 added: the out-of-range cells await BACKEND's addendum), 0 awaiting a task for wording, 1 not done (O2).
+Build: abstract 300 words, conclusion 250, 292 values, 0 pending, no `[[PENDING` in `paper.html`. PDF rebuilt: 53 pages, 1.44 MB.

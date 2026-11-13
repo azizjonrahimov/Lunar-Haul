@@ -1074,30 +1074,79 @@ def values(r: R, allow_pending: bool):
                                    "&plusmn;2&#8239;% margin")
     else:
         V["P1-H4-LIGHT-CLAUSE"] = "and there the linear model was worse than the hand-built bids"
-    # Referee M8: Table 6, the guard runs and the imitation statistics are from the evaluation file of 27 October,
-    # made on the engine before PREREG changes 4 and 5; the rerun (task B-106) is read when its file exists.
+    # Referee M8, task B-106: the evaluation of the learned bids (30 seeds at 30 and 60 % load) and the guard runs
+    # (10 seeds) were rerun on the corrected engine; the build reads `eval` and `guards` from the rerun file. Its
+    # `ood` is read only when it is a table: until then Table 6 prints the first evaluation's values with a plain
+    # label. The imitation statistics are a training record and are not rerun. H4's confirmatory test stays E40's.
     le = r.dev["learned_eval"]
-    LS = r.L_rerun if r.L_rerun is not None else r.L
-    r.learned_src = LS
-    if r.L_rerun is not None:
-        V["P1-LEARNED-EVAL-LABEL"] = "rerun on the current engine"
-        V["P1-LEARNED-EVAL-SENTENCE"] = ("Table 6 and the guard runs are from the rerun of those cells on the current "
-                                         "engine; the imitation statistics of Section 5.11 are from the first "
-                                         f"evaluation, of {le['file_date']}, made before changes 4 and 5.")
-    else:
-        V["P1-LEARNED-EVAL-LABEL"] = f"from the evaluation of {le['file_date']}, on the engine before changes 4 and 5"
-        V["P1-LEARNED-EVAL-SENTENCE"] = (
-            f"Table 6, the guard runs and the imitation statistics of Section 5.11 are not from the rerun rows: they "
-            f"come from the evaluation of the learned bids made on {le['file_date']}, on the engine before the two "
-            f"fixes of changes 4 and 5 (Section 4.6), which the pre-registration describes as statistically valid "
-            f"but not bit-exact [43]. They have not been rerun on the current engine.")
-    g = LS["guards"][str(LOAD_HEAVY)]
-    for k in ("delay_prio2_mean_h", "delay_mean_bulk", "delay_mean_h", "tonne_days_waiting"):
-        check(g[k]["linear"] < g[k]["hand"], f"guard {k} fell with the learned bids at 60 %")
+    RR = r.L_rerun
+    if RR is None:
+        raise SystemExit(f"{le['rerun_file']} is missing: the learned-bid evaluation rerun (task B-106) is read from it")
+    ood_rerun = isinstance(RR.get("ood"), dict) and len(RR["ood"]) > 0
+    r.ood_src, r.ood_rerun = (RR["ood"] if ood_rerun else r.L["ood"]), ood_rerun
+    rd = RR["dates"]["rerun"]
+    y, mth, dd = (int(x) for x in rd.split("-"))
+    RERUN_DATE = f"{dd} {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][mth - 1]} {y}"
+    check("same evaluation seeds" in RR["rerun_note"] and "not retrained" in RR["rerun_note"], "the rerun used the same seeds and policies")
+    ev = RR["eval"]
+    ci2 = lambda q, nd=2: f"{num(q['ci95'][0], nd)} to {num(q['ci95'][1], nd)}{NB}h"
+    l30, l60 = ev[str(LOAD_MAIN)]["linear"], ev[str(LOAD_HEAVY)]["linear"]
+    m30, m60 = ev[str(LOAD_MAIN)]["mlp"], ev[str(LOAD_HEAVY)]["mlp"]
+    check(l30["vs_hand_h"]["ci95"][1] < 0 and l60["vs_hand_h"]["ci95"][1] < 0, "in the rerun the linear bids cut the urgent wait at 30 and 60 % load")
+    check(all(q["vs_hand_h"]["ci95"][0] < 0 < q["vs_hand_h"]["ci95"][1] for q in (m30, m60)), "in the rerun the network is not distinguishable from hand bids at either load")
+    check(abs(l30["vs_hand_h"]["mean"] - lin30["mean"]) < 0.5, "the rerun's linear gain at 30 % agrees with E40's within half an hour")
+    V["P1-LEARNED-EVAL-LABEL"] = f"evaluation rerun on the corrected engine on {RERUN_DATE}"
+    V["P1-LEARNED-EVAL-SENTENCE"] = (
+        f"The evaluation of the learned bids that was first made on {le['file_date']}, before the two engine fixes of "
+        f"changes 4 and 5, was rerun on the corrected engine on {RERUN_DATE} with the same seeds and the same "
+        f"policies; the earlier values are kept in the old file. On its {l30['vs_hand_h']['n']} seeds the linear "
+        f"correction changed the urgent wait against hand-built bids by {h_(l30['vs_hand_h']['mean'], 2, sign=True)} "
+        f"({ci2(l30['vs_hand_h'])}; {pc(100 * l30['vs_hand_share'], 1, sign=True)}) at {LOAD_MAIN}{PCT} load and by "
+        f"{h_(l60['vs_hand_h']['mean'], 1, sign=True)} ({ci2(l60['vs_hand_h'], 1)}; "
+        f"{pc(100 * l60['vs_hand_share'], 1, sign=True)}) at {LOAD_HEAVY}{PCT}, in agreement with E40; the network's "
+        f"difference was {h_(m30['vs_hand_h']['mean'], 2, sign=True)} ({ci2(m30['vs_hand_h'])}) and "
+        f"{h_(m60['vs_hand_h']['mean'], 1, sign=True)} ({ci2(m60['vs_hand_h'], 1)}), not distinguishable from zero at "
+        f"either load.")
+    # the guard runs: does other cargo pay for the gain? (10 seeds; linear minus hand)
+    GD = RR["guards"]
+    g = GD[str(LOAD_HEAVY)]
+    gm = GD[str(LOAD_MAIN)]
+    d_ = lambda q: q["linear_minus_hand"]
+    for k in ("atc_urgent_wait_mean_cens_h", "delay_prio2_mean_h", "delay_mean_bulk", "delay_mean_h", "tonne_days_waiting"):
+        check(d_(g[k])["ci95"][1] < 0, f"guard {k} fell with the learned bids at 60 % (interval below zero)")
     check(abs(g["delivered_kg"]["linear"] / g["delivered_kg"]["hand"] - 1) < 0.005, "tonnes delivered did not change")
     V["P1-GUARD-TONNEDAYS-PCT"] = pc(100 * (g["tonne_days_waiting"]["linear"] / g["tonne_days_waiting"]["hand"] - 1), 0,
                                      sign=True)
-    ood = LS["ood"]
+    gu, gb, ga = d_(gm["atc_urgent_wait_mean_cens_h"]), d_(gm["delay_mean_bulk"]), d_(gm["delay_mean_h"])
+    word = lambda q: ("fell" if q["ci95"][1] < 0 else "rose" if q["ci95"][0] > 0 else "did not move measurably")
+    urgent_ok30 = gu["ci95"][1] < 0
+    bulk_worse30 = gb["ci95"][0] > 0
+    V["P1-GUARD-30-SENTENCE"] = (
+        f"At {LOAD_MAIN}{PCT} load the same check does not come out clean. On its {gu['n']} seeds the urgent wait "
+        f"{word(gu)} ({h_(gu['mean'], 2, sign=True)}, {ci2(gu)}), "
+        + ("so the gain is seen there too" if urgent_ok30 else
+           "so on that smaller sample the gain itself is not distinguishable from zero")
+        + f", and the delay of bulk cargo {word(gb)} ({h_(gb['mean'], 2, sign=True)}, {ci2(gb)}); the delay of all "
+          f"cargo {word(ga)} ({h_(ga['mean'], 2, sign=True)}, {ci2(ga)}). "
+        + ("At the middle load the learned bids therefore make bulk cargo wait a little longer, and we do not claim "
+           "that their gain for urgent cargo is free for other cargo there." if bulk_worse30 else
+           "At the middle load other cargo did not measurably pay for the gain."))
+    check(not urgent_ok30, "on the ten guard seeds at 30 % the urgent gain is not distinguishable from zero (Limitations)")
+    V["P1-GUARD-30-CLAUSE"] = ("at the middle load a ten-seed check found bulk cargo waiting slightly longer" if bulk_worse30
+                               else "a ten-seed check found no cost to other cargo")
+    ha = {k: ev[str(LOAD_MAIN)][k]["heldout_agreement"] for k in ("hand", "mlp", "linear")}
+    check("NOT rerun" in str(RR["imitation"].get("rerun_status", "")), "the rerun file marks the imitation statistics as not rerun")
+    V["P1-IMIT-RERUN-SENTENCE"] = (
+        f"These figures are a record of training: the first imitation round on the tuning seeds, with the engine of "
+        f"{le['file_date']}; they were not rerun. On the corrected engine, on the evaluation seeds at "
+        f"{LOAD_MAIN}{PCT} load, the hand-built bids chose the marketplace's item in {sh(ha['hand'], 2)} of rounds, "
+        f"the network's bids in {sh(ha['mlp'], 2)} and the linear bids in {sh(ha['linear'], 2)}.")
+    V["P1-OOD-LABEL-SENTENCE"] = (
+        "The cells of Table 6 were rerun on the corrected engine with the rest of the evaluation." if ood_rerun else
+        f"The cells of Table 6 are the one part of that evaluation not rerun: its values are those of {le['file_date']} "
+        f"and predate the two engine fixes.")
+    ood = r.ood_src
+
     diffs = {k: v["linear"]["vs_hand_h"] for k, v in ood.items()}
     check(all(d["mean"] < 0 for d in diffs.values()), "the linear model kept the same sign in every OOD cell")
     V["P1-OOD-N-CELLS"] = words(len(diffs))
@@ -1696,13 +1745,12 @@ def table_regimes(r: R):
 
 def table_ood(r: R):
     rows = []
-    src = getattr(r, "learned_src", r.L)
     le = r.dev["learned_eval"]
-    origin = ("rerun on the current engine" if r.L_rerun is not None else
+    origin = ("from the evaluation of the learned bids as rerun on the corrected engine" if r.ood_rerun else
               f"from the evaluation of the learned bids of {le['file_date']}, made before the main runs and on the "
-              f"engine before the two fixes of changes 4 and 5 (Section 4.6); these six cells have not been rerun on "
-              f"the current engine")
-    for cell, v in src["ood"].items():
+              f"engine before the two fixes of changes 4 and 5 (Section 4.6); unlike the rest of that evaluation, "
+              f"these six cells were not rerun on the corrected engine")
+    for cell, v in r.ood_src.items():
         d = v["linear"]["vs_hand_h"]
         rows.append([html.escape(cell), num(v["hand"]["urgent_mean_h"], 1), num(v["linear"]["urgent_mean_h"], 1),
                      f"{num(d['mean'], 2, sign=True)} [{num(d['ci95'][0], 2)}, {num(d['ci95'][1], 2)}]", f"{d['n']}"])
@@ -2303,33 +2351,47 @@ def phase6_e53(p, st, V, check):
     # Second pass (12 Nov), tasks B-103 and B-104 (decisions B9, B10): the same calculation on driving steps only and
     # with STATUS and INTENT at 1 Hz (E53_bitrate.json "driving_split"), and the link rate under a curved-Moon loss
     # (E48_sizing.json "revision_b104"). Both are calculations on assumed inputs and are labelled so.
-    ds = e.get("driving_split")
+    ds = p.v02.get("driving_split")
     if ds is None:
-        raise Pending("E53_bitrate.json has no driving_split (task B-103)")
-    dv = ds["e53_auth_20_rovers"]["fleet_driving"]["1 Hz"]
-    pk = ds["e53_auth_20_rovers"]["fleet_parked"]["1 Hz"]
-    s1 = ds["status_intent_at_1hz"]
-    ls = ds["e54_link_shares_30_seeds"]["linked_share_driving_time"]
-    check(abs(pk["busiest_link_kbps_p95"] - v1_01) < 1e-3, "the parked draws reproduce the fleet geometry's busiest link (v0.1 sizes)")
+        raise Pending("E53_bitrate.json lrip_v02 has no driving_split (task B-110)")
+    d01 = p.e53_v01.get("driving_split") or {}
+    ls = (d01.get("e54_link_shares_30_seeds") or {}).get("linked_share_driving_time")
+    if ls is None:
+        raise Pending("E53_bitrate.json driving_split has no E54 link shares (task B-103)")
+    G2 = ds["e53_auth_20_rovers"]
+    dv, pk = G2["lrip"]["fleet_driving"]["1 Hz"], G2["lrip"]["fleet_parked"]["1 Hz"]
+    dvf = G2["proximity1"]["fleet_driving"]["1 Hz"]
+    s1, s1f = ds["status_intent_at_1hz"]["lrip"], ds["status_intent_at_1hz"]["proximity1"]
+    check(abs(pk["busiest_link_kbps_p95"] - v1) < 1e-3, "the parked draws reproduce the fleet geometry's busiest link (v0.2 sizes)")
     check(dv["mean_hops_to_base"] > pk["mean_hops_to_base"] and dv["reachable_share"] < pk["reachable_share"],
           "driving vehicles are more hops from the base and fewer of them have a path to it")
-    check(dv["scheduled_airtime_p95_kbps"] <= nb, "on driving steps the scheduled channel still carries 20 rovers at 1 Hz")
-    s1_fit = s1["sources_20_rovers_kbps"] <= nb
+    check(dv["scheduled_airtime_p95_kbps"] <= nb and dvf["scheduled_airtime_p95_kbps"] <= nb,
+          "on driving steps the scheduled channel still carries 20 rovers at 1 Hz, framed or not")
+    check(dv["slotted_aloha_airtime_p95_kbps"] > nb and dvf["slotted_aloha_airtime_p95_kbps"] > nb,
+          "on driving steps slotted random access does not fit the narrow-band channel")
+    s1_all = [s1["sources_20_rovers_kbps"], s1f["sources_20_rovers_kbps"],
+              s1["busiest_link_20_rovers"]["fleet"]["scheduled_airtime_p95_kbps"],
+              s1["busiest_link_20_rovers"]["fleet_driving"]["scheduled_airtime_p95_kbps"],
+              s1f["busiest_link_20_rovers"]["fleet"]["scheduled_airtime_p95_kbps"],
+              s1f["busiest_link_20_rovers"]["fleet_driving"]["scheduled_airtime_p95_kbps"]]
+    s1_over = all(x > nb for x in s1_all)
     V["P1-E53-DRIVING-SENTENCE"] = (
-        f"Two further calculations show how far the result depends on its inputs. They were made with the sizes "
-        f"of version 0.1, in which the fleet geometry gives {kbps(v1_01)}. Only "
+        f"Two further calculations, with the same sizes, show how far the result depends on its inputs. Only "
         f"{sh(ds['pool_driving_share'], 1)} of the vehicle-steps in the pool that the fleet geometry samples are "
         f"driving steps. Drawn from those alone, 20 rovers are {num(dv['mean_hops_to_base'], 2)} hops from the base "
         f"on average where a path exists, {sh(dv['reachable_share'])} of them have one, and the busiest link "
-        f"carries {kbps(dv['busiest_link_kbps_p95'], 1)} at one position report a second (95th percentile; "
-        f"{kbps(dv['scheduled_airtime_p95_kbps'], 1)} as scheduled airtime), against "
+        f"carries {kbps(dv['busiest_link_kbps_p95'], 1)} at one position report a second (95th percentile), against "
         f"{num(pk['mean_hops_to_base'], 2)} hops, {sh(pk['reachable_share'])} and "
-        f"{kbps(pk['busiest_link_kbps_p95'], 1)} for parked vehicles; over the recorded month of Section 5.9 a "
-        f"vehicle had a path to the base for {sh(ls)} of its driving time. If the status and intent reports are "
-        f"also sent once a second, the 20 rovers offer {kbps(s1['sources_20_rovers_kbps'], 2)} at the sources, which "
-        + (f"is inside the {kbps(nb, 0)} budget." if s1_fit else
-           f"is above the {kbps(nb, 0)} budget before any airtime is counted: H13's first clause holds only at the "
-           f"report rates we assumed."))
+        f"{kbps(pk['busiest_link_kbps_p95'], 1)} for parked vehicles. As scheduled airtime the driving draws need "
+        f"{kbps(dv['scheduled_airtime_p95_kbps'])}, or {kbps(dvf['scheduled_airtime_p95_kbps'])} in Proximity-1 "
+        f"frames, and on slotted random access {kbps(dv['slotted_aloha_airtime_p95_kbps'], 1)} or "
+        f"{kbps(dvf['slotted_aloha_airtime_p95_kbps'], 1)}, which does not fit. Over the recorded month of "
+        f"Section 5.9 a vehicle had a path to the base for {sh(ls)} of its driving time. If the status and intent "
+        f"reports are also sent once a second, the 20 rovers offer {kbps(s1['sources_20_rovers_kbps'], 2)} at the "
+        f"sources, {kbps(s1f['sources_20_rovers_kbps'], 2)} framed, which is "
+        + (f"above the {kbps(nb, 0)} channel in every case, before any airtime is counted: H13's first clause holds "
+           f"only at the report rates we assumed." if s1_over else
+           f"not inside the {kbps(nb, 0)} channel in every case."))
     b104 = p.e48.get("revision_b104") if p.e48 is not None else None
     if b104 is None:
         raise Pending("E48_sizing.json has no revision_b104 (task B-104)")
@@ -3060,7 +3122,9 @@ def phase6_proved(p, r, V, fill, check, ctx, e53):
              "Tested: E41, 30 seeds per cell, one factor at a time around the auction at the middle load. No cell "
              "has deeper bundles without loss.", "5.5"),
             ("The linear bids keep their sign outside the training range; other cargo does not pay for the gain",
-             f"Tested on ten seeds per cell, {V['P1-LEARNED-EVAL-LABEL']}.", "5.6"),
+             f"Tested on ten seeds per cell. Sign outside the range: "
+             + ("rerun on the corrected engine" if r.ood_rerun else "values that predate the two engine fixes, not rerun")
+             + f". Other cargo ({V['P1-LEARNED-EVAL-LABEL']}): no cost at {LOAD_HEAVY}{PCT} load; {V['P1-GUARD-30-CLAUSE']}.", "5.6"),
             ("With perfect links and depth 1 the auction reproduces the marketplace's event trace; with every new "
              "feature off the engine reproduces the earlier papers",
              f"Tested: exact comparison of event traces, and {r.dev['regression_check']['rows_rerun_identical']} "

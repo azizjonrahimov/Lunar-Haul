@@ -320,3 +320,21 @@ the codec at minor version 1 gives E53's v0.1 sizes; the 95 % code takes the six
 three fields are frame, datum and time scale since minor 2; E53's v0.2 traffic sends HELLO once per declaration
 interval; the schema states the declaration rule and five versioning rules; the framed loads equal the file's
 framing row; the traffic model's types are those the v0.2 block lists; H13 is on the same side with v0.2 sizes.
+
+## Final pass, part 3 (12 Nov 2026): the learned-bid rerun (B-106) and the v0.2 driving split (B-110)
+
+RR = `results/ATC_learned_eval_rerun.json` (rerun of 12 Nov 2026 on the corrected engine: `eval`, 30 seeds at 30 and
+60 % load; `guards`, 10 seeds; `dates`; `rerun_note`). The build now requires it. `guards` and `eval` are read from
+RR. `ood` is read from RR when it is a table (a dict); until then Table 6 prints the `ood` of the 27 Oct file with a
+plain label, and `P1-OOD-LABEL-SENTENCE` says so; nothing needs editing when the table lands. The imitation
+statistics (`P1-IMIT-*`) stay from `results/ATC_learned_eval.json`: they are a training record, not rerun. H4's
+numbers (`P1-H4-*`) stay from E40's pairs table, the registered confirmatory test; RR's `eval` is reported beside it.
+
+| Key | Meaning | Source | Format |
+|---|---|---|---|
+| P1-LEARNED-EVAL-SENTENCE (recomposed), P1-LEARNED-EVAL-LABEL | the rerun stated once, with the linear and network differences at 30 and 60 % | RR `eval.*.{linear,mlp}.vs_hand_h`, `vs_hand_share`, `dates.rerun`; DEV `learned_eval.file_date` | composed |
+| P1-GUARD-TONNEDAYS-PCT | tonne-days change at 60 % in the guard runs | RR `guards.60.tonne_days_waiting` | % 0 dp |
+| P1-GUARD-30-SENTENCE, P1-GUARD-30-CLAUSE | the guard runs at 30 %: urgent wait, bulk delay, all-cargo delay; every direction word chosen from the interval | RR `guards.30.*.linear_minus_hand` | composed |
+| P1-IMIT-RERUN-SENTENCE | the 92.9 % is a training record; agreement with the marketplace on the evaluation seeds in the rerun | RR `eval.30.*.heldout_agreement`, `imitation.rerun_status` | composed; % 2 dp |
+| P1-OOD-LABEL-SENTENCE | whether Table 6's cells were rerun | RR `ood` (table or not) | composed |
+| P1-E53-DRIVING-SENTENCE (recomposed) | driving steps and the 1 Hz status and intent case with v0.2 sizes, with and without Proximity-1 frames | E53 `lrip_v02.driving_split` (B-110); the E54 link share from `driving_split.e54_link_shares_30_seeds` | composed |
