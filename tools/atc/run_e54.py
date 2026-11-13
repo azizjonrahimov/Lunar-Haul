@@ -19,11 +19,13 @@ single-lane reservation. Over the month's contact plan (lunarsim/atc/dtn.py), me
 Protocols: drop_retry, sf (store-and-forward with custody), sf_ll (sf + the lost-link ladder); per-hop loss 0.10,
 0.25, 0.40 (lunarsim.atc.messages LOSS_LEVELS). Sizes from the LRIP codec (B-93).
 Stuck reservations: a reservation whose holder has no path to the base at t_out + grace (60 s) and stays unheard;
-without the lost-link rule the base cannot confirm the release and must keep the silent vehicle's reserved volume
-blocked until it is heard (note 03 C7) - an UNCONFIRMED release, not a vehicle physically still in the segment (in the
-replay every vehicle leaves on schedule); with the rule the holder's behaviour is defined (it finishes or never
-enters a single-lane segment and stops at the next safe point), so the base releases it at its timeout: 0 stuck by
-construction (a property of the rule), and the hours that would otherwise have been blocked are reported. The count
+without the lost-link rule the base cannot confirm that the holder has left and must keep the silent vehicle's reserved
+volume blocked until it is heard (note 03 C7) - an UNCONFIRMED segment, not a vehicle physically still in it (in the
+replay every vehicle leaves on schedule). With the rule the holder's behaviour is defined (it finishes or never enters
+a single-lane segment and stops at the next safe point), so at t_out + grace the reservation is NOT released: the base
+marks the segment unconfirmed and others may enter it only at caution speed (decision B1 of the referee round). No
+reservation then stays blocked: 0 stuck by construction (a property of the rule), and the hours that would otherwise
+have been blocked are reported. The count
 is large (98 %) because the single-lane segments lie on routes the BASE mast does not see: vehicles are linked 97.9 %
 of all time but only 54.5 % of driving time, and in seed 1 61 of the 91 reservations are on one segment of the
 CONSTR -> ISRU leg whose exit (route sample 190) is out of the mast's view (B-98a check).
@@ -352,8 +354,10 @@ def cmd_v02run(seeds, max_s):
 
 
 CLAUSE_2_BASIS = ("B-118 N7: H14's second clause ('no reservation stuck past its timeout under sf_ll') holds BY RULE, "
-                  "not by measurement: under the lost-link rule the base releases a silent holder's reservation at its "
-                  "timeout, so the replay sets sf_ll's stuck count to 0 by construction. The drop_retry and sf counts "
+                  "not by measurement: under the lost-link rule a silent holder's reservation is not released; after its "
+                  "timeout plus the 60 s grace the segment is marked unconfirmed and may be entered only at caution "
+                  "speed (decision B1), so nothing stays blocked and the replay sets sf_ll's stuck count to 0 by "
+                  "construction. The drop_retry and sf counts "
                   "come from the contact plan alone (holder unheard at the timeout + 60 s grace), whatever the loss "
                   "level and whether the grant was delivered, so they are the same at every loss level (2,566 over "
                   "30 seeds); they count unconfirmed releases, not vehicles in a segment. Only the first clause is "

@@ -26,8 +26,9 @@ Protocols (per message; per-hop loss p, independent per transmission, as lunarsi
   its recorded isolation (it then waits there, linked, until its recorded path reconnects). The replay uses the
   recorded trajectories, so the vehicle does not stop at the next safe point as note 03 C7 says: the retrace distance
   is an upper reading of the rule. Rule "pre_review" (kept for comparison): T_hold + 2 x the driving time in the
-  hour before the loss (the code before 13 Nov 2026). With either rule the base releases the vehicle's reservations
-  at their timeout (stuck reservations end) and re-auctions its tasks when its heartbeat is lost for the lease.
+  hour before the loss (the code before 13 Nov 2026). With either rule the base does not release the vehicle's
+  reservations: at their timeout plus grace it marks the segments unconfirmed, to be entered only at caution speed
+  (decision B1; no reservation stays blocked), and re-auctions its tasks when its heartbeat is lost for the lease.
   Stated limitation: the return is applied to the contact plan, not re-run in the engine (the engine's later
   dispatch does not see the vehicle's detour).
 

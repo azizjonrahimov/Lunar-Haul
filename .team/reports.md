@@ -11008,3 +11008,13 @@ needs one seed-1 equality check and a restamp before the next E54 build (about 2
   experiments/phase6/nn/run_baselines.py "import numpy as np". Both still import / parse.
 - Heavy work still waits for 0.8 GB free (0.59 GB now): E50 1x seeds 20-30, E54 seed-1 check and restamp, the e54
   timeline export, the 16 uphill delay cells.
+
+## B-118 step 2/3 text fix 14:35 | E54 wording follows decision B1 (no release; unconfirmed, caution speed)
+results/E54_dtn.json: stuck_definition and the six clause_2_basis texts (h14, the two h14_variants, the three lrip_v02
+h14 blocks) now say that a silent holder's reservation is NOT released: after its timeout plus the 60 s grace the
+segment is marked unconfirmed and may be entered only at caution speed (decision B1), so nothing stays blocked and
+sf_ll's stuck count is 0 by construction; "holds BY RULE, not by measurement" kept. Checked: only those seven strings
+differ from the file before; no value changed. The same text is now in tools/atc/run_e54.py (module docstring paragraph,
+CLAUSE_2_BASIS) and lunarsim/atc/dtn.py's docstring, so a rebuild gives the same file. The file was patched in place
+(the E54 build waits for the seed-1 check and restamp). phase6_family.json's stuck_basis does not mention a release:
+unchanged. test_dtn 18 pass.
