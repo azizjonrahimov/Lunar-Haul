@@ -12,7 +12,7 @@
 .sim-h { font-size: 1rem; margin: 0; font-family: var(--font-display); }
 .sim-h3 { font-size: 1rem; margin: 0; font-family: var(--font-display); }
 .sim-sub, .sim-hint, .sim-note { font-size: var(--fs-small); color: var(--ink-2); margin: 0; }
-.sim-hint { color: var(--ink-3); }
+.sim-hint { color: var(--ink-2); }   /* F-77: ink-3 is for text >= 24 px; this was 3.35:1 in light */
 .sim-note ul { margin: var(--s-1) 0 0; padding-left: 1.2em; }
 .sim-field { display: flex; flex-direction: column; gap: 4px; }
 .sim-field label, .sim-slider label { font-size: var(--fs-small); color: var(--ink-2); }
@@ -35,7 +35,7 @@
 .sim-status { font-size: var(--fs-small); color: var(--ink-2); margin: 0; min-height: 1.4em; }
 .veh { display: grid; grid-template-columns: 1fr 1fr 1.25fr auto; gap: var(--s-1); align-items: center; }
 .veh select { min-width: 0; width: 100%; }
-.vehhead span { font-size: 0.75rem; color: var(--ink-3); }
+.vehhead span { font-size: 0.75rem; color: var(--ink-2); }
 .fleet-list { display: flex; flex-direction: column; gap: var(--s-1); }
 .sim-del { min-width: 2.25rem; justify-content: center; }
 .fleetkey { padding-left: 1.1em; }
@@ -51,7 +51,7 @@
 .sim-chips:empty { display: none; }
 #kpis { min-height: 19rem; }   /* F-40: the quick-start run fills it after first paint; no layout shift */
 @media (max-width: 960px) { #kpis { min-height: 30rem; } }
-.sim-ci { display: block; font-size: 0.75rem; color: var(--ink-3); margin-top: 2px; font-family: var(--font-num); }
+.sim-ci { display: block; font-size: 0.75rem; color: var(--ink-2); margin-top: 2px; font-family: var(--font-num); }
 .sim-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: var(--s-4); }
 .sim-fig { margin: 0; }
 .sim-chart { min-height: 290px; }
@@ -87,7 +87,7 @@
 .sim-answer-dl { display: grid; grid-template-columns: 1fr auto; gap: 2px var(--s-3); margin: var(--s-2) 0 0; font-size: var(--fs-small); }
 .sim-answer-dl dt { color: var(--ink-2); }
 .sim-answer-dl dd { margin: 0; font-family: var(--font-num); font-variant-numeric: tabular-nums; text-align: right; }
-.sim-answer-note { margin: var(--s-2) 0 0; font-size: 0.75rem; color: var(--ink-3); }
+.sim-answer-note { margin: var(--s-2) 0 0; font-size: 0.75rem; color: var(--ink-2); }
 
 /* Replay */
 .replayhead { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-4); font-size: var(--fs-small); color: var(--ink-2); }
