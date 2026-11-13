@@ -10347,3 +10347,31 @@ Checked: 1 batch per type, not all batches. A full regeneration of the ten types
 over the 2 h limit, so it is not done; say if you want it.
 Run: 14 batch reruns, 42-335 s each, in 6 chunks under 9 min, free RAM 1.15-1.42 GB before each, peak 108-132 MB.
 Questions: none.
+
+## F-76 (FRONTEND, 13 Nov): the site follows P2 part 4 (request-rule variant on all fresh type-6 encounters)
+Task: find any site statement that the request rule ran on one encounter only, or anything else out of date about the
+type-6 fresh-seed result, and fix it from results/E44_fresh_seeds.json (key request_rule_fresh_6) at build.
+Found:
+- /paper/: P2's hypothesis row "Types 4, 5 and 6 allow no hard violation on seeds never used before" said the request
+  rule "was rerun on that one encounter only, which was then clean". The row is read from paper/p2/paper.html at build;
+  the rebuilt paper.html now says "run afterwards on all 10,000 fresh type-6 encounters, had no violation; it was
+  chosen after seeing the violation, so this is exploratory and the verdict stands; 62 % of these encounters end
+  incomplete under either rule". No site source change; the build picks it up.
+- /atc/ section 5: the fresh-seed paragraph gave type 6's one violation and its weighted bound, and nothing on the
+  variant. Added (site/lib/results-atc.mjs, reqRule6, appended to e44fresh('lead')), every number a num() span from
+  the file: "A request rule chosen after that violation was seen, under which a vehicle requests a resource only when
+  no hold point it cannot pass lies before it, was then run on all 10,000 fresh type-6 encounters with the same
+  specifications: it allowed 0 violations against 1, and no encounter that finished under the rule as written failed
+  under it. Because it was chosen after the fact, the result is exploratory and type 6 still fails under the rule as
+  written. It did not make more encounters finish: 3,781 finished under either rule, and 6,218 (62 %) ended
+  incomplete against 6,208."
+  Build stops if: the rule-as-written block is not the fresh type-6 run (n, violations, incomplete); the variant did
+  not run on the same encounters; the variant is not clean against a violating rule as written; any encounter that
+  finished under the rule as written fails under the variant; the number finished differs.
+- Left as is (per LEAD): the type-6 finding in the /atc/ table ("no rule yet keeps it out of a junction whose far side
+  is a hold point"), true of the rules as written. No other site source mentions the variant.
+Files: site/lib/results-atc.mjs, site/tests/f76.test.mjs (new, 3 tests: the /atc/ sentence; four altered blocks each
+stop the build, tested on an in-memory copy, the results file is never written; P2's paper.html row).
+Checks: tests 79/79. Build and budgets pages OK were run by LEAD with a capped Node heap (free RAM 0.95 GB, below the
+1.0 GB floor for me). Browser check NOT run, for memory: /atc/ and /paper/ were not viewed at 1280/390 in light/dark.
+The RAM watcher was stopped by Claude Code under memory pressure and not restarted. Committed by LEAD as 93085ba.
