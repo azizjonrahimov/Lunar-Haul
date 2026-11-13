@@ -98,3 +98,23 @@ ground); the 1 Hz link case if status and intent also go at 1 Hz (fails on every
 
 Still awaited, as plain sentences: B-100 (protocol version 0.2), B-105 (measured memory, one robot's bid computation); B-102 (overlap durations)
 is named in Section 7 as the companion paper's.
+
+## Second pass, part 2 (12 Nov)
+
+B-105 landed (`results/E48_sizing.json`, blocks `per_robot_round` and `measured_memory`); both composers are written. Build: passes with
+`--no-pdf` and without `--allow-pending`; no `[[PENDING`; one key still awaited (B-100, protocol version 0.2).
+
+| Finding | Now | What changed | Where |
+|---|---|---|---|
+| M1 | Closed | One robot's bid computation in an auction round (its loop over the waiting items; one 30-day month of seed 1 per fleet size; laptop, scaled by 54.8): 99th percentile 0.29 s at today's fleet (0.19 to 0.34 over the factor's range), 1.09 s at four times (0.73 to 1.28), 1.19 s at eight times (0.79 to 1.39); medians 11 to 25 ms. Verdict against the one-second decision, written from the data: within it at today's fleet, above it at four and eight times the fleet at the 99th percentile. The whole-fleet 1.12 s is kept as what it is and said to be about one robot's share. Memory measured with tracemalloc: 0.11 to 0.13 MB at peak with the parts held at once (0.14 MB with the planner's working memory added), against the 0.39 MB estimate; 0.11 MB is the learned bid policy that the default auction does not use; the other parts 0.01 to 0.03 MB. Stated: interpreter, code and numpy buffers not counted (the process holds 439 MB); a laptop measurement scaled by an assumed factor, one seed, not flight hardware. "Not timed" and "not measured" removed everywhere. | abstract, 1, 3.4, Table 3, 4.2, 5.1, Table 6 caption, 6.1, 6.4, 6.6, 7, Table 18, conclusion |
+| S17 item 3 | Done in part | One robot's bid computation is timed apart from the simulator's round. The safety check in a compiled language is still not run. | 5.1, 6.6 |
+
+Verdicts that moved: the bidding against the one-second decision. Before: unknown for one vehicle (only the pooled whole-fleet call, 1.12 s). Now:
+fits at today's fleet, does not fit at four and eight times the fleet at the 99th percentile under the assumed scaling (at the low end of the factor's
+range it would fit). H10 as registered has no capacity for the bidding, so its registered counts do not move; its verdict sentence now states the
+bidding result. Table 18: the whole-fleet row is replaced by a tested row for one robot's bid; a tested row for measured memory is added; the
+estimate row stays "calculated from assumed inputs"; the "not yet tested" row keeps only "the software on a flight-class processor, in a flight language".
+
+Abstract (299 words): "one robot's bid takes 0.29 s (99th percentile) at today's fleet and 1.19 s at eight times it, above the one-second decision"
+replaces the whole-fleet sentence. Conclusion (249 words): the same sentence. Section 6.6 names the design change that follows and is not made: a cap
+on the items a robot evaluates in a round. Section 7's pointer to B-102 as the companion paper's is unchanged.

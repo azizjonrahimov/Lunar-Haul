@@ -2071,6 +2071,7 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
         eb = r.p6("E50b", "metrics", "delay_mean_h")
         ebs = r.p6("E50b", "stops")
         dsp = r.p6("E53", "driving_split", "e53_auth_20_rovers", "fleet_driving", "1 Hz")
+        pr5, mm5 = r.s48("per_robot_round", "laptop_ms_by_multiple"), r.s48("measured_memory", "mb_by_multiple")
         rows = [
             # proved
             ["Beyond the breakpoint the loss over flat ground is 40&nbsp;log&nbsp;d &minus; 20&nbsp;log(h<sub>1</sub>h<sub>2</sub>), whatever the frequency; two antennas "
@@ -2134,12 +2135,17 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
              f"A {num(led['life'], 0)}-day lifetime against {num(led['down'], 1)} days without Earth, set by where the imposed blackout falls in the month; the same in every seed", "Section 5.12"],
             [f"Sizing (H10 of [59], exploratory): the safety check takes {pc(e48h['safety_core_share_flight_per_robot_10hz'], 1)} of one core of the reference processor", T,
              f"E48: one Python function timed on a laptop over the same moves for every class, with no reservation entries in the call, and scaled by an assumed factor", "Section 5.1"],
-            [f"The simulator's dispatch call for the whole fleet takes {unit(p99s, 's', 2)} at the 99th percentile, scaled", T,
-             f"E48: {cnt(r.s48('classes', 'LTV1', 'cpu_auction_round_ms', 'n'))} calls pooled over one, four and eight times the fleet; not one vehicle's share of a round, "
-             f"which task B-105 times", "Section 5.1"],
+            [f"One robot's bid computation in an auction round, scaled, takes {unit(pr5['1']['flight_p99_ms'] / 1000.0, 's', 2)} at the 99th percentile at "
+             f"today's fleet, within the one-second decision, and {unit(pr5['4']['flight_p99_ms'] / 1000.0, 's', 2)} and "
+             f"{unit(pr5['8']['flight_p99_ms'] / 1000.0, 's', 2)} at four and eight times the fleet, above it", T,
+             f"E48: a laptop timing of Python in one 30-day month of one seed per fleet size, scaled by an assumed factor; the simulator's whole-fleet call "
+             f"({unit(p99s, 's', 2)}, pooled) is about one robot's share", "Section 5.1"],
+            [f"The on-robot parts allocate {num(max(_fin(v['all_at_once_peak']) for v in mm5.values()), 2)}&nbsp;MB at most", T + " (measured on a laptop)",
+             "E48: peaks of Python allocations in one month of one seed per fleet size; the interpreter, the code and the numerical library's buffers are "
+             "not counted; most of it is the learned bid policy", "Section 5.1"],
             [f"The on-robot data come to {unit(e48h['peak_memory_mb_max_robot'], 'MB', 2)}", C,
-             "A sum of estimates at assumed layouts: a day of the reservation table, a year of the ledger, the policy files and an allowance; nothing was measured "
-             "(task B-105 measures it)", "Section 5.1"],
+             "A sum of estimates at assumed layouts: a day of the reservation table, a year of the ledger, the policy files and an allowance; the measured "
+             "peak is the row above", "Section 5.1"],
             [f"The authenticated traffic of 20 robots, {num(e48h['link_kbps_needed_20_robots_secured_mac8'], 2)}&nbsp;kbit/s at the sources, would need "
              f"{num(e48h['airtime_kbps_20_robots_secured_mac8_scheduled'], 2)}&nbsp;kbit/s of a base-scheduled channel if every robot were within one hop of the base", C,
              f"Event counts of the instrumented runs times serialised sizes and assumed rates. The hop count is from positions that are "
@@ -2177,7 +2183,7 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
             [f"Over a spherical ground the crew and cargo rovers' {unit(_fin(m14['lk']['LTV1']['longest_hop_m']) / 1000.0, 'km', 0)} hop carries "
              f"{num(m14['rates']['LTV1'][0], 0)}&nbsp;kbit/s, not {num(m14['rates']['LTV1'][1], 0)}, and no longer 1&nbsp;Mbit/s", C,
              "ITU-R P.526 section 3.2 for a smooth sphere, checked against the Recommendation's text; assumed radio constants; no lunar measurement", "Section 5.3; Table 7"],
-            ["The software on a flight-class processor; the memory in use; one robot's bid computation", N, "The scaling factor and the estimates stand in for them; task B-105 measures the last two on the laptop", "Sections 5.1, 7"],
+            ["The software on a flight-class processor, in a flight language", N, "The scaling factor stands in for it", "Sections 5.1, 7"],
             ["Protocol version 0.2, with the frame, datum and time-scale identifiers and a covariance in the position report", N, "Task B-100; every size here is version 0.1's", "Sections 3.8, 5.11"],
             ["Hops and reach to the base with 1.0&nbsp;m antennas for the small classes; the report rate tied to motion", N, "Not run; the traffic model gives every rover a 2.5&nbsp;m antenna", "Sections 5.2, 7"],
             ["Position error at eight times the fleet", T if x8 else N, "E50 at eight times the fleet: " + ("in the file" if x8 else "five seeds, not in this version"), "Section 5.8"],
@@ -2713,6 +2719,75 @@ def values(r: R, allow_pending: bool):
         out["air"] = e48_air()
         return out
 
+    _b105: Dict[str, Any] = {}
+
+    def b105():
+        """Task B-105 (results/E48_sizing.json, blocks `per_robot_round` and `measured_memory`): one robot's bid computation in one auction
+        round and the memory the on-robot parts allocate, each from one 30-day month of one seed per fleet multiple, on the laptop; the
+        times are scaled by the same assumed factor as the safety check. A measurement on a laptop, not on flight hardware."""
+        if _b105:
+            return _b105
+        pr, mm_ = r.s48("per_robot_round"), r.s48("measured_memory")
+        f = _fin(r.s48("flight", "factor"))
+        flo, fhi = (_fin(x) for x in r.s48("flight", "factor_range"))
+        t = {}
+        for m, x in pr["laptop_ms_by_multiple"].items():
+            check(abs(_fin(x["p99_ms"]) * f - _fin(x["flight_p99_ms"])) < 0.6 and abs(_fin(x["median_ms"]) * f - _fin(x["flight_median_ms"])) < 0.06 and
+                  abs(_fin(x["p99_ms"]) * flo - _fin(x["flight_p99_ms_range"][0])) < 0.6 and abs(_fin(x["p99_ms"]) * fhi - _fin(x["flight_p99_ms_range"][1])) < 0.6 and
+                  int(x["days"]) == 30, f"one robot's bid time at {m} times the fleet is the laptop time times the flight factor, from a 30-day month (5.1)")
+            t[m] = {"p99": _fin(x["flight_p99_ms"]) / 1000.0, "med": _fin(x["flight_median_ms"]), "lo": _fin(x["flight_p99_ms_range"][0]) / 1000.0,
+                    "hi": _fin(x["flight_p99_ms_range"][1]) / 1000.0, "n": int(x["n"]), "free": _fin(x["robots_per_round_mean"]), "robots": int(x["robots"]),
+                    "fits": _fin(x["flight_p99_ms"]) <= 1000.0}
+        check(list(t) == ["1", "4", "8"] and "seed 1" in str(pr["revision"]) and "ONE robot's bid computation" in str(pr["revision"]),
+              "the per-robot timing is of one robot's bid computation, seed 1, at one, four and eight times the fleet (5.1)")
+        whole = _fin(pr["whole_fleet_dispatch_call_ms_pooled"]["p99"]) * f / 1000.0
+        mem = {}
+        for m, x in mm_["mb_by_multiple"].items():
+            mem[m] = {"all": _fin(x["all_at_once_peak"]), "policy": _fin(x["bid_policy"]["peak"]), "plus": _fin(x["all_at_once_plus_planner_p99"]),
+                      "rest": _fin(x["safety_check_peak"]) + _fin(x["reservation_window_24h"]["peak"]) + _fin(x["ledger_month"]["peak"]) + _fin(x["planner_working_peak_p99"]),
+                      "ws": _fin(x["process_peak_working_set_mb"])}
+        est = _fin(mm_["estimate_mb_for_comparison"])
+        check(all(x in str(mm_["revision"]) for x in ("tracemalloc", "interpreter, the code and numpy buffers", "do not use it")) and
+              abs(est - _fin(r.s48("classes", "LTV1", "peak_memory_mb"))) < 1e-9 and max(v["plus"] for v in mem.values()) < est,
+              "the measured memory is tracemalloc peaks of the on-robot parts, without the interpreter, the code and numpy buffers, and below the estimate (5.1)")
+        check(all(v["policy"] > 0.8 * v["all"] for v in mem.values()), "most of the measured peak is the learned bid policy (5.1)")
+        _b105.update({"t": t, "whole": whole, "mem": mem, "est": est, "f": f})
+        return _b105
+
+    def b105_round():
+        b = b105()
+        t = b["t"]
+        fit = [m for m in t if t[m]["fits"]]
+        nofit = [m for m in t if not t[m]["fits"]]
+        MN = {"1": "today's fleet", "4": "four times the fleet", "8": "eight times the fleet"}
+        check(abs(b["whole"] - max(t[m]["p99"] for m in t)) < 0.25, "the pooled whole-fleet call is about the size of one robot's 99th percentile at the larger fleets (5.1)")
+        verdict = ("within the one-second decision at every fleet size" if not nofit else
+                   (f"within the one-second decision at {' and '.join(MN[m] for m in fit)} and above it at {' and '.join(MN[m] for m in nofit)}" if fit else
+                    "above the one-second decision at every fleet size"))
+        return (f"One robot's own bid computation in an auction round, its loop over the waiting items, was then timed apart from the simulator's round, "
+                f"in one 30-day month of one seed per fleet size, and scaled by the same assumed factor. At the 99th percentile it takes "
+                + ", ".join(f"{unit(t[m]['p99'], 's', 2)} at {MN[m]} ({num(t[m]['lo'], 2)} to {num(t[m]['hi'], 2)} over the factor's range; "
+                            f"{cnt(t[m]['n'])} robot-rounds, {num(t[m]['free'], 1)} free robots a round)" for m in t) +
+                f", and {num(min(t[m]['med'] for m in t), 0)} to {unit(max(t[m]['med'] for m in t), 'ms', 0)} at the median: {verdict}. The slow rounds "
+                f"are those with many waiting items, each of which the robot tries to insert into its plan; a cap on the items a robot evaluates in a round "
+                f"would bound the time and is not in the design. The whole-fleet figure above is therefore about one robot's 99th percentile, with "
+                f"several robots free in a round at the larger fleets. This is a laptop timing of Python scaled by an assumed factor, on one "
+                f"seed, not a measurement on flight hardware.")
+
+    def b105_memory():
+        b = b105()
+        mem = b["mem"]
+        lo, hi = min(v["all"] for v in mem.values()), max(v["all"] for v in mem.values())
+        return (f"The memory was also measured, as the bytes the interpreter allocates for the on-robot parts on one robot's view of a 30-day month of "
+                f"one seed: the planner's working memory during a bid, one safety check, the reservation entries of the next 24 hours, the month's "
+                f"ledger records and the loaded bid policy, all held at once. The peak is {num(lo, 2)} to {unit(hi, 'MB', 2)} over the three fleet sizes "
+                f"({num(max(v['plus'] for v in mem.values()), 2)}{NB}MB with the planner's working memory at its 99th percentile added), against the estimate of "
+                f"{unit(b['est'], 'MB', 2)}; {num(min(v['policy'] for v in mem.values()), 2)}{NB}MB of it is the learned bid "
+                f"policy, which the default auction does not use, and the other parts together peak at {num(min(v['rest'] for v in mem.values()), 2)} to "
+                f"{unit(max(v['rest'] for v in mem.values()), 'MB', 2)}. Not counted are the interpreter, the code and the buffers of the numerical library; "
+                f"the whole process holds {num(max(v['ws'] for v in mem.values()), 0)}{NB}MB, nearly all of it interpreter and simulator. It is a laptop "
+                f"measurement of a Python implementation, not of flight software.")
+
     def h10_sentence():
         s = e48_scaled()
         a = s["air"]
@@ -2721,17 +2796,21 @@ def values(r: R, allow_pending: bool):
         fits["market"] = _fin(mk) <= _fin(r.s48("targets", "market_mb_per_day"))
         T = f"{num(a['target'], 0)}{KBPS}"
         ob = one_hop_basis()
+        b5 = b105()
         w = lambda ok: "within" if ok else "above"
         return (f"H10 of [59], exploratory, is reported count by count. The processor: the safety check takes {num(s['cpu_share_worst'] * 100, 1)}{PCT} of "
-                f"one core of the reference processor at 10{NB}Hz, {w(fits['cpu'])} it. The memory: the on-robot data are estimated, not measured, at "
-                f"{unit(s['mem_worst_mb'], 'MB', 1)} of {unit(s['mem_capacity_mb'], 'MB')}. The market's messages: {unit(mk, 'MB', 3)} a day, {w(fits['market'])} "
+                f"one core of the reference processor at 10{NB}Hz, {w(fits['cpu'])} it. The memory: the on-robot data are estimated at "
+                f"{unit(s['mem_worst_mb'], 'MB', 1)} and measured on the laptop at {num(max(v['all'] for v in b5['mem'].values()), 2)}{NB}MB at most, of "
+                f"{unit(s['mem_capacity_mb'], 'MB')}. The market's messages: {unit(mk, 'MB', 3)} a day, {w(fits['market'])} "
                 f"the {unit(r.s48('targets', 'market_mb_per_day'), 'MB')} target. The link: the authenticated radio traffic of {cnt(a['robots'])} robots, "
                 f"{num(a['load'], 2)}{KBPS} at the sources, would need {num(a['sched']['need'], 2)}{KBPS} of a channel the base schedules if every robot were "
                 f"within one hop of the base ({side(a['sched'], 'the ' + T + ' target')}), {num(a['rand']['need'], 2)}{KBPS} on slotted random access "
                 f"({side(a['rand'])}) and {num(a['two']['need'], 2)}{KBPS} if every report were relayed two hops ({side(a['two'])}); the one-hop condition "
                 f"holds for robots standing at sites, and a driving robot has a path to the base {pc(ob['drive'], 1)} of the time (Section 5.2). The scaling "
-                f"factor is {num(s['factor'], 1)} (range {num(s['range'][0], 1)}&ndash;{num(s['range'][1], 1)}), and the bidding, which H10 also names, has no "
-                f"registered capacity.")
+                f"factor is {num(s['factor'], 1)} (range {num(s['range'][0], 1)}&ndash;{num(s['range'][1], 1)}). The bidding, which H10 also names, has no "
+                f"registered capacity; against the one-second decision of this design one robot's bid computation, scaled, "
+                f"{'fits at every fleet size' if all(v['fits'] for v in b5['t'].values()) else ('fits at today' + chr(39) + 's fleet and not at four and eight times it' if b5['t']['1']['fits'] and not b5['t']['4']['fits'] and not b5['t']['8']['fits'] else 'does not fit at every fleet size')} "
+                f"at the 99th percentile.")
     fill("P3-H10-VERDICT-SENTENCE", h10_sentence, "E48")
 
     def e48_round():
@@ -2748,14 +2827,10 @@ def values(r: R, allow_pending: bool):
                 f"the simulator's own model of the message exchange, {cnt(a['n'])} calls pooled over the timing runs at one, four and eight times the fleet. "
                 f"Scaled by the same factor it takes {unit(med, 's', 2)} at the median and {unit(p99, 's', 2)} at the 99th percentile, "
                 f"{'above' if over else 'within'} the one-second decision that the link model of Section 5.3 assumes; the results file does not split it by "
-                f"fleet size. No single vehicle executes that call, and one vehicle's share of a round was not timed.")
+                f"fleet size. No single vehicle executes that call.")
     fill("P3-E48-ROUND-SENTENCE", e48_round, "E48")
-    fill_await("P3-E48-MEMORY-SENTENCE", lambda: landed("the measured memory (B-105)", lambda: r.s48("measured_memory")),
-               "A measurement of the memory in use, taken while the program runs, is not in this version; it will be reported here beside the estimate.",
-               "B-105 (results/E48_sizing.json, block measured_memory)")
-    fill_await("P3-E48-ROBOT-ROUND-SENTENCE", lambda: landed("one robot's bid computation (B-105)", lambda: r.s48("per_robot_round")),
-               "The time of one robot's bid computation, apart from the simulator's round, is not in this version either; it will be reported here, "
-               "per fleet size.", "B-105 (results/E48_sizing.json, block per_robot_round)")
+    fill("P3-E48-MEMORY-SENTENCE", lambda: b105_memory(), "E48 measured_memory (B-105)")
+    fill("P3-E48-ROBOT-ROUND-SENTENCE", lambda: b105_round(), "E48 per_robot_round (B-105)")
     def e48_spherical():
         """5.3: the spherical-ground column (task B-104, results/E48_sizing.json block `revision_b104`): a calculation with ITU-R P.526
         section 3.2, and which verdicts it moves."""
@@ -2881,7 +2956,7 @@ def values(r: R, allow_pending: bool):
                 f"timer noise; no class is the worst, and the largest 99th percentile is the value used. The call is Python on single numbers, so it "
                 f"measures this implementation and not the rules in a flight language. The simulator's dispatch call for the whole fleet took "
                 f"{unit(a['median'], 'ms', 2)} at the median and {unit(a['p99'], 'ms', 1)} at the 99th percentile over {cnt(a['n'])} calls pooled over the fleet "
-                f"sizes. The on-robot data are estimated, not measured, at {unit(max(mem.values()), 'MB', 2)}: the bytes of a 24-hour window of the reservation "
+                f"sizes. The on-robot data are estimated at {unit(max(mem.values()), 'MB', 2)}: the bytes of a 24-hour window of the reservation "
                 f"table and of a year's ledger copy at the assumed layouts, the two policy files as stored on disk, and 0.05{NB}MB allowed for working "
                 f"data; the program, its interpreter and its stack are not counted. The base computer's reservation check over the shared table, a "
                 f"different function from the vehicles' safety check, took {unit(bs['median'], '&micro;s', 0)} at the median and {unit(bs['p99'], '&micro;s', 0)} "
@@ -3225,10 +3300,15 @@ def values(r: R, allow_pending: bool):
         a = s["air"]
         core_ok = all(s["fits"].values())           # the processor and the memory
         p99s = e48_round_p99_s()
-        round_txt = (f"the simulator's dispatch call for the whole fleet, pooled over one to eight times the fleet and scaled, takes {unit(p99s, 's', 2)} at "
-                     f"the 99th percentile; one vehicle's share of a round was not timed")
-        round_short = (f"the simulator's whole-fleet dispatch call, pooled over fleet sizes, takes {unit(p99s, 's', 2)} at the 99th percentile; one "
-                       f"vehicle's share was not timed")
+        b5 = b105()
+        t5 = b5["t"]
+        check(t5["1"]["fits"] and not t5["4"]["fits"] and not t5["8"]["fits"],
+              "one robot's bid computation fits the one-second decision at today's fleet and not at four and eight times it, at the 99th percentile (abstract, 5.1, 9)")
+        round_txt = (f"one robot's bid computation in an auction round, timed on a laptop in one month of one seed and scaled by the same factor, takes "
+                     f"{unit(t5['1']['p99'], 's', 2)} at the 99th percentile at today's fleet, within the one-second decision, and {unit(t5['4']['p99'], 's', 2)} "
+                     f"and {unit(t5['8']['p99'], 's', 2)} at four and eight times the fleet, above it")
+        round_short = (f"one robot's bid takes {unit(t5['1']['p99'], 's', 2)} (99th percentile) at today's fleet and {unit(t5['8']['p99'], 's', 2)} at "
+                       f"eight times it, above the one-second decision")
         if kind == "abstract":
             return (f"Scaled by {num(s['factor'], 1)} to flight hardware, the safety check takes {num(s['cpu_share_worst'] * 100, 1)}{PCT} of one core; "
                     f"{round_short}. {cap1(words(a['robots']) if a['robots'] < 10 else {20: 'twenty'}.get(a['robots'], cnt(a['robots'])))} robots' authenticated traffic, "
@@ -3236,12 +3316,12 @@ def values(r: R, allow_pending: bool):
         if kind == "intro":
             return (f"As implemented, the safety check {'fits' if s['fits']['cpu'] else 'does not fit'} the reference flight processor: it takes "
                     f"{num(s['cpu_share_worst'] * 100, 1)}{PCT} of one core, from one function timed on a laptop and scaled by an assumed factor. The on-robot "
-                    f"data are estimated, not measured, at {unit(s['mem_worst_mb'], 'MB', 1)}. The time of an auction round on one vehicle is not known: "
-                    f"{round_txt}. The authenticated radio traffic of {cnt(a['robots'])} robots, {num(a['load'], 2)}{KBPS} at the sources, "
+                    f"data are estimated at {unit(s['mem_worst_mb'], 'MB', 1)} and measured on the laptop at {num(max(v['all'] for v in b5['mem'].values()), 2)}{NB}MB "
+                    f"at most. The bidding does not fit at every fleet size: {round_txt}. The authenticated radio traffic of {cnt(a['robots'])} robots, {num(a['load'], 2)}{KBPS} at the sources, "
                     f"{link_text(a, 'long')} (Sections 5.1 to 5.3).")
         if kind == "discussion":
             return (f"the safety check {'fits' if s['fits']['cpu'] else 'does not fit'} one core of the reference processor with the stated factor, and the "
-                    f"on-robot data are small by an estimate that was not measured; {round_txt}; and the authenticated radio traffic of {cnt(a['robots'])} "
+                    f"on-robot data are small, by an estimate and by a laptop measurement; {round_txt}; and the authenticated radio traffic of {cnt(a['robots'])} "
                     f"robots {link_text(a, 'long')}.")
         if kind == "comparison":
             bph = r.s48("messages", "bytes_per_robot_hour")
@@ -3255,8 +3335,7 @@ def values(r: R, allow_pending: bool):
                     f"at today's fleet.")
         if kind == "conclusion":
             return (f"Scaled to flight hardware the safety check {'fits' if s['fits']['cpu'] else 'does not fit'} one core. "
-                    f"{cap1({20: 'twenty'}.get(a['robots'], cnt(a['robots'])))} robots' traffic {link_text(a, 'concl')}. The simulator's whole-fleet dispatch call "
-                    f"takes {unit(p99s, 's', 2)} at the 99th percentile; one vehicle's share was not timed.")
+                    f"{cap1({20: 'twenty'}.get(a['robots'], cnt(a['robots'])))} robots' traffic {link_text(a, 'concl')}. {cap1(round_short)}.")
         if kind == "limitation":
             return (f"The factor used is {num(s['factor'], 1)} (range {num(s['range'][0], 1)}&ndash;{num(s['range'][1], 1)}), from "
                     f"{html.escape(s['laptop'])} to the {html.escape(s['processor'])}.")
@@ -3862,7 +3941,7 @@ def table_e48_sizing(r: R):
     return _tab(f"Table 6. Sizing, timed on our implementation ({html.escape(r.s48('laptop', 'processor'))}) and, where stated in the text, scaled to the "
                 f"{html.escape(f['processor'])} by {num(f['factor'], 1)} (Assumed, range {num(f['factor_range'][0], 1)}&ndash;{num(f['factor_range'][1], 1)}). "
                 f"Processor time per safety check in microseconds, median / 99th percentile, as the range over the four class timings, which differ by "
-                f"timer noise only; the on-robot data in MB, estimated and not measured (a 24-hour window of the reservation table, a year's ledger "
+                f"timer noise only; the on-robot data in MB, an estimate, with the measured peak in the text (a 24-hour window of the reservation table, a year's ledger "
                 f"copy, the policy files and 0.05&nbsp;MB allowed for working data; for the base computer the full year's table); power with its flag. "
                 f"The simulator's dispatch call for the whole fleet took {num(a['median'], 2)} / {num(a['p99'], 1)}&nbsp;ms over {cnt(a['n'])} calls pooled "
                 f"over one, four and eight times the fleet; it belongs to no class and to no single vehicle and is therefore not a column.",
