@@ -1384,12 +1384,12 @@ is not rerun; state that in the block's note.
 ## 9 min, at least 0.8 GB free before each chunk. If a task needs more than about 2 h of compute, report the
 ## estimate first and wait. Order: B-111, B-112, B-113. Report each as it lands.
 
-## B-111 [IN PROGRESS] The E54 message replay at LRIP v0.2 sizes
+## B-111 [DONE 00:27] The E54 message replay at LRIP v0.2 sizes
 The papers say the E54 replay was not rerun at v0.2. Rerun it with v0.2 sizes (and Proximity-1 framing as a
 separate row), into E54's results file under a new key `lrip_v02` beside the v0.1 values; report every value
 that moves and whether any verdict (H14 clause 1, unconfirmed-segment counts and hours) moves.
 
-## B-112 [OPEN] The request-rule variant on all fresh type-6 encounters
+## B-112 [IN PROGRESS] The request-rule variant on all fresh type-6 encounters
 B-108 found one zone violation in 10,000 type-6 encounters on fresh seeds and tested the request-rule variant
 on that one encounter only. Run the variant on the same 10,000 fresh type-6 encounters; report violations,
 the 95 % bound beside the rule as written, and any new failure the variant introduces (deadlock, timeouts,

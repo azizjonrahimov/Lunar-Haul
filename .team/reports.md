@@ -10237,3 +10237,28 @@ Command: `python tools/atc/train_bid.py evaluate|guard|table --rerun` (own cache
    - The 27 Oct OOD runs (cache written 27 Oct 20:16) are identical to today's in 4 of 6 cells (20 of 20 runs each; 2eq 2 of 20; loss 0.25 15 of 20). Their year-2038 runs equal *today's* guard runs.
    - The 27 Oct guard runs (18:24) and evaluation runs (18:03) differ from today's.
    - So at least one of the two engine fixes landed between 18:24 and 20:16 on 27 Oct: the old OOD table was mostly on the fixed engine already, while the old Table 6 and guards were not. The rerun file now has all three on one engine (commit 64b5340).
+
+## B-111 DONE 00:27 | E54 replay at LRIP v0.2 sizes: no value moves, no verdict moves
+Files: tools/atc/run_e54.py (opt-in: messages(sz=None) keeps the old default; new size_sets, run_seed_sizes, commands
+v02run / v02build; cache .cache/atc/e54_v02/), results/E54_dtn.json new key "lrip_v02" (every other key identical,
+checked value by value; the only diff line outside the block is the comma after "ledger_bytes"), results/E54_table_v02.csv
+(new; rows for v0.2 and v0.2_proximity1).
+What ran: 30 seeds, one engine run and one contact plan per seed, replayed with three size tables: v0.1 (reproduction
+check), v0.2, and v0.2 in Proximity-1 frames (+12 B per LRIP packet; the 10 kB daily ledger bundle unchanged). 38-44 s
+per seed, 20 min in 5 chunks, free RAM 0.90-1.39 GB before each chunk.
+Results:
+- Reproduction: the v0.1 set rebuilt from the new cache equals the published rows, h14 and seed list exactly
+  (reproduction_of_published_v01 all true), so the engine state under E54 is unchanged.
+- values_moved_vs_v01: empty for v0.2 and for v0.2_proximity1 (every row value: lost counts and shares, delays mean and
+  p95, AoI, stuck counts and hours).
+- H14 clause 1 at loss 0.25: lost jobs sf_ll minus drop_retry -0.333 per seed [-0.533, -0.167] (drop_retry 0.333,
+  sf_ll 0.0), identical in all three sets; supported in all three.
+- Unconfirmed segments at loss 0.25, drop_retry: 2,566 (30 seeds), 7,349.22 h; sf_ll 0; identical in all three sets.
+Why nothing moves (in the block's note): the replay sends TASK_AWARD 92 B, RESERVE_GRANT 94 B, TASK_STATE 33 B, whose
+v0.2 sizes equal v0.1 (v0.2 changed POSITION's spare bits and HELLO only). In lunarsim/atc/dtn.py a size enters only the
+64 MB per-node store limit; the bound "every message of a seed held at once" is 362,779 B (v0.1 and v0.2) and 371,455 B
+(Proximity-1), 0.6 % of the limit. AoI uses STATUS beacons and no size; unconfirmed segments come from the contact plan.
+So the papers' "the E54 replay was not rerun at v0.2" can become "rerun at v0.2 and in Proximity-1 frames: no value
+changes". Byte totals per message kind are in the new rows (*_bytes).
+Tests: tests/test_dtn.py, test_protocol_data.py, test_lrip.py, test_lrip_v02.py: 22 passed. No engine edit (guard not needed).
+Questions: none.

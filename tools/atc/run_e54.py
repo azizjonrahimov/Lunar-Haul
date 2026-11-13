@@ -124,10 +124,12 @@ def earth_up_fn(t0h, t1h, dt_s):
     return up
 
 
-def messages(rec, t0h, t1h, N, vid_col):
+def messages(rec, t0h, t1h, N, vid_col, sz=None):
+    """sz: bytes per LRIP message name (B-111); None = the codec's default size table, as published."""
     from lunarsim.atc.dtn import BASE, Msg
     from lunarsim.atc.lrip import codec as C
-    sz = {k: v["default"] for k, v in C.size_table().items()}
+    if sz is None:
+        sz = {k: v["default"] for k, v in C.size_table().items()}
     out, mid = [], 0
     for j in rec["jobs"]:
         t = (j["t"] - t0h) * 3600.0
@@ -220,6 +222,193 @@ def run_seed(seed):
             out["cells"].append(row)
     out["run_s"] = round(time.time() - t, 1)
     return out
+
+
+CACHE_V02 = os.path.join(ROOT, ".cache", "atc", "e54_v02")
+
+
+def size_sets():
+    """B-111: the replay's packet sizes. v0.1 (the published E54, kept as a reproduction check), v0.2 (B-100) and
+    v0.2 in Proximity-1 frames (+12 B per LRIP packet). The daily Earth ledger is a bundle of 10 kB Assumed, not an
+    LRIP packet, and keeps its size in every set."""
+    from lunarsim.atc.lrip import codec as C
+    fb = C.schema()["framing"]["proximity1_frame_bytes"]
+    v01 = {k: v["default"] for k, v in C.size_table(minor=1).items()}
+    v02 = {k: v["default"] for k, v in C.size_table(minor=2).items()}
+    return {"v0.1": v01, "v0.2": v02, "v0.2_proximity1": {k: v + fb for k, v in v02.items()}}
+
+
+def run_seed_sizes(seed):
+    """B-111: run_seed's replay with each of size_sets(), from one engine run and one contact plan per seed. Same rng
+    streams as run_seed (so v0.1 reproduces the published cells when the engine is unchanged). Age of information
+    does not depend on packet sizes (STATUS beacons, dtn.age_of_information) and is computed once per cell."""
+    import run_e50 as E5
+    from lunarsim.atc import dtn as DT
+    month, t0h, t1h, share = E5._window()
+    t = time.time()
+    rec = record(seed, t0h, t1h)
+    tr = E5.trajectories(rec, t0h, t1h)
+    g = E5._geo()
+    A = DT.contact_plan(tr, g["los"], g["ids"]["BASE"])
+    A_ll, ll_stats = DT.lost_link_plan(A, tr)
+    hb = {"A": DT.base_hops(A), "A_ll": DT.base_hops(A_ll)}
+    N = A.shape[1] - 1
+    vid_col = {int(v): n for n, v in enumerate(tr.ids)}
+    eu = earth_up_fn(t0h, t1h, tr.dt_s)
+    n_st, h_st = stuck_reservations(rec, A, tr, t0h, vid_col, DT.DEFAULTS["grace_s"])
+    out = {"seed": seed, "n_vehicles": N, "jobs": len(rec["jobs"]), "reservations": len(rec["res_log"]),
+           "lost_link": ll_stats, "sets": {}}
+    aoi_cache = {}
+    for set_name, sz in size_sets().items():
+        msgs = messages(rec, t0h, t1h, N, vid_col, sz)
+        cells = []
+        for loss in LOSSES:
+            for proto in PROTOCOLS:
+                plan = A_ll if proto == "sf_ll" else A
+                rng = np.random.default_rng([seed, 94, int(loss * 100), PROTOCOLS.index(proto)])
+                res = DT.simulate(plan, msgs, "drop_retry" if proto == "drop_retry" else "sf", loss, rng, tr.dt_s,
+                                  earth_up=lambda k: bool(eu[min(k, len(eu) - 1)]))
+                by = defaultdict(lambda: {"n": 0, "lost": 0, "delay": [], "bytes": 0})
+                for m in res:
+                    b = by[m.kind]
+                    b["n"] += 1
+                    b["bytes"] += m.size
+                    if m.t_done is None:
+                        b["lost"] += 1
+                    else:
+                        b["delay"].append(m.t_done - m.t0)
+                if (loss, proto) not in aoi_cache:
+                    aoi = DT.age_of_information(plan, loss, "drop_retry" if proto == "drop_retry" else "sf",
+                                                np.random.default_rng([seed, 94, 7, int(loss * 100)]), tr.dt_s,
+                                                hb=hb["A_ll" if proto == "sf_ll" else "A"])
+                    aoi_cache[(loss, proto)] = (float(np.mean(aoi)), float(np.max(aoi)))
+                cells.append({"loss": loss, "protocol": proto,
+                              "kinds": {k: {"n": v["n"], "lost": v["lost"], "bytes": v["bytes"],
+                                            "delay_mean_s": float(np.mean(v["delay"])) if v["delay"] else None,
+                                            "delay_p95_s": float(np.quantile(v["delay"], 0.95)) if v["delay"] else None}
+                                        for k, v in by.items()},
+                              "aoi_mean_s": aoi_cache[(loss, proto)][0], "aoi_max_vehicle_s": aoi_cache[(loss, proto)][1],
+                              "stuck_reservations": 0 if proto == "sf_ll" else n_st,
+                              "stuck_hours": 0.0 if proto == "sf_ll" else h_st,
+                              "blocked_hours_released_by_rule": h_st if proto == "sf_ll" else 0.0})
+        out["sets"][set_name] = {"messages": len(msgs), "cells": cells}
+    out["run_s"] = round(time.time() - t, 1)
+    return out
+
+
+def cmd_v02run(seeds, max_s):
+    t0 = time.time()
+    os.makedirs(CACHE_V02, exist_ok=True)
+    for s in seeds:
+        p = os.path.join(CACHE_V02, f"s{s}.json")
+        if os.path.isfile(p):
+            continue
+        if time.time() - t0 > max_s * 0.55:
+            print(f"stop before seed {s}: time budget", flush=True)
+            return
+        o = run_seed_sizes(s)
+        json.dump(o, open(p + ".tmp", "w"), allow_nan=True)
+        os.replace(p + ".tmp", p)
+        print(f"v02 s{s} done in {o['run_s']} s", flush=True)
+    print("all requested seeds done", flush=True)
+
+
+def _summ(S, set_name):
+    """build()'s rows and H14 for one size set of the B-111 cache."""
+    kinds = ["award", "grant", "task_state", "ledger_earth"]
+    rows, cell = [], {}
+    for loss in LOSSES:
+        for proto in PROTOCOLS:
+            rs = [next(c for c in s["sets"][set_name]["cells"] if c["loss"] == loss and c["protocol"] == proto) for s in S]
+            cell[(loss, proto)] = rs
+            row = {"loss": loss, "protocol": proto, "seeds": len(rs)}
+            for k in kinds:
+                n = sum(r["kinds"].get(k, {}).get("n", 0) for r in rs)
+                lost = sum(r["kinds"].get(k, {}).get("lost", 0) for r in rs)
+                d = [r["kinds"][k]["delay_mean_s"] for r in rs if r["kinds"].get(k, {}).get("delay_mean_s") is not None]
+                d95 = [r["kinds"][k]["delay_p95_s"] for r in rs if r["kinds"].get(k, {}).get("delay_p95_s") is not None]
+                row[f"{k}_n"] = n
+                row[f"{k}_lost"] = lost
+                row[f"{k}_lost_share"] = round(lost / n, 5) if n else ""
+                row[f"{k}_delay_mean_s"] = round(float(np.mean(d)), 3) if d else ""
+                row[f"{k}_delay_p95_s"] = round(float(np.mean(d95)), 3) if d95 else ""
+                row[f"{k}_bytes"] = int(sum(r["kinds"].get(k, {}).get("bytes", 0) for r in rs))
+            row["aoi_mean_s"] = round(float(np.mean([r["aoi_mean_s"] for r in rs])), 2)
+            row["aoi_worst_vehicle_s"] = round(float(np.max([r["aoi_max_vehicle_s"] for r in rs])), 1)
+            row["stuck_reservations"] = int(sum(r["stuck_reservations"] for r in rs))
+            row["stuck_hours"] = round(float(sum(r["stuck_hours"] for r in rs)), 2)
+            rows.append(row)
+    lost = lambda r: r["kinds"].get("award", {}).get("lost", 0)
+    dr, ll = cell[(0.25, "drop_retry")], cell[(0.25, "sf_ll")]
+    h14 = {"lost_jobs_drop_retry_per_seed": _boot([lost(a) for a in dr], 1),
+           "lost_jobs_sf_ll_per_seed": _boot([lost(b) for b in ll], 2),
+           "difference_sf_ll_minus_drop_retry": _boot([lost(b) - lost(a) for a, b in zip(dr, ll)], 3),
+           "stuck_reservations_sf_ll": int(sum(r["stuck_reservations"] for r in ll)),
+           "stuck_reservations_drop_retry": int(sum(r["stuck_reservations"] for r in dr))}
+    h14["supported"] = bool(h14["difference_sf_ll_minus_drop_retry"]["ci"][1] < 0 and h14["stuck_reservations_sf_ll"] == 0)
+    return rows, h14
+
+
+def build_v02():
+    """B-111: results/E54_dtn.json key "lrip_v02" (every other key unchanged) and results/E54_table_v02.csv; the
+    v0.1 set rebuilt from the same cache is compared with the published rows and h14 (reproduction check)."""
+    files = sorted(glob.glob(os.path.join(CACHE_V02, "s[0-9]*.json")), key=lambda p: int(os.path.basename(p)[1:-5]))
+    S = [json.load(open(p)) for p in files]
+    if not S:
+        raise SystemExit("no B-111 seeds")
+    old = json.load(open(OUT_JSON))
+    sets = {nm: _summ(S, nm) for nm in size_sets()}
+    rep_rows = [{k: v for k, v in r.items() if not k.endswith("_bytes")} for r in sets["v0.1"][0]]
+    old_h14 = {k: v for k, v in old["h14"].items() if k != "rule"}
+    rt = lambda x: json.loads(json.dumps(x))
+    reproduced = {"rows_equal_published": rt(rep_rows) == old["rows"], "h14_equal_published": rt(sets["v0.1"][1]) == old_h14,
+                  "seeds_equal_published": [s["seed"] for s in S] == old["seeds"]}
+    moved = []
+    base_rows = {(r["loss"], r["protocol"]): r for r in sets["v0.1"][0]}
+    for nm in ("v0.2", "v0.2_proximity1"):
+        for r in sets[nm][0]:
+            o = base_rows[(r["loss"], r["protocol"])]
+            for k, v in r.items():
+                if k.endswith("_bytes"):
+                    continue
+                if v != o[k]:
+                    moved.append({"set": nm, "loss": r["loss"], "protocol": r["protocol"], "key": k, "v0.1": o[k], nm: v})
+    verdict = {nm: {"h14_supported": sets[nm][1]["supported"],
+                    "same_as_v0.1": sets[nm][1]["supported"] == sets["v0.1"][1]["supported"],
+                    "unconfirmed_segments_drop_retry_loss025": sets[nm][1]["stuck_reservations_drop_retry"],
+                    "unconfirmed_hours_drop_retry_loss025": next(r["stuck_hours"] for r in sets[nm][0]
+                                                                  if r["loss"] == 0.25 and r["protocol"] == "drop_retry")}
+               for nm in sets}
+    sz = size_sets()
+    blk = {"task": "B-111 (LEAD, 13 Nov): the E54 replay at LRIP v0.2 sizes",
+           "sizes_bytes": {nm: {k: sz[nm][k] for k in ("TASK_AWARD", "RESERVE_GRANT", "TASK_STATE")} for nm in sz},
+           "ledger_bytes": LEDGER_BYTES,
+           "note": ("Each seed's engine run and contact plan are made once and replayed with three size tables: v0.1 "
+                    "(the published values, as a reproduction check), v0.2 and v0.2 in Proximity-1 frames (+12 B per "
+                    "LRIP packet; the daily ledger bundle keeps its 10 kB). The replay sends TASK_AWARD, RESERVE_GRANT "
+                    "and TASK_STATE, whose v0.2 sizes equal v0.1 (v0.2 changed POSITION's spare bits and HELLO only), "
+                    "and in lunarsim/atc/dtn.py a size enters only the 64 MB per-node store limit, which no queue comes "
+                    "near; age of information uses STATUS beacons and no size. Unconfirmed-segment counts and hours "
+                    "come from the contact plan, not from sizes."),
+           "reproduction_of_published_v01": reproduced,
+           "rows": {nm: sets[nm][0] for nm in sets}, "h14": {nm: sets[nm][1] for nm in sets},
+           "values_moved_vs_v01": moved, "verdicts": verdict,
+           "max_queue_bytes_bound": None,
+           "seeds": [s["seed"] for s in S], "run_s_total": round(sum(s["run_s"] for s in S), 1)}
+    # an upper bound on any node's store: every message of a seed held at once
+    blk["max_queue_bytes_bound"] = {nm: int(max(sum(c["kinds"][k]["bytes"] for k in c["kinds"])
+                                                for s in S for c in s["sets"][nm]["cells"])) for nm in sz}
+    old["lrip_v02"] = blk
+    with open(OUT_JSON, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(old, f, indent=1)
+        f.write("\n")
+    rows = [dict(r, size_set=nm) for nm in ("v0.2", "v0.2_proximity1") for r in sets[nm][0]]
+    with open(OUT_CSV.replace(".csv", "_v02.csv"), "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=["size_set"] + [k for k in rows[0] if k != "size_set"])
+        w.writeheader()
+        w.writerows(rows)
+    print(json.dumps({"reproduced": reproduced, "moved": len(moved), "verdicts": verdict,
+                      "queue_bound": blk["max_queue_bytes_bound"]}, indent=1))
 
 
 def cmd_linkshare(seeds, max_s):
@@ -342,7 +531,7 @@ def build():
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["run", "build", "ledger", "linkshare"])
+    ap.add_argument("cmd", choices=["run", "build", "ledger", "linkshare", "v02run", "v02build"])
     ap.add_argument("--seeds", default="1-30")
     ap.add_argument("--max-seconds", type=float, default=480.0)
     a = ap.parse_args(argv)
@@ -354,6 +543,11 @@ def main(argv=None):
     elif a.cmd == "linkshare":
         lo, hi = (a.seeds.split("-") + [a.seeds])[:2]
         cmd_linkshare(list(range(int(lo), int(hi) + 1)), a.max_seconds)
+    elif a.cmd == "v02run":
+        lo, hi = (a.seeds.split("-") + [a.seeds])[:2]
+        cmd_v02run(list(range(int(lo), int(hi) + 1)), a.max_seconds)
+    elif a.cmd == "v02build":
+        build_v02()
     elif a.cmd == "ledger":
         ledger()
     else:
