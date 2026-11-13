@@ -10212,3 +10212,28 @@ Command: `python tools/atc/train_bid.py evaluate|guard|table --rerun` (own cache
 **/paper/ PDF:** read at build: P1 53 pages, 1,439 kB (1,438,747 B). P3's size will follow on the next build.
 
 **Checks:** build clean (no lock warning); node tests 73/73; budgets `pages: OK`. /results/ and /paper/ were checked in dark and light at 1280 and 390: overflow 0, contrast failures 0, one h1, no heading skips, console errors 0. Server and browser are stopped.
+
+## B-106 ADDENDUM 18:57 (out-of-distribution cells rerun) | file: results/ATC_learned_eval_rerun.json
+- The OOD cells are now in the rerun file (`ood`, no longer "not rerun"), with their changes in `moved` (160 values moved in all, 78 unchanged).
+- `results/ATC_learned_eval.json` is untouched. The 92.9 % training record is not rerun, as agreed.
+- RAM: 1.95 GB free at the first of five chunks. I did not recheck before the later four, which had already run when your message arrived; each used about 360 MB.
+
+**Linear minus hand bids, urgent wait, 10 seeds each (27 Oct → rerun), and which side of 0 the 95 % CI lies on:**
+
+| Cell | Hand / linear, 27 Oct | Hand / linear, rerun | Difference 27 Oct | Difference rerun | Side |
+|---|---|---|---|---|---|
+| 2 equal owners | 16.00 / 11.40 h | 16.97 / 12.02 | −4.59 [−8.24, −0.95] | **−4.95 [−8.66, −1.24]** | excludes 0, unchanged |
+| 5 equal owners | 13.95 / 12.63 | identical | −1.33 [−3.50, 0.84] | same | includes 0, unchanged |
+| loss 0.25 | 16.42 / 13.36 | 15.64 / 13.32 | −3.07 [−4.42, −1.72] | **−2.32 [−4.29, −0.34]** | excludes 0, unchanged |
+| loss 0.40 | 18.00 / 16.38 | identical | −1.62 [−4.91, 1.68] | same | includes 0, unchanged |
+| load 10 % | 11.52 / 10.30 | identical | −1.22 [−2.12, −0.31] | same | excludes 0, unchanged |
+| year 2038 | 13.26 / 12.03 | identical | −1.23 [−3.91, 1.45] | same | includes 0, unchanged |
+
+- **No cell changes side.** Two cells move (2 owners slightly larger gain; loss 0.25 smaller gain); starved items are within 0.1 everywhere.
+
+**Two findings from checking run by run (summary values without wall time):**
+1. **The "year 2038" cell is not out of distribution.** On the current engine its 20 runs are identical in every summary value to the 30 % guard runs on the same seeds, which start in 2028. The start-year setting changes nothing in these runs, so the cell does not test what it is named for. **Suggest P1 drops the row, or labels it "start year has no effect in this scenario"**. I can trace why if you want; I have not.
+2. **The 27 Oct file mixes engine states.**
+   - The 27 Oct OOD runs (cache written 27 Oct 20:16) are identical to today's in 4 of 6 cells (20 of 20 runs each; 2eq 2 of 20; loss 0.25 15 of 20). Their year-2038 runs equal *today's* guard runs.
+   - The 27 Oct guard runs (18:24) and evaluation runs (18:03) differ from today's.
+   - So at least one of the two engine fixes landed between 18:24 and 20:16 on 27 Oct: the old OOD table was mostly on the fixed engine already, while the old Table 6 and guards were not. The rerun file now has all three on one engine (commit 64b5340).

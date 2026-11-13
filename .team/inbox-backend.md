@@ -1339,7 +1339,7 @@ two-ray value, and Table 7's rates 1.4 to 2.4 times lower. Reproduce it from the
 (say exactly which formula), add it to E48 as a third column ("spherical ground"), and report which verdicts
 move (the referee says none).
 
-## B-106 [DONE 18:27; ood addendum pending] The learned-bid evaluation on the fixed engine (P1 M8)
+## B-106 [DONE 18:27; ood addendum done 18:57] The learned-bid evaluation on the fixed engine (P1 M8)
 `results/ATC_learned_eval.json` dates from 27 October, before the two engine fixes; P1's Table 6, the guard
 runs and the 92.9 % come from it. Rerun that evaluation on the current engine with the same seeds (resumable
 chunks under 9 minutes), write the new file beside the old with both dates, and report every value that moves.

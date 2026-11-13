@@ -169,7 +169,116 @@
    }
   }
  },
- "ood": "not rerun (B-106 option (a): eval and guard first; ood follows as an addendum if time allows)",
+ "ood": {
+  "2eq": {
+   "hand": {
+    "urgent_mean_h": 16.972,
+    "starved_items": 1.3
+   },
+   "linear": {
+    "urgent_mean_h": 12.022,
+    "starved_items": 0.9,
+    "vs_hand_h": {
+     "mean": -4.95,
+     "ci95": [
+      -8.663,
+      -1.236
+     ],
+     "n": 10
+    }
+   }
+  },
+  "5eq": {
+   "hand": {
+    "urgent_mean_h": 13.954,
+    "starved_items": 0.9
+   },
+   "linear": {
+    "urgent_mean_h": 12.626,
+    "starved_items": 0.9,
+    "vs_hand_h": {
+     "mean": -1.328,
+     "ci95": [
+      -3.497,
+      0.841
+     ],
+     "n": 10
+    }
+   }
+  },
+  "loss 0.25": {
+   "hand": {
+    "urgent_mean_h": 15.638,
+    "starved_items": 1.0
+   },
+   "linear": {
+    "urgent_mean_h": 13.323,
+    "starved_items": 1.3,
+    "vs_hand_h": {
+     "mean": -2.315,
+     "ci95": [
+      -4.293,
+      -0.337
+     ],
+     "n": 10
+    }
+   }
+  },
+  "loss 0.40": {
+   "hand": {
+    "urgent_mean_h": 18.0,
+    "starved_items": 1.7
+   },
+   "linear": {
+    "urgent_mean_h": 16.383,
+    "starved_items": 1.6,
+    "vs_hand_h": {
+     "mean": -1.617,
+     "ci95": [
+      -4.909,
+      1.675
+     ],
+     "n": 10
+    }
+   }
+  },
+  "load 10 %": {
+   "hand": {
+    "urgent_mean_h": 11.518,
+    "starved_items": 0.2
+   },
+   "linear": {
+    "urgent_mean_h": 10.301,
+    "starved_items": 0.3,
+    "vs_hand_h": {
+     "mean": -1.216,
+     "ci95": [
+      -2.123,
+      -0.31
+     ],
+     "n": 10
+    }
+   }
+  },
+  "year 2038": {
+   "hand": {
+    "urgent_mean_h": 13.261,
+    "starved_items": 0.7
+   },
+   "linear": {
+    "urgent_mean_h": 12.029,
+    "starved_items": 0.8,
+    "vs_hand_h": {
+     "mean": -1.232,
+     "ci95": [
+      -3.91,
+      1.445
+     ],
+     "n": 10
+    }
+   }
+  }
+ },
  "policies": {
   "mlp": {
    "file": "data/policies/atc_bid_v1.json",
@@ -393,7 +502,7 @@
  "dates": {
   "original": "2026-10-27 (results/ATC_learned_eval.json, commit c90676f, before the two engine fixes)",
   "rerun": "2026-11-12",
-  "rerun_commit": "64b53408e6200b4dabf2e01c49bd05941a6158a3"
+  "rerun_commit": "f8235fd29dd60bac3ea54b7d6c5a2b961a2292e4"
  },
  "rerun_note": "same evaluation seeds (1-30), loads 30 % and 60 %, guard seeds 1-10, same policies (data/policies/atc_bid_v1.json, atc_bid_linear_v1.json, not retrained); only the engine differs",
  "moved": [
@@ -1136,7 +1245,67 @@
    "key": "/guards/60/tonne_days_waiting/linear_minus_hand/mean",
    "original": -1055.613,
    "rerun": -1043.378
+  },
+  {
+   "key": "/ood/2eq/hand/starved_items",
+   "original": 1.2,
+   "rerun": 1.3
+  },
+  {
+   "key": "/ood/2eq/hand/urgent_mean_h",
+   "original": 15.997,
+   "rerun": 16.972
+  },
+  {
+   "key": "/ood/2eq/linear/starved_items",
+   "original": 1.0,
+   "rerun": 0.9
+  },
+  {
+   "key": "/ood/2eq/linear/urgent_mean_h",
+   "original": 11.403,
+   "rerun": 12.022
+  },
+  {
+   "key": "/ood/2eq/linear/vs_hand_h/ci95[0]",
+   "original": -8.239,
+   "rerun": -8.663
+  },
+  {
+   "key": "/ood/2eq/linear/vs_hand_h/ci95[1]",
+   "original": -0.95,
+   "rerun": -1.236
+  },
+  {
+   "key": "/ood/2eq/linear/vs_hand_h/mean",
+   "original": -4.594,
+   "rerun": -4.95
+  },
+  {
+   "key": "/ood/loss 0.25/hand/urgent_mean_h",
+   "original": 16.424,
+   "rerun": 15.638
+  },
+  {
+   "key": "/ood/loss 0.25/linear/urgent_mean_h",
+   "original": 13.356,
+   "rerun": 13.323
+  },
+  {
+   "key": "/ood/loss 0.25/linear/vs_hand_h/ci95[0]",
+   "original": -4.415,
+   "rerun": -4.293
+  },
+  {
+   "key": "/ood/loss 0.25/linear/vs_hand_h/ci95[1]",
+   "original": -1.722,
+   "rerun": -0.337
+  },
+  {
+   "key": "/ood/loss 0.25/linear/vs_hand_h/mean",
+   "original": -3.069,
+   "rerun": -2.315
   }
  ],
- "unchanged_count": 42
+ "unchanged_count": 78
 }
