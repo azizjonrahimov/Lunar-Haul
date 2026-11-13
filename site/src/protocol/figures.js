@@ -354,20 +354,29 @@ const LRIP_NAME = { version: 'Packet version', type: 'Packet type', sec_hdr_flag
   seq_flags: 'Sequence flags', seq_count: 'Sequence count', data_length: 'Packet data length (bytes after the header, minus 1)',
   ver_major: 'LRIP version, major', ver_minor: 'LRIP version, minor', msg_type: 'Message type', sender_id: 'Sender id', t_valid: 'Valid at (since the LRIP epoch)',
   e: 'East', n: 'North', h: 'Height', heading: 'Heading', speed: 'Speed', sigma_h: 'Position error (one sigma)', nav_src: 'Position source', moving: 'Moving',
-  spare: 'Spare', spi: 'Key kind and epoch (SPI)', seq: 'Counter (stops replays)', mac8: 'Authentication code (AES-CMAC, 8 bytes)' };
+  spare: 'Spare', u95_code: '95 % horizontal bound (log code)', spi: 'Key kind and epoch (SPI)', seq: 'Counter (stops replays)', mac8: 'Authentication code (AES-CMAC, 8 bytes)' };
 async function figMsg(host) {
   const r = await fetch(`${import.meta.env.BASE_URL}protocol/lrip-position.json`);
   if (!r.ok) throw new Error(`protocol/lrip-position.json: HTTP ${r.status}`);
   const L = await r.json();
-  if (L.format !== 'lunarsim-lrip-figure' || L.version !== 1) throw new Error(`lrip-position.json: format ${L.format}`);
+  if (L.format !== 'lunarsim-lrip-figure' || L.version !== 2) throw new Error(`lrip-position.json: format ${L.format} version ${L.version}`);
   const F = L.layout.fields, raw = lripDecode(L.vector.hex, L.layout), hex = L.vector.hex;
   const bytes = []; for (let i = 0; i < hex.length; i += 2) bytes.push(hex.slice(i, i + 2));
   let pos = 0; const span = F.map(f => { const s = pos; pos += f.bits; return [s, pos]; });
   const PART = { head: 'packet header', lrip: 'protocol header', pay: 'position content', sec: 'security header', mac: 'authentication code' };
   const G = (value, unit, digits, what) => num({ value, unit, digits, flag: 'Spec', source: `${L.source}: the POSITION conformance vector (profile N, 8-byte MAC), ${what}; layout ${L.schema}` });
+  // F-73: v0.2's u95_code, a log code read by the schema's own rule (base × 2^(code/div); two codes reserved)
+  const bound = (f, v) => {
+    const g = f.log;
+    if (v === g.unknown) return `${v} (unknown)`;
+    if (v === g.above) return `${v} (above ${g.aboveText})`;
+    const m = g.base * 2 ** (v / g.div), big = m >= 1000;
+    return `${v}, so ${G(big ? m / 1000 : m, big ? ' km' : ' m', big ? 2 : m < 10 ? 2 : 0, `${LRIP_NAME[f.name]} (${f.note.split(',')[0]})`)}`;
+  };
   const valueOf = k => {
     const f = F[k], v = raw[k];
     if (typeof v === 'string') return `<code>${bytes.slice(span[k][0] / 8, span[k][1] / 8).join(' ')}</code>`;
+    if (f.log) return bound(f, v);
     if (f.enum) return `${v} (${String(f.enum[v] ?? 'unknown').replace(/_/g, ' ')})`;
     if (f.type === 'flag') return v ? 'yes' : 'no';
     if (f.scale && f.scale !== 1) { const d = Math.max(0, -Math.floor(Math.log10(f.scale) + 1e-9)); return G(v * f.scale, f.unit === 'deg' ? '°' : ` ${f.unit}`, d, LRIP_NAME[f.name] || f.name); }
@@ -412,21 +421,24 @@ async function figMsg(host) {
     const LONG = { carry: 'carry 150 kg from the depot to the base', hop: 'take 8 kg 1.5 km across a crater', psr: 'survey a shadowed crater for 30 minutes', relay: 'hold 60 MB of messages for a rover out of range' };
     mout.textContent = `The job (${LONG[j]}) asks for "${cap}". ${who.length ? `Only the ${who.join(' and the ')} lists it with enough capacity, so only it bids.` : 'No vehicle lists it.'} Unknown capabilities are skipped, so a rover never has to understand a hopper's.`;
   }
-  host.append(h('p', { class: 'ui-label' }, `A POSITION packet, before link framing: LRIP v0.1's conformance vector, sender ${L.vector.sender}`), grid, h('p', { class: 'pr-key small' }, Object.entries(PART).flatMap(([k, l]) => [h('span', { class: `pr-sw pr-p-${k}` }), ` ${l}  `])), fields, out,
+  host.append(h('p', { class: 'ui-label' }, `A POSITION packet, before link framing: LRIP v${L.lrip}'s conformance vector, sender ${L.vector.sender}`), grid, h('p', { class: 'pr-key small' }, Object.entries(PART).flatMap(([k, l]) => [h('span', { class: `pr-sw pr-p-${k}` }), ` ${l}  `])), fields, out,
     h('div', { class: 'pr-ctl pr-ctl-gap' }, segJ.el), cards, mout);
   pick(F.findIndex(f => f.name === 'e')); match('carry');
 }
 
 // ---------------------------------------------------------------- 5b. E53: how much radio the fleet needs
-// B-99's e53_bitrate.json: the busiest link's load (95th percentile over position draws) against the number of rovers,
+// E53 at LRIP v0.2 sizes (F-73: protocol/e53-v02.json from results/E53_table_v02.csv, the rows of packets before link
+// framing; B-99's v0.1 file had the same shape): the busiest link's load (95th percentile over position draws) against the number of rovers,
 // at 0.1, 1 and 10 reports a second, for the fleet's own positions or rovers spread over the routes, with authentication on
 // or off; the channel lines are capacity times access efficiency (the file's eta: 0.8 when the base schedules the slots,
 // 1/e for random access), the rule E53 uses for "fits".
 async function figBitrate(host) {
-  const r = await fetch(`${import.meta.env.BASE_URL}protocol/b99/e53_bitrate.json`);
-  if (!r.ok) throw new Error(`protocol/b99/e53_bitrate.json: HTTP ${r.status}`);
+  const r = await fetch(`${import.meta.env.BASE_URL}protocol/e53-v02.json`);
+  if (!r.ok) throw new Error(`protocol/e53-v02.json: HTTP ${r.status}`);
   const D = await r.json();
-  if (D.format !== 'lunarsim-protocol-data' || !Array.isArray(D.rows)) throw new Error(`e53_bitrate.json: format ${D.format}`);
+  if (D.format !== 'lunarsim-protocol-data' || !Array.isArray(D.rows)) throw new Error(`e53-v02.json: format ${D.format}`);
+  const FR = D.columns.indexOf('framing');
+  if (FR >= 0) D.rows = D.rows.filter(x => x[FR] === 'lrip');   // the figure draws packets before link framing
   const c = k => D.columns.indexOf(k), GE = c('geometry'), AU = c('auth'), HZ = c('position_hz'), N = c('rovers'), P95 = c('busiest_link_kbps_p95');
   if ([GE, AU, HZ, N, P95].some(i => i < 0)) throw new Error('e53_bitrate.json: columns');
   let geo = 'fleet', auth = 'on';
@@ -443,13 +455,15 @@ async function figBitrate(host) {
     const y = v => T + (H - T - B) * (1 - (Math.log10(v) - Math.log10(LY[0])) / (Math.log10(LY[1]) - Math.log10(LY[0])));
     for (const v of [1, 10, 100, 1000]) svg.append(S('line', { class: 'pr-grid-l', x1: L, x2: W - R, y1: y(v), y2: y(v) }), S('text', { class: 'pr-tick', x: L - 6, y: y(v) + 4, 'text-anchor': 'end' }, v >= 1000 ? '1 M' : `${v} k`));
     for (const n of Ns) svg.append(S('text', { class: 'pr-tick', x: x(n), y: H - B + 16, 'text-anchor': n === Ns[0] ? 'start' : n === Ns[Ns.length - 1] ? 'end' : 'middle' }, `${n}`));
-    for (const [v, l] of lines) svg.append(S('line', { class: 'pr-limit', x1: L, x2: W - R, y1: y(v), y2: y(v) }), S('text', { class: 'pr-tick pr-lab', x: W - R - 4, y: y(v) - 4, 'text-anchor': 'end' }, `${l} (${fmt(v, 1)} kbit/s)`));
+    for (const [v] of lines) svg.append(S('line', { class: 'pr-limit', x1: L, x2: W - R, y1: y(v), y2: y(v) }));
     rates.forEach((hz, i) => {
       const pts = Ns.map(n => D.rows.find(q => q[GE] === geo && q[AU] === auth && q[HZ] === hz && q[N] === n)).filter(Boolean);
       const cls = `pr-c${i + 1}`;
       svg.append(S('path', { class: `pr-curve ${cls}`, d: pts.map((q, k) => `${k ? 'L' : 'M'}${x(q[N]).toFixed(1)},${y(q[P95]).toFixed(1)}`).join('') }));
       for (const q of pts) svg.append(S('circle', { class: cls, cx: x(q[N]), cy: y(q[P95]), r: 3.5 }, S('title', {}, `${q[N]} rovers, ${fmt(hz, hz < 1 ? 1 : 0)} reports a second: ${fmt(q[P95], 1)} kbit/s on the busiest link`)));
     });
+    // F-73: the channel labels last, over the curves, with a halo of the figure's background (v0.2's 40-rover point sits on one)
+    for (const [v, l] of lines) svg.append(S('text', { class: 'pr-tick pr-lab pr-halo', x: W - R - 4, y: y(v) - 4, 'text-anchor': 'end' }, `${l} (${fmt(v, 1)} kbit/s)`));
   }
   onResize(svg, draw);
   host.append(h('div', { class: 'pr-ctl' }, segG.el, segA.el), svg,

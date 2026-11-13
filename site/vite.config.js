@@ -9,7 +9,7 @@ import { paperField, paperValue } from './lib/papers.mjs';
 import { P as PROTOCOL } from './src/protocol/params.js';
 import { nw } from './lib/network.mjs';
 import { atcResults, e44fresh, e45up } from './lib/results-atc.mjs';
-import { b104, e50b, e50ov, e51, e52, e53, e53d, e55, lrip } from './lib/protocol-data.mjs';
+import { b104, e50b, e50ov, e51, e52, e53, e53v1, e53air, e53d, e55, lrip, lrip2 } from './lib/protocol-data.mjs';
 import { b97 } from './lib/realdata.mjs';
 import { nb, vv6 } from './lib/phase6.mjs';
 import { num } from './src/components/num.js';
@@ -53,7 +53,9 @@ function lunarsimPages() {
           .replace(/<!--@vv6:(\w+)-->/g, (_, k) => vv6(k))   // F-69: the Phase 6 checks' lead on /verification/ (lib/phase6.mjs)
           .replace(/<!--@b97:(\w+)-->/g, (_, k) => b97(k))   // F-56: B-97's real-data boxes (lib/realdata.mjs)
           .replace(/<!--@e55:([\w@.]+)-->/g, (_, k) => e55(k))   // F-56: E55 in /protocol/ problem 7 (lib/protocol-data.mjs)
-          .replace(/<!--@e53:(\w+):(\w+):([\d.]+):(\d+):(\w+)-->/g, (_, g, au, hz, n, col) => e53(g, au, hz, n, col))   // F-56: E53 in /protocol/ problem 5 (lib/protocol-data.mjs)
+          .replace(/<!--@e53(v1|pf)?:(\w+):(\w+):([\d.]+):(\d+):(\w+)(?::(\d))?-->/g, (_, v, g, au, hz, n, col, d) => (v === 'v1' ? e53v1(g, au, hz, n, col, d) : e53(g, au, hz, n, col, d, v === 'pf' ? 'proximity1' : 'lrip')))   // F-56, F-73: E53 in /protocol/ problem 5 at LRIP v0.2 (pf: Proximity-1 frames; v1: v0.1)
+          .replace('<!--@lrip2:note-->', () => lrip2('note'))   // F-73: the v0.2 radio load beside E48's v0.1 figures (/atc/ section 3)
+          .replace(/<!--@e53air:(\w+)-->/g, (_, k) => e53air(k))   // F-73: scheduled airtime, twenty rovers at 1 Hz (v1, v2, pf)
           .replace(/<!--@pn:(\w+)-->/g, (_, k) => { if (!PROTOCOL[k]) throw new Error(`protocol: no parameter ${k}`); return num(PROTOCOL[k]); })   // F-60: /protocol/ numbers, src/protocol/params.js
           .replace(/<!--@figure:([\w-]+)-->/g, (_, n) => figure(n))
           .replace(/<!--@icon:([\w-]+)-->/g, (_, n) => icon(n))

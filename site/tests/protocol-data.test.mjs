@@ -9,10 +9,10 @@ import { lripLayout, lripDecode, compactLrip, compactE51, e53 } from '../lib/pro
 
 const R = p => new URL(`../../${p}`, import.meta.url);
 const J = p => JSON.parse(readFileSync(R(p), 'utf8').replace(/\bNaN\b/g, 'null'));
-const haveLrip = existsSync(R('lunarsim/schemas/lrip-v0.1.json')) && existsSync(R('data/atc/lrip/conformance-v0.1.json'));
+const haveLrip = existsSync(R('lunarsim/schemas/lrip-v0.2.json')) && existsSync(R('data/atc/lrip/conformance-v0.2.json'));   // F-73: v0.2
 
 test('LRIP figure: the golden POSITION packet decodes to its own field values', { skip: !haveLrip && 'LRIP files missing' }, () => {
-  const schema = J('lunarsim/schemas/lrip-v0.1.json'), golden = J('data/atc/lrip/conformance-v0.1.json');
+  const schema = J('lunarsim/schemas/lrip-v0.2.json'), golden = J('data/atc/lrip/conformance-v0.2.json');
   const out = compactLrip(schema, golden), L = out.layout, v = out.vector;
   assert.equal(L.bits, v.bytes * 8);
   const raw = lripDecode(v.hex, L), at = name => raw[L.fields.findIndex(f => f.name === name)];
@@ -26,7 +26,8 @@ test('LRIP figure: the golden POSITION packet decodes to its own field values', 
   assert.equal(at('apid'), 0x500 + L.id);
   assert.equal(at('data_length'), v.bytes - 6 - 1);
   assert.equal(at('mac8').length, 64);
-  assert.deepEqual(out.sizes.map(s => s.bytes).sort((a, b) => a - b), [27, 41, 52]);
+  assert.deepEqual(out.sizes.map(s => s.bytes).sort((a, b) => a - b), golden.vectors.filter(x => x.message === 'POSITION').map(x => x.bytes).sort((a, b) => a - b));
+  assert.equal(out.sizes.length, 3, 'unauthenticated, 8-byte MAC, broadband profile');
 });
 
 test('LRIP decoder: signed fields and a size mismatch', () => {
@@ -45,7 +46,7 @@ test('E51 for figure 3: lunar rows for both oscillators, H11 kept', { skip: !exi
 });
 
 test('E53 in problem 5: numbers flagged, fits as words, one row only', { skip: !existsSync(R('data/atc/protocol/e53_bitrate.json')) && 'B-99 missing' }, () => {
-  assert.match(e53('fleet', 'on', '1.0', 20, 'busiest_link_kbps_p95'), /data-flag="Modelled".*e53_bitrate\.json/);
+  assert.match(e53('fleet', 'on', '1.0', 20, 'busiest_link_kbps_p95'), /data-flag="Modelled".*E53_table_v02\.csv/);   // F-73: v0.2
   assert.match(e53('fleet', 'on', '1.0', 20, 'fits_nb_scheduled_p95'), /^(fits|does not fit)$/);
   assert.throws(() => e53('nowhere', 'on', '1.0', 20, 'busiest_link_kbps_p95'), /0 rows/);
   assert.throws(() => e53('fleet', 'on', '1.0', 20, 'no_such_column'), /no column/);
@@ -147,7 +148,8 @@ test('F-70b hooks: the driving split (B-103) and the curved-Moon radio (B-104)',
   if (existsSync(R('results/E53_bitrate.json')) && J('results/E53_bitrate.json').driving_split) {
     const D = J('results/E53_bitrate.json').driving_split;
     assert.match(e53d('drive_hops'), /data-flag="Modelled"/);
-    assert.equal(e53d('si_fit'), D.status_intent_at_1hz.scheduled_airtime_p95_kbps.fleet <= 16 ? 'fits' : 'does not fit');
+    const S2 = J('results/E53_bitrate.json').lrip_v02.driving_split.status_intent_at_1hz, air = ['lrip', 'proximity1'].flatMap(f => Object.values(S2[f].busiest_link_20_rovers).map(x => x.scheduled_airtime_p95_kbps));
+    assert.equal(e53d('si_fit'), air.every(a => a > 16) ? 'is above' : 'is within');   // F-73: v0.2 (B-110), every case
     assert.throws(() => e53d('nope'), /unknown key/);
   }
   if (existsSync(R('results/E48_sizing.json')) && J('results/E48_sizing.json').revision_b104) {

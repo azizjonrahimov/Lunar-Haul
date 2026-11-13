@@ -55,8 +55,8 @@
           (<!--@pn:dr_wheel--> on loose soil without cameras), and it resets that drift with absolute fixes: matching
           what it sees to orbital maps (<!--@pn:fix_terrain-->), radio ranges to the base's beacons (<!--@pn:uwb--> within
           <!--@pn:uwb_range-->) and, from about 2030, the LunaNet navigation satellites (<!--@pn:lans-->, available about
-          <!--@pn:lans_2030-->). Every position report carries its own horizontal error (one sigma; LRIP v0.1 carries no full
-          covariance), and the rules of the road widen a rover's safety margin when that error is large.</p>
+          <!--@pn:lans_2030-->). Every position report carries its own horizontal error (one sigma and, since LRIP v0.2, a 95 % bound; no
+          covariance is carried), and the rules of the road widen a rover's safety margin when that error is large.</p>
         <h3>Method</h3>
         <p>Experiment E50 drives the fleet with each layer switched on in turn and measures the position error against
           the separation the traffic rules assume (<!--@pn:sigma_nav-->); hypotheses H9&prime; and H10&prime; (as the papers write
@@ -106,8 +106,9 @@
           (<!--@e52:full_resend-->); at 16 kbit/s the hazard layer is current after
           <!--@e52:24_16_hazards_first_t_hazards_current_s-->, against <!--@e52:24_16_oldest_first_t_hazards_current_s-->
           oldest first. The design has every coordinate name its frame, because reading it in the wrong lunar frame
-          moves a south-pole base by about <!--@pn:frame_m-->; LRIP v0.1's position report does not carry the frame,
-          datum or time scale yet (v0.2 adds them).</p>
+          moves a south-pole base by about <!--@pn:frame_m-->. In LRIP v<!--@lrip:version--> each sender declares the frame,
+          datum and time scale of everything it sends, in its heartbeat (sent at least every <!--@lrip:hello_every-->) and in
+          its signed manifest, and a receiver refuses a position from a sender that has no authenticated declaration.</p>
         <h3>Method</h3>
         <p>Experiment E52 (hypothesis H12) brings rovers back after hours to days out of contact and counts the bytes
           and the time until their hazard map is current, against a full resend. The bytes, and so H12's share of a full
@@ -223,30 +224,43 @@
     <div class="pr-grid">
       <div class="pr-text">
         <h3>Our answer</h3>
-        <p>LRIP v0.1 has <!--@lrip:types--> message types (position, status, intent, alert, the task and reservation
-          messages, capability, map notice and a heartbeat; the traffic model carries most of them, not all), each with a
-          version number and an authentication code; a position report is <!--@pn:pos_payload--> of content and
-          <!--@lrip:packet--> before link framing and coding (<!--@lrip:framed--> in a Proximity-1 frame). v0.1's position report carries no frame, datum or
-          time-scale field and only a horizontal error, not a covariance; v0.2 adds them. Twenty rovers reporting once a second
+        <p>LRIP v<!--@lrip:version--> has <!--@lrip:types--> message types (position, status, intent, alert, the task and reservation
+          messages, capability, map notice and a heartbeat), each with a version number and an authentication code; a
+          position report is <!--@pn:pos_payload--> of content and <!--@lrip:packet--> before link framing and coding
+          (<!--@lrip:framed--> in a Proximity-1 frame). Since v0.2 the report carries a 95 % horizontal bound beside its
+          one-sigma error, in six bits that were spare, so it did not grow; no covariance is carried. Each sender declares
+          the frame, datum and time scale of its positions and time stamps in its heartbeat (HELLO, now
+          <!--@lrip:hello--> instead of <!--@lrip:hello_v1-->, sent at least every <!--@lrip:hello_every-->) and in its
+          capability manifest (<!--@lrip:manifest_add--> more), bound to its current key: a receiver refuses a position
+          from a sender with no authenticated declaration. A v0.1 packet still decodes; only its positions are refused,
+          since v0.1 cannot declare. Twenty rovers reporting once a second
           need about <!--@pn:load_1hz--> by note 03's estimate (ten times a second, <!--@pn:load_10hz-->; E53's
-          measured load is below). Each rover also publishes a signed
+          calculated load is below). Each rover also publishes a signed
           capability manifest (about <!--@pn:manifest-->), the idea behind tool descriptions in the Model Context
           Protocol, so a job can be matched to any maker's vehicle.</p>
         <h3>Method</h3>
-        <p>Experiment E53 (hypothesis H13) loads the channel with the full message set, authentication on, at once and
-          ten times a second for twenty rovers. Calculated from the message sizes and rates (H13 is a design
-          calculation, not a test), for positions where the fleet works, <!--@e53d:parked_share--> of them parked: twenty rovers reporting once a second put
-          <!--@e53:fleet:on:1.0:20:busiest_link_kbps_p95--> on the busiest link, which <!--@e53:fleet:on:1.0:20:fits_nb_scheduled_p95--> the
-          narrow-band channel when the base schedules the slots and <!--@e53:fleet:on:1.0:20:fits_nb_slotted_aloha_p95-->
-          it with random access; ten times a second, <!--@e53:fleet:on:10.0:20:busiest_link_kbps_p95-->, which
+        <p>Experiment E53 (hypothesis H13) loads the channel with the messages, authentication on, at once and
+          ten times a second for twenty rovers. It is a calculation on a traffic model from the message sizes and rates
+          (H13 is a design calculation, not a test), and the model sends <!--@lrip:sent--> of the <!--@lrip:types--> message
+          types, leaving out the rare ones (<!--@lrip:not_sent-->). For positions where the fleet works,
+          <!--@e53d:parked_share--> of them parked, twenty rovers reporting once a second put
+          <!--@e53v1:fleet:on:1.0:20:busiest_link_kbps_p95:2--> on the busiest link at v0.1 sizes and
+          <!--@e53:fleet:on:1.0:20:busiest_link_kbps_p95:2--> at v0.2 sizes, the declaring heartbeat being the only
+          change; on a channel the base schedules that is <!--@e53air:v1--> and <!--@e53air:v2--> of airtime. In
+          Proximity-1 frames v0.2 puts <!--@e53pf:fleet:on:1.0:20:busiest_link_kbps_p95:2--> on the busiest link and needs
+          <!--@e53air:pf--> of airtime, which <!--@e53pf:fleet:on:1.0:20:fits_nb_scheduled_p95--> the narrow-band channel
+          when the base schedules the slots and <!--@e53pf:fleet:on:1.0:20:fits_nb_slotted_aloha_p95--> it with slotted
+          random access. Ten times a second, <!--@e53:fleet:on:10.0:20:busiest_link_kbps_p95-->, which
           <!--@e53:fleet:on:10.0:20:fits_nb_scheduled_p95--> the narrow-band channel with scheduled slots and
           <!--@e53:fleet:on:10.0:20:fits_bb_scheduled_p95--> the broadband one. With the fleet spread across the
           site, <!--@e53:spread:on:1.0:20:reachable_share--> of rovers reach the base, in
           <!--@e53:spread:on:1.0:20:mean_hops_to_base--> hops on average. While driving, reports travel
-          <!--@e53d:drive_hops--> hops on average and <!--@e53d:drive_reach--> of rovers have a path to the base; the busiest
-          link then carries <!--@e53d:drive_p95-->. With STATUS and INTENT also sent once a second, twenty rovers need
-          <!--@e53d:si_air--> of airtime even when the base schedules the slots, which <!--@e53d:si_fit--> the
-          <!--@e53d:channel--> channel.</p>
+          <!--@e53d:drive_hops--> hops on average and <!--@e53d:drive_reach--> of rovers have a path to the base, whatever
+          the version; at v0.2 sizes the driving steps need <!--@e53d:drive_air--> of airtime when the base schedules the
+          slots (<!--@e53d:drive_air_pf--> in Proximity-1 frames) and <!--@e53d:drive_aloha--> with slotted random access
+          (<!--@e53d:drive_aloha_pf-->). With STATUS and INTENT also sent once a second, twenty rovers' sources offer
+          <!--@e53d:si_src--> (<!--@e53d:si_src_pf--> in frames), and the airtime <!--@e53d:si_fit--> the
+          <!--@e53d:channel--> channel in every case, even when the base schedules the slots.</p>
         <h3>Who we would work with</h3>
         <p>CCSDS, the Space ROS community, ZettaScale (Zenoh), and the VDA 5050 group and MassRobotics, whose
           factory-robot standards are the closest working precedent.</p>
@@ -254,15 +268,15 @@
       </div>
       <figure class="pr-fig" id="fig-msg" aria-labelledby="fig-msg-cap">
         <div class="pr-host" data-fig="msg"></div>
-        <figcaption id="fig-msg-cap">One POSITION report taken apart, byte by byte: LRIP v0.1's conformance vector
-          (data/atc/lrip/conformance-v0.1.json), decoded by the message schema (lunarsim/schemas/lrip-v0.1.json), its
-          authentication code real. Then a job matched against two vehicles' capability manifests (note 03, section C).</figcaption>
+        <figcaption id="fig-msg-cap">One POSITION report taken apart, byte by byte: LRIP v0.2's conformance vector
+          (data/atc/lrip/conformance-v0.2.json), decoded by the message schema (lunarsim/schemas/lrip-v0.2.json), its
+          authentication code real. Conformance vectors test the codec, not a radio. Then a job matched against two vehicles' capability manifests (note 03, section C).</figcaption>
       </figure>
       <figure class="pr-fig pr-fig-wide" id="fig-bitrate" aria-labelledby="fig-bitrate-cap">
         <div class="pr-host" data-fig="bitrate"></div>
-        <figcaption id="fig-bitrate-cap">Measured in experiment E53: the load on the busiest radio link as the fleet grows, for
-          three reporting rates, against what the narrow-band and broadband channels can carry. Rovers across, kbit/s up,
-          both on log scales; the numbers for twenty rovers are in the text (data/atc/protocol/e53_bitrate.json).</figcaption>
+        <figcaption id="fig-bitrate-cap">Calculated in experiment E53 on a traffic model, at LRIP v0.2 sizes: the load on the busiest radio link as the
+          fleet grows, for three reporting rates, against what the narrow-band and broadband channels can carry. Rovers
+          across, kbit/s up, both on log scales; the numbers for twenty rovers are in the text (results/E53_table_v02.csv).</figcaption>
       </figure>
     </div>
   </section>

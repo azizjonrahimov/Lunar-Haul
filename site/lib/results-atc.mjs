@@ -9,6 +9,7 @@ import { num, esc, FLAGS } from '../src/components/num.js';
 import { ROOT } from './pages.mjs';
 import { familyTable } from './phase6.mjs';
 import { robotRound } from '../src/atc/e48-robot.js';
+import { lrip2 } from './protocol-data.mjs';
 
 // a pre-formatted value from a paper's values file, flagged like every number on the site: Modelled unless the value
 // is a setting of the experiment (F-70d: the relay's 80 % availability is an input, so Assumed)
@@ -79,7 +80,8 @@ export function atcResults(base = '/') {
     `The market was priced for ${v('p3', 'P3-N-OWNERS')} owners over ${v('p3', 'P3-E46-N-RUNS')} simulated years.`,
     E ? `By a scaled estimate (laptop timing times the flight processor's slowdown), the heaviest safety check takes ${e(E.h10.safety_core_share_flight_per_robot_10hz * 100, ' %', 1, 'h10.safety_core_share_flight_per_robot_10hz')} of one core.` : 'E48 not available.',
     E && robotRound(E) ? `One robot's bid in a market round, timed on a laptop in one month of one seed and scaled by an assumed factor (not flight hardware), takes ${robotRound(E).bid} (99th percentile); the on-robot data were measured at ${robotRound(E).mem} against the ${robotRound(E).estimate} estimate, the interpreter and the code not counted.` : '',
-    sched && slot ? `By calculation from the message sizes and rates, twenty robots' authenticated traffic needs ${e(sched.channel_kbps_needed, ' kbit/s', 2, 'airtime (scheduled, measured hops)')} of airtime on a channel the base schedules, and ${e(slot.channel_kbps_needed, ' kbit/s', 2, 'airtime (slotted random access, measured hops)')} with random access, against a ${e(E.airtime.channel_kbps, ' kbit/s', 0, 'airtime.channel_kbps')} channel.` : '',
+    sched && slot ? `By calculation from LRIP v0.1's message sizes and rates, twenty robots' authenticated traffic needs ${e(sched.channel_kbps_needed, ' kbit/s', 2, 'airtime (scheduled, measured hops)')} of airtime on a channel the base schedules, and ${e(slot.channel_kbps_needed, ' kbit/s', 2, 'airtime (slotted random access, measured hops)')} with random access, against a ${e(E.airtime.channel_kbps, ' kbit/s', 0, 'airtime.channel_kbps')} channel.` : '',
+    lrip2('note'),   // F-73: the v0.2 load beside E48's v0.1 airtime
     `The base's mast is in direct view at ${v('p3', 'P3-MESH-MAST-DIRECT-SHARE')} of route points; the rest goes through the mesh.`,
   ].filter(Boolean);
   return `<section class="r-atc" aria-labelledby="h-atc"><h2 id="h-atc">Lunar ATC: the three papers in numbers</h2>`

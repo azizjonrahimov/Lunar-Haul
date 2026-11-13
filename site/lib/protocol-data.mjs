@@ -8,44 +8,72 @@ import { lripDecode } from '../src/protocol/lrip.js';
 import { num } from '../src/components/num.js';
 export { lripDecode };
 
-// F-56 / B-93: /protocol/ figure 5 shows a real LRIP v0.1 POSITION report: the golden vector POSITION / profile N /
-// mac8 of data/atc/lrip/conformance-v0.1.json, laid out by lunarsim/schemas/lrip-v0.1.json (Space Packet primary
-// header, LRIP header, the message's fields, the security header, the 8-byte MAC). The other POSITION vectors give
-// the sizes without authentication and on the broadband profile.
-export const LRIP_SCHEMA = 'lunarsim/schemas/lrip-v0.1.json';
-export const LRIP_GOLDEN = 'data/atc/lrip/conformance-v0.1.json';
+// F-56 / B-93, F-73 / B-100: /protocol/ figure 5 shows a real LRIP POSITION report: the golden vector POSITION / profile N /
+// mac8 of the current conformance file (v0.2), laid out by its schema (Space Packet primary header, LRIP header, the
+// message's fields, the security header, the 8-byte MAC). The other POSITION vectors give the sizes without
+// authentication and on the broadband profile. v0.1's vector is decoded by v0.1's layout too ("v0.1 stays decodable").
+// Conformance vectors test the codec, not a radio.
+export const LRIP_SCHEMA = 'lunarsim/schemas/lrip-v0.2.json';
+export const LRIP_GOLDEN = 'data/atc/lrip/conformance-v0.2.json';
+export const LRIP_SCHEMA_V1 = 'lunarsim/schemas/lrip-v0.1.json';
+export const LRIP_GOLDEN_V1 = 'data/atc/lrip/conformance-v0.1.json';
 export const LRIP_OUT = 'protocol/lrip-position.json';
 
-export function lripLayout(schema, message = 'POSITION', trailer = 'mac8') {
+// a log-coded field (v0.2's u95_code): "u95 = 0.05 m x 2^(code/4) … 62: above 1.95 km; 63 unknown", read from the schema
+export function logCode(note) {
+  const m = /=\s*([\d.]+)\s*m\s*x\s*2\^\(code\/(\d+)\)/.exec(note || '');
+  if (!m) return null;
+  const above = /(\d+):\s*above\s+([^;]+)/.exec(note), unknown = /(\d+)\s+unknown/.exec(note);
+  return { base: +m[1], div: +m[2], above: above ? +above[1] : null, aboveText: above ? above[2].trim() : null, unknown: unknown ? +unknown[1] : null };
+}
+export function lripLayout(schema, message = 'POSITION', trailer = 'mac8', src = LRIP_SCHEMA) {
   const fr = schema.framing, msg = schema.messages.find(m => m.name === message);
-  if (!msg) throw new Error(`${LRIP_SCHEMA}: no message ${message}`);
+  if (!msg) throw new Error(`${src}: no message ${message}`);
   const F = [];
   for (const [name, bits] of fr.space_packet.fields) F.push({ part: 'head', name, bits });
   for (const [name, bits] of fr.lrip_header.fields) F.push({ part: 'lrip', name, bits, ...(name === 't_valid' ? { scale: fr.lrip_header.t_valid_unit_s, unit: 's' } : {}) });
-  for (const [name, type, bits, scale, unit] of msg.fields) F.push({ part: 'pay', name, bits, type, scale, unit: unit.split(' ')[0], note: unit, ...(type.startsWith('enum:') ? { enum: schema.enums[type.slice(5)] } : {}) });
+  for (const [name, type, bits, scale, unit, meta] of msg.fields) {
+    const log = logCode(unit);
+    F.push({ part: 'pay', name, bits, type, scale, unit: log ? 'm' : unit.split(' ')[0], note: unit, ...(log ? { log } : {}), ...(meta?.since ? { since: meta.since } : {}),
+      ...(type.startsWith('enum:') ? { enum: schema.enums[type.slice(5)] } : {}) });
+  }
   for (const [name, bits] of fr.security_header.fields) F.push({ part: 'sec', name, bits });
   F.push({ part: 'mac', name: trailer, bits: 8 * fr.trailer[trailer] });
   return { message: msg.name, id: msg.id, fields: F, bits: F.reduce((a, f) => a + f.bits, 0) };
 }
-
-export function compactLrip(schema, golden) {
+const vec = (golden, message, src) => {
+  const v = golden.vectors.find(x => x.message === message && x.profile === 'N' && x.auth === 'mac8');
+  if (!v) throw new Error(`${src}: no ${message} vector for profile N with mac8`);
+  return v;
+};
+export function compactLrip(schema, golden, schemaV1 = null, goldenV1 = null) {
   const pos = golden.vectors.filter(v => v.message === 'POSITION');
-  const main = pos.find(v => v.profile === 'N' && v.auth === 'mac8');
-  if (!main) throw new Error(`${LRIP_GOLDEN}: no POSITION vector for profile N with mac8`);
-  const layout = lripLayout(schema);
+  const main = vec(golden, 'POSITION', LRIP_GOLDEN), layout = lripLayout(schema);
   lripDecode(main.hex, layout);   // throws if the sizes disagree
-  return { format: 'lunarsim-lrip-figure', version: 1, source: LRIP_GOLDEN, schema: LRIP_SCHEMA, layout,
+  const hello = vec(golden, 'HELLO', LRIP_GOLDEN), helloLayout = lripLayout(schema, 'HELLO');
+  lripDecode(hello.hex, helloLayout);
+  let previous = null;
+  if (schemaV1 && goldenV1) {   // v0.1 stays decodable: its own POSITION and HELLO vectors by its own layouts
+    const p1 = vec(goldenV1, 'POSITION', LRIP_GOLDEN_V1), h1 = vec(goldenV1, 'HELLO', LRIP_GOLDEN_V1);
+    lripDecode(p1.hex, lripLayout(schemaV1, 'POSITION', 'mac8', LRIP_SCHEMA_V1)); lripDecode(h1.hex, lripLayout(schemaV1, 'HELLO', 'mac8', LRIP_SCHEMA_V1));
+    previous = { version: `${schemaV1.ver_major}.${schemaV1.ver_minor}`, source: LRIP_GOLDEN_V1, position_bytes: p1.bytes, hello_bytes: h1.bytes };
+  }
+  return { format: 'lunarsim-lrip-figure', version: 2, lrip: `${schema.ver_major}.${schema.ver_minor}`, source: LRIP_GOLDEN, schema: LRIP_SCHEMA, layout,
     vector: { hex: main.hex, bytes: main.bytes, sender: main.sender, seq: main.seq, t_valid_s: main.t_valid_s, fields: main.fields },
-    sizes: pos.map(v => ({ profile: v.profile, auth: v.auth, bytes: v.bytes })) };
+    sizes: pos.map(v => ({ profile: v.profile, auth: v.auth, bytes: v.bytes })),
+    hello: { bytes: hello.bytes, fields: hello.fields, every_s: schema.messages.find(m => m.name === 'HELLO').declaration_interval_s,
+      enums: Object.fromEntries(['frame', 'datum', 'time_scale'].map(k => [k, schema.enums[k]])) },
+    previous };
 }
 
 export function stageLrip(PUB) {
   const s = join(ROOT, LRIP_SCHEMA), g = join(ROOT, LRIP_GOLDEN);
   if (!existsSync(s) || !existsSync(g)) { console.log(`prepare-data: ${LRIP_GOLDEN} or the schema missing; /protocol/ figure 5 says so`); return null; }
-  const out = compactLrip(JSON.parse(readFileSync(s, 'utf8')), JSON.parse(readFileSync(g, 'utf8')));
+  const rd = p => JSON.parse(readFileSync(join(ROOT, p), 'utf8'));
+  const out = compactLrip(rd(LRIP_SCHEMA), rd(LRIP_GOLDEN), rd(LRIP_SCHEMA_V1), rd(LRIP_GOLDEN_V1));
   mkdirSync(join(PUB, 'protocol'), { recursive: true });
   writeFileSync(join(PUB, LRIP_OUT), JSON.stringify(out));
-  console.log(`prepare-data: ${LRIP_OUT} staged (${out.vector.bytes}-byte POSITION report, ${out.layout.fields.length} fields)`);
+  console.log(`prepare-data: ${LRIP_OUT} staged (LRIP v${out.lrip}, ${out.vector.bytes}-byte POSITION report, ${out.layout.fields.length} fields; v${out.previous?.version} decodes)`);
   return out;
 }
 
@@ -78,24 +106,67 @@ export function stageE51(PUB) {
 // bit-rate figure draws): <!--@e53:geometry:auth:position_hz:rovers:column--> gives a flagged number; a fits_<nb|bb>_<access>
 // column gives "fits" or "does not fit" by E53's rule, the busiest link's 95th-percentile load against the channel's
 // capacity times its access efficiency (tests/protocol-data.test.mjs checks the rule against results/E53_table.csv).
-export const E53_SRC = 'data/atc/protocol/e53_bitrate.json';
-let e53doc = null;
+export const E53_SRC = 'data/atc/protocol/e53_bitrate.json';   // LRIP v0.1 (B-99)
+export const E53_V02_TABLE = 'results/E53_table_v02.csv', E53_FULL = 'results/E53_bitrate.json', E53_V02_OUT = 'protocol/e53-v02.json';
+let e53doc = null, e53v2 = null, e53full2 = null;
 const E53_UNIT = { busiest_link_kbps_p95: [' kbit/s', 1], busiest_link_kbps_mean: [' kbit/s', 1], per_rover_kbps: [' kbit/s', 2], mean_hops_to_base: ['', 1], reachable_share: [' %', 0, 100] };
 export function e53Fits(D, row, band, access) {
   const line = Object.entries(D.lines_kbps).find(([k]) => (band === 'nb' ? /narrow/ : /broad/).test(k))?.[1], eta = D.eta[access];
   if (!(line > 0) || !(eta > 0)) throw new Error(`${E53_SRC}: no line or efficiency for ${band} ${access}`);
   return row[D.columns.indexOf('busiest_link_kbps_p95')] <= line * eta;
 }
-export function e53(geometry, auth, hz, rovers, column) {
-  e53doc ||= JSON.parse(readFileSync(join(ROOT, E53_SRC), 'utf8'));
-  const D = e53doc, c = k => D.columns.indexOf(k);
-  const hit = D.rows.filter(r => r[c('geometry')] === geometry && r[c('auth')] === auth && +r[c('position_hz')] === +hz && +r[c('rovers')] === +rovers);
-  if (hit.length !== 1) throw new Error(`${E53_SRC}: ${hit.length} rows for ${geometry} ${auth} ${hz} Hz ${rovers} rovers`);
+// F-73 (B-100): E53 at LRIP v0.2 sizes, results/E53_table_v02.csv (framing "lrip": packets before link framing;
+// "proximity1": every packet in a Proximity-1 frame), in the shape of B-99's file, with the channels and access
+// efficiencies of results/E53_bitrate.json. A calculation on a traffic model.
+function e53v02full() { return (e53full2 ||= JSON.parse(readFileSync(join(ROOT, E53_FULL), 'utf8').replace(/\bNaN\b/g, 'null'))); }
+export function e53v02() { const v = e53v02full().lrip_v02; if (!v) throw new Error(`${E53_FULL}: no lrip_v02`); return v; }
+export function e53v02Table() {
+  if (e53v2) return e53v2;
+  const [head, ...lines] = readFileSync(join(ROOT, E53_V02_TABLE), 'utf8').trim().split(/\r?\n/).map(l => l.split(','));
+  const F = e53v02full(), val = x => (x === 'True' ? true : x === 'False' ? false : x !== '' && Number.isFinite(+x) ? +x : x);
+  e53v2 = { format: 'lunarsim-protocol-data', version: 1, experiment: 'E53 at LRIP v0.2 (B-100)', source: E53_V02_TABLE, lrip: '0.2',
+    columns: head, rows: lines.map(l => l.map(val)), lines_kbps: F.channels_kbps, eta: F.eta };
+  return e53v2;
+}
+function e53row(D, src, geometry, auth, hz, rovers, framing) {
+  const c = k => D.columns.indexOf(k);
+  const hit = D.rows.filter(r => r[c('geometry')] === geometry && r[c('auth')] === auth && +r[c('position_hz')] === +hz && +r[c('rovers')] === +rovers && (framing == null || r[c('framing')] === framing));
+  if (hit.length !== 1) throw new Error(`${src}: ${hit.length} rows for ${framing || ''} ${geometry} ${auth} ${hz} Hz ${rovers} rovers`);
+  return hit[0];
+}
+function e53cell(D, src, row, column, label, digits) {
+  const c = k => D.columns.indexOf(k);
   const m = /^fits_(nb|bb)_(scheduled|slotted_aloha)(?:_p95)?$/.exec(column);
-  if (m) return e53Fits(D, hit[0], m[1], m[2]) ? 'fits' : 'does not fit';
-  if (c(column) < 0) throw new Error(`${E53_SRC}: no column ${column}`);
-  const [unit, digits, scale = 1] = E53_UNIT[column] || ['', 2];
-  return num({ value: +hit[0][c(column)] * scale, unit, digits, flag: 'Modelled', source: `${E53_SRC}: geometry ${geometry}, authentication ${auth}, ${hz} Hz, ${rovers} rovers, ${column}` });
+  if (m) { const k = `fits_${m[1]}_${m[2]}_p95`; return (c(k) >= 0 ? row[c(k)] === true : e53Fits(D, row, m[1], m[2])) ? 'fits' : 'does not fit'; }
+  if (c(column) < 0) throw new Error(`${src}: no column ${column}`);
+  const [unit, d, scale = 1] = E53_UNIT[column] || ['', 2];
+  return num({ value: +row[c(column)] * scale, unit, digits: digits ?? d, flag: 'Modelled', source: `${src}: ${label}, ${column} (a calculation on a traffic model)` });
+}
+// <!--@e53:geometry:auth:hz:rovers:column[:digits]--> at LRIP v0.2 sizes; <!--@e53pf:…--> the same in Proximity-1 frames;
+// <!--@e53v1:…--> at v0.1 sizes (B-99's file). A fits_<nb|bb>_<access> column gives "fits" or "does not fit".
+export function e53(geometry, auth, hz, rovers, column, digits, framing = 'lrip') {
+  const D = e53v02Table(), row = e53row(D, E53_V02_TABLE, geometry, auth, hz, rovers, framing);
+  return e53cell(D, E53_V02_TABLE, row, column, `${framing === 'proximity1' ? 'LRIP v0.2 in Proximity-1 frames' : 'LRIP v0.2'}, geometry ${geometry}, authentication ${auth}, ${hz} Hz, ${rovers} rovers`, digits == null ? undefined : +digits);
+}
+export function e53v1(geometry, auth, hz, rovers, column, digits) {
+  e53doc ||= JSON.parse(readFileSync(join(ROOT, E53_SRC), 'utf8'));
+  const row = e53row(e53doc, E53_SRC, geometry, auth, hz, rovers, null);
+  return e53cell(e53doc, E53_SRC, row, column, `LRIP v0.1, geometry ${geometry}, authentication ${auth}, ${hz} Hz, ${rovers} rovers`, digits == null ? undefined : +digits);
+}
+// <!--@e53air:v1|v2|pf--> scheduled airtime for twenty authenticated rovers at 1 Hz (each version's H13 check; the framed row)
+export function e53air(which) {
+  const F = e53v02full(), V = e53v02();
+  const [value, what] = which === 'v1' ? [F.h13.airtime_1hz_scheduled_kbps, 'h13.airtime_1hz_scheduled_kbps (LRIP v0.1)']
+    : which === 'v2' ? [V.h13_check_v02.airtime_1hz_scheduled_kbps, 'lrip_v02.h13_check_v02.airtime_1hz_scheduled_kbps']
+      : which === 'pf' ? [V.framing_row.airtime_1hz_scheduled_kbps, 'lrip_v02.framing_row.airtime_1hz_scheduled_kbps (Proximity-1 frames)'] : [];
+  if (typeof value !== 'number') throw new Error(`e53air: unknown or missing ${which}`);
+  return num({ value, unit: ' kbit/s', digits: 2, flag: 'Modelled', source: `${E53_FULL}: ${what} (a calculation on a traffic model)` });
+}
+// the bit-rate figure's file: the v0.2 table's load column only (the /protocol/ data budget)
+export function stageE53v02(PUB) {
+  if (!existsSync(join(ROOT, E53_V02_TABLE))) { console.log(`prepare-data: ${E53_V02_TABLE} missing; /protocol/ figure 5b says so`); return null; }
+  const D = e53v02Table(), keep = ['framing', 'geometry', 'auth', 'position_hz', 'rovers', 'busiest_link_kbps_p95'], ix = keep.map(k => D.columns.indexOf(k));
+  return stageJson(PUB, { ...D, columns: keep, rows: D.rows.map(r => ix.map(i => r[i])) }, E53_V02_OUT, `${D.rows.length} rows at LRIP v0.2 sizes`);
 }
 
 // F-56 / B-92: /protocol/ figure 2 reads E52 (results/E52_map.json): bytes and time to sync after 1 h to 14 days out of
@@ -293,39 +364,68 @@ export function e51(key) {
 // 41 B packet is before link framing and coding). <!--@lrip:types--> the message types of v0.1 (in words),
 // <!--@lrip:packet--> the POSITION packet, <!--@lrip:framed--> the same in a Proximity-1 frame.
 const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty'];
+// F-73 (B-100): v0.2. <!--@lrip:version-->, <!--@lrip:hello_v1--> / <!--@lrip:hello--> the HELLO packet before and with the
+// declaration, <!--@lrip:hello_every--> how often it must be sent, <!--@lrip:manifest_add--> what the declaration adds to a
+// manifest, <!--@lrip:sent--> / <!--@lrip:not_sent--> the types in and out of E53's traffic model. Conformance vectors test
+// the codec, not a radio.
 export function lrip(key) {
-  const schema = JSON.parse(readFileSync(join(ROOT, LRIP_SCHEMA), 'utf8')), golden = JSON.parse(readFileSync(join(ROOT, LRIP_GOLDEN), 'utf8'));
-  const pos = golden.vectors.find(v => v.message === 'POSITION' && v.profile === 'N' && v.auth === 'mac8');
-  if (!pos) throw new Error(`${LRIP_GOLDEN}: no POSITION vector for profile N with mac8`);
-  const frame = schema.framing?.proximity1_frame_bytes;
-  if (key === 'types') return WORDS[schema.messages.length] ?? String(schema.messages.length);
-  if (key === 'packet') return num({ value: pos.bytes, unit: ' B', digits: 0, flag: 'Spec', source: `${LRIP_GOLDEN}: the POSITION vector (profile N, 8-byte MAC), before link framing and coding` });
-  if (key === 'framed') {
-    if (typeof frame !== 'number') throw new Error(`${LRIP_SCHEMA}: no framing.proximity1_frame_bytes`);
-    return num({ value: pos.bytes + frame, unit: ' B', digits: 0, flag: 'Spec', source: `${LRIP_GOLDEN} POSITION packet plus ${LRIP_SCHEMA} framing.proximity1_frame_bytes (${frame} B)` });
-  }
-  throw new Error(`lrip: unknown key ${key}`);
+  const rd = p => JSON.parse(readFileSync(join(ROOT, p), 'utf8'));
+  const schema = rd(LRIP_SCHEMA), golden = rd(LRIP_GOLDEN);
+  const pos = vec(golden, 'POSITION', LRIP_GOLDEN), frame = schema.framing?.proximity1_frame_bytes, cov = schema.traffic_model_coverage;
+  const spec = (value, unit, src) => num({ value, unit, digits: 0, flag: 'Spec', source: src });
+  const V = {
+    types: () => WORDS[schema.messages.length] ?? String(schema.messages.length),
+    version: () => `${schema.ver_major}.${schema.ver_minor}`,
+    packet: () => spec(pos.bytes, ' B', `${LRIP_GOLDEN}: the POSITION vector (profile N, 8-byte MAC), before link framing and coding`),
+    framed: () => {
+      if (typeof frame !== 'number') throw new Error(`${LRIP_SCHEMA}: no framing.proximity1_frame_bytes`);
+      return spec(pos.bytes + frame, ' B', `${LRIP_GOLDEN} POSITION packet plus ${LRIP_SCHEMA} framing.proximity1_frame_bytes (${frame} B)`);
+    },
+    hello_v1: () => spec(vec(rd(LRIP_GOLDEN_V1), 'HELLO', LRIP_GOLDEN_V1).bytes, ' B', `${LRIP_GOLDEN_V1}: the HELLO vector (profile N, 8-byte MAC)`),
+    hello: () => spec(vec(golden, 'HELLO', LRIP_GOLDEN).bytes, ' B', `${LRIP_GOLDEN}: the HELLO vector (profile N, 8-byte MAC), with the declaration`),
+    hello_every: () => spec(schema.messages.find(m => m.name === 'HELLO').declaration_interval_s, ' s', `${LRIP_SCHEMA}: HELLO.declaration_interval_s`),
+    manifest_add: () => {
+      const d = [...new Set(Object.values(e53v02()['manifest_bytes_v0.2']).map(m => m.compact_cbor - m['compact_cbor_v0.1']))];
+      if (d.length !== 1) throw new Error(`${E53_FULL}: the manifests grew by different amounts (${d.join(', ')} B)`);
+      return spec(d[0], ' B', `${E53_FULL}: lrip_v02.manifest_bytes_v0.2, compact_cbor minus compact_cbor_v0.1`);
+    },
+    sent: () => WORDS[cov.sent_by_E53.length] ?? String(cov.sent_by_E53.length),
+    not_sent: () => cov.not_sent_by_E53.map(t => t.toLowerCase().replace(/^cap_/, 'capability_').replace(/_/g, ' ')).join(', '),
+  };
+  if (!V[key]) throw new Error(`lrip: unknown key ${key}`);
+  return V[key]();
 }
 
-// F-70b / B-103: the driving split of E53 (results/E53_bitrate.json driving_split; decisions B9): <!--@e53d:key--> with key
-// parked_share, drive_hops, drive_reach, drive_p95 (busiest link, 1 Hz, driving), si_air (STATUS and INTENT also at 1 Hz:
-// scheduled airtime for twenty rovers), channel (the narrow-band channel) or si_fit ("fits" / "does not fit").
+// F-70b / B-103, F-73 / B-110: the driving split of E53 at LRIP v0.2 sizes: <!--@e53d:key--> with key parked_share,
+// drive_hops, drive_reach, drive_air / drive_air_pf (scheduled airtime on driving steps, 1 Hz; _pf in Proximity-1 frames),
+// drive_aloha / drive_aloha_pf (slotted random access), si_src / si_src_pf (STATUS and INTENT also at 1 Hz: what twenty
+// rovers' sources offer), channel (the narrow-band channel) or si_fit (the airtime against it, in every case).
 let e53full = null;
 export function e53d(key) {
   e53full ||= JSON.parse(readFileSync(join(ROOT, 'results', 'E53_bitrate.json'), 'utf8').replace(/\bNaN\b/g, 'null'));
-  const D = e53full.driving_split, src = 'results/E53_bitrate.json: driving_split.';
-  if (!D) throw new Error('results/E53_bitrate.json: no driving_split');
-  const drv = D.e53_auth_20_rovers?.fleet_driving?.['1 Hz'], si = D.status_intent_at_1hz;
+  // F-73 (B-110): at LRIP v0.2 sizes, lrip_v02.driving_split, packets before link framing ("lrip") and in Proximity-1
+  // frames ("proximity1"); the hops and the share with a path do not depend on the version. A calculation on a traffic model.
+  const D = e53full.lrip_v02?.driving_split, src = 'results/E53_bitrate.json: lrip_v02.driving_split.';
+  if (!D) throw new Error('results/E53_bitrate.json: no lrip_v02.driving_split');
+  const drv = fr => D.e53_auth_20_rovers?.[fr]?.fleet_driving?.['1 Hz'], si = fr => D.status_intent_at_1hz?.[fr];
   const nb = Object.entries(e53full.channels_kbps).find(([k]) => /narrow/.test(k))?.[1];
-  const f = (value, unit, digits, what) => num({ value, unit, digits, flag: 'Modelled', source: src + what });
+  const f = (value, unit, digits, what) => num({ value, unit, digits, flag: 'Modelled', source: `${src}${what} (a calculation on a traffic model)` });
+  const air = (fr, k, d) => f(drv(fr)[k], ' kbit/s', d, `e53_auth_20_rovers.${fr}.fleet_driving.1 Hz.${k}`);
+  // every airtime with STATUS and INTENT at 1 Hz, both framings, the fleet and its driving steps
+  const siAir = ['lrip', 'proximity1'].flatMap(fr => Object.values(si(fr).busiest_link_20_rovers).map(x => x.scheduled_airtime_p95_kbps));
   const V = {
     parked_share: () => f(100 * (1 - D.pool_driving_share), ' %', 0, 'pool_driving_share (one minus)'),
-    drive_hops: () => f(drv.mean_hops_to_base, '', 2, 'e53_auth_20_rovers.fleet_driving.1 Hz.mean_hops_to_base'),
-    drive_reach: () => f(100 * drv.reachable_share, ' %', 0, 'e53_auth_20_rovers.fleet_driving.1 Hz.reachable_share'),
-    drive_p95: () => f(drv.busiest_link_kbps_p95, ' kbit/s', 1, 'e53_auth_20_rovers.fleet_driving.1 Hz.busiest_link_kbps_p95'),
-    si_air: () => f(si.scheduled_airtime_p95_kbps.fleet, ' kbit/s', 1, 'status_intent_at_1hz.scheduled_airtime_p95_kbps.fleet'),
+    drive_hops: () => f(drv('lrip').mean_hops_to_base, '', 2, 'e53_auth_20_rovers.lrip.fleet_driving.1 Hz.mean_hops_to_base'),
+    drive_reach: () => f(100 * drv('lrip').reachable_share, ' %', 0, 'e53_auth_20_rovers.lrip.fleet_driving.1 Hz.reachable_share'),
+    drive_air: () => air('lrip', 'scheduled_airtime_p95_kbps', 2),
+    drive_air_pf: () => air('proximity1', 'scheduled_airtime_p95_kbps', 2),
+    drive_aloha: () => air('lrip', 'slotted_aloha_airtime_p95_kbps', 1),
+    drive_aloha_pf: () => air('proximity1', 'slotted_aloha_airtime_p95_kbps', 1),
+    si_src: () => f(si('lrip').sources_20_rovers_kbps, ' kbit/s', 2, 'status_intent_at_1hz.lrip.sources_20_rovers_kbps'),
+    si_src_pf: () => f(si('proximity1').sources_20_rovers_kbps, ' kbit/s', 2, 'status_intent_at_1hz.proximity1.sources_20_rovers_kbps'),
     channel: () => num({ value: nb, unit: ' kbit/s', digits: 0, flag: 'Assumed', source: 'results/E53_bitrate.json: channels_kbps (the narrow-band channel)' }),
-    si_fit: () => (si.scheduled_airtime_p95_kbps.fleet <= nb ? 'fits' : 'does not fit'),
+    // the page says "… the channel in every case": stop the build if the cases disagree
+    si_fit: () => { if (siAir.every(a => a > nb)) return 'is above'; if (siAir.every(a => a <= nb)) return 'is within'; throw new Error(`${src}status_intent_at_1hz: some airtimes above the channel and some within; /protocol/ says "in every case"`); },
   };
   if (!V[key]) throw new Error(`E53 driving split: unknown key ${key}`);
   return V[key]();
@@ -378,4 +478,11 @@ export function e50ov(key) {
   const pairs = bare[0][1].back_to_back.abutting_pairs_per_seed;
   return `The margin also changes how often two reservations of the same road overlap in time, and that count is not a safety measure: windows filed back to back overlapped in ${m(100 * lo[1], '', 0, `${lo[0]}.back_to_back.abutting_share_overlapping`)} to ${m(100 * hi[1], ' %', 0, `${hi[0]}.back_to_back.abutting_share_overlapping`)} of cases at four times the fleet (${m(pairs, '', 0, `${bare[0][0]}.back_to_back.abutting_pairs_per_seed`)} such pairs a seed) whatever the position error. `
     + `The margin separates the windows, so the count falls, but it does not change how far ahead the first vehicle was when the second entered (medians of ${m(glo[1], '', 0, `${glo[0]}.gap_at_entry_m.median`)} to ${m(ghi[1], ' m', 0, `${ghi[0]}.gap_at_entry_m.median`)} without a margin, ${m(lay.gap_at_entry_m.median, ' m', 0, 'with_margin:layered.gap_at_entry_m.median')} with the layered one, set by the lengths of the segments), and no overlap, with or without a margin, at either fleet size, brought two vehicles inside the static margin or the keep-distance rule's gap (a simulation, task B-102).`;
+}
+
+// F-73 (B-100): where a page gives the radio load at LRIP v0.1 sizes (E48's airtime on /atc/ and the P3 card), the v0.2
+// figures beside it, from E53 (a calculation on a traffic model): <!--@lrip2:note-->
+export function lrip2(key) {
+  if (key !== 'note') throw new Error(`lrip2: unknown key ${key}`);
+  return `At LRIP v0.2 sizes, whose heartbeat now declares frame, datum and time scale, E53's calculation on a traffic model gives twenty rovers reporting once a second ${e53('fleet', 'on', '1.0', 20, 'busiest_link_kbps_p95', 2)} on the busiest link (${e53v1('fleet', 'on', '1.0', 20, 'busiest_link_kbps_p95', 2)} at v0.1 sizes) and ${e53air('v2')} of scheduled airtime (${e53air('v1')}); in Proximity-1 frames ${e53air('pf')}, which ${e53('fleet', 'on', '1.0', 20, 'fits_nb_scheduled_p95', null, 'proximity1')} the narrow-band channel when scheduled and ${e53('fleet', 'on', '1.0', 20, 'fits_nb_slotted_aloha_p95', null, 'proximity1')} it with slotted random access.`;
 }
