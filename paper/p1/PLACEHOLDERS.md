@@ -338,3 +338,12 @@ numbers (`P1-H4-*`) stay from E40's pairs table, the registered confirmatory tes
 | P1-IMIT-RERUN-SENTENCE | the 92.9 % is a training record; agreement with the marketplace on the evaluation seeds in the rerun | RR `eval.30.*.heldout_agreement`, `imitation.rerun_status` | composed; % 2 dp |
 | P1-OOD-LABEL-SENTENCE | whether Table 6's cells were rerun | RR `ood` (table or not) | composed |
 | P1-E53-DRIVING-SENTENCE (recomposed) | driving steps and the 1 Hz status and intent case with v0.2 sizes, with and without Proximity-1 frames | E53 `lrip_v02.driving_split` (B-110); the E54 link share from `driving_split.e54_link_shares_30_seeds` | composed |
+
+## Part 4 (12 Nov 2026): the out-of-range cells rerun
+
+RR `ood` is now a table and Table 6 reads it. `P1-OOD-SENTENCE` (new, composed): the five out-of-range cells, how
+many intervals exclude zero (counted, with each cell's difference and interval), the cells whose interval includes
+zero, the sixth cell ("year 2038") kept out of the count, and the statement that the 27 Oct file mixed engine
+states. `P1-OOD-N-CELLS` and `P1-OOD-N-SIG` now count without "year 2038". The build STOPS if the "year 2038" cell
+ever differs from the guard runs at 30 % load (`guards.30.atc_urgent_wait_mean_cens_h`: both means, the difference,
+its interval and n), because the text says it repeats them.

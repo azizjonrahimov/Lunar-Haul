@@ -116,3 +116,15 @@ Build: abstract 299 words, conclusion 249, 288 values, 0 pending, no `[[PENDING`
 
 Tally of the 37 findings: 26 fixed, 10 fixed in part (M8 added: the out-of-range cells await BACKEND's addendum), 0 awaiting a task for wording, 1 not done (O2).
 Build: abstract 300 words, conclusion 250, 292 values, 0 pending, no `[[PENDING` in `paper.html`. PDF rebuilt: 53 pages, 1.44 MB.
+
+## Part 4 (12 Nov): the out-of-range cells rerun
+
+| Item | What was done | Where |
+|---|---|---|
+| M8, now fixed | The rerun file's `ood` is a table and Table 6 reads it; the caption, 5.6, 6.5, the Limitations and Table 12 changed with it, and no "predate the two engine fixes" sentence remains. Nothing of M8 is left open. | 4.6, 5.6, 7, Table 6, Table 12 |
+| Count | Computed by the build: five out-of-range cells, same sign in all five, interval clear of zero in three (two owners -4.95 h, -8.66 to -1.24; loss 0.25 -2.31 h, -4.29 to -0.34; light load -1.22 h, -2.12 to -0.31); it includes zero at five owners (-1.33 h, -3.50 to 0.84) and loss 0.40 (-1.62 h, -4.91 to 1.68). | 5.6 |
+| "Year 2038" | Kept out of the count and said so: the start year changes nothing in these runs, and the cell repeats the guard runs at the middle load value for value. The build stops if it ever differs from them (both means, the difference, its interval, n). "Six conditions" in the contributions is now five. | 1, 5.6, Table 6 caption, `build_p1.py` |
+| Mixed engine states | Stated once: the file of 27 October made its out-of-range runs after a fix that its evaluation and guard runs predate; the rerun file has all three on one engine. | 5.6 |
+
+Tally of the 37 findings: 27 fixed (M8 added), 9 fixed in part, 0 awaiting a task, 1 not done (O2).
+Build: abstract 300 words, conclusion 250, 0 pending, no `[[PENDING` in `paper.html`. PDF rebuilt, 53 pages.

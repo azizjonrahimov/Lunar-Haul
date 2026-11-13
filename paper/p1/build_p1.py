@@ -1142,15 +1142,52 @@ def values(r: R, allow_pending: bool):
         f"{LOAD_MAIN}{PCT} load, the hand-built bids chose the marketplace's item in {sh(ha['hand'], 2)} of rounds, "
         f"the network's bids in {sh(ha['mlp'], 2)} and the linear bids in {sh(ha['linear'], 2)}.")
     V["P1-OOD-LABEL-SENTENCE"] = (
-        "The cells of Table 6 were rerun on the corrected engine with the rest of the evaluation." if ood_rerun else
+        "The cells of Table 6 were rerun on the corrected engine with the rest of that evaluation." if ood_rerun else
         f"The cells of Table 6 are the one part of that evaluation not rerun: its values are those of {le['file_date']} "
         f"and predate the two engine fixes.")
     ood = r.ood_src
 
-    diffs = {k: v["linear"]["vs_hand_h"] for k, v in ood.items()}
-    check(all(d["mean"] < 0 for d in diffs.values()), "the linear model kept the same sign in every OOD cell")
+    # Part 4 (12 Nov): the cell "year 2038" is not an out-of-range test. The start-year setting has no effect on
+    # these Earth-independent runs, so the cell repeats the guard runs at the middle load (start year 2028, the same
+    # seeds). It is kept out of the count, and the build stops if it ever differs from the guard values.
+    YEAR_CELL = "year 2038"
+    if YEAR_CELL not in ood:
+        raise KeyError(f"the out-of-range table has no cell {YEAR_CELL!r}")
+    if ood_rerun:
+        yc, gq = ood[YEAR_CELL], gm["atc_urgent_wait_mean_cens_h"]
+        same = (abs(yc["hand"]["urgent_mean_h"] - gq["hand"]) < 1e-3 and abs(yc["linear"]["urgent_mean_h"] - gq["linear"]) < 1e-3
+                and abs(yc["linear"]["vs_hand_h"]["mean"] - gq["linear_minus_hand"]["mean"]) < 1e-3
+                and all(abs(a - b) < 1e-3 for a, b in zip(yc["linear"]["vs_hand_h"]["ci95"], gq["linear_minus_hand"]["ci95"]))
+                and yc["linear"]["vs_hand_h"]["n"] == gq["linear_minus_hand"]["n"])
+        if not same:
+            raise SystemExit(f"the out-of-range cell {YEAR_CELL!r} no longer equals the guard runs at {LOAD_MAIN} % load: "
+                             f"the paper says it repeats them and keeps it out of the count; revise P1-OOD-SENTENCE")
+    diffs = {k: v["linear"]["vs_hand_h"] for k, v in ood.items() if k != YEAR_CELL}
+    check(all(d["mean"] < 0 for d in diffs.values()), "the linear model kept the same sign in every out-of-range cell")
     V["P1-OOD-N-CELLS"] = words(len(diffs))
-    V["P1-OOD-N-SIG"] = words(sum(d["ci95"][1] < 0 for d in diffs.values()))
+    n_sig = sum(d["ci95"][1] < 0 for d in diffs.values())
+    V["P1-OOD-N-SIG"] = words(n_sig)
+    OOD_WORDS = {"2eq": "two owners", "5eq": "five owners", "loss 0.25": "message loss 0.25", "loss 0.40": "message loss 0.40",
+                 "load 10 %": "light load"}
+    if set(diffs) != set(OOD_WORDS):
+        raise KeyError(f"unexpected out-of-range cells: {sorted(diffs)}")
+    oq = lambda k: f"{OOD_WORDS[k]} ({h_(diffs[k]['mean'], 2, sign=True)}, {num(diffs[k]['ci95'][0], 2)} to {num(diffs[k]['ci95'][1], 2)}{NB}h)"
+    sig = [k for k in diffs if diffs[k]["ci95"][1] < 0]
+    ns = [k for k in diffs if diffs[k]["ci95"][1] >= 0]
+    V["P1-OOD-SENTENCE"] = (
+        f"Outside its training range the linear model was run in {words(len(diffs))} cells of ten seeds each: two "
+        f"and five owners, message loss 0.25 and 0.40, and light load. It kept the same sign in all "
+        f"{words(len(diffs))}, with an interval clear of zero in {words(n_sig)}"
+        + (": " + listing(oq(k) for k in sig) if sig else "")
+        + (". The interval includes zero at " + listing(oq(k) for k in ns) if ns else "")
+        + " (Table 6). "
+        + ("A sixth cell, a later start year, is not an out-of-range test and is not counted: the start year "
+           "changes nothing in these runs, which never wait for Earth, so the cell repeats the guard runs at the "
+           "middle load value for value. " if ood_rerun else
+           "A sixth cell, a later start year, is not counted: the start year changes nothing in these runs, which "
+           "never wait for Earth. ")
+        + (f"The file of {le['file_date']} mixed engine states: its out-of-range runs were made after a fix that "
+           f"its evaluation and guard runs predate. The rerun file has all three on one engine." if ood_rerun else ""))
     # the linear weights in plain words: the output is a bid correction in hours (positive = bids lower = favoured)
     w = np.asarray(r.lin["layers"][0]["w"], float).reshape(-1)
     names, scale = r.lin["obs"]["names"], r.lin["obs"]["scale"]
@@ -1757,7 +1794,9 @@ def table_ood(r: R):
     return _tab(f"<b>Table 6.</b> The linear bids outside their training range, {origin}: mean urgent wait (h) with "
                 "hand-built and learned bids, and the paired "
                 "difference with its 95&#8239;% interval, on ten evaluation seeds the model never saw. 2eq and 5eq "
-                "split the same eight vehicles and the demand equally among two and five owners. Where E41 reran a cell on 30 seeds (loss 0.25 and 0.40, "
+                "split the same eight vehicles and the demand equally among two and five owners. The last row, a "
+                "later start year, repeats the guard runs at the middle load and is not an out-of-range test "
+                "(Section 5.6). Where E41 reran a cell on 30 seeds (loss 0.25 and 0.40, "
                 "Section 5.5) and E40 on 30 seeds (load 10&#8239;%, Section 5.6), those values supersede these.",
                 ["Cell", "Hand-built (h)", "Learned (h)", "Difference (h)", "n"], rows)
 
@@ -3121,7 +3160,7 @@ def phase6_proved(p, r, V, fill, check, ctx, e53):
              "as reported (H3b, H3c, exploratory)",
              "Tested: E41, 30 seeds per cell, one factor at a time around the auction at the middle load. No cell "
              "has deeper bundles without loss.", "5.5"),
-            ("The linear bids keep their sign outside the training range; other cargo does not pay for the gain",
+            ("The linear bids keep their sign outside the training range; whether other cargo pays for the gain",
              f"Tested on ten seeds per cell. Sign outside the range: "
              + ("rerun on the corrected engine" if r.ood_rerun else "values that predate the two engine fixes, not rerun")
              + f". Other cargo ({V['P1-LEARNED-EVAL-LABEL']}): no cost at {LOAD_HEAVY}{PCT} load; {V['P1-GUARD-30-CLAUSE']}.", "5.6"),
