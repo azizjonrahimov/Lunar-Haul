@@ -137,3 +137,12 @@ Before: "Working Together Without Earth: Job Sharing, Team Lifts and Learned Bid
 Changed in the `<title>` element and the `<h1>` of `paper/p1/part1_front.html`; the paper has no running head and
 `values.json` has no title key (the site reads the `<h1>` of the built `paper.html`). The PDF file name is unchanged.
 No finding changes state; the tally stays 27 fixed, 9 fixed in part, 0 awaiting a task, 1 not done (O2).
+
+## Part 6 (13 Nov): the E54 replay at version 0.2 sizes
+
+B-111 landed (`results/E54_dtn.json`, block `lrip_v02`). The Limitations no longer say "The replay E54 used the sizes
+of version 0.1, which differ only in the heartbeat". They say the replay was repeated at the packet sizes of version
+0.2 and in Proximity-1 frames, that no value and no verdict changed, and that this is a property of the replay's
+message set (task awards, reservation grants and task states, whose sizes version 0.2 does not change; a size counts
+only against a node's 64 MB store) and not a test of version 0.2. The build checks that the v0.2 rows equal the v0.1
+rows, as P3's build does. No other sentence of P1 said the replay was at v0.1 sizes or not rerun. The tally is unchanged.

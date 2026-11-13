@@ -355,3 +355,12 @@ The title is not a placeholder: it is typed twice in `part1_front.html` (the `<t
 (`site/lib/papers.mjs`); `values.json` has no title key. Title since 13 Nov:
 "Working Together Without Earth: Job Sharing, Team Lifts, Learned Bidding and a Message Protocol for Lunar Robots of Different Owners".
 Before: "Working Together Without Earth: Job Sharing, Team Lifts and Learned Bidding Among Lunar Robots of Different Owners". The PDF file name is unchanged.
+
+## Part 6 (13 Nov 2026): the E54 replay at version 0.2 sizes
+
+`P1-E54-V02-SENTENCE` (new, composed; Limitations, "The protocol is counted and replayed, not transmitted"): from
+`results/E54_dtn.json` block `lrip_v02` (task B-111). It replaces "The replay E54 used the sizes of version 0.1".
+Build checks, as in P3's build: every v0.2 and v0.2-in-Proximity-1 row equals the v0.1 row (all values but the byte
+totals), `values_moved_vs_v01` is empty, the v0.1 rows reproduce the published rows, H14 and every verdict are the
+same in all three sets, the three message sizes are unchanged by v0.2 and gain the schema's frame bytes in
+Proximity-1, and every message of a seed held at once is under 1 % of the node store (`parameters.queue_bytes`).

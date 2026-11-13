@@ -2696,6 +2696,43 @@ def phase6_e54(p, V, fill, check):
             f"ladder of Section 3.13 read literally would interrupt a large share of drives.")
     fill("P1-E54-COST-SENTENCE", cost_sentence, "E54")
 
+    def v02_sentence():
+        """Part 6 (13 Nov, task B-111, results/E54_dtn.json block `lrip_v02`): the replay repeated at the packet sizes of
+        protocol version 0.2 and in Proximity-1 frames. No value and no verdict changes; the checks below fail the build
+        if that stops being true. It is a property of the replay's message set, not a test of version 0.2."""
+        p.h14()
+        e = p.e54
+        if "lrip_v02" not in e:
+            raise Pending("E54_dtn.json has no block lrip_v02 (task B-111)")
+        b = e["lrip_v02"]
+        rows, sz = b["rows"], b["sizes_bytes"]
+        same = lambda a, c: all(a[k] == c[k] for k in a if not k.endswith("_bytes"))
+        check(list(b["values_moved_vs_v01"]) == [] and
+              all(len(rows[v]) == len(rows["v0.1"]) and all(same(x, y) for x, y in zip(rows["v0.1"], rows[v]))
+                  for v in ("v0.2", "v0.2_proximity1")),
+              "the E54 replay at version 0.2 sizes and in Proximity-1 frames gives the version 0.1 value in every row")
+        pub = e["rows"]
+        check(all(b["reproduction_of_published_v01"].values()) and len(pub) == len(rows["v0.1"]) and
+              all(all(x[k] == y[k] for k in y if k in x) for x, y in zip(rows["v0.1"], pub)),
+              "the version 0.1 rows of the E54 rerun reproduce the published rows")
+        check(all(b["h14"][v] == b["h14"]["v0.1"] for v in b["h14"]) and
+              all(b["h14"][v]["difference_sf_ll_minus_drop_retry"] == e["h14"]["difference_sf_ll_minus_drop_retry"] for v in b["h14"]),
+              "H14's first clause comes out the same at version 0.2 sizes and in Proximity-1 frames")
+        check(all(bool(v["h14_supported"]) and bool(v["same_as_v0.1"]) for v in b["verdicts"].values()),
+              "no verdict of E54 changes at version 0.2 sizes")
+        fb = int(p.schema["framing"]["proximity1_frame_bytes"])
+        check(sz["v0.2"] == sz["v0.1"] and sorted(sz["v0.1"]) == ["RESERVE_GRANT", "TASK_AWARD", "TASK_STATE"] and
+              all(int(sz["v0.2_proximity1"][k]) - int(sz["v0.2"][k]) == fb for k in sz["v0.2"]),
+              "the replay sends awards, grants and task states, whose sizes version 0.2 does not change; a Proximity-1 frame adds its bytes to each")
+        q = float(e["parameters"]["queue_bytes"])
+        worst = max(float(v) for v in b["max_queue_bytes_bound"].values())
+        check(worst < 0.01 * q, "every message of a seed held at once is under 1 % of a node's store")
+        return (f"The replay E54 was repeated at the packet sizes of version 0.2 and in Proximity-1 frames, and no value "
+                f"and no verdict changed. That is a property of the replay's message set and not a test of version 0.2: "
+                f"it sends task awards, reservation grants and task states, whose sizes version 0.2 does not change, and "
+                f"a size counts only against a node's store of {num(q / 1e6)}{NB}MB.")
+    fill("P1-E54-V02-SENTENCE", v02_sentence, "E54 lrip_v02 (B-111)")
+
     def aoi_sentence():
         e = p.e54
         dr, sf, ll = (p.row54(LOSS, k) for k in ("drop_retry", "sf", "sf_ll"))
