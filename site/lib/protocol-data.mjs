@@ -361,3 +361,21 @@ export function b104(key, cls = 'LTV1') {
   if (!V[key]) throw new Error(`revision_b104: unknown key ${key}`);
   return V[key]();
 }
+
+// F-72 (B-102): <!--@e50ov:lead--> on /protocol/ problem 1: what a reservation overlap is (results/E50_overlaps.json). The
+// count is fixed by how waiting windows are filed (back to back), not by the position error, so it is said not to be a
+// safety measure; the closeness numbers (gap at entry, nothing within 5 m) carry the safety statement. A simulation.
+export const OV_SRC = 'results/E50_overlaps.json';
+export function e50ov(key) {
+  if (key !== 'lead') throw new Error(`${OV_SRC}: unknown key ${key}`);
+  const D = JSON.parse(readFileSync(join(ROOT, OV_SRC), 'utf8')), X = D.multiples['4'], runs = Object.entries(X.runs);
+  const m = (value, unit, digits, what) => num({ value, unit, digits, flag: 'Modelled', source: `${OV_SRC}: multiples.4.runs.${what} (a simulation)` });
+  const bare = runs.filter(([k]) => k.startsWith('no_margin:')), lay = X.runs['with_margin:layered'];
+  const sh = bare.map(([k, r]) => [k, r.back_to_back.abutting_share_overlapping]), lo = sh.reduce((a, b) => (b[1] < a[1] ? b : a)), hi = sh.reduce((a, b) => (b[1] > a[1] ? b : a));
+  const gp = bare.map(([k, r]) => [k, r.gap_at_entry_m.median]), glo = gp.reduce((a, b) => (b[1] < a[1] ? b : a)), ghi = gp.reduce((a, b) => (b[1] > a[1] ? b : a));
+  const all = Object.values(D.multiples).flatMap(M => Object.values(M.runs));
+  if (all.some(r => r.counts_per_seed.gap_under_d0_5m > 0 || r.counts_per_seed.gap_under_r1_dmin > 0)) throw new Error(`${OV_SRC}: an overlap came within 5 m or R1's gap; the /protocol/ sentence says none did`);
+  const pairs = bare[0][1].back_to_back.abutting_pairs_per_seed;
+  return `The margin also changes how often two reservations of the same road overlap in time, and that count is not a safety measure: windows filed back to back overlapped in ${m(100 * lo[1], '', 0, `${lo[0]}.back_to_back.abutting_share_overlapping`)} to ${m(100 * hi[1], ' %', 0, `${hi[0]}.back_to_back.abutting_share_overlapping`)} of cases at four times the fleet (${m(pairs, '', 0, `${bare[0][0]}.back_to_back.abutting_pairs_per_seed`)} such pairs a seed) whatever the position error. `
+    + `The margin separates the windows, so the count falls, but it does not change how far ahead the first vehicle was when the second entered (medians of ${m(glo[1], '', 0, `${glo[0]}.gap_at_entry_m.median`)} to ${m(ghi[1], ' m', 0, `${ghi[0]}.gap_at_entry_m.median`)} without a margin, ${m(lay.gap_at_entry_m.median, ' m', 0, 'with_margin:layered.gap_at_entry_m.median')} with the layered one, set by the lengths of the segments), and no overlap, with or without a margin, at either fleet size, brought two vehicles inside the static margin or the keep-distance rule's gap (a simulation, task B-102).`;
+}

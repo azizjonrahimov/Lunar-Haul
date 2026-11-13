@@ -28,7 +28,7 @@ const TYPE_TEXT = {
 };
 // the three types whose result is a property of the rules, as P2 reports it (labelled as findings, not bugs)
 const FINDING = {
-  9: `The keep-distance rule (R1) sizes the gap for a vehicle ahead that brakes at most at ${B_MAX} m/s². A vehicle that stops dead, a fault rather than a manoeuvre, is outside that model, so a follower already inside a one-lane road can lose its margin. A margin for a dead stop would close the case at a cost in road capacity; it has not been run.`,
+  9: `The keep-distance rule (R1), as run in the twelve types, sizes the gap for a vehicle ahead that brakes at most at ${B_MAX} m/s². A vehicle that stops dead, a fault rather than a manoeuvre, is outside that model, so a follower already inside a one-lane road can lose its margin. A margin for a dead stop would close the case at a cost in road capacity; it has not been run.`,
   6: 'A crossing that lies on a landing zone’s boundary can be held by a vehicle stopped at the zone line, and a vehicle leaving the closing zone through that crossing is then blocked. R3 keeps a vehicle out of a one-lane road it cannot leave into a bay, but no rule yet keeps it out of a junction whose far side is a hold point.',
   5: 'On a ring of one-lane roads with bays of limited size, the rule “enter only with a free bay at the exit” can still lock up, each vehicle waiting for the next. This was noted before the main run; the logistics model avoids it only because its bays are unlimited.',
 };

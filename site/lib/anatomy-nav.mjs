@@ -9,6 +9,7 @@ import { k, W, project, tools, labels, partList, plate, still } from './anatomy-
 import { num, esc, fmt } from '../src/components/num.js';
 import { P as PRM } from '../src/protocol/params.js';
 import { ROOT } from './pages.mjs';
+import { robotRound } from '../src/atc/e48-robot.js';
 
 const H = 470;
 const DECK = { x: -150, y: -80, w: 300, d: 160, r: 8 }, DECK_H = 10, FOOT_H = 6;
@@ -198,6 +199,7 @@ function rows() {
   const S48 = E48(), SZ = 'results/E48_sizing.json', sm = S48?.classes?.SMALL, F = S48?.flight;
   const e = (value, unit, digits, flag, src) => num({ value, unit, digits, flag, source: `${SZ}: ${src}` });
   const check = sm && F ? sm.cpu_safety_check_us.p99 * F.factor / 1000 : null;
+  const RR = robotRound(S48);   // F-72 (B-105): measured memory and one robot's bid time
   return {
     check, sm, F,
     list: [
@@ -210,7 +212,7 @@ function rows() {
         sm ? `${e(sm.link.longest_hop_kbps, ' kbit/s', 1, 'Modelled', 'classes.SMALL.link.longest_hop_kbps')} at the ${e(sm.link.mutual_horizon_m / 1000, ' km', 1, 'Modelled', 'classes.SMALL.link.mutual_horizon_m')} horizon, ${e(sm.link.tx_power_w, ' W', 2, 'Assumed', 'classes.SMALL.link.tx_power_w')}` : 'E48 not available', 'our design'],
       ['clock', 'Clock module', 'A chip-scale atomic clock beside a crystal: time stamps and resyncs.', `Drift: atomic ${n('csac')}, crystal ${n('tcxo')}`, 'published'],
       ['computer', 'Navigation computer', `The flight board (${esc(F?.processor || 'GR740')}) runs our safety program and planner.`,
-        sm && F ? `${num({ value: F.memory_mb, unit: ' MB', digits: 0, flag: 'Spec', source: `${SZ}: flight.memory_mb (${F.processor})` })} on board; our program needs about ${e(sm.peak_memory_mb, ' MB', 2, 'Modelled', 'classes.SMALL.peak_memory_mb (an estimate: the sum of its parts)')} by an estimate and one safety check takes ${e(check, ' ms', 0, 'Modelled', 'classes.SMALL.cpu_safety_check_us.p99 × flight.factor')} on the flight core` : 'E48 not available', 'published board, our software'],
+        sm && F ? `${num({ value: F.memory_mb, unit: ' MB', digits: 0, flag: 'Spec', source: `${SZ}: flight.memory_mb (${F.processor})` })} on board; ${RR ? `our program's data measured at ${RR.mem} on a laptop (interpreter and code not counted; estimated at ${RR.estimate})` : `our program needs about ${e(sm.peak_memory_mb, ' MB', 2, 'Modelled', 'classes.SMALL.peak_memory_mb (an estimate: the sum of its parts)')} by an estimate`}; one safety check takes ${e(check, ' ms', 0, 'Modelled', 'classes.SMALL.cpu_safety_check_us.p99 × flight.factor')} on the flight core${RR ? ` and one robot's bid ${RR.bid} (99th percentile; a laptop timing scaled by an assumed factor)` : ''}` : 'E48 not available', 'published board, our software'],
     ],
   };
 }

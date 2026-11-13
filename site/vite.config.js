@@ -8,8 +8,8 @@ import { tex } from './lib/tex.mjs';
 import { paperField, paperValue } from './lib/papers.mjs';
 import { P as PROTOCOL } from './src/protocol/params.js';
 import { nw } from './lib/network.mjs';
-import { atcResults, e44fresh } from './lib/results-atc.mjs';
-import { b104, e50b, e51, e52, e53, e53d, e55, lrip } from './lib/protocol-data.mjs';
+import { atcResults, e44fresh, e45up } from './lib/results-atc.mjs';
+import { b104, e50b, e50ov, e51, e52, e53, e53d, e55, lrip } from './lib/protocol-data.mjs';
 import { b97 } from './lib/realdata.mjs';
 import { nb, vv6 } from './lib/phase6.mjs';
 import { num } from './src/components/num.js';
@@ -32,7 +32,8 @@ function lunarsimPages() {
           .replace('<!--@headline-->', () => headline())
           .replace('<!--@hero-counters-->', () => heroCounters())
           .replace('<!--@hero-css-->', () => `<style>${readFileSync(join(SITE, 'src', 'home-hero.css'), 'utf8')}</style>`)   // inlined: one render-blocking request fewer on the home page
-          .replace('<!--@e44f:lead-->', () => e44fresh('lead'))   // F-71: encounter types on fresh seeds (results/E44_fresh_seeds.json), /atc/ section 5
+          .replace('<!--@e44f:lead-->', () => e44fresh('lead'))
+          .replace(/<!--@e45u:(\w+)-->/g, (_, k) => e45up(k))   // F-72: R1 with the slope term and the uphill runs (results/E45_uphill.json), /atc/ section 5   // F-71: encounter types on fresh seeds (results/E44_fresh_seeds.json), /atc/ section 5
           .replace('<!--@results-atc-->', () => atcResults(base))   // F-56: the Lunar ATC papers' headline numbers (lib/results-atc.mjs)
           .replace('<!--@results-->', () => results(base))
           .replace(/<!--@md:([\w-]+)-->/g, (_, n) => markdown(n))
@@ -47,7 +48,8 @@ function lunarsimPages() {
           .replace(/<!--@e53d:(\w+)-->/g, (_, k) => e53d(k))   // F-70b: E53's driving split in /protocol/ problem 5
           .replace(/<!--@b104:(\w+)-->/g, (_, k) => b104(k))   // F-70b: the radio over a curved Moon in /protocol/ problem 4
           .replace(/<!--@e52:(\w+)-->/g, (_, k) => e52(k))   // F-56: E52 in /protocol/ problem 2 (lib/protocol-data.mjs)
-          .replace(/<!--@nb:(\w+)-->/g, (_, k) => nb(k))   // F-71: H9' clause 2 under every reading (results/E50_near_base.json), /protocol/ problem 1
+          .replace(/<!--@nb:(\w+)-->/g, (_, k) => nb(k))
+          .replace('<!--@e50ov:lead-->', () => e50ov('lead'))   // F-72: what a reservation overlap is (results/E50_overlaps.json), /protocol/ problem 1   // F-71: H9' clause 2 under every reading (results/E50_near_base.json), /protocol/ problem 1
           .replace(/<!--@vv6:(\w+)-->/g, (_, k) => vv6(k))   // F-69: the Phase 6 checks' lead on /verification/ (lib/phase6.mjs)
           .replace(/<!--@b97:(\w+)-->/g, (_, k) => b97(k))   // F-56: B-97's real-data boxes (lib/realdata.mjs)
           .replace(/<!--@e55:([\w@.]+)-->/g, (_, k) => e55(k))   // F-56: E55 in /protocol/ problem 7 (lib/protocol-data.mjs)

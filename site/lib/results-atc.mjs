@@ -2,11 +2,13 @@
 // from paper/<id>/values.json (the papers' own values files; pre-formatted strings) and, for P3's computing and radio
 // numbers that its values file does not carry, results/E48_sizing.json. Nothing is typed.
 import { readFileSync, existsSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { paperValue, paperField } from './papers.mjs';
 import { num, esc, FLAGS } from '../src/components/num.js';
 import { ROOT } from './pages.mjs';
 import { familyTable } from './phase6.mjs';
+import { robotRound } from '../src/atc/e48-robot.js';
 
 // a pre-formatted value from a paper's values file, flagged like every number on the site: Modelled unless the value
 // is a setting of the experiment (F-70d: the relay's 80 % availability is an input, so Assumed)
@@ -31,12 +33,27 @@ export const ITEMS = {
   p3: [['P3-N-OWNERS', 'P3-E46-N-RUNS'], ['P3-MESH-MAST-DIRECT-SHARE']],
 };
 
+// F-72: every key a card reads, and the text it had when the cards were last checked against it (lib/card-keys.lock.json,
+// sha-256 prefixes, written by scripts/lock-cards.mjs). A key that went away fails the build (paperValue); one whose text
+// changed is named in the build log and fails tests/f72.test.mjs until someone has reread the card and refreshed the lock.
+export const CARD_LOCK = join(ROOT, 'site', 'lib', 'card-keys.lock.json');
+export const cardHashes = () => Object.fromEntries(Object.entries(ITEMS).flatMap(([id, groups]) => groups.flat()
+  .map(key => [`${id}:${key}`, createHash('sha256').update(paperValue(id, key)).digest('hex').slice(0, 16)])));
+export function cardKeyChanges() {
+  const lock = existsSync(CARD_LOCK) ? JSON.parse(readFileSync(CARD_LOCK, 'utf8')) : {}, now = cardHashes();
+  return Object.entries(now).filter(([k, h]) => lock[k] !== h).map(([k]) => {
+    const [id, key] = k.split(':');
+    return { id, key, was: lock[k] ? 'changed' : 'not in the lock', text: paperValue(id, key).replace(/<[^>]+>|&[a-z#0-9]+;/g, ' ').replace(/\s+/g, ' ').slice(0, 160) };
+  });
+}
+
 function e48() { const p = join(ROOT, 'results', 'E48_sizing.json'); return existsSync(p) ? JSON.parse(readFileSync(p, 'utf8').replace(/\bNaN\b/g, 'null')) : null; }
 
 // a sentence the paper itself writes (a values-file key holding prose): quoted as it stands, its numbers included
 export function quote(id, key) { return `<q class="r-quote" data-src="paper/${id}/values.json ${key}">${paperValue(id, key)}</q>`; }
 
 export function atcResults(base = '/') {
+  for (const c of cardKeyChanges()) console.warn(`[results cards] paper/${c.id}/values.json ${c.key} ${c.was} since the cards were checked; reread the card, then run node scripts/lock-cards.mjs: "${c.text}"`);
   const v = pv, E = e48(), SZ = 'results/E48_sizing.json';
   const e = (value, unit, digits, src) => num({ value, unit, digits, flag: 'Modelled', source: `${SZ}: ${src}` });
   const air = a => E?.airtime?.rows?.find(r => r.sizes.startsWith('LRIP secured, MAC 8') && String(r.hops).startsWith('measured') && r.access.startsWith(a));
@@ -61,6 +78,7 @@ export function atcResults(base = '/') {
   const p3 = [
     `The market was priced for ${v('p3', 'P3-N-OWNERS')} owners over ${v('p3', 'P3-E46-N-RUNS')} simulated years.`,
     E ? `By a scaled estimate (laptop timing times the flight processor's slowdown), the heaviest safety check takes ${e(E.h10.safety_core_share_flight_per_robot_10hz * 100, ' %', 1, 'h10.safety_core_share_flight_per_robot_10hz')} of one core.` : 'E48 not available.',
+    E && robotRound(E) ? `One robot's bid in a market round, timed on a laptop in one month of one seed and scaled by an assumed factor (not flight hardware), takes ${robotRound(E).bid} (99th percentile); the on-robot data were measured at ${robotRound(E).mem} against the ${robotRound(E).estimate} estimate, the interpreter and the code not counted.` : '',
     sched && slot ? `By calculation from the message sizes and rates, twenty robots' authenticated traffic needs ${e(sched.channel_kbps_needed, ' kbit/s', 2, 'airtime (scheduled, measured hops)')} of airtime on a channel the base schedules, and ${e(slot.channel_kbps_needed, ' kbit/s', 2, 'airtime (slotted random access, measured hops)')} with random access, against a ${e(E.airtime.channel_kbps, ' kbit/s', 0, 'airtime.channel_kbps')} channel.` : '',
     `The base's mast is in direct view at ${v('p3', 'P3-MESH-MAST-DIRECT-SHARE')} of route points; the rest goes through the mesh.`,
   ].filter(Boolean);
@@ -90,4 +108,27 @@ export function e44fresh(key) {
     return `type ${t} had ${m(F.violations, `types.${t}.fresh_seeds.violations`)} in ${n(t)}: ${and(kinds)}${wb}`;
   }).join('; ');
   return s.replace(/, $/, '') + '.';
+}
+
+// F-72 (B-107): <!--@e45u:rule--> and <!--@e45u:result--> on /atc/ section 5: the keep-distance rule (R1) as P2 now
+// proposes it, with the slope term, and the uphill runs (results/E45_uphill.json) that led to it. Every number from the
+// file; a simulation. The twelve encounter types were run without the slope term (flat or downhill, where it is inactive).
+const UP_SRC = 'results/E45_uphill.json';
+export function e45up(key) {
+  const D = JSON.parse(readFileSync(join(ROOT, UP_SRC), 'utf8')), C = D.cells, T = D.threshold;
+  const sim = (value, what, unit = '', digits = 0) => num({ value, unit, digits, flag: 'Modelled', source: `${UP_SRC}: ${what} (a simulation)` });
+  const set = (value, what, unit = '', digits = 0) => num({ value, unit, digits, flag: 'Assumed', source: `${UP_SRC}: ${what} (a setting of the experiment)` });
+  const rule = (value, what, unit, digits) => num({ value, unit, digits, flag: 'Spec', source: `${UP_SRC}: ${what} (a setting of the proposed rule)` });
+  if (key === 'rule') return `The keep-distance rule (R1) sets the gap to the vehicle ahead from the follower's response time and own braking and from the leader's braking, plus a static margin of ${rule(D.d0_m, 'd0_m', ' m', 0)}. As P2 now proposes it, the leader's braking is the larger of ${rule(D.b_max, 'b_max', ' m/s²', 1)} and what the leader can guarantee on the grade (the slope term): uphill, gravity lets a leader stop harder than that. The twelve encounter types above were run without the slope term; all are flat or downhill, where it is inactive.`;
+  if (key !== 'result') throw new Error(`E45 uphill: unknown key ${key}`);
+  const contacts = C.reduce((a, c) => a + c.contacts, 0), lag = Math.max(...C.map(c => c.delay_s)), slopes = [...new Set(C.map(c => c.slope_deg))].sort((a, b) => a - b);
+  const sloped = C.filter(c => c.rule === 'slope_term'), follow = sloped.filter(c => c.geom === 'following');
+  if (follow.some(c => c.gap_below_d0 > 0)) throw new Error(`${UP_SRC}: the slope term leaves a shortfall when following; the /atc/ sentence says it removes every one`);
+  const rest = sloped.filter(c => c.gap_below_d0 > 0);
+  const short = rest.length ? Math.max(...rest.map(c => D.d0_m - c.min_gap_m)) : 0;
+  const restWhere = [...new Set(rest.map(c => `${c.planet === 'mars' ? 'Mars' : 'Moon'} ${c.geom === 'one_lane' ? 'convoy on a one-lane road' : 'following'}${c.delay_s > 0 ? ' with the lag' : ''}`))];
+  const thr = (k, pl) => { const v = T[k]?.first_slope_with_gap_below_d0_deg; return typeof v === 'number' ? `${pl} from ${sim(v, `threshold.${k}.first_slope_with_gap_below_d0_deg`, '°', v % 1 ? 1 : 0)}` : null; };
+  const where = [thr('moon:following', 'on the Moon'), thr('mars:following', 'on Mars')].filter(Boolean);
+  return `Uphill, a separate simulation (task B-107: following and one-lane convoys on the Moon and Mars at ${set(slopes[0], 'cells.slope_deg (lowest)', '°', 0)} to ${set(slopes[slopes.length - 1], 'cells.slope_deg (highest)', '°', 1)}, ${set(D.n_per_cell, 'n_per_cell')} encounters per case, followers at the rule's limit) found ${contacts === 0 ? 'no contact anywhere' : `${sim(contacts, 'Σ cells.contacts')} contacts`}; with the rule as it was and a ${set(lag, 'cells.delay_s (the actuation lag)', ' s', 0)} actuation lag, a braking leader took followers inside the margin when following ${where.join(' and ')}. `
+    + `The slope term removes every shortfall when following, on both bodies${rest.length ? `; the ${restWhere.join(' and ')} keeps shortfalls of at most ${sim(short, 'max over the slope_term cells with a shortfall of d0_m − min_gap_m', ' m', 2)}, traced to the lag model and not patched` : ''}.`;
 }
