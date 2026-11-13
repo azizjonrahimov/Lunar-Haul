@@ -2900,6 +2900,168 @@
    }
   ],
   "conformance_vectors_v0.2": 45,
-  "run_s": 12.2
+  "run_s": 12.2,
+  "driving_split": {
+   "task": "B-110",
+   "note": "as B-103 (driving_split) with v0.2 packet sizes and HELLO >= 0.1 Hz; 'proximity1' adds 12 B per packet; authenticated, 20 rovers, E53's draw streams",
+   "pool_driving_share": 0.0261,
+   "e53_auth_20_rovers": {
+    "lrip": {
+     "fleet_driving": {
+      "1 Hz": {
+       "busiest_link_kbps_mean": 5.315,
+       "busiest_link_kbps_p95": 6.277,
+       "mean_hops_to_base": 1.583,
+       "reachable_share": 0.93,
+       "scheduled_airtime_p95_kbps": 7.846,
+       "slotted_aloha_airtime_p95_kbps": 17.062
+      },
+      "10 Hz": {
+       "busiest_link_kbps_mean": 42.805,
+       "busiest_link_kbps_p95": 50.557,
+       "mean_hops_to_base": 1.583,
+       "reachable_share": 0.93,
+       "scheduled_airtime_p95_kbps": 63.196,
+       "slotted_aloha_airtime_p95_kbps": 137.428
+      }
+     },
+     "fleet_parked": {
+      "1 Hz": {
+       "busiest_link_kbps_mean": 8.215,
+       "busiest_link_kbps_p95": 8.369,
+       "mean_hops_to_base": 1.012,
+       "reachable_share": 0.9933,
+       "scheduled_airtime_p95_kbps": 10.461,
+       "slotted_aloha_airtime_p95_kbps": 22.749
+      },
+      "10 Hz": {
+       "busiest_link_kbps_mean": 66.173,
+       "busiest_link_kbps_p95": 67.409,
+       "mean_hops_to_base": 1.012,
+       "reachable_share": 0.9933,
+       "scheduled_airtime_p95_kbps": 84.261,
+       "slotted_aloha_airtime_p95_kbps": 183.236
+      }
+     },
+     "fleet_all": {
+      "1 Hz": {
+       "busiest_link_kbps_mean": 7.964,
+       "busiest_link_kbps_p95": 8.369,
+       "mean_hops_to_base": 1.019,
+       "reachable_share": 0.9683,
+       "scheduled_airtime_p95_kbps": 10.461,
+       "slotted_aloha_airtime_p95_kbps": 22.749
+      },
+      "10 Hz": {
+       "busiest_link_kbps_mean": 64.151,
+       "busiest_link_kbps_p95": 67.409,
+       "mean_hops_to_base": 1.019,
+       "reachable_share": 0.9683,
+       "scheduled_airtime_p95_kbps": 84.261,
+       "slotted_aloha_airtime_p95_kbps": 183.236
+      }
+     }
+    },
+    "proximity1": {
+     "fleet_driving": {
+      "1 Hz": {
+       "busiest_link_kbps_mean": 6.9,
+       "busiest_link_kbps_p95": 8.149,
+       "mean_hops_to_base": 1.583,
+       "reachable_share": 0.93,
+       "scheduled_airtime_p95_kbps": 10.186,
+       "slotted_aloha_airtime_p95_kbps": 22.151
+      },
+      "10 Hz": {
+       "busiest_link_kbps_mean": 55.363,
+       "busiest_link_kbps_p95": 65.389,
+       "mean_hops_to_base": 1.583,
+       "reachable_share": 0.93,
+       "scheduled_airtime_p95_kbps": 81.736,
+       "slotted_aloha_airtime_p95_kbps": 177.746
+      }
+     },
+     "fleet_parked": {
+      "1 Hz": {
+       "busiest_link_kbps_mean": 10.666,
+       "busiest_link_kbps_p95": 10.865,
+       "mean_hops_to_base": 1.012,
+       "reachable_share": 0.9933,
+       "scheduled_airtime_p95_kbps": 13.581,
+       "slotted_aloha_airtime_p95_kbps": 29.534
+      },
+      "10 Hz": {
+       "busiest_link_kbps_mean": 85.587,
+       "busiest_link_kbps_p95": 87.185,
+       "mean_hops_to_base": 1.012,
+       "reachable_share": 0.9933,
+       "scheduled_airtime_p95_kbps": 108.981,
+       "slotted_aloha_airtime_p95_kbps": 236.993
+      }
+     },
+     "fleet_all": {
+      "1 Hz": {
+       "busiest_link_kbps_mean": 10.34,
+       "busiest_link_kbps_p95": 10.865,
+       "mean_hops_to_base": 1.019,
+       "reachable_share": 0.9683,
+       "scheduled_airtime_p95_kbps": 13.581,
+       "slotted_aloha_airtime_p95_kbps": 29.534
+      },
+      "10 Hz": {
+       "busiest_link_kbps_mean": 82.971,
+       "busiest_link_kbps_p95": 87.185,
+       "mean_hops_to_base": 1.019,
+       "reachable_share": 0.9683,
+       "scheduled_airtime_p95_kbps": 108.981,
+       "slotted_aloha_airtime_p95_kbps": 236.993
+      }
+     }
+    }
+   },
+   "status_intent_at_1hz": {
+    "lrip": {
+     "bytes": {
+      "POSITION": 41,
+      "STATUS": 43,
+      "INTENT": 38,
+      "HELLO": 32
+     },
+     "three_beacons_20_rovers_kbps": 19.52,
+     "sources_20_rovers_kbps": 20.033,
+     "busiest_link_20_rovers": {
+      "fleet": {
+       "busiest_link_kbps_p95": 20.033,
+       "scheduled_airtime_p95_kbps": 25.041
+      },
+      "fleet_driving": {
+       "busiest_link_kbps_p95": 15.025,
+       "scheduled_airtime_p95_kbps": 18.781
+      }
+     }
+    },
+    "proximity1": {
+     "bytes": {
+      "POSITION": 53,
+      "STATUS": 55,
+      "INTENT": 50,
+      "HELLO": 44
+     },
+     "three_beacons_20_rovers_kbps": 25.28,
+     "sources_20_rovers_kbps": 25.985,
+     "busiest_link_20_rovers": {
+      "fleet": {
+       "busiest_link_kbps_p95": 25.985,
+       "scheduled_airtime_p95_kbps": 32.481
+      },
+      "fleet_driving": {
+       "busiest_link_kbps_p95": 19.489,
+       "scheduled_airtime_p95_kbps": 24.361
+      }
+     }
+    }
+   },
+   "run_s": 32.8
+  }
  }
 }
