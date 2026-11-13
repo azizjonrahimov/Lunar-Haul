@@ -364,3 +364,28 @@ Build checks, as in P3's build: every v0.2 and v0.2-in-Proximity-1 row equals th
 totals), `values_moved_vs_v01` is empty, the v0.1 rows reproduce the published rows, H14 and every verdict are the
 same in all three sets, the three message sizes are unchanged by v0.2 and gain the schema's frame bytes in
 Proximity-1, and every message of a seed held at once is under 1 % of the node store (`parameters.queue_bytes`).
+
+## Part 7 (13 Nov 2026): corrections after the code review
+
+Source: `reports/review_phase6_code.md` and the dated entry of PREREG6 section 6. E54 is read from the corrected
+`results/E54_dtn.json`; the earlier values from its block `superseded_2026-11-13_b118`.
+
+- `P1-E54-CORRECTION-SENTENCE` (new, composed; 5.9): what the review changed, said once, with the earlier values
+  (age of information with and without the return, the end-of-job reports with the return, grants lost under
+  custody, returns and isolation hours a seed) and the statement that H14's first clause is the same before the
+  correction, with censored messages counted as lost (`h14_variants.lost_incl_censored`) and under the earlier
+  return rule (`h14_variants.pre_review_return_rule`, rows `sf_ll_pre_review`). Each is a build check.
+- `P1-LRIP-RECEIVER-SENTENCE` (new, composed; 3.12): what the decoder refuses on receipt. The build runs the
+  receiver of `lunarsim/atc/lrip/codec.py` on packets it encodes and checks every clause of the sentence (no
+  code, unsigned signed message, counter, freshness with a clock, key epoch, older and invalid heartbeat,
+  malformed input); the freshness window is read from `codec.FRESHNESS_S` and the signed messages from the schema.
+- `P1-E54-DESIGN-SENTENCE`: the awards a seed against the jobs (`awards_and_jobs`), and the return rule as the
+  replay applies it (`parameters.return_rule` = "papers", an upper reading). `P1-E54-STUCK-SENTENCE` and Table 12:
+  the second clause "holds by rule, not by measurement" (`h14.clause_2_basis`, checked). `P1-TABLE-E54`: lost
+  against censored defined in the caption (no award, grant or report is censored: checked). The age with the
+  return, the report delay with the return and the returns a seed now print with one decimal.
+- `P1-LRIP-CAPFILTER-SENTENCE`: the options-off check with its scope, read from the two G1 rows of
+  `results/vv_phase6.json` (`passed` read; the build stops if a row is missing, where it used to drop the sentence).
+- `P1-E54-V02-SENTENCE`: the check now compares the v0.1 rows of the size rerun with the main table's rows
+  (`reproduction_of_main_table_v01`), leaving out the variant rows `sf_ll_pre_review`.
+- `P1-E54-HOLM-SENTENCE`: H15a's adjusted p prints as a value, because the family file now computes its p.

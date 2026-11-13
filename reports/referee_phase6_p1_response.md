@@ -146,3 +146,49 @@ of version 0.1, which differ only in the heartbeat". They say the replay was rep
 message set (task awards, reservation grants and task states, whose sizes version 0.2 does not change; a size counts
 only against a node's 64 MB store) and not a test of version 0.2. The build checks that the v0.2 rows equal the v0.1
 rows, as P3's build does. No other sentence of P1 said the replay was at v0.1 sizes or not rerun. The tally is unchanged.
+
+## Corrections after code review (part 7, 13 Nov)
+
+Source: `reports/review_phase6_code.md` and the dated entry of PREREG6 section 6; wording aligned with P3 part 6.
+Every value is read through the build from the corrected results file, and each earlier value from that file's
+`superseded_2026-11-13_b118` block. Build: passes with `--no-pdf` and without `--allow-pending`; the PDF is not
+rebuilt (memory).
+
+- **E54 (N3 to N7), 4.8, 5.9, 6, abstract, Table 11, Table 12.** Age of information with the return 9.5 s (worst
+  vehicle 39.9 s), was 45.5 s (148.9 s); end-of-job reports with the return 3.4 s late with none lost, were 33.0 s
+  with 2 lost; grants lost with the return at loss 0.25: 3, were 0 (at loss 0.40: 29 and 22 in Table 11, were 2 and
+  1); returns 87.3 a seed removing 365 vehicle-hours of isolation, were 82.1 and 336. Said once, in one passage of
+  5.9, with the three defects the review found. No count of lost awards and nothing in H14's first clause changed;
+  the build checks that the clause is the same before the correction, with censored messages counted as lost, and
+  under the pre-review return rule (kept as a variant, age 20.9 s).
+- **Censored against lost (N4).** Defined in the caption of Table 11. No award, grant or end-of-job report is
+  censored (checked), so no count P1 prints moves by it. P1 does not print the Earth ledger of the one-month replay
+  (270 expired and 420 censored, was 690 lost); its ledger sentence reads the 61-day file, whose values did not move.
+- **Return rule (N6).** 4.8 now says how the replay applies the rule of 3.13: the recorded drive is followed, so the
+  stretch retraced is the one driven in the 600 s of the hold, an upper reading of the rule.
+- **H14's second clause (N7).** 5.9 and Table 12: "holds by rule, not by measurement" (the file's words), beside
+  the statement already there that the release rule is withdrawn and no verdict is reported.
+- **Awards and jobs (exploratory).** 4.8: 200.9 awards a seed are the 199.3 jobs plus one more for each of the 1.63
+  two-vehicle team jobs.
+- **The protocol's receiver (C1 to C9), 3.12, 7.** 3.12 lists what the decoder now refuses on receipt and says the
+  checks were added after the code review, that no packet size or test packet changed, that before it checked the
+  code and the declaration of a position report only, and that the counter and freshness rule had been applied only
+  in the companion paper's simulation model. The build runs the receiver on packets it encodes and checks each
+  clause. "What exists and what does not" now counts the receiver's checks as existing and names what still does
+  not: any exchange between simulated vehicles or over a radio link, the timeouts, the timing of the heartbeat and
+  the change of key epoch. The Limitations say the checks were made only on packets the codec built itself.
+- **E55 (N9, N16).** P1 quotes neither the replay trial nor H16: nothing to change.
+- **Verification (N2, N22), 3.12.** P1 prints no count of Phase 6 verification rows. Its one sentence on the
+  options-off check now gives the scope (one scenario, 30 days, seed 2, 144 summary values, against a stored run of
+  commit 0210c22; one option switched on changes 14) and says the check was rebuilt after the review. The builder
+  used to drop that sentence silently if the row was missing; it now stops.
+- **Family file (N8), 5.9.** H15a's adjusted p prints as 0.003, no longer "at most".
+- **Builder (review P2).** Two strings on the meeting timeout were computed from a verdict and never printed:
+  deleted (the verdict itself is checked). Three unused locals removed. No unchecked verdict was found.
+- **E50.** Untouched. P1 prints one figure that rests on it, the adjusted p of H10' in 5.9; the Limitations say in
+  one sentence that the position experiment predates a correction and is being regenerated.
+- **E48 (N12).** P1 reads only the link budget from `E48_sizing.json`, not the bid times: nothing to change.
+
+Status changes: none of the 37 findings changes state (27 fixed, 9 fixed in part, 1 not done). M9 (fixed in part)
+gains the corrected values and the statement of how the replay applies the return rule; its open part, the cost of
+the returns in interrupted jobs, is unchanged.

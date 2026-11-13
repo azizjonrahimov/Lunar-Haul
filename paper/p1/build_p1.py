@@ -1617,10 +1617,6 @@ def values(r: R, allow_pending: bool):
     tof = {t: meet("E42_meet_timeout", loss="0.25", to=t)[fm] for t in ("0.5", "2")}
     tof["1"] = base["0.25"]
     trades = tof["2"] < tof["1"] < tof["0.5"]           # fewer failures the longer the timeout
-    timeout_lead = ("The timeout trades waiting for failures:" if trades else
-                    "The timeout sets the waiting without buying fewer failures:")
-    timeout_tail = ("" if trades else f", while failed meetings stayed between {num(min(tof.values()), 1)} and "
-                                     f"{num(max(tof.values()), 1)}")
     # the commit step, paired by seed and year (with the step minus without it): failed meetings and the primary outcome
     def pair_metric(label, metric):
         d = r.p[(r.p["comparison"] == label) & (r.p["load"] == LOAD_MAIN) & (r.p["metric"] == metric)]
@@ -2144,6 +2140,75 @@ def phase6_values(r, V, fill, check):
         f"covariance is not carried: the report states its uncertainty as the one-sigma value and the "
         f"95{PCT} code only.")
 
+    # Part 7 (13 Nov, review C1 to C9, commit 8d53587): what the receiver in the codec checks. Each clause of the
+    # sentence is exercised here on packets the codec builds, so the sentence stays true of the code.
+    def receiver_sentence():
+        sk, pk = C.ed25519_keys(bytes(range(32)))
+        K = C.Keys(mac_key=bytes(range(16)), sign_key=sk, verify_key=pk, epoch=3)
+        K9 = C.Keys(mac_key=bytes(range(16)), sign_key=sk, verify_key=pk, epoch=9)
+        enc = p.lrip.encode
+
+        def refused(fn, exc):
+            try:
+                fn()
+            except exc:
+                return True
+            return False
+        rx = C.Receiver(K)
+        signed = [m["name"] for m in msgs if m.get("signed")]
+        check(refused(lambda: rx.accept(enc("STATUS", {}, 5, 1.0, auth=None, seq=1)), C.LripAuthError)
+              and rx.refused_unauthenticated == 1, "the receiver refuses a packet without an authentication code")
+        check(len(signed) > 0 and all(refused(lambda nm=nm, i=i: rx.accept(enc(nm, {}, 5, 1.0, keys=K, auth="mac8", seq=10 + i)), C.LripAuthError)
+                                      for i, nm in enumerate(signed)) and rx.refused_unsigned == len(signed),
+              "the receiver refuses, without a signature, every message the schema marks as signed")
+        fresh = float(C.FRESHNESS_S)
+        stt = lambda seq, t: enc("STATUS", {}, 4, t, keys=K, seq=seq)
+        ok1 = rx.accept(stt(5, 100.0), now=100.0) is not None
+        check(ok1 and refused(lambda: rx.accept(stt(5, 100.0), now=100.5), C.LripReplayError)
+              and refused(lambda: rx.accept(stt(4, 100.0), now=100.5), C.LripReplayError) and rx.refused_replay == 2,
+              "the receiver refuses a counter that is not above the highest it has accepted from that sender")
+        check(refused(lambda: rx.accept(stt(6, 100.0), now=100.0 + fresh + 1.0), C.LripReplayError) and rx.refused_stale == 1
+              and rx.accept(stt(6, 100.0), now=100.0 + fresh - 1.0) is not None and rx.accept(stt(7, 100.0)) is not None,
+              "the receiver refuses a validity time outside the freshness window when it is given a clock, and only then")
+        check(refused(lambda: rx.accept(enc("STATUS", {}, 4, 1.0, keys=K9, seq=1)), C.LripAuthError) and rx.refused_epoch == 1,
+              "the receiver refuses a packet under another key epoch")
+        decl = {"link_margin": 10, "neighbours": 3, "bundles_queued": 0, "frame_id": 1, "datum_id": 1, "time_scale": 6}
+        pos = {"e": 12.34, "n": -5.67, "h": 1.0, "heading": 90.0, "speed": 1.2, "sigma_h": 1.0, "nav_src": 3, "moving": True}
+        rh = C.Receiver(K)
+        rh.accept(enc("HELLO", dict(decl, frame_id=2), 7, 5.0, keys=K, seq=1))
+        rh.accept(enc("HELLO", dict(decl, frame_id=1), 7, 4.0, keys=K, seq=2))
+        kept = rh.decl[7].frame_id == 2
+        rh.accept(enc("HELLO", dict(decl, frame_id=0), 7, 7.0, keys=K, seq=3))
+        check(kept and 7 not in rh.decl and rh.revoked_declarations == 1
+              and refused(lambda: rh.accept(enc("POSITION", pos, 7, 7.5, keys=K, seq=4)), C.LripRefError),
+              "an older heartbeat does not replace a newer declaration, and one with invalid codes revokes it")
+        good = enc("POSITION", pos, 7, 1.0, keys=K)
+        bad = [b"", b"\x00", good[:5], good[:13], good[:-1], good + b"\x00", "not bytes"]
+
+        def value_error_only(c):
+            try:
+                p.lrip.decode(c, keys=K)
+            except ValueError:
+                return True
+            except Exception:
+                return False
+            return False
+        check(all(value_error_only(c) for c in bad), "short or malformed input is refused with one error type")
+        return (
+            f"In our implementation the decoder applies these checks on receipt. It refuses a packet that carries no "
+            f"authentication code, a message that the schema marks as signed and that carries no signature "
+            f"({code(signed)}), a counter that is not above the highest it has accepted from that sender, "
+            f"a validity time more than {secs(fresh)} from its own clock when it is given one, and a key epoch other "
+            f"than its own; an older heartbeat does not replace a newer declaration, one with invalid codes revokes "
+            f"it, and short or malformed input is refused with one kind of error. These checks were added after a "
+            f"code review on 13 November 2026, and no packet size or test packet changed with them; before, the "
+            f"decoder verified a code or signature where one was present and applied the declaration rule to "
+            f"position reports, and the counter and freshness rule "
+            f"had been applied only in the simulation model of the companion paper [45]. They are exercised on "
+            f"packets that the codec itself builds, each time this paper is built; the codec has not been run over "
+            f"a radio link.")
+    V["P1-LRIP-RECEIVER-SENTENCE"] = receiver_sentence()
+
     rows = []
     for m in msgs:
         nm, d = m["name"], st[m["name"]]
@@ -2243,15 +2308,28 @@ def phase6_values(r, V, fill, check):
     cf = r.dev["capability_filter_check"]
     check(cf["identical"] == cf["summary_values"] and cf["runs"] == 1, "the capability filter changed no summary value")
     # Referee S13(f): the companion papers quote another check (every Phase 6 option off equals the Phase 5 run)
-    g1_note = ""
+    # Part 7 (13 Nov, review N2): the row is now a comparison with a stored run of the code before Phase 6, and a
+    # second row shows that the comparison can fail. Both are read with `passed`; a missing row stops the build.
     pv6 = os.path.join(RES, "vv_phase6.json")
-    if os.path.exists(pv6):
-        g1 = [x for x in json.load(open(pv6, encoding="utf-8")).get("rows", []) if x.get("id") == "G1" and x.get("sub") == "options off"]
-        mg = re.search(r"(\d+) days, seed (\d+): (\d+) summary values", str(g1[0].get("basis", ""))) if g1 else None
-        if mg:
-            g1_note = (f" This is not the check that the companion papers quote, in which every option added for the "
-                       f"protocol is switched off and the run equals the earlier engine's in {mg.group(3)} summary "
-                       f"values over {mg.group(1)} days on seed {mg.group(2)} [44, 45].")
+    if not os.path.exists(pv6):
+        raise Pending("results/vv_phase6.json has not been built")
+    vv6 = json.load(open(pv6, encoding="utf-8"))
+    g1r = {x.get("sub"): x for x in vv6.get("rows", []) if x.get("id") == "G1"}
+    if "options off" not in g1r or "option on changes the run" not in g1r:
+        raise KeyError("vv_phase6.json has no G1 rows 'options off' and 'option on changes the run'")
+    mg = re.search(r"(\d+) days, seed (\d+): (\d+) summary values against results/(\S+) \(commit (\w+)\)", str(g1r["options off"].get("basis", "")))
+    mo = re.search(r"(\d+) of (\d+) summary values differ", str(g1r["option on changes the run"].get("basis", "")))
+    if not mg or not mo:
+        raise KeyError("vv_phase6.json: the G1 rows do not state their scope in the expected words")
+    check(bool(g1r["options off"]["passed"]) and bool(g1r["option on changes the run"]["passed"]) and int(mo.group(2)) == int(mg.group(3))
+          and int(mo.group(1)) > 0, "both G1 rows of vv_phase6.json pass, on the same summary values")
+    check(os.path.exists(os.path.join(RES, mg.group(4))), "the stored reference run of the options-off check is in the results directory")
+    g1_note = (f" This is not the check that the companion papers quote [44, 45], in which every engine option added for "
+               f"the protocol is switched off and the run is compared with a stored run of the code as it was before "
+               f"those options (commit <code>{mg.group(5)}</code>): none of {mg.group(3)} summary values differs, in "
+               f"one scenario over {mg.group(1)} days on seed {mg.group(2)}, and with one option switched on "
+               f"{mo.group(1)} of them differ, so the comparison can fail. That check was rebuilt after a code review "
+               f"on 13 November 2026; before, it compared a run with itself.")
     V["P1-LRIP-CAPFILTER-SENTENCE"] = (
         f"With manifests generated from the vehicle classes, switching the filter on changed none of the "
         f"{cf['summary_values']} summary values of a {cf['days']}-day run of the auction (one run, seed {cf['seed']}, "
@@ -2553,6 +2631,16 @@ def phase6_e54(p, V, fill, check):
         n_res = round(e["reservations_per_seed"] * n)
         check(g["grant_n"] == g["award_n"] and g["grant_n"] > 2 * n_res,
               "the replay generates a grant for every award, more than twice the recorded single-lane reservations")
+        # Part 7 (13 Nov, review N6 and task B-117): the return rule in the code is the one Section 3.13 states, and
+        # the awards are the jobs plus the second vehicle of each team job
+        check(prm.get("return_rule") == "papers" and abs(prm["return_speed_factor"] - 0.5) < 1e-12
+              and "upper reading" in str(e.get("lost_link_rule", "")),
+              "E54's lost-link return is the rule of Section 3.13 (hold, then retrace at half speed), read at its upper end")
+        aj = e["awards_and_jobs"]
+        check(abs(aj["awards_per_seed"] - aj["jobs_per_seed"] - (aj["vehicles_per_job_max"] - 1) * aj["team_jobs_per_seed"]) < 1e-6
+              and round(aj["awards_per_seed"] * n) == g["award_n"] and abs(aj["jobs_per_seed"] - e["jobs_per_seed"]) < 1e-9
+              and aj["vehicles_per_job_max"] == 2,
+              "the awards of the replay are its jobs plus one more for each two-vehicle team job")
         return (
             f"The month is July 2028 as the engine recorded it for the auction at the middle load, with the fleet of "
             f"eight vehicles and the road rules of [45], on {n} seeds ({num(e['jobs_per_seed'])} jobs and "
@@ -2566,8 +2654,11 @@ def phase6_e54(p, V, fill, check):
             f"{num(span_min)} minutes into a lifetime of {num(prm['lease_s'] / 60)} minutes, while store and forward "
             f"repeats for all of it. The third adds the <i>lost-link return</i> of Section 3.13: a vehicle that has "
             f"had no path to the base for {secs(prm['t_hold_s'])} retraces its path at half speed to the last point "
-            f"where it had one. The messages are generated from the recorded run: an award to each vehicle of a job "
-            f"(its lifetime is the lease of {num(prm['lease_s'] / 3600)}{NB}h, the time after which an awarded job "
+            f"where it had one. The replay follows the recorded drive, in which the vehicle did not stop at the next "
+            f"safe point, so the stretch it retraces is the one driven in those {secs(prm['t_hold_s'])}, an upper "
+            f"reading of the rule. The messages are generated from the recorded run: an award to each vehicle of a job "
+            f"({num(aj['awards_per_seed'], 1)} awards a seed, the {num(aj['jobs_per_seed'], 1)} jobs and one more for each "
+            f"of the {num(aj['team_jobs_per_seed'], 2)} team jobs of two vehicles; its lifetime is the lease of {num(prm['lease_s'] / 3600)}{NB}h, the time after which an awarded job "
             f"returns to the pool; an award that expires undelivered is a lost job, auctioned again), a reservation "
             f"grant with every award (lifetime 60{NB}s; {g['grant_n']:,} grants against the {n_res:,} single-lane "
             f"reservations of the recorded runs, so more than half of them belong to jobs with no such reservation), "
@@ -2592,7 +2683,7 @@ def phase6_e54(p, V, fill, check):
 
     def h14_sentence():
         h = p.h14()
-        e, prm = p.e54, p.e54["parameters"]
+        prm = p.e54["parameters"]
         dr, ll, d = h["lost_jobs_drop_retry_per_seed"], h["lost_jobs_sf_ll_per_seed"], h["difference_sf_ll_minus_drop_retry"]
         rdr, rsf, rll = (p.row54(LOSS, k) for k in ("drop_retry", "sf", "sf_ll"))
         fewer = d["ci"][1] < 0
@@ -2642,14 +2733,19 @@ def phase6_e54(p, V, fill, check):
         rdr, rll = p.row54(LOSS, "drop_retry"), p.row54(LOSS, "sf_ll")
         check(rll["stuck_reservations"] == 0 and rll["stuck_hours"] == 0, "the results file sets stuck reservations to zero under the rule")
         check(rdr["stuck_reservations"] == h["stuck_reservations_drop_retry"] > 0, "without the return some reservations end with their holder out of reach")
-        check("UNCONFIRMED release" in str(e.get("stuck_definition", "")) and "leaves on schedule" in str(e.get("stuck_definition", "")),
-              "the results file defines a stuck reservation as an unconfirmed release, with every vehicle leaving on schedule")
+        check("UNCONFIRMED segment" in str(e.get("stuck_definition", "")) and "leaves on schedule" in str(e.get("stuck_definition", "")),
+              "the results file defines a stuck reservation as an unconfirmed segment, with every vehicle leaving on schedule")
+        # Part 7 (13 Nov, review N7): the file says which half of H14 is measured
+        check(bool(h.get("clause_1_measured")) and "BY RULE, not by measurement" in str(h.get("clause_2_basis", ""))
+              and "by construction" in str(h.get("clause_2_basis", "")),
+              "the results file says H14's second clause holds by rule, not by measurement, and only the first is measured")
         n = len(e["seeds"])
         return (
             f"H14's second clause, that the rule leaves no reservation stuck past its timeout, is not testable as "
-            f"written, and we report no verdict on it [54]. The zero that the results file holds for it follows from "
-            f"the rule as first written, under which the base released a silent vehicle's reservation at its "
-            f"timeout. That rule is withdrawn: releasing the segment is unsafe if the vehicle is disabled inside it. "
+            f"written, and we report no verdict on it [54]. The zero that the results file holds for it is set by "
+            f"the rule's definition: in the file's words the clause holds by rule, not by measurement, and only the "
+            f"first clause is measured. The rule as first written released a silent vehicle's reservation at its "
+            f"timeout and is withdrawn: releasing the segment is unsafe if the vehicle is disabled inside it. "
             f"Under the rule of Section 3.13 the segment is marked unconfirmed and may be entered only at caution "
             f"speed. What the replay gives is a count. Without the return to the last link point, "
             f"{rdr['stuck_reservations']:,} of the {round(e['reservations_per_seed'] * n):,} reservations in the {n} "
@@ -2691,7 +2787,7 @@ def phase6_e54(p, V, fill, check):
             f"radio a returning vehicle stands at its last link point, and for the logistics it is driving its job "
             f"at the same time. The replay therefore counts what the return gains in contact and not what it costs "
             f"in interrupted jobs. That cost is not small: the rule produced "
-            f"{num(e['lost_link_returns_per_seed'])} returns a seed against {num(e['jobs_per_seed'])} jobs, and in "
+            f"{num(e['lost_link_returns_per_seed'], 1)} returns a seed against {num(e['jobs_per_seed'], 1)} jobs, and in "
             f"the recorded month a vehicle had a path to the base for only {sh(ls)} of its driving time, so the "
             f"ladder of Section 3.13 read literally would interrupt a large share of drives.")
     fill("P1-E54-COST-SENTENCE", cost_sentence, "E54")
@@ -2711,10 +2807,10 @@ def phase6_e54(p, V, fill, check):
               all(len(rows[v]) == len(rows["v0.1"]) and all(same(x, y) for x, y in zip(rows["v0.1"], rows[v]))
                   for v in ("v0.2", "v0.2_proximity1")),
               "the E54 replay at version 0.2 sizes and in Proximity-1 frames gives the version 0.1 value in every row")
-        pub = e["rows"]
-        check(all(b["reproduction_of_published_v01"].values()) and len(pub) == len(rows["v0.1"]) and
+        pub = [x for x in e["rows"] if x["protocol"] in E54_NAMES]     # without the rows of the pre-review return rule
+        check(all(b["reproduction_of_main_table_v01"].values()) and len(pub) == len(rows["v0.1"]) and
               all(all(x[k] == y[k] for k in y if k in x) for x, y in zip(rows["v0.1"], pub)),
-              "the version 0.1 rows of the E54 rerun reproduce the published rows")
+              "the version 0.1 rows of the E54 size rerun equal the rows of the main table (Table 11)")
         check(all(b["h14"][v] == b["h14"]["v0.1"] for v in b["h14"]) and
               all(b["h14"][v]["difference_sf_ll_minus_drop_retry"] == e["h14"]["difference_sf_ll_minus_drop_retry"] for v in b["h14"]),
               "H14's first clause comes out the same at version 0.2 sizes and in Proximity-1 frames")
@@ -2744,16 +2840,77 @@ def phase6_e54(p, V, fill, check):
             f"The return to the last link point changes what the base knows, not what the radio loses. Without it the base's "
             f"picture of a vehicle was on average {num(sf['aoi_mean_s'] / 60)}{NB}min old "
             f"({secs(sf['aoi_mean_s'])}) under either transport, and the worst-placed vehicle went unheard for "
-            f"{num(sf['aoi_worst_vehicle_s'] / 3600)}{NB}h. With it the mean age was {secs(ll['aoi_mean_s'])} and the "
-            f"worst vehicle's {secs(ll['aoi_worst_vehicle_s'])}: the return was made "
-            f"{num(e['lost_link_returns_per_seed'])} times a seed and removed "
+            f"{num(sf['aoi_worst_vehicle_s'] / 3600)}{NB}h. With it the mean age was {secs(ll['aoi_mean_s'], 1)} and the "
+            f"worst vehicle's {secs(ll['aoi_worst_vehicle_s'], 1)}: the return was made "
+            f"{num(e['lost_link_returns_per_seed'], 1)} times a seed and removed "
             f"{num(e['lost_link_isolation_h_saved_per_seed'])} vehicle-hours of isolation a seed. The end-of-job "
             f"reports show the cost of holding a message: drop and retry lost {sh(dr['task_state_lost_share'])} of "
             f"them, store and forward lost {sh(sf['task_state_lost_share'], 1)} and delivered the rest "
             f"{secs(sf['task_state_delay_mean_s'])} late on average, because a vehicle that ends a job out of reach "
             f"waits for a contact, and with the return to the last link point the delay fell to "
-            f"{secs(ll['task_state_delay_mean_s'])}.")
+            f"{secs(ll['task_state_delay_mean_s'], 1)}"
+            + (" and no report was lost." if ll["task_state_lost"] == 0 else f" and {ll['task_state_lost']} were lost."))
     fill("P1-E54-AOI-SENTENCE", aoi_sentence, "E54")
+
+    def superseded():
+        """The values published before the code review of 13 Nov 2026, kept in the results file under a dated key."""
+        p.h14()
+        ks = [k for k, v in p.e54.items() if k.startswith("superseded_") and isinstance(v, dict) and v.get("superseded_on") == "2026-11-13"]
+        if len(ks) != 1:
+            raise KeyError(f"E54_dtn.json: expected one superseded block dated 2026-11-13, found {ks}")
+        o = p.e54[ks[0]]
+
+        def row(loss, proto):
+            d = [x for x in o["rows"] if abs(x["loss"] - loss) < 1e-9 and x["protocol"] == proto]
+            if len(d) != 1:
+                raise KeyError(f"E54_dtn.json {ks[0]} row loss {loss} / {proto}: {len(d)} rows")
+            return d[0]
+        return o, row
+
+    def correction_sentence():
+        """Part 7 (13 Nov, review N3 to N7): what the code review changed in this section, said once, with the earlier
+        values read from the results file's superseded block."""
+        e, h = p.e54, p.h14()
+        o, orow = superseded()
+        ll, oll = p.row54(LOSS, "sf_ll"), orow(LOSS, "sf_ll")
+        pre = p.row54(LOSS, "sf_ll_pre_review")
+        check(all(s in str(o["reason"]) for s in ("counted delivered", "floored", "hour before the loss", "censored")),
+              "the superseded block of E54 names the four corrections the text lists")
+        check(ll["aoi_mean_s"] < 0.5 * oll["aoi_mean_s"] and ll["task_state_delay_mean_s"] < 0.5 * oll["task_state_delay_mean_s"]
+              and e["lost_link_returns_per_seed"] > o["lost_link_returns_per_seed"],
+              "the correction lowered the age of information and the report delay with the return, and raised the number of returns")
+        check(all(p.row54(l, k)["award_lost"] == orow(l, k)["award_lost"] for l in (0.10, 0.25, 0.40) for k in E54_NAMES),
+              "no count of lost awards changed with the correction")
+        check(o["h14"]["difference_sf_ll_minus_drop_retry"] == h["difference_sf_ll_minus_drop_retry"]
+              and all(e["h14_variants"][v]["difference_sf_ll_minus_drop_retry"] == h["difference_sf_ll_minus_drop_retry"]
+                      and bool(e["h14_variants"][v]["supported"]) == bool(h["supported"])
+                      for v in ("lost_incl_censored", "pre_review_return_rule")),
+              "H14's first clause is the same before the correction, with censored messages counted as lost and under the earlier return rule")
+        kinds = ("award", "grant", "task_state")
+        check(all(p.row54(l, k)[f"{m}_censored"] == 0 for l in (0.10, 0.25, 0.40) for k in E54_NAMES for m in kinds),
+              "no award, grant or end-of-job report was still undelivered at the end of the month")
+        check("censored = still alive and undelivered at the window's end" in str(e.get("outcome_definitions", "")),
+              "the results file tells censored messages apart from lost ones")
+        g40, o40 = {k: p.row54(0.40, k)["grant_lost"] for k in ("sf", "sf_ll")}, {k: orow(0.40, k)["grant_lost"] for k in ("sf", "sf_ll")}
+        check(g40 != o40 or ll["grant_lost"] != oll["grant_lost"], "the correction changed the grants lost under custody")
+        check(abs(pre["aoi_mean_s"] - ll["aoi_mean_s"]) > 1.0 and abs(e["lost_link_pre_review"]["returns_per_seed"] - o["lost_link_returns_per_seed"]) < 1e-9,
+              "the earlier return rule, kept as a variant, gives another age of information and the earlier number of returns")
+        return (
+            f"The values of this section and of Table 11 were corrected after a code review on 13 November 2026, "
+            f"which found that a message could be counted as delivered after its lifetime had ended, that the age "
+            f"of information had a floor of half a step ({secs(30)}), and that the return rule in the code was not "
+            f"the one of Section 3.13. Before, the mean age with the return was {secs(oll['aoi_mean_s'], 1)} "
+            f"({secs(oll['aoi_worst_vehicle_s'], 1)} for the worst vehicle), the end-of-job reports with the return came {secs(oll['task_state_delay_mean_s'], 1)} late "
+            f"with {oll['task_state_lost']} lost, "
+            f"{'no grant was' if oll['grant_lost'] == 0 else str(oll['grant_lost']) + ' grants were'} lost with the "
+            f"return at loss {LOSS:.2f} (at loss 0.40 store and forward lost {o40['sf']} and {o40['sf_ll']} with the "
+            f"return, now {g40['sf']} and {g40['sf_ll']}), and the return was made "
+            f"{num(o['lost_link_returns_per_seed'], 1)} times a seed, removing "
+            f"{num(o['lost_link_isolation_h_saved_per_seed'])} vehicle-hours of isolation. No count of lost awards "
+            f"changed, and the first clause of H14 gives the same difference before the correction, with messages "
+            f"still undelivered at the end of the month counted as lost, and under the return rule the code had "
+            f"before the review, which is kept as a variant (mean age {secs(pre['aoi_mean_s'], 1)}).")
+    fill("P1-E54-CORRECTION-SENTENCE", correction_sentence, "E54 (code review, 13 Nov)")
 
     def ledger_sentence():
         L = p.e54l
@@ -2814,7 +2971,11 @@ def phase6_e54(p, V, fill, check):
             f"every award) and {x['task_state_n']:,} end-of-job reports. Drop and retry makes at most "
             f"{prm['max_tries']} tries {secs(prm['retry_s'])} apart; store and forward repeats every "
             f"{secs(prm['custody_timer_s'])} until the message's lifetime ends (both Assumed, not swept). The age of "
-            f"information is the age of the newest status report the base holds for a vehicle. The last column "
+            f"information is the age of the newest status report the base holds for a vehicle. A message is lost "
+            f"when its lifetime ends undelivered inside the month; one still alive and undelivered at the month's "
+            f"end is censored and not counted as lost, and no award, grant or report was. The values are those "
+            f"after the correction of 13 November 2026 (Section 5.9); the earlier table is kept in the results "
+            f"file. The last column "
             f"counts reservations that ended while their holder was out of the base's reach, so that the segment "
             f"stays unconfirmed, with the hours until the holder was heard again; no vehicle was still inside a "
             f"segment. It does not depend on the transport or the loss rate, and it was not counted for the rows "
@@ -2931,7 +3092,7 @@ def phase6_e54(p, V, fill, check):
     def aoi_clause():
         sf, ll = p.row54(LOSS, "sf"), p.row54(LOSS, "sf_ll")
         return (f"the base's picture of a vehicle was {num(sf['aoi_mean_s'] / 60)}{NB}min old on average without the "
-                f"return to the last link point and {secs(ll['aoi_mean_s'])} with it, a gain counted without the "
+                f"return to the last link point and {secs(ll['aoi_mean_s'], 1)} with it, a gain counted without the "
                 f"jobs the return would interrupt")
     fill("P1-E54-AOI-CLAUSE", aoi_clause, "E54")
 
@@ -3160,7 +3321,6 @@ def phase6_proved(p, r, V, fill, check, ctx, e53):
         check("10 x 10 square" in str(bn.get("model", "")), "the small instances use a toy score on a 10 x 10 square")
         cf = r.dev["capability_filter_check"]
         reg = p.regimes.DEFAULTS
-        le = r.dev["learned_eval"]
         mlp30, lin30 = r.pair("H4_MLP", LOAD_MAIN), r.pair("H4_LIN", LOAD_MAIN)
         check(mlp30["hi"] >= 0 and lin30["hi"] < 0, "H4: the network's interval includes zero, the linear model's does not")
         R = [
@@ -3243,7 +3403,8 @@ def phase6_proved(p, r, V, fill, check, ctx, e53):
              f"lease (Assumed, not swept), with a Holm-adjusted p of {pfmt(f14['holm']['p_adjusted'])} on a "
              f"one-sided sign test added after the results. Not an engine run.", "5.9, 7"),
             ("The lost-link rule leaves no reservation stuck past its timeout (H14, second clause)",
-             f"Not testable as written; no verdict. The rule first written, which released a silent vehicle's "
+             f"Not testable as written; no verdict: in the results file the clause holds by rule, not by "
+             f"measurement. The rule first written, which released a silent vehicle's "
              f"reservation, is withdrawn. Counted in E54 without the return to the last link point: "
              f"{rdr['stuck_reservations']:,} of {n_res:,} reservations ended with their holder out of reach.", "5.9"),
             ("A silent vehicle's reserved segment is not released: it is marked unconfirmed and may be entered only "
