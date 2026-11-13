@@ -72,9 +72,11 @@ def forgery_trial(t_bits: int, attempts: int, rng: np.random.Generator, key: byt
 def replay_trial(n_senders: int, n_receivers: int, seconds: int, loss: float, replay_rate_hz: float,
                  rng: np.random.Generator, t_bits: int = 64, key: bytes = bytes(range(16))) -> Dict[str, int]:
     """Senders broadcast at 1 Hz; each copy reaches each receiver with probability 1 - loss; an attacker records
-    everything and replays a random recorded message to a random receiver with a delay of 0-60 s, replay_rate_hz times
-    a second. Returns accepted replays, of which within the freshness window to a receiver that had missed the
-    original (the only ones the rule lets through: true but stale states)."""
+    everything and, replay_rate_hz times a second, replays a random EARLIER message of the whole recorded log (so
+    usually minutes old) to a random receiver, stamped as arriving 0-60 s after the replay event (the receiver's state
+    is the one at the event). B-118 N9: because the message is drawn from the whole log, only about 1 % of replays
+    fall inside the 10 s freshness window, so few acceptances are possible by design; replay_recent_trial is the
+    harder test. Returns accepted replays, of which to a receiver that had missed the original."""
     rxs = [Receiver(key, t_bits) for _ in range(n_receivers)]
     log: List[Tuple[int, int, float, bytes, int]] = []
     heard: set = set()
@@ -102,6 +104,53 @@ def replay_trial(n_senders: int, n_receivers: int, seconds: int, loss: float, re
             if rxs[r].receive(s2, seq2, tv, now + rng.uniform(0, 60), body, tag):
                 out["replays_accepted"] += 1
                 out["accepted_missed_original"] += int((r, s2, seq2) not in heard)
+    return out
+
+
+def replay_recent_trial(n_senders: int, n_receivers: int, seconds: int, loss: float, replay_rate_hz: float,
+                        rng: np.random.Generator, t_bits: int = 64, key: bytes = bytes(range(16)),
+                        max_age_s: float = 60.0) -> Dict[str, int]:
+    """B-118 N9 (added after the code review of 13 Nov 2026): as replay_trial, but each replay is a message sent in the
+    last max_age_s (60 s) before the replay, delivered at the replay's time, so its age is 0 to 60 s. Accepted
+    replays are split into those the rule is meant to let through (the receiver missed the original and the copy is
+    inside the 10 s freshness window: a true but late state) and the rest (which would be a defect)."""
+    rxs = [Receiver(key, t_bits) for _ in range(n_receivers)]
+    log: List[Tuple[int, int, float, bytes, int]] = []
+    heard: set = set()
+    out = {"replays": 0, "replays_with_age_le_10s": 0, "replays_accepted": 0,
+           "accepted_missed_original_inside_window": 0, "accepted_other": 0}
+    events = []
+    for t in range(seconds):
+        for s in range(n_senders):
+            events.append((float(t) + rng.random() * 0.5, "send", s, t))
+    for _ in range(int(rng.poisson(replay_rate_hz * seconds))):
+        events.append((rng.uniform(0, seconds), "replay", 0, 0))
+    events.sort()
+    lo = 0                                                    # first log entry sent within max_age_s of now
+    for now, kind, s, seq in events:
+        if kind == "send":
+            body = bytes(rng.integers(0, 256, 13, dtype=np.uint8))
+            tag = mac_bits(key, body + s.to_bytes(2, "big") + seq.to_bytes(4, "big"), t_bits)
+            log.append((s, seq, now, body, tag))
+            for r, rx in enumerate(rxs):
+                if rng.random() >= loss:
+                    rx.receive(s, seq, now, now, body, tag)
+                    heard.add((r, s, seq))
+            continue
+        while lo < len(log) and log[lo][2] < now - max_age_s:
+            lo += 1
+        if lo >= len(log):
+            continue
+        s2, seq2, tv, body, tag = log[int(rng.integers(lo, len(log)))]
+        r = int(rng.integers(0, n_receivers))
+        out["replays"] += 1
+        out["replays_with_age_le_10s"] += int(now - tv <= FRESHNESS_S)
+        if rxs[r].receive(s2, seq2, tv, now, body, tag):
+            out["replays_accepted"] += 1
+            if (r, s2, seq2) not in heard and now - tv <= FRESHNESS_S:
+                out["accepted_missed_original_inside_window"] += 1
+            else:
+                out["accepted_other"] += 1
     return out
 
 

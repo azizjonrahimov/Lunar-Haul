@@ -78,3 +78,13 @@ def test_e55_outputs():
     assert isinstance(d["h16"]["supported"], bool)
     t = d["integrity"]["sets"]["test"]["3of5@0.001"]
     assert t["fa_per_pair_day"] < d["integrity"]["sets"]["test"]["single@0.001"]["fa_per_pair_day"]
+
+
+def test_replay_recent_trial_lets_through_only_missed_fresh_copies():
+    """B-118 N9: replays of messages 0-60 s old; the counter and the 10 s window let through only a copy the receiver
+    missed that is still inside the window, never anything else."""
+    from lunarsim.atc import integrity as I
+    r = I.replay_recent_trial(10, 5, 300, 0.5, 2.0, np.random.default_rng(3))
+    assert r["replays"] > 400 and r["replays_with_age_le_10s"] > 0
+    assert r["accepted_other"] == 0
+    assert r["replays_accepted"] == r["accepted_missed_original_inside_window"] > 0

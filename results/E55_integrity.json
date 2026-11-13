@@ -6298,5 +6298,26 @@
    },
    "note": "the split behind robust_cells_all_safe: exact (2F+1)-robustness is computed for N <= 8 only; above, 'robust' means every honest node hears >= 2F + 1, a necessary condition, so those runs are not shown to be on robust meshes. The exactly robust evidence is the runs_robust of the first block."
   }
+ },
+ "replay_trial_description": "auth.replay: 20 senders at 1 Hz, 10 receivers, 600 s, loss 0.10 / 0.25; once a second the attacker replays a random EARLIER message drawn from the whole recorded log (so usually minutes old), stamped 0 to 60 s after the replay event. Only about 1 % of these replays fall inside the 10 s freshness window, so '0 accepted' says little about the window. replay_recent (added after the code review of 13 Nov 2026) replays messages sent in the last 60 s (age 0 to 60 s) and splits the accepted replays.",
+ "replay_recent": {
+  "added": "after the code review of 13 Nov 2026 (B-118 N9)",
+  "setup": "20 senders at 1 Hz, 10 receivers, 600 s, a replay a second of a message sent in the last 60 s (age 0 to 60 s), counter and 10 s freshness rule, 64-bit tags",
+  "loss": {
+   "0.1": {
+    "replays": 589,
+    "replays_with_age_le_10s": 117,
+    "replays_accepted": 0,
+    "accepted_missed_original_inside_window": 0,
+    "accepted_other": 0
+   },
+   "0.25": {
+    "replays": 590,
+    "replays_with_age_le_10s": 115,
+    "replays_accepted": 6,
+    "accepted_missed_original_inside_window": 6,
+    "accepted_other": 0
+   }
+  }
  }
 }

@@ -10863,3 +10863,22 @@ E56_integrity.json, E55_integrity.json, E44_fresh_seeds.json, E45_uphill.json.
   site/lib/phase6.mjs W1), not a typed verdict. P1, P2 and P3 cite G1 as "options off equals the Phase 5 run": that
   is now true against the pre-Phase-6 code itself.
 Files: lunarsim/vv6.py, results/vv_phase6.json, results/vv6_g1_reference_0210c22.json (new).
+
+## B-118 step 5 DONE 13:06 | N9: the E55 replay trial described as it is; a new trial (added after review) replays 0-60 s old messages: 6 accepted at loss 0.25, all of the allowed kind
+- Existing counts kept as they are (auth.replay: 574 and 598 replays at loss 0.10 / 0.25, 0 accepted). New key
+  replay_trial_description in results/E55_integrity.json says what they count: each replay is a random EARLIER message
+  of the whole 10-minute log, stamped 0 to 60 s after the replay event. Recounted with the same random stream: only 9
+  of 574 (1.6 %) and 4 of 598 (0.7 %) of those replays fell inside the 10 s freshness window, so "0 accepted" says
+  little about the window. integrity.replay_trial's docstring and run_e55's description say the same.
+- New trial, labelled "added after the code review of 13 Nov 2026" (integrity.replay_recent_trial, run_e55.py
+  replay_recent, key replay_recent): same set-up (20 senders at 1 Hz, 10 receivers, 600 s, a replay a second, 64-bit
+  tags), each replay drawn from the messages sent in the last 60 s and delivered at once (age 0 to 60 s).
+  Loss 0.10: 589 replays, 117 aged 10 s or less, 0 accepted.
+  Loss 0.25: 590 replays, 115 aged 10 s or less, 6 accepted: all 6 to a receiver that had missed the original and
+  inside the 10 s window (true but late states, which the rule lets through by design); 0 accepted of any other kind.
+- Paper / site wording to follow: P3 5.11 and /protocol/ say "replayed after 0 to 60 s"; the existing numbers are
+  "a random earlier message, then 0 to 60 s". The new trial is the one that tests replays inside the window.
+- Test: tests/test_integrity.py test_replay_recent_trial_lets_through_only_missed_fresh_copies (loss 0.5, 2 replays a
+  second: accepted > 0, all of the allowed kind, none other). test_integrity: 7 passed.
+- Every other key of E55_integrity.json and E55_table.csv unchanged.
+Files: lunarsim/atc/integrity.py, tools/atc/run_e55.py, tests/test_integrity.py, results/E55_integrity.json.
