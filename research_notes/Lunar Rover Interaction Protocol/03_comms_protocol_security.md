@@ -1350,3 +1350,6 @@ result are textbook items stated with their derivation or flagged.
   - 1.0–1.0 m at 3.73 km: A = 35.1 dB, 146.6 dB (flat 142.9);
   - 10–1.0 m at 5 km: A = 17.3 dB, 131.4 dB (flat 128.0);
   - 2.5–2.5 m at 1 km: 104.1 dB, equal to the flat law.
+
+
+> Note added 13 Nov 2026 (LEAD): the sizes in this note are those of LRIP v0.1. In v0.2 HELLO and POSITION grow, because HELLO declares the frame, datum and time scale and POSITION carries an uncertainty code. The v0.2 sizes are in `results/E53_bitrate.json` (key `lrip_v02`) and `results/E53_table_v02.csv`; papers P1 and P3 report v0.2.
