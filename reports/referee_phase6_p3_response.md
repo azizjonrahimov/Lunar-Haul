@@ -152,3 +152,14 @@ bound, not a covariance" replaces the sentence on what version 0.1 lacked. Table
 2. P1's learned-bid rerun: P3 quotes no learned-bid result and no 92.9 %. Its only statement, that the linear model improved on hand-built
    bids and the network did not (Section 3.4), agrees with P1's revised abstract; nothing was changed.
 3. Abstract 300 words, conclusion 248. The tally of the 44 findings does not move (34 fixed, 6 fixed in part, 4 not done).
+
+## Part 5 (13 Nov)
+
+1. B-111 (`results/E54_dtn.json`, block `lrip_v02`): the one sentence that said the E54 replay was not rerun with version 0.2 (Section 5.11) now
+   says it was repeated at version 0.2 sizes and in Proximity-1 frames with no value and no verdict changed. Section 5.12 gives the reason:
+   the replay sends task awards, reservation grants and task states (92, 94 and 33 B; 104, 106 and 45 B framed), whose sizes version 0.2 does not
+   change, and a size counts only against the 64 MB store, 0.37 MB at most with every message of a seed held at once. Section 7 and H14's row
+   of Table 18 say the same. It is called a property of the replay's message set, not a test of version 0.2. The build checks row by row that
+   the v0.2 and framed rows equal the v0.1 rows and stops if they ever differ. Future work had no such sentence and is unchanged.
+2. Reference [60] carries P1's new title.
+3. The tally of the 44 findings does not move (34 fixed, 6 fixed in part, 4 not done). No verdict moved.

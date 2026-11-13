@@ -75,7 +75,7 @@ NOTE: [37] is not in the research notes; it is the standard reference for the Sh
 [57] A. Rahimov. *Where the Lander Lands: Landing Precision, Pad Standoff, Plume Keep-Out and Rover Autonomy Priced in Lunar Surface Logistics*. Preprint, version 3, October 2026. (P2 [41])
 [58] A. Rahimov. *What Earth's Horizon Costs a Lunar Base: Terrain-Masked Communication Windows in South-Pole Cargo Logistics*. Preprint, October 2026. (P2 [42])
 [59] Pre-registration, paper/atc/PREREG.md in the repository, written 27 October 2026, with dated changes. (P2 [43])
-[60] A. Rahimov. *Working Together Without Earth: Job Sharing, Team Lifts and Learned Bidding Among Lunar Robots of Different Owners*. Preprint, October 2026; revised November 2026 (companion paper P1).
+[60] A. Rahimov. *Working Together Without Earth: Job Sharing, Team Lifts, Learned Bidding and a Message Protocol for Lunar Robots of Different Owners*. Preprint, October 2026; revised November 2026 (companion paper P1).
 [61] A. Rahimov. *Rules of the Road on the Moon and Mars: Traffic Rules for Surface Robots of Different Owners, Checked and Priced*. Preprint, October 2026; revised November 2026 (companion paper P2).
 [62] B. Efron, R. J. Tibshirani. *An Introduction to the Bootstrap*. Chapman & Hall, 1993. (P2 [55])
 [63] NASA Space Math. Horizon distance on a sphere. https://spacemath.gsfc.nasa.gov/Geometry/3Page19.pdf (VCI, High; the lunar values are Computed in the note)

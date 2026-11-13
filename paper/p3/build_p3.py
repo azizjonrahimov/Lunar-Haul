@@ -1465,8 +1465,7 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
                 f"{w(fr['airtime_1hz_scheduled_kbps'])} the target, and {'do not fit' if not bool(f20['fits_nb_slotted_aloha_p95']) else 'fit'} it on slotted "
                 f"random access; channel coding is not counted. The two comparisons of H13 come out the same under version 0.2. These are calculations "
                 f"on a traffic model; the split by driving positions and the case with status and intent at 1&nbsp;Hz (Section 5.2) are given at the "
-                f"sizes of version 0.2. The replay of messages in E54 (Section 5.12) was not rerun with version 0.2.")
-    fill("P3-LRIP-V02-SENTENCE", lrip_v02_sentence, "E53 lrip_v02 (B-100)")
+                f"sizes of version 0.2, and {e54_v02('clause')} (Section 5.12).")
 
     def e53_design():
         eta = r.p6("E53", "eta")
@@ -1681,6 +1680,45 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
                 f"ladder sent a silent vehicle back along its path {num(ret, 1)} times a seed, about {num(ret / days, 1)} a day for the "
                 f"{words(len(r.fleet()))} vehicles; the replay does not drive those returns, each at half speed, and no delay figure contains them (Table 15).")
     fill("P3-E54-RESULTS-SENTENCE", e54_results, "E54")
+
+    def e54_v02(kind="sentence"):
+        """5.12 (task B-111, results/E54_dtn.json block `lrip_v02`): the E54 replay repeated at the packet sizes of protocol version 0.2 and
+        in Proximity-1 frames. No value and no verdict changes, and the build stops if that ever stops being true. It is a property of the
+        replay's message set (its three message types have the same size in both versions), not a test of version 0.2."""
+        b = r.p6("E54", "lrip_v02")
+        rows, sz = b["rows"], b["sizes_bytes"]
+        same = lambda a, c: all(a[k] == c[k] for k in a if not k.endswith("_bytes"))
+        check(list(b["values_moved_vs_v01"]) == [] and all(len(rows[v]) == len(rows["v0.1"]) and all(same(x, y) for x, y in zip(rows["v0.1"], rows[v]))
+                                                         for v in ("v0.2", "v0.2_proximity1")),
+              "the E54 replay at version 0.2 sizes and in Proximity-1 frames gives the version 0.1 value in every row (5.12)")
+        pub = r.p6("E54", "rows")
+        check(all(b["reproduction_of_published_v01"].values()) and len(pub) == len(rows["v0.1"]) and
+              all(all(x[k] == y[k] for k in y if k in x) for x, y in zip(rows["v0.1"], pub)),
+              "the version 0.1 rows of the rerun reproduce the published rows of E54 (5.12)")
+        check(all(b["h14"][v] == b["h14"]["v0.1"] for v in b["h14"]) and
+              all(b["h14"][v]["difference_sf_ll_minus_drop_retry"] == r.p6("E54", "h14")["difference_sf_ll_minus_drop_retry"] for v in b["h14"]),
+              "H14's first clause comes out the same at version 0.2 sizes and in Proximity-1 frames (5.12)")
+        check(all(bool(v["h14_supported"]) and bool(v["same_as_v0.1"]) for v in b["verdicts"].values()), "no verdict of E54 changes at version 0.2 sizes (5.12)")
+        check(sz["v0.2"] == sz["v0.1"] and sorted(sz["v0.1"]) == ["RESERVE_GRANT", "TASK_AWARD", "TASK_STATE"] and
+              all(int(sz["v0.2_proximity1"][k]) - int(sz["v0.2"][k]) == lrip_position()["p1"] for k in sz["v0.2"]),
+              "the replay sends awards, grants and task states, whose sizes version 0.2 does not change; a Proximity-1 frame adds its bytes to each (5.12)")
+        q = _fin(r.p6("E54", "parameters", "queue_bytes"))
+        worst = max(_fin(v) for v in b["max_queue_bytes_bound"].values())
+        check(worst < 0.01 * q, "every message of a seed held at once is under 1 % of a node's store, so no size reaches the store limit (5.12)")
+        if kind == "clause":
+            return (f"the replay was repeated at the packet sizes of version 0.2 and in Proximity-1 frames, and no value and no verdict changed, which "
+                    f"is a property of its message set and not a test of version 0.2")
+        return (f"The replay was repeated at the packet sizes of protocol version 0.2 and with every packet in a Proximity-1 frame, on the same "
+                f"{cnt(len(b['seeds']))} seeds: no value of Table 15 and no verdict changes. That is a property of the replay's message set, not a test of "
+                f"version 0.2. The replay sends task awards, reservation grants and task states, whose sizes version 0.2 does not change "
+                f"({cnt(sz['v0.2']['TASK_AWARD'])}, {cnt(sz['v0.2']['RESERVE_GRANT'])} and {cnt(sz['v0.2']['TASK_STATE'])}&nbsp;B; "
+                f"{cnt(sz['v0.2_proximity1']['TASK_AWARD'])}, {cnt(sz['v0.2_proximity1']['RESERVE_GRANT'])} and {cnt(sz['v0.2_proximity1']['TASK_STATE'])}&nbsp;B "
+                f"framed), and in the replay a size counts only against a node's store of {unit(q / 1e6, 'MB', 0)}: with every message of a seed held at "
+                f"once the store would hold {unit(worst / 1e6, 'MB', 2)} at most. Losses and delays come from the contact plan and the per-hop loss, "
+                f"which do not depend on a message's size.")
+    fill("P3-E54-V02-SENTENCE", e54_v02, "E54 lrip_v02 (B-111)")
+    fill("P3-E54-V02-LIMIT", lambda: cap1(e54_v02("clause")) + "; it says nothing about how version 0.2's reports and heartbeats fare on a lossy link.", "E54 lrip_v02 (B-111)")
+    fill("P3-LRIP-V02-SENTENCE", lrip_v02_sentence, "E53 lrip_v02 (B-100)")
 
     def h14_verdict():
         """5.12: H14 clause by clause. The first is tested; the second is not testable as written (decision B1 of the referee round;
@@ -2212,7 +2250,8 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
              "same comparisons come out alike with version 0.2", "Section 5.11"],
             [f"Store-and-forward with the lost-link rule loses fewer jobs than drop-and-retry (H14, first clause), {sv(c14)}", T,
              f"E54, a message-level simulation on the recorded month, not an engine run: {n54} seeds at today's fleet; {family_sentence('pta14')}. "
-             f"{cnt(d54['award_lost'])} awards of {cnt(d54['award_n'])} under drop-and-retry, at a retry budget we chose", "Section 5.12"],
+             f"{cnt(d54['award_lost'])} awards of {cnt(d54['award_n'])} under drop-and-retry, at a retry budget we chose. Repeated at the packet sizes of protocol "
+             f"version 0.2 and in Proximity-1 frames with no value changed: a property of the replay's message set, not a test of version 0.2", "Section 5.12"],
             ["The lost-link rule leaves no reservation stuck past its timeout (H14, second clause)", "Not testable as written",
              f"The zero followed from the rule as first written, which released a silent holder's reservation; that release is withdrawn. E54 gives "
              f"{cnt(d54['stuck_reservations'])} segments and {cnt(d54['stuck_hours'])} hours that the rule now marks unconfirmed; caution-speed traversal is not priced", "Sections 3.8, 5.12"],
