@@ -81,9 +81,10 @@
   "rerun_task": "B-106"
  },
  "lrip_v02": {
-  "source": "reports/referee_phase6_decisions.md, B3: LRIP v0.2 adds a frame and datum identifier, a time-scale identifier and a covariance to POSITION (task B-100). When the schema exists at schema_file the build stops and asks for the sentence P1-LRIP-V02-SENTENCE to be filled from it.",
+  "source": "Task B-100, done 12 Nov 2026: lunarsim/schemas/lrip-v0.2.json, data/atc/lrip/conformance-v0.2.json, data/atc/lrip/v0.2/, results/E53_bitrate.json key lrip_v02, results/E53_table_v02.csv. build_p1.py reads them directly (class P6); this entry is kept as a record and is no longer read.",
   "schema_file": "lunarsim/schemas/lrip-v0.2.json",
-  "task": "B-100"
+  "task": "B-100",
+  "status": "landed"
  },
  "h13_design_note": {
   "source": "research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md, section E2 (table row for 20 robots: 0.66 / 6.56 / 65.6 kbit/s; text: '49 B/s per robot with an 8-byte MAC ... or 7.9 kbit/s ... for 20 robots'). The note was committed at 10:50 on 11 Nov 2026 (02e9674), 36 minutes after PREREG6.md (b1e2266, 10:14), which names it as its parameter source, and before E53 ran (a618519, 18:10).",

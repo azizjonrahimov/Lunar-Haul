@@ -87,3 +87,19 @@ conclusion 249, no `[[PENDING` in `paper.html`. The PDF was not rebuilt (free me
 | B-106, B-100 | Still awaited | Left as plain sentences with their placeholder paths. | 5.6, 6.5, 7 |
 
 Build: abstract 299 words, conclusion 249, 288 values, 0 pending, no `[[PENDING` in `paper.html`. PDF not rebuilt.
+
+## Second pass, part 2 (12 Nov)
+
+M10 is now fixed in full: B-100 (LRIP v0.2) has landed and the paper describes v0.2.
+
+| Item | What was done | Where |
+|---|---|---|
+| The protocol described | "LRIP v0.2" throughout. New `P1-LRIP-V02-SENTENCE`: the position report carries a code for the 95 % horizontal uncertainty in the six bits v0.1 left spare, still 13 B of content and a 41 B packet; frame, datum and time scale are declared in HELLO (30 to 32 B, at least every 10 s) and in the manifest (+9 B); a receiver refuses a position from a sender with no authenticated declaration under its current key epoch; v0.1 packets still encode and decode bit for bit; a covariance is not carried. Five versioning rules, not four. | 1, 3.12, Appendix A |
+| Radio load, as a calculation on a traffic model | All E53 values, Tables 9 and 10 and Proposition 2 are now from the v0.2 rerun: 0.418 kbit/s per rover, busiest link 8.37 kbit/s (v0.1: 7.86), scheduled airtime 10.46 (9.82), random access 22.7; with Proximity-1 framing 10.9 and 13.6 kbit/s; the scheduled 16 kbit/s channel is full at 30 rovers, 23 with framing. H13 stays on the predicted side, a design calculation. 11 of 15 message types. The abstract and conclusion now print 8.4 kbit/s. | abstract, 1, 5.8, Tables 9, 10, A2, Appendix B, 8 |
+| Proposition 6 | The layout uses all 104 bits (joint count 103.4, no spare); definitional for seven of nine fields. | Appendix B, Table B3 |
+| What still uses v0.1 sizes, stated | The design note's 7.9 kbit/s, the driving split of B-103, the family file's H13 values and the replay E54; they differ from v0.2 only in the heartbeat. | 5.8, 7 |
+| Wording removed | "v0.1 carries no ...", "version 0.2 adds them; its sizes were not available", and the future-work and Limitations lines on v0.2. The Limitations now say: no covariance, and the frame, datum and time-scale codes are a site registry we assumed. | 3.12, 6.5, 7 |
+| Build | The stop on `lunarsim/schemas/lrip-v0.2.json` is removed; the build reads no other landed file that can stop it. B-106 stays a plain sentence with its placeholder path. | `build_p1.py`, `PLACEHOLDERS.md`, `dev_notes.json` |
+
+Updated tally of the 37 findings: 26 fixed (M10 added), 9 fixed in part, 1 awaiting a task (M8, B-106), 1 not done (O2).
+Build: abstract 299 words, conclusion 249, 288 values, 0 pending, no `[[PENDING` in `paper.html`. PDF not rebuilt.

@@ -1865,8 +1865,28 @@ def secs(x, nd=0):
 class P6:
     def __init__(self):
         jl = lambda *p: json.load(open(os.path.join(ROOT, *p), encoding="utf-8"))
-        self.e53 = jl("results", "E53_bitrate.json")
-        self.t53 = pd.read_csv(os.path.join(RES, "E53_table.csv"))
+        # Second pass, part 2 (12 Nov; task B-100): the paper describes LRIP v0.2. E53's v0.2 rerun is the key
+        # "lrip_v02" of E53_bitrate.json and E53_table_v02.csv; the v0.1 values stay under e53_v01 / t53_v01 for the
+        # things computed with them (the design note's figures, the family file, the driving split of B-103).
+        self.e53_v01 = jl("results", "E53_bitrate.json")
+        self.t53_v01 = pd.read_csv(os.path.join(RES, "E53_table.csv"))
+        v2 = self.e53_v01.get("lrip_v02")
+        if v2 is None:
+            raise SystemExit("results/E53_bitrate.json has no lrip_v02 (task B-100)")
+        t2 = pd.read_csv(os.path.join(RES, "E53_table_v02.csv"))
+        self.t53 = t2[t2["framing"] == "lrip"].drop(columns=["framing"]).reset_index(drop=True)
+        self.v02 = v2
+        h2, eta = v2["h13_check_v02"], self.e53_v01["eta"]
+        self.e53 = dict(self.e53_v01)
+        self.e53["sizes"] = v2["sizes_v0.2"]
+        self.e53["per_rover_at_1hz"] = v2["per_rover_at_1hz"]
+        self.e53["h13"] = {"at_1hz_kbps_p95": h2["at_1hz_kbps_p95"], "at_10hz_kbps_p95": h2["at_10hz_kbps_p95"],
+                           "supported": bool(self.e53_v01["h13"]["supported"]) and bool(h2["same_verdict_as_v0.1"]),
+                           "airtime_1hz_scheduled_kbps": h2["airtime_1hz_scheduled_kbps"],
+                           "airtime_1hz_slotted_aloha_kbps": h2["at_1hz_kbps_p95"] / eta["slotted_aloha"]}
+        self.e53["manifest_bytes"] = {k: {"json": v["json"], "compact_cbor": v["compact_cbor"], "compact_cbor_v01": v["compact_cbor_v0.1"],
+                                          "note03_compact": self.e53_v01["manifest_bytes"][k]["note03_compact"]}
+                                      for k, v in v2["manifest_bytes_v0.2"].items()}
         p54 = os.path.join(RES, "E54_dtn.json")
         self.e54 = json.load(open(p54, encoding="utf-8")) if os.path.exists(p54) else None
         # the Earth-bound ledger over 61 days (the main E54 table's ledger columns are cut off by its 31-day window
@@ -1878,10 +1898,11 @@ class P6:
         self.fam = json.load(open(pfam, encoding="utf-8")) if os.path.exists(pfam) else None
         p48 = os.path.join(RES, "E48_sizing.json")
         self.e48 = json.load(open(p48, encoding="utf-8")) if os.path.exists(p48) else None
-        self.schema = jl("lunarsim", "schemas", "lrip-v0.1.json")
+        self.schema = jl("lunarsim", "schemas", "lrip-v0.2.json")
         self.dev = jl("paper", "p1", "dev_notes.json")
-        self.conf = jl("data", "atc", "lrip", "conformance-v0.1.json")
-        self.man = {k: jl("data", "atc", "lrip", f"manifest-{k}.json") for k in ("small_rover", "hopper")}
+        self.conf = jl("data", "atc", "lrip", "conformance-v0.2.json")
+        self.e53["conformance_vectors"] = len(self.conf["vectors"])
+        self.man = {k: jl("data", "atc", "lrip", "v0.2", f"manifest-{k}.json") for k in ("small_rover", "hopper")}
         from lunarsim.atc import lrip, messages, regimes
         from lunarsim.atc.lrip import codec, manifest
         self.lrip, self.codec, self.manifest, self.messages, self.regimes = lrip, codec, manifest, messages, regimes
@@ -1976,7 +1997,7 @@ def phase6_values(r, V, fill, check):
     V["P1-LRIP-HOP-LIMIT"] = "5"                                # design note 03, C1; not a schema constant (typed input)
     V["P1-LRIP-BUNDLE-B"] = nbytes(fr["bundle_overhead_bytes"])
     en = S["enums"]
-    check(len(S["versioning"]) == 4, "the schema states four versioning rules")
+    check(len(S["versioning"]) == 5 and "since" in S["versioning"][4], "the schema states five versioning rules, the fifth on fields added since a minor version")
     check(en["alert_type"][str(en["alert_type"]["unknown_as"])] == "hazard" and en["mode"][str(en["mode"]["unknown_as"])] == "fault",
           "an unknown alert type reads as a hazard and an unknown mode as a fault")
 
@@ -1997,45 +2018,62 @@ def phase6_values(r, V, fill, check):
     V["P1-LRIP-ALERT-SIGNED-B"] = nbytes(st["ALERT"]["signed"])
     V["P1-LRIP-AWARD-B"], V["P1-LRIP-GRANT-B"] = nbytes(st["TASK_AWARD"]["default"]), nbytes(st["RESERVE_GRANT"]["default"])
 
-    # Decision B3 (referee M10, P3 M4): what v0.1's POSITION serialises, and what it lacks. Version 0.2 adds the
-    # missing identifiers (task B-100). Until its schema exists the paper says so in one plain sentence; when the
-    # file named in dev_notes.json appears the build stops, so that the sentence and the sizes are filled from it.
+    # Decision B3 (referee M10, P3 M4) and task B-100: what the position report of v0.2 carries, where the frame,
+    # datum and time scale are declared, and what is still not carried. Everything is read from the schema, the
+    # codec and the v0.2 block of E53_bitrate.json.
     posm = next(m for m in msgs if m["name"] == "POSITION")
+    helm = next(m for m in msgs if m["name"] == "HELLO")
     pnames = [f[0] for f in posm["fields"]]
-    check(pnames == ["e", "n", "h", "heading", "speed", "sigma_h", "nav_src", "moving", "spare"],
-          "v0.1's POSITION holds east, north, height, heading, speed, one horizontal sigma, the navigation source and a moving flag")
-    check(not any(k in n.lower() for n in pnames for k in ("frame", "datum", "epoch", "scale", "cov")),
-          "v0.1's POSITION has no frame, datum, time-scale or covariance field")
-    v02 = p.dev["lrip_v02"]
-    if os.path.exists(os.path.join(ROOT, v02["schema_file"])):
-        raise SystemExit(f"{v02['schema_file']} exists (task {v02['task']}): P1 still says that v0.2's sizes are not "
-                         f"available. Fill P1-LRIP-V02-SENTENCE and the position-report sizes from it "
-                         f"(PLACEHOLDERS.md, 'Inputs that await a task').")
-    sig_f = next(f for f in posm["fields"] if f[0] == "sigma_h")
+    hnames = [f[0] for f in helm["fields"]]
+    check(pnames == ["e", "n", "h", "heading", "speed", "sigma_h", "nav_src", "moving", "u95_code"],
+          "v0.2's POSITION holds east, north, height, heading, speed, a one-sigma value, the source, a moving flag and the 95 % code")
+    u95 = posm["fields"][-1]
+    check(u95[2] == 6 and u95[5].get("was") == "spare" and u95[5].get("since") == 2, "the 95 % code takes the six bits that were spare in v0.1")
+    check(not any(k in n.lower() for n in pnames for k in ("frame", "datum", "scale", "cov")),
+          "the position report itself carries no frame, datum, time-scale or covariance field")
+    check(hnames[-3:] == ["frame_id", "datum_id", "time_scale"] and all(f[5].get("since") == 2 for f in helm["fields"][-3:]),
+          "HELLO declares frame, datum and time scale since minor version 2")
+    st1 = C.size_table(man_b["small_rover"], minor=1)
+    moved = {k: (st1[k]["default"], st[k]["default"]) for k in st if k != "CAP_MANIFEST" and st1[k]["default"] != st[k]["default"]}
+    check(list(moved) == ["HELLO"] and st["POSITION"] == st1["POSITION"], "from v0.1 to v0.2 only HELLO changes size; POSITION does not")
+    check(all(st1[k]["default"] == p.e53_v01["sizes"][k]["default"] for k in st1 if k != "CAP_MANIFEST"),
+          "the codec at minor version 1 gives the v0.1 sizes E53 first used (v0.1 stays bit-exact)")
+    decl_s = helm["declaration_interval_s"]
+    check(abs(p.v02["hello_min_hz"] * decl_s - 1.0) < 1e-9, "E53's v0.2 traffic sends HELLO at least once per declaration interval")
+    check("refused" in S["declaration_rule"] and "key epoch" in S["declaration_rule"], "the schema states the declaration rule")
+    dman = {k: (v["compact_cbor_v01"], v["compact_cbor"]) for k, v in p.e53["manifest_bytes"].items()}
+    dm = {b - a for a, b in dman.values()}
+    check(len(dm) == 1, "the declaration adds the same number of bytes to both example manifests")
     V["P1-LRIP-V02-SENTENCE"] = (
-        f"The position report of v0.1 serialises east, north and height in the site grid, heading, speed, one "
-        f"horizontal one-sigma value in steps of {sig_f[3]:g}{NB}m, the navigation source and a moving flag. It "
-        f"carries no identifier of the coordinate frame or datum, no identifier of the time scale and no covariance, "
-        f"so two vehicles agree on them only by sharing the site's configuration. Version 0.2 of the schema adds "
-        f"them; its sizes were not available when this paper was built, and the {nbytes(st['POSITION']['mac8'])} of "
-        f"the position report and every load computed from it will rise with it.")
+        f"This paper describes version 0.2. Its position report carries east, north and height in the site grid, "
+        f"heading, speed, a one-sigma horizontal value, the navigation source, a moving flag and, in the six bits "
+        f"that version 0.1 left spare, a code for the 95{PCT} horizontal uncertainty on a logarithmic scale; it is "
+        f"still {nbytes(st['POSITION']['payload'])} of content and a packet of {nbytes(st['POSITION']['mac8'])}. "
+        f"The frame, the datum and the time scale of a vehicle's positions are not repeated in every report. The "
+        f"vehicle declares them in its heartbeat, <code>HELLO</code>, which grows from {nbytes(moved['HELLO'][0])} to "
+        f"{nbytes(moved['HELLO'][1])} and is sent at least every {secs(decl_s)}, and in its manifest, which grows "
+        f"by {nbytes(dm.pop())}. A receiver refuses a position report from a sender that has no authenticated "
+        f"declaration under its current key epoch. Packets of version 0.1 still encode and decode bit for bit. A "
+        f"covariance is not carried: the report states its uncertainty as the one-sigma value and the "
+        f"95{PCT} code only.")
 
     rows = []
     for m in msgs:
         nm, d = m["name"], st[m["name"]]
         bits = sum(f[2] for f in m["fields"]) if m["fields"] else None
-        rows.append([f"{m['id']}", f"<code>{nm}</code>", html.escape(m["pattern"]), html.escape(m["default_rate"]),
+        rate_words = m["default_rate"].replace(" (it carries the declaration)", "")
+        rows.append([f"{m['id']}", f"<code>{nm}</code>", html.escape(m["pattern"]), html.escape(rate_words),
                      f"{bits}" if bits else "variable", f"{d['payload']}",
                      f"{d['default']}" + (" (signed)" if m.get("signed") else ""), html.escape(m["carried_by"])])
     V["P1-TABLE-LRIP-MSG"] = _tab(
-        f"<b>Table A2.</b> The {len(msgs)} messages of LRIP v0.1, read from the schema file: how each is sent, its "
+        f"<b>Table A2.</b> The {len(msgs)} messages of LRIP v0.2, read from the schema file: how each is sent, its "
         f"default rate, its content in bits and bytes, and its size as a packet in the narrow-band profile, before "
         f"link framing and channel coding: the content plus {nbytes(spp + hdr + sec + mac8)} of headers and "
         f"authentication code, or plus {nbytes(spp + hdr + sec + sig)} where a signature replaces the code. Inside a "
         f"Proximity-1 frame each packet gains {nbytes(fr['proximity1_frame_bytes'])}. <code>CAP_MANIFEST</code> is "
         f"the small-rover example of Section 3.12. In the last column a bundle is a Bundle Protocol bundle [60] and "
         f"CFDP is the file delivery protocol of the same family of space standards; in the design a bid is encrypted "
-        f"inside its bundle until the auction closes, which the codec of v0.1 does not implement.",
+        f"inside its bundle until the auction closes, which the codec does not implement.",
         ["ID", "Message", "Pattern", "Default rate", "Content (bits)", "Content (B)",
          "Packet (B), before link framing and coding", "Carried by"],
         rows, cls="wide",
@@ -2156,9 +2194,10 @@ def phase6_e53(p, st, V, check):
     pr = e["per_rover_at_1hz"]["on"]
     check(abs(sum(v["bps"] for v in pr.values()) / 1000 - per[("on", 1.0)]) < 1e-3,
           "the per-rover load at 1 Hz is the sum over message types")
-    beacons = sum(pr[k]["rate_hz"] * st[k]["default"] for k in ("POSITION", "STATUS", "INTENT"))     # B/s
-    check(abs(beacons * 8 / 1000 - per[("on", 1.0)]) < 1e-3, "position, status and intent reports make up the 1 Hz load")
-    check(sum(v["bps"] for k, v in pr.items() if k not in ("POSITION", "STATUS", "INTENT")) < 1e-3 * 1000 * per[("on", 1.0)],
+    beacons = sum(pr[k]["rate_hz"] * st[k]["default"] for k in ("POSITION", "STATUS", "INTENT", "HELLO"))     # B/s
+    check(abs(beacons * 8 / 1000 - per[("on", 1.0)]) < 1e-3, "position, status, intent and heartbeat make up the 1 Hz load")
+    check(abs(pr["HELLO"]["rate_hz"] - p.v02["hello_min_hz"]) < 1e-9, "at 1 Hz the heartbeat is sent at its minimum rate, for the declaration")
+    check(sum(v["bps"] for k, v in pr.items() if k not in ("POSITION", "STATUS", "INTENT", "HELLO")) < 1e-3 * 1000 * per[("on", 1.0)],
           "event messages add less than a thousandth to the per-rover load")
     check(pr["POSITION"]["rate_hz"] == 1.0 and pr["STATUS"]["rate_hz"] == 0.1 and pr["INTENT"]["rate_hz"] == 0.1,
           "status and intent are sent at 0.1 Hz")
@@ -2187,8 +2226,9 @@ def phase6_e53(p, st, V, check):
           "H13's 95th percentile at 1 Hz is the fleet's summed load (20 x the per-rover load, to the table's rounding)")
     check(fleet_sum <= nb, "the fleet's summed load at 1 Hz is below the budget, so H13's first clause holds in any geometry")
     dn = p.dev["h13_design_note"]
-    check(abs(dn["kbps_20_at_1hz"] - v1) < 0.1 and abs(dn["per_robot_Bps"] - per[("on", 1.0)] * 1000 / 8) < 0.5,
-          "the design note's figures at 1 Hz are E53's to the precision the note gives")
+    v1_01 = p.e53_v01["h13"]["at_1hz_kbps_p95"]
+    check(abs(dn["kbps_20_at_1hz"] - v1_01) < 0.1, "the design note's figure at 1 Hz is E53's with the v0.1 sizes, to the note's precision")
+    check(v1 > v1_01, "the declaration in the heartbeat raises the load from v0.1 to v0.2")
     side = ("on the predicted side of the threshold in both clauses" if sup else
             "above the threshold in its first clause: the earlier budget was too small" if v1 > nb else
             "on the predicted side in its first clause and not in its second")
@@ -2202,8 +2242,9 @@ def phase6_e53(p, st, V, check):
         f"{kbps(per[('on', 1.0)], 3)} = {kbps(fleet_sum)}, which is the 95th percentile above. The design note from "
         f"which the second pre-registration took its parameters had already computed "
         f"{num(dn['per_robot_Bps'])}{NB}B/s per robot, {kbps(dn['kbps_20_at_1hz'], 1)} for 20 robots and "
-        f"{kbps(dn['kbps_20_at_10hz'], 1)} for their position reports alone at ten a second; E53 confirms those "
-        f"figures with the codec's sizes and adds the mesh.")
+        f"{kbps(dn['kbps_20_at_10hz'], 1)} for their position reports alone at ten a second, for the first version "
+        f"of the protocol; E53 gave {kbps(v1_01)} with that version's sizes, and the heartbeat that carries the "
+        f"declaration in version 0.2 raises it to the {kbps(v1)} above.")
     V["P1-LRIP-INTRO-SENTENCE"] = (
         f"By the sizes and rates we assumed, twenty rovers reporting once a second offer {kbps(v1)}, "
         f"{'inside' if v1 <= nb else 'above'} the {kbps(nb, 0)} we had budgeted, and {kbps(v10, 1)} at ten reports a "
@@ -2238,6 +2279,10 @@ def phase6_e53(p, st, V, check):
     fr20 = 20 * per_fr * 8 / 1000
     nmax0, nmax_fr = math.floor(eta_s * nb / per[("on", 1.0)]), math.floor(eta_s * nb / (per_fr * 8 / 1000))
     check(fr20 / eta_s <= nb, "with Proximity-1 framing 20 rovers still fit the scheduled channel")
+    frow = p.v02["framing_row"]
+    check(abs(frow["fleet_auth_1hz_20"]["one_hop_sum_kbps"] - fr20) < 0.01 and abs(frow["airtime_1hz_scheduled_kbps"] - fr20 / eta_s) < 0.01,
+          "the framed loads recomputed here equal the framing row of E53's v0.2 block")
+    check(sorted(p.v02["traffic_model_coverage"]["sent_by_E53"]) == sorted(pr), "the traffic model's message types are those the v0.2 block lists")
     V["P1-LRIP-FRAME-B"] = nbytes(fb)
     V["P1-E53-FRAMING-SENTENCE"] = (
         f"These are packet sizes before link framing and channel coding. Inside a Proximity-1 frame every message "
@@ -2265,13 +2310,14 @@ def phase6_e53(p, st, V, check):
     pk = ds["e53_auth_20_rovers"]["fleet_parked"]["1 Hz"]
     s1 = ds["status_intent_at_1hz"]
     ls = ds["e54_link_shares_30_seeds"]["linked_share_driving_time"]
-    check(abs(pk["busiest_link_kbps_p95"] - v1) < 1e-3, "the parked draws reproduce the fleet geometry's busiest link")
+    check(abs(pk["busiest_link_kbps_p95"] - v1_01) < 1e-3, "the parked draws reproduce the fleet geometry's busiest link (v0.1 sizes)")
     check(dv["mean_hops_to_base"] > pk["mean_hops_to_base"] and dv["reachable_share"] < pk["reachable_share"],
           "driving vehicles are more hops from the base and fewer of them have a path to it")
     check(dv["scheduled_airtime_p95_kbps"] <= nb, "on driving steps the scheduled channel still carries 20 rovers at 1 Hz")
     s1_fit = s1["sources_20_rovers_kbps"] <= nb
     V["P1-E53-DRIVING-SENTENCE"] = (
-        f"Two further calculations on the same inputs show how far the result depends on them. Only "
+        f"Two further calculations show how far the result depends on its inputs. They were made with the sizes "
+        f"of version 0.1, in which the fleet geometry gives {kbps(v1_01)}. Only "
         f"{sh(ds['pool_driving_share'], 1)} of the vehicle-steps in the pool that the fleet geometry samples are "
         f"driving steps. Drawn from those alone, 20 rovers are {num(dv['mean_hops_to_base'], 2)} hops from the base "
         f"on average where a path exists, {sh(dv['reachable_share'])} of them have one, and the busiest link "
@@ -2704,10 +2750,11 @@ def phase6_e54(p, V, fill, check):
     def h13_draws_sentence():
         F = p.family()
         c = F["hypotheses"]["H13"]["clauses"]
-        r1, r10 = p.row53("fleet", "on", 1.0, 20), p.row53("fleet", "on", 10.0, 20)
-        check(abs(c["1 Hz"]["busiest_kbps_p95"] - r1["busiest_link_kbps_p95"]) < 1e-3
-              and abs(c["10 Hz"]["busiest_kbps_p95"] - r10["busiest_link_kbps_p95"]) < 1e-3,
-              "the family file's H13 values are those of E53")
+        h01 = p.e53_v01["h13"]
+        check(abs(c["1 Hz"]["busiest_kbps_p95"] - h01["at_1hz_kbps_p95"]) < 1e-3
+              and abs(c["10 Hz"]["busiest_kbps_p95"] - h01["at_10hz_kbps_p95"]) < 1e-3,
+              "the family file's H13 values are those of E53 with the v0.1 sizes")
+        check(bool(p.v02["h13_check_v02"]["same_verdict_as_v0.1"]), "H13 falls on the same side of the threshold with the v0.2 sizes")
         a, b = c["1 Hz"]["draws_on_predicted_side"], c["10 Hz"]["draws_on_predicted_side"]
         every = a == 1.0 and b == 1.0
         check(every == ("every draw" in F["summary"]["H13"]), "the family file's H13 summary matches its draws")
@@ -2883,7 +2930,7 @@ def phase6_props(p, st, r, V, fill, check):
     pos = next(m for m in p.schema["messages"] if m["name"] == "POSITION")
     rows, counts, total = [], [], 0
     for f in pos["fields"]:
-        name, typ, bits, scale, unit = f
+        name, typ, bits, scale, unit = f[:5]
         total += bits
         if typ == "spare":
             rows.append(["spare", "zero; left by byte alignment", f"{bits}", "&ndash;", "&ndash;"])
@@ -2894,11 +2941,14 @@ def phase6_props(p, st, r, V, fill, check):
         elif name == "heading":
             n = round(360 / scale)
             what = f"0 to {360 - scale:g}&deg; in steps of {scale:g}&deg;"
+        elif name == "u95_code":
+            n = 1 << bits
+            what = "a code for the 95&#8239;% horizontal uncertainty, 0.05&nbsp;m to 1.95&nbsp;km on a logarithmic scale, with codes for larger and for unknown"
         elif name == "sigma_h":
             n = 1 << bits
             what = f"0 to {((1 << bits) - 2) * scale:g}{NB}m in steps of {scale:g}{NB}m, and one code for unknown"
         else:
-            what, n = _field_range(f)
+            what, n = _field_range(f[:5])
             if typ == "uint":
                 what = what.replace(" in steps", f"{NB}{html.escape(unit)} in steps") + f"{NB}{html.escape(unit)}"
         counts.append(n)
@@ -2912,8 +2962,8 @@ def phase6_props(p, st, r, V, fill, check):
     check(total == 104 and sizes["payload"] * 8 == total, "the position report's fields add up to 104 bits, 13 bytes")
     check(sizes["payload"] == 13 and sizes["mac8"] == 41 == sizes["payload"] + over, "the codec counts 13 B of content and 41 B secured")
     check(gold[("N", "mac8")] == sizes["mac8"] and gold[("N", None)] == sizes["unsecured"], "the golden position packets have the codec's sizes")
-    check(math.ceil(joint) == need and math.ceil(need / 8) == sizes["payload"],
-          "the fields need 98 bits jointly and field by field, which is 13 whole bytes")
+    check(math.ceil(joint) == need == total and need / 8 == sizes["payload"],
+          "the fields need every bit of the layout, jointly and field by field, which is 13 whole bytes")
     check(8 * (sizes["payload"] - 1) < joint, "twelve bytes are fewer bits than the fields need jointly")
     rows.append(["<b>Total</b>", "", f"<b>{total}</b>", "", f"<b>{need}</b>"])
     V["P1-TABLE-PROP6"] = _tab(
@@ -2933,7 +2983,7 @@ def phase6_props(p, st, r, V, fill, check):
         + listing(f"<code>{n}</code>" for n in defin) + f") the number of values is two to the power of the field's "
         f"bits, because we set the range by the bit width; for those the lower bound is definitional. Only "
         + listing(f"<code>{n}</code>" for n in other) + f" have a count that is not a power of two, which is why the "
-        f"joint count is {joint:.1f} and not {need} bits. The steps are also not matched to one another: the "
+        f"joint count is {joint:.1f} bits, which rounds up to the {need} the layout uses. The steps are also not matched to one another: the "
         f"position step is {num(100 * step_pos)}{NB}cm and the step of its own uncertainty {num(100 * step_sig)}{NB}cm. "
         f"A coarser position step or a smaller site grid would save bits, so {nbytes(sizes['payload'])} is the size "
         f"of this layout and not a lower bound for a position report in general.")
@@ -2941,6 +2991,7 @@ def phase6_props(p, st, r, V, fill, check):
     V["P1-PROP6-CONTENT-B"], V["P1-PROP6-SECURED-B"] = nbytes(sizes["payload"]), nbytes(sizes["mac8"])
     V["P1-PROP6-MAC16-B"], V["P1-PROP6-UNSEC-B"] = nbytes(sizes["mac16"]), nbytes(sizes["unsecured"])
     V["P1-PROP6-CBOR-B"] = nbytes(gold[("B", "mac8")])
+    check(gold[("N", "mac8")] == p.e53_v01["sizes"]["POSITION"]["mac8"], "the position packet has the size it had in v0.1")
 
     # --- the leader's election time (3.6, 3.13): what the engine assumes -----------------------------------------
     reg = p.regimes.DEFAULTS

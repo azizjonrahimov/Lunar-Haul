@@ -303,3 +303,20 @@ site's /paper/ page reads it from `values.json`; remove the key here once the si
 | P1-RELAY08-SHARE | availability of the relay case the text calls the 80 % relay (the site reads it) | `coverage` of the cell `B_EARTH_RELAY 0.8` in `results/E40_runs*.csv` (run_phase5's cell definition) | % 0 dp |
 | P1-E53-DRIVING-SENTENCE | task B-103: the load calculation on driving steps only, and with STATUS and INTENT at 1 Hz | E53 `driving_split` | composed; "above / inside the budget" chosen from data; labelled a calculation |
 | P1-LINKLAW-SENTENCE | task B-104: rover-to-rover rate at the worst hop, flat ground against curved Moon | `results/E48_sizing.json` `revision_b104.per_class.LTV1.worst_hop` | composed; labelled a calculation |
+
+## Second pass, part 2 (12 Nov 2026): LRIP v0.2 (task B-100, landed)
+
+The paper now describes v0.2. `P6` reads `lunarsim/schemas/lrip-v0.2.json`, `data/atc/lrip/conformance-v0.2.json`,
+`data/atc/lrip/v0.2/manifest-*.json`, the key `lrip_v02` of `results/E53_bitrate.json` and the rows with
+`framing == "lrip"` of `results/E53_table_v02.csv`; every E53 key, Tables 9, 10, A2 and B3 and Propositions 2 and 6
+are filled from them. The v0.1 file and table stay loaded (`e53_v01`, `t53_v01`) for what was computed with v0.1
+sizes: the design note's figures, `phase6_family.json`'s H13 values and the driving split of B-103; E54 also ran with
+v0.1 sizes. The build no longer stops on the v0.2 schema; the earlier note under "Inputs that await a task" for
+B-100 is superseded. Only B-106 is still awaited.
+
+`P1-LRIP-V02-SENTENCE` (recomposed): what the v0.2 position report carries, the declaration in HELLO and the
+manifest, the refusal rule, v0.1 bit-exact, no covariance. Checks added: only HELLO changes size from v0.1 to v0.2;
+the codec at minor version 1 gives E53's v0.1 sizes; the 95 % code takes the six bits that were spare; HELLO's last
+three fields are frame, datum and time scale since minor 2; E53's v0.2 traffic sends HELLO once per declaration
+interval; the schema states the declaration rule and five versioning rules; the framed loads equal the file's
+framing row; the traffic model's types are those the v0.2 block lists; H13 is on the same side with v0.2 sizes.
