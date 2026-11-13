@@ -10998,3 +10998,13 @@ test_clocks 5, test_pnt 11, test_formats 70, test_nn_integrity 15, test_vv6 2, t
 test_uphill 3: all pass.
 Note on E54: removing dtn.py's unused import (C14) and run_e54's dead local changes E54's code fingerprint, so its cache
 needs one seed-1 equality check and a restamp before the next E54 build (about 2 min, a heavy chunk; at 0.8 GB).
+
+## B-119 addendum 14:25 | the six custody cells; the two unused imports in your agent's files
+- tests/test_dtn.py, one test per cell of dtn.simulate the state-machines reviewer named: drop_retry x expire (4 tries,
+  then the next would pass the 600 s lifetime); sf x expire; drop_retry to EARTH x deliver (one hop, 10 ms); drop_retry
+  to EARTH x expire (Earth never up); drop_retry to EARTH x drop (every try lost: max_tries, then expired); sf to EARTH x
+  drop (custody retransmits every 10 s until delivery: 200 of 200 delivered at the custody timer's multiples). 18 pass.
+- Removed, as you allowed and nothing else: lunarsim/nn/tracks.py "List" from the typing import;
+  experiments/phase6/nn/run_baselines.py "import numpy as np". Both still import / parse.
+- Heavy work still waits for 0.8 GB free (0.59 GB now): E50 1x seeds 20-30, E54 seed-1 check and restamp, the e54
+  timeline export, the 16 uphill delay cells.

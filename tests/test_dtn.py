@@ -178,3 +178,48 @@ def test_e54_outputs():
     assert abs(rows[(0.25, "drop_retry")]["award_lost"] / n - h["lost_jobs_drop_retry_per_seed"]["mean"]) < 1e-9
     assert abs(rows[(0.25, "sf_ll")]["award_lost"] / n - h["lost_jobs_sf_ll_per_seed"]["mean"]) < 1e-9
     assert rows[(0.25, "sf_ll")]["stuck_reservations"] == h["stuck_reservations_sf_ll"] == 0
+
+
+# B-119 T: the six custody cells the state-machines reviewer found untested (drop_retry x expire; sf x expire;
+# drop_retry to EARTH x deliver / expire / drop; sf to EARTH x drop). EARTH-bound messages leave from the base.
+def test_cell_drop_retry_expires():
+    A = chain(30, [])                                    # never a path to vehicle 0
+    m = DT.simulate(A, [Msg(0, "grant", BASE, 0, 0.0, 92, 600.0)], "drop_retry", 0.0, np.random.default_rng(0), 60.0)[0]
+    assert m.expired and not m.censored and m.t_done is None and m.tries == 4      # tries at 0, 180, 360, 540 s
+
+
+def test_cell_sf_expires():
+    A = chain(30, [])
+    m = DT.simulate(A, [Msg(0, "award", BASE, 0, 0.0, 92, 600.0)], "sf", 0.0, np.random.default_rng(0), 60.0)[0]
+    assert m.expired and not m.censored and m.t_done is None
+
+
+def test_cell_drop_retry_to_earth_delivers():
+    A = chain(10, range(10))
+    m = DT.simulate(A, [Msg(0, "ledger_earth", BASE, -2, 30.0, 10_000, 3600.0)], "drop_retry", 0.0,
+                    np.random.default_rng(0), 60.0, earth_up=lambda k: True)[0]
+    assert m.t_done == pytest.approx(30.0 + 0.01) and m.tries == 1   # one hop: the Earth link from the base
+
+
+def test_cell_drop_retry_to_earth_expires():
+    A = chain(30, range(30))
+    m = DT.simulate(A, [Msg(0, "ledger_earth", BASE, -2, 0.0, 10_000, 600.0)], "drop_retry", 0.0,
+                    np.random.default_rng(0), 60.0, earth_up=lambda k: False)[0]
+    assert m.expired and m.t_done is None and not m.censored
+
+
+def test_cell_drop_retry_to_earth_drops_then_gives_up():
+    A = chain(30, range(30))
+    m = DT.simulate(A, [Msg(0, "ledger_earth", BASE, -2, 0.0, 10_000, 1700.0)], "drop_retry", 0.999,
+                    np.random.default_rng(1), 60.0, earth_up=lambda k: True)[0]
+    assert m.tries == DT.DEFAULTS["max_tries"] and m.expired and m.t_done is None    # every try dropped
+
+
+def test_cell_sf_to_earth_drops_and_retransmits():
+    A = chain(30, range(30))
+    msgs = [Msg(i, "ledger_earth", BASE, -2, 0.0, 10_000, 1700.0) for i in range(200)]
+    res = DT.simulate(A, msgs, "sf", 0.7, np.random.default_rng(2), 60.0, earth_up=lambda k: True)
+    done = [m.t_done for m in res if m.t_done is not None]
+    assert len(done) == 200                                   # custody retransmits until it gets through
+    assert sum(t >= DT.DEFAULTS["custody_timer_s"] for t in done) > 100   # most were dropped at least once first
+    assert all(round((t - DT.DEFAULTS["hop_latency_s"]) / DT.DEFAULTS["custody_timer_s"], 6).is_integer() for t in done)
