@@ -145,7 +145,24 @@ export function e44fresh(key) {
     const wb = typeof F.bound_weighted === 'number' ? `, a 95 % upper bound of ${m(100 * F.bound_weighted, `types.${t}.fresh_seeds.bound_weighted`, ' %', 2)} per encounter (weighted)` : '';
     return `type ${t} had ${m(F.violations, `types.${t}.fresh_seeds.violations`)} in ${n(t)}: ${and(kinds)}${wb}`;
   }).join('; ');
-  return s.replace(/, $/, '') + '.';
+  return s.replace(/, $/, '') + '.' + reqRule6(D, m);
+}
+
+// F-76 (B-112): the request-rule variant on all the fresh type-6 encounters (key request_rule_fresh_6), as P2 part 4 gives
+// it: exploratory, the type-6 verdict unchanged, and most of these encounters incomplete under either rule. The build stops
+// if the file no longer says what the sentence says.
+export function reqRule6(D, m = x => String(x.value ?? x)) {
+  const V = D.request_rule_fresh_6;
+  if (!V) return '';
+  const K = 'request_rule_fresh_6', a = V.rules_as_written, b = V.request_rule_variant, f6 = D.types['6'].fresh_seeds;
+  const fail = w => { throw new Error(`${FRESH_SRC}: ${K}: ${w}; the /atc/ sentence on the request rule no longer holds`); };
+  if (a.n !== f6.n || a.violations !== f6.violations || a.outcomes.incomplete !== f6.outcomes.incomplete) fail('its rule-as-written block is not the fresh type-6 run');
+  if (b.n !== a.n || !V.paired_same_specs) fail('the variant did not run on the same encounters');
+  if (b.violations !== 0 || a.violations < 1) fail('the variant is not clean against a violating rule as written');
+  if (V.new_failures_vs_rules_as_written.count !== 0) fail('an encounter that finished under the rule as written fails under the variant');
+  if (b.outcomes.finished !== a.outcomes.finished) fail('the variant changes how many encounters finish');
+  const o = (x, k, w) => m(x.outcomes[k], `${K}.${w}.outcomes.${k}`);
+  return ` A request rule chosen after that violation was seen, under which a vehicle requests a resource only when no hold point it cannot pass lies before it, was then run on all ${m(b.n, `${K}.request_rule_variant.n`)} fresh type-6 encounters with the same specifications: it allowed ${m(b.violations, `${K}.request_rule_variant.violations`)} violations against ${m(a.violations, `${K}.rules_as_written.violations`)}, and no encounter that finished under the rule as written failed under it. Because it was chosen after the fact, the result is exploratory and type 6 still fails under the rule as written. It did not make more encounters finish: ${o(b, 'finished', 'request_rule_variant')} finished under either rule, and ${o(b, 'incomplete', 'request_rule_variant')} (${m(100 * b.outcomes.incomplete / b.n, `${K}.request_rule_variant.outcomes.incomplete / n`, ' %', 0)}) ended incomplete against ${o(a, 'incomplete', 'rules_as_written')}.`;
 }
 
 // F-72 (B-107): <!--@e45u:rule--> and <!--@e45u:result--> on /atc/ section 5: the keep-distance rule (R1) as P2 now
