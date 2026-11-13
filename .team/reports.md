@@ -9672,3 +9672,474 @@ Opened with /browse (gstack's headless browser; Aside is not available on Window
   - 2.5–2.5 m at 1 km: 104.1 dB, equal to the flat law.
 
 **Files:** `tools/atc/run_e48.py` (source_note text), `lunarsim/atc/radio.py` (docstring), `results/E48_sizing.json` (rebuilt; only the note text changed), `results/B97_downloads.json` (+1 file).
+
+## F-70b CODE DONE 09:23 (NOT BUILT: free RAM 0.70 GB) + F-57 FILE CHECKS | site/lib/results-atc.mjs, site/lib/protocol-data.mjs (hooks e53d, b104), site/protocol/index.html (problems 4 and 5), site/src/atc/main.js and site/atc/index.html (curved-Moon row), site/vite.config.js, site/tests/results-atc.test.mjs, site/tests/protocol-data.test.mjs | how to check: node --test (58/58), then a build | for LEAD: notes at the end
+**The failing test:** my F-70 sentence said "distinct runs in the main experiment, E40", and "E40" counts as typed digits. Fixed with the revised P1.
+
+**P1 card**, from the revised paper/p1/values.json:
+- "5,480 simulated years in three experiments, at most 4,699 of them distinct (2,029 distinct of 2,750 in the main experiment), under thirteen decision regimes";
+- the H2 and H3a sentences as before (wait for pickup);
+- "The registered learned bid, a small network, did not beat hand-built bids (difference −0.25 h, interval −1.6 to 1.1 h); a linear correction registered as secondary cut the urgent wait by 16.5 %";
+- "An always-up relay matched the marketplace run for run; only an intermittent relay was worse than the auction, by 3.8 h (2.0 to 5.7 h)". **The 80 % is in no values key, so the card says "intermittent"; a key (e.g. P1-RELAY08-SHARE) would let it say 80 %.**
+- P1-H1-UNDELIVERED-SHARE is no longer read, and a test checks it.
+
+**P2 card**, from the revised file:
+- the safety and ring-deadlock result is the paper's own sentence, quoted from P2-H7-ABSTRACT-SHORT ("…A one-lane ring deadlocked in 0.7 % of encounters under the rule as written");
+- referral is "at the assumed staff time per conflict";
+- the positioning, fix-stop, guard and detector findings are quoted from P2-P6-ABSTRACT-CLAUSE ("…0.63 h per delivery (3.5 %, a lower bound)… so none qualifies for the safety path");
+- **"There were no deadlocks at today's fleet" is dropped**: the revised paper calls that zero a property of the logistics model.
+- Quoted sentences sit in <q class="r-quote"> and come from the values file, so the digit test skips them.
+
+**Problem 5, the driving split** (results/E53_bitrate.json driving_split, new hook e53d):
+- "for positions where the fleet works, 97 % of them parked";
+- "While driving, reports travel 1.58 hops on average and 93 % of rovers have a path to the base; the busiest link then carries 5.9 kbit/s. With STATUS and INTENT also sent once a second, twenty rovers need 24.4 kbit/s of airtime even when the base schedules the slots, which does not fit the 16 kbit/s channel."
+
+**Problem 4, the curved Moon** (results/E48_sizing.json revision_b104, new hook b104):
+- "Over a curved Moon (ITU-R P.526) the loss between two 2.5 m antennas 5 km apart is 5 dB higher, so the rate falls from 1,574 kbit/s to 701 kbit/s, and 1 Mbit/s reaches 4.64 km instead of 5.89 km. No lunar measurement exists to settle which is closer."
+- The radio figure's caption says it draws flat ground.
+
+**/atc/:** a new row, "Radio at the worst hop over a curved Moon (ITU-R P.526)", per class: rate, hop and dB more than on flat ground. The radio note under the table names B-104.
+
+**E50 8x:** nothing on the site reads it yet. The /results/ table's "Still to come: E50 at 8x…" note comes from results/phase6_family.json and goes away when that file is updated.
+
+**F-57, the file-only checks on the nine stable pages** (/, /world/, /vehicles/, /lab/, /lab/lander/, /lab/rover/, /stories/, /verification/, /about/, /method/):
+- **link check** (a scratch script on dist/): 513 internal links and fragments, 0 broken. The only external is the GitHub repository (10 links), which answers 200;
+- **budgets:** all within limits.
+- **The Lighthouse and browser accessibility runs wait for free RAM ≥ 1.0 GB:** it was 0.29–0.72 GB. The runner checks RAM as its own step before each page.
+
+**Next, when RAM allows:** build; browser check of /results/, problems 4 and 5 and /atc/; then F-57's Lighthouse runs one page at a time.
+- **F-57 addendum, the static accessibility check** of the nine pages' built HTML (a scratch script; no browser): lang, title, viewport, one h1, heading order, img alt, names for links and buttons, form labels, duplicate ids.
+  - **No real issue.** It flagged two things, both checked and false:
+    - /lab/lander/'s two checkboxes are labelled by wrapping <label>s;
+    - /stories/ has two h1s in the file, the list's and the player's, but only one is shown (the other is display: none, so out of the accessibility tree).
+  - The browser audit and Lighthouse still wait for RAM (0.69 GB at the last check).
+
+## F-70b BUILT, PARTLY CHECKED 12:00 | site/lib/results-atc.mjs, site/lib/protocol-data.mjs, site/vite.config.js, site/protocol/index.html, site/src/atc/main.js, site/atc/index.html, site/tests/*.test.mjs | how to check: below | from BACKEND: P1-RELAY08-SHARE (or similar) for the 80 %; updated phase6_family.json for E50 8x | for LEAD
+- Built at 1.28 GB free. Budgets pages: OK (/protocol/ data 88.2/90, lazy JS 24.2/25, unchanged). Tests 58/58.
+- Browser, dark 1280 only: /results/, /protocol/, /atc/: 0 console errors, 0 overflow, 0 contrast failures, one h1, no heading skips.
+  - P1 card: 5,480 simulated years, at most 4,699 distinct (2,029 of 2,750 in E40); network vs hand-built −0.25 h (−1.6 to 1.1 h); linear correction 16.5 %; intermittent relay worse by 3.8 h (2.0 to 5.7 h). No 99.5 % anywhere.
+  - P2 card: P2-H7-ABSTRACT-SHORT and P2-P6-ABSTRACT-CLAUSE quoted as written; referral "at the assumed staff time per conflict"; no deadlock count.
+  - /protocol/ problem 5: 97 % parked; driving 1.58 hops, 93 % with a path, 5.9 kbit/s; STATUS+INTENT 24.4 kbit/s does not fit the 16 kbit/s channel. Problem 4: curved Moon 5 dB more, 1,574 → 701 kbit/s, 1 Mbit/s reaches 4.64 km instead of 5.89 km. Radio caption says flat ground.
+  - /atc/ new row "Radio at the worst hop over a curved Moon (ITU-R P.526)", all six columns filled (lander "not sized").
+- Fix after the check (source only, NOT rebuilt): the /atc/ curved-Moon row rounded the small rover to "5 kbit/s" (4.9) and "6 dB" (5.73), the hopper to "10 kbit/s" (9.7). Now one decimal under 100 kbit/s and for dB that are not whole (src/atc/main.js, the 'sph' cell).
+- Still to do when free RAM ≥ 1.0 GB: rebuild, light 1280, dark/light 390, then F-57 Lighthouse. Free RAM fell to 0.61 during the browser run; server and browser stopped; 0.93, then 0.89.
+
+## B-109 DONE 11:14 (phase6_family.json with E50 at 8x; no "still to come" note) | file: results/phase6_family.json
+- **Already done in the 8x addendum.** The file in commit 180db6a was regenerated with the 8x rows, and its `pending` key ("E50 at 8x (5 seeds) is still running …") is gone. Nothing new was written for this task.
+- **Key diff, 1cc5348 (11 Nov) → HEAD:**
+  - removed: `/pending`; the clause "the gap grows at 4x (8x pending)" was renamed "the gap grows with the fleet (4x and 8x)";
+  - added: `/e50_cells/{1x: 30, 4x: 10, 8x: 5}`, and in the renamed clause `gap_8x_h` (−0.247), `n_8x` (5), `p_one_sided_4x` (0.932), `p_one_sided_8x` (0.773);
+  - **changed: none.** Every other value is identical, including gap_1x_h, gap_4x_h, n_4x and the clause's p_one_sided (0.932, now the larger of the 4x and 8x values), and all Holm values.
+- **Why the site still shows the note:** `site/lib/phase6.mjs:85` prints `F.pending` as "Still to come". The current file has no `pending` key, so the site is reading a copy staged before 180db6a. FRONTEND's staging (`site/scripts/prepare-data.mjs`) needs to rerun. The clause's display name also changed, if the site matches on it.
+
+## F-70c CODE DONE (NOT BUILT) | site/lib/phase6.mjs, site/tests/phase6.test.mjs | how to check: node --test tests/*.test.mjs (58/58); after a build, /results/ "Phase 6: what the hypotheses came to", row H10′ | for LEAD
+- "Still to come": the site never used a staged copy. familyTable() reads results/phase6_family.json from the repo root at build time, and my 12:00 build (after 180db6a) already prints no "Still to come" (0 hits in dist/results/index.html). A test now checks this.
+- E50 8x on the page: the H10′ row listed only the file's summary sentence. It now lists the three clauses, each with its own test and values, like H9′:
+  - layered within 1.5x of perfect at 1x (TOST): held, difference 0.01 h against a margin of 8.87 h;
+  - the gap grows with the fleet (4x and 8x): did not hold, gap 0.01 h at 1x, −0.87 h at 4x (10 seeds), −0.25 h at 8x (5 seeds);
+  - dead reckoning with the margin larger at 1x: did not hold, difference 0.12 h, p 0.13;
+  - note: the clauses are joined by intersection-union.
+  A clause is held when its p (p, or p_one_sided) is below the file's alpha. The fleet sizes come from the gap_<m>x_h keys, so a later 16x would show without a code change. The clause name is read from the file, so the rename needed nothing.
+- e50_cells (1x 30, 4x 10, 8x 5) is not printed separately: the seed counts are already in the gap clause. Say if you want it in the caption.
+- Not built: free RAM 0.70 GB.
+
+## B-101 DONE 11:27 ("near the base" under several readings) | files: results/E50_near_base.json, results/E50_near_base.csv
+`tools/atc/run_e50_near.py` repeats E50's perfect runs and navigation runs with E50's own functions and seeds, in its own cache; E50's cache is only read.
+- **Reproduction:** every cell matches E50 (perfect delay; reading (a) ranging p95 = E50's stored near-base p95) at 1x (30 seeds) and 4x (10 seeds).
+- **8x is not run.** One 8x perfect run takes about 500 s, the cell does not fit one chunk, and its memory exceeds what has been free today. It needs a staged runner and about 1.5 GB free; I can add it as an addendum if you want it.
+
+**Readings, as shares of driving vehicle-steps:**
+
+| Reading | 1x | 4x |
+|---|---|---|
+| (a) 2+ beacons in radio line of sight (the reading used so far) | 23.0 % | 23.0 % |
+| (b) 1+ beacon in radio line of sight | 56.7 % | 56.1 % |
+| (c) within 1 km of the BASE mast | 67.2 % | 66.4 % |
+| (d) within radio range (5 km) of the BASE mast | **100 %** | 100 % |
+| (e) within radio range (5 km) of any base beacon: **PREREG6's words, taken literally** | **100 %** | 100 % |
+
+(d) and (e) cover all driving: every route point lies within 5 km of BASE.
+
+**H9' clause 2, ranging (dr + ranging): p95 inside the region, mean over seeds, and seeds inside the 5 m budget:**
+
+| Reading | 1x p95 (seeds inside) | 4x p95 (seeds inside) |
+|---|---|---|
+| (a) | **4.22 m (30/30)** | **4.31 m (10/10)** |
+| (b) | 12.5 m (0/30) | 8.6 m (0/10) |
+| (c) | 24.7 m (0/30) | 22.5 m (0/10) |
+| (d) = (e) | **50.1 m (0/30)** | **32.1 m (0/10)** |
+
+- **Verdict: depends on the reading.** The clause holds in every seed under (a) and fails in every seed under (b) to (e), including the registered words (e), at both fleet sizes.
+- The 95 % intervals over seeds are in the JSON (`in_p95_m_ci95_seeds`), as are the p95 outside each region (`out_p95_m_mean`).
+
+**The other layer sets, for the table** (1x p95; seeds inside the budget):
+
+| Layer set | (a) | (b) | (c) | (d) = (e) |
+|---|---|---|---|---|
+| dead reckoning | 644 m (0/30) | 644 m (0/30) | 641 m (0/30) | 643 m (0/30) |
+| + terrain fixes | 3.50 m (30/30) | 4.76 m (23/30) | 9.12 m (0/30) | 12.6 m (0/30) |
+| + LANS as in 2030 | 2.86 m (30/30) | 3.43 m (30/30) | 4.99 m (17/30) | 6.30 m (2/30) |
+
+At 4x: fixes 3.52 / 4.54 / 8.51 / 10.6 m; LANS@2030 2.81 / 3.35 / 4.90 / 5.82 m.
+
+**Ranging-error sweep** (referee M5; dr + ranging, seeds 1–6, 1x; p95 by reading (a) / (b) / (c) / (d=e); seeds inside under (a)):
+- long-range ranging σ = 1 m: **1.87** / 8.28 / 16.5 / 38.4 m (6/6);
+- σ = 3 m (default): 4.21 / 12.9 / 25.0 / 47.1 m (6/6);
+- σ = 10 m: **9.64** / 21.9 / 37.3 / 62.8 m (**0/6**);
+- UWB σ 0.1 / 0.3 / 0.7 m: under (a) 4.16 / 4.21 / 4.25 m, and similar flatness under the others.
+
+**Reading.** Clause 2 is decided by the long-range radio ranging error and by where it applies, not by UWB. UWB's 100 m reach rarely covers a driving vehicle. Even at 1 m ranging error, no reading wider than (a) meets the 5 m budget.
+
+**Files:** new `tools/atc/run_e50_near.py`, `results/E50_near_base.json` (per fleet multiple: shares, per layer set and reading the p95 mean, CI over seeds, min/max, seeds inside, p95 outside; the verdict per reading; the sweep), `results/E50_near_base.csv` (per seed, set and reading). Peak memory: 448 MB at 1x, 554 MB at 4x.
+**How to test:** `python tools/atc/run_e50_near.py run --mult 1 --seeds 1-30` (about 1 min a seed), `--mult 4 --seeds 1-10` (about 4 min a seed), then `build`.
+
+## F-70b CHECKED + F-70c DONE | site/lib/phase6.mjs, site/tests/phase6.test.mjs (F-70c); F-70b files as committed in ba12fab | how to check: /results/ H10′ row, /atc/ curved-Moon row, /protocol/ problems 4 and 5 | for LEAD
+- Built at 2.33 GB free, then rebuilt at 1.71. Budgets OK, tests 58/58.
+- Browser: /results/, /protocol/, /atc/ in dark and light at 1280 and 390: 0 console errors, 0 page overflow, 0 contrast failures, one h1, no heading skips. At 390 the /atc/ table scrolls inside its own box (937/358), as before.
+- F-70b: the /atc/ one-decimal fix shows: small rover 4.9 kbit/s and 5.7 dB, hopper 9.7 kbit/s and 5.7 dB, big rovers 701 kbit/s and 5 dB, base 3,653 kbit/s and 3.4 dB.
+- F-70c: the H10′ row now lists its clauses:
+  - "layered within 1.5x of perfect at 1x (TOST): held; difference 0.01 h against a margin of 8.87 h";
+  - "the gap grows with the fleet (4x and 8x): did not hold; gap 0.01 h at 1x, −0.87 h at 4x with 10 seeds, −0.25 h at 8x with 5 seeds";
+  - "dead reckoning with the margin larger at 1x: did not hold; difference 0.12 h, p 0.13";
+  - plus the intersection-union note.
+  A value that is a phrase now comes after the outcome. H9′'s plain values stay in brackets, as before, to avoid "(TOST) (…)". No "Still to come" on the page.
+- Next: F-57 Lighthouse, one page at a time.
+
+## B-108 DONE 12:29 (bounds for encounter types 4, 5, 6 on fresh seeds) | file: results/E44_fresh_seeds.json
+**Seeds.** Builder root 4410 and run root 4411 (never used: E44 uses 44 / 4400, the fixtures 4498 / 4499, and E47 E44's own), with the same batch sizes and counts as the main run (10,000 encounters per type).
+- Parts: `results/E44_parts/F0{4,5,6}_b*.csv.gz`. The F prefix keeps them out of the main summary, which reads `T*` only.
+- Process peak about 130 MB; 4 h 40 min of compute under load.
+- The JSON keeps the main run's values and the fresh values side by side, with the reason (the main run's bounds were computed on the seeds where the body-geometry and type-6 crossing defects were found and the metric narrowed, `results/E44_defects.json`).
+
+| Type | Main run: violations; bound (95 %); Bonferroni | Fresh seeds: violations; bound; Bonferroni | Min. margin, main / fresh | Outcomes on fresh seeds |
+|---|---|---|---|---|
+| 4 junctions | 0; 3.0×10⁻⁴; 5.5×10⁻⁴ | **0; 3.0×10⁻⁴; 5.5×10⁻⁴** | 1.20 / 1.20 m | finished 3,540, incomplete 6,460 |
+| 5 ring | 0; 3.0×10⁻⁴; 5.5×10⁻⁴ | **0; 3.0×10⁻⁴; 5.5×10⁻⁴** | 1.46 / 1.45 m | deadlock 361 (main 386), finished 3,464 |
+| 6 landing closure (importance-sampled, n_eff 4,545 / 4,580) | 0; 6.6×10⁻⁴; 1.2×10⁻³ | **1 zone violation**; see below | 1.05 / 0.95 m | violation 1, deadlock 10 (main 4), finished 3,781 |
+
+**Type 6: the main run's zero did not replicate.**
+- On fresh seeds, one encounter (batch 9, index 968; weight 0.49) has a vehicle inside the closed zone for the last 60 s.
+- **Cause (replayed; deterministic, no random fuzzer):** vehicle 2 is correctly held at the zone boundary because it cannot cross before the closure. It still holds its grant for a one-lane resource beyond the zone. Vehicle 1, inside the zone, waits at that resource's stop line and is still there at the closure.
+- This is the hold-and-wait between R5 and R3 that E44's exploratory variant `6_request_rule` (PREREG change 9: no request while an impassable hold point lies before the resource) was written for. **With that rule the same encounter has no violation** (replayed).
+- So the base rule has a real, rare failure mode, and the main run's seeds did not show it as a violation. The main run's 4 type-6 deadlocks are the same mechanism.
+
+**The bound rule misbehaves for type 6.**
+- E44's rule switches, at x > 0, to an unweighted Clopper-Pearson on n = 10,000, giving **4.7×10⁻⁴** (Bonferroni 7.6×10⁻⁴). That is *lower* than the zero-violation bound on n_eff (6.6×10⁻⁴): one violation would tighten the claim.
+- A rule that keeps the importance weights, Clopper-Pearson on n_eff with the violation's effective count rounded up, gives **1.0×10⁻³**. The weighted point rate is 4.8×10⁻⁵.
+- I recommend the papers quote the weighted value, or state the type-6 result as "one violation in 10,000 fresh encounters, from the known hold-and-wait, removed by the request rule".
+- The JSON holds E44's rule values; the weighted figures are here and in the examples block. Say if you want them as keys.
+
+**P2 figures you asked me to confirm (from results/E44_parts and E44_bounds.json):**
+- ring deadlock among judged encounters (no random fuzzer): **13 of 1,892 (0.7 %)** as written, and **373 of 1,963 (19.0 %)** for the keep-one-slot-free variant: confirmed;
+- R1 breach rates non-zero for types **3 (0.0003), 10 (0.0003) and 6 (0.001)**: confirmed.
+
+**Files:** `tools/atc/run_e44.py` (`fresh` and `fresh_summarize` commands; `run_batch` takes the fresh roots only for variant "fresh", so main-run batches are unchanged), `results/E44_parts/F0*_b*.csv.gz` (25 files), `results/E44_fresh_seeds.json`.
+**How to test:** `python tools/atc/run_e44.py fresh` (resumable), then `fresh_summarize`.
+
+## F-57 DONE (Lighthouse + quality pass) | site/src/vehicles/vehicles.css | how to check: Lighthouse 13.5.0 on the preview server, one page and form factor at a time, RAM checked before each run (1.23 to 1.92 GB) | for LEAD
+Targets (F-40): perf desktop ≥85 on 3D pages, ≥95 on reading pages; perf mobile ≥70 on 3D pages, ≥90 on reading pages; a11y and best practices ≥95 everywhere.
+
+| Page | Kind | Desktop perf | Mobile perf | a11y | BP | Notes |
+|---|---|---|---|---|---|---|
+| / | 3D | 100 | 100 | 100 | 100 | |
+| /world/ | 3D | 100 | 97 | 100 | 100 | |
+| /world/trace/ | 3D | 88 | 73 | 100 | 100 | mobile TBT 1,570 ms (known, accepted); desktop TBT 290 ms |
+| /vehicles/ | 3D | 99 | 92 (was 81) | 100 | 100 | mobile CLS 0.224 → 0.001, fixed below |
+| /lab/ | reading | 100 | 100 | 100 | 100 | |
+| /lab/lander/ | 3D | 100 | 91 | 100 | 100 | mobile CLS 0.074 |
+| /lab/rover/ | 3D | 100 | 83 | 100 | 100 | mobile LCP 4.2 s, CLS 0.082 |
+| /stories/ | 3D | 100 | 96 | 100 | 100 | desktop CLS 0.001 (the known item no longer shows) |
+| /simulator/ | 3D | 97 | 95 | 100 | 100 | desktop CLS 0.108 (known, accepted) |
+| /verification/ | reading | 100 | 99 | 100 | 100 | |
+| /about/ | reading | 100 | 100 | 100 | 100 | |
+| /method/ | reading | 100 | 100 | 100 | 100 | |
+| /protocol/ | reading | 100 | 98 | 100 | 100 | |
+| /network/ | reading | 100 | 100 | 100 | 100 | |
+| /results/ | reading | 100 | 99 | 100 | 100 | |
+| /paper/ | reading | 100 | 99 | 100 | 100 | |
+| /atc/ | reading | 100 | 98 | 100 | 100 | |
+
+Findings and fixes:
+- MEDIUM, fixed: /vehicles/ on phones jumped after load (CLS 0.224). The story card and chips sit in the page flow under the 3D view at ≤900 px and are filled once the catalogue loads, pushing the controls down 400 px.
+  - Fix: while the story text is empty, the story holds 16.5rem and the chips 8rem (about the default MK1's 265 and 130 px).
+  - The rule keys on `.ui-story-text:empty`, not the card: the card is attached at once, so `:empty` on it never matched (first try, no effect).
+  - Checked at 390: after load the reserve is gone (MK1 288/130, Griffin 188/0: no gap where a vehicle has no chips), 0 console errors.
+- No failing a11y or best-practice audit on any page. The static checks (links 513/0 broken, a11y static clean, budgets OK) are in the earlier F-57 addendum.
+- Low, not fixed: /lab/rover/ mobile LCP 4.2 s and /lab/lander/ mobile CLS 0.07 to 0.08. Both are inside the targets. Lighthouse runs headless with --disable-gpu, so 3D pages are measured on their fallback path; a GPU phone may differ.
+
+## B-108 ADDENDUM 12:40 (LEAD's decision: the weighted type-6 bound and the replay in the file) | file: results/E44_fresh_seeds.json
+Added to `types.6.fresh_seeds`, computed by `run_e44.py fresh_summarize` (so a rebuild reproduces them). **Every existing key is unchanged** (compared with the file before).
+- `bound_weighted` **1.04×10⁻³** and `bonferroni_bound_weighted` **1.67×10⁻³**: Clopper-Pearson on n_eff = 4,580.4, with the effective violation count x_eff = 0.219 rounded up to 1; weighted point rate 4.78×10⁻⁵. `bound_weighted_note` states the method and why E44's unweighted 4.7×10⁻⁴ is not comparable.
+- `replay` (batch 9, idx 968; deterministic, no random fuzzer):
+  - what happened, in one sentence: the hold-and-wait between R5 and R3 described in the B-108 report;
+  - under the base rules: `viol_zone` 1;
+  - **under the request-rule variant (PREREG change 9): no violation, no deadlock**;
+  - `fresh_encounters_rerun_under_variant`: **1**. Only this encounter of the 10,000 was rerun under the variant, and the `scope_note` says nothing is claimed for the others.
+
+## F-70d DONE | site/lib/results-atc.mjs, site/tests/results-atc.test.mjs | how to check: /results/ P1 card, last line | for LEAD
+- The P1 card's relay line now reads: "An always-up relay matched the marketplace run for run; only a relay up 80 % of the time was worse than the auction, by 3.8 h (2.0 to 5.7 h)". The 80 % comes from P1-RELAY08-SHARE.
+- Flag: the share is tagged Assumed, not Modelled. It is the relay's availability, a setting of the experiment (PLACEHOLDERS.md: the coverage of the cell B_EARTH_RELAY 0.8). pv() takes an optional flag, default Modelled, so nothing else changed. Say if you want it Modelled.
+- Tests 58/58; the results-atc test now requires the key and its Assumed flag. Built at 1.21 GB. Browser /results/ in dark 1280, light 390, light 1280 and dark 390: 0 console errors, 0 overflow, 0 contrast failures.
+- P2 card and /protocol/ not touched, as asked.
+
+## F-71 CODE DONE (NOT BUILT) | site/lib/phase6.mjs, site/lib/protocol-data.mjs, site/lib/results-atc.mjs, site/lib/papers.mjs, site/vite.config.js, site/protocol/index.html, site/atc/index.html, site/src/atc/sandbox.js, site/tests/f71.test.mjs (new) | how to check: node --test tests/*.test.mjs (62/62) | for LEAD
+1. P2 card: both quotes are read from paper/p2/values.json at build time, so they carry the new text with no code change:
+   - "no violation in ten of twelve encounter types … one landing closure in 10,000 left a vehicle inside the zone";
+   - "inside the 5 m margin where two beacons were in sight (23 % of driving) but not over the registered radio range (50 m)".
+   No other P2 sentence on the card changed.
+2. H9′ clause 2, from results/E50_near_base.json (fleet at 1x, dead reckoning plus ranging, every reading in the file):
+   - /results/ H9′ row: the near-base clause, "depends on the reading", lists all five readings, each with its share of driving, its 95th percentile and its seed verdict. The registered wording (within radio range (5 km) of any base beacon) shows 50.1 m and "fails in every seed"; "2+ beacons in radio line of sight" shows 23 %, 4.2 m, "holds in every seed".
+   - The note now says the clause holds only under the two-beacon reading, chosen after the results, that under the registered wording it fails in every seed, and that the papers report all five readings. It said "four readings" before.
+   - /protocol/ problem 1, method, new sentence: "Read as “2+ beacons in radio line of sight” (23 % of driving), the error’s 95th percentile is 4.2 m and the clause holds in every seed; read as the registered wording, “within radio range (5 km) of any base beacon”, it is 50.1 m against 5 m and fails in every seed. The papers report all five readings, so the second clause of H9′ depends on the reading (a simulation on assumed ranging errors)."
+   - The build stops if the file's verdict is no longer "depends on the reading". Every number is flagged; the tooltip names "a simulation on assumed ranging errors". The 5 m budget is tagged Spec.
+3. Curved Moon:
+   - /protocol/ problem 4 now reads "By calculation over a curved Moon (ITU-R P.526) … the rate falls from 1,574 to 701 kbit/s: the crew and cargo rovers' worst hop no longer carries 1 Mbit/s, which reaches 4.64 km instead of 5.89 km."
+   - "no longer carries" is computed from the file for both the crew rover and the cargo rover (LTV1 and CARGO); the build stops if they disagree.
+   - /atc/ note: "The curved-Moon row is a calculation: …". The row itself (701 kbit/s at 5.0 km) says nothing stronger.
+4. /paper/:
+   - PDF sizes and page counts are read from the files: P1 53 pages, 1,430 kB; P2 61 pages, 1,634 kB; P3 72 pages, 1,638 kB.
+   - The BibTeX note was typed "Preprint, October 2026". It now comes from each paper's byline: "Preprint, October 2026, revised November 2026". The year is read too.
+5. /atc/ section 5 (beyond the list, same issue):
+   - The sandbox lead counted "11 of the 12 types had no violation" from the main run without saying so. It now opens "In the main run, of …".
+   - New build-time sentence from results/E44_fresh_seeds.json: "On fresh seeds (task B-108 …), types 4 and 5 again had no violation in 10,000 encounters each; type 6 had 1 in 10,000: a vehicle still inside a closed landing zone at closure, a 95 % upper bound of 0.10 % per encounter (weighted)."
+- Not built: free RAM 0.71, then 0.70 GB (server and browser were already stopped). Next when ≥ 1.0 GB: build, budgets, then /results/, /protocol/, /atc/ and /paper/ in both themes at 1280 and 390.
+
+## B-102 DONE 14:50 (what a reservation overlap is) | files: results/E50_overlaps.json, results/E50_overlaps.csv
+`tools/atc/run_e50_overlaps.py` repeats E50's runs (perfect run, navigation per layer set, both margin runs with their navigation) with E50's functions and seeds, staged, in its own cache. E50's cache is only read.
+- **Reproduction:** every cell's violation counts equal E50's, at 1x (30 seeds) and 4x (10 seeds).
+- **8x not run.** One 8x engine run takes 450–530 s, too close to the per-call limit to stage safely. I can do it if you accept a few single calls of about 9 minutes and 1.5 GB free. 8x is the case where 5.2 overlaps per seed remain with the layered margin.
+- **The engine's logs were enough:** reservation windows with segment fractions, plus the true trajectories and navigation errors. Nothing extra was needed.
+
+**Per overlap (the pairs `violations()` counts):**
+
+| Fleet, run | Overlaps per seed | Duration median / p95 / max | Gap at entry median / max | Gap < 5 m D0 | Gap < R1 d_min |
+|---|---|---|---|---|---|
+| 4x, no margin, dead reckoning | 71.5 | 417 / 1,291 / 2,298 s | 410 / 2,037 m | 0 | 0 |
+| 4x, no margin, + ranging | 69.0 | **15 / 51 / 109 s** | 437 / 480 m | 0 | 0 |
+| 4x, no margin, + fixes | 67.7 | **6.7 / 25 / 54 s** | 441 / 450 m | 0 | 0 |
+| 4x, no margin, + LANS@2030 | 69.2 | **3.8 / 17 / 42 s** | 443 / 451 m | 0 | 0 |
+| 4x, margin, dead reckoning | 0 | – | – | – | – |
+| 4x, margin, layered | 0.9 | 8.2 / 15 / 17 s | 441 / 446 m | 0 | 0 |
+| 1x, no margin: dr / ranging / fixes / LANS | 1.87 / 0.57 / 0.70 / 0.77 | medians 334 / 31 / 10 / 3.2 s | ~430–450 m | 0 | 0 |
+| 1x, margin: dr / layered | 0.03 / 0.03 | 10.9 / 16.3 s (one each) | 472 / 438 m | 0 | 0 |
+
+Counts above 1 s, 10 s and 60 s are in the JSON (`counts_per_seed`).
+
+**The back-to-back test (the referee's point): confirmed.**
+- Consecutive conflicting windows on a resource, in nominal order: at 4x there are 134 abutting pairs per seed (nominal gap under 1 s, as a waiting vehicle files).
+- **They overlap in true time 43 %, 51 %, 50 % and 52 % of the time** for dead reckoning, ranging, fixes and LANS, whose p95 errors are 793, 32, 10.6 and 5.8 m. At 1x the shares are 60 %, 40 %, 50 % and 55 % (42 abutting pairs over 30 seeds).
+- Separated pairs overlap at most 4 % (dead reckoning) and 0.06–0.2 % otherwise.
+- **So the count measures how many back-to-back pairs the month had, not navigation quality.**
+
+**What the margin does, plainly:**
+- **It changes the count, not the nature of an overlap.** The margin separates the windows nominally (layered: nominal gap 15–26 s), so the near-50 % back-to-back overlaps disappear.
+- The few left (4x layered: 0.9 per seed) last 8–17 s, about what the fixes layer gives without a margin.
+- The gaps at entry stay where they were. They are set by segment geometry (about 440 m, the length of the single-lane segments involved), not by the margin.
+
+**What an overlap is physically:**
+- In no run, with or without a margin, at either fleet size, were the two vehicles within 5 m or within R1's d_min when the second truly entered.
+- 99 % of overlaps are same-direction pairs on branched segments (head-on 0–1 %). The second vehicle enters while the first is still about 440 m ahead, before its exit.
+- **The overlap is a reservation-accounting event, not a close approach.**
+- Suggested wording for P2: "the margin removes overlapping reservation windows, which arise about half the time whenever two windows are filed back to back; no overlap brought two vehicles within the static margin, with or without it".
+
+**Files:** new `tools/atc/run_e50_overlaps.py`, `results/E50_overlaps.json` (per fleet multiple and run: distributions, counts, back-to-back shares; `note` defines every field), `results/E50_overlaps.csv` (one row per fleet multiple, condition and layer set). Peak memory: 468 MB at 1x, 508 MB at 4x.
+**How to test:** `python tools/atc/run_e50_overlaps.py run --mult 1 --seeds 1-30` (about 70 s a seed), `--mult 4 --seeds 1-10` (about 8.5 min a seed, staged), then `build`.
+
+## F-71 DONE (FRONTEND, 2026-11-12): site brought to the P2/P3 second pass, browser-checked
+Build by LEAD (tests 62/62, budgets pages OK); preview of that dist. Checked /results/, /protocol/, /atc/, /paper/ in dark and light at 1280 and 390: 16 page views, 0 console errors, 0 overflow, 0 contrast fails, one h1, no heading skips on each.
+- /results/ H9′ row: the reading clause "depends on the reading" with a sub-list of all five readings (a: 2+ beacons, 23 % of driving, 4.2 m, holds in every seed; b 12.5 m, c 24.7 m, d 50.1 m, e the registered wording 50.1 m, each fails in every seed), 10 flags, each sourced to results/E50_near_base.json and named "a simulation on assumed ranging errors"; note "holds only under the reading … chosen after the results; under the registered wording it fails in every seed; the papers report all five readings (decisions B4)". Table fits (1152/1152, 358/358).
+- /results/ P2 card: the two quotes now read "ten of twelve … one landing closure in 10,000 left a vehicle inside the zone" and "…two beacons were in sight (23 % of driving) but…", from paper/p2/values.json.
+- /protocol/ problem 1: "Read as “2+ beacons in radio line of sight” (23 % of driving), the error’s 95th percentile is 4.2 m and the clause holds in every seed; read as the registered wording, “within radio range (5 km) of any base beacon”, it is 50.1 m against 5 m (Spec) and fails in every seed. … (a simulation on assumed ranging errors)."
+- /protocol/ problem 4: "By calculation over a curved Moon (ITU-R P.526) … 1,574 → 701 kbit/s: the crew and cargo rovers' worst hop no longer carries 1 Mbit/s, which reaches 4.64 km instead of 5.89 km. No lunar measurement exists to settle which ground model is closer."
+- /atc/ section 5: the opening line now begins "In the main run, of 300,000 simulated encounters…" (loads on scroll); new fresh-seed sentence "types 4 and 5 again had no violation in 10,000 encounters each; type 6 had 1 in 10,000: a vehicle still inside a closed landing zone at closure, a 95 % upper bound of 0.10 % per encounter (weighted)", flagged Modelled from results/E44_fresh_seeds.json. Curved-Moon note: "is a calculation".
+- /paper/: BibTeX notes "Preprint, October 2026, revised November 2026" for P1–P3 read from each byline (r1 stays "Preprint, October 2026"; the v3 block is typed content, unchanged); PDFs 53 pp 1,430 kB, 61 pp 1,634 kB, 72 pp 1,638 kB. BibTeX <pre> blocks scroll horizontally inside themselves as before (no page overflow).
+- results/E50_overlaps.json (B-102) not used, as asked.
+Files: site/lib/phase6.mjs, site/lib/protocol-data.mjs, site/lib/results-atc.mjs, site/lib/papers.mjs, site/vite.config.js, site/protocol/index.html, site/atc/index.html, site/src/atc/sandbox.js, site/tests/f71.test.mjs (new).
+
+## B-107 DONE 15:52 (uphill encounters; R1's slope term) | files: results/E45_uphill.json, results/E45_uphill.csv
+**Setup** (`tools/atc/run_e45_uphill.py`; seed roots 4507 / 4508, never used):
+- **Encounters:** E44's type 1 (following; the leader brakes to a stop) with the slope fixed uphill, in two geometries: "following" (two-lane road) and "one_lane" (the convoy enters one single-lane segment, R3 same direction, granted on approach as in type 9; the leader brakes after the last vehicle is in).
+- **Cells:** Moon and Mars; 5, 10, 15, 17.2°; 2,000 encounters per cell, all driven. Both rules run on the same encounters: as is, and with the slope term.
+- **Followers at the rule's limit, a choice I made, stated.** Every vehicle starts at class speed; each follower starts 0–2 m beyond R1's d_min and runs E44's adversarial planner (full acceleration requested, so the safety check holds it at the limit). E44's nominal planner keeps a cushion of v²/0.6 + 2 m and never reaches d_min, so in E44's own type-1 setup no slope would show the effect.
+- **Leader braking:** the braking leader brakes at its real capability, max(B_MAX, b_guaranteed(θ)). Uphill that is 0.5 + g sin θ (friction-capped): mean 0.91 / 0.97 m/s² on the Moon at 15 / 17.2°, and 0.82 / 1.14 / 1.46 / 1.60 on Mars at 5 / 10 / 15 / 17.2°.
+- **Lag:** each cell runs with no lag (E44: the check acts within one 0.1 s step, faster than the proposition assumes) and with a follower actuation lag equal to R1's response time ρ = 1 s. The safety check itself is unchanged; the lag models the vehicle.
+
+**Results** (encounters of 2,000 where the smallest same-lane gap fell inside D0 = 5 m; smallest gap in metres; no contact in any cell):
+
+| Planet, geometry | Lag | 5° | 10° | 15° | 17.2° | With the slope term |
+|---|---|---|---|---|---|---|
+| Moon, following | none | 0 (7.96) | 0 (7.33) | 0 (6.97) | 0 (6.84) | 0 everywhere |
+| Moon, following | 1 s | 0 (7.32) | 0 (5.88) | **14 (4.57)** | **335 (4.15)** | **0** everywhere (min 5.43) |
+| Moon, one lane | none / 1 s | 0 | 0 | 0 (5.43 with lag) | 0 (5.22 with lag) | 0 |
+| Mars, following | none | 0 (7.17) | 0 (6.41) | **112 (4.93)** | **324 (4.61)** | **0** (min 5.00) |
+| Mars, following | 1 s | 0 (5.39) | **964 (2.86)** | **1,490 (0.98)** | **1,676 (0.72)** | **0** (min 5.00) |
+| Mars, one lane | none | 0 | 0 | 5 (4.99) | 394 (4.57) | 0 |
+| Mars, one lane | 1 s | 0 (5.92) | **301 (3.01)** | **969 (0.98)** | **1,314 (0.73)** | 71 / 62 at 15 / 17.2° (min 4.86), see below |
+
+**Slope at which the gap first falls inside D0** (sweep 0–17° in 0.5° steps, 500 encounters each, 1 s lag, rule as is):
+- **Moon, following: 14.0°** (theory: the leader out-brakes B_MAX beyond 10.7°; the first 3° are absorbed by the spacing). **Moon, one lane: not up to 17°.**
+- **Mars, following: 6.5°**; **Mars, one lane: 8.5°** (theory 4.6°).
+- Without the lag (E44's 0.1 s response), only Mars at 15° and above shows shortfalls (112–394 of 2,000, min 4.57 m).
+
+**The fix**, a slope term in R1:
+- R1 assumes the leader may brake at max(B_MAX, b_guaranteed(θ)), so d_min is computed with b_front = that value.
+- It removes every shortfall in "following" on both bodies, at every slope, with and without the lag.
+- **In the Mars one-lane convoy with the lag, 71 (15°) and 62 (17.2°) of 2,000 still end 0.01–0.14 m inside D0** (min 4.86 m). This is not the slope.
+  - I traced one: the leader had already stopped, and the middle vehicle closed in.
+  - With the lag, a vehicle that commands braking still applies its last second of acceleration commands. That is one 0.1 s step more than ρ, because the 10 Hz check assumes its command acts at once. It also briefly exceeds its class speed (4.31 against 4.17 m/s).
+  - So it is an artifact of combining a pure actuation lag with a 10 Hz check that assumes immediate actuation. A real implementation would count the commands already in the pipeline.
+  - **I have not changed the check for it.** Say if you want the check to account for the lag (an opt-in R1 term of one step, a_max × ρ × DT).
+- R1 breach rates as is: up to 0.039 (Mars following, 15°, lag) and 0.15 (Mars one lane, lag); 0 with the slope term.
+
+**Opt-in; nothing existing moves:**
+- `safety.Move.b_front` (None = B_MAX, the old expressions run unchanged);
+- `encounter.Spec`: `lead_brake_physical`, `r1_slope_term`, `actuation_delay_s`, all off by default.
+- **Checks:**
+  - E44's type-1 and type-10 batches rerun with the edited code are identical to the committed code's output;
+  - `tests/test_safety.py` 7 pass; new `tests/test_uphill.py` 2 pass;
+  - engine default path 0 of 144 differ from the pre-edit snapshot, vv6 G1 0 of 144.
+- **Separate finding while checking:** E44's stored type-10 parts disagree with the committed code (HEAD) on the `deadlock` flag in 445 of 4,000 rows of batch 0 (stored 1, rerun 0). All 445 have a random fuzzer, where E44 does not count deadlocks, so every outcome class and every published value is the same. It is a drift between the stored parts and the current code, not caused by B-107 (HEAD's code gives the same rerun).
+
+**Files:**
+- new: `tools/atc/run_e45_uphill.py`, `results/E45_uphill.json` (cells per planet, geometry, slope, lag and rule; sweep and thresholds with the theory slopes), `results/E45_uphill.csv`, `tests/test_uphill.py`;
+- changed: `lunarsim/atc/safety.py`, `lunarsim/atc/encounter.py` (opt-ins above).
+
+**How to test:** `.venv\Scripts\python -m pytest tests/test_uphill.py tests/test_safety.py -q`; `python tools/atc/run_e45_uphill.py run` (about 75 min in chunks), then `build`.
+
+## B-105 DONE 15:58 (memory measured; one robot's bid time) | file: results/E48_sizing.json (new blocks `per_robot_round`, `measured_memory`)
+`tools/atc/run_b105.py` runs a 30-day month of E48's scenario per fleet multiple (C_AUCTION, roads atc, seed 1) into `.cache/atc/e48/b105.json`. `run_e48.py build` adds the two blocks, each with a `revision` note that relabels E48's old figures. **All existing E48 keys are byte-identical** (compared before and after).
+
+**(2) One robot's bid computation in one auction round:**
+- What is timed: the robot's own loop over the pool (`_try_bundle` per item, summed per round and robot).
+- How: rounds are counted at the auction's selector; the time is the laptop time, scaled by flight.factor 54.8 (range 36.5–64).
+
+| Fleet | Robots | Robot-rounds | Free robots per round (mean) | Laptop median / p99 / max | Flight core median / p99 (range) |
+|---|---|---|---|---|---|
+| 1x | 8 | 218 | 1.1 | 0.45 / 5.3 / 7.5 ms | 25 ms / **0.29 s** (0.19–0.34) |
+| 4x | 32 | 2,262 | 2.7 | 0.19 / 20.0 / 217 ms | 11 ms / **1.09 s** (0.73–1.28) |
+| 8x | 64 | 6,935 | 4.0 | 0.20 / 21.7 / 196 ms | 11 ms / **1.19 s** (0.79–1.39) |
+
+- **Plainly: at 4x and 8x, one robot's own bid computation exceeds the 1 s decision at the 99th percentile on the flight core** (0.73–1.39 s over the factor range).
+- E48's whole-fleet figure (median 1.98 ms, p99 20.5 ms laptop, 1.12 s flight, pooled) is about the same as one robot's p99. With 3–4 free robots per round, one robot's bid is most of the call.
+- **Abstract wording:** "one robot's bid computation in an auction round, timed and scaled to the flight processor, takes 11–25 ms at the median and 0.3 s (1x) to 1.2 s (8x) at the 99th percentile", replacing the whole-fleet call.
+- The p99 comes from rounds with a large pool: the robot evaluates every waiting item with insertion. A cap on the items a robot evaluates per round would bound it. Not done; it would be a design change.
+
+**(1) Peak memory of the on-robot part (tracemalloc, MB of Python allocations):**
+
+| Fleet | Planner working (p99 / max) | One safety check | 24 h reservation window | Month's ledger | Bid policy | **All at once** | + planner p99 |
+|---|---|---|---|---|---|---|---|
+| 1x | 0.0035 / 0.0042 | 0.0056 | 0.0016 (7 entries) | 0.0025 (194 jobs) | 0.107 | **0.114** | 0.117 |
+| 4x | 0.0126 / 0.025 | 0.0056 | 0.0040 (14 entries) | 0.0078 (854 jobs) | 0.109 | **0.121** | 0.133 |
+| 8x | 0.0076 / 0.077 | 0.0056 | 0.0050 (79 entries, 19 resources) | 0.0136 (1,574 jobs) | 0.108 | **0.127** | 0.135 |
+
+- **Measured: 0.11–0.13 MB at peak, against E48's estimate of 0.388 MB.** The bid policy is 0.11 MB of it, and C_AUCTION's default bids do not use it (the learned regimes do). Without it the parts peak at about 0.03 MB.
+- Not counted: the interpreter, the code and numpy's own buffers. The process's working set is 439 MB in every run, almost all interpreter, numpy and simulator, not the on-robot data.
+- A year's ledger at 1x would be about 12 × 0.0025 = 0.03 MB as Python objects.
+- E48's estimate is larger because its 24 h window came from the year-long run's end (with more reservations) and its ledger was a year at 128 B per entry.
+- **Suggested label:** "Measured: 0.11–0.13 MB of Python allocations at peak (tracemalloc), of which 0.11 MB is the learned bid policy; estimated 0.39 MB as the sum of the parts at assumed layouts".
+
+**Files:** new `tools/atc/run_b105.py`; `tools/atc/run_e48.py` (build adds the two blocks from the cache); `results/E48_sizing.json` (+ `per_robot_round`, `measured_memory`).
+**How to test:** `python tools/atc/run_b105.py run --mult 1` (and 4, 8; 2 s, 13 s, 90 s), then `python tools/atc/run_e48.py build`.
+
+## B-100 DONE 16:07 (LRIP v0.2: what a position carries) | files: lunarsim/schemas/lrip-v0.2.json, data/atc/lrip/conformance-v0.2.json, results/E53_bitrate.json key lrip_v02, results/E53_table_v02.csv
+**What v0.2 changes** (`lunarsim/schemas/lrip-v0.2.json`, generated from v0.1 with only these changes, listed in `changes_from`; minor version 2, within the minor-version rule):
+1. **POSITION carries a 95 % horizontal bound in its 6 spare bits: `u95_code`; no byte added.** The code is u95 = 0.05 m × 2^(code/4):
+   - codes 0–61 cover 0.05 m to 1.95 km in steps of at most 19 %; 62 means above 1.95 km; 63 means unknown;
+   - coding is upward (`codec.u95_code`), so the decoded bound never understates (tested; e.g. 4.22 m → code 26 → 4.53 m; 15.2 m → 33 → 15.22 m);
+   - `sigma_h` (one sigma) stays as in v0.1.
+2. **HELLO appends the declaration:** `frame_id` (6 bits), `datum_id` (6), `time_scale` (4); payload 2 → 4 B. **HELLO is now sent at least once every 10 s** (`declaration_interval_s`), not only when nothing else was sent.
+3. **New enumerations** (codes 0 and unknown codes are refused, not read as a cautious value):
+   - frame: 1 site grid on MOON_ME_DE440_ME421, 2 site grid on MOON_PA_DE440, 3 MOON_ME selenographic;
+   - datum: 1 sphere 1,737.4 km with the grid origin at BASE, 2 the LOLA polar DEM height reference;
+   - time_scale: 1 TAI, 2 UTC, 3 TT, 4 TDB, 5 TCL, 6 site time base steered to TAI.
+   - These are the site's registry, assumed; their registration with the agencies is future work.
+4. **Manifest:** registry keys `frame`, `datum` and `time_scale` appended (indices never reused). v0.2 examples in `data/atc/lrip/v0.2/` with `nav.{frame, datum, time_scale}`; `lunarsim/schemas/lrip-manifest-v0.2.schema.json` requires them.
+5. **Declaration rule** (`codec.Receiver`), bound by the security context:
+   - a declaration counts only from an authenticated v0.2 HELLO or a signed manifest, and holds for the key epoch it was authenticated under;
+   - **a POSITION whose sender has no declaration under its current key epoch is refused** (`LripRefError`, counted), and so is an unauthenticated POSITION;
+   - a v0.1 sender cannot declare, so a v0.2 receiver refuses its positions; its other messages decode as before;
+   - an accepted POSITION comes back with frame, datum, time scale and `u95_m`.
+
+**v0.1 stays decodable and reproducible:**
+- Fields marked `since: 2` are absent from minor-1 packets. The spare bits replaced by `u95_code` read as spare there, so a v0.1 POSITION does not read as a 0.05 m bound.
+- `fields_for(name, 1)` equals the v0.1 catalogue for all 15 messages (tested).
+- `minor=1` gives v0.1 packets and sizes; **the v0.1 conformance vectors regenerate byte-identically** and still decode; v0.1 compact manifests are unchanged.
+- E53's v0.1 computation is pinned to minor 1. Its keys and `E53_table.csv` are byte-identical, and the published per-rover traffic reproduces.
+
+**Every size that moves:**
+- HELLO: **30 → 32 B** authenticated (16 → 18 unsecured);
+- compact manifests: 283 → **292 B** (small rover), 280 → **289 B** (hopper);
+- all other messages are unchanged; POSITION is still **41 B before link framing** (+12 B in a Proximity-1 frame = 53 B).
+
+**Every bit rate that moves** (E53 rerun with v0.2 sizes, both geometries, all 120 cells; every cell moves only through HELLO):
+
+| 20 rovers, authenticated | Per rover v0.1 → v0.2 | Busiest link p95, fleet | Busiest link p95, spread |
+|---|---|---|---|
+| POSITION 0.1 Hz | 0.266 → 0.277 kbit/s | 5.31 → 5.54 | 3.07 → 3.20 |
+| **POSITION 1 Hz** | 0.393 → **0.418** | **7.86 → 8.37** | 4.54 → 4.83 |
+| POSITION 10 Hz | 3.345 → 3.370 | 66.9 → 67.4 | 38.6 → 38.9 |
+| unauthenticated, 1 Hz | 0.258 → 0.273 | 5.17 → 5.46 | 2.99 → 3.15 |
+
+- **H13 check with v0.2:** 8.37 kbit/s at 1 Hz (≤ 16) and 67.4 at 10 Hz (> 16), **the same verdict**. Scheduled airtime 10.46 kbit/s (v0.1 9.82); slotted random access 22.7 (does not fit, as before).
+- **Link framing row** (every packet in a Proximity-1 frame, +12 B): 20 rovers at 1 Hz, authenticated, **10.87 kbit/s** at the sources and on the busiest link; **13.58 kbit/s scheduled airtime** (fits 16 kbit/s scheduled, not slotted).
+- **Traffic model coverage:** E53 sends **11 of the 15 message types**: POSITION, STATUS, INTENT, HELLO, RESERVE_REQ / GRANT / RELEASE, TASK_BID / AWARD / STATE, ALERT. It does not send TASK_ANNOUNCE, CAP_QUERY, CAP_MANIFEST or MAP_NOTICE (stated in the schema and in `lrip_v02.traffic_model_coverage`).
+
+**Files:**
+- new: `lunarsim/schemas/lrip-v0.2.json`, `lunarsim/schemas/lrip-manifest-v0.2.schema.json`, `data/atc/lrip/v0.2/manifest-{small_rover,hopper}.json`, `data/atc/lrip/conformance-v0.2.json` (45 vectors), `results/E53_table_v02.csv`, `tests/test_lrip_v02.py` (5 tests);
+- changed: `lunarsim/atc/lrip/codec.py` (`fields_for`, minor-aware sizes, encode and decode, `u95_code` / `u95_from_code`, `Receiver`, `LripRefError`), `lunarsim/atc/lrip/__init__.py`, `lunarsim/atc/lrip/manifest.py` (`example(name, version)`), `tools/atc/run_e53.py` (v0.1 pinned to minor 1; `v02` command), `results/E53_bitrate.json` (+ `lrip_v02`), `tests/test_lrip.py` (sizes test pinned to v0.1).
+- **Checks:** LRIP tests 15 pass; vv6 54 of 54 pass (only commit and runtimes changed in vv_phase6.json).
+
+**How to test:** `.venv\Scripts\python -m pytest tests/test_lrip.py tests/test_lrip_v02.py -q`; `python tools/atc/run_e53.py v02` (about 2 min).
+**For FRONTEND (via LEAD):** `data/atc/protocol/e53_bitrate.json` (B-99) still carries the v0.1 rows. I can re-export it with v0.2 and the framing row if the site should show them.
+
+## F-72 DONE (FRONTEND, 2026-11-12): P2 second pass part 2 (46d0de2) and P3 second pass part 2 (294fbc2) on the site
+Tests 66/66; build clean; budgets pages OK (/atc/ eager JS 15.0/16 kB after splitting section 3 into a lazy chunk, /protocol/ data 88.5/90). Browser: /results/, /atc/, /protocol/, /paper/ in dark and light at 1280 and 390, 16 views: 0 console errors, 0 overflow, 0 contrast fails, one h1, no heading skips.
+1. P2 card: both quotes come from paper/p2/values.json and now read the new abstract (no ring deadlock; "Uphill, a braking leader took followers inside the 5 m margin, without contact, until the rule gained a slope term"). New: lib/card-keys.lock.json holds a hash of every key the three cards read; a key that went away fails the build (as before), a key whose text changed is named in the build log ("[results cards] … changed since the cards were checked") and fails tests/f72.test.mjs until someone rereads the card and runs `node scripts/lock-cards.mjs`. Locked now (26 keys).
+2. /atc/ section 5, new "Uphill: the keep-distance rule gains a slope term": R1 as P2 now proposes it (leader braking the larger of 0.8 m/s² and the leader's guaranteed braking on the grade; 5 m margin; both Spec from E45_uphill.json), with "the twelve encounter types above were run without the slope term; all are flat or downhill, where it is inactive". Then the uphill result from results/E45_uphill.json: no contact anywhere; inside the margin when following on the Moon from 14° and on Mars from 6.5° with the 1 s lag; the slope term removes every shortfall when following; the Mars one-lane convoy with the lag keeps at most 0.14 m, traced to the lag model and not patched (Modelled, "a simulation"; slopes, encounters per case and lag tagged Assumed as settings). The build throws if the slope term ever leaves a following shortfall. Finding 9 now says R1 "as run in the twelve types".
+3. /protocol/ problem 1 (the only place the site discusses the margin and E50; nothing on the site showed overlap counts): "the count is not a safety measure: windows filed back to back overlapped in 43 to 52 % of cases at four times the fleet (134 such pairs a seed) whatever the position error … the margin … does not change how far ahead the first vehicle was when the second entered (medians of 410 to 443 m without a margin, 441 m with the layered one) … no overlap … brought two vehicles inside the static margin or the keep-distance rule's gap". From results/E50_overlaps.json; the build throws if any run has a gap under d0 or R1. The word "violation" is never used for the count (tested). Note: /verification/'s Phase 5 V&V row "No two conflicting reservations of a segment overlap" (vv_phase5.json, perfect position) is a different, exact logic check; left as is.
+4. P3 (B-105), from E48 per_robot_round and measured_memory through one helper (src/atc/e48-robot.js): one robot's bid 0.29 s (p99) at today's fleet, within the one-second decision, and 1.09 s and 1.19 s at four and eight times it, above it, "a laptop timing of one seed scaled by an assumed factor (not flight hardware)"; memory measured 0.11 to 0.13 MB against the 0.39 MB estimate, interpreter and code not counted. Shown on: /atc/ section 3 (memory row relabelled and measured; base computer cell says "by an estimate (not measured)"; Computing note gains the bid sentence and says the market-round row is the simulator's whole-fleet call, 1.12 s scaled, about one robot's share; Memory note measured), the /results/ P3 card, and the navigation computer row of /protocol/'s Fig 1b. /network/ has no compute or memory claim (its cutaway's computer row is E56's network timing). The one-second decision is a design figure (P3 Section 5.3) used only to choose "within"/"above", never shown as a number.
+5. /paper/: PDFs read from the files: P2 62 pages, 1,647 kB; P3 74 pages, 1,646 kB. P3's proved/tested table row now reads the measured bid time (from paper/p3/paper.html).
+Files: site/lib/results-atc.mjs, site/lib/card-keys.lock.json (new), site/scripts/lock-cards.mjs (new), site/lib/protocol-data.mjs, site/lib/anatomy-nav.mjs, site/src/atc/e48-robot.js (new), site/src/atc/sizing.js (new), site/src/atc/main.js, site/src/atc/sandbox.js, site/atc/index.html, site/protocol/index.html, site/vite.config.js, site/tests/f72.test.mjs (new), site/tests/results-atc.test.mjs.
+
+## F-73 CODE DONE, BUILT ONCE, BROWSER CHECK PENDING (FRONTEND, 2026-11-12): /protocol/ and the radio load on LRIP v0.2
+Tests 69/69. One build after the main changes: clean, budgets pages OK (/protocol/ data 89.1/90 with the new 120-row v0.2 table staged; no lazy load needed; /atc/ eager JS 15.0/16). Two wording fixes after it ("calculated load", "capability query/manifest") are not rebuilt yet. Free RAM 0.96 GB twice, so no rebuild or browser run; waiting.
+- Figure 5 (POSITION byte by byte) now decodes LRIP v0.2's conformance vector by v0.2's schema: the six former spare bits are u95_code, decoded by the schema's own rule (0.05 m × 2^(code/4), 62 above 1.95 km, 63 unknown, parsed from the schema); still 41 B; caption "Conformance vectors test the codec, not a radio". The build also decodes v0.1's POSITION and HELLO vectors by v0.1's layout ("v0.1 stays decodable") and fails if they stop decoding.
+- Problem 5 text: v0.2, 15 types; 95 % bound in spare bits, no covariance; HELLO 32 B instead of 30 B, at least every 10 s, manifest +9 B; a receiver refuses a position from a sender with no authenticated declaration; v0.1 still decodes, only its positions are refused. E53 (a calculation on a traffic model; 11 of the 15 types, the four left out named): 20 rovers at 1 Hz busiest link 7.86 (v0.1) and 8.37 (v0.2) kbit/s, scheduled airtime 9.82 and 10.46; in Proximity-1 frames 10.87 and 13.58, fits when scheduled, not on slotted random access; 10 Hz and the spread geometry at v0.2. The driving split is introduced as "still a v0.1 figure (it is being recomputed at v0.2 sizes)".
+- Problem 1: one sigma and, since v0.2, a 95 % bound; no covariance carried. Problem 2: in v0.2 each sender declares frame, datum and time scale (HELLO at least every 10 s, signed manifest) and a receiver refuses positions without an authenticated declaration.
+- Bit-rate figure: reads protocol/e53-v02.json (built from results/E53_table_v02.csv, packets before framing); caption says v0.2 and "calculated … on a traffic model".
+- /atc/ section 3 and the /results/ P3 card: E48's airtime is labelled "at LRIP v0.1 sizes" and followed by the v0.2 sentence from E53 (8.37 vs 7.86; 10.46 vs 9.82 scheduled; 13.58 in Proximity-1 frames, fits scheduled, not slotted random access).
+- /paper/: P1's abstract (from paper/p1/paper.html) already reads 8.4 kbit/s. The P1 card on /results/ has no radio figure. The /results/ H13 row shows no number besides the 16 kbit/s threshold (the family file stays on v0.1 per P1's commit).
+- Not regenerated: data/atc/protocol/ (BACKEND's export_protocol.py output); the site reads v0.2 straight from the results files instead.
+
+## B-110 DONE 16:23 (driving split and status-and-intent load under v0.2 sizes) | file: results/E53_bitrate.json key lrip_v02.driving_split
+`python tools/atc/run_b103.py v02` adds `lrip_v02.driving_split`. **Every existing key is byte-identical** (compared before and after).
+- Setup: B-103's pools (1x July trace, seed 1; 2.6 % of vehicle-steps driving) and E53's draw streams; 20 authenticated rovers; v0.2 sizes with HELLO at least every 10 s; without and with Proximity-1 framing (+12 B per packet).
+
+| 20 rovers, 1 Hz position | Busiest link p95 | Scheduled airtime (η 0.8) | Slotted random access (η 1/e) | Hops |
+|---|---|---|---|---|
+| driving steps, v0.2 | 6.28 kbit/s | **7.85** | 17.06 | 1.58 |
+| parked / all steps, v0.2 | 8.37 | 10.46 | 22.75 | 1.01 / 1.02 |
+| driving steps, v0.2 + Proximity-1 | 8.15 | **10.19** | 22.15 | 1.58 |
+| parked / all steps, v0.2 + Proximity-1 | 10.87 | 13.58 | 29.53 | 1.01 / 1.02 |
+
+At 10 Hz, scheduled airtime: driving 63.2 (81.7 with framing); all steps 84.3 (109.0). None fits 16 kbit/s at 10 Hz, as before.
+
+**STATUS and INTENT at 1 Hz like POSITION** (v0.2: POSITION 41, STATUS 43, INTENT 38, HELLO 32 B; with framing 53 / 55 / 50 / 44 B):
+- **at the sources, 20 rovers: 20.03 kbit/s (v0.2), 25.99 with framing** (v0.1: 19.52);
+- busiest link p95: 20.03 on all steps, 15.03 on driving steps (framed: 25.99 / 19.49);
+- **scheduled airtime: 25.0 and 18.8 kbit/s (framed 32.5 and 24.4), all above 16**: at those rates H13's 1 Hz verdict fails under either version.
+
+**Reading:** with status and intent at the counted 0.1 Hz, the 1 Hz verdict holds for driving positions under v0.2, with or without framing, on a scheduled channel (7.85 / 10.19 kbit/s airtime). On slotted random access it fails once framing is counted (22.2 kbit/s).
+**File changed:** `tools/atc/run_b103.py` (`v02` command). **How to test:** `python tools/atc/run_b103.py v02` (about 1 min).
+
+## F-73 DONE (FRONTEND, 2026-11-12): /protocol/ and the radio load on LRIP v0.2, driving split at v0.2 (B-110)
+Supersedes the interim F-73 entry above. Tests 70/70; build clean; budgets pages OK (/protocol/ data 89.1/90, no lazy load needed; /atc/ eager JS 15.0/16). Browser: /protocol/, /atc/, /results/, /paper/ in dark and light at 1280 and 390, 16 views: 0 console errors, 0 overflow, 0 contrast fails, one h1, no heading skips; /protocol/ rechecked in all four after the last change.
+- Driving split (B-110) now reads results/E53_bitrate.json lrip_v02.driving_split; "still a v0.1 figure" removed. Text: while driving 1.58 hops and 93 % with a path "whatever the version"; at v0.2 sizes scheduled airtime on driving steps 7.85 kbit/s (10.19 in Proximity-1 frames), slotted random access 17.1 (22.2); with STATUS and INTENT at 1 Hz the sources offer 20.03 kbit/s (25.99 in frames) and the airtime "is above the 16 kbit/s channel in every case" (computed over all four STATUS/INTENT airtimes; the build stops if they ever disagree).
+- Rest as in the interim entry: figure 5 decodes v0.2 (u95_code read by the schema's rule, e.g. code 59 = 1.38 km; caption "conformance vectors test the codec, not a radio"; v0.1 vectors decode at build); problem 5 v0.2 text with v0.1 beside v0.2 (7.86/8.37 busiest link, 9.82/10.46 scheduled airtime, Proximity-1 10.87 and 13.58, fits scheduled, not slotted random access; 11 of 15 types); problems 1 and 2; the bit-rate figure on results/E53_table_v02.csv; /atc/ section 3 and the P3 card label E48's airtime "at LRIP v0.1 sizes" and add the v0.2 sentence.
+- Bit-rate figure: at v0.2 sizes the 40-rover, 1-a-second point sits on the "narrow-band, base schedules the slots" label; the channel labels are now drawn last with a halo in the figure's background (.pr-halo), so they stay legible. At 1280 the halo hides that one dot (the curve still passes through it); at 390 nothing collides.
+- /paper/: P3's PDF reads 74 pages, 1,660 kB; P1's abstract shows 8.4 kbit/s.
+Files: site/lib/protocol-data.mjs, site/src/protocol/figures.js, site/src/protocol/protocol.css, site/protocol/index.html, site/atc/index.html, site/src/atc/sizing.js, site/lib/results-atc.mjs, site/scripts/prepare-data.mjs, site/vite.config.js, site/tests/protocol-data.test.mjs, site/tests/results-atc.test.mjs, site/tests/f73.test.mjs (new).
+
+## F-73b DONE (FRONTEND, 2026-11-12): the bit-rate figure's channel labels move into the key
+LEAD's decision: a label must not cover a data point. The three capacity lines now differ by dash (dotted: narrow-band random access; dashed: narrow-band scheduled; dash-dot: broadband scheduled), each with a tooltip, and are named under the chart in a second key line with a matching line sample and its usable capacity ("Usable capacity (capacity × access efficiency): … narrow-band, random access, 5.9 kbit/s; … narrow-band, base schedules the slots, 12.8 kbit/s; … broadband, scheduled, 800.0 kbit/s."). No text left on the plot; every point visible at 1280 and 390. The halo class from F-73 is removed. Tests 70/70; build clean; budgets pages OK (/protocol/ data 89.1/90). /protocol/ in dark and light at 1280 and 390: 0 console errors, 0 overflow, 0 contrast fails.
+Files: site/src/protocol/figures.js, site/src/protocol/protocol.css.

@@ -162,7 +162,12 @@
 .pr-sw-haz { background: var(--pr-c1); }
 .pr-sel { fill: color-mix(in srgb, var(--ink) 6%, transparent); }
 .pr-lab { fill: var(--ink); }
-.pr-halo { paint-order: stroke; stroke: var(--bg-2); stroke-width: 4px; stroke-linejoin: round; }   /* F-73: legible over a curve */
+/* F-73b: the bit-rate figure's three channel lines, told apart by dash and named in the key */
+.pr-cap1 { stroke-dasharray: 2 3; }
+.pr-cap2 { stroke-dasharray: 6 4; }
+.pr-cap3 { stroke-dasharray: 12 4 2 4; }
+.pr-capkey { display: inline-block; vertical-align: 0.1em; }
+.pr-capkey svg { display: block; }
 .pr-sub { margin: var(--s-4) 0 var(--s-1); }
 .pr-cell { display: inline-flex; flex-direction: column; gap: 3px; min-width: 7.5em; }
 .pr-mini { display: block; height: 4px; width: var(--w); min-width: 1px; border-radius: 2px; background: var(--pr-c2); }

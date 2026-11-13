@@ -455,19 +455,21 @@ async function figBitrate(host) {
     const y = v => T + (H - T - B) * (1 - (Math.log10(v) - Math.log10(LY[0])) / (Math.log10(LY[1]) - Math.log10(LY[0])));
     for (const v of [1, 10, 100, 1000]) svg.append(S('line', { class: 'pr-grid-l', x1: L, x2: W - R, y1: y(v), y2: y(v) }), S('text', { class: 'pr-tick', x: L - 6, y: y(v) + 4, 'text-anchor': 'end' }, v >= 1000 ? '1 M' : `${v} k`));
     for (const n of Ns) svg.append(S('text', { class: 'pr-tick', x: x(n), y: H - B + 16, 'text-anchor': n === Ns[0] ? 'start' : n === Ns[Ns.length - 1] ? 'end' : 'middle' }, `${n}`));
-    for (const [v] of lines) svg.append(S('line', { class: 'pr-limit', x1: L, x2: W - R, y1: y(v), y2: y(v) }));
+    lines.forEach(([v, l], i) => svg.append(S('line', { class: `pr-limit pr-cap${i + 1}`, x1: L, x2: W - R, y1: y(v), y2: y(v) }, S('title', {}, `${l}: ${fmt(v, 1)} kbit/s usable`))));
     rates.forEach((hz, i) => {
       const pts = Ns.map(n => D.rows.find(q => q[GE] === geo && q[AU] === auth && q[HZ] === hz && q[N] === n)).filter(Boolean);
       const cls = `pr-c${i + 1}`;
       svg.append(S('path', { class: `pr-curve ${cls}`, d: pts.map((q, k) => `${k ? 'L' : 'M'}${x(q[N]).toFixed(1)},${y(q[P95]).toFixed(1)}`).join('') }));
       for (const q of pts) svg.append(S('circle', { class: cls, cx: x(q[N]), cy: y(q[P95]), r: 3.5 }, S('title', {}, `${q[N]} rovers, ${fmt(hz, hz < 1 ? 1 : 0)} reports a second: ${fmt(q[P95], 1)} kbit/s on the busiest link`)));
     });
-    // F-73: the channel labels last, over the curves, with a halo of the figure's background (v0.2's 40-rover point sits on one)
-    for (const [v, l] of lines) svg.append(S('text', { class: 'pr-tick pr-lab pr-halo', x: W - R - 4, y: y(v) - 4, 'text-anchor': 'end' }, `${l} (${fmt(v, 1)} kbit/s)`));
   }
   onResize(svg, draw);
   host.append(h('div', { class: 'pr-ctl' }, segG.el, segA.el), svg,
-    h('p', { class: 'pr-key small' }, ...rates.flatMap((hz, i) => [h('span', { class: `pr-sw pr-c${i + 1}` }), ` ${fmt(hz, hz < 1 ? 1 : 0)} a second  `]), h('span', { class: 'pr-ln pr-ln-limit' }), ' usable capacity (capacity × access efficiency).'));
+    h('p', { class: 'pr-key small' }, ...rates.flatMap((hz, i) => [h('span', { class: `pr-sw pr-c${i + 1}` }), ` ${fmt(hz, hz < 1 ? 1 : 0)} a second  `])),
+    // F-73b: the channel lines are named here, not on the plot, so no label covers a data point
+    h('p', { class: 'pr-key small' }, 'Usable capacity (capacity × access efficiency): ', ...lines.flatMap(([v, l], i) => [
+      h('span', { class: 'pr-capkey', html: `<svg width="28" height="8" aria-hidden="true"><line class="pr-limit pr-cap${i + 1}" x1="0" x2="28" y1="4" y2="4"/></svg>` }),
+      ` ${l}, ${fmt(v, 1)} kbit/s${i < lines.length - 1 ? ';  ' : '.'}`])));
   draw();
 }
 
