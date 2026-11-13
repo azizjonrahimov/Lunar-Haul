@@ -160,5 +160,169 @@
    "status": "no mechanism; not reported; files archived",
    "archive": "results/archive/E44_variant_6_request_rule/"
   }
+ },
+ "b113_stale_deadlock_flag": {
+  "task": "B-113 (LEAD, 13 Nov 2026)",
+  "finding": "The stored parts of types 2, 3, 4, 8, 9, 10 and 12 carry the deadlock flag of the stall classifier before its change-9 correction (change_9.classification_defect): that correction was followed by a rerun of types 5 and 6 only (types_rerun), and the other types' parts were kept. Rerun with the current code, a batch gives the stored rows exactly except the deadlock flag, which goes from 1 to 0 in some rows (never from 0 to 1), and every such row has a random fuzzer.",
+  "cause": "not a commit after E44 and not nondeterminism: type 10 batch 0 rerun with the code of commit 83cbb90 (the commit that stored the parts, extracted with git archive) and with HEAD gives the same rows (identical: True), and both differ from the stored part in 445 of 1000 rows on the deadlock flag only; the parts were written before the classifier fix that 83cbb90 contains. The corrected classifier narrows 'waiting for a grant' (the ungranted group's entry must be the binding stop line, within request distance) and widens 'held at a closed zone'; outside type 6 there is no zone, so only the flag can change.",
+  "why_no_published_value_moves": "Every reader judges a deadlock only where no random fuzzer runs: run_e44.classify (outcome classes, E44_bounds.json, E44_bins.csv, E44_encounters.csv, vv_phase5 S5), site/lib/ring.mjs and paper/p2/build_p2.py ring_parts (type 5), tools/atc/sandbox.py. In every type not rerun, no stored fuzzer-free row has the flag set, and the rerun batches change no fuzzer-free row. Types 5 and 6 (the 386 ring deadlocks, P2's 13 of 1,892 and 373 of 1,963, and the four landing-closure deadlocks) and E47's Mars parts (2 of 368 and 68 of 395) match the current code exactly in the batches checked. The sandbox's type-12 encounter (the only fuzzer pick) has the flag set in both the stored row and the rerun.",
+  "batch_checks": [
+   {
+    "parts": "E44_parts",
+    "type": 1,
+    "batch": 0,
+    "rows": 4000,
+    "columns_differing": [],
+    "deadlock_stored_1_rerun_0": 0,
+    "deadlock_stored_0_rerun_1": 0,
+    "differing_rows_without_random_fuzzer": 0
+   },
+   {
+    "parts": "E44_parts",
+    "type": 2,
+    "batch": 0,
+    "rows": 2000,
+    "columns_differing": [
+     "deadlock"
+    ],
+    "deadlock_stored_1_rerun_0": 465,
+    "deadlock_stored_0_rerun_1": 0,
+    "differing_rows_without_random_fuzzer": 0
+   },
+   {
+    "parts": "E44_parts",
+    "type": 3,
+    "batch": 0,
+    "rows": 2000,
+    "columns_differing": [
+     "deadlock"
+    ],
+    "deadlock_stored_1_rerun_0": 400,
+    "deadlock_stored_0_rerun_1": 0,
+    "differing_rows_without_random_fuzzer": 0
+   },
+   {
+    "parts": "E44_parts",
+    "type": 4,
+    "batch": 0,
+    "rows": 2000,
+    "columns_differing": [
+     "deadlock"
+    ],
+    "deadlock_stored_1_rerun_0": 176,
+    "deadlock_stored_0_rerun_1": 0,
+    "differing_rows_without_random_fuzzer": 0
+   },
+   {
+    "parts": "E44_parts",
+    "type": 5,
+    "batch": 0,
+    "rows": 1000,
+    "columns_differing": [],
+    "deadlock_stored_1_rerun_0": 0,
+    "deadlock_stored_0_rerun_1": 0,
+    "differing_rows_without_random_fuzzer": 0
+   },
+   {
+    "parts": "E44_parts",
+    "type": 6,
+    "batch": 0,
+    "rows": 1000,
+    "columns_differing": [],
+    "deadlock_stored_1_rerun_0": 0,
+    "deadlock_stored_0_rerun_1": 0,
+    "differing_rows_without_random_fuzzer": 0
+   },
+   {
+    "parts": "E44_parts",
+    "type": 7,
+    "batch": 0,
+    "rows": 4000,
+    "columns_differing": [],
+    "deadlock_stored_1_rerun_0": 0,
+    "deadlock_stored_0_rerun_1": 0,
+    "differing_rows_without_random_fuzzer": 0
+   },
+   {
+    "parts": "E44_parts",
+    "type": 8,
+    "batch": 0,
+    "rows": 2000,
+    "columns_differing": [
+     "deadlock"
+    ],
+    "deadlock_stored_1_rerun_0": 460,
+    "deadlock_stored_0_rerun_1": 0,
+    "differing_rows_without_random_fuzzer": 0
+   },
+   {
+    "parts": "E44_parts",
+    "type": 9,
+    "batch": 0,
+    "rows": 2000,
+    "columns_differing": [
+     "deadlock"
+    ],
+    "deadlock_stored_1_rerun_0": 268,
+    "deadlock_stored_0_rerun_1": 0,
+    "differing_rows_without_random_fuzzer": 0
+   },
+   {
+    "parts": "E44_parts",
+    "type": 10,
+    "batch": 0,
+    "rows": 1000,
+    "columns_differing": [
+     "deadlock"
+    ],
+    "deadlock_stored_1_rerun_0": 445,
+    "deadlock_stored_0_rerun_1": 0,
+    "differing_rows_without_random_fuzzer": 0
+   },
+   {
+    "parts": "E44_parts",
+    "type": 11,
+    "batch": 0,
+    "rows": 250,
+    "columns_differing": [],
+    "deadlock_stored_1_rerun_0": 0,
+    "deadlock_stored_0_rerun_1": 0,
+    "differing_rows_without_random_fuzzer": 0
+   },
+   {
+    "parts": "E44_parts",
+    "type": 12,
+    "batch": 0,
+    "rows": 2000,
+    "columns_differing": [
+     "deadlock"
+    ],
+    "deadlock_stored_1_rerun_0": 202,
+    "deadlock_stored_0_rerun_1": 0,
+    "differing_rows_without_random_fuzzer": 0
+   },
+   {
+    "parts": "E47_parts",
+    "type": 5,
+    "batch": 0,
+    "rows": 1000,
+    "columns_differing": [],
+    "deadlock_stored_1_rerun_0": 0,
+    "deadlock_stored_0_rerun_1": 0,
+    "differing_rows_without_random_fuzzer": 0
+   },
+   {
+    "parts": "E47_parts",
+    "type": 10,
+    "batch": 0,
+    "rows": 1000,
+    "columns_differing": [],
+    "deadlock_stored_1_rerun_0": 0,
+    "deadlock_stored_0_rerun_1": 0,
+    "differing_rows_without_random_fuzzer": 0
+   }
+  ],
+  "not_regenerated": "the stale flags sit only in rows no published value reads; regenerating the ten types not rerun would take about 5.5 h (E44_parts/timing.json batch times) and is not done",
+  "correction": "B-107's report gave the denominator as 4,000 rows; type 10 batch 0 has 1,000 rows (445 differ)"
  }
 }

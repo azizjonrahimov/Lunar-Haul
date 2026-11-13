@@ -10318,3 +10318,32 @@ So the variant removes the zone violation on the fresh seeds and introduces no d
 clears 9 of the 10 hold-and-wait deadlocks.
 Tests: no test touches E44; no engine edit (request_rule was already an opt-in Spec flag).
 Questions: none.
+
+## B-113 DONE 02:18 | stale type-10 deadlock flags: written before the change-9 classifier fix; no published value used them
+Files: results/E44_defects.json new top-level key "b113_stale_deadlock_flag" (every other key unchanged, checked; read
+by paper/p2/build_p2.py only through change_9 and the change-8 record, so nothing it builds changes). No code change.
+Scratch evidence: D:\Temp\claude\9f85daca063d7b9d\aad6225c-d15d-491b-9bcf-5d2ce85b70d4\scratchpad\b113\ (rerun parts),
+b113_rerun.py and b113_note.py beside it.
+Cause: not a later commit, not nondeterminism. Type 10 batch 0 rerun with the code of 83cbb90 (the commit that stored
+the parts; extracted with git archive, no checkout) equals the HEAD rerun row for row, and both differ from the stored
+part on the deadlock flag only. E44_defects.json change_9.classification_defect records the stall-classifier fix
+(29-30 Oct) and a rerun of types 5 and 6 only (types_rerun [5, 6]); the other types' parts were kept from before the fix.
+The fix narrows "waiting for a grant" and widens "held at a closed zone"; only type 6 has a zone, so elsewhere only the
+flag can change, never the dynamics.
+Batch-0 reruns on HEAD (one per type, plus E47 types 5 and 10 on Mars), stored vs rerun:
+- only the deadlock column differs, always stored 1 -> rerun 0, never 0 -> 1, and every differing row has a random
+  fuzzer: T2 465 / 2,000, T3 400 / 2,000, T4 176 / 2,000, T8 460 / 2,000, T9 268 / 2,000, T10 445 / 1,000,
+  T12 202 / 2,000;
+- identical in every column: T1, T5, T6, T7, T11 (E44) and T5, T10 (E47).
+Correction: B-107's report said 445 of 4,000 rows; type 10 batch 0 has 1,000 rows.
+Published values: none moves. Every reader judges a deadlock only where no random fuzzer runs (run_e44.classify ->
+E44_bounds.json outcomes, E44_bins.csv, E44_encounters.csv, vv_phase5 S5 "390"; site/lib/ring.mjs and build_p2
+ring_parts; tools/atc/sandbox.py). In the stored parts of every type not rerun, no fuzzer-free row has the flag set.
+P2's ring-deadlock rates (type 5: 386; 13 of 1,892 as written, 373 of 1,963 with the variant; Mars 2 of 368, 68 of 395)
+and type 6's four deadlocks come from parts that match the current code in the batches checked. The sandbox's only
+fuzzer pick (type 12, b0 i2) has the flag set in both the stored row and the rerun. So I did not regenerate. The reason
+is recorded in the results file.
+Checked: 1 batch per type, not all batches. A full regeneration of the ten types not rerun would take about 5.5 h,
+over the 2 h limit, so it is not done; say if you want it.
+Run: 14 batch reruns, 42-335 s each, in 6 chunks under 9 min, free RAM 1.15-1.42 GB before each, peak 108-132 MB.
+Questions: none.

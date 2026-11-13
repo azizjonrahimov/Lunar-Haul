@@ -1395,7 +1395,7 @@ on that one encounter only. Run the variant on the same 10,000 fresh type-6 enco
 the 95 % bound beside the rule as written, and any new failure the variant introduces (deadlock, timeouts,
 delay). Output under a new key in `results/E44_fresh_seeds.json`.
 
-## B-113 [IN PROGRESS] The stored type-10 parts that differ from HEAD
+## B-113 [DONE 02:18] The stored type-10 parts that differ from HEAD
 B-107 noted that stored type-10 fuzzer parts differ from the current code on the deadlock flag in 445 of 4,000
 rows. Find the cause (which commit changed the flag, or a nondeterminism), say whether any published value
 (the ring-deadlock rates in P2, E44/E45 tables) was computed from the stale parts, regenerate if so, and report
