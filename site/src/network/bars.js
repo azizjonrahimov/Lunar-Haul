@@ -5,6 +5,7 @@
 import { h } from '../ui/index.js';
 // F-78 (review W6): the site's formatter (components/num.js), which also guards against "-0.00"
 import { fmt as fmtN } from '../components/num.js';
+import { onTheme } from './theme.js';
 
 const COL = { light: ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4'], dark: ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181'] };
 const dark = () => { const c = getComputedStyle(document.body).backgroundColor.match(/\d+/g) || [255, 255, 255]; return (+c[0] + +c[1] + +c[2]) / 3 < 128; };
@@ -51,5 +52,5 @@ export function mountBars(host, E) {
       h('tbody', {}, dets.map(([d, n]) => h('tr', {}, h('th', { scope: 'row' }, n), h('td', { class: 'n' }, fmt(T[d]?.all?.fa_per_pair_day, 2)), h('td', { class: 'n' }, fmt(O[d]?.all?.fa_per_pair_day, O[d]?.all?.fa_per_pair_day > 100 ? 0 : 1)), h('td', { class: 'n' }, fmt(O[d]?.jump?.recall)), h('td', { class: 'n' }, fmt(O[d]?.drift?.recall))))))));
   draw();
   let lastW = 0; new ResizeObserver(() => { const w = Math.round(svgWrap.getBoundingClientRect().width); if (Math.abs(w - lastW) > 8) { lastW = w; draw(); } }).observe(svgWrap);
-  new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  onTheme(draw);   // F-81: the attribute and the system colour scheme
 }

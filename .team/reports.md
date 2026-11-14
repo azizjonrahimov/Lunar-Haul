@@ -11412,3 +11412,23 @@ Tests:
 Commit set: lunarsim/atc/dtn.py, tools/atc/run_e54.py, tests/test_dtn.py, results/E54_dtn.json, E54_table.csv,
 E54_table_v02.csv; with item A: lunarsim/atc/encounter.py, tests/test_uphill.py; results/E44_defects.json (outcome.totals);
 .team/reports.md.
+
+## B-120 D heavy-run notice (14 Nov): one near_base 4x seed-1 rerun to scratch (about 250 s, peak about 0.55 GB) for the code-stamp reproduction check; one process, gate 0.8 GB
+
+## F-81 (FRONTEND), 2026-11-14: E54 block keys and the ledger split; build and browser check NOT run (memory)
+- E54 now holds two superseded blocks. `superseded(doc, file, field, key)` passes a key through to supersededBlock (exactly one block stays the default). New `blockKey(doc, file, task)` resolves a task tail (b118, b120_b) to the one key ending in it, or stops the build.
+- e54 keys: `was_<task>:...` and `superseded_on_<task>`. A bare `was:` now stops the build ("2 superseded_* blocks"). /protocol/ problems 4 and 6 use was_b118 for the code-review values.
+- Ledger: the page reads 300 expired / 390 censored from the file through the existing markers (no typed numbers). New sentence after the b118 one: "On <date, b120_b> a ledger bundle whose lifetime ends exactly when the window closes was moved from censored to expired, since its whole life was observed: before, <270> expired and <420> were censored", every value from superseded_2026-11-14_b120_b. No other site file states 270/420/0.29.
+- f79: before-keys must name their block; checks for the ledger now and before, that expired + censored is unchanged across the fix, and the bare-was:, unknown-task and no-returns-in-b120 failures.
+- causeOf (phase6.mjs) already picks the E54 block by its superseded_on date, so it is unaffected.
+- Tests: f72, f79, f80, f81 and protocol-data pass 32/32.
+- NOT run: build, full suite, budgets, browser check. Free RAM was 0.71 then 0.75 GB, under the 0.8 GB floor. No waiting job started.
+- Files: site/lib/{anatomy-nav,network,phase6,protocol-data,results-atc}.mjs, site/protocol/index.html, site/src/atc/{e48-robot,sizing,sizing-note}.js, site/src/components/{date-num,results-file}.js, site/src/network/{bars,inside,landscape,theme}.js, site/src/protocol/figures.js, site/tests/{f72,f79,f81}.test.mjs (new files: sizing-note.js, results-file.js, theme.js, f81.test.mjs).
+
+## F-81 browser check (FRONTEND), 2026-11-14: done on LEAD's build (site/dist, vite preview :4173, gstack $B)
+- Console and audit (f57b.sh: errors, overflow, contrast, headings) at 1280 px, in dark and light, on /network/, /protocol/ and /results/: 0 console errors, overflow 0, contrast failures 0, one h1, no heading skips on every page.
+- /network/ colour-scheme switch with no theme picked (no data-theme attribute, localStorage theme removed), emulated through CDP Emulation.setEmulatedMedia: body background goes rgb(255,255,255) → rgb(17,18,20) → back. All 8 canvases (landscape surface, bars, inside strips) redraw on light→dark and return to identical pixel hashes on dark→light. The contour SVG is unchanged, as expected: it is styled by CSS. 0 errors.
+- /protocol/ problem 4 (built text): "300 expired on the way and 390 were still alive … censored"; then the 13 November 2026 note (0 grants, 33.0 s, 690 counted lost); then "On 14 November 2026 a ledger bundle whose lifetime ends exactly when the window closes was moved from censored to expired, since its whole life was observed: before, 270 expired and 420 were censored." Problem 6: 9.5 s / 39.9 s, 87.3 returns; before 45.5 s / 2.5 min / 82.1 (the b118 block).
+- /results/ family note: one r-fam-was, "Corrected after a code review on 13 November 2026 (a fix to the positioning model): before, H9′ gave 85 m …; H10′ …, Holm p 0.932; the readings near the base were 4.2 m, 24.7 m, 50.1 m, 50.1 m. Every outcome is as it was." It names one cause because only E50 values differ; H14 and H15a are identical in the block.
+- Screenshots (full page) in the scratchpad: f81_network_sys_light.png, f81_network_sys_dark.png, f81_protocol_ledger.png (light), f81_results_note.png (dark).
+- The preview and the browser are stopped. Free RAM dipped to 0.36–0.45 GB with the browser open between pages; with it closed it stayed at 0.6 GB or more.

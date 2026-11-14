@@ -192,7 +192,9 @@ function radio(open) {
 }
 
 // ---------- numbers ----------
-const E48 = () => { const p = join(ROOT, 'results', 'E48_sizing.json'); return existsSync(p) ? JSON.parse(readFileSync(p, 'utf8').replace(/\bNaN\b/g, 'null')) : null; };
+// F-81: the results are committed, so a missing file stops the build (no "not available" or dash on a green build)
+const need = (rel, why) => { const p = join(ROOT, rel); if (!existsSync(p)) throw new Error(`${rel} missing; ${why}`); return JSON.parse(readFileSync(p, 'utf8').replace(/\bNaN\b/g, 'null')); };
+const E48 = () => need('results/E48_sizing.json', 'the /protocol/ navigation computer reads it');
 const n = key => num(PRM[key]);
 const t = key => `${fmt(PRM[key].value, PRM[key].digits)}${PRM[key].unit}`;   // plain text for the drawing
 function rows() {
@@ -200,6 +202,7 @@ function rows() {
   const e = (value, unit, digits, flag, src) => num({ value, unit, digits, flag, source: `${SZ}: ${src}` });
   const check = sm && F ? sm.cpu_safety_check_us.p99 * F.factor / 1000 : null;
   const RR = robotRound(S48);   // F-72 (B-105): measured memory and one robot's bid time
+  if (!sm || !F || !RR) throw new Error(`${SZ}: no classes.SMALL, flight or per-robot timing; the /protocol/ navigation computer reads them`);
   return {
     check, sm, F,
     list: [
@@ -209,10 +212,10 @@ function rows() {
       ['imu', 'IMU: three gyros and accelerometers', 'Turn rate and acceleration between camera frames.', `Heading drift ${n('gyro')} on gyros alone`, 'published'],
       ['radio', 'Ranging radio (UWB)', 'Two-way radio ranges to the base beacons and to other rovers.', `Range error ${n('uwb')} up to ${n('uwb_range')}`, 'published'],
       ['antenna', 'Antenna (1 m) of the coordination radio', 'Carries position reports and the job market.',
-        sm ? `${e(sm.link.longest_hop_kbps, ' kbit/s', 1, 'Modelled', 'classes.SMALL.link.longest_hop_kbps')} at the ${e(sm.link.mutual_horizon_m / 1000, ' km', 1, 'Modelled', 'classes.SMALL.link.mutual_horizon_m')} horizon, ${e(sm.link.tx_power_w, ' W', 2, 'Assumed', 'classes.SMALL.link.tx_power_w')}` : 'E48 not available', 'our design'],
+        `${e(sm.link.longest_hop_kbps, ' kbit/s', 1, 'Modelled', 'classes.SMALL.link.longest_hop_kbps')} at the ${e(sm.link.mutual_horizon_m / 1000, ' km', 1, 'Modelled', 'classes.SMALL.link.mutual_horizon_m')} horizon, ${e(sm.link.tx_power_w, ' W', 2, 'Assumed', 'classes.SMALL.link.tx_power_w')}`, 'our design'],
       ['clock', 'Clock module', 'A chip-scale atomic clock beside a crystal: time stamps and resyncs.', `Drift: atomic ${n('csac')}, crystal ${n('tcxo')}`, 'published'],
       ['computer', 'Navigation computer', `The flight board (${esc(F?.processor || 'GR740')}) runs our safety program and planner.`,
-        sm && F ? `${num({ value: F.memory_mb, unit: ' MB', digits: 0, flag: 'Spec', source: `${SZ}: flight.memory_mb (${F.processor})` })} on board; ${RR ? `our program's data measured at ${RR.mem} on a laptop (interpreter and code not counted; estimated at ${RR.estimate})` : `our program needs about ${e(sm.peak_memory_mb, ' MB', 2, 'Modelled', 'classes.SMALL.peak_memory_mb (an estimate: the sum of its parts)')} by an estimate`}; one safety check takes ${e(check, ' ms', 0, 'Modelled', 'classes.SMALL.cpu_safety_check_us.p99 × flight.factor')} on the flight core${RR ? ` and one robot's bid ${RR.bid} (99th percentile; a laptop timing scaled by an assumed factor)${RR.was ? `. ${RR.was.replace(/\.$/, '')}` : ''}` : ''}` : 'E48 not available', 'published board, our software'],
+        `${num({ value: F.memory_mb, unit: ' MB', digits: 0, flag: 'Spec', source: `${SZ}: flight.memory_mb (${F.processor})` })} on board; ${RR ? `our program's data measured at ${RR.mem} on a laptop (interpreter and code not counted; estimated at ${RR.estimate})` : `our program needs about ${e(sm.peak_memory_mb, ' MB', 2, 'Modelled', 'classes.SMALL.peak_memory_mb (an estimate: the sum of its parts)')} by an estimate`}; one safety check takes ${e(check, ' ms', 0, 'Modelled', 'classes.SMALL.cpu_safety_check_us.p99 × flight.factor')} on the flight core${RR ? ` and one robot's bid ${RR.bid} (99th percentile; a laptop timing scaled by an assumed factor)${RR.was ? `. ${RR.was.replace(/\.$/, '')}` : ''}` : ''}`, 'published board, our software'],
     ],
   };
 }
@@ -229,9 +232,9 @@ function drawing(open, variant = 'nav') {
     { id: 'sun', anchor: [SUN[0] + 6, SUN[1], 8], title: 'Sun sensor', value: `heading ${t('sun_hdg')}` },
     { id: 'imu', anchor: [IMU.x, IMU.y + 19, 18], title: 'IMU gyros', value: `drift ${t('gyro')}` },
     { id: 'radio', anchor: [RAD.x + RAD.w, RAD.y + 14, 10], title: 'UWB ranging', value: `${t('uwb')} to ${t('uwb_range')}` },
-    { id: 'antenna', anchor: [ANT[0], ANT[1], 122], title: 'Antenna, 1 m', value: R.sm ? `${fmt(R.sm.link.longest_hop_kbps, 1)} kbit/s at ${fmt(R.sm.link.mutual_horizon_m / 1000, 1)} km` : '–' },
+    { id: 'antenna', anchor: [ANT[0], ANT[1], 122], title: 'Antenna, 1 m', value: `${fmt(R.sm.link.longest_hop_kbps, 1)} kbit/s at ${fmt(R.sm.link.mutual_horizon_m / 1000, 1)} km` },
     { id: 'clock', anchor: [CLK.x + 3, CLK.y + CLK.d, 1.5], title: 'Atomic clock', value: t('csac').replace(' a day', '/day') },
-    { id: 'computer', anchor: [CPU.x + 3, CPU.y + CPU.d, 1.5], title: 'Computer', value: R.check ? `${fmt(R.check, 0)} ms per safety check` : '–' },
+    { id: 'computer', anchor: [CPU.x + 3, CPU.y + CPU.d, 1.5], title: 'Computer', value: `${fmt(R.check, 0)} ms per safety check` },
   ], H);
   const body = [base(), cables(), clips(), ...order.map(id => `<g class="nv-part" data-part="${id}" data-sys="${sys[id]}"${id === 'radio' ? ' data-also="antenna"' : ''}>${parts[id]}</g>`), lab].join('');
   return { body, R };
@@ -239,7 +242,7 @@ function drawing(open, variant = 'nav') {
 
 // F-61: the same deck as "where the integrity network runs": its inputs (the range to B, B's report, own odometry and
 // heading), the computer that runs it, and its output to the safety check
-const E56 = () => { const p = join(ROOT, 'results', 'E56_integrity.json'); return existsSync(p) ? JSON.parse(readFileSync(p, 'utf8').replace(/\bNaN\b/g, 'null')) : null; };
+const E56 = () => need('results/E56_integrity.json', 'the /network/ deck reads it');
 function netLabels() {
   const E = E56();
   return [
@@ -247,7 +250,7 @@ function netLabels() {
     { id: 'imu', anchor: [IMU.x, IMU.y + 19, 18], title: 'Input: own heading', value: `drift ${t('gyro')}` },
     { id: 'radio', anchor: [RAD.x + RAD.w, RAD.y + 14, 10], title: 'Input: range to B', value: `${t('uwb')} to ${t('uwb_range')}` },
     { id: 'antenna', anchor: [ANT[0], ANT[1], 122], title: "Input: B's report", value: 'once a second' },
-    { id: 'computer', anchor: [CPU.x + 3, CPU.y + CPU.d, 1.5], title: 'Runs the network', value: E ? `${fmt(E.model.n_params, 0)} parameters` : '–' },
+    { id: 'computer', anchor: [CPU.x + 3, CPU.y + CPU.d, 1.5], title: 'Runs the network', value: `${fmt(E.model.n_params, 0)} parameters` },
     { id: 'safety', anchor: [42, CPU.y + CPU.d + 5, 3], title: 'Output: a warning', value: 'not in the safety path' },
   ];
 }
@@ -256,7 +259,7 @@ function netRows() {
   const e = (value, unit, digits, src) => num({ value, unit, digits, flag: 'Modelled', source: `${SE}: ${src}` });
   return [
     ['computer', 'The network, on the navigation computer', 'Reads the last 127 s of ten inputs and gives the probability that B’s reports are wrong.',
-      E ? `${e(E.model.n_params, '', 0, 'model.n_params')} parameters; one window takes ${e(E.timing.numpy_reference_ms.median, ' ms', 2, 'timing.numpy_reference_ms.median')} on a laptop core (the flight core is slower; not measured)` : 'E56 not available', 'our design'],
+      `${e(E.model.n_params, '', 0, 'model.n_params')} parameters; one window takes ${e(E.timing.numpy_reference_ms.median, ' ms', 2, 'timing.numpy_reference_ms.median')} on a laptop core (the flight core is slower; not measured)`, 'our design'],
     ['radio', 'Input: the range to B', 'A two-way radio range, compared with the range B’s report implies.', `Range error ${n('uwb')} up to ${n('uwb_range')}`, 'published'],
     ['antenna', "Input: B's position report", 'Received over the coordination radio once a second, with B’s claimed error.', `${n('pos_air')} before link framing`, 'our design'],
     ['cameras', 'Input: own odometry', 'The rover’s own position, with its own claimed error.', `Drift ${n('dr_vo')}`, 'published'],

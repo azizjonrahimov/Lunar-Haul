@@ -7,6 +7,7 @@ import { ROOT } from './pages.mjs';
 import { lripDecode } from '../src/protocol/lrip.js';
 import { num, fmt } from '../src/components/num.js';
 import { dateNum } from '../src/components/date-num.js';
+import { supersededBlock, readingVerdict } from '../src/components/results-file.js';
 export { lripDecode };
 
 // F-56 / B-93, F-73 / B-100: /protocol/ figure 5 shows a real LRIP POSITION report: the golden vector POSITION / profile N /
@@ -173,12 +174,19 @@ export function stageE53v02(PUB) {
 }
 
 // F-79: a results file keeps the values it published before a correction under superseded_<date>_<task>; the page names
-// each earlier value once. superseded(doc, file, field) finds the block holding <field>; dateText gives its superseded_on
+// each earlier value once. superseded(doc, file, field) takes the one block holding <field> (F-81: none, or two after a
+// second supersession, stops the build naming the file and the keys); dateText gives its superseded_on
 // as "13 November 2026" in the flagged markup of a number (dateNum), so no date reaches a page as typed digits.
-export function superseded(doc, file, field) {
-  const key = Object.keys(doc).find(k => /^superseded_/.test(k) && doc[k] && field in doc[k]);
-  if (!key) throw new Error(`${file}: no superseded_* block with ${field}`);
-  return { key, doc: doc[key] };
+export function superseded(doc, file, field, key = null) {
+  return supersededBlock(doc, file, b => field in b, key);
+}
+// F-81: a page names a block by its task, the tail of its key (b118 for superseded_2026-11-13_b118): exactly one key
+// of the file ends in it, or the build stops; no task means the file's one block (supersededBlock's default)
+export function blockKey(doc, file, task) {
+  if (!task) return null;
+  const keys = Object.keys(doc || {}).filter(k => /^superseded_/.test(k)), hit = keys.filter(k => k.endsWith(`_${task}`));
+  if (hit.length !== 1) throw new Error(`${file}: ${hit.length} superseded_* blocks end in _${task} (the file has ${keys.join(', ') || 'none'})`);
+  return hit[0];
 }
 export function dateText(S, file) {
   return dateNum({ iso: S.doc.superseded_on, source: `${file}: ${S.key}.superseded_on (the date the values were replaced)` });
@@ -212,7 +220,8 @@ export function compactE54(dtn, ledger) {
   const AJ = dtn.awards_and_jobs;
   for (const k of ['jobs_per_seed', 'awards_per_seed', 'team_jobs_per_seed']) if (typeof AJ?.[k] !== 'number') throw new Error(`${E54_SRC}: no awards_and_jobs.${k}`);
   if (typeof dtn.lost_link_returns_per_seed !== 'number') throw new Error(`${E54_SRC}: no lost_link_returns_per_seed`);
-  return { format: 'lunarsim-e54-site', version: 1, source: E54_SRC, ledger_source: E54_LEDGER, experiment: dtn.experiment, seeds: Array.isArray(dtn.seeds) ? dtn.seeds.length : dtn.seeds,   // the file lists the seed numbers
+  // F-81: version 2 since awards_and_jobs and returns_per_seed joined (F-79): the client refuses a cached version 1
+  return { format: 'lunarsim-e54-site', version: 2, source: E54_SRC, ledger_source: E54_LEDGER, experiment: dtn.experiment, seeds: Array.isArray(dtn.seeds) ? dtn.seeds.length : dtn.seeds,   // the file lists the seed numbers
     jobs_per_seed: dtn.jobs_per_seed, reservations_per_seed: dtn.reservations_per_seed, blackout_days: dtn.blackout_days, earth_up_share: dtn.earth_up_share,
     awards_and_jobs: { jobs_per_seed: AJ.jobs_per_seed, awards_per_seed: AJ.awards_per_seed, team_jobs_per_seed: AJ.team_jobs_per_seed },
     returns_per_seed: dtn.lost_link_returns_per_seed,
@@ -270,16 +279,19 @@ export function e52(key) {
 }
 
 // F-79 (B-118 step 2): E54 numbers in /protocol/ problems 4 and 6's text, at build time. <!--@e54:key--> with key
-//   [was:]<protocol>:<field>@<loss> for a row of results/E54_dtn.json (was: the row as published before the code review,
-//   from its superseded_* block), e.g. sf_ll:aoi_mean_s@0.25; or returns / was:returns (lost-link returns a seed), jobs,
-//   awards, team_jobs (awards_and_jobs, a seed) and superseded_on. Fields ending _s are times, _share shares, the rest counts.
+//   [was_<task>:]<protocol>:<field>@<loss> for a row of results/E54_dtn.json (was_<task>: the row as published before
+//   a correction, from the superseded_* block whose key ends in _<task>), e.g. sf_ll:aoi_mean_s@0.25; or returns /
+//   was_<task>:returns (lost-link returns a seed), jobs, awards, team_jobs (awards_and_jobs, a seed) and
+//   superseded_on_<task>. Fields ending _s are times, _share shares, the rest counts. F-81: the file keeps two blocks
+//   (b118, the code review; b120_b, the end of the window), so every "before" key names its block; a bare was: works only
+//   while the file has one.
 let e54doc = null;
 export function e54(key) {
   e54doc ||= readJson(E54_SRC);
   const D = e54doc, flag = (o, what) => num({ ...o, flag: 'Modelled', source: `${E54_SRC}: ${what}` });
-  const old = key.startsWith('was:'), k = old ? key.slice(4) : key, S = old ? superseded(D, E54_SRC, 'rows') : null, doc = old ? S.doc : D;
-  const pre = old ? `${S.key}.` : '', post = old ? ', as published before the code review' : '';
-  let m;
+  let m = /^was(?:_(\w+?))?:(.+)$/.exec(key);
+  const old = !!m, k = old ? m[2] : key, S = old ? superseded(D, E54_SRC, 'rows', blockKey(D, E54_SRC, m[1])) : null, doc = old ? S.doc : D;
+  const pre = old ? `${S.key}.` : '', post = old ? `, as published before the correction of ${S.doc.superseded_on}` : '';
   if ((m = /^(drop_retry|sf|sf_ll):(\w+)@([\d.]+)$/.exec(k))) {
     const [, proto, field, loss] = m, hit = doc.rows.filter(r => r.protocol === proto && r.loss === +loss);
     if (hit.length !== 1 || typeof hit[0][field] !== 'number') throw new Error(`${E54_SRC}: no ${pre}rows ${field} for ${proto} at loss ${loss}`);
@@ -296,7 +308,7 @@ export function e54(key) {
   if (old) throw new Error(`${E54_SRC}: unknown key ${key}`);
   const AJ = { jobs: 'jobs_per_seed', awards: 'awards_per_seed', team_jobs: 'team_jobs_per_seed' };
   if (AJ[k]) { const v = D.awards_and_jobs?.[AJ[k]]; if (typeof v !== 'number') throw new Error(`${E54_SRC}: no awards_and_jobs.${AJ[k]}`); return flag({ value: v, unit: '', digits: k === 'jobs' ? 1 : 2 }, `awards_and_jobs.${AJ[k]}`); }
-  if (k === 'superseded_on') return dateText(superseded(D, E54_SRC, 'rows'), E54_SRC);
+  if ((m = /^superseded_on(?:_(\w+))?$/.exec(k))) return dateText(superseded(D, E54_SRC, 'rows', blockKey(D, E54_SRC, m[1])), E54_SRC);
   throw new Error(`${E54_SRC}: unknown key ${key}`);
 }
 
@@ -324,7 +336,8 @@ export function compactE55(doc) {
   }
   const cell = x => ({ geometry: x.geometry, mast: !!x.mast, N: x.N, f: x.f, F: x.F, runs: x.runs, safe: x.safe_share, agreement: x.agreement_share, connected: x.connected_share, degree: x.degree_condition_share });
   const auth = doc.auth || {};
-  return { format: 'lunarsim-e55-site', version: 1, source: E55_SRC, experiment: doc.experiment, rule: I.rule, detectors: det,
+  // F-81: version 2 since replay_recent joined: the client refuses a cached version 1
+  return { format: 'lunarsim-e55-site', version: 2, source: E55_SRC, experiment: doc.experiment, rule: I.rule, detectors: det,
     consensus: [...C.map(cell), ...(M || []).map(x => ({ ...cell(x), mast: true }))],
     forgery: Object.fromEntries(Object.entries(auth.forgery || {}).map(([t, v]) => [t, v.attempts ? { attempts: v.attempts, accepted: v.accepted, bound: v['bound_2^-t'] } : { per_attempt: v.per_attempt }])),
     replay: auth.replay || {}, replay_recent: replayRecent(doc) };
@@ -595,6 +608,8 @@ function e50was(OV) {
   e50bdoc ||= JSON.parse(readFileSync(join(ROOT, E50B_SRC), 'utf8').replace(/\bNaN\b/g, 'null'));
   const sNB = superseded(NB, NB_SRC, 'multiples'), sOV = superseded(OV, OV_SRC, 'multiples'), sB = superseded(e50bdoc, E50B_SRC, 'metrics');
   if (sNB.doc.superseded_on !== sOV.doc.superseded_on || sB.doc.superseded_on !== sOV.doc.superseded_on) throw new Error('E50: the near-base, overlap and E50b files were superseded on different dates; the /protocol/ sentence gives one');
+  // F-81: the sentence names the positioning fix as the cause, so each file's own reason must say it
+  for (const [f, S] of [[NB_SRC, sNB], [OV_SRC, sOV], [E50B_SRC, sB]]) if (!/positioning fix/.test(S.doc.reason || '')) throw new Error(`${f}: ${S.key}.reason does not name the positioning fix; the /protocol/ sentence gives it as the cause`);
   const was = (value, unit, digits, file, S, what) => num({ value, unit, digits, flag: 'Modelled', source: `${file}: ${S.key}.${what} (as published before the fix)` });
   // near the base: the reading that holds in every seed now and the registered wording, as /protocol/ names them
   const N = nearBaseReadings(NB), M1 = sNB.doc.multiples['1']?.sets?.['dr+ranging'];
@@ -616,7 +631,8 @@ function e50was(OV) {
 function nearBaseReadings(NB) {
   const S = NB.multiples?.['1']?.sets?.['dr+ranging'], reg = Object.keys(NB.readings).find(r => /PREREG6/.test(NB.readings[r]));
   if (!S || !reg) throw new Error('results/E50_near_base.json: no 1x dead reckoning plus ranging set or no registered reading');
-  return { held: Object.keys(NB.readings).find(r => S[r].seeds_inside_budget === S[r].seeds_with_steps) || null, reg };
+  if (readingVerdict(S[reg]) === 'not judged') throw new Error('results/E50_near_base.json: the registered reading is not judged at 1x (no seed has steps inside it); /protocol/ gives its value');
+  return { held: Object.keys(NB.readings).find(r => readingVerdict(S[r]) === 'holds') || null, reg };
 }
 
 // F-73 (B-100): where a page gives the radio load at LRIP v0.1 sizes (E48's airtime on /atc/ and the P3 card), the v0.2

@@ -30,7 +30,8 @@ export const FAULTS = ['jump', 'drift', 'frozen', 'frame', 'noise', 'all'];
 let cache = null;
 function load() {
   if (cache) return cache;
-  if (!existsSync(CSV) || !existsSync(JSONF)) return (cache = { ok: false });
+  // F-81: the results are committed, so a missing file stops the build (no placeholder text on a green build)
+  for (const [f, rel] of [[CSV, 'results/table_E56.csv'], [JSONF, 'results/E56_integrity.json']]) if (!existsSync(f)) throw new Error(`network: ${rel} missing; /network/ prints its numbers from it`);
   const rows = csv(readFileSync(CSV, 'utf8'));
   const E = JSON.parse(readFileSync(JSONF, 'utf8').replace(/\bNaN\b/g, 'null'));
   const L = landscapeB99();
@@ -46,7 +47,6 @@ const dig = (o, path) => path.split('.').reduce((a, k) => (a == null ? undefined
 // the page's numbers, by key
 export function nw(key) {
   const D = load();
-  if (!D.ok) return '<span class="stub">(E56 results not available)</span>';
   const { r, E, L } = D;
   const v = (set, det, fault, field) => {
     const row = r(set, det, fault), at = `set ${set}, detector ${det}, fault ${fault}, rate 1/pair-day, range class all, ${field}`;
@@ -125,7 +125,7 @@ function e56Compact() {
 }
 
 export function stage(PUB) {
-  if (!load().ok) { console.log('prepare-data: E56 results missing, /network/ shows placeholders'); return; }
+  load();   // F-81: stops the build when the E56 results are missing
   const dir = join(PUB, 'network'); mkdirSync(dir, { recursive: true });
   copyFileSync(POL, join(dir, 'integrity_net_v1.json')); copyFileSync(CHK, join(dir, 'integrity_net_v1.check.json'));
   writeFileSync(join(dir, 'e56.json'), JSON.stringify(e56Compact()));

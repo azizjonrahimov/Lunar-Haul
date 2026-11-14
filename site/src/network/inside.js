@@ -6,6 +6,7 @@ import { segmented, h } from '../ui/index.js';
 import { forward, prob } from './tcn.js';
 // F-78 (review W6): the site's formatter (components/num.js), which also guards against "-0.00"
 import { fmt } from '../components/num.js';
+import { onTheme } from './theme.js';
 
 const SEQ = ['#cde2fb', '#9ec5f4', '#6da7ec', '#3987e5', '#256abf', '#184f95', '#0d366b'];
 const DIV = { neg: '#2a78d6', pos: '#eb6834', mid: [214, 214, 210] };   // diverging: blue / orange, neutral grey midpoint
@@ -62,6 +63,5 @@ export function mountInside(host, pol, chk) {
       + `<p class="small muted">${chk.what[i].replace(/\(.*\)/, '').trim()}; a validation window, not test data.</p>`;
   }
   draw();
-  new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-  matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', draw);
+  onTheme(draw);
 }

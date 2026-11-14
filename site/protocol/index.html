@@ -196,10 +196,13 @@
           daily ledger bundles the replay sends to Earth with store-and-forward, <!--@e54:sf:ledger_earth_lost@0.25-->
           expired on the way and <!--@e54:sf:ledger_earth_censored@0.25--> were still alive and undelivered when the
           window closed: censored, their fate unknown, not lost. These values were corrected after a code review on
-          <!--@e54:superseded_on--> (a bundle could be counted delivered after its lifetime, and bundles still alive at
-          the window's end were counted lost): before, <!--@e54:was:sf_ll:grant_lost@0.25--> grants were lost with the
-          rule, the reports took <!--@e54:was:sf_ll:task_state_delay_mean_s@0.25-->, and
-          <!--@e54:was:sf:ledger_earth_lost@0.25--> ledger bundles were counted lost.
+          <!--@e54:superseded_on_b118--> (a bundle could be counted delivered after its lifetime, and bundles still alive at
+          the window's end were counted lost): before, <!--@e54:was_b118:sf_ll:grant_lost@0.25--> grants were lost with the
+          rule, the reports took <!--@e54:was_b118:sf_ll:task_state_delay_mean_s@0.25-->, and
+          <!--@e54:was_b118:sf:ledger_earth_lost@0.25--> ledger bundles were counted lost. On
+          <!--@e54:superseded_on_b120_b--> a ledger bundle whose lifetime ends exactly when the window closes was moved from
+          censored to expired, since its whole life was observed: before, <!--@e54:was_b120_b:sf:ledger_earth_lost@0.25-->
+          expired and <!--@e54:was_b120_b:sf:ledger_earth_censored@0.25--> were censored.
           The flat-ground law ignores the Moon's curvature. By calculation over a curved Moon (ITU-R P.526), the loss between two
           <!--@b104:antenna--> antennas <!--@b104:hop--> apart is <!--@b104:loss_diff--> higher, so the rate falls from
           <!--@b104:rate_flat--> to <!--@b104:rate_sph-->: the crew and cargo rovers' worst hop <!--@b104:carry-->
@@ -321,8 +324,8 @@
           replay does not drive those returns, and no delay figure contains them. A job of two vehicles gets an award for
           each, so <!--@e54:awards--> awards a seed carry <!--@e54:jobs--> jobs, <!--@e54:team_jobs--> of them team jobs.
           The age and the returns were corrected after the same code review (the age had a floor of half a step, and the
-          code's return rule was not the one the papers state): before, <!--@e54:was:sf_ll:aoi_mean_s@0.25-->
-          (<!--@e54:was:sf_ll:aoi_worst_vehicle_s@0.25--> for the worst vehicle) and <!--@e54:was:returns--> returns a
+          code's return rule was not the one the papers state): before, <!--@e54:was_b118:sf_ll:aoi_mean_s@0.25-->
+          (<!--@e54:was_b118:sf_ll:aoi_worst_vehicle_s@0.25--> for the worst vehicle) and <!--@e54:was_b118:returns--> returns a
           seed.</p>
         <h3>Who we would work with</h3>
         <p>The JPL CADRE autonomy team, the Lunar Surface Innovation Consortium, DARPA's LOGIC interface consortium, DFKI

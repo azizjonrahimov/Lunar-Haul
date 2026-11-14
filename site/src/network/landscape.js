@@ -5,6 +5,7 @@
 import { segmented, h } from '../ui/index.js';
 // F-78 (review W6): the site's formatter (components/num.js), which also guards against "-0.00"
 import { fmt } from '../components/num.js';
+import { onTheme } from './theme.js';
 
 const RAMP = ['#cde2fb', '#b7d3f6', '#9ec5f4', '#86b6ef', '#6da7ec', '#5598e7', '#3987e5', '#2a78d6', '#256abf', '#1c5cab', '#184f95', '#104281', '#0d366b'];
 const PATH_LIGHT = '#eb6834', PATH_DARK = '#d95926';
@@ -128,7 +129,7 @@ export function mountLandscape(host, L) {
     const w = host.clientWidth; if (w === shownW) return; shownW = w;   // only on a real change of width
     if (view === 'surface') later(); else drawContour();
   }).observe(host);
-  new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  onTheme(draw);   // F-81: the attribute and the system colour scheme
   // no 2D canvas (tier 0): the contour map
   if (!canvas.getContext || !canvas.getContext('2d')) { view = 'contour'; seg.set('contour'); }
   draw();

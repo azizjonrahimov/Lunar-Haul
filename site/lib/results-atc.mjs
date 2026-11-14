@@ -83,7 +83,9 @@ export function p1learned(key, D = JSON.parse(readFileSync(join(ROOT, LR_SRC), '
   throw new Error(`P1 learned bids: unknown key ${key}`);
 }
 
-function e48() { const p = join(ROOT, 'results', 'E48_sizing.json'); return existsSync(p) ? JSON.parse(readFileSync(p, 'utf8').replace(/\bNaN\b/g, 'null')) : null; }
+// F-81: committed, so a missing file stops the build (no "not available" on a green build)
+const noRound = () => { throw new Error('results/E48_sizing.json: no per_robot_round or measured_memory; the /results/ P3 card reads them'); };
+function e48() { const p = join(ROOT, 'results', 'E48_sizing.json'); if (!existsSync(p)) throw new Error('results/E48_sizing.json missing; the /results/ P3 card reads it'); return JSON.parse(readFileSync(p, 'utf8').replace(/\bNaN\b/g, 'null')); }
 
 // a sentence the paper itself writes (a values-file key holding prose): quoted as it stands, its numbers included
 export function quote(id, key) { return `<q class="r-quote" data-src="paper/${id}/values.json ${key}">${paperValue(id, key)}</q>`; }
@@ -114,8 +116,8 @@ export function atcResults(base = '/') {
   const sched = air('scheduled'), slot = air('slotted');
   const p3 = [
     `The market was priced for ${v('p3', 'P3-N-OWNERS')} owners over ${v('p3', 'P3-E46-N-RUNS')} simulated years.`,
-    E ? `By a scaled estimate (laptop timing times the flight processor's slowdown), the heaviest safety check takes ${e(E.h10.safety_core_share_flight_per_robot_10hz * 100, ' %', 1, 'h10.safety_core_share_flight_per_robot_10hz')} of one core.` : 'E48 not available.',
-    E && robotRound(E) ? `One robot's bid in a market round, timed on a laptop in one month of one seed and scaled by an assumed factor (not flight hardware), takes ${robotRound(E).bid} (99th percentile); the on-robot data were measured at ${robotRound(E).mem} against the ${robotRound(E).estimate} estimate, the interpreter and the code not counted.${robotRound(E).was ? ` ${robotRound(E).was}` : ''}` : '',
+    `By a scaled estimate (laptop timing times the flight processor's slowdown), the heaviest safety check takes ${e(E.h10.safety_core_share_flight_per_robot_10hz * 100, ' %', 1, 'h10.safety_core_share_flight_per_robot_10hz')} of one core.`,
+    (robotRound(E) || noRound()) ? `One robot's bid in a market round, timed on a laptop in one month of one seed and scaled by an assumed factor (not flight hardware), takes ${robotRound(E).bid} (99th percentile); the on-robot data were measured at ${robotRound(E).mem} against the ${robotRound(E).estimate} estimate, the interpreter and the code not counted.${robotRound(E).was ? ` ${robotRound(E).was}` : ''}` : '',
     sched && slot ? `By calculation from LRIP v0.1's message sizes and rates, twenty robots' authenticated traffic needs ${e(sched.channel_kbps_needed, ' kbit/s', 2, 'airtime (scheduled, measured hops)')} of airtime on a channel the base schedules, and ${e(slot.channel_kbps_needed, ' kbit/s', 2, 'airtime (slotted random access, measured hops)')} with random access, against a ${e(E.airtime.channel_kbps, ' kbit/s', 0, 'airtime.channel_kbps')} channel.` : '',
     lrip2('note'),   // F-73: the v0.2 load beside E48's v0.1 airtime
     `The base's mast is in direct view at ${v('p3', 'P3-MESH-MAST-DIRECT-SHARE')} of route points; the rest goes through the mesh.`,

@@ -252,7 +252,7 @@ async function figDtn(host) {
     focus === 'fail' ? fetch(`${import.meta.env.BASE_URL}protocol/b99/e54_timeline.json`) : null]);
   if (!r.ok) throw new Error(`protocol/e54.json: HTTP ${r.status}`);
   const E = await r.json();
-  if (E.format !== 'lunarsim-e54-site' || E.version !== 1) throw new Error(`e54.json: format ${E.format}`);
+  if (E.format !== 'lunarsim-e54-site' || E.version !== 2) throw new Error(`e54.json: format ${E.format} version ${E.version}`);   // F-81: 2 has awards_and_jobs
   let timeline = [];
   if (focus === 'fail') {   // F-65: one seed's month from B-99, under the table
     if (!rt.ok) throw new Error(`protocol/b99/e54_timeline.json: HTTP ${rt.status}`);
@@ -584,7 +584,7 @@ async function figE55(host) {
   if (!r.ok) throw new Error(`protocol/e55.json: HTTP ${r.status}`);
   if (!rcv.ok) throw new Error(`protocol/b99/e55_detectors.json: HTTP ${rcv.status}`);
   const E = await r.json(), C = await rcv.json();
-  if (E.format !== 'lunarsim-e55-site' || E.version !== 1) throw new Error(`e55.json: format ${E.format}`);
+  if (E.format !== 'lunarsim-e55-site' || E.version !== 2) throw new Error(`e55.json: format ${E.format} version ${E.version}`);   // F-81: 2 has replay_recent
   if (C.format !== 'lunarsim-protocol-data' || !C.curves) throw new Error(`e55_detectors.json: format ${C.format}`);
   let set = 'test', N = 12;
   const Ns = [...new Set(E.consensus.map(c => c.N))].sort((a, b) => a - b);

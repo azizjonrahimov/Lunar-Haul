@@ -6,8 +6,9 @@ import { FLAGS, esc } from './num.js';
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 export function dateNum({ iso, flag = 'Modelled', source = '' }) {
   if (!FLAGS[flag]) throw new Error(`dateNum: flag must be one of ${Object.keys(FLAGS).join(', ')} (got ${flag})`);
+  // F-81: a real calendar day (2026-02-31 stops the build too)
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso)), mo = m ? +m[2] : 0, d = m ? +m[3] : 0;
-  if (!m || mo < 1 || mo > 12 || d < 1 || d > 31) throw new Error(`dateNum: ${iso} is not a date (YYYY-MM-DD)${source ? `, ${source}` : ''}`);
+  if (!m || mo < 1 || mo > 12 || d < 1 || new Date(Date.UTC(+m[1], mo - 1, d)).getUTCDate() !== d) throw new Error(`dateNum: ${iso} is not a date (YYYY-MM-DD)${source ? `, ${source}` : ''}`);
   const tip = `${FLAGS[flag]}.${source ? ' Source: ' + source : ''}`;
   return `<span class="num"><span class="v">${d} ${MONTHS[mo - 1]} ${m[1]}</span><span class="flag" data-flag="${flag}" title="${esc(tip)}">${flag}</span>` +
     `<span class="visually-hidden"> (${esc(tip)})</span></span>`;
