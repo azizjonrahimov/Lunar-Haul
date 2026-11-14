@@ -552,19 +552,71 @@ export function b104(key, cls = 'LTV1') {
 // F-72 (B-102): <!--@e50ov:lead--> on /protocol/ problem 1: what a reservation overlap is (results/E50_overlaps.json). The
 // count is fixed by how waiting windows are filed (back to back), not by the position error, so it is said not to be a
 // safety measure; the closeness numbers (gap at entry, nothing within 5 m) carry the safety statement. A simulation.
+// F-80 (B-118 N14/N15): every fleet size the file holds (1x, 4x, 8x): the count with the layered margin at each, against
+// the range without one; <!--@e50ov:was--> names once, with the flagged date, the values E50's runs gave before the
+// positioning fix (the superseded_* blocks of the near-base, overlap and E50b files; 8x was not run before the fix).
 export const OV_SRC = 'results/E50_overlaps.json';
+const FLEET = { 1: 'today’s fleet', 4: 'four times the fleet', 8: 'eight times the fleet' };
+const fleetOf = k => { if (!FLEET[k]) throw new Error(`E50: no words for a fleet multiple of ${k}`); return FLEET[k]; };
+const minBy = (xs, f) => xs.reduce((a, b) => (f(b) < f(a) ? b : a)), maxBy = (xs, f) => xs.reduce((a, b) => (f(b) > f(a) ? b : a));
+const countText = v => ({ value: v, digits: v && v < 10 ? 1 : 0 });
+const and = xs => (xs.length < 3 ? xs.join(' and ') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
+const nWords = n => ['no', 'one', 'two', 'three', 'four', 'five'][n] || String(n);
 export function e50ov(key) {
+  const D = JSON.parse(readFileSync(join(ROOT, OV_SRC), 'utf8'));
+  if (key === 'was') return e50was(D);
   if (key !== 'lead') throw new Error(`${OV_SRC}: unknown key ${key}`);
-  const D = JSON.parse(readFileSync(join(ROOT, OV_SRC), 'utf8')), X = D.multiples['4'], runs = Object.entries(X.runs);
-  const m = (value, unit, digits, what) => num({ value, unit, digits, flag: 'Modelled', source: `${OV_SRC}: multiples.4.runs.${what} (a simulation)` });
+  const X = D.multiples['4'], runs = Object.entries(X.runs);
+  const m = (value, unit, digits, what, mult = '4') => num({ value, unit, digits, flag: 'Modelled', source: `${OV_SRC}: multiples.${mult}.runs.${what} (a simulation)` });
   const bare = runs.filter(([k]) => k.startsWith('no_margin:')), lay = X.runs['with_margin:layered'];
-  const sh = bare.map(([k, r]) => [k, r.back_to_back.abutting_share_overlapping]), lo = sh.reduce((a, b) => (b[1] < a[1] ? b : a)), hi = sh.reduce((a, b) => (b[1] > a[1] ? b : a));
-  const gp = bare.map(([k, r]) => [k, r.gap_at_entry_m.median]), glo = gp.reduce((a, b) => (b[1] < a[1] ? b : a)), ghi = gp.reduce((a, b) => (b[1] > a[1] ? b : a));
+  const sh = bare.map(([k, r]) => [k, r.back_to_back.abutting_share_overlapping]), lo = minBy(sh, x => x[1]), hi = maxBy(sh, x => x[1]);
+  const gp = bare.map(([k, r]) => [k, r.gap_at_entry_m.median]), glo = minBy(gp, x => x[1]), ghi = maxBy(gp, x => x[1]);
   const all = Object.values(D.multiples).flatMap(M => Object.values(M.runs));
   if (all.some(r => r.counts_per_seed.gap_under_d0_5m > 0 || r.counts_per_seed.gap_under_r1_dmin > 0)) throw new Error(`${OV_SRC}: an overlap came within 5 m or R1's gap; the /protocol/ sentence says none did`);
   const pairs = bare[0][1].back_to_back.abutting_pairs_per_seed;
+  // the count with the layered margin at every fleet size, against the range without one; the sentence says the margin
+  // makes the count fall, so a size where it does not stops the build
+  const mults = Object.keys(D.multiples).sort((a, b) => a - b);
+  const per = mults.map(k => {
+    const R = Object.entries(D.multiples[k].runs), L = D.multiples[k].runs['with_margin:layered'], B = R.filter(([n]) => n.startsWith('no_margin:'));
+    if (!L || !B.length) throw new Error(`${OV_SRC}: multiples.${k} lacks the layered margin run or the runs without a margin`);
+    const blo = minBy(B, x => x[1].overlaps_per_seed), bhi = maxBy(B, x => x[1].overlaps_per_seed);
+    if (L.overlaps_per_seed >= blo[1].overlaps_per_seed) throw new Error(`${OV_SRC}: at ${k}x the layered margin does not lower the overlap count; the /protocol/ sentence says it does`);
+    const c = (v, what) => { const t = countText(v); return m(t.value, '', t.digits, what, k); };
+    return { k, lay: c(L.overlaps_per_seed, 'with_margin:layered.overlaps_per_seed'), lo: c(blo[1].overlaps_per_seed, `${blo[0]}.overlaps_per_seed`), hi: c(bhi[1].overlaps_per_seed, `${bhi[0]}.overlaps_per_seed`) };
+  });
   return `The margin also changes how often two reservations of the same road overlap in time, and that count is not a safety measure: windows filed back to back overlapped in ${m(100 * lo[1], '', 0, `${lo[0]}.back_to_back.abutting_share_overlapping`)} to ${m(100 * hi[1], ' %', 0, `${hi[0]}.back_to_back.abutting_share_overlapping`)} of cases at four times the fleet (${m(pairs, '', 0, `${bare[0][0]}.back_to_back.abutting_pairs_per_seed`)} such pairs a seed) whatever the position error. `
-    + `The margin separates the windows, so the count falls, but it does not change how far ahead the first vehicle was when the second entered (medians of ${m(glo[1], '', 0, `${glo[0]}.gap_at_entry_m.median`)} to ${m(ghi[1], ' m', 0, `${ghi[0]}.gap_at_entry_m.median`)} without a margin, ${m(lay.gap_at_entry_m.median, ' m', 0, 'with_margin:layered.gap_at_entry_m.median')} with the layered one, set by the lengths of the segments), and no overlap, with or without a margin, at either fleet size, brought two vehicles inside the static margin or the keep-distance rule's gap (a simulation, task B-102).`;
+    + `The margin separates the windows, so the count falls: with the layered margin it was ${and(per.map((p, i) => `${p.lay}${i ? '' : ' a seed'} at ${fleetOf(p.k)}`))}, against ${and(per.map(p => `${p.lo} to ${p.hi}`))} without one. `
+    + `It does not change how far ahead the first vehicle was when the second entered (at four times the fleet, medians of ${m(glo[1], '', 0, `${glo[0]}.gap_at_entry_m.median`)} to ${m(ghi[1], ' m', 0, `${ghi[0]}.gap_at_entry_m.median`)} without a margin, ${m(lay.gap_at_entry_m.median, ' m', 0, 'with_margin:layered.gap_at_entry_m.median')} with the layered one, set by the lengths of the segments), and no overlap, with or without a margin, at any of the ${nWords(mults.length)} fleet sizes, brought two vehicles inside the static margin or the keep-distance rule's gap (a simulation, task B-102).`;
+}
+// <!--@e50ov:was-->: the values of problem 1's E50 sentences as published before the positioning fix, each named once
+function e50was(OV) {
+  const NB_SRC = 'results/E50_near_base.json', NB = JSON.parse(readFileSync(join(ROOT, NB_SRC), 'utf8'));
+  e50bdoc ||= JSON.parse(readFileSync(join(ROOT, E50B_SRC), 'utf8').replace(/\bNaN\b/g, 'null'));
+  const sNB = superseded(NB, NB_SRC, 'multiples'), sOV = superseded(OV, OV_SRC, 'multiples'), sB = superseded(e50bdoc, E50B_SRC, 'metrics');
+  if (sNB.doc.superseded_on !== sOV.doc.superseded_on || sB.doc.superseded_on !== sOV.doc.superseded_on) throw new Error('E50: the near-base, overlap and E50b files were superseded on different dates; the /protocol/ sentence gives one');
+  const was = (value, unit, digits, file, S, what) => num({ value, unit, digits, flag: 'Modelled', source: `${file}: ${S.key}.${what} (as published before the fix)` });
+  // near the base: the reading that holds in every seed now and the registered wording, as /protocol/ names them
+  const N = nearBaseReadings(NB), M1 = sNB.doc.multiples['1']?.sets?.['dr+ranging'];
+  if (!M1) throw new Error(`${NB_SRC}: ${sNB.key} has no 1x dead reckoning plus ranging set`);
+  const nb = N.held ? `${was(M1[N.held].in_p95_m_mean, ' m', 1, NB_SRC, sNB, `multiples.1.sets.dr+ranging.${N.held}.in_p95_m_mean`)} under the first reading and ` : '';
+  // overlaps: the back-to-back share at 4x and the layered margin's count at every size the earlier file held
+  const O4 = sOV.doc.multiples['4']?.runs;
+  if (!O4) throw new Error(`${OV_SRC}: ${sOV.key} has no 4x runs`);
+  const sh = Object.entries(O4).filter(([k]) => k.startsWith('no_margin:')).map(([k, r]) => [k, r.back_to_back.abutting_share_overlapping]), lo = minBy(sh, x => x[1]), hi = maxBy(sh, x => x[1]);
+  const oldM = Object.keys(sOV.doc.multiples).sort((a, b) => a - b), newM = Object.keys(OV.multiples).sort((a, b) => a - b), notRun = newM.filter(k => !oldM.includes(k));
+  const lay = oldM.map((k, i) => { const v = sOV.doc.multiples[k].runs['with_margin:layered'].overlaps_per_seed, t = countText(v); return `${was(t.value, '', v && v < 0.1 ? 2 : t.digits, OV_SRC, sOV, `multiples.${k}.runs.with_margin:layered.overlaps_per_seed`)}${i ? '' : ' overlaps a seed'} at ${fleetOf(k)}`; });
+  const d = sB.doc.metrics.delay_mean_h;
+  return `Corrected after a code review on ${dateText(sOV, OV_SRC)} (a fix to the positioning model): before, the error’s 95th percentile near the base was ${nb}${was(M1[N.reg].in_p95_m_mean, ' m', 1, NB_SRC, sNB, `multiples.1.sets.dr+ranging.${N.reg}.in_p95_m_mean`)} under the registered wording; `
+    + `windows filed back to back overlapped in ${was(100 * lo[1], '', 0, OV_SRC, sOV, `multiples.4.runs.${lo[0]}.back_to_back.abutting_share_overlapping`)} to ${was(100 * hi[1], ' %', 0, OV_SRC, sOV, `multiples.4.runs.${hi[0]}.back_to_back.abutting_share_overlapping`)} of cases at four times the fleet; `
+    + `the layered margin left ${and(lay)}${notRun.length ? ` (${and(notRun.map(fleetOf))} ${notRun.length > 1 ? 'were' : 'was'} not run then)` : ''}; `
+    + `and the stops for terrain fixes added ${was(d.diff_mean, ' h', 2, E50B_SRC, sB, 'metrics.delay_mean_h.diff_mean')} (95 % interval ${was(d.diff_ci95_bootstrap[0], ' h', 2, E50B_SRC, sB, 'metrics.delay_mean_h.diff_ci95_bootstrap[0]')} to ${was(d.diff_ci95_bootstrap[1], ' h', 2, E50B_SRC, sB, 'metrics.delay_mean_h.diff_ci95_bootstrap[1]')}).`;
+}
+// the reading of "near the base" that holds in every seed at 1x (dead reckoning plus ranging) and the registered one
+function nearBaseReadings(NB) {
+  const S = NB.multiples?.['1']?.sets?.['dr+ranging'], reg = Object.keys(NB.readings).find(r => /PREREG6/.test(NB.readings[r]));
+  if (!S || !reg) throw new Error('results/E50_near_base.json: no 1x dead reckoning plus ranging set or no registered reading');
+  return { held: Object.keys(NB.readings).find(r => S[r].seeds_inside_budget === S[r].seeds_with_steps) || null, reg };
 }
 
 // F-73 (B-100): where a page gives the radio load at LRIP v0.1 sizes (E48's airtime on /atc/ and the P3 card), the v0.2

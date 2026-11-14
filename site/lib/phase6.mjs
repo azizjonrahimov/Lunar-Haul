@@ -8,6 +8,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from './pages.mjs';
 import { esc, fmt, num } from '../src/components/num.js';
+import { dateNum } from '../src/components/date-num.js';
 
 export const VV6_SRC = 'results/vv_phase6.json', FAMILY_SRC = 'results/phase6_family.json';
 const read = rel => (existsSync(join(ROOT, rel)) ? JSON.parse(readFileSync(join(ROOT, rel), 'utf8').replace(/([:[,]\s*)-?(NaN|Infinity)\b/g, '$1null')) : null);
@@ -95,8 +96,27 @@ export function nb(key) {
   if (!/depends on the reading/.test(N.verdict)) throw new Error(`${NEAR_SRC}: verdict is no longer "depends on the reading"`);
   const first = h ? `Read as “${esc(h.label)}” (${h.share} of driving), the error’s 95th percentile is ${h.p95} and the clause ${N.seedsSay(h)}` : 'No reading keeps it inside the budget';
   return `Whether ranging keeps the error inside the budget near the base depends on what “near” means. ${first}; read as the registered
-          wording, “${esc(N.reg.label)}”, it is ${N.reg.p95} against ${N.budget} and ${N.seedsSay(N.reg)}. The papers report all ${WORDS[N.count] || N.count}
+          wording, “${esc(N.reg.label)}”, it is ${N.reg.p95} against ${N.budget} and ${N.seedsSay(N.reg)}.${nearLarger(N)} The papers report all ${WORDS[N.count] || N.count}
           readings, so the second clause of H9&prime; depends on the reading (${NEAR_KIND}).`;
+}
+// F-80 (B-118): the larger fleets the file holds (4x, 8x since the regenerated runs) give the same verdict under every
+// reading as 1x, or the build stops; the sentence gives their seeds and the two readings /protocol/ names
+function nearLarger(N) {
+  const D = read(NEAR_SRC), ks = Object.keys(D.multiples).filter(k => k !== '1').sort((a, b) => a - b);
+  if (!ks.length) return '';
+  const say = x => (x.seeds_inside_budget === 0 ? 'fails' : x.seeds_inside_budget === x.seeds_with_steps ? 'holds' : 'mixed');
+  const S1 = D.multiples['1'].sets['dr+ranging'];
+  for (const k of ks) {
+    const S = D.multiples[k].sets?.['dr+ranging'];
+    if (!S) throw new Error(`${NEAR_SRC}: multiples.${k} has no dead reckoning plus ranging set`);
+    for (const r of Object.keys(D.readings)) if (say(S[r]) !== say(S1[r]) || say(S[r]) === 'mixed') throw new Error(`${NEAR_SRC}: at ${k}x the reading ${r} ${say(S[r])}, at 1x it ${say(S1[r])}; the /protocol/ sentence says the verdicts are the same`);
+  }
+  const src = (k, what) => `${NEAR_SRC}: multiples.${k}.${what} (${NEAR_KIND})`;
+  const v = (k, r) => num({ value: D.multiples[k].sets['dr+ranging'][r].in_p95_m_mean, unit: ' m', digits: 1, flag: 'Modelled', source: src(k, `sets.dr+ranging.${r}.in_p95_m_mean`) });
+  const n = k => num({ value: D.multiples[k].sets['dr+ranging'][N.reg.r].seeds_with_steps, digits: 0, flag: 'Modelled', source: src(k, `sets.dr+ranging.${N.reg.r}.seeds_with_steps`) });
+  const list = f => (ks.length > 1 ? `${ks.slice(0, -1).map(f).join(', ')} and ${f(ks[ks.length - 1])}` : f(ks[0]));
+  const h = N.held[0];
+  return ` At ${list(k => WORDS[k] || k)} times the fleet (${list(n)} seeds) every reading gives the same verdict${h ? `: ${list(k => v(k, h.r))} under the first reading,` : ','} ${list(k => v(k, N.reg.r))} under the registered wording.`;
 }
 const fmtH = v => `${fmt(v, 2).replace(/^-/, '−')} h`, fmtP = v => (v < 0.001 ? '< 0.001' : fmt(v, 2));
 // F-70c: a clause decided by its own sampling test (H10′): held when its p is below alpha; the values the file gives
@@ -159,5 +179,45 @@ export function familyTable() {
     <div class="r-scroll"><table class="r-table r-fam-table"><caption>Hypotheses of Phase 6, from ${FAMILY_SRC}${F.pending ? `. Still to come: ${esc(F.pending)}` : ''}.</caption>
       <thead><tr><th scope="col">Hypothesis</th><th scope="col">Outcome</th><th scope="col">What the runs showed</th><th scope="col">How it was tested</th><th scope="col">Holm p</th></tr></thead>
       <tbody>${rows.map(r => `<tr><th scope="row">${esc(r.label)}</th><td data-label="Outcome"><span class="r-out r-out-${r.outcome}">${OUT[r.outcome]}</span></td>`
-        + `<td class="small" data-label="What the runs showed">${what(r)}</td><td class="small" data-label="How it was tested"><span class="muted">${esc(r.kind)}:</span> ${esc(r.test)}</td><td class="small" data-label="Holm p">${r.p === null ? '–' : p(r.p)}</td></tr>`).join('')}</tbody></table></div></section>`;
+        + `<td class="small" data-label="What the runs showed">${what(r)}</td><td class="small" data-label="How it was tested"><span class="muted">${esc(r.kind)}:</span> ${esc(r.test)}</td><td class="small" data-label="Holm p">${r.p === null ? '–' : p(r.p)}</td></tr>`).join('')}</tbody></table></div>${familyWas(F, rows)}</section>`;
+}
+
+// F-80 (B-118 N14/N15): the values the table showed before the positioning fix, each named once with the flagged date
+// (the file's superseded_* block, and the near-base file's for the readings); only a value whose shown text changed is
+// named, and the note says whether every outcome stayed as it was
+export function familyWas(F, rows = familyRows(F)) {
+  const fk = Object.keys(F).find(k => /^superseded_/.test(k) && F[k]?.hypotheses);
+  if (!fk) return '';
+  const O = F[fk], oldRows = familyRows({ ...O, summary: F.summary }), items = [];
+  const was = (value, unit, digits, src) => num({ value, unit, digits, flag: 'Modelled', source: `${src} (as published before the fix)` });
+  const fsrc = path => `${FAMILY_SRC}: ${fk}.hypotheses.${path}`;
+  for (const [id, h] of Object.entries(O.hypotheses)) {
+    const now = F.hypotheses[id], label = DECISIONS[id]?.label || id, got = [];
+    if (!now) continue;
+    for (const [name, c] of Object.entries(h.clauses || {})) {
+      const n = now.clauses?.[name];
+      if (!n) continue;
+      if (typeof c.value_m === 'number' && DECISIONS[id]?.clauses?.[name] !== 'reading' && fmtM(c.value_m) !== fmtM(n.value_m)) got.push(`${was(c.value_m, ' m', c.value_m < 10 ? 1 : 0, fsrc(`${id}.clauses.${name}.value_m`))} for “${esc(name)}”`);
+      const gaps = Object.keys(c).map(k => /^gap_(\d+)x_h$/.exec(k)).filter(m => m && +m[1] > 1).map(m => m[1]);
+      const gs = gaps.filter(m => typeof n[`gap_${m}x_h`] === 'number' && fmtH(c[`gap_${m}x_h`]) !== fmtH(n[`gap_${m}x_h`]));
+      if (gs.length) got.push(`a gap of ${gs.map(m => `${was(c[`gap_${m}x_h`], ' h', 2, fsrc(`${id}.clauses.${name}.gap_${m}x_h`)).replace('>-', '>−')} at ${m}x`).join(' and ')}`);
+      if (!gaps.length && typeof c.mean_diff_h === 'number' && typeof c.margin_h !== 'number' && fmtH(c.mean_diff_h) !== fmtH(n.mean_diff_h)) got.push(`a difference of ${was(c.mean_diff_h, ' h', 2, fsrc(`${id}.clauses.${name}.mean_diff_h`))} for “${esc(name)}”`);
+    }
+    const hp = h.holm?.p_adjusted, np = now.holm?.p_adjusted;
+    if (typeof hp === 'number' && typeof np === 'number' && fmt(hp, 3) !== fmt(np, 3) && hp >= 0.001) got.push(`Holm p ${was(hp, '', 3, fsrc(`${id}.holm.p_adjusted`))}`);
+    if (got.length) items.push(`${esc(label)} gave ${got.join(', ')}`);
+  }
+  // the near-base readings the table lists under H9′ (results/E50_near_base.json, 1x, dead reckoning plus ranging)
+  const NB = read(NEAR_SRC), nk = NB && Object.keys(NB).find(k => /^superseded_/.test(k) && NB[k]?.multiples?.['1']);
+  if (nk) {
+    const S = NB[nk].multiples['1'].sets['dr+ranging'], C = NB.multiples['1'].sets['dr+ranging'];
+    const ch = Object.keys(NB.readings).filter(r => S[r] && fmt(S[r].in_p95_m_mean, 1) !== fmt(C[r].in_p95_m_mean, 1));
+    if (ch.length) items.push(`the readings near the base were ${ch.map(r => `${was(S[r].in_p95_m_mean, ' m', 1, `${NEAR_SRC}: ${nk}.multiples.1.sets.dr+ranging.${r}.in_p95_m_mean`)} (“${esc(NB.readings[r].replace(/\s*\((used so far|PREREG6[^)]*)\)/g, '').replace(/\bBASE\b/g, 'base'))}”)`).join(', ')}`);
+    if (NB[nk].superseded_on !== O.superseded_on) throw new Error(`${NEAR_SRC} and ${FAMILY_SRC} were superseded on different dates; the /results/ note gives one`);
+  }
+  if (!items.length) return '';
+  const changed = rows.filter(r => oldRows.find(o => o.id === r.id)?.outcome !== r.outcome).map(r => r.label);
+  const date = dateNum({ iso: O.superseded_on, source: `${FAMILY_SRC}: ${fk}.superseded_on (the date the values were replaced)` });
+  return `<p class="small muted r-fam-was">Corrected after a code review on ${date} (a fix to the positioning model): before, ${items.join('; ')}. `
+    + `${changed.length ? `The outcome changed for ${esc(changed.join(' and '))}.` : 'Every outcome is as it was.'}</p>`;
 }

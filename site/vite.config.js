@@ -53,7 +53,7 @@ function lunarsimPages() {
           .replace(/<!--@e52:(\w+)-->/g, (_, k) => e52(k))   // F-56: E52 in /protocol/ problem 2 (lib/protocol-data.mjs)
           .replace(/<!--@e54:([\w:@.]+)-->/g, (_, k) => e54(k))   // F-79: E54 in /protocol/ problems 4 and 6, now and as published before the code review
           .replace(/<!--@nb:(\w+)-->/g, (_, k) => nb(k))
-          .replace('<!--@e50ov:lead-->', () => e50ov('lead'))   // F-72: what a reservation overlap is (results/E50_overlaps.json), /protocol/ problem 1   // F-71: H9' clause 2 under every reading (results/E50_near_base.json), /protocol/ problem 1
+          .replace(/<!--@e50ov:(lead|was)-->/g, (_, k) => e50ov(k))   // F-80: was = problem 1's E50 values before the positioning fix   // F-72: what a reservation overlap is (results/E50_overlaps.json), /protocol/ problem 1   // F-71: H9' clause 2 under every reading (results/E50_near_base.json), /protocol/ problem 1
           .replace(/<!--@vv6:(\w+)-->/g, (_, k) => vv6(k))   // F-69: the Phase 6 checks' lead on /verification/ (lib/phase6.mjs)
           .replace(/<!--@b97:(\w+)-->/g, (_, k) => b97(k))   // F-56: B-97's real-data boxes (lib/realdata.mjs)
           .replace(/<!--@e55:([\w@.]+)-->/g, (_, k) => e55(k))   // F-56: E55 in /protocol/ problem 7 (lib/protocol-data.mjs)
