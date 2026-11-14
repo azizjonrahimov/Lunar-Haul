@@ -143,3 +143,52 @@ the request rule "was rerun on that one encounter only", which is now out of dat
   encounter files of types 2, 3, 4, 8, 9, 10 and 12 carry a deadlock flag from before the classifier fix in rows with a
   random fuzzer; no reported value reads those rows. The type list is read from the file.
 - Abstract and conclusion unchanged (neither stated the one-encounter fact). New placeholder `P2-REQRULE-LIMITATION`.
+
+## Parts 8 and 9 (13-14 Nov): corrections after the code review
+
+These follow `reports/review_phase6_code.md`, not the referee report, so the referee tally does not move (fixed 28,
+part 7, awaiting 0, not done 2). Every value below is read through the build from the regenerated files; the earlier
+value is named once in the paper where listed. No verdict moved: H10 is still not supported as a whole and its
+equivalence clause holds.
+
+Code-review findings touching P2:
+- N2 (options-off row): the verification paragraph gives the check with its scope; 56 rows, commit `bbbd8f5`
+  (`results/vv_phase6.json`).
+- N8 (H15a's p), N10 and N11 (detector recall and false-alarm intervals): recalls are on quiet events (CUSUM 84.2 ->
+  69.3 %, per-step chi-square 79.2 -> 73.2 %, network 66.0 -> 65.1 %), false-alarm intervals on 1,000 resamples.
+  Table 12 has a note, not new columns: the quiet-event recalls exist only for the test and out-of-distribution blocks.
+- N14, N15 (position model, E50): all E50 text and Tables 9 and 10 follow `results/E50_summary.json`,
+  `E50_overlaps.json`, `E50b_summary.json` and `phase6_family.json` at 1x, 4x and 8x. Dead-reckoning p95 643 -> 610 m;
+  ranging overall 50.1 -> 49.1 m; overlaps without a margin 1.87 -> 1.43 a seed (median 334 -> 548 s); with the margin
+  none at 1x (was 1 in 30 under each), 0.3 and 2.3 at 4x, 0.0 and 3.6 at 8x; layered gap at 4x -0.87 h [-2.00, -0.01]
+  -> -0.49 h [-1.36, 0.05]; H10 p 0.93 / 0.77 -> 0.87 / 0.66; E50b +0.63 h -> +0.65 h [0.06, 1.33]. Abstract: 50 m ->
+  49 m, 0.63 h -> 0.65 h.
+- N23 (actuation-delay buffer): Appendix A.4 defines the delay-aware R1 breach count and names the earlier rates (none
+  of the 32 cells with the lag has a breach; counted on the command at once, five had 0.05 % to 15 %).
+- The E54 paragraph carries the regenerated message age (about the 10 s status period; earlier 45 s, worst 149 s).
+
+Sentences reversed or removed:
+- "The same overlap count for every layer set at four times the fleet": dead reckoning alone now has 84 a month against
+  67 to 68 for the three sets with ranging.
+- "No overlap occurred in any seed with the stops": 1 of 30 seeds with, 0 without; the paper now says overlaps say
+  nothing either way.
+- "The eight-times cells were not analysed" and the provisional sentence in `part5_back.html`: removed; the 8x readings
+  and overlaps are in the text.
+
+Proposition 1 illustration (two steps):
+- Part 9 first printed 81 m after one driving hour, 244 m after five, 240 m after eight, and said the level stretch was
+  not traced.
+- BACKEND then traced it (reading only): the curve bins cumulative driving hours since the window start
+  (`tools/atc/run_e50.py`, `shift_curve`) and few vehicles drive that long, so the points beyond the fourth hour rest on
+  a few vehicles a seed. The paper now says the level stretch is within that noise and that the error still grows: 0.62 km
+  beyond eight driving hours (0.65 km before the fix), and a rise in every hour at 4x and 8x (344 m and 470 m after
+  eight). The curve values are read from `errors.<m>.dr.shift_p95_m_mean_over_seeds`. The file does not hold the number
+  of vehicles in each hour or the seed-to-seed spread, so the paper states those in words, without numbers.
+- New build checks (`paper/p2/phase6.py`, `prop1`): the curve has eight hourly bins and one beyond; the bin beyond is
+  more than twice any hourly value; at 4x and 8x every hour is above the one before.
+
+Builder: eight defects fixed in `paper/p2/build_p2.py` (no typed-in fallback values); the R1 breach pin covers four
+lines of `lunarsim/atc/encounter.py`.
+
+Not done: the position-error percentiles in the errors paragraph and the cells of Tables 9 and 10 do not name their
+earlier values one by one; the limitations sentence points to `superseded_2026-11-13_b118_n15`.

@@ -2176,17 +2176,34 @@ def add_props(c):
             s = c.e50f(1)
             hrs = s["errors"]["1"]["dr"]["shift_p95_m_mean_over_seeds"][:8]
             check(hrs[0] > m, "E50 agrees with Proposition 1: dead reckoning alone is past the margin within the first driving hour")
-            ohrs = c.e50old()["errors"]["1"]["dr"]["shift_p95_m_mean_over_seeds"][:8]
+            cur = s["errors"]["1"]["dr"]["shift_p95_m_mean_over_seeds"]
+            ocur = c.e50old()["errors"]["1"]["dr"]["shift_p95_m_mean_over_seeds"]
+            check(len(cur) == len(ocur) == int(s["design"]["shift_h"]) + 1 == 9,
+                  "E50: the by-hour curve has eight one-hour bins of driving and one bin beyond them (run_e50.shift_curve)")
+            ohrs, beyond, obeyond = ocur[:8], cur[8], ocur[8]
             up = next((i for i, (a2, b2) in enumerate(zip(hrs, hrs[1:])) if b2 <= a2), len(hrs) - 1) + 1
             check(up >= 4 and hrs[-1] > 2 * hrs[0] and max(hrs[up - 1:]) / min(hrs[up - 1:]) < 1.1,
                   "E50: the dead-reckoning error grows over at least the first four driving hours of the shift and is level within 10 % after")
+            check(beyond > 2 * max(hrs), "E50: beyond eight driving hours the dead-reckoning error is more than twice any hourly value, so it still grows")
+            big = {}
+            for mult in ("4", "8"):
+                hb = s["errors"][mult]["dr"]["shift_p95_m_mean_over_seeds"][:8]
+                check(all(b2 > a2 for a2, b2 in zip(hb, hb[1:])),
+                      f"E50: at {mult} times the fleet the dead-reckoning error rises in every driving hour to the eighth")
+                big[mult] = hb[-1]
             out += (f" E50 illustrates the growth and does not test the formula: with dead reckoning alone the 95th "
                     f"percentile of the error was {m_(hrs[0], 0)} after one hour of driving, {m_(hrs[up - 1], 0)} "
                     f"after {c.words(up)} and {m_(hrs[-1], 0)} after eight ({cnt(len(s['seeds']['1']))} seeds)"
-                    + ("" if up == len(hrs) else "; it did not grow after that in these runs, which the formula does "
-                                                 "not describe and we did not trace")
+                    + ("" if up == len(hrs) else
+                       f". The level stretch between is not a limit. The hours are driving hours counted from the "
+                       f"start of the run, and few vehicles drive that many, so beyond the fourth hour each point "
+                       f"rests on a few vehicles a seed and is noisy; the level stretch is within that noise. The error "
+                       f"still grows, to about {num(beyond / 1000.0, 2)}{NB}km beyond eight driving hours, and at four "
+                       f"and eight times the fleet it rose in every hour, to "
+                       f"{m_(big['4'], 0)} and {m_(big['8'], 0)} after eight")
                     + f". Before a correction to the position model, an earlier version of this paper gave "
-                    f"{m_(ohrs[0], 0)} after one hour and {m_(ohrs[-1], 0)} after eight.")
+                    f"{m_(ohrs[0], 0)} after one hour, {m_(ohrs[-1], 0)} after eight and "
+                    f"{num(obeyond / 1000.0, 2)}{NB}km beyond.")
         except Pending:
             pass
         return out

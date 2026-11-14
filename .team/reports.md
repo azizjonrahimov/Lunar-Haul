@@ -11265,3 +11265,15 @@ lunarsim/atc/regimes.py (B-117 a, opt-in, not run). Scratch drivers (not in the 
 e50_peak.py, sample_run.sh, gate10/13/15.sh. Staging files of the 8x near_base cells stay in .cache/atc/e50_near/m8_s*/
 (engine pickles); I can remove them if you want the space.
 B-116 (8x) is complete with this. Next: B-115 to B-117 as queued, unless you say otherwise.
+
+## F-80 browser check (FRONTEND, 2026-11-14), on LEAD's build d61050c
+- No file changed, no rebuild. Local build (site/dist) served by vite preview; free RAM 0.90 GB at the start; the audit closed the browser between pages (RAM with it closed 0.64 to 0.98 GB, never under 0.5).
+- /protocol/, /results/, /network/, /verification/, /atc/ at 1280 and 390 px, dark and light (20 loads, every lazy section scrolled in): 0 console errors, 0 overflow, 0 contrast failures, one h1, no heading skips.
+- Rendered values against the results files (checked in site/dist by an independent script reading results/*.json), 26 of 26 match:
+  - /protocol/ near base: 1x 4.3 m (first reading) and 49.1 m (registered); 4x and 8x (10 and 5 seeds) give the same verdicts, 4.3 / 4.5 m and 32.1 / 30.6 m.
+  - Overlaps: the layered margin 0, 2.3 and 3.6 a seed at 1x, 4x, 8x against 0.6 to 1.4, 67 to 84 and 174 to 189 without one; back-to-back overlaps 47 to 51 % at 4x; "at any of the three fleet sizes" ("either fleet size" is gone).
+  - E50b: 0.65 h (17.74 h to 18.39 h).
+  - Earlier-values sentence, once, date flagged: 4.2 / 50.1 m, 43 to 52 %, 0.03 and 0.9 overlaps a seed (8x not run then), 0.63 h (0.02 to 1.29 h).
+  - /results/: H10′ gaps −0.49 h at 4x (10 seeds) and −0.14 h at 8x (5 seeds), Holm p 0.865; H9′ 81 m. The note under the table names before: 85 m, −0.87 / −0.25 h, Holm p 0.932, the near-base readings; it ends "Every outcome is as it was."
+- Figure 1's data (protocol/b99/e50_layers.json) and the lost-link timeline in dist are byte-identical to data/atc/protocol/.
+- The preview and the browser are stopped; free RAM 1.03 GB.
