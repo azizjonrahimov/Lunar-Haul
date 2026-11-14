@@ -95,19 +95,19 @@ def test_h15a_p_comes_from_the_saved_resample_count(monkeypatch, tmp_path):
     monkeypatch.setattr(PF, "ROOT", str(tmp_path))
     os.makedirs(tmp_path / "results")
     path = str(tmp_path / "results" / "E56_integrity.json")
-    key = "chi2_step|drift|delay_median_diff_s"
+    stat_name = "chi2_step|drift|delay_median_diff_s"
     stat = {"value": -12.5, "ci95": [-20.0, -4.0], "ci90": [-18.0, -6.0]}
     doc = {"test": {"h15_net_against": {"chi2_step": {"drift": {"delay_median_diff_s": stat}}}},
-           "h15_resample_counts_b118": {"sets": {"test": {key: {"reproduces_stored_interval": True, "boot_n": 1000,
+           "h15_resample_counts_b118": {"sets": {"test": {stat_name: {"reproduces_stored_interval": True, "boot_n": 1000,
                                                                 "at_or_above_0": 3}}}}}
     _write(path, doc)
     h = PF.h15a()
     assert h["p"] == pytest.approx(4.0 / 1001.0) and h["resamples_at_or_above_0"] == 3 and h["resamples"] == 1000
     assert h["delay_median_diff_s"] == -12.5 and h["ci95"] == [-20.0, -4.0]
-    doc["h15_resample_counts_b118"]["sets"]["test"][key]["at_or_above_0"] = 0
+    doc["h15_resample_counts_b118"]["sets"]["test"][stat_name]["at_or_above_0"] = 0
     _write(path, doc)
     assert PF.h15a()["p"] == pytest.approx(1.0 / 1001.0)        # no resample at or above 0: the bound, as before
-    doc["h15_resample_counts_b118"]["sets"]["test"][key]["reproduces_stored_interval"] = False
+    doc["h15_resample_counts_b118"]["sets"]["test"][stat_name]["reproduces_stored_interval"] = False
     _write(path, doc)
     with pytest.raises(SystemExit, match="resample-counts"):   # a count that does not give the stored interval back
         PF.h15a()
