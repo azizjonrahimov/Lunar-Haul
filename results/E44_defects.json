@@ -323,6 +323,51 @@
    }
   ],
   "not_regenerated": "the stale flags sit only in rows no published value reads; regenerating the ten types not rerun would take about 5.5 h (E44_parts/timing.json batch times) and is not done",
-  "correction": "B-107's report gave the denominator as 4,000 rows; type 10 batch 0 has 1,000 rows (445 differ)"
+  "correction": "B-107's report gave the denominator as 4,000 rows; type 10 batch 0 has 1,000 rows (445 differ)",
+  "outcome": {
+   "task": "B-115 (14 Nov 2026)",
+   "done": "every stored batch of types 2, 3, 4, 8, 9, 10 and 12 regenerated with the current code and the stored part replaced: 40 batches (five each of types 2, 3, 4, 8, 9 and 12, ten of type 10), 70,000 rows",
+   "result": "each batch has the stored rows and columns; the deadlock flag goes from 1 to 0 in 14,071 rows, all with a random fuzzer; no row goes from 0 to 1, no fuzzer-free row changes and no other column differs",
+   "by_type": {
+    "2": {
+     "batches": 5,
+     "rows": 10000,
+     "deadlock_1_to_0": 2329
+    },
+    "3": {
+     "batches": 5,
+     "rows": 10000,
+     "deadlock_1_to_0": 1967
+    },
+    "4": {
+     "batches": 5,
+     "rows": 10000,
+     "deadlock_1_to_0": 862
+    },
+    "8": {
+     "batches": 5,
+     "rows": 10000,
+     "deadlock_1_to_0": 2284
+    },
+    "9": {
+     "batches": 5,
+     "rows": 10000,
+     "deadlock_1_to_0": 1210
+    },
+    "10": {
+     "batches": 10,
+     "rows": 10000,
+     "deadlock_1_to_0": 4425
+    },
+    "12": {
+     "batches": 5,
+     "rows": 10000,
+     "deadlock_1_to_0": 994
+    }
+   },
+   "published_values": "E44_bounds.json (types, joint, variants), E44_encounters.csv (300,000 rows) and E44_bins.csv (74 rows) rebuilt from the replaced parts: every value is unchanged",
+   "supersedes": "not_regenerated (the stale flags no longer exist in the stored parts)",
+   "code": "the seven batch-0 files are B-113's reruns (13 Nov); the other 33 were run on 13-14 Nov; the only later change to the encounter code (B-118 N23) acts on rows with an actuation delay, which E44 never sets"
+  }
  }
 }

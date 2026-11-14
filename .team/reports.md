@@ -11277,3 +11277,29 @@ B-116 (8x) is complete with this. Next: B-115 to B-117 as queued, unless you say
   - /results/: H10′ gaps −0.49 h at 4x (10 seeds) and −0.14 h at 8x (5 seeds), Holm p 0.865; H9′ 81 m. The note under the table names before: 85 m, −0.87 / −0.25 h, Holm p 0.932, the near-base readings; it ends "Every outcome is as it was."
 - Figure 1's data (protocol/b99/e50_layers.json) and the lost-link timeline in dist are byte-identical to data/atc/protocol/.
 - The preview and the browser are stopped; free RAM 1.03 GB.
+
+## B-115 DONE (14 Nov) | E44's stale deadlock flags regenerated: 40 batches (not 33), 70,000 rows, 14,071 fuzzer rows 1 -> 0, none 0 -> 1; no published value changes
+Count corrected: the stored batches of types 2, 3, 4, 8, 9 and 12 (five each) and type 10 (ten) are 40 batches and 70,000 rows; I had
+been saying 33.
+Regeneration (scratchpad b115_run.py, run_e44.run_batch into a scratch dir, one process per call under the RAM gate): every batch has
+the stored rows and columns; only the deadlock flag differs, 1 -> 0 in 14,071 rows, all with a random fuzzer. No row goes 0 -> 1, no
+fuzzer-free row changes, no other column differs. By type: T02 2,329, T03 1,967, T04 862, T08 2,284, T09 1,210, T10 4,425, T12 994.
+Code: the seven batch-0 files are B-113's HEAD reruns (13 Nov 01:45); the other 33 ran 13 Nov 11:20 to 14 Nov 09:10. The only later
+change on E44's path is B-118 N23 (encounter.py), which acts only on rows with actuation_delay > 0; E44 never sets one. fb59f62's
+run_e44.py change touches only fresh_summarize.
+Written (LEAD's go):
+- results/E44_parts/T{02,03,04,08,09,10,12}_b*.csv.gz (40 files replaced). All 186 stored parts now equal the scratch input set
+  byte for byte.
+- results/E44_defects.json: b113_stale_deadlock_flag.outcome (task, what was done, result, by-type counts, published values, a
+  note that not_regenerated is superseded, code basis). Nothing else in the file changed. The builder reads only
+  defects_found_in_main_run.
+- E44 rebuilt with run_e44.cmd_summarize (11 s):
+  - E44_bins.csv (74 rows) and E44_encounters.csv (300,000 rows) are byte-identical to the committed files.
+  - E44_bounds.json: every type, joint and variant value is identical. The file gains the two texts re_run_selection and
+    re_run_selection_short in defects_found_in_main_run. They come from E44_defects.json, which changed after bounds was last
+    built; they are unrelated to B-115.
+  - The 12 per-type lines printed are as before (T5 386 deadlocks, T6 4, T9 58 violations, all bounds unchanged).
+Tests: test_safety 7 passed, test_verification_phase5 18 passed.
+Commit set: results/E44_parts/T02_b0000-0004, T03_b0000-0004, T04_b0000-0004, T08_b0000-0004, T09_b0000-0004, T10_b0000-0009,
+T12_b0000-0004 (.csv.gz); results/E44_defects.json; results/E44_bounds.json. No code changes.
+Holding: B-117 waits until the branch has landed.
