@@ -315,3 +315,11 @@ Each corrected value prints with one sentence that names the review and the earl
 | P3-FAMILY-SENTENCE | FAM `hypotheses.H15a.p_note` no longer says "upper bound", so the adjusted p prints as a value, not as "at most" |
 
 Removed from the build as computed and never checked (review, P2): `core_ok` in `e48_clause`, `h12` and `s_map` in `p6_clause`, and `bid_sign` in `e46_clause`.
+
+### Part 7 (14 Nov 2026): E50 regenerated after the positioning fix
+
+No new key. P3-E50-RESULTS-ERRORS and P3-E50B-SENTENCE now also read `superseded_2026-11-13_b118_n15` of `results/E50_summary.json` and
+`results/E50b_summary.json` for the one sentence each that names the earlier values. P3-E50B-SENTENCE no longer requires zero violations with
+stop time: it prints the count of runs with a violation in each arm from `metrics.violations` (checked to be whole counts over the seeds) and
+words the difference from its interval. P3-H9-VERDICT-SENTENCE and P3-LIMIT-NEAR-SENTENCE print "not computed at eight times the fleet" only
+when `results/E50_near_base.json` lacks that multiple (it now has it).

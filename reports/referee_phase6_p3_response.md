@@ -193,3 +193,19 @@ Corrections after code review:
 
 Referee finding O3 is now fixed (4.2): 200.9 awards a seed are 199.3 jobs plus 1.63 two-vehicle team jobs, one award per vehicle.
 Tally of the 44 findings: 35 fixed, 6 fixed in part, 3 not done (S18, O6, O11).
+
+## Part 7 (14 Nov): E50 regenerated after the positioning fix
+
+Every E50-derived value is read again from the regenerated files (commit 8f58d46). Build passes with `--no-pdf`; abstract 298 words,
+conclusion 249. No verdict of P3 moved: H9' first clause supported, second "depends on the reading" (fails in every seed under the registered
+wording), third not supported; H10' not supported as a whole (adjusted p 0.87, was 0.93).
+- 5.8: dead reckoning alone 610 m at today's fleet (was 643), 883 m at four times (was 793), 988 m at eight times (was 906); ranging where two or
+  more beacons are in view 4.28 m (was 4.22); registered wording 49.1 m (was 50.1); within 1 km 25.1 m (was 24.7); sweep at 10 m ranging
+  error 10.1 m (was 9.64). The near-base readings now exist at eight times the fleet (4.48, 10.2, 21.8, 30.6 m), so the three sentences saying
+  they were not computed are removed. One sentence names the earlier values.
+- E50b: delay +0.65 h [0.06, 1.33], 3.7 % (was +0.63 h, 3.5 %). Reversed: "no run with stop time had a violation" becomes "with stop time one run
+  of 30 had a violation and without it no run, a difference whose interval includes zero, so the stop time is not shown to add or to remove
+  violations" (before the fix it was the other way round, and that is said once).
+- The two sentences saying E50 was being regenerated (4.6, 5.14) are replaced by statements that it was regenerated.
+- P3 prints no overlap count and no margin-violation count of E50; those are the companion paper's.
+The tally of the 44 findings is unchanged (35 fixed, 6 fixed in part, 3 not done).

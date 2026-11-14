@@ -648,10 +648,17 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
                        f"{share} of the driving steps, in the same order of layer sets.")
         st = e50_steps()
         nr = r.p6("E50", "errors", "1", "dr+ranging", "near")
+        o1 = r.p6("E50", "superseded_2026-11-13_b118_n15", "errors", "1")
+        check("positioning fix" in str(r.p6("E50", "superseded_2026-11-13_b118_n15", "reason")), "E50's earlier values are kept as superseded by the positioning fix (5.8)")
         return (" ".join(out) + f" The first region holds {pc(st['near_share'], 1)} of the driving steps at today's fleet. Inside it, with ranging, "
                 f"{pc(st['near_over'], 1)} of the steps still had an error above the budget, the largest error of a seed was {unit(st['near_max_mean'], 'm', 0)} "
                 f"on average and {unit(st['near_max'], 'm', 0)} at most, and the vehicle's own 95{PCT} bound, which is what a rule can act on, was above the "
-                f"budget in {pc(nr['share_b95_over_budget']['mean'], 0)} of the steps. Table 10 gives the medians and the fix stops.")
+                f"budget in {pc(nr['share_b95_over_budget']['mean'], 0)} of the steps. Table 10 gives the medians and the fix stops. Every value of this "
+                f"section was regenerated on the same seeds after a code review on 13 November 2026 corrected the positioning code (how the last "
+                f"step of a leg and the update at a vehicle's arrival step are handled): before, at today's fleet, the "
+                f"95th percentiles were {unit(o1['dr']['all']['p95_m']['mean'], 'm', 0)} with dead reckoning alone, "
+                f"{unit(o1['dr+ranging']['near']['p95_m']['mean'], 'm', 2)} with ranging in the first region and "
+                f"{unit(o1['dr+ranging+fixes']['away']['p95_m']['mean'], 'm', 1)} with terrain fixes in the second.")
     fill("P3-E50-RESULTS-ERRORS", e50_errors, "E50")
 
     def h9_parts():
@@ -762,18 +769,32 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
         check(abs(nav - _fin(r.p6("E50", "errors", "1", "dr+ranging+fixes", "fix_stop_h_per_month")["mean"])) < 0.01,
               "E50b: the fix time of the navigation replay is E50's fix-stop time at today's fleet (5.8)")
         check(0 < ins < nav, "E50b inserts part of the navigation replay's fix time, so its delay difference is a lower bound (5.8, 7)")
-        check(_fin(vi["with_stop_time"]) == 0, "E50b: no run with stop time has a violation (5.8)")
+        n_with, n_without = int(round(_fin(vi["with_stop_time"]) * n)), int(round(_fin(vi["without_stop_time"]) * n))
+        check(abs(_fin(vi["with_stop_time"]) * n - n_with) < 1e-6 and abs(_fin(vi["without_stop_time"]) * n - n_without) < 1e-6 and
+              int(vi["seeds_higher"]) + int(vi["seeds_lower"]) <= max(n_with, n_without, 1),
+              "E50b's violation means are whole counts of runs over its seeds (5.8)")
+        sp = r.p6("E50b", "superseded_2026-11-13_b118_n15")
+        od, ov = sp["metrics"]["delay_mean_h"], sp["metrics"]["violations"]
+        o_with, o_without = int(round(_fin(ov["with_stop_time"]) * n)), int(round(_fin(ov["without_stop_time"]) * n))
+        vtxt = lambda a: "no run" if a == 0 else (f"{words(a)} run" + ("s" if a != 1 else "") + f" of {cnt(n)}")
+        vio = (f"with stop time {vtxt(n_with)} had a violation and without it {vtxt(n_without)}" if n_with != n_without else
+               f"{vtxt(n_with)} had a violation with stop time or without it")
+        vlo, vhi = (_fin(x) for x in vi["diff_ci95_bootstrap"])
+        vio += (", a difference whose interval includes zero, so the stop time is not shown to add or to remove violations" if vlo <= 0 <= vhi else
+                ", a difference whose interval excludes zero")
         zero = "excludes" if (lo > 0 or hi < 0) else "includes"
         return (f"A follow-up run, E50b, put the stops into the engine; it was registered after E50's first results and run after them, so it is "
                 f"exploratory [67]. At today's fleet, on the same {cnt(n)} seeds, whose arm without stop time reproduces E50's cells exactly, the delay per "
                 f"delivery {'rose' if up else 'fell'} from {unit(dl['without_stop_time'], 'h', 2)} without stop time to {unit(dl['with_stop_time'], 'h', 2)} "
                 f"with it, by {unit(abs(_fin(dl['diff_mean'])), 'h', 2)} {ci(lo, hi, 2)} or {pc(abs(rel), 1)}; the bootstrap interval {zero} zero, a paired "
                 f"t-test gives p = {num(dl['paired_t_p'], 3)}, and the delay was higher in {cnt(dl['seeds_higher'])} seeds and lower in {cnt(dl['seeds_lower'])}. "
-                f"The time spent waiting at roads {'did not change' if road_same else 'changed'} ({unit(rw['diff_mean'], 'h', 2, sign=True)} {ci(rlo, rhi, 2)}), "
-                f"and no run with stop time had a violation. This is the price of the terrain-fix layer in delay, and it is a lower bound: the engine "
+                f"The time spent waiting at roads {'did not change' if road_same else 'changed'} ({unit(rw['diff_mean'], 'h', 2, sign=True)} {ci(rlo, rhi, 2)}); "
+                f"{vio}. This is the price of the terrain-fix layer in delay, and it is a lower bound: the engine "
                 f"inserted {unit(ins, 'h', 1)} of stops a month, {pc(ins / nav, 0)} of the {unit(nav, 'h', 1)} of fix time in the navigation replay, because "
                 f"the other stops fall on repositioning drives, which do not pass through the road layer; a stop that falls inside a single-lane "
-                f"segment ({pc(st['fixes_inside_single_lane_share'], 0)} of the fixes) is taken just after the segment's exit.")
+                f"segment ({pc(st['fixes_inside_single_lane_share'], 0)} of the fixes) is taken just after the segment's exit. E50b was rerun after the "
+                f"positioning code was corrected on 13 November 2026: before, the difference in delay was {unit(od['diff_mean'], 'h', 2)} and "
+                f"{vtxt(o_with)} had a violation with stop time, {vtxt(o_without)} without it.")
     fill("P3-E50B-SENTENCE", e50b, "E50b (B-90b): the delay with the fix stops in the engine")
 
     def table_nav():
@@ -1451,8 +1472,8 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
                 f"{unit(rows['c']['p95'], 'm', 1)} within a kilometre of the base and {unit(rows['e']['p95'], 'm', 1)} under the registered wording, "
                 f"outside the budget in every seed. Inside the narrow region the result rests on the long-range ranging error, an assumption without "
                 f"a lunar measurement: at {unit(max(sw['rad']), 'm', 0)} in place of {unit(PD['radio_sigma_m'], 'm', 0)} the percentile is "
-                f"{unit(sw['rad'][10.0]['a']['in_p95_m_mean'], 'm', 1)}. The beacon survey error and the ultra-wideband reach were not swept, and the "
-                f"readings were not computed at eight times the fleet. Inside the region {pc(st['near_over'], 1)} of the steps still exceed the budget.")
+                f"{unit(sw['rad'][10.0]['a']['in_p95_m_mean'], 'm', 1)}. The beacon survey error and the ultra-wideband reach were not swept"
+                + ("" if "8" in rd else ", and the readings were not computed at eight times the fleet") + f". Inside the region {pc(st['near_over'], 1)} of the steps still exceed the budget.")
     fill("P3-LIMIT-NEAR-SENTENCE", limit_near, "E50, B-101")
 
     def lrip_v02_sentence():
