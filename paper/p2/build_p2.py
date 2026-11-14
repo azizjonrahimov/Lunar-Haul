@@ -952,8 +952,18 @@ def values(r: R, allow_pending: bool):
         check(th["moon:one_lane"]["first_slope_with_gap_below_d0_deg"] is None, "the Moon one-lane sweep shows no shortfall")
         check(all(float(S.b_guaranteed(t, mu, gg)) <= S.B_MAX for t in (0.0, 10.0, 15.0, 20.0) for mu in (0.3, 0.45, 0.6)
                   for gg in (S.G_MOON, S.G_MARS)), "on the flat and downhill the slope term is inactive (guaranteed braking never exceeds b_max)")
-        asis = [c for k, c in cells.items() if k[2] == "as_is"]
-        return SimpleNamespace(d=d, g=g, th=th, res=res, n=d["n_per_cell"],
+        lagc = [c for c in d["cells"] if c["delay_s"] > 0]
+        oldb = d["superseded_2026-11-13_b118_n23"]["r1_breach_rate"]
+        oldnz = sorted(x["r1_breach_rate"] for x in oldb if x["r1_breach_rate"] > 0)
+        check(len(lagc) == 32 and all(c["delay_s"] == S.RHO_S for c in lagc) and len(oldb) == len(lagc)
+              and all(x["delay_s"] == S.RHO_S for x in oldb),
+              "the uphill run has 32 cells with the lag, which is R1's response time, and the earlier breach rate of each is kept")
+        okey = {(x["planet"], x["geom"], x["rule"], x["delay_s"], x["slope_deg"]) for x in oldb}
+        check(all(cells[k]["r1_breach_rate"] == 0 for k in okey),
+              "under the delay-aware count no R1 breach occurs in any cell with the lag")
+        check("longer than R1's response time RHO_S" in d["r1_breach_definition"] and "counted on the command at once" in d["superseded_2026-11-13_b118_n23"]["reason"],
+              "the uphill file states the delay-aware breach definition and what the earlier count was")
+        return SimpleNamespace(d=d, g=g, th=th, res=res, n=d["n_per_cell"], n_lag=len(oldb), oldnz=oldnz,
                                min_mars=min(c["min_gap_m"] for k, c in cells.items() if k[2] == "as_is" and k[0] == "mars"),
                                min_moon=min(c["min_gap_m"] for k, c in cells.items() if k[2] == "as_is" and k[0] == "moon"),
                                res_min=min(c["min_gap_m"] for c in res.values()),
@@ -985,7 +995,14 @@ def values(r: R, allow_pending: bool):
                 + f" still ended inside it, by at most {num(S.D0_M - u.res_min, 2)}{NB}m (smallest gap "
                 f"{num(u.res_min, 2)}{NB}m). A trace puts that remainder on the lag model, in which a vehicle that "
                 f"commands braking still applies one 0.1{NB}s step more of its earlier commands than R1's response "
-                f"time allows; it was not patched.")
+                f"time allows; it was not patched. An R1 breach, which is not a hard violation, is counted in the "
+                f"cells with the lag only when the gap has been below R1's required distance for longer than the "
+                f"response time of {num(S.RHO_S, 0)}{NB}s while the braking the vehicle applies is still short of "
+                f"full, which is what R1 asks; by that count none of the {cnt(u.n_lag)} cells with the lag "
+                f"had a breach. Counted on the command at once, as the results first were, "
+                f"{words(len(u.oldnz))} of them had breaches in {pc(u.oldnz[0], 2)} to {pc(u.oldnz[-1], 0)} of "
+                f"encounters, all of them followers that braked within the response time. Cells without the lag "
+                f"keep the count on the command.")
 
     def reqrule_limitation():
         """Limitations: the request-rule variant on the fresh type-6 encounters (B-112) and the stale deadlock flag in
@@ -1086,8 +1103,14 @@ def values(r: R, allow_pending: bool):
                            ('out["viol_r3"] += (occ_in & ~granted_g).any((1, 2))', "inside a reserved resource without a grant"),
                            ('out["viol_r3"] += (seg & (opp | br)).any(1)', "opposite directions inside one segment"),
                            ('out["viol_slots"] += (~seg & (cnt > b.res_slots)).any(1)', "more vehicles in a slot resource than slots"),
-                           ('r1b = np.isfinite(gap_lead) & (gap_lead < S.rss_dmin(v, v_lead, bg)) & (a > -bg + 1e-9) & live',
-                            "an R1 breach is a gap below d_min while not braking fully, counted apart")):
+                           ('below = np.isfinite(gap_lead) & (gap_lead < S.rss_dmin(v, v_lead, bg)) & live',
+                            "below R1's required gap is a gap to the leader under d_min"),
+                           ('r1b = below & (a > -bg + 1e-9)',
+                            "an R1 breach is a gap below d_min while not braking fully, counted apart"),
+                           ('return below & (below_s > S.RHO_S + 1e-9) & (a_ph > -bg + 1e-9), below_s',
+                            "with an actuation delay an R1 breach is a gap below d_min for longer than the response time with the applied braking short of full"),
+                           ('r1b = np.where(b.act_delay[:, None] > 0, r1d, below & (a > -bg + 1e-9))',
+                            "the delay-aware breach count applies only to rows with an actuation delay")):
             check(line in src, f"the hard-violation definition in the text is the code's: {what}")
         return (f"A hard violation is one of: contact; a bumper gap to the vehicle ahead on the same road and in the "
                 f"same direction below the static margin d<sub>0</sub> = {num(S.D0_M, 0)}{NB}m; any part of a vehicle "

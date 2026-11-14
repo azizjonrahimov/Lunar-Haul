@@ -125,6 +125,18 @@ def add_e50(c):
 
     c.e50f = e50
 
+    def old50(name="E50_summary.json"):
+        """The values of an E50 file as they were before the positioning fix of B-118 N14/N15, kept by BACKEND under
+        one key of the regenerated file. A missing key stops the build."""
+        d = e50() if name == "E50_summary.json" else _load(name)
+        if d is None:
+            raise Pending(f"results/{name} is missing")
+        o = d["superseded_2026-11-13_b118_n15"]
+        check("before the fix" in o["reason"] or "B-118" in o["reason"], f"{name}: the superseded block says what it is")
+        return o
+    c.e50old = old50
+    EARLIER = "before a correction to the position model, an earlier version of this paper gave"
+
     def frames():
         """The per-run and per-region tables of E50 (results/E50_runs.csv, E50_errors.csv), for the quantities the
         summary file does not hold: driving time, the share of driving steps near the base, per-seed differences."""
@@ -181,7 +193,7 @@ def add_e50(c):
         if o is None:
             raise Pending("results/E50_overlaps.json (B-102) is missing")
         out = {}
-        for mult in ("1", "4"):
+        for mult in ("1", "4", "8"):
             b = o["multiples"][mult]
             s = e50(int(mult))
             check(b["e50_reproduced_all"] is True and b["seeds"] == s["seeds"][mult], f"B-102 reproduces E50's cells at {mult}x")
@@ -198,8 +210,11 @@ def add_e50(c):
                 abut_n=nm[0]["back_to_back"]["abutting_pairs_per_seed"],
                 sep=max(r["back_to_back"]["separated_share_overlapping"] for r in runs.values()),
                 dur=[r["duration_s"]["median"] for r in nm], gap=[r["gap_at_entry_m"]["median"] for r in nm],
-                head=max(r["head_on_share"] or 0.0 for r in runs.values()))
-        check("8" not in o["multiples"], "B-102 did not analyse the eight-times cells")
+                head=max(r["head_on_share"] for r in runs.values() if r["head_on_share"] is not None))
+            check(all((r["head_on_share"] is None) == (r["overlaps_per_seed"] == 0) for r in runs.values()),
+                  f"at {mult}x a head-on share is absent only for a run without any overlap")
+        check(o["multiples_not_rerun_yet"] == [] and sorted(o["multiples"]) == ["1", "4", "8"],
+              "B-102 analysed the cells of all three fleet sizes after the regeneration")
         a4 = out["4"]
         check(0.4 < min(a4.abut) and max(a4.abut) < 0.55, "at 4x back-to-back windows overlap about half the time for every layer set")
         check(a4.dur[0] > 20 * a4.dur[1] > 20 * a4.dur[3] > 0, "the duration of an overlap falls with better navigation")
@@ -209,26 +224,44 @@ def add_e50(c):
 
     def overlaps_sentence():
         o = overlaps()
-        a1, a4 = o["1"], o["4"]
+        a1, a4, a8 = o["1"], o["4"], o["8"]
         lay = a4.runs["with_margin:layered"]
+        d1r, o1r = a1.runs["no_margin:dr"], old50("E50_overlaps.json")["multiples"]["1"]["runs"]["no_margin:dr"]
+        check(d1r["overlaps_per_seed"] < o1r["overlaps_per_seed"] and d1r["duration_s"]["median"] > o1r["duration_s"]["median"]
+              and d1r["duration_s"]["max"] > o1r["duration_s"]["max"],
+              "with dead reckoning alone at 1x the regenerated runs hold fewer and longer overlaps than the earlier ones")
+        check(0.3 < min(a8.abut) and max(a8.abut) < 0.6 and 0.3 < min(a1.abut) and max(a1.abut) < 0.6,
+              "at 1x and 8x back-to-back windows overlap between three and six times in ten for every layer set")
+        sep_dr = max(x.runs["no_margin:dr"]["back_to_back"]["separated_share_overlapping"] for x in (a1, a4, a8))
+        sep_other = max(r["back_to_back"]["separated_share_overlapping"] for x in (a1, a4, a8)
+                        for k, r in x.runs.items() if k != "no_margin:dr")
+        check(sep_other < 0.01 < sep_dr == max(a1.sep, a4.sep, a8.sep),
+              "pairs filed apart overlap in under 1 % of cases except with dead reckoning alone and no margin")
+        check(a8.dur[0] > 20 * a8.dur[1] > 20 * a8.dur[3] > 0, "at 8x too the duration of an overlap falls with better navigation")
         check(abs(lay["gap_at_entry_m"]["median"] - a4.gap[2]) < 0.05 * a4.gap[2], "the margin does not change the gap at entry")
-        check(a4.head < 0.02 and a1.head < 0.02, "nearly all overlaps are same-direction pairs")
+        check(a4.head < 0.02 and a1.head < 0.02 and a8.head < 0.1, "nearly all overlaps are same-direction pairs, at 8x more than nine in ten")
         return (f"A separate analysis of the same simulated runs measured each overlap, at today's fleet and at four "
-                f"times (it reproduces E50's counts in every cell; the eight-times cells were not analysed). Windows "
+                f"and eight times (it reproduces E50's counts in every cell). Windows "
                 f"filed back to back, with a nominal gap under a second, overlapped in true time in "
                 f"{pc(min(a4.abut), 0)} to {pc(max(a4.abut), 0)} of cases at four times the fleet, where a seed holds "
                 f"{cnt(a4.abut_n)} such pairs, for the four layer sets, and in {pc(min(a1.abut), 0)} to "
                 f"{pc(max(a1.abut), 0)} at today's fleet, where there are {cnt(a1.abut_n * a1.n)} such pairs in "
-                f"{cnt(a1.n)} seeds; pairs filed apart overlapped in at most {pc(max(a1.sep, a4.sep), 0)}. The count "
-                f"therefore measures how many back-to-back pairs the month held. How long an overlap lasts does "
+                f"{cnt(a1.n)} seeds, and in {pc(min(a8.abut), 0)} to {pc(max(a8.abut), 0)} at eight times; pairs filed "
+                f"apart overlapped in under 1{PCT} of cases, except with dead reckoning alone and no margin, whose "
+                f"errors of hundreds of metres reach them too (up to {pc(sep_dr, 0)}). The count "
+                f"therefore measures how many back-to-back pairs the month held. With dead reckoning alone at "
+                f"today's fleet an overlap lasted a median of {num(d1r['duration_s']['median'], 0)}{NB}s and at most "
+                f"{cnt(d1r['duration_s']['max'])}{NB}s ({EARLIER} {num(o1r['duration_s']['median'], 0)}{NB}s and "
+                f"{cnt(o1r['duration_s']['max'])}{NB}s, on more overlaps). How long an overlap lasts does "
                 f"follow navigation: at four times the fleet the median was {num(a4.dur[0], 0)}{NB}s with dead "
                 f"reckoning alone, {num(a4.dur[1], 0)}{NB}s with ranging, {num(a4.dur[2], 1)}{NB}s with terrain fixes "
                 f"and {num(a4.dur[3], 1)}{NB}s with the navigation service of 2030. No overlap, with or without a "
-                f"margin, at either fleet size, brought the two vehicles within the {m_(S.D0_M, 0)} static margin or "
+                f"margin, at any of the three fleet sizes, brought the two vehicles within the {m_(S.D0_M, 0)} static margin or "
                 f"within R1's required gap. When the second vehicle truly entered, the first was about "
                 f"{m_(round(a4.gap[2], -1), 0)} ahead of it (medians of {m_(min(a4.gap), 0)} to {m_(max(a4.gap), 0)}), a "
                 f"distance set by the length of the segments and not by navigation, and {pc(1 - max(a1.head, a4.head), 0)} "
-                f"of the overlaps were pairs travelling in the same direction on branched segments. An overlap is an "
+                f"or more of the overlaps were pairs travelling in the same direction on branched segments at "
+                f"today's fleet and at four times, {pc(1 - a8.head, 0)} or more at eight times. An overlap is an "
                 f"event in the reservation accounts and not a close approach. The margin separates the filed "
                 f"windows, so the back-to-back overlaps go and the count falls; it does not change the gap at entry "
                 f"({m_(lay['gap_at_entry_m']['median'], 0)} with the layered margin at four times the fleet), and the "
@@ -247,14 +280,17 @@ def add_e50(c):
                f"which is the registered wording read by distance: all of the driving, "
                f"{m_(rd['e']['in_p95_m_mean'], 1)}, in no seed. Under the registered wording the clause fails in "
                f"every seed; it holds only under the reading that was chosen after the results.")
-        try:
-            q4 = readings(4)
-            out += (f" At four times the fleet the pattern is the same on {cnt(q4.ns)} seeds: "
-                    f"{m_(q4.rd['a']['in_p95_m_mean'], 2)} under (a), inside in every seed, and "
-                    f"{m_(q4.rd['e']['in_p95_m_mean'], 1)} under the registered wording, inside in none. The "
-                    f"eight-times cells were not run under the readings.")
-        except (Pending, KeyError):
-            pass
+        q4 = readings(4)
+        out += (f" At four times the fleet the pattern is the same on {cnt(q4.ns)} seeds: "
+                f"{m_(q4.rd['a']['in_p95_m_mean'], 2)} under (a), inside in every seed, and "
+                f"{m_(q4.rd['e']['in_p95_m_mean'], 1)} under the registered wording, inside in none.")
+        q8 = readings(8)
+        out += (f" At eight times, on {cnt(q8.ns)} seeds, it is {m_(q8.rd['a']['in_p95_m_mean'], 2)} under (a), inside "
+                f"in every seed, and {m_(q8.rd['e']['in_p95_m_mean'], 1)} under the registered wording, inside in "
+                f"none.")
+        o1 = old50("E50_near_base.json")["multiples"]["1"]["sets"]["dr+ranging"]
+        out += (f" At today's fleet, {EARLIER} {m_(o1['a']['in_p95_m_mean'], 2)} under (a) and "
+                f"{m_(o1['e']['in_p95_m_mean'], 1)} under the registered wording; no verdict moved.")
         return out
 
     def model_sentence():
@@ -399,25 +435,36 @@ def add_e50(c):
         rng = [nm[k]["mean"] for k in ("dr+ranging", "dr+ranging+fixes", "lans@2030")]
         check(nm["dr"]["mean"] > max(rng), "without a margin dead reckoning alone gives the most overlaps at 1x")
         wm = v1["with_margin"]
+        owm = old50()["violations"]["1"]["with_margin"]
         check(wm["dr"]["mean"] < nm["dr"]["mean"] and wm["layered"]["mean"] < nm["dr+ranging+fixes"]["mean"],
               "the margin lowers the number of true-time overlaps at 1x")
         n1 = nm["dr"]["n"]
         per = lambda x: f"{num(x * n1, 0)} in {cnt(n1)} seeds"
         # the count without a margin does not follow the size of the error (the referee's M2): at 4x it is the same
-        # for layer sets whose errors differ a hundredfold
+        # for the three layer sets with ranging or better, whose errors differ more than fivefold; dead reckoning
+        # alone holds more, because its errors also overlap pairs that were filed apart
         runs, _ = frames()
         ov = runs[(runs["violations"] > 0) & runs["variant"].isin(["margin_dr", "margin_layered"])]["overlap_s"]
         check(len(ov) > 0, "some runs with the margin still hold an overlap")
         byc = ""
         try:
             s4 = e50(4)
-            n4c = [s4["violations"]["4"]["no_margin"][k]["mean"] for k in LAYER_KEYS]
-            p4 = [st(4, k)["mean"] for k in LAYER_KEYS]
-            check(max(n4c) / min(n4c) < 1.15 and max(p4) / min(p4) > 50,
-                  "at 4x the overlap count without a margin is the same within 15 % for position errors that differ more than fiftyfold")
+            RK = [k for k in LAYER_KEYS if k != "dr"]
+            n4c = [s4["violations"]["4"]["no_margin"][k]["mean"] for k in RK]
+            p4 = [st(4, k)["mean"] for k in RK]
+            n4dr = s4["violations"]["4"]["no_margin"]["dr"]["mean"]
+            o4 = old50()["violations"]["4"]["no_margin"]
+            o4c = [o4[k]["mean"] for k in LAYER_KEYS]
+            sep4 = overlaps()["4"].runs["no_margin:dr"]["back_to_back"]["separated_share_overlapping"]
+            check(len(RK) == 3 and max(n4c) / min(n4c) < 1.05 and max(p4) / min(p4) > 5,
+                  "at 4x the overlap count without a margin is the same within 5 % for the three layer sets with ranging, whose position errors differ more than fivefold")
+            check(n4dr > 1.15 * max(n4c) and sep4 > 0.02,
+                  "at 4x dead reckoning alone holds more overlaps than the other sets, and overlaps pairs filed apart")
             byc = (f" The counts show it: at four times the fleet they were {num(min(n4c), 0)} to {num(max(n4c), 0)} a "
-                   f"month for layer sets whose 95th-percentile errors run from {m_(max(p4), 0)} down to "
-                   f"{m_(min(p4), 1)}.")
+                   f"month for the three layer sets with ranging, whose 95th-percentile errors run from "
+                   f"{m_(max(p4), 0)} down to {m_(min(p4), 1)}. Dead reckoning alone held {num(n4dr, 0)}, because "
+                   f"errors of {m_(st(4, 'dr')['mean'], 0)} also overlapped {pc(sep4, 0)} of the pairs filed apart "
+                   f"({EARLIER} {num(min(o4c), 0)} to {num(max(o4c), 0)} for all four sets).")
         except Pending:
             pass
         out = (f"Table 10 gives the overlaps and the delay. An overlap is a pair of conflicting reservations whose "
@@ -425,14 +472,18 @@ def add_e50(c):
                f"measure of safety: a waiting vehicle's window is filed to start where the conflicting window ends, "
                f"so the two windows of such a back-to-back pair overlap whenever the two position errors shift them "
                f"in the unfavourable order, about half the time, however small the errors are.{byc} At today's "
-               f"fleet the count was {num(nm['dr']['mean'], 2)} a month with dead reckoning alone and "
+               f"fleet the count was {num(nm['dr']['mean'], 2)} a month with dead reckoning alone "
+               f"({num(old50()['violations']['1']['no_margin']['dr']['mean'], 2)} in the earlier version) and "
                f"{num(min(rng), 2)} to {num(max(rng), 2)} with the other layer sets; it says how many back-to-back "
                f"pairs the month held. " + overlaps_sentence() + f" With each window widened by the vehicle's own "
-               f"bound an overlap remains only where an error was larger than the bound that was filed: "
-               f"{num(wm['dr']['mean'], 2)} a month under the dead-reckoning "
-               f"margin ({per(wm['dr']['mean'])}) and {num(wm['layered']['mean'], 2)} under the layered margin "
-               f"({per(wm['layered']['mean'])}), with {num(float(ov.min()), 0)} to {num(float(ov.max()), 0)}{NB}s of "
-               f"overlapping time in a run that had one, over all fleet sizes. That is the rate at which the filed "
+               f"bound an overlap remains only where an error was larger than the bound that was filed: at today's "
+               f"fleet " + (f"none in {cnt(n1)} seeds under either margin" if wm['dr']['mean'] == wm['layered']['mean'] == 0
+                            else f"{per(wm['dr']['mean'])} under the dead-reckoning margin and "
+                                 f"{per(wm['layered']['mean'])} under the layered margin")
+               + f" ({EARLIER} {per(owm['dr']['mean'])} under the first and {per(owm['layered']['mean'])} under the "
+               f"second); the larger fleets follow below. A run that had an overlap with a margin held "
+               f"{num(float(ov.min()), 0)} to {num(float(ov.max()), 0)}{NB}s of overlapping time, over all fleet "
+               f"sizes. That is the rate at which the filed "
                f"bound was exceeded; it is not a test of Proposition 2, because the simulation shifts each window "
                f"by error over speed, which is the proposition's own premise (Section 3.9). "
                f"The two margins differ in size: {h_(d1['margin_dr_margin_h_mean']['mean'], 2)} "
@@ -448,11 +499,17 @@ def add_e50(c):
         try:
             s4 = e50(4)
             v4, d4 = s4["violations"]["4"], s4["delay"]["4"]
-            nm4 = [v4["no_margin"][k]["mean"] for k in LAYER_KEYS]
+            v8 = e50(8)["violations"]["8"]["with_margin"]
+            ov4, ov8 = old50()["violations"]["4"]["with_margin"], old50()["violations"]["8"]["with_margin"]
             out += (f" At four times the fleet the overlaps with the margin were "
                     f"{num(v4['with_margin']['dr']['mean'], 1)} a month (dead reckoning) and "
                     f"{num(v4['with_margin']['layered']['mean'], 1)} "
-                    f"{c.ci(*v4['with_margin']['layered']['ci'], 1, unit='')} (layered). Perfect position gave "
+                    f"{c.ci(*v4['with_margin']['layered']['ci'], 1, unit='')} (layered), and at eight times "
+                    f"{num(v8['dr']['mean'], 1)} and {num(v8['layered']['mean'], 1)} "
+                    f"{c.ci(*v8['layered']['ci'], 1, unit='')}; {EARLIER} {num(ov4['dr']['mean'], 1)} and "
+                    f"{num(ov4['layered']['mean'], 1)} at four times and {num(ov8['dr']['mean'], 1)} and "
+                    f"{num(ov8['layered']['mean'], 1)} at eight, so the counts with a margin moved up at four times "
+                    f"and down at eight and show no trend with the fleet on these few seeds. Perfect position gave "
                     f"{h_(d4['perfect']['mean'], 2)} {cih(d4['perfect'])}; the dead-reckoning margin changed it by "
                     f"{h_(d4['margin_dr_minus_perfect']['mean'], 2, sign=True)} {cih(d4['margin_dr_minus_perfect'])} "
                     f"and the layered margin by {h_(d4['margin_layered_minus_perfect']['mean'], 2, sign=True)} "
@@ -477,7 +534,7 @@ def add_e50(c):
             more_wait = d4["margin_layered_road_wait_h"]["mean"] >= d4["perfect_road_wait_h"]["mean"]
             check(more_wait, "at 4x the layered run waited no less on the roads than the perfect run (the negative "
                              "gap is not a gain on the roads)")
-            check(g4["ci"][1] > -0.25 * abs(g4["mean"]) - 0.1, "the 4x interval of the layered gap only just excludes zero")
+            check(g4["ci"][1] > -0.25 * abs(g4["mean"]) - 0.1, "the 4x interval of the layered gap includes zero or only just excludes it")
             runs, _ = frames()
             p4 = runs[(runs["mult"] == 4) & (runs["variant"] == "perfect")]["delay_mean_h"]
             check(len(p4) == g4["n"] and float(p4.std(ddof=1)) > 5 * abs(g4["mean"]),
@@ -530,6 +587,9 @@ def add_e50(c):
             out += "the four-times cells have not finished"
         x8 = V["P2-E50-X8-CLAUSE"]
         out += (f"; at eight times the gap is {x8}. " if x8 else ". The eight-times cells have not finished. ")
+        og = old50()["h10"]["gap_by_mult"]
+        out += (f"({EARLIER[0].upper() + EARLIER[1:]} {h_(og['4']['mean'], 2, sign=True)} {cih(og['4'])} at four "
+                f"times and {h_(og['8']['mean'], 2, sign=True)} {cih(og['8'])} at eight.) ")
         check(n_pos > len(dd) / 2 and p_w < 0.05 and not h["dr_larger_supported"],
               "the dead-reckoning margin cost more in most seeds while the registered interval on the mean includes zero")
         out += (f"With dead reckoning alone and the widened margin the delay is larger, by an interval that excludes "
@@ -612,7 +672,20 @@ def add_e50(c):
         lo, hi = d["diff_ci95_bootstrap"]
         check(d["diff_mean"] > 0 and d["seeds_higher"] > d["seeds_lower"], "with the stops in the model the delay per delivery rose")
         check(rw["diff_ci95_bootstrap"][0] < 0 < rw["diff_ci95_bootstrap"][1], "the stops did not change the waiting on the roads")
-        check(vi["with_stop_time"] == 0.0, "with the stops in the model no overlap occurred in any seed")
+        import pandas as pd
+        fb = os.path.join(RES, "E50b_runs.csv")
+        if not os.path.exists(fb):
+            raise Pending("results/E50b_runs.csv is missing")
+        rb = pd.read_csv(fb)
+        n_with, n_without = int((rb["violations_with"] > 0).sum()), int((rb["violations_without"] > 0).sum())
+        ob = b["superseded_2026-11-13_b118_n15"]["metrics"]
+        od, ovi = ob["delay_mean_h"], ob["violations"]
+        o_with, o_without = round(ovi["with_stop_time"] * ovi["n_seeds"]), round(ovi["without_stop_time"] * ovi["n_seeds"])
+        check(len(rb) == d["n_seeds"] and abs(n_with / len(rb) - vi["with_stop_time"]) < 1e-9
+              and abs(n_without / len(rb) - vi["without_stop_time"]) < 1e-9 and int(rb["violations_with"].max()) <= 1,
+              "E50b_runs.csv gives the summary's overlap counts with and without the stops, at most one per seed")
+        check(n_with <= 1 and n_without <= 1 and o_with <= 1 and o_without <= 1,
+              "with or without the stops, now or in the earlier runs, at most one seed in thirty holds an overlap")
         check(0.5 < frac < 1.0, "the model inserted a part of the position run's stop time, so the delay is a lower bound")
         check(0.2 < st_["fixes_inside_single_lane_share"] < 0.3, "about a quarter of the fixes were taken inside one-lane segments")
         check(hp["ratio_to_perfect"] < 1.5 and abs(hp["margin_h"] - s["h10"]["tost_margin_h"]) < 1e-9, "with the stops the delay is still within 1.5 times the perfect-position delay")
@@ -634,7 +707,10 @@ def add_e50(c):
                    f"determined" if excl and d["paired_t_p"] > 0.05 else f" (paired t test p = {num(d['paired_t_p'], 3)})")
                 + f". The ratio to perfect position was {num(hp['ratio_to_perfect'], 3)}, still inside the 1.5 of "
                 f"H10&prime;'s first clause. Waiting on the roads did not change ({h_(rw['diff_mean'], 2, sign=True)} "
-                f"{c.ci(*rw['diff_ci95_bootstrap'], 2)}), and no overlap occurred in any seed. The figure is a lower "
+                f"{c.ci(*rw['diff_ci95_bootstrap'], 2)}). Overlaps say nothing either way: {cnt(n_with)} of "
+                f"{cnt(len(rb))} seeds held one with the stops and {cnt(n_without)} without; {EARLIER} "
+                f"{cnt(o_with)} with and {cnt(o_without)} without, and a delay difference of "
+                f"{h_(od['diff_mean'], 2, sign=True)} {c.ci(*od['diff_ci95_bootstrap'], 2)}. The figure is a lower "
                 f"bound: the model inserted {h_(st_['engine_fix_stop_h_mean'], 1)} of stops a month, "
                 f"{pc(frac, 0)} of the {h_(st_['perfect_run_fix_stop_h_mean'], 1)} of the position run, because the "
                 f"other fixes fall on repositioning drives, which do not pass through the road layer. By arithmetic "
@@ -1027,10 +1103,10 @@ def add_e54(c):
         check(dr["stuck_reservations"] == sf["stuck_reservations"] == h["stuck_reservations_drop_retry"] > 0,
               "without the lost-link rule the stuck reservations do not depend on how messages are carried")
         src = open(os.path.join(ROOT, "tools", "atc", "run_e54.py"), encoding="utf-8").read()
-        check('0 if proto == "sf_ll" else n_st' in src,
+        check('"stuck_reservations": 0 if ll else ctx["n_st"]' in src,
               "the zero of stuck reservations under the rule is set by construction in tools/atc/run_e54.py, not measured")
         sd = d.get("stuck_definition", "")
-        check("UNCONFIRMED release" in sd and "every vehicle leaves on schedule" in sd,
+        check("an UNCONFIRMED segment" in sd and "every vehicle leaves on schedule" in sd and "0 stuck by construction" in sd,
               "E54's stuck reservations are unconfirmed releases; in the replay every vehicle leaves on schedule (the file's stuck_definition)")
         dj, lj, df = h["lost_jobs_drop_retry_per_seed"], h["lost_jobs_sf_ll_per_seed"], h["difference_sf_ll_minus_drop_retry"]
         check(h["supported"] == (df["ci"][1] < 0 and h["stuck_reservations_sf_ll"] == 0), "H14's verdict follows from its rule")
@@ -1051,6 +1127,13 @@ def add_e54(c):
             unconf_h=dr["stuck_hours"], three=dr["loss"] ** 3, lost=dr["grant_lost_share"])
         check(0.3 < fact.returns / fact.jobs < 0.6 and 0.4 < fact.linked < 0.7,
               "in the replay a vehicle turns back about once for every two or three jobs, and vehicles have a radio path for about half of their driving time")
+        o54 = d["superseded_2026-11-13_b118"]
+        oll = [x for x in o54["rows"] if x["loss"] == ll["loss"] and x["protocol"] == ll["protocol"]]
+        check(len(oll) == 1 and "floored at dt/2" in o54["reason"], "E54 keeps the values published before the replay was corrected, with the reason")
+        oll = oll[0]
+        check(abs(ll["aoi_mean_s"] - d["parameters"]["status_period_s"]) < 0.5 * d["parameters"]["status_period_s"]
+              and oll["aoi_mean_s"] > 3 * ll["aoi_mean_s"],
+              "with the rule the age of the base's knowledge is about one status period, and the earlier value was several times that")
         return (f"Over the {cnt(len(d['seeds']))} seeds the month held {cnt(dr['grant_n'])} reservation grants and "
                 f"{cnt(dr['award_n'])} job awards. At a loss of 0.25 per hop, drop and retry lost "
                 f"{cnt(dr['grant_lost'])} grants, {pc(dr['grant_lost_share'], 0)}; with custody "
@@ -1087,7 +1170,12 @@ def add_e54(c):
                 f"base's knowledge of a vehicle was {num(ll['aoi_mean_s'], 0)}{NB}s old on average with the rule "
                 f"(worst vehicle {num(ll['aoi_worst_vehicle_s'], 0)}{NB}s) and "
                 f"{num(dr['aoi_mean_s'] / 60.0, 0)}{NB}min without it (worst {num(dr['aoi_worst_vehicle_s'] / 3600.0, 0)}{NB}h), "
-                f"in a replay in which a returning vehicle is given a direct link.")
+                f"in a replay in which a returning vehicle is given a direct link. With the rule the age is about "
+                f"the {num(d['parameters']['status_period_s'], 0)}{NB}s at which a vehicle reports its state, which "
+                f"is as young as it can be. Before corrections to the replay after a code review, an earlier version "
+                f"of this paper gave {num(oll['aoi_mean_s'], 0)}{NB}s (worst vehicle {num(oll['aoi_worst_vehicle_s'], 0)}{NB}s), "
+                f"most of it a floor of half a replay step, and {num(o54['lost_link_returns_per_seed'], 0)} returns "
+                f"and {cnt(o54['lost_link_isolation_h_saved_per_seed'])}{NB}h a seed.")
     fill("P2-E54-RESULTS-PARAGRAPH", results_paragraph, "E54")
 
 
@@ -1117,6 +1205,28 @@ def add_e56(c):
     def h15(base, fault, st="test"):
         return e56()[st]["h15_net_against"][base][fault]
     c.e56f, c.e56rec, c.e56fa, c.e56h15, c.e56ev = e56, rec, fa, h15, ev
+
+    def b118(st, det, rate="day"):
+        """B-118 N10 and N11 (results/E56_integrity.json key onset_context_and_fa_interval_b118): beside each recall
+        the share of events with an alarm in the 60 s before onset and the recall on the events without one; the
+        false-alarm interval on all the resamples. A missing key stops the build."""
+        x = e56()["onset_context_and_fa_interval_b118"]["sets"][st][det][rate]
+        check(x["fa_ci95_200_reproduces_stored"] and all(v["recall_reproduces_stored"] for v in x["events"].values()),
+              f"B-118 reproduces the stored recalls and the stored false-alarm interval ({st}, {det})")
+        check(abs(x["events"]["all"]["recall"] - rec(st, det, "all", rate)) < 5e-4,
+              f"B-118's recall over all faults is the stored one ({st}, {det})")
+        return x
+
+    def b118_n():
+        """(resamples of the new interval, resamples of the earlier one), read from the key names of the block."""
+        import re as _re
+        x = e56()["onset_context_and_fa_interval_b118"]["sets"]["test"]["net"]["day"]
+        new = [int(m.group(1)) for k in x for m in [_re.fullmatch(r"fa_per_pair_day_ci95_(\d+)", k)] if m]
+        old = [int(m.group(1)) for k in x for m in [_re.fullmatch(r"fa_ci95_(\d+)_reproduces_stored", k)] if m]
+        if len(new) != 1 or len(old) != 1:
+            raise KeyError("onset_context_and_fa_interval_b118: the resample counts are not in the key names")
+        return new[0], old[0]
+    c.e56b118, c.e56b118n = b118, b118_n
     _t56 = {}
 
     def cls(st, rc, det, fault, col="recall", rate="1/pair-day"):
@@ -1261,7 +1371,9 @@ def add_e56(c):
         cd = h15("cusum", "drift")["delay_median_diff_s"]
         check(ld["ci95"][0] < 0 < ld["ci95"][1] and cd["ci95"][0] < 0 < cd["ci95"][1],
               "on slow drifts the network is not earlier than the regression or the CUSUM")
-        fci = lambda k: civ(d["test"][k]["day"]["fa_per_pair_day"], 2)
+        n_new, n_old = b118_n()
+        fci = lambda k: c.ci(*b118("test", k)["fa_per_pair_day_ci95_" + str(n_new)], 2, unit="")
+        check(n_new > n_old, "the false-alarm intervals now use more resamples than the earlier ones")
         tds = d["dataset"]["test"]
         blocks, pop = tds["natural_blocks_by_stratum"], tds["natural_population_blocks"]
         big = max(pop, key=pop.get)
@@ -1274,7 +1386,9 @@ def add_e56(c):
                 f"pair-day for the network {fci('net')}, "
                 f"{num(fas['chi2_step'], 2)} {fci('chi2_step')} for the per-step chi-square, {num(fas['logreg'], 2)} "
                 f"{fci('logreg')} for the regression, {num(fas['chi2_window'], 2)} {fci('chi2_window')} for the "
-                f"windowed chi-square and {num(fas['cusum'], 2)} {fci('cusum')} for the CUSUM. The intervals are wide "
+                f"windowed chi-square and {num(fas['cusum'], 2)} {fci('cusum')} for the CUSUM. The intervals are from "
+                f"{cnt(n_new)} resamples; an earlier version of this paper gave them on the first {cnt(n_old)} "
+                f"(the network's was {civ(d['test']['net']['day']['fa_per_pair_day'], 2)}). They are wide "
                 f"because the rates rest on few alarms: the fault-free test data are "
                 f"{cnt(tds['fault_free_natural_blocks'])} one-hour blocks drawn from four strata and weighted back to "
                 f"{num(d['test']['fault_free_pair_days_represented'], 0)} pair-days, and one alarm-minute in the "
@@ -1377,6 +1491,16 @@ def add_e56_h15(c):
               "in the short-range class the network finds as many small jumps as the CUSUM, at a fraction of its false alarms")
         ratio = {k: fa("ood", k) / fa("test", k) for k, _ in DETECTORS}
         check(ratio["chi2_step"] > 10 * ratio["net"], "out of distribution the per-step chi-square test loses more of its calibration than the network")
+        q = {k: c.e56b118("ood", k)["events"]["all"] for k in ("cusum", "chi2_step", "net")}
+        check(q["cusum"]["share_alarm_in_60s_before"] > q["chi2_step"]["share_alarm_in_60s_before"] > q["net"]["share_alarm_in_60s_before"],
+              "out of distribution an alarm before onset is most frequent for the CUSUM and least for the network")
+        check(q["cusum"]["recall"] - q["cusum"]["recall_quiet_60s_before"] > 0.1
+              and q["net"]["recall"] - q["net"]["recall_quiet_60s_before"] < 0.02
+              and all(v["recall_quiet_60s_before"] <= v["recall"] for v in q.values()),
+              "on quiet events the CUSUM's out-of-distribution recall falls by more than a tenth and the network's by under 0.02")
+        tq = [c.e56b118("test", k)["events"]["all"] for k, _ in DETECTORS]
+        check(all(abs(v["recall"] - v["recall_quiet_60s_before"]) < 0.005 for v in tq),
+              "on the test set the recall on quiet events is the stored recall within half a point for every detector")
         out += (f"(d) Out of distribution the network's recall may fall below the CUSUM's: by the numbers "
                 f"{'it did' if below else 'it did not'}, and the comparison means little. At the deployed thresholds "
                 f"the network found {pc(nj, 1)} of the small jumps and {pc(nd_, 1)} of the slow drifts, the CUSUM "
@@ -1396,7 +1520,17 @@ def add_e56_h15(c):
                 f"{pc(cls('ood', 'uwb', 'cusum', 'drift'), 0)} of the drifts; the network found "
                 f"{pc(cls('ood', 'uwb', 'net', 'jump'), 0)} and {pc(cls('ood', 'uwb', 'net', 'drift'), 0)} at "
                 f"{num(ne_u, 1)} (Table 12, by ranging class). The detections of the innovation tests out of "
-                f"distribution cannot be told from their false alarms. With thresholds reset on half of the "
+                f"distribution cannot be told from their false alarms. The events show the same. A fault counts as "
+                f"found if an alarm is on during it, whether or not the alarm was already on, and out of "
+                f"distribution an alarm had been raised in the 60{NB}s before the fault began in "
+                f"{pc(q['cusum']['share_alarm_in_60s_before'], 1)} of the CUSUM's events, "
+                f"{pc(q['chi2_step']['share_alarm_in_60s_before'], 1)} of the per-step chi-square test's and "
+                f"{pc(q['net']['share_alarm_in_60s_before'], 1)} of the network's. On the events with no alarm in "
+                f"that minute, recall over all fault types was {pc(q['cusum']['recall_quiet_60s_before'], 1)} for the "
+                f"CUSUM, {pc(q['chi2_step']['recall_quiet_60s_before'], 1)} for the per-step chi-square test and "
+                f"{pc(q['net']['recall_quiet_60s_before'], 1)} for the network, against the "
+                f"{pc(q['cusum']['recall'], 1)}, {pc(q['chi2_step']['recall'], 1)} and {pc(q['net']['recall'], 1)} "
+                f"over all events that Table 12 and an earlier version of this paper give. With thresholds reset on half of the "
                 f"out-of-distribution fault-free data "
                 f"(realised rates {num(min(fa_rc), 1)} to {num(max(fa_rc), 1)} per pair-day on the other half), "
                 f"no detector found these two fault types ({pc(min(small), 0)} to {pc(max(small), 0)}), so nothing "
@@ -1445,7 +1579,13 @@ def add_e56_h15(c):
                      "compared as if they were; a false alarm is a minute with an alarm, so 1,440 per pair-day is "
                      "every minute. Each delay is the median over the faults that detector found. The "
                      "network's numbers are means over five training seeds. The protocol rule (E55) has no tuned "
-                     "threshold, so it has no row in the reset block, and it was not scored by class.")
+                     "threshold, so it has no row in the reset block, and it was not scored by class. A fault counts "
+                     "as found if an alarm is on during it, even one raised before it began. On the events with no "
+                     "alarm in the 60&nbsp;s before the fault began, recall over all faults in the second block is "
+                     + ", ".join(f"{num(c.e56b118('ood', det)['events']['all']['recall_quiet_60s_before'], 2)} ({name})"
+                                 for det, name in DETECTORS)
+                     + "; in the first block it is within half a point of the value shown. The other blocks were "
+                     "not recounted.")
     try:
         c.T["E56"] = table_e56()
     except Pending as e:
@@ -1749,7 +1889,7 @@ def add_family(c):
                 f"that have a test: H10&prime; by paired two one-sided tests at today's fleet, joined with its other "
                 f"two clauses by intersection and union, so that its p value is the largest of the three; H14 by an "
                 f"exact sign test on the lost jobs per seed; and H15 (a) by the bootstrap over events, whose p value "
-                f"is an upper bound when no resample reaches zero. These p values are not registered: [59] gives "
+                f"is the count of resamples at or above zero plus one, over the number of resamples plus one. These p values are not registered: [59] gives "
                 f"its decision rules by interval, and the three tests were constructed after the results so that "
                 f"the correction could be applied. The sign test is one-sided (two-sided p = "
                 f"{num(2 * f.h['H14']['p'], 4)}), and the registered rule for H14, a paired interval that excludes "
@@ -1771,13 +1911,20 @@ def add_family(c):
     def h10_sentence():
         f = fam()
         rej = f.h["H10"]["holm"]["rejected_at_0.05"]
+        oh = f.d["superseded_2026-11-13_b118_n15"]["hypotheses"]["H10"]
+        oc = oh["clauses"]
+        og = oc["the gap grows with the fleet (4x and 8x)"]
+        check(not oh["holm"]["rejected_at_0.05"], "H10' was not supported as a whole in the earlier runs either")
         check(not rej and f.pcl[0] < 0.001 and f.pcl[1] > 0.05 and f.pcl[2] > 0.05,
               "H10' is not supported as a whole: the first clause holds and the other two do not")
         return (f"Taken as one hypothesis of the confirmatory family, H10&prime; is not supported. Its first clause "
-                f"holds (p {pv(f.pcl[0])}), but the one-sided p value is {pv(f.gcl.get('p_one_sided_4x', f.pcl[1]))} for a larger gap at four "
-                f"times the fleet" + (f", {pv(f.gcl['p_one_sided_8x'])} at eight times," if "p_one_sided_8x" in f.gcl else "")
-                + f" and {pv(f.pcl[2])} for a costlier dead-reckoning margin at today's fleet, and the "
-                f"three clauses joined have a Holm-adjusted p of {pv(f.adj['H10'])}.")
+                f"holds (p {pv(f.pcl[0])}), but the one-sided p value is {pv(f.gcl['p_one_sided_4x'])} for a larger gap at four "
+                f"times the fleet, {pv(f.gcl['p_one_sided_8x'])} at eight times,"
+                f" and {pv(f.pcl[2])} for a costlier dead-reckoning margin at today's fleet, and the "
+                f"three clauses joined have a Holm-adjusted p of {pv(f.adj['H10'])}. Before a correction to "
+                f"the position model, an earlier version of this paper gave {pv(og['p_one_sided_4x'])}, "
+                f"{pv(og['p_one_sided_8x'])} and {pv(oc['dead reckoning with the margin larger at 1x']['p_one_sided'])} "
+                f"for the same three; the verdict is the same.")
     fill("P2-FAMILY-H10-SENTENCE", h10_sentence, "B-98a")
 
     def h14_sentence():
@@ -1793,9 +1940,14 @@ def add_family(c):
     def h15a_sentence():
         f = fam()
         h = f.h["H15a"]
-        check(h["holm"]["rejected_at_0.05"] and "upper bound" in h["p_note"], "H15a stands after the Holm correction; its p value is an upper bound")
-        return (f"In the confirmatory family (a) stands after the Holm correction: no bootstrap resample reached "
-                f"zero, so p is at most {num(h['p'], 3)} and the adjusted value at most {num(f.adj['H15a'], 3)}.")
+        k0, nb = h["resamples_at_or_above_0"], h["resamples"]
+        cnts = c.e56f()["h15_resample_counts_b118"]["sets"]["test"]["chi2_step|drift|delay_median_diff_s"]
+        check(h["holm"]["rejected_at_0.05"] and abs(h["p"] - (k0 + 1) / (nb + 1)) < 1e-12
+              and cnts["boot_n"] == nb and cnts["at_or_above_0"] == k0 and cnts["reproduces_stored_interval"],
+              "H15a stands after the Holm correction; its p value is (resamples at or above zero + 1) / (resamples + 1), from the count saved in E56")
+        return (f"In the confirmatory family (a) stands after the Holm correction: {cnt(k0)} of the {cnt(nb)} "
+                f"bootstrap resamples lay at or above zero, which gives a one-sided p of {num(h['p'], 3)} and an "
+                f"adjusted value of {num(f.adj['H15a'], 3)}.")
     fill("P2-FAMILY-H15A-SENTENCE", h15a_sentence, "B-98a")
 
     def limitation():
@@ -1847,12 +1999,30 @@ def add_family(c):
         bad = [x for x in ran if not x["passed"]]
         g1 = [x for x in rows if x["id"] == "G1" and x["sub"] == "options off"]
         check(len(g1) == 1 and g1[0]["passed"] and g1[0]["simulated"] == 0.0, "with every Phase 6 option off the Phase 5 run is reproduced")
-        n_cmp = int(_re.search(r"(\d+) summary values compared", g1[0]["basis"]).group(1))
-        out = (f"All {cnt(len(ran))} Phase 6 verification rows tagged to this paper passed." if not bad else
+        ref = _load("vv6_g1_reference_0210c22.json")
+        if ref is None:
+            raise Pending("results/vv6_g1_reference_0210c22.json (B-118 N2) is missing")
+        m = _re.search(r"(\d+) days, seed (\d+): (\d+) summary values against (results/\S+) \(commit (\w+)\)", g1[0]["basis"])
+        on = [x for x in d["rows"] if x["id"] == "G1" and x["sub"] == "option on changes the run"]
+        m2 = _re.search(r"(\d+) of (\d+) summary values differ", on[0]["basis"]) if len(on) == 1 else None
+        if m is None or m2 is None:
+            raise KeyError("vv_phase6.json row G1: the basis does not state the days, seed, values and reference file")
+        days, n_cmp, commit = int(m.group(1)), int(m.group(3)), m.group(5)
+        check(m.group(4) == "results/vv6_g1_reference_0210c22.json" and ref["commit"] == commit and len(ref["summary"]) == n_cmp
+              and f"{days} days" in ref["scenario"] and f"seed {m.group(2)}" in ref["scenario"],
+              "row G1 compares with the stored reference of the commit before Phase 6, for the scenario the reference names")
+        check(on[0]["passed"] and int(m2.group(2)) == n_cmp and int(m2.group(1)) > 0, "an option switched on changes the summary, so row G1 can fail")
+        s = d["summary"]
+        check(not bad and s["failed"] == 0 and s["skipped"] == 0 and s["passed"] == s["rows"], "every row of the Phase 6 verification suite passed")
+        out = (f"All {cnt(s['rows'])} rows of the Phase 6 verification suite passed, the {cnt(len(ran))} tagged to "
+               f"this paper among them." if not bad else
                f"Of the {cnt(len(ran))} Phase 6 verification rows tagged to this paper, {cnt(len(bad))} failed: "
                + "; ".join(x["name"] for x in bad) + ".")
-        out += (f" With every Phase 6 option off, the logistics model reproduces the Phase 5 run: "
-                f"{cnt(g1[0]['simulated'])} of {cnt(n_cmp)} summary values differ.")
+        out += (f" The check that the logistics model with every Phase 6 option off equals the code before Phase 6 "
+                f"is narrow: one scenario, one seed, {cnt(days)} days, in which {cnt(g1[0]['simulated'])} of "
+                f"{cnt(n_cmp)} summary values differ from a run stored from commit {commit} "
+                f"(<code>{m.group(4)}</code>); with one option switched on, {cnt(int(m2.group(1)))} of them differ, "
+                f"so the comparison can fail. It says nothing about other scenarios or seeds.")
         return out
     fill("P2-CHECKS6-OUTCOME", checks_outcome, "B-98")
 
@@ -2006,10 +2176,17 @@ def add_props(c):
             s = c.e50f(1)
             hrs = s["errors"]["1"]["dr"]["shift_p95_m_mean_over_seeds"][:8]
             check(hrs[0] > m, "E50 agrees with Proposition 1: dead reckoning alone is past the margin within the first driving hour")
-            check(all(b2 > a2 for a2, b2 in zip(hrs, hrs[1:])), "E50: the dead-reckoning error grows with every driving hour of the shift")
+            ohrs = c.e50old()["errors"]["1"]["dr"]["shift_p95_m_mean_over_seeds"][:8]
+            up = next((i for i, (a2, b2) in enumerate(zip(hrs, hrs[1:])) if b2 <= a2), len(hrs) - 1) + 1
+            check(up >= 4 and hrs[-1] > 2 * hrs[0] and max(hrs[up - 1:]) / min(hrs[up - 1:]) < 1.1,
+                  "E50: the dead-reckoning error grows over at least the first four driving hours of the shift and is level within 10 % after")
             out += (f" E50 illustrates the growth and does not test the formula: with dead reckoning alone the 95th "
-                    f"percentile of the error was {m_(hrs[0], 0)} after one hour of driving and {m_(hrs[-1], 0)} "
-                    f"after eight (30 seeds).")
+                    f"percentile of the error was {m_(hrs[0], 0)} after one hour of driving, {m_(hrs[up - 1], 0)} "
+                    f"after {c.words(up)} and {m_(hrs[-1], 0)} after eight ({cnt(len(s['seeds']['1']))} seeds)"
+                    + ("" if up == len(hrs) else "; it did not grow after that in these runs, which the formula does "
+                                                 "not describe and we did not trace")
+                    + f". Before a correction to the position model, an earlier version of this paper gave "
+                    f"{m_(ohrs[0], 0)} after one hour and {m_(ohrs[-1], 0)} after eight.")
         except Pending:
             pass
         return out
@@ -2385,7 +2562,7 @@ def add_front(c):
         without and with the base mast (the referee's S11: the overall maximum is in a cell where the rule is unsafe)."""
         f16 = c.e55facts16()
         ag = max(x["agreement_share"] for x in f16.ok)
-        mast = c.e55f().get("consensus_with_base_mast", {"cells": f16.all})["cells"]
+        mast = c.e55f()["consensus_with_base_mast"]["cells"]        # a missing key stops the build
         return ag, max(x["agreement_share"] for x in mast if x["F"] >= x["f"])
 
     def intro_paragraph():
@@ -2519,25 +2696,22 @@ def add_front(c):
         ne_u = cls("ood", "uwb", "net", "jump", "fa_per_pair_day")
         small = [rec("ood_recalibrated", k, ft) for k, _ in DETECTORS for ft in ("jump", "drift")]
         e54 = ""
-        try:
-            x = c.e54facts
-            e54 = (f" The lost-link experiment shows two things and prices neither in delay. A lost grant is a "
-                   f"stopped vehicle, because R3 never assumes an unconfirmed reservation. The {pc(x.lost, 0)} of "
-                   f"grants that drop and retry lost at a loss of 0.25 per hop is that loss itself: its retry "
-                   f"interval is longer than a grant's lifetime, both assumed, so each grant was sent once, and "
-                   f"three tries inside the lifetime would by arithmetic lose {pc(x.three, 1)}. Custody removes the "
-                   f"loss; the replay does not show that it is needed. And a silent vehicle is the usual case: "
-                   f"along the month's contact plan vehicles had a radio path to the base in {pc(x.linked, 0)} of "
-                   f"their driving time, and {cnt(x.unconf)} of {cnt(x.n_res)} reservations ended with their holder "
-                   f"unheard. Under the rule as first written the base released those segments, which is unsafe when "
-                   f"the holder is silent because it has failed inside one; under the rule as it now stands they "
-                   f"are marked unconfirmed and entered only at caution speed. No logistics run contains the "
-                   f"lost-link ladder. The fleets of E43 and E50 never turn back, the replay holds "
-                   f"{num(x.returns, 0)} returns a month against {num(x.jobs, 0)} jobs, and the nearest thing that "
-                   f"was priced, the strict reading of R7, cost {V['P2-R7-ATC-DIFF']} per delivery. The delay cost "
-                   f"of the ladder and of caution-speed entry is therefore unknown and probably large.")
-        except (Pending, AttributeError):
-            pass
+        x = c.e54facts
+        e54 = (f" The lost-link experiment shows two things and prices neither in delay. A lost grant is a "
+               f"stopped vehicle, because R3 never assumes an unconfirmed reservation. The {pc(x.lost, 0)} of "
+               f"grants that drop and retry lost at a loss of 0.25 per hop is that loss itself: its retry "
+               f"interval is longer than a grant's lifetime, both assumed, so each grant was sent once, and "
+               f"three tries inside the lifetime would by arithmetic lose {pc(x.three, 1)}. Custody removes the "
+               f"loss; the replay does not show that it is needed. And a silent vehicle is the usual case: "
+               f"along the month's contact plan vehicles had a radio path to the base in {pc(x.linked, 0)} of "
+               f"their driving time, and {cnt(x.unconf)} of {cnt(x.n_res)} reservations ended with their holder "
+               f"unheard. Under the rule as first written the base released those segments, which is unsafe when "
+               f"the holder is silent because it has failed inside one; under the rule as it now stands they "
+               f"are marked unconfirmed and entered only at caution speed. No logistics run contains the "
+               f"lost-link ladder. The fleets of E43 and E50 never turn back, the replay holds "
+               f"{num(x.returns, 0)} returns a month against {num(x.jobs, 0)} jobs, and the nearest thing that "
+               f"was priced, the strict reading of R7, cost {V['P2-R7-ATC-DIFF']} per delivery. The delay cost "
+               f"of the ladder and of caution-speed entry is therefore unknown and probably large.")
         e55 = ""
         try:
             t55, o55 = c.e55rule("test"), c.e55rule("ood")
@@ -2828,7 +3002,9 @@ def add_pta(c):
             "Proved; the exceedance of the filed bound counted, not a test",
             f"Assumptions: each along-track error inside its bound at both ends of the window, and the vehicle passes each "
             f"end at the speed v (not true of a vehicle starting from rest). E50, {fleets}: "
-            f"{num(v1['with_margin']['layered']['mean'], 2)} overlaps a month with the margin at &times;1. The simulation "
+            f"{num(v1['with_margin']['layered']['mean'], 2)} overlaps a month with the margin at &times;1, "
+            f"{num(c.e50f(4)['violations']['4']['with_margin']['layered']['mean'], 1)} at &times;4 and "
+            f"{num(c.e50f(8)['violations']['8']['with_margin']['layered']['mean'], 1)} at &times;8. The simulation "
             "shifts windows by error over speed, the proposition's premise, so this is how often the filed bound was "
             "exceeded; whether each remaining overlap is an error outside a correctly computed bound is not shown", "A.2, 5.9")
         add("The count of reservation overlaps without a margin",
@@ -2837,7 +3013,7 @@ def add_pta(c):
             f"the time whatever the error: {num(v1['no_margin']['dr+ranging+fixes']['mean'], 2)} a month at &times;1", "3.9, 5.9")
         ov = c.e50overlaps()
         add("What a reservation overlap is, and what the margin does to it",
-            "Tested (analysis of the E50 runs at &times;1 and &times;4; &times;8 not analysed)",
+            "Tested (analysis of the E50 runs at " + ", ".join(f"&times;{k}" for k in sorted(ov)) + ")",
             f"Back-to-back windows overlap in {pc(min(ov['4'].abut), 0)} to {pc(max(ov['4'].abut), 0)} of cases at &times;4 "
             f"whatever the layer set; duration follows navigation (medians {num(ov['4'].dur[0], 0)}{NB}s to "
             f"{num(ov['4'].dur[3], 1)}{NB}s); no overlap brought two vehicles within the static margin or R1's gap; the "
@@ -2918,9 +3094,10 @@ def add_pta(c):
             "Tested: " + ("held" if a["ci95"][1] < 0 else "failed"), basis56 + holm("H15a"), "5.11")
         add("On jumps the network and the chi-square test are within one second (H15 b)",
             "Tested: " + ("held" if (-1 < b["ci90"][0] and b["ci90"][1] < 1) else "failed"), basis56, "5.11")
-        below = c.e56rec("ood", "net", "jump") < c.e56rec("ood", "cusum", "jump")
+        kept56 = [k for k, _ in DETECTORS if c.e56fa("ood", k) <= 5 * max(1.0, c.e56fa("test", k))]
+        check(not kept56, "out of distribution every detector's false-alarm rate is more than five times its test rate")
         add("A detector keeps its false-alarm rate out of distribution (bears on H15 d)",
-            "Tested: fails for every detector",
+            "Tested: fails for every detector" if not kept56 else "Tested: fails for some detectors",
             "E56 out-of-distribution set (one shift: noisier sensors, smaller faults). The recalls there are not at one "
             "false-alarm rate and are not compared; with thresholds reset no detector finds the small faults. No detector "
             "is qualified for the safety path on this evidence", "5.11")
