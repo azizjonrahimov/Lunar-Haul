@@ -174,18 +174,50 @@ def stuck_reservations(rec, A, tr, t0h, vid_col, grace_s):
     return n_stuck, hours
 
 
+def _ast_digest(src):
+    """B-120 C: the code of a module or function without its docstrings, comments and layout (ast.dump of the parsed
+    source with every docstring removed), so editing a docstring or a comment does not change the fingerprint."""
+    import ast
+    import textwrap
+    tree = ast.parse(textwrap.dedent(src))
+    for node in ast.walk(tree):
+        body = getattr(node, "body", None)
+        if (isinstance(node, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and body
+                and isinstance(body[0], ast.Expr) and isinstance(getattr(body[0], "value", None), ast.Constant)
+                and isinstance(body[0].value.value, str)):
+            node.body = body[1:] or [ast.Pass()]
+    return ast.dump(tree, include_attributes=False)
+
+
+FP_MODULES = ("lunarsim/atc/dtn.py",)
+
+
 def code_fingerprint():
-    """B-118 N21: a fingerprint of the code a cache file's content comes from: dtn.py, E50's runner, the codec, and
-    this runner's producing functions (not the build functions, so a change to how the table is written does not
-    invalidate the runs); build() refuses to mix cache files with different fingerprints."""
+    """B-120 C: a fingerprint of everything a cache file's content comes from, and nothing else:
+    - E50's code fingerprint (run_e50.code_fingerprint: every lunarsim .py file an engine run uses - the engine,
+      regimes, roads, pnt, ... - plus run_e50.py, export_trace.py and run_phase5.py), because record(), prepare()
+      and earth_up_fn() run the engine, E5.trajectories, E5._geo and the link files through them;
+    - the DTN model (dtn.py), which E50's fingerprint leaves out;
+    - from the LRIP codec, what E54 takes from it: the message sizes (codec.size_table() as messages() uses it and
+      size_sets()), so a change to the codec or its schema files moves the fingerprint exactly when a size changes,
+      and a decoder fix does not;
+    - this runner's producing functions and the constants of the cells.
+    The modules and functions of this runner are hashed without docstrings and comments (_ast_digest), so only a
+    change of code moves the fingerprint; E50's part is E50's own (raw bytes). build() and v02build() refuse cache
+    files with another fingerprint. Before 14 Nov 2026 (B-118 N21) only dtn.py, run_e50.py, codec.py (raw bytes)
+    and the producing functions were hashed (raw text, so docstrings moved it): not the engine."""
     import hashlib
     import inspect
+    import run_e50 as E5
     h = hashlib.sha256()
-    for rel in ("lunarsim/atc/dtn.py", "tools/atc/run_e50.py", "lunarsim/atc/lrip/codec.py"):
-        with open(os.path.join(ROOT, rel), "rb") as f:
-            h.update(f.read().replace(b"\r\n", b"\n"))
+    h.update(b"e50:" + E5.code_fingerprint().encode())
+    for rel in FP_MODULES:
+        with open(os.path.join(ROOT, rel), encoding="utf-8") as f:
+            h.update(rel.encode() + _ast_digest(f.read()).encode())
+    from lunarsim.atc.lrip import codec as C
+    h.update(json.dumps({"default": C.size_table(), "sets": size_sets()}, sort_keys=True).encode())
     for fn in (record, earth_up_fn, messages, stuck_reservations, prepare, _replay, run_seed, size_sets, run_seed_sizes):
-        h.update(inspect.getsource(fn).encode())
+        h.update(fn.__name__.encode() + _ast_digest(inspect.getsource(fn)).encode())
     h.update(repr(CELLS).encode() + repr((PROTOCOLS, LOSSES, BLACKOUT_DAYS, LEDGER_BYTES)).encode())
     return h.hexdigest()[:16]
 
@@ -606,10 +638,26 @@ def build():
     if os.path.isfile(OUT_JSON):                             # B-118: earlier values stay under dated keys
         old = json.load(open(OUT_JSON, encoding="utf-8"))
         doc.update({k: v for k, v in old.items() if k.startswith("superseded_")})
+        if B120_BLOCK not in doc and old.get("code") != doc["code"]:
+            doc[B120_BLOCK] = {
+                "reason": "B-120 B (14 Nov 2026): dtn.simulate's end of window. A bundle still held when the window "
+                          "ended was called censored even when its lifetime had ended inside the window; now it is "
+                          "expired when t0 + life_s <= the window's end (a deadline at the end itself included: its "
+                          "whole lifetime was observed and nothing at the end could deliver it), and censored only "
+                          "when its lifetime runs past the end. In E54 this concerns one daily Earth ledger per seed "
+                          "(created on day 17, deadline day 31 = the window's end, Earth link down from day 8) in the "
+                          "store-and-forward cells. Also B-120 C: the cache fingerprint now covers the engine.",
+                "superseded_on": "2026-11-14", "code": old.get("code"),
+                "rows": old.get("rows"), "h14": old.get("h14"), "h14_variants": old.get("h14_variants"),
+                "lrip_v02": {k: old["lrip_v02"].get(k) for k in ("rows", "h14", "verdicts", "values_moved_vs_v01")}
+                if "lrip_v02" in old else None}
     with open(OUT_JSON, "w", encoding="utf-8", newline="\n") as f:
         json.dump(doc, f, indent=1)
         f.write("\n")
     print(json.dumps(h14, indent=1))
+
+
+B120_BLOCK = "superseded_2026-11-14_b120_b"
 
 
 def main(argv=None):

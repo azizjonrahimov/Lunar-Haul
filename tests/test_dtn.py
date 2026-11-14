@@ -148,6 +148,65 @@ def test_window_end_is_not_expiry():
         assert r[2].expired and not r[2].censored         # its lifetime ended inside the window
 
 
+def test_lifetime_ending_in_the_last_step_is_expired():
+    """B-120 B: a bundle held with no path through the final step, whose lifetime ended inside the window, is expired
+    (before, store-and-forward called it censored while drop_retry called it expired); a deadline at the window's end
+    itself is expired too; one later than the end is censored. Same for both protocols."""
+    A = chain(2, [])                                     # 2 steps of 60 s, never a path to vehicle 0
+    for proto in ("sf", "drop_retry"):
+        for life, expired in ((90.0, True), (120.0, True), (600.0, False)):    # 600 s: drop_retry's next try (180 s)
+            if proto == "drop_retry" and life == 600.0:                      # is still inside the lifetime
+                assert DT.DEFAULTS["retry_s"] < life
+            m = DT.simulate(A, [Msg(0, "award", BASE, 0, 0.0, 92, life)], proto, 0.0, np.random.default_rng(0), 60.0)[0]
+            assert m.t_done is None and m.expired is expired and m.censored is (not expired), (proto, life)
+    m = DT.simulate(A, [Msg(0, "award", BASE, 0, 0.0, 92, 121.0)], "sf", 0.0, np.random.default_rng(0), 60.0)[0]
+    assert m.censored and not m.expired                  # one second past the end: not known
+    # an Earth-bound bundle at the base with the Earth link down to the end (E54's ledgers)
+    A = chain(3, range(3))
+    for life, expired in ((180.0, True), (240.0, False)):
+        m = DT.simulate(A, [Msg(0, "ledger_earth", BASE, -2, 0.0, 10_000, life)], "sf", 0.0,
+                        np.random.default_rng(0), 60.0, earth_up=lambda k: False)[0]
+        assert m.expired is expired and m.censored is (not expired)
+
+
+def test_full_base_store_refuses_an_earth_bound_bundle():
+    """B-120 G: the base holds an Earth-bound bundle until the Earth link, so a full base store refuses custody like
+    a full relay (before, the base store was unbounded for Earth-bound bundles)."""
+    A = chain(40, range(40))
+    held = Msg(0, "ledger_earth", BASE, -2, 0.0, 80, 7200.0)          # fills the base store (100 B) until Earth is up
+    x = Msg(1, "ledger_earth", 1, -2, 0.0, 50, 7200.0)                # from vehicle 1, one hop to the base
+    up = lambda k: k >= 20
+    r = DT.simulate(A, [held, x], "sf", 0.0, np.random.default_rng(0), 60.0, {"queue_bytes": 100}, earth_up=up)
+    hl = DT.DEFAULTS["hop_latency_s"]
+    assert r[0].t_done == pytest.approx(20 * 60.0 + hl)
+    assert r[1].t_done == pytest.approx(20 * 60.0 + 2 * hl)   # refused at the full base until the held bundle left
+    r2 = DT.simulate(A, [held, x], "sf", 0.0, np.random.default_rng(0), 60.0, earth_up=up)
+    assert r2[1].t_done == pytest.approx(20 * 60.0 + hl)     # default 64 MB store: at the base already, one hop
+
+
+def test_simulate_refuses_an_unknown_protocol():
+    """B-120 G: before, any string but "drop_retry" ran as store-and-forward."""
+    A = chain(2, [0, 1])
+    msgs = [Msg(0, "award", BASE, 0, 0.0, 92, 600.0)]
+    with pytest.raises(ValueError):
+        DT.simulate(A, msgs, "drop-retry", 0.0, np.random.default_rng(0), 60.0)
+    a = DT.simulate(A, msgs, "sf", 0.0, np.random.default_rng(0), 60.0)[0]
+    b = DT.simulate(A, msgs, "sf_ll", 0.0, np.random.default_rng(0), 60.0)[0]
+    assert a.t_done == b.t_done is not None
+
+
+def test_e54_fingerprint_ignores_docstrings_and_comments():
+    """B-120 C: the E54 fingerprint hashes code, not docstrings, comments or layout."""
+    import sys
+    sys.path.insert(0, os.path.join(ROOT, "tools", "atc"))
+    import run_e54 as R
+    a = 'def f(x):\n    """doc"""\n    return x + 1  # note\n'
+    b = 'def f(x):\n    """another doc"""\n\n    return (x + 1)\n'
+    c = 'def f(x):\n    """doc"""\n    return x + 2\n'
+    assert R._ast_digest(a) == R._ast_digest(b) != R._ast_digest(c)
+    assert R._ast_digest('"""module doc"""\nimport os\n') == R._ast_digest("import os  # c\n")
+
+
 def test_full_relay_refuses_custody():
     """C11: a relay whose store is full does not take the bundle; it moves on when the store frees."""
     T = 60

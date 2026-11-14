@@ -11303,3 +11303,112 @@ Tests: test_safety 7 passed, test_verification_phase5 18 passed.
 Commit set: results/E44_parts/T02_b0000-0004, T03_b0000-0004, T04_b0000-0004, T08_b0000-0004, T09_b0000-0004, T10_b0000-0009,
 T12_b0000-0004 (.csv.gz); results/E44_defects.json; results/E44_bounds.json. No code changes.
 Holding: B-117 waits until the branch has landed.
+
+## B-120 A DONE (14 Nov) | N23 off-by-one fixed: the 11th below step is the first that can count (was the 12th); the 16 uphill delay cells stay at breach rate 0 with every value identical, so no results file moves
+Step convention (encounter.py run_batch): `below` is the gap at the start of a step and a_ph acts during the step. If the gap goes
+below at step k0 (time t0), then k0+10 acts from t0 + 1.0 s = t0 + RHO_S. R1 (brake fully within RHO_S) requires full braking from
+there, so step k0+10, the 11th below step, must count when a_ph is short. The old counter gave the first below step 0 s and required
+> RHO_S, so its first countable step was k0+11, the 12th. Your reading is right.
+Fix: lunarsim/atc/encounter.py r1_breach_delayed. below_s is now the time below at the end of the step (DT for the first below step;
+test unchanged: > RHO_S). The docstring states the convention and the B-120 change; the Batch.r1_below comment is updated.
+Rows with delay 0 and E44 are untouched; encounter.py is outside the E50 fingerprint, which stays 5bf22fa6d5ccfe47.
+Scratch check (b120a_cells.py, corrected counter monkeypatched, run_cell as committed): all 16 delay cells (moon/mars x following/
+one_lane x 5/10/15/17.2 deg, as_is and slope_term) give r1_breach_rate 0, as cached. Every other value of every rule (violations,
+by_kind, min gaps, gap_below_d0, contacts, emergency brake rate) is identical.
+Evidence the zero is not by construction of the counter: the steps on which a below-gap follower is short of full braking, by
+position in the below run (mars cells: following 17.2; one_lane 5, 10, 15, 17.2), run from step 1 to step 10 and stop. For example,
+one_lane 5 deg gives 19,712 at step 1, 7,085 at step 9, 981 at step 10, and 0 at step 11 in every cell. The check commands full
+braking when the gap goes below; with delay = RHO_S that braking takes effect at step 11, exactly when R1 requires it. The old extra
+step was never used, but the zero holds with no margin: any delay longer than RHO_S would be counted from step 11.
+Test (tests/test_uphill.py test_delayed_breach_allows_the_response_time):
+- delay = RHO_S gives 0 breaches; delay = RHO_S + DT gives 1 (the 11th step).
+- delay = 2 RHO_S gives 10 (was pinned at 9); never brakes gives 50 of 60 (was 49).
+- The old counter fails the new test (0/0/9/49 against 0/1/10/50). test_uphill: 4 passed.
+Not rerun or rebuilt: results/E45_uphill.json/.csv. The cached cells' rates equal the corrected counter's in all 16 cells, and the
+file's r1_breach_definition ("below rss_dmin for longer than RHO_S") already describes the corrected count.
+For P2's paragraph: the d0 shortfalls cannot be "one 0.1 s step more of earlier commands than R1 allows" in these cells. Applied
+braking is never short beyond RHO_S (step 11). Any gap below d0 at delay = RHO_S happens with R1 met to the step.
+Files: lunarsim/atc/encounter.py, tests/test_uphill.py.
+
+## B-120 B code + one-seed facts (14 Nov) | dtn.simulate end of window: lifetime ended in the window = expired (deadline at t_end included); on E54 this moves exactly 1 ledger per seed per store-and-forward cell (sf rows 270 + 420 -> 300 + 390 under <=; nothing under <); 30-seed rerun waits for your decision
+Fix (lunarsim/atc/dtn.py simulate, end of window): an active, undelivered, unexpired message is expired when t0 + life_s <= t_end
+(q_bytes released as in the loop for sf) and censored otherwise. Messages created at or after t_end stay censored, as before. The
+docstring now defines t_done, expired and censored, including the boundary.
+Repro on HEAD (2 steps of 60 s, no path): sf gives censored, drop_retry expired, for lifetimes of 90 s and 120 s. With the fix both
+give expired; for 600 s (and 121 s, sf) both give censored.
+Test: tests/test_dtn.py test_lifetime_ending_in_the_last_step_is_expired, covering both protocols (90 / 120 / 600 s, sf 121 s) and an
+Earth-bound bundle at the base with the Earth link down (180 s expired, 240 s censored). test_dtn: 19 passed.
+Boundary facts, E54 seed 1 (scratch b120b_seed.py: prepare + run_seed + run_seed_sizes on the current code with simulate wrapped;
+both outputs reproduce .cache/atc/e54/s1.json and e54_v02/s1.json exactly):
+- Window: 31.0 d (t0 4368 h to 5112 h), 44,640 steps of 60 s, t_end = 2,678,400 s. The Earth link is up last at step 11,519
+  (day 8.0) and down from there to the end (blackout days 8-22, then no direct-to-Earth window). earth_up does not depend on the seed.
+- Ledgers (one a day, d = 0..30, life 14 d) in every sf / sf_ll / sf_ll_pre_review cell at every loss: d 0-7 delivered (8),
+  d 8-16 expire inside the window (9), d 17 has deadline 17 + 14 = 31 d = t_end exactly (1), d 18-30 have deadlines past t_end
+  (13). So the 14 censored are 1 with deadline == t_end and 13 truly alive at the end. The published 420 = 14 x 30, not 420 at the
+  boundary.
+- d 17 was undelivered because the Earth link was down from day 8 to the end. It could not have been delivered at t_end: a delivery
+  needs the Earth link in the step, and every attempt starts before t_end.
+- No award, grant or task_state is censored in any cell; drop_retry cells have 0 censored. The v0.2 size sets are the same: 1
+  ledger per sf cell under <=, nothing under <.
+- E54_ledger.json (61-day span): 0 censored in all 18 rows. The longest deadline is 30 + 25.8 d < 61 d, so neither rule moves it.
+Counts (30 seeds; the ledger schedule and Earth link are seed-independent, so each seed gives the same):
+- deadline < t_end: no E54 value moves (sf ledger rows stay 270 expired + 420 censored).
+- deadline <= t_end: each sf, sf_ll and sf_ll_pre_review row (main table and the three lrip_v02 size sets) goes 270 + 420 ->
+  300 + 390. lost_share 0.29032 -> 0.32258; lost_incl_censored stays 690.
+- drop_retry rows (870 / 871 lost, 0 censored), awards, grants, task states, AoI, stuck reservations and H14 do not move.
+Recommendation: <=. The bundle's whole lifetime was observed, it was never delivered, and nothing at t_end could deliver it: its
+outcome is known (expired). Censoring is for outcomes the window did not see. It also makes sf and drop_retry agree on the same
+bundle.
+Next, on your word: the 30-seed E54 rerun (main + v0.2; about 45 s a seed plus about 45 s for the sizes) together with C's new
+fingerprint, so one rerun covers both. C's code part comes next.
+
+## B-120 B + C DONE (14 Nov) | E54 rerun on 30 seeds with the end-of-window fix (<=) and the new fingerprint: only the expected ledger values move (sf / sf_ll / sf_ll_pre_review rows 270 + 420 -> 300 + 390, lost_share 0.29032 -> 0.32258); two dtn changes from G folded in first so one rerun covers them
+C: tools/atc/run_e54.py code_fingerprint now hashes:
+- E50's code fingerprint (run_e50.code_fingerprint: the engine, regimes, roads, pnt and the other lunarsim modules record(),
+  prepare() and E5.trajectories run, plus run_e50.py, export_trace.py and run_phase5.py; at present 5bf22fa6d5ccfe47);
+- dtn.py;
+- the LRIP sizes E54 uses (codec.size_table() and size_sets() output, as JSON). So a codec or schema change moves the fingerprint
+  exactly when a size changes; F's decoder fixes will not;
+- the producing functions (record, earth_up_fn, messages, stuck_reservations, prepare, _replay, run_seed, size_sets,
+  run_seed_sizes) and the cell constants.
+dtn.py and the functions are hashed as ASTs without docstrings or comments (new _ast_digest), so docstring and comment edits no
+longer stop build / v02build. Unused imports and renames still do: they are code. New fingerprint: c3c3b2880e33888c (was
+164db46f005497d2). No restamp: the caches were rerun (B changes values).
+G parts done before the rerun (both are code in dtn.py, so they move the fingerprint; doing them later would have needed a second
+rerun):
+- simulate() refuses an unknown protocol (dtn.PROTOCOLS = drop_retry, sf, sf_ll; "sf_ll" runs as sf). Before, every string but
+  "drop_retry" ran as sf.
+- The base store is now bounded for Earth-bound bundles. Custody to the base was never refused, although the base stores such a
+  bundle until the Earth link. A one-condition fix: (w != dst_node or m.dst == -2). E54 has no vehicle-to-Earth bundle, so
+  nothing moves (confirmed by the rerun).
+Rerun: .cache/atc/e54 and e54_v02 moved to *_pre_b120 (link_s*.json copied back: they come from the contact plan alone).
+run_e54.py runall --seeds 1-30, 8 calls, about 100 s a seed, peak free RAM never below the gate.
+Cache comparison, all 60 files (scratchpad b120_e54cmp.py): 1,620 differences, each a ledger_earth lost +1 with censored -1 in a
+store-and-forward cell. That is 9 per seed in the main cells (sf, sf_ll and sf_ll_pre_review x 3 losses) and 18 per seed in the
+size sets (3 sets x sf, sf_ll x 3 losses). No other value differs in any cell (awards, grants, task states, delays, AoI, stuck).
+Rebuilt with run_e54.py build and v02build:
+- results/E54_dtn.json, rows and lrip_v02.rows: ledger_earth_lost 270 -> 300, ledger_earth_lost_share 0.29032 -> 0.32258 and
+  ledger_earth_censored 420 -> 390 in 27 rows (9 main, 18 v0.2 sets); lost_incl_censored stays 690.
+- Otherwise only code, rerun_commit and lrip_v02.run_s_total change; h14, h14_variants, verdicts and the v0.1 reproduction (rows,
+  h14 and seeds equal the main table) are identical.
+- results/E54_table.csv (9 rows) and E54_table_v02.csv (12 rows): the same three columns.
+- New block superseded_2026-11-14_b120_b, written once by build() from the committed file. Keys: reason, superseded_on
+  (2026-11-14), code (164db46f005497d2), rows (12, as committed), h14, h14_variants, lrip_v02 {rows, h14, verdicts,
+  values_moved_vs_v01}. Each equals the committed value.
+- superseded_2026-11-13_b118 is unchanged. Keys: reason, superseded_on, experiment, note, seeds, jobs_per_seed, earth_up_share,
+  reservations_per_seed, lost_link_returns_per_seed, lost_link_isolation_h_saved_per_seed, rows (9, pre-N4 definitions:
+  ledger_earth_lost 690), h14, link_shares, parameters, stuck_definition, blackout_days, ledger_bytes, lrip_v02 {task,
+  sizes_bytes, ledger_bytes, note, reproduction_of_published_v01, rows, h14, values_moved_vs_v01, verdicts,
+  max_queue_bytes_bound, seeds, run_s_total}.
+- E54_ledger.json is not rebuilt: 0 censored, and its 61-day span outlasts every deadline. It keeps its one block
+  (superseded_2026-11-13_b118).
+Not changed:
+- data/atc/protocol/e54_timeline.json: re-exported to scratch, byte-identical (82,635 B). It reads only t_done and has no ledgers.
+- phase6_family.json: it reads award losses and stuck reservations at loss 0.25, which did not move. D rebuilds it anyway.
+Tests:
+- test_dtn 22 passed. New: last-step lifetime expired; unknown protocol refused; full base store refuses an Earth-bound bundle
+  (HEAD gives 1200.01 s, now 1200.02 s); the E54 fingerprint ignores docstrings and comments.
+- test_protocol_data 1, test_lrip_v02 13, test_uphill 4 passed.
+Commit set: lunarsim/atc/dtn.py, tools/atc/run_e54.py, tests/test_dtn.py, results/E54_dtn.json, E54_table.csv,
+E54_table_v02.csv; with item A: lunarsim/atc/encounter.py, tests/test_uphill.py; results/E44_defects.json (outcome.totals);
+.team/reports.md.

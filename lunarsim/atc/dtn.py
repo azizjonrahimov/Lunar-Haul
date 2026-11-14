@@ -154,10 +154,21 @@ class Msg:
     t_next: float = 0.0            # B-118 N3: earliest time of the bundle's next transmission
 
 
+PROTOCOLS = ("drop_retry", "sf", "sf_ll")     # B-120 G: the protocols simulate() accepts ("sf_ll" runs as "sf")
+
+
 def simulate(A: np.ndarray, msgs: Sequence[Msg], protocol: str, loss: float, rng: np.random.Generator,
              dt_s: float, p: Optional[dict] = None, earth_up=None) -> List[Msg]:
     """Deliver the messages over the contact plan A (T, n + 1, n + 1). Node n is the base mast; a message to "EARTH"
-    (dst = -2) needs the base and earth_up(k) for its last hop. Returns the messages with t_done / expired set."""
+    (dst = -2) needs the base and earth_up(k) for its last hop. Returns the messages with t_done, expired or censored
+    set: t_done = delivered (at or before t0 + life_s); expired = undelivered with its lifetime ended inside the window
+    (t0 + life_s <= T dt_s, the end itself included, B-120 B), out of tries (drop_retry) or dropped by a full store at
+    creation; censored = undelivered and still alive at the window's end (t0 + life_s > T dt_s), or created at or
+    after it: its outcome is not known. protocol: "drop_retry", or "sf" (store-and-forward with custody; "sf_ll", the
+    same model run on a lost_link_plan output, is accepted as a name for it); anything else is refused (B-120 G:
+    before, every string but "drop_retry" ran as sf)."""
+    if protocol not in PROTOCOLS:
+        raise ValueError(f"unknown protocol {protocol!r}; expected one of {PROTOCOLS}")
     p = dict(DEFAULTS, **(p or {}))
     T, n1, _ = A.shape
     N = n1 - 1
@@ -250,8 +261,10 @@ def simulate(A: np.ndarray, msgs: Sequence[Msg], protocol: str, loss: float, rng
                     break                                     # no path now: hold the bundle
                 cand = [w for w in np.nonzero(A[k, m.at])[0] if hd[w] == hd[m.at] - 1]
                 w = min(cand)
-                if w != dst_node and q_bytes[w] + m.size > p["queue_bytes"]:
-                    t_now += p["custody_timer_s"]             # C11: a full relay refuses custody; try again later
+                # C11: a full relay refuses custody; try again later. The base takes custody of an Earth-bound
+                # bundle and stores it until the Earth link, so its store is bounded too (B-120 G: before, unbounded)
+                if (w != dst_node or m.dst == -2) and q_bytes[w] + m.size > p["queue_bytes"]:
+                    t_now += p["custody_timer_s"]
                     continue
                 if rng.random() < q:
                     q_bytes[m.at] -= m.size
@@ -277,7 +290,12 @@ def simulate(A: np.ndarray, msgs: Sequence[Msg], protocol: str, loss: float, rng
     for i in active:                                          # B-118 N4: alive at the window's end: censored
         m = out[i]
         if m.t_done is None and not m.expired:
-            m.censored = True
+            if m.t0 + m.life_s <= t_end:                      # B-120 B: its whole lifetime was inside the window
+                m.expired = True                              # (deadline at t_end included): the outcome is known
+                if protocol != "drop_retry":
+                    q_bytes[m.at] -= m.size
+            else:
+                m.censored = True
     for m in out:                                             # created at or after the window's end: censored
         if m.t_done is None and not m.expired and m.t0 >= t_end:
             m.censored = True

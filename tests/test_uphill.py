@@ -79,8 +79,8 @@ def _breaches(delay_s, brakes=True, steps=60):
 
 def test_delayed_breach_allows_the_response_time():
     """B-118 N23 (b): with an actuation delay the breach allows R1's response time RHO_S, not the delay."""
-    assert _breaches(S.RHO_S) == 0                           # brakes at entry, acts after RHO_S: compliant
-    assert _breaches(2 * S.RHO_S) > 0                        # acts after 2 RHO_S: counted for the excess
-    assert _breaches(2 * S.RHO_S) == int(round(S.RHO_S / E.DT)) - 1
-    assert _breaches(S.RHO_S, brakes=False) > 0              # never brakes: counted after RHO_S
-    assert _breaches(S.RHO_S, brakes=False) == 60 - int(round(S.RHO_S / E.DT)) - 1
+    n_rho = int(round(S.RHO_S / E.DT))
+    assert _breaches(S.RHO_S) == 0                           # brakes at entry, acts after RHO_S exactly: compliant
+    assert _breaches(S.RHO_S + E.DT) == 1                    # B-120 A: acts one step later: the 11th step counts
+    assert _breaches(2 * S.RHO_S) == n_rho                   # acts after 2 RHO_S: counted for the excess, every step
+    assert _breaches(S.RHO_S, brakes=False) == 60 - n_rho    # never brakes: every step after RHO_S counts

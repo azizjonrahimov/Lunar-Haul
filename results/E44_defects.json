@@ -365,6 +365,14 @@
      "deadlock_1_to_0": 994
     }
    },
+   "totals": {
+    "batches": 40,
+    "rows": 70000,
+    "deadlock_1_to_0": 14071,
+    "deadlock_0_to_1": 0,
+    "fuzzer_free_rows_changed": 0,
+    "other_columns_changed": 0
+   },
    "published_values": "E44_bounds.json (types, joint, variants), E44_encounters.csv (300,000 rows) and E44_bins.csv (74 rows) rebuilt from the replaced parts: every value is unchanged",
    "supersedes": "not_regenerated (the stale flags no longer exist in the stored parts)",
    "code": "the seven batch-0 files are B-113's reruns (13 Nov); the other 33 were run on 13-14 Nov; the only later change to the encounter code (B-118 N23) acts on rows with an actuation delay, which E44 never sets"

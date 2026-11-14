@@ -286,7 +286,7 @@ class Batch:
         if L_ > 0:                                # command buffer (N, L, V); compacted with the batch (shape[0] = N)
             self.abuf = np.zeros((N, L_, V))
             self.aptr = 0
-            self.r1_below = np.full((N, V), -1.0)  # B-118 N23: time the gap has been below rss_dmin (-1: not below)
+            self.r1_below = np.full((N, V), -1.0)  # B-118 N23: time the gap has been below rss_dmin at the end of the last step (-1: not below)
         self.fault_v = np.full(N, -1, int); self.fault_t = np.full(N, np.inf)
         self.slip_v = np.full(N, -1, int); self.slip_f = np.ones(N)
         self.drift_v = np.full(N, -1, int); self.drift_r = np.zeros(N)
@@ -373,9 +373,13 @@ def r1_breach_delayed(below, below_s, a_ph, bg):
     rss_dmin, brake fully within the response time RHO_S. So a breach is a gap that has been below rss_dmin for
     longer than RHO_S while the applied deceleration a_ph (the delayed command the vehicle acts on) is still short of
     full braking (a_ph > -bg). The allowance is the rule's RHO_S, not the cell's delay, so a vehicle whose delay
-    exceeds RHO_S is counted. below_s: time the gap has been below rss_dmin at the previous step (-1: not below);
-    returns (breach, below_s now). Without a delay the breach stays as before: on the command, at once."""
-    below_s = np.where(below, np.where(below_s >= 0.0, below_s + DT, 0.0), -1.0)
+    exceeds RHO_S is counted. Step convention: `below` is the gap at the start of the step and a_ph acts during the
+    step, so the gap is below from the start of its first below step and, at the end of the n-th below step, has been
+    below for n DT; the n-th step is a breach when n DT > RHO_S and a_ph is short (B-120 A: the first countable step is
+    the 11th at RHO_S = 1 s, braking applied from RHO_S after the gap went below is compliant; before, the first below
+    step counted 0 s and the first countable step was the 12th). below_s: time below at the end of the previous step
+    (-1: not below); returns (breach, below_s now). Without a delay the breach stays as before: on the command, at once."""
+    below_s = np.where(below, np.where(below_s >= 0.0, below_s + DT, DT), -1.0)
     return below & (below_s > S.RHO_S + 1e-9) & (a_ph > -bg + 1e-9), below_s
 
 
