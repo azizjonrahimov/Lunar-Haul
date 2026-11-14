@@ -11177,3 +11177,38 @@ N23 (b), as you decided:
 Files for commit: lunarsim/atc/encounter.py, tests/test_uphill.py, tools/atc/run_e45_uphill.py,
 results/E45_uphill.json, results/E45_uphill.csv, results/E54_dtn.json (code stamp), data/atc/protocol/e54_timeline.json,
 data/atc/protocol/index.json. Next: E50 at 4x.
+
+## B-118 E50 regeneration, step 3 (4x) DONE 22:43 | E50, near_base and overlaps at 4x rerun; verdicts unchanged; violations with the margin went UP at 4x (layered 0.9 -> 2.3 a seed, dr 0 -> 0.3)
+Runs: E50 4x seeds 1-10 (fingerprint 5bf22fa6d5ccfe47, the same as the 1x cells: encounter.py is outside E50's
+fingerprint), near_base 4x seeds 1-10, overlaps 4x seeds 1-10; every near_base and overlaps cell reproduces its E50
+cell. One process at a time, gate before each (free RAM 1.27 to 1.62 GB); peak 554 MB (near_base), 508 MB (overlaps).
+One slip: near_base seeds 9 and 10 ran as two gated processes in one tool call that passed the tool's 590 s limit, so
+the second process (seed 10, 252 s) finished as a background task of the tool. It was the only job running and I
+started nothing until it ended; from then on one process per call.
+Rebuilt E50_summary, E50_near_base, E50_overlaps (+ CSVs): multiples_not_rerun_yet now [8]; the superseded key still
+holds the pre-fix values (written once, kept).
+4x, pre-fix -> now:
+- H9 at 4x: dr first hour over budget 1 -> 1; ranging near p95 4.306 -> 4.284 m (supported); fixes away 12.24 ->
+  12.08 m (not supported). Unchanged verdicts.
+- Errors (all, p95 mean): dr 793.0 -> 883.2 m (at 1x it fell, 643 -> 610); dr+ranging 32.10 -> 32.13; +fixes
+  10.59 -> 10.44; lans@2030 5.82 -> 5.77. Fix stop time 168.7 -> 170.3 h/month (+fixes).
+- Violations per seed, no margin: dr 71.5 -> 83.6; dr+ranging 69.0 -> 66.6; +fixes 67.7 -> 68.3; lans 69.2 -> 68.0.
+  FLAG (direction): with the margin, dr 0 -> 0.3 and layered 0.9 -> 2.3 (overlaps short: layered median 8.2 -> 4.4
+  s, max 17 -> 47 s; dr with margin median 381 s, max 797 s, where there were none). Gap at entry under d0 (5 m): 0
+  everywhere, as before.
+- Delay at 4x: perfect 12.805 h (identical); layered with margin minus perfect -0.868 -> -0.485 h; dr minus perfect
+  2.082 -> 1.870 h.
+- near_base 4x: dr+ranging in-p95 a..d 4.31/8.64/22.45/32.10 -> 4.28/8.70/22.16/32.13; h9_clause2_by_reading
+  identical; seeds inside budget moved: +fixes b 9 -> 10, lans@2030 c 5 -> 8, d/e 1 -> 0.
+- overlaps 4x: counts follow the violations; dr no margin median 417 -> 483 s; lans@2030 max 41 -> 76 s.
+Family (scratch only, b118_family_interim4.py: new 1x and 4x, pre-fix 8x): every decision identical. H10 "gap grows"
+p at 4x 0.932 -> 0.865 (gap 4x -0.49 h against 0.0066 h at 1x: not met), IUT p 0.932 -> 0.865; H14 / H15a Holm
+unchanged. results/phase6_family.json waits for 8x.
+Unchanged by 4x: E50_trace.json and data/atc/protocol/e50_layers.json (1x seed 1 and the 1x month values only).
+test_pnt 11 pass.
+Files: results/E50_summary.json, E50_errors.csv, E50_runs.csv, E50_near_base.json/.csv, E50_overlaps.json/.csv.
+8x (asking before starting, as agreed): E50 8x seeds 1-5, near_base 8x 1-5, overlaps 8x 1-5; this also completes
+B-116. Estimate from the 4x stage times (about 2x at 8x): E50 about 17 min a seed (85 min), near_base about 8.5 min a
+seed (45 min; one cell is close to the 9 min chunk limit), overlaps about 18 min a seed (90 min): about 3.7 h in
+all, one process at a time. Memory: 4x peaked at 554 MB; 8x likely 0.9 to 1.1 GB, so I would gate each 8x chunk at
+1.5 GB free as you set. If one E50 stage or one near_base cell would pass 9 min, I stop and tell you before running it.

@@ -370,6 +370,347 @@
     "d": "on the predicted side in no seed",
     "e": "on the predicted side in no seed"
    }
+  },
+  "4": {
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "e50_reproduced_all": true,
+   "peak_mb_max": 554.3,
+   "cell_s_mean": 249.32999999999998,
+   "share_of_driving": {
+    "a": {
+     "mean": 0.23023929319274852,
+     "min": 0.20694749093513587,
+     "max": 0.24375052604999578
+    },
+    "b": {
+     "mean": 0.5611482085700961,
+     "min": 0.539884595890678,
+     "max": 0.5863353253093174
+    },
+    "c": {
+     "mean": 0.6642076702962597,
+     "min": 0.6453296941339572,
+     "max": 0.6852479424579846
+    },
+    "d": {
+     "mean": 1.0,
+     "min": 1.0,
+     "max": 1.0
+    },
+    "e": {
+     "mean": 1.0,
+     "min": 1.0,
+     "max": 1.0
+    }
+   },
+   "sets": {
+    "dr": {
+     "a": {
+      "in_p95_m_mean": 891.7986938476563,
+      "in_p95_m_ci95_seeds": [
+       767.5476815795898,
+       1042.9901782226564
+      ],
+      "in_p95_m_min_max": [
+       669.995361328125,
+       1426.4371337890625
+      ],
+      "seeds_inside_budget": 0,
+      "seeds_with_steps": 10,
+      "out_p95_m_mean": 881.4543151855469
+     },
+     "b": {
+      "in_p95_m_mean": 890.13740234375,
+      "in_p95_m_ci95_seeds": [
+       760.0463217163086,
+       1046.8412182617187
+      ],
+      "in_p95_m_min_max": [
+       661.3045043945312,
+       1489.7354736328125
+      ],
+      "seeds_inside_budget": 0,
+      "seeds_with_steps": 10,
+      "out_p95_m_mean": 885.8673156738281
+     },
+     "c": {
+      "in_p95_m_mean": 890.1950988769531,
+      "in_p95_m_ci95_seeds": [
+       766.4993618774414,
+       1044.3125491333008
+      ],
+      "in_p95_m_min_max": [
+       645.8289794921875,
+       1450.943359375
+      ],
+      "seeds_inside_budget": 0,
+      "seeds_with_steps": 10,
+      "out_p95_m_mean": 887.1155944824219
+     },
+     "d": {
+      "in_p95_m_mean": 883.1553649902344,
+      "in_p95_m_ci95_seeds": [
+       766.123793334961,
+       1026.8472857666015
+      ],
+      "in_p95_m_min_max": [
+       657.3909912109375,
+       1370.5809326171875
+      ],
+      "seeds_inside_budget": 0,
+      "seeds_with_steps": 10,
+      "out_p95_m_mean": null
+     },
+     "e": {
+      "in_p95_m_mean": 883.1553649902344,
+      "in_p95_m_ci95_seeds": [
+       766.9092324829102,
+       1019.7793493652342
+      ],
+      "in_p95_m_min_max": [
+       657.3909912109375,
+       1370.5809326171875
+      ],
+      "seeds_inside_budget": 0,
+      "seeds_with_steps": 10,
+      "out_p95_m_mean": null
+     }
+    },
+    "dr+ranging": {
+     "a": {
+      "in_p95_m_mean": 4.283826518058777,
+      "in_p95_m_ci95_seeds": [
+       4.147003643512726,
+       4.440415012836456
+      ],
+      "in_p95_m_min_max": [
+       3.9896180629730225,
+       4.842742919921875
+      ],
+      "seeds_inside_budget": 10,
+      "seeds_with_steps": 10,
+      "out_p95_m_mean": 36.309221267700195
+     },
+     "b": {
+      "in_p95_m_mean": 8.69676070213318,
+      "in_p95_m_ci95_seeds": [
+       7.749326568841934,
+       9.726470417976378
+      ],
+      "in_p95_m_min_max": [
+       6.913746356964111,
+       11.574705123901367
+      ],
+      "seeds_inside_budget": 0,
+      "seeds_with_steps": 10,
+      "out_p95_m_mean": 45.55470085144043
+     },
+     "c": {
+      "in_p95_m_mean": 22.15814800262451,
+      "in_p95_m_ci95_seeds": [
+       21.013652262687682,
+       23.505551557540894
+      ],
+      "in_p95_m_min_max": [
+       19.821083068847656,
+       27.09400749206543
+      ],
+      "seeds_inside_budget": 0,
+      "seeds_with_steps": 10,
+      "out_p95_m_mean": 42.49754333496094
+     },
+     "d": {
+      "in_p95_m_mean": 32.12704944610596,
+      "in_p95_m_ci95_seeds": [
+       29.809120683670045,
+       34.28541501522064
+      ],
+      "in_p95_m_min_max": [
+       25.260448455810547,
+       37.41047286987305
+      ],
+      "seeds_inside_budget": 0,
+      "seeds_with_steps": 10,
+      "out_p95_m_mean": null
+     },
+     "e": {
+      "in_p95_m_mean": 32.12704944610596,
+      "in_p95_m_ci95_seeds": [
+       29.795300564765927,
+       34.28443375110626
+      ],
+      "in_p95_m_min_max": [
+       25.260448455810547,
+       37.41047286987305
+      ],
+      "seeds_inside_budget": 0,
+      "seeds_with_steps": 10,
+      "out_p95_m_mean": null
+     }
+    },
+    "dr+ranging+fixes": {
+     "a": {
+      "in_p95_m_mean": 3.4961177349090575,
+      "in_p95_m_ci95_seeds": [
+       3.4232484138011934,
+       3.5727523875236513
+      ],
+      "in_p95_m_min_max": [
+       3.3518612384796143,
+       3.7110326290130615
+      ],
+      "seeds_inside_budget": 10,
+      "seeds_with_steps": 10,
+      "out_p95_m_mean": 12.075501918792725
+     },
+     "b": {
+      "in_p95_m_mean": 4.537333059310913,
+      "in_p95_m_ci95_seeds": [
+       4.346458101272583,
+       4.711756821870804
+      ],
+      "in_p95_m_min_max": [
+       3.968588352203369,
+       4.983522891998291
+      ],
+      "seeds_inside_budget": 10,
+      "seeds_with_steps": 10,
+      "out_p95_m_mean": 16.202770900726318
+     },
+     "c": {
+      "in_p95_m_mean": 8.581568813323974,
+      "in_p95_m_ci95_seeds": [
+       8.352706167697907,
+       8.803449330329894
+      ],
+      "in_p95_m_min_max": [
+       8.034852981567383,
+       9.090290069580078
+      ],
+      "seeds_inside_budget": 0,
+      "seeds_with_steps": 10,
+      "out_p95_m_mean": 13.775609874725342
+     },
+     "d": {
+      "in_p95_m_mean": 10.4352370262146,
+      "in_p95_m_ci95_seeds": [
+       10.049243035316469,
+       10.834804813861846
+      ],
+      "in_p95_m_min_max": [
+       9.345512390136719,
+       11.592552185058594
+      ],
+      "seeds_inside_budget": 0,
+      "seeds_with_steps": 10,
+      "out_p95_m_mean": null
+     },
+     "e": {
+      "in_p95_m_mean": 10.4352370262146,
+      "in_p95_m_ci95_seeds": [
+       10.051522369384767,
+       10.837309055328369
+      ],
+      "in_p95_m_min_max": [
+       9.345512390136719,
+       11.592552185058594
+      ],
+      "seeds_inside_budget": 0,
+      "seeds_with_steps": 10,
+      "out_p95_m_mean": null
+     }
+    },
+    "lans@2030": {
+     "a": {
+      "in_p95_m_mean": 2.8191531896591187,
+      "in_p95_m_ci95_seeds": [
+       2.77204263150692,
+       2.8624578827619556
+      ],
+      "in_p95_m_min_max": [
+       2.671969175338745,
+       2.928666830062866
+      ],
+      "seeds_inside_budget": 10,
+      "seeds_with_steps": 10,
+      "out_p95_m_mean": 6.658864879608155
+     },
+     "b": {
+      "in_p95_m_mean": 3.3362032890319826,
+      "in_p95_m_ci95_seeds": [
+       3.2320541262626645,
+       3.4331575429439543
+      ],
+      "in_p95_m_min_max": [
+       3.0008809566497803,
+       3.5578322410583496
+      ],
+      "seeds_inside_budget": 10,
+      "seeds_with_steps": 10,
+      "out_p95_m_mean": 8.832382488250733
+     },
+     "c": {
+      "in_p95_m_mean": 4.87464919090271,
+      "in_p95_m_ci95_seeds": [
+       4.677360677719117,
+       5.062003493309021
+      ],
+      "in_p95_m_min_max": [
+       4.201282501220703,
+       5.393394947052002
+      ],
+      "seeds_inside_budget": 8,
+      "seeds_with_steps": 10,
+      "out_p95_m_mean": 7.418595790863037
+     },
+     "d": {
+      "in_p95_m_mean": 5.769583892822266,
+      "in_p95_m_ci95_seeds": [
+       5.513887584209442,
+       6.014631599187851
+      ],
+      "in_p95_m_min_max": [
+       5.035745620727539,
+       6.3760271072387695
+      ],
+      "seeds_inside_budget": 0,
+      "seeds_with_steps": 10,
+      "out_p95_m_mean": null
+     },
+     "e": {
+      "in_p95_m_mean": 5.769583892822266,
+      "in_p95_m_ci95_seeds": [
+       5.506977382898331,
+       6.019699835777282
+      ],
+      "in_p95_m_min_max": [
+       5.035745620727539,
+       6.3760271072387695
+      ],
+      "seeds_inside_budget": 0,
+      "seeds_with_steps": 10,
+      "out_p95_m_mean": null
+     }
+    }
+   },
+   "h9_clause2_by_reading": {
+    "a": "on the predicted side in every seed",
+    "b": "on the predicted side in no seed",
+    "c": "on the predicted side in no seed",
+    "d": "on the predicted side in no seed",
+    "e": "on the predicted side in no seed"
+   }
   }
  },
  "sweep": {
@@ -1467,7 +1808,6 @@
   "verdict": "depends on the reading (PREREG6 section 6, 11 Nov): see h9_clause2_by_reading per fleet multiple"
  },
  "multiples_not_rerun_yet": [
-  4,
   8
  ]
 }
