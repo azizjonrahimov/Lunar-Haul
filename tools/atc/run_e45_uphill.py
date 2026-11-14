@@ -192,7 +192,29 @@ def cmd_build():
            "cells": rows, "threshold": thr,
            "nominal_only_note": "B-118 N18: every follower runs E44's adversarial planner (planner [0] + [2] x (nv - 1)), "
                                 "so no encounter is nominal-only and nominal_only_violations is null in every cell (it "
-                                "was printed as 0 of 0 before 13 Nov 2026; nothing was counted)"}
+                                "was printed as 0 of 0 before 13 Nov 2026; nothing was counted)",
+           "r1_breach_definition": "share of encounters with at least one R1 breach. Without an actuation delay (delay_s "
+                                   "0): a step where a follower's gap to its leader is below rss_dmin and its command is "
+                                   "short of full braking (a > -b). With an actuation delay (delay_s 1 = RHO_S; B-118 N23, "
+                                   "13 Nov 2026): a step where the gap has been below rss_dmin for longer than R1's "
+                                   "response time RHO_S = 1 s and the deceleration the vehicle applies (the delayed "
+                                   "command) is still short of full braking, as R1 states (brake within the response "
+                                   "time); the allowance is RHO_S, not the delay, so a delay longer than RHO_S would be "
+                                   "counted (lunarsim/atc/encounter.py r1_breach_delayed). The sweep cells' breach "
+                                   "counts are not used (only their minimum gaps); the counter does not change the motion."}
+    key = "superseded_2026-11-13_b118_n23"
+    if os.path.isfile(OUT_JSON):                 # B-118 N23: the delay cells' breach rates before the new definition
+        old = json.load(open(OUT_JSON, encoding="utf-8"))
+        doc.update({k: v for k, v in old.items() if k.startswith("superseded_")})
+        if key not in doc:
+            doc[key] = {"reason": "B-118 N23: the delay cells' R1 breach rates as committed before 13 Nov 2026, counted "
+                                  "on the command at once (a follower that brakes within R1's response time was counted "
+                                  "in the steps before its braking took effect); every other value of these cells is "
+                                  "unchanged by the new definition",
+                        "superseded_on": "2026-11-13",
+                        "r1_breach_rate": [{k: r[k] for k in ("planet", "geom", "slope_deg", "delay_s", "rule",
+                                                               "r1_breach_rate")}
+                                           for r in old["cells"] if r["delay_s"] > 0]}
     with open(OUT_JSON, "w", encoding="utf-8", newline="\n") as f:
         json.dump(doc, f, indent=1, allow_nan=False)
         f.write("\n")

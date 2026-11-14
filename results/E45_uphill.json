@@ -52,7 +52,7 @@
    "gap_below_d0": 964,
    "min_gap_m": 2.864459446752676,
    "min_gap_p01_m": 3.0514973006947854,
-   "r1_breach_rate": 0.0005,
+   "r1_breach_rate": 0.0,
    "nominal_only_violations": null
   },
   {
@@ -116,7 +116,7 @@
    "gap_below_d0": 1490,
    "min_gap_m": 0.9790692092125255,
    "min_gap_p01_m": 1.1548731017469072,
-   "r1_breach_rate": 0.039,
+   "r1_breach_rate": 0.0,
    "nominal_only_violations": null
   },
   {
@@ -180,7 +180,7 @@
    "gap_below_d0": 1676,
    "min_gap_m": 0.7243629071021473,
    "min_gap_p01_m": 0.9322326947048305,
-   "r1_breach_rate": 0.014,
+   "r1_breach_rate": 0.0,
    "nominal_only_violations": null
   },
   {
@@ -372,7 +372,7 @@
    "gap_below_d0": 969,
    "min_gap_m": 0.9761452022264621,
    "min_gap_p01_m": 1.3624624557873313,
-   "r1_breach_rate": 0.1465,
+   "r1_breach_rate": 0.0,
    "nominal_only_violations": null
   },
   {
@@ -436,7 +436,7 @@
    "gap_below_d0": 1314,
    "min_gap_m": 0.7251200090629482,
    "min_gap_p01_m": 1.0390397910562883,
-   "r1_breach_rate": 0.1515,
+   "r1_breach_rate": 0.0,
    "nominal_only_violations": null
   },
   {
@@ -1618,5 +1618,268 @@
    ]
   }
  },
- "nominal_only_note": "B-118 N18: every follower runs E44's adversarial planner (planner [0] + [2] x (nv - 1)), so no encounter is nominal-only and nominal_only_violations is null in every cell (it was printed as 0 of 0 before 13 Nov 2026; nothing was counted)"
+ "nominal_only_note": "B-118 N18: every follower runs E44's adversarial planner (planner [0] + [2] x (nv - 1)), so no encounter is nominal-only and nominal_only_violations is null in every cell (it was printed as 0 of 0 before 13 Nov 2026; nothing was counted)",
+ "r1_breach_definition": "share of encounters with at least one R1 breach. Without an actuation delay (delay_s 0): a step where a follower's gap to its leader is below rss_dmin and its command is short of full braking (a > -b). With an actuation delay (delay_s 1 = RHO_S; B-118 N23, 13 Nov 2026): a step where the gap has been below rss_dmin for longer than R1's response time RHO_S = 1 s and the deceleration the vehicle applies (the delayed command) is still short of full braking, as R1 states (brake within the response time); the allowance is RHO_S, not the delay, so a delay longer than RHO_S would be counted (lunarsim/atc/encounter.py r1_breach_delayed). The sweep cells' breach counts are not used (only their minimum gaps); the counter does not change the motion.",
+ "superseded_2026-11-13_b118_n23": {
+  "reason": "B-118 N23: the delay cells' R1 breach rates as committed before 13 Nov 2026, counted on the command at once (a follower that brakes within R1's response time was counted in the steps before its braking took effect); every other value of these cells is unchanged by the new definition",
+  "superseded_on": "2026-11-13",
+  "r1_breach_rate": [
+   {
+    "planet": "mars",
+    "geom": "following",
+    "slope_deg": 10.0,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.0005
+   },
+   {
+    "planet": "mars",
+    "geom": "following",
+    "slope_deg": 10.0,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "mars",
+    "geom": "following",
+    "slope_deg": 15.0,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.039
+   },
+   {
+    "planet": "mars",
+    "geom": "following",
+    "slope_deg": 15.0,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "mars",
+    "geom": "following",
+    "slope_deg": 17.2,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.014
+   },
+   {
+    "planet": "mars",
+    "geom": "following",
+    "slope_deg": 17.2,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "mars",
+    "geom": "following",
+    "slope_deg": 5.0,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "mars",
+    "geom": "following",
+    "slope_deg": 5.0,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "mars",
+    "geom": "one_lane",
+    "slope_deg": 10.0,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "mars",
+    "geom": "one_lane",
+    "slope_deg": 10.0,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "mars",
+    "geom": "one_lane",
+    "slope_deg": 15.0,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.1465
+   },
+   {
+    "planet": "mars",
+    "geom": "one_lane",
+    "slope_deg": 15.0,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "mars",
+    "geom": "one_lane",
+    "slope_deg": 17.2,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.1515
+   },
+   {
+    "planet": "mars",
+    "geom": "one_lane",
+    "slope_deg": 17.2,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "mars",
+    "geom": "one_lane",
+    "slope_deg": 5.0,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "mars",
+    "geom": "one_lane",
+    "slope_deg": 5.0,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "following",
+    "slope_deg": 10.0,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "following",
+    "slope_deg": 10.0,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "following",
+    "slope_deg": 15.0,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "following",
+    "slope_deg": 15.0,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "following",
+    "slope_deg": 17.2,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "following",
+    "slope_deg": 17.2,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "following",
+    "slope_deg": 5.0,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "following",
+    "slope_deg": 5.0,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "one_lane",
+    "slope_deg": 10.0,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "one_lane",
+    "slope_deg": 10.0,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "one_lane",
+    "slope_deg": 15.0,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "one_lane",
+    "slope_deg": 15.0,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "one_lane",
+    "slope_deg": 17.2,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "one_lane",
+    "slope_deg": 17.2,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "one_lane",
+    "slope_deg": 5.0,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "one_lane",
+    "slope_deg": 5.0,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   }
+  ]
+ }
 }

@@ -628,7 +628,7 @@
   "vehicles_per_job_max": 2,
   "note": "B-117 (i), exploratory: one TASK_AWARD per vehicle of a job (run_e54.messages), so awards = jobs + the extra vehicles of team jobs"
  },
- "code": "a2e23ef3de150ce5",
+ "code": "164db46f005497d2",
  "rerun_commit": [
   "9252364",
   "b128d8e"

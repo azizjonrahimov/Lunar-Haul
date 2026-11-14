@@ -11102,3 +11102,78 @@ run_e50_near.py, run_e50_overlaps.py, run_e50b.py (keep_superseded calls), resul
 E50_runs.csv, E50_trace.json, E50_near_base.json/.csv, E50_overlaps.json/.csv, E50b_summary.json, E50b_runs.csv,
 results/vv_phase6.json, data/atc/protocol/e50_layers.json, data/atc/protocol/index.json. Not yet in a commit-ready
 state: encounter.py / test_uphill.py (N23, step 2 next) and regimes.py (B-117 a, not run).
+
+## B-118 N23 check DONE 18:58 | the 16 E45-uphill delay cells rerun with encounter.py as held: NOT equal; the R1 breach rate goes from 0-0.15 to 0.92-1.0 in every cell; every violation, contact and gap identical. Decision needed (yours); nothing published
+Rerun into scratch only (scratchpad b118/e45u, scratchpad b118/n23_cell.py; the cache .cache/atc/e45_uphill and
+results/E45_uphill.json untouched), same planet / geometry / slope / n / rules / delay (1.0 s, = RHO_S) as each cached cell.
+- Unchanged in all 16 cells and both rules (as_is, slope_term): violations, by_kind, contacts, gap_below_d0, min gap
+  (min, p01, median), emergency-brake rate.
+- r1_breach_rate, cache -> held code (as_is / slope_term): Moon following 5/10/15/17.2 deg: 0 -> 0.998, 0.990,
+  0.978, 0.982 (slope_term the same to 0.002); Moon one-lane 5/10/15/17.2: 0 -> 0.991, 0.983, 0.982/0.975,
+  0.976/0.969; Mars following 5/10/15/17.2: as_is 0 / 0.0005 / 0.039 / 0.014 -> 0.989 / 0.960 / 0.945 / 0.963,
+  slope_term 0 -> 0.991 / 0.969 / 1.0 / 1.0; Mars one-lane 5/10/15/17.2: as_is 0 / 0 / 0.147 / 0.152 -> 0.980 /
+  0.947 / 0.938 / 0.924, slope_term 0 -> 0.978 / 1.0 / 1.0 / 1.0.
+- nominal_only_violations 0 -> null: B-118 N18 (already in the builder, documented), not N23.
+Why (from the code; my reading, not tested further): R1's minimum gap rss_dmin already contains the response time
+RHO_S = 1 s, during which the rear vehicle may still accelerate. With a 1 s actuation delay a follower that commands
+full braking the step it enters dmin is, judged on the command it acts on (a_ph), not yet braking for the next 1 s,
+so the step counts as a breach. The new counter therefore counts the RSS response window itself, in nearly every
+encounter, while nothing physical changes (same gaps, no contact). The old counter (judged on the command a) counted
+a follower that did not command braking inside dmin.
+Options (yours to choose; I change nothing until you say):
+(a) keep the batch check (mixed delays refused; no cell mixes, so nothing moves) and revert the breach line to the
+    command a, with a sentence that the delay is covered by rss_dmin's response time (RHO_S = the delay here);
+(b) a delay-aware breach: on the acted command, but only once the gap has been below dmin for longer than the delay
+    (a breach = still not braking after the response time), which is what R1 means with a delay; needs a rerun of
+    these 16 cells (about 18 min) and a test;
+(c) keep the held line and publish the moved rates with this explanation.
+I recommend (a) or (b); (c) would report as "breaches" what R1 allows.
+test_uphill: 3 pass with the held code (it tests the batch refusal and the no-delay path, not the rates).
+
+## B-118 step 2 DONE 19:04 | E54 restamp (values identical), e54 timeline export, N23 (b) implemented: the delay cells' R1 breach rate is now 0 in all 16 cells; it DIFFERS from the committed file in 5 cells (Mars as_is, 0.0005-0.15 -> 0)
+E54 restamp check:
+- Code fingerprint a2e23ef3de150ce5 -> 164db46f005497d2 (B-119 C14 and the B1 texts). Seed 1 rerun with the current
+  code equals its cache file in both .cache/atc/e54 (10 keys) and e54_v02 (6 keys); then 60 files restamped
+  (scratchpad b118/e54_restamp2.py; code_before_b119 and code_at_run kept; caches backed up to scratchpad
+  b118/e54_cache_before_b119). Build from the restamped caches: results/E54_dtn.json differs only in "code"
+  (a2e23ef3... -> 164db46f...); v02build changes nothing.
+e54 timeline: export_protocol.e54() alone, only its index entry updated: data/atc/protocol/e54_timeline.json bytes
+82,675 -> 82,635, gzip 5,287 -> 5,180, sha256 1f7722a2... -> a6d2797e197c90cb20f1f22c7c6d8a7717785954ed3f8bcefc637d52ceeaba77.
+What changed in it: link_share_per_hour.lost_link_return (70 of 744 hours) and messages.delivered_h for sf (19 of
+564) and sf_ll (168 of 564): the B-118 step 2 rerun (committed results) reaching the site file. test_protocol_data passes.
+N23 (b), as you decided:
+- lunarsim/atc/encounter.py: new r1_breach_delayed(below, below_s, a_ph, bg): with an actuation delay, a breach is a
+  step where the gap has been below rss_dmin for longer than RHO_S (time kept per vehicle in Batch.r1_below, compacted
+  with the batch) and the applied deceleration a_ph is still short of full braking. Applied to rows with a delay
+  only: rows with delay 0 (every batch without a delay, and zero-delay rows in a delay batch) keep the breach as in
+  HEAD (on the command a, at once), so E44 and every run without a delay are unchanged by construction. If you want
+  the RHO_S allowance for delay-0 rows too, that changes E44/E45 breach rates and needs their reruns; I did not do it.
+  Mixed positive delays still refused.
+- tests/test_uphill.py test_delayed_breach_allows_the_response_time: braking at entry with delay = RHO_S: 0 breaches;
+  delay 2 RHO_S: 9 breach steps (the 0.9 s past RHO_S before the braking acts); never brakes: breaches from RHO_S on.
+  Uses the engine's function with a command buffer like run_batch's. test_uphill 4, test_atc_regimes 12,
+  test_safety 7: pass.
+- The 16 delay cells rerun (scratch b118/e45u_b, then installed in .cache/atc/e45_uphill; the previous 16 kept in
+  .cache/atc/e45_uphill_pre_n23). Per cell, committed -> now, R1 breach rate (as_is / slope_term):
+  Moon following 5, 10, 15, 17.2 deg: 0 / 0 -> 0 / 0 (all four). Moon one-lane 5, 10, 15, 17.2: 0 / 0 -> 0 / 0.
+  Mars following 5: 0 / 0 -> 0 / 0; 10: 0.0005 / 0 -> 0 / 0; 15: 0.039 / 0 -> 0 / 0; 17.2: 0.014 / 0 -> 0 / 0.
+  Mars one-lane 5, 10: 0 / 0 -> 0 / 0; 15: 0.1465 / 0 -> 0 / 0; 17.2: 0.1515 / 0 -> 0 / 0.
+  So: they DIFFER from the committed 0-0.15 in 5 cells (Mars as_is at 10, 15, 17.2 following and 15, 17.2
+  one-lane), all to 0: in those encounters the follower began full braking within R1's response time, which the old
+  counter (on the command, at once) counted in the steps before it acted. Every other value of every cell
+  (violations, contacts, gaps, emergency-brake rate) is identical; the no-delay cells and the threshold table are
+  unchanged. (The held version, judged on a_ph at once, gave 0.92-1.0; not published.)
+- results/E45_uphill.json / .csv rebuilt: 64 rows, 5 changed (the above). New keys: r1_breach_definition (the
+  definition, both with and without a delay) and superseded_2026-11-13_b118_n23 (reason, date, the 32 delay rows'
+  committed rates). The 140 sweep cells (also with the delay) are not rerun: the builder takes only their minimum
+  gap, and the counter does not change the motion; their stored breach counts are unused (stated in the file).
+- Final breach lines in lunarsim/atc/encounter.py (for paper/p2/build_p2.py), verbatim:
+  735: below = np.isfinite(gap_lead) & (gap_lead < S.rss_dmin(v, v_lead, bg)) & live
+  737: below = np.isfinite(gap_lead) & (gap_lead < S.rss_dmin(v, v_lead, bg, b_front=bfront)) & live
+  739: r1b = below & (a > -bg + 1e-9)
+  741: r1d, b.r1_below = r1_breach_delayed(below, b.r1_below, a_ph, bg)
+  742: r1b = np.where(b.act_delay[:, None] > 0, r1d, below & (a > -bg + 1e-9))
+  379 (in r1_breach_delayed): return below & (below_s > S.RHO_S + 1e-9) & (a_ph > -bg + 1e-9), below_s
+Files for commit: lunarsim/atc/encounter.py, tests/test_uphill.py, tools/atc/run_e45_uphill.py,
+results/E45_uphill.json, results/E45_uphill.csv, results/E54_dtn.json (code stamp), data/atc/protocol/e54_timeline.json,
+data/atc/protocol/index.json. Next: E50 at 4x.
