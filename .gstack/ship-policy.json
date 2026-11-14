@@ -1,0 +1,4 @@
+{
+  "review_exclude_paths": ["results/**"],
+  "min_gstack_version": "1.93.33.0"
+}
