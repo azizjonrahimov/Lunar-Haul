@@ -11212,3 +11212,56 @@ B-116. Estimate from the 4x stage times (about 2x at 8x): E50 about 17 min a see
 seed (45 min; one cell is close to the 9 min chunk limit), overlaps about 18 min a seed (90 min): about 3.7 h in
 all, one process at a time. Memory: 4x peaked at 554 MB; 8x likely 0.9 to 1.1 GB, so I would gate each 8x chunk at
 1.5 GB free as you set. If one E50 stage or one near_base cell would pass 9 min, I stop and tell you before running it.
+
+## B-118 E50 regeneration, step 4 (8x) DONE 06:51 (14 Nov) | E50, overlaps, near_base at 8x; every multiple rerun on one code version; every verdict unchanged; the 4x rise in violations with the margin does NOT repeat at 8x (layered 5.2 -> 3.6, dr 0.2 -> 0)
+Runs (one process per call; gate 1.3 GB, then 1.0 GB as you set; free RAM during stages sampled every 5 s, lowest
+491 MB; no stage over 465 s):
+- E50 8x seeds 1-5, one stage per call: engine runs 443-457 s, nav 385-448 s, mnav 69-73 / 169-188 s; peak
+  434-519 MB. All 45 E50 cells (1x 30, 4x 10, 8x 5) carry code 5bf22fa6d5ccfe47.
+- overlaps 8x seeds 1-5 through a scratch driver (scratchpad ovl_one.py) that calls the runner's own run_stage /
+  assemble: the runner's fresh-process estimate for an 8x nav stage (15 s x 60 x 1.3 = 1,170 s, a default) never
+  lets cmd_run start one. Stages 69-463 s. The 8x cells' peak_mb is that of the assembling process only (36.6 MB
+  for seeds 1-2, about 431 MB for 3-5), not of the stages (stage peaks about 450-520 MB, from the E50 stages).
+- near_base 8x seeds 1-5 through the new staged path (below): rec 445-455 s, each layer set 69-191 s (no single
+  pnt.simulate near 10 min), assembly; peak 545 MB. Every 8x near_base and overlaps cell reproduces its E50 cell.
+near_base staging (tools/atc/run_e50_near.py, as you asked): new run_stage / assemble / cmd_stage and CLI "stage";
+run_cell untouched. Steps: the engine run (pickled with its window), one pnt.simulate per layer set, one per sweep
+point (1x seeds 1-6 only), then the assembly into the same cell file. Each step records E50's code fingerprint when it
+starts; the assembly refuses mixed codes and stores "code" (and "staged": true) in the cell. Check (scratch, before
+use at 8x): 4x seed 1 built staged equals its cached cell in all 57 values, exactly; only cell_s (338.6 against
+252.4 s: the trajectories are rebuilt per step), peak_mb and the two new keys differ. New tests/test_e50_near_staged.py:
+a tiny case (stand-ins for the engine, trajectories, masks and pnt.simulate) gives the same cell staged and unstaged,
+with and without the sweep; the assembly refuses steps made with different code. 2 pass.
+phase6_family.py: the E50 cells must share one code (refused otherwise; "e50_code" in the file) and the committed
+values are kept under superseded_2026-11-13_b118_n15 (e50_build.keep_superseded).
+Rebuilt: E50_summary, E50_near_base, E50_overlaps (+ CSVs; multiples_not_rerun_yet now []), phase6_family.json.
+Unchanged byte for byte: E50b_summary / E50b_runs (1x only), E50_trace.json, data/atc/protocol/e50_layers.json (its
+sources, the 1x seed-1 trace and E50_summary errors["1"], did not change; regenerated to check, sha256 24c7bf7e...).
+vv6: 56 rows, 56 passed, every row identical; only the file's generated / commit fields changed.
+8x, pre-fix -> now (E50_summary):
+- H9 at 8x: dr first hour 1 -> 1; ranging near p95 4.499 -> 4.481 m (supported); fixes away 11.53 -> 11.00 m (not
+  supported). Errors (all, p95 mean): dr 905.5 -> 987.9 m; dr+ranging 31.35 -> 30.57; +fixes 10.11 -> 9.76; lans@2030
+  5.65 -> 5.50. Fix stop time 354.4 -> 359.5 h/month (+fixes), 317.2 -> 321.3 (lans@2030).
+- Violations per seed, no margin: dr 211.6 -> 188.6; dr+ranging 174.2 -> 174.0; +fixes 174.4 -> 176.6; lans 168.8 ->
+  174.4. WITH the margin: dr 0.2 -> 0, layered 5.2 -> 3.6. So the 4x rise (layered 0.9 -> 2.3, dr 0 -> 0.3) does not
+  repeat at 8x: there both fall. Gap at entry under d0 (5 m): 0 everywhere.
+- Delay at 8x: perfect 13.451 h (identical); layered with margin minus perfect -0.248 -> -0.140 h; dr minus perfect
+  16.40 -> 15.80 h.
+- near_base 8x (new; there was no 8x before): shares of driving a..e 0.215 / 0.556 / 0.655 / 1 / 1; dr+ranging in-p95
+  4.48 / 10.24 / 21.79 / 30.57 / 30.57 m; h9_clause2_by_reading as at 1x and 4x (a: every seed; b to e: no seed);
+  +fixes reading b 4 of 5 seeds inside, lans@2030 c 4 of 5, d/e 1 of 5.
+- overlaps 8x (new): no margin dr 188.6 per seed (max 2,592 s; 167 a seed over 60 s), dr+ranging 174.0 (max 131 s),
+  +fixes 176.6 (max 52 s), lans 174.4 (max 38 s); with margin dr 0, layered 3.6 (max 34 s, none over 60 s).
+phase6_family.json (real file, one code version), committed -> now: every decision identical. H9: dr first-hour p95
+85.22 -> 81.05 m, ranging near 4.216 -> 4.276 m, fixes away 15.234 -> 15.237 m (supported / supported / not). H10:
+TOST p 1.18e-75 -> 1.17e-75 (holds); gap 1x 0.0066 h, 4x -0.868 -> -0.485 h, 8x -0.247 -> -0.140 h, p one-sided 4x
+0.932 -> 0.865, 8x 0.773 -> 0.661 ("gap grows" not met); dr larger p 0.128 -> 0.172 (not met); IUT and Holm p 0.932 ->
+0.865 (not supported as a whole). H14 Holm 0.0039, H15a 0.0030, both unchanged.
+Tests: test_pnt 11, test_vv6 2, test_protocol_data 1, test_e50_near_staged 2, test_uphill 4: pass.
+Commit set: tools/atc/run_e50_near.py (staged path), tools/atc/phase6_family.py, tests/test_e50_near_staged.py,
+results/E50_summary.json, E50_errors.csv, E50_runs.csv, E50_near_base.json/.csv, E50_overlaps.json/.csv,
+results/phase6_family.json, results/vv_phase6.json (metadata only; may be skipped). Not mine to include:
+lunarsim/atc/regimes.py (B-117 a, opt-in, not run). Scratch drivers (not in the repo): ovl_one.py, near_one.py,
+e50_peak.py, sample_run.sh, gate10/13/15.sh. Staging files of the 8x near_base cells stay in .cache/atc/e50_near/m8_s*/
+(engine pickles); I can remove them if you want the space.
+B-116 (8x) is complete with this. Next: B-115 to B-117 as queued, unless you say otherwise.

@@ -633,6 +633,307 @@
      }
     }
    }
+  },
+  "8": {
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "e50_reproduced_all": true,
+   "peak_mb_max": 431.5,
+   "runs": {
+    "no_margin:dr": {
+     "overlaps_per_seed": 188.6,
+     "violations_per_seed_e50": 188.6,
+     "duration_s": {
+      "n": 943,
+      "median": 393.80533640469366,
+      "p95": 1288.6682581598143,
+      "max": 2592.135242303266
+     },
+     "gap_at_entry_m": {
+      "n": 943,
+      "median": 451.8078308105469,
+      "p95": 1193.5651611328126,
+      "max": 2028.436767578125
+     },
+     "nominal_gap_s": {
+      "n": 943,
+      "median": 0.0,
+      "p95": 1723.5151175974165,
+      "max": 5088.296924344468
+     },
+     "counts_per_seed": {
+      "dur_over_1s": 182.8,
+      "dur_over_10s": 180.6,
+      "dur_over_60s": 167.0,
+      "gap_under_d0_5m": 0.0,
+      "gap_under_r1_dmin": 0.0
+     },
+     "r1_dmin_m": {
+      "n": 943,
+      "median": 5.84387177237241,
+      "p95": 6.301883542306144,
+      "max": 6.784653955933754
+     },
+     "head_on_share": 0.05726405090137858,
+     "back_to_back": {
+      "consecutive_conflicting_pairs_per_seed": 638.6,
+      "abutting_pairs_per_seed": 331.6,
+      "abutting_share_overlapping": 0.40651387213510254,
+      "separated_pairs_per_seed": 307.0,
+      "separated_share_overlapping": 0.06123778501628664,
+      "separated_nominal_gap_s": {
+       "n": 1535,
+       "median": 5792.256,
+       "p95": 260759.56589999993,
+       "max": 1917692.363
+      },
+      "nominally_overlapping_pairs": 0
+     }
+    },
+    "no_margin:dr+ranging": {
+     "overlaps_per_seed": 174.0,
+     "violations_per_seed_e50": 174.0,
+     "duration_s": {
+      "n": 870,
+      "median": 15.810265647996857,
+      "p95": 51.18690614481238,
+      "max": 131.41109486059577
+     },
+     "gap_at_entry_m": {
+      "n": 870,
+      "median": 436.3658142089844,
+      "p95": 445.3505401611328,
+      "max": 656.0408935546875
+     },
+     "nominal_gap_s": {
+      "n": 870,
+      "median": 0.0,
+      "p95": 0.0,
+      "max": 33.52065140425111
+     },
+     "counts_per_seed": {
+      "dur_over_1s": 167.0,
+      "dur_over_10s": 112.6,
+      "dur_over_60s": 5.6,
+      "gap_under_d0_5m": 0.0,
+      "gap_under_r1_dmin": 0.0
+     },
+     "r1_dmin_m": {
+      "n": 870,
+      "median": 5.884661061561832,
+      "p95": 6.27968996565223,
+      "max": 6.799171187101049
+     },
+     "head_on_share": 0.040229885057471264,
+     "back_to_back": {
+      "consecutive_conflicting_pairs_per_seed": 638.6,
+      "abutting_pairs_per_seed": 331.6,
+      "abutting_share_overlapping": 0.5235223160434258,
+      "separated_pairs_per_seed": 307.0,
+      "separated_share_overlapping": 0.0013029315960912053,
+      "separated_nominal_gap_s": {
+       "n": 1535,
+       "median": 5792.256,
+       "p95": 260759.56589999993,
+       "max": 1917692.363
+      },
+      "nominally_overlapping_pairs": 0
+     }
+    },
+    "no_margin:dr+ranging+fixes": {
+     "overlaps_per_seed": 176.6,
+     "violations_per_seed_e50": 176.6,
+     "duration_s": {
+      "n": 883,
+      "median": 6.133684628366609,
+      "p95": 23.311283225666553,
+      "max": 52.379233497413225
+     },
+     "gap_at_entry_m": {
+      "n": 883,
+      "median": 441.3917541503906,
+      "p95": 445.5563171386719,
+      "max": 662.5167846679688
+     },
+     "nominal_gap_s": {
+      "n": 883,
+      "median": 0.0,
+      "p95": 0.0,
+      "max": 2.9309906622074777
+     },
+     "counts_per_seed": {
+      "dur_over_1s": 159.4,
+      "dur_over_10s": 52.8,
+      "dur_over_60s": 0.0,
+      "gap_under_d0_5m": 0.0,
+      "gap_under_r1_dmin": 0.0
+     },
+     "r1_dmin_m": {
+      "n": 883,
+      "median": 5.893162034644638,
+      "p95": 6.300059552349448,
+      "max": 6.799171187101049
+     },
+     "head_on_share": 0.03850509626274066,
+     "back_to_back": {
+      "consecutive_conflicting_pairs_per_seed": 638.6,
+      "abutting_pairs_per_seed": 331.6,
+      "abutting_share_overlapping": 0.5319662243667069,
+      "separated_pairs_per_seed": 307.0,
+      "separated_share_overlapping": 0.0006514657980456026,
+      "separated_nominal_gap_s": {
+       "n": 1535,
+       "median": 5792.256,
+       "p95": 260759.56589999993,
+       "max": 1917692.363
+      },
+      "nominally_overlapping_pairs": 0
+     }
+    },
+    "no_margin:lans@2030": {
+     "overlaps_per_seed": 174.4,
+     "violations_per_seed_e50": 174.4,
+     "duration_s": {
+      "n": 872,
+      "median": 3.9505200378698646,
+      "p95": 15.489146233740017,
+      "max": 38.40893095512001
+     },
+     "gap_at_entry_m": {
+      "n": 872,
+      "median": 442.46971130371094,
+      "p95": 445.4785415649414,
+      "max": 562.3290405273438
+     },
+     "nominal_gap_s": {
+      "n": 872,
+      "median": 0.0,
+      "p95": 0.0,
+      "max": 2.9309906622074777
+     },
+     "counts_per_seed": {
+      "dur_over_1s": 149.2,
+      "dur_over_10s": 21.8,
+      "dur_over_60s": 0.0,
+      "gap_under_d0_5m": 0.0,
+      "gap_under_r1_dmin": 0.0
+     },
+     "r1_dmin_m": {
+      "n": 872,
+      "median": 5.87704451668257,
+      "p95": 6.292634188006919,
+      "max": 6.799171187101049
+     },
+     "head_on_share": 0.0389908256880734,
+     "back_to_back": {
+      "consecutive_conflicting_pairs_per_seed": 638.6,
+      "abutting_pairs_per_seed": 331.6,
+      "abutting_share_overlapping": 0.5253317249698432,
+      "separated_pairs_per_seed": 307.0,
+      "separated_share_overlapping": 0.0006514657980456026,
+      "separated_nominal_gap_s": {
+       "n": 1535,
+       "median": 5792.256,
+       "p95": 260759.56589999993,
+       "max": 1917692.363
+      },
+      "nominally_overlapping_pairs": 0
+     }
+    },
+    "with_margin:dr": {
+     "overlaps_per_seed": 0.0,
+     "violations_per_seed_e50": 0.0,
+     "duration_s": {
+      "n": 0
+     },
+     "gap_at_entry_m": {
+      "n": 0
+     },
+     "nominal_gap_s": {
+      "n": 0
+     },
+     "counts_per_seed": {
+      "dur_over_1s": 0.0,
+      "dur_over_10s": 0.0,
+      "dur_over_60s": 0.0,
+      "gap_under_d0_5m": 0.0,
+      "gap_under_r1_dmin": 0.0
+     },
+     "r1_dmin_m": {
+      "n": 0
+     },
+     "head_on_share": null,
+     "back_to_back": {
+      "consecutive_conflicting_pairs_per_seed": 478.2,
+      "abutting_pairs_per_seed": 0.0,
+      "abutting_share_overlapping": null,
+      "separated_pairs_per_seed": 478.2,
+      "separated_share_overlapping": 0.0,
+      "separated_nominal_gap_s": {
+       "n": 2391,
+       "median": 3513.239,
+       "p95": 55684.536,
+       "max": 2076612.658
+      },
+      "nominally_overlapping_pairs": 0
+     }
+    },
+    "with_margin:layered": {
+     "overlaps_per_seed": 3.6,
+     "violations_per_seed_e50": 3.6,
+     "duration_s": {
+      "n": 18,
+      "median": 6.784187561243016,
+      "p95": 30.220102049552217,
+      "max": 33.59665488424071
+     },
+     "gap_at_entry_m": {
+      "n": 18,
+      "median": 440.9524230957031,
+      "p95": 443.6823028564453,
+      "max": 444.30377197265625
+     },
+     "nominal_gap_s": {
+      "n": 18,
+      "median": 8.982871502485068,
+      "p95": 18.104498522607173,
+      "max": 18.262517586481408
+     },
+     "counts_per_seed": {
+      "dur_over_1s": 3.4,
+      "dur_over_10s": 1.4,
+      "dur_over_60s": 0.0,
+      "gap_under_d0_5m": 0.0,
+      "gap_under_r1_dmin": 0.0
+     },
+     "r1_dmin_m": {
+      "n": 18,
+      "median": 5.858491294257412,
+      "p95": 6.235905992501907,
+      "max": 6.298921225827348
+     },
+     "head_on_share": 0.05555555555555555,
+     "back_to_back": {
+      "consecutive_conflicting_pairs_per_seed": 632.0,
+      "abutting_pairs_per_seed": 0.0,
+      "abutting_share_overlapping": null,
+      "separated_pairs_per_seed": 632.0,
+      "separated_share_overlapping": 0.00569620253164557,
+      "separated_nominal_gap_s": {
+       "n": 3160,
+       "median": 157.013,
+       "p95": 25531.791199999992,
+       "max": 1889866.306
+      },
+      "nominally_overlapping_pairs": 0
+     }
+    }
+   }
   }
  },
  "superseded_2026-11-13_b118_n15": {
@@ -1287,7 +1588,5 @@
    }
   }
  },
- "multiples_not_rerun_yet": [
-  8
- ]
+ "multiples_not_rerun_yet": []
 }
