@@ -389,3 +389,12 @@ Source: `reports/review_phase6_code.md` and the dated entry of PREREG6 section 6
 - `P1-E54-V02-SENTENCE`: the check now compares the v0.1 rows of the size rerun with the main table's rows
   (`reproduction_of_main_table_v01`), leaving out the variant rows `sf_ll_pre_review`.
 - `P1-E54-HOLM-SENTENCE`: H15a's adjusted p prints as a value, because the family file now computes its p.
+
+## Second pass after the code review (14 Nov 2026): E50 regenerated
+
+P1 prints one value that rests on E50: the Holm-adjusted p of H10' in `P1-E54-HOLM-SENTENCE` (5.9), read from
+`results/phase6_family.json`. It is now 0.87; the earlier 0.93 is read from the file's block
+`superseded_2026-11-13_b118_n15` and named once in that sentence. Build checks: the verdict is the same before and
+after, H14 and H15a did not move, the equivalence clause holds and the growth clause does not at 4x and at 8x. The
+Limitations sentence "is being regenerated" is removed. P1 reads none of E50_summary, E50_near_base, E50_overlaps,
+E50b_summary or E45_uphill.

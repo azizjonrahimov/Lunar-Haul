@@ -192,3 +192,12 @@ rebuilt (memory).
 Status changes: none of the 37 findings changes state (27 fixed, 9 fixed in part, 1 not done). M9 (fixed in part)
 gains the corrected values and the statement of how the replay applies the return rule; its open part, the cost of
 the returns in interrupted jobs, is unchanged.
+
+## Second pass after the code review (14 Nov): E50 regenerated
+
+P1 prints one value that rests on E50, the Holm-adjusted p of H10' in 5.9: now 0.87, was 0.93, with the earlier
+value named once in that sentence and read from `phase6_family.json` (`superseded_2026-11-13_b118_n15`). The verdict
+(not supported as a whole) is unchanged, and H14 and H15a did not move; all three are build checks. The Limitations
+sentence that E50 "is being regenerated" is removed. P1 quotes nothing from E50's summary, the readings near the
+base, the overlaps, E50b (the stop time) or the uphill R1 breach rates, so no other sentence changes. No finding
+changes status. HTML only; the PDF is not rebuilt.

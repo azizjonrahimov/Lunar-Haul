@@ -3030,6 +3030,25 @@ def phase6_e54(p, V, fill, check):
         check(bool(f15["holm"]["rejected_at_0.05"]) and not bool(f10["holm"]["rejected_at_0.05"])
               and "not supported" in F["summary"]["H10"], "in the family H15a is supported and H10' is not supported as a whole")
         upper = "upper bound" in str(f15.get("p_note", ""))
+        # Second pass after the code review (14 Nov): E50 was regenerated with the positioning fix and the family file
+        # rebuilt from it; the earlier H10' value is read from the file's superseded block and named once.
+        sk = [k for k, v in F.items() if k.startswith("superseded_") and isinstance(v, dict) and "n15" in k]
+        if len(sk) != 1:
+            raise KeyError(f"phase6_family.json: expected one superseded block for the positioning fix, found {sk}")
+        o10 = F[sk[0]]["hypotheses"]["H10"]
+        check("positioning fix" in str(F[sk[0]].get("reason", "")), "the family file's superseded block is the one of the positioning fix")
+        check(bool(o10["holm"]["rejected_at_0.05"]) == bool(f10["holm"]["rejected_at_0.05"])
+              and pfmt(o10["holm"]["p_adjusted"]) != pfmt(f10["holm"]["p_adjusted"]),
+              "H10' has the same verdict before and after the positioning fix, at another adjusted p")
+        check(all(F[sk[0]]["hypotheses"][k]["holm"] == H[k]["holm"] for k in ("H14", "H15a")),
+              "the positioning fix did not move H14 or H15a in the family")
+        prim = f10["clauses"]["layered within 1.5x of perfect at 1x (TOST)"]["p"]
+        grow = f10["clauses"]["the gap grows with the fleet (4x and 8x)"]
+        check(prim < 0.05 and grow["p_one_sided_4x"] > 0.05 and grow["p_one_sided_8x"] > 0.05
+              and abs(f10["p_intersection_union"] - max(grow["p_one_sided_4x"], grow["p_one_sided_8x"],
+                                                        f10["clauses"]["dead reckoning with the margin larger at 1x"]["p_one_sided"])) < 1e-12,
+              "H10's equivalence clause holds and its growth clause does not, at four and at eight times the fleet")
+        check("e50_code" in F and not any("not_rerun" in str(k) for k in F), "the family file is built from one regenerated E50")
         open10 = any("pending" in str(k) or "not yet run" in json.dumps(v) for k, v in f10["clauses"].items())
         more = "none" if f14["seeds_more"] == 0 else f"{f14['seeds_more']}"
         return (
@@ -3043,6 +3062,8 @@ def phase6_e54(p, V, fill, check):
             f"Of the other two, H15a is supported (adjusted p&nbsp;{'at most ' + pfmt(f15['holm']['p_adjusted']) if upper else p_eq(f15['holm']['p_adjusted'])}) "
             f"and H10&prime; is not supported as a whole (adjusted p&nbsp;{p_eq(f10['holm']['p_adjusted'])}"
             + (", on the fleet sizes run when the family file was built, which do not include the largest" if open10 else "")
+            + f"; {p_eq(o10['holm']['p_adjusted']).replace('=&nbsp;', '')} before the position experiment behind it was "
+              f"regenerated after a correction to its positioning code, found in a code review on 13 November 2026"
             + "); both are reported in the companion paper [45].")
     fill("P1-E54-HOLM-SENTENCE", holm_sentence, "Phase 6 family")
 
