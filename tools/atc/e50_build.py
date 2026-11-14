@@ -28,24 +28,24 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 CACHE = os.path.join(ROOT, ".cache", "atc", "e50")
 B = 20000
-SUPERSEDED_KEY = "superseded_2026-11-13_b118_n15"
+SUPERSEDED_BLOCK = "superseded_2026-11-13_b118_n15"
 SUPERSEDED_REASON = ("B-118 N14/N15 (positioning fix in lunarsim/atc/pnt.py: a ranging or fix update at a vehicle's "
                      "arrival step, and the reservation count): the values below were made with the code before the "
                      "fix and are kept as they were; the file's other values come from the regenerated cells")
 
 
 def keep_superseded(path, doc, design_multiples=None, built_multiples=None):
-    """B-118 N15: carry the previous file's values into doc under SUPERSEDED_KEY (once: a later rebuild keeps the key
+    """B-118 N15: carry the previous file's values into doc under SUPERSEDED_BLOCK (once: a later rebuild keeps the key
     it finds, so the pre-fix values are never overwritten by a partial rebuild), carry any older superseded_* keys,
-    and list the design's fleet multiples not yet rerun (their pre-fix values stay only under SUPERSEDED_KEY)."""
+    and list the design's fleet multiples not yet rerun (their pre-fix values stay only under SUPERSEDED_BLOCK)."""
     if os.path.isfile(path):
         with open(path, encoding="utf-8") as f:
             old = json.load(f)
         for k, v in old.items():
             if k.startswith("superseded_"):
                 doc.setdefault(k, v)
-        if SUPERSEDED_KEY not in doc:
-            doc[SUPERSEDED_KEY] = {"reason": SUPERSEDED_REASON, "superseded_on": "2026-11-13",
+        if SUPERSEDED_BLOCK not in doc:
+            doc[SUPERSEDED_BLOCK] = {"reason": SUPERSEDED_REASON, "superseded_on": "2026-11-13",
                                    **{k: v for k, v in old.items() if not k.startswith("superseded_")}}
     if design_multiples is not None:
         built = {int(m) for m in (built_multiples or [])}

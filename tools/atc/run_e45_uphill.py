@@ -202,12 +202,12 @@ def cmd_build():
                                    "time); the allowance is RHO_S, not the delay, so a delay longer than RHO_S would be "
                                    "counted (lunarsim/atc/encounter.py r1_breach_delayed). The sweep cells' breach "
                                    "counts are not used (only their minimum gaps); the counter does not change the motion."}
-    key = "superseded_2026-11-13_b118_n23"
+    block = "superseded_2026-11-13_b118_n23"
     if os.path.isfile(OUT_JSON):                 # B-118 N23: the delay cells' breach rates before the new definition
         old = json.load(open(OUT_JSON, encoding="utf-8"))
         doc.update({k: v for k, v in old.items() if k.startswith("superseded_")})
-        if key not in doc:
-            doc[key] = {"reason": "B-118 N23: the delay cells' R1 breach rates as committed before 13 Nov 2026, counted "
+        if block not in doc:
+            doc[block] = {"reason": "B-118 N23: the delay cells' R1 breach rates as committed before 13 Nov 2026, counted "
                                   "on the command at once (a follower that brakes within R1's response time was counted "
                                   "in the steps before its braking took effect); every other value of these cells is "
                                   "unchanged by the new definition",

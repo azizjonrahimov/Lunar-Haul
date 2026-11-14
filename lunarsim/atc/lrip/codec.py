@@ -576,10 +576,10 @@ class Receiver:
         if d.epoch != self.keys.epoch:
             self.refused_epoch += 1
             raise LripAuthError(f"{d.name} from sender {d.sender}: key epoch {d.epoch}, receiver's {self.keys.epoch}")
-        key = (int(d.sender), int(d.epoch))
-        if d.seq is not None and d.seq <= self.s_max.get(key, -1):
+        sender_epoch = (int(d.sender), int(d.epoch))
+        if d.seq is not None and d.seq <= self.s_max.get(sender_epoch, -1):
             self.refused_replay += 1
-            raise LripReplayError(f"{d.name} from sender {d.sender}: sequence {d.seq} <= {self.s_max[key]}")
+            raise LripReplayError(f"{d.name} from sender {d.sender}: sequence {d.seq} <= {self.s_max[sender_epoch]}")
         if now is not None and abs(d.t_valid_s - float(now)) > FRESHNESS_S:
             self.refused_stale += 1
             raise LripReplayError(f"{d.name} from sender {d.sender}: t_valid {d.t_valid_s} s, now {now} s")
@@ -605,5 +605,5 @@ class Receiver:
             d.fields.update(frame_id=dec.frame_id, datum_id=dec.datum_id, time_scale=dec.time_scale,
                             u95_m=u95_from_code(d.fields["u95_code"]) if "u95_code" in d.fields else None)
         if d.seq is not None:
-            self.s_max[key] = int(d.seq)                    # only an accepted packet moves the counter
+            self.s_max[sender_epoch] = int(d.seq)                    # only an accepted packet moves the counter
         return d
