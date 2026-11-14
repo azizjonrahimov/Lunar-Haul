@@ -2610,6 +2610,8 @@ def phase6_e53(p, st, V, check):
             "hops": [row("fleet", "on", 1.0, n)["mean_hops_to_base"] for n in NS]}
 
 
+E54_SUP_REVIEW = "superseded_2026-11-13_b118"      # the values before the code review of 13 Nov 2026
+E54_SUP_WINDOW = "superseded_2026-11-14_b120_b"    # the ledger split before the end-of-window fix of 14 Nov 2026
 E54_NAMES = {"drop_retry": "drop and retry", "sf": "store and forward", "sf_ll": "store and forward + return to the last link point"}
 
 
@@ -2855,10 +2857,14 @@ def phase6_e54(p, V, fill, check):
     def superseded():
         """The values published before the code review of 13 Nov 2026, kept in the results file under a dated key."""
         p.h14()
-        ks = [k for k, v in p.e54.items() if k.startswith("superseded_") and isinstance(v, dict) and v.get("superseded_on") == "2026-11-13"]
-        if len(ks) != 1:
-            raise KeyError(f"E54_dtn.json: expected one superseded block dated 2026-11-13, found {ks}")
+        # The file holds one superseded block per correction; each is selected by its key (pass of 14 Nov, B-120).
+        ks = [E54_SUP_REVIEW]
+        have = sorted(k for k in p.e54 if k.startswith("superseded_"))
+        if have != sorted([E54_SUP_REVIEW, E54_SUP_WINDOW]):
+            raise KeyError(f"E54_dtn.json: expected the superseded blocks {E54_SUP_REVIEW} and {E54_SUP_WINDOW}, found {have}")
         o = p.e54[ks[0]]
+        if o.get("superseded_on") != "2026-11-13":
+            raise KeyError(f"E54_dtn.json {ks[0]}: superseded_on is {o.get('superseded_on')}, expected 2026-11-13")
 
         def row(loss, proto):
             d = [x for x in o["rows"] if abs(x["loss"] - loss) < 1e-9 and x["protocol"] == proto]
@@ -2895,10 +2901,66 @@ def phase6_e54(p, V, fill, check):
         check(g40 != o40 or ll["grant_lost"] != oll["grant_lost"], "the correction changed the grants lost under custody")
         check(abs(pre["aoi_mean_s"] - ll["aoi_mean_s"]) > 1.0 and abs(e["lost_link_pre_review"]["returns_per_seed"] - o["lost_link_returns_per_seed"]) < 1e-9,
               "the earlier return rule, kept as a variant, gives another age of information and the earlier number of returns")
+        # the floor of the age of information, read from the results file (it was typed here before 14 Nov)
+        fl = re.findall(r"floored at (\d+(?:\.\d+)?) s", str(e.get("outcome_definitions", "")))
+        fl_old = re.findall(r"floored at dt/2 = (\d+(?:\.\d+)?) s", str(o["reason"]))
+        if len(fl) != 1 or fl != fl_old:
+            raise KeyError(f"E54_dtn.json: the floor of the age of information is not stated once and alike "
+                           f"(outcome_definitions {fl}, {E54_SUP_REVIEW} reason {fl_old})")
+        floor_s = float(fl[0])
+        # Pass of 14 Nov (B-120 B): the rerun moved one count, the split of the month's undelivered Earth ledgers
+        # between lost and censored. This paper prints no other value that moved; the move is named once, from the file.
+        w = e[E54_SUP_WINDOW]
+        check(w.get("superseded_on") == "2026-11-14" and all(s in str(w["reason"]) for s in ("censored", "lifetime", "window's end")),
+              "the second superseded block of E54 is the one of the end-of-window fix of 14 November")
+        LED = ("ledger_earth_lost", "ledger_earth_lost_share", "ledger_earth_censored")
+
+        def moved(new_rows, old_rows):
+            """The fields that differ between two row lists, as {field: {(protocol, old, new)}}."""
+            key = lambda x: (round(x["loss"], 9), x["protocol"])
+            a, b = {key(x): x for x in new_rows}, {key(x): x for x in old_rows}
+            if sorted(a) != sorted(b) or len(a) != len(new_rows):
+                raise KeyError("E54_dtn.json: the rerun and its superseded block do not hold the same rows")
+            out = {}
+            for k in a:
+                if set(a[k]) != set(b[k]):
+                    raise KeyError(f"E54_dtn.json row {k}: the rerun and its superseded block do not hold the same fields")
+                for f in a[k]:
+                    if a[k][f] != b[k][f]:
+                        out.setdefault(f, set()).add((k[1], b[k][f], a[k][f]))
+            return out
+        mv = moved(e["rows"], w["rows"])
+        check(sorted(mv) == sorted(LED), "the rerun of 14 November moved only the split of the Earth ledgers between lost and censored")
+        check(all(len(mv.get(f, ())) == 3 and {q[0] for q in mv[f]} == {"sf", "sf_ll", "sf_ll_pre_review"} and len({q[1:] for q in mv[f]}) == 1 for f in LED),
+              "the split moved alike in every store-and-forward row and in no drop-and-retry row")
+        check(e["h14"] == w["h14"] and e["h14_variants"] == w["h14_variants"], "H14 and its variants are identical before and after the rerun of 14 November")
+        sizes, sizes_w = e["lrip_v02"]["rows"], w["lrip_v02"]["rows"]
+        check(sorted(sizes) == sorted(sizes_w)
+              and all(sorted(moved(sizes[s], sizes_w[s])) == sorted(LED) for s in sizes)
+              and e["lrip_v02"]["h14"] == w["lrip_v02"]["h14"] and e["lrip_v02"]["verdicts"] == w["lrip_v02"]["verdicts"],
+              "in the size rerun too, only the ledger split moved on 14 November")
+        lg, lw = p.row54(LOSS, "sf"), [x for x in w["rows"] if abs(x["loss"] - LOSS) < 1e-9 and x["protocol"] == "sf"][0]
+        n_s = len(e["seeds"])
+        check(lg["ledger_earth_lost_incl_censored"] == lw["ledger_earth_lost_incl_censored"]
+              == lg["ledger_earth_lost"] + lg["ledger_earth_censored"] == lw["ledger_earth_lost"] + lw["ledger_earth_censored"],
+              "the undelivered Earth ledgers are as many before and after; only their split moved")
+        check(lg["ledger_earth_lost"] - lw["ledger_earth_lost"] == n_s == lw["ledger_earth_censored"] - lg["ledger_earth_censored"],
+              "one Earth ledger a seed went from censored to lost")
+        check(abs(lg["ledger_earth_lost_share"] - lg["ledger_earth_lost"] / lg["ledger_earth_n"]) < 1e-4
+              and abs(lw["ledger_earth_lost_share"] - lw["ledger_earth_lost"] / lw["ledger_earth_n"]) < 1e-4,
+              "the lost share of the Earth ledgers is the lost count over the number sent")
+        window_note = (
+            f" A second review, on 14 November 2026, moved one count that this section does not otherwise print: of "
+            f"the {lg['ledger_earth_n']:,} daily ledgers sent to Earth in the month (all seeds), store and forward "
+            f"left {lg['ledger_earth_lost_incl_censored']} undelivered, of which {lg['ledger_earth_lost']} are now "
+            f"counted lost ({sh(lg['ledger_earth_lost_share'])}) and {lg['ledger_earth_censored']} censored; before, "
+            f"{lw['ledger_earth_lost']} ({sh(lw['ledger_earth_lost_share'])}) and {lw['ledger_earth_censored']}. One "
+            f"ledger a seed had a lifetime that ended exactly at the month's end and had been counted censored; its "
+            f"whole lifetime was observed, so it is lost. No value of Table 11 and no part of H14 changed.")
         return (
             f"The values of this section and of Table 11 were corrected after a code review on 13 November 2026, "
             f"which found that a message could be counted as delivered after its lifetime had ended, that the age "
-            f"of information had a floor of half a step ({secs(30)}), and that the return rule in the code was not "
+            f"of information had a floor of half a step ({secs(floor_s)}), and that the return rule in the code was not "
             f"the one of Section 3.13. Before, the mean age with the return was {secs(oll['aoi_mean_s'], 1)} "
             f"({secs(oll['aoi_worst_vehicle_s'], 1)} for the worst vehicle), the end-of-job reports with the return came {secs(oll['task_state_delay_mean_s'], 1)} late "
             f"with {oll['task_state_lost']} lost, "
@@ -2909,7 +2971,7 @@ def phase6_e54(p, V, fill, check):
             f"{num(o['lost_link_isolation_h_saved_per_seed'])} vehicle-hours of isolation. No count of lost awards "
             f"changed, and the first clause of H14 gives the same difference before the correction, with messages "
             f"still undelivered at the end of the month counted as lost, and under the return rule the code had "
-            f"before the review, which is kept as a variant (mean age {secs(pre['aoi_mean_s'], 1)}).")
+            f"before the review, which is kept as a variant (mean age {secs(pre['aoi_mean_s'], 1)})." + window_note)
     fill("P1-E54-CORRECTION-SENTENCE", correction_sentence, "E54 (code review, 13 Nov)")
 
     def ledger_sentence():
@@ -2972,7 +3034,7 @@ def phase6_e54(p, V, fill, check):
             f"{prm['max_tries']} tries {secs(prm['retry_s'])} apart; store and forward repeats every "
             f"{secs(prm['custody_timer_s'])} until the message's lifetime ends (both Assumed, not swept). The age of "
             f"information is the age of the newest status report the base holds for a vehicle. A message is lost "
-            f"when its lifetime ends undelivered inside the month; one still alive and undelivered at the month's "
+            f"when its lifetime ends undelivered by the month's end; one still alive and undelivered at the month's "
             f"end is censored and not counted as lost, and no award, grant or report was. The values are those "
             f"after the correction of 13 November 2026 (Section 5.9); the earlier table is kept in the results "
             f"file. The last column "

@@ -957,13 +957,49 @@ def values(r: R, allow_pending: bool):
         oldnz = sorted(x["r1_breach_rate"] for x in oldb if x["r1_breach_rate"] > 0)
         check(len(lagc) == 32 and all(c["delay_s"] == S.RHO_S for c in lagc) and len(oldb) == len(lagc)
               and all(x["delay_s"] == S.RHO_S for x in oldb),
-              "the uphill run has 32 cells with the lag, which is R1's response time, and the earlier breach rate of each is kept")
+              "the uphill run has 32 rows with the lag, which is R1's response time, and the earlier breach rate of each is kept")
+        lagk = {(c["planet"], c["geom"], c["slope_deg"]) for c in lagc}
+        check(len(lagk) == 16 and all(sum(1 for c in lagc if (c["planet"], c["geom"], c["slope_deg"]) == k and c["rule"] == ru) == 1
+                                      for k in lagk for ru in ("as_is", "slope_term")),
+              "the 32 rows with the lag are 16 cells, each run under both rules")
+        # B-120 A: the rows with the lag were rerun on the corrected breach counter; read from the file's stamp and note
+        dnote, dcode = d.get("delay_cells_code_note", ""), d.get("delay_cells_code", "")
+        if not dcode or not dnote:
+            raise Pending("E45_uphill.json has no delay_cells_code stamp (B-120 A rerun of the delay cells)")
+        check("rerun on the corrected R1 breach counter" in dnote and "every value equals the earlier run" in dnote
+              and "16 delay cells" in dnote and "32 rows" in dnote and "delay-0 cells and the sweep were not rerun" in dnote,
+              "the uphill file says its 16 delay cells (32 rows) were rerun on the corrected breach counter with every value equal")
+        tdir = os.path.join(ROOT, "tools", "atc")
+        if tdir not in sys.path:
+            sys.path.insert(0, tdir)
+        import run_e45_uphill as RU
+        check(dcode == RU.code_fingerprint(),
+              "the code stamp of the uphill delay cells is the fingerprint of the current encounter code (run_e45_uphill.code_fingerprint)")
+        check(all(c["gap_below_d0"] == 0 for k, c in cells.items() if k[2] == "slope_term" and k[3] == 0.0),
+              "with the slope term no row without the lag has a gap inside the static margin")
         okey = {(x["planet"], x["geom"], x["rule"], x["delay_s"], x["slope_deg"]) for x in oldb}
         check(all(cells[k]["r1_breach_rate"] == 0 for k in okey),
               "under the delay-aware count no R1 breach occurs in any cell with the lag")
         check("longer than R1's response time RHO_S" in d["r1_breach_definition"] and "counted on the command at once" in d["superseded_2026-11-13_b118_n23"]["reason"],
               "the uphill file states the delay-aware breach definition and what the earlier count was")
+        # what the lag model and the breach counter do, read from lunarsim/atc/encounter.py (B-107, B-118 N23, B-120 A)
+        esrc = open(os.path.join(ROOT, "lunarsim", "atc", "encounter.py"), encoding="utf-8").read()
+        mdt = re.search(r"^DT = ([\d.]+)", esrc, re.M)
+        dt_s = float(mdt.group(1)) if mdt else float("nan")
+        lag_steps = int(round(S.RHO_S / dt_s)) if mdt else 0
+        check(lag_steps == 10 and "L_ = int(round(float(self.act_delay.max()) / DT)) if N else 0" in esrc
+              and "a_del = b.abuf[:, b.aptr, :].copy()" in esrc and "b.abuf[:, b.aptr, :] = a" in esrc
+              and "a_ph = np.where(lagged, a_del, a)" in esrc,
+              "the lag model: a follower applies the command it gave RHO_S earlier, a queue of ten 0.1 s steps (encounter.py)")
+        i0, i1 = esrc.find("mv = Move(v=v, a_prop=a_prop"), esrc.find("ver = safety_check(None, mv)")
+        check(0 <= i0 < i1 and "abuf" not in esrc[i0:i1] and "act_delay" not in esrc[i0:i1],
+              "the safety check is given the current speed and gap only, not the commands waiting in the lag queue (encounter.py)")
+        check("below_s = np.where(below, np.where(below_s >= 0.0, below_s + DT, DT), -1.0)" in esrc
+              and "return below & (below_s > S.RHO_S + 1e-9) & (a_ph > -bg + 1e-9), below_s" in esrc,
+              "the delay-aware breach counter takes the time below at the end of the step, so the first step that can count is "
+              "the one on which braking commanded when the gap went below takes effect (encounter.py r1_breach_delayed, B-120 A)")
         return SimpleNamespace(d=d, g=g, th=th, res=res, n=d["n_per_cell"], n_lag=len(oldb), oldnz=oldnz,
+                               dt_s=dt_s, lag_steps=lag_steps, n_lag_cells=len(lagk),
                                min_mars=min(c["min_gap_m"] for k, c in cells.items() if k[2] == "as_is" and k[0] == "mars"),
                                min_moon=min(c["min_gap_m"] for k, c in cells.items() if k[2] == "as_is" and k[0] == "moon"),
                                res_min=min(c["min_gap_m"] for c in res.values()),
@@ -993,20 +1029,30 @@ def values(r: R, allow_pending: bool):
                 f"body, at any grade, with or without the lag. In the Mars convoy with the lag "
                 + " and ".join(f"{cnt(x)} of {cnt(n)} encounters at {num(sl, 1)}&deg;" for sl, x in u.res_counts)
                 + f" still ended inside it, by at most {num(S.D0_M - u.res_min, 2)}{NB}m (smallest gap "
-                f"{num(u.res_min, 2)}{NB}m). A trace puts that remainder on the lag model, in which a vehicle that "
-                f"commands braking still applies one 0.1{NB}s step more of its earlier commands than R1's response "
-                f"time allows; it was not patched. An R1 breach, which is not a hard violation, is counted in the "
+                f"{num(u.res_min, 2)}{NB}m). That remainder is not a late response. In the lag model a follower "
+                f"applies the command it gave {num(S.RHO_S, 0)}{NB}s earlier, a queue of {words(u.lag_steps)} steps "
+                f"of {num(u.dt_s, 1)}{NB}s, so full braking commanded when the gap goes below R1's required distance "
+                f"takes effect {words(u.lag_steps)} steps later, at R1's response time and not after it. The check "
+                f"is unchanged: it decides each step's command from the vehicle's speed and gap at that step, as if "
+                f"the command acted at once, and is not given the commands that wait in the queue. With the slope "
+                f"term the remainder occurs only in rows with the lag, none without it; its cause is not known, "
+                f"and the check was not patched. An R1 breach, which is not "
+                f"a hard violation, is counted in the "
                 f"cells with the lag only when the gap has been below R1's required distance for longer than the "
                 f"response time of {num(S.RHO_S, 0)}{NB}s while the braking the vehicle applies is still short of "
-                f"full, which is what R1 asks; by that count none of the {cnt(u.n_lag)} cells with the lag "
-                f"had a breach. Counted on the command at once, as the results first were, "
-                f"{words(len(u.oldnz))} of them had breaches in {pc(u.oldnz[0], 2)} to {pc(u.oldnz[-1], 0)} of "
+                f"full, which is what R1 asks; the time below is taken at the end of each step, so the first step "
+                f"that can count is the one on which that braking is due. By that count, on the corrected counter, "
+                f"none of the {cnt(u.n_lag)} rows with the lag had a breach ({cnt(u.n_lag_cells)} cells, each under "
+                f"R1 as it was and with the slope term); these rows were run again after the counter was corrected "
+                f"and every value came out as before. Counted on the command at once, as the results first were, "
+                f"{words(len(u.oldnz))} of the rows had breaches in {pc(u.oldnz[0], 2)} to {pc(u.oldnz[-1], 0)} of "
                 f"encounters, all of them followers that braked within the response time. Cells without the lag "
                 f"keep the count on the command.")
 
     def reqrule_limitation():
         """Limitations: the request-rule variant on the fresh type-6 encounters (B-112) and the stale deadlock flag in
-        the stored parts of the types not rerun after the classifier fix (B-113, E44_defects.json)."""
+        the stored parts of the types not rerun after the classifier fix (B-113), which were then regenerated (B-115;
+        E44_defects.json b113_stale_deadlock_flag.outcome)."""
         v = fresh_facts()["request_rule_fresh_6"]
         vb = v["request_rule_variant"]
         if r.e44d is None or "b113_stale_deadlock_flag" not in r.e44d:
@@ -1020,12 +1066,28 @@ def values(r: R, allow_pending: bool):
               "every row with a stale deadlock flag has a random fuzzer")
         check(5 not in stale and 6 not in stale, "the parts of types 5 and 6 match the current code")
         tl = ", ".join(str(t) for t in stale[:-1]) + f" and {stale[-1]}"
+        o = r.e44d["b113_stale_deadlock_flag"].get("outcome")
+        if o is None:
+            raise Pending("E44_defects.json b113_stale_deadlock_flag has no outcome record (B-115)")
+        tot, bt = o["totals"], o["by_type"]
+        check(sorted(int(k) for k in bt) == stale, "B-115 regenerated the stored parts of exactly the types whose flag was stale")
+        check(all(tot[k] == sum(x[k] for x in bt.values()) for k in ("batches", "rows", "deadlock_1_to_0")),
+              "B-115's totals are the sums over its types")
+        check(tot["deadlock_0_to_1"] == 0 and tot["fuzzer_free_rows_changed"] == 0 and tot["other_columns_changed"] == 0
+              and tot["deadlock_1_to_0"] > 0,
+              "in the regenerated parts the deadlock flag only goes from set to unset, only in rows with a random fuzzer, and no other column differs")
+        check("every value is unchanged" in o["published_values"] and "E44_bounds.json" in o["published_values"]
+              and "all with a random fuzzer" in o["result"],
+              "B-115 records that the bounds, encounter and bin files rebuilt from the regenerated parts are unchanged")
         return (f"The request rule that removed that violation was run on all {cnt(vb['n'])} fresh type-6 encounters "
                 f"only after the violation was seen, so its clean result is exploratory, and "
                 f"{pc(vb['outcomes']['incomplete'] / vb['n'], 0)} of those encounters end incomplete under either "
-                f"rule. The stored encounter files of types {tl} carry a deadlock flag from before the classifier "
-                f"was corrected in rows with a random fuzzer (one batch per type checked, files not regenerated); no "
-                f"reported value reads those rows.")
+                f"rule. The stored encounter files of types {tl} carried a deadlock flag from before the classifier "
+                f"was corrected, in rows with a random fuzzer, which no reported value reads. They were regenerated "
+                f"on the current code, {cnt(tot['batches'])} batches of {cnt(tot['rows'])} rows: the flag went from "
+                f"set to unset in {cnt(tot['deadlock_1_to_0'])} rows, all with a random fuzzer, and from unset to "
+                f"set in {'none' if tot['deadlock_0_to_1'] == 0 else cnt(tot['deadlock_0_to_1'])}; no other column differs, and the bounds, encounter and "
+                f"bin files rebuilt from them are unchanged in every value.")
     fill("P2-REQRULE-LIMITATION", reqrule_limitation, "B-112")
 
     def fresh_types():
@@ -1107,6 +1169,8 @@ def values(r: R, allow_pending: bool):
                             "below R1's required gap is a gap to the leader under d_min"),
                            ('r1b = below & (a > -bg + 1e-9)',
                             "an R1 breach is a gap below d_min while not braking fully, counted apart"),
+                           ('below_s = np.where(below, np.where(below_s >= 0.0, below_s + DT, DT), -1.0)',
+                            "with an actuation delay the time below d_min is taken at the end of the step (B-120 A)"),
                            ('return below & (below_s > S.RHO_S + 1e-9) & (a_ph > -bg + 1e-9), below_s',
                             "with an actuation delay an R1 breach is a gap below d_min for longer than the response time with the applied braking short of full"),
                            ('r1b = np.where(b.act_delay[:, None] > 0, r1d, below & (a > -bg + 1e-9))',
@@ -1398,8 +1462,8 @@ def values(r: R, allow_pending: bool):
                  f"on the Moon and {num(uphill_sim().th['mars:following']['first_slope_with_gap_below_d0_deg'], 1)}&deg; "
                  f"at Mars gravity when the follower's actuation lags by a second. A slope term in R1 removed every "
                  f"such case when following and left a remainder of at most "
-                 f"{num(5.0 - uphill_sim().res_min, 2)}{NB}m in the Mars one-lane convoy, which comes from the lag "
-                 f"model. We therefore state R1 with the slope term as the proposed rule (Table 2); the twelve types "
+                 f"{num(5.0 - uphill_sim().res_min, 2)}{NB}m in the Mars one-lane convoy with the lag, which is "
+                 f"not explained (Appendix A.4). We therefore state R1 with the slope term as the proposed rule (Table 2); the twelve types "
                  f"were run without it, on ground where it is inactive. ")
         elif viol:
             s = ("The simulator's failures, " + e44_violating_clause(j, viol).replace("the exceptions are ", "")

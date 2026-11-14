@@ -398,3 +398,21 @@ P1 prints one value that rests on E50: the Holm-adjusted p of H10' in `P1-E54-HO
 after, H14 and H15a did not move, the equivalence clause holds and the growth clause does not at 4x and at 8x. The
 Limitations sentence "is being regenerated" is removed. P1 reads none of E50_summary, E50_near_base, E50_overlaps,
 E50b_summary or E45_uphill.
+
+## Correction pass after the second review (14 Nov 2026): E54 rerun, B-120
+
+- `results/E54_dtn.json` now holds two superseded blocks. The builder selects each by its key
+  (`E54_SUP_REVIEW` = `superseded_2026-11-13_b118`, `E54_SUP_WINDOW` = `superseded_2026-11-14_b120_b`) and stops if
+  the file holds any other set of superseded blocks.
+- `P1-E54-CORRECTION-SENTENCE` gains the move of 14 November, all values read from the file: of 930 Earth ledgers,
+  690 undelivered under store and forward, now 300 lost (32 %) and 390 censored, before 270 (29 %) and 420; cause:
+  one ledger a seed whose lifetime ended exactly at the month's end was counted censored. P1 printed neither the
+  split nor the share before, and prints them nowhere else. Build checks: only the three ledger fields differ
+  between the rerun and the superseded block (main rows and the three size sets), in every store-and-forward row
+  alike and in no drop-and-retry row; H14, its variants and the size rerun's verdicts are identical; lost plus
+  censored is unchanged; the move is one ledger a seed.
+- The same sentence no longer types the floor of the age of information (was `secs(30)`): it is read from the
+  file's `outcome_definitions` ("floored at 30 s") and must agree with the reason of the superseded block.
+- `P1-TABLE-E54` caption: a message is lost when its lifetime ends undelivered "by the month's end" (was "inside
+  the month"), the definition after B-120 B.
+- `P1-E54-LEDGER-SENTENCE` reads `results/E54_ledger.json` (the 61-day replay), which the rerun did not touch.

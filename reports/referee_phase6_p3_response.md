@@ -209,3 +209,16 @@ wording), third not supported; H10' not supported as a whole (adjusted p 0.87, w
 - The two sentences saying E50 was being regenerated (4.6, 5.14) are replaced by statements that it was regenerated.
 - P3 prints no overlap count and no margin-violation count of E50; those are the companion paper's.
 The tally of the 44 findings is unchanged (35 fixed, 6 fixed in part, 3 not done).
+
+## Part 8 (14 Nov): E54 rerun (commit df15eb9) and one unchecked phrase
+
+- **E54 Earth ledger inside the replay.** In every store-and-forward row the in-replay Earth ledger is now 300 expired and 390 censored of 930
+  (share lost 0.32258); it was 270 and 420 (0.29032); expired plus censored stays 690. Cause: a ledger whose 14-day lifetime ends exactly when the
+  31-day window ends is now counted expired, not censored (one a seed, 30 seeds). P3 prints neither the split nor the share: its ledger
+  paragraph (5.12) uses the separate 61-day run of `results/E54_ledger.json`, in which every bundle resolves. So no printed value moves. The
+  build now checks, from `superseded_2026-11-14_b120_b`, that only the `ledger_earth_*` fields differ from the earlier rows, and reads the code-review
+  block by its explicit key. The definition of "censored" in 4.2 is reworded to the file's: undelivered at the window's end with a lifetime that
+  runs past it.
+- **Builder.** The phrase "the last two were reported as above one second" (5.1) is now chosen from a check on the superseded timing block
+  (`superseded_2026-11-13_b118_n12`: above one second at four and eight times the fleet, under it at today's).
+Everything in the paper remains simulation or calculation; nothing is measured on the Moon. Tally unchanged.

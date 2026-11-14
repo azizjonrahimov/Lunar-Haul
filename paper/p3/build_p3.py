@@ -1655,6 +1655,8 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
         bo = r.p6("E54", "blackout_days")
         check(losses == [0.1, 0.25, 0.4] and {x["protocol"] for x in r.p6("E54", "rows")} - {"sf_ll_pre_review"} == set(PROTO),
               "E54 runs three protocols at three loss levels, with the return rule of before the code review kept as a variant (4.2)")
+        check("its lifetime runs past the end" in str(r.p6("E54", "superseded_2026-11-14_b120_b", "reason")) or "lifetime runs past" in str(r.p6("E54", "outcome_definitions")),
+              "E54 calls a message censored only when its lifetime runs past the window's end (4.2)")
         aj = r.p6("E54", "awards_and_jobs")
         check(abs(_fin(aj["awards_per_seed"]) - _fin(aj["jobs_per_seed"]) - _fin(aj["team_jobs_per_seed"])) < 1e-6 and int(aj["vehicles_per_job_max"]) == 2 and
               abs(_fin(aj["awards_per_seed"]) * len(r.p6("E54", "seeds")) - int(e54row(0.25, "drop_retry")["award_n"])) < 1e-6,
@@ -1677,7 +1679,7 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
                 f"{num(losses[-1], 2)}, on {cnt(len(r.p6('E54', 'seeds')))} seeds with {num(aj['jobs_per_seed'], 1)} jobs, {num(aj['awards_per_seed'], 1)} awards (one "
                 f"for each vehicle of a job; {num(aj['team_jobs_per_seed'], 2)} jobs a seed are team jobs of two vehicles) and "
                 f"{num(r.p6('E54', 'reservations_per_seed'), 0)} single-lane reservations a seed. A message is lost when its lifetime ends undelivered inside "
-                f"the window, and censored, not lost, when it is still alive and undelivered at the window's end. Two things are approximations: the return of a silent vehicle is "
+                f"the window, and censored, not lost, when it is undelivered at the window's end and its lifetime runs past that end. Two things are approximations: the return of a silent vehicle is "
                 f"applied to the contact plan and is not driven in the engine, and a returning vehicle is given a direct link to the base, which is optimistic "
                 f"when its last link went through another vehicle. E54 also counts the reservations whose holder has no path to the base "
                 f"{unit(p['grace_s'], 's', 0)} after the reservation's timeout: the base cannot confirm that the segment is clear, although in the replay every "
@@ -1698,7 +1700,13 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
         check(int(l["stuck_reservations"]) == 0 and int(d["stuck_reservations"]) == int(s["stuck_reservations"]) > 0, "E54: reservations stay stuck without the lost-link rule only (5.12)")
         lo, hi = e54row(0.1, "drop_retry"), e54row(0.4, "drop_retry")
         ret, days = _fin(r.p6("E54", "lost_link_returns_per_seed")), 31.0
-        sp = r.p6("E54", "superseded_2026-11-13_b118")
+        sp = r.p6("E54", "superseded_2026-11-13_b118")          # the code-review block, by its explicit key: the file holds a second superseded block since 14 Nov
+        sp2 = r.p6("E54", "superseded_2026-11-14_b120_b")
+        for k in ("sf", "sf_ll"):
+            new_, old_ = e54row(L, k), next(x for x in sp2["rows"] if abs(_fin(x["loss"]) - L) < 1e-9 and x["protocol"] == k)
+            check(int(new_["ledger_earth_lost"]) + int(new_["ledger_earth_censored"]) == int(new_["ledger_earth_lost_incl_censored"]) == int(old_["ledger_earth_lost_incl_censored"]) and
+                  all(new_[f] == old_[f] for f in new_ if not f.startswith("ledger_earth") and f in old_),
+                  f"E54 rerun of 14 Nov ({k}): only the split of the in-replay Earth ledger between expired and censored moved; this paper prints neither (5.12)")
         ol = next(x for x in sp["rows"] if abs(_fin(x["loss"]) - L) < 1e-9 and x["protocol"] == "sf_ll")
         check(all(int(next(x for x in sp["rows"] if abs(_fin(x["loss"]) - L) < 1e-9 and x["protocol"] == k)["award_lost"]) == int(e54row(L, k)["award_lost"])
                   for k in ("drop_retry", "sf", "sf_ll")) and sp["h14"]["difference_sf_ll_minus_drop_retry"] == r.p6("E54", "h14")["difference_sf_ll_minus_drop_retry"],
@@ -2988,6 +2996,10 @@ def values(r: R, allow_pending: bool):
         t = b["t"]
         MN = {"1": "today's fleet", "4": "four times the fleet", "8": "eight times the fleet"}
         check(abs(b["whole"] - max(max(t[m]["passes"]) for m in t)) < 0.25, "the pooled whole-fleet call is of the size of one robot's 99th percentile at the larger fleets (5.1)")
+        over_old = [m for m in ("1", "4", "8") if b["old"][m] > 1.0]
+        check(over_old == ["4", "8"], "the superseded per-robot times were above one second at four and eight times the fleet and under it at today's fleet, as the correction sentence says (5.1)")
+        old_words = ("and the last two were above one second" if over_old == ["4", "8"] else
+                     ("none of them above one second" if not over_old else "of which those at " + " and ".join(MN[m] for m in over_old) + " were above one second"))
         VW = {"inside": "under one second in every pass and over the whole range of the scaling factor",
               "straddling": "under one second in every pass at the central factor and over it only towards the top of the factor's range",
               "above": "over one second in every pass"}
@@ -3005,7 +3017,7 @@ def values(r: R, allow_pending: bool):
                 f", and {num(min(t[m]['med'] for m in t), 0)} to {unit(max(t[m]['med'] for m in t), 'ms', 0)} at the median. Against the one-second "
                 f"decision: {verdict}. These times were corrected after a code review on 13 November 2026, which found that one round in twenty had been "
                 f"timed with the memory tracer running: before, the figures were {num(b['old']['1'], 2)}, {num(b['old']['4'], 2)} and "
-                f"{unit(b['old']['8'], 's', 2)}, and the last two were reported as above one second. The slow rounds are those with many waiting items, "
+                f"{unit(b['old']['8'], 's', 2)}, {old_words}. The slow rounds are those with many waiting items, "
                 f"each of which the robot tries to insert into its plan; a cap on the items a robot evaluates in a round would bound the time and is "
                 f"not in the design. The whole-fleet figure above is of the same size as one robot's 99th percentile at the larger fleets. This is a "
                 f"laptop timing of Python scaled by an assumed factor, on one seed, with a spread between passes of the size shown, not a measurement "

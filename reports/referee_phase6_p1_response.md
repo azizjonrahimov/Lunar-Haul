@@ -201,3 +201,14 @@ value named once in that sentence and read from `phase6_family.json` (`supersede
 sentence that E50 "is being regenerated" is removed. P1 quotes nothing from E50's summary, the readings near the
 base, the overlaps, E50b (the stop time) or the uphill R1 breach rates, so no other sentence changes. No finding
 changes status. HTML only; the PDF is not rebuilt.
+
+## Correction pass after the second review (14 Nov): E54 rerun (B-120)
+
+The rerun of E54 moved one count: the month's undelivered Earth ledgers under store and forward (690 of 930) split
+300 lost and 390 censored, where they split 270 and 420; the lost share is 32 %, was 29 %. One ledger a seed had a
+lifetime that ended exactly at the month's end and had been counted censored. P1 printed neither number; the move
+is now named once in the correction note of 5.9, with both values and the cause, read from `E54_dtn.json` and its
+block `superseded_2026-11-14_b120_b`. Build checks confirm that nothing else in E54 moved (Table 11, H14, the size
+rerun). The builder selects the file's two superseded blocks by key. The floor of the age of information in the
+same note (30 s) is read from the file and no longer typed. Table 11's caption says "by the month's end". No
+finding changes status. Everything here is simulation. HTML only; the PDF is not rebuilt.

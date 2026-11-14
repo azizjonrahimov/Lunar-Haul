@@ -289,8 +289,13 @@ def add_e50(c):
                 f"in every seed, and {m_(q8.rd['e']['in_p95_m_mean'], 1)} under the registered wording, inside in "
                 f"none.")
         o1 = old50("E50_near_base.json")["multiples"]["1"]["sets"]["dr+ranging"]
+        check(all(rd[k]["seeds_inside_budget"] == o1[k]["seeds_inside_budget"] for k in "abcde")
+              and rd["a"]["seeds_inside_budget"] == ns and all(rd[k]["seeds_inside_budget"] == 0 for k in "bcde"),
+              "B-101 at 1x: under each of the five readings the number of seeds inside the budget is the same before and after "
+              "the correction (every seed under (a), none under the others)")
         out += (f" At today's fleet, {EARLIER} {m_(o1['a']['in_p95_m_mean'], 2)} under (a) and "
-                f"{m_(o1['e']['in_p95_m_mean'], 1)} under the registered wording; no verdict moved.")
+                f"{m_(o1['e']['in_p95_m_mean'], 1)} under the registered wording, with the same number of seeds inside the "
+                f"budget under each of the five readings as now.")
         return out
 
     def model_sentence():
@@ -327,10 +332,10 @@ def add_e50(c):
         return (f"The logistics model at its middle load in the ATC mode, with jobs awarded by the on-robot auction "
                 f"of [44] at a message loss of {num(d['regime_kw']['loss'], 2)}, over the month of "
                 f"{d['regime_kw']['start_year']} in which the base sees Earth least (July), at one, four and eight "
-                f"times the fleet. A cell takes 1.5, 11 and 42 minutes at the three sizes, so the cells run "
-                f"{cnt(n1)}, {cnt(n4)} and 5 seeds (a dated change of [59], decided on run time alone); "
-                + (f"{cnt(n8)} of the 5 eight-times seeds have finished. " if 0 < n8 < 5 else
-                   "the eight-times cells have not finished. " if n8 == 0 else "")
+                f"times the fleet. A cell takes longer the larger the fleet, so the cells run "
+                f"{cnt(n1)}, {cnt(n4)} and 5 seeds (a dated change of [59], decided on run time alone)"
+                + (f"; {cnt(n8)} of the 5 eight-times seeds have finished. " if 0 < n8 < 5 else
+                   "; the eight-times cells have not finished. " if n8 == 0 else ". ")
                 + f"Each cell is one run with perfect position, whose recorded trajectories feed the position model at "
                 f"each layer set (dead reckoning alone; with ranging; with terrain fixes; with the navigation service "
                 f"as in {d['regime_kw']['start_year']} and, as a variant, as planned for {d['lans_variant_year']}), "
@@ -501,6 +506,14 @@ def add_e50(c):
             v4, d4 = s4["violations"]["4"], s4["delay"]["4"]
             v8 = e50(8)["violations"]["8"]["with_margin"]
             ov4, ov8 = old50()["violations"]["4"]["with_margin"], old50()["violations"]["8"]["with_margin"]
+            check(all(v4["with_margin"][k]["mean"] > ov4[k]["mean"] and v8[k]["mean"] < ov8[k]["mean"] for k in ("dr", "layered")),
+                  "E50: the correction raised the overlap counts with a margin at 4x and lowered them at 8x, under both margins")
+            lay3 = [wm["layered"], v4["with_margin"]["layered"], v8["layered"]]
+            dr3 = [wm["dr"]["mean"], v4["with_margin"]["dr"]["mean"], v8["dr"]["mean"]]
+            check(lay3[0]["mean"] < lay3[1]["mean"] < lay3[2]["mean"] and lay3[1]["ci"][1] >= lay3[2]["ci"][0],
+                  "E50: with the layered margin the overlap count rises from 1x to 4x to 8x, and the 4x and 8x intervals overlap")
+            check(not (dr3[0] < dr3[1] < dr3[2]) and not (dr3[0] > dr3[1] > dr3[2]),
+                  "E50: with the dead-reckoning margin the overlap count neither rises nor falls across the three fleet sizes")
             out += (f" At four times the fleet the overlaps with the margin were "
                     f"{num(v4['with_margin']['dr']['mean'], 1)} a month (dead reckoning) and "
                     f"{num(v4['with_margin']['layered']['mean'], 1)} "
@@ -508,8 +521,13 @@ def add_e50(c):
                     f"{num(v8['dr']['mean'], 1)} and {num(v8['layered']['mean'], 1)} "
                     f"{c.ci(*v8['layered']['ci'], 1, unit='')}; {EARLIER} {num(ov4['dr']['mean'], 1)} and "
                     f"{num(ov4['layered']['mean'], 1)} at four times and {num(ov8['dr']['mean'], 1)} and "
-                    f"{num(ov8['layered']['mean'], 1)} at eight, so the counts with a margin moved up at four times "
-                    f"and down at eight and show no trend with the fleet on these few seeds. Perfect position gave "
+                    f"{num(ov8['layered']['mean'], 1)} at eight, so the correction raised the counts with a "
+                    f"margin at four times and lowered them at eight. With the layered margin the count rises "
+                    f"with the fleet, {num(wm['layered']['mean'], 1)}, {num(v4['with_margin']['layered']['mean'], 1)} "
+                    f"and {num(v8['layered']['mean'], 1)} a month at one, four and eight times, though the intervals "
+                    f"at four and eight times overlap, on {cnt(v4['with_margin']['layered']['n'])} and "
+                    f"{cnt(v8['layered']['n'])} seeds; with the dead-reckoning margin it has no direction. Perfect "
+                    f"position gave "
                     f"{h_(d4['perfect']['mean'], 2)} {cih(d4['perfect'])}; the dead-reckoning margin changed it by "
                     f"{h_(d4['margin_dr_minus_perfect']['mean'], 2, sign=True)} {cih(d4['margin_dr_minus_perfect'])} "
                     f"and the layered margin by {h_(d4['margin_layered_minus_perfect']['mean'], 2, sign=True)} "
@@ -1131,9 +1149,55 @@ def add_e54(c):
         oll = [x for x in o54["rows"] if x["loss"] == ll["loss"] and x["protocol"] == ll["protocol"]]
         check(len(oll) == 1 and "floored at dt/2" in o54["reason"], "E54 keeps the values published before the replay was corrected, with the reason")
         oll = oll[0]
-        check(abs(ll["aoi_mean_s"] - d["parameters"]["status_period_s"]) < 0.5 * d["parameters"]["status_period_s"]
+        period = d["parameters"]["status_period_s"]
+        floor = 0.5 * period                       # the time average of a sawtooth that restarts every period with no delay
+        check("exact time average of the sawtooth" in d["outcome_definitions"],
+              "E54's age of information is the time average of the sawtooth, whose floor is half the reporting period")
+        check(all(floor < x["aoi_mean_s"] < period for x in d["rows"] if x["protocol"] == "sf_ll")
               and oll["aoi_mean_s"] > 3 * ll["aoi_mean_s"],
-              "with the rule the age of the base's knowledge is about one status period, and the earlier value was several times that")
+              "with the rule the mean age of the base's knowledge lies between its floor of half a status period and one period at "
+              "every loss rate, and the earlier value was several times that")
+        # the end-of-window correction of 14 Nov (B-120 B): the block is selected by its key, the file holds two
+        sup = sorted(k for k in d if k.startswith("superseded"))
+        check(sup == ["superseded_2026-11-13_b118", "superseded_2026-11-14_b120_b"],
+              "E54 holds exactly two superseded blocks, each read by its own key")
+        o120 = d["superseded_2026-11-14_b120_b"]
+        LK = ("ledger_earth_lost", "ledger_earth_lost_share", "ledger_earth_censored")
+        SF = ("sf", "sf_ll", "sf_ll_pre_review")
+        key = lambda x: (x["loss"], x["protocol"])
+        new_r, old_r = {key(x): x for x in d["rows"]}, {key(x): x for x in o120["rows"]}
+        check(set(new_r) == set(old_r) and len(new_r) == len(d["rows"]) == len(o120["rows"]),
+              "the block before the end-of-window correction has the rows of the current table")
+        check(all(new_r[k][f] == old_r[k][f] for k in new_r for f in new_r[k] if f not in LK or k[1] not in SF),
+              "the end-of-window correction moved nothing but the split of the undelivered Earth ledgers in the store-and-forward rows")
+        check(d["h14"] == o120["h14"] and d["h14_variants"] == o120["h14_variants"] and d["code"] != o120["code"],
+              "H14 and its variants are the same before and after the end-of-window correction; the code fingerprint differs")
+        nsf, osf = [new_r[k] for k in new_r if k[1] in SF], [old_r[k] for k in old_r if k[1] in SF]
+        sets_new, sets_old = d["lrip_v02"]["rows"], o120["lrip_v02"]["rows"]
+        check(sorted(sets_new) == sorted(sets_old) and len(sets_new) == 3,
+              "the three size sets are the same before and after the end-of-window correction")
+        for name in sets_new:
+            nsf += [x for x in sets_new[name] if x["protocol"] in SF]
+            osf += [x for x in sets_old[name] if x["protocol"] in SF]
+        led = {f: ({x[f] for x in nsf}, {x[f] for x in osf}) for f in LK + ("ledger_earth_n", "ledger_earth_lost_incl_censored")}
+        check(len(nsf) == len(osf) and all(len(a) == 1 and len(b) == 1 for a, b in led.values()),
+              "every store-and-forward row, in the main table and the three size sets, has the same Earth-ledger counts")
+        one = lambda f, i: next(iter(led[f][i]))
+        n_seeds = len(d["seeds"])
+        check(one("ledger_earth_lost", 0) - one("ledger_earth_lost", 1) == n_seeds
+              == one("ledger_earth_censored", 1) - one("ledger_earth_censored", 0)
+              and one("ledger_earth_lost_incl_censored", 0) == one("ledger_earth_lost_incl_censored", 1)
+              == one("ledger_earth_lost", 0) + one("ledger_earth_censored", 0)
+              and one("ledger_earth_n", 0) == one("ledger_earth_n", 1),
+              "the end-of-window correction moves one Earth ledger a seed from censored to expired; the undelivered total is unchanged")
+        check(abs(one("ledger_earth_lost_share", 0) - one("ledger_earth_lost", 0) / one("ledger_earth_n", 0)) < 1e-4
+              and abs(one("ledger_earth_lost_share", 1) - one("ledger_earth_lost", 1) / one("ledger_earth_n", 1)) < 1e-4,
+              "the lost share of the Earth ledgers is lost over sent, before and after")
+        life_d = 14
+        check(f'Msg(mid, "ledger_earth", BASE, -2, d * 86400.0, LEDGER_BYTES, {life_d} * 86400.0)' in src
+              and "deadline day 31 = the window's end" in o120["reason"] and "t0 + life_s <=" in o120["reason"]
+              and "Earth link down from day 8" in o120["reason"] and o120["superseded_on"] == "2026-11-14",
+              "the replay sends one ledger a day to Earth with a lifetime of 14 days, and the file gives the cause of the end-of-window correction")
         return (f"Over the {cnt(len(d['seeds']))} seeds the month held {cnt(dr['grant_n'])} reservation grants and "
                 f"{cnt(dr['award_n'])} job awards. At a loss of 0.25 per hop, drop and retry lost "
                 f"{cnt(dr['grant_lost'])} grants, {pc(dr['grant_lost_share'], 0)}; with custody "
@@ -1167,15 +1231,29 @@ def add_e54(c):
                 f"{num(fact.jobs, 0)} jobs, and credits {cnt(fact.saved_h)}{NB}h a seed as spent waiting, linked, "
                 f"at the return point; but it applies the return to the contact plan only, and the recorded job "
                 f"still completes. No logistics run of this paper contains the ladder (Section 7). The "
-                f"base's knowledge of a vehicle was {num(ll['aoi_mean_s'], 0)}{NB}s old on average with the rule "
+                f"base's knowledge of a vehicle was {num(ll['aoi_mean_s'], 1)}{NB}s old on average with the rule "
                 f"(worst vehicle {num(ll['aoi_worst_vehicle_s'], 0)}{NB}s) and "
                 f"{num(dr['aoi_mean_s'] / 60.0, 0)}{NB}min without it (worst {num(dr['aoi_worst_vehicle_s'] / 3600.0, 0)}{NB}h), "
-                f"in a replay in which a returning vehicle is given a direct link. With the rule the age is about "
-                f"the {num(d['parameters']['status_period_s'], 0)}{NB}s at which a vehicle reports its state, which "
-                f"is as young as it can be. Before corrections to the replay after a code review, an earlier version "
+                f"in a replay in which a returning vehicle is given a direct link. A vehicle reports its state "
+                f"every {num(period, 0)}{NB}s, so the average age cannot be below half of that, {num(floor, 0)}{NB}s, "
+                f"which reports that arrive at once would give; with the rule the age is "
+                f"{num(ll['aoi_mean_s'] - floor, 1)}{NB}s above that floor, {num(ll['aoi_mean_s'] / floor, 1)} times "
+                f"it. Before corrections to the replay after a code review, an earlier version "
                 f"of this paper gave {num(oll['aoi_mean_s'], 0)}{NB}s (worst vehicle {num(oll['aoi_worst_vehicle_s'], 0)}{NB}s), "
                 f"most of it a floor of half a replay step, and {num(o54['lost_link_returns_per_seed'], 0)} returns "
-                f"and {cnt(o54['lost_link_isolation_h_saved_per_seed'])}{NB}h a seed.")
+                f"and {cnt(o54['lost_link_isolation_h_saved_per_seed'])}{NB}h a seed. A second correction, on "
+                f"14 November, moved one count in the results file and no value printed in this paper. The replay "
+                f"also sends one ledger a day from the base to Earth, with a lifetime of {life_d} days. Of the "
+                f"{cnt(one('ledger_earth_n', 0))} ledgers of the {cnt(n_seeds)} seeds, "
+                f"{cnt(one('ledger_earth_lost_incl_censored', 0))} were undelivered under custody at every loss "
+                f"rate: {cnt(one('ledger_earth_lost', 0))} expired inside the window "
+                f"({pc(one('ledger_earth_lost_share', 0), 1)}) and {cnt(one('ledger_earth_censored', 0))} were still "
+                f"alive at its end, where the file first gave {cnt(one('ledger_earth_lost', 1))} "
+                f"({pc(one('ledger_earth_lost_share', 1), 1)}) and {cnt(one('ledger_earth_censored', 1))}. The cause "
+                f"is one ledger a seed whose lifetime ended exactly when the window ended: it had been counted as "
+                f"still alive and is now counted as expired, because its whole lifetime was observed and it was "
+                f"never delivered. The job awards, the grants, the age of the base's knowledge, the unconfirmed "
+                f"reservations and H14 are the same before and after.")
     fill("P2-E54-RESULTS-PARAGRAPH", results_paragraph, "E54")
 
 
@@ -2196,8 +2274,8 @@ def add_props(c):
                     f"after {c.words(up)} and {m_(hrs[-1], 0)} after eight ({cnt(len(s['seeds']['1']))} seeds)"
                     + ("" if up == len(hrs) else
                        f". The level stretch between is not a limit. The hours are driving hours counted from the "
-                       f"start of the run, and few vehicles drive that many, so beyond the fourth hour each point "
-                       f"rests on a few vehicles a seed and is noisy; the level stretch is within that noise. The error "
+                       f"start of the run, and few vehicles drive that many, so the later points each rest on a few "
+                       f"vehicles a seed and are noisy; the level stretch is within that noise. The error "
                        f"still grows, to about {num(beyond / 1000.0, 2)}{NB}km beyond eight driving hours, and at four "
                        f"and eight times the fleet it rose in every hour, to "
                        f"{m_(big['4'], 0)} and {m_(big['8'], 0)} after eight")
@@ -2952,7 +3030,7 @@ def add_pta(c):
             f"{num(us.th['mars:following']['first_slope_with_gap_below_d0_deg'], 1)}&deg; at Mars gravity (smallest "
             f"{num(us.min_mars, 2)}{NB}m); never in the lunar one-lane convoy. With the slope term: none when following; "
             f"up to {num(max(x for _, x in us.res_counts), 0)} of {cnt(us.n)} in the Mars one-lane convoy with the lag, at "
-            f"most {num(S.D0_M - us.res_min, 2)}{NB}m inside, traced to the lag model. By the formulas the worst case on the "
+            f"most {num(S.D0_M - us.res_min, 2)}{NB}m inside, not explained (the response time is met). By the formulas the worst case on the "
             f"route maximum is {m_(up.gap_moon, 1)} (Moon)", "A.4, 6.1")
         rf = c.ring("E44")
         add("The exit-bay rule does not deadlock",
