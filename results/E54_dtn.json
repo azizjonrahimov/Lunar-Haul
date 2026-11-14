@@ -632,6 +632,7 @@
  "rerun_commit": [
   "07aac87"
  ],
+ "rerun_commit_note": "rerun_commit: the git HEAD each seed's run started from (git rev-parse at run time); code changes not yet committed when the seeds ran are not in it, so it can be the commit before the one that holds the rerun. 'code' is the fingerprint of the code that actually ran.",
  "superseded_2026-11-13_b118": {
   "reason": "B-118 step 2 (code review of 13 Nov 2026): the values published before the dtn.py fixes. N3: a store-and-forward bundle got a full set of transmissions in every step whatever time was left and its lifetime was checked only at the step's start, so grants could be delivered up to about 40 s late and counted delivered; an arrival on a step's last transmission was stamped at the next step. N4: bundles still alive at the window's end were counted lost (now 'censored'). N5: age of information was floored at dt/2 = 30 s. N6: the lost-link return used the driving time in the hour before the loss, which no text describes (now as the papers state it). C11: a relay's store limit was not checked on forwarding (no queue came near 64 MB, so no value moved by it). Kept as published, with the B-111 v0.2 block.",
   "superseded_on": "2026-11-13",

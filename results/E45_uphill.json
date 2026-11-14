@@ -1,6 +1,8 @@
 {
  "task": "B-107 (P2 M9)",
  "note": "    python tools/atc/run_e45_uphill.py run [--max-seconds 480]    # resumable, one file per cell     python tools/atc/run_e45_uphill.py build                      # -> results/E45_uphill.json, results/E45_uphill.csv",
+ "delay_cells_code": "fdb548a78d255c93",
+ "delay_cells_code_note": "B-120 A (14 Nov 2026): the 16 delay cells (delay_s 1 = RHO_S: moon and mars x following and one_lane x 5, 10, 15 and 17.2 deg; each with as_is and slope_term, 32 rows) were rerun on the corrected R1 breach counter (the first countable step is the 11th below step) and carry this code fingerprint; every value equals the earlier run. The delay-0 cells and the sweep were not rerun: without a delay the breach is counted on the command as before, and the sweep's breach counts are not used; neither carries a code stamp.",
  "d0_m": 5.0,
  "b_max": 0.8,
  "b_min_flat": 0.5,

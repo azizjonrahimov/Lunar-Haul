@@ -634,7 +634,11 @@ def build():
                "vehicles_per_job_max": int(max(max(x) for x in jv if x)),
                "note": "B-117 (i), exploratory: one TASK_AWARD per vehicle of a job (run_e54.messages), so awards = "
                        "jobs + the extra vehicles of team jobs"},
-           "code": code_fingerprint(), "rerun_commit": sorted({s.get("rerun_commit") for s in S}, key=str)}
+           "code": code_fingerprint(), "rerun_commit": sorted({s.get("rerun_commit") for s in S}, key=str),
+           "rerun_commit_note": "rerun_commit: the git HEAD each seed's run started from (git rev-parse at run "
+                                "time); code changes not yet committed when the seeds ran are not in it, so it can "
+                                "be the commit before the one that holds the rerun. 'code' is the fingerprint of "
+                                "the code that actually ran."}
     if os.path.isfile(OUT_JSON):                             # B-118: earlier values stay under dated keys
         old = json.load(open(OUT_JSON, encoding="utf-8"))
         doc.update({k: v for k, v in old.items() if k.startswith("superseded_")})
@@ -732,6 +736,13 @@ def ledger(seeds=range(1, 31)):
                                     "lost_share": round(sum(lost) / (days * len(list(seeds))), 4),
                                     "delay_mean_d": round(float(np.mean(delay)), 2) if delay else None,
                                     "delay_max_d": round(float(np.max(delay)), 2) if delay else None})
+    import hashlib
+    import inspect
+    out["code"] = code_fingerprint()                         # B-120: dtn.py, the engine, the sizes (as E54's cells)
+    out["ledger_code"] = hashlib.sha256(_ast_digest(inspect.getsource(ledger)).encode()).hexdigest()[:16]
+    out["code_note"] = ("code: run_e54.code_fingerprint (dtn.py with the end-of-window rule, the engine, the LRIP "
+                        "sizes, E54's producing functions); ledger_code: this replay's own function (ledger), without "
+                        "docstrings or comments. Rerun on 14 Nov 2026 (B-120) with every value equal to the 13 Nov file.")
     p = os.path.join(ROOT, "results", "E54_ledger.json")
     if os.path.isfile(p):                                    # B-118: earlier values stay under dated keys
         old = json.load(open(p, encoding="utf-8"))

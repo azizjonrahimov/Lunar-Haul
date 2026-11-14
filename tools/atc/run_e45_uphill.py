@@ -84,7 +84,25 @@ def build(rng, slope, geom, g, delay=0.0):
                   **kw)
 
 
+def code_fingerprint():
+    """B-120 A: the code a cell comes from: the encounter model (lunarsim/atc/encounter.py, encounter_types.py,
+    safety.py, which import nothing else of lunarsim) and this runner's build and run_cell, hashed without docstrings
+    and comments (run_e54._ast_digest), plus the cell constants."""
+    import hashlib
+    import inspect
+    from run_e54 import _ast_digest
+    h = hashlib.sha256()
+    for rel in ("lunarsim/atc/encounter.py", "lunarsim/atc/encounter_types.py", "lunarsim/atc/safety.py"):
+        with open(os.path.join(ROOT, rel), encoding="utf-8") as f:
+            h.update(rel.encode() + _ast_digest(f.read()).encode())
+    for fn in (build, run_cell):
+        h.update(fn.__name__.encode() + _ast_digest(inspect.getsource(fn)).encode())
+    h.update(repr((PLANETS, RULES, N_CELL, N_SWEEP, VIOL)).encode())
+    return h.hexdigest()[:16]
+
+
 def run_cell(planet, geom, slope, n, tag, rules=RULES, delay=0.0):
+    code = code_fingerprint()                                     # B-120 A: stamped when the cell starts
     g = PLANETS[planet]
     pi, gi = list(PLANETS).index(planet), GEOMS.index(geom)
     rng = np.random.default_rng([4507, pi, gi, int(round(slope * 10)), 0 if tag == "cell" else 1])
@@ -120,6 +138,7 @@ def run_cell(planet, geom, slope, n, tag, rules=RULES, delay=0.0):
                                                 for i in np.nonzero(nominal)[0])) if nominal.any() else None),
             "nominal_only_n": int(nominal.sum())}
     ET.G_BUILD = S.G_MOON
+    out["code"] = code
     return out
 
 
@@ -187,7 +206,19 @@ def cmd_build():
             thr[f"{planet}:{geom}"] = {"first_slope_with_gap_below_d0_deg": first,
                                        "theory_b_lead_exceeds_b_max_deg": round(math.degrees(math.asin((S.B_MAX - S.B_MIN_FLAT) / PLANETS[planet])), 2),
                                        "sweep": [[sl, gp] for sl, gp in pts]}
+    dcodes = {c.get("code") for c in cells if c["delay_s"] > 0}     # B-120 A: the delay cells on the current code
+    if dcodes != {code_fingerprint()}:
+        raise SystemExit(f"uphill delay cells made with code {sorted(dcodes, key=str)}, current {code_fingerprint()}: "
+                         "rerun them")
     doc = {"task": "B-107 (P2 M9)", "note": __doc__.strip().split("\n\n")[1].replace("\n", " "),
+           "delay_cells_code": dcodes.pop(),
+           "delay_cells_code_note": "B-120 A (14 Nov 2026): the 16 delay cells (delay_s 1 = RHO_S: moon and mars x "
+                                    "following and one_lane x 5, 10, 15 and 17.2 deg; each with as_is and slope_term, "
+                                    "32 rows) were rerun on the corrected R1 breach counter (the first countable step "
+                                    "is the 11th below step) and carry this code fingerprint; every value equals the "
+                                    "earlier run. The delay-0 cells and the sweep were not rerun: without a delay the "
+                                    "breach is counted on the command as before, and the sweep's breach counts are "
+                                    "not used; neither carries a code stamp.",
            "d0_m": S.D0_M, "b_max": S.B_MAX, "b_min_flat": S.B_MIN_FLAT, "n_per_cell": N_CELL, "n_per_sweep_point": N_SWEEP,
            "cells": rows, "threshold": thr,
            "nominal_only_note": "B-118 N18: every follower runs E44's adversarial planner (planner [0] + [2] x (nv - 1)), "
