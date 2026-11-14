@@ -226,9 +226,17 @@ def violations(rec, tr, res, t0, t1):
             continue
         n = vid_col[int(vid)]
         sh = []
-        for tt in (a, b):
+        seg = np.diff(P, axis=0)
+        cum = np.concatenate([[0.0], np.cumsum(np.hypot(*seg.T))])
+        for tt, f in ((a, f_in), (b, f_out)):
             k = int(np.clip(round((tt - tr.t_h[0]) * 3600.0 / tr.dt_s), 0, len(tr.t_h) - 1))
-            e_al = float(res.e[k, n] @ tr.head[k, n]) if res.e is not None else 0.0
+            hd = tr.head[k, n].astype(np.float64)
+            if not hd.any():
+                # B-118 N14: the time rounds to a step outside the leg (zero heading): use the reserved segment's own
+                # direction at that point of the leg, so the along-track error still shifts the window
+                j = int(np.clip(np.searchsorted(cum, f * L, side="right") - 1, 0, len(seg) - 1))
+                hd = seg[j] / max(float(np.hypot(*seg[j])), 1e-9)
+            e_al = float(res.e[k, n] @ hd) if res.e is not None else 0.0
             sh.append(e_al / v_ms / 3600.0)
         by_res[res_id].append((a + sh[0], b + sh[1], d, int(vid)))
     n_viol, overlap_s, pairs = 0, 0.0, 0
@@ -375,8 +383,33 @@ def stage_mnav(m, seed, lab):
             "nav_s": round(time.time() - t, 1)}
 
 
+FP_EXCLUDE = ("lunarsim/atc/lrip/", "lunarsim/nn/", "lunarsim/vv", "lunarsim/server.py", "lunarsim/cli.py",
+              "lunarsim/formats.py", "lunarsim/atc/integrity.py", "lunarsim/atc/dtn.py", "lunarsim/atc/smap.py",
+              "lunarsim/atc/clocks.py", "lunarsim/atc/modelcheck.py", "lunarsim/atc/encounter")
+
+
+def code_fingerprint():
+    """B-118 N21: a fingerprint of the code an E50 cell comes from: every .py file of lunarsim except the parts an E50
+    run does not use (FP_EXCLUDE: the codec, the network, the verification rows, the CLI, and the modules of other
+    experiments), plus this runner, export_trace.py and experiments/phase5/run_phase5.py. Every stage of a cell and
+    every cell of a build must carry the same one."""
+    import glob as _g
+    import hashlib
+    files = sorted(p.replace(os.sep, "/") for p in _g.glob(os.path.join(ROOT, "lunarsim", "**", "*.py"), recursive=True))
+    files = [p for p in files if not any(x in p[len(ROOT.replace(os.sep, "/")) + 1:] for x in FP_EXCLUDE)]
+    files += [os.path.join(HERE, "run_e50.py"), os.path.join(HERE, "export_trace.py"),
+              os.path.join(ROOT, "experiments", "phase5", "run_phase5.py")]
+    h = hashlib.sha256()
+    for p in files:
+        h.update(os.path.relpath(p, ROOT).replace(os.sep, "/").encode())
+        with open(p, "rb") as f:
+            h.update(f.read().replace(b"\r\n", b"\n"))
+    return h.hexdigest()[:16]
+
+
 def run_stage(m, seed, stage, keep_trace=False):
     t = time.time()
+    fp = code_fingerprint()                                       # B-118 N21: taken when the stage starts
     if stage == "rec":
         obj = stage_rec(m, seed)
     elif stage == "nav":
@@ -386,22 +419,38 @@ def run_stage(m, seed, stage, keep_trace=False):
     else:
         obj = stage_mnav(m, seed, stage[5:])
     _dump(_stage_path(m, seed, stage), obj)
+    with open(_stage_path(m, seed, stage) + ".code", "w") as f:
+        f.write(fp)
     return round(time.time() - t, 1)
 
 
 def assemble(m, seed):
     """All stages done: write the cell file (small) and drop the large stage files."""
+    fps = set()
+    for st in STAGES:                                             # B-118 N21: one code fingerprint for the cell
+        p = _stage_path(m, seed, st) + ".code"
+        fps.add(open(p).read().strip() if os.path.isfile(p) else None)
+    if len(fps) != 1 or None in fps:
+        raise SystemExit(f"m{m} s{seed}: stages made with different code ({sorted(fps, key=str)}); rerun the cell")
     navd = _load(_stage_path(m, seed, "nav"))
     out = {k: v for k, v in navd.items() if not k.startswith("_")}
     out["margin"] = {lab: _load(_stage_path(m, seed, f"mnav_{lab}")) for lab in DESIGN["margin_sets"]}
+    out["code"] = fps.pop()
+    try:
+        import subprocess
+        out["rerun_commit"] = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, capture_output=True,
+                                             text=True, timeout=20).stdout.strip() or None
+    except Exception:
+        out["rerun_commit"] = None
     if "_trace" in navd:
         _dump(os.path.join(CACHE, f"trace_m{m}_s{seed}.pkl.gz"), navd["_trace"])
     _dump(_cache(m, seed), out)
     for st in STAGES:
-        try:
-            os.remove(_stage_path(m, seed, st))
-        except OSError:
-            pass
+        for p in (_stage_path(m, seed, st), _stage_path(m, seed, st) + ".code"):
+            try:
+                os.remove(p)
+            except OSError:
+                pass
     try:
         os.rmdir(_stage_dir(m, seed))
     except OSError:

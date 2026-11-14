@@ -26,7 +26,6 @@ import csv
 import glob
 import gzip
 import json
-import math
 import os
 import pickle
 import sys
@@ -297,6 +296,8 @@ def cmd_build():
                              "abutting_share_overlapping": r["back_to_back"]["abutting_share_overlapping"],
                              "separated_share_overlapping": r["back_to_back"]["separated_share_overlapping"]})
         doc["multiples"][str(m)] = blk
+    import e50_build as EB
+    EB.keep_superseded(OUT_JSON, doc, E5.DESIGN["multiples"], doc["multiples"])
     with open(OUT_JSON, "w", encoding="utf-8", newline="\n") as f:
         json.dump(doc, f, indent=1, allow_nan=False)
         f.write("\n")

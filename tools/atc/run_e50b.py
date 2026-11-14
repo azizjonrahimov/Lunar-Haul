@@ -302,6 +302,8 @@ def cmd_build():
                                           "ratio_to_perfect": float(lay_s.mean() / perf.mean())},
            "e50_reproduced_all_seeds": all(all(s.get("e50_reproduced", {}).values()) and s.get("e50_reproduced") for s in S),
            "peak_mb_max": max((s["peak_mb"] or 0) for s in S), "seed_s_mean": float(np.mean([s["seed_s"] for s in S]))}
+    import e50_build as EB
+    EB.keep_superseded(OUT_JSON, doc)
     with open(OUT_JSON, "w", encoding="utf-8", newline="\n") as f:
         json.dump(doc, f, indent=1)
         f.write("\n")

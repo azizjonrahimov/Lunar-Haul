@@ -1,7 +1,7 @@
 {
  "version": 1,
- "generated": "2026-11-13T13:04:08-0800",
- "commit": "fb59f62a1e7c39ad87abfbc1495c2d22e1c3269f",
+ "generated": "2026-11-13T18:16:40-0800",
+ "commit": "7f7230a3b5f5c4d392dbc5bfb1d9617be0d6573a",
  "summary": {
   "rows": 56,
   "passed": 56,
@@ -92,7 +92,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.0,
+   "runtime_s": 0.01,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/01_positioning_and_time.md section E3; identity"
   },
   {
@@ -120,7 +120,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.0,
+   "runtime_s": 0.01,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/01_positioning_and_time.md section E3 table (2 decimals)"
   },
   {
@@ -316,7 +316,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.03,
+   "runtime_s": 0.02,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/01_positioning_and_time.md sections D, E (bound definition); binomial 3-sigma 0.001"
   },
   {
@@ -344,7 +344,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.03,
+   "runtime_s": 0.02,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/02_shared_map_and_coordinates.md section E1; 10 micrometres: float64 latitude from arcsin(z / r) loses about two digits within 1 deg of the pole (condition number 1 / cos(lat), about 60)"
   },
   {
@@ -400,7 +400,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.0,
+   "runtime_s": 0.01,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/02_shared_map_and_coordinates.md section E1 (SPICE to 0.01 m; 0.05 m allows the composition order)"
   },
   {
@@ -428,7 +428,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.0,
+   "runtime_s": 0.01,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/02_shared_map_and_coordinates.md section E1 (SPICE to 0.01 m; 0.05 m allows the composition order)"
   },
   {
@@ -1044,7 +1044,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.09,
+   "runtime_s": 0.13,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md section C4 rule 6 (golden packets); exact"
   },
   {
@@ -1072,7 +1072,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.09,
+   "runtime_s": 0.13,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md section E2 step 8; exact"
   },
   {
@@ -1156,7 +1156,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 1.42,
+   "runtime_s": 1.38,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md section E4; binomial 3-sigma"
   },
   {
@@ -1184,7 +1184,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.89,
+   "runtime_s": 0.76,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md section E5 table (2 decimals)"
   },
   {
@@ -1212,7 +1212,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.89,
+   "runtime_s": 0.76,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md section E5 table (2 decimals)"
   },
   {
@@ -1240,21 +1240,21 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.89,
+   "runtime_s": 0.76,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md section E5 table (2 decimals)"
   },
   {
    "name": "A bias of 4.57 sigma is caught with probability 0.9 (m = 1, alpha 1e-3)",
    "reference": 0.9,
-   "simulated": 0.89939,
+   "simulated": 0.89976,
    "tolerance": 0.005,
    "unit": "probability",
    "basis": "200,000 draws",
    "passed": true,
-   "rel_error": 0.0006777777777777771,
+   "rel_error": 0.00026666666666668663,
    "source": "lunarsim/atc/integrity.py",
    "mode": "abs",
-   "error": 0.0006099999999999994,
+   "error": 0.00024000000000001798,
    "skipped": "",
    "id": "C8",
    "sub": "detectable error",
@@ -1268,7 +1268,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.9,
+   "runtime_s": 0.77,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md section E5; binomial 3-sigma 0.002 plus rounding of 4.57"
   },
   {
@@ -1296,7 +1296,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.9,
+   "runtime_s": 0.77,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md section E5 (2 digits)"
   },
   {
@@ -1324,7 +1324,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 2.44,
+   "runtime_s": 2.29,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md section E7; 2 % for 240,000 updates"
   },
   {
@@ -1382,7 +1382,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 3.63,
+   "runtime_s": 3.46,
    "tolerance_source": "PLAN-phase6 section 2 ('byte-identical with every new option off'); exact"
   },
   {
@@ -1412,7 +1412,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 3.63,
+   "runtime_s": 3.46,
    "tolerance_source": "B-118 N2 (the row above must be able to fail); exact"
   },
   {
@@ -1440,7 +1440,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 3.63,
+   "runtime_s": 3.46,
    "tolerance_source": "B-93 opt-in; exact"
   },
   {
@@ -1581,7 +1581,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.17,
+   "runtime_s": 0.16,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md section E5 (1e-8 per window); exact count"
   }
  ]

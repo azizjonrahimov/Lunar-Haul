@@ -25,7 +25,6 @@ import csv
 import glob
 import gzip
 import json
-import math
 import os
 import pickle
 import sys
@@ -227,6 +226,8 @@ def cmd_build():
                                                  "seeds_inside_budget": int(sum(e[r] < BUDGET for e in v if e[r] is not None)),
                                                  "seeds": len(v)} for r in READINGS}} for k, v in sorted(S.items())]}
     doc["verdict"] = "depends on the reading (PREREG6 section 6, 11 Nov): see h9_clause2_by_reading per fleet multiple"
+    import e50_build as EB
+    EB.keep_superseded(OUT_JSON, doc, E5.DESIGN["multiples"], doc["multiples"])
     with open(OUT_JSON, "w", encoding="utf-8", newline="\n") as f:
         json.dump(doc, f, indent=1, allow_nan=False)
         f.write("\n")

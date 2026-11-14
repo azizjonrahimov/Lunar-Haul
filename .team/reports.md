@@ -11018,3 +11018,87 @@ differ from the file before; no value changed. The same text is now in tools/atc
 CLAUSE_2_BASIS) and lunarsim/atc/dtn.py's docstring, so a rebuild gives the same file. The file was patched in place
 (the E54 build waits for the seed-1 check and restamp). phase6_family.json's stuck_basis does not mention a release:
 unchanged. test_dtn 18 pass.
+
+## F-79 (FRONTEND, 2026-11-13): the site follows the corrected results (B-118); edit only, no build
+
+Every value below is read at build time from its results key; the earlier value comes from the file's superseded_* block and is named once on its page. No E50 value and no protocol/b99/e54_timeline.json touched.
+
+Values, old -> new (page):
+- E52 stale-map hits after contact, largest over every outage and rate (/protocol/ problem 2, new sentence): hazards first 0.08 -> 0.40, oldest first 1.65 -> 1.72 (rows / superseded_2026-11-13_b118_n1). Figure 2 already read the rows.
+- E54 at loss 0.25 with the lost-link rule (/protocol/ problems 4 and 6, new sentences): age of information 45.5 s -> 9.5 s (sf_ll row 9.52; 9.51 is the 0.10 row), worst vehicle 2.5 min -> 39.9 s, TASK_STATE delay 33.0 s -> 3.4 s, grants lost 0 -> 3, returns 82.1 -> 87.3 a seed, Earth ledger in the replay 690 lost -> 270 expired + 420 censored. Awards against jobs: 200.93 awards = 199.3 jobs + 1.63 team jobs (text and the figure's table caption). Figure table: "Jobs lost" -> "Job awards that expired ... of 6,028 awards"; sf_ll stuck cell "not counted yet" -> "0 blocked, by rule (not measured)"; H14 clause 2 "not testable as written" -> "holds by rule, not by measurement" (from h14.clause_2_basis).
+- E55 (/protocol/ problem 7): new sentence on replay_recent, 0 of 589 at 10 % loss, 6 of 590 at 25 % (6 missed originals inside the window, 0 other); the answer no longer says replayed messages are always rejected; the readout describes the first trial as random earlier messages and adds the second. No earlier value (keys unchanged).
+- E56 (/network/, new sentence, onset_context_and_fa_interval_b118, rate day = 1/pair-day): alarm already on in the minute before onset, out of distribution: CUSUM 50.7 %, chi-square per step 28.5 %, network 4.0 % (test: at most 0.7 %); recall on quiet events (all faults): CUSUM 0.69 (0.84), chi-square 0.73 (0.79), network 0.65 (0.66). The build checks the block's recall equals table_E56.csv's.
+- /verification/: 56 of 56; G1 now "repeats a run made by the code before Phase 6 (commit 0210c22) exactly: 0 of 144 summary values differ. The check covers one scenario (C_AUCTION, roads atc), one seed (seed 2) and 30 days, 144 values; with one option switched on, 14 of them differ, so the check can fail." (was "gives the Phase 5 run back"). Scope parsed from the row's basis; another form stops the build. The old count (54) is in no data file, so it is not named.
+- One robot's bid p99, flight-scaled (E48_sizing per_robot_round, /atc/ section 3, /results/ P3 card, /protocol/ and /network/ navigation computer): 0.29 / 1.09 / 1.19 s -> 0.21 / 0.92 / 0.94 s at 1x/4x/8x, "under the one-second decision at the central factor in all three timing passes, and over it only at the top of the factor range (up to 1.07 s and 1.10 s at four and eight times it)"; earlier values named once per page. /atc/ no longer says "The bidding does not fit at every fleet size" (now chosen from the data).
+
+Files changed: site/lib/protocol-data.mjs (superseded/dateText/secs helpers, e52 keys hits_after_max_* / was_* / superseded_on, compactE54 + awards_and_jobs and returns, new e54(key), compactE55 + replay_recent, e55 replay_* keys), site/vite.config.js (<!--@e54:...--> hook), site/protocol/index.html, site/src/protocol/figures.js, site/lib/network.mjs, site/network/index.html, site/lib/phase6.mjs, site/src/atc/e48-robot.js, site/src/atc/sizing.js, site/lib/results-atc.mjs, site/lib/anatomy-nav.mjs, site/tests/f79.test.mjs (new, 6 tests).
+
+Checks (no build, RAM 1.63 GB): node --test of f79, f72, f78, phase6 and protocol-data: 29 of 29 pass; node --check on every touched file; the page transform run on /protocol/, /network/ and /verification/ resolves every marker. Not run yet: site build, full test suite, page budgets, browser check (waiting for LEAD's go).
+
+### F-79 follow-up (FRONTEND, 2026-11-13): the correction date flagged; build, full suite, budgets and browser check
+
+- Fix for "Lunar ATC results: every key exists ... typed digits": a superseded_on date now reaches the page in the flagged markup of a number. New site/src/components/date-num.js has dateNum({iso, flag, source}), which writes "13 November 2026" with flag Modelled and the source "<file>: <superseded key>.superseded_on". I kept it out of num.js because adding it there pushed research/earth-sky's JS to 15.1 KB gz, over its budget of 15. It is used in all three places that print a superseded_on date: site/src/atc/e48-robot.js (the bid correction on /atc/, the /results/ P3 card and the navigation computer) and site/lib/protocol-data.mjs (the e52/e54 superseded_on keys, which dateText now builds from the superseded block). The test was not loosened. tests/f79.test.mjs now checks that the date is flagged and that its value comes from the file.
+- Checks, RAM 1.44 GB before the build: build OK (protocol/e54.json 12 rows, e55.json staged); node --test tests/*.test.mjs 91 of 91 pass; budgets.py pages OK. /protocol/ lazy JS is 24.9 of 25 KB gz, so there is almost no headroom.
+- Browser check on the local build (vite preview, gstack browse) at 1280, dark and light: /protocol/, /network/, /verification/, /results/ and /atc/ each have 0 console errors, 0 overflow, 0 contrast failures, one h1 and no heading skips.
+- The rendered text matches the files:
+  - E54 table caption: 199.3 jobs, 1.63 team jobs, 200.93 awards. Rows: "10 / 2 / 0 of 6,028 awards"; the sf_ll stuck cell reads "0 blocked, by rule (not measured)"; the age of information with the rule is 9.5 s (40 s).
+  - H14 readout: clause 2 "holds by rule, not by measurement".
+  - E55 readout: both replay trials (0 of 589; 6 of 590, all 6 missed copies).
+  - /atc/ bid sentence: "fits at the central factor but not across the whole factor range ... 0.21, 0.92, 0.94 s ... up to 1.07 and 1.10 s".
+  - Every "corrected after a code review on ..." date is flagged (/atc/ 1, /results/ 1, /protocol/ 3). The only unflagged dates on /protocol/ are the survey's "11 November 2026" in problem 8, which is not a superseded_on date.
+- Not run: a 390 px browser pass of these pages.
+
+## B-118 E50 regeneration, step 1 DONE 18:18 | 1x: E50, near_base, overlaps, E50b rerun with the N14/N15 positioning fix; every H9/H10 verdict unchanged
+Runs (one at a time, chunks under 9 min, gate >= 0.8 GB before each; free RAM read 1.2 to 2.3 GB):
+- E50 1x seeds 1-30: 30 cells in .cache/atc/e50, every cell code fingerprint 5bf22fa6d5ccfe47 = the working tree.
+- near_base 1x 30 seeds (the ranging-error sweep on seeds 1-6), overlaps 1x 30 seeds, E50b 1x 30 seeds. Every cell
+  of all three reproduces its E50 cell (repro True: perfect delay identical, ranging near p95 within 1e-4).
+- Old caches kept: .cache/atc/e50_pre_b118, e50_near_pre_b118, e50_ovl_pre_b118, e50b_pre_b118 (new today).
+Builders (tools/atc/e50_build.py keep_superseded, called by the E50, near_base, overlaps and E50b builders; none of
+these build functions is in E50's code fingerprint): the previous file's values go under
+superseded_2026-11-13_b118_n15 (with "reason" and "superseded_on"), written once, so a later partial rebuild never
+overwrites the pre-fix values; older superseded_* keys carried. New key multiples_not_rerun_yet: [4, 8] in
+E50_summary, E50_near_base, E50_overlaps. Until 4x/8x are rerun, their pre-fix values exist only under the superseded
+key; the CSVs (no place for a key) now hold the 1x rows only (E50_errors 900 -> 600 rows, E50_runs 135 -> 90,
+E50_near_base 800 -> 600, E50_overlaps 12 -> 6; the pre-fix 4x/8x rows are in HEAD). E50_trace.json rebuilt from the
+new seed-1 trace.
+1x values, pre-fix -> now (results/E50_summary.json etc.):
+- H9: dead reckoning first driving hour over budget 1 -> 1 (supported); ranging near p95 4.216 -> 4.276 m, CI
+  [4.17, 4.38] (supported); fixes away p95 15.234 -> 15.237 m (not supported). Unchanged verdicts.
+- H10: perfect delay 17.731 h (identical); layered minus perfect 0.0066 h, 90 % CI [0.00023, 0.0152] (within:
+  supported); dr minus perfect 0.117 -> 0.096 h, 95 % CI [-0.099, 0.285] (dr larger: not supported). Unchanged verdicts.
+- Errors, all-region p95 mean: dr 643.2 -> 610.2 m; dr+ranging 50.10 -> 49.14; dr+ranging+fixes 12.63 -> 12.68;
+  lans@2030 6.30 -> 6.13. Fix stop time per month 37.27 -> 37.41 h (fixes), 33.10 -> 33.24 h (lans@2030).
+- Violations per seed, no margin: dr 1.87 -> 1.43, dr+ranging 0.57 -> 0.57, +fixes 0.70 -> 0.57, lans 0.77 -> 0.73;
+  with the margin: dr 0.033 -> 0, layered 0.033 -> 0 (the single pre-fix violation, one seed, is gone).
+- near_base (reading a to e, dr+ranging in-p95): 4.22 -> 4.28, 12.47 -> 12.55, 24.70 -> 25.11, 50.10 -> 49.14;
+  shares of driving identical; h9_clause2_by_reading identical (a: every seed; b to e: no seed). Seeds inside the
+  budget that moved: +fixes reading b 23 -> 22; lans@2030 c 17 -> 20, d/e 2 -> 1. Sweep seeds inside budget at
+  reading a identical (6/6/0 radio 1/3/10 m; 6/6/6 uwb 0.1/0.3/0.7 m); radio 10 m p95 9.64 -> 10.05 m.
+- overlaps: counts follow the violations above. FLAG (direction): dead reckoning without margin has fewer overlaps
+  (1.87 -> 1.43 per seed) but longer ones: median 334 -> 548 s, max 1,169 -> 2,015 s; lans@2030 max 10.4 -> 34.3 s;
+  dr+ranging and +fixes shorter (median 30.9 -> 21.3 s, 10.4 -> 8.1 s). With the margin: no overlaps left (was one
+  each). Gap at entry under d0 (5 m): 0 in every set, as before.
+- E50b: with minus without stop time, delay 0.628 -> 0.651 h (CI [0.059, 1.328]), 22 seeds higher (same); ratio to
+  perfect 1.036 -> 1.037; TOST p < 1e-20 (same). FLAG (direction): violations without stop time 0.033 -> 0 (follows
+  E50), WITH stop time 0 -> 0.033 (one violation, seed 21, where the pre-fix run had none); so "the stop time removes
+  the one violation" no longer holds; it now adds one in 1 of 30 seeds (CI of the difference [0, 0.1]). Delivered
+  with stop time 250.1 -> 249.8.
+phase6_family.json NOT written: H10's "gap grows" clause and the Holm p need 4x and 8x cells, which are not rerun yet,
+and a results file must not mix code versions (N21). In scratch (b118_family_interim.py: new 1x, pre-fix 4x/8x,
+written only to the scratchpad): every decision identical to the committed file; H9 dr first-hour p95 85.22 -> 81.05
+m (share 1.0); H10 TOST p 1.18e-75 -> 1.17e-75; dr clause p 0.128 -> 0.172; IUT p 0.93244 (gap grows at 4x not met,
+unchanged); H14 / H15a Holm unchanged. The real file is rebuilt after 4x and 8x.
+vv6 rerun: 56 rows, 56 passed, 0 bias flags; the only changed row is C8 detectable error 0.89939 -> 0.89976 (B-119
+C12, expected); no P row moved with the pnt fix.
+Protocol data: data/atc/protocol/e50_layers.json is built from the E50 seed-1 trace and E50_summary, so it was stale;
+regenerated alone (export_protocol.e50(), not main()), and only its index entry updated: bytes 47,324 -> 47,451,
+gzip 11,450 -> 11,475, sha256 d9358d82... -> 24c7bf7e26d06564f41ed0d0871e3efc05b720b48e351a492febea9b9eb8f8b8. The
+index's "commit" field is left as it was. The site reads only multiples.1 of E50_near_base (site/lib/phase6.mjs), so
+the missing 4x/8x keys do not affect it.
+Tests: test_pnt 11, test_vv6 2, test_protocol_data 1: pass.
+Files for your commit with pnt.py / tests/test_pnt.py / run_e50*.py / e50_build.py: tools/atc/e50_build.py,
+run_e50_near.py, run_e50_overlaps.py, run_e50b.py (keep_superseded calls), results/E50_summary.json, E50_errors.csv,
+E50_runs.csv, E50_trace.json, E50_near_base.json/.csv, E50_overlaps.json/.csv, E50b_summary.json, E50b_runs.csv,
+results/vv_phase6.json, data/atc/protocol/e50_layers.json, data/atc/protocol/index.json. Not yet in a commit-ready
+state: encounter.py / test_uphill.py (N23, step 2 next) and regimes.py (B-117 a, not run).

@@ -28,6 +28,29 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 CACHE = os.path.join(ROOT, ".cache", "atc", "e50")
 B = 20000
+SUPERSEDED_KEY = "superseded_2026-11-13_b118_n15"
+SUPERSEDED_REASON = ("B-118 N14/N15 (positioning fix in lunarsim/atc/pnt.py: a ranging or fix update at a vehicle's "
+                     "arrival step, and the reservation count): the values below were made with the code before the "
+                     "fix and are kept as they were; the file's other values come from the regenerated cells")
+
+
+def keep_superseded(path, doc, design_multiples=None, built_multiples=None):
+    """B-118 N15: carry the previous file's values into doc under SUPERSEDED_KEY (once: a later rebuild keeps the key
+    it finds, so the pre-fix values are never overwritten by a partial rebuild), carry any older superseded_* keys,
+    and list the design's fleet multiples not yet rerun (their pre-fix values stay only under SUPERSEDED_KEY)."""
+    if os.path.isfile(path):
+        with open(path, encoding="utf-8") as f:
+            old = json.load(f)
+        for k, v in old.items():
+            if k.startswith("superseded_"):
+                doc.setdefault(k, v)
+        if SUPERSEDED_KEY not in doc:
+            doc[SUPERSEDED_KEY] = {"reason": SUPERSEDED_REASON, "superseded_on": "2026-11-13",
+                                   **{k: v for k, v in old.items() if not k.startswith("superseded_")}}
+    if design_multiples is not None:
+        built = {int(m) for m in (built_multiples or [])}
+        doc["multiples_not_rerun_yet"] = [m for m in design_multiples if m not in built]
+    return doc
 
 
 def _load(p):
@@ -52,6 +75,9 @@ def cells():
     for p in sorted(glob.glob(os.path.join(CACHE, "m*_s*.pkl.gz"))):
         d = _load(p)
         out[(int(d["mult"]), int(d["seed"]))] = d
+    codes = {d.get("code") for d in out.values()}               # B-118 N21: never mix cells made with other code
+    if len(codes) > 1:
+        raise SystemExit(f"E50 cells made with different code: {sorted(codes, key=str)}; rerun the stale cells")
     return out
 
 
@@ -166,6 +192,7 @@ def build():
             "gap_by_mult": {str(m): summ["delay"][str(m)]["margin_layered_minus_perfect"] for m in mults},
             "note": "the layered scheme's terrain-fix stops (fix_stop_h) are not in the engine's delay; they are "
                     "reported per month in errors.<mult>.<set>.fix_stop_h_per_month"}
+    keep_superseded(R.OUT_JSON, summ, D["multiples"], mults)
     with open(R.OUT_JSON, "w", encoding="utf-8", newline="\n") as f:
         json.dump(summ, f, indent=1, allow_nan=False, default=lambda x: None)
         f.write("\n")

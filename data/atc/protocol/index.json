@@ -4,9 +4,9 @@
  "commit": "1cc5348c14765833a2c1432925e698e878aca2bb",
  "files": {
   "e50_layers.json": {
-   "bytes": 47324,
-   "bytes_gzip": 11450,
-   "sha256": "d9358d8257a928eab225883f9890ef3b44051741a020dda6d64f45897b13f111"
+   "bytes": 47451,
+   "bytes_gzip": 11475,
+   "sha256": "24c7bf7e26d06564f41ed0d0871e3efc05b720b48e351a492febea9b9eb8f8b8"
   },
   "e53_bitrate.json": {
    "bytes": 4234,
