@@ -60,6 +60,19 @@ export function nw(key) {
   const base = ['chi2_step', 'chi2_window', 'cusum', 'logreg'].map(d => v('test', d, 'all', 'recall'));
   const driftBest = Math.max(...DETECTORS.map(([d]) => v('test', d, 'drift', 'recall')));
   const faTest = v('test', 'net', 'all', 'fa_per_pair_day'), faOod = v('ood', 'net', 'all', 'fa_per_pair_day');
+  // F-79 (B-118 N10): beside each recall, the share of fault events with an alarm already on in the 60 s before onset and
+  // the recall on the events with a quiet minute before (onset_context_and_fa_interval_b118, rate "day" = 1 false alarm
+  // per pair-day, the rate of the page's other numbers). The block's recall must equal table_E56.csv's.
+  const OC = 'onset_context_and_fa_interval_b118';
+  const oc = (set, det) => {
+    const path = `${OC}.sets.${set}.${det}.day.events.all`, ev = dig(E, path);
+    if (!ev) throw new Error(`network: results/E56_integrity.json has no ${path}`);
+    if (ev.recall_reproduces_stored !== true) throw new Error(`network: results/E56_integrity.json ${path}.recall_reproduces_stored is not true`);
+    if (Math.abs(need(ev.recall, 'results/E56_integrity.json', `${path}.recall`) - v(set, det, 'all', 'recall')) > 5e-4) throw new Error(`network: ${path}.recall differs from results/table_E56.csv`);
+    return { path, ev };
+  };
+  const ocShare = (set, det) => { const { path, ev } = oc(set, det); return M(100 * need(ev.share_alarm_in_60s_before, 'results/E56_integrity.json', `${path}.share_alarm_in_60s_before`), ' %', 1, `results/E56_integrity.json: ${path}.share_alarm_in_60s_before`); };
+  const ocQuiet = (set, det) => { const { path, ev } = oc(set, det); return M(need(ev.recall_quiet_60s_before, 'results/E56_integrity.json', `${path}.recall_quiet_60s_before`), '', 2, `results/E56_integrity.json: ${path}.recall_quiet_60s_before`); };
   const K = {
     net_all: () => rec('test', 'net', 'all'),
     base_min_all: () => M(Math.min(...base), '', 2, 'results/table_E56.csv: test, the four baselines, fault all, recall (lowest)'),
@@ -75,6 +88,13 @@ export function nw(key) {
     ood_net_jump: () => rec('ood', 'net', 'jump'), ood_net_drift: () => rec('ood', 'net', 'drift'),
     ood_cusum_jump: () => rec('ood', 'cusum', 'jump'), ood_cusum_drift: () => rec('ood', 'cusum', 'drift'),
     ood_cusum_fa: () => M(v('ood', 'cusum', 'all', 'fa_per_pair_day'), ' per pair-day', 0, src('ood', 'cusum', 'all', 'fa_per_pair_day')),
+    // F-79: ood_before_<det> (share with an alarm on in the minute before onset), ood_quiet_<det> (recall on quiet events),
+    // ood_all_<det> (recall on all faults), test_before_max (the largest share on the test streams, any detector)
+    ...Object.fromEntries(DETECTORS.flatMap(([d]) => [[`ood_before_${d}`, () => ocShare('ood', d)], [`ood_quiet_${d}`, () => ocQuiet('ood', d)], [`ood_all_${d}`, () => rec('ood', d, 'all')]])),
+    test_before_max: () => {
+      const xs = DETECTORS.map(([d]) => { const { path, ev } = oc('test', d); return need(ev.share_alarm_in_60s_before, 'results/E56_integrity.json', `${path}.share_alarm_in_60s_before`); });
+      return M(100 * Math.max(...xs), ' %', 1, `results/E56_integrity.json: ${OC}.sets.test.<every detector>.day.events.all.share_alarm_in_60s_before, the largest`);
+    },
     drift_diff: () => M(e('test.h15_net_against.chi2_step.drift.delay_median_diff_s.value'), ' s', 1, 'results/E56_integrity.json: test.h15_net_against.chi2_step.drift.delay_median_diff_s'),
     // the parameter count is labelled with the file it was read from (the results file first, else B-99's landscape)
     params: () => typeof dig(E, 'model.n_params') === 'number'

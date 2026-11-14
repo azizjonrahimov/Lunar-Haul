@@ -16,7 +16,7 @@ export function vv6(key, D = read(VV6_SRC)) {   // D: the file's contents (a tes
   if (key !== 'lead') throw new Error(`${VV6_SRC}: unknown key ${key}`);
   if (!D) return 'The Phase 6 checks are not published yet.';
   // F-78 (review W1): the counts come from the rows' own `passed` flags and must agree with the summary; a missing count
-  // or a failing G1 stops the build (the sentence says G1 gives the Phase 5 run back)
+  // or a failing G1 stops the build (the sentence says G1 repeats the run of the code before Phase 6)
   const S = D.summary, R = D.rows;
   if (!Array.isArray(R) || !R.length) throw new Error(`${VV6_SRC}: no rows`);
   if (typeof S?.rows !== 'number' || typeof S?.passed !== 'number') throw new Error(`${VV6_SRC}: summary.rows or summary.passed missing`);
@@ -26,9 +26,21 @@ export function vv6(key, D = read(VV6_SRC)) {   // D: the file's contents (a tes
   const g1 = R.filter(r => r.id === 'G1');
   if (!g1.length) throw new Error(`${VV6_SRC}: no G1 row`);
   if (!g1.every(r => r.passed)) throw new Error(`${VV6_SRC}: G1 does not pass; the /verification/ sentence says it does`);
-  const main = g1[0], n = /(\d[\d,]*) summary values/.exec(main.basis || '')?.[1];
+  // F-79 (B-118 step 4): G1's main row compares the engine with every option off against a stored run of the code before
+  // Phase 6; its scope (one scenario, one seed, the days, the values) is read from the row's basis, and a second G1 row
+  // switches one option on to show the comparison can fail. A basis in another form stops the build.
+  const main = g1.find(r => r.sub === 'options off');
+  if (!main) throw new Error(`${VV6_SRC}: no G1 row with sub "options off"`);
+  const b = /^(.+), (\d+) days, seed (\d+): (\d[\d,]*) summary values against (\S+) \(commit (\w+)\)$/.exec(main.basis || '');
+  if (!b) throw new Error(`${VV6_SRC}: G1 options-off basis "${main.basis}" is not "<scenario>, <n> days, seed <s>: <n> summary values against <file> (commit <c>)"`);
+  const [, scen, days, seed, nv, , commit] = b, nVal = +nv.replace(/,/g, '');
+  const on = g1.find(r => r.sub === 'option on changes the run'), o = on && /(\d[\d,]*) of (\d[\d,]*) summary values differ/.exec(on.basis || '');
+  if (on && !o) throw new Error(`${VV6_SRC}: G1 option-on basis "${on.basis}" does not say how many summary values differ`);
+  if (o && +o[2].replace(/,/g, '') !== nVal) throw new Error(`${VV6_SRC}: G1's two rows compare ${nVal} and ${o[2]} summary values`);
   return `${fmt(passed, 0)} of ${fmt(R.length, 0)} recorded checks pass. Among them G1: with every Phase 6 engine option switched off, the engine `
-    + `gives the Phase 5 run back exactly${n ? `: ${fmt(main.simulated, 0)} of ${n} summary values differ` : ''} (${esc((main.basis || '').replace(/:\s*\d[\d,]* summary values compared\s*$/, ''))}), so the new parts change nothing they are not asked to.`;
+    + `repeats a run made by the code before Phase 6 (commit ${esc(commit)}) exactly: ${fmt(main.simulated, 0)} of ${fmt(nVal, 0)} summary values differ. `
+    + `The check covers one scenario (${esc(scen)}), one seed (seed ${fmt(+seed, 0)}) and ${fmt(+days, 0)} days, ${fmt(nVal, 0)} values`
+    + `${o ? `; with one option switched on, ${fmt(+o[1].replace(/,/g, ''), 0)} of them differ, so the check can fail` : ''}.`;
 }
 
 // the outcome of one hypothesis from the file's own fields: 'held', 'partly' (some clauses held, some did not) or 'not'

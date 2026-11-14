@@ -112,7 +112,13 @@
         <h3>Method</h3>
         <p>Experiment E52 (hypothesis H12) brings rovers back after hours to days out of contact and counts the bytes
           and the time until their hazard map is current, against a full resend. The bytes, and so H12's share of a full
-          resend, follow from the assumed change rates: a design calculation, not a test.</p>
+          resend, follow from the assumed change rates: a design calculation, not a test. The hazards a rover meets on
+          its stale map after contact are counted: at most <!--@e52:hits_after_max_hazards_first--> with hazards first
+          and <!--@e52:hits_after_max_oldest_first--> with the oldest change first, at any outage and link rate. These
+          counts were corrected after a code review on <!--@e52:superseded_on-->, which found that every tile of a road
+          leg had been given the distance of the leg's end; before, they were
+          <!--@e52:was_hits_after_max_hazards_first--> and <!--@e52:was_hits_after_max_oldest_first-->, and the bytes and
+          times did not change.</p>
         <h3>Who we would work with</h3>
         <p>NASA Goddard's planetary geodesy group (terrain models and their error maps), the LROC and ShadowCam teams at
           Arizona State, USGS Astrogeology (the map grid and datum), NAIF at JPL (frames), and the CADRE team (its
@@ -184,7 +190,16 @@
         <h3>Method</h3>
         <p>The engine's radio model decides every link on the 5 m terrain (free space, then the flat-ground law, and a
           link budget: <!--@pn:tx_w-->, <!--@pn:gain-->, noise figure <!--@pn:nf-->, margin <!--@pn:margin-->, at
-          <!--@pn:rate-->); experiment E54 (hypothesis H14) compares store-and-forward with drop-and-retry.
+          <!--@pn:rate-->); experiment E54 (hypothesis H14) compares store-and-forward with drop-and-retry. With the
+          lost-link rule at <!--@e54:loss@0.25--> loss per hop, <!--@e54:sf_ll:grant_lost@0.25--> reservation grants were
+          lost and job-state reports arrived after <!--@e54:sf_ll:task_state_delay_mean_s@0.25--> on average. Of the
+          daily ledger bundles the replay sends to Earth with store-and-forward, <!--@e54:sf:ledger_earth_lost@0.25-->
+          expired on the way and <!--@e54:sf:ledger_earth_censored@0.25--> were still alive and undelivered when the
+          window closed: censored, their fate unknown, not lost. These values were corrected after a code review on
+          <!--@e54:superseded_on--> (a bundle could be counted delivered after its lifetime, and bundles still alive at
+          the window's end were counted lost): before, <!--@e54:was:sf_ll:grant_lost@0.25--> grants were lost with the
+          rule, the reports took <!--@e54:was:sf_ll:task_state_delay_mean_s@0.25-->, and
+          <!--@e54:was:sf:ledger_earth_lost@0.25--> ledger bundles were counted lost.
           The flat-ground law ignores the Moon's curvature. By calculation over a curved Moon (ITU-R P.526), the loss between two
           <!--@b104:antenna--> antennas <!--@b104:hop--> apart is <!--@b104:loss_diff--> higher, so the rate falls from
           <!--@b104:rate_flat--> to <!--@b104:rate_sph-->: the crew and cargo rovers' worst hop <!--@b104:carry-->
@@ -300,6 +315,15 @@
         <p>The Phase 5 engine (experiments E40 to E43) with the lost-link ladder of E54; a failure decision left to
           Earth would add about <!--@pn:earth_wait--> of expected delay at our base. NASA's CADRE elects a new leader
           within <!--@pn:cadre_leader-->.</p>
+        <p>In E54's message replay at <!--@e54:loss@0.25--> loss per hop, the lost-link rule keeps the base's picture of
+          a vehicle <!--@e54:sf_ll:aoi_mean_s@0.25--> old on average (<!--@e54:sf_ll:aoi_worst_vehicle_s@0.25--> for the
+          worst vehicle), and it sends a silent vehicle back along the path it drove <!--@e54:returns--> times a seed; the
+          replay does not drive those returns, and no delay figure contains them. A job of two vehicles gets an award for
+          each, so <!--@e54:awards--> awards a seed carry <!--@e54:jobs--> jobs, <!--@e54:team_jobs--> of them team jobs.
+          The age and the returns were corrected after the same code review (the age had a floor of half a step, and the
+          code's return rule was not the one the papers state): before, <!--@e54:was:sf_ll:aoi_mean_s@0.25-->
+          (<!--@e54:was:sf_ll:aoi_worst_vehicle_s@0.25--> for the worst vehicle) and <!--@e54:was:returns--> returns a
+          seed.</p>
         <h3>Who we would work with</h3>
         <p>The JPL CADRE autonomy team, the Lunar Surface Innovation Consortium, DARPA's LOGIC interface consortium, DFKI
           and DLR (rover teams tested in the field), and the Open-RMF project.</p>
@@ -329,8 +353,9 @@
     <div class="pr-grid">
       <div class="pr-text">
         <h3>Our answer</h3>
-        <p>Every message carries a counter and a keyed authentication code, so forged and replayed messages are
-          rejected; a rover that is wrong anyway is caught by comparing its report with your own radio range to it. If
+        <p>Every message carries a counter and a keyed authentication code, so forged messages are rejected, and so are
+          replayed ones, except a copy of a message the receiver missed that arrives while still fresh; a rover that is
+          wrong anyway is caught by comparing its report with your own radio range to it. If
           the normalised squared difference exceeds <!--@pn:gamma1--> on 3 of the last 5 reports, the rover is treated
           as suspect and the others are told; an error of about <!--@pn:min_err--> is caught 90 % of the time.</p>
         <p>The persistence is what makes the textbook threshold usable: tested one report at a time, it raises
@@ -345,7 +370,13 @@
         <h3>Method</h3>
         <p>Experiment E55 (hypotheses H15 and H16) scores the rule as written, with no tuning, on the same simulated
           streams and faults as the learned detector of E56 (see <a href="<!--@base-->network/">the network</a>), and
-          tests the trimmed-mean rule for values many rovers must agree on, with and without the base mast.</p>
+          tests the trimmed-mean rule for values many rovers must agree on, with and without the base mast. A second
+          replay trial, added after the code review, replays recent messages instead of old ones: at
+          <!--@e55:replay_loss@0.1--> loss <!--@e55:replay_replays_accepted@0.1--> of
+          <!--@e55:replay_replays@0.1--> replays were accepted, and at <!--@e55:replay_loss@0.25-->
+          <!--@e55:replay_replays_accepted@0.25--> of <!--@e55:replay_replays@0.25-->, all
+          <!--@e55:replay_accepted_missed_original_inside_window@0.25--> of them copies of a message the receiver had
+          missed, still inside the freshness window, and <!--@e55:replay_accepted_other@0.25--> of any other kind.</p>
         <h3>Who we would work with</h3>
         <p>The CCSDS security working group, the LunaNet security documents' authors at NASA SCaN, and the JPL CADRE
           team.</p>

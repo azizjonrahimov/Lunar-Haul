@@ -5,7 +5,8 @@ import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { ROOT } from './pages.mjs';
 import { lripDecode } from '../src/protocol/lrip.js';
-import { num } from '../src/components/num.js';
+import { num, fmt } from '../src/components/num.js';
+import { dateNum } from '../src/components/date-num.js';
 export { lripDecode };
 
 // F-56 / B-93, F-73 / B-100: /protocol/ figure 5 shows a real LRIP POSITION report: the golden vector POSITION / profile N /
@@ -171,6 +172,20 @@ export function stageE53v02(PUB) {
   return stageJson(PUB, { ...D, columns: keep, rows: D.rows.map(r => ix.map(i => r[i])) }, E53_V02_OUT, `${D.rows.length} rows at LRIP v0.2 sizes`);
 }
 
+// F-79: a results file keeps the values it published before a correction under superseded_<date>_<task>; the page names
+// each earlier value once. superseded(doc, file, field) finds the block holding <field>; dateText gives its superseded_on
+// as "13 November 2026" in the flagged markup of a number (dateNum), so no date reaches a page as typed digits.
+export function superseded(doc, file, field) {
+  const key = Object.keys(doc).find(k => /^superseded_/.test(k) && doc[k] && field in doc[k]);
+  if (!key) throw new Error(`${file}: no superseded_* block with ${field}`);
+  return { key, doc: doc[key] };
+}
+export function dateText(S, file) {
+  return dateNum({ iso: S.doc.superseded_on, source: `${file}: ${S.key}.superseded_on (the date the values were replaced)` });
+}
+// seconds for the page text: one decimal under 90 s, then minutes, then hours
+export function secs(v) { return v < 90 ? { value: v, unit: ' s', digits: 1 } : v < 5400 ? { value: v / 60, unit: ' min', digits: 1 } : { value: v / 3600, unit: ' h', digits: 1 }; }
+
 // F-56 / B-92: /protocol/ figure 2 reads E52 (results/E52_map.json): bytes and time to sync after 1 h to 14 days out of
 // contact, hazards-first against oldest-first, at four link rates; hazards hit during the outage and after contact.
 // The route tiles (60) and the full resend (185.5 MB) are computed; the change rates and the hidden share are Assumed.
@@ -193,8 +208,14 @@ export const E54_OUT = 'protocol/e54.json';
 export function compactE54(dtn, ledger) {
   if (!Array.isArray(dtn.rows) || !dtn.h14) throw new Error(`${E54_SRC}: no rows or no h14`);
   if (!Array.isArray(ledger?.rows)) throw new Error(`${E54_LEDGER}: no rows`);
+  // F-79 (B-118): one award per vehicle of a job, so awards = jobs + the extra vehicles of team jobs; the lost-link returns
+  const AJ = dtn.awards_and_jobs;
+  for (const k of ['jobs_per_seed', 'awards_per_seed', 'team_jobs_per_seed']) if (typeof AJ?.[k] !== 'number') throw new Error(`${E54_SRC}: no awards_and_jobs.${k}`);
+  if (typeof dtn.lost_link_returns_per_seed !== 'number') throw new Error(`${E54_SRC}: no lost_link_returns_per_seed`);
   return { format: 'lunarsim-e54-site', version: 1, source: E54_SRC, ledger_source: E54_LEDGER, experiment: dtn.experiment, seeds: Array.isArray(dtn.seeds) ? dtn.seeds.length : dtn.seeds,   // the file lists the seed numbers
     jobs_per_seed: dtn.jobs_per_seed, reservations_per_seed: dtn.reservations_per_seed, blackout_days: dtn.blackout_days, earth_up_share: dtn.earth_up_share,
+    awards_and_jobs: { jobs_per_seed: AJ.jobs_per_seed, awards_per_seed: AJ.awards_per_seed, team_jobs_per_seed: AJ.team_jobs_per_seed },
+    returns_per_seed: dtn.lost_link_returns_per_seed,
     h14: dtn.h14, rows: dtn.rows, ledger: { longest_earth_down_d: ledger.longest_earth_down_d, rows: ledger.rows } };
 }
 
@@ -227,6 +248,16 @@ export function e52(key) {
   if (key === 'full_resend') return num({ value: D.full_resend_bytes / 1e6, unit: ' MB', digits: 1, flag: 'Modelled', source: src + 'full_resend_bytes' });
   if (key === 'hazards_per_day') return num({ value: D.parameters.hazards_per_day, unit: ' a day', digits: 0, flag: 'Assumed', source: src + 'parameters.hazards_per_day' });
   if (key === 'hidden_share') return num({ value: 100 * D.parameters.hidden_share, unit: ' %', digits: 0, flag: 'Assumed', source: src + 'parameters.hidden_share' });
+  // F-79 (B-118 N1): the largest stale-map hit count after contact over every outage and link rate, now (hits_after_max_<order>)
+  // and as published before the code review (was_hits_after_max_<order>, from superseded_<date>_..., named once on the page)
+  let mm;
+  if ((mm = /^(was_)?hits_after_max_(hazards_first|oldest_first)$/.exec(key))) {
+    const old = !!mm[1], S = old ? superseded(D, E52_SRC, 'rows') : null, rows = old ? S.doc.rows : D.rows;
+    const xs = rows.filter(r => r.order === mm[2]).map(r => r.hits_after_contact_mean);
+    if (!xs.length || xs.some(x => typeof x !== 'number')) throw new Error(`${E52_SRC}: no hits_after_contact_mean for ${mm[2]}${old ? ` in ${S.key}` : ''}`);
+    return num({ value: Math.max(...xs), unit: '', digits: 2, flag: 'Modelled', source: `${src}${old ? `${S.key}.` : ''}rows, ${mm[2].replace('_', ' ')}, hits_after_contact_mean, the largest over every outage and link rate (mean over ${D.seeds.length || D.seeds} seeds)${old ? ', as published before the code review' : ''}` });
+  }
+  if (key === 'superseded_on') return dateText(superseded(D, E52_SRC, 'rows'), E52_SRC);
   const m = /^(\d+)_(\d+)_(hazards_first|oldest_first)_(\w+)$/.exec(key);
   if (!m) throw new Error(`${E52_SRC}: unknown key ${key}`);
   const [, out, rate, order, col] = m, hit = D.rows.filter(r => r.out_h === +out && r.rate_kbps === +rate && r.order === order);
@@ -236,6 +267,37 @@ export function e52(key) {
   if (/^t_/.test(col)) return v >= 90 ? num({ value: v / 60, unit: ' min', digits: v >= 600 ? 0 : 1, flag: 'Modelled', source: s }) : num({ value: v, unit: ' s', digits: v < 10 ? 1 : 0, flag: 'Modelled', source: s });
   if (/share/.test(col)) return num({ value: 100 * v, unit: ' %', digits: 2, flag: 'Modelled', source: s });
   return num({ value: v, unit: '', digits: 2, flag: 'Modelled', source: s });
+}
+
+// F-79 (B-118 step 2): E54 numbers in /protocol/ problems 4 and 6's text, at build time. <!--@e54:key--> with key
+//   [was:]<protocol>:<field>@<loss> for a row of results/E54_dtn.json (was: the row as published before the code review,
+//   from its superseded_* block), e.g. sf_ll:aoi_mean_s@0.25; or returns / was:returns (lost-link returns a seed), jobs,
+//   awards, team_jobs (awards_and_jobs, a seed) and superseded_on. Fields ending _s are times, _share shares, the rest counts.
+let e54doc = null;
+export function e54(key) {
+  e54doc ||= readJson(E54_SRC);
+  const D = e54doc, flag = (o, what) => num({ ...o, flag: 'Modelled', source: `${E54_SRC}: ${what}` });
+  const old = key.startsWith('was:'), k = old ? key.slice(4) : key, S = old ? superseded(D, E54_SRC, 'rows') : null, doc = old ? S.doc : D;
+  const pre = old ? `${S.key}.` : '', post = old ? ', as published before the code review' : '';
+  let m;
+  if ((m = /^(drop_retry|sf|sf_ll):(\w+)@([\d.]+)$/.exec(k))) {
+    const [, proto, field, loss] = m, hit = doc.rows.filter(r => r.protocol === proto && r.loss === +loss);
+    if (hit.length !== 1 || typeof hit[0][field] !== 'number') throw new Error(`${E54_SRC}: no ${pre}rows ${field} for ${proto} at loss ${loss}`);
+    const v = hit[0][field], what = `${pre}rows, ${proto}, loss ${loss}, ${field}, over ${hit[0].seeds} seeds${post}`;
+    if (/_s$/.test(field)) return flag(secs(v), what);
+    if (/_share$/.test(field)) return flag({ value: 100 * v, unit: ' %', digits: 1 }, what);
+    return flag({ value: v, unit: '', digits: 0 }, what);
+  }
+  if ((m = /^loss@([\d.]+)$/.exec(k)) && !old) {   // a loss level the rows hold, as a percentage (a setting, not a result)
+    if (!D.rows.some(r => r.loss === +m[1])) throw new Error(`${E54_SRC}: no rows at loss ${m[1]}`);
+    return `${fmt(100 * m[1], 0)} %`;
+  }
+  if (k === 'returns') { if (typeof doc.lost_link_returns_per_seed !== 'number') throw new Error(`${E54_SRC}: no ${pre}lost_link_returns_per_seed`); return flag({ value: doc.lost_link_returns_per_seed, unit: '', digits: 1 }, `${pre}lost_link_returns_per_seed${post}`); }
+  if (old) throw new Error(`${E54_SRC}: unknown key ${key}`);
+  const AJ = { jobs: 'jobs_per_seed', awards: 'awards_per_seed', team_jobs: 'team_jobs_per_seed' };
+  if (AJ[k]) { const v = D.awards_and_jobs?.[AJ[k]]; if (typeof v !== 'number') throw new Error(`${E54_SRC}: no awards_and_jobs.${AJ[k]}`); return flag({ value: v, unit: '', digits: k === 'jobs' ? 1 : 2 }, `awards_and_jobs.${AJ[k]}`); }
+  if (k === 'superseded_on') return dateText(superseded(D, E54_SRC, 'rows'), E54_SRC);
+  throw new Error(`${E54_SRC}: unknown key ${key}`);
 }
 
 // F-56 / B-95: /protocol/ problem 7 reads E55 (results/E55_integrity.json): the LRIP integrity rule as written (z^2 > gamma,
@@ -265,7 +327,18 @@ export function compactE55(doc) {
   return { format: 'lunarsim-e55-site', version: 1, source: E55_SRC, experiment: doc.experiment, rule: I.rule, detectors: det,
     consensus: [...C.map(cell), ...(M || []).map(x => ({ ...cell(x), mast: true }))],
     forgery: Object.fromEntries(Object.entries(auth.forgery || {}).map(([t, v]) => [t, v.attempts ? { attempts: v.attempts, accepted: v.accepted, bound: v['bound_2^-t'] } : { per_attempt: v.per_attempt }])),
-    replay: auth.replay || {} };
+    replay: auth.replay || {}, replay_recent: replayRecent(doc) };
+}
+// F-79 (B-118 N9): the second replay trial, messages sent in the last 60 s, with the accepted replays split
+function replayRecent(doc) {
+  const L = doc.replay_recent?.loss;
+  if (!L) throw new Error(`${E55_SRC}: no replay_recent.loss`);
+  const keep = ['replays', 'replays_with_age_le_10s', 'replays_accepted', 'accepted_missed_original_inside_window', 'accepted_other'];
+  return Object.fromEntries(Object.entries(L).map(([l, v]) => {
+    for (const k of keep) if (typeof v[k] !== 'number') throw new Error(`${E55_SRC}: no replay_recent.loss.${l}.${k}`);
+    if (v.accepted_missed_original_inside_window + v.accepted_other !== v.replays_accepted) throw new Error(`${E55_SRC}: replay_recent at loss ${l}: the accepted replays do not add up`);
+    return [l, Object.fromEntries(keep.map(k => [k, v[k]]))];
+  }));
 }
 export function stageE55(PUB) {
   if (!existsSync(join(ROOT, E55_SRC))) { console.log(`prepare-data: ${E55_SRC} missing; /protocol/ problem 7 says so`); return null; }
@@ -287,6 +360,13 @@ export function e55(key) {
   if ((m = /^recall_(test|ood)_(.+)_(jump|drift|frozen|frame|noise|all)$/.exec(key))) {
     const d = D.detectors[m[1]][m[2]]; if (!d) throw new Error(`${E55_SRC}: no detector ${m[2]} on ${m[1]}`);
     return flag(d.recall[m[3]], '', 2, `${m[2]}, ${m[1]} set, recall on ${m[3]} faults`);
+  }
+  // F-79: replay_<field>@<loss> from the recent-replay trial (replays, replays_accepted, accepted_missed_original_inside_window, accepted_other)
+  if ((m = /^replay_(\w+)@([\d.]+)$/.exec(key))) {
+    if (m[1] === 'loss') { if (!D.replay_recent[m[2]]) throw new Error(`${E55_SRC}: no replay_recent.loss.${m[2]}`); return `${fmt(100 * m[2], 0)} %`; }   // the loss level (a setting)
+    const v = D.replay_recent[m[2]]?.[m[1]];
+    if (typeof v !== 'number') throw new Error(`${E55_SRC}: no replay_recent.loss.${m[2]}.${m[1]}`);
+    return flag(v, '', 0, `replay_recent.loss.${m[2]}.${m[1]} (a replay a second of a message sent in the last 60 s)`);
   }
   if (key === 'agreement_max' || key === 'agreement_max_mast') {
     const mast = key.endsWith('mast'), cells = D.consensus.filter(c => c.mast === mast && c.F >= c.f);

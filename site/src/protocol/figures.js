@@ -270,15 +270,17 @@ async function figDtn(host) {
       ['Job-state reports lost', q => share(q.task_state_lost, q.task_state_n, q.task_state_lost_share)],
       ['Job-state reports: mean delay', q => secsText(q.task_state_delay_mean_s)],
       ['Job awards: mean delay', q => secsText(q.award_delay_mean_s)]]
-    : [['Jobs lost (the award expired; the job is auctioned again)', q => `${fmt(q.award_lost, 0)} of ${fmt(q.award_n, 0)}`],
-      ['Segments of silent vehicles past their timeout (unconfirmed under the rule)', (q, k) => (k === 'sf_ll' ? 'not counted yet' : `${fmt(q.stuck_reservations, 0)} (${fmt(q.stuck_hours, 0)} h)`)],
+    : [['Job awards that expired (the job is auctioned again)', q => `${fmt(q.award_lost, 0)} of ${fmt(q.award_n, 0)} awards`],
+      // F-79 (B-118 N7): under the rule the count is 0 by construction (the segment is marked unconfirmed), not measured
+      ['Segments of silent vehicles past their timeout (unconfirmed under the rule)', (q, k) => (k === 'sf_ll' && E.h14.clause_2_basis ? `${fmt(q.stuck_reservations, 0)} blocked, by rule (not measured)` : `${fmt(q.stuck_reservations, 0)} (${fmt(q.stuck_hours, 0)} h)`)],
       ['How old the base’s picture of a vehicle is: mean (worst vehicle)', q => `${secsText(q.aoi_mean_s)} (${secsText(q.aoi_worst_vehicle_s)})`],
       ['Job-state reports lost', q => share(q.task_state_lost, q.task_state_n, q.task_state_lost_share)]];
   const wrap = h('div', { class: 'pr-scroll' }), extra = h('div', { class: 'pr-dtn-extra' }), read = readout();
   function draw() {
     const q = Object.fromEntries(PROTO.map(([k]) => [k, E.rows.find(x => x.loss === loss && x.protocol === k)]));
     wrap.replaceChildren(h('table', { class: 'pr-table' },
-      h('caption', { class: 'small' }, `At ${fmt(100 * loss, 0)} % loss per hop, over ${E.seeds} seeds of the recorded month (${fmt(E.jobs_per_seed, 0)} jobs and ${fmt(E.reservations_per_seed, 0)} one-lane reservations a seed). Modelled, from ${E.source}.`),
+      // F-79 (B-117 i): one award per vehicle of a job, so awards = jobs + the extra vehicles of team jobs
+      h('caption', { class: 'small' }, `At ${fmt(100 * loss, 0)} % loss per hop, over ${E.seeds} seeds of the recorded month (${fmt(E.awards_and_jobs.jobs_per_seed, 1)} jobs a seed, ${fmt(E.awards_and_jobs.team_jobs_per_seed, 2)} of them team jobs of two vehicles, so ${fmt(E.awards_and_jobs.awards_per_seed, 2)} awards; ${fmt(E.reservations_per_seed, 0)} one-lane reservations a seed). Modelled, from ${E.source}.`),
       h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, ''), ...PROTO.map(([, l]) => h('th', { scope: 'col' }, l)))),
       h('tbody', {}, ROWS.map(([name, f]) => h('tr', {}, h('th', { scope: 'row' }, name), ...PROTO.map(([k, l]) => h('td', { 'data-label': l }, q[k] ? f(q[k], k) : '–')))))));
     if (focus === 'radio') {
@@ -295,7 +297,7 @@ async function figDtn(host) {
     } else {
       const H = E.h14, a = H.lost_jobs_drop_retry_per_seed, b = H.lost_jobs_sf_ll_per_seed;
       extra.replaceChildren();
-      setRead(read, `Hypothesis H14, at 25 % loss with the 14-day blackout: jobs lost per seed ${num({ value: a.mean, unit: '', digits: 2, flag: 'Modelled', source: `${E.source}: h14, drop and retry, mean over ${a.n} seeds (95 % interval ${fmt(a.ci[0], 2)} to ${fmt(a.ci[1], 2)})` })} with drop and retry against ${num({ value: b.mean, unit: '', digits: 0, flag: 'Modelled', source: `${E.source}: h14, store and forward with the lost-link rule, mean over ${b.n} seeds` })} with the lost-link rule: H14's first clause held; its second (no stuck reservation) is not testable as written. `
+      setRead(read, `Hypothesis H14, at 25 % loss with the 14-day blackout: jobs lost per seed ${num({ value: a.mean, unit: '', digits: 2, flag: 'Modelled', source: `${E.source}: h14, drop and retry, mean over ${a.n} seeds (95 % interval ${fmt(a.ci[0], 2)} to ${fmt(a.ci[1], 2)})` })} with drop and retry against ${num({ value: b.mean, unit: '', digits: 0, flag: 'Modelled', source: `${E.source}: h14, store and forward with the lost-link rule, mean over ${b.n} seeds` })} with the lost-link rule: H14's first clause held; ${H.clause_2_basis ? 'its second (no reservation stuck past its timeout) holds by rule, not by measurement' : 'its second (no stuck reservation) is not testable as written'}. `
         + 'A silent vehicle’s reservation is not released: its segment is marked unconfirmed and entered only at caution speed. Driving back to its last link point shortens how long the base goes without hearing from it.');
     }
   }
@@ -613,7 +615,9 @@ async function figE55(host) {
     const X = (value, digits, what) => num({ value, unit: '', digits, flag: 'Modelled', source: `${E.source}: ${what}` });
     setRead(read, `Forged messages with a truncated authentication code get through about as often as chance says: ${F8 ? `${X(F8.accepted, 0, 'auth.forgery 8 bits, accepted')} of ${fmt(F8.attempts, 0)} with 8 bits (chance: ${fmt(F8.attempts * F8.bound, 0)})` : ''}`
       + `${F16 ? `, ${X(F16.accepted, 0, 'auth.forgery 16 bits, accepted')} of ${fmt(F16.attempts, 0)} with 16 bits (chance: ${fmt(F16.attempts * F16.bound, 1)})` : ''}; the protocol uses 64 bits. `
-      + `Replayed messages accepted: ${rp.map(([l, v]) => `${X(v.replays_accepted, 0, `auth.replay at loss ${l}`)} of ${fmt(v.replays, 0)} at ${fmt(100 * l, 0)} % loss`).join(' and ')}.`);
+      + `Replays of a random earlier message from the whole log, mostly minutes old and so rarely inside the freshness window, accepted: ${rp.map(([l, v]) => `${X(v.replays_accepted, 0, `auth.replay at loss ${l}`)} of ${fmt(v.replays, 0)} at ${fmt(100 * l, 0)} % loss`).join(' and ')}. `
+      // F-79 (B-118 N9): the second trial, recent messages, with the accepted replays split
+      + `Replays of recent messages accepted: ${Object.entries(E.replay_recent).map(([l, v]) => `${X(v.replays_accepted, 0, `replay_recent.loss.${l}.replays_accepted`)} of ${fmt(v.replays, 0)} at ${fmt(100 * l, 0)} % loss${v.replays_accepted ? ` (${fmt(v.accepted_missed_original_inside_window, 0)} copies of a message the receiver had missed, still fresh; ${fmt(v.accepted_other, 0)} of any other kind)` : ''}`).join(' and ')}.`);
   }
   host.append(h('p', { class: 'ui-label pr-sub' }, 'Faults found against false alarms, as the threshold moves'), ...e55Curve(C),
     h('p', { class: 'ui-label pr-sub' }, 'Spotting a wrong position report'), h('div', { class: 'pr-ctl' }, segS.el), det,
