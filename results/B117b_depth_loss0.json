@@ -1,0 +1,332 @@
+{
+ "task": "B-117 (b), P1 S11: bundle depths 2 and 5 at loss 0",
+ "note": "python tools/atc/b117b_depth_loss0.py run     # resumable, cached in .cache/atc/b117b.json (--max-seconds 520)\n    python tools/atc/b117b_depth_loss0.py table   # -> results/B117b_depth_loss0.json (a new file)",
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+  20,
+  21,
+  22,
+  23,
+  24,
+  25,
+  26,
+  27,
+  28,
+  29,
+  30
+ ],
+ "code": "5bf22fa6d5ccfe47+fixpoint",
+ "repeated_E41_cells_max_abs_diff": {
+  "C_AUCTION loss 0": {
+   "atc_urgent_wait_mean_cens_h": 0.0,
+   "atc_urgent_wait_p95_cens_h": 0.0,
+   "atc_urgent_within24_share": 0.0,
+   "delivered_kg": 0.0,
+   "atc_claims_stale": 0.0,
+   "atc_claims_won": 0.0,
+   "atc_wasted_trips": 0.0,
+   "atc_msgs_lost": 0.0,
+   "atc_rallies": 0.0
+  },
+  "C_AUCTION depth 5 loss 0.25": {
+   "atc_urgent_wait_mean_cens_h": 0.0,
+   "atc_urgent_wait_p95_cens_h": 0.0,
+   "atc_urgent_within24_share": 0.0,
+   "delivered_kg": 0.0,
+   "atc_claims_stale": 0.0,
+   "atc_claims_won": 0.0,
+   "atc_wasted_trips": 0.0,
+   "atc_msgs_lost": 0.0,
+   "atc_rallies": 0.0
+  }
+ },
+ "repeated_E41_cells_reproduce": true,
+ "cells": {
+  "C_AUCTION loss 0": {
+   "atc_urgent_wait_mean_cens_h": 14.2983,
+   "atc_urgent_wait_p95_cens_h": 61.4946,
+   "atc_urgent_within24_share": 0.8346,
+   "delivered_kg": 1471343.5738,
+   "atc_claims_stale": 0.0,
+   "atc_claims_won": 0.0,
+   "atc_wasted_trips": 0.0,
+   "atc_msgs_lost": 0.0,
+   "atc_rallies": 811.0667
+  },
+  "C_AUCTION loss 0.25": {
+   "atc_urgent_wait_mean_cens_h": 15.682,
+   "atc_urgent_wait_p95_cens_h": 68.0521,
+   "atc_urgent_within24_share": 0.8141,
+   "delivered_kg": 1471033.1833,
+   "atc_claims_stale": 0.0,
+   "atc_claims_won": 0.0,
+   "atc_wasted_trips": 0.0667,
+   "atc_msgs_lost": 4927.1667,
+   "atc_rallies": 810.3333
+  },
+  "C_AUCTION loss 0.4": {
+   "atc_urgent_wait_mean_cens_h": 18.158,
+   "atc_urgent_wait_p95_cens_h": 75.0901,
+   "atc_urgent_within24_share": 0.8139,
+   "delivered_kg": 1471159.125,
+   "atc_claims_stale": 0.0,
+   "atc_claims_won": 0.0,
+   "atc_wasted_trips": 0.9333,
+   "atc_msgs_lost": 7524.9333,
+   "atc_rallies": 813.8
+  },
+  "C_AUCTION depth 2 loss 0": {
+   "atc_urgent_wait_mean_cens_h": 16.8905,
+   "atc_urgent_wait_p95_cens_h": 75.8574,
+   "atc_urgent_within24_share": 0.8021,
+   "delivered_kg": 1470715.0677,
+   "atc_claims_stale": 84.2333,
+   "atc_claims_won": 2619.6667,
+   "atc_wasted_trips": 0.0,
+   "atc_msgs_lost": 0.0,
+   "atc_rallies": 678.2667
+  },
+  "C_AUCTION depth 2 loss 0.25": {
+   "atc_urgent_wait_mean_cens_h": 19.4183,
+   "atc_urgent_wait_p95_cens_h": 84.5168,
+   "atc_urgent_within24_share": 0.7803,
+   "delivered_kg": 1471672.9396,
+   "atc_claims_stale": 84.6,
+   "atc_claims_won": 2617.7,
+   "atc_wasted_trips": 0.1,
+   "atc_msgs_lost": 6795.4,
+   "atc_rallies": 679.9333
+  },
+  "C_AUCTION depth 2 loss 0.4": {
+   "atc_urgent_wait_mean_cens_h": 23.1845,
+   "atc_urgent_wait_p95_cens_h": 103.4342,
+   "atc_urgent_within24_share": 0.767,
+   "delivered_kg": 1472018.0125,
+   "atc_claims_stale": 85.7333,
+   "atc_claims_won": 2622.3333,
+   "atc_wasted_trips": 1.0667,
+   "atc_msgs_lost": 10388.0,
+   "atc_rallies": 678.7667
+  },
+  "C_AUCTION depth 5 loss 0": {
+   "atc_urgent_wait_mean_cens_h": 19.0597,
+   "atc_urgent_wait_p95_cens_h": 82.9412,
+   "atc_urgent_within24_share": 0.7877,
+   "delivered_kg": 1471012.5024,
+   "atc_claims_stale": 315.4667,
+   "atc_claims_won": 2941.2667,
+   "atc_wasted_trips": 0.0,
+   "atc_msgs_lost": 0.0,
+   "atc_rallies": 627.2333
+  },
+  "C_AUCTION depth 5 loss 0.25": {
+   "atc_urgent_wait_mean_cens_h": 21.7125,
+   "atc_urgent_wait_p95_cens_h": 94.2358,
+   "atc_urgent_within24_share": 0.7834,
+   "delivered_kg": 1469577.2726,
+   "atc_claims_stale": 312.6333,
+   "atc_claims_won": 2935.9,
+   "atc_wasted_trips": 0.1333,
+   "atc_msgs_lost": 7976.2333,
+   "atc_rallies": 628.8333
+  },
+  "C_AUCTION depth 5 loss 0.4": {
+   "atc_urgent_wait_mean_cens_h": 28.2021,
+   "atc_urgent_wait_p95_cens_h": 121.1529,
+   "atc_urgent_within24_share": 0.7544,
+   "delivered_kg": 1470783.2229,
+   "atc_claims_stale": 313.9333,
+   "atc_claims_won": 2937.2,
+   "atc_wasted_trips": 1.1667,
+   "atc_msgs_lost": 12108.7667,
+   "atc_rallies": 636.3333
+  }
+ },
+ "depth_minus_depth1": {
+  "atc_urgent_wait_mean_cens_h": {
+   "depth 2 - depth 1, loss 0": {
+    "n": 30,
+    "mean": 2.5922,
+    "lo": 0.481,
+    "hi": 4.6215,
+    "lo90": 0.8392,
+    "hi90": 4.3007,
+    "p": 0.016,
+    "b_mean": 14.2983
+   },
+   "depth 2 - depth 1, loss 0.25": {
+    "n": 30,
+    "mean": 3.7363,
+    "lo": 1.8087,
+    "hi": 5.54,
+    "lo90": 2.1058,
+    "hi90": 5.2634,
+    "p": 0.0001,
+    "b_mean": 15.682
+   },
+   "depth 2 - depth 1, loss 0.4": {
+    "n": 30,
+    "mean": 5.0265,
+    "lo": 2.2821,
+    "hi": 7.6335,
+    "lo90": 2.7518,
+    "hi90": 7.2463,
+    "p": 0.0004,
+    "b_mean": 18.158
+   },
+   "depth 5 - depth 1, loss 0": {
+    "n": 30,
+    "mean": 4.7614,
+    "lo": 2.8393,
+    "hi": 6.6573,
+    "lo90": 3.1652,
+    "hi90": 6.3459,
+    "p": 0.0001,
+    "b_mean": 14.2983
+   },
+   "depth 5 - depth 1, loss 0.25": {
+    "n": 30,
+    "mean": 6.0304,
+    "lo": 4.4488,
+    "hi": 7.7747,
+    "lo90": 4.6788,
+    "hi90": 7.4792,
+    "p": 0.0001,
+    "b_mean": 15.682
+   },
+   "depth 5 - depth 1, loss 0.4": {
+    "n": 30,
+    "mean": 10.0441,
+    "lo": 7.6365,
+    "hi": 12.6473,
+    "lo90": 7.9813,
+    "hi90": 12.2298,
+    "p": 0.0001,
+    "b_mean": 18.158
+   }
+  },
+  "atc_claims_stale": {
+   "depth 2 - depth 1, loss 0": {
+    "n": 30,
+    "mean": 84.2333,
+    "lo": 80.9333,
+    "hi": 88.2667,
+    "lo90": 81.4,
+    "hi90": 87.5333,
+    "p": 0.0001,
+    "b_mean": 0.0
+   },
+   "depth 2 - depth 1, loss 0.25": {
+    "n": 30,
+    "mean": 84.6,
+    "lo": 81.7333,
+    "hi": 87.5,
+    "lo90": 82.2,
+    "hi90": 87.0,
+    "p": 0.0001,
+    "b_mean": 0.0
+   },
+   "depth 2 - depth 1, loss 0.4": {
+    "n": 30,
+    "mean": 85.7333,
+    "lo": 82.4,
+    "hi": 89.3,
+    "lo90": 82.9,
+    "hi90": 88.7,
+    "p": 0.0001,
+    "b_mean": 0.0
+   },
+   "depth 5 - depth 1, loss 0": {
+    "n": 30,
+    "mean": 315.4667,
+    "lo": 307.3,
+    "hi": 323.5667,
+    "lo90": 308.5317,
+    "hi90": 322.2333,
+    "p": 0.0001,
+    "b_mean": 0.0
+   },
+   "depth 5 - depth 1, loss 0.25": {
+    "n": 30,
+    "mean": 312.6333,
+    "lo": 302.4,
+    "hi": 323.3667,
+    "lo90": 303.8333,
+    "hi90": 321.4667,
+    "p": 0.0001,
+    "b_mean": 0.0
+   },
+   "depth 5 - depth 1, loss 0.4": {
+    "n": 30,
+    "mean": 313.9333,
+    "lo": 304.7,
+    "hi": 323.5333,
+    "lo90": 306.0667,
+    "hi90": 321.9667,
+    "p": 0.0001,
+    "b_mean": 0.0
+   }
+  }
+ },
+ "part_due_to_loss": {
+  "depth 2, loss 0.25": {
+   "n": 30,
+   "mean": 1.1441,
+   "lo": -0.9394,
+   "hi": 3.3174,
+   "lo90": -0.6067,
+   "hi90": 2.9385,
+   "p": 0.2987,
+   "b_mean": 2.5922
+  },
+  "depth 2, loss 0.4": {
+   "n": 30,
+   "mean": 2.4343,
+   "lo": -0.2145,
+   "hi": 4.8317,
+   "lo90": 0.2451,
+   "hi90": 4.4747,
+   "p": 0.0684,
+   "b_mean": 2.5922
+  },
+  "depth 5, loss 0.25": {
+   "n": 30,
+   "mean": 1.2691,
+   "lo": -0.4703,
+   "hi": 3.146,
+   "lo90": -0.2095,
+   "hi90": 2.826,
+   "p": 0.1619,
+   "b_mean": 4.7614
+  },
+  "depth 5, loss 0.4": {
+   "n": 30,
+   "mean": 5.2828,
+   "lo": 2.9293,
+   "hi": 7.5569,
+   "lo90": 3.3209,
+   "hi90": 7.1841,
+   "p": 0.0001,
+   "b_mean": 4.7614
+  }
+ },
+ "part_due_to_loss_note": "(depth d - depth 1 at loss L) - (depth d - depth 1 at loss 0), per seed; b_mean is the mean depth penalty at loss 0 (the part not due to loss)"
+}

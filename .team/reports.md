@@ -11568,3 +11568,76 @@ Tests (one file at a time): test_nn_integrity 20 passed (3 new: carry-over, empt
 test_dtn 28 passed (2 new: results file written whole, link files stamped and seed-checked); test_e50_build 6 passed.
 Site node tests were not run (phase6_family.json only gains a key).
 Section O: the eight follow-ups as one line each, plus the build-alone note, and a "Done in B-121" line.
+
+- BACKEND 17:22: B-117 started (go from LEAD after b16349c). Item (a): 120 ATC runs of a few s each, one process, chunks under 9 min, gated at 0.8 GB (under 0.5 GB each).
+
+## B-117 (a) and (b) DONE (BACKEND, 14 Nov, on main b16349c). Two NEW results files; no existing results file is touched.
+Machine: single process, OMP 1, gated at 0.8 GB; ATC runs of 2.5-5 s.
+
+### (a) P1 S3: the marketplace with the auction's return-to-coverage move
+- Runner: tools/atc/b117a_oracle_rally.py (run / table) -> results/B117a_oracle_rally.json (new).
+- Design: E40 at 30 % load, block v1, seeds 1-30, with the dispatch fixed point as E40 runs (run_phase5 --fixpoint) and E40's
+  regime arguments (C_AUCTION loss 0.10). 4 cells x 30 runs, all on the current code:
+  - O_ORACLE and C_AUCTION, repeated as a check. They reproduce results/E40_runs.csv exactly: max abs diff 0 on all 5 metrics,
+    all 30 seeds.
+  - "O + rally (unheard)": regimes o_rally="unheard". This is the auction's own trigger and move: an idle robot with no radio
+    path to BASE drives to the nearest site the mast sees (to BASE while the base is down).
+  - "O + rally (all idle)": the B-75 cell, repeated.
+- Results, urgent wait (censored mean, h):
+
+  | cell | urgent wait | rallies a year | deadhead share |
+  |---|---|---|---|
+  | O_ORACLE | 14.932 | 0 | 0.498 |
+  | C_AUCTION | 14.094 | 808.7 | 0.712 |
+  | O + rally (unheard) | 14.086 | 412.4 | 0.635 |
+  | O + rally (all idle) | 14.213 | 418.9 | 0.636 |
+
+- Paired differences (analyse_e40.boot, 95 % CI):
+  - auction - marketplace: -0.84 (-2.91 to 0.95)
+  - marketplace with the move - marketplace: -0.85 (-2.68 to 0.76)
+  - auction - marketplace with the move: +0.008 (-0.98 to 0.96, p 0.97)
+  - all-idle variant - marketplace: -0.72 (-2.87 to 1.15)
+- Reading: given the same move, the full-information marketplace waits as long as the auction, to within 0.01 h. The auction's
+  0.84 h point advantage is the return move, not where the decision is made. That is what P1 5.4 suspected but could not
+  separate. The marketplace does not need the move as often: 412 against 809 rallies a year.
+- Sentences this would change, if you take it into the paper (no printed value moves; these are additions):
+  - P1 5.4 "The marketplace was not run with the same move, so the two cannot be separated here".
+  - P1 6.1 "the marketplace with the same return-to-coverage move" in the list of control runs.
+  - P1 7 "The marketplace was not run with the same move".
+- By-product, not in results: my first pass ran without the fixed point and with the auction at loss 0, a mistake I caught by the
+  check. It reproduced B-75's results/ATC_oracle_diag.json cells exactly (O_ORACLE 14.4684, "O + rally" 14.8252, "C_AUCTION
+  loss 0" 14.9316). So B-75 is reproducible on the current code; it predates PREREG change 5. Kept in
+  .cache/atc/b117a_nofixpoint_noloss.json.
+
+### (b) P1 S11: auction bundle depths 2 and 5 at loss 0
+- Runner: tools/atc/b117b_depth_loss0.py -> results/B117b_depth_loss0.json (new).
+- Design: two new cells, defined as E41 defines its depth cells (cell("E41", ..., block="v1"), fixed point, seeds 1-30):
+  C_AUCTION depth 2 loss 0 and depth 5 loss 0.
+- Check: two E41 cells repeated on the current code, C_AUCTION loss 0 and depth 5 loss 0.25. Both equal
+  results/E41_runs.lead.csv exactly (max abs diff 0, 9 metrics), so the new cells pair with the stored rows. The table step
+  refuses otherwise.
+- Bootstrap: analyse_e41_pairs.paired (20,000 resamples). The three published lossy comparisons come out as P1 prints them:
+  depth 5 at 0.25 +6.0 (4.4 to 7.8), at 0.40 +10.0 (7.6 to 12.6); depth 2 at 0.25 +3.7 (1.8 to 5.5), at 0.40 +5.0 (2.3 to 7.6).
+  P1 prints 2.3 to 7.6 and 7.7 to 12.6; the last digit differs because each comparison here has its own random stream.
+- Results, urgent wait (h): depth 1 / 2 / 5:
+
+  | loss | depth 1 | depth 2 | depth 5 |
+  |---|---|---|---|
+  | 0 | 14.30 | 16.89 | 19.06 |
+  | 0.25 | 15.68 | 19.42 | 21.71 |
+  | 0.40 | 18.16 | 23.18 | 28.20 |
+
+- Depth penalty at loss 0 (95 % CI): depth 2 +2.59 (0.48 to 4.62); depth 5 +4.76 (2.84 to 6.66).
+- Stale claims a year: depth 2 = 84.2 at loss 0 (84.6 and 85.7 lossy); depth 5 = 315.5 at loss 0 (312.6 and 313.9).
+- Part of the penalty due to loss, (depth d - depth 1 at L) - (depth d - depth 1 at 0), paired by seed:
+  - depth 5: at 0.25 +1.27 (-0.47 to 3.15); at 0.40 +5.28 (2.93 to 7.56)
+  - depth 2: at 0.25 +1.14 (-0.94 to 3.32); at 0.40 +2.43 (-0.21 to 4.83)
+- Reading: bundling alone costs 2.6 h at depth 2 and 4.8 h at depth 5, without any loss. Loss adds to the depth-5 penalty only
+  at 0.40, by 5.3 h (about half of the 10.0 h). At 0.25 nothing is resolved. Stale claims do not depend on loss.
+- Lott and Honary's "the best depth falls under loss": here depth 1 is best at every loss, 0 included, and the gap to depth 5
+  widens at 0.40.
+- Sentences this would change (additions; no printed value moves): P1 3.7 and 5.5 "The design has no cell with depth 2 or 5 and
+  no loss, so it cannot say how much of this penalty is due to loss ... can therefore be neither confirmed nor contradicted".
+
+Next: (d) and (e1) (E54 replay with retry budgets; new key in E54_dtn.json, nothing else in that file moves; I will
+verify that before writing).
