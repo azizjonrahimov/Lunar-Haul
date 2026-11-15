@@ -11952,3 +11952,24 @@ Sentences this would change (no printed value moves):
   the beacon survey (16 of 30 at 1 m). UWB sigma does not matter.
 
 - BACKEND 04:00: B-117 (j3) E51 at 4x started: 4x engine runs, ~0.6 GB peak, one process, gated at 0.8 GB.
+
+## B-117 (j3) DONE (BACKEND, 15 Nov): E51 (clocks, H11) at 4x, 10 seeds. NEW results/E51_clocks_m4.json, E51_table_m4.csv, E51b_clocks_m4.json, E51b_table_m4.csv; E51's own files untouched
+- Runner: tools/atc/b117j3_e51_4x.py, untracked as asked. It runs run_e51.run_seed and build unchanged, with run_e50.record at
+  fleet multiple 4 (32 vehicles); the cache is .cache/atc/e51_m4.
+- Cost: 10 seeds, 22 min, about 0.6 GB.
+- Check: every seed's perfect run equals E50's cached 4x cell (delay equal; code 5bf22fa6d5ccfe47). The table refuses otherwise.
+- H11 at 4x is SUPPORTED, with the same intervals as at 1x: crystal, lunar scale, resync every 10 s, 1 min, 10 min, 1 h and 6 h
+  give zero clock-caused reservation conflicts (guard 0.1 s) in all 10 seeds, with one-way error p95 above 0.3 m.
+- Daily resync:
+  - lunar scale: 5 conflicts in 2 of 10 seeds at 4x, against 1 in 1 of 30 at 1x
+  - earth scale: 6 conflicts in 4 of 10 at 4x, against 0 at 1x
+- Never resynced:
+  - lunar scale: 365 conflicts, all 10 seeds, against 15 in 9 of 30 at 1x
+  - earth scale: 346, against 10
+- Reservations per seed are 392 against 87.6 at 1x. Contact share is 0.910 against 0.932, so sync attempts fail 9.0 % of the
+  time against 6.8 %.
+- Sentences this would change: P3 6.6 (E51 at larger fleets in the list) and H11 at larger fleets. H11's 1x decision holds at 4x
+  unchanged. Only the daily and never-resynced rows get worse, roughly with the reservation count. No printed value moves.
+- 8x was not run (LATER in the estimate; needs B-116's 8x conditions).
+
+- BACKEND 04:24: B-117 (f) reduced started: E46 runs at 4 value-of-time levels (1,440 runs of ~7 s), one process, under 0.5 GB, gated at 0.8 GB.
