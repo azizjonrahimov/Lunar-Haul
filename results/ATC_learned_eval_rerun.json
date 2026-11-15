@@ -1307,5 +1307,6 @@
    "rerun": -2.315
   }
  ],
- "unchanged_count": 78
+ "unchanged_count": 78,
+ "engine_note_b122": "B-122 (15 Nov 2026): this rerun ran WITHOUT PREREG change 5 (the dispatch fixed point and wake dedupe, Scenario.p5 dispatch_fixpoint): tools/atc/train_bid.py did not set it, so only the engine fixes on the default path were in it, not change 5, and its hand bids at 30 % equal E40's C_AUCTION cells before change 5 (14.0865 h), not E40's current cells (14.0943 h). The same evaluation on the engine with change 5 is results/ATC_learned_eval_fixpoint.json. No value in this file is changed."
 }

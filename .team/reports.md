@@ -11789,3 +11789,115 @@ Sentences this would change. No printed value moves; these are additions or repl
   the same search budget, the hand rule beats the linear policy by 2.0 h at 30 % load. It gains nothing at 60 %, where the linear
   policy stays 30.6 h ahead. The comparison of learned against hand-built bids then turns on transfer across load, not on
   search alone.
+
+- BACKEND 22:00: B-117 (g)+(j1) at 1x started: E50 engine + navigation runs, one process, ~0.45 GB peak, chunks under 9 min, gated at 0.8 GB.
+
+- BACKEND 22:24: B-122 started (learned-bid evaluation and (c) on the dispatch fixed point); (g)+(j1) paused after seed 10. ATC runs, one process, under 0.5 GB, chunks under 9 min.
+
+## B-122 DONE (BACKEND, 15 Nov): the learned-bid evaluation and control (c) on the dispatch fixed point. No PREREG decision moves.
+
+Files:
+- NEW results/ATC_learned_eval_fixpoint.json.
+- results/B117c_bid_ablation.json: main content now on the fixed point. The earlier content is kept unchanged under
+  "no_fixpoint_2026-11-15", with a reason (verified identical to the old file).
+- results/ATC_learned_eval_rerun.json: one key added, "engine_note_b122". No value changed (git diff: that key only).
+- results/ATC_learned_eval.json: untouched.
+
+Code:
+- tools/atc/train_bid.py: opt-in FIXPOINT / --fixpoint, default off. The cached no-fixpoint runs still reproduce (the (c) no-fix
+  references used them). It adds its own cache .cache/atc/bid_fixpoint, cmd_table_fixpoint, and a code stamp
+  "5bf22fa6d5ccfe47+fixpoint" on every run.
+- tools/atc/b117c_bid_ablation.py: --fixpoint (own cache .cache/atc/b117c_fixpoint). The 60 % hand and linear rows are repeated.
+
+Gates:
+- Hand at 30 % equals E40's C_AUCTION cells run for run (max abs diff 0, mean 14.0943 h).
+- (c)'s hand and linear references at 30 % and 60 % equal the fixed-point evaluation's runs exactly.
+
+Finding on the way (a defect; cause not traced): with the fixed point, train_bid's collect=True changes the run itself. Hand seed
+1 gives 9.78 h collected against 9.06 h = E40; seed 2 gives 8.47 against 9.52. Without the fixed point, collecting changed
+nothing. So in fixed-point mode the outcome comes from a run without collection, and the held-out agreement from a second
+collecting run (its urgent wait is stored beside it as agreement_run_urgent_h). The 51 collect-affected runs made first were
+discarded.
+
+### Learned-bid evaluation, no fixed point (ATC_learned_eval_rerun.json) -> fixed point (ATC_learned_eval_fixpoint.json)
+Urgent wait, h, seeds 1-30; paired t intervals (train_bid._paired).
+
+| | 30 % no-fix | 30 % fixpoint | 60 % no-fix | 60 % fixpoint |
+|---|---|---|---|---|
+| O_ORACLE | 14.468 | 14.932 | 63.915 | 66.319 |
+| hand | 14.087 | 14.094 | 74.978 | 76.681 |
+| mlp | 13.929 | 13.847 | 80.343 | 75.338 |
+| linear | 11.598 | 11.773 | 44.689 | 45.219 |
+
+- linear - hand: 30 % -2.489 (-4.154 to -0.823) -> -2.321 (-4.089 to -0.553); 60 % -30.289 (-36.048 to -24.53) -> -31.462
+  (-38.357 to -24.567)
+- mlp - hand: 30 % -0.157 (-1.615 to 1.301) -> -0.247 (-1.694 to 1.199); 60 % +5.365 (-2.872 to 13.602) -> -1.342 (-6.117 to 3.432)
+- held-out agreement at 30 %: hand 0.8835 -> 0.884, mlp 0.8637 -> 0.8638, linear 0.7076 -> 0.7028
+
+Guards, linear - hand, seeds 1-10:
+- 30 %:
+  - urgent -1.232 (-3.91 to 1.445) -> -2.409 (-4.715 to -0.102)
+  - prio-2 delay +0.161 (-2.322 to 2.644) -> -1.172 (-3.936 to 1.593)
+  - bulk delay +0.23 (0.019 to 0.44) -> -0.092 (-0.408 to 0.223)
+  - mean delay +0.178 (-0.037 to 0.393) -> -0.151 (-0.47 to 0.168)
+  - tonne-days waiting +14.79 (-0.49 to 30.08) -> -3.42 (-22.56 to 15.72)
+  - starved +0.1 (-0.54 to 0.74) -> +0.1 (-0.27 to 0.47)
+  - delivered kg +1,959 (-1,907 to 5,825) -> +2,408 (-1,979 to 6,796)
+- 60 %:
+  - urgent -23.22 (-31.76 to -14.68) -> -31.46 (-44.58 to -18.34)
+  - prio-2 -24.61 (-40.55 to -8.66) -> -26.24 (-34.66 to -17.82)
+  - bulk -5.65 (-9.12 to -2.18) -> -5.69 (-9.39 to -1.98)
+  - mean delay -6.23 (-9.86 to -2.59) -> -6.44 (-10.12 to -2.76)
+  - tonne-days -1,043 (-1,687 to -400) -> -1,129 (-1,692 to -566)
+  - starved +1.4 (-51.5 to 54.3) -> -15.7 (-79.4 to 48.0)
+  - delivered kg +6,907 (-5,159 to 18,973) -> +7,959 (-845 to 16,764)
+
+OOD, linear - hand, seeds 1-10 (hand urgent wait no-fix -> fixpoint in brackets):
+- 2eq: -4.95 (-8.66 to -1.24) -> -4.46 (-8.26 to -0.67) [16.97 -> 16.98]
+- 5eq: -1.33 (-3.50 to 0.84) -> -1.38 (-3.56 to 0.81) [13.95 -> 13.75]
+- loss 0.25: -2.32 (-4.29 to -0.34) -> -3.71 (-6.59 to -0.83) [15.64 -> 17.20]
+- loss 0.40: -1.62 (-4.91 to 1.68) -> -2.86 (-6.14 to 0.42) [18.00 -> 18.98]
+- load 10 %: -1.22 (-2.12 to -0.31) -> -2.19 (-4.43 to 0.05) [11.52 -> 12.49]
+- year 2038: -1.23 (-3.91 to 1.45) -> -2.41 (-4.72 to -0.10) [13.26 -> 14.20]
+- Note: "year 2038" equals the 30 % guard cell run for run on both engines. These regimes do not depend on the start year
+  (PREREG change 4), so that OOD cell repeats the guard seeds.
+
+### (c), no fixed point -> fixed point
+- Urgent wait at 30 %: hand 14.0865 -> 14.0943; linear 11.5979 -> 11.7734.
+- Ablation, zeroed weight minus linear:
+  - slack_d +2.707 (1.183 to 4.366) -> +2.446 (1.060 to 3.987). Slack-zeroed minus hand: +0.218 (-0.926 to 1.421) -> +0.125
+    (-1.054 to 1.395).
+  - prio +0.758 (0.098 to 1.561) -> +0.783 (0.092 to 1.607).
+  - landing -0.130 (-0.741 to 0.376) -> -0.369 (-0.665 to -0.113): removing the landing weight now helps.
+  - not resolved on either engine: job_h +0.63 -> +0.31; age_d +0.58 -> +0.22; mass_frac +0.21 -> -0.04; approach_h
+    +0.07 -> -0.28; heard +0.12 -> -0.00.
+  - battery +0.057 -> +0.010 (0.0 to 0.031); dark_or_low -0.160 -> +0.015 (0.0 to 0.046).
+  - link_base 0 -> 0; queue 0 -> 0; bundle_n 0.0004 -> 0.011 (-0.014 to 0.047).
+- Tuned hand rule, re-selected by the CEM on the fixed point (same budget, seeds and streams):
+  - selected: generation 4, w_p1 32.3, w_p2 1.86, w_age 0.040, vot_scale 1.50. Before: generation 1, 26.2, 3.26, 0.028, 1.83.
+    The weights differ; same direction from the defaults (6, 2, 0.08, 1).
+  - selection seeds: 7.118 h against default 10.174 h. Before: 7.158 against 10.092.
+- Tuned rule on seeds 1-30 (60 % hand and linear repeated):
+  - 30 %: tuned 9.633 -> 8.954. Tuned - hand -4.454 (-6.335 to -2.833) -> -5.140 (-6.714 to -3.664). Linear - tuned +1.965
+    (1.045 to 2.916) -> +2.819 (1.855 to 3.824).
+  - 60 %: tuned 75.249 -> 58.024; hand 74.978 -> 76.681; linear 44.689 -> 45.219. Tuned - hand +0.271 (-14.5 to 17.2) -> -18.656
+    (-29.076 to -6.618). Linear - tuned -30.560 (-48.780 to -14.930) -> -12.806 (-25.176 to -3.177).
+
+### Conclusions
+- "The gain is the slack weight": holds. New on the fixed point: zeroing the landing weight helps, by 0.37 h.
+- "The tuned hand rule beats linear at 30 % and not at 60 %": holds. At 30 % the lead grows to 2.8 h. At 60 % linear still
+  leads, by 12.8 h (3.2 to 25.2).
+- CHANGES: "the tuning gains nothing at 60 %". On the fixed point the tuned rule gains 18.7 h over the hand rule at 60 %
+  (6.6 to 29.1). Transfer across load is partial, not absent.
+- CHANGES: "the guard check is not clean". On the fixed point no guard metric gets significantly worse at 30 % or 60 %. The
+  30 % bulk-delay cost (+0.23 h, CI 0.02 to 0.44) is gone (-0.09, -0.41 to 0.22). The 30 % urgent gain on the guard seeds is now
+  significant (-2.41, -4.72 to -0.10).
+- OOD: load 10 % loses significance (CI reaches +0.05); year 2038 (= the 30 % guard seeds) gains it; loss 0.25 stays
+  significant and grows (-3.71).
+- MLP at 60 %: +5.4 -> -1.3 h; both CIs span 0.
+
+### PREREG decisions: none moves
+- H4 for the MLP (the pre-registered C_LEARNED): not supported at 30 % and 60 % on both engines (CIs span 0).
+- H4 for the linear model at 30-60 %: supported on both engines.
+- H4's 10 % TOST part (±2 % of hand = ±0.25 h): fails on both. The CI is -2.12 to -0.31 without the fixed point and
+  -4.43 to 0.05 with it.

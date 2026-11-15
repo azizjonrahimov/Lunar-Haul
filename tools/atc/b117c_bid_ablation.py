@@ -39,13 +39,24 @@ RUNS = os.path.join(CACHE, "runs.json")
 CEM_STATE = os.path.join(CACHE, "cem_hand.json")
 OUT = os.path.join(ROOT, "results", "B117c_bid_ablation.json")
 REF_RUNS = os.path.join(ROOT, ".cache", "atc", "bid_rerun", "eval_runs.json")
+FIXPOINT = False          # B-122: --fixpoint runs everything on the engine with PREREG change 5 (own cache)
+NO_FIX_BLOCK = "no_fixpoint_2026-11-15"
 HAND = {"w_p1": 6.0, "w_p2": 2.0, "w_age": 0.08, "vot_scale": 1.0}
 NAMES = list(HAND)
 
 
 def _code():
     import run_e50 as E5
-    return E5.code_fingerprint()
+    return E5.code_fingerprint() + ("+fixpoint" if FIXPOINT else "")
+
+
+def _set_fixpoint():
+    """B-122: train_bid's runs with the dispatch fixed point; own cache; references from the fixed-point evaluation."""
+    global FIXPOINT, CACHE, RUNS, CEM_STATE, REF_RUNS
+    FIXPOINT = TB.FIXPOINT = True
+    CACHE = os.path.join(ROOT, ".cache", "atc", "b117c_fixpoint")
+    RUNS, CEM_STATE = os.path.join(CACHE, "runs.json"), os.path.join(CACHE, "cem_hand.json")
+    REF_RUNS = os.path.join(ROOT, ".cache", "atc", "bid_fixpoint", "eval_runs.json")
 
 
 def _load(path, default):
@@ -112,6 +123,12 @@ def cmd_ablate(max_s):
             if R.get(f"{lab}|30|{seed}", reg, "30", seed, kw) is None:
                 print("ablate: time limit; rerun", flush=True)
                 return False
+    if FIXPOINT:                                          # B-122: the 60 % references repeated, not from a cache
+        for lab, reg, kw in plan[:2]:
+            for seed in TB.EVAL_SEEDS:
+                if R.get(f"{lab}|60|{seed}", reg, "60", seed, kw) is None:
+                    print("ablate: time limit; rerun", flush=True)
+                    return False
     print("ablate: done", flush=True)
     return True
 
@@ -200,6 +217,8 @@ def cmd_table():
     ser = lambda lab, load="30": np.array([runs[f"{lab}|{load}|{s}"][m] for s in TB.EVAL_SEEDS])
     refser = lambda lab, load: np.array([ref[f"{lab}|{load}|{s}"][m] for s in TB.EVAL_SEEDS])
     check = {lab: float(np.max(np.abs(ser(lab) - refser(lab, "30")))) for lab in ("hand", "linear")}
+    if FIXPOINT:
+        check.update({f"{lab} 60": float(np.max(np.abs(ser(lab, "60") - refser(lab, "60")))) for lab in ("hand", "linear")})
     if any(v != 0.0 for v in check.values()):
         raise SystemExit(f"the repeated references differ from train_bid's cached evaluation runs: {check}")
     best, st = _selected()
@@ -219,14 +238,31 @@ def cmd_table():
                          "history": st["history"]}
     for load in ("30", "60"):
         th = ser("hand tuned", load)
-        hand = ser("hand") if load == "30" else refser("hand", "60")
-        lin = full if load == "30" else refser("linear", "60")
+        hand = ser("hand", load) if FIXPOINT else (ser("hand") if load == "30" else refser("hand", "60"))
+        lin = full if load == "30" else (ser("linear", "60") if FIXPOINT else refser("linear", "60"))
         out["tuned_hand"][f"load_{load}"] = {"urgent_wait_h": round(float(th.mean()), 4),
                                              "hand_h": round(float(hand.mean()), 4), "linear_h": round(float(lin.mean()), 4),
                                              "tuned_minus_hand": boot(th - hand), "linear_minus_tuned": boot(lin - th)}
-    out["tuned_hand"]["note_60"] = ("hand and linear at 60 % load: train_bid's cached evaluation runs "
+    out["tuned_hand"]["note_60"] = ("hand and linear at 60 % load: repeated here, and equal to the fixed-point "
+                                    "evaluation's runs (.cache/atc/bid_fixpoint/eval_runs.json)" if FIXPOINT else
+                                    "hand and linear at 60 % load: train_bid's cached evaluation runs "
                                     "(.cache/atc/bid_rerun/eval_runs.json), not repeated; the 30 % references equal "
                                     "their cached runs exactly")
+    if FIXPOINT:
+        out["engine"] = ("PREREG change 5 on (Scenario.p5 dispatch_fixpoint: fixed point and wake dedupe), as E40 and "
+                         "results/ATC_learned_eval_fixpoint.json; the linear policy was trained without it and not "
+                         "retrained; the tuned hand rule was selected again by the CEM on this engine (same budget, "
+                         "seeds and random streams)")
+        if os.path.isfile(OUT):
+            prev = json.load(open(OUT, encoding="utf-8"))
+            if NO_FIX_BLOCK in prev:
+                out[NO_FIX_BLOCK] = prev[NO_FIX_BLOCK]
+            elif not str(prev.get("code", "")).endswith("+fixpoint"):
+                out[NO_FIX_BLOCK] = dict({"reason": "B-122 (15 Nov 2026): the first run of (c) used train_bid's "
+                                                    "engine without PREREG change 5 (no dispatch fixed point), as "
+                                                    "results/ATC_learned_eval_rerun.json did; kept as it was. The "
+                                                    "main content of this file is on the engine with change 5."},
+                                         **prev)
     text = json.dumps(out, indent=1, allow_nan=False) + "\n"
     with open(OUT + ".tmp", "w", encoding="utf-8", newline="\n") as f:
         f.write(text)
@@ -238,7 +274,10 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("cmd", choices=["ablate", "tune", "evaluate", "table"])
     ap.add_argument("--max-seconds", type=float, default=500.0)
+    ap.add_argument("--fixpoint", action="store_true", help="B-122: the engine with PREREG change 5 (own cache)")
     a = ap.parse_args()
+    if a.fixpoint:
+        _set_fixpoint()
     import faulthandler
     faulthandler.dump_traceback_later(a.max_seconds + 120, exit=True)
     {"ablate": cmd_ablate, "tune": cmd_tune, "evaluate": cmd_evaluate}.get(a.cmd, lambda _: cmd_table())(a.max_seconds)
