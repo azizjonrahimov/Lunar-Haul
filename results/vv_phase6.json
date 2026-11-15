@@ -1,10 +1,10 @@
 {
  "version": 1,
- "generated": "2026-11-12T16:07:10-0800",
- "commit": "294fbc2877e7615eba102d2bf6cb5a6e89df1b6d",
+ "generated": "2026-11-14T06:50:28-0800",
+ "commit": "bbbd8f57ae002d64ba1ae20dd3a66be5107289b5",
  "summary": {
-  "rows": 54,
-  "passed": 54,
+  "rows": 56,
+  "passed": 56,
   "failed": 0,
   "skipped": 0,
   "bias_flags": 0
@@ -36,7 +36,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.04,
+   "runtime_s": 0.03,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/01_positioning_and_time.md section E1; 10 % for 400 samples (rms standard error 3.5 %)"
   },
   {
@@ -92,7 +92,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.01,
+   "runtime_s": 0.0,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/01_positioning_and_time.md section E3; identity"
   },
   {
@@ -120,7 +120,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.01,
+   "runtime_s": 0.0,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/01_positioning_and_time.md section E3 table (2 decimals)"
   },
   {
@@ -512,7 +512,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.0,
+   "runtime_s": 0.01,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/02_shared_map_and_coordinates.md section E4; exact"
   },
   {
@@ -521,7 +521,7 @@
    "simulated": 86016.0,
    "tolerance": 0.0,
    "unit": "B",
-   "basis": "256^2 cells x 0.25 bit",
+   "basis": "smap.sync_plan for 42 changed hazard tiles, less the 16 B tile header each; 256^2 cells x 0.25 bit",
    "passed": true,
    "rel_error": 0.0,
    "source": "lunarsim/atc/smap.py",
@@ -540,7 +540,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.0,
+   "runtime_s": 0.01,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/02_shared_map_and_coordinates.md section E4 ('86 kB'); exact"
   },
   {
@@ -568,7 +568,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.0,
+   "runtime_s": 0.01,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/02_shared_map_and_coordinates.md section E5 (3 digits)"
   },
   {
@@ -1044,7 +1044,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.08,
+   "runtime_s": 0.27,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md section C4 rule 6 (golden packets); exact"
   },
   {
@@ -1072,7 +1072,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.08,
+   "runtime_s": 0.27,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md section E2 step 8; exact"
   },
   {
@@ -1081,10 +1081,10 @@
    "simulated": 7.855999999999999,
    "tolerance": 0.01,
    "unit": "kbit/s",
-   "basis": "8 x 49.1 B/s x 20",
+   "basis": "codec packet_bytes 41 / 43 / 38 B x rates x 20 x 8",
    "passed": true,
    "rel_error": 0.0005089058524174727,
-   "source": "note 03 E3",
+   "source": "lunarsim/atc/lrip/codec.py",
    "mode": "abs",
    "error": 0.004000000000001336,
    "skipped": "",
@@ -1109,10 +1109,10 @@
    "simulated": 9.819999999999999,
    "tolerance": 0.05,
    "unit": "kbit/s",
-   "basis": "R >= L h / eta",
+   "basis": "R >= L h / eta, eta from run_e53.ETA",
    "passed": true,
    "rel_error": 0.0020408163265303873,
-   "source": "note 03 E3",
+   "source": "tools/atc/run_e53.py",
    "mode": "abs",
    "error": 0.019999999999997797,
    "skipped": "",
@@ -1156,18 +1156,18 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 1.41,
+   "runtime_s": 1.36,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md section E4; binomial 3-sigma"
   },
   {
    "name": "Chi-square threshold, one range, alpha 1e-3",
-   "reference": 10.83,
-   "simulated": 10.827566170662733,
+   "reference": 10.827566170662733,
+   "simulated": 10.83,
    "tolerance": 0.005,
    "unit": "-",
-   "basis": "scipy chi2.ppf",
+   "basis": "integrity.GAMMA[1][1e-3] against scipy chi2.ppf",
    "passed": true,
-   "rel_error": 0.0002247303173838608,
+   "rel_error": 0.00022478083245167947,
    "source": "lunarsim/atc/integrity.py GAMMA",
    "mode": "abs",
    "error": 0.0024338293372672126,
@@ -1184,18 +1184,18 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.88,
+   "runtime_s": 0.77,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md section E5 table (2 decimals)"
   },
   {
    "name": "Chi-square threshold, two measurements, alpha 1e-3 (= -2 ln alpha)",
-   "reference": 13.82,
-   "simulated": 13.815510557964274,
+   "reference": 13.815510557964274,
+   "simulated": 13.82,
    "tolerance": 0.005,
    "unit": "-",
-   "basis": "closed form",
+   "basis": "integrity.GAMMA[2][1e-3] against scipy chi2.ppf",
    "passed": true,
-   "rel_error": 0.00032485108796864357,
+   "rel_error": 0.00032495665049009793,
    "source": "lunarsim/atc/integrity.py GAMMA",
    "mode": "abs",
    "error": 0.004489442035726654,
@@ -1212,21 +1212,49 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.88,
+   "runtime_s": 0.77,
+   "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md section E5 table (2 decimals)"
+  },
+  {
+   "name": "Every chi-square threshold in the code's table (m 1 and 2, alpha 1e-2 to 1e-5)",
+   "reference": 0.0,
+   "simulated": 0.004896601021214586,
+   "tolerance": 0.005,
+   "unit": "-",
+   "basis": "largest |GAMMA - chi2.ppf| over the 8 entries",
+   "passed": true,
+   "rel_error": 4896601021.214586,
+   "source": "lunarsim/atc/integrity.py GAMMA",
+   "mode": "abs",
+   "error": 0.004896601021214586,
+   "skipped": "",
+   "id": "C8",
+   "sub": "gamma table",
+   "technique": "analytic",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P2"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 0.77,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md section E5 table (2 decimals)"
   },
   {
    "name": "A bias of 4.57 sigma is caught with probability 0.9 (m = 1, alpha 1e-3)",
    "reference": 0.9,
-   "simulated": 0.89939,
+   "simulated": 0.89976,
    "tolerance": 0.005,
    "unit": "probability",
    "basis": "200,000 draws",
    "passed": true,
-   "rel_error": 0.0006777777777777771,
+   "rel_error": 0.00026666666666668663,
    "source": "lunarsim/atc/integrity.py",
    "mode": "abs",
-   "error": 0.0006099999999999994,
+   "error": 0.00024000000000001798,
    "skipped": "",
    "id": "C8",
    "sub": "detectable error",
@@ -1240,7 +1268,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.89,
+   "runtime_s": 0.78,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md section E5; binomial 3-sigma 0.002 plus rounding of 4.57"
   },
   {
@@ -1268,21 +1296,21 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.89,
+   "runtime_s": 0.78,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md section E5 (2 digits)"
   },
   {
    "name": "Mean age of information over k hops with loss p, no retry",
    "reference": 1.9003703703703705,
-   "simulated": 1.9010404945460075,
+   "simulated": 1.9052166666666668,
    "tolerance": 0.03800740740740741,
    "unit": "s",
-   "basis": "renewal: k D + E[X^2] / 2 E[X], X = G T; note table 1.90 s at k 3, p 0.25",
+   "basis": "dtn.age_of_information on a 3-hop chain, update every 1 s, + k D (the function neglects hop latency); renewal formula k D + E[X^2] / 2 E[X], X = G T; note table 1.90 s at k 3, p 0.25",
    "passed": true,
-   "rel_error": 0.00035262819610603144,
-   "source": "note 03 E7",
+   "rel_error": 0.002550185149093742,
+   "source": "lunarsim/atc/dtn.py",
    "mode": "abs",
-   "error": 0.0006701241756370546,
+   "error": 0.004846296296296293,
    "skipped": "",
    "id": "C9",
    "sub": "age 3 hops",
@@ -1296,8 +1324,8 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.01,
-   "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md section E7; 2 % for 200,000 renewals"
+   "runtime_s": 2.26,
+   "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md section E7; 2 % for 240,000 updates"
   },
   {
    "name": "W-MSR keeps honest values inside the honest range (one liar, F = 1, K7)",
@@ -1328,12 +1356,12 @@
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md section E6 (safety); exact"
   },
   {
-   "name": "Every Phase 6 engine option off (pos_margin, log_reservations, capability_filter) equals the Phase 5 run",
+   "name": "Every Phase 6 engine option off (pos_margin, log_reservations, capability_filter) equals the run of the code before Phase 6",
    "reference": 0.0,
    "simulated": 0.0,
    "tolerance": 0.0,
    "unit": "summary values differing",
-   "basis": "C_AUCTION, roads atc, 30 days, seed 2: 144 summary values compared",
+   "basis": "C_AUCTION, roads atc, 30 days, seed 2: 144 summary values against results/vv6_g1_reference_0210c22.json (commit 0210c22)",
    "passed": true,
    "rel_error": 0.0,
    "source": "lunarsim/atc",
@@ -1354,8 +1382,38 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 3.58,
+   "runtime_s": 3.43,
    "tolerance_source": "PLAN-phase6 section 2 ('byte-identical with every new option off'); exact"
+  },
+  {
+   "name": "Switching one Phase 6 option on (pos_margin, 50 m bound) changes the summary, so the comparison above can fail",
+   "reference": 1.0,
+   "simulated": 1.0,
+   "tolerance": 0.0,
+   "unit": "boolean",
+   "basis": "same scenario with pos_margin k 1, bound 50 m: 14 of 144 summary values differ from the reference",
+   "passed": true,
+   "rel_error": 0.0,
+   "source": "lunarsim/atc/roads.py",
+   "mode": "abs",
+   "error": 0.0,
+   "skipped": "",
+   "id": "G1",
+   "sub": "option on changes the run",
+   "technique": "analytic",
+   "factor": "code verification",
+   "kind": "V",
+   "priority": "P1",
+   "papers": [
+    "P1",
+    "P2",
+    "P3"
+   ],
+   "ci99": null,
+   "bias_flag": null,
+   "exposure": null,
+   "runtime_s": 3.45,
+   "tolerance_source": "B-118 N2 (the row above must be able to fail); exact"
   },
   {
    "name": "Message channel without LRIP sizes counts no bytes",
@@ -1382,7 +1440,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 3.58,
+   "runtime_s": 3.45,
    "tolerance_source": "B-93 opt-in; exact"
   },
   {
@@ -1476,7 +1534,7 @@
    "simulated": 0.0009695,
    "tolerance": 6.708203932499369e-05,
    "unit": "per test",
-   "basis": "2,000,000 Gaussian innovations, gamma 10.83",
+   "basis": "2,000,000 Gaussian innovations through integrity.lrip_rule_score with k = n = 1, gamma GAMMA[1][1e-3] = 10.83",
    "passed": true,
    "rel_error": 0.030500000000000037,
    "source": "lunarsim/atc/integrity.py",
@@ -1495,7 +1553,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.05,
+   "runtime_s": 0.12,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md section E5; binomial 3-sigma"
   },
   {
@@ -1523,7 +1581,7 @@
    "ci99": null,
    "bias_flag": null,
    "exposure": null,
-   "runtime_s": 0.13,
+   "runtime_s": 0.15,
    "tolerance_source": "research_notes/Lunar Rover Interaction Protocol/03_comms_protocol_security.md section E5 (1e-8 per window); exact count"
   }
  ]

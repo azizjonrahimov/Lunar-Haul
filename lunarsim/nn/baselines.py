@@ -21,7 +21,7 @@ Alarms and false alarms (one definition for every detector, the network included
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Sequence, Tuple
+from typing import Any, Dict, Tuple
 
 import numpy as np
 
@@ -205,6 +205,25 @@ class LogReg:
 
 
 # ------------------------------------------------------------------------------------------------ event scoring
+def onset_context(score: np.ndarray, meta: np.ndarray, thr: float, quiet_s: int = 60
+                  ) -> Tuple[np.ndarray, np.ndarray]:
+    """B-118 N10, on fault streams (onset >= 0): (alarm_on_at_onset [N], quiet_before [N]). alarm_on_at_onset: the
+    score is above thr at the step just before the onset, so detect() counts the event found at once whatever the
+    fault does. quiet_before: no step above thr in the quiet_s steps (1 s each) before the onset. detect() is
+    unchanged; this says how much of a recall comes from alarms that were already on."""
+    from .dataset import META
+    onset = meta[:, META.index("onset")].astype(int)
+    al = score > thr
+    on = np.zeros(len(onset), bool)
+    quiet = np.zeros(len(onset), bool)
+    for i, o in enumerate(onset):
+        if o < 1:
+            continue
+        on[i] = bool(al[i, o - 1])
+        quiet[i] = not al[i, max(0, o - quiet_s):o].any()
+    return on, quiet
+
+
 def detect(score: np.ndarray, meta: np.ndarray, thr: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """On fault streams: (found [N] bool, delay in s [N] (nan if missed), false-alarm bins before the fault [N]).
 

@@ -55,7 +55,11 @@ def test_e51_outputs():
     assert perfect["class"] == "perfect" and perfect["one_way_m_p95"] == 0 and perfect["conflicts_guard_0.1"] == 0
     cr = {r["interval_s"]: r for r in d["rows"] if r["class"] == "crystal" and r["scale"] == "lunar"}
     assert cr[10]["max_abs_clock_s"] <= cr["never"]["max_abs_clock_s"]
-    assert isinstance(d["h11"]["supported"], bool)
+    # B-119: the verdict recomputed from the rows (crystal, lunar scale: some interval with no clock-caused conflict
+    # in any seed at the 0.1 s guard and a one-way ranging error p95 above the UWB noise 0.3 m)
+    crl = [r for r in d["rows"] if r["class"] == "crystal" and r["scale"] == "lunar" and r["interval_s"] != "never"]
+    ok = [r["interval_s"] for r in crl if r["seeds_with_conflict_guard_0.1"] == 0 and r["one_way_m_p95"] > 0.3]
+    assert d["h11"]["supported"] is bool(ok) and d["h11"]["intervals_meeting_both"] == ok
 
 
 def test_ageing_accumulates_and_steering():

@@ -104,7 +104,7 @@ simulation in both cases (B-102 is an analysis of the E50 runs; B-107 new encoun
 | Finding | Status now | What was done | Where |
 |---|---|---|---|
 | M2 (B-102, `results/E50_overlaps.json`) | closed | 5.9: windows filed back to back overlap in 43 % to 52 % of cases at 4x (134 such pairs a seed) for all four layer sets, 40 % to 60 % at 1x (42 pairs in 30 seeds); pairs filed apart at most 4 %: the count measures back-to-back pairs. Duration follows navigation (4x medians 417 s, 15 s, 6.7 s, 3.8 s). No overlap, with or without the margin, brought two vehicles within 5 m or within R1's gap; the first vehicle was about 440 m ahead at entry; 99 % are same-direction pairs on branched segments. The margin lowers the count and changes neither the gap at entry (441 m) nor the nature of an overlap. 8x: "were not analysed". The count stays out of the safety results. | 5.9, 6.1, Table 14 |
-| M9 (B-107, `results/E45_uphill.json`) | closed | "By calculation" is replaced by the simulated result. A.4: 64 cells of 2,000 encounters, followers at the rule's limit, with and without a 1 s actuation lag. R1 as it was: no contact anywhere; gaps inside the 5 m margin on the Moon when following with the lag from 14 deg (14 of 2,000 at 15 deg, 335 at 17.2 deg, smallest 4.15 m), never in the lunar convoy; at Mars gravity with the lag from 6.5 deg (following) and 8.5 deg (convoy), down to 0.72 m, and at 15 deg and above without the lag. Slope term: none when following; 71 and 62 of 2,000 in the Mars convoy with the lag, at most 0.14 m inside (smallest 4.86 m), traced to the lag model, not patched. R1 in Table 2 is stated with the slope term as the proposed rule; the text says the twelve types were run without it, on the flat and downhill, where it is inactive (checked). The calculation (3.0 m on the route maximum) stays as the worst case of the formulas. | abstract, Table 2, 3.5, 6.1, 6.4, 7, 9, A.4, Table 14 |
+| M9 (B-107, `results/E45_uphill.json`) | closed | "By calculation" is replaced by the simulated result. A.4: 64 cells of 2,000 encounters, followers at the rule's limit, with and without a 1 s actuation lag. R1 as it was: no contact anywhere; gaps inside the 5 m margin on the Moon when following with the lag from 14 deg (14 of 2,000 at 15 deg, 335 at 17.2 deg, smallest 4.15 m), never in the lunar convoy; at Mars gravity with the lag from 6.5 deg (following) and 8.5 deg (convoy), down to 0.72 m, and at 15 deg and above without the lag. Slope term: none when following; 71 and 62 of 2,000 in the Mars convoy with the lag, at most 0.14 m inside (smallest 4.86 m), not explained and not patched (the first explanation, one step more of earlier commands than R1 allows, was wrong: see part 10). R1 in Table 2 is stated with the slope term as the proposed rule; the text says the twelve types were run without it, on the flat and downhill, where it is inactive (checked). The calculation (3.0 m on the route maximum) stays as the worst case of the formulas. | abstract, Table 2, 3.5, 6.1, 6.4, 7, 9, A.4, Table 14 |
 
 Updated tally (37 findings): fixed 28, fixed in part 7 (M12, S5, S8, S12, S14, S16, O3), awaiting a BACKEND task 0, not
 done 2 (O2, O8).
@@ -140,6 +140,99 @@ the request rule "was rerun on that one encounter only", which is now out of dat
   pairing counts are not 9 deadlocks and 1 violation to incomplete, if any finished encounter fails under the variant,
   or if the file's rule-as-written block is not the fresh-seed run of type 6.
 - Limitations gains one sentence (B-113, `results/E44_defects.json` key `b113_stale_deadlock_flag`): the stored
-  encounter files of types 2, 3, 4, 8, 9, 10 and 12 carry a deadlock flag from before the classifier fix in rows with a
-  random fuzzer; no reported value reads those rows. The type list is read from the file.
+  encounter files of types 2, 3, 4, 8, 9, 10 and 12 carried a deadlock flag from before the classifier fix in rows with
+  a random fuzzer; no reported value reads those rows. The type list is read from the file. The files have since been
+  regenerated (B-115, key `b113_stale_deadlock_flag.outcome`): 40 batches, 70,000 rows; the flag goes from 1 to 0 in
+  14,071 rows, all with a random fuzzer, and from 0 to 1 in none; no other column differs and the rebuilt bounds,
+  encounter and bin files are unchanged in every value. The sentence now says this, from the file (part 10).
 - Abstract and conclusion unchanged (neither stated the one-encounter fact). New placeholder `P2-REQRULE-LIMITATION`.
+
+## Parts 8 and 9 (13-14 Nov): corrections after the code review
+
+These follow `reports/review_phase6_code.md`, not the referee report, so the referee tally does not move (fixed 28,
+part 7, awaiting 0, not done 2). Every value below is read through the build from the regenerated files; the earlier
+value is named once in the paper where listed. No verdict moved: H10 is still not supported as a whole and its
+equivalence clause holds.
+
+Code-review findings touching P2:
+- N2 (options-off row): the verification paragraph gives the check with its scope; 56 rows, commit `bbbd8f5`
+  (`results/vv_phase6.json`).
+- N8 (H15a's p), N10 and N11 (detector recall and false-alarm intervals): recalls are on quiet events (CUSUM 84.2 ->
+  69.3 %, per-step chi-square 79.2 -> 73.2 %, network 66.0 -> 65.1 %), false-alarm intervals on 1,000 resamples.
+  Table 12 has a note, not new columns: the quiet-event recalls exist only for the test and out-of-distribution blocks.
+- N14, N15 (position model, E50): all E50 text and Tables 9 and 10 follow `results/E50_summary.json`,
+  `E50_overlaps.json`, `E50b_summary.json` and `phase6_family.json` at 1x, 4x and 8x. Dead-reckoning p95 643 -> 610 m;
+  ranging overall 50.1 -> 49.1 m; overlaps without a margin 1.87 -> 1.43 a seed (median 334 -> 548 s); with the margin
+  none at 1x (was 1 in 30 under each), 0.3 and 2.3 at 4x, 0.0 and 3.6 at 8x; layered gap at 4x -0.87 h [-2.00, -0.01]
+  -> -0.49 h [-1.36, 0.05]; H10 p 0.93 / 0.77 -> 0.87 / 0.66; E50b +0.63 h -> +0.65 h [0.06, 1.33]. Abstract: 50 m ->
+  49 m, 0.63 h -> 0.65 h.
+- N23 (actuation-delay buffer): Appendix A.4 defines the delay-aware R1 breach count and names the earlier rates (none
+  of the 32 cells with the lag has a breach; counted on the command at once, five had 0.05 % to 15 %). Amended in
+  part 10.
+- The E54 paragraph carries the regenerated message age (9.5 s; earlier 45 s, worst 149 s). Amended in part 10.
+
+Sentences reversed or removed:
+- "The same overlap count for every layer set at four times the fleet": dead reckoning alone now has 84 a month against
+  67 to 68 for the three sets with ranging.
+- "No overlap occurred in any seed with the stops": 1 of 30 seeds with, 0 without; the paper now says overlaps say
+  nothing either way.
+- "The eight-times cells were not analysed" and the provisional sentence in `part5_back.html`: removed; the 8x readings
+  and overlaps are in the text.
+
+Proposition 1 illustration (two steps):
+- Part 9 first printed 81 m after one driving hour, 244 m after five, 240 m after eight, and said the level stretch was
+  not traced.
+- BACKEND then traced it (reading only): the curve bins cumulative driving hours since the window start
+  (`tools/atc/run_e50.py`, `shift_curve`) and few vehicles drive that long, so the points beyond the fourth hour rest on
+  a few vehicles a seed. The paper now says the level stretch is within that noise and that the error still grows: 0.62 km
+  beyond eight driving hours (0.65 km before the fix), and a rise in every hour at 4x and 8x (344 m and 470 m after
+  eight). The curve values are read from `errors.<m>.dr.shift_p95_m_mean_over_seeds`. The file does not hold the number
+  of vehicles in each hour or the seed-to-seed spread, so the paper states those in words, without numbers.
+- New build checks (`paper/p2/phase6.py`, `prop1`): the curve has eight hourly bins and one beyond; the bin beyond is
+  more than twice any hourly value; at 4x and 8x every hour is above the one before.
+
+Builder: eight defects fixed in `paper/p2/build_p2.py` (no typed-in fallback values); the R1 breach pin covers four
+lines of `lunarsim/atc/encounter.py`.
+
+Not done: the position-error percentiles in the errors paragraph and the cells of Tables 9 and 10 do not name their
+earlier values one by one; the limitations sentence points to `superseded_2026-11-13_b118_n15`.
+
+## Part 10 (14 Nov): second correction pass (review fixes B-115 and B-120, E54 rerun)
+
+HTML only (`build_p2.py --no-pdf`, all checks pass, abstract 300 words, conclusion 250); the PDF is not rebuilt. Every
+value is read from the results files through build checks. Everything is simulation.
+
+- E54 ledger split (`results/E54_dtn.json`, code `c3c3b2880e33888c`). The E54 paragraph (5.12) ends with a second
+  correction note: of 930 daily Earth ledgers, 690 undelivered under custody at every loss rate; 300 expired and 390
+  still alive at the window's end (32.3 %), where the file first gave 270 and 420 (29.0 %). Cause: one ledger a seed
+  whose 14-day lifetime ended exactly at the end of the window is now counted expired, not censored. The paper had
+  printed none of these counts. Checks (`phase6.py`, `results_paragraph`): the file holds exactly the two superseded
+  blocks and each is read by its key; apart from the three ledger fields of the store-and-forward rows every field of
+  every row equals the `superseded_2026-11-14_b120_b` block; H14 and its variants are equal; the main table and the
+  three size sets agree; the move is one ledger a seed and the undelivered total is unchanged.
+- Uphill remainder (A.4, 6.1, 7, Table 14). "One 0.1 s step more of its earlier commands than R1's response time
+  allows" was wrong for these cells and is removed. The text now states what `lunarsim/atc/encounter.py` does: a
+  follower applies the command it gave 1 s earlier (a queue of ten 0.1 s steps), so braking commanded when the gap
+  goes below R1's distance takes effect at the response time; the check decides each step from the current speed and
+  gap and is not given the queued commands. The remainder (at most 0.14 m) is stated as not explained and not patched.
+  With the slope term the remainder occurs only in rows with the lag (71 and 62 of 2,000, Mars convoy, 15 and
+  17.2 deg), none without it (checked from the file). One candidate cause, a one-step detection latency, was refuted
+  by BACKEND in a scratch check that is in no results file; the paper prints nothing from it.
+  The breach count's definition gains "time below taken at the end of the step" (B-120 A). BACKEND reran the 16 delay
+  cells (32 rows, each cell under both rules) on the corrected counter: every value equal, breach rate 0 in all 32.
+  The text says so, and the build checks the file's `delay_cells_code_note` and that `delay_cells_code` equals
+  `run_e45_uphill.code_fingerprint()` on the current code (the fingerprint is not typed). The pin of the breach lines now covers five
+  lines (the counter line added); three new checks tie the lag-model sentences to the source.
+- E44 stored files: see the amended bullet in part 7. New checks on the `outcome` record (types, totals, no flag from 0
+  to 1, no other column, published files unchanged).
+- Age of the base's knowledge: "as young as it can be" removed. The text gives 9.5 s against the floor of 5 s (half
+  the 10 s reporting period): 4.5 s above it, 1.9 times. Check: between the floor and one period at every loss rate.
+- Prose now tied to checks: the overlap counts with a margin by fleet size ("no trend" was wrong for the layered
+  margin: 0.0, 2.3, 3.6 a month at 1x, 4x, 8x, intervals at 4x and 8x overlapping; no direction under the
+  dead-reckoning margin); "no verdict moved" for the near-base readings (same number of seeds inside the budget under
+  each of the five readings before and after); the typed "fourth hour" in the Proposition 1 illustration is removed.
+- Typed run times removed: E50's "1.5, 11 and 42 minutes" a cell (no results file holds them) and the "nine minutes"
+  and "five minutes" limits in 4.7. The run times that remain are read from files.
+
+Not verified by the build: that few vehicles drive more than a few hours (BACKEND's trace). The cause of the uphill
+remainder is unknown.

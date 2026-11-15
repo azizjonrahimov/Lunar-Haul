@@ -25,9 +25,9 @@ import csv
 import glob
 import gzip
 import json
-import math
 import os
 import pickle
+import shutil
 import sys
 import time
 
@@ -105,6 +105,7 @@ def _p95(err, m):
 def run_cell(mult, seed):
     from lunarsim.atc import pnt as PN
     t_s = time.time()
+    code = E5.code_fingerprint()                                  # B-120 D: stamped like the staged cells
     month, t0, t1, share = E5._window()
     rec = E5.record(mult, seed, t0, t1)
     tr = E5.trajectories(rec, t0, t1)
@@ -136,7 +137,134 @@ def run_cell(mult, seed):
             "ranging_near_p95": abs(c["nav"]["dr+ranging"]["near"]["p95_m"] - out["sets"]["dr+ranging"]["a"]["in_p95_m"]) < 1e-4}
     out["cell_s"] = round(time.time() - t_s, 1)
     out["peak_mb"] = _peak_mb()
+    out["code"] = code
     return out
+
+
+# ---------------------------------------------------------------- staged path (B-118, for 8x)
+# An 8x cell (one engine run of about 450 s plus four pnt.simulate calls) does not fit one chunk. "stage" runs one
+# step per process: the engine run (pickled), each layer set, each sweep point (1x seeds 1-6), then the assembly into
+# the same cell file run_cell writes. Every step records E50's code fingerprint (run_e50.code_fingerprint) when it
+# starts; the assembly refuses steps made with different code and stores it in the cell ("code").
+def _stage_dir(mult, seed):
+    return os.path.join(CACHE, f"m{mult}_s{seed}")
+
+
+def _stage_names(mult, seed):
+    st = ["rec"] + [f"set_{n}" for n in SETS]
+    if mult == 1 and seed in SWEEP_SEEDS:
+        st += [f"sweep_{i}" for i in range(len(SWEEP))]
+    return st
+
+
+def _stage_path(mult, seed, st):
+    return os.path.join(_stage_dir(mult, seed), st + (".pkl.gz" if st == "rec" else ".json"))
+
+
+def _load_rec(mult, seed):
+    with gzip.open(_stage_path(mult, seed, "rec"), "rb") as f:
+        return pickle.load(f)
+
+
+def _stage_ctx(rec):
+    t0, t1 = rec["_window"]
+    tr = E5.trajectories(rec, t0, t1)
+    mv = tr.ds > 0
+    M = masks(tr, rec)
+    bi, bxy = E5.beacons(rec)
+    kw = dict(los=E5._geo()["los"], beacon_idx=bi, beacon_xy=bxy, mast_idx=E5._geo()["ids"]["BASE"], store_errors=False)
+    return tr, mv, M, kw
+
+
+def run_stage(mult, seed, st):
+    from lunarsim.atc import pnt as PN
+    t_s = time.time()
+    code = E5.code_fingerprint()
+    os.makedirs(_stage_dir(mult, seed), exist_ok=True)
+    if st == "rec":
+        month, t0, t1, share = E5._window()
+        rec = E5.record(mult, seed, t0, t1)
+        rec["_window"] = [t0, t1]
+        rec["_stage"] = {"code": code, "stage_s": round(time.time() - t_s, 1), "peak_mb": _peak_mb()}
+        p = _stage_path(mult, seed, st)
+        with gzip.open(p + ".tmp", "wb") as f:
+            pickle.dump(rec, f, protocol=pickle.HIGHEST_PROTOCOL)
+        os.replace(p + ".tmp", p)
+        return rec["_stage"]
+    rec = _load_rec(mult, seed)
+    tr, mv, M, kw = _stage_ctx(rec)
+    if st.startswith("set_"):
+        name = st[4:]
+        ls, year = SETS[name]
+        res = PN.simulate(tr, PN.LAYER_SETS[ls], seed, params={"year": year}, **kw)
+        blk = {r: {"in_p95_m": _p95(res.err, m & mv), "out_p95_m": _p95(res.err, ~m & mv)} for r, m in M.items()}
+        blk["all_driving_p95_m"] = _p95(res.err, mv)
+    else:
+        par, val = SWEEP[int(st.split("_")[1])]
+        res = PN.simulate(tr, PN.LAYER_SETS["dr+ranging"], seed, params={"year": 2028, par: val}, **kw)
+        blk = {"param": par, "value": val, **{r: _p95(res.err, m & mv) for r, m in M.items()}}
+    del res
+    meta = {"code": code, "stage_s": round(time.time() - t_s, 1), "peak_mb": _peak_mb()}
+    p = _stage_path(mult, seed, st)
+    with open(p + ".tmp", "w") as f:
+        json.dump({"block": blk, **meta}, f)
+    os.replace(p + ".tmp", p)
+    return meta
+
+
+def assemble(mult, seed):
+    t_s = time.time()
+    rec = _load_rec(mult, seed)
+    steps = {st: (rec["_stage"] if st == "rec" else json.load(open(_stage_path(mult, seed, st))))
+             for st in _stage_names(mult, seed)}
+    codes = {v["code"] for v in steps.values()}
+    if len(codes) > 1:
+        raise SystemExit(f"near_base m{mult} s{seed}: steps made with different code {sorted(codes)}; rerun them")
+    t0, t1 = rec["_window"]
+    tr, mv, M, kw = _stage_ctx(rec)
+    out = {"mult": mult, "seed": seed, "window": [t0, t1], "driving_steps": int(mv.sum()),
+           "perfect_delay_mean_h": rec["delay_mean_h"],
+           "share_of_driving": {r: float((m & mv).sum() / max(1, mv.sum())) for r, m in M.items()}, "sets": {}}
+    for name in SETS:
+        out["sets"][name] = steps[f"set_{name}"]["block"]
+    if mult == 1 and seed in SWEEP_SEEDS:
+        out["sweep"] = [steps[f"sweep_{i}"]["block"] for i in range(len(SWEEP))]
+    p50 = os.path.join(E5.CACHE, f"m{mult}_s{seed}.pkl.gz")
+    if os.path.isfile(p50):
+        with gzip.open(p50) as f:
+            c = pickle.load(f)
+        out["e50_reproduced"] = {
+            "perfect_delay": c["perfect"]["delay_mean_h"] == rec["delay_mean_h"],
+            "ranging_near_p95": abs(c["nav"]["dr+ranging"]["near"]["p95_m"] - out["sets"]["dr+ranging"]["a"]["in_p95_m"]) < 1e-4}
+    out["cell_s"] = round(sum(v["stage_s"] for v in steps.values()) + time.time() - t_s, 1)
+    out["peak_mb"] = max([v["peak_mb"] or 0 for v in steps.values()] + [_peak_mb() or 0])
+    out["code"] = codes.pop()
+    out["staged"] = True
+    return out
+
+
+def cmd_stage(mult, seeds, cell_path=None):
+    """One step per process: the first missing step of the first unfinished seed, or its assembly."""
+    for s in seeds:
+        p = cell_path(mult, s) if cell_path else os.path.join(CACHE, f"m{mult}_s{s}.json")
+        if os.path.isfile(p):
+            continue
+        for st in _stage_names(mult, s):
+            if not os.path.isfile(_stage_path(mult, s, st)):
+                meta = run_stage(mult, s, st)
+                print(f"m{mult} s{s} {st}: {meta['stage_s']} s, peak {meta['peak_mb']} MB", flush=True)
+                return
+        out = assemble(mult, s)
+        with open(p + ".tmp", "w") as f:
+            json.dump(out, f)
+        os.replace(p + ".tmp", p)
+        shutil.rmtree(_stage_dir(mult, s), ignore_errors=True)      # B-120 D: the steps are in the cell now
+        r = out["sets"]["dr+ranging"]
+        print(f"m{mult} s{s} assembled: ranging p95 a/b/c/d/e "
+              + " / ".join(f"{r[k]['in_p95_m']:.2f}" if r[k]["in_p95_m"] is not None else "-" for k in READINGS)
+              + f", repro {all(out.get('e50_reproduced', {}).values())}, peak {out['peak_mb']} MB", flush=True)
+        return
+    print("all requested cells done", flush=True)
 
 
 def _seeds(s):
@@ -179,7 +307,11 @@ def _ci(x, rng, B=10000):
 def cmd_build():
     rng = np.random.default_rng([50, 101])
     cells = [json.load(open(p)) for p in glob.glob(os.path.join(CACHE, "m*_s*.json"))]
-    doc = {"task": "B-101 (P3 M5; decisions B4)", "note": __doc__.strip().split("\n\n")[1].replace("\n", " "),
+    if not cells:
+        raise SystemExit("no near_base cells")
+    import e50_build as EB
+    code = EB.require_code((c.get("code") for c in cells), "near_base")   # B-120 D
+    doc = {"task": "B-101 (P3 M5; decisions B4)", "code": code, "note": __doc__.strip().split("\n\n")[1].replace("\n", " "),
            "readings": READINGS, "budget_m": BUDGET, "multiples": {}, "sweep": None}
     rows = []
     for mult in sorted({c["mult"] for c in cells}):
@@ -209,7 +341,9 @@ def cmd_build():
                                  "out_p95_m": None if c["sets"][name][r]["out_p95_m"] is None else round(c["sets"][name][r]["out_p95_m"], 4),
                                  "inside_budget": None if c["sets"][name][r]["in_p95_m"] is None else c["sets"][name][r]["in_p95_m"] < BUDGET})
         rg = blk["sets"]["dr+ranging"]
-        blk["h9_clause2_by_reading"] = {r: ("on the predicted side in every seed" if rg[r]["seeds_inside_budget"] == rg[r]["seeds_with_steps"]
+        # B-118 N19: a reading with no driving steps in any seed has nothing to judge
+        blk["h9_clause2_by_reading"] = {r: ("no driving steps under this reading: not judged" if rg[r]["seeds_with_steps"] == 0
+                                            else "on the predicted side in every seed" if rg[r]["seeds_inside_budget"] == rg[r]["seeds_with_steps"]
                                             else "on the predicted side in no seed" if rg[r]["seeds_inside_budget"] == 0
                                             else f"on the predicted side in {rg[r]['seeds_inside_budget']} of {rg[r]['seeds_with_steps']} seeds")
                                         for r in READINGS}
@@ -225,6 +359,8 @@ def cmd_build():
                                                  "seeds_inside_budget": int(sum(e[r] < BUDGET for e in v if e[r] is not None)),
                                                  "seeds": len(v)} for r in READINGS}} for k, v in sorted(S.items())]}
     doc["verdict"] = "depends on the reading (PREREG6 section 6, 11 Nov): see h9_clause2_by_reading per fleet multiple"
+    import e50_build as EB
+    EB.keep_superseded(OUT_JSON, doc, E5.DESIGN["multiples"], doc["multiples"])
     with open(OUT_JSON, "w", encoding="utf-8", newline="\n") as f:
         json.dump(doc, f, indent=1, allow_nan=False)
         f.write("\n")
@@ -245,13 +381,15 @@ def cmd_build():
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["run", "build"])
+    ap.add_argument("cmd", choices=["run", "stage", "build"])
     ap.add_argument("--mult", type=int, default=1)
     ap.add_argument("--seeds", default="1-30")
     ap.add_argument("--max-seconds", type=float, default=480.0)
     a = ap.parse_args(argv)
     if a.cmd == "run":
         cmd_run(a.mult, _seeds(a.seeds), a.max_seconds)
+    elif a.cmd == "stage":                       # B-118: one step per process (8x), see run_stage
+        cmd_stage(a.mult, _seeds(a.seeds))
     else:
         cmd_build()
 

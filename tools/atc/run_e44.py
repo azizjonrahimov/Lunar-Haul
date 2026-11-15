@@ -416,15 +416,20 @@ def cmd_fresh_summarize():
                 for _i in range(int(r.idx) + 1):
                     sp = ET.build(k, rng)
                 res = {}
-                for rr in (False, True):
+                for rr, tag in ((False, "base_rules"), (True, "request_rule"), (False, "base_rules_again")):
                     sp.request_rule = rr
                     with warnings.catch_warnings():
                         warnings.simplefilter("ignore")
                         oc, _ = E.run_batch(E.Batch([sp], g=GRAVITY), np.random.default_rng([FRESH["roots"][1], k, int(r.batch)]))
-                    res["request_rule" if rr else "base_rules"] = {f: int(getattr(oc, f)[0] > 0) for f in VIOL} | {
+                    res[tag] = {f: int(getattr(oc, f)[0] > 0) for f in VIOL} | {
                         "deadlock": int(oc.deadlock[0]), "finished": int(oc.finished[0])}
+                stored = {f: int(r[f]) for f in VIOL} | {"deadlock": int(r["deadlock"]), "finished": int(r["finished"])}
+                # B-118 N17: from a comparison, not a literal: two replays agree and equal the stored batch row
+                det = res["base_rules"] == res["base_rules_again"] == stored
                 new["replay"].append({
-                    "batch": int(r.batch), "idx": int(r.idx), "deterministic": True,
+                    "batch": int(r.batch), "idx": int(r.idx), "deterministic": bool(det),
+                    "deterministic_basis": "two single-encounter replays with the batch's seeds agree with each other "
+                                           "and with the stored batch row (violation flags, deadlock, finished)",
                     "what_happened": "a vehicle held at the zone boundary (it could not cross before the closure) "
                                      "kept its grant for a one-lane resource beyond the zone, and a vehicle inside the "
                                      "zone waited at that resource's stop line and was still inside when the zone "
@@ -440,6 +445,9 @@ def cmd_fresh_summarize():
                                                                                    "min_margin_m")},
                                 "fresh_seeds": new}
     path = os.path.join(ROOT, "results", "E44_fresh_seeds.json")
+    if os.path.isfile(path):                     # B-118: keep the keys other commands add (request_rule_fresh_6, ...)
+        prev = json.load(open(path, encoding="utf-8"))
+        out.update({k2: v2 for k2, v2 in prev.items() if k2 not in out})
     with open(path, "w", encoding="utf-8", newline="\n") as f:
         json.dump(out, f, indent=1, default=float)
         f.write("\n")

@@ -46,7 +46,7 @@
         "protocol/anatomy/clock.html",
         "protocol/anatomy/radio.html",
         "protocol/b99/e50_layers.json",
-        "protocol/b99/e53_bitrate.json",
+        "protocol/e53-v02.json",
         "protocol/b99/e54_timeline.json",
         "protocol/b99/e55_detectors.json",
         "protocol/e51.json",

@@ -15,8 +15,6 @@ import os
 import sys
 import time
 
-import numpy as np
-
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 if ROOT not in sys.path:

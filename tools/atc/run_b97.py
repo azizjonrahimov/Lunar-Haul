@@ -42,7 +42,6 @@ import math
 import os
 import re
 import sys
-import time
 
 import numpy as np
 

@@ -3,6 +3,7 @@
     python tools/atc/run_b105.py run --mult 1      # one 30-day month per fleet multiple (1, 4, 8), resumable
     python tools/atc/run_b105.py run --mult 4
     python tools/atc/run_b105.py run --mult 8
+    python tools/atc/run_b105.py timing --mult 1 [--passes 3]   # more timing passes of the same month (B-118 N12)
     (python tools/atc/run_e48.py build then adds the blocks `measured_memory` and `per_robot_round` to E48_sizing.json)
 
 E48's scenario (C_AUCTION, roads atc, 1 Jan 2028, seed 1; run_e48._scen), 30 days per fleet multiple.
@@ -12,7 +13,10 @@ bundle over the pool (lunarsim/dispatch.py marketplace, the loop over the pool w
 adjustment). Each _try_bundle call is timed (perf_counter) and summed per (auction round, robot); rounds are counted
 at the auction's selector, which is called once per round after every robot's offer (lunarsim/atc/auction.py
 _Selector). E48's cpu_auction_round_ms is the simulator's whole dispatch call for the whole fleet, pooled over the
-fleet multiples; it is reported beside, relabelled.
+fleet multiples; it is reported beside, relabelled. B-118 N12: `run` simulates the month twice, a timing pass with no
+tracemalloc anywhere (per_robot_round, timed_without_tracemalloc) and a memory pass ((1) below), whose own timings are
+kept as per_robot_round_traced_pass only to show tracemalloc's effect; both passes must be the same run
+(passes_same_run). `timing` adds timing passes of the same month (timing_passes).
 
 (1) Peak memory of the on-robot part, measured with tracemalloc (bytes Python allocates; the interpreter, the code and
 numpy's own buffers outside Python's allocator are not counted; a C implementation would hold the same data in less):
@@ -81,7 +85,9 @@ def _traced(fn):
     return peak - base, cur - base, out
 
 
-def run(m):
+def run(m, trace=True):
+    """trace False (B-118 N12): the timing pass, with no tracemalloc anywhere in the month; trace True: the memory
+    pass (planner sampling and the component peaks); its timings are kept only to measure tracemalloc's effect."""
     from lunarsim import Simulation, dispatch as D
     from lunarsim.atc import auction as AU, regimes as G, safety as S
     import run_phase5 as R
@@ -92,7 +98,7 @@ def run(m):
     def timed_try(sim, v, *a, **k):
         key = (state["round"], v.id)
         state["n_calls"] += 1
-        sample = (state["round"] % SAMPLE_EVERY == 0)
+        sample = trace and (state["round"] % SAMPLE_EVERY == 0)
         if sample:
             tracemalloc.start()
             tracemalloc.reset_peak()
@@ -192,11 +198,29 @@ def run(m):
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["run"])
+    ap.add_argument("cmd", choices=["run", "timing"])
     ap.add_argument("--mult", type=int, required=True)
+    ap.add_argument("--passes", type=int, default=3)
     a = ap.parse_args(argv)
     res = json.load(open(E48._cache("b105"))) if os.path.isfile(E48._cache("b105")) else {}
-    out = run(a.mult)
+    if a.cmd == "timing":                            # B-118 N12: repeated timing passes (no tracemalloc), same month
+        r = res[str(a.mult)]
+        tp = r.setdefault("timing_passes", [r["per_robot_round"]])
+        while len(tp) < a.passes:
+            t = run(a.mult, trace=False)
+            if any(t["per_robot_round"][k] != r["per_robot_round"][k] for k in ("n", "rounds", "try_bundle_calls")):
+                raise SystemExit("timing pass is not the same run")
+            tp.append(dict(t["per_robot_round"], timed_without_tracemalloc=True))
+            E48._save("b105", res)
+            print(a.mult, len(tp), round(tp[-1]["median_ms"], 3), round(tp[-1]["p99_ms"], 2), flush=True)
+        return
+    tm = run(a.mult, trace=False)                    # B-118 N12: timing and tracing in separate passes
+    out = run(a.mult, trace=True)
+    out["per_robot_round_traced_pass"] = out["per_robot_round"]
+    out["per_robot_round"] = dict(tm["per_robot_round"], timed_without_tracemalloc=True)
+    out["run_s_timing_pass"] = tm["run_s"]
+    out["passes_same_run"] = all(tm["per_robot_round"][k] == out["per_robot_round_traced_pass"][k]
+                                 for k in ("n", "rounds", "try_bundle_calls", "robots_per_round_mean"))
     res[str(a.mult)] = out
     E48._save("b105", res)
     print(json.dumps({k: out[k] for k in ("mult", "robots", "run_s", "process_peak_working_set_mb", "per_robot_round")}),

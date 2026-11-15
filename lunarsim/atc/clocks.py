@@ -33,7 +33,7 @@ Effects (note E5, E6):
 from __future__ import annotations
 
 import math
-from typing import Dict, List, Optional, Sequence
+from typing import Dict, List, Optional
 
 import numpy as np
 

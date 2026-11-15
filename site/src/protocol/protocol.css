@@ -84,7 +84,9 @@
 .pr-p-mac { background: color-mix(in srgb, var(--tol-purple, #AA3377) 26%, transparent); }
 .pr-fields { display: flex; flex-wrap: wrap; gap: 4px; margin-top: var(--s-3); }
 .pr-field { font: inherit; font-size: 0.78rem; color: var(--ink); border: 1px solid var(--hairline); border-radius: 6px; padding: 0.25em 0.55em; min-height: var(--target); cursor: pointer; }
-.pr-field[aria-pressed="true"] { border-color: var(--ink); font-weight: 600; }
+/* F-78 (review W5): a hover state; pressed shows a heavier ring, not bolder text (the fill stays the part's colour), so the row does not reflow */
+.pr-field:hover { border-color: var(--ink-2); }
+.pr-field[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
 .pr-man { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); gap: var(--s-3); }
 .pr-card { border: 1px solid var(--hairline); border-radius: var(--radius); padding: var(--s-3); font-size: var(--fs-small); background: var(--bg); }
 .pr-card ul { list-style: none; padding: 0; margin: var(--s-1) 0; }

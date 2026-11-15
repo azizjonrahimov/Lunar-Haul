@@ -739,6 +739,37 @@ def cmd_build():
                         "not a vehicle's computation (P3 M1)",
             "laptop_ms_by_multiple": pr,
             "whole_fleet_dispatch_call_ms_pooled": out["classes"]["LTV1"]["cpu_auction_round_ms"]}
+        if all("per_robot_round_traced_pass" in r for r in b5.values()):     # B-118 N12
+            out["per_robot_round"]["timing_pass"] = (
+                "B-118 N12 (13 Nov 2026): the times above come from a pass with no tracemalloc; the memory figures from "
+                "a second pass of the same month (same seed; rounds and calls checked equal). Before, one robot-round in "
+                "20 was timed while tracemalloc ran, inside the same array. tracemalloc_effect: the traced pass's "
+                "figures, which measure that bias")
+            out["per_robot_round"]["tracemalloc_effect"] = {
+                m_: {"traced_median_ms": r["per_robot_round_traced_pass"]["median_ms"],
+                     "traced_p99_ms": r["per_robot_round_traced_pass"]["p99_ms"],
+                     "untraced_median_ms": r["per_robot_round"]["median_ms"], "untraced_p99_ms": r["per_robot_round"]["p99_ms"],
+                     "passes_same_run": r["passes_same_run"]}
+                for m_, r in sorted(b5.items(), key=lambda kv: int(kv[0]))}
+        if all(len(r.get("timing_passes", [])) >= 3 for r in b5.values()):      # B-118 N12: repeated passes
+            tp = {}
+            for m_, r in sorted(b5.items(), key=lambda kv: int(kv[0])):
+                p99 = [p["p99_ms"] for p in r["timing_passes"]]
+                lo_, hi_ = min(p99) * frg[0], max(p99) * frg[1]
+                central = [x * fac for x in p99]
+                tp[m_] = {"laptop_p99_ms_by_pass": [round(x, 3) for x in p99],
+                          "laptop_median_ms_by_pass": [round(p["median_ms"], 4) for p in r["timing_passes"]],
+                          "flight_p99_ms_by_pass": [round(x, 1) for x in central],
+                          "flight_p99_ms_over_passes_and_factor_range": [round(lo_, 1), round(hi_, 1)],
+                          "against_1s_at_central_factor": ("inside" if max(central) < 1000 else "above" if min(central) > 1000
+                                                           else "straddling"),
+                          "against_1s_over_passes_and_factor_range": ("inside" if hi_ < 1000 else "above" if lo_ > 1000
+                                                                      else "straddling")}
+            out["per_robot_round"]["timing_passes"] = {
+                "note": "B-118 N12: three timing passes (no tracemalloc) of the same month per fleet multiple; p99 of one "
+                        "robot's bid computation per pass, scaled by flight.factor and its range. 'inside' = every pass "
+                        "and factor under the 1 s decision; 'above' = every one over it; 'straddling' = some over, some "
+                        "under", "by_multiple": tp}
         out["measured_memory"] = {
             "revision": "B-105, 12 Nov 2026: tracemalloc peaks (bytes Python allocates) of the on-robot parts on one "
                         "robot's view of a 30-day month per fleet multiple: planner working memory during one bid "
@@ -753,6 +784,9 @@ def cmd_build():
                                         process_peak_working_set_mb=r["process_peak_working_set_mb"])
                                for m_, r in sorted(b5.items(), key=lambda kv: int(kv[0]))},
             "estimate_mb_for_comparison": out["classes"]["LTV1"]["peak_memory_mb"]}
+    if os.path.isfile(OUT):                                   # B-118: earlier values stay under dated keys
+        prev = json.load(open(OUT, encoding="utf-8"))
+        out.update({k: v for k, v in prev.items() if k.startswith("superseded_")})
     with open(OUT, "w", encoding="utf-8", newline="\n") as f:
         json.dump(out, f, indent=1, default=float)
         f.write("\n")

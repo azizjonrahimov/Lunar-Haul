@@ -52,6 +52,7 @@ DETECTORS = ("chi2_step", "chi2_window", "cusum", "logreg", "net")
 LABEL = {"chi2_step": "chi-square, per step", "chi2_window": "chi-square, windowed", "cusum": "CUSUM",
          "logreg": "logistic regression", "net": "network"}
 N_BOOT = 1000
+FA_BOOT_PUBLISHED = 200          # resamples behind the stored false-alarm interval (fa_per_pair_day.ci95)
 AUC_STRIDE = 5
 TYPES = F.FAULT_TYPES + ("all",)
 
@@ -169,7 +170,8 @@ def compare(found_net: np.ndarray, d_net: np.ndarray, found_base: np.ndarray, d_
     def med(a, axis):
         return _nanq(a, 50, axis)
 
-    cn, cb = np.where(np.isnan(dn), 600.0, dn), np.where(np.isnan(db), 600.0, db)
+    miss_s = float(F.EVENT_S[1])                                 # B-119 C13: the longest fault, from faults.EVENT_S
+    cn, cb = np.where(np.isnan(dn), miss_s, dn), np.where(np.isnan(db), miss_s, db)
     out = {}
     for key, point, boot in (
             ("delay_median_diff_s", med(dn, 1).mean() - med(db, 0), _mean0(med(dn[:, idx], 2)) - med(db[idx], 1)),
@@ -179,7 +181,10 @@ def compare(found_net: np.ndarray, d_net: np.ndarray, found_base: np.ndarray, d_
             ("recall_diff", fn.mean() - fb.mean(), fn[:, idx].mean(2).mean(0) - fb[idx].mean(1))):
         b = boot[np.isfinite(boot)]
         out[key] = {"value": float(point), "ci95": _ci(boot),
-                    "ci90": [float(np.percentile(b, 5)), float(np.percentile(b, 95))] if len(b) else [None, None]}
+                    "ci90": [float(np.percentile(b, 5)), float(np.percentile(b, 95))] if len(b) else [None, None],
+                    # B-118 N8: the resample counts a bootstrap p is computed from
+                    "boot_n": int(len(b)), "boot_at_or_above_0": int((b >= 0).sum()),
+                    "boot_at_or_below_0": int((b <= 0).sum())}
     out["delay_median_s"] = {"net": float(med(dn, 1).mean()), "base": float(med(db, 0))}
     out["recall"] = {"net": float(fn.mean()), "base": float(fb.mean())}
     out["n_events"] = int(len(sel))
@@ -225,7 +230,11 @@ def evaluate_set(scores_f: Dict[str, np.ndarray], meta: np.ndarray, y: np.ndarra
             fp = np.array([q[2] for q in fd])
             fa = np.array([B.fa_per_day(bms[s], wn, float(thr[det][rate][s])) for s in range(S)])
             idx = rng.integers(0, len(wn), (N_BOOT, len(wn)))
-            fa_b = np.array([[B.fa_per_day(bms[s][i], wn[i], float(thr[det][rate][s])) for i in idx[:200]]
+            # B-121 1: fa_per_pair_day.ci95 is the published interval on the first FA_BOOT_PUBLISHED resamples (the
+            # 1,000-resample interval is stored beside it under onset_context_and_fa_interval_b118,
+            # fa_per_pair_day_ci95_1000, which --onset-fa checks against this one); B-120 E had switched this to all
+            # 1,000, so that a --force run would have moved the stored interval and --onset-fa could never write again
+            fa_b = np.array([[B.fa_per_day(bms[s][i], wn[i], float(thr[det][rate][s])) for i in idx[:FA_BOOT_PUBLISHED]]
                              for s in range(S)]).mean(0)
             act_h = active.sum() * bms[0].shape[1] * B.BIN_S / 3600.0
             fa_act = np.array([(bms[s][active] > thr[det][rate][s]).sum() / max(act_h, 1e-9) for s in range(S)])
@@ -271,6 +280,7 @@ def evaluate_set(scores_f: Dict[str, np.ndarray], meta: np.ndarray, y: np.ndarra
 def time_inference(model, n: int = 2000) -> Dict[str, Any]:
     """Seconds per window on this CPU: the torch model with one thread, and the numpy reference runtime."""
     import torch
+    n_threads = torch.get_num_threads()                          # B-119 C13: restored afterwards, not set to 2
     torch.set_num_threads(1)
     rng = np.random.default_rng(0)
     x = torch.from_numpy(rng.normal(size=(1, model.rf, len(F.FEATURES))).astype(np.float32))
@@ -290,7 +300,7 @@ def time_inference(model, n: int = 2000) -> Dict[str, Any]:
         t = time.perf_counter()
         pol(xn)
         tn.append(time.perf_counter() - t)
-    torch.set_num_threads(2)
+    torch.set_num_threads(n_threads)
     import platform
     return {"window_steps": model.rf, "torch_1thread_ms": {"median": float(np.median(ts) * 1e3),
                                                            "p99": float(np.percentile(ts, 99) * 1e3), "n": n},
@@ -395,7 +405,103 @@ def write_table(res: Dict[str, Any]) -> None:
                                         round(a["pr_auc"], 4) if cname == "all" else ""])
 
 
-def main(on: str = "test", force: bool = False, runs: Optional[List[str]] = None, max_s: float = 530.0) -> None:
+def scores_fingerprint(names: List[str]) -> str:
+    """B-118 N21: what a cached score array depends on: the model checkpoints named, the scoring code (baselines,
+    model, faults), the baselines' fitted parameters and the dataset's hash."""
+    import glob as _g
+    import hashlib
+    h = hashlib.sha256(D.dataset_sha256().encode())
+    files = [os.path.join(os.path.dirname(os.path.abspath(__file__)), f) for f in ("baselines.py", "model.py", "faults.py")]
+    files += [BASELINES] + sorted(p for n in names for p in _g.glob(os.path.join(T.STATE, n, "*")) if os.path.isfile(p))
+    for p in files:
+        h.update(os.path.basename(p).encode())
+        with open(p, "rb") as f:
+            h.update(f.read().replace(b"\r\n", b"\n") if p.endswith(".py") else f.read())
+    return h.hexdigest()[:16]
+
+
+def score_gate(z, path: str, fp: str, accept_unstamped: bool) -> None:
+    """B-118 N21 / B-120 E: a cached score file (an open np.load) is used only if its fingerprint equals fp; a file
+    cached before B-118 (no fingerprint) only with accept_unstamped (--accept-unstamped-scores)."""
+    code = str(z["_code"]) if "_code" in z.files else None
+    if code is None and not accept_unstamped:
+        raise SystemExit(f"{path} carries no fingerprint (cached before B-118); delete it and rescore, or "
+                         "pass --accept-unstamped-scores to use it as it is")
+    if code is None:
+        print(f"  {os.path.basename(path)}: scores cached before B-118 carry no fingerprint; used as they are "
+              "(--accept-unstamped-scores)", flush=True)
+    elif code != fp:
+        raise SystemExit(f"{path} was made with other models or code ({code} != {fp}); delete it and rescore")
+
+
+CARRY_KEYS = ("landscape", "h15_resample_counts_b118", "onset_context_and_fa_interval_b118")   # B-120 E
+
+
+def _same(a: Any, b: Any) -> bool:
+    """Exact equality of two JSON values (NaN equals NaN); a freshly computed value is compared after a JSON round
+    trip, as it would be stored."""
+    if isinstance(a, dict) and isinstance(b, dict):
+        return a.keys() == b.keys() and all(_same(a[k], b[k]) for k in a)
+    if isinstance(a, list) and isinstance(b, list):
+        return len(a) == len(b) and all(_same(x, y) for x, y in zip(a, b))
+    if isinstance(a, float) and isinstance(b, float) and a != a and b != b:
+        return True
+    return type(a) is type(b) and a == b
+
+
+def carry_over(prev: Dict[str, Any], out: Dict[str, Any]) -> Tuple[Dict[str, Any], List[str]]:
+    """B-121 2: the keys of the previous results file a rerun keeps, and what to run for each one it drops.
+
+    "landscape" and superseded_* blocks are kept. The B-118 addenda are kept only if every check they carry passed and
+    the freshly computed values they were checked against equal the stored ones: h15_resample_counts_b118 needs each
+    of its sets' h15_net_against (the intervals and the resample counts) unchanged; onset_context_and_fa_interval_b118
+    needs the dataset hash, the validation thresholds, and for each of its sets every recall and the 200-resample
+    false-alarm interval unchanged. Before, both were copied with their flags unchecked, so phase6_family.h15a could
+    trust counts that no longer matched the stored intervals."""
+    fresh = json.loads(json.dumps(out))
+    keep = {k: v for k, v in prev.items() if k == "landscape" or k.startswith("superseded_")}
+    todo: List[str] = []
+    blk = prev.get("h15_resample_counts_b118")
+    if blk is not None:
+        sets = blk.get("sets") or {}
+        ok = (bool(sets) and all(sets.values()) and not resample_counts_not_reproduced(blk)
+              and all(s in fresh and s in prev and _same(fresh[s].get("h15_net_against"), prev[s].get("h15_net_against"))
+                      for s in sets))
+        if ok:
+            keep["h15_resample_counts_b118"] = blk
+        else:
+            todo.append("h15_resample_counts_b118 dropped (its intervals or counts no longer match); run "
+                        "python -m lunarsim.nn.evaluate --resample-counts")
+    blk = prev.get("onset_context_and_fa_interval_b118")
+    if blk is not None:
+        sets = blk.get("sets") or {}
+
+        def unchanged(s: str) -> bool:
+            if s not in fresh or s not in prev:
+                return False
+            for det, by in sets[s].items():
+                for rate, e in by.items():
+                    f, p = fresh[s][det][rate], prev[s][det][rate]
+                    if not _same(f["fa_per_pair_day"]["ci95"], p["fa_per_pair_day"]["ci95"]):
+                        return False
+                    if not all(_same(f["events"][ft]["recall"]["mean"], p["events"][ft]["recall"]["mean"])
+                               for ft in e["events"]):
+                        return False
+            return True
+        ok = (bool(sets) and not onset_fa_not_reproduced(blk)
+              and _same(fresh.get("dataset_sha256"), prev.get("dataset_sha256"))
+              and _same(fresh.get("thresholds_from_validation"), prev.get("thresholds_from_validation"))
+              and all(unchanged(s) for s in sets))
+        if ok:
+            keep["onset_context_and_fa_interval_b118"] = blk
+        else:
+            todo.append("onset_context_and_fa_interval_b118 dropped (a recall, threshold or false-alarm interval it "
+                        "was checked against changed); run python -m lunarsim.nn.evaluate --onset-fa")
+    return keep, todo
+
+
+def main(on: str = "test", force: bool = False, runs: Optional[List[str]] = None, max_s: float = 530.0,
+         accept_unstamped_scores: bool = False) -> None:
     t0 = time.time()
     rehearsal = on == "val"
     result_path = RESULT if not rehearsal else os.path.join(T.STATE, "rehearsal_val.json")
@@ -416,18 +522,21 @@ def main(on: str = "test", force: bool = False, runs: Optional[List[str]] = None
 
     tag = "rehearsal" if rehearsal else "final"
 
+    fp = scores_fingerprint(runs or [final_name(s) for s in FINAL_SEEDS])
+
     def all_scores(X: np.ndarray, what: str) -> Dict[str, np.ndarray]:
         """Scores of every detector on one array; saved, so that a run that stops at the time limit resumes."""
         path = os.path.join(T.STATE, f"scores_{tag}_{what}.npz")
         if os.path.isfile(path) and not rehearsal:
             with np.load(path) as z:
-                return {k: z[k] for k in z.files}
+                score_gate(z, path, fp, accept_unstamped_scores)
+                return {k: z[k] for k in z.files if k != "_code"}
         if time.time() - t0 > max_s - 200.0 and not rehearsal:
             raise SystemExit(3)
         out = {k: fn(X)[None] for k, fn in scorers.items()}
         out["net"] = np.array([M.score_streams(m, X) for m in models])
         if not rehearsal:
-            np.savez(path, **out)
+            np.savez(path, _code=np.array(fp), **out)
         print(f"  scored {what} ({time.time() - t0:.0f} s)", flush=True)
         return out
 
@@ -499,8 +608,13 @@ def main(on: str = "test", force: bool = False, runs: Optional[List[str]] = None
         out["policy_file"] = export_policy(rep, rdone, {r: float(thr["net"][r][0]) for r in B.RATES}, va,
                                            {"dataset_sha256": out["dataset_sha256"],
                                             "PROVISIONAL": out["PROVISIONAL"]})
-        if "landscape" in prev:
-            out["landscape"] = prev["landscape"]
+        # B-120 E: keys other commands add are carried over (before, only "landscape", so a rerun dropped the
+        # B-118 addenda that phase6_family.h15a, paper/p2/phase6.py and site/lib/network.mjs read); B-121 2: an
+        # addendum only while the values it was checked against are unchanged (carry_over)
+        kept, todo = carry_over(prev, out)
+        out.update(kept)
+        for line in todo:
+            print(line, flush=True)
         np.savez(EVAL_CACHE, **arrays)
         write_table(out)
     out["wall_s"] = round(time.time() - t0, 1)
@@ -517,13 +631,168 @@ def main(on: str = "test", force: bool = False, runs: Optional[List[str]] = None
     print("->", result_path, out["wall_s"], "s")
 
 
+def resample_counts(write: bool = True) -> Dict[str, Any]:
+    """B-118 N8: the bootstrap resample counts behind H15's comparisons (h15_block at 1 false alarm per pair-day),
+    reproduced from the saved event arrays (EVAL_CACHE) with the same random streams as the published evaluation, and
+    checked against the stored intervals. Written to results/E56_integrity.json under a new top-level key; every other
+    key is left as it is. A one-sided bootstrap p for 'network shorter' is (at_or_above_0 + 1) / (boot_n + 1)."""
+    doc = json.load(open(RESULT, encoding="utf-8"))
+    out: Dict[str, Any] = {"note": resample_counts.__doc__.split("\n\n")[0].replace("\n    ", " "), "sets": {}}
+    with np.load(EVAL_CACHE) as z:
+        for sname in ("test", "ood", "ood_recalibrated"):
+            if f"{sname}__kinds" not in z.files or sname not in doc:
+                continue
+            arr = {k[len(sname) + 2:]: z[k] for k in z.files if k.startswith(sname + "__")}
+            blk = h15_block(arr, arr["kinds"])
+            stored = doc[sname]["h15_net_against"]
+            cnt: Dict[str, Any] = {}
+            for base, by in blk.items():
+                for ft, r in by.items():
+                    for key, v in r.items():
+                        if isinstance(v, dict) and "boot_n" in v:
+                            s = stored[base][ft][key]
+                            cnt[f"{base}|{ft}|{key}"] = {
+                                "boot_n": v["boot_n"], "at_or_above_0": v["boot_at_or_above_0"],
+                                "at_or_below_0": v["boot_at_or_below_0"],
+                                "reproduces_stored_interval": bool(np.allclose(v["ci95"], s["ci95"], equal_nan=True)
+                                                                   and np.allclose(v["ci90"], s["ci90"], equal_nan=True))}
+            out["sets"][sname] = cnt
+        for sname in ("test", "ood", "ood_recalibrated"):      # B-121 6: a stored set the cache lacks is not skipped
+            if sname in doc and sname not in out["sets"]:
+                out["sets"][sname] = {}
+    if write:
+        _store("h15_resample_counts_b118", out)
+    return out
+
+
+def _store(key: str, block: Dict[str, Any]) -> None:
+    """Write one top-level key of results/E56_integrity.json, every other key left as it is."""
+    doc = json.load(open(RESULT, encoding="utf-8"))
+    doc[key] = block
+    with open(RESULT, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(doc, f, indent=1)
+        f.write("\n")
+
+
+def resample_counts_not_reproduced(r: Dict[str, Any]) -> List[str]:
+    """B-120 E: the comparisons whose recomputed interval does not equal the stored one. B-121 6: no set at all, or a
+    set with no comparison (EVAL_CACHE without <set>__kinds), is a failure too; before, it passed vacuously and an
+    empty addendum overwrote a good one."""
+    if not r.get("sets"):
+        return ["no set reproduced (EVAL_CACHE has no <set>__kinds)"]
+    bad = [f"{s}: no comparison (EVAL_CACHE has no {s}__kinds)" for s, c in r["sets"].items() if not c]
+    return bad + [f"{s}:{k}" for s, c in r["sets"].items() for k, v in c.items() if not v["reproduces_stored_interval"]]
+
+
+def onset_fa_not_reproduced(r: Dict[str, Any]) -> List[tuple]:
+    """B-120 E: the recalls and 200-resample false-alarm intervals that do not equal the stored ones (B-121: no set,
+    or a set with no detector, is a failure)."""
+    if not r.get("sets"):
+        return [("no set", "", "", "")]
+    bad = [(s, "", "", "empty") for s, b in r["sets"].items() if not b]
+    bad += [(s, d, rt, ft) for s, b in r["sets"].items() for d, x in b.items() for rt, y in x.items()
+           for ft, e in y["events"].items() if not e["recall_reproduces_stored"]]
+    bad += [(s, d, rt, "fa") for s, b in r["sets"].items() for d, x in b.items() for rt, y in x.items()
+            if not y["fa_ci95_200_reproduces_stored"]]
+    return bad
+
+
+def onset_and_fa_addendum(write: bool = True, sets=("test", "ood"), accept_unstamped_scores: bool = False
+                          ) -> Dict[str, Any]:
+    """B-118 N10 and N11, from the saved scores (.cache/nn/scores_final_*.npz) and the stored validation thresholds;
+    nothing is retrained or recalibrated, and every existing key of results/E56_integrity.json is left as it is.
+    N10: beside each recall (test and out-of-distribution sets, both rates, per fault type and overall), the share of
+    events with an alarm already on at the step before onset (baselines.onset_context), and the recall on the events
+    with no alarm in the 60 s before onset. N11: the false-alarm interval on all 1,000 resamples (the published one
+    used the first 200), with the same resample indices. Every recomputed recall and 200-resample interval is checked
+    against the stored value first. B-121 6: the score files pass the same fingerprint gate as in main."""
+    doc = json.load(open(RESULT, encoding="utf-8"))
+    thr = doc["thresholds_from_validation"]
+    fp = scores_fingerprint([final_name(s) for s in FINAL_SEEDS])
+    out: Dict[str, Any] = {"note": onset_and_fa_addendum.__doc__.replace("\n    ", " "), "sets": {}}
+    for sname in sets:
+        with np.load(D.cache_path(sname)) as z:
+            mf, mn = z["mf"], z["mn"]
+        kinds = mf[:, 0].astype(int)
+        wn = mn[:, D.META.index("weight")]
+        blk: Dict[str, Any] = {}
+        for det in DETECTORS:
+            path = os.path.join(T.STATE, f"scores_final_{sname}_fault.npz")
+            with np.load(path) as z:
+                score_gate(z, path, fp, accept_unstamped_scores)
+                sf = z[det]
+            blk[det] = {}
+            for rate in B.RATES:
+                S = len(sf)
+                res = [B.detect(sf[s], mf, float(thr[det][rate][s])) for s in range(S)]
+                ctx = [B.onset_context(sf[s], mf, float(thr[det][rate][s])) for s in range(S)]
+                stored = doc[sname][det][rate]["events"]
+                ev = {}
+                for k, name in list(enumerate(F.FAULT_TYPES, 1)) + [(0, "all")]:
+                    sel = (kinds == k) if k else (kinds > 0)
+                    rec = float(np.mean([res[s][0][sel].mean() for s in range(S)]))
+                    on = float(np.mean([ctx[s][0][sel].mean() for s in range(S)]))
+                    q = [ctx[s][1] & sel for s in range(S)]
+                    rq = [res[s][0][q[s]].mean() for s in range(S) if q[s].any()]
+                    ev[name] = {"recall": rec, "recall_reproduces_stored": bool(abs(rec - stored[name]["recall"]["mean"]) < 1e-9),
+                                "share_alarm_on_at_onset": on, "recall_quiet_60s_before": float(np.mean(rq)) if rq else None,
+                                "events_quiet_60s_before_mean": float(np.mean([q[s].sum() for s in range(S)])),
+                                "events": int(sel.sum())}
+                    ev[name]["share_alarm_in_60s_before"] = 1.0 - ev[name]["events_quiet_60s_before_mean"] / ev[name]["events"]
+                blk[det][rate] = {"events": ev}
+            del sf
+            path = os.path.join(T.STATE, f"scores_final_{sname}_ff.npz")
+            with np.load(path) as z:
+                score_gate(z, path, fp, accept_unstamped_scores)
+                sn = z[det]
+            bms = [B.bin_max(sn[s]) for s in range(len(sn))]
+            del sn
+            for rate in B.RATES:
+                S = len(bms)
+                rng = np.random.default_rng([D.MASTER_SEED, 11, 0])          # evaluate_set's stream, seed 0
+                idx = rng.integers(0, len(wn), (N_BOOT, len(wn)))
+                per = np.array([[B.fa_per_day(bms[s][i], wn[i], float(thr[det][rate][s])) for i in idx]
+                                for s in range(S)])                         # [S, 1000]
+                b200, b1000 = per[:, :FA_BOOT_PUBLISHED].mean(0), per.mean(0)
+                st = doc[sname][det][rate]["fa_per_pair_day"]["ci95"]
+                blk[det][rate]["fa_per_pair_day_ci95_1000"] = _ci(b1000)
+                blk[det][rate]["fa_ci95_200_reproduces_stored"] = bool(np.allclose(_ci(b200), st, equal_nan=True))
+            print(f"{sname} {det} done", flush=True)
+        out["sets"][sname] = blk
+    if write:
+        _store("onset_context_and_fa_interval_b118", out)
+    return out
+
+
+def addendum_cli(argv: List[str]) -> int:
+    """B-120 E / B-121: --onset-fa and --resample-counts write their addendum only when every recomputed value
+    reproduces the stored one (and there is at least one); otherwise nothing is written and the status is 1."""
+    accept = "--accept-unstamped-scores" in argv
+    if "--onset-fa" in argv:
+        key, r = "onset_context_and_fa_interval_b118", onset_and_fa_addendum(write=False, accept_unstamped_scores=accept)
+        bad: List[Any] = onset_fa_not_reproduced(r)
+    else:
+        key, r = "h15_resample_counts_b118", resample_counts(write=False)
+        bad = resample_counts_not_reproduced(r)
+    if bad:
+        print(len(bad), "not reproduced (nothing written):", bad[:10])
+        return 1
+    _store(key, r)
+    print("reproduced; written")
+    return 0
+
+
 if __name__ == "__main__":
+    if "--onset-fa" in sys.argv or "--resample-counts" in sys.argv:
+        raise SystemExit(addendum_cli(sys.argv[1:]))
     ap = argparse.ArgumentParser()
     ap.add_argument("--on", default="test", choices=("test", "val"))
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--runs", default="", help="rehearsal only: comma-separated run names instead of the finals")
     ap.add_argument("--max-seconds", type=float, default=530.0)
+    ap.add_argument("--accept-unstamped-scores", action="store_true",
+                    help="use score caches made before B-118 (no fingerprint) as they are; refused otherwise")
     a = ap.parse_args()
     import faulthandler
     faulthandler.dump_traceback_later(a.max_seconds, exit=True)
-    main(a.on, a.force, [r for r in a.runs.split(",") if r] or None, a.max_seconds)
+    main(a.on, a.force, [r for r in a.runs.split(",") if r] or None, a.max_seconds, a.accept_unstamped_scores)

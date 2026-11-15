@@ -1,6 +1,8 @@
 {
  "task": "B-107 (P2 M9)",
  "note": "    python tools/atc/run_e45_uphill.py run [--max-seconds 480]    # resumable, one file per cell     python tools/atc/run_e45_uphill.py build                      # -> results/E45_uphill.json, results/E45_uphill.csv",
+ "delay_cells_code": "fdb548a78d255c93",
+ "delay_cells_code_note": "B-120 A (14 Nov 2026): the 16 delay cells (delay_s 1 = RHO_S: moon and mars x following and one_lane x 5, 10, 15 and 17.2 deg; each with as_is and slope_term, 32 rows) were rerun on the corrected R1 breach counter (the first countable step is the 11th below step) and carry this code fingerprint; every value equals the earlier run. The delay-0 cells and the sweep were not rerun: without a delay the breach is counted on the command as before, and the sweep's breach counts are not used; neither carries a code stamp.",
  "d0_m": 5.0,
  "b_max": 0.8,
  "b_min_flat": 0.5,
@@ -21,7 +23,7 @@
    "min_gap_m": 6.40646975541938,
    "min_gap_p01_m": 6.452885452415303,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -37,7 +39,7 @@
    "min_gap_m": 6.748393667840787,
    "min_gap_p01_m": 6.781907779842085,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -52,8 +54,8 @@
    "gap_below_d0": 964,
    "min_gap_m": 2.864459446752676,
    "min_gap_p01_m": 3.0514973006947854,
-   "r1_breach_rate": 0.0005,
-   "nominal_only_violations": 0
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -69,7 +71,7 @@
    "min_gap_m": 5.871593293144713,
    "min_gap_p01_m": 6.4629195333034275,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -85,7 +87,7 @@
    "min_gap_m": 4.92739009748837,
    "min_gap_p01_m": 4.965389674059498,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -101,7 +103,7 @@
    "min_gap_m": 5.001001541269886,
    "min_gap_p01_m": 5.034906890736917,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -116,8 +118,8 @@
    "gap_below_d0": 1490,
    "min_gap_m": 0.9790692092125255,
    "min_gap_p01_m": 1.1548731017469072,
-   "r1_breach_rate": 0.039,
-   "nominal_only_violations": 0
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -133,7 +135,7 @@
    "min_gap_m": 5.001001541269886,
    "min_gap_p01_m": 5.034906890736917,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -149,7 +151,7 @@
    "min_gap_m": 4.610069686932491,
    "min_gap_p01_m": 4.648859628461887,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -165,7 +167,7 @@
    "min_gap_m": 5.000442591932995,
    "min_gap_p01_m": 5.031889266209907,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -180,8 +182,8 @@
    "gap_below_d0": 1676,
    "min_gap_m": 0.7243629071021473,
    "min_gap_p01_m": 0.9322326947048305,
-   "r1_breach_rate": 0.014,
-   "nominal_only_violations": 0
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -197,7 +199,7 @@
    "min_gap_m": 5.000442591932995,
    "min_gap_p01_m": 5.031889266209907,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -213,7 +215,7 @@
    "min_gap_m": 7.17256185679193,
    "min_gap_p01_m": 7.211645937269993,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -229,7 +231,7 @@
    "min_gap_m": 7.199703844294731,
    "min_gap_p01_m": 7.278892246111625,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -245,7 +247,7 @@
    "min_gap_m": 5.385543470075163,
    "min_gap_p01_m": 5.866554485116008,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -261,7 +263,7 @@
    "min_gap_m": 5.5582370050514385,
    "min_gap_p01_m": 5.992122809527554,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -277,7 +279,7 @@
    "min_gap_m": 6.424706480460657,
    "min_gap_p01_m": 6.465606021709298,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -293,7 +295,7 @@
    "min_gap_m": 6.748274416482246,
    "min_gap_p01_m": 6.770047599019378,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -309,7 +311,7 @@
    "min_gap_m": 3.008389049630864,
    "min_gap_p01_m": 3.291132034888092,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -325,7 +327,7 @@
    "min_gap_m": 6.6055818949746765,
    "min_gap_p01_m": 6.632978418048412,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -341,7 +343,7 @@
    "min_gap_m": 4.987660722611565,
    "min_gap_p01_m": 5.019310137988786,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -357,7 +359,7 @@
    "min_gap_m": 5.001685569493276,
    "min_gap_p01_m": 5.029338430825915,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -372,8 +374,8 @@
    "gap_below_d0": 969,
    "min_gap_m": 0.9761452022264621,
    "min_gap_p01_m": 1.3624624557873313,
-   "r1_breach_rate": 0.1465,
-   "nominal_only_violations": 0
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -389,7 +391,7 @@
    "min_gap_m": 4.86264069303283,
    "min_gap_p01_m": 4.901510817979177,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -405,7 +407,7 @@
    "min_gap_m": 4.574978329785267,
    "min_gap_p01_m": 4.710543358175782,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -421,7 +423,7 @@
    "min_gap_m": 5.000123762315184,
    "min_gap_p01_m": 5.044100567093288,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -436,8 +438,8 @@
    "gap_below_d0": 1314,
    "min_gap_m": 0.7251200090629482,
    "min_gap_p01_m": 1.0390397910562883,
-   "r1_breach_rate": 0.1515,
-   "nominal_only_violations": 0
+   "r1_breach_rate": 0.0,
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -453,7 +455,7 @@
    "min_gap_m": 4.858649456018583,
    "min_gap_p01_m": 4.916755164761721,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -469,7 +471,7 @@
    "min_gap_m": 7.216761563207285,
    "min_gap_p01_m": 7.229114551073181,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -485,7 +487,7 @@
    "min_gap_m": 7.286459129471666,
    "min_gap_p01_m": 7.305926307007141,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -501,7 +503,7 @@
    "min_gap_m": 5.921621156898198,
    "min_gap_p01_m": 6.1021543320884994,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "mars",
@@ -517,7 +519,7 @@
    "min_gap_m": 6.055757008833382,
    "min_gap_p01_m": 6.19703339063214,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -533,7 +535,7 @@
    "min_gap_m": 7.3261146189577175,
    "min_gap_p01_m": 7.384188961284487,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -549,7 +551,7 @@
    "min_gap_m": 7.3261146189577175,
    "min_gap_p01_m": 7.384188961284487,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -565,7 +567,7 @@
    "min_gap_m": 5.884731503203028,
    "min_gap_p01_m": 6.319422208879559,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -581,7 +583,7 @@
    "min_gap_m": 5.884731503203028,
    "min_gap_p01_m": 6.319422208879559,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -597,7 +599,7 @@
    "min_gap_m": 6.9700725386635725,
    "min_gap_p01_m": 7.017555725862482,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -613,7 +615,7 @@
    "min_gap_m": 7.185048574628212,
    "min_gap_p01_m": 7.285091854945542,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -629,7 +631,7 @@
    "min_gap_m": 4.570829084341199,
    "min_gap_p01_m": 5.053389885692098,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -645,7 +647,7 @@
    "min_gap_m": 5.430654185143425,
    "min_gap_p01_m": 5.9239311205043075,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -661,7 +663,7 @@
    "min_gap_m": 6.843995392426905,
    "min_gap_p01_m": 6.8857402364467015,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -677,7 +679,7 @@
    "min_gap_m": 7.138225318586365,
    "min_gap_p01_m": 7.277129788173467,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -693,7 +695,7 @@
    "min_gap_m": 4.148003908909288,
    "min_gap_p01_m": 4.364562814566238,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -709,7 +711,7 @@
    "min_gap_m": 5.841454950815091,
    "min_gap_p01_m": 6.1217957173872355,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -725,7 +727,7 @@
    "min_gap_m": 7.960902424054325,
    "min_gap_p01_m": 8.019262209808863,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -741,7 +743,7 @@
    "min_gap_m": 7.960902424054325,
    "min_gap_p01_m": 8.019262209808863,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -757,7 +759,7 @@
    "min_gap_m": 7.320011042133615,
    "min_gap_p01_m": 7.38663385111632,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -773,7 +775,7 @@
    "min_gap_m": 7.320011042133615,
    "min_gap_p01_m": 7.38663385111632,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -789,7 +791,7 @@
    "min_gap_m": 7.377450934537819,
    "min_gap_p01_m": 7.401029018641876,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -805,7 +807,7 @@
    "min_gap_m": 7.377450934537819,
    "min_gap_p01_m": 7.401029018641876,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -821,7 +823,7 @@
    "min_gap_m": 6.312637438947263,
    "min_gap_p01_m": 6.468723761762129,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -837,7 +839,7 @@
    "min_gap_m": 6.312637438947263,
    "min_gap_p01_m": 6.468723761762129,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -853,7 +855,7 @@
    "min_gap_m": 7.0144687990990064,
    "min_gap_p01_m": 7.040647307430122,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -869,7 +871,7 @@
    "min_gap_m": 7.348392705469223,
    "min_gap_p01_m": 7.363821509255873,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -885,7 +887,7 @@
    "min_gap_m": 5.431841218227817,
    "min_gap_p01_m": 5.650853753783191,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -901,7 +903,7 @@
    "min_gap_m": 5.981495711137541,
    "min_gap_p01_m": 6.198179900479141,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -917,7 +919,7 @@
    "min_gap_m": 6.857724324120909,
    "min_gap_p01_m": 6.8999809676643835,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -933,7 +935,7 @@
    "min_gap_m": 7.384732072979034,
    "min_gap_p01_m": 7.397593231327578,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -949,7 +951,7 @@
    "min_gap_m": 5.218760425620587,
    "min_gap_p01_m": 5.389749867159441,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -965,7 +967,7 @@
    "min_gap_m": 5.998170272349228,
    "min_gap_p01_m": 6.216737131899561,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -981,7 +983,7 @@
    "min_gap_m": 8.010386532206724,
    "min_gap_p01_m": 8.041464504783411,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -997,7 +999,7 @@
    "min_gap_m": 8.010386532206724,
    "min_gap_p01_m": 8.041464504783411,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -1013,7 +1015,7 @@
    "min_gap_m": 7.4700545360766455,
    "min_gap_p01_m": 7.518334398235983,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   },
   {
    "planet": "moon",
@@ -1029,7 +1031,7 @@
    "min_gap_m": 7.4700545360766455,
    "min_gap_p01_m": 7.518334398235983,
    "r1_breach_rate": 0.0,
-   "nominal_only_violations": 0
+   "nominal_only_violations": null
   }
  ],
  "threshold": {
@@ -1617,5 +1619,269 @@
     ]
    ]
   }
+ },
+ "nominal_only_note": "B-118 N18: every follower runs E44's adversarial planner (planner [0] + [2] x (nv - 1)), so no encounter is nominal-only and nominal_only_violations is null in every cell (it was printed as 0 of 0 before 13 Nov 2026; nothing was counted)",
+ "r1_breach_definition": "share of encounters with at least one R1 breach. Without an actuation delay (delay_s 0): a step where a follower's gap to its leader is below rss_dmin and its command is short of full braking (a > -b). With an actuation delay (delay_s 1 = RHO_S; B-118 N23, 13 Nov 2026): a step where the gap has been below rss_dmin for longer than R1's response time RHO_S = 1 s and the deceleration the vehicle applies (the delayed command) is still short of full braking, as R1 states (brake within the response time); the allowance is RHO_S, not the delay, so a delay longer than RHO_S would be counted (lunarsim/atc/encounter.py r1_breach_delayed). The sweep cells' breach counts are not used (only their minimum gaps); the counter does not change the motion.",
+ "superseded_2026-11-13_b118_n23": {
+  "reason": "B-118 N23: the delay cells' R1 breach rates as committed before 13 Nov 2026, counted on the command at once (a follower that brakes within R1's response time was counted in the steps before its braking took effect); every other value of these cells is unchanged by the new definition",
+  "superseded_on": "2026-11-13",
+  "r1_breach_rate": [
+   {
+    "planet": "mars",
+    "geom": "following",
+    "slope_deg": 10.0,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.0005
+   },
+   {
+    "planet": "mars",
+    "geom": "following",
+    "slope_deg": 10.0,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "mars",
+    "geom": "following",
+    "slope_deg": 15.0,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.039
+   },
+   {
+    "planet": "mars",
+    "geom": "following",
+    "slope_deg": 15.0,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "mars",
+    "geom": "following",
+    "slope_deg": 17.2,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.014
+   },
+   {
+    "planet": "mars",
+    "geom": "following",
+    "slope_deg": 17.2,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "mars",
+    "geom": "following",
+    "slope_deg": 5.0,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "mars",
+    "geom": "following",
+    "slope_deg": 5.0,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "mars",
+    "geom": "one_lane",
+    "slope_deg": 10.0,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "mars",
+    "geom": "one_lane",
+    "slope_deg": 10.0,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "mars",
+    "geom": "one_lane",
+    "slope_deg": 15.0,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.1465
+   },
+   {
+    "planet": "mars",
+    "geom": "one_lane",
+    "slope_deg": 15.0,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "mars",
+    "geom": "one_lane",
+    "slope_deg": 17.2,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.1515
+   },
+   {
+    "planet": "mars",
+    "geom": "one_lane",
+    "slope_deg": 17.2,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "mars",
+    "geom": "one_lane",
+    "slope_deg": 5.0,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "mars",
+    "geom": "one_lane",
+    "slope_deg": 5.0,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "following",
+    "slope_deg": 10.0,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "following",
+    "slope_deg": 10.0,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "following",
+    "slope_deg": 15.0,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "following",
+    "slope_deg": 15.0,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "following",
+    "slope_deg": 17.2,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "following",
+    "slope_deg": 17.2,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "following",
+    "slope_deg": 5.0,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "following",
+    "slope_deg": 5.0,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "one_lane",
+    "slope_deg": 10.0,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "one_lane",
+    "slope_deg": 10.0,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "one_lane",
+    "slope_deg": 15.0,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "one_lane",
+    "slope_deg": 15.0,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "one_lane",
+    "slope_deg": 17.2,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "one_lane",
+    "slope_deg": 17.2,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "one_lane",
+    "slope_deg": 5.0,
+    "delay_s": 1.0,
+    "rule": "as_is",
+    "r1_breach_rate": 0.0
+   },
+   {
+    "planet": "moon",
+    "geom": "one_lane",
+    "slope_deg": 5.0,
+    "delay_s": 1.0,
+    "rule": "slope_term",
+    "r1_breach_rate": 0.0
+   }
+  ]
  }
 }

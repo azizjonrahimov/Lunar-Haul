@@ -93,7 +93,8 @@ DEFAULTS: Dict[str, Any] = {
                                      # are in its partition: it resends the decision until the lease (timeout_h) ends
     "mast2": None,                   # E41 network design: a second 10 m relay mast at this site (e.g. "PAD_B")
     "o_rally": False,                # diagnostic (B-75): O_ORACLE plus the auction's rally (idle robots at sites the
-                                     # BASE mast does not see drive to the nearest one it sees); not a PREREG cell
+                                     # BASE mast does not see drive to the nearest one it sees); not a PREREG cell;
+                                     # "unheard" (B-117): only idle robots no radio path links to BASE, as in C_AUCTION
     # B-76 (E46, the market): an owner's ask = its true cost x this multiplier (private cost x bid scaling); None = off
     "bid_mult": None,
     # B-93 (opt-in): bids only from robots whose LRIP capability manifest can do the bundle ("catalog" = manifests from
@@ -426,7 +427,17 @@ class ATCState:
         r = self.regime
         if r == "O_ORACLE":
             jobs = _inner_fn("marketplace")(sim, waiting, free, **inner_kw)
-            if self.cfg["o_rally"]:
+            if self.cfg["o_rally"] == "unheard":
+                # B-117 (P1 S3, opt-in): the auction's own trigger (auction.dispatch): an idle robot whose radio
+                # component holds no BASE drives to the nearest site the mast sees (BASE while the base is down)
+                from .auction import _components
+                _, comps, _ = _components(self, sim, t)
+                heard = set().union(*[cp for cp in comps if "BASE" in cp])
+                busy = {v.id for j in jobs for v in j.vehicles}
+                for v in free:
+                    if v.id not in busy and v.id not in heard:
+                        self._rally(sim, v, self.covered_sites(sim, antenna_m(v)) if self.base_up(t) else ["BASE"])
+            elif self.cfg["o_rally"]:
                 busy = {v.id for j in jobs for v in j.vehicles}
                 for v in free:
                     if v.id not in busy:

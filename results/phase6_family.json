@@ -8,19 +8,19 @@
    "clauses": {
     "dead reckoning exceeds the budget within one 8-h shift": {
      "statistic": "p95 in the first driving hour, mean over seeds",
-     "value_m": 85.22339922587076,
+     "value_m": 81.0508918762207,
      "seeds_on_predicted_side": 1.0,
      "supported": true
     },
     "ranging stays inside the budget near the base": {
      "statistic": "p95 near the base, mean over seeds",
-     "value_m": 4.215645329554874,
+     "value_m": 4.276413573026657,
      "seeds_on_predicted_side": 1.0,
      "supported": true
     },
     "absolute fixes keep it inside away from the base": {
      "statistic": "p95 away from the base, mean over seeds",
-     "value_m": 15.234429089228302,
+     "value_m": 15.237035288810715,
      "seeds_on_predicted_side": 0.0,
      "supported": false
     }
@@ -31,34 +31,34 @@
    "test": "primary clause: paired TOST at 1x (margin 50 % of the perfect-position delay), t distribution, 30 seeds; the clauses joined by intersection-union (p = the largest clause p)",
    "clauses": {
     "layered within 1.5x of perfect at 1x (TOST)": {
-     "mean_diff_h": 0.006561927181440079,
-     "se_h": 0.004694085603096999,
+     "mean_diff_h": 0.006574367605389675,
+     "se_h": 0.004693279952451045,
      "margin_h": 8.865594233681295,
-     "p": 1.1788705464104612e-75
+     "p": 1.1730648482109467e-75
     },
     "the gap grows with the fleet (4x and 8x)": {
-     "gap_1x_h": 0.006561927181440079,
-     "gap_4x_h": -0.8676662943806861,
+     "gap_1x_h": 0.006574367605389675,
+     "gap_4x_h": -0.4853053045801291,
      "n_4x": 10,
-     "gap_8x_h": -0.24746018746765444,
+     "gap_8x_h": -0.14038452378698665,
      "n_8x": 5,
-     "p_one_sided_4x": 0.9324376632595714,
-     "p_one_sided_8x": 0.7726879763267119,
-     "p_one_sided": 0.9324376632595714,
+     "p_one_sided_4x": 0.8652824049001837,
+     "p_one_sided_8x": 0.6611217977592585,
+     "p_one_sided": 0.8652824049001837,
      "note": "Welch one-sided, gap m x > gap 1x, at 4x and at 8x; the clause holds only if both do (p = the larger)"
     },
     "dead reckoning with the margin larger at 1x": {
-     "mean_diff_h": 0.11711714233689818,
-     "t": 1.1602047681571703,
-     "p_one_sided": 0.12771407296733817
+     "mean_diff_h": 0.09599141471954678,
+     "t": 0.9637052994895408,
+     "p_one_sided": 0.171580742014788
     }
    },
-   "p_primary": 1.1788705464104612e-75,
-   "p_intersection_union": 0.9324376632595714,
+   "p_primary": 1.1730648482109467e-75,
+   "p_intersection_union": 0.8652824049001837,
    "holm": {
-    "p_adjusted": 0.9324376632595714,
+    "p_adjusted": 0.8652824049001837,
     "rejected_at_0.05": false,
-    "p_adjusted_if_H10_primary_clause_only": 3.5366116392313837e-75
+    "p_adjusted_if_H10_primary_clause_only": 3.51919454463284e-75
    }
   },
   "H13": {
@@ -85,6 +85,7 @@
    "seeds_tied": 21,
    "p": 0.001953125,
    "stuck_reservations_sf_ll": 0,
+   "stuck_basis": "by rule, not measured (B-118 N7): the replay sets sf_ll's stuck count to 0 by construction; see results/E54_dtn.json h14.clause_2_basis",
    "holm": {
     "p_adjusted": 0.00390625,
     "rejected_at_0.05": true,
@@ -103,7 +104,9 @@
     -15.995000000000005
    ],
    "p": 0.000999000999000999,
-   "p_note": "bootstrap: no resample reached 0, so p <= 1 / (B + 1) (an upper bound)",
+   "resamples_at_or_above_0": 0,
+   "resamples": 1000,
+   "p_note": "one-sided bootstrap p = (resamples at or above 0 + 1) / (resamples + 1), from the saved count (results/E56_integrity.json h15_resample_counts_b118; B-118 N8)",
    "holm": {
     "p_adjusted": 0.002997002997002997,
     "rejected_at_0.05": true,
@@ -122,5 +125,138 @@
   "1x": 30,
   "4x": 10,
   "8x": 5
+ },
+ "e50_code": "5bf22fa6d5ccfe47",
+ "e54_code": "c3c3b2880e33888c",
+ "superseded_2026-11-13_b118_n15": {
+  "reason": "B-118 N14/N15 (positioning fix in lunarsim/atc/pnt.py: a ranging or fix update at a vehicle's arrival step, and the reservation count): the values below were made with the code before the fix and are kept as they were; the file's other values come from the regenerated cells",
+  "superseded_on": "2026-11-13",
+  "family": "PREREG6 section 4: {H9, H10, H13, H14, H15a} confirmatory, Holm at alpha 0.05 over the hypotheses with a sampling test (H10, H14, H15a)",
+  "alpha": 0.05,
+  "hypotheses": {
+   "H9": {
+    "test": "threshold comparison (no sampling test): p95 position error against the 5 m budget, per layer, E50 1x, 30 seeds",
+    "budget_m": 5.0,
+    "clauses": {
+     "dead reckoning exceeds the budget within one 8-h shift": {
+      "statistic": "p95 in the first driving hour, mean over seeds",
+      "value_m": 85.22339922587076,
+      "seeds_on_predicted_side": 1.0,
+      "supported": true
+     },
+     "ranging stays inside the budget near the base": {
+      "statistic": "p95 near the base, mean over seeds",
+      "value_m": 4.215645329554874,
+      "seeds_on_predicted_side": 1.0,
+      "supported": true
+     },
+     "absolute fixes keep it inside away from the base": {
+      "statistic": "p95 away from the base, mean over seeds",
+      "value_m": 15.234429089228302,
+      "seeds_on_predicted_side": 0.0,
+      "supported": false
+     }
+    },
+    "decision": "supported in two clauses (dead reckoning, ranging near the base); NOT supported in the third (absolute fixes away from the base: every seed above the budget)"
+   },
+   "H10": {
+    "test": "primary clause: paired TOST at 1x (margin 50 % of the perfect-position delay), t distribution, 30 seeds; the clauses joined by intersection-union (p = the largest clause p)",
+    "clauses": {
+     "layered within 1.5x of perfect at 1x (TOST)": {
+      "mean_diff_h": 0.006561927181440079,
+      "se_h": 0.004694085603096999,
+      "margin_h": 8.865594233681295,
+      "p": 1.1788705464104612e-75
+     },
+     "the gap grows with the fleet (4x and 8x)": {
+      "gap_1x_h": 0.006561927181440079,
+      "gap_4x_h": -0.8676662943806861,
+      "n_4x": 10,
+      "gap_8x_h": -0.24746018746765444,
+      "n_8x": 5,
+      "p_one_sided_4x": 0.9324376632595714,
+      "p_one_sided_8x": 0.7726879763267119,
+      "p_one_sided": 0.9324376632595714,
+      "note": "Welch one-sided, gap m x > gap 1x, at 4x and at 8x; the clause holds only if both do (p = the larger)"
+     },
+     "dead reckoning with the margin larger at 1x": {
+      "mean_diff_h": 0.11711714233689818,
+      "t": 1.1602047681571703,
+      "p_one_sided": 0.12771407296733817
+     }
+    },
+    "p_primary": 1.1788705464104612e-75,
+    "p_intersection_union": 0.9324376632595714,
+    "holm": {
+     "p_adjusted": 0.9324376632595714,
+     "rejected_at_0.05": false,
+     "p_adjusted_if_H10_primary_clause_only": 3.5366116392313837e-75
+    }
+   },
+   "H13": {
+    "test": "threshold comparison (no sampling test): busiest-link load with authentication, 20 rovers, against 16 kbit/s (E53, 30 position draws)",
+    "clauses": {
+     "1 Hz": {
+      "busiest_kbps_mean": 7.4771038068148155,
+      "busiest_kbps_p95": 7.856836977777779,
+      "draws_on_predicted_side": 1.0
+     },
+     "10 Hz": {
+      "busiest_kbps_mean": 63.66350380681482,
+      "busiest_kbps_p95": 66.89683697777777,
+      "draws_on_predicted_side": 1.0
+     }
+    },
+    "decision": "supported: every draw <= 16 kbit/s at 1 Hz and > 16 kbit/s at 10 Hz"
+   },
+   "H14": {
+    "test": "exact sign test on per-seed lost jobs (expired awards), sf_ll minus drop_retry, loss 0.25, 14-day blackout, 30 seeds; plus 'no reservation stuck under sf_ll' (a property of the rule)",
+    "mean_diff_jobs": -0.3333333333333333,
+    "seeds_fewer": 9,
+    "seeds_more": 0,
+    "seeds_tied": 21,
+    "p": 0.001953125,
+    "stuck_reservations_sf_ll": 0,
+    "stuck_basis": "by rule, not measured (B-118 N7): the replay sets sf_ll's stuck count to 0 by construction; see results/E54_dtn.json h14.clause_2_basis",
+    "holm": {
+     "p_adjusted": 0.00390625,
+     "rejected_at_0.05": true,
+     "p_adjusted_if_H10_primary_clause_only": 0.001998001998001998
+    }
+   },
+   "H15a": {
+    "test": "network minus per-step chi-square, median detection delay on slow drifts at 1 false alarm per pair-day (E56, B-96): bootstrap over events, 1,000 resamples",
+    "delay_median_diff_s": -24.099999999999994,
+    "ci95": [
+     -35.105,
+     -14.900000000000006
+    ],
+    "ci90": [
+     -32.8,
+     -15.995000000000005
+    ],
+    "p": 0.000999000999000999,
+    "resamples_at_or_above_0": 0,
+    "resamples": 1000,
+    "p_note": "one-sided bootstrap p = (resamples at or above 0 + 1) / (resamples + 1), from the saved count (results/E56_integrity.json h15_resample_counts_b118; B-118 N8)",
+    "holm": {
+     "p_adjusted": 0.002997002997002997,
+     "rejected_at_0.05": true,
+     "p_adjusted_if_H10_primary_clause_only": 0.001998001998001998
+    }
+   }
+  },
+  "summary": {
+   "H9": "supported in two clauses (dead reckoning, ranging near the base); NOT supported in the third (absolute fixes away from the base: every seed above the budget)",
+   "H13": "supported: every draw <= 16 kbit/s at 1 Hz and > 16 kbit/s at 10 Hz",
+   "H10": "not supported as a whole: the primary clause holds (TOST), the 'gap grows' and 'dead reckoning larger' clauses do not (intersection-union)",
+   "H14": "supported (Holm)",
+   "H15a": "supported (Holm)"
+  },
+  "e50_cells": {
+   "1x": 30,
+   "4x": 10,
+   "8x": 5
+  }
  }
 }

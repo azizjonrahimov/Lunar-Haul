@@ -1,11 +1,13 @@
 // /protocol/ data staged at build time (prepare-data) and read for the page text: LRIP (figure 5), E51 (figure 3), E52
 // (figure 2), E53 (problem 5's text), E54 (problems 4 and 6), E55 (problem 7) and B-99's figure files (checkB99, stageB99).
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { ROOT } from './pages.mjs';
 import { lripDecode } from '../src/protocol/lrip.js';
-import { num } from '../src/components/num.js';
+import { num, fmt } from '../src/components/num.js';
+import { dateNum } from '../src/components/date-num.js';
+import { supersededBlock, readingVerdict } from '../src/components/results-file.js';
 export { lripDecode };
 
 // F-56 / B-93, F-73 / B-100: /protocol/ figure 5 shows a real LRIP POSITION report: the golden vector POSITION / profile N /
@@ -89,8 +91,10 @@ export function compactE51(doc) {
   const rows = doc.rows.filter(r => r.scale === 'lunar' && (r.class === 'crystal' || r.class === 'csac'))
     .map(r => ({ class: r.class, interval_s: r.interval_s, seeds: r.seeds, ...Object.fromEntries(E51_KEEP.map(k => [k, r[k]])) }));
   if (!rows.length) throw new Error(`${E51_SRC}: no lunar rows for crystal or csac`);
-  return { format: 'lunarsim-e51-site', version: 1, source: E51_SRC, experiment: doc.experiment, guard_s: doc.constants?.guard_s,
-    uwb_sigma_m: doc.design?.uwb_sigma_m, contact_share: doc.contact_share_mean, h11: doc.h11, rows };
+  // F-78 (review W1): the constants figure 3 reads are required, not dropped by optional chaining
+  const need = (v, key) => { if (typeof v !== 'number' || !Number.isFinite(v)) throw new Error(`${E51_SRC}: no number at ${key}`); return v; };
+  return { format: 'lunarsim-e51-site', version: 1, source: E51_SRC, experiment: doc.experiment, guard_s: need(doc.constants?.guard_s, 'constants.guard_s'),
+    uwb_sigma_m: need(doc.design?.uwb_sigma_m, 'design.uwb_sigma_m'), contact_share: need(doc.contact_share_mean, 'contact_share_mean'), h11: doc.h11, rows };
 }
 export function stageE51(PUB) {
   const src = join(ROOT, E51_SRC);
@@ -169,6 +173,27 @@ export function stageE53v02(PUB) {
   return stageJson(PUB, { ...D, columns: keep, rows: D.rows.map(r => ix.map(i => r[i])) }, E53_V02_OUT, `${D.rows.length} rows at LRIP v0.2 sizes`);
 }
 
+// F-79: a results file keeps the values it published before a correction under superseded_<date>_<task>; the page names
+// each earlier value once. superseded(doc, file, field) takes the one block holding <field> (F-81: none, or two after a
+// second supersession, stops the build naming the file and the keys); dateText gives its superseded_on
+// as "13 November 2026" in the flagged markup of a number (dateNum), so no date reaches a page as typed digits.
+export function superseded(doc, file, field, key = null) {
+  return supersededBlock(doc, file, b => field in b, key);
+}
+// F-81: a page names a block by its task, the tail of its key (b118 for superseded_2026-11-13_b118): exactly one key
+// of the file ends in it, or the build stops; no task means the file's one block (supersededBlock's default)
+export function blockKey(doc, file, task) {
+  if (!task) return null;
+  const keys = Object.keys(doc || {}).filter(k => /^superseded_/.test(k)), hit = keys.filter(k => k.endsWith(`_${task}`));
+  if (hit.length !== 1) throw new Error(`${file}: ${hit.length} superseded_* blocks end in _${task} (the file has ${keys.join(', ') || 'none'})`);
+  return hit[0];
+}
+export function dateText(S, file) {
+  return dateNum({ iso: S.doc.superseded_on, source: `${file}: ${S.key}.superseded_on (the date the values were replaced)` });
+}
+// seconds for the page text: one decimal under 90 s, then minutes, then hours
+export function secs(v) { return v < 90 ? { value: v, unit: ' s', digits: 1 } : v < 5400 ? { value: v / 60, unit: ' min', digits: 1 } : { value: v / 3600, unit: ' h', digits: 1 }; }
+
 // F-56 / B-92: /protocol/ figure 2 reads E52 (results/E52_map.json): bytes and time to sync after 1 h to 14 days out of
 // contact, hazards-first against oldest-first, at four link rates; hazards hit during the outage and after contact.
 // The route tiles (60) and the full resend (185.5 MB) are computed; the change rates and the hidden share are Assumed.
@@ -191,8 +216,15 @@ export const E54_OUT = 'protocol/e54.json';
 export function compactE54(dtn, ledger) {
   if (!Array.isArray(dtn.rows) || !dtn.h14) throw new Error(`${E54_SRC}: no rows or no h14`);
   if (!Array.isArray(ledger?.rows)) throw new Error(`${E54_LEDGER}: no rows`);
-  return { format: 'lunarsim-e54-site', version: 1, source: E54_SRC, ledger_source: E54_LEDGER, experiment: dtn.experiment, seeds: Array.isArray(dtn.seeds) ? dtn.seeds.length : dtn.seeds,   // the file lists the seed numbers
+  // F-79 (B-118): one award per vehicle of a job, so awards = jobs + the extra vehicles of team jobs; the lost-link returns
+  const AJ = dtn.awards_and_jobs;
+  for (const k of ['jobs_per_seed', 'awards_per_seed', 'team_jobs_per_seed']) if (typeof AJ?.[k] !== 'number') throw new Error(`${E54_SRC}: no awards_and_jobs.${k}`);
+  if (typeof dtn.lost_link_returns_per_seed !== 'number') throw new Error(`${E54_SRC}: no lost_link_returns_per_seed`);
+  // F-81: version 2 since awards_and_jobs and returns_per_seed joined (F-79): the client refuses a cached version 1
+  return { format: 'lunarsim-e54-site', version: 2, source: E54_SRC, ledger_source: E54_LEDGER, experiment: dtn.experiment, seeds: Array.isArray(dtn.seeds) ? dtn.seeds.length : dtn.seeds,   // the file lists the seed numbers
     jobs_per_seed: dtn.jobs_per_seed, reservations_per_seed: dtn.reservations_per_seed, blackout_days: dtn.blackout_days, earth_up_share: dtn.earth_up_share,
+    awards_and_jobs: { jobs_per_seed: AJ.jobs_per_seed, awards_per_seed: AJ.awards_per_seed, team_jobs_per_seed: AJ.team_jobs_per_seed },
+    returns_per_seed: dtn.lost_link_returns_per_seed,
     h14: dtn.h14, rows: dtn.rows, ledger: { longest_earth_down_d: ledger.longest_earth_down_d, rows: ledger.rows } };
 }
 
@@ -225,6 +257,16 @@ export function e52(key) {
   if (key === 'full_resend') return num({ value: D.full_resend_bytes / 1e6, unit: ' MB', digits: 1, flag: 'Modelled', source: src + 'full_resend_bytes' });
   if (key === 'hazards_per_day') return num({ value: D.parameters.hazards_per_day, unit: ' a day', digits: 0, flag: 'Assumed', source: src + 'parameters.hazards_per_day' });
   if (key === 'hidden_share') return num({ value: 100 * D.parameters.hidden_share, unit: ' %', digits: 0, flag: 'Assumed', source: src + 'parameters.hidden_share' });
+  // F-79 (B-118 N1): the largest stale-map hit count after contact over every outage and link rate, now (hits_after_max_<order>)
+  // and as published before the code review (was_hits_after_max_<order>, from superseded_<date>_..., named once on the page)
+  let mm;
+  if ((mm = /^(was_)?hits_after_max_(hazards_first|oldest_first)$/.exec(key))) {
+    const old = !!mm[1], S = old ? superseded(D, E52_SRC, 'rows') : null, rows = old ? S.doc.rows : D.rows;
+    const xs = rows.filter(r => r.order === mm[2]).map(r => r.hits_after_contact_mean);
+    if (!xs.length || xs.some(x => typeof x !== 'number')) throw new Error(`${E52_SRC}: no hits_after_contact_mean for ${mm[2]}${old ? ` in ${S.key}` : ''}`);
+    return num({ value: Math.max(...xs), unit: '', digits: 2, flag: 'Modelled', source: `${src}${old ? `${S.key}.` : ''}rows, ${mm[2].replace('_', ' ')}, hits_after_contact_mean, the largest over every outage and link rate (mean over ${D.seeds.length || D.seeds} seeds)${old ? ', as published before the code review' : ''}` });
+  }
+  if (key === 'superseded_on') return dateText(superseded(D, E52_SRC, 'rows'), E52_SRC);
   const m = /^(\d+)_(\d+)_(hazards_first|oldest_first)_(\w+)$/.exec(key);
   if (!m) throw new Error(`${E52_SRC}: unknown key ${key}`);
   const [, out, rate, order, col] = m, hit = D.rows.filter(r => r.out_h === +out && r.rate_kbps === +rate && r.order === order);
@@ -234,6 +276,40 @@ export function e52(key) {
   if (/^t_/.test(col)) return v >= 90 ? num({ value: v / 60, unit: ' min', digits: v >= 600 ? 0 : 1, flag: 'Modelled', source: s }) : num({ value: v, unit: ' s', digits: v < 10 ? 1 : 0, flag: 'Modelled', source: s });
   if (/share/.test(col)) return num({ value: 100 * v, unit: ' %', digits: 2, flag: 'Modelled', source: s });
   return num({ value: v, unit: '', digits: 2, flag: 'Modelled', source: s });
+}
+
+// F-79 (B-118 step 2): E54 numbers in /protocol/ problems 4 and 6's text, at build time. <!--@e54:key--> with key
+//   [was_<task>:]<protocol>:<field>@<loss> for a row of results/E54_dtn.json (was_<task>: the row as published before
+//   a correction, from the superseded_* block whose key ends in _<task>), e.g. sf_ll:aoi_mean_s@0.25; or returns /
+//   was_<task>:returns (lost-link returns a seed), jobs, awards, team_jobs (awards_and_jobs, a seed) and
+//   superseded_on_<task>. Fields ending _s are times, _share shares, the rest counts. F-81: the file keeps two blocks
+//   (b118, the code review; b120_b, the end of the window), so every "before" key names its block; a bare was: works only
+//   while the file has one.
+let e54doc = null;
+export function e54(key) {
+  e54doc ||= readJson(E54_SRC);
+  const D = e54doc, flag = (o, what) => num({ ...o, flag: 'Modelled', source: `${E54_SRC}: ${what}` });
+  let m = /^was(?:_(\w+?))?:(.+)$/.exec(key);
+  const old = !!m, k = old ? m[2] : key, S = old ? superseded(D, E54_SRC, 'rows', blockKey(D, E54_SRC, m[1])) : null, doc = old ? S.doc : D;
+  const pre = old ? `${S.key}.` : '', post = old ? `, as published before the correction of ${S.doc.superseded_on}` : '';
+  if ((m = /^(drop_retry|sf|sf_ll):(\w+)@([\d.]+)$/.exec(k))) {
+    const [, proto, field, loss] = m, hit = doc.rows.filter(r => r.protocol === proto && r.loss === +loss);
+    if (hit.length !== 1 || typeof hit[0][field] !== 'number') throw new Error(`${E54_SRC}: no ${pre}rows ${field} for ${proto} at loss ${loss}`);
+    const v = hit[0][field], what = `${pre}rows, ${proto}, loss ${loss}, ${field}, over ${hit[0].seeds} seeds${post}`;
+    if (/_s$/.test(field)) return flag(secs(v), what);
+    if (/_share$/.test(field)) return flag({ value: 100 * v, unit: ' %', digits: 1 }, what);
+    return flag({ value: v, unit: '', digits: 0 }, what);
+  }
+  if ((m = /^loss@([\d.]+)$/.exec(k)) && !old) {   // a loss level the rows hold, as a percentage (a setting, not a result)
+    if (!D.rows.some(r => r.loss === +m[1])) throw new Error(`${E54_SRC}: no rows at loss ${m[1]}`);
+    return `${fmt(100 * m[1], 0)} %`;
+  }
+  if (k === 'returns') { if (typeof doc.lost_link_returns_per_seed !== 'number') throw new Error(`${E54_SRC}: no ${pre}lost_link_returns_per_seed`); return flag({ value: doc.lost_link_returns_per_seed, unit: '', digits: 1 }, `${pre}lost_link_returns_per_seed${post}`); }
+  if (old) throw new Error(`${E54_SRC}: unknown key ${key}`);
+  const AJ = { jobs: 'jobs_per_seed', awards: 'awards_per_seed', team_jobs: 'team_jobs_per_seed' };
+  if (AJ[k]) { const v = D.awards_and_jobs?.[AJ[k]]; if (typeof v !== 'number') throw new Error(`${E54_SRC}: no awards_and_jobs.${AJ[k]}`); return flag({ value: v, unit: '', digits: k === 'jobs' ? 1 : 2 }, `awards_and_jobs.${AJ[k]}`); }
+  if ((m = /^superseded_on(?:_(\w+))?$/.exec(k))) return dateText(superseded(D, E54_SRC, 'rows', blockKey(D, E54_SRC, m[1])), E54_SRC);
+  throw new Error(`${E54_SRC}: unknown key ${key}`);
 }
 
 // F-56 / B-95: /protocol/ problem 7 reads E55 (results/E55_integrity.json): the LRIP integrity rule as written (z^2 > gamma,
@@ -260,10 +336,22 @@ export function compactE55(doc) {
   }
   const cell = x => ({ geometry: x.geometry, mast: !!x.mast, N: x.N, f: x.f, F: x.F, runs: x.runs, safe: x.safe_share, agreement: x.agreement_share, connected: x.connected_share, degree: x.degree_condition_share });
   const auth = doc.auth || {};
-  return { format: 'lunarsim-e55-site', version: 1, source: E55_SRC, experiment: doc.experiment, rule: I.rule, detectors: det,
+  // F-81: version 2 since replay_recent joined: the client refuses a cached version 1
+  return { format: 'lunarsim-e55-site', version: 2, source: E55_SRC, experiment: doc.experiment, rule: I.rule, detectors: det,
     consensus: [...C.map(cell), ...(M || []).map(x => ({ ...cell(x), mast: true }))],
     forgery: Object.fromEntries(Object.entries(auth.forgery || {}).map(([t, v]) => [t, v.attempts ? { attempts: v.attempts, accepted: v.accepted, bound: v['bound_2^-t'] } : { per_attempt: v.per_attempt }])),
-    replay: auth.replay || {} };
+    replay: auth.replay || {}, replay_recent: replayRecent(doc) };
+}
+// F-79 (B-118 N9): the second replay trial, messages sent in the last 60 s, with the accepted replays split
+function replayRecent(doc) {
+  const L = doc.replay_recent?.loss;
+  if (!L) throw new Error(`${E55_SRC}: no replay_recent.loss`);
+  const keep = ['replays', 'replays_with_age_le_10s', 'replays_accepted', 'accepted_missed_original_inside_window', 'accepted_other'];
+  return Object.fromEntries(Object.entries(L).map(([l, v]) => {
+    for (const k of keep) if (typeof v[k] !== 'number') throw new Error(`${E55_SRC}: no replay_recent.loss.${l}.${k}`);
+    if (v.accepted_missed_original_inside_window + v.accepted_other !== v.replays_accepted) throw new Error(`${E55_SRC}: replay_recent at loss ${l}: the accepted replays do not add up`);
+    return [l, Object.fromEntries(keep.map(k => [k, v[k]]))];
+  }));
 }
 export function stageE55(PUB) {
   if (!existsSync(join(ROOT, E55_SRC))) { console.log(`prepare-data: ${E55_SRC} missing; /protocol/ problem 7 says so`); return null; }
@@ -286,6 +374,13 @@ export function e55(key) {
     const d = D.detectors[m[1]][m[2]]; if (!d) throw new Error(`${E55_SRC}: no detector ${m[2]} on ${m[1]}`);
     return flag(d.recall[m[3]], '', 2, `${m[2]}, ${m[1]} set, recall on ${m[3]} faults`);
   }
+  // F-79: replay_<field>@<loss> from the recent-replay trial (replays, replays_accepted, accepted_missed_original_inside_window, accepted_other)
+  if ((m = /^replay_(\w+)@([\d.]+)$/.exec(key))) {
+    if (m[1] === 'loss') { if (!D.replay_recent[m[2]]) throw new Error(`${E55_SRC}: no replay_recent.loss.${m[2]}`); return `${fmt(100 * m[2], 0)} %`; }   // the loss level (a setting)
+    const v = D.replay_recent[m[2]]?.[m[1]];
+    if (typeof v !== 'number') throw new Error(`${E55_SRC}: no replay_recent.loss.${m[2]}.${m[1]}`);
+    return flag(v, '', 0, `replay_recent.loss.${m[2]}.${m[1]} (a replay a second of a message sent in the last 60 s)`);
+  }
   if (key === 'agreement_max' || key === 'agreement_max_mast') {
     const mast = key.endsWith('mast'), cells = D.consensus.filter(c => c.mast === mast && c.F >= c.f);
     if (!cells.length) throw new Error(`${E55_SRC}: no consensus cells${mast ? ' with the mast' : ''}`);
@@ -298,6 +393,9 @@ export function e55(key) {
 // checked against its index (bytes and sha256 per file, as for the trace pair) and staged unchanged to
 // public/protocol/b99/. A size or sha256 mismatch, or a file the index lists that is missing, stops the build.
 export const B99_DIR = 'data/atc/protocol', B99_OUT = 'protocol/b99';
+// F-78 (review W2): checked against the index but not staged: read at build only (problem 5's text); the bit-rate figure
+// draws protocol/e53-v02.json
+export const B99_BUILD_ONLY = new Set(['e53_bitrate.json']);
 export function checkB99(dir = join(ROOT, B99_DIR)) {
   const ix = JSON.parse(readFileSync(join(dir, 'index.json'), 'utf8'));
   if (ix.format !== 'lunarsim-protocol-data-index' || ix.version !== 1) throw new Error(`${B99_DIR}/index.json: format ${ix.format} version ${ix.version}`);
@@ -318,9 +416,11 @@ export function stageB99(PUB) {
   if (!existsSync(join(ROOT, B99_DIR, 'index.json'))) { console.log(`prepare-data: ${B99_DIR} missing; the B-99 figures say so`); return null; }
   const { index, files } = checkB99();
   mkdirSync(join(PUB, B99_OUT), { recursive: true });
-  for (const [name, f] of Object.entries(files)) writeFileSync(join(PUB, B99_OUT, name), f.buf);
+  const staged = Object.entries(files).filter(([name]) => !B99_BUILD_ONLY.has(name));
+  for (const name of B99_BUILD_ONLY) rmSync(join(PUB, B99_OUT, name), { force: true });   // a copy staged by an older build
+  for (const [name, f] of staged) writeFileSync(join(PUB, B99_OUT, name), f.buf);
   writeFileSync(join(PUB, B99_OUT, 'index.json'), JSON.stringify(index));
-  console.log(`prepare-data: ${Object.keys(files).length} B-99 files staged to ${B99_OUT}/ (sizes and sha256 match the index)`);
+  console.log(`prepare-data: ${staged.length} B-99 files staged to ${B99_OUT}/ (sizes and sha256 match the index; ${[...B99_BUILD_ONLY].join(', ')} read at build only)`);
   return files;
 }
 
@@ -465,19 +565,74 @@ export function b104(key, cls = 'LTV1') {
 // F-72 (B-102): <!--@e50ov:lead--> on /protocol/ problem 1: what a reservation overlap is (results/E50_overlaps.json). The
 // count is fixed by how waiting windows are filed (back to back), not by the position error, so it is said not to be a
 // safety measure; the closeness numbers (gap at entry, nothing within 5 m) carry the safety statement. A simulation.
+// F-80 (B-118 N14/N15): every fleet size the file holds (1x, 4x, 8x): the count with the layered margin at each, against
+// the range without one; <!--@e50ov:was--> names once, with the flagged date, the values E50's runs gave before the
+// positioning fix (the superseded_* blocks of the near-base, overlap and E50b files; 8x was not run before the fix).
 export const OV_SRC = 'results/E50_overlaps.json';
+const FLEET = { 1: 'today’s fleet', 4: 'four times the fleet', 8: 'eight times the fleet' };
+const fleetOf = k => { if (!FLEET[k]) throw new Error(`E50: no words for a fleet multiple of ${k}`); return FLEET[k]; };
+const minBy = (xs, f) => xs.reduce((a, b) => (f(b) < f(a) ? b : a)), maxBy = (xs, f) => xs.reduce((a, b) => (f(b) > f(a) ? b : a));
+const countText = v => ({ value: v, digits: v && v < 10 ? 1 : 0 });
+const and = xs => (xs.length < 3 ? xs.join(' and ') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
+const nWords = n => ['no', 'one', 'two', 'three', 'four', 'five'][n] || String(n);
 export function e50ov(key) {
+  const D = JSON.parse(readFileSync(join(ROOT, OV_SRC), 'utf8'));
+  if (key === 'was') return e50was(D);
   if (key !== 'lead') throw new Error(`${OV_SRC}: unknown key ${key}`);
-  const D = JSON.parse(readFileSync(join(ROOT, OV_SRC), 'utf8')), X = D.multiples['4'], runs = Object.entries(X.runs);
-  const m = (value, unit, digits, what) => num({ value, unit, digits, flag: 'Modelled', source: `${OV_SRC}: multiples.4.runs.${what} (a simulation)` });
+  const X = D.multiples['4'], runs = Object.entries(X.runs);
+  const m = (value, unit, digits, what, mult = '4') => num({ value, unit, digits, flag: 'Modelled', source: `${OV_SRC}: multiples.${mult}.runs.${what} (a simulation)` });
   const bare = runs.filter(([k]) => k.startsWith('no_margin:')), lay = X.runs['with_margin:layered'];
-  const sh = bare.map(([k, r]) => [k, r.back_to_back.abutting_share_overlapping]), lo = sh.reduce((a, b) => (b[1] < a[1] ? b : a)), hi = sh.reduce((a, b) => (b[1] > a[1] ? b : a));
-  const gp = bare.map(([k, r]) => [k, r.gap_at_entry_m.median]), glo = gp.reduce((a, b) => (b[1] < a[1] ? b : a)), ghi = gp.reduce((a, b) => (b[1] > a[1] ? b : a));
+  const sh = bare.map(([k, r]) => [k, r.back_to_back.abutting_share_overlapping]), lo = minBy(sh, x => x[1]), hi = maxBy(sh, x => x[1]);
+  const gp = bare.map(([k, r]) => [k, r.gap_at_entry_m.median]), glo = minBy(gp, x => x[1]), ghi = maxBy(gp, x => x[1]);
   const all = Object.values(D.multiples).flatMap(M => Object.values(M.runs));
   if (all.some(r => r.counts_per_seed.gap_under_d0_5m > 0 || r.counts_per_seed.gap_under_r1_dmin > 0)) throw new Error(`${OV_SRC}: an overlap came within 5 m or R1's gap; the /protocol/ sentence says none did`);
   const pairs = bare[0][1].back_to_back.abutting_pairs_per_seed;
+  // the count with the layered margin at every fleet size, against the range without one; the sentence says the margin
+  // makes the count fall, so a size where it does not stops the build
+  const mults = Object.keys(D.multiples).sort((a, b) => a - b);
+  const per = mults.map(k => {
+    const R = Object.entries(D.multiples[k].runs), L = D.multiples[k].runs['with_margin:layered'], B = R.filter(([n]) => n.startsWith('no_margin:'));
+    if (!L || !B.length) throw new Error(`${OV_SRC}: multiples.${k} lacks the layered margin run or the runs without a margin`);
+    const blo = minBy(B, x => x[1].overlaps_per_seed), bhi = maxBy(B, x => x[1].overlaps_per_seed);
+    if (L.overlaps_per_seed >= blo[1].overlaps_per_seed) throw new Error(`${OV_SRC}: at ${k}x the layered margin does not lower the overlap count; the /protocol/ sentence says it does`);
+    const c = (v, what) => { const t = countText(v); return m(t.value, '', t.digits, what, k); };
+    return { k, lay: c(L.overlaps_per_seed, 'with_margin:layered.overlaps_per_seed'), lo: c(blo[1].overlaps_per_seed, `${blo[0]}.overlaps_per_seed`), hi: c(bhi[1].overlaps_per_seed, `${bhi[0]}.overlaps_per_seed`) };
+  });
   return `The margin also changes how often two reservations of the same road overlap in time, and that count is not a safety measure: windows filed back to back overlapped in ${m(100 * lo[1], '', 0, `${lo[0]}.back_to_back.abutting_share_overlapping`)} to ${m(100 * hi[1], ' %', 0, `${hi[0]}.back_to_back.abutting_share_overlapping`)} of cases at four times the fleet (${m(pairs, '', 0, `${bare[0][0]}.back_to_back.abutting_pairs_per_seed`)} such pairs a seed) whatever the position error. `
-    + `The margin separates the windows, so the count falls, but it does not change how far ahead the first vehicle was when the second entered (medians of ${m(glo[1], '', 0, `${glo[0]}.gap_at_entry_m.median`)} to ${m(ghi[1], ' m', 0, `${ghi[0]}.gap_at_entry_m.median`)} without a margin, ${m(lay.gap_at_entry_m.median, ' m', 0, 'with_margin:layered.gap_at_entry_m.median')} with the layered one, set by the lengths of the segments), and no overlap, with or without a margin, at either fleet size, brought two vehicles inside the static margin or the keep-distance rule's gap (a simulation, task B-102).`;
+    + `The margin separates the windows, so the count falls: with the layered margin it was ${and(per.map((p, i) => `${p.lay}${i ? '' : ' a seed'} at ${fleetOf(p.k)}`))}, against ${and(per.map(p => `${p.lo} to ${p.hi}`))} without one. `
+    + `It does not change how far ahead the first vehicle was when the second entered (at four times the fleet, medians of ${m(glo[1], '', 0, `${glo[0]}.gap_at_entry_m.median`)} to ${m(ghi[1], ' m', 0, `${ghi[0]}.gap_at_entry_m.median`)} without a margin, ${m(lay.gap_at_entry_m.median, ' m', 0, 'with_margin:layered.gap_at_entry_m.median')} with the layered one, set by the lengths of the segments), and no overlap, with or without a margin, at any of the ${nWords(mults.length)} fleet sizes, brought two vehicles inside the static margin or the keep-distance rule's gap (a simulation, task B-102).`;
+}
+// <!--@e50ov:was-->: the values of problem 1's E50 sentences as published before the positioning fix, each named once
+function e50was(OV) {
+  const NB_SRC = 'results/E50_near_base.json', NB = JSON.parse(readFileSync(join(ROOT, NB_SRC), 'utf8'));
+  e50bdoc ||= JSON.parse(readFileSync(join(ROOT, E50B_SRC), 'utf8').replace(/\bNaN\b/g, 'null'));
+  const sNB = superseded(NB, NB_SRC, 'multiples'), sOV = superseded(OV, OV_SRC, 'multiples'), sB = superseded(e50bdoc, E50B_SRC, 'metrics');
+  if (sNB.doc.superseded_on !== sOV.doc.superseded_on || sB.doc.superseded_on !== sOV.doc.superseded_on) throw new Error('E50: the near-base, overlap and E50b files were superseded on different dates; the /protocol/ sentence gives one');
+  // F-81: the sentence names the positioning fix as the cause, so each file's own reason must say it
+  for (const [f, S] of [[NB_SRC, sNB], [OV_SRC, sOV], [E50B_SRC, sB]]) if (!/positioning fix/.test(S.doc.reason || '')) throw new Error(`${f}: ${S.key}.reason does not name the positioning fix; the /protocol/ sentence gives it as the cause`);
+  const was = (value, unit, digits, file, S, what) => num({ value, unit, digits, flag: 'Modelled', source: `${file}: ${S.key}.${what} (as published before the fix)` });
+  // near the base: the reading that holds in every seed now and the registered wording, as /protocol/ names them
+  const N = nearBaseReadings(NB), M1 = sNB.doc.multiples['1']?.sets?.['dr+ranging'];
+  if (!M1) throw new Error(`${NB_SRC}: ${sNB.key} has no 1x dead reckoning plus ranging set`);
+  const nb = N.held ? `${was(M1[N.held].in_p95_m_mean, ' m', 1, NB_SRC, sNB, `multiples.1.sets.dr+ranging.${N.held}.in_p95_m_mean`)} under the first reading and ` : '';
+  // overlaps: the back-to-back share at 4x and the layered margin's count at every size the earlier file held
+  const O4 = sOV.doc.multiples['4']?.runs;
+  if (!O4) throw new Error(`${OV_SRC}: ${sOV.key} has no 4x runs`);
+  const sh = Object.entries(O4).filter(([k]) => k.startsWith('no_margin:')).map(([k, r]) => [k, r.back_to_back.abutting_share_overlapping]), lo = minBy(sh, x => x[1]), hi = maxBy(sh, x => x[1]);
+  const oldM = Object.keys(sOV.doc.multiples).sort((a, b) => a - b), newM = Object.keys(OV.multiples).sort((a, b) => a - b), notRun = newM.filter(k => !oldM.includes(k));
+  const lay = oldM.map((k, i) => { const v = sOV.doc.multiples[k].runs['with_margin:layered'].overlaps_per_seed, t = countText(v); return `${was(t.value, '', v && v < 0.1 ? 2 : t.digits, OV_SRC, sOV, `multiples.${k}.runs.with_margin:layered.overlaps_per_seed`)}${i ? '' : ' overlaps a seed'} at ${fleetOf(k)}`; });
+  const d = sB.doc.metrics.delay_mean_h;
+  return `Corrected after a code review on ${dateText(sOV, OV_SRC)} (a fix to the positioning model): before, the error’s 95th percentile near the base was ${nb}${was(M1[N.reg].in_p95_m_mean, ' m', 1, NB_SRC, sNB, `multiples.1.sets.dr+ranging.${N.reg}.in_p95_m_mean`)} under the registered wording; `
+    + `windows filed back to back overlapped in ${was(100 * lo[1], '', 0, OV_SRC, sOV, `multiples.4.runs.${lo[0]}.back_to_back.abutting_share_overlapping`)} to ${was(100 * hi[1], ' %', 0, OV_SRC, sOV, `multiples.4.runs.${hi[0]}.back_to_back.abutting_share_overlapping`)} of cases at four times the fleet; `
+    + `the layered margin left ${and(lay)}${notRun.length ? ` (${and(notRun.map(fleetOf))} ${notRun.length > 1 ? 'were' : 'was'} not run then)` : ''}; `
+    + `and the stops for terrain fixes added ${was(d.diff_mean, ' h', 2, E50B_SRC, sB, 'metrics.delay_mean_h.diff_mean')} (95 % interval ${was(d.diff_ci95_bootstrap[0], ' h', 2, E50B_SRC, sB, 'metrics.delay_mean_h.diff_ci95_bootstrap[0]')} to ${was(d.diff_ci95_bootstrap[1], ' h', 2, E50B_SRC, sB, 'metrics.delay_mean_h.diff_ci95_bootstrap[1]')}).`;
+}
+// the reading of "near the base" that holds in every seed at 1x (dead reckoning plus ranging) and the registered one
+function nearBaseReadings(NB) {
+  const S = NB.multiples?.['1']?.sets?.['dr+ranging'], reg = Object.keys(NB.readings).find(r => /PREREG6/.test(NB.readings[r]));
+  if (!S || !reg) throw new Error('results/E50_near_base.json: no 1x dead reckoning plus ranging set or no registered reading');
+  if (readingVerdict(S[reg]) === 'not judged') throw new Error('results/E50_near_base.json: the registered reading is not judged at 1x (no seed has steps inside it); /protocol/ gives its value');
+  return { held: Object.keys(NB.readings).find(r => readingVerdict(S[r]) === 'holds') || null, reg };
 }
 
 // F-73 (B-100): where a page gives the radio load at LRIP v0.1 sizes (E48's airtime on /atc/ and the P3 card), the v0.2

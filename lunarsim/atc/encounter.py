@@ -279,10 +279,14 @@ class Batch:
         self.lead_phys = np.array([bool(getattr(s, "lead_brake_physical", False)) for s in specs])   # B-107
         self.r1_slope = np.array([bool(getattr(s, "r1_slope_term", False)) for s in specs])          # B-107
         self.act_delay = np.array([float(getattr(s, "actuation_delay_s", 0.0)) for s in specs])      # B-107
+        pos = {round(float(x), 9) for x in self.act_delay if x > 0}
+        if len(pos) > 1:                          # B-118 N23: one buffer length serves the batch; refuse a mix
+            raise ValueError(f"actuation delays differ within a batch ({sorted(pos)}); run one delay per batch")
         L_ = int(round(float(self.act_delay.max()) / DT)) if N else 0
         if L_ > 0:                                # command buffer (N, L, V); compacted with the batch (shape[0] = N)
             self.abuf = np.zeros((N, L_, V))
             self.aptr = 0
+            self.r1_below = np.full((N, V), -1.0)  # B-118 N23: time the gap has been below rss_dmin at the end of the last step (-1: not below)
         self.fault_v = np.full(N, -1, int); self.fault_t = np.full(N, np.inf)
         self.slip_v = np.full(N, -1, int); self.slip_f = np.ones(N)
         self.drift_v = np.full(N, -1, int); self.drift_r = np.zeros(N)
@@ -362,6 +366,21 @@ class Outcome:
     delay_s: np.ndarray
     t_end: np.ndarray
     steps: np.ndarray
+
+
+def r1_breach_delayed(below, below_s, a_ph, bg):
+    """B-118 N23 (LEAD, 13 Nov): the R1 breach of a step when an actuation delay is set. R1 says: once the gap is below
+    rss_dmin, brake fully within the response time RHO_S. So a breach is a gap that has been below rss_dmin for
+    longer than RHO_S while the applied deceleration a_ph (the delayed command the vehicle acts on) is still short of
+    full braking (a_ph > -bg). The allowance is the rule's RHO_S, not the cell's delay, so a vehicle whose delay
+    exceeds RHO_S is counted. Step convention: `below` is the gap at the start of the step and a_ph acts during the
+    step, so the gap is below from the start of its first below step and, at the end of the n-th below step, has been
+    below for n DT; the n-th step is a breach when n DT > RHO_S and a_ph is short (B-120 A: the first countable step is
+    the 11th at RHO_S = 1 s, braking applied from RHO_S after the gap went below is compliant; before, the first below
+    step counted 0 s and the first countable step was the 12th). below_s: time below at the end of the previous step
+    (-1: not below); returns (breach, below_s now). Without a delay the breach stays as before: on the command, at once."""
+    below_s = np.where(below, np.where(below_s >= 0.0, below_s + DT, DT), -1.0)
+    return below & (below_s > S.RHO_S + 1e-9) & (a_ph > -bg + 1e-9), below_s
 
 
 def run_batch(b: Batch, rng: np.random.Generator, record: Optional[List[int]] = None, shield: bool = True) -> tuple:
@@ -698,6 +717,7 @@ def run_batch(b: Batch, rng: np.random.Generator, record: Optional[List[int]] = 
         fault_now = (vi[None] == b.fault_v[:, None]) & (t >= b.fault_t[:, None])
         faulted |= fault_now
         if getattr(b, "abuf", None) is None:
+            a_ph = a
             a_act = np.where((vi[None] == b.slip_v[:, None]) & (a > 0), a * b.slip_f[:, None], a)
         else:                                             # B-107: followers act on the command of RHO_S ago
             a_del = b.abuf[:, b.aptr, :].copy()
@@ -716,9 +736,14 @@ def run_batch(b: Batch, rng: np.random.Generator, record: Optional[List[int]] = 
         ds_ = np.where(faulted | done | ~active[:, None], 0.0, ds_)
         v_new = np.where(faulted | done, 0.0, v_new)
         if bfront is None:
-            r1b = np.isfinite(gap_lead) & (gap_lead < S.rss_dmin(v, v_lead, bg)) & (a > -bg + 1e-9) & live
+            below = np.isfinite(gap_lead) & (gap_lead < S.rss_dmin(v, v_lead, bg)) & live
         else:                                             # B-107: the breach against the rule in force
-            r1b = np.isfinite(gap_lead) & (gap_lead < S.rss_dmin(v, v_lead, bg, b_front=bfront)) & (a > -bg + 1e-9) & live
+            below = np.isfinite(gap_lead) & (gap_lead < S.rss_dmin(v, v_lead, bg, b_front=bfront)) & live
+        if getattr(b, "abuf", None) is None:
+            r1b = below & (a > -bg + 1e-9)
+        else:                                             # B-118 N23: rows with an actuation delay, see r1_breach_delayed
+            r1d, b.r1_below = r1_breach_delayed(below, b.r1_below, a_ph, bg)
+            r1b = np.where(b.act_delay[:, None] > 0, r1d, below & (a > -bg + 1e-9))
         out["r1_breach"] += r1b.any(1)
         s_new = s + ds_
         # drift grows with distance driven (a stopped vehicle does not slide sideways): drift_r m/s at class speed

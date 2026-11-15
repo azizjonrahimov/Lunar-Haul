@@ -19,6 +19,24 @@ jobs:
       - run: python -m lunarsim validate data/scenarios/*.json data/sample_traces/*.json
       - run: python tools/ci/budgets.py schemas
 
+  # The three tests of the detector network itself skip without torch (B-114), so they run here with CPU torch.
+  # The job fails if any test in the file is skipped.
+  nn:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[full]"
+      - run: pip install "torch>=2.8" --index-url https://download.pytorch.org/whl/cpu
+      - name: Network tests with torch (no skips allowed)
+        shell: bash
+        run: |
+          set -o pipefail   # a failing test must fail the step, not only a skipped one (tee would hide pytest's status)
+          python -m pytest tests/test_nn_integrity.py -q -rs | tee nn.log
+          if grep -q "skipped" nn.log; then echo "a network test was skipped"; exit 1; fi
+
   site:
     runs-on: ubuntu-latest
     steps:

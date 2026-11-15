@@ -75,6 +75,22 @@ def test_e55_outputs():
         pytest.skip("E55 not built")
     d = json.load(open(p))
     assert d["auth"]["forgery"]["8"]["accepted"] > 0 and d["auth"]["replay"]["0.25"]["replays_accepted"] == 0
-    assert isinstance(d["h16"]["supported"], bool)
+    # B-119: the verdict recomputed from the consensus cells (F = f >= 1: every robust run safe, and at least one
+    # non-robust cell with a run leaving the honest range)
+    ff = [c for c in d["consensus"]["cells"] if c["f"] >= 1 and c["F"] == c["f"]]
+    robust_safe = all(c["safe_when_robust"] in (None, 1.0) for c in ff if c["runs_robust"])
+    left = [c for c in ff if c["safe_when_not_robust"] is not None and c["safe_when_not_robust"] < 1.0]
+    assert d["h16"]["supported"] is bool(robust_safe and len(left) > 0)
+    assert d["h16"]["nonrobust_cells_with_a_run_leaving_the_range"] == len(left)
     t = d["integrity"]["sets"]["test"]["3of5@0.001"]
     assert t["fa_per_pair_day"] < d["integrity"]["sets"]["test"]["single@0.001"]["fa_per_pair_day"]
+
+
+def test_replay_recent_trial_lets_through_only_missed_fresh_copies():
+    """B-118 N9: replays of messages 0-60 s old; the counter and the 10 s window let through only a copy the receiver
+    missed that is still inside the window, never anything else."""
+    from lunarsim.atc import integrity as I
+    r = I.replay_recent_trial(10, 5, 300, 0.5, 2.0, np.random.default_rng(3))
+    assert r["replays"] > 400 and r["replays_with_age_le_10s"] > 0
+    assert r["accepted_other"] == 0
+    assert r["replays_accepted"] == r["accepted_missed_original_inside_window"] > 0

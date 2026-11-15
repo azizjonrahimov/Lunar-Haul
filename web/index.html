@@ -10,7 +10,7 @@
 <style>
 /* Layout: a fixed topbar with brand, tabs and links; a 340px control rail; a fluid work area. The base-map replay is the hero of its tab. */
 :root {
-  --bg: #f4f4f0; --panel: #ffffff; --panel-2: #faf9f5; --ink: #141518; --ink2: #4b4d55; --muted: #7f828c; --line: #dddcd4; --line-2: #ecebe4;
+  --bg: #f4f4f0; --panel: #ffffff; --panel-2: #faf9f5; --ink: #141518; --ink2: #4b4d55; --muted: #666971; /* F-77: was #7f828c, 3.5-3.8:1 for small text; now >= 4.5:1 on every light surface */ --line: #dddcd4; --line-2: #ecebe4;
   --accent: #1c4f9c; --accent-ink: #ffffff; --accent-soft: #e2eaf7; --amber: #c77d05; --night: rgba(20, 24, 40, 0.14);
   --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #4a3aa7; --s7: #008300; --s8: #e34948;
   --good: #0ca30c; --warn: #fab219; --bad: #d03b3b; --shadow: 0 1px 2px rgba(20, 21, 24, 0.06), 0 6px 20px rgba(20, 21, 24, 0.05);
@@ -256,7 +256,7 @@ footer { max-width: 1480px; margin: 0 auto; padding: 0 20px 40px; font-size: 12p
 
 <main style="min-width:0">
   <section id="tab-run" class="tabpane">
-    <div class="kpis" id="kpis"></div>
+    <div class="kpis" id="kpis"><!-- F-77: ten empty tiles hold the space until the first run fills them (layout shift 0.143) --><div class="kpi" aria-hidden="true"><div class="lab">&nbsp;</div><div class="num">&nbsp;</div><div class="ci">&nbsp;</div></div><div class="kpi" aria-hidden="true"><div class="lab">&nbsp;</div><div class="num">&nbsp;</div><div class="ci">&nbsp;</div></div><div class="kpi" aria-hidden="true"><div class="lab">&nbsp;</div><div class="num">&nbsp;</div><div class="ci">&nbsp;</div></div><div class="kpi" aria-hidden="true"><div class="lab">&nbsp;</div><div class="num">&nbsp;</div><div class="ci">&nbsp;</div></div><div class="kpi" aria-hidden="true"><div class="lab">&nbsp;</div><div class="num">&nbsp;</div><div class="ci">&nbsp;</div></div><div class="kpi" aria-hidden="true"><div class="lab">&nbsp;</div><div class="num">&nbsp;</div><div class="ci">&nbsp;</div></div><div class="kpi" aria-hidden="true"><div class="lab">&nbsp;</div><div class="num">&nbsp;</div><div class="ci">&nbsp;</div></div><div class="kpi" aria-hidden="true"><div class="lab">&nbsp;</div><div class="num">&nbsp;</div><div class="ci">&nbsp;</div></div><div class="kpi" aria-hidden="true"><div class="lab">&nbsp;</div><div class="num">&nbsp;</div><div class="ci">&nbsp;</div></div><div class="kpi" aria-hidden="true"><div class="lab">&nbsp;</div><div class="num">&nbsp;</div><div class="ci">&nbsp;</div></div></div>
     <div class="grid2">
       <div class="card"><h3>Waiting time by cargo type</h3><p class="sub">Hours from when cargo is ready at the pad until it is delivered. Bars: average over the simulated years. Whiskers: 95 % confidence interval. Under the marketplace, soil loads wait on purpose until a load is full.</p><svg class="chart" id="chart_delay" viewBox="0 0 560 250" role="img" aria-label="Waiting time by cargo type"></svg></div>
       <div class="card"><h3>Every delivery in the first simulated year</h3><p class="sub">One dot per item: the day it was ready and how long it waited (hours, log scale). Grey bands: darkness. Orange ticks: landings.</p><svg class="chart" id="chart_timeline" viewBox="0 0 560 250" role="img" aria-label="Waiting time of each delivered item over the year"></svg></div>

@@ -30,12 +30,20 @@ OUT = os.path.join(ROOT, "results", "phase6_family.json")
 ALPHA = 0.05
 
 
+E50_CODES = set()                                   # B-118 N21: every E50 cell of the family from one code version
+E50_COUNTS = {}                                     # B-120 D: cells loaded per fleet multiple (written to the file)
+
+
 def _e50(m):
     out = {}
     for p in glob.glob(os.path.join(ROOT, ".cache", "atc", "e50", f"m{m}_s*.pkl.gz")):
         with gzip.open(p) as f:
             d = pickle.load(f)
         out[d["seed"]] = d
+        E50_CODES.add(d.get("code"))
+    import e50_build as EB                              # B-120 D: one code, not None, the current one
+    EB.require_code(E50_CODES, "phase6_family E50")
+    E50_COUNTS[f"{m}x"] = len(out)
     return out
 
 
@@ -134,8 +142,17 @@ def h13():
             else "see the shares"}
 
 
+E54_CODE = {}                                       # B-121 3: the code of the E54 cells H14 read (written to the file)
+
+
 def h14():
-    S = [json.load(open(p)) for p in sorted(glob.glob(os.path.join(ROOT, ".cache", "atc", "e54", "s*.json")))]
+    # B-121 3: through run_e54._load_cache, which refuses cells made with other code (before: a bare glob, no code
+    # check, and a typed "30 seeds"); the seed count comes from the cells
+    import run_e54 as E4
+    S = E4._load_cache(os.path.join(ROOT, ".cache", "atc", "e54", "s[0-9]*.json"))
+    if not S:
+        raise SystemExit("phase6_family H14: no E54 cells")
+    E54_CODE["code"] = S[0]["code"]
     lost = lambda s, proto: next(c for c in s["cells"] if c["loss"] == 0.25 and c["protocol"] == proto)["kinds"]["award"]["lost"]
     d = np.array([lost(s, "sf_ll") - lost(s, "drop_retry") for s in S])
     n_neg, n_pos = int((d < 0).sum()), int((d > 0).sum())
@@ -143,19 +160,26 @@ def h14():
     p_sign = float(stats.binomtest(n_neg, n_neg + n_pos, 0.5, alternative="greater").pvalue) if n_neg + n_pos else 1.0
     stuck = sum(next(c for c in s["cells"] if c["loss"] == 0.25 and c["protocol"] == "sf_ll")["stuck_reservations"] for s in S)
     return {"test": "exact sign test on per-seed lost jobs (expired awards), sf_ll minus drop_retry, loss 0.25, 14-day "
-                    "blackout, 30 seeds; plus 'no reservation stuck under sf_ll' (a property of the rule)",
+                    f"blackout, {len(S)} seeds; plus 'no reservation stuck under sf_ll' (a property of the rule)",
             "mean_diff_jobs": float(d.mean()), "seeds_fewer": n_neg, "seeds_more": n_pos, "seeds_tied": int((d == 0).sum()),
-            "p": p_sign, "stuck_reservations_sf_ll": int(stuck)}
+            "p": p_sign, "stuck_reservations_sf_ll": int(stuck),
+            "stuck_basis": "by rule, not measured (B-118 N7): the replay sets sf_ll's stuck count to 0 by construction; "
+                           "see results/E54_dtn.json h14.clause_2_basis"}
 
 
 def h15a():
     d = json.load(open(os.path.join(ROOT, "results", "E56_integrity.json")))
     x = d["test"]["h15_net_against"]["chi2_step"]["drift"]["delay_median_diff_s"]
-    B = 1000
+    c = d.get("h15_resample_counts_b118", {}).get("sets", {}).get("test", {}).get("chi2_step|drift|delay_median_diff_s")
+    if c is None or not c["reproduces_stored_interval"]:
+        raise SystemExit("E56: run python -m lunarsim.nn.evaluate --resample-counts first (B-118 N8)")
+    B = c["boot_n"]
     return {"test": "network minus per-step chi-square, median detection delay on slow drifts at 1 false alarm per "
                     "pair-day (E56, B-96): bootstrap over events, 1,000 resamples",
             "delay_median_diff_s": x["value"], "ci95": x["ci95"], "ci90": x["ci90"],
-            "p": 1.0 / (B + 1), "p_note": "bootstrap: no resample reached 0, so p <= 1 / (B + 1) (an upper bound)"}
+            "p": (c["at_or_above_0"] + 1.0) / (B + 1), "resamples_at_or_above_0": c["at_or_above_0"], "resamples": B,
+            "p_note": "one-sided bootstrap p = (resamples at or above 0 + 1) / (resamples + 1), from the saved count "
+                      "(results/E56_integrity.json h15_resample_counts_b118; B-118 N8)"}
 
 
 def holm(ps):
@@ -185,7 +209,11 @@ def main():
                                "reckoning larger' clauses do not (intersection-union)"),
                        "H14": "supported (Holm)" if fam["H14"]["holm"]["rejected_at_0.05"] else "not supported",
                        "H15a": "supported (Holm)" if fam["H15a"]["holm"]["rejected_at_0.05"] else "not supported"},
-           "e50_cells": {"1x": 30, "4x": 10, "8x": 5}}
+           "e50_cells": dict(sorted(E50_COUNTS.items(), key=lambda kv: int(kv[0][:-1]))),
+           "e50_code": __import__("e50_build").require_code(E50_CODES, "phase6_family E50"),
+           "e54_code": E54_CODE["code"]}
+    import e50_build as EB                              # B-118 N15: the previous values kept under the dated key
+    EB.keep_superseded(OUT, doc)
     with open(OUT, "w", encoding="utf-8", newline="\n") as f:
         json.dump(doc, f, indent=1, default=float)
         f.write("\n")

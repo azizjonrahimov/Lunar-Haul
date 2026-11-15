@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import math
 import os
+import sys
 import time
 from typing import Dict, List
 
@@ -156,8 +157,17 @@ def check_m() -> List[Dict]:
     rows.append(R("M4", "tree bound", "Hash-tree walk bytes <= h (1 + 4 n D)", 0.0, float(walk > bound), 0.0, "breaches",
                   f"n = {len(tiles)} changed tiles, D = 6: walk {walk} B, bound {bound} B (note: 8,072 B at n = 42)",
                   "lunarsim/atc/smap.py", f"{N02} section E4; exact", t0=t0))
+    # B-118 N22: the payload the code's sync plan sends for those changed tiles (tile headers taken off, as the note
+    # counts the layer's bits only); the 42 tiles are distinct
+    tiles42 = [(i, j) for i in range(6) for j in range(7)]
+    b42 = S.TileMap()
+    for t in tiles42:
+        b42.bump("hazard", t, 0.0)
+    _, items = S.sync_plan(b42, S.TileMap(), tiles42, "hazards_first")
+    payload = sum(nb - S.TILE_HEADER_B for kind, _, nb, _ in items if kind in ("hazard", "hazard_route"))
     rows.append(R("M4", "hazard payload 24 h", "Hazard payload for 42 changed tiles at 2,048 B", 86016.0,
-                  42 * S.LAYERS["hazard"]["bytes"], 0.0, "B", "256^2 cells x 0.25 bit", "lunarsim/atc/smap.py",
+                  float(payload), 0.0, "B", f"smap.sync_plan for 42 changed hazard tiles, less the "
+                  f"{S.TILE_HEADER_B} B tile header each; 256^2 cells x 0.25 bit", "lunarsim/atc/smap.py",
                   f"{N02} section E4 ('86 kB'); exact", t0=t0))
     sig = math.sqrt(2 * (1 + (math.radians(0.5) * 10) ** 2 + 0.05 ** 2))
     rows.append(R("M5", "disagreement", "Two rovers' map disagreement, RMS (1 m position, 0.5 deg at 10 m, 0.05 m "
@@ -231,11 +241,19 @@ def check_c() -> List[Dict]:
                   float(sum(len(cbor.dumps(x)) for x in (23, 24, 256, 65536))), 0.0, "B", "RFC 8949 shortest form",
                   "lunarsim/atc/lrip/cbor.py", f"{N03} section E2 step 8; exact", ("P1",), t0=t0))
     t0 = time.time()
-    load = (41 + 0.1 * 43 + 0.1 * 38) * 20 * 8 / 1000.0
+    # B-118 N22: sizes from the codec and eta from E53's runner, the code the row cites
+    if os.path.join(ROOT, "tools", "atc") not in sys.path:
+        sys.path.insert(0, os.path.join(ROOT, "tools", "atc"))
+    import run_e53 as E53
+    pb = {nm: CO.packet_bytes(nm, CO.default_auth(nm), minor=1) for nm in ("POSITION", "STATUS", "INTENT")}
+    load = (pb["POSITION"] + 0.1 * pb["STATUS"] + 0.1 * pb["INTENT"]) * 20 * 8 / 1000.0
     rows.append(R("C6", "offered load", "Offered load, 20 robots: POSITION 1 Hz + STATUS and INTENT 0.1 Hz (MAC 8 B)",
-                  7.86, load, 0.01, "kbit/s", "8 x 49.1 B/s x 20", "note 03 E3", f"{N03} section E3 (3 digits)", ("P1",), t0=t0))
+                  7.86, load, 0.01, "kbit/s", f"codec packet_bytes {pb['POSITION']} / {pb['STATUS']} / {pb['INTENT']} B "
+                  "x rates x 20 x 8", "lunarsim/atc/lrip/codec.py", f"{N03} section E3 (3 digits)", ("P1",), t0=t0))
+    # (sizes as LRIP v0.1, the note's table; POSITION, STATUS and INTENT have the same size in v0.2)
     rows.append(R("C6", "scheduled airtime", "Channel rate needed on a scheduled channel (eta 0.8, one hop)", 9.8,
-                  load / 0.8, 0.05, "kbit/s", "R >= L h / eta", "note 03 E3", f"{N03} section E3 (2 digits)", ("P1",), t0=t0))
+                  load / E53.ETA["scheduled"], 0.05, "kbit/s", "R >= L h / eta, eta from run_e53.ETA",
+                  "tools/atc/run_e53.py", f"{N03} section E3 (2 digits)", ("P1",), t0=t0))
     t0 = time.time()
     n_att = 40000
     acc = I.forgery_trial(8, n_att, np.random.default_rng(8))
@@ -244,11 +262,17 @@ def check_c() -> List[Dict]:
                   "lunarsim/atc/integrity.py", f"{N03} section E4; binomial 3-sigma", ("P3",), technique="monte carlo", t0=t0))
     t0 = time.time()
     from scipy import stats
-    rows.append(R("C8", "gamma m=1", "Chi-square threshold, one range, alpha 1e-3", 10.83, float(stats.chi2.ppf(1 - 1e-3, 1)),
-                  0.005, "-", "scipy chi2.ppf", "lunarsim/atc/integrity.py GAMMA", f"{N03} section E5 table (2 decimals)",
-                  ("P2",), t0=t0))
-    rows.append(R("C8", "gamma m=2", "Chi-square threshold, two measurements, alpha 1e-3 (= -2 ln alpha)", 13.82,
-                  -2 * math.log(1e-3), 0.005, "-", "closed form", "lunarsim/atc/integrity.py GAMMA",
+    # B-118 N22: the code's constants against the quantiles (before: the quantiles against typed numbers)
+    rows.append(R("C8", "gamma m=1", "Chi-square threshold, one range, alpha 1e-3", float(stats.chi2.ppf(1 - 1e-3, 1)),
+                  I.GAMMA[1][1e-3], 0.005, "-", "integrity.GAMMA[1][1e-3] against scipy chi2.ppf",
+                  "lunarsim/atc/integrity.py GAMMA", f"{N03} section E5 table (2 decimals)", ("P2",), t0=t0))
+    rows.append(R("C8", "gamma m=2", "Chi-square threshold, two measurements, alpha 1e-3 (= -2 ln alpha)",
+                  float(stats.chi2.ppf(1 - 1e-3, 2)), I.GAMMA[2][1e-3], 0.005, "-",
+                  "integrity.GAMMA[2][1e-3] against scipy chi2.ppf", "lunarsim/atc/integrity.py GAMMA",
+                  f"{N03} section E5 table (2 decimals)", ("P2",), t0=t0))
+    worst = max(abs(I.GAMMA[m][a] - float(stats.chi2.ppf(1 - a, m))) for m in I.GAMMA for a in I.GAMMA[m])
+    rows.append(R("C8", "gamma table", "Every chi-square threshold in the code's table (m 1 and 2, alpha 1e-2 to 1e-5)",
+                  0.0, worst, 0.005, "-", "largest |GAMMA - chi2.ppf| over the 8 entries", "lunarsim/atc/integrity.py GAMMA",
                   f"{N03} section E5 table (2 decimals)", ("P2",), t0=t0))
     chk = I.detectable_error_check(n=200000)
     rows.append(R("C8", "detectable error", "A bias of 4.57 sigma is caught with probability 0.9 (m = 1, alpha 1e-3)", 0.90,
@@ -258,14 +282,22 @@ def check_c() -> List[Dict]:
                   I.k_of_n_false_alarm(1e-3), 1e-10, "probability", "binomial sum", "lunarsim/atc/integrity.py",
                   f"{N03} section E5 (2 digits)", ("P2",), t0=t0))
     t0 = time.time()
+    # B-118 N22 (and N5): the code itself, dtn.age_of_information, on a k-hop chain, against the renewal formula
+    from .atc import dtn as DT
     k, p, Tp, D = 3, 0.25, 1.0, 0.010
     q = (1 - p) ** k
     ref = k * D + Tp * (2 - q) / (2 * q)
-    g = np.random.default_rng(9).geometric(q, 200000) * Tp
-    sim = k * D + float((g ** 2).mean() / (2 * g.mean()))
+    Tn = 4000                                                   # steps of 60 s, 60 updates each: 240,000 updates
+    A = np.zeros((Tn, k + 1, k + 1), bool)
+    for i in range(k):                                          # vehicle 0 - 1 - ... - (k - 1) - base (node k)
+        A[:, i, i + 1] = A[:, i + 1, i] = True
+    age = DT.age_of_information(A, p, "drop_retry", np.random.default_rng(9), 60.0, {"status_period_s": Tp})
+    sim = k * D + float(age[0])
     rows.append(R("C9", "age 3 hops", "Mean age of information over k hops with loss p, no retry", ref, sim, 0.02 * ref,
-                  "s", "renewal: k D + E[X^2] / 2 E[X], X = G T; note table 1.90 s at k 3, p 0.25", "note 03 E7",
-                  f"{N03} section E7; 2 % for 200,000 renewals", ("P1",), mode="abs", technique="monte carlo", t0=t0))
+                  "s", "dtn.age_of_information on a 3-hop chain, update every 1 s, + k D (the function neglects hop "
+                  "latency); renewal formula k D + E[X^2] / 2 E[X], X = G T; note table 1.90 s at k 3, p 0.25",
+                  "lunarsim/atc/dtn.py", f"{N03} section E7; 2 % for 240,000 updates", ("P1",), mode="abs",
+                  technique="monte carlo", t0=t0))
     t0 = time.time()
     n7 = 7
     full = ~np.eye(n7, dtype=bool)
@@ -293,16 +325,38 @@ def check_g() -> List[Dict]:
     sc = P5.build("3eq", k=2.806, team_lift_share=0.10)
     sc = sc.with_(horizon_h=24.0 * 30, p5=dict(sc.p5, roads={"mode": "atc", "single_share": 0.15, "bay_km": 1.0}))
     sc_off = sc.with_(p5=dict(sc.p5, roads=dict(sc.p5["roads"], pos_margin=None, log_reservations=False)))
+    sc_on = sc.with_(p5=dict(sc.p5, roads=dict(sc.p5["roads"], pos_margin={"k": 1.0, "bound_m": 50.0})))
     mech = G.mechanism("C_AUCTION")
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        a = Simulation(sc, mech, seed=2, mech_kwargs={"loss": 0.1}).run()
         b = Simulation(sc_off, mech, seed=2, mech_kwargs={"loss": 0.1, "capability_filter": None}).run()
-    mism = sum(1 for k in a if not (a[k] == b[k] or (isinstance(a[k], float) and math.isnan(a[k]) and math.isnan(b[k]))))
+        on = Simulation(sc_on, mech, seed=2, mech_kwargs={"loss": 0.1}).run()
+    # B-118 N2: against the summary the code BEFORE Phase 6 produced (commit 0210c22, stored with its commit), not
+    # against the current code's own default run
+    import json as _json
+    ref_doc = _json.load(open(os.path.join(ROOT, "results", "vv6_g1_reference_0210c22.json"), encoding="utf-8"))
+    ref = ref_doc["summary"]
+
+    def _same(x, y):
+        """B-120 H: exact (JSON round-trips floats exactly); the only allowance is NaN in the run against null in the
+        stored reference (JSON has no NaN). Before: a relative difference up to 1e-9 passed."""
+        if x is None:
+            return y is None or (isinstance(y, float) and math.isnan(y))
+        return x == y
+    # B-120 H: keys on both sides count: a value missing from the run, or present in the run and not in the
+    # reference, is a difference (before, keys only the run had were not counted)
+    mism = sum(1 for k in ref if k not in b or not _same(ref[k], b[k])) + sum(1 for k in b if k not in ref)
     rows.append(R("G1", "options off", "Every Phase 6 engine option off (pos_margin, log_reservations, capability_filter) "
-                  "equals the Phase 5 run", 0.0, float(mism), 0.0, "summary values differing",
-                  f"C_AUCTION, roads atc, 30 days, seed 2: {len(a)} summary values compared", "lunarsim/atc",
+                  "equals the run of the code before Phase 6", 0.0, float(mism), 0.0, "summary values differing",
+                  f"C_AUCTION, roads atc, 30 days, seed 2: {len(ref)} summary values against "
+                  f"results/vv6_g1_reference_0210c22.json (commit {ref_doc['commit']})", "lunarsim/atc",
                   "PLAN-phase6 section 2 ('byte-identical with every new option off'); exact", ("P1", "P2", "P3"), t0=t0))
+    n_on = sum(1 for k in ref if k in on and not _same(ref[k], on[k]))
+    rows.append(R("G1", "option on changes the run", "Switching one Phase 6 option on (pos_margin, 50 m bound) changes "
+                  "the summary, so the comparison above can fail", 1.0, float(n_on > 0), 0.0, "boolean",
+                  f"same scenario with pos_margin k 1, bound 50 m: {n_on} of {len(ref)} summary values differ from the "
+                  "reference", "lunarsim/atc/roads.py", "B-118 N2 (the row above must be able to fail); exact",
+                  ("P1", "P2", "P3"), t0=t0))
     ch = Channel(0.0)
     ch.send(3)
     rows.append(R("G1", "channel sizes off", "Message channel without LRIP sizes counts no bytes", 0.0,
@@ -332,16 +386,19 @@ def check_g() -> List[Dict]:
                   "B-98 degenerate case; exact", ("P3",), t0=t0))
     t0 = time.time()
     z = np.random.default_rng(10).normal(size=2_000_000)
-    rate = float((z * z > 10.83).mean())
-    rows.append(R("G4", "zero faults, single test", "No faults: the single chi-square test alarms at its false-alarm rate",
-                  1e-3, rate, 3 * math.sqrt(1e-3 / 2e6), "per test", "2,000,000 Gaussian innovations, gamma 10.83",
-                  "lunarsim/atc/integrity.py", f"{N03} section E5; binomial 3-sigma", ("P2",), technique="monte carlo", t0=t0))
     from .nn import faults as F
+    from .atc.integrity import lrip_rule_score, GAMMA
     X = np.zeros((1, len(z), len(F.FEATURES)), np.float32)
     X[0, :, F.F_Z] = z
     X[0, :, F.F_VALID] = 1
-    from .atc.integrity import lrip_rule_score
-    alarms = float((lrip_rule_score(X, 10.83)[0] >= 3).sum())
+    g3 = GAMMA[1][1e-3]
+    # B-118 N22: the single test through the code's rule (k = 1 of n = 1) and the code's threshold
+    rate = float((lrip_rule_score(X, g3, k=1, n=1)[0] >= 1).mean())
+    rows.append(R("G4", "zero faults, single test", "No faults: the single chi-square test alarms at its false-alarm rate",
+                  1e-3, rate, 3 * math.sqrt(1e-3 / 2e6), "per test", f"2,000,000 Gaussian innovations through "
+                  f"integrity.lrip_rule_score with k = n = 1, gamma GAMMA[1][1e-3] = {g3}",
+                  "lunarsim/atc/integrity.py", f"{N03} section E5; binomial 3-sigma", ("P2",), technique="monte carlo", t0=t0))
+    alarms = float((lrip_rule_score(X, g3)[0] >= 3).sum())
     rows.append(R("G4", "zero faults, 3 of 5", "No faults: the 3-of-5 rule raises no alarm in 2,000,000 tests "
                   "(expected 0.02)", 0.0, alarms, 0.0, "alarms", "Gaussian innovations, gamma 10.83",
                   "lunarsim/atc/integrity.py", f"{N03} section E5 (1e-8 per window); exact count", ("P2",),

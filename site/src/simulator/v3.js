@@ -334,7 +334,7 @@ function drawMap() {
   for (const [a, b, sl] of EDGES) {
     const [x0, y0] = sitePos(a, W, H), [x1, y1] = sitePos(b, W, H);
     ctx.strokeStyle = slopeCol[sl]; ctx.lineWidth = sl === 'steep' ? 8 : sl === 'moderate' ? 6 : 4; ctx.lineCap = 'round'; ctx.globalAlpha = 0.8; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); ctx.globalAlpha = 1;
-    ctx.fillStyle = css('--ink-3'); ctx.font = `11px ${mono}`; ctx.fillText(WORLD.edges[a + '|' + b].dist.toFixed(1) + ' km', (x0 + x1) / 2 + 5, (y0 + y1) / 2 - 5);
+    ctx.fillStyle = css('--ink-2'); ctx.font = `11px ${mono}`; ctx.fillText(WORLD.edges[a + '|' + b].dist.toFixed(1) + ' km', (x0 + x1) / 2 + 5, (y0 + y1) / 2 - 5);
   }
   const night = tr && tr.nights.some(([a, b]) => t >= a && t < b); if (night) { ctx.fillStyle = css('--night'); ctx.fillRect(0, 0, W, H); }
   const waiting = {}; if (tr) for (const c of tr.cargo) if (c.tReady <= t && (c.tPicked === null || c.tPicked > t) && !c.stranded) waiting[c.origin] = (waiting[c.origin] || 0) + 1;

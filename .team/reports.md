@@ -10521,3 +10521,1050 @@ Files changed: site/src/lander/lab.js (aria-hidden on the legend swatch), .team/
    /stories/, /vehicles/, /world/, /world/trace/, /404.html (all clean in dark at 1280 and 390).
 3. Lighthouse: not measured on any page (RAM under 0.8 GB).
 Files changed in F-57: site/src/lander/lab.js (aria-hidden on the legend swatch), .team/reports.md; site/dist rebuilt.
+
+## B-115 to B-117 ESTIMATE 11:14 (BACKEND, 13 Nov): compute per item, nothing run yet; heavy chunks wait for your go
+Basis: per-run times recorded in the repo (results/E44_parts/timing.json; run_s in the E40-E43 rows; E46 B-76 report,
+7.1 s a run; timing blocks in .cache/atc/e50/m*_s*.pkl.gz; run_s in .cache/atc/e51; B-101, B-102, B-111 reports).
+Hours are wall time on this laptop, single process, plus about 15 % for chunk restarts. Development time is separate
+where code is needed (opt-in flags only; no default path changes). Free RAM now 0.97 GB.
+Class: NOW = under 3 h compute; LATER = 3 to 10 h; NOT FEASIBLE = cannot run under the current rules (reason given).
+
+| Item | Compute | Class | Reuses | Writes (new key only) | Paper sentence it would change |
+|---|---|---|---|---|---|
+| B-115 E44 types 2, 3, 4, 8, 9, 10, 12 regenerated | 1.65 h: 7,195 s of batches minus the seven batch-0 reruns B-113 already made on unchanged code (encounter code last changed 01:23, before B-113); plus 10 min rebuild | NOW | scratch b113/T*_b0000_head.csv.gz | results/E44_parts/T*.csv.gz replaced only after the per-batch proof; E44_bounds, E44_bins, E44_encounters rebuilt and diffed; E44_defects.json b113_stale_deadlock_flag gets an outcome field | none expected (every reader judges a deadlock only without a fuzzer); if one moves: P2 ring-deadlock rates, E44/E45 tables |
+| B-116 E50 8x for near_base and overlaps | 5 seeds x about 37 min (shared perfect run 480 s, trajectories 70 s, navigation 370 s, two margin runs of 450-565 s each with navigation 260 s) = 3.1 h; 4.3 h if the two scripts each repeat the perfect run | LATER, with the 8x condition below | .cache/atc/e50/m8_s1 to m8_s5 exist (your 12 Nov loop: all five E50 8x seeds, so nothing is missing for E50's own design); they hold summaries only, so the runs are repeated | E50_near_base.json multiples "8"; E50_overlaps.json 8x block; CSV rows added | P2 S1 row, 5.9, 5.13, Table 14: "8x not run under the readings"; P2's overlap paragraph at 8x (5.2 overlaps per seed remain with the layered margin) |
+| (a) P1 S3 marketplace with the same return move, 30 runs | 15 min: O_ORACLE + o_rally, plus O_ORACLE and C_AUCTION repeated on HEAD for pairing (90 runs of 3-5 s) | NOW | o_rally already exists (B-75 diagnostic in results/ATC_oracle_diag.json, older engine: O + rally 14.83 h against O 14.47 h, 418 rallies against the auction's 808) | new results file or a new key in ATC_oracle_diag.json | P1 5.4, 6.1, 7: "Not done: the marketplace with the same move"; "0.3 h above the marketplace" |
+| (b) P1 S11 two loss-free cells (C_AUCTION depth 2 and depth 5 at loss 0), 60 runs | 5 min; 15 min if the four lossy depth cells must be repeated on HEAD for pairing | NOW | E41 cell definitions | new rows under a new key beside E41 (E41_runs.lead.csv untouched) | P1 3.7, 5.5: "the design cannot attribute the penalty to loss" |
+| (c) P1 S12 ablation of the 13 weights and a tuned hand baseline | ablation: 13 x 30 seeds at 30 % load x 6 s = 40 min, plus the linear and hand references 6 min. Tuning: the linear CEM's own budget and seeds applied to the hand rule's 4 parameters (w_p1, w_p2, w_age, vot_scale), about 260 runs = 22 min; evaluation on seeds 1-30 at 30 % and 60 % load 25 min. Total 1.5 h; development 1-2 h | NOW | train_bid CEM code, seeds and budget as published | new results file; the policy files untouched | P1 5.6, 6.2, 6.3: "13 weights, which we have not interpreted"; "the baseline was never tuned" |
+| (d) P2 M7 the extra baseline run (three tries inside the 60 s grant lifetime) | 10 min (replay, retry interval 20 s, 30 seeds, 3 losses); it is one setting of (e1) | NOW | E54 runs and contact plans repeated per seed as in B-111 (40 s a seed) | E54_dtn.json new key | P2 3.11, 5.12, 6.5, Table 14: "three tries would lose 1.6 % by arithmetic"; "needs a new run" |
+| (e1) P3 S9/S17 E54 retry budget swept | 45 min: tries {1, 3, 5, 10} x interval {20, 60, 180 s}, losses 0.10, 0.25, 0.40, 30 seeds, replay | NOW | as (d) | E54_dtn.json new key | P3 4.2, 5.12, 7, 6.6: "the retry budget ... not swept" |
+| (e2) P3 S9/S17 the lost-link return driven in the engine | 30-45 min compute (30 seeds at 1x, with a link check at each step); development about half a day: an opt-in engine ladder (hold T_hold, return at half speed to the last link point, wait, re-auction at the lease), the largest code item in this list | NOW (compute) | dtn.lost_link_plan as the reference | E54_dtn.json new key | P3 4.2, 6.6: "the lost-link return is not driven in the engine"; its 82 returns a seed would enter the delay |
+| (f) P3 M7/S17 E46 value of time swept | full design: 2.13 h a level (1,080 runs x 7.1 s); four levels (x0.2, x0.5, x2, x5 of 5,000 / 1,000 / 100 USD an hour, fixed before any row) = 8.5 h. Reduced design without the 12 deviations (pooled, alone, three coalitions, O): 0.71 h a level, 2.8 h for four levels (H5 clause 3 only). Re-pricing the existing runs with the allocation fixed: minutes, labelled accounting only | full LATER; reduced NOW (just) | E46 parts for the x1 level | new results file per level; E46_parts untouched | P3 3.9, 5.6, 7, 6.6: "a sweep of the value of time (a limitation and future work)" |
+| (g) P2 S14 bound coverage per seed | 1x, 30 seeds: 30 min, shared with (j1); 4x, 10 seeds: 1 h; 8x comes free with B-116 | 1x and 4x NOW | E50 functions (no per-step bounds are stored except trace_m1_s1) | new key in E50_near_base.json, or a new file | P2 7 and Table 9: "bound coverage per seed is not in a results file" |
+| (h) P2 S8 the Mars fleet's 94 against 53 conflicts | 15 min (E47 Mars and E43 Moon, uncoordinated x1, 30 seeds each, with an opt-in conflict log); analysis 1-2 h | NOW | E43 and E47 cell definitions | new results file, labelled exploratory (a trace, not a test) | P2 5.1, 5.4, 6.1: "we have not traced the cause" |
+| (i) P3 O3 199.3 jobs against 200.9 awards a seed | under 15 min from the E54 cache (likely team jobs, one award per vehicle; to be checked) | NOW | .cache/atc/e54 | E54_dtn.json note key | P3 4.2: "199 jobs ... a seed" beside 200.9 awards |
+| (j1) P3 S17 E50 input sweeps on all seeds | 1x, 30 seeds: long-range ranging 1 and 10 m, UWB 0.1 and 0.7 m, beacon survey 0.05, 0.5 and 1.0 m, UWB reach 50 and 300 m (the note's ranges), split by distance from the base and by beacons in view: about 1.2 h (14 s a navigation run, from M5's 6-seed run) | NOW | run_e50_near sweep code | E50_near_base.json new sweep key | P3 6.6 list; the H9' sweep sentence in P2 and P3 (6 seeds -> 30) |
+| (j2) P3 S17 E52 change rates swept | under 10 min (tiles a day 10-84, keep-outs, road edges; a run takes seconds) | NOW | run_e52 | E52_map.json new key | P3 6.6: "one free parameter and one result" |
+| (j3) P3 S17 E51 at 4x and 8x | 4x, 10 seeds: 40-60 min; 8x, 5 seeds: 1-1.5 h, sharing B-116's perfect runs | 4x NOW; 8x LATER with B-116 | E50 record and trajectories | E51_clocks.json new key | P3 6.6 list; H11 at larger fleets |
+
+The 8x condition (B-116, (g) at 8x, (j3) at 8x): one 8x engine run takes 450-565 s and cannot be split, so some single
+calls exceed the 9-minute chunk rule by up to 25 s. Peak memory is about 1 to 1.5 GB (B-101's estimate), and 0.97 GB is
+free now. Under the rules as written these items are NOT FEASIBLE. They become LATER if you accept single calls of
+about 10 minutes and I wait for at least 1.5 GB free (browser closed). I would cache each 8x perfect run once and share
+it across near_base, overlaps, coverage and E51.
+
+Totals: the NOW items come to about 9 h of compute without (f), 12 h with (f) reduced: B-115 1.8 h; (a)+(b) 0.3 h;
+(c) 1.5 h; (d)+(e1) 0.9 h; (e2) 0.7 h; (g) 1.5 h; (h) 0.3 h; (i) 0.2 h; (j1)+(j2)+(j3) at 4x 2.2 h, less 0.5 h shared
+with (g) at 1x; (f) reduced 2.8 h. Each NOW item is under 3 h on its own; together they are several sittings.
+LATER: B-116 3.1 h, E51 at 8x 1.5 h, E46 full design 8.5 h.
+Pre-declared here, so not exploratory: the sweep grids above, the ablation design (zero one weight at a time, seeds 1-30,
+30 % load), the tuning (the linear CEM's budget and seeds applied to the hand parameters) and the E46 levels. Labelled
+exploratory in the files: (h), (i) and the accounting-only E46 re-pricing.
+Correction: my 5.5 h for B-115 covered the ten types not rerun after change 9, including types 1, 7 and 11, whose batch
+0 already matches HEAD. The seven types you list take 1.65 h.
+Proposed order after your go: B-115, (a), (b), (d), (e1), (i), (h), (j2), (c), (g)+(j1) at 1x, (j3) at 4x, (e2); then
+(f) and the 8x items as you decide.
+
+## F-77 (FRONTEND, 13 Nov): the live site (https://azizjonrahimov.github.io/Lunar-Haul/, deploy of b96361e)
+Method: gstack headless browser, one at a time, closed whenever free RAM < 0.8 GB (never under 0.5 GB with it closed);
+every page scrolled through so lazy sections load; console errors, every request's status, overflow, contrast (AA),
+one h1, heading order (scratchpad f77.sh).
+1. Dark, 1280 px, all 24 pages (+ a made-up URL): every page loads; console errors 0; failed requests 0. Seven requests
+   were still in flight when read (lander policy and check files, rover_bc_s0.onnx, the 5 m normal maps); fetched
+   directly, all seven return 200 under /Lunar-Haul/. Fonts, data files, lazy chunks and /simulator/v2/ all load under
+   the new base. /no-such-page/ gets the site's 404 page (one h1, its own 404 status). Overflow 0, contrast 0, one h1,
+   no heading skips on every page.
+   Content: /atc/ has the request-rule sentence; /paper/ has P1's title "Working Together Without Earth: Job Sharing,
+   Team Lifts, Learned Bidding and a Message Protocol for Lunar Robots of Different Owners", no old title, no
+   "one encounter only".
+2. Light, 1280 px, the 20 pages left from F-57: 18 clean (console 0, failed 0, overflow 0, contrast 0, one h1, no
+   skips). Two medium findings, fixed in source:
+   - /simulator/: 13 small-text items at 3.35:1 (the rail's hints, the KPI chips' "± … · 95 % CI · n = 3" lines).
+     They used --ink-3, which tokens.css reserves for text >= 24 px (as in F-64). site/src/simulator/v3.css:
+     .sim-hint, .vehhead span, .sim-ci, .sim-answer-note -> --ink-2; site/src/simulator/v3.js: the network map's
+     11 px distance labels (canvas) -> --ink-2. --muted, a chart mark colour at 3.35:1 (>= 3:1 for marks), unchanged.
+   - /simulator/v2/ (the archived app, web/): light --muted #7f828c was 3.5-3.8:1 on card headings, hints, the brand
+     tag and the footer (12 items in view). web/index.html: light --muted -> #666971, 4.5-5.5:1 on every light surface
+     (bg, panel, panel-2, line-2, accent-soft). Dark values unchanged.
+   Not re-checked in the browser: the fixes are not deployed (needs your rebuild; npm run build runs build_web.py, so
+   web/ is included). Bytes added: a few in v3.css (one comment) and in web/index.html (one comment); budgets not
+   re-run.
+3. Lighthouse 13.5.0 on the live site, 13 Nov (mobile = default simulated slow 4G and 4x CPU; desktop =
+   --preset=desktop; perf / a11y / best practices):
+   | page | mobile | mobile LCP, TBT, CLS | desktop | desktop LCP, CLS |
+   |---|---|---|---|---|
+   | /atc/ | 96/100/100 | 1.4 s, 210 ms, 0 | 100/100/100 | 0.4 s, 0.028 |
+   Targets (plan section 5, F-40): >= 85 performance on desktop for 3D pages, >= 95 for reading pages, home LCP <= 2.5 s
+   on mobile. /atc/ meets them.
+   NOT MEASURED: every other page. The run over the remaining 23 pages was stopped by Claude Code under memory
+   pressure before it wrote any result. It left Lighthouse's own headless Chrome (profile D:\Temp\lighthouse.PXP0a3,
+   9 processes), which I closed; free RAM went from 0.55 to 0.97 GB. Claude Code's rule is not to restart a stopped
+   job unasked, so I have not.
+Files changed: site/src/simulator/v3.css, site/src/simulator/v3.js, web/index.html, .team/reports.md. Tests 79/79.
+
+### F-77 Lighthouse rerun (FRONTEND, 13 Nov), live site, foreground, one page at a time
+Lighthouse 13.5.0 CLI, headless Chrome (closed after every page), https://azizjonrahimov.github.io/Lunar-Haul/.
+Mobile = default (simulated slow 4G, 4x CPU); desktop = --preset=desktop. Single runs: allow a few points of noise.
+Targets (plan, F-40): performance >= 85 on desktop for 3D pages, >= 95 for reading pages; home LCP <= 2.5 s on mobile.
+| page | mobile p/a/bp | mobile LCP, TBT, CLS | desktop p/a/bp | desktop LCP, TBT, CLS | free RAM before | failing a11y/bp audits |
+|---|---|---|---|---|---|---|
+| /atc/ | 96/100/100 | 1.4 s, 210 ms, 0 | 100/100/100 | 0.4 s, 0 ms, 0.028 | 1.14 | none |
+| /paper/ | 98/100/100 | 1.5 s, 150 ms, 0 | 100/100/100 | 0.4 s, 0 ms, 0 | 0.87 | none |
+| /protocol/ | 100/100/100 | 1.3 s, 0 ms, 0 | 100/100/100 | 0.4 s, 30 ms, 0 | 1 | none |
+| /network/ | 100/100/100 | 1.1 s, 60 ms, 0 | 100/100/100 | 0.3 s, 0 ms, 0 | 1.23 | none |
+| /results/ | 98/100/100 | 1.5 s, 160 ms, 0 | 100/100/100 | 0.4 s, 10 ms, 0 | 1.57 | none |
+| /verification/ | 84/100/100 | 1.2 s, 640 ms, 0 | 100/100/100 | 0.4 s, 20 ms, 0 | 1.78 | none |
+| / | 100/100/100 | 1.4 s, 50 ms, 0 | 100/100/100 | 0.3 s, 0 ms, 0 | 1.64 | none |
+| /about/ | 99/100/100 | 1.2 s, 140 ms, 0 | 100/100/100 | 0.3 s, 0 ms, 0 | 1.51 | none |
+| /account/ | 99/100/100 | 1.1 s, 130 ms, 0 | 100/100/100 | 0.3 s, 0 ms, 0 | 1.97 | none |
+| /changelog/ | 100/100/100 | 1.1 s, 30 ms, 0 | 100/100/100 | 0.4 s, 0 ms, 0 | 1.94 | none |
+| /data/ | 99/100/100 | 1.1 s, 110 ms, 0 | 100/100/100 | 0.3 s, 0 ms, 0 | 1.95 | none |
+| /design/ | 89/100/100 | 1.7 s, 430 ms, 0.021 | 98/100/100 | 1.0 s, 20 ms, 0.063 | 1.56 | none |
+| /design/stage/ | 61/100/100 | 2.6 s, 4,340 ms, 0 | 64/100/100 | 0.6 s, 2,030 ms, 0 | 2.01 | none |
+| /lab/ | 100/100/100 | 1.1 s, 50 ms, 0 | 100/100/100 | 0.3 s, 0 ms, 0 | 1.94 | none |
+| /lab/lander/ | 69/100/100 | 2.3 s, 1,970 ms, 0 | 100/100/100 | 0.5 s, 40 ms, 0 | 2.03 | none |
+| /lab/rover/ | 100/100/100 | 1.3 s, 0 ms, 0 | 95/100/100 | 0.3 s, 170 ms, 0 | 1.53 | none |
+| /method/ | 98/100/100 | 1.1 s, 170 ms, 0 | 100/100/100 | 0.3 s, 30 ms, 0 | 1.32 | none |
+| /research/earth-sky/ | 98/100/100 | 1.8 s, 140 ms, 0 | 100/100/100 | 0.4 s, 0 ms, 0 | 1.66 | none |
+| /simulator/ | 91/100/100 | 1.2 s, 340 ms, 0.071 | 96/100/100 | 0.5 s, 0 ms, 0.109 | 1.61 | none |
+| /simulator/v2/ | 91/100/100 | 2.7 s, 0 ms, 0 | 87/100/100 | 1.3 s, 0 ms, 0.147 | 1.54 | none |
+| /stories/ | 98/100/100 | 2.0 s, 0 ms, 0.085 | 98/100/100 | 0.4 s, 0 ms, 0.092 | 1.31 | none |
+| /vehicles/ | 57/100/100 | 4.1 s, 2,430 ms, 0 | 78/100/100 | 1.0 s, 490 ms, 0.009 | 0.97 | none |
+| /world/ | 73/100/100 | 1.8 s, 1,480 ms, 0.049 | 85/100/100 | 0.4 s, 340 ms, 0 | 1.03 | none |
+| /world/trace/ | 75/100/100 | 1.2 s, 1,410 ms, 0.008 | 93/100/100 | 0.4 s, 220 ms, 0.019 | 1.09 | none |
+
+## B-118 step 1 (N1) DONE 11:40 | E52 route-tile offsets fixed, E52 rerun: only the stale-map hit counts move; H12 and every byte and time unchanged
+Defect (default path; the fix changes the default): tools/atc/run_e52.py route_tiles added a leg's whole length before
+recording its tiles, so every tile of a leg carried the distance of the leg's end: 35 distinct offsets for 328 tile
+entries. Now each entry carries the distance at its own sample: 318 distinct offsets for 328 entries (the 10 ties are a
+leg's end and the next leg's start, same point). Tour length unchanged (62.3 km).
+Test: tests/test_e52.py (new, 2 tests). test_route_tile_offsets_are_per_sample failed before the fix ("35 distinct")
+and passes after; test_smap.py still passes (9 passed together).
+Rerun: python tools/atc/run_e52.py (30 seeds, 2 s). results/E52_map.json and results/E52_table.csv rewritten; the
+pre-fix rows and h12 are kept in E52_map.json under the new key "superseded_2026-11-13_b118_n1" with the reason. The
+writer now carries any "superseded_*" key across reruns. Every other top-level key is identical.
+What moved: only hits_during_outage_mean (32 rows) and hits_after_contact_mean (21 rows). Unchanged: bytes, shares of
+a full resend, tree overhead, times to current (hazard layer and all), H12 (share 24 h, sooner at every rate, paired
+deltas, supported = true).
+- P3 5.10, "after contact at most 0.08 with hazards first and 1.65 with the oldest change first": now 0.40 (336 h out,
+  10 kbit/s) and 1.72 (336 h, 10 kbit/s). Matches the red team's recomputation (0.40 and 1.72).
+- P3 5.10, hits during the outage: 1 h 0.017 (same); 6 h 0.133 -> 0.15; 1 day 0.80 -> 0.783; 3 days 2.6 (same);
+  7 days 6.65 -> 6.667; 14 days 13.783 -> 13.767 (prints 13.8 either way).
+- P3 Table 13, the hit columns at 16 kbit/s (during outage; after contact hazards-first / oldest-first), before -> after:
+  24 h 0.80; 0.03 / 0.12 -> 0.783; 0.03 / 0.08. 72 h 2.6; 0 / 0.15 -> 2.6; 0 / 0.20. 7 d 6.65; 0 / 1.23 -> 6.667;
+  0.08 / 0.82. 14 d 13.78; 0 / 1.15 -> 13.77; 0.38 / 1.32. 1 h and 6 h: after contact 0 / 0 either way.
+- The checks build_p3.py makes still hold: 14-day outage hits (13.77) exceed 5 x the largest after-contact count
+  (8.6), and hazards-first has no more hits after contact than oldest-first in any row (checked over all 48 rows).
+  "Hazards-first had none after contact" is no longer true at 7 and 14 days (0.08 and 0.38 at 16 kbit/s).
+- /protocol/ figure 2: site/public/protocol/e52.json is staged by FRONTEND's prepare-data (site/lib/protocol-data.mjs
+  stageE52) from results/E52_map.json at build time; no BACKEND file to regenerate. It moves at your next build.
+Files: tools/atc/run_e52.py, tests/test_e52.py (new), results/E52_map.json, results/E52_table.csv.
+Also in the tree from B-117 (a), not yet run: lunarsim/atc/regimes.py o_rally="unheard" (opt-in).
+| /vehicles/ | 60/100/100 | 3.9 s, 1,550 ms, 0 | 100/100/100 | 0.6 s, 0 ms, 0.009 | 1.84 | none |
+(/vehicles/ was run twice: the first desktop 78 was with BACKEND's simulation chunks competing for the CPU; the second
+run gives 100. Treat single mobile scores, all taken on this slow laptop under load, as rough.)
+Against the targets (desktop):
+- Reading pages >= 95: all pass (/paper/, /results/, /verification/, /method/, /data/, /about/, /account/, /changelog/,
+  /research/earth-sky/, /atc/, /protocol/, /network/, /lab/: 98-100).
+- 3D pages >= 85: home 100, /world/ 85 (at the line), /world/trace/ 93, /stories/ 98, /vehicles/ 100 (78 on the noisy
+  first run), /lab/lander/ 100, /lab/rover/ 95, /simulator/ 96, /design/ 98.
+- Home mobile LCP 1.4 s (<= 2.5 s): pass.
+- Misses:
+  * /design/stage/ 64: a development page (noindex, not linked from the site); TBT 2.0 s is the shared 3D stage
+    building its test scene at load (ui chunk 2.0 s, stage chunk 1.9 s of script). Not a public page; not fixed.
+  * /simulator/v2/ 87 (the archived app; no target was ever set for it; 95 if counted as a reading page): CLS 0.147
+    (#tab-run .grid2 moved down when the KPI tiles filled the empty #kpis) and FCP 1.3 s (Google Fonts stylesheet,
+    render-blocking). Fixed the shift, cheap and safe: web/index.html puts ten empty aria-hidden placeholder tiles of
+    the same shape in #kpis, replaced by the first run. Checked on a local web/dist (build_web.py + a static server):
+    CLS 0.196 live vs 0.005 local at 1280 px, 0 at 390 px, ten real tiles after the run, console errors 0. The font
+    request is not changed (self-hosting is the archived app's bigger change; say if you want it).
+- Mobile (no target except home's LCP): /vehicles/ 57-60, /design/stage/ 61, /lab/lander/ 69, /world/ 73,
+  /world/trace/ 75 (TBT 1.4-4.3 s, the 3D build), /verification/ 84 (TBT 640 ms), the rest 89-100.
+- Accessibility 100 and best practices 100 on every page, mobile and desktop.
+Files changed since the first F-77 report: web/index.html (KPI placeholders), .team/reports.md.
+
+## F-78 (FRONTEND, 13 Nov): code review of Phase 6, sections W and T (reports/review_phase6_code.md)
+W1, a missing row or key stops the build with the file and key named:
+- site/lib/network.mjs: every number reads through v()/e()/l(), which throw "network: <file> has no row/value/number
+  at <key>" (no more "–"); drift_diff throws instead of printing a dash; the parameter count is labelled with the file
+  it was read from (results/E56_integrity.json model.n_params, else data/atc/protocol/b96_landscape.json
+  landscape.model.n_params); every landscape number names B-99's file; a missing landscape file throws by key.
+- site/lib/phase6.mjs vv6 (/verification/): counts the rows' own `passed` flags; throws if summary.rows/passed are
+  missing, a row has no boolean passed, the rows and the summary disagree, or G1 does not pass (the sentence says it
+  gives the Phase 5 run back). vv6 takes the file's contents as an optional argument so a test can alter a copy.
+- phase6.mjs familyRows: throws on a decision for a hypothesis or a clause the family file does not have.
+- site/lib/protocol-data.mjs compactE51: guard_s, uwb_sigma_m and contact_share are required numbers (were optional
+  chaining).
+W2: tools/ci/budgets.json /protocol/ data counts protocol/e53-v02.json (the file the bit-rate figure fetches) instead of
+  protocol/b99/e53_bitrate.json; stageB99 still checks e53_bitrate.json against the index (problem 5's text reads it at
+  build) but no longer stages it (B99_BUILD_ONLY; an older staged copy is removed). The figure's column error now names
+  protocol/e53-v02.json.
+W3: figures.js figDtn fetches e54.json and the month's timeline together (Promise.all). network/landscape.js: quad
+  corners and shading precomputed once, colours once per theme, the canvas resized only when its size changes, drag
+  and arrow keys draw at most once per frame (one pending requestAnimationFrame), the ResizeObserver redraws only on a
+  real width change.
+W4: network/main.js escapes err.message (esc from components/num.js); no other innerHTML takes an error message raw.
+W5:
+- lib/realdata.mjs: data-labels on the Artemis II table cells, the colspan row labelled "Not used" (the other pr-tables
+  already had them).
+- network/landscape.js: the contour map is drawn at the width it is shown at (12 px labels stay 12 px; at 390 px the
+  SVG is 324 wide with a 324-unit viewBox).
+- Cutaways (lib/anatomy-common.mjs, src/protocol/anatomy-live.js): titles 8.6 -> 9.2 units, letter-spacing .06 ->
+  .02 em (the longest, 21 characters, is 110 of the box's 120 units); labels show only from 840 px (scale >= 1.1),
+  pins below that, sized from the drawn scale (numbers 11 px on screen). Measured: label text >= 13 px boxes at 1280,
+  pins at 700 and 390 px readable and not overlapping.
+- The cutaway tour visits each part once and stops; the first click, focus, hover or touch stops it for good
+  (no 8 s restart).
+- /network/: the ten input names are shown under the input strip ("Rows, top to bottom:", numbered list); ui.css is
+  imported eagerly (as on /protocol/).
+- hub.css: the card focus ring and the link's outline:none apply only under @supports selector(:has(a)).
+- network/inside.js: the ramps follow the theme (sequential reversed in dark, diverging midpoint dark grey) and the
+  strips redraw on a theme change (data-theme and prefers-color-scheme).
+- protocol.css: packet field buttons get a hover border; pressed is a heavier ring (inset box-shadow), no font-weight
+  change, the part colour kept.
+- Left as they are, per your note: the left stripe on the real-data box, the labels above headings.
+W6: network/landscape.js, inside.js, bars.js and world/atc-pair.js use components/num.js fmt (the "-0.00" guard).
+Side effect fixed: with ui.css imported by /network/ too, Rolldown merged it into tooltip.js's chunk, so the CSS file
+  was named tooltip-*.css and the rover and lander lazy_css budgets ("assets/ui-*.css") failed. site/vite.config.js
+  assetFileNames keeps that stylesheet named ui-*.css (other assets keep Vite's default name).
+T: site/tests/f78.test.mjs (6 tests): every @nw key on /network/ gives a flagged number with its file as source and an
+  unknown key throws; the parameter count's source label; familyRows throws on an unknown clause and an unknown
+  hypothesis; vv6 counts from the rows and throws on a missing count, a mismatch, a missing passed flag or a failing G1;
+  compactE51 requires its constants; the budget counts e53-v02.json and the build-only file is not fetched.
+Checks: free RAM 0.95-0.99 GB before each build (heap 512 MB): npm run build exit 0 ("4 B-99 files staged ...
+  e53_bitrate.json read at build only"); tests 85/85; budgets.py pages OK. Browser (local build, one at a time, closed
+  under 0.8 GB): /network/, /protocol/, /verification/, /results/, /simulator/, /lab/lander/ in dark and light at 1280
+  and 390 px: overflow 0, contrast failures 0, one h1, no heading skips, console errors 0.
+No numbers typed; BACKEND's reruns of E52, E54, E55, E56 and the verification rows will flow through the same readers
+  (and stop the build if a row or key goes missing).
+Files: site/lib/network.mjs, site/lib/phase6.mjs, site/lib/protocol-data.mjs, site/lib/realdata.mjs,
+  site/lib/anatomy-common.mjs, site/src/protocol/figures.js, site/src/protocol/anatomy-live.js,
+  site/src/protocol/protocol.css, site/src/network/main.js, site/src/network/landscape.js, site/src/network/inside.js,
+  site/src/network/bars.js, site/src/network/network.css, site/src/hub.css, site/src/world/atc-pair.js,
+  site/vite.config.js, tools/ci/budgets.json, site/tests/f78.test.mjs (new), .team/reports.md.
+
+## B-118 step 2 DONE 12:48 | dtn.py N3, N4, N5, N6 (+ C11) fixed, E54 rerun: H14 unchanged; age of information, grant losses, report delays, returns and the Earth-ledger count move
+These are defects in the DEFAULT path: the defaults change and the published E54 values move. Every old value is kept
+in results/E54_dtn.json and results/E54_ledger.json under "superseded_2026-11-13_b118" (with the reason).
+Code (lunarsim/atc/dtn.py):
+- N3: store-and-forward keeps a clock per bundle (new Msg.t_next). A step gives a bundle only the transmissions that
+  start before the step ends and before its lifetime; nothing is delivered after its lifetime (also drop_retry); an
+  arrival is stamped when it happens, not at the next step.
+- N4: new outcome Msg.censored: alive and undelivered at the window's end, or created at or after it. It is not a
+  loss. E54 rows now carry per kind: lost (expired inside the window), censored, lost_incl_censored (the old
+  definition).
+- N5: age of information is the exact time average of the sawtooth over each step (was floored at dt/2 = 30 s).
+- N6 (your decision): rule "papers" is the default: linked again at loss + 600 s + 2 x (recorded driving time between
+  the loss and the loss + 600 s), windows from dt. The old rule stays callable as return_rule "pre_review" and E54
+  reports it as rows "sf_ll_pre_review" (same random stream as sf_ll). The file says the replay uses recorded
+  trajectories, so the vehicle does not stop at the next safe point (an upper reading), and labels the rule "as the
+  papers state it, corrected after code review on 13 Nov 2026" (keys lost_link_rule, outcome_definitions).
+- C11 (the review's dtn item; your list said N11, which is evaluate.py and comes in step 6): a full relay refuses
+  custody on forwarding; a destination always accepts. No E54 queue came near 64 MB (largest bound 0.37 MB), so it
+  moves nothing.
+Tests (tests/test_dtn.py, 12 pass): 7 new or changed tests fail on the old code (checked on a git-archive copy of
+HEAD) and pass now: age 5 s with every 10 s update (was asserted 30 s); age grows without a path; papers rule
+(driving after the loss counts, driving beyond the hold timer does not, an unknown rule raises); never delivered
+after the lifetime (sf and a 20 s drop_retry); arrival stamped in its own step; window end is not expiry; full relay
+refuses custody. The pre-review rule keeps its own test.
+tools/atc/run_e54.py: one engine run per seed feeds both caches (new command runall); the replay is one function
+for the main table and the v0.2 sets; cache files carry a code fingerprint and the commit at run time, and build
+refuses mixed fingerprints (N21 for E54); old caches moved to .cache/atc/e54_pre_b118 and e54_v02_pre_b118.
+Run: 30 seeds, 100-116 s a seed, 8 chunks under 9 min, free RAM 1.0-1.7 GB before each; build, v02build, ledger.
+What moved (30 seeds; before -> after):
+- Age of information at the base, with the lost-link rule (sf_ll): mean 45.49 s -> 9.51 s, worst vehicle 148.9 s
+  (2.5 min) -> 39.9 s (same at every loss level, 9.51-9.56 s). P3 5.12 and Table 15 ("45.5 s and 2.5 min"); P1's
+  age-of-information sentence. Split: the N5 fix alone (old return rule) gives 20.85 s, worst 126.4 s; the N6 rule
+  takes it to 9.51 s.
+- Without the rule (drop_retry, sf): 5,287 s -> 5,264-5,272 s; worst vehicle 30.9 h unchanged (111,304 s).
+- TASK_STATE under sf_ll: lost 2 -> 0 and mean delay 30.7 s -> 1.1 s (loss 0.10), 33.0 s -> 3.4 s (0.25), 36.3 s ->
+  6.8 s (0.40); p95 155-172 s -> 10-28 s. P3 Table 15 ("2; 30.7 s") and P3's "against 33.0 s with the lost-link
+  rule". This is the N6 rule (the pre-review rows keep 2 lost and 30.7 s).
+- RESERVE_GRANT losses (N3; grants delivered late were counted delivered): loss 0.40 sf 2 -> 29 (0.48 %), sf_ll
+  1 -> 22 (0.37 %); loss 0.25 sf_ll 0 -> 3. drop_retry unchanged (grants lost 570, 1,543, 2,403). P3 Table 15, and P2 if
+  they print sf losses.
+- Lost-link returns: 82.13 -> 87.30 a seed (2.6 -> 2.8 a day for the eight vehicles); isolation hours saved 335.6 ->
+  364.8 a seed. P3 "82.1 times a seed, about 2.6 a day".
+- Earth-ledger bundles in the E54 replay (31-day window): 690 lost (74.2 %) -> 270 expired (29.0 %) + 420 censored
+  (alive at the window's end). results/E54_ledger.json (the 61-day lifetime study) does not move: every bundle
+  resolves inside 61 days, censored 0.
+- Award and grant delays move in the second decimal (e.g. sf_ll award mean 3.33 -> 3.40 s at 0.25).
+Unchanged: jobs 199.3 a seed; reservations 87.6; unconfirmed segments 2,566 and 7,349.22 h (drop_retry, 0.25); every
+award count (0 lost under sf and sf_ll at every loss; drop_retry 4, 10, 85 as before); H14: drop_retry 0.333 lost
+jobs a seed [0.167, 0.533], sf_ll 0, difference -0.333 [-0.533, -0.167], supported. H14 is the same under the old
+loss definition and under the pre-review rule (h14_variants). The v0.2 block: v0.1, v0.2 and v0.2 + Proximity-1 rows
+equal (0 values moved), and v0.1 equals the main table (one engine run per seed). results/phase6_family.json rebuilt:
+identical.
+B-117 (i), exploratory, now in E54_dtn.json "awards_and_jobs": 200.93 awards = 199.3 jobs + 1.63 team jobs a seed with
+two vehicles each (one TASK_AWARD per vehicle of a job; at most 2 vehicles a job). This answers P3 O3.
+Files: lunarsim/atc/dtn.py, tools/atc/run_e54.py, tests/test_dtn.py, results/E54_dtn.json, E54_table.csv,
+E54_table_v02.csv, E54_ledger.json. site/public/protocol/e54.json is staged by FRONTEND's build from the results.
+
+## B-118 step 3 DONE 13:00 | N7, N8, N16-N20: no published value moves; labels and counts added, H15a's p now computed
+- N7 (tools/atc/run_e54.py, tools/atc/phase6_family.py): H14 now says how each clause is known. results/E54_dtn.json
+  h14 (and each h14 variant and v0.2 set) gets clause_1_measured = true and clause_2_basis: the second clause holds
+  BY RULE, not by measurement (the replay sets sf_ll's stuck count to 0 by construction); the drop_retry / sf count of
+  2,566 comes from the contact plan alone, the same at every loss level and whether or not the grant arrived, and
+  counts unconfirmed releases, not vehicles in a segment. phase6_family.json H14 gets stuck_basis. Values unchanged.
+- N8 (lunarsim/nn/evaluate.py, lines added only; tools/atc/phase6_family.py): compare() now records boot_n,
+  boot_at_or_above_0 and boot_at_or_below_0 with each interval (used by any future evaluation). New
+  evaluate.resample_counts() (python -m lunarsim.nn.evaluate --resample-counts) reproduces every H15 comparison from
+  .cache/nn/eval_arrays.npz with the published random streams: all comparisons on test, ood and ood_recalibrated
+  reproduce their stored 95 % and 90 % intervals exactly (0 mismatches). Written to results/E56_integrity.json under the
+  new key h15_resample_counts_b118; every other key byte-identical (re-dump checked first). H15a (drift, net minus
+  per-step chi-square, test): 0 of 1,000 resamples at or above 0, so p = (0 + 1) / 1,001 = 0.000999, as printed before;
+  phase6_family.py now computes it from the saved count and refuses to build without it. Holm results unchanged.
+  Models, thresholds, the policy file and table_E56.csv untouched. evaluate.py lines changed: compare() +3 lines in
+  the per-key dict; new function resample_counts() and a --resample-counts branch before the argument parser.
+- N16 (tools/atc/run_e55.py): results/E55_integrity.json h16 gets robust_evidence_by_basis: exact (2F+1)-robust cells
+  (N <= 8): 8 cells, 3 runs exactly robust, all safe; degree-condition cells (N > 8): 12 cells, 53 runs meeting the
+  necessary condition only, all safe. Every other key and both CSV tables unchanged.
+- N17 (tools/atc/run_e44.py): the fresh-seed violation's replay sets "deterministic" from a comparison: two
+  single-encounter replays agree with each other and with the stored batch row. Result: true (as written before), now
+  with deterministic_basis. Rebuilt results/E44_fresh_seeds.json; the builder now keeps keys it does not write (it
+  would have dropped B-112's request_rule_fresh_6). Only the new field differs.
+- N18 (tools/atc/run_e45_uphill.py): every follower runs the adversarial planner, so no encounter is nominal-only;
+  nominal_only_violations is now null (was 0 of 0) in every cell, with nominal_only_note in results/E45_uphill.json.
+  No paper or site reader uses the field. Nothing else moved.
+- N19 (tools/atc/run_e50_near.py): a reading with no driving steps prints "no driving steps under this reading: not
+  judged". No reading has zero steps: results/E50_near_base.json rebuilt, identical.
+- N20 (tools/atc/run_e50_overlaps.py): pairs whose nominal windows overlap by 1 s or more are counted
+  (nominally_overlapping_pairs) and printed. 0 in every run at 1x and 4x; every other value identical.
+Also: the E54 cache fingerprint now covers only the code that produces cache content (not the table writer); the 60
+E54 cache files were restamped after checking that seed 1 rerun with the current code equals its cache file.
+Tests: test_dtn, test_e52, test_integrity, test_lander, test_rover, test_uphill: 66 passed.
+Files: tools/atc/run_e54.py, phase6_family.py, run_e55.py, run_e44.py, run_e45_uphill.py, run_e50_near.py,
+run_e50_overlaps.py, lunarsim/nn/evaluate.py; results/E54_dtn.json, E54_table_v02.csv, phase6_family.json,
+E56_integrity.json, E55_integrity.json, E44_fresh_seeds.json, E45_uphill.json.
+
+## B-118 step 4 DONE 13:04 | N2 and N22 (vv6): G1 now compares with the pre-Phase-6 code and can fail; six rows call the code they cite; 56 of 56 pass
+- N2, G1 "options off": the reference is now a run of the code BEFORE Phase 6. git archive 0210c22 (lunarsim, data,
+  experiments/phase5) into the scratchpad; G1's scenario (C_AUCTION, roads atc 15 % single-lane, 30 days, seed 2) run
+  there with python -I (the imported package checked to be the archived one). Its 144 summary values are stored with
+  the commit, date and method in results/vv6_g1_reference_0210c22.json (new file). The current code with every Phase 6
+  option off (pos_margin None, log_reservations off, capability_filter None) equals it on all 144 values (0 differ).
+  New row G1 "option on changes the run": pos_margin k 1, bound 50 m makes 14 of the 144 values differ, so the row
+  above can fail. Before, G1 compared the current default run with itself.
+- N22, rows that now call the code they cite (reference unchanged unless said):
+  - C6 offered load and scheduled airtime: sizes from codec.packet_bytes (41 / 43 / 38 B, LRIP v0.1 as the note's
+    table; same sizes in v0.2) and eta from tools/atc/run_e53.py ETA (7.856 and 9.82 kbit/s, as before).
+  - C8 gamma m=1, m=2: the code's integrity.GAMMA against scipy's chi-square quantile (reference and simulated swapped
+    from before: the quantile is now the reference). New row C8 "gamma table": every entry of GAMMA (m 1 and 2, alpha
+    1e-2 to 1e-5) within 0.005 of the quantile (largest 0.0049, the 2-decimal rounding of 6.63).
+  - C9 age of information over 3 hops: dtn.age_of_information on a 3-hop chain with 1 s updates (240,000 updates) plus
+    k x 10 ms hop latency (which the function neglects), against the renewal formula 1.900 s: 1.905 s (0.26 %, tolerance
+    2 %). Before, the row ran its own inline simulation; with the old dtn code this row would have shown the 30 s floor.
+  - G4 zero faults, single test: through integrity.lrip_rule_score with k = n = 1 and GAMMA[1][1e-3] (same value as
+    before, 9.695e-4); the 3-of-5 row also takes the code's GAMMA.
+  - M4 hazard payload: from smap.sync_plan for 42 changed hazard tiles, less the 16 B tile header each (86,016 B).
+- vv6 rerun: results/vv_phase6.json 56 rows (was 54), 56 passed, 0 failed, 0 bias flags; every other row's values
+  unchanged (run times aside). tests/test_vv6.py: 2 passed.
+- For you / FRONTEND: the row count is now 56; the site and the papers should read each row's "passed" (review N2,
+  site/lib/phase6.mjs W1), not a typed verdict. P1, P2 and P3 cite G1 as "options off equals the Phase 5 run": that
+  is now true against the pre-Phase-6 code itself.
+Files: lunarsim/vv6.py, results/vv_phase6.json, results/vv6_g1_reference_0210c22.json (new).
+
+## B-118 step 5 DONE 13:06 | N9: the E55 replay trial described as it is; a new trial (added after review) replays 0-60 s old messages: 6 accepted at loss 0.25, all of the allowed kind
+- Existing counts kept as they are (auth.replay: 574 and 598 replays at loss 0.10 / 0.25, 0 accepted). New key
+  replay_trial_description in results/E55_integrity.json says what they count: each replay is a random EARLIER message
+  of the whole 10-minute log, stamped 0 to 60 s after the replay event. Recounted with the same random stream: only 9
+  of 574 (1.6 %) and 4 of 598 (0.7 %) of those replays fell inside the 10 s freshness window, so "0 accepted" says
+  little about the window. integrity.replay_trial's docstring and run_e55's description say the same.
+- New trial, labelled "added after the code review of 13 Nov 2026" (integrity.replay_recent_trial, run_e55.py
+  replay_recent, key replay_recent): same set-up (20 senders at 1 Hz, 10 receivers, 600 s, a replay a second, 64-bit
+  tags), each replay drawn from the messages sent in the last 60 s and delivered at once (age 0 to 60 s).
+  Loss 0.10: 589 replays, 117 aged 10 s or less, 0 accepted.
+  Loss 0.25: 590 replays, 115 aged 10 s or less, 6 accepted: all 6 to a receiver that had missed the original and
+  inside the 10 s window (true but late states, which the rule lets through by design); 0 accepted of any other kind.
+- Paper / site wording to follow: P3 5.11 and /protocol/ say "replayed after 0 to 60 s"; the existing numbers are
+  "a random earlier message, then 0 to 60 s". The new trial is the one that tests replays inside the window.
+- Test: tests/test_integrity.py test_replay_recent_trial_lets_through_only_missed_fresh_copies (loss 0.5, 2 replays a
+  second: accepted > 0, all of the allowed kind, none other). test_integrity: 7 passed.
+- Every other key of E55_integrity.json and E55_table.csv unchanged.
+Files: lunarsim/atc/integrity.py, tools/atc/run_e55.py, tests/test_integrity.py, results/E55_integrity.json.
+
+## B-118 step 6 DONE 13:09 | N10, N11: recalls beside the share of alarms already on (out of distribution, CUSUM 0.842 -> 0.693 on quiet events); false-alarm intervals on all 1,000 resamples
+Method: python -m lunarsim.nn.evaluate --onset-fa, from the saved scores (.cache/nn/scores_final_*.npz) and the stored
+validation thresholds; nothing retrained or recalibrated. Every recomputed recall and every 200-resample false-alarm
+interval was first checked against the stored value: all reproduce (0 mismatches over 2 sets x 5 detectors x 2 rates).
+Written to results/E56_integrity.json under the new key onset_context_and_fa_interval_b118; every other key unchanged
+(checked); table_E56.csv, the models, thresholds and the policy file untouched.
+N10, per set, detector, rate and fault type: share_alarm_on_at_onset (alarm at the step before onset: detect() then
+counts the event found at once), share_alarm_in_60s_before, recall_quiet_60s_before (recall on events with no alarm
+in the 60 s before onset) and the event counts. At 1 false alarm per pair-day, all fault types:
+| set | detector | recall (published) | alarm in the 60 s before | recall, quiet minute before |
+| test | chi2 step / window | 0.713 / 0.703 | 0.0 % / 0.0 % | 0.713 / 0.703 |
+| test | CUSUM | 0.774 | 0.5 % | 0.774 |
+| test | logreg | 0.861 | 0.7 % | 0.860 |
+| test | network | 0.903 | 0.3 % | 0.903 |
+| ood | chi2 step / window | 0.792 / 0.705 | 28.5 % / 14.9 % | 0.732 / 0.673 |
+| ood | CUSUM | 0.842 | 50.7 % | 0.693 |
+| ood | logreg | 0.711 | 10.2 % | 0.682 |
+| ood | network | 0.660 | 4.0 % | 0.651 |
+So on test nothing moves beyond 0.001. Out of distribution the baselines' recalls are inflated by alarms that were
+already on (their false-alarm rates there are 14 to 890 a pair-day); on quiet events CUSUM's 0.842 is 0.693, the
+per-step chi-square's 0.792 is 0.732, and the network (0.660 -> 0.651) is still below CUSUM (0.693) and the others.
+Matches the review's 50.7 % and 0.693. /network/ and the E56 tables print the published recalls: wording for you.
+N11: fa_per_pair_day_ci95_1000 beside each published interval (which used the first 200 of the 1,000 resamples).
+Changes are small: e.g. test network 1/pair-day [0.286, 0.825] -> [0.288, 0.817]; test per-step chi-square
+[0.181, 1.417] -> [0.178, 1.320]; test windowed chi-square [0.026, 3.70] -> [0.021, 4.11]; CUSUM [1.456, 2.725] ->
+[1.423, 2.766]. The cache allowed the full recomputation, so the file states 1,000.
+Code (lunarsim/nn, confirmed by you; lines added only, nothing existing changed in behaviour):
+- baselines.py: new function onset_context() placed before detect(); detect() unchanged.
+- evaluate.py: new function onset_and_fa_addendum() and an "--onset-fa" branch at the top of the main block (with
+  step 3's compare() counts and resample_counts()).
+Test: tests/test_nn_integrity.py test_onset_context_flags_alarms_already_on (alarm across the onset counts as found
+at delay 0 and is flagged; an alarm 50 s before breaks the quiet minute; 100 s before does not). 14 passed.
+Files: lunarsim/nn/baselines.py, lunarsim/nn/evaluate.py, tests/test_nn_integrity.py, results/E56_integrity.json.
+
+## B-118 step 7: E50 REGENERATION DESIGN, fixed before any run (13:37, BACKEND, per LEAD's option (a))
+Why: N15 (the arrival step's partial distance now belongs to its leg: heading, class, lit flag, leg index; before, a
+new leg with a zero heading, so the filter redrew the leg's bias) and N14 (a reservation time that rounds to a step
+outside a leg uses the reserved segment's own direction for its timing shift). Both in the default path.
+What is regenerated, with the code as it stands now (pnt.py, run_e50.py; no other engine or filter change), nothing
+else changed:
+- E50 (tools/atc/run_e50.py run): 1x seeds 1-30, 4x seeds 1-10, 8x seeds 1-5 (the same seeds as published); layer
+  sets dr, dr+ranging, dr+ranging+fixes, dr+ranging+fixes+lans, and lans@2030; the two margin runs (dr; layered);
+  scenario, window (July 2028), regime C_AUCTION loss 0.10, roads atc, budget 5 m, region rule (2+ beacons in LOS),
+  shift 8 h: all as DESIGN in run_e50.py, unchanged. Random roots unchanged (engine seed = cell seed; pnt.simulate
+  seed = cell seed). The seed-1 1x trace is kept as before.
+- near_base (run_e50_near.py): 1x seeds 1-30 with the ranging sweep on seeds 1-6 (the same grid as published), 4x
+  seeds 1-10, 8x seeds 1-5 (8x is B-116, run in the same pass as E50's 8x cells).
+- overlaps (run_e50_overlaps.py): 1x seeds 1-30, 4x seeds 1-10, 8x seeds 1-5 (8x is B-116).
+- Then results/E50_*.json and .csv, E50_near_base, E50_overlaps rebuilt; phase6_family.json (H9', H10'); vv6.
+Old values: every rebuilt results file keeps its published content under "superseded_2026-11-13_b118_n15" (with the
+reason); old caches moved aside to .cache/atc/e50_pre_b118, e50_near_pre_b118, e50_ovl_pre_b118 (not deleted).
+Order: 1x (E50, near_base, overlaps) -> report; 4x -> report; 8x (tell LEAD first; 1.5 GB free; single engine calls of
+about 10 min) -> report; then phase6_family and vv6. Nothing in this list is chosen after seeing a result.
+Test (fails on the old code): tests/test_pnt.py test_arrival_step_belongs_to_its_leg.
+
+## B-119 DONE 14:23 (code; no published number moves) | C1-C14 and the section T tests
+Codec (lunarsim/atc/lrip/codec.py, cbor.py; C1-C8). CHECK, as asked: the conformance vectors regenerated with the
+changed codec are byte-identical to data/atc/lrip/conformance-v0.1.json and -v0.2.json (sha256 e5ebab68..., b399ce1a...),
+and every size table (minor 1 and 2; manifest 0, 84, 300 B) and every packet_bytes(name, auth, minor) equals the codec
+before the change (loaded from a copy). So every size in E53 is unchanged.
+- C1: Receiver.accept refuses every unauthenticated packet (LripAuthError; an unauthenticated POSITION still raises the
+  declaration rule's LripRefError), and a message the schema marks signed (TASK_AWARD, RESERVE_GRANT, CAP_MANIFEST)
+  unless it carries a signature.
+- C2 (note 03 E4): per sender and key epoch the receiver keeps the highest accepted sequence number and refuses
+  s <= s_max; with accept(pkt, now=...) it also refuses |t_valid - now| > 10 s (LripReplayError). Only an accepted
+  packet moves the counter. An older HELLO does not replace a newer declaration under the same epoch.
+- C3: a packet whose SPI key epoch differs from the receiver's is refused.
+- C4: decode raises LripDecodeError (a ValueError) for short or malformed packets, never struct.error, KeyError,
+  IndexError, TypeError, RecursionError. CBOR: length checks on every head, string and container, a depth limit (16),
+  map keys of int / str / bytes only, unknown simple values refused.
+- C5: tags compared with hmac.compare_digest.
+- C6: no keys (or no Ed25519 seed) still works but raises LripInsecureKeyWarning; never silent.
+- C7: profile B checks the header items, the field count, each field's type and range, and that the CBOR array does
+  not run into the security header.
+- C8 (stricter reading, as you said): an authenticated v0.2 HELLO with codes outside the enums revokes the sender's
+  declaration.
+Other code:
+- C9 manifest.py: only the enumerated-string keys get registry indices, so any manifest round-trips (free text equal to a
+  registry string under another key used to come back as an integer). Example manifests' bytes unchanged (in the vectors).
+- C10 smap.py: a valid report on an already-confirmed tile is logged "accepted: already confirmed".
+- C11 dtn.py: done in B-118 step 2 (a full relay refuses custody).
+- C12 integrity.py: detectable_error_check computes the bias from alpha and p_detect (noncentral chi-square, exact for
+  any m; 4.5724 sigma at alpha 1e-3, p 0.9, against the literal 4.57). E55's stored entry recomputed from the function
+  (cache entry only, E55 rebuilt): bias 4.57 -> 4.5724, detect_prob 0.89939 -> 0.89976; old values kept beside as
+  integrity.detectable_error_check_pre_b119. vv6 row C8 "detectable error" follows at the vv6 rerun after E50 (its
+  reference stays 0.90).
+- C13 (lunarsim/nn, confirmed by you): evaluate.py censors a missed event at faults.EVENT_S[1] (600 s, from the module,
+  not a literal) and restores the thread count it found instead of setting 2; train.py saves the training checkpoint as
+  tensors and plain Python and loads it with weights_only=True (checked with a round trip; a checkpoint written before
+  13 Nov cannot be resumed and the run would be retrained; training is finished, evaluation loads model.pt as before).
+- C14 unused imports removed in smap, dtn, clocks, codec, baselines, run_e50_near, run_e50_overlaps, run_e54, run_e55,
+  run_b97, export_protocol, run_b103; tests/test_lrip.py "KEYS if False else" removed. Found by a small AST check
+  (scratch b119_unused.py; tuple unpacking and loop variables, which pyflakes accepts, left as they are). Not edited:
+  lunarsim/nn/tracks.py (unused import List) and experiments/phase6/nn/run_baselines.py (unused import np), your
+  agent's files outside the three you cleared; tools/atc/run_e50.py (unused import math) waits until the E50
+  regeneration ends, because its code fingerprint covers that file.
+Tests added or changed (each new one fails on the old code, checked on a git-archive copy, and passes now):
+- test_lrip_v02.py: test_declaration_rule (rewritten for the receive rules), unauthenticated refused, replay and
+  freshness refused, other key epoch refused, short and malformed packets raise ValueError (truncations, byte flips,
+  wrong lengths, 5,000-deep nesting), CBOR rejects malformed input, HELLO newer replaces older and invalid revokes,
+  no keys warns, manifest full round trip (both examples, both versions) and free text: 14 pass.
+- test_smap.py: confirmed tile not provisional; same owner on another pass confirms.
+- test_pnt.py: ranging lowers the error and counts updates; LANS with a non-zero share; N15 arrival step.
+- test_formats.py: validate skips design records (CLI).
+- test_nn_integrity.py: Policy refuses other files and its two guard clauses; N10 onset context.
+- Results tests: the five isinstance(supported, bool) lines (test_clocks H11, test_dtn H14, test_integrity H16, test_lrip
+  H13, test_smap H12) now recompute each verdict from the file's own rows.
+- test_lrip.py: the channel signs what the schema signs (N13).
+Not done from section T: "the six untested custody cells" (I could not identify them in the review; send me the stub);
+the site tests (FRONTEND); the CI job (yours).
+Test runs, one file at a time: test_lrip 11, test_lrip_v02 14, test_smap 8, test_dtn 12, test_integrity 7,
+test_clocks 5, test_pnt 11, test_formats 70, test_nn_integrity 15, test_vv6 2, test_atc_regimes 12, test_e52 2,
+test_uphill 3: all pass.
+Note on E54: removing dtn.py's unused import (C14) and run_e54's dead local changes E54's code fingerprint, so its cache
+needs one seed-1 equality check and a restamp before the next E54 build (about 2 min, a heavy chunk; at 0.8 GB).
+
+## B-119 addendum 14:25 | the six custody cells; the two unused imports in your agent's files
+- tests/test_dtn.py, one test per cell of dtn.simulate the state-machines reviewer named: drop_retry x expire (4 tries,
+  then the next would pass the 600 s lifetime); sf x expire; drop_retry to EARTH x deliver (one hop, 10 ms); drop_retry
+  to EARTH x expire (Earth never up); drop_retry to EARTH x drop (every try lost: max_tries, then expired); sf to EARTH x
+  drop (custody retransmits every 10 s until delivery: 200 of 200 delivered at the custody timer's multiples). 18 pass.
+- Removed, as you allowed and nothing else: lunarsim/nn/tracks.py "List" from the typing import;
+  experiments/phase6/nn/run_baselines.py "import numpy as np". Both still import / parse.
+- Heavy work still waits for 0.8 GB free (0.59 GB now): E50 1x seeds 20-30, E54 seed-1 check and restamp, the e54
+  timeline export, the 16 uphill delay cells.
+
+## B-118 step 2/3 text fix 14:35 | E54 wording follows decision B1 (no release; unconfirmed, caution speed)
+results/E54_dtn.json: stuck_definition and the six clause_2_basis texts (h14, the two h14_variants, the three lrip_v02
+h14 blocks) now say that a silent holder's reservation is NOT released: after its timeout plus the 60 s grace the
+segment is marked unconfirmed and may be entered only at caution speed (decision B1), so nothing stays blocked and
+sf_ll's stuck count is 0 by construction; "holds BY RULE, not by measurement" kept. Checked: only those seven strings
+differ from the file before; no value changed. The same text is now in tools/atc/run_e54.py (module docstring paragraph,
+CLAUSE_2_BASIS) and lunarsim/atc/dtn.py's docstring, so a rebuild gives the same file. The file was patched in place
+(the E54 build waits for the seed-1 check and restamp). phase6_family.json's stuck_basis does not mention a release:
+unchanged. test_dtn 18 pass.
+
+## F-79 (FRONTEND, 2026-11-13): the site follows the corrected results (B-118); edit only, no build
+
+Every value below is read at build time from its results key; the earlier value comes from the file's superseded_* block and is named once on its page. No E50 value and no protocol/b99/e54_timeline.json touched.
+
+Values, old -> new (page):
+- E52 stale-map hits after contact, largest over every outage and rate (/protocol/ problem 2, new sentence): hazards first 0.08 -> 0.40, oldest first 1.65 -> 1.72 (rows / superseded_2026-11-13_b118_n1). Figure 2 already read the rows.
+- E54 at loss 0.25 with the lost-link rule (/protocol/ problems 4 and 6, new sentences): age of information 45.5 s -> 9.5 s (sf_ll row 9.52; 9.51 is the 0.10 row), worst vehicle 2.5 min -> 39.9 s, TASK_STATE delay 33.0 s -> 3.4 s, grants lost 0 -> 3, returns 82.1 -> 87.3 a seed, Earth ledger in the replay 690 lost -> 270 expired + 420 censored. Awards against jobs: 200.93 awards = 199.3 jobs + 1.63 team jobs (text and the figure's table caption). Figure table: "Jobs lost" -> "Job awards that expired ... of 6,028 awards"; sf_ll stuck cell "not counted yet" -> "0 blocked, by rule (not measured)"; H14 clause 2 "not testable as written" -> "holds by rule, not by measurement" (from h14.clause_2_basis).
+- E55 (/protocol/ problem 7): new sentence on replay_recent, 0 of 589 at 10 % loss, 6 of 590 at 25 % (6 missed originals inside the window, 0 other); the answer no longer says replayed messages are always rejected; the readout describes the first trial as random earlier messages and adds the second. No earlier value (keys unchanged).
+- E56 (/network/, new sentence, onset_context_and_fa_interval_b118, rate day = 1/pair-day): alarm already on in the minute before onset, out of distribution: CUSUM 50.7 %, chi-square per step 28.5 %, network 4.0 % (test: at most 0.7 %); recall on quiet events (all faults): CUSUM 0.69 (0.84), chi-square 0.73 (0.79), network 0.65 (0.66). The build checks the block's recall equals table_E56.csv's.
+- /verification/: 56 of 56; G1 now "repeats a run made by the code before Phase 6 (commit 0210c22) exactly: 0 of 144 summary values differ. The check covers one scenario (C_AUCTION, roads atc), one seed (seed 2) and 30 days, 144 values; with one option switched on, 14 of them differ, so the check can fail." (was "gives the Phase 5 run back"). Scope parsed from the row's basis; another form stops the build. The old count (54) is in no data file, so it is not named.
+- One robot's bid p99, flight-scaled (E48_sizing per_robot_round, /atc/ section 3, /results/ P3 card, /protocol/ and /network/ navigation computer): 0.29 / 1.09 / 1.19 s -> 0.21 / 0.92 / 0.94 s at 1x/4x/8x, "under the one-second decision at the central factor in all three timing passes, and over it only at the top of the factor range (up to 1.07 s and 1.10 s at four and eight times it)"; earlier values named once per page. /atc/ no longer says "The bidding does not fit at every fleet size" (now chosen from the data).
+
+Files changed: site/lib/protocol-data.mjs (superseded/dateText/secs helpers, e52 keys hits_after_max_* / was_* / superseded_on, compactE54 + awards_and_jobs and returns, new e54(key), compactE55 + replay_recent, e55 replay_* keys), site/vite.config.js (<!--@e54:...--> hook), site/protocol/index.html, site/src/protocol/figures.js, site/lib/network.mjs, site/network/index.html, site/lib/phase6.mjs, site/src/atc/e48-robot.js, site/src/atc/sizing.js, site/lib/results-atc.mjs, site/lib/anatomy-nav.mjs, site/tests/f79.test.mjs (new, 6 tests).
+
+Checks (no build, RAM 1.63 GB): node --test of f79, f72, f78, phase6 and protocol-data: 29 of 29 pass; node --check on every touched file; the page transform run on /protocol/, /network/ and /verification/ resolves every marker. Not run yet: site build, full test suite, page budgets, browser check (waiting for LEAD's go).
+
+### F-79 follow-up (FRONTEND, 2026-11-13): the correction date flagged; build, full suite, budgets and browser check
+
+- Fix for "Lunar ATC results: every key exists ... typed digits": a superseded_on date now reaches the page in the flagged markup of a number. New site/src/components/date-num.js has dateNum({iso, flag, source}), which writes "13 November 2026" with flag Modelled and the source "<file>: <superseded key>.superseded_on". I kept it out of num.js because adding it there pushed research/earth-sky's JS to 15.1 KB gz, over its budget of 15. It is used in all three places that print a superseded_on date: site/src/atc/e48-robot.js (the bid correction on /atc/, the /results/ P3 card and the navigation computer) and site/lib/protocol-data.mjs (the e52/e54 superseded_on keys, which dateText now builds from the superseded block). The test was not loosened. tests/f79.test.mjs now checks that the date is flagged and that its value comes from the file.
+- Checks, RAM 1.44 GB before the build: build OK (protocol/e54.json 12 rows, e55.json staged); node --test tests/*.test.mjs 91 of 91 pass; budgets.py pages OK. /protocol/ lazy JS is 24.9 of 25 KB gz, so there is almost no headroom.
+- Browser check on the local build (vite preview, gstack browse) at 1280, dark and light: /protocol/, /network/, /verification/, /results/ and /atc/ each have 0 console errors, 0 overflow, 0 contrast failures, one h1 and no heading skips.
+- The rendered text matches the files:
+  - E54 table caption: 199.3 jobs, 1.63 team jobs, 200.93 awards. Rows: "10 / 2 / 0 of 6,028 awards"; the sf_ll stuck cell reads "0 blocked, by rule (not measured)"; the age of information with the rule is 9.5 s (40 s).
+  - H14 readout: clause 2 "holds by rule, not by measurement".
+  - E55 readout: both replay trials (0 of 589; 6 of 590, all 6 missed copies).
+  - /atc/ bid sentence: "fits at the central factor but not across the whole factor range ... 0.21, 0.92, 0.94 s ... up to 1.07 and 1.10 s".
+  - Every "corrected after a code review on ..." date is flagged (/atc/ 1, /results/ 1, /protocol/ 3). The only unflagged dates on /protocol/ are the survey's "11 November 2026" in problem 8, which is not a superseded_on date.
+- Not run: a 390 px browser pass of these pages.
+
+## B-118 E50 regeneration, step 1 DONE 18:18 | 1x: E50, near_base, overlaps, E50b rerun with the N14/N15 positioning fix; every H9/H10 verdict unchanged
+Runs (one at a time, chunks under 9 min, gate >= 0.8 GB before each; free RAM read 1.2 to 2.3 GB):
+- E50 1x seeds 1-30: 30 cells in .cache/atc/e50, every cell code fingerprint 5bf22fa6d5ccfe47 = the working tree.
+- near_base 1x 30 seeds (the ranging-error sweep on seeds 1-6), overlaps 1x 30 seeds, E50b 1x 30 seeds. Every cell
+  of all three reproduces its E50 cell (repro True: perfect delay identical, ranging near p95 within 1e-4).
+- Old caches kept: .cache/atc/e50_pre_b118, e50_near_pre_b118, e50_ovl_pre_b118, e50b_pre_b118 (new today).
+Builders (tools/atc/e50_build.py keep_superseded, called by the E50, near_base, overlaps and E50b builders; none of
+these build functions is in E50's code fingerprint): the previous file's values go under
+superseded_2026-11-13_b118_n15 (with "reason" and "superseded_on"), written once, so a later partial rebuild never
+overwrites the pre-fix values; older superseded_* keys carried. New key multiples_not_rerun_yet: [4, 8] in
+E50_summary, E50_near_base, E50_overlaps. Until 4x/8x are rerun, their pre-fix values exist only under the superseded
+key; the CSVs (no place for a key) now hold the 1x rows only (E50_errors 900 -> 600 rows, E50_runs 135 -> 90,
+E50_near_base 800 -> 600, E50_overlaps 12 -> 6; the pre-fix 4x/8x rows are in HEAD). E50_trace.json rebuilt from the
+new seed-1 trace.
+1x values, pre-fix -> now (results/E50_summary.json etc.):
+- H9: dead reckoning first driving hour over budget 1 -> 1 (supported); ranging near p95 4.216 -> 4.276 m, CI
+  [4.17, 4.38] (supported); fixes away p95 15.234 -> 15.237 m (not supported). Unchanged verdicts.
+- H10: perfect delay 17.731 h (identical); layered minus perfect 0.0066 h, 90 % CI [0.00023, 0.0152] (within:
+  supported); dr minus perfect 0.117 -> 0.096 h, 95 % CI [-0.099, 0.285] (dr larger: not supported). Unchanged verdicts.
+- Errors, all-region p95 mean: dr 643.2 -> 610.2 m; dr+ranging 50.10 -> 49.14; dr+ranging+fixes 12.63 -> 12.68;
+  lans@2030 6.30 -> 6.13. Fix stop time per month 37.27 -> 37.41 h (fixes), 33.10 -> 33.24 h (lans@2030).
+- Violations per seed, no margin: dr 1.87 -> 1.43, dr+ranging 0.57 -> 0.57, +fixes 0.70 -> 0.57, lans 0.77 -> 0.73;
+  with the margin: dr 0.033 -> 0, layered 0.033 -> 0 (the single pre-fix violation, one seed, is gone).
+- near_base (reading a to e, dr+ranging in-p95): 4.22 -> 4.28, 12.47 -> 12.55, 24.70 -> 25.11, 50.10 -> 49.14;
+  shares of driving identical; h9_clause2_by_reading identical (a: every seed; b to e: no seed). Seeds inside the
+  budget that moved: +fixes reading b 23 -> 22; lans@2030 c 17 -> 20, d/e 2 -> 1. Sweep seeds inside budget at
+  reading a identical (6/6/0 radio 1/3/10 m; 6/6/6 uwb 0.1/0.3/0.7 m); radio 10 m p95 9.64 -> 10.05 m.
+- overlaps: counts follow the violations above. FLAG (direction): dead reckoning without margin has fewer overlaps
+  (1.87 -> 1.43 per seed) but longer ones: median 334 -> 548 s, max 1,169 -> 2,015 s; lans@2030 max 10.4 -> 34.3 s;
+  dr+ranging and +fixes shorter (median 30.9 -> 21.3 s, 10.4 -> 8.1 s). With the margin: no overlaps left (was one
+  each). Gap at entry under d0 (5 m): 0 in every set, as before.
+- E50b: with minus without stop time, delay 0.628 -> 0.651 h (CI [0.059, 1.328]), 22 seeds higher (same); ratio to
+  perfect 1.036 -> 1.037; TOST p < 1e-20 (same). FLAG (direction): violations without stop time 0.033 -> 0 (follows
+  E50), WITH stop time 0 -> 0.033 (one violation, seed 21, where the pre-fix run had none); so "the stop time removes
+  the one violation" no longer holds; it now adds one in 1 of 30 seeds (CI of the difference [0, 0.1]). Delivered
+  with stop time 250.1 -> 249.8.
+phase6_family.json NOT written: H10's "gap grows" clause and the Holm p need 4x and 8x cells, which are not rerun yet,
+and a results file must not mix code versions (N21). In scratch (b118_family_interim.py: new 1x, pre-fix 4x/8x,
+written only to the scratchpad): every decision identical to the committed file; H9 dr first-hour p95 85.22 -> 81.05
+m (share 1.0); H10 TOST p 1.18e-75 -> 1.17e-75; dr clause p 0.128 -> 0.172; IUT p 0.93244 (gap grows at 4x not met,
+unchanged); H14 / H15a Holm unchanged. The real file is rebuilt after 4x and 8x.
+vv6 rerun: 56 rows, 56 passed, 0 bias flags; the only changed row is C8 detectable error 0.89939 -> 0.89976 (B-119
+C12, expected); no P row moved with the pnt fix.
+Protocol data: data/atc/protocol/e50_layers.json is built from the E50 seed-1 trace and E50_summary, so it was stale;
+regenerated alone (export_protocol.e50(), not main()), and only its index entry updated: bytes 47,324 -> 47,451,
+gzip 11,450 -> 11,475, sha256 d9358d82... -> 24c7bf7e26d06564f41ed0d0871e3efc05b720b48e351a492febea9b9eb8f8b8. The
+index's "commit" field is left as it was. The site reads only multiples.1 of E50_near_base (site/lib/phase6.mjs), so
+the missing 4x/8x keys do not affect it.
+Tests: test_pnt 11, test_vv6 2, test_protocol_data 1: pass.
+Files for your commit with pnt.py / tests/test_pnt.py / run_e50*.py / e50_build.py: tools/atc/e50_build.py,
+run_e50_near.py, run_e50_overlaps.py, run_e50b.py (keep_superseded calls), results/E50_summary.json, E50_errors.csv,
+E50_runs.csv, E50_trace.json, E50_near_base.json/.csv, E50_overlaps.json/.csv, E50b_summary.json, E50b_runs.csv,
+results/vv_phase6.json, data/atc/protocol/e50_layers.json, data/atc/protocol/index.json. Not yet in a commit-ready
+state: encounter.py / test_uphill.py (N23, step 2 next) and regimes.py (B-117 a, not run).
+
+## B-118 N23 check DONE 18:58 | the 16 E45-uphill delay cells rerun with encounter.py as held: NOT equal; the R1 breach rate goes from 0-0.15 to 0.92-1.0 in every cell; every violation, contact and gap identical. Decision needed (yours); nothing published
+Rerun into scratch only (scratchpad b118/e45u, scratchpad b118/n23_cell.py; the cache .cache/atc/e45_uphill and
+results/E45_uphill.json untouched), same planet / geometry / slope / n / rules / delay (1.0 s, = RHO_S) as each cached cell.
+- Unchanged in all 16 cells and both rules (as_is, slope_term): violations, by_kind, contacts, gap_below_d0, min gap
+  (min, p01, median), emergency-brake rate.
+- r1_breach_rate, cache -> held code (as_is / slope_term): Moon following 5/10/15/17.2 deg: 0 -> 0.998, 0.990,
+  0.978, 0.982 (slope_term the same to 0.002); Moon one-lane 5/10/15/17.2: 0 -> 0.991, 0.983, 0.982/0.975,
+  0.976/0.969; Mars following 5/10/15/17.2: as_is 0 / 0.0005 / 0.039 / 0.014 -> 0.989 / 0.960 / 0.945 / 0.963,
+  slope_term 0 -> 0.991 / 0.969 / 1.0 / 1.0; Mars one-lane 5/10/15/17.2: as_is 0 / 0 / 0.147 / 0.152 -> 0.980 /
+  0.947 / 0.938 / 0.924, slope_term 0 -> 0.978 / 1.0 / 1.0 / 1.0.
+- nominal_only_violations 0 -> null: B-118 N18 (already in the builder, documented), not N23.
+Why (from the code; my reading, not tested further): R1's minimum gap rss_dmin already contains the response time
+RHO_S = 1 s, during which the rear vehicle may still accelerate. With a 1 s actuation delay a follower that commands
+full braking the step it enters dmin is, judged on the command it acts on (a_ph), not yet braking for the next 1 s,
+so the step counts as a breach. The new counter therefore counts the RSS response window itself, in nearly every
+encounter, while nothing physical changes (same gaps, no contact). The old counter (judged on the command a) counted
+a follower that did not command braking inside dmin.
+Options (yours to choose; I change nothing until you say):
+(a) keep the batch check (mixed delays refused; no cell mixes, so nothing moves) and revert the breach line to the
+    command a, with a sentence that the delay is covered by rss_dmin's response time (RHO_S = the delay here);
+(b) a delay-aware breach: on the acted command, but only once the gap has been below dmin for longer than the delay
+    (a breach = still not braking after the response time), which is what R1 means with a delay; needs a rerun of
+    these 16 cells (about 18 min) and a test;
+(c) keep the held line and publish the moved rates with this explanation.
+I recommend (a) or (b); (c) would report as "breaches" what R1 allows.
+test_uphill: 3 pass with the held code (it tests the batch refusal and the no-delay path, not the rates).
+
+## B-118 step 2 DONE 19:04 | E54 restamp (values identical), e54 timeline export, N23 (b) implemented: the delay cells' R1 breach rate is now 0 in all 16 cells; it DIFFERS from the committed file in 5 cells (Mars as_is, 0.0005-0.15 -> 0)
+E54 restamp check:
+- Code fingerprint a2e23ef3de150ce5 -> 164db46f005497d2 (B-119 C14 and the B1 texts). Seed 1 rerun with the current
+  code equals its cache file in both .cache/atc/e54 (10 keys) and e54_v02 (6 keys); then 60 files restamped
+  (scratchpad b118/e54_restamp2.py; code_before_b119 and code_at_run kept; caches backed up to scratchpad
+  b118/e54_cache_before_b119). Build from the restamped caches: results/E54_dtn.json differs only in "code"
+  (a2e23ef3... -> 164db46f...); v02build changes nothing.
+e54 timeline: export_protocol.e54() alone, only its index entry updated: data/atc/protocol/e54_timeline.json bytes
+82,675 -> 82,635, gzip 5,287 -> 5,180, sha256 1f7722a2... -> a6d2797e197c90cb20f1f22c7c6d8a7717785954ed3f8bcefc637d52ceeaba77.
+What changed in it: link_share_per_hour.lost_link_return (70 of 744 hours) and messages.delivered_h for sf (19 of
+564) and sf_ll (168 of 564): the B-118 step 2 rerun (committed results) reaching the site file. test_protocol_data passes.
+N23 (b), as you decided:
+- lunarsim/atc/encounter.py: new r1_breach_delayed(below, below_s, a_ph, bg): with an actuation delay, a breach is a
+  step where the gap has been below rss_dmin for longer than RHO_S (time kept per vehicle in Batch.r1_below, compacted
+  with the batch) and the applied deceleration a_ph is still short of full braking. Applied to rows with a delay
+  only: rows with delay 0 (every batch without a delay, and zero-delay rows in a delay batch) keep the breach as in
+  HEAD (on the command a, at once), so E44 and every run without a delay are unchanged by construction. If you want
+  the RHO_S allowance for delay-0 rows too, that changes E44/E45 breach rates and needs their reruns; I did not do it.
+  Mixed positive delays still refused.
+- tests/test_uphill.py test_delayed_breach_allows_the_response_time: braking at entry with delay = RHO_S: 0 breaches;
+  delay 2 RHO_S: 9 breach steps (the 0.9 s past RHO_S before the braking acts); never brakes: breaches from RHO_S on.
+  Uses the engine's function with a command buffer like run_batch's. test_uphill 4, test_atc_regimes 12,
+  test_safety 7: pass.
+- The 16 delay cells rerun (scratch b118/e45u_b, then installed in .cache/atc/e45_uphill; the previous 16 kept in
+  .cache/atc/e45_uphill_pre_n23). Per cell, committed -> now, R1 breach rate (as_is / slope_term):
+  Moon following 5, 10, 15, 17.2 deg: 0 / 0 -> 0 / 0 (all four). Moon one-lane 5, 10, 15, 17.2: 0 / 0 -> 0 / 0.
+  Mars following 5: 0 / 0 -> 0 / 0; 10: 0.0005 / 0 -> 0 / 0; 15: 0.039 / 0 -> 0 / 0; 17.2: 0.014 / 0 -> 0 / 0.
+  Mars one-lane 5, 10: 0 / 0 -> 0 / 0; 15: 0.1465 / 0 -> 0 / 0; 17.2: 0.1515 / 0 -> 0 / 0.
+  So: they DIFFER from the committed 0-0.15 in 5 cells (Mars as_is at 10, 15, 17.2 following and 15, 17.2
+  one-lane), all to 0: in those encounters the follower began full braking within R1's response time, which the old
+  counter (on the command, at once) counted in the steps before it acted. Every other value of every cell
+  (violations, contacts, gaps, emergency-brake rate) is identical; the no-delay cells and the threshold table are
+  unchanged. (The held version, judged on a_ph at once, gave 0.92-1.0; not published.)
+- results/E45_uphill.json / .csv rebuilt: 64 rows, 5 changed (the above). New keys: r1_breach_definition (the
+  definition, both with and without a delay) and superseded_2026-11-13_b118_n23 (reason, date, the 32 delay rows'
+  committed rates). The 140 sweep cells (also with the delay) are not rerun: the builder takes only their minimum
+  gap, and the counter does not change the motion; their stored breach counts are unused (stated in the file).
+- Final breach lines in lunarsim/atc/encounter.py (for paper/p2/build_p2.py), verbatim:
+  735: below = np.isfinite(gap_lead) & (gap_lead < S.rss_dmin(v, v_lead, bg)) & live
+  737: below = np.isfinite(gap_lead) & (gap_lead < S.rss_dmin(v, v_lead, bg, b_front=bfront)) & live
+  739: r1b = below & (a > -bg + 1e-9)
+  741: r1d, b.r1_below = r1_breach_delayed(below, b.r1_below, a_ph, bg)
+  742: r1b = np.where(b.act_delay[:, None] > 0, r1d, below & (a > -bg + 1e-9))
+  379 (in r1_breach_delayed): return below & (below_s > S.RHO_S + 1e-9) & (a_ph > -bg + 1e-9), below_s
+Files for commit: lunarsim/atc/encounter.py, tests/test_uphill.py, tools/atc/run_e45_uphill.py,
+results/E45_uphill.json, results/E45_uphill.csv, results/E54_dtn.json (code stamp), data/atc/protocol/e54_timeline.json,
+data/atc/protocol/index.json. Next: E50 at 4x.
+
+## B-118 E50 regeneration, step 3 (4x) DONE 22:43 | E50, near_base and overlaps at 4x rerun; verdicts unchanged; violations with the margin went UP at 4x (layered 0.9 -> 2.3 a seed, dr 0 -> 0.3)
+Runs: E50 4x seeds 1-10 (fingerprint 5bf22fa6d5ccfe47, the same as the 1x cells: encounter.py is outside E50's
+fingerprint), near_base 4x seeds 1-10, overlaps 4x seeds 1-10; every near_base and overlaps cell reproduces its E50
+cell. One process at a time, gate before each (free RAM 1.27 to 1.62 GB); peak 554 MB (near_base), 508 MB (overlaps).
+One slip: near_base seeds 9 and 10 ran as two gated processes in one tool call that passed the tool's 590 s limit, so
+the second process (seed 10, 252 s) finished as a background task of the tool. It was the only job running and I
+started nothing until it ended; from then on one process per call.
+Rebuilt E50_summary, E50_near_base, E50_overlaps (+ CSVs): multiples_not_rerun_yet now [8]; the superseded key still
+holds the pre-fix values (written once, kept).
+4x, pre-fix -> now:
+- H9 at 4x: dr first hour over budget 1 -> 1; ranging near p95 4.306 -> 4.284 m (supported); fixes away 12.24 ->
+  12.08 m (not supported). Unchanged verdicts.
+- Errors (all, p95 mean): dr 793.0 -> 883.2 m (at 1x it fell, 643 -> 610); dr+ranging 32.10 -> 32.13; +fixes
+  10.59 -> 10.44; lans@2030 5.82 -> 5.77. Fix stop time 168.7 -> 170.3 h/month (+fixes).
+- Violations per seed, no margin: dr 71.5 -> 83.6; dr+ranging 69.0 -> 66.6; +fixes 67.7 -> 68.3; lans 69.2 -> 68.0.
+  FLAG (direction): with the margin, dr 0 -> 0.3 and layered 0.9 -> 2.3 (overlaps short: layered median 8.2 -> 4.4
+  s, max 17 -> 47 s; dr with margin median 381 s, max 797 s, where there were none). Gap at entry under d0 (5 m): 0
+  everywhere, as before.
+- Delay at 4x: perfect 12.805 h (identical); layered with margin minus perfect -0.868 -> -0.485 h; dr minus perfect
+  2.082 -> 1.870 h.
+- near_base 4x: dr+ranging in-p95 a..d 4.31/8.64/22.45/32.10 -> 4.28/8.70/22.16/32.13; h9_clause2_by_reading
+  identical; seeds inside budget moved: +fixes b 9 -> 10, lans@2030 c 5 -> 8, d/e 1 -> 0.
+- overlaps 4x: counts follow the violations; dr no margin median 417 -> 483 s; lans@2030 max 41 -> 76 s.
+Family (scratch only, b118_family_interim4.py: new 1x and 4x, pre-fix 8x): every decision identical. H10 "gap grows"
+p at 4x 0.932 -> 0.865 (gap 4x -0.49 h against 0.0066 h at 1x: not met), IUT p 0.932 -> 0.865; H14 / H15a Holm
+unchanged. results/phase6_family.json waits for 8x.
+Unchanged by 4x: E50_trace.json and data/atc/protocol/e50_layers.json (1x seed 1 and the 1x month values only).
+test_pnt 11 pass.
+Files: results/E50_summary.json, E50_errors.csv, E50_runs.csv, E50_near_base.json/.csv, E50_overlaps.json/.csv.
+8x (asking before starting, as agreed): E50 8x seeds 1-5, near_base 8x 1-5, overlaps 8x 1-5; this also completes
+B-116. Estimate from the 4x stage times (about 2x at 8x): E50 about 17 min a seed (85 min), near_base about 8.5 min a
+seed (45 min; one cell is close to the 9 min chunk limit), overlaps about 18 min a seed (90 min): about 3.7 h in
+all, one process at a time. Memory: 4x peaked at 554 MB; 8x likely 0.9 to 1.1 GB, so I would gate each 8x chunk at
+1.5 GB free as you set. If one E50 stage or one near_base cell would pass 9 min, I stop and tell you before running it.
+
+## B-118 E50 regeneration, step 4 (8x) DONE 06:51 (14 Nov) | E50, overlaps, near_base at 8x; every multiple rerun on one code version; every verdict unchanged; the 4x rise in violations with the margin does NOT repeat at 8x (layered 5.2 -> 3.6, dr 0.2 -> 0)
+Runs (one process per call; gate 1.3 GB, then 1.0 GB as you set; free RAM during stages sampled every 5 s, lowest
+491 MB; no stage over 465 s):
+- E50 8x seeds 1-5, one stage per call: engine runs 443-457 s, nav 385-448 s, mnav 69-73 / 169-188 s; peak
+  434-519 MB. All 45 E50 cells (1x 30, 4x 10, 8x 5) carry code 5bf22fa6d5ccfe47.
+- overlaps 8x seeds 1-5 through a scratch driver (scratchpad ovl_one.py) that calls the runner's own run_stage /
+  assemble: the runner's fresh-process estimate for an 8x nav stage (15 s x 60 x 1.3 = 1,170 s, a default) never
+  lets cmd_run start one. Stages 69-463 s. The 8x cells' peak_mb is that of the assembling process only (36.6 MB
+  for seeds 1-2, about 431 MB for 3-5), not of the stages (stage peaks about 450-520 MB, from the E50 stages).
+- near_base 8x seeds 1-5 through the new staged path (below): rec 445-455 s, each layer set 69-191 s (no single
+  pnt.simulate near 10 min), assembly; peak 545 MB. Every 8x near_base and overlaps cell reproduces its E50 cell.
+near_base staging (tools/atc/run_e50_near.py, as you asked): new run_stage / assemble / cmd_stage and CLI "stage";
+run_cell untouched. Steps: the engine run (pickled with its window), one pnt.simulate per layer set, one per sweep
+point (1x seeds 1-6 only), then the assembly into the same cell file. Each step records E50's code fingerprint when it
+starts; the assembly refuses mixed codes and stores "code" (and "staged": true) in the cell. Check (scratch, before
+use at 8x): 4x seed 1 built staged equals its cached cell in all 57 values, exactly; only cell_s (338.6 against
+252.4 s: the trajectories are rebuilt per step), peak_mb and the two new keys differ. New tests/test_e50_near_staged.py:
+a tiny case (stand-ins for the engine, trajectories, masks and pnt.simulate) gives the same cell staged and unstaged,
+with and without the sweep; the assembly refuses steps made with different code. 2 pass.
+phase6_family.py: the E50 cells must share one code (refused otherwise; "e50_code" in the file) and the committed
+values are kept under superseded_2026-11-13_b118_n15 (e50_build.keep_superseded).
+Rebuilt: E50_summary, E50_near_base, E50_overlaps (+ CSVs; multiples_not_rerun_yet now []), phase6_family.json.
+Unchanged byte for byte: E50b_summary / E50b_runs (1x only), E50_trace.json, data/atc/protocol/e50_layers.json (its
+sources, the 1x seed-1 trace and E50_summary errors["1"], did not change; regenerated to check, sha256 24c7bf7e...).
+vv6: 56 rows, 56 passed, every row identical; only the file's generated / commit fields changed.
+8x, pre-fix -> now (E50_summary):
+- H9 at 8x: dr first hour 1 -> 1; ranging near p95 4.499 -> 4.481 m (supported); fixes away 11.53 -> 11.00 m (not
+  supported). Errors (all, p95 mean): dr 905.5 -> 987.9 m; dr+ranging 31.35 -> 30.57; +fixes 10.11 -> 9.76; lans@2030
+  5.65 -> 5.50. Fix stop time 354.4 -> 359.5 h/month (+fixes), 317.2 -> 321.3 (lans@2030).
+- Violations per seed, no margin: dr 211.6 -> 188.6; dr+ranging 174.2 -> 174.0; +fixes 174.4 -> 176.6; lans 168.8 ->
+  174.4. WITH the margin: dr 0.2 -> 0, layered 5.2 -> 3.6. So the 4x rise (layered 0.9 -> 2.3, dr 0 -> 0.3) does not
+  repeat at 8x: there both fall. Gap at entry under d0 (5 m): 0 everywhere.
+- Delay at 8x: perfect 13.451 h (identical); layered with margin minus perfect -0.248 -> -0.140 h; dr minus perfect
+  16.40 -> 15.80 h.
+- near_base 8x (new; there was no 8x before): shares of driving a..e 0.215 / 0.556 / 0.655 / 1 / 1; dr+ranging in-p95
+  4.48 / 10.24 / 21.79 / 30.57 / 30.57 m; h9_clause2_by_reading as at 1x and 4x (a: every seed; b to e: no seed);
+  +fixes reading b 4 of 5 seeds inside, lans@2030 c 4 of 5, d/e 1 of 5.
+- overlaps 8x (new): no margin dr 188.6 per seed (max 2,592 s; 167 a seed over 60 s), dr+ranging 174.0 (max 131 s),
+  +fixes 176.6 (max 52 s), lans 174.4 (max 38 s); with margin dr 0, layered 3.6 (max 34 s, none over 60 s).
+phase6_family.json (real file, one code version), committed -> now: every decision identical. H9: dr first-hour p95
+85.22 -> 81.05 m, ranging near 4.216 -> 4.276 m, fixes away 15.234 -> 15.237 m (supported / supported / not). H10:
+TOST p 1.18e-75 -> 1.17e-75 (holds); gap 1x 0.0066 h, 4x -0.868 -> -0.485 h, 8x -0.247 -> -0.140 h, p one-sided 4x
+0.932 -> 0.865, 8x 0.773 -> 0.661 ("gap grows" not met); dr larger p 0.128 -> 0.172 (not met); IUT and Holm p 0.932 ->
+0.865 (not supported as a whole). H14 Holm 0.0039, H15a 0.0030, both unchanged.
+Tests: test_pnt 11, test_vv6 2, test_protocol_data 1, test_e50_near_staged 2, test_uphill 4: pass.
+Commit set: tools/atc/run_e50_near.py (staged path), tools/atc/phase6_family.py, tests/test_e50_near_staged.py,
+results/E50_summary.json, E50_errors.csv, E50_runs.csv, E50_near_base.json/.csv, E50_overlaps.json/.csv,
+results/phase6_family.json, results/vv_phase6.json (metadata only; may be skipped). Not mine to include:
+lunarsim/atc/regimes.py (B-117 a, opt-in, not run). Scratch drivers (not in the repo): ovl_one.py, near_one.py,
+e50_peak.py, sample_run.sh, gate10/13/15.sh. Staging files of the 8x near_base cells stay in .cache/atc/e50_near/m8_s*/
+(engine pickles); I can remove them if you want the space.
+B-116 (8x) is complete with this. Next: B-115 to B-117 as queued, unless you say otherwise.
+
+## F-80 browser check (FRONTEND, 2026-11-14), on LEAD's build d61050c
+- No file changed, no rebuild. Local build (site/dist) served by vite preview; free RAM 0.90 GB at the start; the audit closed the browser between pages (RAM with it closed 0.64 to 0.98 GB, never under 0.5).
+- /protocol/, /results/, /network/, /verification/, /atc/ at 1280 and 390 px, dark and light (20 loads, every lazy section scrolled in): 0 console errors, 0 overflow, 0 contrast failures, one h1, no heading skips.
+- Rendered values against the results files (checked in site/dist by an independent script reading results/*.json), 26 of 26 match:
+  - /protocol/ near base: 1x 4.3 m (first reading) and 49.1 m (registered); 4x and 8x (10 and 5 seeds) give the same verdicts, 4.3 / 4.5 m and 32.1 / 30.6 m.
+  - Overlaps: the layered margin 0, 2.3 and 3.6 a seed at 1x, 4x, 8x against 0.6 to 1.4, 67 to 84 and 174 to 189 without one; back-to-back overlaps 47 to 51 % at 4x; "at any of the three fleet sizes" ("either fleet size" is gone).
+  - E50b: 0.65 h (17.74 h to 18.39 h).
+  - Earlier-values sentence, once, date flagged: 4.2 / 50.1 m, 43 to 52 %, 0.03 and 0.9 overlaps a seed (8x not run then), 0.63 h (0.02 to 1.29 h).
+  - /results/: H10′ gaps −0.49 h at 4x (10 seeds) and −0.14 h at 8x (5 seeds), Holm p 0.865; H9′ 81 m. The note under the table names before: 85 m, −0.87 / −0.25 h, Holm p 0.932, the near-base readings; it ends "Every outcome is as it was."
+- Figure 1's data (protocol/b99/e50_layers.json) and the lost-link timeline in dist are byte-identical to data/atc/protocol/.
+- The preview and the browser are stopped; free RAM 1.03 GB.
+
+## B-115 DONE (14 Nov) | E44's stale deadlock flags regenerated: 40 batches (not 33), 70,000 rows, 14,071 fuzzer rows 1 -> 0, none 0 -> 1; no published value changes
+Count corrected: the stored batches of types 2, 3, 4, 8, 9 and 12 (five each) and type 10 (ten) are 40 batches and 70,000 rows; I had
+been saying 33.
+Regeneration (scratchpad b115_run.py, run_e44.run_batch into a scratch dir, one process per call under the RAM gate): every batch has
+the stored rows and columns; only the deadlock flag differs, 1 -> 0 in 14,071 rows, all with a random fuzzer. No row goes 0 -> 1, no
+fuzzer-free row changes, no other column differs. By type: T02 2,329, T03 1,967, T04 862, T08 2,284, T09 1,210, T10 4,425, T12 994.
+Code: the seven batch-0 files are B-113's HEAD reruns (13 Nov 01:45); the other 33 ran 13 Nov 11:20 to 14 Nov 09:10. The only later
+change on E44's path is B-118 N23 (encounter.py), which acts only on rows with actuation_delay > 0; E44 never sets one. fb59f62's
+run_e44.py change touches only fresh_summarize.
+Written (LEAD's go):
+- results/E44_parts/T{02,03,04,08,09,10,12}_b*.csv.gz (40 files replaced). All 186 stored parts now equal the scratch input set
+  byte for byte.
+- results/E44_defects.json: b113_stale_deadlock_flag.outcome (task, what was done, result, by-type counts, published values, a
+  note that not_regenerated is superseded, code basis). Nothing else in the file changed. The builder reads only
+  defects_found_in_main_run.
+- E44 rebuilt with run_e44.cmd_summarize (11 s):
+  - E44_bins.csv (74 rows) and E44_encounters.csv (300,000 rows) are byte-identical to the committed files.
+  - E44_bounds.json: every type, joint and variant value is identical. The file gains the two texts re_run_selection and
+    re_run_selection_short in defects_found_in_main_run. They come from E44_defects.json, which changed after bounds was last
+    built; they are unrelated to B-115.
+  - The 12 per-type lines printed are as before (T5 386 deadlocks, T6 4, T9 58 violations, all bounds unchanged).
+Tests: test_safety 7 passed, test_verification_phase5 18 passed.
+Commit set: results/E44_parts/T02_b0000-0004, T03_b0000-0004, T04_b0000-0004, T08_b0000-0004, T09_b0000-0004, T10_b0000-0009,
+T12_b0000-0004 (.csv.gz); results/E44_defects.json; results/E44_bounds.json. No code changes.
+Holding: B-117 waits until the branch has landed.
+
+## B-120 A DONE (14 Nov) | N23 off-by-one fixed: the 11th below step is the first that can count (was the 12th); the 16 uphill delay cells stay at breach rate 0 with every value identical, so no results file moves
+Step convention (encounter.py run_batch): `below` is the gap at the start of a step and a_ph acts during the step. If the gap goes
+below at step k0 (time t0), then k0+10 acts from t0 + 1.0 s = t0 + RHO_S. R1 (brake fully within RHO_S) requires full braking from
+there, so step k0+10, the 11th below step, must count when a_ph is short. The old counter gave the first below step 0 s and required
+> RHO_S, so its first countable step was k0+11, the 12th. Your reading is right.
+Fix: lunarsim/atc/encounter.py r1_breach_delayed. below_s is now the time below at the end of the step (DT for the first below step;
+test unchanged: > RHO_S). The docstring states the convention and the B-120 change; the Batch.r1_below comment is updated.
+Rows with delay 0 and E44 are untouched; encounter.py is outside the E50 fingerprint, which stays 5bf22fa6d5ccfe47.
+Scratch check (b120a_cells.py, corrected counter monkeypatched, run_cell as committed): all 16 delay cells (moon/mars x following/
+one_lane x 5/10/15/17.2 deg, as_is and slope_term) give r1_breach_rate 0, as cached. Every other value of every rule (violations,
+by_kind, min gaps, gap_below_d0, contacts, emergency brake rate) is identical.
+Evidence the zero is not by construction of the counter: the steps on which a below-gap follower is short of full braking, by
+position in the below run (mars cells: following 17.2; one_lane 5, 10, 15, 17.2), run from step 1 to step 10 and stop. For example,
+one_lane 5 deg gives 19,712 at step 1, 7,085 at step 9, 981 at step 10, and 0 at step 11 in every cell. The check commands full
+braking when the gap goes below; with delay = RHO_S that braking takes effect at step 11, exactly when R1 requires it. The old extra
+step was never used, but the zero holds with no margin: any delay longer than RHO_S would be counted from step 11.
+Test (tests/test_uphill.py test_delayed_breach_allows_the_response_time):
+- delay = RHO_S gives 0 breaches; delay = RHO_S + DT gives 1 (the 11th step).
+- delay = 2 RHO_S gives 10 (was pinned at 9); never brakes gives 50 of 60 (was 49).
+- The old counter fails the new test (0/0/9/49 against 0/1/10/50). test_uphill: 4 passed.
+Not rerun or rebuilt: results/E45_uphill.json/.csv. The cached cells' rates equal the corrected counter's in all 16 cells, and the
+file's r1_breach_definition ("below rss_dmin for longer than RHO_S") already describes the corrected count.
+For P2's paragraph: the d0 shortfalls cannot be "one 0.1 s step more of earlier commands than R1 allows" in these cells. Applied
+braking is never short beyond RHO_S (step 11). Any gap below d0 at delay = RHO_S happens with R1 met to the step.
+Files: lunarsim/atc/encounter.py, tests/test_uphill.py.
+
+## B-120 B code + one-seed facts (14 Nov) | dtn.simulate end of window: lifetime ended in the window = expired (deadline at t_end included); on E54 this moves exactly 1 ledger per seed per store-and-forward cell (sf rows 270 + 420 -> 300 + 390 under <=; nothing under <); 30-seed rerun waits for your decision
+Fix (lunarsim/atc/dtn.py simulate, end of window): an active, undelivered, unexpired message is expired when t0 + life_s <= t_end
+(q_bytes released as in the loop for sf) and censored otherwise. Messages created at or after t_end stay censored, as before. The
+docstring now defines t_done, expired and censored, including the boundary.
+Repro on HEAD (2 steps of 60 s, no path): sf gives censored, drop_retry expired, for lifetimes of 90 s and 120 s. With the fix both
+give expired; for 600 s (and 121 s, sf) both give censored.
+Test: tests/test_dtn.py test_lifetime_ending_in_the_last_step_is_expired, covering both protocols (90 / 120 / 600 s, sf 121 s) and an
+Earth-bound bundle at the base with the Earth link down (180 s expired, 240 s censored). test_dtn: 19 passed.
+Boundary facts, E54 seed 1 (scratch b120b_seed.py: prepare + run_seed + run_seed_sizes on the current code with simulate wrapped;
+both outputs reproduce .cache/atc/e54/s1.json and e54_v02/s1.json exactly):
+- Window: 31.0 d (t0 4368 h to 5112 h), 44,640 steps of 60 s, t_end = 2,678,400 s. The Earth link is up last at step 11,519
+  (day 8.0) and down from there to the end (blackout days 8-22, then no direct-to-Earth window). earth_up does not depend on the seed.
+- Ledgers (one a day, d = 0..30, life 14 d) in every sf / sf_ll / sf_ll_pre_review cell at every loss: d 0-7 delivered (8),
+  d 8-16 expire inside the window (9), d 17 has deadline 17 + 14 = 31 d = t_end exactly (1), d 18-30 have deadlines past t_end
+  (13). So the 14 censored are 1 with deadline == t_end and 13 truly alive at the end. The published 420 = 14 x 30, not 420 at the
+  boundary.
+- d 17 was undelivered because the Earth link was down from day 8 to the end. It could not have been delivered at t_end: a delivery
+  needs the Earth link in the step, and every attempt starts before t_end.
+- No award, grant or task_state is censored in any cell; drop_retry cells have 0 censored. The v0.2 size sets are the same: 1
+  ledger per sf cell under <=, nothing under <.
+- E54_ledger.json (61-day span): 0 censored in all 18 rows. The longest deadline is 30 + 25.8 d < 61 d, so neither rule moves it.
+Counts (30 seeds; the ledger schedule and Earth link are seed-independent, so each seed gives the same):
+- deadline < t_end: no E54 value moves (sf ledger rows stay 270 expired + 420 censored).
+- deadline <= t_end: each sf, sf_ll and sf_ll_pre_review row (main table and the three lrip_v02 size sets) goes 270 + 420 ->
+  300 + 390. lost_share 0.29032 -> 0.32258; lost_incl_censored stays 690.
+- drop_retry rows (870 / 871 lost, 0 censored), awards, grants, task states, AoI, stuck reservations and H14 do not move.
+Recommendation: <=. The bundle's whole lifetime was observed, it was never delivered, and nothing at t_end could deliver it: its
+outcome is known (expired). Censoring is for outcomes the window did not see. It also makes sf and drop_retry agree on the same
+bundle.
+Next, on your word: the 30-seed E54 rerun (main + v0.2; about 45 s a seed plus about 45 s for the sizes) together with C's new
+fingerprint, so one rerun covers both. C's code part comes next.
+
+## B-120 B + C DONE (14 Nov) | E54 rerun on 30 seeds with the end-of-window fix (<=) and the new fingerprint: only the expected ledger values move (sf / sf_ll / sf_ll_pre_review rows 270 + 420 -> 300 + 390, lost_share 0.29032 -> 0.32258); two dtn changes from G folded in first so one rerun covers them
+C: tools/atc/run_e54.py code_fingerprint now hashes:
+- E50's code fingerprint (run_e50.code_fingerprint: the engine, regimes, roads, pnt and the other lunarsim modules record(),
+  prepare() and E5.trajectories run, plus run_e50.py, export_trace.py and run_phase5.py; at present 5bf22fa6d5ccfe47);
+- dtn.py;
+- the LRIP sizes E54 uses (codec.size_table() and size_sets() output, as JSON). So a codec or schema change moves the fingerprint
+  exactly when a size changes; F's decoder fixes will not;
+- the producing functions (record, earth_up_fn, messages, stuck_reservations, prepare, _replay, run_seed, size_sets,
+  run_seed_sizes) and the cell constants.
+dtn.py and the functions are hashed as ASTs without docstrings or comments (new _ast_digest), so docstring and comment edits no
+longer stop build / v02build. Unused imports and renames still do: they are code. New fingerprint: c3c3b2880e33888c (was
+164db46f005497d2). No restamp: the caches were rerun (B changes values).
+G parts done before the rerun (both are code in dtn.py, so they move the fingerprint; doing them later would have needed a second
+rerun):
+- simulate() refuses an unknown protocol (dtn.PROTOCOLS = drop_retry, sf, sf_ll; "sf_ll" runs as sf). Before, every string but
+  "drop_retry" ran as sf.
+- The base store is now bounded for Earth-bound bundles. Custody to the base was never refused, although the base stores such a
+  bundle until the Earth link. A one-condition fix: (w != dst_node or m.dst == -2). E54 has no vehicle-to-Earth bundle, so
+  nothing moves (confirmed by the rerun).
+Rerun: .cache/atc/e54 and e54_v02 moved to *_pre_b120 (link_s*.json copied back: they come from the contact plan alone).
+run_e54.py runall --seeds 1-30, 8 calls, about 100 s a seed, peak free RAM never below the gate.
+Cache comparison, all 60 files (scratchpad b120_e54cmp.py): 1,620 differences, each a ledger_earth lost +1 with censored -1 in a
+store-and-forward cell. That is 9 per seed in the main cells (sf, sf_ll and sf_ll_pre_review x 3 losses) and 18 per seed in the
+size sets (3 sets x sf, sf_ll x 3 losses). No other value differs in any cell (awards, grants, task states, delays, AoI, stuck).
+Rebuilt with run_e54.py build and v02build:
+- results/E54_dtn.json, rows and lrip_v02.rows: ledger_earth_lost 270 -> 300, ledger_earth_lost_share 0.29032 -> 0.32258 and
+  ledger_earth_censored 420 -> 390 in 27 rows (9 main, 18 v0.2 sets); lost_incl_censored stays 690.
+- Otherwise only code, rerun_commit and lrip_v02.run_s_total change; h14, h14_variants, verdicts and the v0.1 reproduction (rows,
+  h14 and seeds equal the main table) are identical.
+- results/E54_table.csv (9 rows) and E54_table_v02.csv (12 rows): the same three columns.
+- New block superseded_2026-11-14_b120_b, written once by build() from the committed file. Keys: reason, superseded_on
+  (2026-11-14), code (164db46f005497d2), rows (12, as committed), h14, h14_variants, lrip_v02 {rows, h14, verdicts,
+  values_moved_vs_v01}. Each equals the committed value.
+- superseded_2026-11-13_b118 is unchanged. Keys: reason, superseded_on, experiment, note, seeds, jobs_per_seed, earth_up_share,
+  reservations_per_seed, lost_link_returns_per_seed, lost_link_isolation_h_saved_per_seed, rows (9, pre-N4 definitions:
+  ledger_earth_lost 690), h14, link_shares, parameters, stuck_definition, blackout_days, ledger_bytes, lrip_v02 {task,
+  sizes_bytes, ledger_bytes, note, reproduction_of_published_v01, rows, h14, values_moved_vs_v01, verdicts,
+  max_queue_bytes_bound, seeds, run_s_total}.
+- E54_ledger.json is not rebuilt: 0 censored, and its 61-day span outlasts every deadline. It keeps its one block
+  (superseded_2026-11-13_b118).
+Not changed:
+- data/atc/protocol/e54_timeline.json: re-exported to scratch, byte-identical (82,635 B). It reads only t_done and has no ledgers.
+- phase6_family.json: it reads award losses and stuck reservations at loss 0.25, which did not move. D rebuilds it anyway.
+Tests:
+- test_dtn 22 passed. New: last-step lifetime expired; unknown protocol refused; full base store refuses an Earth-bound bundle
+  (HEAD gives 1200.01 s, now 1200.02 s); the E54 fingerprint ignores docstrings and comments.
+- test_protocol_data 1, test_lrip_v02 13, test_uphill 4 passed.
+Commit set: lunarsim/atc/dtn.py, tools/atc/run_e54.py, tests/test_dtn.py, results/E54_dtn.json, E54_table.csv,
+E54_table_v02.csv; with item A: lunarsim/atc/encounter.py, tests/test_uphill.py; results/E44_defects.json (outcome.totals);
+.team/reports.md.
+
+## B-120 D heavy-run notice (14 Nov): one near_base 4x seed-1 rerun to scratch (about 250 s, peak about 0.55 GB) for the code-stamp reproduction check; one process, gate 0.8 GB
+
+## F-81 (FRONTEND), 2026-11-14: E54 block keys and the ledger split; build and browser check NOT run (memory)
+- E54 now holds two superseded blocks. `superseded(doc, file, field, key)` passes a key through to supersededBlock (exactly one block stays the default). New `blockKey(doc, file, task)` resolves a task tail (b118, b120_b) to the one key ending in it, or stops the build.
+- e54 keys: `was_<task>:...` and `superseded_on_<task>`. A bare `was:` now stops the build ("2 superseded_* blocks"). /protocol/ problems 4 and 6 use was_b118 for the code-review values.
+- Ledger: the page reads 300 expired / 390 censored from the file through the existing markers (no typed numbers). New sentence after the b118 one: "On <date, b120_b> a ledger bundle whose lifetime ends exactly when the window closes was moved from censored to expired, since its whole life was observed: before, <270> expired and <420> were censored", every value from superseded_2026-11-14_b120_b. No other site file states 270/420/0.29.
+- f79: before-keys must name their block; checks for the ledger now and before, that expired + censored is unchanged across the fix, and the bare-was:, unknown-task and no-returns-in-b120 failures.
+- causeOf (phase6.mjs) already picks the E54 block by its superseded_on date, so it is unaffected.
+- Tests: f72, f79, f80, f81 and protocol-data pass 32/32.
+- NOT run: build, full suite, budgets, browser check. Free RAM was 0.71 then 0.75 GB, under the 0.8 GB floor. No waiting job started.
+- Files: site/lib/{anatomy-nav,network,phase6,protocol-data,results-atc}.mjs, site/protocol/index.html, site/src/atc/{e48-robot,sizing,sizing-note}.js, site/src/components/{date-num,results-file}.js, site/src/network/{bars,inside,landscape,theme}.js, site/src/protocol/figures.js, site/tests/{f72,f79,f81}.test.mjs (new files: sizing-note.js, results-file.js, theme.js, f81.test.mjs).
+
+## F-81 browser check (FRONTEND), 2026-11-14: done on LEAD's build (site/dist, vite preview :4173, gstack $B)
+- Console and audit (f57b.sh: errors, overflow, contrast, headings) at 1280 px, in dark and light, on /network/, /protocol/ and /results/: 0 console errors, overflow 0, contrast failures 0, one h1, no heading skips on every page.
+- /network/ colour-scheme switch with no theme picked (no data-theme attribute, localStorage theme removed), emulated through CDP Emulation.setEmulatedMedia: body background goes rgb(255,255,255) → rgb(17,18,20) → back. All 8 canvases (landscape surface, bars, inside strips) redraw on light→dark and return to identical pixel hashes on dark→light. The contour SVG is unchanged, as expected: it is styled by CSS. 0 errors.
+- /protocol/ problem 4 (built text): "300 expired on the way and 390 were still alive … censored"; then the 13 November 2026 note (0 grants, 33.0 s, 690 counted lost); then "On 14 November 2026 a ledger bundle whose lifetime ends exactly when the window closes was moved from censored to expired, since its whole life was observed: before, 270 expired and 420 were censored." Problem 6: 9.5 s / 39.9 s, 87.3 returns; before 45.5 s / 2.5 min / 82.1 (the b118 block).
+- /results/ family note: one r-fam-was, "Corrected after a code review on 13 November 2026 (a fix to the positioning model): before, H9′ gave 85 m …; H10′ …, Holm p 0.932; the readings near the base were 4.2 m, 24.7 m, 50.1 m, 50.1 m. Every outcome is as it was." It names one cause because only E50 values differ; H14 and H15a are identical in the block.
+- Screenshots (full page) in the scratchpad: f81_network_sys_light.png, f81_network_sys_dark.png, f81_protocol_ledger.png (light), f81_results_note.png (dark).
+- The preview and the browser are stopped. Free RAM dipped to 0.36–0.45 GB with the browser open between pages; with it closed it stayed at 0.6 GB or more.
+
+## B-120 D-H DONE (14 Nov) | no published value and no fingerprint a paper or the site reads moves (E50 5bf22fa6d5ccfe47, E54 c3c3b2880e33888c); three results files gain only a "code" key
+D (E50-family code checks):
+- New e50_build.require_code: one code, not None, equal to run_e50.code_fingerprint(). Used by e50_build.cells, the near_base,
+  overlaps and E50b builds, and phase6_family._e50.
+- run_cell (near_base) and run_seed (E50b) stamp "code". Each overlaps stage records "_code", and assemble refuses mixed or
+  unknown codes and stamps the cell. cmd_stage removes a cell's stage directory after assembly. phase6_family writes e50_cells
+  from the cells it loaded and e50_code through require_code.
+- Found beyond the brief: none of the 45 overlaps cells carried a code either. 115 cells were unstamped (near_base 40, overlaps
+  45, E50b 30).
+- Reproduction on the current code before stamping (scratchpad b120d_repro.py): near_base 1x seed 1 (with the sweep) and 4x
+  seed 1, overlaps 1x seed 1 (all stages), and E50b seed 1 each reproduce their cached cell in every value (E50b differs only in
+  a nested run_s timing).
+- Stamped: code 5bf22fa6d5ccfe47 plus a code_stamped note in each of the 115 cells. The five leftover near_base 8x stage
+  directories are removed.
+- Rebuilt: results/E50_near_base.json, E50_overlaps.json and E50b_summary.json gain only "code". Their CSVs and
+  phase6_family.json are byte-identical.
+- Tests: test_e50_build 6 (2 updated: the current fingerprint is monkeypatched; 2 new: require_code rules, near_base refuses
+  unstamped cells; plus the family's counts) and test_e50_near_staged 2 (adds stage dir removed, run_cell stamps).
+E (lunarsim/nn/evaluate.py):
+- main() carries landscape, h15_resample_counts_b118, onset_context_and_fa_interval_b118 and any superseded_* key
+  (CARRY_KEYS).
+- The false-alarm interval uses every resample (idx, was idx[:200]).
+- --resample-counts and --onset-fa compute with write=False, check, and write (one key, _store) only if everything reproduces;
+  otherwise exit 1 and write nothing.
+- Score caches without a fingerprint are refused unless --accept-unstamped-scores.
+- Checked: resample counts reproduce, every comparison, and equal the stored block; the onset/FA addendum reproduces and equals
+  the stored block. Nothing written, nothing retrained.
+- Value note: no stored value moves now. A forced rerun of main would put the 1,000-resample false-alarm interval into
+  <set>.<det>.<rate>.fa_per_pair_day.ci95 (today the 200-resample one; the 1,000 one is already stored as
+  onset_context_and_fa_interval_b118 ... fa_per_pair_day_ci95_1000).
+- Test: test_nn_integrity, the addenda are checked before writing, _store and CARRY_KEYS.
+F:
+- codec.decode: CBOR ValueErrors and UnicodeDecodeError become LripDecodeError (as does the Space Packet length error in
+  _decode).
+- An explicit all-zero MAC key warns (LripInsecureKeyWarning).
+- Freshness is written as "not |dt| <= 10 s", so a NaN or infinite clock is refused.
+- The dead "d.auth is None or" is dropped.
+- simulate's docstring names censored (done in B).
+- run_b105 module docstring: the `timing` command and N12's two passes.
+- Unused import subprocess removed from train_bid.cmd_table_rerun.
+- test_e52 compares the tour length with E52_map.json tour_km (62.31).
+- run_e54: _write_cache (closed before os.replace, allow_nan=False) for all cache writes; allow_nan=False on the three results
+  writes. E54 rebuilt byte-identical.
+- Tests: test_lrip_v02 (the malformed loop now accepts only Lrip* errors; new: tampered profile-B fields of wrong type or out of
+  range and bad UTF-8 give LripDecodeError, which HEAD let escape as UnicodeDecodeError; zero key warns; NaN / inf clock
+  refused).
+G:
+- dtn items done in C (unknown protocol refused; base store bounded for Earth-bound bundles); the docstring states the store
+  rule.
+- Tests added from the reviewer's stubs:
+  - test_dtn: Earth-bound drop_retry / sf censored; sf_ll deliver / hold / drop / expire / censor on a lost_link_plan output;
+    full store drops the newest at creation; short isolation has no return under both rules.
+  - test_lrip_v02: receiver unknown type returns None and changes no state; manifest and HELLO replace each other, unsigned
+    manifest keeps the declaration.
+  - test_smap: rejected and repeat reports keep the tile state.
+- Decision kept as a stated rule, not changed: a MAC-only HELLO can replace or revoke a signed manifest's declaration. Not a
+  two-line fix (blocking only revocation would leave replacement open). Stated in Receiver.accept's docstring with the
+  sequence-counter scope.
+- reports/review_phase6_code.md new section O lists the open follow-ups: simplifications, AoI vectorising, sequence wrap and
+  shared-key denial, the HELLO/manifest rule, the counter scope per kind, smap's unread hazard field, and the uphill 0.14 m
+  remainder (cause unknown).
+H:
+- vv6 G1: exact comparison (only NaN in the run against null in the reference); keys present only in the run count as
+  differences.
+  - Scratch run: 144 keys on both sides, 0 of 144 differ exactly (0 under the old rule too); the option-on row still differs
+    in 14 of 144.
+  - Row text unchanged, so results/vv_phase6.json stays valid; not regenerated.
+- nn/train.fit: an UnpicklingError from the weights_only load stops with SystemExit naming the file and saying to delete it and
+  train that run again. No fallback, file left in place. Test with a pre-13-Nov style checkpoint.
+- E44_defects outcome field names: sent in the A message (outcome.by_type, outcome.totals {batches, rows, deadlock_1_to_0,
+  deadlock_0_to_1, fuzzer_free_rows_changed, other_columns_changed}, outcome.supersedes).
+Tests (one file at a time): test_dtn 26, test_e50_build 6, test_e50_near_staged 2, test_e52 2, test_lrip 11, test_lrip_v02 17,
+test_nn_integrity 17, test_protocol_data 1, test_safety 7, test_smap 9, test_uphill 4, test_vv6 2, all passed.
+Commit set per item:
+- D: tools/atc/e50_build.py, run_e50_near.py, run_e50_overlaps.py, run_e50b.py, phase6_family.py; tests/test_e50_build.py,
+  test_e50_near_staged.py; results/E50_near_base.json, E50_overlaps.json, E50b_summary.json.
+- E: lunarsim/nn/evaluate.py; tests/test_nn_integrity.py (shared with H).
+- F: lunarsim/atc/lrip/codec.py; tools/atc/run_b105.py, train_bid.py, run_e54.py; tests/test_lrip_v02.py (shared with G),
+  test_e52.py.
+- G: lunarsim/atc/dtn.py (docstring), lunarsim/atc/lrip/codec.py (docstring); tests/test_dtn.py, test_lrip_v02.py,
+  test_smap.py; reports/review_phase6_code.md.
+- H: lunarsim/vv6.py, lunarsim/nn/train.py; tests/test_nn_integrity.py.
+- And .team/reports.md.
+
+- BACKEND 16:44: B-121 4, one E54 engine run (seed 1 link-share reproduction, ~1 min, under 1 GB) in the foreground, gated at 0.8 GB.
+
+## BACKEND: B-121 done (14 Nov 2026). No stored value moves; no fingerprint read by a paper or the site moves. One results file gains one key.
+
+Commit set: lunarsim/nn/evaluate.py, tools/atc/run_e54.py, tools/atc/phase6_family.py, lunarsim/atc/dtn.py (docstring only),
+results/phase6_family.json (+1 line), tests/test_nn_integrity.py, tests/test_dtn.py, reports/review_phase6_code.md (section O).
+Not in git: the 30 .cache/atc/e54/link_s*.json files are now stamped; originals are in .cache/atc/e54_link_pre_b121.
+
+1. Option chosen: fa_per_pair_day.ci95 stays the published 200-resample interval. evaluate_set uses idx[:FA_BOOT_PUBLISHED]
+   (= 200; the 1,000 draws are still drawn, so the random stream is unchanged). The 1,000-resample interval stays under
+   onset_context_and_fa_interval_b118.fa_per_pair_day_ci95_1000. This moves nothing in results/E56_integrity.json, and a
+   --force rerun now reproduces the stored interval that --onset-fa checks. (The B-120 E change to all 1,000 is reverted.)
+2. New carry_over(prev, out). It keeps landscape and superseded_* as before.
+   - h15_resample_counts_b118 is kept only if its sets are non-empty, every reproduces flag is true, and each set's fresh
+     h15_net_against (intervals and resample counts) equals the stored one exactly.
+   - onset_context_and_fa_interval_b118 is kept only if its flags are true and dataset_sha256, the thresholds, every recall
+     and the 200-resample FA interval are unchanged.
+   - Otherwise the block is dropped and the command to run (--resample-counts or --onset-fa) is printed.
+   On the stored file, carry_over(doc, doc) keeps both addenda.
+3. h14 loads the cells through run_e54._load_cache (code check), raises on no cells, and takes the seed count from the data
+   ("{len(S)} seeds").
+   - The family was regenerated into a scratch copy. It is byte-identical to the committed file apart from one added top-level
+     line, "e54_code": "c3c3b2880e33888c" (after e50_code). Since that met your condition, I wrote it to results/phase6_family.json.
+   - The file therefore changes by that one line. Every H value, p and decision is unchanged (H14 p 0.00195, Holm 0.00391).
+4. link_s*.json files now carry code (= the E54 fingerprint, unchanged at c3c3b2880e33888c) and link_code
+   (cmd_linkshare's AST digest, d8d2fd0f89a511cb).
+   - build() loads them through _load_cache with the extra stamp (_load_links) and refuses a seed set that differs from the
+     cells'. _load_cache now reads the seed from the file name's trailing digits.
+   - No rerun was needed. The 30 files all had the same mtime (13:35:42, copied back during the B-120 cache shuffle), so I
+     reproduced seeds 1 and 30 with the current code: exactly equal, 11-12 s each. I then stamped all 30 with values unchanged.
+     A full rerun of all 30 would take about 6 min if you want one.
+   - Reading the files in seed order moved linked_share_driving_time in its last digit (0.566360139904384 ->
+     0.5663601399043842: the mean was taken in another order). build() therefore averages in file-name order as before.
+   - Checked into scratch: build + v02build reproduce E54_dtn.json, E54_table.csv and E54_table_v02.csv byte for byte.
+     build alone lacks only lrip_v02 (existing behaviour; listed in O).
+5. New run_e54._write_json: json.dumps(allow_nan=False) first, then a .tmp file and os.replace. It is used for the three
+   results writes (build, v02build, ledger). A NaN now leaves the old file as it was and no .tmp behind.
+6. - resample_counts_not_reproduced fails on no set or on a set with no comparison.
+   - resample_counts lists a stored set that the cache lacks as {} (so it fails); onset_fa_not_reproduced fails the same way.
+   - The --onset-fa score files pass the same gate as main (new score_gate(); main's all_scores uses it too). All five
+     scores_final_*.npz are unstamped, so --onset-fa now needs --accept-unstamped-scores, as the evaluation does.
+   - The write-or-exit logic moved into addendum_cli(argv) -> int.
+   - Live check: --resample-counts on the real cache still reproduces all 180 comparisons (60 per set), nothing written.
+     --onset-fa was not rerun (its computation is unchanged).
+Docstring: dtn.simulate now states the exact expired rule. Expired includes "next attempt after the lifetime" in every step,
+the last one included, so a deadline within one retry_s or custody_timer_s after the window's end gives expired, not censored.
+E54 fingerprint still c3c3b2880e33888c (docstrings not hashed).
+Tests (one file at a time): test_nn_integrity 20 passed (3 new: carry-over, empty cache refused, score gate);
+test_dtn 28 passed (2 new: results file written whole, link files stamped and seed-checked); test_e50_build 6 passed.
+Site node tests were not run (phase6_family.json only gains a key).
+Section O: the eight follow-ups as one line each, plus the build-alone note, and a "Done in B-121" line.

@@ -24,7 +24,6 @@ import hashlib
 import json
 import os
 import pickle
-import shutil
 import subprocess
 import sys
 import time

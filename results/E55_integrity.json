@@ -4787,14 +4787,21 @@
    }
   },
   "detectable_error_check": {
-   "bias_sigma": 4.57,
-   "detect_prob": 0.89939,
+   "bias_sigma": 4.572448099925457,
+   "bias_sigma_first_order": 4.572078297036526,
+   "detect_prob": 0.89976,
    "false_alarm": 0.000985
   },
   "k_of_n_false_alarm": {
    "0.01": 9.850600000000002e-06,
    "0.001": 9.985006e-09,
    "0.0001": 9.998500060000002e-12
+  },
+  "detectable_error_check_pre_b119": {
+   "bias_sigma": 4.57,
+   "detect_prob": 0.89939,
+   "false_alarm": 0.000985,
+   "note": "B-119 C12: before 13 Nov 2026 the bias was the literal 4.57 sigma whatever alpha and p_detect"
   }
  },
  "consensus": {
@@ -6282,6 +6289,42 @@
     "safe_share": 0.7
    }
   ],
-  "supported": false
+  "supported": false,
+  "robust_evidence_by_basis": {
+   "exact_2F1_robust_N_le_8": {
+    "cells": 8,
+    "runs_robust": 3,
+    "runs_robust_all_safe": true,
+    "runs_not_robust": 397
+   },
+   "degree_condition_only_N_gt_8": {
+    "cells": 12,
+    "runs_robust": 53,
+    "runs_robust_all_safe": true,
+    "runs_not_robust": 547
+   },
+   "note": "the split behind robust_cells_all_safe: exact (2F+1)-robustness is computed for N <= 8 only; above, 'robust' means every honest node hears >= 2F + 1, a necessary condition, so those runs are not shown to be on robust meshes. The exactly robust evidence is the runs_robust of the first block."
+  }
+ },
+ "replay_trial_description": "auth.replay: 20 senders at 1 Hz, 10 receivers, 600 s, loss 0.10 / 0.25; once a second the attacker replays a random EARLIER message drawn from the whole recorded log (so usually minutes old), stamped 0 to 60 s after the replay event. Only about 1 % of these replays fall inside the 10 s freshness window, so '0 accepted' says little about the window. replay_recent (added after the code review of 13 Nov 2026) replays messages sent in the last 60 s (age 0 to 60 s) and splits the accepted replays.",
+ "replay_recent": {
+  "added": "after the code review of 13 Nov 2026 (B-118 N9)",
+  "setup": "20 senders at 1 Hz, 10 receivers, 600 s, a replay a second of a message sent in the last 60 s (age 0 to 60 s), counter and 10 s freshness rule, 64-bit tags",
+  "loss": {
+   "0.1": {
+    "replays": 589,
+    "replays_with_age_le_10s": 117,
+    "replays_accepted": 0,
+    "accepted_missed_original_inside_window": 0,
+    "accepted_other": 0
+   },
+   "0.25": {
+    "replays": 590,
+    "replays_with_age_le_10s": 115,
+    "replays_accepted": 6,
+    "accepted_missed_original_inside_window": 6,
+    "accepted_other": 0
+   }
+  }
  }
 }

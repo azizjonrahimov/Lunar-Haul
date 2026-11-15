@@ -139,10 +139,20 @@ def fit(name: str, cfg: Dict[str, Any], seed: int, max_s: float = 520.0, traject
     traj: Dict[str, list] = {"w": [], "epoch": [], "step": []}
     ck = os.path.join(sdir, "ckpt.pt")
     if os.path.isfile(ck):
-        z = torch.load(ck, weights_only=False)
+        # B-119 C13: weights_only=True (tensors and plain Python only; see the save below). A checkpoint written
+        # before 13 Nov 2026 held numpy arrays and cannot be resumed this way: train that run again.
+        import pickle
+        try:
+            z = torch.load(ck, weights_only=True)
+        except pickle.UnpicklingError as e:                 # B-120 H: named, not a bare traceback; no fallback
+            raise SystemExit(f"{ck} cannot be resumed with weights_only=True (a checkpoint written before 13 Nov "
+                             f"2026 holds numpy arrays): delete it and train run {name} (seed {seed}) again. "
+                             f"({type(e).__name__}: {str(e).splitlines()[0] if str(e) else ''})") from e
         model.load_state_dict(z["model"])
         opt.load_state_dict(z["opt"])
-        st, traj = z["st"], z["traj"]
+        st = z["st"]
+        traj = {"w": [w.numpy() for w in z["traj"]["w"]], "epoch": list(z["traj"]["epoch"]),
+                "step": list(z["traj"]["step"])}
     elif trajectory:
         traj["w"].append(M.get_flat(model)); traj["epoch"].append(0.0); traj["step"].append(0)
     ep_time = 60.0
@@ -184,7 +194,10 @@ def fit(name: str, cfg: Dict[str, Any], seed: int, max_s: float = 520.0, traject
             traj["step"].append((ep + 1) * steps_per_epoch)
         ep_time = time.time() - t_ep
         st["wall"] += ep_time
-        torch.save({"model": model.state_dict(), "opt": opt.state_dict(), "st": st, "traj": traj}, ck)
+        torch.save({"model": model.state_dict(), "opt": opt.state_dict(),
+                    "st": json.loads(json.dumps(st, default=float)),
+                    "traj": {"w": [torch.from_numpy(np.asarray(w)) for w in traj["w"]],
+                             "epoch": [float(x) for x in traj["epoch"]], "step": [int(x) for x in traj["step"]]}}, ck)
         print(f"  {name} epoch {ep + 1}/{cfg['epochs']}: train {tot / cnt:.4f} val {vl:.4f} ({ep_time:.0f} s)",
               flush=True)
     if time.time() - t_start > max_s - 60.0:

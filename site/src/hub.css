@@ -5,8 +5,11 @@
 .hub-card h2 a { color: var(--ink); text-decoration: none; }
 .hub-card h2 a::after { content: ''; position: absolute; inset: 0; border-radius: inherit; }   /* the whole card is the link's target */
 .hub-card h2 a:hover { text-decoration: underline; }
-.hub-card:has(a:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
-.hub-card h2 a:focus-visible { outline: none; }
+/* F-78 (review W5): the card takes the focus ring only where :has() works; elsewhere the link keeps its own */
+@supports selector(:has(a)) {
+  .hub-card:has(a:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .hub-card h2 a:focus-visible { outline: none; }
+}
 .hub-card p { margin: 0; color: var(--ink-2); }
 .hub-card ul { margin: 0; padding-left: 1.1em; color: var(--ink-2); }
 .stub-list { max-width: var(--measure); }

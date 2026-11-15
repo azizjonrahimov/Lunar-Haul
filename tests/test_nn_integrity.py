@@ -141,6 +141,26 @@ def test_detect_counts_events_and_delays():
     assert fp.tolist() == [1, 1]
 
 
+def test_onset_context_flags_alarms_already_on():
+    """B-118 N10: an alarm that is on before the onset makes detect() count the event at once (delay 0); onset_context
+    says so, and a quiet minute before the onset is reported apart."""
+    n, t = 3, D.PRE + D.FAULT_T
+    meta = np.zeros((n, len(D.META)))
+    meta[:, D.META.index("onset")] = [400, 400, 400]
+    meta[:, D.META.index("end")] = [600, 600, 600]
+    meta[:, 0] = [1, 1, 1]
+    score = np.zeros((n, t), np.float32)
+    score[0, 380:420] = 5.0        # on across the onset: found at once
+    score[1, 350] = 5.0            # one alarm 50 s before, then a real detection
+    score[1, 430] = 5.0
+    score[2, 300] = 5.0            # 100 s before: still a quiet minute
+    found, delay, _ = B.detect(score, meta, 1.0)
+    on, quiet = B.onset_context(score, meta, 1.0)
+    assert found.tolist() == [True, True, False] and delay[0] == 0.0
+    assert on.tolist() == [True, False, False]
+    assert quiet.tolist() == [False, False, True]
+
+
 def test_model_forward_shape_and_causality():
     torch = pytest.importorskip("torch")
     torch.manual_seed(0)
@@ -248,3 +268,164 @@ def test_exported_landscape_file():
     assert abs(centre - p["path"][-1]["val_loss"]) <= 2e-3 * abs(centre)       # equal up to 4-digit rounding
     assert p["path"][-1]["x"] == 0.0 and p["path"][-1]["y"] == 0.0
     assert len(doc["random"]["val"]) == 41 and len(doc["interp"]["alpha"]) == len(doc["interp"]["val"])
+
+
+def test_policy_refuses_other_files():
+    """The review's nn test: the integrity Policy loads its own file and refuses any other policy or a doc whose
+    features differ (its two guard clauses)."""
+    import copy
+    p = os.path.join(D.ROOT, "data", "policies", "integrity_net_v1.json")
+    if not os.path.isfile(p):
+        pytest.skip("integrity policy not exported")
+    pol = M.Policy(p)
+    assert np.isfinite(pol(np.zeros((pol.window, len(F.FEATURES))))).all()
+    with pytest.raises(ValueError):
+        M.Policy(os.path.join(D.ROOT, "data", "policies", "atc_bid_v1.json"))   # the auction's bid policy
+    doc = json.load(open(p, encoding="utf-8"))
+    for bad in (dict(doc, format="other"), dict(doc, env="other")):
+        with pytest.raises(ValueError):
+            M.Policy(doc=bad)
+    d2 = copy.deepcopy(doc)
+    d2["obs"]["names"] = list(reversed(d2["obs"]["names"]))
+    with pytest.raises(ValueError):
+        M.Policy(doc=d2)
+
+
+def test_evaluate_addenda_checked_before_writing(monkeypatch, tmp_path):
+    """B-120 E: --resample-counts and --onset-fa write only reproduced addenda, one key at a time; a rerun of the
+    evaluation carries the B-118 addenda over (before, it kept only "landscape")."""
+    from lunarsim.nn import evaluate as E
+    path = tmp_path / "E56.json"
+    path.write_text(json.dumps({"test": {"x": 1}, "h15_resample_counts_b118": {"old": True}}))
+    monkeypatch.setattr(E, "RESULT", str(path))
+    E._store("h15_resample_counts_b118", {"new": True})
+    doc = json.loads(path.read_text())
+    assert doc == {"test": {"x": 1}, "h15_resample_counts_b118": {"new": True}}
+    ok = {"sets": {"test": {"a|b|c": {"reproduces_stored_interval": True}}}}
+    bad = {"sets": {"test": {"a|b|c": {"reproduces_stored_interval": False}}}}
+    assert E.resample_counts_not_reproduced(ok) == [] and E.resample_counts_not_reproduced(bad) == ["test:a|b|c"]
+    ev = {"events": {"all": {"recall_reproduces_stored": True}}, "fa_ci95_200_reproduces_stored": False}
+    assert E.onset_fa_not_reproduced({"sets": {"test": {"net": {"day": ev}}}}) == [("test", "net", "day", "fa")]
+    assert {"landscape", "h15_resample_counts_b118", "onset_context_and_fa_interval_b118"} <= set(E.CARRY_KEYS)
+
+
+def test_old_checkpoint_is_refused_with_its_name(small, monkeypatch, tmp_path):
+    """B-120 H: a checkpoint written before 13 Nov 2026 (numpy arrays inside) cannot be resumed with
+    weights_only=True; fit stops with a message that names the file and says what to do, not an UnpicklingError,
+    and does not fall back to loading it unsafely."""
+    torch = pytest.importorskip("torch")       # runs in the CI job with torch; skipped without it, like the other network tests
+    from lunarsim.nn import train as T
+    monkeypatch.setattr(T, "STATE", str(tmp_path))
+    os.makedirs(tmp_path / "old_run")
+    ck = tmp_path / "old_run" / "ckpt.pt"
+    torch.save({"model": {}, "opt": {}, "st": {"epoch": 1, "hist": np.zeros(3)}}, str(ck))
+    with pytest.raises(SystemExit, match="ckpt.pt cannot be resumed .* delete it"):
+        T.fit("old_run", {"epochs": 1}, 0, data={"train": small, "val": small}, log=False)
+    assert ck.exists()                                   # nothing deleted or rewritten behind the user's back
+
+
+def _e56_doc():
+    """A minimal E56 results file with both B-118 addenda, every check passed."""
+    ev = {"all": {"recall": {"mean": 0.5}}, "drift": {"recall": {"mean": 0.25}}}
+    s = {"net": {"day": {"fa_per_pair_day": {"ci95": [0.3, 0.8]}, "events": ev}},
+         "h15_net_against": {"chi2_step": {"drift": {"delay_median_diff_s": {"ci95": [-9.0, -1.0], "boot_n": 1000,
+                                                                              "boot_at_or_above_0": 2}}}}}
+    return {"dataset_sha256": "d", "thresholds_from_validation": {"net": {"day": [1.0]}}, "test": s,
+            "landscape": {"x": 1}, "superseded_old": {"y": 2},
+            "h15_resample_counts_b118": {"sets": {"test": {"chi2_step|drift|delay_median_diff_s": {
+                "boot_n": 1000, "at_or_above_0": 2, "reproduces_stored_interval": True}}}},
+            "onset_context_and_fa_interval_b118": {"sets": {"test": {"net": {"day": {
+                "events": {"all": {"recall_reproduces_stored": True}, "drift": {"recall_reproduces_stored": True}},
+                "fa_ci95_200_reproduces_stored": True, "fa_per_pair_day_ci95_1000": [0.31, 0.79]}}}}}}
+
+
+def test_rerun_carries_an_addendum_only_while_it_still_matches():
+    """B-121 2: a rerun keeps h15_resample_counts_b118 only while every set's h15_net_against (intervals and counts)
+    is unchanged, and onset_context_and_fa_interval_b118 only while the dataset, the thresholds, every recall and the
+    200-resample false-alarm interval are unchanged, and only if their own checks passed; otherwise it drops the
+    block and names the command to run (before, both were copied with their flags unchecked)."""
+    import copy
+    from lunarsim.nn import evaluate as E
+    prev = _e56_doc()
+    out = {k: copy.deepcopy(prev[k]) for k in ("dataset_sha256", "thresholds_from_validation", "test")}
+    kept, todo = E.carry_over(prev, out)
+    assert set(kept) == {"landscape", "superseded_old", "h15_resample_counts_b118",
+                         "onset_context_and_fa_interval_b118"} and todo == []
+    o2 = copy.deepcopy(out)
+    o2["test"]["h15_net_against"]["chi2_step"]["drift"]["delay_median_diff_s"]["boot_at_or_above_0"] = 3
+    kept, todo = E.carry_over(prev, o2)
+    assert "h15_resample_counts_b118" not in kept and "onset_context_and_fa_interval_b118" in kept
+    assert len(todo) == 1 and "--resample-counts" in todo[0]
+    o3 = copy.deepcopy(out)
+    o3["test"]["net"]["day"]["fa_per_pair_day"]["ci95"] = [0.31, 0.79]        # e.g. the 1,000-resample interval
+    kept, todo = E.carry_over(prev, o3)
+    assert "onset_context_and_fa_interval_b118" not in kept and "h15_resample_counts_b118" in kept
+    assert len(todo) == 1 and "--onset-fa" in todo[0]
+    o4 = copy.deepcopy(out)
+    o4["test"]["net"]["day"]["events"]["drift"]["recall"]["mean"] = 0.26
+    assert "onset_context_and_fa_interval_b118" not in E.carry_over(prev, o4)[0]
+    p2 = copy.deepcopy(prev)
+    p2["h15_resample_counts_b118"]["sets"]["test"]["chi2_step|drift|delay_median_diff_s"][
+        "reproduces_stored_interval"] = False
+    p2["onset_context_and_fa_interval_b118"]["sets"]["test"]["net"]["day"]["fa_ci95_200_reproduces_stored"] = False
+    kept, todo = E.carry_over(p2, out)
+    assert not {"h15_resample_counts_b118", "onset_context_and_fa_interval_b118"} & set(kept) and len(todo) == 2
+    nan = copy.deepcopy(prev)
+    nan["test"]["net"]["day"]["fa_per_pair_day"]["ci95"] = [float("nan"), float("nan")]
+    o5 = copy.deepcopy(nan)
+    assert "onset_context_and_fa_interval_b118" in E.carry_over(nan, o5)[0]     # NaN equals NaN here
+    real = os.path.join(D.ROOT, "results", "E56_integrity.json")
+    if os.path.isfile(real):                       # the stored file: a rerun that reproduces it keeps both addenda
+        doc = json.load(open(real, encoding="utf-8"))
+        kept, todo = E.carry_over(doc, doc)
+        assert {"h15_resample_counts_b118", "onset_context_and_fa_interval_b118"} <= set(kept) and todo == []
+
+
+def test_resample_counts_refuses_an_empty_cache(monkeypatch, tmp_path):
+    """B-121 6: --resample-counts with no <set>__kinds in EVAL_CACHE is refused and writes nothing (before, it
+    passed vacuously, printed 'reproduced; written' and overwrote a good addendum with an empty one)."""
+    from lunarsim.nn import evaluate as E
+    path = tmp_path / "E56.json"
+    path.write_text(json.dumps(_e56_doc(), indent=1))
+    before = path.read_bytes()
+    cache = tmp_path / "eval_arrays.npz"
+    np.savez(cache, other=np.zeros(1))
+    monkeypatch.setattr(E, "RESULT", str(path))
+    monkeypatch.setattr(E, "EVAL_CACHE", str(cache))
+    assert E.addendum_cli(["--resample-counts"]) == 1
+    assert path.read_bytes() == before
+    assert E.resample_counts_not_reproduced({"sets": {}}) and E.resample_counts_not_reproduced({"sets": {"test": {}}})
+    assert E.onset_fa_not_reproduced({"sets": {}}) and E.onset_fa_not_reproduced({"sets": {"test": {}}})
+
+
+def test_onset_fa_score_files_pass_the_fingerprint_gate(monkeypatch, tmp_path):
+    """B-121 6: --onset-fa reads scores_final_*.npz through the same gate as the evaluation: an unstamped file only
+    with --accept-unstamped-scores, a file with another fingerprint never; nothing is written either way."""
+    from lunarsim.nn import evaluate as E
+    from lunarsim.nn import train as T
+    path = tmp_path / "E56.json"
+    path.write_text(json.dumps(_e56_doc(), indent=1))
+    before = path.read_bytes()
+    monkeypatch.setattr(E, "RESULT", str(path))
+    monkeypatch.setattr(T, "STATE", str(tmp_path))
+    monkeypatch.setattr(E, "scores_fingerprint", lambda names: "fp")
+    mf = np.zeros((2, len(D.META)))
+    np.savez(tmp_path / "test.npz", mf=mf, mn=mf)
+    monkeypatch.setattr(D, "cache_path", lambda split: str(tmp_path / f"{split}.npz"))
+    np.savez(tmp_path / "scores_final_test_fault.npz", net=np.zeros((1, 2, 3)))
+    with pytest.raises(SystemExit, match="no fingerprint"):
+        E.addendum_cli(["--onset-fa"])
+    np.savez(tmp_path / "scores_final_test_fault.npz", _code=np.array("other"), net=np.zeros((1, 2, 3)))
+    with pytest.raises(SystemExit, match="other models or code"):
+        E.addendum_cli(["--onset-fa", "--accept-unstamped-scores"])
+    assert path.read_bytes() == before
+    z = {"_code": np.array("fp")}
+    E.score_gate(z_files(z), "x.npz", "fp", False)                  # the current fingerprint passes
+    E.score_gate(z_files({}), "x.npz", "fp", True)                  # unstamped, accepted on request
+
+
+class z_files(dict):
+    """A stand-in for an open np.load: .files and item access."""
+    @property
+    def files(self):
+        return list(self)

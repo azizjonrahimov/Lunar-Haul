@@ -364,3 +364,55 @@ Build checks, as in P3's build: every v0.2 and v0.2-in-Proximity-1 row equals th
 totals), `values_moved_vs_v01` is empty, the v0.1 rows reproduce the published rows, H14 and every verdict are the
 same in all three sets, the three message sizes are unchanged by v0.2 and gain the schema's frame bytes in
 Proximity-1, and every message of a seed held at once is under 1 % of the node store (`parameters.queue_bytes`).
+
+## Part 7 (13 Nov 2026): corrections after the code review
+
+Source: `reports/review_phase6_code.md` and the dated entry of PREREG6 section 6. E54 is read from the corrected
+`results/E54_dtn.json`; the earlier values from its block `superseded_2026-11-13_b118`.
+
+- `P1-E54-CORRECTION-SENTENCE` (new, composed; 5.9): what the review changed, said once, with the earlier values
+  (age of information with and without the return, the end-of-job reports with the return, grants lost under
+  custody, returns and isolation hours a seed) and the statement that H14's first clause is the same before the
+  correction, with censored messages counted as lost (`h14_variants.lost_incl_censored`) and under the earlier
+  return rule (`h14_variants.pre_review_return_rule`, rows `sf_ll_pre_review`). Each is a build check.
+- `P1-LRIP-RECEIVER-SENTENCE` (new, composed; 3.12): what the decoder refuses on receipt. The build runs the
+  receiver of `lunarsim/atc/lrip/codec.py` on packets it encodes and checks every clause of the sentence (no
+  code, unsigned signed message, counter, freshness with a clock, key epoch, older and invalid heartbeat,
+  malformed input); the freshness window is read from `codec.FRESHNESS_S` and the signed messages from the schema.
+- `P1-E54-DESIGN-SENTENCE`: the awards a seed against the jobs (`awards_and_jobs`), and the return rule as the
+  replay applies it (`parameters.return_rule` = "papers", an upper reading). `P1-E54-STUCK-SENTENCE` and Table 12:
+  the second clause "holds by rule, not by measurement" (`h14.clause_2_basis`, checked). `P1-TABLE-E54`: lost
+  against censored defined in the caption (no award, grant or report is censored: checked). The age with the
+  return, the report delay with the return and the returns a seed now print with one decimal.
+- `P1-LRIP-CAPFILTER-SENTENCE`: the options-off check with its scope, read from the two G1 rows of
+  `results/vv_phase6.json` (`passed` read; the build stops if a row is missing, where it used to drop the sentence).
+- `P1-E54-V02-SENTENCE`: the check now compares the v0.1 rows of the size rerun with the main table's rows
+  (`reproduction_of_main_table_v01`), leaving out the variant rows `sf_ll_pre_review`.
+- `P1-E54-HOLM-SENTENCE`: H15a's adjusted p prints as a value, because the family file now computes its p.
+
+## Second pass after the code review (14 Nov 2026): E50 regenerated
+
+P1 prints one value that rests on E50: the Holm-adjusted p of H10' in `P1-E54-HOLM-SENTENCE` (5.9), read from
+`results/phase6_family.json`. It is now 0.87; the earlier 0.93 is read from the file's block
+`superseded_2026-11-13_b118_n15` and named once in that sentence. Build checks: the verdict is the same before and
+after, H14 and H15a did not move, the equivalence clause holds and the growth clause does not at 4x and at 8x. The
+Limitations sentence "is being regenerated" is removed. P1 reads none of E50_summary, E50_near_base, E50_overlaps,
+E50b_summary or E45_uphill.
+
+## Correction pass after the second review (14 Nov 2026): E54 rerun, B-120
+
+- `results/E54_dtn.json` now holds two superseded blocks. The builder selects each by its key
+  (`E54_SUP_REVIEW` = `superseded_2026-11-13_b118`, `E54_SUP_WINDOW` = `superseded_2026-11-14_b120_b`) and stops if
+  the file holds any other set of superseded blocks.
+- `P1-E54-CORRECTION-SENTENCE` gains the move of 14 November, all values read from the file: of 930 Earth ledgers,
+  690 undelivered under store and forward, now 300 lost (32 %) and 390 censored, before 270 (29 %) and 420; cause:
+  one ledger a seed whose lifetime ended exactly at the month's end was counted censored. P1 printed neither the
+  split nor the share before, and prints them nowhere else. Build checks: only the three ledger fields differ
+  between the rerun and the superseded block (main rows and the three size sets), in every store-and-forward row
+  alike and in no drop-and-retry row; H14, its variants and the size rerun's verdicts are identical; lost plus
+  censored is unchanged; the move is one ledger a seed.
+- The same sentence no longer types the floor of the age of information (was `secs(30)`): it is read from the
+  file's `outcome_definitions` ("floored at 30 s") and must agree with the reason of the superseded block.
+- `P1-TABLE-E54` caption: a message is lost when its lifetime ends undelivered "by the month's end" (was "inside
+  the month"), the definition after B-120 B.
+- `P1-E54-LEDGER-SENTENCE` reads `results/E54_ledger.json` (the 61-day replay), which the rerun did not touch.

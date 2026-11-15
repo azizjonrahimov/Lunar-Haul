@@ -25551,5 +25551,2385 @@
    "median": 0.2695468281196059
   },
   "note": "gap = |loss on the plane - loss recorded at the checkpoint| on the validation subset; 'projection' evaluates the plane exactly at the projected point, 'nearest node' at the closest grid node (what the page shows)"
+ },
+ "h15_resample_counts_b118": {
+  "note": "B-118 N8: the bootstrap resample counts behind H15's comparisons (h15_block at 1 false alarm per pair-day), reproduced from the saved event arrays (EVAL_CACHE) with the same random streams as the published evaluation, and checked against the stored intervals. Written to results/E56_integrity.json under a new top-level key; every other key is left as it is. A one-sided bootstrap p for 'network shorter' is (at_or_above_0 + 1) / (boot_n + 1).",
+  "sets": {
+   "test": {
+    "chi2_step|jump|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|jump|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|jump|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 989,
+     "at_or_below_0": 12,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|jump|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|drift|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|drift|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|drift|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|drift|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|frozen|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|frozen|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|frozen|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|frozen|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|frame|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|frame|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|frame|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|frame|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 149,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|noise|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|noise|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|noise|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|noise|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "cusum|jump|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "cusum|jump|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "cusum|jump|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "cusum|jump|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "cusum|drift|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 897,
+     "at_or_below_0": 108,
+     "reproduces_stored_interval": true
+    },
+    "cusum|drift|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 406,
+     "at_or_below_0": 645,
+     "reproduces_stored_interval": true
+    },
+    "cusum|drift|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 427,
+     "at_or_below_0": 573,
+     "reproduces_stored_interval": true
+    },
+    "cusum|drift|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "cusum|frozen|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 208,
+     "at_or_below_0": 836,
+     "reproduces_stored_interval": true
+    },
+    "cusum|frozen|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 290,
+     "at_or_below_0": 807,
+     "reproduces_stored_interval": true
+    },
+    "cusum|frozen|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 129,
+     "at_or_below_0": 899,
+     "reproduces_stored_interval": true
+    },
+    "cusum|frozen|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 888,
+     "at_or_below_0": 122,
+     "reproduces_stored_interval": true
+    },
+    "cusum|frame|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "cusum|frame|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "cusum|frame|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "cusum|frame|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 149,
+     "reproduces_stored_interval": true
+    },
+    "cusum|noise|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "cusum|noise|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "cusum|noise|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "cusum|noise|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "logreg|jump|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "logreg|jump|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "logreg|jump|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "logreg|jump|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "logreg|drift|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 632,
+     "at_or_below_0": 372,
+     "reproduces_stored_interval": true
+    },
+    "logreg|drift|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "logreg|drift|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "logreg|drift|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "logreg|frozen|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "logreg|frozen|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "logreg|frozen|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "logreg|frozen|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "logreg|frame|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "logreg|frame|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "logreg|frame|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "logreg|frame|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "logreg|noise|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "logreg|noise|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "logreg|noise|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 998,
+     "at_or_below_0": 4,
+     "reproduces_stored_interval": true
+    },
+    "logreg|noise|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    }
+   },
+   "ood": {
+    "chi2_step|jump|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 119,
+     "at_or_below_0": 884,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|jump|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|jump|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 37,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|jump|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|drift|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 998,
+     "at_or_below_0": 2,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|drift|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|drift|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|drift|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|frozen|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|frozen|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|frozen|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|frozen|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1,
+     "at_or_below_0": 999,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|frame|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|frame|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|frame|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|frame|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|noise|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|noise|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|noise|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|noise|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "cusum|jump|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "cusum|jump|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "cusum|jump|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "cusum|jump|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "cusum|drift|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "cusum|drift|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "cusum|drift|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "cusum|drift|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "cusum|frozen|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "cusum|frozen|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "cusum|frozen|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "cusum|frozen|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 10,
+     "at_or_below_0": 991,
+     "reproduces_stored_interval": true
+    },
+    "cusum|frame|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "cusum|frame|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "cusum|frame|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "cusum|frame|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "cusum|noise|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "cusum|noise|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "cusum|noise|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "cusum|noise|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "logreg|jump|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "logreg|jump|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "logreg|jump|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 976,
+     "reproduces_stored_interval": true
+    },
+    "logreg|jump|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "logreg|drift|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 999,
+     "at_or_below_0": 1,
+     "reproduces_stored_interval": true
+    },
+    "logreg|drift|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 994,
+     "at_or_below_0": 8,
+     "reproduces_stored_interval": true
+    },
+    "logreg|drift|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "logreg|drift|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "logreg|frozen|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 662,
+     "at_or_below_0": 363,
+     "reproduces_stored_interval": true
+    },
+    "logreg|frozen|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 276,
+     "at_or_below_0": 815,
+     "reproduces_stored_interval": true
+    },
+    "logreg|frozen|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 648,
+     "at_or_below_0": 369,
+     "reproduces_stored_interval": true
+    },
+    "logreg|frozen|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 736,
+     "at_or_below_0": 276,
+     "reproduces_stored_interval": true
+    },
+    "logreg|frame|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "logreg|frame|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "logreg|frame|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "logreg|frame|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "logreg|noise|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "logreg|noise|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "logreg|noise|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "logreg|noise|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    }
+   },
+   "ood_recalibrated": {
+    "chi2_step|jump|delay_median_diff_s": {
+     "boot_n": 999,
+     "at_or_above_0": 623,
+     "at_or_below_0": 376,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|jump|paired_diff_s": {
+     "boot_n": 849,
+     "at_or_above_0": 525,
+     "at_or_below_0": 324,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|jump|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|jump|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 958,
+     "at_or_below_0": 45,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|drift|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 75,
+     "at_or_below_0": 925,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|drift|paired_diff_s": {
+     "boot_n": 983,
+     "at_or_above_0": 808,
+     "at_or_below_0": 175,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|drift|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|drift|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 845,
+     "at_or_below_0": 170,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|frozen|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|frozen|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|frozen|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|frozen|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|frame|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|frame|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|frame|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|frame|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 144,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|noise|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|noise|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|noise|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "chi2_step|noise|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "cusum|jump|delay_median_diff_s": {
+     "boot_n": 986,
+     "at_or_above_0": 313,
+     "at_or_below_0": 673,
+     "reproduces_stored_interval": true
+    },
+    "cusum|jump|paired_diff_s": {
+     "boot_n": 652,
+     "at_or_above_0": 0,
+     "at_or_below_0": 652,
+     "reproduces_stored_interval": true
+    },
+    "cusum|jump|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "cusum|jump|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 996,
+     "at_or_below_0": 4,
+     "reproduces_stored_interval": true
+    },
+    "cusum|drift|delay_median_diff_s": {
+     "boot_n": 993,
+     "at_or_above_0": 756,
+     "at_or_below_0": 237,
+     "reproduces_stored_interval": true
+    },
+    "cusum|drift|paired_diff_s": {
+     "boot_n": 854,
+     "at_or_above_0": 854,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "cusum|drift|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "cusum|drift|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 967,
+     "at_or_below_0": 40,
+     "reproduces_stored_interval": true
+    },
+    "cusum|frozen|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "cusum|frozen|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "cusum|frozen|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "cusum|frozen|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "cusum|frame|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "cusum|frame|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "cusum|frame|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "cusum|frame|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 40,
+     "reproduces_stored_interval": true
+    },
+    "cusum|noise|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "cusum|noise|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "cusum|noise|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "cusum|noise|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "logreg|jump|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 121,
+     "at_or_below_0": 880,
+     "reproduces_stored_interval": true
+    },
+    "logreg|jump|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 281,
+     "at_or_below_0": 727,
+     "reproduces_stored_interval": true
+    },
+    "logreg|jump|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "logreg|jump|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 574,
+     "at_or_below_0": 439,
+     "reproduces_stored_interval": true
+    },
+    "logreg|drift|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 245,
+     "at_or_below_0": 756,
+     "reproduces_stored_interval": true
+    },
+    "logreg|drift|paired_diff_s": {
+     "boot_n": 999,
+     "at_or_above_0": 155,
+     "at_or_below_0": 844,
+     "reproduces_stored_interval": true
+    },
+    "logreg|drift|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "logreg|drift|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 654,
+     "at_or_below_0": 361,
+     "reproduces_stored_interval": true
+    },
+    "logreg|frozen|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "logreg|frozen|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "logreg|frozen|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "logreg|frozen|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "logreg|frame|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "logreg|frame|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "logreg|frame|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    },
+    "logreg|frame|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "logreg|noise|delay_median_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "logreg|noise|paired_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "logreg|noise|censored_diff_s": {
+     "boot_n": 1000,
+     "at_or_above_0": 0,
+     "at_or_below_0": 1000,
+     "reproduces_stored_interval": true
+    },
+    "logreg|noise|recall_diff": {
+     "boot_n": 1000,
+     "at_or_above_0": 1000,
+     "at_or_below_0": 0,
+     "reproduces_stored_interval": true
+    }
+   }
+  }
+ },
+ "onset_context_and_fa_interval_b118": {
+  "note": "B-118 N10 and N11, from the saved scores (.cache/nn/scores_final_*.npz) and the stored validation thresholds; nothing is retrained or recalibrated, and every existing key of results/E56_integrity.json is left as it is. N10: beside each recall (test and out-of-distribution sets, both rates, per fault type and overall), the share of events with an alarm already on at the step before onset (baselines.onset_context), and the recall on the events with no alarm in the 60 s before onset. N11: the false-alarm interval on all 1,000 resamples (the published one used the first 200), with the same resample indices. Every recomputed recall and 200-resample interval is checked against the stored value first.",
+  "sets": {
+   "test": {
+    "chi2_step": {
+     "day": {
+      "events": {
+       "jump": {
+        "recall": 0.6975,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 0.6975,
+        "events_quiet_60s_before_mean": 400.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.0
+       },
+       "drift": {
+        "recall": 0.575,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 0.575,
+        "events_quiet_60s_before_mean": 400.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.0
+       },
+       "frozen": {
+        "recall": 0.9425,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 0.9425,
+        "events_quiet_60s_before_mean": 400.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.0
+       },
+       "frame": {
+        "recall": 0.995,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 0.995,
+        "events_quiet_60s_before_mean": 400.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.0
+       },
+       "noise": {
+        "recall": 0.355,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 0.355,
+        "events_quiet_60s_before_mean": 400.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.0
+       },
+       "all": {
+        "recall": 0.713,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 0.713,
+        "events_quiet_60s_before_mean": 2000.0,
+        "events": 2000,
+        "share_alarm_in_60s_before": 0.0
+       }
+      },
+      "fa_per_pair_day_ci95_1000": [
+       0.17757333422153315,
+       1.319995880707078
+      ],
+      "fa_ci95_200_reproduces_stored": true
+     },
+     "hour": {
+      "events": {
+       "jump": {
+        "recall": 0.8,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 0.8005115089514067,
+        "events_quiet_60s_before_mean": 391.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.022499999999999964
+       },
+       "drift": {
+        "recall": 0.665,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 0.6658291457286433,
+        "events_quiet_60s_before_mean": 398.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.0050000000000000044
+       },
+       "frozen": {
+        "recall": 0.9725,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0025,
+        "recall_quiet_60s_before": 0.9722921914357683,
+        "events_quiet_60s_before_mean": 397.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.007499999999999951
+       },
+       "frame": {
+        "recall": 0.995,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0025,
+        "recall_quiet_60s_before": 0.9949494949494949,
+        "events_quiet_60s_before_mean": 396.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.010000000000000009
+       },
+       "noise": {
+        "recall": 0.685,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 0.6802030456852792,
+        "events_quiet_60s_before_mean": 394.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.015000000000000013
+       },
+       "all": {
+        "recall": 0.8235,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.001,
+        "recall_quiet_60s_before": 0.8228744939271255,
+        "events_quiet_60s_before_mean": 1976.0,
+        "events": 2000,
+        "share_alarm_in_60s_before": 0.01200000000000001
+       }
+      },
+      "fa_per_pair_day_ci95_1000": [
+       16.680576580965823,
+       33.98660559088386
+      ],
+      "fa_ci95_200_reproduces_stored": true
+     }
+    },
+    "chi2_window": {
+     "day": {
+      "events": {
+       "jump": {
+        "recall": 0.755,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 0.755,
+        "events_quiet_60s_before_mean": 400.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.0
+       },
+       "drift": {
+        "recall": 0.63,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 0.63,
+        "events_quiet_60s_before_mean": 400.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.0
+       },
+       "frozen": {
+        "recall": 0.96,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 0.96,
+        "events_quiet_60s_before_mean": 400.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.0
+       },
+       "frame": {
+        "recall": 0.995,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0025,
+        "recall_quiet_60s_before": 0.9949874686716792,
+        "events_quiet_60s_before_mean": 399.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.0024999999999999467
+       },
+       "noise": {
+        "recall": 0.175,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 0.175,
+        "events_quiet_60s_before_mean": 400.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.0
+       },
+       "all": {
+        "recall": 0.703,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0005,
+        "recall_quiet_60s_before": 0.7028514257128564,
+        "events_quiet_60s_before_mean": 1999.0,
+        "events": 2000,
+        "share_alarm_in_60s_before": 0.0004999999999999449
+       }
+      },
+      "fa_per_pair_day_ci95_1000": [
+       0.020769140025022472,
+       4.114534144242632
+      ],
+      "fa_ci95_200_reproduces_stored": true
+     },
+     "hour": {
+      "events": {
+       "jump": {
+        "recall": 0.8,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 0.7969151670951157,
+        "events_quiet_60s_before_mean": 389.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.02749999999999997
+       },
+       "drift": {
+        "recall": 0.685,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 0.6860759493670886,
+        "events_quiet_60s_before_mean": 395.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.012499999999999956
+       },
+       "frozen": {
+        "recall": 0.975,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0025,
+        "recall_quiet_60s_before": 0.9747474747474747,
+        "events_quiet_60s_before_mean": 396.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.010000000000000009
+       },
+       "frame": {
+        "recall": 0.995,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0025,
+        "recall_quiet_60s_before": 0.9949494949494949,
+        "events_quiet_60s_before_mean": 396.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.010000000000000009
+       },
+       "noise": {
+        "recall": 0.435,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 0.43073047858942065,
+        "events_quiet_60s_before_mean": 397.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.007499999999999951
+       },
+       "all": {
+        "recall": 0.778,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.001,
+        "recall_quiet_60s_before": 0.7764825139381653,
+        "events_quiet_60s_before_mean": 1973.0,
+        "events": 2000,
+        "share_alarm_in_60s_before": 0.013499999999999956
+       }
+      },
+      "fa_per_pair_day_ci95_1000": [
+       7.570732121188615,
+       22.61501672912627
+      ],
+      "fa_ci95_200_reproduces_stored": true
+     }
+    },
+    "cusum": {
+     "day": {
+      "events": {
+       "jump": {
+        "recall": 0.7725,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 0.7713567839195979,
+        "events_quiet_60s_before_mean": 398.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.0050000000000000044
+       },
+       "drift": {
+        "recall": 0.565,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0025,
+        "recall_quiet_60s_before": 0.5642317380352645,
+        "events_quiet_60s_before_mean": 397.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.007499999999999951
+       },
+       "frozen": {
+        "recall": 0.97,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0025,
+        "recall_quiet_60s_before": 0.9697732997481109,
+        "events_quiet_60s_before_mean": 397.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.007499999999999951
+       },
+       "frame": {
+        "recall": 0.995,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 0.9949874686716792,
+        "events_quiet_60s_before_mean": 399.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.0024999999999999467
+       },
+       "noise": {
+        "recall": 0.5675,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 0.5678391959798995,
+        "events_quiet_60s_before_mean": 398.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.0050000000000000044
+       },
+       "all": {
+        "recall": 0.774,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.001,
+        "recall_quiet_60s_before": 0.7737556561085973,
+        "events_quiet_60s_before_mean": 1989.0,
+        "events": 2000,
+        "share_alarm_in_60s_before": 0.005499999999999949
+       }
+      },
+      "fa_per_pair_day_ci95_1000": [
+       1.4225447639857158,
+       2.765532104349887
+      ],
+      "fa_ci95_200_reproduces_stored": true
+     },
+     "hour": {
+      "events": {
+       "jump": {
+        "recall": 0.8425,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 0.8414322250639387,
+        "events_quiet_60s_before_mean": 391.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.022499999999999964
+       },
+       "drift": {
+        "recall": 0.6725,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0025,
+        "recall_quiet_60s_before": 0.6666666666666666,
+        "events_quiet_60s_before_mean": 390.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.025000000000000022
+       },
+       "frozen": {
+        "recall": 0.985,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.005,
+        "recall_quiet_60s_before": 0.9840425531914894,
+        "events_quiet_60s_before_mean": 376.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.06000000000000005
+       },
+       "frame": {
+        "recall": 0.995,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 0.9948453608247423,
+        "events_quiet_60s_before_mean": 388.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.030000000000000027
+       },
+       "noise": {
+        "recall": 0.7925,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0025,
+        "recall_quiet_60s_before": 0.7855297157622739,
+        "events_quiet_60s_before_mean": 387.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.03249999999999997
+       },
+       "all": {
+        "recall": 0.8575,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.002,
+        "recall_quiet_60s_before": 0.8535196687370601,
+        "events_quiet_60s_before_mean": 1932.0,
+        "events": 2000,
+        "share_alarm_in_60s_before": 0.03400000000000003
+       }
+      },
+      "fa_per_pair_day_ci95_1000": [
+       13.615318714424474,
+       18.67206419986473
+      ],
+      "fa_ci95_200_reproduces_stored": true
+     }
+    },
+    "logreg": {
+     "day": {
+      "events": {
+       "jump": {
+        "recall": 0.955,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.005,
+        "recall_quiet_60s_before": 0.9546599496221663,
+        "events_quiet_60s_before_mean": 397.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.007499999999999951
+       },
+       "drift": {
+        "recall": 0.5625,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0025,
+        "recall_quiet_60s_before": 0.5591939546599496,
+        "events_quiet_60s_before_mean": 397.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.007499999999999951
+       },
+       "frozen": {
+        "recall": 0.95,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0025,
+        "recall_quiet_60s_before": 0.9489795918367347,
+        "events_quiet_60s_before_mean": 392.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.020000000000000018
+       },
+       "frame": {
+        "recall": 1.0,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 1.0,
+        "events_quiet_60s_before_mean": 400.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.0
+       },
+       "noise": {
+        "recall": 0.835,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 0.835,
+        "events_quiet_60s_before_mean": 400.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.0
+       },
+       "all": {
+        "recall": 0.8605,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.002,
+        "recall_quiet_60s_before": 0.8595166163141994,
+        "events_quiet_60s_before_mean": 1986.0,
+        "events": 2000,
+        "share_alarm_in_60s_before": 0.007000000000000006
+       }
+      },
+      "fa_per_pair_day_ci95_1000": [
+       0.8861498149788456,
+       1.6930454791476257
+      ],
+      "fa_ci95_200_reproduces_stored": true
+     },
+     "hour": {
+      "events": {
+       "jump": {
+        "recall": 1.0,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.025,
+        "recall_quiet_60s_before": 1.0,
+        "events_quiet_60s_before_mean": 373.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.0675
+       },
+       "drift": {
+        "recall": 0.775,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.04,
+        "recall_quiet_60s_before": 0.7554347826086957,
+        "events_quiet_60s_before_mean": 368.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.07999999999999996
+       },
+       "frozen": {
+        "recall": 0.99,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.1325,
+        "recall_quiet_60s_before": 0.9884615384615385,
+        "events_quiet_60s_before_mean": 260.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.35
+       },
+       "frame": {
+        "recall": 1.0,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 1.0,
+        "events_quiet_60s_before_mean": 391.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.022499999999999964
+       },
+       "noise": {
+        "recall": 1.0,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.01,
+        "recall_quiet_60s_before": 1.0,
+        "events_quiet_60s_before_mean": 391.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.022499999999999964
+       },
+       "all": {
+        "recall": 0.953,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0415,
+        "recall_quiet_60s_before": 0.9478407178911946,
+        "events_quiet_60s_before_mean": 1783.0,
+        "events": 2000,
+        "share_alarm_in_60s_before": 0.10850000000000004
+       }
+      },
+      "fa_per_pair_day_ci95_1000": [
+       17.999640418790992,
+       30.857067301122605
+      ],
+      "fa_ci95_200_reproduces_stored": true
+     }
+    },
+    "net": {
+     "day": {
+      "events": {
+       "jump": {
+        "recall": 0.9195,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0015,
+        "recall_quiet_60s_before": 0.9191391577179726,
+        "events_quiet_60s_before_mean": 398.2,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.0045000000000000595
+       },
+       "drift": {
+        "recall": 0.618,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 0.6170623599300519,
+        "events_quiet_60s_before_mean": 399.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.0024999999999999467
+       },
+       "frozen": {
+        "recall": 0.9770000000000001,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0025,
+        "recall_quiet_60s_before": 0.9767586620920167,
+        "events_quiet_60s_before_mean": 395.8,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.010499999999999954
+       },
+       "frame": {
+        "recall": 1.0,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 1.0,
+        "events_quiet_60s_before_mean": 400.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.0
+       },
+       "noise": {
+        "recall": 1.0,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 1.0,
+        "events_quiet_60s_before_mean": 400.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.0
+       },
+       "all": {
+        "recall": 0.9029,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0008,
+        "recall_quiet_60s_before": 0.9025632848193146,
+        "events_quiet_60s_before_mean": 1993.0,
+        "events": 2000,
+        "share_alarm_in_60s_before": 0.0034999999999999476
+       }
+      },
+      "fa_per_pair_day_ci95_1000": [
+       0.28757241774574427,
+       0.8170145502953394
+      ],
+      "fa_ci95_200_reproduces_stored": true
+     },
+     "hour": {
+      "events": {
+       "jump": {
+        "recall": 0.9765,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.009000000000000001,
+        "recall_quiet_60s_before": 0.9756323176802904,
+        "events_quiet_60s_before_mean": 385.6,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.03599999999999992
+       },
+       "drift": {
+        "recall": 0.728,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.009,
+        "recall_quiet_60s_before": 0.7250929080464866,
+        "events_quiet_60s_before_mean": 385.6,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.03599999999999992
+       },
+       "frozen": {
+        "recall": 0.99,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0225,
+        "recall_quiet_60s_before": 0.9906314337371726,
+        "events_quiet_60s_before_mean": 362.8,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.09299999999999997
+       },
+       "frame": {
+        "recall": 1.0,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 1.0,
+        "events_quiet_60s_before_mean": 399.2,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.0020000000000000018
+       },
+       "noise": {
+        "recall": 1.0,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.003,
+        "recall_quiet_60s_before": 1.0,
+        "events_quiet_60s_before_mean": 395.4,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.011500000000000066
+       },
+       "all": {
+        "recall": 0.9389,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.008700000000000001,
+        "recall_quiet_60s_before": 0.9384004016757462,
+        "events_quiet_60s_before_mean": 1928.6,
+        "events": 2000,
+        "share_alarm_in_60s_before": 0.035700000000000065
+       }
+      },
+      "fa_per_pair_day_ci95_1000": [
+       15.113265391960502,
+       30.329883195412673
+      ],
+      "fa_ci95_200_reproduces_stored": true
+     }
+    }
+   },
+   "ood": {
+    "chi2_step": {
+     "day": {
+      "events": {
+       "jump": {
+        "recall": 0.54,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0075,
+        "recall_quiet_60s_before": 0.4377104377104377,
+        "events_quiet_60s_before_mean": 297.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.25749999999999995
+       },
+       "drift": {
+        "recall": 0.57,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0175,
+        "recall_quiet_60s_before": 0.4517241379310345,
+        "events_quiet_60s_before_mean": 290.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.275
+       },
+       "frozen": {
+        "recall": 0.985,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0125,
+        "recall_quiet_60s_before": 0.9814814814814815,
+        "events_quiet_60s_before_mean": 270.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.32499999999999996
+       },
+       "frame": {
+        "recall": 1.0,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0075,
+        "recall_quiet_60s_before": 1.0,
+        "events_quiet_60s_before_mean": 290.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.275
+       },
+       "noise": {
+        "recall": 0.865,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.02,
+        "recall_quiet_60s_before": 0.8162544169611308,
+        "events_quiet_60s_before_mean": 283.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.2925
+       },
+       "all": {
+        "recall": 0.792,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.013,
+        "recall_quiet_60s_before": 0.7321678321678322,
+        "events_quiet_60s_before_mean": 1430.0,
+        "events": 2000,
+        "share_alarm_in_60s_before": 0.28500000000000003
+       }
+      },
+      "fa_per_pair_day_ci95_1000": [
+       449.63820951517175,
+       509.4658512282928
+      ],
+      "fa_ci95_200_reproduces_stored": true
+     },
+     "hour": {
+      "events": {
+       "jump": {
+        "recall": 0.6825,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.04,
+        "recall_quiet_60s_before": 0.3277777777777778,
+        "events_quiet_60s_before_mean": 180.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.55
+       },
+       "drift": {
+        "recall": 0.68,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0525,
+        "recall_quiet_60s_before": 0.28735632183908044,
+        "events_quiet_60s_before_mean": 174.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.565
+       },
+       "frozen": {
+        "recall": 0.99,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0375,
+        "recall_quiet_60s_before": 0.9649122807017544,
+        "events_quiet_60s_before_mean": 114.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.7150000000000001
+       },
+       "frame": {
+        "recall": 1.0,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0175,
+        "recall_quiet_60s_before": 1.0,
+        "events_quiet_60s_before_mean": 152.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.62
+       },
+       "noise": {
+        "recall": 0.945,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.045,
+        "recall_quiet_60s_before": 0.86875,
+        "events_quiet_60s_before_mean": 160.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.6
+       },
+       "all": {
+        "recall": 0.8595,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0385,
+        "recall_quiet_60s_before": 0.6538461538461539,
+        "events_quiet_60s_before_mean": 780.0,
+        "events": 2000,
+        "share_alarm_in_60s_before": 0.61
+       }
+      },
+      "fa_per_pair_day_ci95_1000": [
+       1004.1026526269939,
+       1075.9004339893565
+      ],
+      "fa_ci95_200_reproduces_stored": true
+     }
+    },
+    "chi2_window": {
+     "day": {
+      "events": {
+       "jump": {
+        "recall": 0.4375,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.01,
+        "recall_quiet_60s_before": 0.39886039886039887,
+        "events_quiet_60s_before_mean": 351.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.12250000000000005
+       },
+       "drift": {
+        "recall": 0.4025,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.025,
+        "recall_quiet_60s_before": 0.34110787172011664,
+        "events_quiet_60s_before_mean": 343.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.14249999999999996
+       },
+       "frozen": {
+        "recall": 0.98,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0275,
+        "recall_quiet_60s_before": 0.9743589743589743,
+        "events_quiet_60s_before_mean": 312.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.21999999999999997
+       },
+       "frame": {
+        "recall": 0.9975,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0075,
+        "recall_quiet_60s_before": 0.9971830985915493,
+        "events_quiet_60s_before_mean": 355.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.11250000000000004
+       },
+       "noise": {
+        "recall": 0.7075,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.03,
+        "recall_quiet_60s_before": 0.6744868035190615,
+        "events_quiet_60s_before_mean": 341.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.14749999999999996
+       },
+       "all": {
+        "recall": 0.705,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.02,
+        "recall_quiet_60s_before": 0.672737955346651,
+        "events_quiet_60s_before_mean": 1702.0,
+        "events": 2000,
+        "share_alarm_in_60s_before": 0.14900000000000002
+       }
+      },
+      "fa_per_pair_day_ci95_1000": [
+       173.3442456518739,
+       225.89101419086305
+      ],
+      "fa_ci95_200_reproduces_stored": true
+     },
+     "hour": {
+      "events": {
+       "jump": {
+        "recall": 0.675,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.045,
+        "recall_quiet_60s_before": 0.528,
+        "events_quiet_60s_before_mean": 250.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.375
+       },
+       "drift": {
+        "recall": 0.65,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0475,
+        "recall_quiet_60s_before": 0.49615384615384617,
+        "events_quiet_60s_before_mean": 260.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.35
+       },
+       "frozen": {
+        "recall": 0.99,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0725,
+        "recall_quiet_60s_before": 0.9853658536585366,
+        "events_quiet_60s_before_mean": 205.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.48750000000000004
+       },
+       "frame": {
+        "recall": 1.0,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0425,
+        "recall_quiet_60s_before": 1.0,
+        "events_quiet_60s_before_mean": 236.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.41000000000000003
+       },
+       "noise": {
+        "recall": 0.895,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0675,
+        "recall_quiet_60s_before": 0.8290598290598291,
+        "events_quiet_60s_before_mean": 234.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.41500000000000004
+       },
+       "all": {
+        "recall": 0.842,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.055,
+        "recall_quiet_60s_before": 0.7535864978902953,
+        "events_quiet_60s_before_mean": 1185.0,
+        "events": 2000,
+        "share_alarm_in_60s_before": 0.4075
+       }
+      },
+      "fa_per_pair_day_ci95_1000": [
+       654.7176869806799,
+       726.7157611984766
+      ],
+      "fa_ci95_200_reproduces_stored": true
+     }
+    },
+    "cusum": {
+     "day": {
+      "events": {
+       "jump": {
+        "recall": 0.665,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0225,
+        "recall_quiet_60s_before": 0.42727272727272725,
+        "events_quiet_60s_before_mean": 220.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.44999999999999996
+       },
+       "drift": {
+        "recall": 0.665,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.045,
+        "recall_quiet_60s_before": 0.37254901960784315,
+        "events_quiet_60s_before_mean": 204.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.49
+       },
+       "frozen": {
+        "recall": 0.985,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.05,
+        "recall_quiet_60s_before": 0.9640718562874252,
+        "events_quiet_60s_before_mean": 167.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.5825
+       },
+       "frame": {
+        "recall": 1.0,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.025,
+        "recall_quiet_60s_before": 1.0,
+        "events_quiet_60s_before_mean": 204.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.49
+       },
+       "noise": {
+        "recall": 0.8925,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0575,
+        "recall_quiet_60s_before": 0.774869109947644,
+        "events_quiet_60s_before_mean": 191.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.5225
+       },
+       "all": {
+        "recall": 0.8415,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.04,
+        "recall_quiet_60s_before": 0.6926977687626775,
+        "events_quiet_60s_before_mean": 986.0,
+        "events": 2000,
+        "share_alarm_in_60s_before": 0.507
+       }
+      },
+      "fa_per_pair_day_ci95_1000": [
+       834.6647006436637,
+       891.5940058231349
+      ],
+      "fa_ci95_200_reproduces_stored": true
+     },
+     "hour": {
+      "events": {
+       "jump": {
+        "recall": 0.6875,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.045,
+        "recall_quiet_60s_before": 0.2422360248447205,
+        "events_quiet_60s_before_mean": 161.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.5974999999999999
+       },
+       "drift": {
+        "recall": 0.6925,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0775,
+        "recall_quiet_60s_before": 0.1736111111111111,
+        "events_quiet_60s_before_mean": 144.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.64
+       },
+       "frozen": {
+        "recall": 0.99,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.095,
+        "recall_quiet_60s_before": 0.9655172413793104,
+        "events_quiet_60s_before_mean": 87.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.7825
+       },
+       "frame": {
+        "recall": 1.0,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.05,
+        "recall_quiet_60s_before": 1.0,
+        "events_quiet_60s_before_mean": 128.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.6799999999999999
+       },
+       "noise": {
+        "recall": 0.94,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.085,
+        "recall_quiet_60s_before": 0.8260869565217391,
+        "events_quiet_60s_before_mean": 138.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.655
+       },
+       "all": {
+        "recall": 0.862,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0705,
+        "recall_quiet_60s_before": 0.5927051671732523,
+        "events_quiet_60s_before_mean": 658.0,
+        "events": 2000,
+        "share_alarm_in_60s_before": 0.671
+       }
+      },
+      "fa_per_pair_day_ci95_1000": [
+       1130.2947642868642,
+       1202.9660168470489
+      ],
+      "fa_ci95_200_reproduces_stored": true
+     }
+    },
+    "logreg": {
+     "day": {
+      "events": {
+       "jump": {
+        "recall": 0.445,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0275,
+        "recall_quiet_60s_before": 0.40970350404312667,
+        "events_quiet_60s_before_mean": 371.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.07250000000000001
+       },
+       "drift": {
+        "recall": 0.1725,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.045,
+        "recall_quiet_60s_before": 0.10655737704918032,
+        "events_quiet_60s_before_mean": 366.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.08499999999999996
+       },
+       "frozen": {
+        "recall": 0.9575,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.1075,
+        "recall_quiet_60s_before": 0.9418181818181818,
+        "events_quiet_60s_before_mean": 275.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.3125
+       },
+       "frame": {
+        "recall": 1.0,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0,
+        "recall_quiet_60s_before": 1.0,
+        "events_quiet_60s_before_mean": 397.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.007499999999999951
+       },
+       "noise": {
+        "recall": 0.9775,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.015,
+        "recall_quiet_60s_before": 0.9767441860465116,
+        "events_quiet_60s_before_mean": 387.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.03249999999999997
+       },
+       "all": {
+        "recall": 0.7105,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.039,
+        "recall_quiet_60s_before": 0.6820712694877505,
+        "events_quiet_60s_before_mean": 1796.0,
+        "events": 2000,
+        "share_alarm_in_60s_before": 0.10199999999999998
+       }
+      },
+      "fa_per_pair_day_ci95_1000": [
+       13.98263599007202,
+       23.08636745429663
+      ],
+      "fa_ci95_200_reproduces_stored": true
+     },
+     "hour": {
+      "events": {
+       "jump": {
+        "recall": 0.8975,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.2925,
+        "recall_quiet_60s_before": 0.7530864197530864,
+        "events_quiet_60s_before_mean": 162.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.595
+       },
+       "drift": {
+        "recall": 0.7475,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.295,
+        "recall_quiet_60s_before": 0.3870967741935484,
+        "events_quiet_60s_before_mean": 155.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.6125
+       },
+       "frozen": {
+        "recall": 1.0,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.735,
+        "recall_quiet_60s_before": 1.0,
+        "events_quiet_60s_before_mean": 20.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.95
+       },
+       "frame": {
+        "recall": 1.0,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.22,
+        "recall_quiet_60s_before": 1.0,
+        "events_quiet_60s_before_mean": 168.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.5800000000000001
+       },
+       "noise": {
+        "recall": 1.0,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.2225,
+        "recall_quiet_60s_before": 1.0,
+        "events_quiet_60s_before_mean": 160.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.6
+       },
+       "all": {
+        "recall": 0.929,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.353,
+        "recall_quiet_60s_before": 0.7969924812030075,
+        "events_quiet_60s_before_mean": 665.0,
+        "events": 2000,
+        "share_alarm_in_60s_before": 0.6675
+       }
+      },
+      "fa_per_pair_day_ci95_1000": [
+       1029.5472002201468,
+       1101.1989378034725
+      ],
+      "fa_ci95_200_reproduces_stored": true
+     }
+    },
+    "net": {
+     "day": {
+      "events": {
+       "jump": {
+        "recall": 0.22600000000000003,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.006500000000000001,
+        "recall_quiet_60s_before": 0.2127329539400633,
+        "events_quiet_60s_before_mean": 389.4,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.02650000000000008
+       },
+       "drift": {
+        "recall": 0.11299999999999999,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.015,
+        "recall_quiet_60s_before": 0.09029354232537931,
+        "events_quiet_60s_before_mean": 383.6,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.040999999999999925
+       },
+       "frozen": {
+        "recall": 0.9615,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.028500000000000004,
+        "recall_quiet_60s_before": 0.9620996810674463,
+        "events_quiet_60s_before_mean": 358.4,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.10400000000000009
+       },
+       "frame": {
+        "recall": 1.0,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.002,
+        "recall_quiet_60s_before": 1.0,
+        "events_quiet_60s_before_mean": 395.4,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.011500000000000066
+       },
+       "noise": {
+        "recall": 1.0,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.015,
+        "recall_quiet_60s_before": 1.0,
+        "events_quiet_60s_before_mean": 392.2,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.019500000000000073
+       },
+       "all": {
+        "recall": 0.6601,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0134,
+        "recall_quiet_60s_before": 0.651318111444427,
+        "events_quiet_60s_before_mean": 1919.0,
+        "events": 2000,
+        "share_alarm_in_60s_before": 0.04049999999999998
+       }
+      },
+      "fa_per_pair_day_ci95_1000": [
+       10.620367307550652,
+       17.269201199956793
+      ],
+      "fa_ci95_200_reproduces_stored": true
+     },
+     "hour": {
+      "events": {
+       "jump": {
+        "recall": 0.64,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.035500000000000004,
+        "recall_quiet_60s_before": 0.5963703971216695,
+        "events_quiet_60s_before_mean": 335.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.16249999999999998
+       },
+       "drift": {
+        "recall": 0.45150000000000007,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.044,
+        "recall_quiet_60s_before": 0.36647086197095013,
+        "events_quiet_60s_before_mean": 331.0,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.1725
+       },
+       "frozen": {
+        "recall": 0.9890000000000001,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.12449999999999999,
+        "recall_quiet_60s_before": 0.9885313040257422,
+        "events_quiet_60s_before_mean": 245.8,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.38549999999999995
+       },
+       "frame": {
+        "recall": 1.0,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.013500000000000002,
+        "recall_quiet_60s_before": 1.0,
+        "events_quiet_60s_before_mean": 367.8,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.08050000000000002
+       },
+       "noise": {
+        "recall": 1.0,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0335,
+        "recall_quiet_60s_before": 1.0,
+        "events_quiet_60s_before_mean": 344.8,
+        "events": 400,
+        "share_alarm_in_60s_before": 0.138
+       },
+       "all": {
+        "recall": 0.8160999999999999,
+        "recall_reproduces_stored": true,
+        "share_alarm_on_at_onset": 0.0502,
+        "recall_quiet_60s_before": 0.7859746719179923,
+        "events_quiet_60s_before_mean": 1624.4,
+        "events": 2000,
+        "share_alarm_in_60s_before": 0.18779999999999997
+       }
+      },
+      "fa_per_pair_day_ci95_1000": [
+       214.38961400943322,
+       269.33307753988504
+      ],
+      "fa_ci95_200_reproduces_stored": true
+     }
+    }
+   }
+  }
  }
 }

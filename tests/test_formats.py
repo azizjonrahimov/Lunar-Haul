@@ -435,3 +435,16 @@ def test_landing_order_does_not_depend_on_dict_key_order():
     assert scenario_from_dict(json.loads(json.dumps(d))).landings_per_year == rev.landings_per_year
     with pytest.raises(ValueError, match="unknown lander types"):
         run(sc.with_(landings_per_year={"CLPS": 1, "XL": 1}), dispatch.marketplace, seed=0)
+
+
+def test_validate_cli_skips_design_records(in_root, capsys):
+    """The review's cli test (B-114): the experiment design records beside the scenarios are skipped by
+    `lunarsim validate` with a SKIP line, and the run still passes."""
+    design = sorted(os.path.join(ROOT, "data", "scenarios", f) for f in os.listdir(os.path.join(ROOT, "data", "scenarios"))
+                    if f.endswith("-design.json"))
+    assert len(design) == 4
+    code, out = _validate_cli(capsys, *(SCENARIO_FILES + design))
+    assert code == 0
+    skips = [l for l in out.splitlines() if l.startswith("SKIP")]
+    assert len(skips) == 4 and all("design record" in l for l in skips)
+    assert sum(l.startswith("OK") for l in out.splitlines()) == len(SCENARIO_FILES)

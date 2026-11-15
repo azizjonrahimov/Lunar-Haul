@@ -38,8 +38,14 @@
         false-alarm rate: the network's rises <!--@nw:fa_ratio-->, from <!--@nw:net_fa_test--> to <!--@nw:net_fa_ood-->,
         CUSUM's to <!--@nw:ood_cusum_fa-->. Side by side, the network finds <!--@nw:ood_net_jump--> of small
         jumps and <!--@nw:ood_net_drift--> of slow drifts, CUSUM <!--@nw:ood_cusum_jump--> and <!--@nw:ood_cusum_drift-->,
-        but at such different false-alarm rates the recall is not comparable. On this evidence no detector is
-        qualified for the safety path.</li>
+        but at such different false-alarm rates the recall is not comparable. Part of what they find out of
+        distribution was already flagged before the fault began: an alarm was on in the minute before onset for
+        <!--@nw:ood_before_cusum--> of fault events with CUSUM, <!--@nw:ood_before_chi2_step--> with chi-square per
+        step and <!--@nw:ood_before_net--> with the network (on the test streams at most
+        <!--@nw:test_before_max-->). On the events with a quiet minute before, CUSUM finds
+        <!--@nw:ood_quiet_cusum--> of faults (<!--@nw:ood_all_cusum--> of all), chi-square per step
+        <!--@nw:ood_quiet_chi2_step--> (<!--@nw:ood_all_chi2_step-->) and the network <!--@nw:ood_quiet_net-->
+        (<!--@nw:ood_all_net-->). On this evidence no detector is qualified for the safety path.</li>
     </ul>
   </section>
 

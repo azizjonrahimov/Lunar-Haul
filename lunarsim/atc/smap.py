@@ -24,9 +24,7 @@ from __future__ import annotations
 import hashlib
 import math
 from dataclasses import dataclass, field
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple
-
-import numpy as np
+from typing import Dict, Iterable, List, Tuple
 
 SITE_M = 16000.0
 LAYERS: Dict[str, Dict[str, float]] = {
@@ -195,7 +193,9 @@ class Authority:
             verdict = "rejected: height disagreement (misaligned)"
         else:
             rep = self.provisional.setdefault(c.tile, [])
-            if c.tile not in self.confirmed and any(o != c.owner or p != c.pass_id for o, p in rep):
+            if c.tile in self.confirmed:                     # B-119 C10: a report on a confirmed tile says so
+                verdict = "accepted: already confirmed"
+            elif any(o != c.owner or p != c.pass_id for o, p in rep):
                 self.confirmed.add(c.tile)
                 verdict = "accepted: confirmed"
             else:

@@ -84,7 +84,25 @@ def build(rng, slope, geom, g, delay=0.0):
                   **kw)
 
 
+def code_fingerprint():
+    """B-120 A: the code a cell comes from: the encounter model (lunarsim/atc/encounter.py, encounter_types.py,
+    safety.py, which import nothing else of lunarsim) and this runner's build and run_cell, hashed without docstrings
+    and comments (run_e54._ast_digest), plus the cell constants."""
+    import hashlib
+    import inspect
+    from run_e54 import _ast_digest
+    h = hashlib.sha256()
+    for rel in ("lunarsim/atc/encounter.py", "lunarsim/atc/encounter_types.py", "lunarsim/atc/safety.py"):
+        with open(os.path.join(ROOT, rel), encoding="utf-8") as f:
+            h.update(rel.encode() + _ast_digest(f.read()).encode())
+    for fn in (build, run_cell):
+        h.update(fn.__name__.encode() + _ast_digest(inspect.getsource(fn)).encode())
+    h.update(repr((PLANETS, RULES, N_CELL, N_SWEEP, VIOL)).encode())
+    return h.hexdigest()[:16]
+
+
 def run_cell(planet, geom, slope, n, tag, rules=RULES, delay=0.0):
+    code = code_fingerprint()                                     # B-120 A: stamped when the cell starts
     g = PLANETS[planet]
     pi, gi = list(PLANETS).index(planet), GEOMS.index(geom)
     rng = np.random.default_rng([4507, pi, gi, int(round(slope * 10)), 0 if tag == "cell" else 1])
@@ -114,9 +132,13 @@ def run_cell(planet, geom, slope, n, tag, rules=RULES, delay=0.0):
             "gap_below_d0": int((gapf < S.D0_M).sum()), "contacts": int((np.asarray(oc.viol_contact) > 0).sum()),
             "r1_breach_rate": float((np.asarray(oc.r1_breach) > 0).mean()),
             "emergency_brake_rate": float((np.asarray(oc.no_safe) > 0).mean()),
-            "nominal_only_violations": int(sum(int(np.any([getattr(oc, f)[i] > 0 for f in VIOL])) for i in np.nonzero(nominal)[0])),
+            # B-118 N18: every follower here runs the adversarial planner (planner [0] + [2] x (nv - 1)), so no encounter
+            # is nominal-only; None (not 0) says there is nothing to count
+            "nominal_only_violations": (int(sum(int(np.any([getattr(oc, f)[i] > 0 for f in VIOL]))
+                                                for i in np.nonzero(nominal)[0])) if nominal.any() else None),
             "nominal_only_n": int(nominal.sum())}
     ET.G_BUILD = S.G_MOON
+    out["code"] = code
     return out
 
 
@@ -173,7 +195,8 @@ def cmd_build():
                          "n_driven": c["n_driven"], "b_lead_mean": round(c["b_lead_mean"], 4), "violations": r["violations"],
                          "contacts": r["contacts"], "gap_below_d0": r["gap_below_d0"], "min_gap_m": r["min_gap_m"],
                          "min_gap_p01_m": r["min_gap_p01_m"], "r1_breach_rate": r["r1_breach_rate"],
-                         "nominal_only_violations": r["nominal_only_violations"]})
+                         # B-118 N18: None when the cell has no nominal-only encounter (every cell, by design)
+                         "nominal_only_violations": r["nominal_only_violations"] if r.get("nominal_only_n") else None})
     thr = {}
     for planet in PLANETS:
         for geom in GEOMS:
@@ -183,9 +206,46 @@ def cmd_build():
             thr[f"{planet}:{geom}"] = {"first_slope_with_gap_below_d0_deg": first,
                                        "theory_b_lead_exceeds_b_max_deg": round(math.degrees(math.asin((S.B_MAX - S.B_MIN_FLAT) / PLANETS[planet])), 2),
                                        "sweep": [[sl, gp] for sl, gp in pts]}
+    dcodes = {c.get("code") for c in cells if c["delay_s"] > 0}     # B-120 A: the delay cells on the current code
+    if dcodes != {code_fingerprint()}:
+        raise SystemExit(f"uphill delay cells made with code {sorted(dcodes, key=str)}, current {code_fingerprint()}: "
+                         "rerun them")
     doc = {"task": "B-107 (P2 M9)", "note": __doc__.strip().split("\n\n")[1].replace("\n", " "),
+           "delay_cells_code": dcodes.pop(),
+           "delay_cells_code_note": "B-120 A (14 Nov 2026): the 16 delay cells (delay_s 1 = RHO_S: moon and mars x "
+                                    "following and one_lane x 5, 10, 15 and 17.2 deg; each with as_is and slope_term, "
+                                    "32 rows) were rerun on the corrected R1 breach counter (the first countable step "
+                                    "is the 11th below step) and carry this code fingerprint; every value equals the "
+                                    "earlier run. The delay-0 cells and the sweep were not rerun: without a delay the "
+                                    "breach is counted on the command as before, and the sweep's breach counts are "
+                                    "not used; neither carries a code stamp.",
            "d0_m": S.D0_M, "b_max": S.B_MAX, "b_min_flat": S.B_MIN_FLAT, "n_per_cell": N_CELL, "n_per_sweep_point": N_SWEEP,
-           "cells": rows, "threshold": thr}
+           "cells": rows, "threshold": thr,
+           "nominal_only_note": "B-118 N18: every follower runs E44's adversarial planner (planner [0] + [2] x (nv - 1)), "
+                                "so no encounter is nominal-only and nominal_only_violations is null in every cell (it "
+                                "was printed as 0 of 0 before 13 Nov 2026; nothing was counted)",
+           "r1_breach_definition": "share of encounters with at least one R1 breach. Without an actuation delay (delay_s "
+                                   "0): a step where a follower's gap to its leader is below rss_dmin and its command is "
+                                   "short of full braking (a > -b). With an actuation delay (delay_s 1 = RHO_S; B-118 N23, "
+                                   "13 Nov 2026): a step where the gap has been below rss_dmin for longer than R1's "
+                                   "response time RHO_S = 1 s and the deceleration the vehicle applies (the delayed "
+                                   "command) is still short of full braking, as R1 states (brake within the response "
+                                   "time); the allowance is RHO_S, not the delay, so a delay longer than RHO_S would be "
+                                   "counted (lunarsim/atc/encounter.py r1_breach_delayed). The sweep cells' breach "
+                                   "counts are not used (only their minimum gaps); the counter does not change the motion."}
+    block = "superseded_2026-11-13_b118_n23"
+    if os.path.isfile(OUT_JSON):                 # B-118 N23: the delay cells' breach rates before the new definition
+        old = json.load(open(OUT_JSON, encoding="utf-8"))
+        doc.update({k: v for k, v in old.items() if k.startswith("superseded_")})
+        if block not in doc:
+            doc[block] = {"reason": "B-118 N23: the delay cells' R1 breach rates as committed before 13 Nov 2026, counted "
+                                  "on the command at once (a follower that brakes within R1's response time was counted "
+                                  "in the steps before its braking took effect); every other value of these cells is "
+                                  "unchanged by the new definition",
+                        "superseded_on": "2026-11-13",
+                        "r1_breach_rate": [{k: r[k] for k in ("planet", "geom", "slope_deg", "delay_s", "rule",
+                                                               "r1_breach_rate")}
+                                           for r in old["cells"] if r["delay_s"] > 0]}
     with open(OUT_JSON, "w", encoding="utf-8", newline="\n") as f:
         json.dump(doc, f, indent=1, allow_nan=False)
         f.write("\n")

@@ -7,7 +7,10 @@
 
 (1) Forgeries with t = 8 and 16 bit truncated AES-CMAC (measured acceptance against 2^-t); 64 and 128 bits by the
     formula (note 03 E4). Replays with the counter and the 10 s freshness rule: 20 senders at 1 Hz, 10 receivers,
-    loss 0.10 / 0.25, a replay a second with 0-60 s delay, 10 minutes.
+    loss 0.10 / 0.25, 10 minutes, a replay a second: a random earlier message of the whole recorded log (usually
+    minutes old), stamped 0 to 60 s after the replay event. Added after the code review of 13 Nov 2026 (B-118 N9,
+    key "replay_recent"): the same set-up with each replay drawn from the messages sent in the last 60 s, so its age
+    is 0 to 60 s; accepted replays split into "missed the original, inside the 10 s window" and the rest.
 (2) The LRIP rule of note 03 C8 as written (z^2 > gamma, 3 of the last 5 flagged) on B-96's validation, test and
     out-of-distribution streams (data/atc/integrity/cache, lunarsim.nn.dataset.load; the same faults as E56), at alpha
     1e-2 / 1e-3 / 1e-4 with the theoretical gamma (no threshold tuned on any data), and the single test at the same
@@ -29,7 +32,6 @@ import argparse
 import csv
 import gzip
 import json
-import math
 import os
 import pickle
 import sys
@@ -74,6 +76,18 @@ def cmd_auth():
     for loss in (0.10, 0.25):
         out["replay"][str(loss)] = I.replay_trial(20, 10, 600, loss, 1.0, np.random.default_rng([55, int(loss * 100)]))
     _save("auth", out)
+    print(json.dumps(out, indent=1))
+
+
+def cmd_replay_recent():
+    """B-118 N9: the replay trial with replays of messages sent in the last 60 s (integrity.replay_recent_trial)."""
+    from lunarsim.atc import integrity as I
+    out = {"added": "after the code review of 13 Nov 2026 (B-118 N9)",
+           "setup": "20 senders at 1 Hz, 10 receivers, 600 s, a replay a second of a message sent in the last 60 s "
+                    "(age 0 to 60 s), counter and 10 s freshness rule, 64-bit tags", "loss": {}}
+    for loss in (0.10, 0.25):
+        out["loss"][str(loss)] = I.replay_recent_trial(20, 10, 600, loss, 1.0, np.random.default_rng([55, 9, int(loss * 100)]))
+    _save("replay_recent", out)
     print(json.dumps(out, indent=1))
 
 
@@ -245,8 +259,28 @@ def cmd_build():
            "nonrobust_cells_with_a_run_leaving_the_range": len(left), "nonrobust_cells": len(nonrobust),
            "cells_with_more_liars_than_F": [{k: c[k] for k in ("geometry", "N", "f", "F", "safe_share")} for c in over]}
     h16["supported"] = bool(h16["robust_cells_all_safe"] and len(left) > 0)
+
+    def _ev(cells):
+        return {"cells": len(cells), "runs_robust": int(sum(c["runs_robust"] for c in cells)),
+                "runs_robust_all_safe": all(c["safe_when_robust"] == 1.0 for c in cells if c["runs_robust"]),
+                "runs_not_robust": int(sum(c["runs"] - c["runs_robust"] for c in cells))}
+    ff = [c for c in cons["cells"] if c["f"] >= 1 and c["F"] == c["f"]]
+    h16["robust_evidence_by_basis"] = {      # B-118 N16: the exact cells reported apart
+        "exact_2F1_robust_N_le_8": _ev([c for c in ff if c["robust_basis"].startswith("exact")]),
+        "degree_condition_only_N_gt_8": _ev([c for c in ff if not c["robust_basis"].startswith("exact")]),
+        "note": "the split behind robust_cells_all_safe: exact (2F+1)-robustness is computed for N <= 8 only; above, "
+                "'robust' means every honest node hears >= 2F + 1, a necessary condition, so those runs are not shown "
+                "to be on robust meshes. The exactly robust evidence is the runs_robust of the first block."}
     doc = {"experiment": "E55 (B-95), Phase 6, H15 baseline and H16", "note": __doc__.split("\n\n")[1].strip(),
            "auth": auth, "integrity": integ, "consensus": cons, "consensus_with_base_mast": cons_m, "h16": h16}
+    doc["replay_trial_description"] = (       # B-118 N9: what auth.replay counts, said plainly
+        "auth.replay: 20 senders at 1 Hz, 10 receivers, 600 s, loss 0.10 / 0.25; once a second the attacker replays a "
+        "random EARLIER message drawn from the whole recorded log (so usually minutes old), stamped 0 to 60 s after the "
+        "replay event. Only about 1 % of these replays fall inside the 10 s freshness window, so '0 accepted' says "
+        "little about the window. replay_recent (added after the code review of 13 Nov 2026) replays messages sent in "
+        "the last 60 s (age 0 to 60 s) and splits the accepted replays.")
+    if os.path.isfile(os.path.join(CACHE, "replay_recent.json")):    # B-118 N9, added after the code review
+        doc["replay_recent"] = _load("replay_recent")
     with open(OUT_JSON, "w", encoding="utf-8", newline="\n") as f:
         json.dump(doc, f, indent=1, default=lambda x: None)
         f.write("\n")
@@ -255,12 +289,12 @@ def cmd_build():
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["auth", "integrity", "consensus", "consensus_mast", "build"])
+    ap.add_argument("cmd", choices=["auth", "replay_recent", "integrity", "consensus", "consensus_mast", "build"])
     ap.add_argument("--max-seconds", type=float, default=540.0)
     a = ap.parse_args(argv)
     import faulthandler
     faulthandler.dump_traceback_later(a.max_seconds, exit=True)
-    {"auth": cmd_auth, "integrity": cmd_integrity, "consensus": cmd_consensus,
+    {"auth": cmd_auth, "replay_recent": cmd_replay_recent, "integrity": cmd_integrity, "consensus": cmd_consensus,
      "consensus_mast": lambda: cmd_consensus(mast_variant=True), "build": cmd_build}[a.cmd]()
     return 0
 

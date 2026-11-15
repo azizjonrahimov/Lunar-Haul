@@ -48,8 +48,14 @@ test('/protocol/: an overlap is an event in the accounts, not a safety measure',
 test('one robot\'s bid and the measured memory, wherever the site sizes the on-robot computation', () => {
   const S = J('results/E48_sizing.json'), RR = robotRound(S), L = S.per_robot_round.laptop_ms_by_multiple;
   const bid = plain(RR.bid);
-  for (const x of Object.keys(L)) assert.ok(bid.includes(`${(L[x].flight_p99_ms / 1e3).toFixed(2)} s`), x);
-  assert.equal(RR.above, Object.values(L).some(r => r.flight_p99_ms > 1000));
+  // F-81: the range over every timing pass, smallest to largest, and "above" from every pass
+  const TP = S.per_robot_round.timing_passes.by_multiple;
+  for (const x of Object.keys(L)) {
+    const ps = TP[x].flight_p99_ms_by_pass;
+    assert.ok(bid.includes(`${(Math.min(...ps) / 1e3).toFixed(2)} to ${(Math.max(...ps) / 1e3).toFixed(2)} s`), x);
+  }
+  assert.match(bid, /over three timing passes/);
+  assert.equal(RR.above, Object.values(TP).some(r => Math.max(...r.flight_p99_ms_by_pass) > 1000));
   if (RR.above) assert.match(bid, /above (it|the one-second decision)/);
   const mem = Object.values(S.measured_memory.mb_by_multiple).map(m => m.all_at_once_peak);
   assert.equal(plain(RR.mem), `${Math.min(...mem).toFixed(2)} to ${Math.max(...mem).toFixed(2)} MB`);

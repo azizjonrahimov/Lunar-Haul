@@ -299,3 +299,27 @@ quarter of the code) and its top value (1.95 km).
 | Key | Source | Format |
 |---|---|---|
 | P3-E54-V02-SENTENCE (5.12), P3-E54-V02-LIMIT (7), the last clause of P3-LRIP-V02-SENTENCE (5.11), TABLE:pta (H14's row) | E54 `lrip_v02` (task B-111): `values_moved_vs_v01`, `rows.{v0.1, v0.2, v0.2_proximity1}`, `reproduction_of_published_v01`, `h14`, `verdicts`, `sizes_bytes`, `max_queue_bytes_bound`, `seeds`; E54 `rows`, `h14`, `parameters.queue_bytes` (checked, and the build stops otherwise: `values_moved_vs_v01` is empty and every row of v0.2 and of v0.2 in Proximity-1 frames equals the v0.1 row on every key but the byte totals; the v0.1 rows reproduce the published rows; H14's block is the same in the three sets and equal to the published difference; every verdict flag is true; the three message types have the same size in v0.1 and v0.2 and 12 B more framed; the largest store bound is under 1 % of `queue_bytes`) | composed; called a property of the replay's message set, not a test of version 0.2 |
+
+### Part 6 (13 Nov 2026): corrections after the code review (reports/review_phase6_code.md)
+
+Each corrected value prints with one sentence that names the review and the earlier value; the earlier values are read from the dated
+`superseded_...` key of the same results file, never typed. No new key; these keys changed their sources and checks:
+
+| Key | New source and checks |
+|---|---|
+| P3-E52-RESULTS-SENTENCE, P3-E52-LIMIT-CLAUSE, TABLE:E52_map | E52 `superseded_2026-11-13_b118_n1` (`rows`, `h12`): the earlier largest after-contact hits and the one-day count (checked: only the `hits_*` columns differ between the superseded and the current rows; H12 is identical) |
+| P3-E54-DESIGN-SENTENCE, P3-E54-RESULTS-SENTENCE, P3-H14-VERDICT-SENTENCE, P3-E54-V02-SENTENCE, TABLE:E54_dtn | E54 `awards_and_jobs` (awards = jobs + two-vehicle team jobs, checked against `award_n`), `lost_link_rule`, `parameters.return_rule` ("papers"), `outcome_definitions`, `h14.clause_2_basis` (checked to say "holds BY RULE, not by measurement"), `h14_variants` (the same difference with censored messages counted and under the earlier return rule), rows of protocol `sf_ll_pre_review`, `superseded_2026-11-13_b118` (the earlier age of information, task-state delay and losses, grant losses and returns; checked: no award loss and not H14's first clause changed), `lrip_v02.reproduction_of_main_table_v01` |
+| P3-E55-AUTH-SENTENCE, P3-E55-CONSENSUS-SENTENCE, TABLE:pta | E55 `replay_trial_description` (checked: drawn from the whole log, about 1 % inside the window), `replay_recent` (`added`, `setup`, `loss.*`: `replays`, `replays_accepted`, `accepted_missed_original_inside_window`, `accepted_other`; checked: every accepted copy is the case Proposition 7(b) allows), `h16.robust_evidence_by_basis` |
+| P3-E48-ROBOT-ROUND-SENTENCE, the round wording of the P3-E48 clauses and of P3-H10-VERDICT-SENTENCE, TABLE:pta | E48 `per_robot_round.timing_passes.by_multiple.*` (`flight_p99_ms_by_pass`, `laptop_p99_ms_by_pass`, `flight_p99_ms_over_passes_and_factor_range`, `against_1s_at_central_factor`, `against_1s_over_passes_and_factor_range`), `laptop_ms_by_multiple.*.timed_without_tracemalloc`, `superseded_2026-11-13_b118_n12.per_robot_round` (checked: three passes; the first is the block's value; the range is the passes times the factor range; the file's "inside" / "straddling" verdicts are recomputed; under one second at the central factor at every fleet size, over it only at the top of the range at four and eight times the fleet) |
+| P3-CHECKS6-SENTENCE, P3-CHECKS6-OUTCOME-SENTENCE | VV6 rows `G1` with `sub` "options off" and "option on changes the run": days, seed, count of summary values and commit parsed from `basis`; the reference file `results/vv6_g1_reference_<commit>.json` must exist; the count of values an option changes |
+| P3-FAMILY-SENTENCE | FAM `hypotheses.H15a.p_note` no longer says "upper bound", so the adjusted p prints as a value, not as "at most" |
+
+Removed from the build as computed and never checked (review, P2): `core_ok` in `e48_clause`, `h12` and `s_map` in `p6_clause`, and `bid_sign` in `e46_clause`.
+
+### Part 7 (14 Nov 2026): E50 regenerated after the positioning fix
+
+No new key. P3-E50-RESULTS-ERRORS and P3-E50B-SENTENCE now also read `superseded_2026-11-13_b118_n15` of `results/E50_summary.json` and
+`results/E50b_summary.json` for the one sentence each that names the earlier values. P3-E50B-SENTENCE no longer requires zero violations with
+stop time: it prints the count of runs with a violation in each arm from `metrics.violations` (checked to be whole counts over the seeds) and
+words the difference from its interval. P3-H9-VERDICT-SENTENCE and P3-LIMIT-NEAR-SENTENCE print "not computed at eight times the fleet" only
+when `results/E50_near_base.json` lacks that multiple (it now has it).

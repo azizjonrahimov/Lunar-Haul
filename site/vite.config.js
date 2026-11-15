@@ -10,7 +10,7 @@ import { P as PROTOCOL } from './src/protocol/params.js';
 import { nw } from './lib/network.mjs';
 import { atcResults, e44fresh, e45up, p1learned } from './lib/results-atc.mjs';
 import { ringSentence } from './lib/ring.mjs';
-import { b104, e50b, e50ov, e51, e52, e53, e53v1, e53air, e53d, e55, lrip, lrip2 } from './lib/protocol-data.mjs';
+import { b104, e50b, e50ov, e51, e52, e53, e53v1, e53air, e53d, e54, e55, lrip, lrip2 } from './lib/protocol-data.mjs';
 import { b97 } from './lib/realdata.mjs';
 import { nb, vv6 } from './lib/phase6.mjs';
 import { num } from './src/components/num.js';
@@ -51,8 +51,9 @@ function lunarsimPages() {
           .replace(/<!--@e53d:(\w+)-->/g, (_, k) => e53d(k))   // F-70b: E53's driving split in /protocol/ problem 5
           .replace(/<!--@b104:(\w+)-->/g, (_, k) => b104(k))   // F-70b: the radio over a curved Moon in /protocol/ problem 4
           .replace(/<!--@e52:(\w+)-->/g, (_, k) => e52(k))   // F-56: E52 in /protocol/ problem 2 (lib/protocol-data.mjs)
+          .replace(/<!--@e54:([\w:@.]+)-->/g, (_, k) => e54(k))   // F-79: E54 in /protocol/ problems 4 and 6, now and as published before the code review
           .replace(/<!--@nb:(\w+)-->/g, (_, k) => nb(k))
-          .replace('<!--@e50ov:lead-->', () => e50ov('lead'))   // F-72: what a reservation overlap is (results/E50_overlaps.json), /protocol/ problem 1   // F-71: H9' clause 2 under every reading (results/E50_near_base.json), /protocol/ problem 1
+          .replace(/<!--@e50ov:(lead|was)-->/g, (_, k) => e50ov(k))   // F-80: was = problem 1's E50 values before the positioning fix   // F-72: what a reservation overlap is (results/E50_overlaps.json), /protocol/ problem 1   // F-71: H9' clause 2 under every reading (results/E50_near_base.json), /protocol/ problem 1
           .replace(/<!--@vv6:(\w+)-->/g, (_, k) => vv6(k))   // F-69: the Phase 6 checks' lead on /verification/ (lib/phase6.mjs)
           .replace(/<!--@b97:(\w+)-->/g, (_, k) => b97(k))   // F-56: B-97's real-data boxes (lib/realdata.mjs)
           .replace(/<!--@e55:([\w@.]+)-->/g, (_, k) => e55(k))   // F-56: E55 in /protocol/ problem 7 (lib/protocol-data.mjs)
@@ -113,7 +114,10 @@ export default defineConfig({
         '404': join(SITE, '404.html') },   // GitHub Pages serves 404.html for unknown paths
       // F-40: a chunk made from one module under src/<dir>/ is named <dir>-<name> (rover-lab3d-scene, stories-stage), so
       // the budgets' lazy globs (tools/ci/budgets.json) match one chunk each; shared and vendor chunks keep their names
-      output: { chunkFileNames: c => { const d = c.facadeModuleId && /[\\/]src[\\/]([^\\/]+)[\\/][^\\/]+$/.exec(c.facadeModuleId); return `assets/${d ? d[1] + '-' : ''}[name]-[hash].js`; } },
+      output: { chunkFileNames: c => { const d = c.facadeModuleId && /[\\/]src[\\/]([^\\/]+)[\\/][^\\/]+$/.exec(c.facadeModuleId); return `assets/${d ? d[1] + '-' : ''}[name]-[hash].js`; },
+        // F-78: the shared stylesheet holding src/ui/ui.css keeps the name ui-*.css whichever module its chunk is named
+        // after (with ui.css imported by /network/ too, it shares a chunk with tooltip.js); the budgets' lazy_css globs read it
+        assetFileNames: a => ((a.originalFileNames || []).some(f => /src[\\/]ui[\\/]ui\.css$/.test(f)) || (a.names || []).includes('tooltip.css') ? 'assets/ui-[hash][extname]' : 'assets/[name]-[hash][extname]') },
     },
   },
   server: { port: 5173 },

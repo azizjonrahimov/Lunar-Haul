@@ -146,6 +146,17 @@ def test_channel_byte_count_is_opt_in():
     assert b.bytes_sent == 3 * 41 + 92
 
 
+def test_channel_signs_what_the_schema_signs():
+    """B-118 N13: every message the codec signs is counted at its signed size (CAP_MANIFEST 84 B, not 28 B)."""
+    from lunarsim.atc.lrip import codec as C
+    from lunarsim.atc.messages import Channel
+    t = C.size_table()
+    ch = Channel(0.0, sizes="lrip_mac8")
+    for k in t:
+        assert ch._size[k] == (t[k]["signed"] if C.default_auth(k) == "sig" else t[k]["mac8"]), k
+    assert ch._size["CAP_MANIFEST"] == 84
+
+
 def test_capability_filter_catalog_changes_nothing():
     """The catalogue-derived manifests offer exactly the capacity the engine checks, so the filter is a no-op there;
     a manifest set without carrying capability leaves the robots without bids."""
@@ -174,11 +185,16 @@ def test_e53_outputs():
     if not os.path.isfile(p):
         pytest.skip("E53 not run")
     d = json.load(open(p))
-    assert isinstance(d["h13"]["supported"], bool)
+    # B-119: the verdict recomputed from the rows (fleet geometry, auth on, 20 rovers: p95 <= 16 kbit/s at 1 Hz,
+    # > 16 kbit/s at 10 Hz)
+    cell = {(r["geometry"], r["auth"], r["position_hz"], r["rovers"]): r for r in d["rows"]}
+    a1, a10 = cell[("fleet", "on", 1.0, 20)]["busiest_link_kbps_p95"], cell[("fleet", "on", 10.0, 20)]["busiest_link_kbps_p95"]
+    assert d["h13"]["supported"] is bool(a1 <= 16.0 and a10 > 16.0)
+    assert d["h13"]["at_1hz_kbps_p95"] == a1 and d["h13"]["at_10hz_kbps_p95"] == a10
     v = json.load(open(os.path.join(ROOT, "data", "atc", "lrip", "conformance-v0.1.json")))
     for x in v["vectors"]:                                   # every golden packet decodes to its recorded fields
         pkt = bytes.fromhex(x["hex"])
-        d2 = L.decode(pkt, auth="auto" if x["auth"] else None, keys=KEYS if False else C.Keys(
+        d2 = L.decode(pkt, auth="auto" if x["auth"] else None, keys=C.Keys(
             mac_key=bytes.fromhex(v["keys"]["aes_cmac_key_hex"]), verify_key=PK), profile=x["profile"])
         assert d2.name == x["message"] and len(pkt) == x["bytes"]
         if "manifest_cbor_hex" not in x["fields"]:

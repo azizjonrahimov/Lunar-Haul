@@ -116,3 +116,50 @@ def test_e50_outputs():
     assert d["h9"]["1"]["dr_supported"] is True
     tr = json.load(open(os.path.join(ROOT, "results", "E50_trace.json")))
     assert tr["format"] == "lunarsim-e50-trace" and len(tr["vehicles"]) == 2
+
+
+def test_arrival_step_belongs_to_its_leg():
+    """B-118 N15 (and N14's exits): the partial distance driven in the arrival step keeps the leg's heading, class and
+    leg index; before, it had a zero heading and leg -1, so the filter redrew the leg's bias and E50's timing shift
+    of a reservation ending in that step was 0."""
+    sample_xy = np.array([[0.0, 0.0], [50.0, 0.0], [100.0, 0.0]])
+    tr = PN.Trajectories.from_segments({1: [["A", "B", 0.005, 0.02, 0]]}, {1: "A"}, 0.0, 0.05, 60.0, {1: 2.5},
+                                       lambda s: s, sample_xy, {"A": 0, "B": 2}, {"A->B": [0, 1, 2]}, np.zeros(3))
+    k_drive, k_arr = 1, 2
+    assert tr.ds[k_drive, 0] > 0 and tr.ds[k_arr, 0] > 0 and tr.arrive[k_arr, 0]
+    assert abs(tr.ds[k_drive, 0] + tr.ds[k_arr, 0] - 100.0) < 1e-3
+    assert tr.head[k_arr, 0].tolist() == [1.0, 0.0]
+    assert tr.leg[k_arr, 0] == tr.leg[k_drive, 0] >= 0
+    assert tr.cls[k_arr, 0] == tr.cls[k_drive, 0]
+
+
+class _OpenSky:
+    """A line-of-sight stub: everything sees everything (one route sample, index 0)."""
+    def __init__(self, n=1):
+        self.mast = {2.5: np.ones(n, bool)}
+        self.mat = {(2.5, 2.5): np.ones((n, n), bool)}
+
+    def ok(self, i_idx, h_i, j_idx, h_j):
+        return np.ones(len(j_idx), bool)
+
+
+def test_ranging_lowers_the_error_and_counts_updates():
+    """The review's pnt test: ranging to a beacon (and peers) lowers the dead-reckoning error, and the update counts
+    add up (range_updates = beacon_updates + peer_updates)."""
+    tr = straight(T=60, N=40)
+    tr.xy[:] = np.stack([np.linspace(150.0, 450.0, 40), np.full(40, 80.0)], axis=1)[None]
+    los = _OpenSky()
+    dr = PN.simulate(tr, ("dr",), seed=4)
+    rg = PN.simulate(tr, ("dr", "ranging"), seed=4, los=los, beacon_idx=[0], beacon_xy=np.array([[0.0, 0.0]]))
+    assert rg.counts["beacon_updates"] > 0 and rg.counts["peer_updates"] > 0
+    assert rg.counts["range_updates"] == rg.counts["beacon_updates"] + rg.counts["peer_updates"]
+    assert np.median(rg.err[-1]) < 0.5 * np.median(dr.err[-1])
+
+
+def test_lans_with_a_nonzero_share():
+    """LANS in 2030 (share 0.6): updates happen and the error falls below dead reckoning alone; in 2028 it does nothing."""
+    tr = straight(T=24 * 60 // 60 * 2, N=30)
+    dr = PN.simulate(tr, ("dr",), seed=5)
+    ln = PN.simulate(tr, ("dr", "lans"), seed=5, params={"year": 2030})
+    assert ln.counts["lans_updates"] > 0 and np.median(ln.err[-1]) < 0.5 * np.median(dr.err[-1])
+    assert PN.simulate(tr, ("dr", "lans"), seed=5, params={"year": 2028}).counts["lans_updates"] == 0

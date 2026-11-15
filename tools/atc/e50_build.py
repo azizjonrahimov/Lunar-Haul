@@ -28,6 +28,44 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 CACHE = os.path.join(ROOT, ".cache", "atc", "e50")
 B = 20000
+SUPERSEDED_BLOCK = "superseded_2026-11-13_b118_n15"
+SUPERSEDED_REASON = ("B-118 N14/N15 (positioning fix in lunarsim/atc/pnt.py: a ranging or fix update at a vehicle's "
+                     "arrival step, and the reservation count): the values below were made with the code before the "
+                     "fix and are kept as they were; the file's other values come from the regenerated cells")
+
+
+def keep_superseded(path, doc, design_multiples=None, built_multiples=None):
+    """B-118 N15: carry the previous file's values into doc under SUPERSEDED_BLOCK (once: a later rebuild keeps the key
+    it finds, so the pre-fix values are never overwritten by a partial rebuild), carry any older superseded_* keys,
+    and list the design's fleet multiples not yet rerun (their pre-fix values stay only under SUPERSEDED_BLOCK)."""
+    if os.path.isfile(path):
+        with open(path, encoding="utf-8") as f:
+            old = json.load(f)
+        for k, v in old.items():
+            if k.startswith("superseded_"):
+                doc.setdefault(k, v)
+        if SUPERSEDED_BLOCK not in doc:
+            doc[SUPERSEDED_BLOCK] = {"reason": SUPERSEDED_REASON, "superseded_on": "2026-11-13",
+                                   **{k: v for k, v in old.items() if not k.startswith("superseded_")}}
+    if design_multiples is not None:
+        built = {int(m) for m in (built_multiples or [])}
+        doc["multiples_not_rerun_yet"] = [m for m in design_multiples if m not in built]
+    return doc
+
+
+def require_code(codes, where):
+    """B-120 D: the cells a build reads must all come from one code version, and it must be the current one
+    (run_e50.code_fingerprint); a cell without a code stamp is refused. Returns the code."""
+    import run_e50 as R
+    codes = set(codes)
+    fp = R.code_fingerprint()
+    if None in codes:
+        raise SystemExit(f"{where}: cells without a code stamp; rerun them or stamp them after a reproduction check")
+    if len(codes) > 1:
+        raise SystemExit(f"{where}: cells made with different code {sorted(codes)}; rerun the stale cells")
+    if codes != {fp}:
+        raise SystemExit(f"{where}: cells made with code {sorted(codes)}, current code is {fp}; rerun them")
+    return fp
 
 
 def _load(p):
@@ -52,6 +90,8 @@ def cells():
     for p in sorted(glob.glob(os.path.join(CACHE, "m*_s*.pkl.gz"))):
         d = _load(p)
         out[(int(d["mult"]), int(d["seed"]))] = d
+    if out:                                                       # B-118 N21 / B-120 D: one code, the current one
+        require_code((d.get("code") for d in out.values()), "E50")
     return out
 
 
@@ -166,6 +206,7 @@ def build():
             "gap_by_mult": {str(m): summ["delay"][str(m)]["margin_layered_minus_perfect"] for m in mults},
             "note": "the layered scheme's terrain-fix stops (fix_stop_h) are not in the engine's delay; they are "
                     "reported per month in errors.<mult>.<set>.fix_stop_h_per_month"}
+    keep_superseded(R.OUT_JSON, summ, D["multiples"], mults)
     with open(R.OUT_JSON, "w", encoding="utf-8", newline="\n") as f:
         json.dump(summ, f, indent=1, allow_nan=False, default=lambda x: None)
         f.write("\n")

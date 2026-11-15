@@ -14,11 +14,13 @@ field's scale; enumerations by code (int).
 """
 from __future__ import annotations
 
+import hmac
 import json
 import os
 import struct
+import warnings
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from . import cbor
 
@@ -41,6 +43,32 @@ class LripAuthError(ValueError):
 
 class LripRefError(ValueError):
     """A POSITION from a sender with no frame / datum / time-scale declaration under its key epoch (v0.2 rule)."""
+
+
+class LripDecodeError(ValueError):
+    """B-119 C4: a short or malformed packet (every decoding failure is a ValueError)."""
+
+
+class LripReplayError(ValueError):
+    """B-119 C2: a replayed or stale packet (sequence number not above the sender's highest, or outside the freshness
+    window), note 03 E4."""
+
+
+class LripInsecureKeyWarning(UserWarning):
+    """B-119 C6: no keys were given, so the all-zero test key (or the fixed test seed) is used."""
+
+
+FRESHNESS_S = 10.0                    # note 03 D "Anti-replay: freshness window" 10 s
+
+
+def _default_keys(keys, where: str):
+    if keys is None:
+        warnings.warn(f"LRIP {where}: no keys given, using the all-zero test key", LripInsecureKeyWarning, stacklevel=3)
+        return Keys()
+    if bytes(keys.mac_key) == bytes(len(keys.mac_key)):          # B-120 F: an explicit all-zero key is the test key
+        warnings.warn(f"LRIP {where}: the MAC key given is all zeros (the test key)", LripInsecureKeyWarning,
+                      stacklevel=3)
+    return keys
 
 
 _SCHEMA: Dict[str, Any] = {}
@@ -186,8 +214,11 @@ def cmac(key: bytes, data: bytes, n: int) -> bytes:
     return c.finalize()[:n]
 
 
-def ed25519_keys(seed: bytes = b"\x07" * 32):
+def ed25519_keys(seed: Optional[bytes] = None):
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    if seed is None:                                   # B-119 C6: say so when the fixed test seed is used
+        warnings.warn("LRIP ed25519_keys: no seed given, using the fixed test seed", LripInsecureKeyWarning, stacklevel=2)
+        seed = b"\x07" * 32
     sk = Ed25519PrivateKey.from_private_bytes(seed)
     return sk, sk.public_key()
 
@@ -228,7 +259,8 @@ def encode(name, values: Dict[str, Any], sender: int, t_valid_s: float, seq: int
         inner = cbor.dumps(arr) + extra
     else:
         raise ValueError("profile must be 'N' or 'B'")
-    keys = keys or Keys()
+    if auth is not None:
+        keys = _default_keys(keys, "encode")
     sec = b""
     if auth is not None:
         sec = struct.pack(">HI", (SPI_KIND[auth] << 14) | (keys.epoch & 0x3FFF), seq & 0xFFFFFFFF)
@@ -278,6 +310,26 @@ class Counters:
 
 def decode(pkt: bytes, auth: Optional[str] = "auto", keys: Optional[Keys] = None, profile: str = "N",
            counters: Optional[Counters] = None, verify: bool = True) -> Optional[Decoded]:
+    """Decode one packet (see _decode). B-119 C4: a short or malformed packet raises LripDecodeError (a ValueError),
+    never struct.error, KeyError, IndexError, TypeError or RecursionError; B-120 F: nor a bare ValueError from the
+    CBOR reader or a UnicodeDecodeError. Another major version, a failed MAC or signature and a missing declaration
+    keep their own errors (LripVersionError, LripAuthError, LripRefError)."""
+    if not isinstance(pkt, (bytes, bytearray)):
+        raise LripDecodeError(f"packet must be bytes, not {type(pkt).__name__}")
+    pkt = bytes(pkt)
+    if len(pkt) < SPP_B + (HDR_B if profile == "N" else 1):
+        raise LripDecodeError(f"packet of {len(pkt)} B is shorter than its headers")
+    try:
+        return _decode(pkt, auth, keys, profile, counters, verify)
+    except (LripVersionError, LripAuthError, LripRefError, LripDecodeError, LripReplayError):
+        raise
+    except (ValueError, struct.error, KeyError, IndexError, TypeError, RecursionError, OverflowError,
+            AttributeError) as e:                       # ValueError includes UnicodeDecodeError and the CBOR reader's
+        raise LripDecodeError(f"malformed packet: {type(e).__name__}: {e}") from e
+
+
+def _decode(pkt: bytes, auth: Optional[str], keys: Optional[Keys], profile: str, counters: Optional[Counters],
+            verify: bool) -> Optional[Decoded]:
     """Decode one packet. auth "auto": a security header is present when the packet is longer than an unsecured one
     (the kind is then read from the SPI); None: unsecured. Returns None for an unknown message type (counted, rule 3);
     raises LripVersionError on another major version (rule 5) and LripAuthError when the MAC / signature fails."""
@@ -286,7 +338,7 @@ def decode(pkt: bytes, auth: Optional[str] = "auto", keys: Optional[Keys] = None
     w1, w2, dl = struct.unpack(">HHH", pkt[:SPP_B])
     total = SPP_B + dl + 1
     if total != len(pkt):
-        raise ValueError(f"packet length {len(pkt)} != {total} from the Space Packet header")
+        raise LripDecodeError(f"packet length {len(pkt)} != {total} from the Space Packet header")
     apid = w1 & 0x7FF
     msg_type = apid - s["framing"]["space_packet"]["apid_base"]
     if profile == "N":
@@ -295,6 +347,9 @@ def decode(pkt: bytes, auth: Optional[str] = "auto", keys: Optional[Keys] = None
         body_start = SPP_B + HDR_B
     else:
         arr0, _ = cbor._load(pkt, SPP_B)
+        # B-119 C7: profile B's header items are checked before use
+        if not isinstance(arr0, list) or len(arr0) < 4 or not all(type(x) is int and x >= 0 for x in arr0[:4]):
+            raise LripDecodeError("profile B: the packet must start with an array of 4 unsigned header integers")
         major, minor = arr0[0] >> 4, arr0[0] & 15
         mt, sender, tv = arr0[1], arr0[2], arr0[3]
         body_start = None
@@ -325,7 +380,7 @@ def decode(pkt: bytes, auth: Optional[str] = "auto", keys: Optional[Keys] = None
                 if KIND_OF.get(spi >> 14) == k:
                     cands.append((k, sq, spi & 0x3FFF))
         if verify and len(cands) > 1:
-            keys_ = keys or Keys()
+            keys_ = _default_keys(keys, "decode")
             good = []
             for k, sq, ep in cands:
                 tl_ = TRAILER_B[k]
@@ -334,7 +389,7 @@ def decode(pkt: bytes, auth: Optional[str] = "auto", keys: Optional[Keys] = None
                     if k == "sig":
                         keys_.verify_key.verify(tag, body_)
                         good.append((k, sq, ep))
-                    elif cmac(keys_.mac_key, body_, tl_) == tag:
+                    elif hmac.compare_digest(cmac(keys_.mac_key, body_, tl_), tag):     # B-119 C5
                         good.append((k, sq, ep))
                 except Exception:
                     pass
@@ -346,7 +401,7 @@ def decode(pkt: bytes, auth: Optional[str] = "auto", keys: Optional[Keys] = None
             raise LripAuthError("no security header of the expected kind")
     end_payload = len(pkt) - tl - (SEC_B if kind else 0)
     if kind and verify:
-        keys = keys or Keys()
+        keys = _default_keys(keys, "decode")
         signed = pkt[:len(pkt) - tl]
         if kind == "sig":
             try:
@@ -354,7 +409,7 @@ def decode(pkt: bytes, auth: Optional[str] = "auto", keys: Optional[Keys] = None
             except Exception:
                 counters.bad_auth += 1
                 raise LripAuthError("signature does not verify")
-        elif cmac(keys.mac_key, signed, tl) != pkt[len(pkt) - tl:]:
+        elif not hmac.compare_digest(cmac(keys.mac_key, signed, tl), pkt[len(pkt) - tl:]):     # B-119 C5
             counters.bad_auth += 1
             raise LripAuthError("MAC does not verify")
     body = None
@@ -367,17 +422,32 @@ def decode(pkt: bytes, auth: Optional[str] = "auto", keys: Optional[Keys] = None
             fields, body, skipped = {}, bytes(data), 0
     else:
         arr, end = cbor._load(pkt, SPP_B)
+        if end > end_payload:                          # B-119 C7: the CBOR array may not run into the security header
+            raise LripDecodeError("profile B: the CBOR array runs into the security header")
         skipped = end_payload - end
         names = [f for f in fields_for(m["name"], minor) if f[1] != "spare"]
         fields = {}
         if m["fields"]:
+            if len(arr) < 4 + len(names):
+                raise LripDecodeError(f"profile B: {m['name']} needs {len(names)} fields, got {len(arr) - 4}")
             for f, raw in zip(names, arr[4:4 + len(names)]):
+                _check_cbor_field(f, raw)
                 fields[f[0]] = _value_signed(f, raw)
             skipped += max(0, len(arr) - 4 - len(names))  # appended CBOR items of a later minor version
         else:
             body = arr[4] if len(arr) > 4 else None
     return Decoded(m["name"], mt, sender, tv * s["framing"]["lrip_header"]["t_valid_unit_s"], (major, minor), fields,
                    kind, seq, epoch, skipped, body)
+
+
+def _check_cbor_field(f, raw) -> None:
+    """B-119 C7: a profile-B field must be an integer inside its field's range."""
+    if type(raw) is not int:
+        raise LripDecodeError(f"profile B: field {f[0]} is {type(raw).__name__}, not an integer")
+    bits, typ = f[2], f[1]
+    lo, hi = (-(1 << (bits - 1)), (1 << (bits - 1)) - 1) if typ == "int" else (0, (1 << bits) - 1)
+    if not lo <= raw <= hi:
+        raise LripDecodeError(f"profile B: field {f[0]} = {raw} outside {bits} bits")
 
 
 def _value_signed(f, raw: int):
@@ -458,11 +528,19 @@ class Receiver:
     (LripRefError, counted). Codes outside the schema's enums are refused, not read as a cautious value."""
 
     def __init__(self, keys: Optional[Keys] = None, profile: str = "N"):
-        self.keys, self.profile = keys or Keys(), profile
+        self.keys, self.profile = _default_keys(keys, "Receiver"), profile
         self.decl: Dict[int, RefDecl] = {}
         self.counters = Counters()
         self.refused_positions = 0
         self.ignored_declarations = 0
+        # B-119: refusals of the receive rules (note 03 E4 and the schema's signed flag)
+        self.s_max: Dict[Tuple[int, int], int] = {}     # (sender, key epoch) -> highest accepted sequence number
+        self.refused_unauthenticated = 0
+        self.refused_unsigned = 0
+        self.refused_epoch = 0
+        self.refused_replay = 0
+        self.refused_stale = 0
+        self.revoked_declarations = 0
 
     def _valid(self, frame, datum, ts) -> bool:
         e = schema()["enums"]
@@ -478,25 +556,65 @@ class Receiver:
                                          "manifest", float("nan"))
         return True
 
-    def accept(self, pkt: bytes) -> Optional[Decoded]:
-        """Decode (verifying), apply the rule; a POSITION comes back with frame_id, datum_id, time_scale and the
-        decoded 95 % bound (u95_m) added to its fields."""
+    def accept(self, pkt: bytes, now: Optional[float] = None) -> Optional[Decoded]:
+        """Decode (verifying), apply the receive rules and the declaration rule; a POSITION comes back with frame_id,
+        datum_id, time_scale and the decoded 95 % bound (u95_m) added to its fields. B-119, refused with an exception
+        and counted: an unauthenticated packet (C1; LripAuthError); a message the schema signs that is not signed
+        (C1); another key epoch than the receiver's (C3); a sequence number not above the highest accepted from that
+        sender under that key, or, when `now` (s, the receiver's clock on the t_valid scale) is given, |t_valid - now|
+        above 10 s (C2, note 03 E4; LripReplayError). An authenticated v0.2 HELLO with codes outside the schema's enums
+        revokes the sender's declaration (C8, the stricter reading); a HELLO older than the declaration in force does
+        not replace it (C2). B-120 G, the rule as it stands (an open protocol decision): a HELLO carries a MAC under the
+        site key, a capability manifest a signature, and neither outranks the other: a valid HELLO replaces a
+        declaration that came from a signed manifest, and an invalid one revokes it, so any holder of the site key can
+        undo a signed declaration. The sequence counter is kept per (sender, key epoch), shared by MAC'd and signed
+        packets."""
         d = decode(pkt, keys=self.keys, profile=self.profile, counters=self.counters)
         if d is None:
             return None
+        if d.auth is None:
+            if d.name == "POSITION":                       # the declaration rule's own refusal, as before
+                self.refused_positions += 1
+                raise LripRefError(f"POSITION from sender {d.sender}: unauthenticated")
+            if d.name == "HELLO" and d.ver[1] >= 2:
+                self.ignored_declarations += 1
+            self.refused_unauthenticated += 1
+            raise LripAuthError(f"{d.name} from sender {d.sender}: unauthenticated packet refused")
+        if message(d.name).get("signed") and d.auth != "sig":
+            self.refused_unsigned += 1
+            raise LripAuthError(f"{d.name} from sender {d.sender}: the schema signs this message; got {d.auth}")
+        if d.epoch != self.keys.epoch:
+            self.refused_epoch += 1
+            raise LripAuthError(f"{d.name} from sender {d.sender}: key epoch {d.epoch}, receiver's {self.keys.epoch}")
+        sender_epoch = (int(d.sender), int(d.epoch))
+        if d.seq is not None and d.seq <= self.s_max.get(sender_epoch, -1):
+            self.refused_replay += 1
+            raise LripReplayError(f"{d.name} from sender {d.sender}: sequence {d.seq} <= {self.s_max[sender_epoch]}")
+        # B-120 F: written so that a non-finite `now` (NaN compares false) is refused, not accepted
+        if now is not None and not abs(d.t_valid_s - float(now)) <= FRESHNESS_S:
+            self.refused_stale += 1
+            raise LripReplayError(f"{d.name} from sender {d.sender}: t_valid {d.t_valid_s} s, now {now} s")
         if d.name == "HELLO" and d.ver[1] >= 2:
             f = d.fields
-            if d.auth is not None and self._valid(f.get("frame_id", 0), f.get("datum_id", 0), f.get("time_scale", 0)):
-                self.decl[d.sender] = RefDecl(int(f["frame_id"]), int(f["datum_id"]), int(f["time_scale"]), int(d.epoch),
-                                              "hello", d.t_valid_s)
+            old = self.decl.get(d.sender)
+            if self._valid(f.get("frame_id", 0), f.get("datum_id", 0), f.get("time_scale", 0)):
+                if old is not None and old.source == "hello" and old.epoch == d.epoch and d.t_valid_s < old.t_valid_s:
+                    self.ignored_declarations += 1          # an older HELLO does not replace a newer declaration
+                else:
+                    self.decl[d.sender] = RefDecl(int(f["frame_id"]), int(f["datum_id"]), int(f["time_scale"]),
+                                                  int(d.epoch), "hello", d.t_valid_s)
             else:
                 self.ignored_declarations += 1
+                if self.decl.pop(d.sender, None) is not None:     # C8: invalid codes revoke the declaration
+                    self.revoked_declarations += 1
         elif d.name == "POSITION":
             dec = self.decl.get(d.sender)
-            if d.auth is None or dec is None or dec.epoch != d.epoch:
+            if dec is None or dec.epoch != d.epoch:     # (unauthenticated packets are refused above)
                 self.refused_positions += 1
                 raise LripRefError(f"POSITION from sender {d.sender}: no frame / datum / time-scale declaration under "
                                    f"key epoch {d.epoch}")
             d.fields.update(frame_id=dec.frame_id, datum_id=dec.datum_id, time_scale=dec.time_scale,
                             u95_m=u95_from_code(d.fields["u95_code"]) if "u95_code" in d.fields else None)
+        if d.seq is not None:
+            self.s_max[sender_epoch] = int(d.seq)                    # only an accepted packet moves the counter
         return d

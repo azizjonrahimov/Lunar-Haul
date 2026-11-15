@@ -45,7 +45,8 @@ def _enc(x: Any, key: Optional[str], r) -> Any:
     if key in r["_ver"] and isinstance(x, str):
         return _ver_int(x)
     if isinstance(x, str):
-        return r["_s"].get(x, x)
+        # B-119 C9: only the keys the decoder maps back carry registry indices; any other string stays text
+        return r["_s"].get(x, x) if key in _STRING_KEYS else x
     if key in r["_dec"]:
         return int(round(float(x) * 100))
     if isinstance(x, float):

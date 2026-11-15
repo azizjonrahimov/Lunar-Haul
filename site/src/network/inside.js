@@ -4,14 +4,20 @@
 // ten windows against the float64 reference (data/policies/integrity_net_v1.check.json, 1e-6).
 import { segmented, h } from '../ui/index.js';
 import { forward, prob } from './tcn.js';
+// F-78 (review W6): the site's formatter (components/num.js), which also guards against "-0.00"
+import { fmt } from '../components/num.js';
+import { onTheme } from './theme.js';
 
 const SEQ = ['#cde2fb', '#9ec5f4', '#6da7ec', '#3987e5', '#256abf', '#184f95', '#0d366b'];
 const DIV = { neg: '#2a78d6', pos: '#eb6834', mid: [214, 214, 210] };   // diverging: blue / orange, neutral grey midpoint
 const hex = s => [1, 3, 5].map(i => parseInt(s.slice(i, i + 2), 16));
 const lerp = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
-const seqAt = u => { const x = Math.max(0, Math.min(1, u)) * (SEQ.length - 1), i = Math.min(SEQ.length - 2, Math.floor(x)); return lerp(hex(SEQ[i]), hex(SEQ[i + 1]), x - i); };
-const divAt = u => u < 0 ? lerp(DIV.mid, hex(DIV.neg), Math.min(1, -u)) : lerp(DIV.mid, hex(DIV.pos), Math.min(1, u));
-const fmt = (v, d) => v.toLocaleString('en-GB', { minimumFractionDigits: d, maximumFractionDigits: d });
+// F-78 (review W5): the ramps follow the theme: in dark the sequential ramp runs the other way (low values recede into
+// the dark surface) and the diverging midpoint is a dark grey; the strips are redrawn when the theme changes
+const dark = () => { const c = getComputedStyle(document.body).backgroundColor.match(/\d+/g) || [255, 255, 255]; return (+c[0] + +c[1] + +c[2]) / 3 < 128; };
+const MID_DARK = [58, 61, 66];
+const seqAt = (u, dk) => { const S = dk ? [...SEQ].reverse() : SEQ, x = Math.max(0, Math.min(1, u)) * (S.length - 1), i = Math.min(S.length - 2, Math.floor(x)); return lerp(hex(S[i]), hex(S[i + 1]), x - i); };
+const divAt = (u, dk) => { const mid = dk ? MID_DARK : DIV.mid; return u < 0 ? lerp(mid, hex(DIV.neg), Math.min(1, -u)) : lerp(mid, hex(DIV.pos), Math.min(1, u)); };
 const FEATURE_LABEL = { z: 'range innovation z', range_m: 'measured range', rep_speed_mps: "B's reported speed", rep_dheading_rad: "B's heading change", rep_sigma_m: "B's claimed error", own_sigma_m: 'own claimed error', lq_degraded: 'link degraded', own_fix_age_s: 'time since own fix', range_valid: 'range valid', range_class_long: 'long-range radio' };
 
 function strip(rows, colour, scale) {   // rows: [channel][time]
@@ -37,17 +43,17 @@ export function mountInside(host, pol, chk) {
 
   function draw() {
     const i = chk.what.findIndex(w => w.startsWith(type + ':') && w.includes(when === 'in' ? 'in the fault' : 'before the fault'));
-    const { logit, acts } = forward(pol, chk.obs[i]);
+    const { logit, acts } = forward(pol, chk.obs[i]), dk = dark();
     body.replaceChildren();
     // inputs (squashed, signed): diverging scale
-    const inp = strip(acts[0], u => divAt(u), 1);
-    body.append(h('div', { class: 'nw-row' }, h('div', { class: 'nw-row-h' }, h('b', {}, 'Inputs'), h('span', {}, `${feat.length} per second × ${acts[0][0].length} s`)), h('div', { class: 'nw-row-c' }, inp,
-      h('ul', { class: 'nw-feats' }, feat.map(f => h('li', {}, FEATURE_LABEL[f] || f))))));
+    const inp = strip(acts[0], u => divAt(u, dk), 1);
+    body.append(h('div', { class: 'nw-row' }, h('div', { class: 'nw-row-h' }, h('b', {}, 'Inputs'), h('span', {}, `${feat.length} per second × ${acts[0][0].length} s`)), h('div', { class: 'nw-row-c nw-row-in' }, inp,
+      h('ol', { class: 'nw-feats', 'aria-label': 'Input rows, top to bottom' }, feat.map(f => h('li', {}, FEATURE_LABEL[f] || f))))));
     pol.layers.forEach((L, k) => {
       const a = acts[k + 1], last = k === pol.layers.length - 1;
       if (last) return;
       let mx = 0; for (const r of a) for (const v of r) mx = Math.max(mx, v);
-      const s = strip(a, u => seqAt(u), mx || 1);
+      const s = strip(a, u => seqAt(u, dk), mx || 1);
       s.style.width = `${(a[0].length / acts[0][0].length) * 100}%`;
       body.append(h('div', { class: 'nw-row' }, h('div', { class: 'nw-row-h' }, h('b', {}, `Layer ${k + 1}`), h('span', {}, `${a.length} channels, dilation ${L.dilation}${L.residual ? ', + residual' : ''} · ${a[0].length} s left`)), h('div', { class: 'nw-row-c nw-right' }, s)));
     });
@@ -57,4 +63,5 @@ export function mountInside(host, pol, chk) {
       + `<p class="small muted">${chk.what[i].replace(/\(.*\)/, '').trim()}; a validation window, not test data.</p>`;
   }
   draw();
+  onTheme(draw);
 }

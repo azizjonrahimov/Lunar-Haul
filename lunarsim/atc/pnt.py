@@ -217,6 +217,7 @@ class Trajectories:
                 dirs = np.diff(P, axis=0) / np.maximum(seg_len, 1e-9)[:, None]
                 head[kk, n] = dirs[j]
                 leg[kk, n] = n_leg
+                this_leg = n_leg
                 n_leg += 1
                 if len(kk):
                     lt = lit_steps(kk, a, b)
@@ -226,8 +227,18 @@ class Trajectories:
                 if k1 < T:
                     xy[k1:, n] = sample_xy[end]
                     idx[k1:, n] = end
-                    ds[k1, n] += max(0.0, L - (s[-1] if len(kk) else 0.0))
+                    rest = max(0.0, L - (s[-1] if len(kk) else 0.0))
+                    ds[k1, n] += rest
                     arrive[k1, n] = True
+                    if rest > 0 and len(dirs):
+                        # B-118 N15: the last partial step belongs to this leg (its heading, ground class and lit flag;
+                        # same leg index, so the filter does not redraw the leg's bias); before, it was a new leg on
+                        # firm ground with a zero heading. A leg that starts in this step overwrites these below.
+                        lt_end = bool(lit_steps(np.array([k1]), a, b)[0])
+                        head[k1, n] = dirs[-1]
+                        leg[k1, n] = this_leg
+                        lit[k1, n] = lt_end
+                        cl[k1, n] = LOOSE if slope_deg[end] > slope_loose_deg else (FIRM if lt_end else SHADOW)
         return cls_(t, xy, idx, ds, head, leg, cl, lit, arrive, ids, np.array([ant[int(v)] for v in ids], float), dt_s)
 
 

@@ -41,3 +41,46 @@ def test_mars_uphill_slope_term():
         assert below[False] > 0 and below[True] == 0
     finally:
         ET.G_BUILD = S.G_MOON
+
+
+def test_mixed_actuation_delays_are_refused():
+    """B-118 N23: the command buffer has one length per batch, so a batch mixing actuation delays is refused (before,
+    every lagged row got the batch's longest delay)."""
+    import pytest
+    import run_e45_uphill as U
+    g = S.G_MOON
+    rng = np.random.default_rng([4507, 1, 1, 50, 0])
+    specs = [U.build(rng, 5.0, "following", g, d) for d in (S.RHO_S, S.RHO_S, 2 * S.RHO_S)]
+    with pytest.raises(ValueError):
+        E.Batch(specs, g=g)
+    same = [U.build(rng, 5.0, "following", g, S.RHO_S) for _ in range(3)] + [U.build(rng, 5.0, "following", g, 0.0)]
+    E.Batch(same, g=g)                                   # one positive delay (and zero) is fine
+
+
+def _breaches(delay_s, brakes=True, steps=60):
+    """A follower whose gap is below rss_dmin from step 0 on; it commands full braking at entry (or never), and acts on
+    its command delay_s later through a command buffer like run_batch's (zeros before the first command)."""
+    bg = 0.5
+    L = int(round(delay_s / E.DT))
+    buf, ptr = np.zeros(max(L, 1)), 0
+    below_s, n = np.full(1, -1.0), 0
+    for _ in range(steps):
+        a = -bg if brakes else 0.0
+        if L:
+            a_ph = buf[ptr]
+            buf[ptr] = a
+            ptr = (ptr + 1) % L
+        else:
+            a_ph = a
+        r1b, below_s = E.r1_breach_delayed(np.ones(1, bool), below_s, np.full(1, a_ph), bg)
+        n += int(r1b[0])
+    return n
+
+
+def test_delayed_breach_allows_the_response_time():
+    """B-118 N23 (b): with an actuation delay the breach allows R1's response time RHO_S, not the delay."""
+    n_rho = int(round(S.RHO_S / E.DT))
+    assert _breaches(S.RHO_S) == 0                           # brakes at entry, acts after RHO_S exactly: compliant
+    assert _breaches(S.RHO_S + E.DT) == 1                    # B-120 A: acts one step later: the 11th step counts
+    assert _breaches(2 * S.RHO_S) == n_rho                   # acts after 2 RHO_S: counted for the excess, every step
+    assert _breaches(S.RHO_S, brakes=False) == 60 - n_rho    # never brakes: every step after RHO_S counts

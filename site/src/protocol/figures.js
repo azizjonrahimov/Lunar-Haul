@@ -246,14 +246,15 @@ function e54Timeline(T) {
 }
 
 async function figDtn(host) {
-  const r = await fetch(`${import.meta.env.BASE_URL}protocol/e54.json`);
+  const focus = host.dataset.focus === 'fail' ? 'fail' : 'radio';
+  // F-78 (review W3): the table and, for the failure figure, the month's timeline are fetched together
+  const [r, rt] = await Promise.all([fetch(`${import.meta.env.BASE_URL}protocol/e54.json`),
+    focus === 'fail' ? fetch(`${import.meta.env.BASE_URL}protocol/b99/e54_timeline.json`) : null]);
   if (!r.ok) throw new Error(`protocol/e54.json: HTTP ${r.status}`);
   const E = await r.json();
-  if (E.format !== 'lunarsim-e54-site' || E.version !== 1) throw new Error(`e54.json: format ${E.format}`);
-  const focus = host.dataset.focus === 'fail' ? 'fail' : 'radio';
+  if (E.format !== 'lunarsim-e54-site' || E.version !== 2) throw new Error(`e54.json: format ${E.format} version ${E.version}`);   // F-81: 2 has awards_and_jobs
   let timeline = [];
   if (focus === 'fail') {   // F-65: one seed's month from B-99, under the table
-    const rt = await fetch(`${import.meta.env.BASE_URL}protocol/b99/e54_timeline.json`);
     if (!rt.ok) throw new Error(`protocol/b99/e54_timeline.json: HTTP ${rt.status}`);
     const TL = await rt.json();
     if (TL.format !== 'lunarsim-protocol-data' || !TL.messages) throw new Error(`e54_timeline.json: format ${TL.format}`);
@@ -269,15 +270,17 @@ async function figDtn(host) {
       ['Job-state reports lost', q => share(q.task_state_lost, q.task_state_n, q.task_state_lost_share)],
       ['Job-state reports: mean delay', q => secsText(q.task_state_delay_mean_s)],
       ['Job awards: mean delay', q => secsText(q.award_delay_mean_s)]]
-    : [['Jobs lost (the award expired; the job is auctioned again)', q => `${fmt(q.award_lost, 0)} of ${fmt(q.award_n, 0)}`],
-      ['Segments of silent vehicles past their timeout (unconfirmed under the rule)', (q, k) => (k === 'sf_ll' ? 'not counted yet' : `${fmt(q.stuck_reservations, 0)} (${fmt(q.stuck_hours, 0)} h)`)],
+    : [['Job awards that expired (the job is auctioned again)', q => `${fmt(q.award_lost, 0)} of ${fmt(q.award_n, 0)} awards`],
+      // F-79 (B-118 N7): under the rule the count is 0 by construction (the segment is marked unconfirmed), not measured
+      ['Segments of silent vehicles past their timeout (unconfirmed under the rule)', (q, k) => (k === 'sf_ll' && E.h14.clause_2_basis ? `${fmt(q.stuck_reservations, 0)} blocked, by rule (not measured)` : `${fmt(q.stuck_reservations, 0)} (${fmt(q.stuck_hours, 0)} h)`)],
       ['How old the base’s picture of a vehicle is: mean (worst vehicle)', q => `${secsText(q.aoi_mean_s)} (${secsText(q.aoi_worst_vehicle_s)})`],
       ['Job-state reports lost', q => share(q.task_state_lost, q.task_state_n, q.task_state_lost_share)]];
   const wrap = h('div', { class: 'pr-scroll' }), extra = h('div', { class: 'pr-dtn-extra' }), read = readout();
   function draw() {
     const q = Object.fromEntries(PROTO.map(([k]) => [k, E.rows.find(x => x.loss === loss && x.protocol === k)]));
     wrap.replaceChildren(h('table', { class: 'pr-table' },
-      h('caption', { class: 'small' }, `At ${fmt(100 * loss, 0)} % loss per hop, over ${E.seeds} seeds of the recorded month (${fmt(E.jobs_per_seed, 0)} jobs and ${fmt(E.reservations_per_seed, 0)} one-lane reservations a seed). Modelled, from ${E.source}.`),
+      // F-79 (B-117 i): one award per vehicle of a job, so awards = jobs + the extra vehicles of team jobs
+      h('caption', { class: 'small' }, `At ${fmt(100 * loss, 0)} % loss per hop, over ${E.seeds} seeds of the recorded month (${fmt(E.awards_and_jobs.jobs_per_seed, 1)} jobs a seed, ${fmt(E.awards_and_jobs.team_jobs_per_seed, 2)} of them team jobs of two vehicles, so ${fmt(E.awards_and_jobs.awards_per_seed, 2)} awards; ${fmt(E.reservations_per_seed, 0)} one-lane reservations a seed). Modelled, from ${E.source}.`),
       h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, ''), ...PROTO.map(([, l]) => h('th', { scope: 'col' }, l)))),
       h('tbody', {}, ROWS.map(([name, f]) => h('tr', {}, h('th', { scope: 'row' }, name), ...PROTO.map(([k, l]) => h('td', { 'data-label': l }, q[k] ? f(q[k], k) : '–')))))));
     if (focus === 'radio') {
@@ -294,7 +297,7 @@ async function figDtn(host) {
     } else {
       const H = E.h14, a = H.lost_jobs_drop_retry_per_seed, b = H.lost_jobs_sf_ll_per_seed;
       extra.replaceChildren();
-      setRead(read, `Hypothesis H14, at 25 % loss with the 14-day blackout: jobs lost per seed ${num({ value: a.mean, unit: '', digits: 2, flag: 'Modelled', source: `${E.source}: h14, drop and retry, mean over ${a.n} seeds (95 % interval ${fmt(a.ci[0], 2)} to ${fmt(a.ci[1], 2)})` })} with drop and retry against ${num({ value: b.mean, unit: '', digits: 0, flag: 'Modelled', source: `${E.source}: h14, store and forward with the lost-link rule, mean over ${b.n} seeds` })} with the lost-link rule: H14's first clause held; its second (no stuck reservation) is not testable as written. `
+      setRead(read, `Hypothesis H14, at 25 % loss with the 14-day blackout: jobs lost per seed ${num({ value: a.mean, unit: '', digits: 2, flag: 'Modelled', source: `${E.source}: h14, drop and retry, mean over ${a.n} seeds (95 % interval ${fmt(a.ci[0], 2)} to ${fmt(a.ci[1], 2)})` })} with drop and retry against ${num({ value: b.mean, unit: '', digits: 0, flag: 'Modelled', source: `${E.source}: h14, store and forward with the lost-link rule, mean over ${b.n} seeds` })} with the lost-link rule: H14's first clause held; ${H.clause_2_basis ? 'its second (no reservation stuck past its timeout) holds by rule, not by measurement' : 'its second (no stuck reservation) is not testable as written'}. `
         + 'A silent vehicle’s reservation is not released: its segment is marked unconfirmed and entered only at caution speed. Driving back to its last link point shortens how long the base goes without hearing from it.');
     }
   }
@@ -440,7 +443,7 @@ async function figBitrate(host) {
   const FR = D.columns.indexOf('framing');
   if (FR >= 0) D.rows = D.rows.filter(x => x[FR] === 'lrip');   // the figure draws packets before link framing
   const c = k => D.columns.indexOf(k), GE = c('geometry'), AU = c('auth'), HZ = c('position_hz'), N = c('rovers'), P95 = c('busiest_link_kbps_p95');
-  if ([GE, AU, HZ, N, P95].some(i => i < 0)) throw new Error('e53_bitrate.json: columns');
+  if ([GE, AU, HZ, N, P95].some(i => i < 0)) throw new Error('protocol/e53-v02.json: columns');
   let geo = 'fleet', auth = 'on';
   const NB = Object.entries(D.lines_kbps).find(([k]) => /narrow/.test(k))?.[1], BB = Object.entries(D.lines_kbps).find(([k]) => /broad/.test(k))?.[1];
   const segG = segmented({ legend: 'Where the rovers are', options: [{ value: 'fleet', label: 'Where the fleet works' }, { value: 'spread', label: 'Spread over the routes' }], value: geo, onChange: v => { geo = v; draw(); } });
@@ -581,7 +584,7 @@ async function figE55(host) {
   if (!r.ok) throw new Error(`protocol/e55.json: HTTP ${r.status}`);
   if (!rcv.ok) throw new Error(`protocol/b99/e55_detectors.json: HTTP ${rcv.status}`);
   const E = await r.json(), C = await rcv.json();
-  if (E.format !== 'lunarsim-e55-site' || E.version !== 1) throw new Error(`e55.json: format ${E.format}`);
+  if (E.format !== 'lunarsim-e55-site' || E.version !== 2) throw new Error(`e55.json: format ${E.format} version ${E.version}`);   // F-81: 2 has replay_recent
   if (C.format !== 'lunarsim-protocol-data' || !C.curves) throw new Error(`e55_detectors.json: format ${C.format}`);
   let set = 'test', N = 12;
   const Ns = [...new Set(E.consensus.map(c => c.N))].sort((a, b) => a - b);
@@ -612,7 +615,9 @@ async function figE55(host) {
     const X = (value, digits, what) => num({ value, unit: '', digits, flag: 'Modelled', source: `${E.source}: ${what}` });
     setRead(read, `Forged messages with a truncated authentication code get through about as often as chance says: ${F8 ? `${X(F8.accepted, 0, 'auth.forgery 8 bits, accepted')} of ${fmt(F8.attempts, 0)} with 8 bits (chance: ${fmt(F8.attempts * F8.bound, 0)})` : ''}`
       + `${F16 ? `, ${X(F16.accepted, 0, 'auth.forgery 16 bits, accepted')} of ${fmt(F16.attempts, 0)} with 16 bits (chance: ${fmt(F16.attempts * F16.bound, 1)})` : ''}; the protocol uses 64 bits. `
-      + `Replayed messages accepted: ${rp.map(([l, v]) => `${X(v.replays_accepted, 0, `auth.replay at loss ${l}`)} of ${fmt(v.replays, 0)} at ${fmt(100 * l, 0)} % loss`).join(' and ')}.`);
+      + `Replays of a random earlier message from the whole log, mostly minutes old and so rarely inside the freshness window, accepted: ${rp.map(([l, v]) => `${X(v.replays_accepted, 0, `auth.replay at loss ${l}`)} of ${fmt(v.replays, 0)} at ${fmt(100 * l, 0)} % loss`).join(' and ')}. `
+      // F-79 (B-118 N9): the second trial, recent messages, with the accepted replays split
+      + `Replays of recent messages accepted: ${Object.entries(E.replay_recent).map(([l, v]) => `${X(v.replays_accepted, 0, `replay_recent.loss.${l}.replays_accepted`)} of ${fmt(v.replays, 0)} at ${fmt(100 * l, 0)} % loss${v.replays_accepted ? ` (${fmt(v.accepted_missed_original_inside_window, 0)} copies of a message the receiver had missed, still fresh; ${fmt(v.accepted_other, 0)} of any other kind)` : ''}`).join(' and ')}.`);
   }
   host.append(h('p', { class: 'ui-label pr-sub' }, 'Faults found against false alarms, as the threshold moves'), ...e55Curve(C),
     h('p', { class: 'ui-label pr-sub' }, 'Spotting a wrong position report'), h('div', { class: 'pr-ctl' }, segS.el), det,
