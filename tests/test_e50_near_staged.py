@@ -44,6 +44,8 @@ def test_staged_cell_equals_run_cell(monkeypatch, tmp_path):
             N.cmd_stage(mult, [seed])
         staged = json.load(open(os.path.join(N.CACHE, f"m{mult}_s{seed}.json")))
         assert staged["code"] == "tiny" and staged["staged"] is True
+        assert not os.path.isdir(N._stage_dir(mult, seed))   # B-120 D: the steps are removed once in the cell
+        assert direct["code"] == "tiny"                       # B-120 D: run_cell stamps its code too
         skip = {"cell_s", "peak_mb", "code", "staged"}
         direct = json.loads(json.dumps(direct))
         assert {k: v for k, v in staged.items() if k not in skip} == {k: v for k, v in direct.items() if k not in skip}

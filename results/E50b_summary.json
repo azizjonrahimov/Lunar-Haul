@@ -7,6 +7,7 @@
   "k_pos": 1.0,
   "bootstrap": 10000
  },
+ "code": "5bf22fa6d5ccfe47",
  "note": "    python tools/atc/run_e50b.py run   --seeds 1-30 [--max-seconds 480]   # resumable, one cache file per seed     python tools/atc/run_e50b.py build                                    # -> results/E50b_summary.json, E50b_runs.csv",
  "seeds": [
   1,

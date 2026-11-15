@@ -27,6 +27,7 @@ import gzip
 import json
 import os
 import pickle
+import shutil
 import sys
 import time
 
@@ -104,6 +105,7 @@ def _p95(err, m):
 def run_cell(mult, seed):
     from lunarsim.atc import pnt as PN
     t_s = time.time()
+    code = E5.code_fingerprint()                                  # B-120 D: stamped like the staged cells
     month, t0, t1, share = E5._window()
     rec = E5.record(mult, seed, t0, t1)
     tr = E5.trajectories(rec, t0, t1)
@@ -135,6 +137,7 @@ def run_cell(mult, seed):
             "ranging_near_p95": abs(c["nav"]["dr+ranging"]["near"]["p95_m"] - out["sets"]["dr+ranging"]["a"]["in_p95_m"]) < 1e-4}
     out["cell_s"] = round(time.time() - t_s, 1)
     out["peak_mb"] = _peak_mb()
+    out["code"] = code
     return out
 
 
@@ -255,6 +258,7 @@ def cmd_stage(mult, seeds, cell_path=None):
         with open(p + ".tmp", "w") as f:
             json.dump(out, f)
         os.replace(p + ".tmp", p)
+        shutil.rmtree(_stage_dir(mult, s), ignore_errors=True)      # B-120 D: the steps are in the cell now
         r = out["sets"]["dr+ranging"]
         print(f"m{mult} s{s} assembled: ranging p95 a/b/c/d/e "
               + " / ".join(f"{r[k]['in_p95_m']:.2f}" if r[k]["in_p95_m"] is not None else "-" for k in READINGS)
@@ -303,7 +307,11 @@ def _ci(x, rng, B=10000):
 def cmd_build():
     rng = np.random.default_rng([50, 101])
     cells = [json.load(open(p)) for p in glob.glob(os.path.join(CACHE, "m*_s*.json"))]
-    doc = {"task": "B-101 (P3 M5; decisions B4)", "note": __doc__.strip().split("\n\n")[1].replace("\n", " "),
+    if not cells:
+        raise SystemExit("no near_base cells")
+    import e50_build as EB
+    code = EB.require_code((c.get("code") for c in cells), "near_base")   # B-120 D
+    doc = {"task": "B-101 (P3 M5; decisions B4)", "code": code, "note": __doc__.strip().split("\n\n")[1].replace("\n", " "),
            "readings": READINGS, "budget_m": BUDGET, "multiples": {}, "sweep": None}
     rows = []
     for mult in sorted({c["mult"] for c in cells}):

@@ -63,10 +63,16 @@ def test_keep_superseded_keeps_the_pre_fix_values_across_rebuilds(tmp_path):
     assert again["superseded_2026-01-01_older"] == {"p95": 9.0} and "multiples_not_rerun_yet" not in again
 
 
+def _current(monkeypatch, code):
+    import run_e50
+    monkeypatch.setattr(run_e50, "code_fingerprint", lambda: code)
+
+
 def test_e50_cells_refuse_mixed_code(monkeypatch, tmp_path):
     import e50_build as EB
     cache = str(tmp_path / "e50")
     monkeypatch.setattr(EB, "CACHE", cache)
+    _current(monkeypatch, "aaa")
     _cell(cache, 1, 1, "aaa")
     _cell(cache, 1, 2, "aaa")
     _cell(cache, 4, 1, "aaa")
@@ -81,13 +87,40 @@ def test_family_refuses_e50_cells_of_mixed_code_across_multiples(monkeypatch, tm
     import phase6_family as PF
     monkeypatch.setattr(PF, "ROOT", str(tmp_path))
     monkeypatch.setattr(PF, "E50_CODES", set())
+    monkeypatch.setattr(PF, "E50_COUNTS", {})
+    _current(monkeypatch, "aaa")
     cache = str(tmp_path / ".cache" / "atc" / "e50")
     _cell(cache, 1, 1, "aaa")
     _cell(cache, 1, 2, "aaa")
     _cell(cache, 4, 1, "bbb")                              # each multiple is uniform; the family is not
     assert sorted(PF._e50(1)) == [1, 2] and PF.E50_CODES == {"aaa"}
+    assert PF.E50_COUNTS == {"1x": 2}                   # B-120 D: the file's e50_cells come from the loaded cells
     with pytest.raises(SystemExit, match="different code"):
         PF._e50(4)
+
+
+def test_require_code_needs_one_stamped_current_code(monkeypatch):
+    """B-120 D: every E50-family build (E50, near_base, overlaps, E50b, the family) takes cells of one code version, and
+    that version must be the current code: a missing stamp or a stale (uniform) code is refused."""
+    import e50_build as EB
+    _current(monkeypatch, "now")
+    assert EB.require_code(["now", "now"], "t") == "now"
+    with pytest.raises(SystemExit, match="without a code stamp"):
+        EB.require_code(["now", None], "t")
+    with pytest.raises(SystemExit, match="different code"):
+        EB.require_code(["now", "old"], "t")
+    with pytest.raises(SystemExit, match="current code is now"):
+        EB.require_code(["old", "old"], "t")
+
+
+def test_near_base_build_refuses_unstamped_cells(monkeypatch, tmp_path):
+    """B-120 D: run_e50_near's build reads only cells stamped with the current code (before, any cell was read)."""
+    import run_e50_near as N
+    _current(monkeypatch, "now")
+    monkeypatch.setattr(N, "CACHE", str(tmp_path))
+    _write(str(tmp_path / "m1_s1.json"), {"mult": 1, "seed": 1})
+    with pytest.raises(SystemExit, match="without a code stamp"):
+        N.cmd_build()
 
 
 def test_h15a_p_comes_from_the_saved_resample_count(monkeypatch, tmp_path):

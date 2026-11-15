@@ -31,6 +31,7 @@ ALPHA = 0.05
 
 
 E50_CODES = set()                                   # B-118 N21: every E50 cell of the family from one code version
+E50_COUNTS = {}                                     # B-120 D: cells loaded per fleet multiple (written to the file)
 
 
 def _e50(m):
@@ -40,8 +41,9 @@ def _e50(m):
             d = pickle.load(f)
         out[d["seed"]] = d
         E50_CODES.add(d.get("code"))
-    if len(E50_CODES) > 1:
-        raise SystemExit(f"E50 cells made with different code: {sorted(E50_CODES, key=str)}; rerun the stale cells")
+    import e50_build as EB                              # B-120 D: one code, not None, the current one
+    EB.require_code(E50_CODES, "phase6_family E50")
+    E50_COUNTS[f"{m}x"] = len(out)
     return out
 
 
@@ -198,7 +200,8 @@ def main():
                                "reckoning larger' clauses do not (intersection-union)"),
                        "H14": "supported (Holm)" if fam["H14"]["holm"]["rejected_at_0.05"] else "not supported",
                        "H15a": "supported (Holm)" if fam["H15a"]["holm"]["rejected_at_0.05"] else "not supported"},
-           "e50_cells": {"1x": 30, "4x": 10, "8x": 5}, "e50_code": sorted(E50_CODES, key=str)[0]}
+           "e50_cells": dict(sorted(E50_COUNTS.items(), key=lambda kv: int(kv[0][:-1]))),
+           "e50_code": __import__("e50_build").require_code(E50_CODES, "phase6_family E50")}
     import e50_build as EB                              # B-118 N15: the previous values kept under the dated key
     EB.keep_superseded(OUT, doc)
     with open(OUT, "w", encoding="utf-8", newline="\n") as f:

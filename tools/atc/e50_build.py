@@ -53,6 +53,21 @@ def keep_superseded(path, doc, design_multiples=None, built_multiples=None):
     return doc
 
 
+def require_code(codes, where):
+    """B-120 D: the cells a build reads must all come from one code version, and it must be the current one
+    (run_e50.code_fingerprint); a cell without a code stamp is refused. Returns the code."""
+    import run_e50 as R
+    codes = set(codes)
+    fp = R.code_fingerprint()
+    if None in codes:
+        raise SystemExit(f"{where}: cells without a code stamp; rerun them or stamp them after a reproduction check")
+    if len(codes) > 1:
+        raise SystemExit(f"{where}: cells made with different code {sorted(codes)}; rerun the stale cells")
+    if codes != {fp}:
+        raise SystemExit(f"{where}: cells made with code {sorted(codes)}, current code is {fp}; rerun them")
+    return fp
+
+
 def _load(p):
     with gzip.open(p, "rb") as f:
         return pickle.load(f)
@@ -75,9 +90,8 @@ def cells():
     for p in sorted(glob.glob(os.path.join(CACHE, "m*_s*.pkl.gz"))):
         d = _load(p)
         out[(int(d["mult"]), int(d["seed"]))] = d
-    codes = {d.get("code") for d in out.values()}               # B-118 N21: never mix cells made with other code
-    if len(codes) > 1:
-        raise SystemExit(f"E50 cells made with different code: {sorted(codes, key=str)}; rerun the stale cells")
+    if out:                                                       # B-118 N21 / B-120 D: one code, the current one
+        require_code((d.get("code") for d in out.values()), "E50")
     return out
 
 

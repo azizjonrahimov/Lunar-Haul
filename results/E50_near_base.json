@@ -1,5 +1,6 @@
 {
  "task": "B-101 (P3 M5; decisions B4)",
+ "code": "5bf22fa6d5ccfe47",
  "note": "    python tools/atc/run_e50_near.py run --mult 1 --seeds 1-30 [--max-seconds 480]   # resumable, one file per cell     python tools/atc/run_e50_near.py run --mult 4 --seeds 1-10     python tools/atc/run_e50_near.py build                       # -> results/E50_near_base.json, E50_near_base.csv",
  "readings": {
   "a": "2+ beacons in radio line of sight (used so far)",

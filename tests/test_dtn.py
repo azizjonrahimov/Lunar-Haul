@@ -282,3 +282,53 @@ def test_cell_sf_to_earth_drops_and_retransmits():
     assert len(done) == 200                                   # custody retransmits until it gets through
     assert sum(t >= DT.DEFAULTS["custody_timer_s"] for t in done) > 100   # most were dropped at least once first
     assert all(round((t - DT.DEFAULTS["hop_latency_s"]) / DT.DEFAULTS["custody_timer_s"], 6).is_integer() for t in done)
+
+
+# B-120 G: the state-machines reviewer's untested cells (.gstack/tmp/state-machines.50bfcda2244a.md)
+def test_cell_earth_bound_censored_when_alive_at_the_end():
+    """drop_retry:earth and sf:earth x censor: Earth link down to the end, lifetime past the end."""
+    for proto in ("drop_retry", "sf"):
+        m = DT.simulate(chain(3, range(3)), [Msg(0, "ledger_earth", BASE, -2, 0.0, 10_000, 3600.0)], proto, 0.0,
+                        np.random.default_rng(0), 60.0, earth_up=lambda k: False)[0]
+        assert m.censored and not m.expired and m.t_done is None, proto
+
+
+def test_cell_sf_ll_deliver_hold_drop_expire_censor():
+    """simulate on a lost_link_plan output (E54's sf_ll cells run protocol "sf" on that plan): vehicle 0 loses the
+    base at step 20 and the rule relinks it at step 30 (T_hold alone: it did not drive); the recorded plan relinks
+    it only at step 150."""
+    A = _isolated_chain()
+    A2, _ = DT.lost_link_plan(A, _Tr(200, 2))
+    m = [Msg(0, "award", BASE, 0, 25 * 60.0, 92, 3600.0)]
+    assert DT.simulate(A, m, "sf", 0.0, np.random.default_rng(0), 60.0)[0].expired       # isolated until step 150
+    r = DT.simulate(A2, m, "sf_ll", 0.0, np.random.default_rng(0), 60.0)[0]
+    assert r.t_done == pytest.approx(30 * 60.0 + DT.DEFAULTS["hop_latency_s"])          # deliver, held until 1,800 s
+    many = [Msg(i, "award", BASE, 0, 25 * 60.0, 92, 3600.0) for i in range(100)]
+    res = DT.simulate(A2, many, "sf_ll", 0.4, np.random.default_rng(1), 60.0)            # drop: custody retransmits
+    assert all(x.t_done is not None and x.t_done >= 30 * 60.0 for x in res)
+    assert any(x.t_done > 30 * 60.0 + DT.DEFAULTS["custody_timer_s"] for x in res)
+    g = DT.simulate(A2, [Msg(0, "grant", BASE, 0, 21 * 60.0, 92, 60.0)], "sf_ll", 0.0,
+                    np.random.default_rng(0), 60.0)[0]
+    assert g.expired and not g.censored and g.t_done is None                             # expire before the return
+    c = DT.simulate(A2[:25], [Msg(0, "award", BASE, 0, 21 * 60.0, 92, 3600.0)], "sf_ll", 0.0,
+                    np.random.default_rng(0), 60.0)[0]
+    assert c.censored and not c.expired and c.t_done is None                             # window ends first
+
+
+def test_cell_full_store_drops_the_newest_at_creation():
+    A = chain(100, range(50, 100))
+    msgs = [Msg(0, "award", BASE, 0, 0.0, 92, 7200.0), Msg(1, "award", BASE, 0, 1.0, 92, 7200.0)]
+    r = DT.simulate(A, msgs, "sf", 0.0, np.random.default_rng(0), 60.0, {"queue_bytes": 100})
+    assert r[0].t_done is not None and r[1].expired and not r[1].censored and r[1].t_done is None
+    dr = DT.simulate(chain(100, range(100)), msgs, "drop_retry", 0.0, np.random.default_rng(0), 60.0,
+                     {"queue_bytes": 100})
+    assert all(m.t_done is not None for m in dr)                                         # drop_retry has no store
+
+
+def test_cell_short_isolation_has_no_return():
+    """papers and pre_review x reconnect before the return: an isolation shorter than T_hold changes nothing."""
+    A = chain(200, list(range(0, 20)) + list(range(28, 200)))     # isolated for 8 steps < T_hold (10 steps)
+    A[:, 0, 2] = A[:, 2, 0] = False
+    for rule in DT.RETURN_RULES:
+        A2, st = DT.lost_link_plan(A, _Tr(200, 2), {"return_rule": rule})
+        assert (A2 == A).all() and st["returns"] == 0 and st["isolation_h_saved"] == 0.0, rule

@@ -338,10 +338,14 @@ def check_g() -> List[Dict]:
     ref = ref_doc["summary"]
 
     def _same(x, y):
+        """B-120 H: exact (JSON round-trips floats exactly); the only allowance is NaN in the run against null in the
+        stored reference (JSON has no NaN). Before: a relative difference up to 1e-9 passed."""
         if x is None:
-            return isinstance(y, float) and math.isnan(y)
-        return x == y or (isinstance(x, float) and isinstance(y, (int, float)) and abs(x - y) <= 1e-9 * max(1.0, abs(x)))
-    mism = sum(1 for k in ref if k not in b or not _same(ref[k], b[k]))
+            return y is None or (isinstance(y, float) and math.isnan(y))
+        return x == y
+    # B-120 H: keys on both sides count: a value missing from the run, or present in the run and not in the
+    # reference, is a difference (before, keys only the run had were not counted)
+    mism = sum(1 for k in ref if k not in b or not _same(ref[k], b[k])) + sum(1 for k in b if k not in ref)
     rows.append(R("G1", "options off", "Every Phase 6 engine option off (pos_margin, log_reservations, capability_filter) "
                   "equals the run of the code before Phase 6", 0.0, float(mism), 0.0, "summary values differing",
                   f"C_AUCTION, roads atc, 30 days, seed 2: {len(ref)} summary values against "

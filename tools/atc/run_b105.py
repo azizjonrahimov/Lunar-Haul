@@ -3,6 +3,7 @@
     python tools/atc/run_b105.py run --mult 1      # one 30-day month per fleet multiple (1, 4, 8), resumable
     python tools/atc/run_b105.py run --mult 4
     python tools/atc/run_b105.py run --mult 8
+    python tools/atc/run_b105.py timing --mult 1 [--passes 3]   # more timing passes of the same month (B-118 N12)
     (python tools/atc/run_e48.py build then adds the blocks `measured_memory` and `per_robot_round` to E48_sizing.json)
 
 E48's scenario (C_AUCTION, roads atc, 1 Jan 2028, seed 1; run_e48._scen), 30 days per fleet multiple.
@@ -12,7 +13,10 @@ bundle over the pool (lunarsim/dispatch.py marketplace, the loop over the pool w
 adjustment). Each _try_bundle call is timed (perf_counter) and summed per (auction round, robot); rounds are counted
 at the auction's selector, which is called once per round after every robot's offer (lunarsim/atc/auction.py
 _Selector). E48's cpu_auction_round_ms is the simulator's whole dispatch call for the whole fleet, pooled over the
-fleet multiples; it is reported beside, relabelled.
+fleet multiples; it is reported beside, relabelled. B-118 N12: `run` simulates the month twice, a timing pass with no
+tracemalloc anywhere (per_robot_round, timed_without_tracemalloc) and a memory pass ((1) below), whose own timings are
+kept as per_robot_round_traced_pass only to show tracemalloc's effect; both passes must be the same run
+(passes_same_run). `timing` adds timing passes of the same month (timing_passes).
 
 (1) Peak memory of the on-robot part, measured with tracemalloc (bytes Python allocates; the interpreter, the code and
 numpy's own buffers outside Python's allocator are not counted; a C implementation would hold the same data in less):

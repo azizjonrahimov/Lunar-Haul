@@ -11432,3 +11432,87 @@ E54_table_v02.csv; with item A: lunarsim/atc/encounter.py, tests/test_uphill.py;
 - /results/ family note: one r-fam-was, "Corrected after a code review on 13 November 2026 (a fix to the positioning model): before, H9′ gave 85 m …; H10′ …, Holm p 0.932; the readings near the base were 4.2 m, 24.7 m, 50.1 m, 50.1 m. Every outcome is as it was." It names one cause because only E50 values differ; H14 and H15a are identical in the block.
 - Screenshots (full page) in the scratchpad: f81_network_sys_light.png, f81_network_sys_dark.png, f81_protocol_ledger.png (light), f81_results_note.png (dark).
 - The preview and the browser are stopped. Free RAM dipped to 0.36–0.45 GB with the browser open between pages; with it closed it stayed at 0.6 GB or more.
+
+## B-120 D-H DONE (14 Nov) | no published value and no fingerprint a paper or the site reads moves (E50 5bf22fa6d5ccfe47, E54 c3c3b2880e33888c); three results files gain only a "code" key
+D (E50-family code checks):
+- New e50_build.require_code: one code, not None, equal to run_e50.code_fingerprint(). Used by e50_build.cells, the near_base,
+  overlaps and E50b builds, and phase6_family._e50.
+- run_cell (near_base) and run_seed (E50b) stamp "code". Each overlaps stage records "_code", and assemble refuses mixed or
+  unknown codes and stamps the cell. cmd_stage removes a cell's stage directory after assembly. phase6_family writes e50_cells
+  from the cells it loaded and e50_code through require_code.
+- Found beyond the brief: none of the 45 overlaps cells carried a code either. 115 cells were unstamped (near_base 40, overlaps
+  45, E50b 30).
+- Reproduction on the current code before stamping (scratchpad b120d_repro.py): near_base 1x seed 1 (with the sweep) and 4x
+  seed 1, overlaps 1x seed 1 (all stages), and E50b seed 1 each reproduce their cached cell in every value (E50b differs only in
+  a nested run_s timing).
+- Stamped: code 5bf22fa6d5ccfe47 plus a code_stamped note in each of the 115 cells. The five leftover near_base 8x stage
+  directories are removed.
+- Rebuilt: results/E50_near_base.json, E50_overlaps.json and E50b_summary.json gain only "code". Their CSVs and
+  phase6_family.json are byte-identical.
+- Tests: test_e50_build 6 (2 updated: the current fingerprint is monkeypatched; 2 new: require_code rules, near_base refuses
+  unstamped cells; plus the family's counts) and test_e50_near_staged 2 (adds stage dir removed, run_cell stamps).
+E (lunarsim/nn/evaluate.py):
+- main() carries landscape, h15_resample_counts_b118, onset_context_and_fa_interval_b118 and any superseded_* key
+  (CARRY_KEYS).
+- The false-alarm interval uses every resample (idx, was idx[:200]).
+- --resample-counts and --onset-fa compute with write=False, check, and write (one key, _store) only if everything reproduces;
+  otherwise exit 1 and write nothing.
+- Score caches without a fingerprint are refused unless --accept-unstamped-scores.
+- Checked: resample counts reproduce, every comparison, and equal the stored block; the onset/FA addendum reproduces and equals
+  the stored block. Nothing written, nothing retrained.
+- Value note: no stored value moves now. A forced rerun of main would put the 1,000-resample false-alarm interval into
+  <set>.<det>.<rate>.fa_per_pair_day.ci95 (today the 200-resample one; the 1,000 one is already stored as
+  onset_context_and_fa_interval_b118 ... fa_per_pair_day_ci95_1000).
+- Test: test_nn_integrity, the addenda are checked before writing, _store and CARRY_KEYS.
+F:
+- codec.decode: CBOR ValueErrors and UnicodeDecodeError become LripDecodeError (as does the Space Packet length error in
+  _decode).
+- An explicit all-zero MAC key warns (LripInsecureKeyWarning).
+- Freshness is written as "not |dt| <= 10 s", so a NaN or infinite clock is refused.
+- The dead "d.auth is None or" is dropped.
+- simulate's docstring names censored (done in B).
+- run_b105 module docstring: the `timing` command and N12's two passes.
+- Unused import subprocess removed from train_bid.cmd_table_rerun.
+- test_e52 compares the tour length with E52_map.json tour_km (62.31).
+- run_e54: _write_cache (closed before os.replace, allow_nan=False) for all cache writes; allow_nan=False on the three results
+  writes. E54 rebuilt byte-identical.
+- Tests: test_lrip_v02 (the malformed loop now accepts only Lrip* errors; new: tampered profile-B fields of wrong type or out of
+  range and bad UTF-8 give LripDecodeError, which HEAD let escape as UnicodeDecodeError; zero key warns; NaN / inf clock
+  refused).
+G:
+- dtn items done in C (unknown protocol refused; base store bounded for Earth-bound bundles); the docstring states the store
+  rule.
+- Tests added from the reviewer's stubs:
+  - test_dtn: Earth-bound drop_retry / sf censored; sf_ll deliver / hold / drop / expire / censor on a lost_link_plan output;
+    full store drops the newest at creation; short isolation has no return under both rules.
+  - test_lrip_v02: receiver unknown type returns None and changes no state; manifest and HELLO replace each other, unsigned
+    manifest keeps the declaration.
+  - test_smap: rejected and repeat reports keep the tile state.
+- Decision kept as a stated rule, not changed: a MAC-only HELLO can replace or revoke a signed manifest's declaration. Not a
+  two-line fix (blocking only revocation would leave replacement open). Stated in Receiver.accept's docstring with the
+  sequence-counter scope.
+- reports/review_phase6_code.md new section O lists the open follow-ups: simplifications, AoI vectorising, sequence wrap and
+  shared-key denial, the HELLO/manifest rule, the counter scope per kind, smap's unread hazard field, and the uphill 0.14 m
+  remainder (cause unknown).
+H:
+- vv6 G1: exact comparison (only NaN in the run against null in the reference); keys present only in the run count as
+  differences.
+  - Scratch run: 144 keys on both sides, 0 of 144 differ exactly (0 under the old rule too); the option-on row still differs
+    in 14 of 144.
+  - Row text unchanged, so results/vv_phase6.json stays valid; not regenerated.
+- nn/train.fit: an UnpicklingError from the weights_only load stops with SystemExit naming the file and saying to delete it and
+  train that run again. No fallback, file left in place. Test with a pre-13-Nov style checkpoint.
+- E44_defects outcome field names: sent in the A message (outcome.by_type, outcome.totals {batches, rows, deadlock_1_to_0,
+  deadlock_0_to_1, fuzzer_free_rows_changed, other_columns_changed}, outcome.supersedes).
+Tests (one file at a time): test_dtn 26, test_e50_build 6, test_e50_near_staged 2, test_e52 2, test_lrip 11, test_lrip_v02 17,
+test_nn_integrity 17, test_protocol_data 1, test_safety 7, test_smap 9, test_uphill 4, test_vv6 2, all passed.
+Commit set per item:
+- D: tools/atc/e50_build.py, run_e50_near.py, run_e50_overlaps.py, run_e50b.py, phase6_family.py; tests/test_e50_build.py,
+  test_e50_near_staged.py; results/E50_near_base.json, E50_overlaps.json, E50b_summary.json.
+- E: lunarsim/nn/evaluate.py; tests/test_nn_integrity.py (shared with H).
+- F: lunarsim/atc/lrip/codec.py; tools/atc/run_b105.py, train_bid.py, run_e54.py; tests/test_lrip_v02.py (shared with G),
+  test_e52.py.
+- G: lunarsim/atc/dtn.py (docstring), lunarsim/atc/lrip/codec.py (docstring); tests/test_dtn.py, test_lrip_v02.py,
+  test_smap.py; reports/review_phase6_code.md.
+- H: lunarsim/vv6.py, lunarsim/nn/train.py; tests/test_nn_integrity.py.
+- And .team/reports.md.

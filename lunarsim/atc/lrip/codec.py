@@ -65,6 +65,9 @@ def _default_keys(keys, where: str):
     if keys is None:
         warnings.warn(f"LRIP {where}: no keys given, using the all-zero test key", LripInsecureKeyWarning, stacklevel=3)
         return Keys()
+    if bytes(keys.mac_key) == bytes(len(keys.mac_key)):          # B-120 F: an explicit all-zero key is the test key
+        warnings.warn(f"LRIP {where}: the MAC key given is all zeros (the test key)", LripInsecureKeyWarning,
+                      stacklevel=3)
     return keys
 
 
@@ -308,7 +311,9 @@ class Counters:
 def decode(pkt: bytes, auth: Optional[str] = "auto", keys: Optional[Keys] = None, profile: str = "N",
            counters: Optional[Counters] = None, verify: bool = True) -> Optional[Decoded]:
     """Decode one packet (see _decode). B-119 C4: a short or malformed packet raises LripDecodeError (a ValueError),
-    never struct.error, KeyError, IndexError, TypeError or RecursionError."""
+    never struct.error, KeyError, IndexError, TypeError or RecursionError; B-120 F: nor a bare ValueError from the
+    CBOR reader or a UnicodeDecodeError. Another major version, a failed MAC or signature and a missing declaration
+    keep their own errors (LripVersionError, LripAuthError, LripRefError)."""
     if not isinstance(pkt, (bytes, bytearray)):
         raise LripDecodeError(f"packet must be bytes, not {type(pkt).__name__}")
     pkt = bytes(pkt)
@@ -316,9 +321,10 @@ def decode(pkt: bytes, auth: Optional[str] = "auto", keys: Optional[Keys] = None
         raise LripDecodeError(f"packet of {len(pkt)} B is shorter than its headers")
     try:
         return _decode(pkt, auth, keys, profile, counters, verify)
-    except (LripVersionError, LripAuthError, LripRefError, LripDecodeError):
+    except (LripVersionError, LripAuthError, LripRefError, LripDecodeError, LripReplayError):
         raise
-    except (struct.error, KeyError, IndexError, TypeError, RecursionError, OverflowError, AttributeError) as e:
+    except (ValueError, struct.error, KeyError, IndexError, TypeError, RecursionError, OverflowError,
+            AttributeError) as e:                       # ValueError includes UnicodeDecodeError and the CBOR reader's
         raise LripDecodeError(f"malformed packet: {type(e).__name__}: {e}") from e
 
 
@@ -332,7 +338,7 @@ def _decode(pkt: bytes, auth: Optional[str], keys: Optional[Keys], profile: str,
     w1, w2, dl = struct.unpack(">HHH", pkt[:SPP_B])
     total = SPP_B + dl + 1
     if total != len(pkt):
-        raise ValueError(f"packet length {len(pkt)} != {total} from the Space Packet header")
+        raise LripDecodeError(f"packet length {len(pkt)} != {total} from the Space Packet header")
     apid = w1 & 0x7FF
     msg_type = apid - s["framing"]["space_packet"]["apid_base"]
     if profile == "N":
@@ -558,7 +564,11 @@ class Receiver:
         sender under that key, or, when `now` (s, the receiver's clock on the t_valid scale) is given, |t_valid - now|
         above 10 s (C2, note 03 E4; LripReplayError). An authenticated v0.2 HELLO with codes outside the schema's enums
         revokes the sender's declaration (C8, the stricter reading); a HELLO older than the declaration in force does
-        not replace it (C2)."""
+        not replace it (C2). B-120 G, the rule as it stands (an open protocol decision): a HELLO carries a MAC under the
+        site key, a capability manifest a signature, and neither outranks the other: a valid HELLO replaces a
+        declaration that came from a signed manifest, and an invalid one revokes it, so any holder of the site key can
+        undo a signed declaration. The sequence counter is kept per (sender, key epoch), shared by MAC'd and signed
+        packets."""
         d = decode(pkt, keys=self.keys, profile=self.profile, counters=self.counters)
         if d is None:
             return None
@@ -580,7 +590,8 @@ class Receiver:
         if d.seq is not None and d.seq <= self.s_max.get(sender_epoch, -1):
             self.refused_replay += 1
             raise LripReplayError(f"{d.name} from sender {d.sender}: sequence {d.seq} <= {self.s_max[sender_epoch]}")
-        if now is not None and abs(d.t_valid_s - float(now)) > FRESHNESS_S:
+        # B-120 F: written so that a non-finite `now` (NaN compares false) is refused, not accepted
+        if now is not None and not abs(d.t_valid_s - float(now)) <= FRESHNESS_S:
             self.refused_stale += 1
             raise LripReplayError(f"{d.name} from sender {d.sender}: t_valid {d.t_valid_s} s, now {now} s")
         if d.name == "HELLO" and d.ver[1] >= 2:
@@ -598,7 +609,7 @@ class Receiver:
                     self.revoked_declarations += 1
         elif d.name == "POSITION":
             dec = self.decl.get(d.sender)
-            if d.auth is None or dec is None or dec.epoch != d.epoch:
+            if dec is None or dec.epoch != d.epoch:     # (unauthenticated packets are refused above)
                 self.refused_positions += 1
                 raise LripRefError(f"POSITION from sender {d.sender}: no frame / datum / time-scale declaration under "
                                    f"key epoch {d.epoch}")

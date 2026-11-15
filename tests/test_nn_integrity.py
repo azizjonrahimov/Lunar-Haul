@@ -289,3 +289,36 @@ def test_policy_refuses_other_files():
     d2["obs"]["names"] = list(reversed(d2["obs"]["names"]))
     with pytest.raises(ValueError):
         M.Policy(doc=d2)
+
+
+def test_evaluate_addenda_checked_before_writing(monkeypatch, tmp_path):
+    """B-120 E: --resample-counts and --onset-fa write only reproduced addenda, one key at a time; a rerun of the
+    evaluation carries the B-118 addenda over (before, it kept only "landscape")."""
+    from lunarsim.nn import evaluate as E
+    path = tmp_path / "E56.json"
+    path.write_text(json.dumps({"test": {"x": 1}, "h15_resample_counts_b118": {"old": True}}))
+    monkeypatch.setattr(E, "RESULT", str(path))
+    E._store("h15_resample_counts_b118", {"new": True})
+    doc = json.loads(path.read_text())
+    assert doc == {"test": {"x": 1}, "h15_resample_counts_b118": {"new": True}}
+    ok = {"sets": {"test": {"a|b|c": {"reproduces_stored_interval": True}}}}
+    bad = {"sets": {"test": {"a|b|c": {"reproduces_stored_interval": False}}}}
+    assert E.resample_counts_not_reproduced(ok) == [] and E.resample_counts_not_reproduced(bad) == ["test:a|b|c"]
+    ev = {"events": {"all": {"recall_reproduces_stored": True}}, "fa_ci95_200_reproduces_stored": False}
+    assert E.onset_fa_not_reproduced({"sets": {"test": {"net": {"day": ev}}}}) == [("test", "net", "day", "fa")]
+    assert {"landscape", "h15_resample_counts_b118", "onset_context_and_fa_interval_b118"} <= set(E.CARRY_KEYS)
+
+
+def test_old_checkpoint_is_refused_with_its_name(small, monkeypatch, tmp_path):
+    """B-120 H: a checkpoint written before 13 Nov 2026 (numpy arrays inside) cannot be resumed with
+    weights_only=True; fit stops with a message that names the file and says what to do, not an UnpicklingError,
+    and does not fall back to loading it unsafely."""
+    import torch
+    from lunarsim.nn import train as T
+    monkeypatch.setattr(T, "STATE", str(tmp_path))
+    os.makedirs(tmp_path / "old_run")
+    ck = tmp_path / "old_run" / "ckpt.pt"
+    torch.save({"model": {}, "opt": {}, "st": {"epoch": 1, "hist": np.zeros(3)}}, str(ck))
+    with pytest.raises(SystemExit, match="ckpt.pt cannot be resumed .* delete it"):
+        T.fit("old_run", {"epochs": 1}, 0, data={"train": small, "val": small}, log=False)
+    assert ck.exists()                                   # nothing deleted or rewritten behind the user's back

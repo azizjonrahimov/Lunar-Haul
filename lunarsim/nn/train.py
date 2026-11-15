@@ -141,7 +141,13 @@ def fit(name: str, cfg: Dict[str, Any], seed: int, max_s: float = 520.0, traject
     if os.path.isfile(ck):
         # B-119 C13: weights_only=True (tensors and plain Python only; see the save below). A checkpoint written
         # before 13 Nov 2026 held numpy arrays and cannot be resumed this way: train that run again.
-        z = torch.load(ck, weights_only=True)
+        import pickle
+        try:
+            z = torch.load(ck, weights_only=True)
+        except pickle.UnpicklingError as e:                 # B-120 H: named, not a bare traceback; no fallback
+            raise SystemExit(f"{ck} cannot be resumed with weights_only=True (a checkpoint written before 13 Nov "
+                             f"2026 holds numpy arrays): delete it and train run {name} (seed {seed}) again. "
+                             f"({type(e).__name__}: {str(e).splitlines()[0] if str(e) else ''})") from e
         model.load_state_dict(z["model"])
         opt.load_state_dict(z["opt"])
         st = z["st"]

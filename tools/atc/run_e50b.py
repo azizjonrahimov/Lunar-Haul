@@ -160,6 +160,7 @@ def arm(seed, t0, t1, series, fs_cfg):
 def run_seed(seed):
     from lunarsim.atc import pnt as PN
     t_s = time.time()
+    code = E5.code_fingerprint()                                  # B-120 D: the cell carries its code version
     month, t0, t1, share = E5._window()
     rec = E5.record(MULT, seed, t0, t1)
     tr = E5.trajectories(rec, t0, t1)
@@ -200,6 +201,7 @@ def run_seed(seed):
             "fixes_driving": c["nav"][LAYERED_FIX]["counts"]["fixes_driving"] == out["perfect_fixes_driving"]}
     out["seed_s"] = round(time.time() - t_s, 1)
     out["peak_mb"] = _peak_mb()
+    out["code"] = code
     return out
 
 
@@ -243,6 +245,8 @@ def cmd_build():
     S = sorted((json.load(open(p)) for p in glob.glob(os.path.join(CACHE, f"m{MULT}_s*.json"))), key=lambda x: x["seed"])
     if not S:
         raise SystemExit("no E50b cells")
+    import e50_build as EB
+    code = EB.require_code((x.get("code") for x in S), "E50b")              # B-120 D
     rng = np.random.default_rng([50, 2])
     B = DESIGN["bootstrap"]
     get = lambda armk, f: np.array([f(s[armk]) for s in S], float)
@@ -283,7 +287,7 @@ def cmd_build():
         wr.writeheader()
         wr.writerows(rows)
     tab = [s["table"] for s in S]
-    doc = {"design": DESIGN, "note": __doc__.strip().split("\n\n")[1].replace("\n", " "), "seeds": [s["seed"] for s in S],
+    doc = {"design": DESIGN, "code": code, "note": __doc__.strip().split("\n\n")[1].replace("\n", " "), "seeds": [s["seed"] for s in S],
            "labels": {"without_stop_time": "E50's layered margin run (results/E50_*: 'without stop time')",
                       "with_stop_time": "the same with the terrain-fix stops in the engine (roads fix_stops)"},
            "metrics": metrics,

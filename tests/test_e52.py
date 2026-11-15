@@ -20,6 +20,10 @@ def test_route_tile_offsets_are_per_sample():
 
 
 def test_tour_length_unchanged_by_the_fix():
-    """The tour length is the sum of the legs' sample-to-sample distances, as before the fix (16 km pack)."""
+    """The tour length is the sum of the legs' sample-to-sample distances, as before the fix (16 km pack); B-120 F:
+    it equals the published tour_km (results/E52_map.json), not only a plausible range."""
+    import json
     _, length = E52.route_tiles()
     assert 1_000.0 < length < 200_000.0
+    with open(os.path.join(ROOT, "results", "E52_map.json"), encoding="utf-8") as f:
+        assert round(length / 1000.0, 2) == json.load(f)["tour_km"]

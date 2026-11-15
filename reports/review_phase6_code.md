@@ -144,6 +144,33 @@ familyRows throws on an unknown clause. CI: a job that installs CPU torch and ru
 Duplicate `_peak_mb` in four scripts; `_dump`/`_load`/`_seeds` redefined beside run_e50; `smap.TileMap.root_hash`
 and `nn/model.transform_np` have no caller; duplicated constants (Moon radius, speed of light).
 
+## O. Open follow-ups after B-120 (14 Nov 2026; not done, by LEAD's decision or as protocol decisions)
+
+- Simplification suggestions of the review (shared helpers, duplicated constants; see S): not taken now.
+- `dtn.age_of_information`: per-vehicle Python loops; vectorising it would speed E54 but moves no number. Not now.
+- Receiver replay design gaps (`lunarsim/atc/lrip/codec.py` Receiver.accept): the 32-bit sequence number has no wrap
+  rule (a sender at 2^32 - 1 is refused for the rest of the key epoch), and a holder of the shared site key can send a
+  packet with a high sequence number for another sender and so deny that sender's later packets until the next epoch.
+  Both need a protocol rule (wrap = new epoch; pairwise keys or per-sender MAC keys), not a code fix.
+- A MAC-only HELLO can replace or revoke a declaration that came from a signed capability manifest (codec.py, the C8
+  branch of Receiver.accept): a HELLO carries only a MAC under the site key, so any key holder can undo a signed
+  declaration. Stated in Receiver.accept's docstring as the rule in force; whether a signed declaration should outrank
+  a HELLO (for replacement as well as revocation) is a protocol decision. Tested as it stands
+  (tests/test_lrip_v02.py test_manifest_and_hello_replace_each_other).
+- The sequence counter is kept per (sender, key epoch), shared by MAC'd and signed packets (stated in the same
+  docstring); a sender counting per key or per SPI kind would have its signed packets refused. The schema's rules
+  should say which.
+- `smap.Contribution.hazard` (default True) is never read: a report with hazard=False takes the hazard path. No caller
+  sets it; remove the field or handle it, with a test.
+- E45 uphill: with the 1 s actuation delay and the slope term, Mars one-lane gaps end up to 0.14 m below d0 (15 and
+  17.2 deg). The cause is not known. Not an R1 breach (0, B-120 A), and not the one-step detection latency: with the
+  delay at 0.9 s the shortfall stays (4.876 / 4.880 m).
+
+Done in B-120 (no longer open): the end-of-window rule in dtn.simulate (B), an unknown protocol string refused and the
+base store bounded for Earth-bound bundles (G), the E54 fingerprint covering the engine (C), the code stamp checks of
+the E50-family builders (D), the E56 addenda carried over and checked before writing (E), the codec's decode errors,
+zero-key warning and NaN clock (F).
+
 ## Checked and found sound
 
 Train / validation / test separation in lunarsim/nn (thresholds and model choice on validation only); the JS ports

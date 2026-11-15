@@ -222,6 +222,14 @@ def code_fingerprint():
     return h.hexdigest()[:16]
 
 
+def _write_cache(path, obj):
+    """B-120 F: a cache file written whole (closed before the rename) and without NaN or infinity, which no JSON
+    reader other than Python's accepts and which would reach the results files."""
+    with open(path + ".tmp", "w", encoding="utf-8") as f:
+        json.dump(obj, f, allow_nan=False)
+    os.replace(path + ".tmp", path)
+
+
 def _rerun_commit():
     import subprocess
     try:
@@ -361,8 +369,7 @@ def cmd_runall(seeds, max_s):
         for p, fn in ((p1, run_seed), (p2, run_seed_sizes)):
             o = fn(s, ctx)
             o["rerun_commit"] = _rerun_commit()
-            json.dump(o, open(p + ".tmp", "w"), allow_nan=True)
-            os.replace(p + ".tmp", p)
+            _write_cache(p, o)
         last = time.time() - ts
         print(f"s{s} done in {last:.0f} s", flush=True)
     print("all requested seeds done", flush=True)
@@ -379,8 +386,7 @@ def cmd_v02run(seeds, max_s):
             print(f"stop before seed {s}: time budget", flush=True)
             return
         o = run_seed_sizes(s)
-        json.dump(o, open(p + ".tmp", "w"), allow_nan=True)
-        os.replace(p + ".tmp", p)
+        _write_cache(p, o)
         print(f"v02 s{s} done in {o['run_s']} s", flush=True)
     print("all requested seeds done", flush=True)
 
@@ -504,7 +510,7 @@ def build_v02():
                                                 for s in S for c in s["sets"][nm]["cells"])) for nm in sz}
     old["lrip_v02"] = blk
     with open(OUT_JSON, "w", encoding="utf-8", newline="\n") as f:
-        json.dump(old, f, indent=1)
+        json.dump(old, f, indent=1, allow_nan=False)
         f.write("\n")
     rows = [dict(r, size_set=nm) for nm in ("v0.2", "v0.2_proximity1") for r in sets[nm][0]]
     with open(OUT_CSV.replace(".csv", "_v02.csv"), "w", newline="", encoding="utf-8") as f:
@@ -535,8 +541,8 @@ def cmd_linkshare(seeds, max_s):
         g = E5._geo()
         hb = DT.base_hops(DT.contact_plan(tr, g["los"], g["ids"]["BASE"]))
         mv = tr.ds > 0
-        json.dump({"seed": s, "linked_all": float((hb >= 0).mean()), "linked_driving": float((hb[mv] >= 0).mean()),
-                   "driving_share": float(mv.mean())}, open(p, "w"))
+        _write_cache(p, {"seed": s, "linked_all": float((hb >= 0).mean()),
+                         "linked_driving": float((hb[mv] >= 0).mean()), "driving_share": float(mv.mean())})
         print(f"link s{s} done", flush=True)
     print("all requested seeds done", flush=True)
 
@@ -552,8 +558,7 @@ def cmd_run(seeds, max_s):
             print(f"stop before seed {s}: time budget", flush=True)
             return
         o = run_seed(s)
-        json.dump(o, open(p + ".tmp", "w"), allow_nan=True)
-        os.replace(p + ".tmp", p)
+        _write_cache(p, o)
         print(f"s{s} done in {o['run_s']} s", flush=True)
     print("all requested seeds done", flush=True)
 
@@ -656,7 +661,7 @@ def build():
                 "lrip_v02": {k: old["lrip_v02"].get(k) for k in ("rows", "h14", "verdicts", "values_moved_vs_v01")}
                 if "lrip_v02" in old else None}
     with open(OUT_JSON, "w", encoding="utf-8", newline="\n") as f:
-        json.dump(doc, f, indent=1)
+        json.dump(doc, f, indent=1, allow_nan=False)
         f.write("\n")
     print(json.dumps(h14, indent=1))
 
@@ -748,7 +753,7 @@ def ledger(seeds=range(1, 31)):
         old = json.load(open(p, encoding="utf-8"))
         out.update({k: v for k, v in old.items() if k.startswith("superseded_")})
     with open(p, "w", encoding="utf-8", newline="\n") as f:
-        json.dump(out, f, indent=1)
+        json.dump(out, f, indent=1, allow_nan=False)
         f.write("\n")
     return out
 

@@ -166,7 +166,10 @@ def simulate(A: np.ndarray, msgs: Sequence[Msg], protocol: str, loss: float, rng
     creation; censored = undelivered and still alive at the window's end (t0 + life_s > T dt_s), or created at or
     after it: its outcome is not known. protocol: "drop_retry", or "sf" (store-and-forward with custody; "sf_ll", the
     same model run on a lost_link_plan output, is accepted as a name for it); anything else is refused (B-120 G:
-    before, every string but "drop_retry" ran as sf)."""
+    before, every string but "drop_retry" ran as sf). Stores (store-and-forward): every node holds at most
+    queue_bytes; a full store drops a new bundle at creation, and a full relay refuses custody until it has room;
+    the base counts as a relay for an Earth-bound bundle, which it stores until the Earth link (B-120 G: before, the
+    base took every Earth-bound bundle whatever its store held); a bundle for the base itself is delivered at once."""
     if protocol not in PROTOCOLS:
         raise ValueError(f"unknown protocol {protocol!r}; expected one of {PROTOCOLS}")
     p = dict(DEFAULTS, **(p or {}))

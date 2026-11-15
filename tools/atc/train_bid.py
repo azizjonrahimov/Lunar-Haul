@@ -522,7 +522,6 @@ RERUN_RESULT = os.path.join(ROOT, "results", "ATC_learned_eval_rerun.json")
 def cmd_table_rerun() -> Optional[Dict[str, Any]]:
     """B-106 (P1 M8): the 27 Oct evaluation repeated on the current engine (same seeds, same policies), written beside
     the old file only when eval and guard are complete; ood marked "not rerun" until it is."""
-    import subprocess
     ev_p, gd_p = os.path.join(CACHE, "eval_runs.json"), os.path.join(CACHE, "guard_runs.json")
     ev = json.load(open(ev_p)) if os.path.isfile(ev_p) else {}
     gd = json.load(open(gd_p)) if os.path.isfile(gd_p) else {}

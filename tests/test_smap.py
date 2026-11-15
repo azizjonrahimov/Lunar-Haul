@@ -118,3 +118,18 @@ def test_e52_outputs():
     rows = {(r["out_h"], r["order"], r["rate_kbps"]): r for r in d["rows"]}
     assert rows[(24, "hazards_first", 16)]["t_hazards_current_s"] < rows[(24, "oldest_first", 16)]["t_hazards_current_s"]
     assert rows[(1, "hazards_first", 100)]["bytes_mean"] <= rows[(336, "hazards_first", 100)]["bytes_mean"]
+
+
+def test_cell_rejected_and_repeat_reports_keep_the_tile_state():
+    """B-120 G (state-machines reviewer): a rejected report changes neither a provisional nor a confirmed tile; a
+    repeat or second-pass report on a confirmed tile keeps it confirmed."""
+    a = S.Authority()
+    a.submit(S.Contribution("A", (3, 3), 1.0, 0.2, pass_id=1), 1.0)
+    assert a.submit(S.Contribution("B", (3, 3), 3.0, 0.2), 2.0).startswith("rejected")
+    assert (3, 3) not in a.confirmed and a.provisional[(3, 3)] == [("A", 1)] and a.map.v["hazard"][(3, 3)] == 1
+    assert a.submit(S.Contribution("B", (3, 3), 1.0, 0.2), 3.0) == "accepted: confirmed"
+    assert a.submit(S.Contribution("C", (3, 3), 1.0, 0.2, frame_ok=False), 4.0).startswith("rejected")
+    assert (3, 3) in a.confirmed and a.map.v["hazard"][(3, 3)] == 2
+    assert a.submit(S.Contribution("A", (3, 3), 1.0, 0.2, pass_id=1), 5.0) == "accepted: already confirmed"
+    assert a.submit(S.Contribution("A", (3, 3), 1.0, 0.2, pass_id=9), 6.0) == "accepted: already confirmed"
+    assert (3, 3) in a.confirmed

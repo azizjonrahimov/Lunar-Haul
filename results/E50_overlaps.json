@@ -1,6 +1,7 @@
 {
  "task": "B-102 (P2 M2; decisions B5)",
  "note": "    python tools/atc/run_e50_overlaps.py run --mult 1 --seeds 1-30 [--max-seconds 480]   # resumable, staged     python tools/atc/run_e50_overlaps.py build              # -> results/E50_overlaps.json, results/E50_overlaps.csv",
+ "code": "5bf22fa6d5ccfe47",
  "multiples": {
   "1": {
    "seeds": [

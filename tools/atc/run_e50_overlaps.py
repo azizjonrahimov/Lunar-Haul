@@ -157,6 +157,14 @@ def _traj_nav(rec, ls, year, seed, t0, t1):
 
 
 def run_stage(m, s, st):
+    """One stage; B-120 D: its output carries E50's code fingerprint taken when it starts ("_code")."""
+    code = E5.code_fingerprint()
+    out = _run_stage(m, s, st)
+    out["_code"] = code
+    return out
+
+
+def _run_stage(m, s, st):
     month, t0, t1, share = E5._window()
     if st == "rec":
         return E5.record(m, s, t0, t1)
@@ -183,12 +191,16 @@ def run_stage(m, s, st):
 
 
 def assemble(m, s):
+    codes = {_load(_sp(m, s, st)).get("_code") for st in STAGES}             # B-120 D: one code for all stages
+    if len(codes) > 1 or None in codes:
+        raise SystemExit(f"overlaps m{m} s{s}: stages made with different or unknown code {sorted(codes, key=str)}; "
+                         "rerun them")
     out = {"mult": m, "seed": s, "no_margin": {}, "with_margin": {}}
     for name in SETS:
         o = _load(_sp(m, s, f"nav_{name}"))
         out["no_margin"][name] = {k: o[k] for k in ("overlaps", "b2b", "violations")}
     for lab in MARGINS:
-        out["with_margin"][lab] = _load(_sp(m, s, f"mnav_{lab}"))
+        out["with_margin"][lab] = {k: v for k, v in _load(_sp(m, s, f"mnav_{lab}")).items() if k != "_code"}
     p50 = os.path.join(E5.CACHE, f"m{m}_s{s}.pkl.gz")
     if os.path.isfile(p50):
         c = _load(p50)
@@ -197,6 +209,7 @@ def assemble(m, s):
                                  and all(c["margin"][lab]["violations"]["violations"] == out["with_margin"][lab]["violations"]
                                          for lab in MARGINS))
     out["peak_mb"] = _peak_mb()
+    out["code"] = codes.pop()
     with open(_cell(m, s) + ".tmp", "w") as f:
         json.dump(out, f)
     os.replace(_cell(m, s) + ".tmp", _cell(m, s))
@@ -254,8 +267,12 @@ def _dist(x):
 
 def cmd_build():
     cells = [json.load(open(p)) for p in glob.glob(os.path.join(CACHE, "m*_s*.json"))]
+    if not cells:
+        raise SystemExit("no overlaps cells")
+    import e50_build as EB
+    code = EB.require_code((c.get("code") for c in cells), "overlaps")       # B-120 D
     doc = {"task": "B-102 (P2 M2; decisions B5)", "note": __doc__.strip().split("\n\n")[1].replace("\n", " "),
-           "multiples": {}}
+           "code": code, "multiples": {}}
     rows = []
     for m in sorted({c["mult"] for c in cells}):
         C = sorted((c for c in cells if c["mult"] == m), key=lambda c: c["seed"])

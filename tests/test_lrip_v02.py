@@ -127,10 +127,52 @@ def test_short_and_malformed_packets_raise_value_error():
         for prof in ("N", "B"):
             try:
                 L.decode(c, keys=KEYS, profile=prof)
-            except ValueError:
+            except (C.LripDecodeError, C.LripAuthError, C.LripVersionError):   # B-120 F: never a bare ValueError
                 pass
-    with pytest.raises(ValueError):
+    with pytest.raises(C.LripDecodeError):
         L.decode("not bytes", keys=KEYS)
+
+
+def _profile_b(arr):
+    """An unsecured profile-B packet of the CBOR array arr (Space Packet header with the right length)."""
+    import struct as _s
+    from lunarsim.atc.lrip import cbor
+    good = L.encode("POSITION", POS, 7, 1.0, auth=None, profile="B")
+    w1, w2, _ = _s.unpack(">HHH", good[:6])
+    inner = cbor.dumps(arr) if not isinstance(arr, bytes) else arr
+    return _s.pack(">HHH", w1, w2, len(inner) - 1) + inner
+
+
+def test_tampered_profile_b_fields_raise_decode_error():
+    """B-120 F: a profile-B field of the wrong type or out of its range, and a CBOR text that is not UTF-8, raise
+    LripDecodeError (before, the CBOR reader's ValueError and UnicodeDecodeError escaped as they were)."""
+    from lunarsim.atc.lrip import cbor
+    good = L.encode("POSITION", POS, 7, 1.0, auth=None, profile="B")
+    arr = cbor.loads(good[6:])
+    assert L.decode(_profile_b(arr), auth=None, profile="B").fields["e"] == pytest.approx(12.34, abs=0.01)
+    for pos, val in ((4, "12"), (4, 1 << 40), (5, -(1 << 40)), (4, [1])):
+        bad = list(arr)
+        bad[pos] = val
+        with pytest.raises(C.LripDecodeError):
+            L.decode(_profile_b(bad), auth=None, profile="B")
+    raw = cbor.dumps(arr[:4])                                   # header items only, then a text item of bad UTF-8
+    with pytest.raises(C.LripDecodeError):
+        L.decode(_profile_b(bytes([0x85]) + raw[1:] + bytes([0x61, 0xFF])), auth=None, profile="B")
+    with pytest.raises(C.LripDecodeError):                     # trailing CBOR garbage after a truncated item
+        L.decode(_profile_b(bytes([0x85]) + raw[1:] + bytes([0x5A, 0xFF])), auth=None, profile="B")
+
+
+def test_explicit_zero_key_warns_and_nan_clock_is_refused():
+    """B-120 F: an explicit all-zero MAC key warns like no key; a non-finite receiver clock is refused, not accepted
+    (|t_valid - NaN| > 10 is false)."""
+    with pytest.warns(C.LripInsecureKeyWarning):
+        L.encode("STATUS", {}, 1, 1.0, keys=C.Keys(epoch=3))
+    rx = L.Receiver(KEYS)
+    pkt = L.encode("HELLO", DECL, 7, 5.0, keys=KEYS, seq=1)
+    for now in (float("nan"), float("inf")):
+        with pytest.raises(C.LripReplayError):
+            rx.accept(pkt, now=now)
+    assert rx.accept(pkt, now=5.0).name == "HELLO"
 
 
 def test_cbor_rejects_malformed_input():
@@ -189,3 +231,36 @@ def test_manifest_round_trip_full_and_free_text():
             assert M.decode(M.encode(m)) == m
             m2 = dict(m, note=word, owner_text="free text not in the registry")
             assert M.decode(M.encode(m2)) == m2
+
+
+# B-120 G: the receiver's untested cells (.gstack/tmp/state-machines.50bfcda2244a.md)
+def test_receiver_unknown_type_returns_none_and_changes_nothing():
+    import struct as _s
+    rx = L.Receiver(KEYS)
+    rx.accept(L.encode("HELLO", DECL, 7, 5.0, keys=KEYS, seq=1))
+    before = (dict(rx.s_max), dict(rx.decl), {k: v for k, v in vars(rx).items() if isinstance(v, int)})
+    good = L.encode("HELLO", DECL, 7, 6.0, auth=None)
+    w1, w2, dl = _s.unpack(">HHH", good[:6])
+    base = C.schema()["framing"]["space_packet"]["apid_base"]
+    unknown = _s.pack(">HHH", (w1 & ~0x7FF) | (base + 250), w2, dl) + good[6:]
+    assert rx.accept(unknown) is None
+    assert rx.counters.unknown_type == 1
+    assert (dict(rx.s_max), dict(rx.decl), {k: v for k, v in vars(rx).items() if isinstance(v, int)}) == before
+
+
+def test_manifest_and_hello_replace_each_other():
+    """A signed manifest replaces a HELLO's declaration and a valid HELLO replaces a manifest's; an unsigned manifest
+    keeps the declaration in force; an invalid HELLO revokes either (C8, the stricter reading; a MAC-only HELLO can
+    thus revoke a declaration that came from a signed manifest: an open protocol decision, see Receiver's docstring)."""
+    rx = L.Receiver(KEYS)
+    m = M.example("small_rover", "0.2")
+    rx.accept(L.encode("HELLO", dict(DECL, frame_id=2), 7, 5.0, keys=KEYS, seq=1))
+    assert not rx.declare_from_manifest(7, m, epoch=3, signed=False) and rx.decl[7].source == "hello"
+    assert rx.declare_from_manifest(7, m, epoch=3, signed=True) and rx.decl[7].source == "manifest"
+    assert not rx.declare_from_manifest(7, m, epoch=3, signed=False) and rx.decl[7].source == "manifest"
+    assert rx.declare_from_manifest(7, m, epoch=3, signed=True) and rx.decl[7].source == "manifest"
+    rx.accept(L.encode("HELLO", dict(DECL, frame_id=2), 7, 6.0, keys=KEYS, seq=2))
+    assert rx.decl[7].source == "hello" and rx.decl[7].frame_id == 2
+    rx.declare_from_manifest(7, m, epoch=3, signed=True)
+    rx.accept(L.encode("HELLO", dict(DECL, frame_id=0), 7, 7.0, keys=KEYS, seq=3))
+    assert 7 not in rx.decl and rx.revoked_declarations == 1

@@ -229,7 +229,9 @@ def evaluate_set(scores_f: Dict[str, np.ndarray], meta: np.ndarray, y: np.ndarra
             fp = np.array([q[2] for q in fd])
             fa = np.array([B.fa_per_day(bms[s], wn, float(thr[det][rate][s])) for s in range(S)])
             idx = rng.integers(0, len(wn), (N_BOOT, len(wn)))
-            fa_b = np.array([[B.fa_per_day(bms[s][i], wn[i], float(thr[det][rate][s])) for i in idx[:200]]
+            # B-120 E: every resample (the published run used the first 200; the 1,000-resample interval is stored
+            # beside it under onset_context_and_fa_interval_b118, fa_per_pair_day_ci95_1000)
+            fa_b = np.array([[B.fa_per_day(bms[s][i], wn[i], float(thr[det][rate][s])) for i in idx]
                              for s in range(S)]).mean(0)
             act_h = active.sum() * bms[0].shape[1] * B.BIN_S / 3600.0
             fa_act = np.array([(bms[s][active] > thr[det][rate][s]).sum() / max(act_h, 1e-9) for s in range(S)])
@@ -415,7 +417,11 @@ def scores_fingerprint(names: List[str]) -> str:
     return h.hexdigest()[:16]
 
 
-def main(on: str = "test", force: bool = False, runs: Optional[List[str]] = None, max_s: float = 530.0) -> None:
+CARRY_KEYS = ("landscape", "h15_resample_counts_b118", "onset_context_and_fa_interval_b118")   # B-120 E
+
+
+def main(on: str = "test", force: bool = False, runs: Optional[List[str]] = None, max_s: float = 530.0,
+         accept_unstamped_scores: bool = False) -> None:
     t0 = time.time()
     rehearsal = on == "val"
     result_path = RESULT if not rehearsal else os.path.join(T.STATE, "rehearsal_val.json")
@@ -445,8 +451,12 @@ def main(on: str = "test", force: bool = False, runs: Optional[List[str]] = None
             with np.load(path) as z:
                 got = {k: z[k] for k in z.files}
             code = str(got.pop("_code")) if "_code" in got else None    # B-118 N21
+            if code is None and not accept_unstamped_scores:          # B-120 E: refused unless asked for
+                raise SystemExit(f"{path} carries no fingerprint (cached before B-118); delete it and rescore, or "
+                                 "pass --accept-unstamped-scores to use it as it is")
             if code is None:
-                print(f"  {what}: scores cached before B-118 carry no fingerprint; used as they are", flush=True)
+                print(f"  {what}: scores cached before B-118 carry no fingerprint; used as they are "
+                      "(--accept-unstamped-scores)", flush=True)
             elif code != fp:
                 raise SystemExit(f"{path} was made with other models or code ({code} != {fp}); delete it and rescore")
             return got
@@ -527,8 +537,10 @@ def main(on: str = "test", force: bool = False, runs: Optional[List[str]] = None
         out["policy_file"] = export_policy(rep, rdone, {r: float(thr["net"][r][0]) for r in B.RATES}, va,
                                            {"dataset_sha256": out["dataset_sha256"],
                                             "PROVISIONAL": out["PROVISIONAL"]})
-        if "landscape" in prev:
-            out["landscape"] = prev["landscape"]
+        # B-120 E: keys other commands add are carried over (before, only "landscape", so a rerun dropped the
+        # B-118 addenda that phase6_family.h15a, paper/p2/phase6.py and site/lib/network.mjs read); the addenda were
+        # made from the same frozen models and thresholds, and --resample-counts / --onset-fa recheck them
+        out.update({k: v for k, v in prev.items() if k in CARRY_KEYS or k.startswith("superseded_")})
         np.savez(EVAL_CACHE, **arrays)
         write_table(out)
     out["wall_s"] = round(time.time() - t0, 1)
@@ -572,11 +584,31 @@ def resample_counts(write: bool = True) -> Dict[str, Any]:
                                                                    and np.allclose(v["ci90"], s["ci90"], equal_nan=True))}
             out["sets"][sname] = cnt
     if write:
-        doc["h15_resample_counts_b118"] = out
-        with open(RESULT, "w", encoding="utf-8", newline="\n") as f:
-            json.dump(doc, f, indent=1)
-            f.write("\n")
+        _store("h15_resample_counts_b118", out)
     return out
+
+
+def _store(key: str, block: Dict[str, Any]) -> None:
+    """Write one top-level key of results/E56_integrity.json, every other key left as it is."""
+    doc = json.load(open(RESULT, encoding="utf-8"))
+    doc[key] = block
+    with open(RESULT, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(doc, f, indent=1)
+        f.write("\n")
+
+
+def resample_counts_not_reproduced(r: Dict[str, Any]) -> List[str]:
+    """B-120 E: the comparisons whose recomputed interval does not equal the stored one."""
+    return [f"{s}:{k}" for s, c in r["sets"].items() for k, v in c.items() if not v["reproduces_stored_interval"]]
+
+
+def onset_fa_not_reproduced(r: Dict[str, Any]) -> List[tuple]:
+    """B-120 E: the recalls and 200-resample false-alarm intervals that do not equal the stored ones."""
+    bad = [(s, d, rt, ft) for s, b in r["sets"].items() for d, x in b.items() for rt, y in x.items()
+           for ft, e in y["events"].items() if not e["recall_reproduces_stored"]]
+    bad += [(s, d, rt, "fa") for s, b in r["sets"].items() for d, x in b.items() for rt, y in x.items()
+            if not y["fa_ci95_200_reproduces_stored"]]
+    return bad
 
 
 def onset_and_fa_addendum(write: bool = True, sets=("test", "ood")) -> Dict[str, Any]:
@@ -636,33 +668,39 @@ def onset_and_fa_addendum(write: bool = True, sets=("test", "ood")) -> Dict[str,
             print(f"{sname} {det} done", flush=True)
         out["sets"][sname] = blk
     if write:
-        doc["onset_context_and_fa_interval_b118"] = out
-        with open(RESULT, "w", encoding="utf-8", newline="\n") as f:
-            json.dump(doc, f, indent=1)
-            f.write("\n")
+        _store("onset_context_and_fa_interval_b118", out)
     return out
 
 
 if __name__ == "__main__":
+    # B-120 E: the addenda are written only when every recomputed value reproduces the stored one; otherwise
+    # nothing is written and the exit status is 1 (before: written first, exit 0 either way)
     if "--onset-fa" in sys.argv:
-        r = onset_and_fa_addendum()
-        bad = [(s, d, rt, ft) for s, b in r["sets"].items() for d, x in b.items() for rt, y in x.items()
-               for ft, e in y["events"].items() if not e["recall_reproduces_stored"]]
-        bad += [(s, d, rt, "fa") for s, b in r["sets"].items() for d, x in b.items() for rt, y in x.items()
-                if not y["fa_ci95_200_reproduces_stored"]]
-        print("not reproduced:", bad)
+        r = onset_and_fa_addendum(write=False)
+        bad = onset_fa_not_reproduced(r)
+        if bad:
+            print("not reproduced (nothing written):", bad)
+            raise SystemExit(1)
+        _store("onset_context_and_fa_interval_b118", r)
+        print("reproduced; written")
         raise SystemExit(0)
     if "--resample-counts" in sys.argv:
-        r = resample_counts()
-        print({s: sum(not v["reproduces_stored_interval"] for v in c.values()) for s, c in r["sets"].items()},
-              "comparisons not reproduced")
+        r = resample_counts(write=False)
+        bad = resample_counts_not_reproduced(r)
+        if bad:
+            print(len(bad), "comparisons not reproduced (nothing written):", bad[:10])
+            raise SystemExit(1)
+        _store("h15_resample_counts_b118", r)
+        print("reproduced; written")
         raise SystemExit(0)
     ap = argparse.ArgumentParser()
     ap.add_argument("--on", default="test", choices=("test", "val"))
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--runs", default="", help="rehearsal only: comma-separated run names instead of the finals")
     ap.add_argument("--max-seconds", type=float, default=530.0)
+    ap.add_argument("--accept-unstamped-scores", action="store_true",
+                    help="use score caches made before B-118 (no fingerprint) as they are; refused otherwise")
     a = ap.parse_args()
     import faulthandler
     faulthandler.dump_traceback_later(a.max_seconds, exit=True)
-    main(a.on, a.force, [r for r in a.runs.split(",") if r] or None, a.max_seconds)
+    main(a.on, a.force, [r for r in a.runs.split(",") if r] or None, a.max_seconds, a.accept_unstamped_scores)
