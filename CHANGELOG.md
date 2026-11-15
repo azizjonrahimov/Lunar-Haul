@@ -2,6 +2,24 @@
 
 All results are simulation, replay or calculation on assumed inputs. Nothing is measured on lunar or flight hardware.
 
+## Control runs named by the referees (15 November 2026)
+
+Seven of the control runs the referees asked for (B-117 a, b, c, d, e1, h, j2) and a rerun of the learned-bid evaluation on the right engine. All were run after the results were known and are labelled as controls, not pre-registered tests. No pre-registered decision changed.
+
+### Changed results and text
+- **Learned bids (P1)**: the 12 November rerun of the learned-bid evaluation ran without the dispatch fixed point (PREREG change 5), which is opt-in and was never switched on for it; P1 called it the corrected engine. Rerun on the fixed point: linear minus hand -2.32 h at 30 % load (was -2.49 h) and -31.5 h at 60 % (was -30.3 h). The check that other cargo does not pay for the gain now comes out clean at 30 % load; on the engine without the fixed point it did not. The bids were trained without the fixed point and not retrained.
+- **What the linear bid learned (P1)**: its whole gain over the hand rule is the slack weight. A hand rule tuned with the same search budget beat the linear bids at 30 % load and cut their lead at 60 %, where the linear bids stay ahead by 12.8 h.
+- **The auction's lead (P1)**: with the auction's own return move, the marketplace matched the auction (difference +0.01 h, -0.98 to 0.96); the auction's 0.84 h point lead is the return move.
+- **Auction depth (P1)**: most of the depth penalty is there without message loss; the part due to loss is significant only at depth 5 and loss 0.40.
+- **Short retry budget (P2)**: 3 tries every 20 s, run on the replay, lost 6.7 % of grants at loss 0.25. P2 had given 1.6 % by arithmetic, which assumed a path at every try; the contact plan's 60 s steps put the three tries in one step.
+- **Moon-Mars conflict gap (P2, exploratory)**: one road segment holds 96 to 97 % of conflicts; fewer conflicts arise while a pair waits for Earth; the higher rate per traversal on Mars is not traced.
+- **Sweeps (P3)**: H14's first clause holds at 10 of 12 retry budgets; H12 holds in all 17 map settings.
+- **Site**: the /results/ P1 card reads the fixed-point evaluation.
+
+### Known gaps
+- Control runs g, j1, j3, e2 and f are still running and will land separately.
+- On the fixed point, the learned-bid evaluation's recording run loses a dispatcher wake-up (cause found in `lunarsim/atc/learned.py`, fix not applied); outcomes come from runs without recording, and the agreement figures come from the recording runs.
+
 ## Phase 6 corrections after a code review (14 November 2026)
 
 A code review of the Phase 6 work found defects in the positioning model, the delay-aware safety count and the lost-link accounts. The affected experiments were rerun; the earlier values are kept in each results file under a `superseded_…` block with the reason.
