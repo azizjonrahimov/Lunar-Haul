@@ -1702,11 +1702,36 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
         ret, days = _fin(r.p6("E54", "lost_link_returns_per_seed")), 31.0
         sp = r.p6("E54", "superseded_2026-11-13_b118")          # the code-review block, by its explicit key: the file holds a second superseded block since 14 Nov
         sp2 = r.p6("E54", "superseded_2026-11-14_b120_b")
-        for k in ("sf", "sf_ll"):
-            new_, old_ = e54row(L, k), next(x for x in sp2["rows"] if abs(_fin(x["loss"]) - L) < 1e-9 and x["protocol"] == k)
-            check(int(new_["ledger_earth_lost"]) + int(new_["ledger_earth_censored"]) == int(new_["ledger_earth_lost_incl_censored"]) == int(old_["ledger_earth_lost_incl_censored"]) and
-                  all(new_[f] == old_[f] for f in new_ if not f.startswith("ledger_earth") and f in old_),
-                  f"E54 rerun of 14 Nov ({k}): only the split of the in-replay Earth ledger between expired and censored moved; this paper prints neither (5.12)")
+        MOVED = {"ledger_earth_lost", "ledger_earth_lost_share", "ledger_earth_censored"}
+        SF = {"sf", "sf_ll", "sf_ll_pre_review"}
+
+        def same_rows(new_rows, old_rows):
+            """Every field of every row equal, a field missing on either side fails, except the three ledger fields of the store-and-forward rows."""
+            if len(new_rows) != len(old_rows):
+                return False
+            ko = {(x["loss"], x["protocol"]): x for x in old_rows}
+            if len(ko) != len(old_rows):
+                return False
+            for x in new_rows:
+                y = ko.get((x["loss"], x["protocol"]))
+                if y is None or set(x) != set(y):
+                    return False
+                for f in x:
+                    if f in MOVED and x["protocol"] in SF:
+                        continue
+                    if x[f] != y[f]:
+                        return False
+                if x["protocol"] in SF and not (x["ledger_earth_lost"] != y["ledger_earth_lost"] and
+                                                int(x["ledger_earth_lost"]) + int(x["ledger_earth_censored"]) == int(x["ledger_earth_lost_incl_censored"])):
+                    return False
+            return True
+        cur = r.p6("E54", "lrip_v02")
+        check(same_rows(r.p6("E54", "rows"), sp2["rows"]) and r.p6("E54", "h14") == sp2["h14"] and r.p6("E54", "h14_variants") == sp2["h14_variants"],
+              "E54 rerun of 14 Nov, main rows: every field of every row equals the superseded block except the Earth ledger's expired count, share and "
+              "censored count in the store-and-forward rows, with no field missing on either side; H14 and its variants are equal (5.12)")
+        check(set(cur["rows"]) == set(sp2["lrip_v02"]["rows"]) and all(same_rows(cur["rows"][v], sp2["lrip_v02"]["rows"][v]) for v in cur["rows"]) and
+              cur["h14"] == sp2["lrip_v02"]["h14"] and cur["verdicts"] == sp2["lrip_v02"]["verdicts"],
+              "E54 rerun of 14 Nov, the three size sets of protocol version 0.2: the same comparison holds, and H14 and the verdicts are equal (5.12)")
         ol = next(x for x in sp["rows"] if abs(_fin(x["loss"]) - L) < 1e-9 and x["protocol"] == "sf_ll")
         check(all(int(next(x for x in sp["rows"] if abs(_fin(x["loss"]) - L) < 1e-9 and x["protocol"] == k)["award_lost"]) == int(e54row(L, k)["award_lost"])
                   for k in ("drop_retry", "sf", "sf_ll")) and sp["h14"]["difference_sf_ll_minus_drop_retry"] == r.p6("E54", "h14")["difference_sf_ll_minus_drop_retry"],
