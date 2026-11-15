@@ -11901,3 +11901,113 @@ OOD, linear - hand, seeds 1-10 (hand urgent wait no-fix -> fixpoint in brackets)
 - H4 for the linear model at 30-60 %: supported on both engines.
 - H4's 10 % TOST part (±2 % of hand = ±0.25 h): fails on both. The CI is -2.12 to -0.31 without the fixed point and
   -4.43 to 0.05 with it.
+
+## B-117 (g) and (j1) at 1x DONE (BACKEND, 15 Nov). NEW results/E50_coverage_sweep.json; no existing file touched
+- Runner: tools/atc/b117gj1_e50_cov.py; cache .cache/atc/b117gj1/s<seed>.json. Both are untracked, as asked.
+- Cost: 30 seeds, 64 min, 452 MB peak.
+- Check: every seed reproduces E50's cached 1x cell. That covers the perfect-run delay, the dr+ranging near p95, and the
+  delay of both margin runs (dr and layered, k = 1). The table refuses otherwise. Code stamp 5bf22fa6d5ccfe47.
+
+(g) Bound coverage: share of driving vehicle-steps with |e| <= the 95 % bound, mean over seeds (lowest seed in brackets).
+
+| layer set | own bound, same step | filed bound, same run (hourly max) |
+|---|---|---|
+| dr | 0.967 (0.761) | 0.970 (0.769) |
+| dr+ranging | 0.984 (0.961) | 0.997 (0.989) |
+| dr+ranging+fixes | 0.974 (0.960) | 0.997 (0.995) |
+| LANS@2030 | 0.970 (0.960) | 0.996 (0.992) |
+
+- Near the base (2+ beacons in view) and away from it are within a point of each other for every set.
+- With ranging, every seed is at or above 95 %.
+- With dead reckoning alone the mean is 96.7 %, but some seeds fall to 76 %: the bound is over-confident there.
+
+The cross-run question P2 leaves open: in E50's margin runs, the margin run's own error against the bound it filed with, which
+came from the perfect run as an hourly maximum.
+- layered: 99.4 % inside (lowest seed 95.0 %); near the base 99.9 %, away 99.3 %. Against its own bound: 97.4 %.
+- dr: 96.2 % (lowest seed 75.7 %). Against its own bound: 96.0 %.
+- So the filed bound is not too small for the run it is used in. For the layered set it covers more than the run's own bound.
+  An overlap that remains with the margin is therefore not explained by a bound taken from the other run. For dead reckoning
+  some seeds are poorly covered either way.
+
+(j1) Input sweeps on 30 seeds (dr+ranging, 2028), one input at a time.
+- Near-base p95 (2+ beacons), mean of 30 seeds, and seeds with p95 <= 5 m:
+  - default: 4.28 m, 30 of 30
+  - long-range ranging sigma 1 m: 1.86 (30); 10 m: 10.02 (0)
+  - UWB sigma 0.1 m: 4.23 (30); 0.7 m: 4.36 (30)
+  - beacon survey 0.05 m: 4.26 (30); 0.5 m: 4.45 (29); 1.0 m: 4.98 (16)
+  - UWB reach 50 m: 5.19 (8); 300 m: 3.45 (30)
+- Split by beacons in line of sight, at the default: 2+ 4.28 m, 1 beacon 21.6 m, none 69.1 m. No sweep point brings 1 or 0
+  beacons within 5 m: the best is 12.9 m at long-range 1 m.
+- Split by distance from the BASE mast: < 1 km 25.1 m, 1-5 km 75.4 m. No driving step is beyond 5 km. Distance alone does not
+  separate good from bad positioning on this terrain; line of sight to beacons does.
+- Coverage of the own bound stays at 0.97-0.99 at every sweep point.
+
+Sentences this would change (no printed value moves):
+- P2 7 and Table 9: "bound coverage per seed is not in a results file", and "how often the error is inside the vehicle's own
+  bound is not in the results files". Now: 96.7-98.4 % on average; at least 95 % in every seed once ranging is on.
+- P2 5.x: the overlap remaining with the margin "may come from that mismatch". Measured: the bound filed from the perfect run
+  covers 99.4 % of the margin run's errors (layered).
+- P3 6.6, and H9's sweep sentence in P2 and P3: 6 seeds -> 30. Two inputs decide the 5 m budget near the base: the
+  long-range ranging sigma (fails at 10 m in every seed) and the UWB reach (8 of 30 seeds at 50 m). Two more matter less:
+  the beacon survey (16 of 30 at 1 m). UWB sigma does not matter.
+
+- BACKEND 04:00: B-117 (j3) E51 at 4x started: 4x engine runs, ~0.6 GB peak, one process, gated at 0.8 GB.
+
+## B-117 (j3) DONE (BACKEND, 15 Nov): E51 (clocks, H11) at 4x, 10 seeds. NEW results/E51_clocks_m4.json, E51_table_m4.csv, E51b_clocks_m4.json, E51b_table_m4.csv; E51's own files untouched
+- Runner: tools/atc/b117j3_e51_4x.py, untracked as asked. It runs run_e51.run_seed and build unchanged, with run_e50.record at
+  fleet multiple 4 (32 vehicles); the cache is .cache/atc/e51_m4.
+- Cost: 10 seeds, 22 min, about 0.6 GB.
+- Check: every seed's perfect run equals E50's cached 4x cell (delay equal; code 5bf22fa6d5ccfe47). The table refuses otherwise.
+- H11 at 4x is SUPPORTED, with the same intervals as at 1x: crystal, lunar scale, resync every 10 s, 1 min, 10 min, 1 h and 6 h
+  give zero clock-caused reservation conflicts (guard 0.1 s) in all 10 seeds, with one-way error p95 above 0.3 m.
+- Daily resync:
+  - lunar scale: 5 conflicts in 2 of 10 seeds at 4x, against 1 in 1 of 30 at 1x
+  - earth scale: 6 conflicts in 4 of 10 at 4x, against 0 at 1x
+- Never resynced:
+  - lunar scale: 365 conflicts, all 10 seeds, against 15 in 9 of 30 at 1x
+  - earth scale: 346, against 10
+- Reservations per seed are 392 against 87.6 at 1x. Contact share is 0.910 against 0.932, so sync attempts fail 9.0 % of the
+  time against 6.8 %.
+- Sentences this would change: P3 6.6 (E51 at larger fleets in the list) and H11 at larger fleets. H11's 1x decision holds at 4x
+  unchanged. Only the daily and never-resynced rows get worse, roughly with the reservation count. No printed value moves.
+- 8x was not run (LATER in the estimate; needs B-116's 8x conditions).
+
+- BACKEND 04:24: B-117 (f) reduced started: E46 runs at 4 value-of-time levels (1,440 runs of ~7 s), one process, under 0.5 GB, gated at 0.8 GB.
+
+## B-117 (f) reduced DONE (BACKEND, 15 Nov): E46's value of time swept, H5 clause 3. NEW results/E46_vot_sweep.json; E46 files untouched
+- Runner: tools/atc/b117f_e46_vot.py, untracked; parts in .cache/atc/e46_vot/x<level>/.
+- Runs: 1,440 physical runs. Value-of-time table scaled x0.2, x0.5, x2, x5. Per split (3eq, 3uneq) and seed 1-30: pooled, the
+  three pairs, alone, oracle. Each is run exactly as run_e46.run_one (fixed point, loss 0, 2028, eps by seed).
+- Memory: the last 200 runs used LEAD's 0.6 GB start / 0.35 GB stop rule (gate600.sh in the scratchpad; gate.sh unchanged).
+- Checks (the table refuses otherwise):
+  - x1 pooled seed 1 repeated equals E46's stored part for both splits (owners, job log, delivered share).
+  - Clause 3 recomputed from E46's parts equals E46_fit.json (min upper and min lower).
+  - The efficiency-loss column reproduces E46_cells.csv at x1 (12.666 % and 35.880 %).
+- H5 clause 3 (every owner in every coalition: Shapley payoff minus value alone) is SUPPORTED AT EVERY LEVEL, both splits. Every
+  lower bound is above 0. Smallest lower / upper bound, M USD a year; the smallest is always owner A in coalition AB:
+
+  | level | 3eq lower / upper | 3uneq lower / upper |
+  |---|---|---|
+  | x0.2 | 2.44 / 13.18 | 6.12 / 16.96 |
+  | x0.5 | 16.40 / 40.32 | 12.79 / 42.69 |
+  | x1 (E46) | 29.72 / 82.00 | 36.43 / 93.88 |
+  | x2 | 72.49 / 176.69 | 78.28 / 198.99 |
+  | x5 | 156.28 / 425.35 | 273.69 / 485.91 |
+
+  The gain from cooperating scales roughly with the value of time. At x0.2 it is small but still positive in every seed-bootstrap
+  bound.
+- Efficiency loss of the pooled market against the marketplace (system cost above O_ORACLE's, %), 3eq / 3uneq:
+
+  | level | 3eq | 3uneq |
+  |---|---|---|
+  | x0.2 | -2.6 | -1.9 |
+  | x0.5 | 11.6 | -2.8 |
+  | x1 | 12.7 | 35.9 |
+  | x2 | 57.2 | 80.2 |
+  | x5 | 100.7 | 222.7 |
+
+  At low value of time the auction is as cheap as the marketplace, or cheaper. At high value of time its loss grows steeply.
+- Sentences this would change: P3 3.9, 5.6, 7, 6.6, "a sweep of the value of time (a limitation and future work)". Now: clause 3
+  holds from x0.2 to x5. The efficiency loss of the auction against the marketplace depends strongly on the value of time (about
+  0 at x0.2, 13-36 % at x1, 100-220 % at x5). No printed value moves. Clauses 1 and 2 (the deviations) were not swept: that is the
+  full design.

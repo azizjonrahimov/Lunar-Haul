@@ -1,0 +1,37 @@
+part,class,interval_s,variant,seeds,one_way_m_p95,max_abs_clock_s,estimator_err_p95,conflicts_guard_0.01,conflicts_guard_0.1,cross_scale_one_way_m_p95,cross_scale_one_way_m_max,cross_scale_conflicts_guard_0.01,cross_scale_pairs_checked,cross_scale_conflicts_guard_0.1
+steering,crystal,60,offset,10,805569,0.33434,,0,0,,,,,
+steering,crystal,60,steer,10,83047.3,0.205653,4.7864e-09,0,0,,,,,
+steering,crystal,600,offset,10,1.08168e+06,0.353223,,1,0,,,,,
+steering,crystal,600,steer,10,148419,0.230653,8.78536e-09,0,0,,,,,
+steering,crystal,3600,offset,10,2.00224e+06,0.478747,,1,0,,,,,
+steering,crystal,3600,steer,10,648887,0.478748,5.21462e-08,0,0,,,,,
+steering,crystal,21600,offset,10,9.59228e+06,0.944514,,24,0,,,,,
+steering,crystal,21600,steer,10,7.38862e+06,0.944514,2.91844e-07,40,0,,,,,
+steering,crystal,86400,offset,10,3.10321e+07,1.64738,,234,7,,,,,
+steering,crystal,86400,steer,10,4.24162e+06,1.64738,3.96954e-07,21,0,,,,,
+mixed,crystal,600,"half Earth seconds, no conversion",10,,,,,,4.80669e+07,1.21809e+08,0,1012,0
+mixed,crystal,600,lunar for all (corrected),10,,,,,,4.80584e+07,1.21809e+08,0,1012,0
+mixed,crystal,3600,"half Earth seconds, no conversion",10,,,,,,5.85293e+07,1.23245e+08,0,1012,0
+mixed,crystal,3600,lunar for all (corrected),10,,,,,,5.85119e+07,1.23245e+08,0,1012,0
+mixed,crystal,86400,"half Earth seconds, no conversion",10,,,,,,1.41134e+08,3.11381e+08,65,1012,1
+mixed,crystal,86400,lunar for all (corrected),10,,,,,,1.41082e+08,3.11398e+08,65,1012,1
+mixed,crystal,never,"half Earth seconds, no conversion",10,,,,,,5.26368e+08,6.35987e+08,283,1012,145
+mixed,crystal,never,lunar for all (corrected),10,,,,,,5.26563e+08,6.36506e+08,283,1012,145
+steering,csac,60,offset,10,994.963,0.000567628,,0,0,,,,,
+steering,csac,60,steer,10,3756.51,0.00242532,4.62079e-09,0,0,,,,,
+steering,csac,600,offset,10,1334.16,0.000749994,,0,0,,,,,
+steering,csac,600,steer,10,503.299,0.00028204,4.61749e-10,0,0,,,,,
+steering,csac,3600,offset,10,2663.96,0.000762456,,0,0,,,,,
+steering,csac,3600,steer,10,481.641,0.000760304,9.47667e-11,0,0,,,,,
+steering,csac,21600,offset,10,12522.4,0.00162246,,0,0,,,,,
+steering,csac,21600,steer,10,5521.15,0.00162271,2.23606e-10,0,0,,,,,
+steering,csac,86400,offset,10,42211.7,0.00313488,,0,0,,,,,
+steering,csac,86400,steer,10,7620.72,0.00313498,3.08307e-10,0,0,,,,,
+mixed,csac,600,"half Earth seconds, no conversion",10,,,,,,91063.8,224472,0,1012,0
+mixed,csac,600,lunar for all (corrected),10,,,,,,85200.6,237918,0,1012,0
+mixed,csac,3600,"half Earth seconds, no conversion",10,,,,,,124462,356973,0,1012,0
+mixed,csac,3600,lunar for all (corrected),10,,,,,,110727,282814,0,1012,0
+mixed,csac,86400,"half Earth seconds, no conversion",10,,,,,,392483,999764,0,1012,0
+mixed,csac,86400,lunar for all (corrected),10,,,,,,315873,900829,0,1012,0
+mixed,csac,never,"half Earth seconds, no conversion",10,,,,,,1.62526e+06,2.08781e+06,0,1012,0
+mixed,csac,never,lunar for all (corrected),10,,,,,,1.25538e+06,1.56715e+06,0,1012,0
