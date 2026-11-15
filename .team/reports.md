@@ -11901,3 +11901,54 @@ OOD, linear - hand, seeds 1-10 (hand urgent wait no-fix -> fixpoint in brackets)
 - H4 for the linear model at 30-60 %: supported on both engines.
 - H4's 10 % TOST part (±2 % of hand = ±0.25 h): fails on both. The CI is -2.12 to -0.31 without the fixed point and
   -4.43 to 0.05 with it.
+
+## B-117 (g) and (j1) at 1x DONE (BACKEND, 15 Nov). NEW results/E50_coverage_sweep.json; no existing file touched
+- Runner: tools/atc/b117gj1_e50_cov.py; cache .cache/atc/b117gj1/s<seed>.json. Both are untracked, as asked.
+- Cost: 30 seeds, 64 min, 452 MB peak.
+- Check: every seed reproduces E50's cached 1x cell. That covers the perfect-run delay, the dr+ranging near p95, and the
+  delay of both margin runs (dr and layered, k = 1). The table refuses otherwise. Code stamp 5bf22fa6d5ccfe47.
+
+(g) Bound coverage: share of driving vehicle-steps with |e| <= the 95 % bound, mean over seeds (lowest seed in brackets).
+
+| layer set | own bound, same step | filed bound, same run (hourly max) |
+|---|---|---|
+| dr | 0.967 (0.761) | 0.970 (0.769) |
+| dr+ranging | 0.984 (0.961) | 0.997 (0.989) |
+| dr+ranging+fixes | 0.974 (0.960) | 0.997 (0.995) |
+| LANS@2030 | 0.970 (0.960) | 0.996 (0.992) |
+
+- Near the base (2+ beacons in view) and away from it are within a point of each other for every set.
+- With ranging, every seed is at or above 95 %.
+- With dead reckoning alone the mean is 96.7 %, but some seeds fall to 76 %: the bound is over-confident there.
+
+The cross-run question P2 leaves open: in E50's margin runs, the margin run's own error against the bound it filed with, which
+came from the perfect run as an hourly maximum.
+- layered: 99.4 % inside (lowest seed 95.0 %); near the base 99.9 %, away 99.3 %. Against its own bound: 97.4 %.
+- dr: 96.2 % (lowest seed 75.7 %). Against its own bound: 96.0 %.
+- So the filed bound is not too small for the run it is used in. For the layered set it covers more than the run's own bound.
+  An overlap that remains with the margin is therefore not explained by a bound taken from the other run. For dead reckoning
+  some seeds are poorly covered either way.
+
+(j1) Input sweeps on 30 seeds (dr+ranging, 2028), one input at a time.
+- Near-base p95 (2+ beacons), mean of 30 seeds, and seeds with p95 <= 5 m:
+  - default: 4.28 m, 30 of 30
+  - long-range ranging sigma 1 m: 1.86 (30); 10 m: 10.02 (0)
+  - UWB sigma 0.1 m: 4.23 (30); 0.7 m: 4.36 (30)
+  - beacon survey 0.05 m: 4.26 (30); 0.5 m: 4.45 (29); 1.0 m: 4.98 (16)
+  - UWB reach 50 m: 5.19 (8); 300 m: 3.45 (30)
+- Split by beacons in line of sight, at the default: 2+ 4.28 m, 1 beacon 21.6 m, none 69.1 m. No sweep point brings 1 or 0
+  beacons within 5 m: the best is 12.9 m at long-range 1 m.
+- Split by distance from the BASE mast: < 1 km 25.1 m, 1-5 km 75.4 m. No driving step is beyond 5 km. Distance alone does not
+  separate good from bad positioning on this terrain; line of sight to beacons does.
+- Coverage of the own bound stays at 0.97-0.99 at every sweep point.
+
+Sentences this would change (no printed value moves):
+- P2 7 and Table 9: "bound coverage per seed is not in a results file", and "how often the error is inside the vehicle's own
+  bound is not in the results files". Now: 96.7-98.4 % on average; at least 95 % in every seed once ranging is on.
+- P2 5.x: the overlap remaining with the margin "may come from that mismatch". Measured: the bound filed from the perfect run
+  covers 99.4 % of the margin run's errors (layered).
+- P3 6.6, and H9's sweep sentence in P2 and P3: 6 seeds -> 30. Two inputs decide the 5 m budget near the base: the
+  long-range ranging sigma (fails at 10 m in every seed) and the UWB reach (8 of 30 seeds at 50 m). Two more matter less:
+  the beacon survey (16 of 30 at 1 m). UWB sigma does not matter.
+
+- BACKEND 04:00: B-117 (j3) E51 at 4x started: 4x engine runs, ~0.6 GB peak, one process, gated at 0.8 GB.
