@@ -305,3 +305,7 @@ foundations [29]-[33], [37] are older and reported as such). Entries needing pub
   5.12 and 5.10 each gained one paragraph, labelled as run after the results were known; every "not swept" sentence about the retry budget
   and the map's change rates is replaced (4.2, 5.10, 5.12, 6.6, 7, Table 18, introduction). H14's first clause fails at 2 of 12 budgets and the
   paper says where. Control (d) is not printed (P3 never printed the 1.6 % it corrects).
+- **Control runs B-117 (f), (j1), (j3) (15 Nov).** The build reads `results/E46_vot_sweep.json` (E46V), `results/E50_coverage_sweep.json` (E50C)
+  and `results/E51_clocks_m4.json` (E51M4). The new text is in 5.6 (value of time, H5's third clause, efficiency loss) and 5.9 (E51 at four times). 5.8 and 7
+  now print the 30-seed ranging sweep. 3.9, 6, 7, 6.6 and Table 18 are reworded. Each run is labelled a control run after the results, not pre-registered.
+  B-117 (e2) is not done.

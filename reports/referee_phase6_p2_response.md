@@ -45,7 +45,7 @@ and the build stops when the file appears, see `PLACEHOLDERS.md`, "Awaited resul
 | S11 | fixed, except one reference | P1: "illustrates ... does not test the formula". P2: new paragraph on the constant-speed premise (6.5 s from rest for 4.2 m against a 1.0 s margin; the stop line; v is the leg's mean speed in `roads.py`). P3: "holds its speed through a reaction delay"; R2 against R1; the NASA figure "validates nothing". P4: (iii) and the dead vehicle; uphill (M9). P6: outside the headline case. P7: no-delay assumption added; "18 %" replaced by 10 % (16 % with the mast) for cells where F covers the faulty rovers. Not done: LeBlanc et al. 2013 not read (listed in NOTES.md). | 1, 6.1, A.1 to A.7 |
 | S12 | part | 2.6 limits the novelty statement to the works read and names the fields not searched (single-track signalling, mine haulage, AGV zones, RNP, vehicular misbehaviour detection, RAIM, delay-robust path finding); Table 1 says so. Not done: none of these sources is in the research notes as opened, so none is cited (decision A5). | 2.6, 2.7, NOTES.md |
 | S13 | fixed in P2 | H9', H10' used throughout and explained in the roadmap; H9 without a prime is always Mars. The lost-link rule is now the one of decision B1. P1's title for P3 is outside this paper. | 1, 4.1 |
-| S14 | part | 7 says what the Phase 6 verification rows do not check. Not done: bound coverage per seed is not in a results file (the referee's 97.1 % is from `.cache`). | 7 |
+| S14 | fixed (part 12) | 7 says what the Phase 6 verification rows do not check. Bound coverage per seed is now in a results file (`results/E50_coverage_sweep.json`, B-117 g, a control run after the results): 7, Table 9's note and Table 14 give it. | 7, Table 9, Table 14 |
 | S15 | fixed | 3.6: R6 is checked on each move, not as a state invariant. | 3.6 |
 | S16 | part | Limitations added: no travel-time uncertainty; no lost-link ladder in the logistics runs; one month; the bound comes from another run, so the remainder is not shown to be outside a correct bound; 60 s sampling; one-sided crystal draw; one out-of-distribution shift. The controls are listed in 6.5; none was run here. | 6.4, 6.5, 7 |
 
@@ -271,3 +271,31 @@ Differences from the task as given, from the files: "97 % on one segment" is 96 
 wait grows" does not hold between the two Mars cells (92.1 at 5.4 h, 94.0 at 8.0 h), so the text says so; "about a
 third of the gap" is not a number in the file (the factors give 28 % of the log ratio), so the factors are printed;
 the 1.5 is the rate per 100 h outside waits, and per traversal the ratio is 1.6.
+
+## Part 12 (15 Nov): three control runs (B-117 g, j1, j3)
+
+HTML only (`build_p2.py --no-pdf`). Everything is simulation; all three are control runs made after the results and
+not pre-registered, and the text says so. Every value is read from the files through build checks.
+
+Tally: S14 moves from part to fixed (bound coverage per seed is now in a results file). Fixed 29, part 6 (M12, S5,
+S8, S12, S16, O3), awaiting 0, not done 2 (O2, O8).
+
+- g (`results/E50_coverage_sweep.json`), Section 7: "an overlap that remains with the margin may therefore come from
+  that mismatch ..., and how often the error is inside the vehicle's own bound is not in the results files" is
+  replaced. Now: in the margin runs the bound filed from the perfect run covers 99.4 % of the layered run's driving
+  steps (lowest seed 95.0 %) and 96.2 % of the dead-reckoning run's (lowest 75.7 %), against 97.4 % and 96.0 % for
+  each run's own bound, so the remaining overlaps are not explained by a bound that is too small. With ranging the own
+  bound covers 97.0 to 98.4 % on average and at least 95.5 % in every seed; dead reckoning 96.7 % but 76.1 % in one
+  seed. Table 9's note gives the four layer sets; Table 14's Proposition 2 row replaces "whether each remaining
+  overlap is an error outside a correctly computed bound is not shown". "How often each vehicle's error is inside its
+  own bound" is removed from future work.
+- j1 (same file): P2 printed no 6-seed sweep, so no value or table changes. 5.9 gains the sweep (four ranging inputs
+  one at a time, 30 seeds): at the defaults 4.28 m with two or more beacons, 21.6 m with one, 69.1 m with none; by
+  distance 25.1 m within 1 km and 75.4 m from 1 to 5 km; no point brings one beacon or none within 5 m (best 12.9 m);
+  with two or more the budget fails in some seeds only at long-range error 10 m (0 of 30), reach 50 m (8), survey
+  error 1 m (16) and 0.5 m (29). Section 7's "nothing else was swept", 4.6's deviation sentence and Table 14's
+  parameters row now name the sweep.
+- j3 (`results/E51_clocks_m4.json`): 5.10's H11 sentence and Table 14's H11 row gain 4x: rule met at the same
+  intervals (10 s to 6 h), 10 seeds, 4.5 times the reservations a seed; daily resync 5 conflicts in 2 of 10 seeds
+  (lunar scale; 1 in 1 of 30 at 1x) and 6 in 4 of 10 (Earth scale; none at 1x); never resynced 365 against 15. The
+  E51b file at 4x is not used (P2's variants sentence is at 1x).

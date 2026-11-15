@@ -268,6 +268,78 @@ def add_e50(c):
                 f"few overlaps that remain last about as long as those of the fix layer without a margin (median "
                 f"{num(lay['duration_s']['median'], 1)}{NB}s).")
 
+    def cov():
+        """B-117 (g) and (j1), results/E50_coverage_sweep.json: a control run after the results, not pre-registered, at
+        today's fleet on E50's 30 seeds. (g) how often a driving vehicle's error is inside its 95 % bound (own bound,
+        filed bound, and in the margin runs the bound filed from the perfect run); (j1) the ranging inputs swept one at a
+        time, near-base p95 split by beacons in line of sight."""
+        g = _load("E50_coverage_sweep.json")
+        if g is None:
+            raise Pending("results/E50_coverage_sweep.json (B-117 g, j1) is missing")
+        s = e50(1)
+        nb = _load("E50_near_base.json")
+        check(g["e50_cells_reproduced"] is True and g["seeds"] == s["seeds"]["1"] and nb is not None and g["code"] == nb["code"],
+              "the coverage control reproduces E50's cells at 1x on E50's seeds, on the code of E50's analysis files")
+        cv, ps = g["coverage"], g["per_seed"]
+        check(sorted(cv) == sorted(LAYER_KEYS), "the coverage control has the four layer sets")
+        own = {k: cv[k]["own_bound"]["all"] for k in LAYER_KEYS}
+        for k in LAYER_KEYS:
+            v = list(ps[k].values())
+            check(len(v) == len(g["seeds"]) and abs(min(v) - own[k]["share_inside_min_seed"]) < 1e-4
+                  and abs(sum(v) / len(v) - own[k]["share_inside_mean"]) < 1e-3,
+                  f"coverage, {k}: the lowest seed and the mean are those of the per-seed values")
+        rng = [k for k in LAYER_KEYS if k != "dr"]
+        check(all(own[k]["share_inside_min_seed"] >= 0.95 for k in rng) and own["dr"]["share_inside_min_seed"] < 0.95,
+              "with ranging every seed's error is inside its own 95 % bound in at least 95 % of driving steps; with dead reckoning alone not")
+        check(all(abs(cv[k]["own_bound"]["near"]["share_inside_mean"] - cv[k]["own_bound"]["away"]["share_inside_mean"]) < 0.015
+                  for k in LAYER_KEYS), "coverage near the base and away from it is within 1.5 points for every layer set")
+        mr = g["margin_runs"]
+        lay, drm = mr["layered"], mr["dr"]
+        lf, df = lay["filed_bound_from_perfect_run"]["all"], drm["filed_bound_from_perfect_run"]["all"]
+        for key, x in (("margin layered filed", lf), ("margin dr filed", df)):
+            v = list(ps[key].values())
+            check(abs(min(v) - x["share_inside_min_seed"]) < 1e-4, f"coverage, {key}: the lowest seed is that of the per-seed values")
+        check(lf["share_inside_mean"] > lay["own_bound"]["all"] > 0.95 and lf["share_inside_min_seed"] >= 0.95
+              and df["share_inside_mean"] > 0.95 and abs(df["share_inside_mean"] - drm["own_bound"]["all"]) < 0.01,
+              "in the margin runs the bound filed from the perfect run covers more of the layered run's errors than the run's "
+              "own bound, in every seed at least 95 %; for dead reckoning the two are within a point")
+        sw = g["sweep"]
+        dk = [k for k in sw if k.startswith("default")]
+        check(len(dk) == 1, "the sweep has one default point")
+        d0 = sw[dk[0]]
+        rd_a = _load("E50_near_base.json")["multiples"]["1"]["sets"]["dr+ranging"]["a"]
+        bb = d0["by_beacons"]
+        ns = len(g["seeds"])
+        check(abs(d0["near_p95_m_mean"] - rd_a["in_p95_m_mean"]) < 1e-3 and d0["near_p95_m_mean"] == bb["2+"]["p95_m_mean"]
+              and bb["2+"]["seeds_p95_within_5m"] == ns,
+              "the sweep's default near-base error is reading (a) of E50's near-base file, inside the budget in every seed")
+        check(bb["2+"]["p95_m_mean"] < S.D0_M < bb["1"]["p95_m_mean"] < bb["0"]["p95_m_mean"],
+              "at the defaults the error rises as fewer beacons are in line of sight, and only two or more hold the budget")
+        pts = {k: v for k, v in sw.items() if k not in dk}
+        check(all(v["by_beacons"][b]["seeds_p95_within_5m"] == 0 for v in sw.values() for b in ("0", "1")),
+              "at no sweep point does one beacon or none hold the budget in any seed")
+        best1 = min(v["by_beacons"]["1"]["p95_m_mean"] for v in sw.values())
+        check(best1 > 2 * S.D0_M, "the best one-beacon error in the sweep is more than twice the budget")
+        bd = d0["by_distance"]
+        check(bd["1-5 km"]["p95_m_mean"] > bd["<1 km"]["p95_m_mean"] > S.D0_M and bd[">5 km"]["p95_m_mean"] is None,
+              "by distance from the mast no band holds the budget, and no driving step is beyond 5 km")
+        short = {k: v for k, v in pts.items() if v["by_beacons"]["2+"]["seeds_p95_within_5m"] < ns}
+        cv_sw = sorted((v["by_beacons"][b]["coverage_mean"], k, b) for k, v in sw.items() for b in ("0", "1", "2+"))
+        low_cov = cv_sw[0]
+        check(low_cov[1] in pts and low_cov[0] < 0.95 and all(x[0] >= 0.95 for x in cv_sw[1:]),
+              "the vehicle's own bound covers at least 95 % of steps at every sweep point but one, which is below 95 %")
+        PRETTY = {"radio_sigma_m": ("long-range ranging error", "m"), "uwb_sigma_m": ("short-range ranging error", "m"),
+                  "beacon_sigma_m": ("beacon survey error", "m"), "uwb_range_m": ("short-range reach", "m")}
+        def name(k):
+            par, val = k.split(" = ")
+            what, u = PRETTY[par]
+            return what, float(val)
+        inputs = sorted({k.split(" = ")[0] for k in pts})
+        check(inputs == sorted(PRETTY), "the sweep varies the four ranging inputs")
+        return SimpleNamespace(g=g, own=own, rng=rng, lf=lf, df=df, lay_own=lay["own_bound"]["all"], dr_own=drm["own_bound"]["all"],
+                               d0=d0, bb=bb, bd=bd, ns=ns, pts=pts, short=short, best1=best1, low_cov=low_cov, name=name, n_inputs=len(inputs))
+    c.e50cov = cov
+
     def readings_sentence():
         q = readings(1)
         rd, sh, ns = q.rd, q.sh, q.ns
@@ -296,6 +368,24 @@ def add_e50(c):
         out += (f" At today's fleet, {EARLIER} {m_(o1['a']['in_p95_m_mean'], 2)} under (a) and "
                 f"{m_(o1['e']['in_p95_m_mean'], 1)} under the registered wording, with the same number of seeds inside the "
                 f"budget under each of the five readings as now.")
+        q = cov()
+        bb, bd = q.bb, q.bd
+        sh = sorted(q.short.items(), key=lambda kv: kv[1]["by_beacons"]["2+"]["seeds_p95_within_5m"])
+        out += (f" A control run made after the results, and not pre-registered, swept the {words(q.n_inputs)} "
+                f"ranging inputs one at a time on the same {cnt(q.ns)} seeds (simulation). At the defaults the error "
+                f"near the base depends on how many beacons are in line of sight: {m_(bb['2+']['p95_m_mean'], 2)} "
+                f"with two or more, {m_(bb['1']['p95_m_mean'], 1)} with one and {m_(bb['0']['p95_m_mean'], 1)} with "
+                f"none; by distance from the mast it is {m_(bd['<1 km']['p95_m_mean'], 1)} within 1{NB}km and "
+                f"{m_(bd['1-5 km']['p95_m_mean'], 1)} from 1 to 5{NB}km, so distance does not separate good positions "
+                f"from bad. No sweep point brought one beacon or none within the budget (the best was "
+                f"{m_(q.best1, 1)}). With two or more beacons the budget held in every seed at every point except "
+                + "; ".join(f"a {q.name(k)[0]} of {m_(q.name(k)[1], 1 if q.name(k)[1] < 1 else 0)} "
+                            f"({m_(v['by_beacons']['2+']['p95_m_mean'], 2)}, {cnt(v['by_beacons']['2+']['seeds_p95_within_5m'])} of "
+                            f"{cnt(q.ns)} seeds)" for k, v in sh)
+                + f". The vehicle's own bound covered at least 95{NB}% of steps at every point but one: with a "
+                  f"{q.name(q.low_cov[1])[0]} of {m_(q.name(q.low_cov[1])[1], 1 if q.name(q.low_cov[1])[1] < 1 else 0)} and "
+                  f"{'two or more beacons' if q.low_cov[2] == '2+' else ('one beacon' if q.low_cov[2] == '1' else 'no beacon')} "
+                  f"in line of sight it covered {pc(q.low_cov[0], 1)}; why is not traced.")
         return out
 
     def model_sentence():
@@ -745,6 +835,32 @@ def add_e50(c):
         check("not in the engine's delay" in s["h10"]["note"], "E50's delay leaves out the terrain-fix stops (the file says so)")
         return f"about {h_(stop1, 0)} a month for today's fleet"
     fill("P2-E50-STOP-CLAUSE", stop_clause, "E50")
+
+    def coverage_limitation():
+        q = cov()
+        return (f"The bound each vehicle files with is taken from the perfect-position run of the same seed, as an "
+                f"hourly maximum, not from the run in which it is used. A control run made after the results, and not "
+                f"pre-registered, measured how often the error is inside the bound at today's fleet ({cnt(q.ns)} seeds). "
+                f"In the margin runs the bound filed from the perfect run covered {pc(q.lf['share_inside_mean'], 1)} of "
+                f"driving steps with the layered margin (lowest seed {pc(q.lf['share_inside_min_seed'], 1)}) and "
+                f"{pc(q.df['share_inside_mean'], 1)} with the dead-reckoning margin (lowest seed "
+                f"{pc(q.df['share_inside_min_seed'], 1)}), against {pc(q.lay_own, 1)} and {pc(q.dr_own, 1)} for each run's "
+                f"own bound, so an overlap that remains with the margin is not explained by a bound that is too small "
+                f"for the run it is used in. With ranging the vehicle's own bound covered "
+                f"{pc(min(q.own[k]['share_inside_mean'] for k in q.rng), 1)} to "
+                f"{pc(max(q.own[k]['share_inside_mean'] for k in q.rng), 1)} of steps on average and at least "
+                f"{pc(min(q.own[k]['share_inside_min_seed'] for k in q.rng), 1)} in every seed; with dead reckoning alone "
+                f"{pc(q.own['dr']['share_inside_mean'], 1)} on average but only {pc(q.own['dr']['share_inside_min_seed'], 1)} "
+                f"in one seed, where its bound is too small.")
+    fill("P2-E50-COVERAGE-LIMITATION", coverage_limitation, "E50")
+
+    def param_sweep_limitation():
+        q = cov()
+        return (f"The guard was swept in E51 and the sensor errors were changed once, in the out-of-distribution set "
+                f"of E56, which is one shift of our choosing. After the results a control run swept the "
+                f"{words(q.n_inputs)} ranging inputs, one at a time, at today's fleet on {cnt(q.ns)} seeds (Section 5.9); "
+                f"nothing else was swept.")
+    fill("P2-PARAM-SWEEP-LIMITATION", param_sweep_limitation, "E50")
     add_e50_tables(c)
 
 
@@ -771,13 +887,23 @@ def add_e50_tables(c):
                 "beacons, the reading of the registered wording that the analysis chose after the results (Section "
                 "5.9). In 2028 the navigation service offers no fix, so the layer set with it equals the "
                 "terrain-fix row and is not repeated. Intervals are 95&#8239;% bootstrap intervals over seeds."
-                + ("" if "8" in s["errors"] else " The eight-times cells have not finished."))
+                + ("" if "8" in s["errors"] else " The eight-times cells have not finished.")
+                + covnote())
         return c.tab("Table 9. E50, horizontal position error while driving, by layer set and fleet size: the mean "
                      "over seeds of each run's median and 95th percentile (m), the 95th percentile near the base "
                      "and away from it, the share of driving steps in which the vehicle's own 95&#8239;% bound "
                      "exceeds the 5&nbsp;m budget, and the fleet's time stopped for terrain fixes (h a month).",
                      ["Fleet", "Seeds", "Layer set", "Median (m)", "p95 (m)", "p95 near base (m)",
                       "p95 away (m)", "Bound over 5 m", "Fix stops (h)"], rows, "wide", note)
+
+    def covnote():
+        q = c.e50cov()
+        LBL = {"dr": "dead reckoning alone", "dr+ranging": "with ranging", "dr+ranging+fixes": "with terrain fixes",
+               "lans@2030": "with the navigation service of 2030"}
+        return (" Share of driving steps with the error inside the vehicle's own 95&#8239;% bound, today's fleet, "
+                f"{cnt(q.ns)} seeds, from a control run after the results (mean over seeds, lowest seed): "
+                + "; ".join(f"{LBL[k]} {pc(q.own[k]['share_inside_mean'], 1)} ({pc(q.own[k]['share_inside_min_seed'], 1)})"
+                            for k in LAYER_KEYS) + ".")
 
     def table_margin():
         s = c.e50f(1)
@@ -971,6 +1097,46 @@ def add_e51(c):
         return s
     fill("P2-E51-RESULTS-PARAGRAPH", results_paragraph, "E51")
 
+    def m4():
+        """B-117 (j3), results/E51_clocks_m4.json: E51 run again at four times the fleet, a control run after the results."""
+        d4 = _load("E51_clocks_m4.json")
+        if d4 is None:
+            raise Pending("results/E51_clocks_m4.json (B-117 j3) is missing")
+        nb = _load("E50_near_base.json")
+        check(d4["mult"] == 4 and d4["code"] == nb["code"] and "reproduce E50's 4x cells" in d4["note_b117j3"]
+              and d4["seeds"] == c.e50f(4)["seeds"]["4"],
+              "E51 at 4x ran on E50's 4x seeds and code, and its perfect runs reproduce E50's 4x cells")
+        check(d4["design"]["intervals_s"] == e51()["design"]["intervals_s"] and d4["constants"] == e51()["constants"],
+              "E51 at 4x has the resync intervals and constants of E51")
+        return d4
+
+    def m4_sentence():
+        d4 = m4()
+        r4 = lambda cls, i, sc="lunar": [x for x in d4["rows"] if x["class"] == cls and x["scale"] == sc and x["interval_s"] == i][0]
+        ok4 = d4["h11"]["intervals_meeting_both"]
+        mine4 = [i for i in intervals() if r4("crystal", i)["seeds_with_conflict_guard_0.1"] == 0
+                 and r4("crystal", i)["one_way_m_p95"] > d4["design"]["uwb_sigma_m"]]
+        check(mine4 == ok4 == e51()["h11"]["intervals_meeting_both"] and d4["h11"]["supported"] is True,
+              "at 4x H11's rule is met at the same intervals as at 1x, from the crystal rows")
+        ratio = d4["reservations_per_seed_mean"] / e51()["reservations_per_seed_mean"]
+        dl, de = r4("crystal", 86400), r4("crystal", 86400, "earth_scale")
+        ol, oe = row("crystal", 86400), row("crystal", 86400, "earth_scale")
+        nl, nl1 = r4("crystal", "never"), row("crystal", "never")
+        check(dl["conflicts_guard_0.1"] > ol["conflicts_guard_0.1"] and de["conflicts_guard_0.1"] > oe["conflicts_guard_0.1"]
+              and nl["conflicts_guard_0.1"] > nl1["conflicts_guard_0.1"],
+              "at 4x the daily and never-resynced crystal rows have more conflicts than at 1x")
+        n4, n1 = len(d4["seeds"]), len(e51()["seeds"])
+        sd = lambda x, n: f"{cnt(x['conflicts_guard_0.1'])} conflict{'s' if x['conflicts_guard_0.1'] != 1 else ''} in {cnt(x['seeds_with_conflict_guard_0.1'])} of {cnt(n)} seeds" \
+            if x["conflicts_guard_0.1"] else "none"
+        return (f" A control run made after the results repeated E51 at four times the fleet on {cnt(n4)} seeds "
+                f"(simulation; its perfect-position runs reproduce E50's), with {num(ratio, 1)} times the "
+                f"reservations a seed: the rule is met at the same intervals, {interval_name(ok4[0])} to "
+                f"{interval_name(ok4[-1])}. With a daily resync the crystal caused {sd(dl, n4)} on the lunar time "
+                f"scale, against {sd(ol, n1)} at today's fleet, and {sd(de, n4)} on the Earth scale, against "
+                f"{sd(oe, n1)}; never resynced, it caused {cnt(nl['conflicts_guard_0.1'])} conflicts against "
+                f"{cnt(nl1['conflicts_guard_0.1'])}.")
+    c.e51m4 = m4
+
     def h11_sentence():
         h = e51()["h11"]
         ok = h["intervals_meeting_both"]
@@ -989,6 +1155,7 @@ def add_e51(c):
                   f"failed: one nanosecond of clock error is {c.m_(ns_m, 1)} of one-way range, so any crystal exceeds "
                   f"the radio's noise, and the protocol ranges two-way. Its first condition is the zero count above, "
                   f"which lies outside the guarantee.")
+            s += m4_sentence()
         else:
             s += "not supported: no interval in the sweep meets both conditions."
         return s
@@ -3188,7 +3355,10 @@ def add_pta(c):
             f"{num(c.e50f(4)['violations']['4']['with_margin']['layered']['mean'], 1)} at &times;4 and "
             f"{num(c.e50f(8)['violations']['8']['with_margin']['layered']['mean'], 1)} at &times;8. The simulation "
             "shifts windows by error over speed, the proposition's premise, so this is how often the filed bound was "
-            "exceeded; whether each remaining overlap is an error outside a correctly computed bound is not shown", "A.2, 5.9")
+            f"exceeded. A control run after the results found that the bound filed from the perfect-position run covered "
+            f"{pc(c.e50cov().lf['share_inside_mean'], 1)} of the layered margin run's driving steps (lowest seed "
+            f"{pc(c.e50cov().lf['share_inside_min_seed'], 1)}), so the remaining overlaps are not explained by a bound that "
+            f"is too small for the run it is used in", "A.2, 5.9")
         add("The count of reservation overlaps without a margin",
             "Calculated: a property of the count, not a safety measure",
             "A waiting vehicle's window starts where the conflicting one ends, so a back-to-back pair overlaps about half "
@@ -3264,7 +3434,8 @@ def add_pta(c):
             "Observed; outside Proposition 6",
             f"E51, {cnt(len(d51['seeds']))} seeds, &times;1: no conflict in {cnt(c6['conflict_pairs_checked'])} pairs with "
             f"clocks up to {num(c6['max_abs_clock_s'], 2)}{NB}s off; the worst pair used "
-            f"{pc(c6['worst_close_s'] / (2 * d51['constants']['guard_s']), 0)} of the two guards", "5.10")
+            f"{pc(c6['worst_close_s'] / (2 * d51['constants']['guard_s']), 0)} of the two guards; at &times;4, "
+            f"{cnt(len(c.e51m4()['seeds']))} seeds in a control run after the results, no conflict up to the same six-hour resync", "5.10")
         add("A crystal's clock error adds more than the radio's noise to one-way ranging (H11, second condition)",
             "Calculated; could not have failed",
             "One nanosecond of clock error is 0.3&nbsp;m of one-way range; the protocol ranges two-way", "5.10")
@@ -3344,7 +3515,10 @@ def add_pta(c):
             pass
         add("Position and clock parameters marked Assumed (ranging reach, long-range ranging error, fix spacing and stop, "
             "shadow drift, transfer residual, guard)", "Assumed; nominal values only",
-            "Not swept, except the guard (E51) and, in E56, one out-of-distribution set; the registration asked for sweeps", "3.9 to 3.11")
+            f"Not swept, except the guard (E51), in E56 one out-of-distribution set, and after the results the "
+            f"{c.words(c.e50cov().n_inputs)} ranging inputs at &times;1 on {cnt(c.e50cov().ns)} seeds (near-base 95th "
+            f"percentile with two or more beacons from {m_(min(v['by_beacons']['2+']['p95_m_mean'] for v in c.e50cov().pts.values()), 2)} "
+            f"to {m_(max(v['by_beacons']['2+']['p95_m_mean'] for v in c.e50cov().pts.values()), 1)}); the registration asked for sweeps", "3.9 to 3.11")
         add("Real sensors, radios and faults; a second site; three-dimensional position; terrain blocking of ranging in the integrity data",
             "Not tested", "Everything in this paper is simulated, at one base", "7")
         head = ["Claim", "Status", "Evidence, assumption or sweep", "Section"]

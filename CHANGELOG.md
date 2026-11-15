@@ -2,6 +2,19 @@
 
 All results are simulation, replay or calculation on assumed inputs. Nothing is measured on lunar or flight hardware.
 
+## Four more control runs named by the referees (15 November 2026)
+
+Control runs B-117 f, g, j1 and j3, run after the results were known and labelled as controls, not pre-registered tests. Each wrote a new results file; no existing value and no pre-registered decision changed.
+
+### Changed text
+- **Value of time (P3, f)**: E46 rerun with the value of time multiplied by 0.2, 0.5, 2 and 5 (30 seeds; factor 1 reproduces E46). H5's third clause holds at every factor in both cost splits. The efficiency loss against the oracle depends strongly on the value of time: below zero at 0.2, 13 % and 36 % at the scenario's value, 101 % and 223 % at five times. The payment rules, and with them H5's first two clauses, were not run at other values.
+- **Is the error inside the bound? (P2, g)**: with ranging, a vehicle's error was inside its own 95 % bound in 97 to 98 % of driving steps, at least 96 % in every seed. With dead reckoning alone it was 96.7 % on average, 76 % in one seed. In the margin runs the bound filed from the perfect-position run covered 99.4 % of the layered run's steps, so the overlaps that remain are not explained by a bound that is too small. P2 had said they might be.
+- **Ranging inputs near the base (P2, P3, j1)**: swept on 30 seeds (was 6). The number of beacons in line of sight decides: 4.28 m with two or more, 21.6 m with one, 69 m with none. A beacon survey error of 1 m holds the 5 m budget in 16 of 30 seeds, and there the bound covers 94.5 % of steps, which is not traced.
+- **Clocks at four times the fleet (P2, P3, j3)**: H11's rule is met at the same resync intervals (10 s to 6 h), 10 seeds. A daily resync gives 5 conflicts in 2 of 10 seeds on the lunar time scale (1 in 1 of 30 at today's fleet).
+
+### Known gaps
+- Control run e2 (the lost-link return driven in the engine) and the fix for the lost dispatcher wake-up in the learned-bid recording run are drafted and will land separately, with a re-stamp of the E50 and E54 families after reproduction checks.
+
 ## Control runs named by the referees (15 November 2026)
 
 Seven of the control runs the referees asked for (B-117 a, b, c, d, e1, h, j2) and a rerun of the learned-bid evaluation on the right engine. All were run after the results were known and are labelled as controls, not pre-registered tests. No pre-registered decision changed.

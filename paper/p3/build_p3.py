@@ -592,6 +592,84 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
               "the ultra-wideband ranging error barely moves the percentile (under 5 % over its sweep)")
         return out, {"rad": rad, "uwb": uwb, "n": len(sw["seeds"]), "budget": b}
 
+    P6_FILES["E50C"], P6_TASK["E50C"] = "E50_coverage_sweep.json", "B-117 (j1)"
+    COV_PAR = ("radio_sigma_m", "uwb_sigma_m", "beacon_sigma_m", "uwb_range_m")
+    COV_NAME = {"radio_sigma_m": "long-range ranging error", "uwb_sigma_m": "ultra-wideband ranging error",
+                "beacon_sigma_m": "beacon survey error", "uwb_range_m": "ultra-wideband reach"}
+
+    def cov_sweep():
+        """5.8, 7 (control B-117 j1, results/E50_coverage_sweep.json, key `sweep`): the four ranging inputs swept one at a time on E50's 30 seeds
+        at today's fleet, the near-base percentile split by beacons in line of sight. A control run after the results, not pre-registered;
+        simulation. Replaces the six-seed sweep of results/E50_near_base.json in every sentence except the registered-wording values, which the
+        new sweep does not report. Worded as P2 words it (paper/p2/phase6.py, cov())."""
+        g = r.p6("E50C")
+        n = len(g["seeds"])
+        check(bool(g["e50_cells_reproduced"]) and list(g["seeds"]) == list(r.p6("E50", "seeds", "1")) and g["code"] == r.p6("E50N", "code"),
+              "the ranging sweep reproduces E50's cells at today's fleet on E50's seeds, on the code of E50's near-base file (5.8)")
+        sw = g["sweep"]
+        dk = [k for k in sw if k.startswith("default")]
+        gfmt = lambda x: "%g" % float(x)
+        check(dk == [f"default (radio {gfmt(PD['radio_sigma_m'])} m, uwb {gfmt(PD['uwb_sigma_m'])} m, beacon {gfmt(PD['beacon_sigma_m'])} m, "
+                     f"uwb reach {gfmt(PD['uwb_range_m'])} m)"], "the sweep has one default point, at the model's defaults (5.8)")
+        d0 = sw[dk[0]]
+        bb = d0["by_beacons"]
+        rd1 = r.p6("E50N", "multiples", "1", "sets", "dr+ranging", "a")
+        check(abs(_fin(d0["near_p95_m_mean"]) - _fin(rd1["in_p95_m_mean"])) < 1e-3 and _fin(bb["2+"]["p95_m_mean"]) == _fin(d0["near_p95_m_mean"])
+              and int(bb["2+"]["seeds_p95_within_5m"]) == n, "the sweep's default is reading (a) of E50's near-base file, inside the budget in every seed (5.8)")
+        check(abs(_fin(r.p6("E50N", "budget_m")) - 5.0) < 1e-12, "the sweep's 5 m is H9's budget (5.8)")
+        pts = {}
+        for k, v in sw.items():
+            if k in dk:
+                continue
+            p, val = k.split(" = ")
+            pts.setdefault(p, {})[float(val)] = v
+        check(sorted(pts) == sorted(COV_PAR) and all(float(PD[p]) not in pts[p] for p in COV_PAR), "the sweep varies the four ranging inputs about their defaults (5.8)")
+        for p in COV_PAR:
+            pts[p][float(PD[p])] = d0
+        check(all(int(v["by_beacons"][b_]["seeds_p95_within_5m"]) == 0 for v in sw.values() for b_ in ("0", "1")),
+              "at no sweep point does one beacon or none hold the budget in any seed (5.8)")
+        best1 = min(_fin(v["by_beacons"]["1"]["p95_m_mean"]) for v in sw.values())
+        rad = pts["radio_sigma_m"]
+        ins = lambda v: int(v["by_beacons"]["2+"]["seeds_p95_within_5m"])
+        p95 = lambda v: _fin(v["by_beacons"]["2+"]["p95_m_mean"])
+        check(ins(rad[min(rad)]) == n and ins(rad[max(rad)]) == 0, "with two or more beacons the budget holds in every seed at the smallest long-range error and in none at the largest (5.8)")
+        ua = [p95(v) for v in pts["uwb_sigma_m"].values()]
+        check(max(ua) - min(ua) < 0.05 * min(ua) and all(ins(v) == n for v in pts["uwb_sigma_m"].values()),
+              "the ultra-wideband ranging error barely moves the percentile (under 5 % over its sweep), inside in every seed (5.8)")
+        check(all((p95(v) <= 5.0) == (ins(v) * 2 > n) for p in COV_PAR for v in pts[p].values()),
+              "a sweep point's mean percentile is inside the budget exactly when most seeds are (5.8)")
+        return {"n": n, "pts": pts, "best1": best1, "ins": ins, "p95": p95, "gfmt": gfmt}
+
+    def cov_text(kind="h9"):
+        c = cov_sweep()
+        n, pts, ins, p95, gfmt = c["n"], c["pts"], c["ins"], c["p95"], c["gfmt"]
+        mu = lambda v: unit(p95(v), "m", 2 if p95(v) < 10 else 1)
+        lst = lambda xs: ", ".join(xs[:-1]) + " and " + xs[-1]
+        short = sorted(((p, x) for p in COV_PAR for x in sorted(pts[p]) if ins(pts[p][x]) < n), key=lambda t: ins(pts[t[0]][t[1]]))
+        if kind == "limit":
+            rad = pts["radio_sigma_m"]
+            worst = {p: min(pts[p], key=lambda x: ins(pts[p][x])) for p in ("beacon_sigma_m", "uwb_range_m")}
+            check(all(0 < ins(pts[p][x]) < n for p, x in worst.items()), "the survey error and the reach each lose the budget in some seeds but not all at their worst point (7)")
+            return (f"at {unit(max(rad), 'm', 0)} in place of {unit(PD['radio_sigma_m'], 'm', 0)} the percentile is {mu(rad[max(rad)])}, outside the budget in "
+                    f"every seed (a control run made after the results, not pre-registered, on {cnt(n)} seeds). The same control run swept the beacon "
+                    f"survey error and the ultra-wideband reach: at a survey error of {gfmt(worst['beacon_sigma_m'])}&nbsp;m the budget held in "
+                    f"{cnt(ins(pts['beacon_sigma_m'][worst['beacon_sigma_m']]))} of {cnt(n)} seeds, and at a reach of {unit(worst['uwb_range_m'], 'm', 0)} in "
+                    f"{cnt(ins(pts['uwb_range_m'][worst['uwb_range_m']]))}")
+        sw6 = referee_m5()[1]
+        rad6 = sw6["rad"]
+        ra6 = lambda v: unit(rad6[v]["e"]["in_p95_m_mean"], "m", 2 if _fin(rad6[v]["e"]["in_p95_m_mean"]) < 10 else 1)
+        rad, uwb = pts["radio_sigma_m"], pts["uwb_sigma_m"]
+        check(sorted(rad6) == sorted(rad), "the earlier six-seed sweep used the same three long-range errors (5.8)")
+        return (f" A control run made after the results, and not pre-registered, swept the {words(len(COV_PAR))} ranging inputs one at a time on the same "
+                f"{cnt(n)} seeds at today's fleet (simulation; at the defaults it reproduces reading (a)). Under the narrowest reading, with a long-range "
+                f"ranging error of {lst([gfmt(x) for x in sorted(rad)])}&nbsp;m the percentile is {lst([mu(rad[x]) for x in sorted(rad)])}, inside the budget in "
+                f"{lst([cnt(ins(rad[x])) for x in sorted(rad)])} of {cnt(n)} seeds; an ultra-wideband error of {lst([gfmt(x) for x in sorted(uwb)])}&nbsp;m gives "
+                f"{lst([mu(uwb[x]) for x in sorted(uwb)])}, barely a difference. With two or more beacons the budget held in every seed at every point except "
+                + "; ".join(f"{'an' if COV_NAME[p][0] in 'aeiou' else 'a'} {COV_NAME[p]} of {gfmt(x)}&nbsp;m ({mu(pts[p][x])}, {cnt(ins(pts[p][x]))} of {cnt(n)} seeds)" for p, x in short) +
+                f". With one beacon or none in line of sight no point of the sweep held the budget in any seed (the best was {unit(c['best1'], 'm', 1)}). "
+                f"The registered wording is not part of this sweep; an earlier sweep on {words(sw6['n'])} seeds put it at {lst([ra6(x) for x in sorted(rad6)])} over "
+                f"the three long-range errors, outside the budget at each.")
+
     def e50_design():
         d = r.p6("E50", "design")
         seeds = r.p6("E50", "seeds")
@@ -700,9 +778,6 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
                     "; ".join(f"{m_(x)} {ci(x['ci'][0], x['ci'][1], 2 if x['p95'] < 10 else 1)} {READING[x['k']]} ({share(x['share'])}, {seeds_in(x)})" for x in rows) + ".")
         not_run = [m for m in ms if m not in rd]
         e1 = rd["1"]["rows"][-1]
-        rad, uwb = sw["rad"], sw["uwb"]
-        rv, uv = sorted(rad), sorted(uwb)
-        ra = lambda v, k="a": unit(rad[v][k]["in_p95_m_mean"], "m", 2 if _fin(rad[v][k]["in_p95_m_mean"]) < 10 else 1)
         fx = {k: rd["1"]["sets"]["dr+ranging+fixes"][k] for k in ("b", "c", "e")}
         check(all(p[m]["near"] for m in ms), "under reading (a) H9' clause 2 is inside the budget at every fleet size run (5.8)")
         return (f"H9&prime; of [67] has three clauses, each against the {unit(p[ms[0]]['b'], 'm', 0)} budget. First, dead reckoning alone passes the budget "
@@ -716,13 +791,7 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
                 f"the base, the clause fails in every seed: {m_(e1)} against a budget of {unit(sw['budget'], 'm', 0)}. It holds only under the narrowest "
                 f"reading, so it is reported under each reading and is neither supported nor refuted as a whole; a dated entry of [67] records this."
                 + (f" The readings were not computed at {' or '.join(MULT_NAME[m] for m in not_run)}." if not_run else "") +
-                f" A sweep on {words(sw['n'])} seeds at today's fleet shows which assumed input decides the clause under the narrowest reading: with a "
-                f"long-range ranging error of {num(rv[0], 0)}, {num(rv[1], 0)} and {unit(rv[2], 'm', 0)} the percentile is {ra(1.0)}, {ra(3.0)} and {ra(10.0)}, inside the budget in "
-                f"{'every' if int(rad[1.0]['a']['seeds_inside_budget']) == sw['n'] else 'some'} seed at the first two and in "
-                f"{'none' if int(rad[10.0]['a']['seeds_inside_budget']) == 0 else 'some'} at the third, while an ultra-wideband error of {num(uv[0], 1)}, "
-                f"{num(uv[1], 1)} and {unit(uv[2], 'm', 1)} gives {', '.join(num(uwb[v]['a']['in_p95_m_mean'], 2) for v in (0.1, 0.3))} and {unit(uwb[0.7]['a']['in_p95_m_mean'], 'm', 2)}, "
-                f"barely a difference; under the registered wording the percentile is {ra(1.0, 'e')}, {ra(3.0, 'e')} and {ra(10.0, 'e')} over the same "
-                f"three ranging errors, outside the budget at each. Third, with terrain fixes the percentile stays inside the budget away from the "
+                cov_text("h9") + f" Third, with terrain fixes the percentile stays inside the budget away from the "
                 f"base, that is, where fewer than two beacons are in line of sight: {sup([p[m]['away'] for m in ms])} ({at('fixes_away_p95_m', 1)}); with "
                 f"fixes the percentile at today's fleet is {unit(fx['b']['in_p95_m_mean'], 'm', 2)} where one or more beacons are in view "
                 f"({cnt(fx['b']['seeds_inside_budget'])} of {cnt(fx['b']['seeds_with_steps'])} seeds inside), {unit(fx['c']['in_p95_m_mean'], 'm', 2)} within "
@@ -1009,6 +1078,41 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
                 f"conflict in any seed, over the {cnt(pairs)} pairs of conflicting single-lane reservations in the recorded months. " + calc +
                 f" By the registered rule the hypothesis counts as supported; it is exploratory and outside the confirmatory family.")
     fill("P3-H11-VERDICT-SENTENCE", h11_verdict, "E51")
+
+    P6_FILES["E51M4"], P6_TASK["E51M4"] = "E51_clocks_m4.json", "B-117 (j3)"
+
+    def e51_m4():
+        """5.9 (control B-117 j3, results/E51_clocks_m4.json): E51 repeated at four times the fleet on ten seeds, H11's observed half. A control
+        run after the results, not pre-registered; simulation. Eight times was not run."""
+        n1, n4 = len(r.p6("E51", "seeds")), len(r.p6("E51M4", "seeds"))
+        check(int(r.p6("E51M4", "mult")) == 4 and set(r.p6("E51M4", "seeds")) <= set(r.p6("E51", "seeds")) and
+              set(r.p6("E51M4", "seeds")) <= set(r.p6("E50", "seeds", "4")) and "Perfect runs reproduce E50's 4x cells" in str(r.p6("E51M4", "note_b117j3")),
+              "the four-times clock run uses E50's four-times seeds and its perfect runs reproduce E50's cells (5.9)")
+        check(r.p6("E51M4", "constants") == r.p6("E51", "constants") and r.p6("E51M4", "h11", "rule") == r.p6("E51", "h11", "rule"),
+              "the four-times clock run has E51's constants and H11's rule (5.9)")
+        row4 = lambda i: r.row6("E51M4", **{"class": "crystal", "scale": "lunar", "interval_s": i})
+        ivs = [10, 60, 600, 3600, 21600, 86400]
+        uwb = _fin(r.p6("E51", "design", "uwb_sigma_m"))
+        both4 = [i for i in ivs if int(row4(i)["conflicts_guard_0.1"]) == 0 and int(row4(i)["seeds_with_conflict_guard_0.1"]) == 0 and _fin(row4(i)["one_way_m_p95"]) > uwb]
+        both1 = list(r.p6("E51", "h11", "intervals_meeting_both"))
+        check(both4 == list(r.p6("E51M4", "h11", "intervals_meeting_both")) and bool(r.p6("E51M4", "h11", "supported")) == bool(both4),
+              "H11's flag and intervals at four times follow from the rows by the file's rule (5.9)")
+        check(both4 == both1 and both4 == ivs[:len(both4)], "at four times the fleet the same shortest intervals meet H11 as at today's fleet (5.9)")
+        d4, v4 = row4(86400), row4("never")
+        d1, v1 = e51row("crystal", 86400), e51row("crystal", "never")
+        cf = lambda x: (int(x["conflicts_guard_0.1"]), int(x["seeds_with_conflict_guard_0.1"]))
+        check(all(cf(x)[0] > 0 for x in (d4, v4, d1, v1)), "a daily resync and none at all give conflicts at both fleet sizes (5.9)")
+        seeds_ = lambda k, nn: "every seed" if k == nn else f"{cnt(k)} of {cnt(nn)} seeds"
+        pairs4, pairs1 = int(row4(10)["conflict_pairs_checked"]), int(e51row("crystal", 10)["conflict_pairs_checked"])
+        res4, res1 = _fin(r.p6("E51M4", "reservations_per_seed_mean")), _fin(r.p6("E51", "reservations_per_seed_mean"))
+        return (f"A control run made after the results, and not pre-registered, repeated E51 at four times the fleet on {cnt(n4)} seeds (simulation; each "
+                f"seed's perfect run reproduces E50's four-times cell), with {num(res4, 0)} reservations a seed against {num(res1, 1)} at today's fleet and "
+                f"{cnt(pairs4)} pairs of conflicting single-lane reservations against {cnt(pairs1)}. With the 0.1&nbsp;s guard every interval from "
+                f"{IVL[both4[0]]} to {IVL[both4[-1]]} again gave no clock-caused conflict in any seed, the same intervals as at today's fleet, so H11's "
+                f"observed half holds there as well. A daily resync gave {cnt(cf(d4)[0])} conflicts in {seeds_(cf(d4)[1], n4)} (against {cnt(cf(d1)[0])} in "
+                f"{seeds_(cf(d1)[1], n1)} at today's fleet), and no resync {cnt(cf(v4)[0])} in {seeds_(cf(v4)[1], n4)} (against {cnt(cf(v1)[0])} in "
+                f"{seeds_(cf(v1)[1], n1)}). Eight times the fleet was not run.")
+    fill("P3-E51-M4-SENTENCE", e51_m4, "E51 at four times (B-117 j3)")
 
     def e51b_row(part, cls, ivl, variant):
         g = [x for x in r.p6("E51b", "rows") if x["part"] == part and x["class"] == cls and x["interval_s"] == ivl and str(x["variant"]).startswith(variant)]
@@ -1472,8 +1576,7 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
                 f"steps and was chosen after the results. In the simulation, on assumed ranging errors, the 95th percentile at today's fleet is "
                 f"{unit(rows['c']['p95'], 'm', 1)} within a kilometre of the base and {unit(rows['e']['p95'], 'm', 1)} under the registered wording, "
                 f"outside the budget in every seed. Inside the narrow region the result rests on the long-range ranging error, an assumption without "
-                f"a lunar measurement: at {unit(max(sw['rad']), 'm', 0)} in place of {unit(PD['radio_sigma_m'], 'm', 0)} the percentile is "
-                f"{unit(sw['rad'][10.0]['a']['in_p95_m_mean'], 'm', 1)}. The beacon survey error and the ultra-wideband reach were not swept"
+                f"a lunar measurement: {cov_text('limit')}"
                 + ("" if "8" in rd else ", and the readings were not computed at eight times the fleet") + f". Inside the region {pc(st['near_over'], 1)} of the steps still exceed the budget.")
     fill("P3-LIMIT-NEAR-SENTENCE", limit_near, "E50, B-101")
 
@@ -2449,7 +2552,7 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
              f"E50b: {cnt(eb['n_seeds'])} seeds at today's fleet, run after the first results. A lower bound: "
              f"{pc(_fin(ebs['engine_fix_stop_h_mean']) / _fin(ebs['perfect_run_fix_stop_h_mean']), 0)} of the fix time is inserted", "Section 5.8"],
             [f"Time (H11, first half): a crystal resynchronised at every contact causes no reservation conflict with a guard of {unit(k51['guard_s'], 's', 1)}", T + " (observed)",
-             f"E51, a check on logged reservations: {cnt(pairs51)} pairs in {n51} seeds at today's fleet only; guard swept from 0.01 to 1&nbsp;s", "Section 5.9"],
+             f"E51, a check on logged reservations: {cnt(pairs51)} pairs in {n51} seeds at today's fleet, and at four times the fleet on {cnt(len(r.p6('E51M4', 'seeds')))} seeds in a control run after the results; guard swept from 0.01 to 1&nbsp;s", "Section 5.9"],
             ["Time (H11, second half): the clock error adds more to one-way ranging than the ranging radio's own noise", C,
              f"The assumed residual of the time transfer, {unit(_fin(k51['tt_sigma_s']) * 1e9, 'ns', 0)}, is {unit(res_m, 'm', 0)} of range: true of any oscillator, "
              f"a perfect one included", "Section 5.9"],
@@ -2492,7 +2595,7 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
             [f"After a rebuild of the base computer's table no job is assigned twice ({'none' if twice == 0 else cnt(twice)} found)", T,
              f"E48 failover sweep: {cnt(n_fo)} seed-runs over three failure rates", "Section 5.4"],
             ["Incentives (H5): " + V.get("P3-H5-ABSTRACT-CLAUSE", "pending"), T, f"E46: {V.get('P3-E46-N-RUNS', 'pending')} simulated years, three owners, two splits, 30 seeds; payments priced "
-             "after one allocation. The third clause asks whether pooling is superadditive in the simulator", "Sections 5.5 to 5.7"],
+             "after one allocation. The third clause asks whether pooling is superadditive in the simulator; " + V.get("P3-E46-VOT-SHORT", "pending"), "Sections 5.5 to 5.7"],
             ["The mast sees " + V["P3-MESH-MAST-DIRECT-SHARE"] + " of the route points directly, and rovers form one network from 2&nbsp;km range", "Computed",
              "Line of sight on the 5&nbsp;m terrain model, whose effective resolution is about 20&nbsp;m, with a grazing ray counted as a link; not a radio measurement", "Section 3.3"],
             ["Agreement by averaging among the rovers, with and without the base mast as a node", T,
@@ -2513,7 +2616,8 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
             ["The base as trust anchor; a site key changed daily; the lost-link ladder's times; the retry budget of drop-and-retry", A,
              "The retry budget swept after the results were known (Section 5.12); the others not swept; no standard names a trust anchor for a site with several owners", "Sections 3.8, 4.2"],
             ["The value of delivery time by priority, the censoring of undelivered cargo at the year's end, the operator's cost per hour, private costs, the audit multiple", A,
-             "One value each; the private-cost spread declared and not swept", "Section 3.9"],
+             "One value each in the paper's runs; the value of time multiplied afterwards for H5's third clause and the efficiency loss only (Section 5.6); "
+             "the private-cost spread declared and not swept", "Sections 3.9, 5.6"],
             ["The base computer's failure rate and the re-election delay", A, "The failure rate at three levels", "Section 4.2"],
             # not yet tested
             ["Any of this on radio hardware", N, "Stage 2 of Table 16", "Section 6.5"],
@@ -3806,6 +3910,79 @@ def values(r: R, allow_pending: bool):
                 f"the audit penalty multiple is m = {num(r.f46('audit_penalty_multiple'), 0)} (Assumed; the design file declares 2&ndash;5 and E46 runs one value).")
     fill("P3-E46-TARIFF-SENTENCE", e46_tariff, "E46")
 
+    P6_FILES["E46V"], P6_TASK["E46V"] = "E46_vot_sweep.json", "B-117 (f)"
+
+    def e46_vot(kind="sentence"):
+        """3.9, 5.6, 6, 7, Table 18 (control B-117 f, results/E46_vot_sweep.json): the scenario's value of time multiplied by five factors, H5's
+        third clause and the efficiency loss at each. Pooled market, coalitions, alone and oracle only: the payment rules, and with them H5's first
+        two clauses, were not run. A control run after the results, not pre-registered; simulation."""
+        ck = r.p6("E46V", "check")
+        vt = {int(k): _fin(v) for k, v in r.p6("E46V", "vot_usd_per_h_x1").items()}
+        check(vt == {int(k): _fin(v) for k, v in r.scn["vot_usd_per_h"].items()}, "the value-of-time sweep scales the scenario's value of time (5.6)")
+        check(all(bool(x) for sp in SPLITS for x in ck["x1_pooled_seed1_equals_stored_part"][sp].values()) and
+              all(bool(ck["x1_clause3_reproduces_E46_fit"][sp]) for sp in SPLITS), "the sweep's own checks: at the factor 1 it repeats E46's stored part and clause 3 (5.6)")
+        c3 = r.p6("E46V", "clause3")
+        lv = sorted(_fin(x) for x in r.p6("E46V", "levels"))
+        gfmt = lambda x: "%g" % x
+        key = lambda x: "x" + gfmt(x)
+        check(sorted(c3) == sorted(key(x) for x in lv) and 1.0 in lv, "the sweep has a row block for each factor, the scenario's included (5.6)")
+        for sp in SPLITS:
+            f_, x1 = r.f46("H5", sp, "clause3"), c3["x1"][sp]
+            check(abs(_fin(x1["min_lower"]) - _fin(f_["min_lower"])) < 1 and abs(_fin(x1["min_upper"]) - _fin(f_["min_upper"])) < 1,
+                  f"at the factor 1 the sweep's clause-3 bounds are E46's ({sp}) (5.6)")
+            check(abs(_fin(x1["efficiency_loss_vs_oracle_pct_mean"]) - _fin(r.cell46("none", sp)["efficiency_loss_pct"])) < 0.001,
+                  f"at the factor 1 the sweep's efficiency loss is E46's ({sp}) (5.6)")
+            check(len(x1["rows"]) == len(f_["rows"]) and all(int(q["n"]) == int(f_["rows"][0]["n"]) for x in lv for q in c3[key(x)][sp]["rows"]),
+                  f"every factor has E46's coalitions and seeds ({sp}) (5.6)")
+        lo, eff, neg = {}, {}, {}
+        for sp in SPLITS:
+            lo[sp], eff[sp] = [], []
+            for x in lv:
+                y = c3[key(x)][sp]
+                lmin, hmin = min(_fin(q["lo"]) for q in y["rows"]), min(_fin(q["hi"]) for q in y["rows"])
+                check(abs(lmin - _fin(y["min_lower"])) < 1 and abs(hmin - _fin(y["min_upper"])) < 1, f"x{gfmt(x)} {sp}: the smallest bounds are those of the rows (5.6)")
+                check(bool(y["supported"]) == (hmin >= 0) and bool(y["all_lower_bounds_above_0"]) == (lmin > 0), f"x{gfmt(x)} {sp}: the flags follow from the rows (5.6)")
+                check(lmin > 0, f"x{gfmt(x)} {sp}: every owner's interval in every coalition lies above zero (5.6)")
+                ties = {(q["coalition"], q["owner"]) for q in y["rows"] if abs(_fin(q["lo"]) - lmin) < 1e-6}
+                check(ties == {("AB", "A"), ("AB", "B")}, f"x{gfmt(x)} {sp}: the smallest lower bound is that of A and B in coalition AB (5.6)")
+                lo[sp].append(lmin)
+                eff[sp].append(_fin(y["efficiency_loss_vs_oracle_pct_mean"]))
+            check(all(a < b_ for a, b_ in zip(lo[sp], lo[sp][1:])), f"{sp}: the smallest lower bound rises with the value of time (5.6)")
+            check(max(eff[sp]) == eff[sp][-1], f"{sp}: the efficiency loss is largest at the largest factor (5.6)")
+            neg[sp] = [x for x, e in zip(lv, eff[sp]) if e < 0]
+        check(bool(r.p6("E46V", "supported_at_every_level")), "the file's flag: clause 3 supported at every factor (5.6)")
+        lst = lambda xs: xs[0] if len(xs) == 1 else ", ".join(xs[:-1]) + " and " + xs[-1]
+        fac = lst([gfmt(x) for x in lv])
+        n = int(c3["x1"]["3eq"]["rows"][0]["n"])
+        if kind == "money":
+            return "a control run made afterwards varied the value of time for H5's third clause and the efficiency loss only (Section 5.6)"
+        if kind == "short":
+            return f"a later control run finds it at every value of time from {gfmt(lv[0])} to {gfmt(lv[-1])} times the scenario's"
+        if kind == "disc":
+            return (f"a control run made after the results, and not pre-registered, found every owner's Shapley value above its alone profit in every "
+                    f"coalition at every value of time from {gfmt(lv[0])} to {gfmt(lv[-1])} times the scenario's (Section 5.6), but the transfers and the "
+                    f"comparison with no payments were computed at the scenario's value only")
+        rng = lambda sp: f"{pc(min(eff[sp]) / 100, 1)} to {pc(max(eff[sp]) / 100, 1)}"
+        if kind == "limit":
+            return (f"A control run made after the results, and not pre-registered, multiplied the value of time by {gfmt(lv[0])} to {gfmt(lv[-1])} for H5's "
+                    f"third clause: the clause held at every factor in both splits, while the efficiency loss against the oracle ran from {rng('3eq')} "
+                    f"with equal shares and from {rng('3uneq')} with 50/35/15 shares (Section 5.6).")
+        negs = [f"at {lst([gfmt(x) for x in neg[sp]])} times with {SPLIT_NAME[sp]}" for sp in SPLITS if neg[sp]]
+        return (f"A control run made after the results, and not pre-registered, repeated the comparisons of H5's third clause, the pooled market, "
+                f"every coalition, each owner alone and the oracle, with the value of time of Section 3.9 multiplied by {fac}, on the same {cnt(n)} seeds "
+                f"(simulation; at the factor 1 it reproduces E46's bounds and efficiency loss). The clause held at every factor in both splits: every "
+                f"owner's interval in every coalition lay above zero. The smallest lower bound was at every factor that of A and B in coalition AB, "
+                f"who share that difference by construction; it rose from {musd(lo['3eq'][0], 2)} at {gfmt(lv[0])} times to {musd(lo['3eq'][-1], 0)} at "
+                f"{gfmt(lv[-1])} times with equal shares and from {musd(lo['3uneq'][0], 2)} to {musd(lo['3uneq'][-1], 0)} with 50/35/15 shares. The "
+                f"efficiency loss against the oracle changed far more with the factor: {lst([pc(e / 100, 1) for e in eff['3eq']])} with equal shares and "
+                f"{lst([pc(e / 100, 1) for e in eff['3uneq']])} with 50/35/15 shares at the {words(len(lv))} factors"
+                + (f", below zero, the market's system cost under the oracle's, {lst(negs)}" if negs else "") +
+                f". The payment rules, and with them H5's first two clauses, the operator's budget and the transfers, were not run at another value of time.")
+    fill("P3-E46-VOT-SENTENCE", e46_vot, "E46 value of time (B-117 f)")
+    fill("P3-E46-VOT-LIMIT", lambda: e46_vot("limit"), "E46 value of time (B-117 f)")
+    fill("P3-E46-VOT-DISC", lambda: e46_vot("disc"), "E46 value of time (B-117 f)")
+    fill("P3-E46-VOT-SHORT", lambda: e46_vot("short"), "E46 value of time (B-117 f)")
+
     def e46_money():
         """3.9 (finding M7): the three parameters every profit, budget, Shapley value and transfer of this paper is priced with, from the
         scenario file and the experiment's design file, each with its flag."""
@@ -3817,7 +3994,8 @@ def values(r: R, allow_pending: bool):
         check(op == 1000.0 and all(x in str(pc_["true_cost"]) for x in ("wear share 0.5 of unit cost per life hour", "1,000 USD/h")),
               "a carrier's true cost is half the unit cost per life hour plus operator time at 1,000 USD an hour (3.9)")
         check("Spec of the scenario" in str(sv["flag"]), "the design file flags the value of time as the scenario's specification (3.9)")
-        return (f"Every amount of money in this paper is priced with three parameters of the scenario, none of them swept. The delay of an item is "
+        return (f"Every amount of money in this paper is priced with three parameters of the scenario, none of them swept in the paper's own runs; "
+                f"{e46_vot('money')}. The delay of an item is "
                 f"priced at the value of time of its priority, {cnt(vot[1])}, {cnt(vot[2])} and {cnt(vot[3])} USD an hour for priorities 1, 2 and 3. An item "
                 f"that is not delivered by the end of the year is priced as if it were delivered at that moment, so its delay is censored at the "
                 f"horizon. A carrier's true cost is its wear, half the vehicle's unit cost per hour of life used, plus its operator's time at "
