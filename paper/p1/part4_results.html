@@ -34,7 +34,7 @@
 
 <p>The robots' own auction, at message loss 0.10 over the terrain-limited network, kept urgent cargo waiting {{P1-H3A-DIFF}} than the full-information marketplace ({{P1-H3A-PCT}}; 90&#8239;% CI {{P1-H3A-CI90}}, n = {{P1-H3A-N}}). We had registered the expectation that it would come within &plusmn;10&#8239;% of the marketplace, &plusmn;{{P1-H2-MARGIN}}. {{P1-H3A-VERDICT}} Because the auction, the leader and the marketplace never wait for Earth, a seed gives the same run in every start year; this comparison therefore uses the {{P1-H3A-N}} runs of block one only (change 4 of the pre-registration [43]). An earlier interim reading that counted the repeated runs as independent suggested the auction beat the marketplace; on independent runs that difference is not distinguishable from zero.</p>
 
-<p>{{P1-H3A-RALLY-SENTENCE}}</p>
+<p>{{P1-H3A-RALLY-SENTENCE}} {{P1-B117A-SENTENCE}}</p>
 
 <p>Two direct comparisons were not registered and are reported because a reader will look for them. The relay that is always up gives the same run as the full-information marketplace for every seed, so the auction's difference from it is the one above. Against the relay that is up {{P1-RELAY08-SHARE}} of the time, on the {{P1-AUCTION-DIRECT-N}} seeds of block one, the auction's urgent wait was {{P1-AUCTION-MINUS-RELAY08}} shorter (95&#8239;% CI {{P1-AUCTION-MINUS-RELAY08-CI}}), and against the plan-ahead dispatcher on Earth {{P1-AUCTION-MINUS-PLAN}} shorter ({{P1-AUCTION-MINUS-PLAN-CI}}).</p>
 
@@ -44,7 +44,7 @@
 
 <p>{{P1-E41-LOSS-SENTENCE}}</p>
 
-<p>{{P1-E41-DEPTH-SENTENCE}}</p>
+<p>{{P1-E41-DEPTH-SENTENCE}} {{P1-B117B-SENTENCE}}</p>
 
 <p>{{P1-E41-RANGE-SENTENCE}} {{P1-E41-REPLICATION-SENTENCE}}</p>
 
@@ -54,7 +54,9 @@
 
 <p>The network did not improve on the hand-built bids. At the middle load its difference from the auction was {{P1-H4-MLP-DIFF-30}} (95&#8239;% CI {{P1-H4-MLP-CI-30}}), and at light load {{P1-H4-MLP-DIFF-10}} ({{P1-H4-MLP-CI-10}}); neither interval excludes zero. H4 as registered is about the network, the registered learned regime, with the linear model as a secondary report; for the network it is not supported.</p>
 
-<p><!-- Fill from data/policies/atc_bid_linear_v1.json: the signs and sizes of the largest weights in plain units (urgency and slack, approach hours, full loads, a weaker age credit, a softer penalty on long jobs, preference for pads with no landing due soon). --> {{P1-LIN-WEIGHTS-SENTENCE}} We have not interpreted these weights: no weight was removed in turn to see what it contributes, the policy is not monotone in the inputs an operator would expect it to be (Section 5.11), and the search kept its last generation, so it may not have converged. {{P1-LEARNED-EVAL-SENTENCE}} Ten further runs per load check whether other cargo pays for the gain. At 60&#8239;% load it does not: the urgent wait and the delays of normal-priority and bulk cargo and tonne-days waiting all fell with the learned bids ({{P1-GUARD-TONNEDAYS-PCT}} for tonne-days), each with an interval below zero, and tonnes delivered did not change. {{P1-GUARD-30-SENTENCE}} {{P1-OOD-LABEL-SENTENCE}} {{P1-OOD-SENTENCE}} A fleet twice as large could not be run in our time budget.</p>
+<p><!-- Fill from data/policies/atc_bid_linear_v1.json: the signs and sizes of the largest weights in plain units (urgency and slack, approach hours, full loads, a weaker age credit, a softer penalty on long jobs, preference for pads with no landing due soon). --> {{P1-LIN-WEIGHTS-SENTENCE}} The policy is not monotone in the inputs an operator would expect it to be (Section 5.11), and the search kept its last generation, so it may not have converged; what each weight contributes was measured afterwards, in the first of the two controls at the end of this section. {{P1-LEARNED-EVAL-SENTENCE}} Ten further runs per load check whether other cargo pays for the gain. At 60&#8239;% load it does not: the urgent wait and the delays of normal-priority and bulk cargo and tonne-days waiting all fell with the learned bids ({{P1-GUARD-TONNEDAYS-PCT}} for tonne-days), each with an interval below zero, and tonnes delivered did not change. {{P1-GUARD-30-SENTENCE}} {{P1-OOD-LABEL-SENTENCE}} {{P1-OOD-SENTENCE}} A fleet twice as large could not be run in our time budget.</p>
+
+<p>{{P1-B117C-ABLATION-SENTENCE}} {{P1-B117C-TUNED-SENTENCE}}</p>
 
 {{P1-TABLE-OOD}}
 
