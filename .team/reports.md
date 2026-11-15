@@ -11749,3 +11749,43 @@ traversal on Mars, not traced. No printed value moves.
   - keep-outs and road edges change no hit count (they are separate draws of the same stream).
 - Sentence this would change: P3 6.6 "one free parameter and one result" -> H12 holds at every swept rate. The byte share scales
   with the tile change rate, from 0.26 % to 1.5 %. No printed value moves.
+
+## B-117 (c) DONE (BACKEND, 14 Nov): ablation of the linear bid's 13 weights, and the hand rule tuned with the linear's CEM budget. NEW file results/B117c_bid_ablation.json
+- Runner: tools/atc/b117c_bid_ablation.py (ablate / tune / evaluate / table; cache .cache/atc/b117c/, stamped with the E50 code
+  fingerprint 5bf22fa6d5ccfe47). 771 runs in 31 chunks.
+- The policy files and ATC_learned_eval*.json are untouched.
+
+Reproduction check: hand (C_AUCTION) and the full linear policy at 30 % load, seeds 1-30, repeated on the current code. Both
+equal train_bid's cached evaluation runs (.cache/atc/bid_rerun/eval_runs.json) exactly (max abs diff 0). The table step refuses
+otherwise.
+
+1. Ablation: the published linear policy with one weight set to 0, run as train_bid evaluates (C_LEARNED, 3eq, 30 % load, loss
+   0.10, seeds 1-30). Urgent wait: hand 14.09 h, linear 11.60 h. Effect of zeroing each weight, paired (analyse_e40.boot, 95 % CI):
+   - slack_d (w -1.96): +2.71 h (1.18 to 4.37). Without it the policy is no better than the hand bids (+0.22 h, -0.93 to 1.42):
+     the linear policy's whole gain is the slack term (days to the item's deadline).
+   - prio (w -0.62): +0.76 h (0.10 to 1.56).
+   - job_h +0.63 (-0.76 to 1.90), age_d +0.58 (-0.46 to 1.70), mass_frac +0.21, heard +0.12, approach_h +0.07, battery +0.06:
+     not resolved.
+   - dark_or_low -0.16 and landing -0.13: not resolved.
+   - link_base and queue: exactly 0 on every seed; bundle_n 0.0004. These three never change a decision in these runs.
+2. Tuned hand rule: CEM on (w_p1, w_p2, w_age, vot_scale) in log space around the defaults, with the linear's budget and seeds
+   (train_bid.CEM["linear"], CEM_FIT_SEEDS, selection on CEM_TUNE_SEEDS).
+   - Selected (lowest selection-seed mean, generation 1 of 6): w_p1 26.2 h (default 6), w_p2 3.26 h (2), w_age 0.028 (0.08),
+     vot_scale 1.83 (1).
+   - Selection seeds: 7.16 h against 10.09 h with the defaults.
+   - The later generations stayed at w_p1 21-23, w_age 0.026-0.030, with selection means 7.5-7.8 h.
+3. The tuned hand rule on seeds 1-30:
+   - 30 % load: 9.63 h, against hand 14.09 (-4.45 h, -6.33 to -2.83) and linear 11.60. Linear minus tuned is +1.97 h (1.04 to
+     2.92): at the load it was tuned for, the tuned hand rule beats the learned linear policy.
+   - 60 % load: 75.25 h, against hand 74.98 (+0.27 h, -14.5 to 17.2) and linear 44.69. Linear minus tuned is -30.6 h (-48.8 to
+     -14.9): the tuning does not transfer to 60 % load, while the linear policy's gain there does. Hand and linear at 60 % are
+     train_bid's cached evaluation runs, not repeated; the 30 % references reproduce exactly.
+
+Sentences this would change. No printed value moves; these are additions or replacements of "not done":
+- P1 5.6 / 6.2: "We have not interpreted these weights: no weight was removed in turn to see what it contributes" and "The linear
+  model has 13 weights, which we have not interpreted". Replacement: the gain is the slack weight. Removing it alone costs 2.7 h
+  and leaves no gain over the hand bids. Priority adds 0.8 h. Three weights (link_base, queue, bundle_n) change nothing.
+- P1 6.3: "the hand-built rule was written, not tuned by search on the objective, while the linear model was". Now: tuned with
+  the same search budget, the hand rule beats the linear policy by 2.0 h at 30 % load. It gains nothing at 60 %, where the linear
+  policy stays 30.6 h ahead. The comparison of learned against hand-built bids then turns on transfer across load, not on
+  search alone.
