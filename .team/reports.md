@@ -11641,3 +11641,111 @@ Machine: single process, OMP 1, gated at 0.8 GB; ATC runs of 2.5-5 s.
 
 Next: (d) and (e1) (E54 replay with retry budgets; new key in E54_dtn.json, nothing else in that file moves; I will
 verify that before writing).
+
+## B-117 (d) and (e1) DONE (BACKEND, 14 Nov): E54 drop-and-retry at 12 retry budgets. NEW file results/E54_retry_budget.json; E54_dtn.json untouched
+- Why a new file and not a key in E54_dtn.json: run_e54 build() rewrites E54_dtn.json and carries only superseded_* keys, so a
+  new key there would vanish at the next build.
+- Runner: tools/atc/b117de_retry.py (cache .cache/atc/e54_retry/s<seed>.json, stamped with E54's fingerprint c3c3b2880e33888c
+  plus the runner's own replay). 30 seeds at 9-13 s each, 6 min in one chunk.
+- Design: as pre-declared. Tries {1, 3, 5, 10} x retry interval {20, 60, 180 s} x loss {0.10, 0.25, 0.40}, 30 seeds.
+  - Each seed: its own engine run, contact plan, messages and run_e54's drop_retry random stream (common random numbers across
+    budgets).
+  - Age of information is not recomputed.
+- Check: the published budget (5 tries, 180 s) reproduces E54's cached drop_retry cells exactly (n, lost, censored, mean delay;
+  all kinds, losses and seeds). The table step refuses otherwise.
+
+(d) Three tries every 20 s, all inside a grant's 60 s lifetime:
+- grants lost: loss 0.10 0.9 % (55 of 6,028); loss 0.25 6.7 % (406); loss 0.40 16.8 % (1,014)
+- the published budget, for comparison: 9.5 / 25.6 / 39.9 %
+- P2 says "three tries would by arithmetic lose 1.6 %" (0.25^3). The run gives 6.7 % at loss 0.25. The arithmetic assumes a
+  path at every try. The contact plan has 60 s steps, so all three tries fall in the same step, and a vehicle with no path then
+  loses all three.
+- Sentences this would change, with a value:
+  - P2 3.11, 5.12, 6.5: "three tries inside the lifetime would by arithmetic lose 1.6 %" -> measured 6.7 % at loss 0.25.
+  - P2 Table 14, the grant row: "three tries would lose 1.6 % by the same arithmetic; that baseline was not run" -> 6.7 %, run.
+
+(e1) The sweep. Shares lost of 6,028 awards (1 h lifetime) and 6,028 grants (60 s), 30 seeds:
+
+| tries x interval | award 0.10 / 0.25 / 0.40 | grant 0.10 / 0.25 / 0.40 |
+|---|---|---|
+| 1 (any interval) | 9.7 / 24.2 / 40.6 % | 9.3 / 25.9 / 39.8 % |
+| 3 x 20 s | 0.20 / 2.09 / 7.53 % | 0.91 / 6.74 / 16.8 % |
+| 3 x 180 s | 0.28 / 1.78 / 7.43 % | 9.6 / 25.3 / 40.0 % |
+| 5 x 20 s | 0.03 / 0.25 / 1.73 % | 0.85 / 6.65 / 16.5 % |
+| 5 x 180 s (published) | 0.07 / 0.17 / 1.41 % | 9.5 / 25.6 / 39.9 % |
+| 10 x 20 s | 0.03 / 0.03 / 0.12 % | 0.93 / 6.65 / 16.9 % |
+| 10 x 180 s | 0.03 / 0.07 / 0.12 % | 9.7 / 25.3 / 39.9 % |
+
+- 60 s intervals behave like 180 s for grants (the second try comes too late) and like 20 s for awards.
+- The task_state lost share stays at 33-34 % for every budget that gives up within an hour. It falls to 15-19 % only at
+  10 x 180 s, which gives up after 27 min.
+- H14's first clause per budget (lost jobs sf_ll minus drop_retry at loss 0.25, paired by seed, run_e54._boot):
+  - supported (CI below 0) at 10 of 12 budgets:
+    - 1 try: -48.7 a seed (-51.7 to -45.8)
+    - 3 tries: -4.2 (-4.9 to -3.5) at 20 and 60 s; -3.6 at 180 s
+    - 5 tries: -0.5 (-0.77 to -0.27) at 20 and 60 s; -0.33 (-0.53 to -0.17) at 180 s, published
+    - 10 x 180 s: -0.13 (-0.27 to -0.03)
+  - not supported at 10 x 20 s and 10 x 60 s: -0.07 (-0.17 to 0.0). Drop-and-retry loses 2 awards in 30 seeds; sf_ll loses 0.
+- Sentences this would change (no published value moves; the published budget is reproduced):
+  - P3 4.2, 5.12, 6.6, 7: "the retry budget is our choice ... and it was not swept" -> swept. H14's first clause holds at 10 of
+    12 budgets; at 10 tries within 3 to 9 minutes the difference is 2 awards in 30 seeds, CI reaching 0.
+  - P3's "10 awards of 6,028 expired under a retry budget we chose" can stay, with the sweep beside it.
+- Nothing else moves: E54_dtn.json, E54_table*.csv and the site's E54 data are not touched.
+
+## B-117 (h) DONE (BACKEND, 14 Nov), EXPLORATORY (a trace, not a test): Mars 94 against Moon 53 conflicts referred to Earth. NEW file results/B117h_conflict_trace.json
+- Runner: tools/atc/b117h_conflict_trace.py. It logs every hand conflict by wrapping roads.RoadLayer._hand in its own process.
+  No lunarsim file changed, so the E50 fingerprint is unchanged.
+- Cells, run as their experiments run them (run_one, fixed point), seeds 1-30: E43 "uncoordinated x1" in 2028 and 2038; E47
+  "uncoordinated x1 mars rtt 20 no relay" and "... relay".
+- Check: every run's conflict count equals its stored row (E43_runs.lead.csv, E47_runs*.csv): 120 of 120.
+
+What the trace shows:
+1. The only Mars-specific code in the road layer is how long Earth takes to settle a hand conflict (RoadLayer._hand_until).
+   Everything else, demand and roads included, is the same. Across the four cells the count falls as that wait grows:
+
+   | cell | mean stop | conflicts a year |
+   |---|---|---|
+   | moon 2038 | 56.3 h | 44.6 |
+   | moon 2028 | 36.9 h | 52.9 |
+   | mars, no relay | 8.0 h | 94.0 |
+   | mars, relay | 5.4 h | 92.1 |
+
+   The stops are long-tailed on the Moon: median 2.0 h, p90 187 h in 2028 (Earth-window gaps). On Mars the p90 is 12.7 h.
+2. 97 % of all conflicts in every cell are on one single-lane segment (res 14): Moon 1,531 of 1,587; Mars 2,745 of 2,819.
+3. While a pair waits for Earth, new conflicts almost stop: 0.009 per 100 h against 0.77 otherwise on the Moon in 2028; Mars
+   0.009 against 1.17. When a pair stops, the holder's reservation moves to after the decision, so the segment is empty during
+   the wait and third vehicles pass without meeting anyone. Such a wait is in force 22.2 % of the year on the Moon in 2028
+   (27.0 % in 2038) and 8.5 % on Mars (5.5 % with relay). That explains about a third of the gap: 77.8 % against 91.5 % of
+   the year exposed.
+4. The rest is a higher rate outside the waits: 1.17 against 0.77 conflicts per 100 h. Mars also has 3.6 % more jobs
+   (2,226 against 2,148) and 10.6 % more segment traversals (1,824 against 1,649) for the same deliveries (2,932 against
+   2,928). Per 1,000 traversals: 51.5 against 32.1. I have not traced why the rate per traversal is higher once the long holds
+   are removed. Per-seed correlations inside a cell are weak (held share vs count -0.06 Moon, 0.49 Mars).
+
+Sentence this would change: P2 5.4 / 6.1 "The Mars fleet referred more conflicts (94 against 53) for the same demand ...; we have
+not traced the cause". Suggested replacement: the count depends on how long Earth takes to answer. While a pair waits no
+conflict arises; long lunar waits (22 % of the year) remove about a third of the exposure. The rest is a higher rate per
+traversal on Mars, not traced. No printed value moves.
+
+## B-117 (j2) DONE (BACKEND, 14 Nov): E52 change rates swept. NEW file results/E52_sweep.json; E52_map.json untouched
+- Runner: tools/atc/b117j2_e52_sweep.py, 31 s. It uses run_e52.run_seed with the module's rates set: E52's seeds and code.
+- Grids, one rate at a time, the others at the defaults:
+  - tiles a day {10, 21, 42*, 84}
+  - hazards a day {0.5, 1, 2*, 5, 10}
+  - keep-outs a day {0, 0.3*, 1, 3}
+  - road edges a day {0, 5*, 20, 50}
+  (* = default)
+- Check: the default setting reproduces E52_map.json's h12 exactly (share 0.01059, sooner at every rate, supported).
+- H12 is supported in all 17 settings. Hazards-first bytes after 24 h, at 100 kbit/s:
+  - against tiles a day: 0.26 % (10), 0.53 % (21), 1.06 % (42), 1.51 % (84) of a full resend; far under 10 % throughout
+  - unchanged within 0.003 points by hazards, keep-outs or road edges
+  - hazards-first is sooner at every rate in every setting
+- Time until the hazard layer is current after 24 h out, at 16 kbit/s, hazards-first against oldest-first:
+  16.8 against 280 s (10 tiles a day), 57.6 against 1,203 s (42), 80.5 against 1,731 s (84).
+- Stale-map hits grow with the hazard rate, roughly in proportion:
+  - during a 7-day outage: 1.85 (0.5 a day), 6.67 (2), 33.9 (10)
+  - after contact at 16 kbit/s after 7 days, hazards-first against oldest-first: 0.08 against 0.82 at 2 a day; 0.53 against
+    3.65 at 10 a day
+  - keep-outs and road edges change no hit count (they are separate draws of the same stream).
+- Sentence this would change: P3 6.6 "one free parameter and one result" -> H12 holds at every swept rate. The byte share scales
+  with the tile change rate, from 0.26 % to 1.5 %. No printed value moves.
