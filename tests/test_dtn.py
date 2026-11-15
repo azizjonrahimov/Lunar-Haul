@@ -332,3 +332,41 @@ def test_cell_short_isolation_has_no_return():
     for rule in DT.RETURN_RULES:
         A2, st = DT.lost_link_plan(A, _Tr(200, 2), {"return_rule": rule})
         assert (A2 == A).all() and st["returns"] == 0 and st["isolation_h_saved"] == 0.0, rule
+
+
+def test_e54_results_file_written_whole(tmp_path):
+    """B-121 5: a NaN refused by allow_nan=False leaves the old results file (and its superseded blocks) as it was;
+    before, json.dump raised mid-stream and left the file truncated."""
+    import sys
+    sys.path.insert(0, os.path.join(ROOT, "tools", "atc"))
+    import run_e54 as R
+    p = tmp_path / "E54.json"
+    R._write_json(str(p), {"rows": [1], "superseded_x": {"a": 1}})
+    good = p.read_bytes()
+    assert json.loads(good) == {"rows": [1], "superseded_x": {"a": 1}} and good.endswith(b"}\n")
+    with pytest.raises(ValueError):
+        R._write_json(str(p), {"rows": [float("nan")], "superseded_x": {"a": 1}})
+    assert p.read_bytes() == good
+    assert sorted(os.listdir(tmp_path)) == ["E54.json"]          # nothing half-written next to it either
+
+
+def test_e54_link_files_stamped_and_seed_checked(tmp_path, monkeypatch):
+    """B-121 4: link_s<seed>.json files are refused without the current code and link_code, or for another seed set
+    than the cells; they are loaded in seed order (link_s2 before link_s10)."""
+    import sys
+    sys.path.insert(0, os.path.join(ROOT, "tools", "atc"))
+    import run_e54 as R
+    monkeypatch.setattr(R, "CACHE", str(tmp_path))
+    monkeypatch.setattr(R, "code_fingerprint", lambda: "fp")
+    monkeypatch.setattr(R, "link_code", lambda: "lc")
+    for s in (2, 10):
+        R._write_cache(str(tmp_path / f"link_s{s}.json"), {"seed": s, "code": "fp", "link_code": "lc"})
+    assert [x["seed"] for x in R._load_links([2, 10])] == [2, 10]
+    with pytest.raises(SystemExit, match="cells for seeds"):
+        R._load_links([2, 3])
+    R._write_cache(str(tmp_path / "link_s10.json"), {"seed": 10, "code": "fp"})
+    with pytest.raises(SystemExit, match="link_code"):
+        R._load_links([2, 10])
+    R._write_cache(str(tmp_path / "link_s10.json"), {"seed": 10, "link_code": "lc"})
+    with pytest.raises(SystemExit, match="other code"):
+        R._load_links([2, 10])

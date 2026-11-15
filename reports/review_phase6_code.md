@@ -166,6 +166,30 @@ and `nn/model.transform_np` have no caller; duplicated constants (Moon radius, s
   17.2 deg). The cause is not known. Not an R1 breach (0, B-120 A), and not the one-step detection latency: with the
   delay at 0.9 s the shortfall stays (4.876 / 4.880 m).
 
+Added by the second review pass (B-121, 14 Nov 2026), open:
+- Code stamps are computed from the files on disk when a cell is written, so a file edited during a resumable
+  multi-call run stamps the later cells with the new code while the earlier cells ran the old code.
+- Data files are not in the fingerprints: the Earth-link table, the road graph, the vehicle files, and the versions of
+  numpy/scipy/torch; a change there leaves the cells' code stamps unchanged.
+- The 140 E45 uphill sweep cells carry no code stamp (only the 16 delay cells do, B-120 Q1), and the E45 uphill guard
+  does not require all 16 delay cells to be present.
+- dtn.simulate: a bundle whose lifetime ends after the window's end but before its next attempt (within one retry_s
+  or custody_timer_s, dtn.py drop_retry "next try past the lifetime" and the sf "lifetime over" branch) is expired,
+  not censored. The exact rule is now stated in simulate's docstring (B-121, docstring only); whether such a bundle
+  should count as censored is open.
+- vv6 G1 compares with exact equality (B-120 H); another numpy build may differ in the last digit (CI will show).
+- codec: the all-zero key warning covers mac_key only (not the signing key) and repeats on every decode call.
+- nn/train.fit catches only pickle.UnpicklingError for an old checkpoint; other errors from loading it are not
+  turned into the named message.
+- Site: null fallbacks remain for the E51 to E55 and B-99 values, so a missing results key does not stop the build.
+- run_e54 build() alone writes E54_dtn.json without lrip_v02 (v02build adds it back); the pair build + v02build
+  reproduces the file byte for byte (checked in B-121).
+
+Done in B-121 (no longer open): the E56 false-alarm interval kept at the published 200 resamples in evaluate_set so
+--onset-fa can still check it; the B-118 addenda carried over only while their inputs are unchanged; --resample-counts
+refuses an empty cache and --onset-fa gates its score files; phase6_family H14 reads the E54 cells through the code
+check (e54_code recorded); E54 link files stamped and seed-checked; E54 results files written whole.
+
 Done in B-120 (no longer open): the end-of-window rule in dtn.simulate (B), an unknown protocol string refused and the
 base store bounded for Earth-bound bundles (G), the E54 fingerprint covering the engine (C), the code stamp checks of
 the E50-family builders (D), the E56 addenda carried over and checked before writing (E), the codec's decode errors,

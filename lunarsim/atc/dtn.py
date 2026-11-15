@@ -161,10 +161,16 @@ def simulate(A: np.ndarray, msgs: Sequence[Msg], protocol: str, loss: float, rng
              dt_s: float, p: Optional[dict] = None, earth_up=None) -> List[Msg]:
     """Deliver the messages over the contact plan A (T, n + 1, n + 1). Node n is the base mast; a message to "EARTH"
     (dst = -2) needs the base and earth_up(k) for its last hop. Returns the messages with t_done, expired or censored
-    set: t_done = delivered (at or before t0 + life_s); expired = undelivered with its lifetime ended inside the window
-    (t0 + life_s <= T dt_s, the end itself included, B-120 B), out of tries (drop_retry) or dropped by a full store at
-    creation; censored = undelivered and still alive at the window's end (t0 + life_s > T dt_s), or created at or
-    after it: its outcome is not known. protocol: "drop_retry", or "sf" (store-and-forward with custody; "sf_ll", the
+    set: t_done = delivered (at or before t0 + life_s); expired = undelivered and with no attempt left that could
+    deliver it: its lifetime ended inside the window (t0 + life_s <= T dt_s, the end itself included, B-120 B), or
+    it is out of tries (drop_retry), or its next attempt falls after its lifetime (drop_retry: the next try
+    t0 + tries retry_s > t0 + life_s; store-and-forward: the next transmission or custody retransmission, or the
+    arrival of the last hop, at or after t0 + life_s), or it was dropped by a full store at creation. The rule on the
+    next attempt is applied in every step, the last one included, so a bundle whose lifetime ends after the window's
+    end but before its next attempt (at most one retry_s or custody_timer_s after the end) is expired, not
+    censored (B-121: stated here as the code has it; no code change). censored = undelivered, still alive at the
+    window's end (t0 + life_s > T dt_s) and with an attempt still possible inside its lifetime, or created at or
+    after the end: its outcome is not known. protocol: "drop_retry", or "sf" (store-and-forward with custody; "sf_ll", the
     same model run on a lost_link_plan output, is accepted as a name for it); anything else is refused (B-120 G:
     before, every string but "drop_retry" ran as sf). Stores (store-and-forward): every node holds at most
     queue_bytes; a full store drops a new bundle at creation, and a full relay refuses custody until it has room;

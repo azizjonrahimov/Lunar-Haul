@@ -11516,3 +11516,55 @@ Commit set per item:
   test_smap.py; reports/review_phase6_code.md.
 - H: lunarsim/vv6.py, lunarsim/nn/train.py; tests/test_nn_integrity.py.
 - And .team/reports.md.
+
+- BACKEND 16:44: B-121 4, one E54 engine run (seed 1 link-share reproduction, ~1 min, under 1 GB) in the foreground, gated at 0.8 GB.
+
+## BACKEND: B-121 done (14 Nov 2026). No stored value moves; no fingerprint read by a paper or the site moves. One results file gains one key.
+
+Commit set: lunarsim/nn/evaluate.py, tools/atc/run_e54.py, tools/atc/phase6_family.py, lunarsim/atc/dtn.py (docstring only),
+results/phase6_family.json (+1 line), tests/test_nn_integrity.py, tests/test_dtn.py, reports/review_phase6_code.md (section O).
+Not in git: the 30 .cache/atc/e54/link_s*.json files are now stamped; originals are in .cache/atc/e54_link_pre_b121.
+
+1. Option chosen: fa_per_pair_day.ci95 stays the published 200-resample interval. evaluate_set uses idx[:FA_BOOT_PUBLISHED]
+   (= 200; the 1,000 draws are still drawn, so the random stream is unchanged). The 1,000-resample interval stays under
+   onset_context_and_fa_interval_b118.fa_per_pair_day_ci95_1000. This moves nothing in results/E56_integrity.json, and a
+   --force rerun now reproduces the stored interval that --onset-fa checks. (The B-120 E change to all 1,000 is reverted.)
+2. New carry_over(prev, out). It keeps landscape and superseded_* as before.
+   - h15_resample_counts_b118 is kept only if its sets are non-empty, every reproduces flag is true, and each set's fresh
+     h15_net_against (intervals and resample counts) equals the stored one exactly.
+   - onset_context_and_fa_interval_b118 is kept only if its flags are true and dataset_sha256, the thresholds, every recall
+     and the 200-resample FA interval are unchanged.
+   - Otherwise the block is dropped and the command to run (--resample-counts or --onset-fa) is printed.
+   On the stored file, carry_over(doc, doc) keeps both addenda.
+3. h14 loads the cells through run_e54._load_cache (code check), raises on no cells, and takes the seed count from the data
+   ("{len(S)} seeds").
+   - The family was regenerated into a scratch copy. It is byte-identical to the committed file apart from one added top-level
+     line, "e54_code": "c3c3b2880e33888c" (after e50_code). Since that met your condition, I wrote it to results/phase6_family.json.
+   - The file therefore changes by that one line. Every H value, p and decision is unchanged (H14 p 0.00195, Holm 0.00391).
+4. link_s*.json files now carry code (= the E54 fingerprint, unchanged at c3c3b2880e33888c) and link_code
+   (cmd_linkshare's AST digest, d8d2fd0f89a511cb).
+   - build() loads them through _load_cache with the extra stamp (_load_links) and refuses a seed set that differs from the
+     cells'. _load_cache now reads the seed from the file name's trailing digits.
+   - No rerun was needed. The 30 files all had the same mtime (13:35:42, copied back during the B-120 cache shuffle), so I
+     reproduced seeds 1 and 30 with the current code: exactly equal, 11-12 s each. I then stamped all 30 with values unchanged.
+     A full rerun of all 30 would take about 6 min if you want one.
+   - Reading the files in seed order moved linked_share_driving_time in its last digit (0.566360139904384 ->
+     0.5663601399043842: the mean was taken in another order). build() therefore averages in file-name order as before.
+   - Checked into scratch: build + v02build reproduce E54_dtn.json, E54_table.csv and E54_table_v02.csv byte for byte.
+     build alone lacks only lrip_v02 (existing behaviour; listed in O).
+5. New run_e54._write_json: json.dumps(allow_nan=False) first, then a .tmp file and os.replace. It is used for the three
+   results writes (build, v02build, ledger). A NaN now leaves the old file as it was and no .tmp behind.
+6. - resample_counts_not_reproduced fails on no set or on a set with no comparison.
+   - resample_counts lists a stored set that the cache lacks as {} (so it fails); onset_fa_not_reproduced fails the same way.
+   - The --onset-fa score files pass the same gate as main (new score_gate(); main's all_scores uses it too). All five
+     scores_final_*.npz are unstamped, so --onset-fa now needs --accept-unstamped-scores, as the evaluation does.
+   - The write-or-exit logic moved into addendum_cli(argv) -> int.
+   - Live check: --resample-counts on the real cache still reproduces all 180 comparisons (60 per set), nothing written.
+     --onset-fa was not rerun (its computation is unchanged).
+Docstring: dtn.simulate now states the exact expired rule. Expired includes "next attempt after the lifetime" in every step,
+the last one included, so a deadline within one retry_s or custody_timer_s after the window's end gives expired, not censored.
+E54 fingerprint still c3c3b2880e33888c (docstrings not hashed).
+Tests (one file at a time): test_nn_integrity 20 passed (3 new: carry-over, empty cache refused, score gate);
+test_dtn 28 passed (2 new: results file written whole, link files stamped and seed-checked); test_e50_build 6 passed.
+Site node tests were not run (phase6_family.json only gains a key).
+Section O: the eight follow-ups as one line each, plus the build-alone note, and a "Done in B-121" line.

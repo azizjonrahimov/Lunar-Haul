@@ -39,6 +39,7 @@ import csv
 import glob
 import json
 import os
+import re
 import sys
 import time
 import warnings
@@ -227,6 +228,16 @@ def _write_cache(path, obj):
     reader other than Python's accepts and which would reach the results files."""
     with open(path + ".tmp", "w", encoding="utf-8") as f:
         json.dump(obj, f, allow_nan=False)
+    os.replace(path + ".tmp", path)
+
+
+def _write_json(path, obj):
+    """B-121 5: a results file written whole: serialised first (allow_nan=False raises on NaN or infinity before
+    anything is written), then a temporary file renamed over the old one, so a failure leaves the old file (and the
+    superseded blocks that live only there) as it was. Before, json.dump raised mid-stream and left it truncated."""
+    text = json.dumps(obj, indent=1, allow_nan=False) + "\n"
+    with open(path + ".tmp", "w", encoding="utf-8", newline="\n") as f:
+        f.write(text)
     os.replace(path + ".tmp", path)
 
 
@@ -509,9 +520,7 @@ def build_v02():
     blk["max_queue_bytes_bound"] = {nm: int(max(sum(c["kinds"][k]["bytes"] for k in c["kinds"])
                                                 for s in S for c in s["sets"][nm]["cells"])) for nm in sz}
     old["lrip_v02"] = blk
-    with open(OUT_JSON, "w", encoding="utf-8", newline="\n") as f:
-        json.dump(old, f, indent=1, allow_nan=False)
-        f.write("\n")
+    _write_json(OUT_JSON, old)
     rows = [dict(r, size_set=nm) for nm in ("v0.2", "v0.2_proximity1") for r in sets[nm][0]]
     with open(OUT_CSV.replace(".csv", "_v02.csv"), "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=["size_set"] + [k for k in rows[0] if k != "size_set"])
@@ -523,11 +532,14 @@ def build_v02():
 
 def cmd_linkshare(seeds, max_s):
     """B-98a follow-up (LEAD): per seed, the share of vehicle-time linked to the base, of all time and of driving
-    time (the contact plan of run_seed), cached as link_s<seed>.json; build() averages them."""
+    time (the contact plan of run_seed), cached as link_s<seed>.json; build() averages them. B-121 4: each file
+    carries code (code_fingerprint) and link_code (link_code(): this function), and build() refuses files with other
+    codes or another seed set than the cells."""
     import run_e50 as E5
     from lunarsim.atc import dtn as DT
     t0 = time.time()
     os.makedirs(CACHE, exist_ok=True)
+    stamp = {"code": code_fingerprint(), "link_code": link_code()}
     month, t0h, t1h, share = E5._window()
     for s in seeds:
         p = os.path.join(CACHE, f"link_s{s}.json")
@@ -542,7 +554,7 @@ def cmd_linkshare(seeds, max_s):
         hb = DT.base_hops(DT.contact_plan(tr, g["los"], g["ids"]["BASE"]))
         mv = tr.ds > 0
         _write_cache(p, {"seed": s, "linked_all": float((hb >= 0).mean()),
-                         "linked_driving": float((hb[mv] >= 0).mean()), "driving_share": float(mv.mean())})
+                         "linked_driving": float((hb[mv] >= 0).mean()), "driving_share": float(mv.mean()), **stamp})
         print(f"link s{s} done", flush=True)
     print("all requested seeds done", flush=True)
 
@@ -570,15 +582,38 @@ def _boot(x, seed=0):
     return {"n": int(len(x)), "mean": float(x.mean()), "ci": [float(np.quantile(m, 0.025)), float(np.quantile(m, 0.975))]}
 
 
-def _load_cache(path_glob):
-    """Cache files in seed order; B-118 N21: all made with the current code, else refuse."""
-    files = sorted(glob.glob(path_glob), key=lambda p: int(os.path.basename(p)[1:-5]))
-    S = [json.load(open(p)) for p in files]
-    fp = code_fingerprint()
-    bad = sorted({s.get("code") for s in S} - {fp}, key=str)
-    if bad:
-        raise SystemExit(f"cache made with other code ({bad}; current {fp}): rerun the seeds")
+def _load_cache(path_glob, extra=None):
+    """Cache files in seed order; B-118 N21: all made with the current code, else refuse. B-121 4: extra = {key:
+    value} further stamps every file must carry (link_code for the link files); the seed is the file name's trailing
+    number (s<seed>.json, link_s<seed>.json)."""
+    files = sorted(glob.glob(path_glob), key=lambda p: int(re.search(r"(\d+)\.json$", p).group(1)))
+    S = []
+    for p in files:
+        with open(p, encoding="utf-8") as f:
+            S.append(json.load(f))
+    want = dict({"code": code_fingerprint()}, **(extra or {}))
+    for k, v in want.items():
+        bad = sorted({s.get(k) for s in S} - {v}, key=str)
+        if bad:
+            raise SystemExit(f"cache {path_glob} made with other {k} ({bad}; current {v}): rerun the seeds")
     return S
+
+
+def link_code():
+    """B-121 4: cmd_linkshare's own code (without docstrings or comments), stamped on the link files beside code."""
+    import hashlib
+    import inspect
+    return hashlib.sha256(_ast_digest(inspect.getsource(cmd_linkshare)).encode()).hexdigest()[:16]
+
+
+def _load_links(seeds):
+    """B-121 4: the link files, each stamped with the current code and link_code, for exactly the cells' seeds (none
+    at all is allowed: build() then writes link_shares null, as before)."""
+    L = _load_cache(os.path.join(CACHE, "link_s[0-9]*.json"), {"link_code": link_code()})
+    if L and [x["seed"] for x in L] != list(seeds):
+        raise SystemExit(f"link files for seeds {[x['seed'] for x in L]}, cells for seeds {list(seeds)}: run "
+                         "linkshare for the cells' seeds")
+    return L
 
 
 LOST_LINK_NOTE = ("Lost-link return (sf_ll): rule 'papers', as the papers state it, corrected after code review on "
@@ -607,7 +642,9 @@ def build():
         w.writerows(rows)
     h14 = dict({"rule": "loss 0.25, 14-day Earth blackout: lost jobs (expired awards) sf_ll minus drop_retry, paired "
                         "bootstrap CI excludes 0 below; and no reservation stuck past its timeout under sf_ll"}, **h14)
-    L = [json.load(open(p)) for p in sorted(glob.glob(os.path.join(CACHE, "link_s*.json")))]
+    # B-121 4: the means are taken in file-name order (link_s1, link_s10, ...), as the published ones were, so that
+    # no last digit moves
+    L = sorted(_load_links([s["seed"] for s in S]), key=lambda x: f"link_s{x['seed']}.json")
     link = ({"seeds": len(L), "linked_share_all_time": float(np.mean([x["linked_all"] for x in L])),
              "linked_share_driving_time": float(np.mean([x["linked_driving"] for x in L])),
              "linked_share_driving_time_min_max": [float(min(x["linked_driving"] for x in L)),
@@ -660,9 +697,7 @@ def build():
                 "rows": old.get("rows"), "h14": old.get("h14"), "h14_variants": old.get("h14_variants"),
                 "lrip_v02": {k: old["lrip_v02"].get(k) for k in ("rows", "h14", "verdicts", "values_moved_vs_v01")}
                 if "lrip_v02" in old else None}
-    with open(OUT_JSON, "w", encoding="utf-8", newline="\n") as f:
-        json.dump(doc, f, indent=1, allow_nan=False)
-        f.write("\n")
+    _write_json(OUT_JSON, doc)
     print(json.dumps(h14, indent=1))
 
 
@@ -752,9 +787,7 @@ def ledger(seeds=range(1, 31)):
     if os.path.isfile(p):                                    # B-118: earlier values stay under dated keys
         old = json.load(open(p, encoding="utf-8"))
         out.update({k: v for k, v in old.items() if k.startswith("superseded_")})
-    with open(p, "w", encoding="utf-8", newline="\n") as f:
-        json.dump(out, f, indent=1, allow_nan=False)
-        f.write("\n")
+    _write_json(p, out)
     return out
 
 

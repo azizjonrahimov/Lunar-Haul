@@ -127,6 +127,7 @@
   "8x": 5
  },
  "e50_code": "5bf22fa6d5ccfe47",
+ "e54_code": "c3c3b2880e33888c",
  "superseded_2026-11-13_b118_n15": {
   "reason": "B-118 N14/N15 (positioning fix in lunarsim/atc/pnt.py: a ranging or fix update at a vehicle's arrival step, and the reservation count): the values below were made with the code before the fix and are kept as they were; the file's other values come from the regenerated cells",
   "superseded_on": "2026-11-13",
