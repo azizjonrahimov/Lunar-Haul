@@ -212,3 +212,59 @@ block `superseded_2026-11-14_b120_b`. Build checks confirm that nothing else in 
 rerun). The builder selects the file's two superseded blocks by key. The floor of the age of information in the
 same note (30 s) is read from the file and no longer typed. Table 11's caption says "by the month's end". No
 finding changes status. Everything here is simulation. HTML only; the PDF is not rebuilt.
+
+## Pass for three control runs (14 Nov): B-117 a, b, c
+
+Three controls the referees named were run by BACKEND after the results were known; the paper calls each a control
+and never a pre-registered test. Every number is read from the control's results file through build checks. No value
+printed before moves.
+
+| Finding | Was | Now | What changed | Where |
+|---|---|---|---|---|
+| S3 | Fixed in part | Fixed | The marketplace was run with the auction's return move (`B117a_oracle_rally.json`): 14.09 h against 14.93 h without it and 14.09 h for the auction; auction minus marketplace-with-move +0.01 h (-0.98 to 0.96). The paper now says the auction's 0.84 h lead in the point estimate is the return move, not the place of the decision. The move's own effect on the marketplace (-0.85 h, -2.68 to 0.76) is stated as not distinguishable from zero. | abstract, 1, 5.4, 6.1, 6.2, 6.5, 7, 8, Table 12 |
+| S11 | Fixed in part | Fixed | Depths 2 and 5 at loss 0 (`B117b_depth_loss0.json`): +2.6 h (0.5 to 4.6) and +4.8 h (2.8 to 6.7); stale claims the same at every loss; the part due to loss excludes zero only at depth 5 and loss 0.40 (+5.3 h, 2.9 to 7.6, of 10.0 h); depth 1 best at every loss. The sentence on Lott and Honary now says what agrees and what cannot be seen here. | 5.5, 6.5, Table 12 |
+| S12 | Fixed in part | Fixed | Ablation and tuned hand-built rule (`B117c_bid_ablation.json`): without the slack weight the linear policy has no gain over hand-built bids; priority adds 0.76 h; three weights change nothing; eight are unresolved. The tuned rule waits 9.63 h at 30 % load, 1.97 h less than the linear bids (1.04 to 2.92); at 60 % it equals the rule as written and the linear bids stay 30.6 h ahead (14.9 to 48.8), the 60 % references being stored evaluation runs, not repeated. | abstract, 1 (text and contribution 4), 5.6, 6.1, 6.2, 6.3, 6.5, 7, 8, Table 12 |
+
+Also in this pass: 4.6 names the three controls as additions made after the results; Limitations gains an item on
+them (run after the results, tuned at one load only, one weight at a time without refitting, 60 % references not
+repeated, the return move in one cell); 6.5 lists two control runs as still open (uncapped drop and retry, another
+ownership split), not four. To hold the word limits (abstract 300, conclusion 250) the closing relay sentence was
+removed from both, with "for delivery" and "to delivery"; the relay comparison stays in 5.4 and 6.3. "Two of our
+regimes beat it" in the introduction now reads "the learned linear bids beat it".
+
+Tally of the 37 findings: 30 fixed (S3, S11, S12 added), 6 fixed in part, 0 awaiting a task, 1 not done (O2).
+Everything here is simulation. HTML only; the PDF is not rebuilt.
+
+## Fixed-point rerun of the learned-bid evaluation and of control (c) (15 Nov): B-122
+
+The 12 Nov rerun of the learned-bid evaluation (`ATC_learned_eval_rerun.json`), which answered M8, and the first run
+of control (c) ran without PREREG change 5, the dispatch fixed point: `train_bid` never set the opt-in flag. P1 said
+"rerun on the corrected engine", which was wrong for change 5. Every learned-bid value P1 prints now comes from
+`results/ATC_learned_eval_fixpoint.json`, whose hand bids at 30 % equal E40's auction runs run for run and whose means
+equal E40's cells at both loads. 4.6 says this once, with the old and new headline values (linear minus hand at 30 %:
+-2.49 h, -4.15 to -0.82, -> -2.32 h, -4.09 to -0.55; at 60 %: -30.3 h -> -31.5 h, -38.4 to -24.6). Limitations say
+the policies were trained without the fixed point and not retrained.
+
+What changes in the text:
+- Other cargo at 30 % load (M8's guard check): it now comes out clean on the fixed point (bulk delay -0.09 h, -0.41
+  to 0.22; urgent -2.41 h, -4.72 to -0.10; no guard metric worsens at 30 or 60 %). The text says it did not on the
+  engine without it (bulk +0.23 h, 0.02 to 0.44). The Limitations item "not shown to be free for other cargo at the
+  middle load" is removed.
+- Table 6: light load loses its interval clear of zero (-2.19 h, -4.43 to 0.05); two of five cells are clear of zero
+  (two owners, loss 0.25 at -3.71 h). "Year 2038" still repeats the 30 % guard cell and is not counted.
+- Control (c), S12: the gain is still the slack weight (+2.45 h when removed; slack-zeroed minus hand +0.13, -1.05 to
+  1.39); priority +0.78 h; new: removing the landing weight lowers the wait by 0.37 h (0.11 to 0.66). The hand rule,
+  selected again on this engine, picks a different point (32.3 h, 1.9 h, 0.040 h, 1.50 against 26.2 h, 3.3 h, 0.028
+  h, 1.83), which the text states. At 30 % the tuned rule beats the linear bids by 2.82 h (1.85 to 3.82). At 60 %
+  the conclusion changes: the tuned rule gains 18.7 h over the rule as written (6.6 to 29.1) and the linear bids stay
+  12.8 h ahead (3.2 to 25.2). The 60 % rows were repeated; the earlier caveat that they were stored runs is removed.
+  Abstract and conclusion: "a likewise-tuned hand rule beat the linear bids at 30 % and cut their lead at 60 %".
+- Limitations: with the fixed point on, the run that records the marketplace's choice for the agreement figures loses
+  a wake-up of the dispatcher (the teacher's marketplace call marks a wake-up as pending while its scheduling is
+  switched off, so the real dispatch skips its own); cause found, not fixed; outcomes come from runs without
+  recording; the agreement figures of 5.11 come from recording runs and the text says so beside them.
+- H4: unchanged. Its decisions come from E40 (Table 7), which already ran on the fixed point; the evaluation file's
+  differences equal E40's H4 rows, checked in the build.
+
+Tally unchanged: 30 fixed, 6 fixed in part, 1 not done (O2). M8 stays fixed; its rerun is now on the right engine.
+Simulation only. HTML only.

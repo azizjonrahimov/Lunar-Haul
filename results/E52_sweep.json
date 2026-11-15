@@ -1,0 +1,687 @@
+{
+ "task": "B-117 (j2), P3 S17: E52 change rates swept one at a time",
+ "note": "python tools/atc/b117j2_e52_sweep.py      # -> results/E52_sweep.json (a new file; seconds per setting) E52 (tools/atc/run_e52.py) has one setting of its assumed change rates: 42 route tiles a day get new versions (note 02\nD, ASSUMED there), 2 new hazards a day, 0.3 keep-outs a day and 5 road edges a day (ASSUMED). Here each rate is varied\nalone, the others at their defaults, on E52's seeds (1-30) and code (run_e52.run_seed with the module's rates set):\ntiles a day {10, 21, 42, 84}, hazards a day {0.5, 1, 2, 5, 10}, keep-outs a day {0, 0.3, 1, 3}, road edges a day\n{0, 5, 20, 50}. Per setting: H12's two clauses (hazards-first bytes after 24 h against a full resend, at 100 kbit/s;\nthe hazard layer current sooner than oldest-first at every link rate, 24 h) and the stale-map hits after 24 h and 7 d\nat 16 kbit/s. The default setting must reproduce results/E52_map.json's h12 and rows (a check; refused otherwise).\nPre-declared in the B-117 estimate (13 Nov) as the change rates; the grids are fixed here before any row.",
+ "defaults": {
+  "TILES_PER_DAY": 42,
+  "HAZARD_PER_DAY": 2.0,
+  "KEEPOUT_PER_DAY": 0.3,
+  "ROAD_EDGES_PER_DAY": 5.0
+ },
+ "default_reproduces_E52_map_h12": true,
+ "seeds": 30,
+ "sweeps": {
+  "TILES_PER_DAY": {
+   "10": {
+    "share_of_full_resend_24h": 0.00255,
+    "sooner_at_every_rate": {
+     "10": true,
+     "16": true,
+     "100": true,
+     "1000": true
+    },
+    "h12_supported": true,
+    "t_hazards_current_24h_s": {
+     "hazards_first": {
+      "10": 26.92,
+      "16": 16.82,
+      "100": 2.69,
+      "1000": 0.27
+     },
+     "oldest_first": {
+      "10": 448.78,
+      "16": 280.49,
+      "100": 44.88,
+      "1000": 4.49
+     }
+    },
+    "tiles_changed_24h": 31.7,
+    "hits_during_outage": {
+     "24 h": 0.9,
+     "168 h": 6.4
+    },
+    "hits_after_contact_16kbps": {
+     "24 h": {
+      "hazards_first": 0.0,
+      "oldest_first": 0.0333
+     },
+     "168 h": {
+      "hazards_first": 0.1,
+      "oldest_first": 0.5
+     }
+    }
+   },
+   "21": {
+    "share_of_full_resend_24h": 0.00532,
+    "sooner_at_every_rate": {
+     "10": true,
+     "16": true,
+     "100": true,
+     "1000": true
+    },
+    "h12_supported": true,
+    "t_hazards_current_24h_s": {
+     "hazards_first": {
+      "10": 49.49,
+      "16": 30.93,
+      "100": 4.95,
+      "1000": 0.49
+     },
+     "oldest_first": {
+      "10": 955.35,
+      "16": 597.1,
+      "100": 95.54,
+      "1000": 9.55
+     }
+    },
+    "tiles_changed_24h": 64.3,
+    "hits_during_outage": {
+     "24 h": 0.9,
+     "168 h": 6.983
+    },
+    "hits_after_contact_16kbps": {
+     "24 h": {
+      "hazards_first": 0.0,
+      "oldest_first": 0.0667
+     },
+     "168 h": {
+      "hazards_first": 0.0667,
+      "oldest_first": 0.7333
+     }
+    }
+   },
+   "42": {
+    "share_of_full_resend_24h": 0.01059,
+    "sooner_at_every_rate": {
+     "10": true,
+     "16": true,
+     "100": true,
+     "1000": true
+    },
+    "h12_supported": true,
+    "t_hazards_current_24h_s": {
+     "hazards_first": {
+      "10": 92.22,
+      "16": 57.64,
+      "100": 9.22,
+      "1000": 0.92
+     },
+     "oldest_first": {
+      "10": 1925.52,
+      "16": 1203.45,
+      "100": 192.55,
+      "1000": 19.26
+     }
+    },
+    "tiles_changed_24h": 126.5,
+    "hits_during_outage": {
+     "24 h": 0.783,
+     "168 h": 6.667
+    },
+    "hits_after_contact_16kbps": {
+     "24 h": {
+      "hazards_first": 0.0333,
+      "oldest_first": 0.0833
+     },
+     "168 h": {
+      "hazards_first": 0.0833,
+      "oldest_first": 0.8167
+     }
+    }
+   },
+   "84": {
+    "share_of_full_resend_24h": 0.01512,
+    "sooner_at_every_rate": {
+     "10": true,
+     "16": true,
+     "100": true,
+     "1000": true
+    },
+    "h12_supported": true,
+    "t_hazards_current_24h_s": {
+     "hazards_first": {
+      "10": 128.78,
+      "16": 80.49,
+      "100": 12.88,
+      "1000": 1.29
+     },
+     "oldest_first": {
+      "10": 2769.34,
+      "16": 1730.84,
+      "100": 276.93,
+      "1000": 27.69
+     }
+    },
+    "tiles_changed_24h": 180.0,
+    "hits_during_outage": {
+     "24 h": 0.833,
+     "168 h": 7.633
+    },
+    "hits_after_contact_16kbps": {
+     "24 h": {
+      "hazards_first": 0.0,
+      "oldest_first": 0.0167
+     },
+     "168 h": {
+      "hazards_first": 0.0333,
+      "oldest_first": 0.65
+     }
+    }
+   }
+  },
+  "HAZARD_PER_DAY": {
+   "0.5": {
+    "share_of_full_resend_24h": 0.01059,
+    "sooner_at_every_rate": {
+     "10": true,
+     "16": true,
+     "100": true,
+     "1000": true
+    },
+    "h12_supported": true,
+    "t_hazards_current_24h_s": {
+     "hazards_first": {
+      "10": 91.63,
+      "16": 57.27,
+      "100": 9.16,
+      "1000": 0.92
+     },
+     "oldest_first": {
+      "10": 1924.89,
+      "16": 1203.06,
+      "100": 192.49,
+      "1000": 19.25
+     }
+    },
+    "tiles_changed_24h": 126.2,
+    "hits_during_outage": {
+     "24 h": 0.267,
+     "168 h": 1.85
+    },
+    "hits_after_contact_16kbps": {
+     "24 h": {
+      "hazards_first": 0.0,
+      "oldest_first": 0.0333
+     },
+     "168 h": {
+      "hazards_first": 0.0833,
+      "oldest_first": 0.2333
+     }
+    }
+   },
+   "1.0": {
+    "share_of_full_resend_24h": 0.01059,
+    "sooner_at_every_rate": {
+     "10": true,
+     "16": true,
+     "100": true,
+     "1000": true
+    },
+    "h12_supported": true,
+    "t_hazards_current_24h_s": {
+     "hazards_first": {
+      "10": 91.47,
+      "16": 57.17,
+      "100": 9.15,
+      "1000": 0.91
+     },
+     "oldest_first": {
+      "10": 1924.75,
+      "16": 1202.97,
+      "100": 192.47,
+      "1000": 19.25
+     }
+    },
+    "tiles_changed_24h": 126.2,
+    "hits_during_outage": {
+     "24 h": 0.35,
+     "168 h": 3.033
+    },
+    "hits_after_contact_16kbps": {
+     "24 h": {
+      "hazards_first": 0.0,
+      "oldest_first": 0.0333
+     },
+     "168 h": {
+      "hazards_first": 0.0333,
+      "oldest_first": 0.3333
+     }
+    }
+   },
+   "2.0": {
+    "share_of_full_resend_24h": 0.01059,
+    "sooner_at_every_rate": {
+     "10": true,
+     "16": true,
+     "100": true,
+     "1000": true
+    },
+    "h12_supported": true,
+    "t_hazards_current_24h_s": {
+     "hazards_first": {
+      "10": 92.22,
+      "16": 57.64,
+      "100": 9.22,
+      "1000": 0.92
+     },
+     "oldest_first": {
+      "10": 1925.52,
+      "16": 1203.45,
+      "100": 192.55,
+      "1000": 19.26
+     }
+    },
+    "tiles_changed_24h": 126.5,
+    "hits_during_outage": {
+     "24 h": 0.783,
+     "168 h": 6.667
+    },
+    "hits_after_contact_16kbps": {
+     "24 h": {
+      "hazards_first": 0.0333,
+      "oldest_first": 0.0833
+     },
+     "168 h": {
+      "hazards_first": 0.0833,
+      "oldest_first": 0.8167
+     }
+    }
+   },
+   "5.0": {
+    "share_of_full_resend_24h": 0.01061,
+    "sooner_at_every_rate": {
+     "10": true,
+     "16": true,
+     "100": true,
+     "1000": true
+    },
+    "h12_supported": true,
+    "t_hazards_current_24h_s": {
+     "hazards_first": {
+      "10": 94.36,
+      "16": 58.98,
+      "100": 9.44,
+      "1000": 0.94
+     },
+     "oldest_first": {
+      "10": 1934.36,
+      "16": 1208.98,
+      "100": 193.44,
+      "1000": 19.34
+     }
+    },
+    "tiles_changed_24h": 127.6,
+    "hits_during_outage": {
+     "24 h": 2.217,
+     "168 h": 17.3
+    },
+    "hits_after_contact_16kbps": {
+     "24 h": {
+      "hazards_first": 0.0667,
+      "oldest_first": 0.2167
+     },
+     "168 h": {
+      "hazards_first": 0.2167,
+      "oldest_first": 2.05
+     }
+    }
+   },
+   "10.0": {
+    "share_of_full_resend_24h": 0.01062,
+    "sooner_at_every_rate": {
+     "10": true,
+     "16": true,
+     "100": true,
+     "1000": true
+    },
+    "h12_supported": true,
+    "t_hazards_current_24h_s": {
+     "hazards_first": {
+      "10": 96.77,
+      "16": 60.48,
+      "100": 9.68,
+      "1000": 0.97
+     },
+     "oldest_first": {
+      "10": 1943.73,
+      "16": 1214.83,
+      "100": 194.37,
+      "1000": 19.44
+     }
+    },
+    "tiles_changed_24h": 128.7,
+    "hits_during_outage": {
+     "24 h": 4.333,
+     "168 h": 33.867
+    },
+    "hits_after_contact_16kbps": {
+     "24 h": {
+      "hazards_first": 0.1333,
+      "oldest_first": 0.4833
+     },
+     "168 h": {
+      "hazards_first": 0.5333,
+      "oldest_first": 3.65
+     }
+    }
+   }
+  },
+  "KEEPOUT_PER_DAY": {
+   "0.0": {
+    "share_of_full_resend_24h": 0.01059,
+    "sooner_at_every_rate": {
+     "10": true,
+     "16": true,
+     "100": true,
+     "1000": true
+    },
+    "h12_supported": true,
+    "t_hazards_current_24h_s": {
+     "hazards_first": {
+      "10": 92.14,
+      "16": 57.59,
+      "100": 9.21,
+      "1000": 0.92
+     },
+     "oldest_first": {
+      "10": 1925.4,
+      "16": 1203.38,
+      "100": 192.54,
+      "1000": 19.25
+     }
+    },
+    "tiles_changed_24h": 126.5,
+    "hits_during_outage": {
+     "24 h": 0.783,
+     "168 h": 6.667
+    },
+    "hits_after_contact_16kbps": {
+     "24 h": {
+      "hazards_first": 0.0333,
+      "oldest_first": 0.0833
+     },
+     "168 h": {
+      "hazards_first": 0.0833,
+      "oldest_first": 0.8167
+     }
+    }
+   },
+   "0.3": {
+    "share_of_full_resend_24h": 0.01059,
+    "sooner_at_every_rate": {
+     "10": true,
+     "16": true,
+     "100": true,
+     "1000": true
+    },
+    "h12_supported": true,
+    "t_hazards_current_24h_s": {
+     "hazards_first": {
+      "10": 92.22,
+      "16": 57.64,
+      "100": 9.22,
+      "1000": 0.92
+     },
+     "oldest_first": {
+      "10": 1925.52,
+      "16": 1203.45,
+      "100": 192.55,
+      "1000": 19.26
+     }
+    },
+    "tiles_changed_24h": 126.5,
+    "hits_during_outage": {
+     "24 h": 0.783,
+     "168 h": 6.667
+    },
+    "hits_after_contact_16kbps": {
+     "24 h": {
+      "hazards_first": 0.0333,
+      "oldest_first": 0.0833
+     },
+     "168 h": {
+      "hazards_first": 0.0833,
+      "oldest_first": 0.8167
+     }
+    }
+   },
+   "1.0": {
+    "share_of_full_resend_24h": 0.01059,
+    "sooner_at_every_rate": {
+     "10": true,
+     "16": true,
+     "100": true,
+     "1000": true
+    },
+    "h12_supported": true,
+    "t_hazards_current_24h_s": {
+     "hazards_first": {
+      "10": 92.36,
+      "16": 57.72,
+      "100": 9.24,
+      "1000": 0.92
+     },
+     "oldest_first": {
+      "10": 1925.65,
+      "16": 1203.53,
+      "100": 192.56,
+      "1000": 19.26
+     }
+    },
+    "tiles_changed_24h": 126.5,
+    "hits_during_outage": {
+     "24 h": 0.783,
+     "168 h": 6.667
+    },
+    "hits_after_contact_16kbps": {
+     "24 h": {
+      "hazards_first": 0.0333,
+      "oldest_first": 0.0833
+     },
+     "168 h": {
+      "hazards_first": 0.0833,
+      "oldest_first": 0.8167
+     }
+    }
+   },
+   "3.0": {
+    "share_of_full_resend_24h": 0.0106,
+    "sooner_at_every_rate": {
+     "10": true,
+     "16": true,
+     "100": true,
+     "1000": true
+    },
+    "h12_supported": true,
+    "t_hazards_current_24h_s": {
+     "hazards_first": {
+      "10": 93.09,
+      "16": 58.18,
+      "100": 9.31,
+      "1000": 0.93
+     },
+     "oldest_first": {
+      "10": 1926.34,
+      "16": 1203.96,
+      "100": 192.63,
+      "1000": 19.26
+     }
+    },
+    "tiles_changed_24h": 126.5,
+    "hits_during_outage": {
+     "24 h": 0.783,
+     "168 h": 6.667
+    },
+    "hits_after_contact_16kbps": {
+     "24 h": {
+      "hazards_first": 0.0333,
+      "oldest_first": 0.0833
+     },
+     "168 h": {
+      "hazards_first": 0.0833,
+      "oldest_first": 0.8167
+     }
+    }
+   }
+  },
+  "ROAD_EDGES_PER_DAY": {
+   "0.0": {
+    "share_of_full_resend_24h": 0.01059,
+    "sooner_at_every_rate": {
+     "10": true,
+     "16": true,
+     "100": true,
+     "1000": true
+    },
+    "h12_supported": true,
+    "t_hazards_current_24h_s": {
+     "hazards_first": {
+      "10": 92.22,
+      "16": 57.64,
+      "100": 9.22,
+      "1000": 0.92
+     },
+     "oldest_first": {
+      "10": 1925.29,
+      "16": 1203.31,
+      "100": 192.53,
+      "1000": 19.25
+     }
+    },
+    "tiles_changed_24h": 126.5,
+    "hits_during_outage": {
+     "24 h": 0.783,
+     "168 h": 6.667
+    },
+    "hits_after_contact_16kbps": {
+     "24 h": {
+      "hazards_first": 0.0333,
+      "oldest_first": 0.0833
+     },
+     "168 h": {
+      "hazards_first": 0.0833,
+      "oldest_first": 0.8167
+     }
+    }
+   },
+   "5.0": {
+    "share_of_full_resend_24h": 0.01059,
+    "sooner_at_every_rate": {
+     "10": true,
+     "16": true,
+     "100": true,
+     "1000": true
+    },
+    "h12_supported": true,
+    "t_hazards_current_24h_s": {
+     "hazards_first": {
+      "10": 92.22,
+      "16": 57.64,
+      "100": 9.22,
+      "1000": 0.92
+     },
+     "oldest_first": {
+      "10": 1925.52,
+      "16": 1203.45,
+      "100": 192.55,
+      "1000": 19.26
+     }
+    },
+    "tiles_changed_24h": 126.5,
+    "hits_during_outage": {
+     "24 h": 0.783,
+     "168 h": 6.667
+    },
+    "hits_after_contact_16kbps": {
+     "24 h": {
+      "hazards_first": 0.0333,
+      "oldest_first": 0.0833
+     },
+     "168 h": {
+      "hazards_first": 0.0833,
+      "oldest_first": 0.8167
+     }
+    }
+   },
+   "20.0": {
+    "share_of_full_resend_24h": 0.0106,
+    "sooner_at_every_rate": {
+     "10": true,
+     "16": true,
+     "100": true,
+     "1000": true
+    },
+    "h12_supported": true,
+    "t_hazards_current_24h_s": {
+     "hazards_first": {
+      "10": 92.22,
+      "16": 57.64,
+      "100": 9.22,
+      "1000": 0.92
+     },
+     "oldest_first": {
+      "10": 1926.09,
+      "16": 1203.81,
+      "100": 192.61,
+      "1000": 19.26
+     }
+    },
+    "tiles_changed_24h": 126.5,
+    "hits_during_outage": {
+     "24 h": 0.783,
+     "168 h": 6.667
+    },
+    "hits_after_contact_16kbps": {
+     "24 h": {
+      "hazards_first": 0.0333,
+      "oldest_first": 0.0833
+     },
+     "168 h": {
+      "hazards_first": 0.0833,
+      "oldest_first": 0.8167
+     }
+    }
+   },
+   "50.0": {
+    "share_of_full_resend_24h": 0.0106,
+    "sooner_at_every_rate": {
+     "10": true,
+     "16": true,
+     "100": true,
+     "1000": true
+    },
+    "h12_supported": true,
+    "t_hazards_current_24h_s": {
+     "hazards_first": {
+      "10": 92.22,
+      "16": 57.64,
+      "100": 9.22,
+      "1000": 0.92
+     },
+     "oldest_first": {
+      "10": 1927.17,
+      "16": 1204.48,
+      "100": 192.72,
+      "1000": 19.27
+     }
+    },
+    "tiles_changed_24h": 126.5,
+    "hits_during_outage": {
+     "24 h": 0.783,
+     "168 h": 6.667
+    },
+    "hits_after_contact_16kbps": {
+     "24 h": {
+      "hazards_first": 0.0333,
+      "oldest_first": 0.0833
+     },
+     "168 h": {
+      "hazards_first": 0.0833,
+      "oldest_first": 0.8167
+     }
+    }
+   }
+  }
+ },
+ "h12_supported_in_every_setting": true,
+ "run_s": 30.6
+}

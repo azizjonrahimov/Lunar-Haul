@@ -11568,3 +11568,336 @@ Tests (one file at a time): test_nn_integrity 20 passed (3 new: carry-over, empt
 test_dtn 28 passed (2 new: results file written whole, link files stamped and seed-checked); test_e50_build 6 passed.
 Site node tests were not run (phase6_family.json only gains a key).
 Section O: the eight follow-ups as one line each, plus the build-alone note, and a "Done in B-121" line.
+
+- BACKEND 17:22: B-117 started (go from LEAD after b16349c). Item (a): 120 ATC runs of a few s each, one process, chunks under 9 min, gated at 0.8 GB (under 0.5 GB each).
+
+## B-117 (a) and (b) DONE (BACKEND, 14 Nov, on main b16349c). Two NEW results files; no existing results file is touched.
+Machine: single process, OMP 1, gated at 0.8 GB; ATC runs of 2.5-5 s.
+
+### (a) P1 S3: the marketplace with the auction's return-to-coverage move
+- Runner: tools/atc/b117a_oracle_rally.py (run / table) -> results/B117a_oracle_rally.json (new).
+- Design: E40 at 30 % load, block v1, seeds 1-30, with the dispatch fixed point as E40 runs (run_phase5 --fixpoint) and E40's
+  regime arguments (C_AUCTION loss 0.10). 4 cells x 30 runs, all on the current code:
+  - O_ORACLE and C_AUCTION, repeated as a check. They reproduce results/E40_runs.csv exactly: max abs diff 0 on all 5 metrics,
+    all 30 seeds.
+  - "O + rally (unheard)": regimes o_rally="unheard". This is the auction's own trigger and move: an idle robot with no radio
+    path to BASE drives to the nearest site the mast sees (to BASE while the base is down).
+  - "O + rally (all idle)": the B-75 cell, repeated.
+- Results, urgent wait (censored mean, h):
+
+  | cell | urgent wait | rallies a year | deadhead share |
+  |---|---|---|---|
+  | O_ORACLE | 14.932 | 0 | 0.498 |
+  | C_AUCTION | 14.094 | 808.7 | 0.712 |
+  | O + rally (unheard) | 14.086 | 412.4 | 0.635 |
+  | O + rally (all idle) | 14.213 | 418.9 | 0.636 |
+
+- Paired differences (analyse_e40.boot, 95 % CI):
+  - auction - marketplace: -0.84 (-2.91 to 0.95)
+  - marketplace with the move - marketplace: -0.85 (-2.68 to 0.76)
+  - auction - marketplace with the move: +0.008 (-0.98 to 0.96, p 0.97)
+  - all-idle variant - marketplace: -0.72 (-2.87 to 1.15)
+- Reading: given the same move, the full-information marketplace waits as long as the auction, to within 0.01 h. The auction's
+  0.84 h point advantage is the return move, not where the decision is made. That is what P1 5.4 suspected but could not
+  separate. The marketplace does not need the move as often: 412 against 809 rallies a year.
+- Sentences this would change, if you take it into the paper (no printed value moves; these are additions):
+  - P1 5.4 "The marketplace was not run with the same move, so the two cannot be separated here".
+  - P1 6.1 "the marketplace with the same return-to-coverage move" in the list of control runs.
+  - P1 7 "The marketplace was not run with the same move".
+- By-product, not in results: my first pass ran without the fixed point and with the auction at loss 0, a mistake I caught by the
+  check. It reproduced B-75's results/ATC_oracle_diag.json cells exactly (O_ORACLE 14.4684, "O + rally" 14.8252, "C_AUCTION
+  loss 0" 14.9316). So B-75 is reproducible on the current code; it predates PREREG change 5. Kept in
+  .cache/atc/b117a_nofixpoint_noloss.json.
+
+### (b) P1 S11: auction bundle depths 2 and 5 at loss 0
+- Runner: tools/atc/b117b_depth_loss0.py -> results/B117b_depth_loss0.json (new).
+- Design: two new cells, defined as E41 defines its depth cells (cell("E41", ..., block="v1"), fixed point, seeds 1-30):
+  C_AUCTION depth 2 loss 0 and depth 5 loss 0.
+- Check: two E41 cells repeated on the current code, C_AUCTION loss 0 and depth 5 loss 0.25. Both equal
+  results/E41_runs.lead.csv exactly (max abs diff 0, 9 metrics), so the new cells pair with the stored rows. The table step
+  refuses otherwise.
+- Bootstrap: analyse_e41_pairs.paired (20,000 resamples). The three published lossy comparisons come out as P1 prints them:
+  depth 5 at 0.25 +6.0 (4.4 to 7.8), at 0.40 +10.0 (7.6 to 12.6); depth 2 at 0.25 +3.7 (1.8 to 5.5), at 0.40 +5.0 (2.3 to 7.6).
+  P1 prints 2.3 to 7.6 and 7.7 to 12.6; the last digit differs because each comparison here has its own random stream.
+- Results, urgent wait (h): depth 1 / 2 / 5:
+
+  | loss | depth 1 | depth 2 | depth 5 |
+  |---|---|---|---|
+  | 0 | 14.30 | 16.89 | 19.06 |
+  | 0.25 | 15.68 | 19.42 | 21.71 |
+  | 0.40 | 18.16 | 23.18 | 28.20 |
+
+- Depth penalty at loss 0 (95 % CI): depth 2 +2.59 (0.48 to 4.62); depth 5 +4.76 (2.84 to 6.66).
+- Stale claims a year: depth 2 = 84.2 at loss 0 (84.6 and 85.7 lossy); depth 5 = 315.5 at loss 0 (312.6 and 313.9).
+- Part of the penalty due to loss, (depth d - depth 1 at L) - (depth d - depth 1 at 0), paired by seed:
+  - depth 5: at 0.25 +1.27 (-0.47 to 3.15); at 0.40 +5.28 (2.93 to 7.56)
+  - depth 2: at 0.25 +1.14 (-0.94 to 3.32); at 0.40 +2.43 (-0.21 to 4.83)
+- Reading: bundling alone costs 2.6 h at depth 2 and 4.8 h at depth 5, without any loss. Loss adds to the depth-5 penalty only
+  at 0.40, by 5.3 h (about half of the 10.0 h). At 0.25 nothing is resolved. Stale claims do not depend on loss.
+- Lott and Honary's "the best depth falls under loss": here depth 1 is best at every loss, 0 included, and the gap to depth 5
+  widens at 0.40.
+- Sentences this would change (additions; no printed value moves): P1 3.7 and 5.5 "The design has no cell with depth 2 or 5 and
+  no loss, so it cannot say how much of this penalty is due to loss ... can therefore be neither confirmed nor contradicted".
+
+Next: (d) and (e1) (E54 replay with retry budgets; new key in E54_dtn.json, nothing else in that file moves; I will
+verify that before writing).
+
+## B-117 (d) and (e1) DONE (BACKEND, 14 Nov): E54 drop-and-retry at 12 retry budgets. NEW file results/E54_retry_budget.json; E54_dtn.json untouched
+- Why a new file and not a key in E54_dtn.json: run_e54 build() rewrites E54_dtn.json and carries only superseded_* keys, so a
+  new key there would vanish at the next build.
+- Runner: tools/atc/b117de_retry.py (cache .cache/atc/e54_retry/s<seed>.json, stamped with E54's fingerprint c3c3b2880e33888c
+  plus the runner's own replay). 30 seeds at 9-13 s each, 6 min in one chunk.
+- Design: as pre-declared. Tries {1, 3, 5, 10} x retry interval {20, 60, 180 s} x loss {0.10, 0.25, 0.40}, 30 seeds.
+  - Each seed: its own engine run, contact plan, messages and run_e54's drop_retry random stream (common random numbers across
+    budgets).
+  - Age of information is not recomputed.
+- Check: the published budget (5 tries, 180 s) reproduces E54's cached drop_retry cells exactly (n, lost, censored, mean delay;
+  all kinds, losses and seeds). The table step refuses otherwise.
+
+(d) Three tries every 20 s, all inside a grant's 60 s lifetime:
+- grants lost: loss 0.10 0.9 % (55 of 6,028); loss 0.25 6.7 % (406); loss 0.40 16.8 % (1,014)
+- the published budget, for comparison: 9.5 / 25.6 / 39.9 %
+- P2 says "three tries would by arithmetic lose 1.6 %" (0.25^3). The run gives 6.7 % at loss 0.25. The arithmetic assumes a
+  path at every try. The contact plan has 60 s steps, so all three tries fall in the same step, and a vehicle with no path then
+  loses all three.
+- Sentences this would change, with a value:
+  - P2 3.11, 5.12, 6.5: "three tries inside the lifetime would by arithmetic lose 1.6 %" -> measured 6.7 % at loss 0.25.
+  - P2 Table 14, the grant row: "three tries would lose 1.6 % by the same arithmetic; that baseline was not run" -> 6.7 %, run.
+
+(e1) The sweep. Shares lost of 6,028 awards (1 h lifetime) and 6,028 grants (60 s), 30 seeds:
+
+| tries x interval | award 0.10 / 0.25 / 0.40 | grant 0.10 / 0.25 / 0.40 |
+|---|---|---|
+| 1 (any interval) | 9.7 / 24.2 / 40.6 % | 9.3 / 25.9 / 39.8 % |
+| 3 x 20 s | 0.20 / 2.09 / 7.53 % | 0.91 / 6.74 / 16.8 % |
+| 3 x 180 s | 0.28 / 1.78 / 7.43 % | 9.6 / 25.3 / 40.0 % |
+| 5 x 20 s | 0.03 / 0.25 / 1.73 % | 0.85 / 6.65 / 16.5 % |
+| 5 x 180 s (published) | 0.07 / 0.17 / 1.41 % | 9.5 / 25.6 / 39.9 % |
+| 10 x 20 s | 0.03 / 0.03 / 0.12 % | 0.93 / 6.65 / 16.9 % |
+| 10 x 180 s | 0.03 / 0.07 / 0.12 % | 9.7 / 25.3 / 39.9 % |
+
+- 60 s intervals behave like 180 s for grants (the second try comes too late) and like 20 s for awards.
+- The task_state lost share stays at 33-34 % for every budget that gives up within an hour. It falls to 15-19 % only at
+  10 x 180 s, which gives up after 27 min.
+- H14's first clause per budget (lost jobs sf_ll minus drop_retry at loss 0.25, paired by seed, run_e54._boot):
+  - supported (CI below 0) at 10 of 12 budgets:
+    - 1 try: -48.7 a seed (-51.7 to -45.8)
+    - 3 tries: -4.2 (-4.9 to -3.5) at 20 and 60 s; -3.6 at 180 s
+    - 5 tries: -0.5 (-0.77 to -0.27) at 20 and 60 s; -0.33 (-0.53 to -0.17) at 180 s, published
+    - 10 x 180 s: -0.13 (-0.27 to -0.03)
+  - not supported at 10 x 20 s and 10 x 60 s: -0.07 (-0.17 to 0.0). Drop-and-retry loses 2 awards in 30 seeds; sf_ll loses 0.
+- Sentences this would change (no published value moves; the published budget is reproduced):
+  - P3 4.2, 5.12, 6.6, 7: "the retry budget is our choice ... and it was not swept" -> swept. H14's first clause holds at 10 of
+    12 budgets; at 10 tries within 3 to 9 minutes the difference is 2 awards in 30 seeds, CI reaching 0.
+  - P3's "10 awards of 6,028 expired under a retry budget we chose" can stay, with the sweep beside it.
+- Nothing else moves: E54_dtn.json, E54_table*.csv and the site's E54 data are not touched.
+
+## B-117 (h) DONE (BACKEND, 14 Nov), EXPLORATORY (a trace, not a test): Mars 94 against Moon 53 conflicts referred to Earth. NEW file results/B117h_conflict_trace.json
+- Runner: tools/atc/b117h_conflict_trace.py. It logs every hand conflict by wrapping roads.RoadLayer._hand in its own process.
+  No lunarsim file changed, so the E50 fingerprint is unchanged.
+- Cells, run as their experiments run them (run_one, fixed point), seeds 1-30: E43 "uncoordinated x1" in 2028 and 2038; E47
+  "uncoordinated x1 mars rtt 20 no relay" and "... relay".
+- Check: every run's conflict count equals its stored row (E43_runs.lead.csv, E47_runs*.csv): 120 of 120.
+
+What the trace shows:
+1. The only Mars-specific code in the road layer is how long Earth takes to settle a hand conflict (RoadLayer._hand_until).
+   Everything else, demand and roads included, is the same. Across the four cells the count falls as that wait grows:
+
+   | cell | mean stop | conflicts a year |
+   |---|---|---|
+   | moon 2038 | 56.3 h | 44.6 |
+   | moon 2028 | 36.9 h | 52.9 |
+   | mars, no relay | 8.0 h | 94.0 |
+   | mars, relay | 5.4 h | 92.1 |
+
+   The stops are long-tailed on the Moon: median 2.0 h, p90 187 h in 2028 (Earth-window gaps). On Mars the p90 is 12.7 h.
+2. 97 % of all conflicts in every cell are on one single-lane segment (res 14): Moon 1,531 of 1,587; Mars 2,745 of 2,819.
+3. While a pair waits for Earth, new conflicts almost stop: 0.009 per 100 h against 0.77 otherwise on the Moon in 2028; Mars
+   0.009 against 1.17. When a pair stops, the holder's reservation moves to after the decision, so the segment is empty during
+   the wait and third vehicles pass without meeting anyone. Such a wait is in force 22.2 % of the year on the Moon in 2028
+   (27.0 % in 2038) and 8.5 % on Mars (5.5 % with relay). That explains about a third of the gap: 77.8 % against 91.5 % of
+   the year exposed.
+4. The rest is a higher rate outside the waits: 1.17 against 0.77 conflicts per 100 h. Mars also has 3.6 % more jobs
+   (2,226 against 2,148) and 10.6 % more segment traversals (1,824 against 1,649) for the same deliveries (2,932 against
+   2,928). Per 1,000 traversals: 51.5 against 32.1. I have not traced why the rate per traversal is higher once the long holds
+   are removed. Per-seed correlations inside a cell are weak (held share vs count -0.06 Moon, 0.49 Mars).
+
+Sentence this would change: P2 5.4 / 6.1 "The Mars fleet referred more conflicts (94 against 53) for the same demand ...; we have
+not traced the cause". Suggested replacement: the count depends on how long Earth takes to answer. While a pair waits no
+conflict arises; long lunar waits (22 % of the year) remove about a third of the exposure. The rest is a higher rate per
+traversal on Mars, not traced. No printed value moves.
+
+## B-117 (j2) DONE (BACKEND, 14 Nov): E52 change rates swept. NEW file results/E52_sweep.json; E52_map.json untouched
+- Runner: tools/atc/b117j2_e52_sweep.py, 31 s. It uses run_e52.run_seed with the module's rates set: E52's seeds and code.
+- Grids, one rate at a time, the others at the defaults:
+  - tiles a day {10, 21, 42*, 84}
+  - hazards a day {0.5, 1, 2*, 5, 10}
+  - keep-outs a day {0, 0.3*, 1, 3}
+  - road edges a day {0, 5*, 20, 50}
+  (* = default)
+- Check: the default setting reproduces E52_map.json's h12 exactly (share 0.01059, sooner at every rate, supported).
+- H12 is supported in all 17 settings. Hazards-first bytes after 24 h, at 100 kbit/s:
+  - against tiles a day: 0.26 % (10), 0.53 % (21), 1.06 % (42), 1.51 % (84) of a full resend; far under 10 % throughout
+  - unchanged within 0.003 points by hazards, keep-outs or road edges
+  - hazards-first is sooner at every rate in every setting
+- Time until the hazard layer is current after 24 h out, at 16 kbit/s, hazards-first against oldest-first:
+  16.8 against 280 s (10 tiles a day), 57.6 against 1,203 s (42), 80.5 against 1,731 s (84).
+- Stale-map hits grow with the hazard rate, roughly in proportion:
+  - during a 7-day outage: 1.85 (0.5 a day), 6.67 (2), 33.9 (10)
+  - after contact at 16 kbit/s after 7 days, hazards-first against oldest-first: 0.08 against 0.82 at 2 a day; 0.53 against
+    3.65 at 10 a day
+  - keep-outs and road edges change no hit count (they are separate draws of the same stream).
+- Sentence this would change: P3 6.6 "one free parameter and one result" -> H12 holds at every swept rate. The byte share scales
+  with the tile change rate, from 0.26 % to 1.5 %. No printed value moves.
+
+## B-117 (c) DONE (BACKEND, 14 Nov): ablation of the linear bid's 13 weights, and the hand rule tuned with the linear's CEM budget. NEW file results/B117c_bid_ablation.json
+- Runner: tools/atc/b117c_bid_ablation.py (ablate / tune / evaluate / table; cache .cache/atc/b117c/, stamped with the E50 code
+  fingerprint 5bf22fa6d5ccfe47). 771 runs in 31 chunks.
+- The policy files and ATC_learned_eval*.json are untouched.
+
+Reproduction check: hand (C_AUCTION) and the full linear policy at 30 % load, seeds 1-30, repeated on the current code. Both
+equal train_bid's cached evaluation runs (.cache/atc/bid_rerun/eval_runs.json) exactly (max abs diff 0). The table step refuses
+otherwise.
+
+1. Ablation: the published linear policy with one weight set to 0, run as train_bid evaluates (C_LEARNED, 3eq, 30 % load, loss
+   0.10, seeds 1-30). Urgent wait: hand 14.09 h, linear 11.60 h. Effect of zeroing each weight, paired (analyse_e40.boot, 95 % CI):
+   - slack_d (w -1.96): +2.71 h (1.18 to 4.37). Without it the policy is no better than the hand bids (+0.22 h, -0.93 to 1.42):
+     the linear policy's whole gain is the slack term (days to the item's deadline).
+   - prio (w -0.62): +0.76 h (0.10 to 1.56).
+   - job_h +0.63 (-0.76 to 1.90), age_d +0.58 (-0.46 to 1.70), mass_frac +0.21, heard +0.12, approach_h +0.07, battery +0.06:
+     not resolved.
+   - dark_or_low -0.16 and landing -0.13: not resolved.
+   - link_base and queue: exactly 0 on every seed; bundle_n 0.0004. These three never change a decision in these runs.
+2. Tuned hand rule: CEM on (w_p1, w_p2, w_age, vot_scale) in log space around the defaults, with the linear's budget and seeds
+   (train_bid.CEM["linear"], CEM_FIT_SEEDS, selection on CEM_TUNE_SEEDS).
+   - Selected (lowest selection-seed mean, generation 1 of 6): w_p1 26.2 h (default 6), w_p2 3.26 h (2), w_age 0.028 (0.08),
+     vot_scale 1.83 (1).
+   - Selection seeds: 7.16 h against 10.09 h with the defaults.
+   - The later generations stayed at w_p1 21-23, w_age 0.026-0.030, with selection means 7.5-7.8 h.
+3. The tuned hand rule on seeds 1-30:
+   - 30 % load: 9.63 h, against hand 14.09 (-4.45 h, -6.33 to -2.83) and linear 11.60. Linear minus tuned is +1.97 h (1.04 to
+     2.92): at the load it was tuned for, the tuned hand rule beats the learned linear policy.
+   - 60 % load: 75.25 h, against hand 74.98 (+0.27 h, -14.5 to 17.2) and linear 44.69. Linear minus tuned is -30.6 h (-48.8 to
+     -14.9): the tuning does not transfer to 60 % load, while the linear policy's gain there does. Hand and linear at 60 % are
+     train_bid's cached evaluation runs, not repeated; the 30 % references reproduce exactly.
+
+Sentences this would change. No printed value moves; these are additions or replacements of "not done":
+- P1 5.6 / 6.2: "We have not interpreted these weights: no weight was removed in turn to see what it contributes" and "The linear
+  model has 13 weights, which we have not interpreted". Replacement: the gain is the slack weight. Removing it alone costs 2.7 h
+  and leaves no gain over the hand bids. Priority adds 0.8 h. Three weights (link_base, queue, bundle_n) change nothing.
+- P1 6.3: "the hand-built rule was written, not tuned by search on the objective, while the linear model was". Now: tuned with
+  the same search budget, the hand rule beats the linear policy by 2.0 h at 30 % load. It gains nothing at 60 %, where the linear
+  policy stays 30.6 h ahead. The comparison of learned against hand-built bids then turns on transfer across load, not on
+  search alone.
+
+- BACKEND 22:00: B-117 (g)+(j1) at 1x started: E50 engine + navigation runs, one process, ~0.45 GB peak, chunks under 9 min, gated at 0.8 GB.
+
+- BACKEND 22:24: B-122 started (learned-bid evaluation and (c) on the dispatch fixed point); (g)+(j1) paused after seed 10. ATC runs, one process, under 0.5 GB, chunks under 9 min.
+
+## B-122 DONE (BACKEND, 15 Nov): the learned-bid evaluation and control (c) on the dispatch fixed point. No PREREG decision moves.
+
+Files:
+- NEW results/ATC_learned_eval_fixpoint.json.
+- results/B117c_bid_ablation.json: main content now on the fixed point. The earlier content is kept unchanged under
+  "no_fixpoint_2026-11-15", with a reason (verified identical to the old file).
+- results/ATC_learned_eval_rerun.json: one key added, "engine_note_b122". No value changed (git diff: that key only).
+- results/ATC_learned_eval.json: untouched.
+
+Code:
+- tools/atc/train_bid.py: opt-in FIXPOINT / --fixpoint, default off. The cached no-fixpoint runs still reproduce (the (c) no-fix
+  references used them). It adds its own cache .cache/atc/bid_fixpoint, cmd_table_fixpoint, and a code stamp
+  "5bf22fa6d5ccfe47+fixpoint" on every run.
+- tools/atc/b117c_bid_ablation.py: --fixpoint (own cache .cache/atc/b117c_fixpoint). The 60 % hand and linear rows are repeated.
+
+Gates:
+- Hand at 30 % equals E40's C_AUCTION cells run for run (max abs diff 0, mean 14.0943 h).
+- (c)'s hand and linear references at 30 % and 60 % equal the fixed-point evaluation's runs exactly.
+
+Finding on the way (a defect; cause not traced): with the fixed point, train_bid's collect=True changes the run itself. Hand seed
+1 gives 9.78 h collected against 9.06 h = E40; seed 2 gives 8.47 against 9.52. Without the fixed point, collecting changed
+nothing. So in fixed-point mode the outcome comes from a run without collection, and the held-out agreement from a second
+collecting run (its urgent wait is stored beside it as agreement_run_urgent_h). The 51 collect-affected runs made first were
+discarded.
+
+### Learned-bid evaluation, no fixed point (ATC_learned_eval_rerun.json) -> fixed point (ATC_learned_eval_fixpoint.json)
+Urgent wait, h, seeds 1-30; paired t intervals (train_bid._paired).
+
+| | 30 % no-fix | 30 % fixpoint | 60 % no-fix | 60 % fixpoint |
+|---|---|---|---|---|
+| O_ORACLE | 14.468 | 14.932 | 63.915 | 66.319 |
+| hand | 14.087 | 14.094 | 74.978 | 76.681 |
+| mlp | 13.929 | 13.847 | 80.343 | 75.338 |
+| linear | 11.598 | 11.773 | 44.689 | 45.219 |
+
+- linear - hand: 30 % -2.489 (-4.154 to -0.823) -> -2.321 (-4.089 to -0.553); 60 % -30.289 (-36.048 to -24.53) -> -31.462
+  (-38.357 to -24.567)
+- mlp - hand: 30 % -0.157 (-1.615 to 1.301) -> -0.247 (-1.694 to 1.199); 60 % +5.365 (-2.872 to 13.602) -> -1.342 (-6.117 to 3.432)
+- held-out agreement at 30 %: hand 0.8835 -> 0.884, mlp 0.8637 -> 0.8638, linear 0.7076 -> 0.7028
+
+Guards, linear - hand, seeds 1-10:
+- 30 %:
+  - urgent -1.232 (-3.91 to 1.445) -> -2.409 (-4.715 to -0.102)
+  - prio-2 delay +0.161 (-2.322 to 2.644) -> -1.172 (-3.936 to 1.593)
+  - bulk delay +0.23 (0.019 to 0.44) -> -0.092 (-0.408 to 0.223)
+  - mean delay +0.178 (-0.037 to 0.393) -> -0.151 (-0.47 to 0.168)
+  - tonne-days waiting +14.79 (-0.49 to 30.08) -> -3.42 (-22.56 to 15.72)
+  - starved +0.1 (-0.54 to 0.74) -> +0.1 (-0.27 to 0.47)
+  - delivered kg +1,959 (-1,907 to 5,825) -> +2,408 (-1,979 to 6,796)
+- 60 %:
+  - urgent -23.22 (-31.76 to -14.68) -> -31.46 (-44.58 to -18.34)
+  - prio-2 -24.61 (-40.55 to -8.66) -> -26.24 (-34.66 to -17.82)
+  - bulk -5.65 (-9.12 to -2.18) -> -5.69 (-9.39 to -1.98)
+  - mean delay -6.23 (-9.86 to -2.59) -> -6.44 (-10.12 to -2.76)
+  - tonne-days -1,043 (-1,687 to -400) -> -1,129 (-1,692 to -566)
+  - starved +1.4 (-51.5 to 54.3) -> -15.7 (-79.4 to 48.0)
+  - delivered kg +6,907 (-5,159 to 18,973) -> +7,959 (-845 to 16,764)
+
+OOD, linear - hand, seeds 1-10 (hand urgent wait no-fix -> fixpoint in brackets):
+- 2eq: -4.95 (-8.66 to -1.24) -> -4.46 (-8.26 to -0.67) [16.97 -> 16.98]
+- 5eq: -1.33 (-3.50 to 0.84) -> -1.38 (-3.56 to 0.81) [13.95 -> 13.75]
+- loss 0.25: -2.32 (-4.29 to -0.34) -> -3.71 (-6.59 to -0.83) [15.64 -> 17.20]
+- loss 0.40: -1.62 (-4.91 to 1.68) -> -2.86 (-6.14 to 0.42) [18.00 -> 18.98]
+- load 10 %: -1.22 (-2.12 to -0.31) -> -2.19 (-4.43 to 0.05) [11.52 -> 12.49]
+- year 2038: -1.23 (-3.91 to 1.45) -> -2.41 (-4.72 to -0.10) [13.26 -> 14.20]
+- Note: "year 2038" equals the 30 % guard cell run for run on both engines. These regimes do not depend on the start year
+  (PREREG change 4), so that OOD cell repeats the guard seeds.
+
+### (c), no fixed point -> fixed point
+- Urgent wait at 30 %: hand 14.0865 -> 14.0943; linear 11.5979 -> 11.7734.
+- Ablation, zeroed weight minus linear:
+  - slack_d +2.707 (1.183 to 4.366) -> +2.446 (1.060 to 3.987). Slack-zeroed minus hand: +0.218 (-0.926 to 1.421) -> +0.125
+    (-1.054 to 1.395).
+  - prio +0.758 (0.098 to 1.561) -> +0.783 (0.092 to 1.607).
+  - landing -0.130 (-0.741 to 0.376) -> -0.369 (-0.665 to -0.113): removing the landing weight now helps.
+  - not resolved on either engine: job_h +0.63 -> +0.31; age_d +0.58 -> +0.22; mass_frac +0.21 -> -0.04; approach_h
+    +0.07 -> -0.28; heard +0.12 -> -0.00.
+  - battery +0.057 -> +0.010 (0.0 to 0.031); dark_or_low -0.160 -> +0.015 (0.0 to 0.046).
+  - link_base 0 -> 0; queue 0 -> 0; bundle_n 0.0004 -> 0.011 (-0.014 to 0.047).
+- Tuned hand rule, re-selected by the CEM on the fixed point (same budget, seeds and streams):
+  - selected: generation 4, w_p1 32.3, w_p2 1.86, w_age 0.040, vot_scale 1.50. Before: generation 1, 26.2, 3.26, 0.028, 1.83.
+    The weights differ; same direction from the defaults (6, 2, 0.08, 1).
+  - selection seeds: 7.118 h against default 10.174 h. Before: 7.158 against 10.092.
+- Tuned rule on seeds 1-30 (60 % hand and linear repeated):
+  - 30 %: tuned 9.633 -> 8.954. Tuned - hand -4.454 (-6.335 to -2.833) -> -5.140 (-6.714 to -3.664). Linear - tuned +1.965
+    (1.045 to 2.916) -> +2.819 (1.855 to 3.824).
+  - 60 %: tuned 75.249 -> 58.024; hand 74.978 -> 76.681; linear 44.689 -> 45.219. Tuned - hand +0.271 (-14.5 to 17.2) -> -18.656
+    (-29.076 to -6.618). Linear - tuned -30.560 (-48.780 to -14.930) -> -12.806 (-25.176 to -3.177).
+
+### Conclusions
+- "The gain is the slack weight": holds. New on the fixed point: zeroing the landing weight helps, by 0.37 h.
+- "The tuned hand rule beats linear at 30 % and not at 60 %": holds. At 30 % the lead grows to 2.8 h. At 60 % linear still
+  leads, by 12.8 h (3.2 to 25.2).
+- CHANGES: "the tuning gains nothing at 60 %". On the fixed point the tuned rule gains 18.7 h over the hand rule at 60 %
+  (6.6 to 29.1). Transfer across load is partial, not absent.
+- CHANGES: "the guard check is not clean". On the fixed point no guard metric gets significantly worse at 30 % or 60 %. The
+  30 % bulk-delay cost (+0.23 h, CI 0.02 to 0.44) is gone (-0.09, -0.41 to 0.22). The 30 % urgent gain on the guard seeds is now
+  significant (-2.41, -4.72 to -0.10).
+- OOD: load 10 % loses significance (CI reaches +0.05); year 2038 (= the 30 % guard seeds) gains it; loss 0.25 stays
+  significant and grows (-3.71).
+- MLP at 60 %: +5.4 -> -1.3 h; both CIs span 0.
+
+### PREREG decisions: none moves
+- H4 for the MLP (the pre-registered C_LEARNED): not supported at 30 % and 60 % on both engines (CIs span 0).
+- H4 for the linear model at 30-60 %: supported on both engines.
+- H4's 10 % TOST part (±2 % of hand = ±0.25 h): fails on both. The CI is -2.12 to -0.31 without the fixed point and
+  -4.43 to 0.05 with it.

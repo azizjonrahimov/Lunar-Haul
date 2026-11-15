@@ -36,6 +36,8 @@ if ROOT not in sys.path:
 from lunarsim.atc import learned as LR  # noqa: E402
 
 CACHE = os.path.join(ROOT, ".cache", "atc", "bid")
+FIXPOINT = False      # B-122 (opt-in, --fixpoint): run with p5 dispatch_fixpoint (PREREG change 5: fixed point + wake
+                      # dedupe), as run_phase5 --fixpoint; off by default, so the cached runs without it still reproduce
 POL_DIR = os.path.join(ROOT, "data", "policies")
 OUT_MLP = os.path.join(POL_DIR, "atc_bid_v1.json")
 OUT_LIN = os.path.join(POL_DIR, "atc_bid_linear_v1.json")
@@ -69,6 +71,8 @@ def _scenario(mix="3eq", load="30", fleet_mult=1, horizon=None):
 def _run(regime: str, sc, seed: int, kw: Dict[str, Any]):
     from lunarsim import Simulation
     from lunarsim.atc import regimes as G
+    if FIXPOINT:
+        sc = sc.with_(p5=dict(sc.p5, dispatch_fixpoint=True))
     sim = Simulation(sc, G.mechanism(regime), seed=seed, mech_kwargs=dict(kw))
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)
@@ -492,13 +496,27 @@ def cmd_evaluate(max_s: float, which: str) -> bool:
         if which == "eval" and o.get("load") == "30" and reg != "O_ORACLE":
             kw["collect"] = True                         # held-out agreement on the 30 % runs
         t = time.time()
-        sim, s = _run(reg, _scenario(o.get("mix", "3eq"), o.get("load", "30"), o.get("fleet_mult", 1), o.get("horizon")),
-                      seed, kw)
+        sc_ = _scenario(o.get("mix", "3eq"), o.get("load", "30"), o.get("fleet_mult", 1), o.get("horizon"))
+        collect = kw.get("collect")
+        if FIXPOINT and collect:
+            # B-122: with the fixed point, collecting (the teacher's assignment at every auction round) changes the run
+            # itself (checked: hand, seed 1, 9.78 h collected against 9.06 h = E40's cell); so the outcome comes from a
+            # run without collection, and the held-out agreement from a second, collecting run
+            kw.pop("collect")
+        sim, s = _run(reg, sc_, seed, kw)
         r = _summ(s)
-        if kw.get("collect"):
+        if FIXPOINT and collect:
+            sim2, s2 = _run(reg, sc_, seed, dict(kw, collect=True))
+            r["agreement"] = _agreement(sim2, lab)
+            r["agreement_run_urgent_h"] = float(s2["atc_urgent_wait_mean_cens_h"])
+            del sim2
+        elif kw.get("collect"):
             r["agreement"] = _agreement(sim, lab)
         last = r["wall_s"] = round(time.time() - t, 1)
         r["run_commit"], r["run_tree_dirty"] = run_commit, dirty
+        if FIXPOINT:                                     # B-122: the code the run used
+            import run_e50 as E5
+            r["code"] = E5.code_fingerprint() + "+fixpoint"
         done[key] = r
         with open(path + ".tmp", "w") as f:
             json.dump(done, f)
@@ -572,6 +590,74 @@ def cmd_table_rerun() -> Optional[Dict[str, Any]]:
 
 
 RESULT_ORIG = RESULT
+FIX_CACHE = os.path.join(ROOT, ".cache", "atc", "bid_fixpoint")
+FIX_RESULT = os.path.join(ROOT, "results", "ATC_learned_eval_fixpoint.json")
+
+
+def cmd_table_fixpoint() -> Optional[Dict[str, Any]]:
+    """B-122: B-74's evaluation (eval, guard, ood) on the engine with PREREG change 5 (dispatch fixed point and wake
+    dedupe), written to results/ATC_learned_eval_fixpoint.json only when every run is there and the hand bids at 30 %
+    load equal E40's C_AUCTION cells (block v1, 30 % load, run with --fixpoint) run for run. The two older files are
+    left as they are."""
+    import pandas as pd
+    import run_e50 as E5
+    paths = {w: os.path.join(CACHE, f"{w}_runs.json") for w in ("eval", "guard", "ood")}
+    runs = {w: (json.load(open(p)) if os.path.isfile(p) else {}) for w, p in paths.items()}
+    need = {"eval": [f"{lab}|{load}|{s}" for load in ("30", "60") for s in EVAL_SEEDS for lab, _, _ in EVAL_CELLS],
+            "guard": [f"{lab}|{load}|{s}" for load in ("30", "60") for s in GUARD_SEEDS for lab in ("hand", "linear")],
+            "ood": [f"{name}|{lab}|{s}" for name, o in OOD_CELLS for s in OOD_SEEDS[:o.get("seeds", len(OOD_SEEDS))]
+                    for lab in ("hand", "linear")]}
+    miss = {w: sum(k not in runs[w] for k in ks) for w, ks in need.items()}
+    if any(miss.values()):
+        print(f"fixpoint table: runs missing {miss}; not written")
+        return None
+    code = E5.code_fingerprint() + "+fixpoint"
+    stamps = sorted({str(r.get("code")) for w in runs for r in runs[w].values()})
+    if stamps != [code]:
+        raise SystemExit(f"fixpoint runs with other code stamps {stamps} (current {code}); rerun them")
+    e = pd.read_csv(os.path.join(ROOT, "results", "E40_runs.csv"), float_precision="round_trip")
+    e = e[(e["label"] == "C_AUCTION") & (e["load"] == 30) & (e["start_year"] == 2028 + e["seed"] % 4)].set_index("seed")
+    m = "atc_urgent_wait_mean_cens_h"
+    diff = max(abs(runs["eval"][f"hand|30|{s}"][m] - float(e.loc[s, m])) for s in EVAL_SEEDS)
+    if diff != 0.0:
+        raise SystemExit(f"hand bids at 30 % differ from E40's C_AUCTION cells (max abs diff {diff}); not written")
+    out = cmd_table(write=False)
+    out["task"] = "B-122: B-74's evaluation on the engine with PREREG change 5 (dispatch fixed point and wake dedupe)"
+    out["engine"] = ("PREREG change 5 on: Scenario.p5 dispatch_fixpoint (dispatch repeated at the same instant until "
+                     "nothing changes, which implies the wake dedupe), as E40-E43 since their reruns (run_phase5 "
+                     "--fixpoint)")
+    out["code"] = code
+    out["fixpoint_note"] = ("same evaluation seeds (1-30), loads 30 % and 60 %, guard seeds 1-10, OOD cells and seeds "
+                            "as B-74, same policies (data/policies/atc_bid_v1.json, atc_bid_linear_v1.json). The "
+                            "policies were trained (DAgger, CEM fitness) on the engine without the fixed point and were "
+                            "not retrained. results/ATC_learned_eval.json (27 Oct) and ATC_learned_eval_rerun.json (12 "
+                            "Nov) ran without change 5 and are left as they are.")
+    out["gate_hand_30_equals_E40_C_AUCTION"] = {"max_abs_diff_h": diff, "E40_mean_h": round(float(e[m].mean()), 4)}
+    if "imitation" in out:
+        out["imitation"] = dict(out["imitation"], status="NOT rerun: the 27 Oct training record (engine of that day)")
+    old = json.load(open(RERUN_RESULT, encoding="utf-8"))
+
+    def flat(d, pfx=""):
+        r = {}
+        if isinstance(d, dict):
+            for k, v in d.items():
+                r.update(flat(v, f"{pfx}/{k}"))
+        elif isinstance(d, list):
+            for i, v in enumerate(d):
+                r.update(flat(v, f"{pfx}[{i}]"))
+        else:
+            r[pfx] = d
+        return r
+    fo, fn = flat({k: old.get(k) for k in ("eval", "guards", "ood")}), flat({k: out.get(k) for k in ("eval", "guards", "ood")})
+    out["moved_vs_no_fixpoint_rerun"] = [{"key": k, "no_fixpoint": fo[k], "fixpoint": fn[k]} for k in sorted(set(fo) & set(fn))
+                                         if isinstance(fo[k], (int, float)) and isinstance(fn[k], (int, float)) and fo[k] != fn[k]]
+    out["unchanged_vs_no_fixpoint_rerun"] = sum(1 for k in set(fo) & set(fn) if fo[k] == fn[k])
+    text = json.dumps(out, indent=1, allow_nan=False) + "\n"
+    with open(FIX_RESULT + ".tmp", "w", encoding="utf-8", newline="\n") as f:
+        f.write(text)
+    os.replace(FIX_RESULT + ".tmp", FIX_RESULT)
+    print(f"written {FIX_RESULT}: {len(out['moved_vs_no_fixpoint_rerun'])} values moved against the no-fixpoint rerun")
+    return out
 
 
 def cmd_table(write: bool = True) -> Dict[str, Any]:
@@ -646,8 +732,15 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("--max-seconds", type=float, default=540.0)
     ap.add_argument("--rerun", action="store_true", help="B-106: own cache (.cache/atc/bid_rerun) and table "
                                                           "results/ATC_learned_eval_rerun.json; the old file is untouched")
+    ap.add_argument("--fixpoint", action="store_true", help="B-122: the engine with PREREG change 5 (dispatch fixed "
+                    "point); own cache (.cache/atc/bid_fixpoint) and table results/ATC_learned_eval_fixpoint.json")
     a = ap.parse_args(argv)
-    global CACHE
+    global CACHE, FIXPOINT
+    if a.fixpoint:
+        if a.rerun or a.cmd not in ("evaluate", "ood", "guard", "table"):
+            raise SystemExit("--fixpoint is for evaluate, ood, guard and table, without --rerun")
+        CACHE, FIXPOINT = FIX_CACHE, True
+        os.makedirs(CACHE, exist_ok=True)
     if a.rerun:
         if a.cmd not in ("evaluate", "ood", "guard", "table"):
             raise SystemExit("--rerun is for evaluate, ood, guard and table")
@@ -669,6 +762,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         cmd_evaluate(a.max_seconds, "ood")
     elif a.cmd == "guard":
         cmd_evaluate(a.max_seconds, "guard")
+    elif a.fixpoint:
+        cmd_table_fixpoint()
     elif a.rerun:
         cmd_table_rerun()
     else:

@@ -1,0 +1,221 @@
+{
+ "task": "B-117 (h), P2 S8: the Mars fleet's 94 conflicts against the Moon's 53 (EXPLORATORY: a trace)",
+ "note": "python tools/atc/b117h_conflict_trace.py run     # resumable, cached in .cache/atc/b117h.json (--max-seconds 500)\n    python tools/atc/b117h_conflict_trace.py table   # -> results/B117h_conflict_trace.json (a new file)",
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+  20,
+  21,
+  22,
+  23,
+  24,
+  25,
+  26,
+  27,
+  28,
+  29,
+  30
+ ],
+ "code": "5bf22fa6d5ccfe47+a04d32af",
+ "cells": {
+  "moon 2028": {
+   "conflicts_per_year": 52.9,
+   "traversals_per_year": 1648.9,
+   "conflicts_per_1000_traversals": 32.081,
+   "stop_h_mean": 36.94,
+   "stop_h_median": 2.0,
+   "stop_h_p90": 186.86,
+   "share_of_conflicts_with_a_vehicle_still_held": 0.0006,
+   "vehicle_hours_held_per_year": 3914.8,
+   "share_of_year_with_a_pair_waiting_for_earth": 0.2223,
+   "conflicts_per_100h_while_a_pair_waits": 0.0086,
+   "conflicts_per_100h_otherwise": 0.7741,
+   "hand_wait_h_per_year": 1969.0,
+   "other_stop_h_per_year": 1960.8,
+   "delivered_items_per_year": 2927.9,
+   "conflicts_by_quarter": [
+    355,
+    389,
+    419,
+    424
+   ],
+   "segments_top5": [
+    [
+     "14",
+     1531
+    ],
+    [
+     "6",
+     25
+    ],
+    [
+     "4",
+     11
+    ],
+    [
+     "('apron', 'PAD_A')",
+     10
+    ],
+    [
+     "('apron', 'PAD_B')",
+     8
+    ]
+   ]
+  },
+  "moon 2038": {
+   "conflicts_per_year": 44.63,
+   "traversals_per_year": 1622.7,
+   "conflicts_per_1000_traversals": 27.505,
+   "stop_h_mean": 56.32,
+   "stop_h_median": 2.0,
+   "stop_h_p90": 236.87,
+   "share_of_conflicts_with_a_vehicle_still_held": 0.0,
+   "vehicle_hours_held_per_year": 5035.9,
+   "share_of_year_with_a_pair_waiting_for_earth": 0.2696,
+   "conflicts_per_100h_while_a_pair_waits": 0.0056,
+   "conflicts_per_100h_otherwise": 0.6955,
+   "hand_wait_h_per_year": 2526.7,
+   "other_stop_h_per_year": 2522.0,
+   "delivered_items_per_year": 2914.6,
+   "conflicts_by_quarter": [
+    316,
+    394,
+    327,
+    301
+   ],
+   "segments_top5": [
+    [
+     "14",
+     1282
+    ],
+    [
+     "6",
+     30
+    ],
+    [
+     "('apron', 'PAD_B')",
+     11
+    ],
+    [
+     "4",
+     8
+    ],
+    [
+     "('apron', 'PAD_A')",
+     6
+    ]
+   ]
+  },
+  "mars rtt 20 no relay": {
+   "conflicts_per_year": 93.97,
+   "traversals_per_year": 1823.7,
+   "conflicts_per_1000_traversals": 51.524,
+   "stop_h_mean": 7.95,
+   "stop_h_median": 2.33,
+   "stop_h_p90": 12.66,
+   "share_of_conflicts_with_a_vehicle_still_held": 0.0007,
+   "vehicle_hours_held_per_year": 1495.3,
+   "share_of_year_with_a_pair_waiting_for_earth": 0.0853,
+   "conflicts_per_100h_while_a_pair_waits": 0.0089,
+   "conflicts_per_100h_otherwise": 1.1719,
+   "hand_wait_h_per_year": 771.6,
+   "other_stop_h_per_year": 748.1,
+   "delivered_items_per_year": 2932.2,
+   "conflicts_by_quarter": [
+    750,
+    777,
+    544,
+    748
+   ],
+   "segments_top5": [
+    [
+     "14",
+     2745
+    ],
+    [
+     "6",
+     34
+    ],
+    [
+     "('apron', 'PAD_A')",
+     20
+    ],
+    [
+     "4",
+     10
+    ],
+    [
+     "('apron', 'PAD_B')",
+     7
+    ]
+   ]
+  },
+  "mars rtt 20 relay": {
+   "conflicts_per_year": 92.1,
+   "traversals_per_year": 1827.6,
+   "conflicts_per_1000_traversals": 50.393,
+   "stop_h_mean": 5.35,
+   "stop_h_median": 2.33,
+   "stop_h_p90": 2.33,
+   "share_of_conflicts_with_a_vehicle_still_held": 0.0007,
+   "vehicle_hours_held_per_year": 986.2,
+   "share_of_year_with_a_pair_waiting_for_earth": 0.0551,
+   "conflicts_per_100h_while_a_pair_waits": 0.0345,
+   "conflicts_per_100h_otherwise": 1.1106,
+   "hand_wait_h_per_year": 516.7,
+   "other_stop_h_per_year": 493.3,
+   "delivered_items_per_year": 2932.1,
+   "conflicts_by_quarter": [
+    744,
+    743,
+    497,
+    779
+   ],
+   "segments_top5": [
+    [
+     "14",
+     2693
+    ],
+    [
+     "6",
+     33
+    ],
+    [
+     "('apron', 'PAD_A')",
+     14
+    ],
+    [
+     "('apron', 'PAD_B')",
+     9
+    ],
+    [
+     "4",
+     8
+    ]
+   ]
+  }
+ },
+ "check_counts_equal_stored_rows": {
+  "moon 2028": true,
+  "moon 2038": true,
+  "mars rtt 20 no relay": true,
+  "mars rtt 20 relay": true
+ }
+}

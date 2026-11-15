@@ -1,0 +1,186 @@
+{
+ "task": "B-117 (a), P1 S3: the marketplace with the auction's return-to-coverage move",
+ "note": "E40 at 30 % load, block v1 (seeds 1-30, start year 2028 + seed mod 4), with the dispatch fixed point as E40 runs since\nPREREG change 5 (run_phase5 --fixpoint) and E40's own regime arguments (C_AUCTION at loss LOSS = 0.10). All four cells\nrun on the current code with the same seeds, so every comparison is paired:\n- O_ORACLE and C_AUCTION: E40's cells, repeated on the current code (compared with results/E40_runs.csv as a check);\n- O + rally (unheard): O_ORACLE, and an idle robot that no radio path links to the BASE mast drives to the nearest\n  site the mast sees (to BASE while the base is down): the trigger and the move of C_AUCTION's lost-link rule\n  (regimes o_rally=\"unheard\");\n- O + rally (all idle): the B-75 diagnostic cell (o_rally=True: every idle robot at a site the mast does not see\n  moves), repeated on the current code for comparison with results/ATC_oracle_diag.json.\nPre-declared (B-117 estimate, 13 Nov): the cells, the seeds and the comparison (urgent wait, censored mean, paired\nbootstrap over seeds). Not PREREG cells. Single process.",
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+  20,
+  21,
+  22,
+  23,
+  24,
+  25,
+  26,
+  27,
+  28,
+  29,
+  30
+ ],
+ "code": "5bf22fa6d5ccfe47+fixpoint",
+ "cells": {
+  "O_ORACLE": {
+   "atc_urgent_wait_mean_cens_h": 14.932,
+   "atc_deadhead_share": 0.4979,
+   "atc_rallies": 0.0,
+   "delivered_kg": 1469386.331,
+   "atc_urgent_within24_share": 0.8172
+  },
+  "C_AUCTION": {
+   "atc_urgent_wait_mean_cens_h": 14.0943,
+   "atc_deadhead_share": 0.7124,
+   "atc_rallies": 808.7333,
+   "delivered_kg": 1470384.7095,
+   "atc_urgent_within24_share": 0.8306
+  },
+  "O + rally (unheard)": {
+   "atc_urgent_wait_mean_cens_h": 14.0859,
+   "atc_deadhead_share": 0.6346,
+   "atc_rallies": 412.4,
+   "delivered_kg": 1470628.0178,
+   "atc_urgent_within24_share": 0.8289
+  },
+  "O + rally (all idle)": {
+   "atc_urgent_wait_mean_cens_h": 14.2129,
+   "atc_deadhead_share": 0.6363,
+   "atc_rallies": 418.9333,
+   "delivered_kg": 1469065.6738,
+   "atc_urgent_within24_share": 0.8262
+  }
+ },
+ "pairs_urgent_wait_h": {
+  "O + rally (unheard) - O_ORACLE": {
+   "n": 30,
+   "mean": -0.8461,
+   "ci": [
+    -2.6827,
+    0.7594
+   ],
+   "ci90": [
+    -2.3706,
+    0.5139
+   ],
+   "p": 0.3347
+  },
+  "C_AUCTION - O_ORACLE": {
+   "n": 30,
+   "mean": -0.8376,
+   "ci": [
+    -2.9106,
+    0.951
+   ],
+   "ci90": [
+    -2.5686,
+    0.7115
+   ],
+   "p": 0.4134
+  },
+  "C_AUCTION - O + rally (unheard)": {
+   "n": 30,
+   "mean": 0.0084,
+   "ci": [
+    -0.9758,
+    0.9553
+   ],
+   "ci90": [
+    -0.8052,
+    0.8097
+   ],
+   "p": 0.9678
+  },
+  "O + rally (all idle) - O_ORACLE": {
+   "n": 30,
+   "mean": -0.7191,
+   "ci": [
+    -2.8691,
+    1.1466
+   ],
+   "ci90": [
+    -2.4992,
+    0.8603
+   ],
+   "p": 0.4929
+  },
+  "O + rally (unheard) - O + rally (all idle)": {
+   "n": 30,
+   "mean": -0.127,
+   "ci": [
+    -1.1697,
+    0.774
+   ],
+   "ci90": [
+    -0.9816,
+    0.6412
+   ],
+   "p": 0.8176
+  }
+ },
+ "reproduces_E40_runs": {
+  "O_ORACLE": {
+   "max_abs_diff": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "atc_deadhead_share": 0.0,
+    "atc_rallies": 0.0,
+    "delivered_kg": 0.0,
+    "atc_urgent_within24_share": 0.0
+   },
+   "equal": true
+  },
+  "C_AUCTION": {
+   "max_abs_diff": {
+    "atc_urgent_wait_mean_cens_h": 0.0,
+    "atc_deadhead_share": 0.0,
+    "atc_rallies": 0.0,
+    "delivered_kg": 0.0,
+    "atc_urgent_within24_share": 0.0
+   },
+   "equal": true
+  }
+ },
+ "b75_cells": {
+  "O_ORACLE": {
+   "atc_urgent_wait_mean_cens_h": 14.4684,
+   "atc_deadhead_share": 0.4979,
+   "atc_rallies": 0.0,
+   "delivered_kg": 1469348.6639,
+   "atc_urgent_within24_share": 0.8209
+  },
+  "C_AUCTION": {
+   "atc_urgent_wait_mean_cens_h": 14.0865,
+   "atc_deadhead_share": 0.7128,
+   "atc_rallies": 808.4,
+   "delivered_kg": 1470266.2616,
+   "atc_urgent_within24_share": 0.8333
+  },
+  "O + rally": {
+   "atc_urgent_wait_mean_cens_h": 14.8252,
+   "atc_deadhead_share": 0.636,
+   "atc_rallies": 418.1667,
+   "delivered_kg": 1470869.3235,
+   "atc_urgent_within24_share": 0.8137
+  },
+  "C_AUCTION loss 0": {
+   "atc_urgent_wait_mean_cens_h": 14.9316,
+   "atc_deadhead_share": 0.7121,
+   "atc_rallies": 808.2667,
+   "delivered_kg": 1471168.2792,
+   "atc_urgent_within24_share": 0.823
+  }
+ }
+}

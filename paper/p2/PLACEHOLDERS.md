@@ -111,7 +111,7 @@ P2-E50-X8-CLAUSE is used inside P2-E50-H10-SENTENCE. Abbreviations: S50 = `resul
 | P2-E51-H11-SENTENCE | S51 `h11` (recomputed from the crystal rows) | composed |
 | P2-E51-VARIANTS-SENTENCE | S51b `rows` (steering; mixed time scales) | composed; checked: steering helps the crystal at every interval and hurts the atomic clock at 1 min |
 | P2-E54-MODEL-SENTENCE, P2-E54-DESIGN-SENTENCE | S54 `parameters`, `rows`, `blackout_days`, `seeds` | composed |
-| P2-E54-RESULTS-PARAGRAPH | S54 `rows` at loss 0.25 (and 0.10, 0.40 for grants), `h14`, `reservations_per_seed` | composed; checked: custody cuts grant loss more than a hundredfold; the zero of stuck reservations under the rule is by construction (the runner sets it), stated as such |
+| P2-E54-RESULTS-PARAGRAPH | S54 `rows` at loss 0.25 (and 0.10, 0.40 for grants), `h14`, `reservations_per_seed`; `results/E54_retry_budget.json` (B-117 d, e1: three tries every 20 s, the twelve budgets, the published budget reproduced) | composed; checked: custody cuts grant loss more than a hundredfold; the zero of stuck reservations under the rule is by construction (the runner sets it), stated as such |
 | P2-E56-DATA-SENTENCE | `lunarsim/nn/faults.py` `FAULTS` (sizes in and out of distribution); S56 `dataset`, `ood_setting` | composed; checked: no seed and no pair in two splits |
 | P2-E56-MODEL-SENTENCE | S56 `baselines`, `model`, `config`, `timing`; `results/E56_runs.csv` (the search rows) | composed; checked: parameter count is the sum over layers, the wider network's gain is under the search margin |
 | P2-E56-DESIGN-SENTENCE, P2-E56-PAIR-DAYS | S56 `validation_fa_per_pair_day_at_threshold`, `false_alarm_definition`, `seeds`, `test.fault_free_pair_days_represented` | composed; count |

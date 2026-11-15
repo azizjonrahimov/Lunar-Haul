@@ -59,7 +59,7 @@
 
 <h3>5.10 Bringing a map up to date (H12, a design calculation)</h3>
 
-<p>{{P3-E52-RESULTS-SENTENCE}} <!-- build: bytes, share of a full resend, the hash-tree walk, the time to a current hazard layer in both orders, and the stale-map hits during and after the outage, from results/E52_map.json rows --> {{P3-H12-VERDICT-SENTENCE}} <!-- build: H12's two clauses recomputed from the file and compared with its flag --></p>
+<p>{{P3-E52-RESULTS-SENTENCE}} <!-- build: bytes, share of a full resend, the hash-tree walk, the time to a current hazard layer in both orders, and the stale-map hits during and after the outage, from results/E52_map.json rows --> {{P3-H12-VERDICT-SENTENCE}} <!-- build: H12's two clauses recomputed from the file and compared with its flag --> {{P3-E52-SWEEP-SENTENCE}} <!-- build: control B-117 (j2), results/E52_sweep.json: 17 settings of the change rates, run after the fact; the default must reproduce E52 --></p>
 
 <!-- TABLE:E52_map -->
 
@@ -73,7 +73,7 @@
 
 <h3>5.12 Store-and-forward and the lost link (H14)</h3>
 
-<p>{{P3-E54-RESULTS-SENTENCE}} <!-- build: per message kind the losses and delays under the three protocols at loss 0.25, the age of the base's information and the stuck reservations, from results/E54_dtn.json rows --> {{P3-H14-VERDICT-SENTENCE}} <!-- build: H14's two clauses recomputed and compared with the file's flag --> {{P3-FAMILY-H14-SENTENCE}} <!-- build: the sign test's counts and p-value and Holm's adjusted p-value, recomputed, from results/phase6_family.json --> {{P3-E54-V02-SENTENCE}} <!-- build: task B-111, results/E54_dtn.json block lrip_v02: the replay at version 0.2 sizes and in Proximity-1 frames; the build stops if any row differs from version 0.1 --> {{P3-E54-LEDGER-SENTENCE}} <!-- build: the Earth ledger over 61 days from results/E54_ledger.json: the longest Earth outage and the bundles lost per lifetime and protocol --></p>
+<p>{{P3-E54-RESULTS-SENTENCE}} <!-- build: per message kind the losses and delays under the three protocols at loss 0.25, the age of the base's information and the stuck reservations, from results/E54_dtn.json rows --> {{P3-H14-VERDICT-SENTENCE}} <!-- build: H14's two clauses recomputed and compared with the file's flag --> {{P3-E54-RETRY-SWEEP-SENTENCE}} <!-- build: control B-117 (e1), results/E54_retry_budget.json: H14's first clause at twelve retry budgets, run after the results were known; the published budget must reproduce E54's cells --> {{P3-FAMILY-H14-SENTENCE}} <!-- build: the sign test's counts and p-value and Holm's adjusted p-value, recomputed, from results/phase6_family.json --> {{P3-E54-V02-SENTENCE}} <!-- build: task B-111, results/E54_dtn.json block lrip_v02: the replay at version 0.2 sizes and in Proximity-1 frames; the build stops if any row differs from version 0.1 --> {{P3-E54-LEDGER-SENTENCE}} <!-- build: the Earth ledger over 61 days from results/E54_ledger.json: the longest Earth outage and the bundles lost per lifetime and protocol --></p>
 
 <!-- TABLE:E54_dtn -->
 

@@ -416,3 +416,60 @@ E50b_summary or E45_uphill.
 - `P1-TABLE-E54` caption: a message is lost when its lifetime ends undelivered "by the month's end" (was "inside
   the month"), the definition after B-120 B.
 - `P1-E54-LEDGER-SENTENCE` reads `results/E54_ledger.json` (the 61-day replay), which the rerun did not touch.
+
+## Pass for three control runs (14 Nov 2026): B-117 a, b, c
+
+The three controls are read by `b117_controls()` in the builder, each from its own results file; all were run after
+the results were known and every sentence says so (controls, not pre-registered tests). No value printed before moves.
+
+- `results/B117a_oracle_rally.json` (referee S3): `P1-B117A-SENTENCE` (5.4), `P1-B117A-INTRO-SENTENCE` (1),
+  `P1-B117A-DISC-SENTENCE` (6.1), `P1-B117A-RELATED-CLAUSE` (6.2), `P1-B117A-LIMIT-SENTENCE` (7) and
+  `P1-B117A-CLAIM` (Table 12, H3a row). Checks: the repeated marketplace and auction cells equal E40's stored runs;
+  the control's auction-minus-marketplace pair is E40's H3a row; with the move the marketplace waits as long as the
+  auction; the move's own effect has an interval that includes zero.
+- `results/B117b_depth_loss0.json` (referee S11): `P1-B117B-SENTENCE` (5.5) and `P1-B117B-CLAIM` (Table 12).
+  `P1-E41-DEPTH-SENTENCE` no longer says that the penalty cannot be attributed. Checks: the two repeated E41 cells
+  reproduce; the control's lossy penalties and stale claims are E41's; both depths cost wait at loss 0; depth 1 is
+  best at every loss; the part due to loss excludes zero only at depth 5 and loss 0.40. The lossy penalties keep
+  E41's printed intervals (the control's own bootstrap differs in the last digit of two interval ends).
+- `results/B117c_bid_ablation.json` (referee S12): `P1-B117C-ABLATION-SENTENCE` and `P1-B117C-TUNED-SENTENCE`
+  (5.6, a new last paragraph), `P1-B117C-INTRO-SENTENCE` (1), `P1-B117C-DISC-SENTENCE` (6.1),
+  `P1-B117C-RELATED-SENTENCE` and `P1-B117C-WEIGHTS-CLAUSE` (6.2), `P1-B117C-IMPL-SENTENCE` (6.3) and
+  `P1-B117C-CLAIM` (Table 12, H4 row). Checks: the ablation covers the policy file's 13 weights; the references
+  equal the evaluation's stored runs; only slack and priority have intervals that exclude zero; three weights change
+  nothing; without slack the policy is not distinguishable from hand-built bids; the tuned rule beats hand-built and
+  linear at 30 % load, is not distinguishable from hand-built at 60 % and stays behind linear there; the file states
+  that the 60 % references are stored runs, not repeated.
+- `P1-B117-ABSTRACT-SENTENCE`, `P1-B117-CONCLUSION-SENTENCE` (word limits 300 and 250; to make room the closing relay sentence of each
+  was removed, with "for delivery" and "to delivery"; the relay comparison stays in 5.4 and 6.3), `P1-B117-LIMIT-SENTENCE` (7, a new item) and `P1-B117-DEPARTURE-SENTENCE` (4.6).
+- 6.5 lists two control runs as still open (uncapped drop and retry, another ownership split) and no longer the two
+  that were run.
+
+## Pass for the fixed-point rerun (15 Nov 2026): B-122
+
+`dev_notes.json` `learned_eval.fixpoint_file` names `results/ATC_learned_eval_fixpoint.json`; the builder loads it as
+`r.L_fix` and stops if it is missing. Every learned-bid value P1 prints (5.6 evaluation, guard runs, Table 6, the
+agreement figures of 5.11) is read from it; `results/ATC_learned_eval_rerun.json` (12 Nov, without change 5) is read
+only for the old headline values and the guard values that 4.6 and 5.6 quote as "without the fixed point".
+Checks: the old file's `engine_note_b122` says it ran without change 5; the new file ran with it, same seeds and
+policies, not retrained; its hand bids at 30 % equal E40's auction runs (`gate_hand_30_equals_E40_C_AUCTION`, max abs
+diff 0); its means for hand, network and linear equal E40's block-one cells at 30 and 60 %, and its differences equal
+E40's H4 rows; no guard metric worsens at 30 or 60 %; without the fixed point bulk delay rose at 30 %.
+
+- New: `P1-LEARNED-EVAL-DEPARTURE-SENTENCE` (4.6; old and new headline values) and
+  `P1-LEARNED-ENGINE-LIMIT-SENTENCE` (7, "The learned bids were trained on an earlier engine": not retrained; the
+  recording run loses a wake-up, cause found and not fixed; the agreement figures come from recording runs; the
+  other-cargo check on ten seeds; the evaluation seeds used more than once). The earlier Limitations item "The learned
+  bids' gain is not shown to be free for other cargo at the middle load" is removed.
+- Rewritten from the new file: `P1-LEARNED-EVAL-SENTENCE`, `P1-LEARNED-EVAL-LABEL`, `P1-GUARD-30-SENTENCE` (clean on
+  the fixed point, not without it), `P1-GUARD-30-CLAUSE`, `P1-GUARD-TONNEDAYS-PCT`, `P1-IMIT-RERUN-SENTENCE`,
+  `P1-OOD-LABEL-SENTENCE`, `P1-OOD-SENTENCE`, Table 6 caption, Table 12 row "The linear bids keep their sign".
+- Control (c): `B117c_bid_ablation.json` main content is on the fixed point; `b117_controls()` checks its references
+  against the fixed-point evaluation at both loads (the 60 % rows are repeated), the landing weight (removing it lowers
+  the wait), and that the hand rule's selected point differs from the one kept under `no_fixpoint_2026-11-15`. The
+  60 % conclusion changes: the tuning carries over in part (tuned minus hand -18.7 h) and the linear bids stay ahead
+  (12.8 h). `P1-B117C-*`, `P1-B117-LIMIT-SENTENCE`, `P1-B117-ABSTRACT-SENTENCE` and `P1-B117-CONCLUSION-SENTENCE`
+  rewritten.
+- Word limits: abstract "above the base's horizon" -> "in view"; conclusion "several owners' vehicles" -> "owners'
+  vehicles".
+- 3.10: the evaluation seeds were also used by the two reruns of the first evaluation.

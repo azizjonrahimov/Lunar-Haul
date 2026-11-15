@@ -1,7 +1,7 @@
 // F-56: the Lunar ATC section of /results/ (<!--@results-atc-->): the three papers' headline numbers, read at build time
 // from paper/<id>/values.json (the papers' own values files; pre-formatted strings) and, for P3's computing and radio
 // numbers that its values file does not carry, results/E48_sizing.json, and for P1's learned-bid rerun,
-// results/ATC_learned_eval_rerun.json (F-74). Nothing is typed.
+// results/ATC_learned_eval_fixpoint.json (F-74, F-82). Nothing is typed.
 import { readFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
@@ -49,37 +49,46 @@ export function cardKeyChanges() {
   });
 }
 
-// F-74: P1's learned-bid rerun on the corrected engine (B-106, results/ATC_learned_eval_rerun.json; P1 section 5.6). The
-// headline stays the registered E40 test (P1-H4-*, from values.json); the rerun agrees, and its guard runs say whether other
-// cargo pays for the gain. The sentences say what the intervals say: a rerun that moves an interval across zero fails the build.
-export const LR_SRC = 'results/ATC_learned_eval_rerun.json';
-export function p1learned(key, D = JSON.parse(readFileSync(join(ROOT, LR_SRC), 'utf8'))) {   // D: the file, or a test's copy
+// F-74, F-82 (B-122): P1's learned-bid evaluation on the engine of the registered test, with the dispatch fixed point
+// (results/ATC_learned_eval_fixpoint.json; P1 section 5.6). The 12 Nov rerun (results/ATC_learned_eval_rerun.json) ran
+// without the fixed point; it is read only for the earlier bulk-cargo value that the guard sentence names. The headline stays
+// the registered E40 test (P1-H4-*, from values.json). The sentences say what the intervals say: a file that moves an interval
+// across zero, or a guard metric that gets worse, fails the build.
+export const LR_SRC = 'results/ATC_learned_eval_fixpoint.json';
+export const LR_OLD = 'results/ATC_learned_eval_rerun.json';
+const WORSE_IF_LOWER = new Set(['delivered_kg']);   // every other guard metric is a wait, a delay, a backlog or a count of starved items
+export function p1learned(key, D = JSON.parse(readFileSync(join(ROOT, LR_SRC), 'utf8')), O = JSON.parse(readFileSync(join(ROOT, LR_OLD), 'utf8'))) {   // D, O: the files, or a test's copies
   const E = D.eval, G = D.guards;
   const loads = Object.keys(E).map(Number).sort((a, b) => a - b), [lo, hi] = [loads[0], loads[loads.length - 1]];
   const gl = Object.keys(G).map(Number).sort((a, b) => a - b);
   if (gl.join() !== loads.join()) throw new Error(`${LR_SRC}: guard loads ${gl} differ from evaluation loads ${loads}`);
   const fail = m => { throw new Error(`${LR_SRC}: ${m}; the P1 sentences on /results/ and /paper/ no longer hold`); };
+  if (!/change 5 on/i.test(String(D.engine))) fail('the file does not say it ran with PREREG change 5 (the dispatch fixed point)');
+  if (!/WITHOUT PREREG change 5/.test(String(O.engine_note_b122 || ''))) throw new Error(`${LR_OLD}: no engine_note_b122 saying it ran without the fixed point`);
   const below = c => c[1] < 0, above = c => c[0] > 0, zero = c => c[0] <= 0 && c[1] >= 0;
   const g = (l, m) => G[l][m].linear_minus_hand;
   for (const l of loads) {
     if (!below(E[l].linear.vs_hand_h.ci95)) fail(`the linear correction's gain at ${l} % is not below zero`);
     if (!zero(E[l].mlp.vs_hand_h.ci95)) fail(`the network's difference at ${l} % excludes zero`);
+    for (const m of Object.keys(G[l])) if ((WORSE_IF_LOWER.has(m) ? below : above)(g(l, m).ci95)) fail(`at ${l} % the guard's ${m} got worse`);
   }
   const OTHER = ['atc_urgent_wait_mean_cens_h', 'delay_prio2_mean_h', 'delay_mean_bulk', 'tonne_days_waiting'];
   for (const m of OTHER) if (!below(g(hi, m).ci95)) fail(`at ${hi} % the guard's ${m} is not below zero`);
-  if (!zero(g(lo, 'atc_urgent_wait_mean_cens_h').ci95)) fail(`at ${lo} % the guard's urgent wait excludes zero`);
-  if (!above(g(lo, 'delay_mean_bulk').ci95)) fail(`at ${lo} % the guard's bulk delay is not above zero`);
+  if (!below(g(lo, 'atc_urgent_wait_mean_cens_h').ci95)) fail(`at ${lo} % the guard's urgent gain is not below zero`);
+  if (!zero(g(lo, 'delay_mean_bulk').ci95)) fail(`at ${lo} % the guard's bulk delay excludes zero`);
+  const OB = O.guards[lo].delay_mean_bulk.linear_minus_hand;
+  if (!above(OB.ci95)) throw new Error(`${LR_OLD}: the earlier bulk delay at ${lo} % is not above zero; the guard sentence no longer holds`);
   const nE = new Set(loads.flatMap(l => ['linear', 'mlp'].map(p => E[l][p].vs_hand_h.n))), nG = new Set(gl.flatMap(l => OTHER.map(m => g(l, m).n)));
   if (nE.size !== 1 || nG.size !== 1) fail('seed counts differ between cells');
-  const set = (value, what, unit = '') => num({ value, unit, digits: 0, flag: 'Assumed', source: `${LR_SRC}: ${what} (a setting of the rerun)` });
+  const set = (value, what, unit = '') => num({ value, unit, digits: 0, flag: 'Assumed', source: `${LR_SRC}: ${what} (a setting of the evaluation)` });
   const load = l => set(l, `eval/guards key ${l}`, ' %');
   const pct = (l, p) => num({ value: -100 * E[l][p].vs_hand_share, unit: ' %', digits: 1, flag: 'Modelled', source: `${LR_SRC}: eval.${l}.${p}.vs_hand_share (a cut, so shown without its minus sign)` });
-  const hr = (x, what) => num({ value: x, unit: ' h', digits: 2, flag: 'Modelled', source: `${LR_SRC}: ${what}` });
-  const ci = (c, what) => `${hr(c[0], `${what}.ci95[0]`)} to ${hr(c[1], `${what}.ci95[1]`)}`;
+  const hr = (x, what, src = LR_SRC) => num({ value: x, unit: ' h', digits: 2, flag: 'Modelled', source: `${src}: ${what}` });
+  const ci = (c, what, src = LR_SRC) => `${hr(c[0], `${what}.ci95[0]`, src)} to ${hr(c[1], `${what}.ci95[1]`, src)}`;
   const U = g(lo, 'atc_urgent_wait_mean_cens_h'), B = g(lo, 'delay_mean_bulk');
   const uw = `guards.${lo}.atc_urgent_wait_mean_cens_h.linear_minus_hand`, bw = `guards.${lo}.delay_mean_bulk.linear_minus_hand`;
-  if (key === 'rerun') return `The separate evaluation of the learned bids, rerun on the corrected engine on its ${set([...nE][0], 'eval.*.vs_hand_h.n')} seeds, found the linear correction cutting the urgent wait by ${pct(lo, 'linear')} at ${load(lo)} load and by ${pct(hi, 'linear')} at ${load(hi)}, in agreement with that test, and the network still not distinguishable from hand-built bids.`;
-  if (key === 'guard') return `Whether other cargo pays for the gain was checked on ${set([...nG][0], 'guards.*.*.linear_minus_hand.n')} further runs per load. At ${load(hi)} load it does not: urgent, normal-priority and bulk cargo all waited less. At ${load(lo)} load the check is not clean: on those few runs the urgent gain could not be told from zero (${hr(U.mean, `${uw}.mean`)}, interval ${ci(U.ci95, uw)}), and bulk cargo waited ${hr(B.mean, `${bw}.mean`)} longer (interval ${ci(B.ci95, bw)}).`;
+  if (key === 'rerun') return `The separate evaluation of the learned bids, run on the engine of that test (with the dispatch fixed point) on its ${set([...nE][0], 'eval.*.vs_hand_h.n')} seeds, found the linear correction cutting the urgent wait by ${pct(lo, 'linear')} at ${load(lo)} load and by ${pct(hi, 'linear')} at ${load(hi)}, in agreement with that test, and the network still not distinguishable from hand-built bids. The bids were trained on an engine without the fixed point and not retrained.`;
+  if (key === 'guard') return `Whether other cargo pays for the gain was checked on ${set([...nG][0], 'guards.*.*.linear_minus_hand.n')} further runs per load: at neither load did any measure of other cargo get worse. At ${load(hi)} load urgent, normal-priority and bulk cargo all waited less. At ${load(lo)} load the urgent wait fell by ${hr(-U.mean, `${uw}.mean (sign dropped: a fall)`)} (interval ${ci(U.ci95, uw)}) and the change for bulk cargo could not be told from zero (${hr(B.mean, `${bw}.mean`)}, interval ${ci(B.ci95, bw)}). An earlier rerun on an engine without the fixed point had bulk cargo waiting ${hr(OB.mean, `guards.${lo}.delay_mean_bulk.linear_minus_hand.mean`, LR_OLD)} longer at ${load(lo)} load (interval ${ci(OB.ci95, `guards.${lo}.delay_mean_bulk.linear_minus_hand`, LR_OLD)}).`;
   throw new Error(`P1 learned bids: unknown key ${key}`);
 }
 

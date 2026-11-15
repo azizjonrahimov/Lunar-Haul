@@ -452,6 +452,12 @@ class R:
             raise ValueError("dev_notes.json learned_eval.file is not results/ATC_learned_eval.json")
         rp = os.path.join(ROOT, le["rerun_file"])
         self.L_rerun = json.load(open(rp, encoding="utf-8")) if os.path.exists(rp) else None
+        # B-122 (15 Nov): the 12 Nov rerun ran without PREREG change 5 (train_bid never set the opt-in fixed point); the
+        # evaluation on the engine with change 5 is the source of every learned-bid value P1 prints
+        fp = os.path.join(ROOT, le["fixpoint_file"])
+        if not os.path.exists(fp):
+            raise SystemExit(f"{le['fixpoint_file']} is missing: the learned-bid evaluation on the fixed point (B-122) is read from it")
+        self.L_fix = json.load(open(fp, encoding="utf-8"))
         self._full, self._arch = {}, {}
 
     KEY = ["cell", "seed", "start_year"]
@@ -547,6 +553,314 @@ class R:
         if len(g) == 0:
             raise Pending(f"{exp} cell {label!r} has no runs yet")
         return g
+
+
+# ---------------------------------------------------------------------------------------------------------
+# B-117 (a, b, c): three control runs made after the results were known (pass of 14 Nov 2026)
+# ---------------------------------------------------------------------------------------------------------
+def b117_controls(r, V, check, h3, m3):
+    """The three controls the referees named (S3, S11, S12), each from its own results file. They were run after the
+    results they bear on had been seen: every sentence calls them controls, never pre-registered tests. Every number
+    is read from the files; what a fixed phrase asserts is a build check."""
+    M = "atc_urgent_wait_mean_cens_h"
+
+    def jl(name):
+        path = os.path.join(RES, name)
+        if not os.path.exists(path):
+            raise SystemExit(f"{name}: the control's results file is missing")
+        return json.load(open(path, encoding="utf-8"))
+
+    def q(d):
+        """A paired difference as {mean, lo, hi, lo90, hi90} whichever way the file spells its interval."""
+        if "ci" in d:
+            return {"mean": d["mean"], "lo": d["ci"][0], "hi": d["ci"][1], "lo90": d["ci90"][0], "hi90": d["ci90"][1], "n": d["n"]}
+        return d
+
+    dd = lambda x, nd=2: f"{h_(x['mean'], nd, sign=True)} ({ci_h(x['lo'], x['hi'], nd)})"
+    din = lambda x, nd=2: f"{h_(x['mean'], nd, sign=True)}, {ci_h(x['lo'], x['hi'], nd)}"      # inside brackets
+    size = lambda x, nd=2: f"{h_(abs(x['mean']), nd)} ({ci_h(*sorted((abs(x['lo']), abs(x['hi']))), nd)})"
+    zero_in = lambda x: x["lo"] < 0 < x["hi"]
+    CTRL = "a control run made after these results were known, not a pre-registered test"
+
+    # ---- (a) the marketplace with the auction's return move --------------------------------------------------
+    A = jl("B117a_oracle_rally.json")
+    ca = A["cells"]
+    o, c, om = ca["O_ORACLE"], ca["C_AUCTION"], ca["O + rally (unheard)"]
+    pa = {k: q(v) for k, v in A["pairs_urgent_wait_h"].items()}
+    a_o, m_o, a_m = pa["C_AUCTION - O_ORACLE"], pa["O + rally (unheard) - O_ORACLE"], pa["C_AUCTION - O + rally (unheard)"]
+    n_a = len(A["seeds"])
+    check(all(A["reproduces_E40_runs"][k]["equal"] and max(A["reproduces_E40_runs"][k]["max_abs_diff"].values()) == 0
+              for k in ("O_ORACLE", "C_AUCTION")),
+          "the control's marketplace and auction cells equal E40's stored runs value for value")
+    check(n_a == 30 == a_m["n"] and A["seeds"] == list(range(1, 31)), "the return-move control uses the 30 seeds of block one")
+    check(abs(o[M] - h3["b_mean"]) < 1e-3 and abs(a_o["mean"] - h3["mean"]) < 1e-3
+          and abs(a_o["lo"] - h3["lo"]) < 0.01 and abs(a_o["hi"] - h3["hi"]) < 0.01,
+          "the control's auction-minus-marketplace difference is the H3a row of E40")
+    on = r.cell41("C_AUCTION loss 0.1")
+    check(abs(c[M] - on[M]) < 1e-3 and abs(c["atc_rallies"] - on["atc_rallies"]) < 0.01,
+          "the control's auction cell is the default auction cell (wait and returns a year)")
+    check("Not PREREG cells" in A["note"] and "Pre-declared" in A["note"] and "nearest" in A["note"] and "lost-link rule" in A["note"],
+          "the return-move control is declared as not pre-registered and as the auction's own trigger and move")
+    check(zero_in(a_m) and abs(a_m["mean"]) < 0.05 and h_(om[M], 2) == h_(c[M], 2),
+          "with the return move the marketplace waits as long as the auction, to the second decimal")
+    check(zero_in(m_o) and zero_in(a_o) and abs(m_o["mean"] - a_o["mean"]) < 0.05,
+          "the move shifts the marketplace's point estimate by what the auction led by, and neither interval excludes zero")
+    check(o["atc_rallies"] == 0 and om["atc_rallies"] < c["atc_rallies"], "the marketplace makes the move less often than the auction")
+    inside = -m3 < a_m["lo90"] and a_m["hi90"] < m3
+    lead = h_(abs(a_o["mean"]), 2)
+    V["P1-B117A-SENTENCE"] = (
+        f"The marketplace was later run with the same move, in {CTRL}: an idle robot with no radio path to the mast "
+        f"drives to the nearest site the mast sees, the trigger and the move of the auction's rule. On the same "
+        f"{n_a} seeds, with E40's marketplace and auction cells repeated and equal to the stored runs value for "
+        f"value, the marketplace with the move waited {h_(om[M], 2)}, against {h_(o[M], 2)} without it and "
+        f"{h_(c[M], 2)} for the auction; the auction minus the marketplace with the move is {dd(a_m)}. The marketplace "
+        f"made the move {num(om['atc_rallies'], 0)} times a year and the auction {num(c['atc_rallies'], 0)}. The "
+        f"auction's lead of {lead} in the point estimate is therefore the return move and not the place of the "
+        f"decision: given the same move, deciding on the robots at this message loss waited as long as deciding with "
+        f"full information"
+        + (f", and the 90{PCT} interval of that difference ({ci_h(a_m['lo90'], a_m['hi90'], 2)}) lies inside the "
+           f"&plusmn;{h_(m3)} that H3a set for the comparison without the move, a margin that was not registered for "
+           f"this one" if inside else "")
+        + f". The move itself is not shown to help: it changed the marketplace's wait by {dd(m_o)}.")
+    V["P1-B117A-INTRO-SENTENCE"] = (
+        f"In a control run made after these results were known, the marketplace, given the auction's own move for "
+        f"robots that nobody hears, waited as long as the auction ({din(a_m)}), so the auction's lead in that point "
+        f"estimate is the move and not the place of the decision.")
+    V["P1-B117A-DISC-SENTENCE"] = (
+        f"A control run made after these results gave the marketplace the auction's return move, and it then waited as "
+        f"long as the auction ({din(a_m)}): the {lead} is the move, not the place of the decision. One thing still "
+        f"qualifies the reading: in the model the best bid of a round always wins whatever is lost (Sections 5.4 and 3.7).")
+    V["P1-B117A-RELATED-CLAUSE"] = (
+        f"With the auction's return move, in a control run afterwards, the reference waited as long as the auction "
+        f"({din(a_m)}; Section 5.4).")
+    V["P1-B117A-LIMIT-SENTENCE"] = (
+        f"A control run after the results were known gave the marketplace the same move: it then waited as long as "
+        f"the auction ({din(a_m)}), so the auction's small lead over the marketplace in the main comparison is the "
+        f"rule (Section 5.4). The control is one cell at one load, and the move's own effect on the marketplace, "
+        f"{dd(m_o)}, is not distinguishable from zero.")
+    V["P1-B117A-CLAIM"] = (
+        f" In E40 the auction's idle robots return towards the mast and the marketplace's do not. Control run "
+        f"afterwards (not pre-registered), {n_a} paired seeds: given the same move the marketplace waits as long as "
+        f"the auction ({din(a_m)}).")
+
+    # ---- (b) bundle depths 2 and 5 without loss --------------------------------------------------------------
+    B = jl("B117b_depth_loss0.json")
+    cb = B["cells"]
+    dm = B["depth_minus_depth1"][M]
+    pl = B["part_due_to_loss"]
+    cellname = lambda dp, L: "C_AUCTION " + ("" if dp == 1 else f"depth {dp} ") + f"loss {L}"
+    LOSSES = ("0", "0.25", "0.4")
+    check(B["repeated_E41_cells_reproduce"] is True
+          and all(v == 0 for cell in B["repeated_E41_cells_max_abs_diff"].values() for v in cell.values())
+          and len(B["repeated_E41_cells_max_abs_diff"]) == 2,
+          "the two E41 cells repeated by the depth control equal the stored runs value for value")
+    check(B["seeds"] == list(range(1, 31)), "the depth control uses seeds 1 to 30")
+    for dp in (2, 5):
+        for L in ("0.25", "0.4"):
+            e41, new = r.pair41(f"C_AUCTION depth {dp} loss {L} - C_AUCTION loss {L}"), dm[f"depth {dp} - depth 1, loss {L}"]
+            check(abs(e41["mean"] - new["mean"]) < 5e-3 and abs(e41["lo"] - new["lo"]) < 0.15 and abs(e41["hi"] - new["hi"]) < 0.15,
+                  f"the depth control's depth {dp} penalty at loss {L} is E41's (the interval to the bootstrap's own draw)")
+            check(abs(r.cell41(f"C_AUCTION depth {dp} loss {L}")["atc_claims_stale"] - cb[cellname(dp, L)]["atc_claims_stale"]) < 0.05,
+                  f"the depth control's stale claims at depth {dp} and loss {L} are E41's")
+    p0 = {dp: dm[f"depth {dp} - depth 1, loss 0"] for dp in (2, 5)}
+    check(all(p0[dp]["lo"] > 0 and p0[dp]["n"] == 30 for dp in p0), "both bundle depths cost urgent wait without any loss")
+    stale = {dp: [cb[cellname(dp, L)]["atc_claims_stale"] for L in LOSSES] for dp in (2, 5)}
+    check(all(max(v) - min(v) < 0.05 * min(v) for v in stale.values()) and all(cb[cellname(1, L)]["atc_claims_stale"] == 0 for L in LOSSES),
+          "the stale claims are the same at every loss, and depth 1 has none")
+    check(all(cb[cellname(1, L)][M] < min(cb[cellname(2, L)][M], cb[cellname(5, L)][M]) for L in LOSSES),
+          "depth 1 has the shortest urgent wait at every loss, 0 included")
+    sig = sorted(k for k, v in pl.items() if not zero_in(v))
+    check(sig == ["depth 5, loss 0.4"] and pl["depth 5, loss 0.4"]["lo"] > 0,
+          "the part of the depth penalty due to loss is distinguishable from zero only at depth 5 and loss 0.40")
+    full54 = r.pair41("C_AUCTION depth 5 loss 0.4 - C_AUCTION loss 0.4")
+    check(abs(pl["depth 5, loss 0.4"]["mean"] + pl["depth 5, loss 0.4"]["b_mean"] - full54["mean"]) < 5e-3,
+          "the penalty at depth 5 and loss 0.40 is the penalty without loss plus the part due to loss")
+    check(pl["depth 5, loss 0.4"]["mean"] > pl["depth 5, loss 0.25"]["mean"], "the part due to loss at depth 5 is larger at loss 0.40")
+    s3 = lambda v: listing(num(x, 0) for x in v)
+    d1 = lambda x: f"{h_(x['mean'], 1, sign=True)} ({ci_h(x['lo'], x['hi'], 1)})"
+    V["P1-B117B-SENTENCE"] = (
+        f"E41 had no cell with depth 2 or 5 and no loss, so it could not say how much of this penalty is due to loss. "
+        f"The two cells were added in {CTRL}, on the same 30 seeds, with two cells of E41 repeated and equal to the "
+        f"stored runs value for value. Without any loss, depth 2 raised the urgent wait by "
+        f"{h_(p0[2]['mean'], 1)} ({ci_h(p0[2]['lo'], p0[2]['hi'], 1)}) against depth 1 and depth 5 by "
+        f"{h_(p0[5]['mean'], 1)} ({ci_h(p0[5]['lo'], p0[5]['hi'], 1)}), and the stale claims are the same at every "
+        f"loss: {s3(stale[2])} a year at depth 2 and {s3(stale[5])} at depth 5, at loss 0, 0.25 and 0.40. Bundling "
+        f"therefore costs urgent wait under this demand with no message lost. The part that loss adds, the penalty at "
+        f"a loss minus the penalty without loss, paired by seed, is distinguishable from zero only at depth 5 and loss "
+        f"0.40: {d1(pl['depth 5, loss 0.4'])} of the {h_(full54['mean'], 1)}. At depth 5 and loss 0.25 it is "
+        f"{d1(pl['depth 5, loss 0.25'])}, and at depth 2 {d1(pl['depth 2, loss 0.25'])} and "
+        f"{d1(pl['depth 2, loss 0.4'])}. Depth 1 had the shortest wait at every loss, 0 included, so the best depth "
+        f"cannot fall under loss here as it does in Lott and Honary's benchmark [10]; what agrees with that "
+        f"benchmark is that the cost of depth 5 grows under heavy loss.")
+    V["P1-B117B-CLAIM"] = (
+        f" Depths 2 and 5 without loss were run afterwards as a control (not pre-registered), 30 paired seeds: "
+        f"bundling costs urgent wait with no message lost ({din(p0[2], 1)} at depth 2; {din(p0[5], 1)} at depth 5), and loss "
+        f"adds to it measurably only at depth 5 and loss 0.40.")
+
+    # ---- (c) the linear bid's weights removed one at a time, and the hand-built rule tuned --------------------
+    # B-122: the file's main content is on the engine with the dispatch fixed point; the first run (without it) is
+    # kept under "no_fixpoint_2026-11-15" and only its tuned point is quoted, to say that the selection moved
+    C = jl("B117c_bid_ablation.json")
+    NOFIX = C["no_fixpoint_2026-11-15"]
+    F = r.L_fix["eval"]
+    check(str(C["code"]).endswith("+fixpoint") and "change 5 on" in C["engine"] and "not retrained" in C["engine"]
+          and "selected again" in C["engine"] and not str(NOFIX["code"]).endswith("+fixpoint"),
+          "control (c) ran on the fixed point, with the policy not retrained and the hand rule selected again; the kept first run did not")
+    ab = {k: {"wait": v["urgent_wait_h"], "lin": q(v["minus_linear"]), "hand": q(v["minus_hand"])} for k, v in C["ablation_30"].items()}
+    names = r.lin["obs"]["names"]
+    w_pol = dict(zip(names, np.asarray(r.lin["layers"][0]["w"], float).reshape(-1)))
+    check(sorted(ab) == sorted(names) == sorted(C["weights"]) and all(abs(C["weights"][k] - w_pol[k]) < 1e-9 for k in names),
+          "the ablation covers every weight of the published linear policy, with the policy file's values")
+    hand30, lin30 = C["urgent_wait_h_30"]["hand"], C["urgent_wait_h_30"]["linear"]
+    check(C["references_reproduce_cached_eval_runs"] is True and C["seeds"] == list(range(1, 31))
+          and all(v["lin"]["n"] == 30 for v in ab.values())
+          and abs(hand30 - F[str(LOAD_MAIN)]["hand"]["urgent_mean_h"]) < 1e-3 and abs(lin30 - F[str(LOAD_MAIN)]["linear"]["urgent_mean_h"]) < 1e-3,
+          "the ablation's hand-built and linear references equal the fixed-point evaluation, on seeds 1 to 30")
+    zin = lambda x: x["lo"] <= 0 <= x["hi"]
+    exact0 = sorted(k for k, v in ab.items() if v["lin"]["mean"] == 0 and v["lin"]["lo"] == 0 == v["lin"]["hi"])
+    resolved = sorted(k for k, v in ab.items() if not zin(v["lin"]))
+    rest = sorted(k for k in ab if k not in resolved and k not in exact0)
+    check(resolved == ["landing", "prio", "slack_d"] and ab["slack_d"]["lin"]["lo"] > 0 and ab["prio"]["lin"]["lo"] > 0
+          and ab["landing"]["lin"]["hi"] < 0,
+          "removing the slack or the priority weight raises the wait, removing the landing weight lowers it, and no other interval excludes zero")
+    check(exact0 == ["link_base", "queue"], "two weights leave every seed's wait as it was")
+    check(len(rest) == len(names) - 5 and all(zin(ab[k]["lin"]) for k in rest), "for the other weights the interval includes zero")
+    sl, pr, ld = ab["slack_d"], ab["prio"], ab["landing"]
+    check(zero_in(sl["hand"]) and abs(sl["wait"] - hand30 - sl["hand"]["mean"]) < 1e-3 and abs(sl["wait"] - lin30 - sl["lin"]["mean"]) < 1e-3,
+          "without its slack weight the linear policy is not distinguishable from the hand-built bids")
+    check(w_pol["slack_d"] < 0 and w_pol["slack_d"] == min(w_pol.values()), "the slack weight is the most negative: it raises the bid of an item with more slack")
+    check(w_pol["landing"] > 0, "the landing weight lowers the bid of an item the longer until the next landing")
+    T = C["tuned_hand"]
+    t30, t60 = T["load_30"], T["load_60"]
+    th30, lt30, th60, lt60 = q(t30["tuned_minus_hand"]), q(t30["linear_minus_tuned"]), q(t60["tuned_minus_hand"]), q(t60["linear_minus_tuned"])
+    check(abs(t30["hand_h"] - hand30) < 1e-9 and abs(t30["linear_h"] - lin30) < 1e-9, "the tuned rule is paired with the ablation's references at the middle load")
+    check(abs(t60["hand_h"] - F[str(LOAD_HEAVY)]["hand"]["urgent_mean_h"]) < 1e-3 and abs(t60["linear_h"] - F[str(LOAD_HEAVY)]["linear"]["urgent_mean_h"]) < 1e-3
+          and "repeated here" in T["note_60"] and "fixed-point evaluation" in T["note_60"],
+          "the 60 % references were repeated and equal the fixed-point evaluation")
+    check(th30["hi"] < 0 and lt30["lo"] > 0, "at the middle load the tuned hand-built rule beats the untuned rule and the linear bids")
+    check(th60["hi"] < 0 and lt60["hi"] < 0, "at 60 % load the tuned rule beats the untuned rule and the linear bids stay ahead of it")
+    check(abs(th60["mean"] + lt60["mean"] - (t60["linear_h"] - t60["hand_h"])) < 1e-3,
+          "at 60 % the tuned rule's gain and the linear bids' remaining lead add up to the linear bids' gain over the rule as written")
+    m = re.search(r"w_p1 = ([\d.]+) h, w_p2 = ([\d.]+) h, w_age = ([\d.]+), vot_scale = ([\d.]+)", C["note"])
+    b = re.search(r"(\d+) candidates, (\d+) elite, (\d+)\s+generations", C["note"])
+    if not m or not b:
+        raise KeyError("B117c_bid_ablation.json: the note does not state the hand rule's defaults and the search budget")
+    dflt = [float(x) for x in m.groups()]
+    hist = T["history"]
+    check(len(hist) == int(b.group(3)) and all(len(g["fitness"]) == int(b.group(1)) for g in hist),
+          "the tuning ran the generations and candidates its note states")
+    check("CEM_FIT_SEEDS" in C["note"] and "CEM_TUNE_SEEDS" in C["note"] and "linear CEM's own budget and seeds" in C["note"]
+          and "30 % load" in C["note"] and "Pre-declared" in C["note"],
+          "the hand-built rule was tuned with the linear search's budget and seeds, at the middle load, as declared beforehand")
+    check(min(range(len(hist)), key=lambda i: hist[i]["tune_mu"]) == T["selected_generation"]
+          and abs(hist[T["selected_generation"]]["tune_mu"] - T["selection_seeds_mean_h"]) < 1e-9
+          and all(abs(hist[T["selected_generation"]]["params"][k] - T["params"][k]) < 1e-9 for k in T["params"]),
+          "the tuned point is the generation with the best mean on the selection seeds")
+    check(abs(dflt[0] - 6) < 1e-9 and abs(dflt[1] - 2) < 1e-9 and abs(dflt[2] - 0.08) < 1e-9 and dflt[3] == 1,
+          "the hand-built rule's defaults are the credits Section 3.7 states")
+    tp, op = T["params"], NOFIX["tuned_hand"]["params"]
+    PK = ("w_p1", "w_p2", "w_age", "vot_scale")
+    check(abs(tp["w_p1"] - op["w_p1"]) > 1 and T["selected_generation"] != NOFIX["tuned_hand"]["selected_generation"],
+          "the search selected a different point on each engine")
+    same_dir = [k for k, d in zip(PK, dflt) if (tp[k] > d) == (op[k] > d)]
+    check(same_dir == ["w_p1", "w_age", "vot_scale"], "both points raise the urgent credit and the scale and lower the age credit; they differ on the normal credit")
+    n_w = len(names)
+    gen = T["selected_generation"]
+    ORD = ["first", "second", "third", "fourth", "fifth", "sixth"]
+    pt = lambda p: f"{num(p['w_p1'], 1)}{NB}h, {num(p['w_p2'], 1)}{NB}h, {num(p['w_age'], 3)}{NB}h and {num(p['vot_scale'], 2)}"
+    lead60 = f"{h_(abs(lt60['mean']), 1)} ({ci_h(-lt60['hi'], -lt60['lo'], 1)})"
+    V["P1-B117C-ABLATION-SENTENCE"] = (
+        f"Two controls were run after these results were known; they are not pre-registered tests, and both ran on "
+        f"the engine with the fixed point. The first removes the linear policy's {n_w} weights one at a time, each "
+        f"set to zero with the others left as they are, and runs each policy on the 30 evaluation seeds at the middle "
+        f"load as the evaluation above runs them, where hand-built bids waited {h_(hand30, 2)} and the full linear "
+        f"policy {h_(lin30, 2)}; both references were repeated and equal the evaluation's runs. Removing the weight "
+        f"on {FEATURE_WORDS['slack_d']} raised the wait by {size(sl['lin'])} and left no gain over the hand-built "
+        f"bids ({din(sl['hand'])}). Removing the weight on priority raised it by {size(pr['lin'])}. Removing the "
+        f"weight on {FEATURE_WORDS['landing']} lowered it, by {size(ld['lin'])}: at this load that weight costs "
+        f"urgent wait. Two weights changed nothing on any seed: {FEATURE_WORDS['link_base']} and "
+        f"{FEATURE_WORDS['queue']}. For the other {words(len(rest))} the interval includes zero (point values from "
+        f"{h_(min(ab[k]['lin']['mean'] for k in rest), 2, sign=True)} to "
+        f"{h_(max(ab[k]['lin']['mean'] for k in rest), 2, sign=True)}). At this load the gain of the linear bids is "
+        f"therefore their slack weight, which raises the bid of an item the more slack it has left; the removal does "
+        f"not refit the other weights.")
+    V["P1-B117C-TUNED-SENTENCE"] = (
+        f"The second tunes the hand-built rule. Its four parameters, the credits of {num(dflt[0])}{NB}h and "
+        f"{num(dflt[1])}{NB}h for urgent and normal items, the {num(dflt[2], 2)}{NB}h per hour waited and a scale of "
+        f"{num(dflt[3])} on the shippers' value of time (Section 3.7), were fitted by the search that fitted the "
+        f"linear model, with its budget ({len(hist)} generations of {len(hist[0]['fitness'])} candidates), its "
+        f"training and tuning seeds and the middle load. The point selected, the best of the {ORD[gen]} generation on "
+        f"the tuning seeds, is {pt(tp)}. The same search on the engine without the fixed point had selected {pt(op)}, "
+        f"so which point is selected depends on the engine; both raise the urgent credit and the scale and lower the "
+        f"credit for age. On the 30 evaluation seeds at the middle load the tuned rule waited "
+        f"{h_(t30['urgent_wait_h'], 2)}: {size(th30)} less than the hand-built rule as written and {size(lt30)} less "
+        f"than the linear bids. At {LOAD_HEAVY}{PCT} load, which neither was tuned on, it waited "
+        f"{h_(t60['urgent_wait_h'], 2)}, {size(th60)} less than the {h_(t60['hand_h'], 2)} of the rule as written, "
+        f"and the linear bids, at {h_(t60['linear_h'], 2)}, stayed {lead60} ahead of it; the hand-built and linear "
+        f"runs at both loads were repeated and equal the evaluation's runs. So at the load both were tuned on, four "
+        f"tuned parameters of the hand-built rule do better than the learned linear correction, and at "
+        f"{LOAD_HEAVY}{PCT} load the tuning carries over in part while the learned correction keeps the lead. The "
+        f"comparison of learned with hand-built bids turns on what carries over to a load that neither was fitted "
+        f"to, and not on search against no search.")
+    V["P1-B117C-INTRO-SENTENCE"] = (
+        f"Two controls run after these results qualify that gain: it disappears when one of the correction's {n_w} "
+        f"weights, the slack to an item's target time, is set to zero, and the hand-built rule with its four "
+        f"parameters tuned by the same search waited {h_(lt30['mean'], 1)} less than the linear bids at this load; at "
+        f"{LOAD_HEAVY}{PCT} load the tuned rule closed part of the gap, and the linear bids stayed "
+        f"{h_(abs(lt60['mean']), 1)} ahead of it (Section 5.6).")
+    V["P1-B117C-DISC-SENTENCE"] = (
+        f"Two controls run afterwards locate that gain and limit it: it disappears when the slack weight alone is "
+        f"set to zero, and the hand-built rule with its four parameters tuned by the same search waited "
+        f"{size(lt30)} less than the linear bids at the middle load; at {LOAD_HEAVY}{PCT} load the tuned rule waited "
+        f"{h_(abs(th60['mean']), 1)} less than the rule as written and the linear bids stayed "
+        f"{h_(abs(lt60['mean']), 1)} ahead of it (Section 5.6).")
+    V["P1-B117C-RELATED-SENTENCE"] = (
+        f"A control run after these results tuned it, with the linear model's search, budget and seeds. At the middle "
+        f"load the tuned rule waited {h_(t30['urgent_wait_h'], 2)}, {size(lt30)} less than the linear bids; at "
+        f"{LOAD_HEAVY}{PCT} load it waited {h_(abs(th60['mean']), 1)} less than the rule as written, and the linear "
+        f"bids stayed {lead60} ahead of it. A stronger hand-built rule does more than shrink the gain at the load it "
+        f"is tuned on: it reverses it. That is the comparison that Accorsi and colleagues ask for [26]. At a load "
+        f"that neither was fitted to, the learned correction keeps a smaller lead.")
+    V["P1-B117C-WEIGHTS-CLAUSE"] = (
+        f"At the middle load the linear model's gain rests on one of its {n_w} weights, the slack to the item's "
+        f"target time (Section 5.6).")
+    V["P1-B117C-IMPL-SENTENCE"] = (
+        f"The gain from learning needed no neural network: it came from a linear model of {n_w} weights, and at the "
+        f"middle load from one of them. At that load it needed no learning either: four parameters of the hand-built "
+        f"rule, tuned by the same search, did better. At {LOAD_HEAVY}{PCT} load, which neither was tuned on, the tuned "
+        f"rule kept part of its gain and the linear bids stayed ahead of it (Section 5.6).")
+    V["P1-B117C-CLAIM"] = (
+        f" Controls run afterwards (not pre-registered), 30 paired seeds, on the fixed point: without its slack weight "
+        f"the linear model has no gain ({din(sl['hand'])} against hand-built bids); a hand-built rule tuned by the "
+        f"same search is better than the linear model at the middle load (by {h_(lt30['mean'], 2)}, "
+        f"{ci_h(lt30['lo'], lt30['hi'], 2)}) and, at {LOAD_HEAVY}{PCT} load, better than the rule as written and "
+        f"behind the linear model (by {h_(abs(lt60['mean']), 1)}, {ci_h(-lt60['hi'], -lt60['lo'], 1)}).")
+    V["P1-B117-LIMIT-SENTENCE"] = (
+        f"The marketplace with the return move (Section 5.4), the bundle depths without loss (Section 5.5) and the "
+        f"ablation and the tuned hand-built rule (Section 5.6) are controls, not pre-registered tests: each was run "
+        f"after every result it bears on had been seen, and none is in a Holm family. The hand-built rule was tuned "
+        f"at the middle load only and selected on the linear search's tuning seeds; its best selection score came in "
+        f"the {ORD[gen]} of {len(hist)} generations, and the search chose a different point on each engine. It was "
+        f"not tuned at {LOAD_HEAVY}{PCT} load, so its result there says how far this tuning carries over, not how "
+        f"close a hand-built rule tuned at that load could come to the linear bids. The ablation removes one weight "
+        f"at a time from a fixed policy and does not refit the others. Both controls ran on the engine with the "
+        f"fixed point, with the linear policy trained without it. The return move was given to the marketplace in one cell, "
+        f"at the middle load.")
+    V["P1-B117-DEPARTURE-SENTENCE"] = (
+        f"Three control runs were added after the results were known, at the referees' request: the marketplace with "
+        f"the auction's return move (Section 5.4), bundle depths 2 and 5 without message loss (Section 5.5), and the "
+        f"linear policy's weights removed one at a time together with the hand-built rule tuned by the linear "
+        f"model's search (Section 5.6). They are controls and not pre-registered tests; each repeats stored cells "
+        f"and reproduces them exactly before its new cells are read, and none changes a number printed before.")
+    V["P1-B117-ABSTRACT-SENTENCE"] = (
+        f"Controls, not pre-registered: given the auction's return move, the marketplace matched it; the linear gain "
+        f"was its slack weight; a likewise-tuned hand rule beat the linear bids at {LOAD_MAIN}{PCT} and cut their lead "
+        f"at {LOAD_HEAVY}{PCT}")
+    V["P1-B117-CONCLUSION-SENTENCE"] = (
+        f"Controls, not pre-registered: given the auction's return move, the marketplace matched it; the linear gain "
+        f"was its slack weight; a likewise-tuned hand rule beat the linear bids at {LOAD_MAIN}{PCT} and cut their lead "
+        f"at {LOAD_HEAVY}{PCT}")
+    return {"lead_is_move": True}
 
 
 # ---------------------------------------------------------------------------------------------------------
@@ -1074,77 +1388,139 @@ def values(r: R, allow_pending: bool):
                                    "&plusmn;2&#8239;% margin")
     else:
         V["P1-H4-LIGHT-CLAUSE"] = "and there the linear model was worse than the hand-built bids"
-    # Referee M8, task B-106: the evaluation of the learned bids (30 seeds at 30 and 60 % load) and the guard runs
-    # (10 seeds) were rerun on the corrected engine; the build reads `eval` and `guards` from the rerun file. Its
-    # `ood` is read only when it is a table: until then Table 6 prints the first evaluation's values with a plain
-    # label. The imitation statistics are a training record and are not rerun. H4's confirmatory test stays E40's.
+    # Referee M8, task B-106, and B-122: the evaluation of the learned bids (30 seeds at 30 and 60 % load), the guard
+    # runs (10 seeds) and the out-of-range cells are read from the run on the engine with PREREG change 5 (the dispatch
+    # fixed point). The 12 Nov rerun (B-106) ran without it; its headline values are quoted once, as the old values,
+    # in 4.6. The imitation statistics are a training record and are not rerun. H4's confirmatory test stays E40's.
     le = r.dev["learned_eval"]
-    RR = r.L_rerun
-    if RR is None:
-        raise SystemExit(f"{le['rerun_file']} is missing: the learned-bid evaluation rerun (task B-106) is read from it")
+    OLD, RR = r.L_rerun, r.L_fix
+    if OLD is None:
+        raise SystemExit(f"{le['rerun_file']} is missing: the old values of the learned-bid evaluation are read from it")
+    check("WITHOUT PREREG change 5" in OLD.get("engine_note_b122", "") and "ATC_learned_eval_fixpoint.json" in OLD["engine_note_b122"],
+          "the 12 November rerun file says it ran without change 5 and names the fixed-point file")
+    check("change 5 on" in RR["engine"] and str(RR["code"]).endswith("+fixpoint")
+          and "same evaluation seeds" in RR["fixpoint_note"] and "were not retrained" in RR["fixpoint_note"]
+          and "trained" in RR["fixpoint_note"] and "without the fixed point" in RR["fixpoint_note"],
+          "the fixed-point evaluation ran with change 5, on the same seeds and policies, which were trained without it and not retrained")
+    gate = RR["gate_hand_30_equals_E40_C_AUCTION"]
+    check(gate["max_abs_diff_h"] == 0 and abs(gate["E40_mean_h"] - lin30["b_mean"]) < 1e-3,
+          "the fixed-point evaluation's hand bids at 30 % equal E40's auction runs run for run")
     ood_rerun = isinstance(RR.get("ood"), dict) and len(RR["ood"]) > 0
-    r.ood_src, r.ood_rerun = (RR["ood"] if ood_rerun else r.L["ood"]), ood_rerun
-    rd = RR["dates"]["rerun"]
+    if not ood_rerun:
+        raise SystemExit("the fixed-point evaluation has no out-of-range cells")
+    r.ood_src, r.ood_rerun = RR["ood"], ood_rerun
+    rd = OLD["dates"]["rerun"]
     y, mth, dd = (int(x) for x in rd.split("-"))
     RERUN_DATE = f"{dd} {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][mth - 1]} {y}"
-    check("same evaluation seeds" in RR["rerun_note"] and "not retrained" in RR["rerun_note"], "the rerun used the same seeds and policies")
-    ev = RR["eval"]
+    check("same evaluation seeds" in OLD["rerun_note"] and "not retrained" in OLD["rerun_note"], "the rerun used the same seeds and policies")
+    ev, evo = RR["eval"], OLD["eval"]
     ci2 = lambda q, nd=2: f"{num(q['ci95'][0], nd)} to {num(q['ci95'][1], nd)}{NB}h"
     l30, l60 = ev[str(LOAD_MAIN)]["linear"], ev[str(LOAD_HEAVY)]["linear"]
     m30, m60 = ev[str(LOAD_MAIN)]["mlp"], ev[str(LOAD_HEAVY)]["mlp"]
-    check(l30["vs_hand_h"]["ci95"][1] < 0 and l60["vs_hand_h"]["ci95"][1] < 0, "in the rerun the linear bids cut the urgent wait at 30 and 60 % load")
-    check(all(q["vs_hand_h"]["ci95"][0] < 0 < q["vs_hand_h"]["ci95"][1] for q in (m30, m60)), "in the rerun the network is not distinguishable from hand bids at either load")
-    check(abs(l30["vs_hand_h"]["mean"] - lin30["mean"]) < 0.5, "the rerun's linear gain at 30 % agrees with E40's within half an hour")
-    V["P1-LEARNED-EVAL-LABEL"] = f"evaluation rerun on the corrected engine on {RERUN_DATE}"
+    o30, o60 = evo[str(LOAD_MAIN)]["linear"]["vs_hand_h"], evo[str(LOAD_HEAVY)]["linear"]["vs_hand_h"]
+    check(l30["vs_hand_h"]["ci95"][1] < 0 and l60["vs_hand_h"]["ci95"][1] < 0, "on the fixed point the linear bids cut the urgent wait at 30 and 60 % load")
+    check(all(q["vs_hand_h"]["ci95"][0] < 0 < q["vs_hand_h"]["ci95"][1] for q in (m30, m60)), "on the fixed point the network is not distinguishable from hand bids at either load")
+    check(o30["ci95"][1] < 0 and o60["ci95"][1] < 0 and all(evo[L]["mlp"]["vs_hand_h"]["ci95"][0] < 0 < evo[L]["mlp"]["vs_hand_h"]["ci95"][1] for L in ("30", "60")),
+          "without the fixed point the same verdicts held: the linear bids cut the wait at both loads, the network at neither")
+    # the fixed-point evaluation is E40's runs: its means equal E40's cells of the same bid rules at both loads
+    E40LAB = {"hand": "C_AUCTION", "mlp": "C_LEARNED_MLP", "linear": "C_LEARNED_LIN"}
+    for L in (LOAD_MAIN, LOAD_HEAVY):
+        rr = r.r[r.r["load"] == L].set_index("label")
+        for k, lab in E40LAB.items():
+            check(abs(ev[str(L)][k]["urgent_mean_h"] - float(rr.loc[lab, "atc_urgent_wait_mean_cens_h_v1"])) < 1e-3,
+                  f"the fixed-point evaluation's {k} cell at {L} % equals E40's {lab} cell (block one)")
+    for kind, key in (("linear", "H4_LIN"), ("mlp", "H4_MLP")):
+        for L in (LOAD_MAIN, LOAD_HEAVY):
+            e = r.pair(key, L)
+            check(abs(ev[str(L)][kind]["vs_hand_h"]["mean"] - e["mean"]) < 1e-3, f"the fixed-point evaluation's {kind} difference at {L} % is E40's H4 difference")
+    check(abs(l30["vs_hand_h"]["mean"] - lin30["mean"]) < 1e-3, "the evaluation's linear gain at 30 % is E40's")
+    V["P1-LEARNED-EVAL-LABEL"] = "evaluation on the engine with the dispatch fixed point"
     V["P1-LEARNED-EVAL-SENTENCE"] = (
-        f"The evaluation of the learned bids that was first made on {le['file_date']}, before the two engine fixes of "
-        f"changes 4 and 5, was rerun on the corrected engine on {RERUN_DATE} with the same seeds and the same "
-        f"policies; the earlier values are kept in the old file. On its {l30['vs_hand_h']['n']} seeds the linear "
-        f"correction changed the urgent wait against hand-built bids by {h_(l30['vs_hand_h']['mean'], 2, sign=True)} "
-        f"({ci2(l30['vs_hand_h'])}; {pc(100 * l30['vs_hand_share'], 1, sign=True)}) at {LOAD_MAIN}{PCT} load and by "
+        f"The evaluation of the learned bids first made on {le['file_date']}, before the engine fixes of changes 4 and "
+        f"5, was rerun on {RERUN_DATE} with the same seeds and policies, but without change 5, the dispatch fixed "
+        f"point; the values here are from a third run on the engine with it (Section 4.6). Its hand-built bids at "
+        f"{LOAD_MAIN}{PCT} load equal E40's auction runs run for run, and its means for all three bid rules equal "
+        f"E40's cells at both loads. On its {l30['vs_hand_h']['n']} seeds the linear correction changed the urgent "
+        f"wait against hand-built bids by {h_(l30['vs_hand_h']['mean'], 2, sign=True)} ({ci2(l30['vs_hand_h'])}; "
+        f"{pc(100 * l30['vs_hand_share'], 1, sign=True)}) at {LOAD_MAIN}{PCT} load and by "
         f"{h_(l60['vs_hand_h']['mean'], 1, sign=True)} ({ci2(l60['vs_hand_h'], 1)}; "
-        f"{pc(100 * l60['vs_hand_share'], 1, sign=True)}) at {LOAD_HEAVY}{PCT}, in agreement with E40; the network's "
-        f"difference was {h_(m30['vs_hand_h']['mean'], 2, sign=True)} ({ci2(m30['vs_hand_h'])}) and "
-        f"{h_(m60['vs_hand_h']['mean'], 1, sign=True)} ({ci2(m60['vs_hand_h'], 1)}), not distinguishable from zero at "
-        f"either load.")
+        f"{pc(100 * l60['vs_hand_share'], 1, sign=True)}) at {LOAD_HEAVY}{PCT}, E40's differences with a paired t "
+        f"interval; the network's difference was {h_(m30['vs_hand_h']['mean'], 2, sign=True)} "
+        f"({ci2(m30['vs_hand_h'])}) and {h_(m60['vs_hand_h']['mean'], 1, sign=True)} ({ci2(m60['vs_hand_h'], 1)}), "
+        f"not distinguishable from zero at either load.")
+    V["P1-LEARNED-EVAL-DEPARTURE-SENTENCE"] = (
+        f"The evaluation of the learned bids made before the main runs, which predated both engine fixes, was rerun in "
+        f"full on {RERUN_DATE}, but that rerun ran without change 5, the dispatch fixed point: the training script "
+        f"that runs the evaluation never switched it on, and it is off unless switched on. The evaluation was run "
+        f"again with it, and every learned-bid value in Section 5.6 (the evaluation, the guard runs, Table 6, the "
+        f"agreement with the marketplace and the two controls) is from that run, whose hand-built bids at "
+        f"{LOAD_MAIN}{PCT} load equal E40's auction runs run for run. The linear correction against hand-built bids "
+        f"went from {h_(o30['mean'], 2, sign=True)} ({ci2(o30)}) to {h_(l30['vs_hand_h']['mean'], 2, sign=True)} "
+        f"({ci2(l30['vs_hand_h'])}) at {LOAD_MAIN}{PCT} load and from {h_(o60['mean'], 1, sign=True)} "
+        f"({ci2(o60, 1)}) to {h_(l60['vs_hand_h']['mean'], 1, sign=True)} ({ci2(l60['vs_hand_h'], 1)}) at "
+        f"{LOAD_HEAVY}{PCT}; no registered decision changed, since H4 is tested on E40. The check on other cargo at "
+        f"{LOAD_MAIN}{PCT} load now comes out clean, and in Table 6 the light-load interval now reaches zero (Section "
+        f"5.6). The policies were trained without the fixed point and were not retrained (Section 7).")
     # the guard runs: does other cargo pay for the gain? (10 seeds; linear minus hand)
-    GD = RR["guards"]
+    GD, GO = RR["guards"], OLD["guards"]
     g = GD[str(LOAD_HEAVY)]
-    gm = GD[str(LOAD_MAIN)]
+    gm, gmo = GD[str(LOAD_MAIN)], GO[str(LOAD_MAIN)]
     d_ = lambda q: q["linear_minus_hand"]
     for k in ("atc_urgent_wait_mean_cens_h", "delay_prio2_mean_h", "delay_mean_bulk", "delay_mean_h", "tonne_days_waiting"):
         check(d_(g[k])["ci95"][1] < 0, f"guard {k} fell with the learned bids at 60 % (interval below zero)")
     check(abs(g["delivered_kg"]["linear"] / g["delivered_kg"]["hand"] - 1) < 0.005, "tonnes delivered did not change")
+    # "no guard metric worsens" at either load: for every metric where more is worse, no interval lies above zero,
+    # and delivered mass has no interval below zero
+    WORSE_UP = ("atc_urgent_wait_mean_cens_h", "delay_prio2_mean_h", "delay_mean_bulk", "delay_mean_h", "tonne_days_waiting", "atc_starved_items")
+    for L in (LOAD_MAIN, LOAD_HEAVY):
+        gg = GD[str(L)]
+        check(sorted(gg) == sorted(WORSE_UP + ("delivered_kg",)), f"the guard metrics at {L} % are the seven the text covers")
+        check(all(d_(gg[k])["ci95"][0] <= 0 for k in WORSE_UP) and d_(gg["delivered_kg"])["ci95"][1] >= 0,
+              f"on the fixed point no guard metric worsens with the learned bids at {L} %")
     V["P1-GUARD-TONNEDAYS-PCT"] = pc(100 * (g["tonne_days_waiting"]["linear"] / g["tonne_days_waiting"]["hand"] - 1), 0,
                                      sign=True)
     gu, gb, ga = d_(gm["atc_urgent_wait_mean_cens_h"]), d_(gm["delay_mean_bulk"]), d_(gm["delay_mean_h"])
+    gbo, guo = d_(gmo["delay_mean_bulk"]), d_(gmo["atc_urgent_wait_mean_cens_h"])
     word = lambda q: ("fell" if q["ci95"][1] < 0 else "rose" if q["ci95"][0] > 0 else "did not move measurably")
     urgent_ok30 = gu["ci95"][1] < 0
-    bulk_worse30 = gb["ci95"][0] > 0
+    check(urgent_ok30 and gb["ci95"][0] < 0 < gb["ci95"][1], "on the fixed point the urgent gain shows on the guard seeds and bulk delay does not move")
+    check(gbo["ci95"][0] > 0 and guo["ci95"][0] < 0 < guo["ci95"][1],
+          "without the fixed point bulk cargo waited longer and the urgent gain was not distinguishable from zero on the guard seeds")
     V["P1-GUARD-30-SENTENCE"] = (
-        f"At {LOAD_MAIN}{PCT} load the same check does not come out clean. On its {gu['n']} seeds the urgent wait "
-        f"{word(gu)} ({h_(gu['mean'], 2, sign=True)}, {ci2(gu)}), "
-        + ("so the gain is seen there too" if urgent_ok30 else
-           "so on that smaller sample the gain itself is not distinguishable from zero")
-        + f", and the delay of bulk cargo {word(gb)} ({h_(gb['mean'], 2, sign=True)}, {ci2(gb)}); the delay of all "
-          f"cargo {word(ga)} ({h_(ga['mean'], 2, sign=True)}, {ci2(ga)}). "
-        + ("At the middle load the learned bids therefore make bulk cargo wait a little longer, and we do not claim "
-           "that their gain for urgent cargo is free for other cargo there." if bulk_worse30 else
-           "At the middle load other cargo did not measurably pay for the gain."))
-    check(not urgent_ok30, "on the ten guard seeds at 30 % the urgent gain is not distinguishable from zero (Limitations)")
-    V["P1-GUARD-30-CLAUSE"] = ("at the middle load a ten-seed check found bulk cargo waiting slightly longer" if bulk_worse30
-                               else "a ten-seed check found no cost to other cargo")
+        f"At {LOAD_MAIN}{PCT} load the check comes out clean on the engine with the fixed point, and it did not on the "
+        f"engine without it. On its {gu['n']} seeds the urgent wait {word(gu)} ({h_(gu['mean'], 2, sign=True)}, "
+        f"{ci2(gu)}), the delay of bulk cargo {word(gb)} ({h_(gb['mean'], 2, sign=True)}, {ci2(gb)}), the delay of "
+        f"all cargo {word(ga)} ({h_(ga['mean'], 2, sign=True)}, {ci2(ga)}), and no measure of other cargo rose with "
+        f"an interval clear of zero, at this load or at {LOAD_HEAVY}{PCT}. Without the fixed point the delay of bulk "
+        f"cargo rose ({h_(gbo['mean'], 2, sign=True)}, {ci2(gbo)}) and the urgent gain was not distinguishable from "
+        f"zero on those ten seeds ({h_(guo['mean'], 2, sign=True)}, {ci2(guo)}).")
+    V["P1-GUARD-30-CLAUSE"] = ("a ten-seed check found no cost to other cargo at the middle load either; without the "
+                               "fixed point it had found bulk cargo waiting slightly longer")
     ha = {k: ev[str(LOAD_MAIN)][k]["heldout_agreement"] for k in ("hand", "mlp", "linear")}
-    check("NOT rerun" in str(RR["imitation"].get("rerun_status", "")), "the rerun file marks the imitation statistics as not rerun")
+    check("NOT rerun" in str(RR["imitation"].get("status", "")), "the fixed-point file marks the imitation statistics as not rerun")
     V["P1-IMIT-RERUN-SENTENCE"] = (
         f"These figures are a record of training: the first imitation round on the tuning seeds, with the engine of "
-        f"{le['file_date']}; they were not rerun. On the corrected engine, on the evaluation seeds at "
-        f"{LOAD_MAIN}{PCT} load, the hand-built bids chose the marketplace's item in {sh(ha['hand'], 2)} of rounds, "
-        f"the network's bids in {sh(ha['mlp'], 2)} and the linear bids in {sh(ha['linear'], 2)}.")
-    V["P1-OOD-LABEL-SENTENCE"] = (
-        "The cells of Table 6 were rerun on the corrected engine with the rest of that evaluation." if ood_rerun else
-        f"The cells of Table 6 are the one part of that evaluation not rerun: its values are those of {le['file_date']} "
-        f"and predate the two engine fixes.")
+        f"{le['file_date']}; they were not rerun. On the engine with the dispatch fixed point, on the evaluation seeds "
+        f"at {LOAD_MAIN}{PCT} load, the hand-built bids chose the marketplace's item in {sh(ha['hand'], 2)} of rounds, "
+        f"the network's bids in {sh(ha['mlp'], 2)} and the linear bids in {sh(ha['linear'], 2)}. These come from runs "
+        f"that record every round, which on this engine lose a wake-up of the dispatcher and so are not the runs "
+        f"that give the outcomes (Section 7).")
+    V["P1-OOD-LABEL-SENTENCE"] = "The cells of Table 6 are from the same run on the engine with the fixed point."
+    V["P1-LEARNED-ENGINE-LIMIT-SENTENCE"] = (
+        f"The two policies were trained, by imitation and by the search on the objective, on the engine without the "
+        f"dispatch fixed point of change 5, and were not retrained when it came in. Their evaluation, the guard runs, "
+        f"Table 6 and the two controls of Section 5.6 are on the engine with it, and the evaluation of {RERUN_DATE} "
+        f"that a first draft quoted ran without it (Section 4.6). Policies searched on the current engine might "
+        f"differ. With the fixed point on, a run that also records, at every auction round, the marketplace's choice "
+        f"for the agreement figures loses a wake-up of the dispatcher, and so gives a different outcome from the same "
+        f"run without recording: the marketplace call that makes the record suppresses the wake-up it schedules but "
+        f"still marks it as pending, and the real dispatch then skips its own. The cause is found and not yet fixed. "
+        f"Every outcome reported comes from runs without recording; the agreement figures of Section 5.11 on this "
+        f"engine come from recording runs and carry the lost wake-up. The other-cargo check is on ten seeds per load: on this engine it found no cost at "
+        f"either load, and on the engine without the fixed point it found bulk cargo waiting slightly longer at the "
+        f"middle load. The imitation statistics of Section 5.11 are a training record from the earlier engine. The "
+        f"frozen policies were run on the evaluation seeds more than once, in the first evaluation, in E40 before and "
+        f"after change 5 and in the two reruns of that evaluation; no training or selection used those seeds.")
     ood = r.ood_src
 
     # Part 4 (12 Nov): the cell "year 2038" is not an out-of-range test. The start-year setting has no effect on
@@ -1187,7 +1563,7 @@ def values(r: R, allow_pending: bool):
            "A sixth cell, a later start year, is not counted: the start year changes nothing in these runs, which "
            "never wait for Earth. ")
         + (f"The file of {le['file_date']} mixed engine states: its out-of-range runs were made after a fix that "
-           f"its evaluation and guard runs predate. The rerun file has all three on one engine." if ood_rerun else ""))
+           f"its evaluation and guard runs predate. The run on the fixed point has all three on one engine." if ood_rerun else ""))
     # the linear weights in plain words: the output is a bid correction in hours (positive = bids lower = favoured)
     w = np.asarray(r.lin["layers"][0]["w"], float).reshape(-1)
     names, scale = r.lin["obs"]["names"], r.lin["obs"]["scale"]
@@ -1429,13 +1805,8 @@ def values(r: R, allow_pending: bool):
         flat = all(abs(sc[(dp, "0.4")] - sc[(dp, "0.25")]) < 0.05 * sc[(dp, "0.25")] for dp in (2, 5))
         no_loss0 = not any(str(x).startswith("C_AUCTION depth") and str(x).endswith("loss 0") for x in r.c41["label"])
         check(no_loss0, "E41 has no bundle-depth cell without message loss")
-        s11 = (f" The design has no cell with depth 2 or 5 and no loss, so it cannot say how much of this penalty is due "
-               f"to loss and how much to bundling under this demand"
-               + (f"; the stale claims are almost the same at loss 0.25 and 0.40 ({num(sc[(2, '0.25')], 0)} and "
-                  f"{num(sc[(2, '0.4')], 0)} a year at depth 2, {num(sc[(5, '0.25')], 0)} and {num(sc[(5, '0.4')], 0)} at "
-                  f"depth 5), which points to bundling" if flat else "")
-               + ". The finding of Lott and Honary that the best depth falls under loss [10] can therefore be neither "
-                 "confirmed nor contradicted here.")
+        check(flat, "the stale claims are almost the same at loss 0.25 and 0.40")
+        s11 = ""      # the two loss-free cells were run as a control (B-117 b): P1-B117B-SENTENCE follows this one
         return (f"Bundles of up to five jobs {'hurt' if h3b['supported'] else 'did not hurt'} the auction: against "
                 f"depth 1, depth 5 {moved(d5['0.25'], 'the urgent wait')} at loss 0.25 and "
                 f"{moved(d5['0.4'], 'it')} at loss 0.40, and depth 2 {moved(d2['0.25'], 'it')} at loss 0.25 and "
@@ -1504,13 +1875,14 @@ def values(r: R, allow_pending: bool):
                 f"the marketplace has no such move. Where the radio reaches every robot the returns fall to "
                 f"{num(perf['atc_rallies'], 0)} a year and the auction's wait is {h_(perf[M])}, {h_(above)} above the "
                 f"marketplace's and {h_(pp['mean'])} ({ci_h(pp['lo'], pp['hi'])}) above its own default cell "
-                f"(Section 5.5). The auction's small advantage in the point estimate is therefore more likely an "
-                f"effect of that repositioning than of where the decision is made. The marketplace was not run with "
-                f"the same move, so the two cannot be separated here.")
+                f"(Section 5.5). That pointed to the repositioning, and not to the place of the decision, as the "
+                f"source of the auction's small advantage in the point estimate, but E40 could not separate the two.")
     fill("P1-H3A-RALLY-SENTENCE", h3a_rally_sentence, "E41")
     fill("P1-E41-LOSS-SENTENCE", e41_loss_sentence, "E41")
     fill("P1-E41-DEPTH-SENTENCE", e41_depth_sentence, "E41")
     fill("P1-E41-RANGE-SENTENCE", e41_range_sentence, "E41")
+    # B-117 a, b, c (14 Nov): the three controls run after the results were known, each from its own results file
+    b117_controls(r, V, check, h3, m3)
 
     def e41_depth_clause():
         h3b = need_f41()["H3b"]
@@ -1779,7 +2151,7 @@ def table_regimes(r: R):
 def table_ood(r: R):
     rows = []
     le = r.dev["learned_eval"]
-    origin = ("from the evaluation of the learned bids as rerun on the corrected engine" if r.ood_rerun else
+    origin = ("from the evaluation of the learned bids on the engine with the dispatch fixed point (change 5; Section 4.6)" if r.ood_rerun else
               f"from the evaluation of the learned bids of {le['file_date']}, made before the main runs and on the "
               f"engine before the two fixes of changes 4 and 5 (Section 4.6); unlike the rest of that evaluation, "
               f"these six cells were not rerun on the corrected engine")
@@ -3421,11 +3793,12 @@ def phase6_proved(p, r, V, fill, check, ctx, e53):
              f"Tested: E40, {n3} paired seeds. Equivalence {'shown' if ctx['equiv'] else 'not shown'}"
              + ("." if ctx["equiv"] else "; the difference is also not distinguishable from zero."
                 if r.pair("H3a", LOAD_MAIN)["lo"] < 0 < r.pair("H3a", LOAD_MAIN)["hi"] else ".")
-             + " Confounded: the auction's idle robots return towards the mast and the marketplace's do not.", "5.4"),
+             + V["P1-B117A-CLAIM"], "5.4"),
             ("Learned bids beat hand-built bids on seeds not used for training or selection (H4)",
              f"Tested: E40, {n4} seeds. Not supported for the network, the registered model, which was trained with "
              f"less freedom. Supported for the linear model, which the registration names as the secondary model "
-             f"and which entered the Holm family after its result on these seeds had been seen.", "5.6, 4.6, 7"),
+             f"and which entered the Holm family after its result on these seeds had been seen."
+             + V["P1-B117C-CLAIM"], "5.6, 4.6, 7"),
             ("Pairs of different owners raise the share of items delivered (H6, first part)",
              f"Tested: E42, {n6} seeds per cell. Supported, on the share of cargo mass and on items. The share of "
              f"team items that same-owner pairs can lift is an input.", "5.7"),
@@ -3438,12 +3811,13 @@ def phase6_proved(p, r, V, fill, check, ctx, e53):
              "message-level implementation, in which the best bid can go unheard, could do worse.", "3.7, 7"),
             ("Message loss, bundle depth, radio range, the lost-link rule and a second mast move the on-Moon regimes "
              "as reported (H3b, H3c, exploratory)",
-             "Tested: E41, 30 seeds per cell, one factor at a time around the auction at the middle load. No cell "
-             "has deeper bundles without loss.", "5.5"),
+             "Tested: E41, 30 seeds per cell, one factor at a time around the auction at the middle load. E41 has "
+             "no cell with deeper bundles and no loss." + V["P1-B117B-CLAIM"], "5.5"),
             ("The linear bids keep their sign outside the training range; whether other cargo pays for the gain",
              f"Tested on ten seeds per cell. Sign outside the range: "
-             + ("rerun on the corrected engine" if r.ood_rerun else "values that predate the two engine fixes, not rerun")
-             + f". Other cargo ({V['P1-LEARNED-EVAL-LABEL']}): no cost at {LOAD_HEAVY}{PCT} load; {V['P1-GUARD-30-CLAUSE']}.", "5.6"),
+             + ("on the engine with the dispatch fixed point" if r.ood_rerun else "values that predate the two engine fixes, not rerun")
+             + f". Other cargo ({V['P1-LEARNED-EVAL-LABEL']}): no cost at {LOAD_HEAVY}{PCT} load; {V['P1-GUARD-30-CLAUSE']}. "
+             f"The policies were trained without the fixed point and not retrained.", "5.6, 4.6, 7"),
             ("With perfect links and depth 1 the auction reproduces the marketplace's event trace; with every new "
              "feature off the engine reproduces the earlier papers",
              f"Tested: exact comparison of event traces, and {r.dev['regression_check']['rows_rerun_identical']} "

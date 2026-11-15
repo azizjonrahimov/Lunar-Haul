@@ -1,0 +1,1527 @@
+{
+ "task": "B-122: B-74's evaluation on the engine with PREREG change 5 (dispatch fixed point and wake dedupe)",
+ "note": "DAgger: iteration 0 rolls out the hand-built bids (C_AUCTION); iteration i >= 1 rolls out the MLP of iteration i - 1\n(C_LEARNED); every auction round of every rollout is labelled with the oracle's choice for each robot (the full-\ninformation pooled marketplace on the same state, lunarsim.atc.learned.oracle_assignment); rows are aggregated over\niterations. Seeds: training 1000-1009 (loads 30 % and 60 % alternating, start years 2028-2031 by seed), tuning\n2000-2004 (early stopping and model choice), evaluation 1-30 (never seen). Message loss 0.10, terrain radio, depth 1.\nNo cross-entropy-method fine-tune was run (optional in the task; see the report). Single process, --max-seconds 540.",
+ "eval": {
+  "30": {
+   "O_ORACLE": {
+    "urgent_mean_h": 14.932,
+    "p5_cargo_util": 0.2953,
+    "utilisation": 0.0758,
+    "delivered_kg": 1469386.331,
+    "atc_starved_items": 0.8333,
+    "atc_urgent_within24_share": 0.8172,
+    "atc_urgent_wait_p95_cens_h": 66.0186
+   },
+   "hand": {
+    "urgent_mean_h": 14.094,
+    "regret_vs_teacher_h": {
+     "mean": -0.838,
+     "ci95": [
+      -2.921,
+      1.246
+     ],
+     "n": 30
+    },
+    "p5_cargo_util": 0.2946,
+    "utilisation": 0.0758,
+    "delivered_kg": 1470384.7095,
+    "atc_starved_items": 0.7,
+    "atc_urgent_within24_share": 0.8306,
+    "atc_urgent_wait_p95_cens_h": 61.7973,
+    "heldout_agreement": 0.884,
+    "heldout_groups": 79074
+   },
+   "mlp": {
+    "urgent_mean_h": 13.847,
+    "regret_vs_teacher_h": {
+     "mean": -1.085,
+     "ci95": [
+      -3.065,
+      0.895
+     ],
+     "n": 30
+    },
+    "vs_hand_h": {
+     "mean": -0.247,
+     "ci95": [
+      -1.694,
+      1.199
+     ],
+     "n": 30
+    },
+    "vs_hand_share": -0.0176,
+    "p5_cargo_util": 0.2944,
+    "utilisation": 0.0757,
+    "delivered_kg": 1471468.8318,
+    "atc_starved_items": 0.9667,
+    "atc_urgent_within24_share": 0.8338,
+    "atc_urgent_wait_p95_cens_h": 63.5995,
+    "heldout_agreement": 0.8638,
+    "heldout_groups": 79027
+   },
+   "linear": {
+    "urgent_mean_h": 11.773,
+    "regret_vs_teacher_h": {
+     "mean": -3.159,
+     "ci95": [
+      -4.955,
+      -1.362
+     ],
+     "n": 30
+    },
+    "vs_hand_h": {
+     "mean": -2.321,
+     "ci95": [
+      -4.089,
+      -0.553
+     ],
+     "n": 30
+    },
+    "vs_hand_share": -0.1647,
+    "p5_cargo_util": 0.2939,
+    "utilisation": 0.0755,
+    "delivered_kg": 1470550.9168,
+    "atc_starved_items": 0.6667,
+    "atc_urgent_within24_share": 0.8625,
+    "atc_urgent_wait_p95_cens_h": 52.0655,
+    "heldout_agreement": 0.7028,
+    "heldout_groups": 75423
+   }
+  },
+  "60": {
+   "O_ORACLE": {
+    "urgent_mean_h": 66.319,
+    "p5_cargo_util": 0.5975,
+    "utilisation": 0.1558,
+    "delivered_kg": 3248396.2929,
+    "atc_starved_items": 114.3333,
+    "atc_urgent_within24_share": 0.5556,
+    "atc_urgent_wait_p95_cens_h": 230.9195
+   },
+   "hand": {
+    "urgent_mean_h": 76.681,
+    "regret_vs_teacher_h": {
+     "mean": 10.361,
+     "ci95": [
+      3.932,
+      16.791
+     ],
+     "n": 30
+    },
+    "p5_cargo_util": 0.602,
+    "utilisation": 0.1568,
+    "delivered_kg": 3252652.5647,
+    "atc_starved_items": 155.4667,
+    "atc_urgent_within24_share": 0.5463,
+    "atc_urgent_wait_p95_cens_h": 279.0393
+   },
+   "mlp": {
+    "urgent_mean_h": 75.338,
+    "regret_vs_teacher_h": {
+     "mean": 9.019,
+     "ci95": [
+      2.674,
+      15.364
+     ],
+     "n": 30
+    },
+    "vs_hand_h": {
+     "mean": -1.342,
+     "ci95": [
+      -6.117,
+      3.432
+     ],
+     "n": 30
+    },
+    "vs_hand_share": -0.0175,
+    "p5_cargo_util": 0.6045,
+    "utilisation": 0.1573,
+    "delivered_kg": 3250332.8727,
+    "atc_starved_items": 178.0,
+    "atc_urgent_within24_share": 0.5668,
+    "atc_urgent_wait_p95_cens_h": 306.4622
+   },
+   "linear": {
+    "urgent_mean_h": 45.219,
+    "regret_vs_teacher_h": {
+     "mean": -21.101,
+     "ci95": [
+      -25.789,
+      -16.412
+     ],
+     "n": 30
+    },
+    "vs_hand_h": {
+     "mean": -31.462,
+     "ci95": [
+      -38.357,
+      -24.567
+     ],
+     "n": 30
+    },
+    "vs_hand_share": -0.4103,
+    "p5_cargo_util": 0.5908,
+    "utilisation": 0.1536,
+    "delivered_kg": 3258810.2883,
+    "atc_starved_items": 120.6333,
+    "atc_urgent_within24_share": 0.7277,
+    "atc_urgent_wait_p95_cens_h": 212.3115
+   }
+  }
+ },
+ "ood": {
+  "2eq": {
+   "hand": {
+    "urgent_mean_h": 16.983,
+    "starved_items": 1.8
+   },
+   "linear": {
+    "urgent_mean_h": 12.52,
+    "starved_items": 1.0,
+    "vs_hand_h": {
+     "mean": -4.463,
+     "ci95": [
+      -8.261,
+      -0.666
+     ],
+     "n": 10
+    }
+   }
+  },
+  "5eq": {
+   "hand": {
+    "urgent_mean_h": 13.751,
+    "starved_items": 0.9
+   },
+   "linear": {
+    "urgent_mean_h": 12.375,
+    "starved_items": 1.2,
+    "vs_hand_h": {
+     "mean": -1.376,
+     "ci95": [
+      -3.558,
+      0.805
+     ],
+     "n": 10
+    }
+   }
+  },
+  "loss 0.25": {
+   "hand": {
+    "urgent_mean_h": 17.197,
+    "starved_items": 1.1
+   },
+   "linear": {
+    "urgent_mean_h": 13.489,
+    "starved_items": 1.1,
+    "vs_hand_h": {
+     "mean": -3.709,
+     "ci95": [
+      -6.589,
+      -0.829
+     ],
+     "n": 10
+    }
+   }
+  },
+  "loss 0.40": {
+   "hand": {
+    "urgent_mean_h": 18.983,
+    "starved_items": 2.5
+   },
+   "linear": {
+    "urgent_mean_h": 16.122,
+    "starved_items": 1.6,
+    "vs_hand_h": {
+     "mean": -2.861,
+     "ci95": [
+      -6.144,
+      0.422
+     ],
+     "n": 10
+    }
+   }
+  },
+  "load 10 %": {
+   "hand": {
+    "urgent_mean_h": 12.494,
+    "starved_items": 0.2
+   },
+   "linear": {
+    "urgent_mean_h": 10.302,
+    "starved_items": 0.3,
+    "vs_hand_h": {
+     "mean": -2.192,
+     "ci95": [
+      -4.434,
+      0.05
+     ],
+     "n": 10
+    }
+   }
+  },
+  "year 2038": {
+   "hand": {
+    "urgent_mean_h": 14.203,
+    "starved_items": 0.6
+   },
+   "linear": {
+    "urgent_mean_h": 11.794,
+    "starved_items": 0.7,
+    "vs_hand_h": {
+     "mean": -2.409,
+     "ci95": [
+      -4.715,
+      -0.102
+     ],
+     "n": 10
+    }
+   }
+  }
+ },
+ "policies": {
+  "mlp": {
+   "file": "data/policies/atc_bid_v1.json",
+   "cem": {
+    "parameters_searched": 32,
+    "population": 12,
+    "elite": 3,
+    "generations": 5,
+    "sigma0": 0.5,
+    "smoothing": 0.7,
+    "fitness": "mean urgent wait (censored, h), C_LEARNED, loss 0.10, 30 % load, common random numbers: seeds [1000, 1002, 1004, 1006] for every candidate",
+    "selection": "mean of each generation on tuning seeds [2000, 2002, 2004]; the best one is exported",
+    "hand_tune_h": 10.0918,
+    "selected_generation": 0,
+    "selected_tune_h": 9.1767,
+    "wall_s": 3432.7
+   }
+  },
+  "linear": {
+   "file": "data/policies/atc_bid_linear_v1.json",
+   "cem": {
+    "parameters_searched": 13,
+    "population": 10,
+    "elite": 3,
+    "generations": 6,
+    "sigma0": 1.5,
+    "smoothing": 0.7,
+    "fitness": "mean urgent wait (censored, h), C_LEARNED, loss 0.10, 30 % load, common random numbers: seeds [1000, 1002, 1004, 1006] for every candidate",
+    "selection": "mean of each generation on tuning seeds [2000, 2002, 2004]; the best one is exported",
+    "hand_tune_h": 10.0918,
+    "selected_generation": 5,
+    "selected_tune_h": 8.7304,
+    "wall_s": 3181.5
+   }
+  }
+ },
+ "imitation": {
+  "teacher": "O_ORACLE: the full-information pooled marketplace on the same auction state",
+  "rows": 624640,
+  "groups": 37941,
+  "val_groups_tuning_seeds": "2000-2004",
+  "hand_agreement_val": 0.92881,
+  "best_epoch": -1,
+  "finding": "imitation reproduces the hand-built bids: their top item is the oracle's item for the robot in 92.9 % of held-out rounds, and every disagreement is an item the oracle gives another robot in the same round (318 of 318 at 30 % load, 404 of 404 at 60 %, seeds 2000/2001); both the MLP and the linear model reach their best held-out agreement with no correction (g = 0), so DAgger iterations 1-4 were not run",
+  "status": "NOT rerun: the 27 Oct training record (engine of that day)"
+ },
+ "guards": {
+  "30": {
+   "atc_urgent_wait_mean_cens_h": {
+    "hand": 14.203,
+    "linear": 11.794,
+    "linear_minus_hand": {
+     "mean": -2.409,
+     "ci95": [
+      -4.715,
+      -0.102
+     ],
+     "n": 10
+    }
+   },
+   "delay_prio2_mean_h": {
+    "hand": 17.884,
+    "linear": 16.712,
+    "linear_minus_hand": {
+     "mean": -1.172,
+     "ci95": [
+      -3.936,
+      1.593
+     ],
+     "n": 10
+    }
+   },
+   "delay_mean_bulk": {
+    "hand": 15.617,
+    "linear": 15.525,
+    "linear_minus_hand": {
+     "mean": -0.092,
+     "ci95": [
+      -0.408,
+      0.223
+     ],
+     "n": 10
+    }
+   },
+   "delay_mean_h": {
+    "hand": 15.552,
+    "linear": 15.401,
+    "linear_minus_hand": {
+     "mean": -0.151,
+     "ci95": [
+      -0.47,
+      0.168
+     ],
+     "n": 10
+    }
+   },
+   "tonne_days_waiting": {
+    "hand": 843.899,
+    "linear": 840.479,
+    "linear_minus_hand": {
+     "mean": -3.421,
+     "ci95": [
+      -22.557,
+      15.716
+     ],
+     "n": 10
+    }
+   },
+   "atc_starved_items": {
+    "hand": 0.6,
+    "linear": 0.7,
+    "linear_minus_hand": {
+     "mean": 0.1,
+     "ci95": [
+      -0.267,
+      0.467
+     ],
+     "n": 10
+    }
+   },
+   "delivered_kg": {
+    "hand": 1469111.084,
+    "linear": 1471519.37,
+    "linear_minus_hand": {
+     "mean": 2408.287,
+     "ci95": [
+      -1979.312,
+      6795.886
+     ],
+     "n": 10
+    }
+   }
+  },
+  "60": {
+   "atc_urgent_wait_mean_cens_h": {
+    "hand": 73.752,
+    "linear": 42.292,
+    "linear_minus_hand": {
+     "mean": -31.46,
+     "ci95": [
+      -44.577,
+      -18.343
+     ],
+     "n": 10
+    }
+   },
+   "delay_prio2_mean_h": {
+    "hand": 86.813,
+    "linear": 60.577,
+    "linear_minus_hand": {
+     "mean": -26.236,
+     "ci95": [
+      -34.656,
+      -17.815
+     ],
+     "n": 10
+    }
+   },
+   "delay_mean_bulk": {
+    "hand": 47.171,
+    "linear": 41.485,
+    "linear_minus_hand": {
+     "mean": -5.686,
+     "ci95": [
+      -9.393,
+      -1.979
+     ],
+     "n": 10
+    }
+   },
+   "delay_mean_h": {
+    "hand": 48.113,
+    "linear": 41.673,
+    "linear_minus_hand": {
+     "mean": -6.44,
+     "ci95": [
+      -10.117,
+      -2.764
+     ],
+     "n": 10
+    }
+   },
+   "tonne_days_waiting": {
+    "hand": 7018.171,
+    "linear": 5889.084,
+    "linear_minus_hand": {
+     "mean": -1129.087,
+     "ci95": [
+      -1692.174,
+      -566.0
+     ],
+     "n": 10
+    }
+   },
+   "atc_starved_items": {
+    "hand": 110.5,
+    "linear": 94.8,
+    "linear_minus_hand": {
+     "mean": -15.7,
+     "ci95": [
+      -79.401,
+      48.001
+     ],
+     "n": 10
+    }
+   },
+   "delivered_kg": {
+    "hand": 3239107.262,
+    "linear": 3247066.612,
+    "linear_minus_hand": {
+     "mean": 7959.35,
+     "ci95": [
+      -844.924,
+      16763.625
+     ],
+     "n": 10
+    }
+   }
+  }
+ },
+ "engine": "PREREG change 5 on: Scenario.p5 dispatch_fixpoint (dispatch repeated at the same instant until nothing changes, which implies the wake dedupe), as E40-E43 since their reruns (run_phase5 --fixpoint)",
+ "code": "5bf22fa6d5ccfe47+fixpoint",
+ "fixpoint_note": "same evaluation seeds (1-30), loads 30 % and 60 %, guard seeds 1-10, OOD cells and seeds as B-74, same policies (data/policies/atc_bid_v1.json, atc_bid_linear_v1.json). The policies were trained (DAgger, CEM fitness) on the engine without the fixed point and were not retrained. results/ATC_learned_eval.json (27 Oct) and ATC_learned_eval_rerun.json (12 Nov) ran without change 5 and are left as they are.",
+ "gate_hand_30_equals_E40_C_AUCTION": {
+  "max_abs_diff_h": 0.0,
+  "E40_mean_h": 14.0943
+ },
+ "moved_vs_no_fixpoint_rerun": [
+  {
+   "key": "/eval/30/O_ORACLE/atc_starved_items",
+   "no_fixpoint": 0.6,
+   "fixpoint": 0.8333
+  },
+  {
+   "key": "/eval/30/O_ORACLE/atc_urgent_wait_p95_cens_h",
+   "no_fixpoint": 64.0682,
+   "fixpoint": 66.0186
+  },
+  {
+   "key": "/eval/30/O_ORACLE/atc_urgent_within24_share",
+   "no_fixpoint": 0.8209,
+   "fixpoint": 0.8172
+  },
+  {
+   "key": "/eval/30/O_ORACLE/delivered_kg",
+   "no_fixpoint": 1469348.6639,
+   "fixpoint": 1469386.331
+  },
+  {
+   "key": "/eval/30/O_ORACLE/p5_cargo_util",
+   "no_fixpoint": 0.2941,
+   "fixpoint": 0.2953
+  },
+  {
+   "key": "/eval/30/O_ORACLE/urgent_mean_h",
+   "no_fixpoint": 14.468,
+   "fixpoint": 14.932
+  },
+  {
+   "key": "/eval/30/O_ORACLE/utilisation",
+   "no_fixpoint": 0.0756,
+   "fixpoint": 0.0758
+  },
+  {
+   "key": "/eval/30/hand/atc_starved_items",
+   "no_fixpoint": 0.9,
+   "fixpoint": 0.7
+  },
+  {
+   "key": "/eval/30/hand/atc_urgent_wait_p95_cens_h",
+   "no_fixpoint": 58.5346,
+   "fixpoint": 61.7973
+  },
+  {
+   "key": "/eval/30/hand/atc_urgent_within24_share",
+   "no_fixpoint": 0.8333,
+   "fixpoint": 0.8306
+  },
+  {
+   "key": "/eval/30/hand/delivered_kg",
+   "no_fixpoint": 1470266.2616,
+   "fixpoint": 1470384.7095
+  },
+  {
+   "key": "/eval/30/hand/heldout_agreement",
+   "no_fixpoint": 0.8835,
+   "fixpoint": 0.884
+  },
+  {
+   "key": "/eval/30/hand/heldout_groups",
+   "no_fixpoint": 79079,
+   "fixpoint": 79074
+  },
+  {
+   "key": "/eval/30/hand/p5_cargo_util",
+   "no_fixpoint": 0.2942,
+   "fixpoint": 0.2946
+  },
+  {
+   "key": "/eval/30/hand/regret_vs_teacher_h/ci95[0]",
+   "no_fixpoint": -2.043,
+   "fixpoint": -2.921
+  },
+  {
+   "key": "/eval/30/hand/regret_vs_teacher_h/ci95[1]",
+   "no_fixpoint": 1.28,
+   "fixpoint": 1.246
+  },
+  {
+   "key": "/eval/30/hand/regret_vs_teacher_h/mean",
+   "no_fixpoint": -0.382,
+   "fixpoint": -0.838
+  },
+  {
+   "key": "/eval/30/hand/urgent_mean_h",
+   "no_fixpoint": 14.087,
+   "fixpoint": 14.094
+  },
+  {
+   "key": "/eval/30/hand/utilisation",
+   "no_fixpoint": 0.0756,
+   "fixpoint": 0.0758
+  },
+  {
+   "key": "/eval/30/linear/atc_starved_items",
+   "no_fixpoint": 0.9667,
+   "fixpoint": 0.6667
+  },
+  {
+   "key": "/eval/30/linear/atc_urgent_wait_p95_cens_h",
+   "no_fixpoint": 50.5612,
+   "fixpoint": 52.0655
+  },
+  {
+   "key": "/eval/30/linear/atc_urgent_within24_share",
+   "no_fixpoint": 0.864,
+   "fixpoint": 0.8625
+  },
+  {
+   "key": "/eval/30/linear/delivered_kg",
+   "no_fixpoint": 1470734.5549,
+   "fixpoint": 1470550.9168
+  },
+  {
+   "key": "/eval/30/linear/heldout_agreement",
+   "no_fixpoint": 0.7076,
+   "fixpoint": 0.7028
+  },
+  {
+   "key": "/eval/30/linear/heldout_groups",
+   "no_fixpoint": 75715,
+   "fixpoint": 75423
+  },
+  {
+   "key": "/eval/30/linear/p5_cargo_util",
+   "no_fixpoint": 0.2944,
+   "fixpoint": 0.2939
+  },
+  {
+   "key": "/eval/30/linear/regret_vs_teacher_h/ci95[0]",
+   "no_fixpoint": -4.753,
+   "fixpoint": -4.955
+  },
+  {
+   "key": "/eval/30/linear/regret_vs_teacher_h/ci95[1]",
+   "no_fixpoint": -0.988,
+   "fixpoint": -1.362
+  },
+  {
+   "key": "/eval/30/linear/regret_vs_teacher_h/mean",
+   "no_fixpoint": -2.87,
+   "fixpoint": -3.159
+  },
+  {
+   "key": "/eval/30/linear/urgent_mean_h",
+   "no_fixpoint": 11.598,
+   "fixpoint": 11.773
+  },
+  {
+   "key": "/eval/30/linear/utilisation",
+   "no_fixpoint": 0.0757,
+   "fixpoint": 0.0755
+  },
+  {
+   "key": "/eval/30/linear/vs_hand_h/ci95[0]",
+   "no_fixpoint": -4.154,
+   "fixpoint": -4.089
+  },
+  {
+   "key": "/eval/30/linear/vs_hand_h/ci95[1]",
+   "no_fixpoint": -0.823,
+   "fixpoint": -0.553
+  },
+  {
+   "key": "/eval/30/linear/vs_hand_h/mean",
+   "no_fixpoint": -2.489,
+   "fixpoint": -2.321
+  },
+  {
+   "key": "/eval/30/linear/vs_hand_share",
+   "no_fixpoint": -0.1767,
+   "fixpoint": -0.1647
+  },
+  {
+   "key": "/eval/30/mlp/atc_starved_items",
+   "no_fixpoint": 0.9333,
+   "fixpoint": 0.9667
+  },
+  {
+   "key": "/eval/30/mlp/atc_urgent_wait_p95_cens_h",
+   "no_fixpoint": 58.6406,
+   "fixpoint": 63.5995
+  },
+  {
+   "key": "/eval/30/mlp/atc_urgent_within24_share",
+   "no_fixpoint": 0.8287,
+   "fixpoint": 0.8338
+  },
+  {
+   "key": "/eval/30/mlp/delivered_kg",
+   "no_fixpoint": 1472509.209,
+   "fixpoint": 1471468.8318
+  },
+  {
+   "key": "/eval/30/mlp/heldout_agreement",
+   "no_fixpoint": 0.8637,
+   "fixpoint": 0.8638
+  },
+  {
+   "key": "/eval/30/mlp/heldout_groups",
+   "no_fixpoint": 79178,
+   "fixpoint": 79027
+  },
+  {
+   "key": "/eval/30/mlp/p5_cargo_util",
+   "no_fixpoint": 0.2963,
+   "fixpoint": 0.2944
+  },
+  {
+   "key": "/eval/30/mlp/regret_vs_teacher_h/ci95[0]",
+   "no_fixpoint": -2.013,
+   "fixpoint": -3.065
+  },
+  {
+   "key": "/eval/30/mlp/regret_vs_teacher_h/ci95[1]",
+   "no_fixpoint": 0.935,
+   "fixpoint": 0.895
+  },
+  {
+   "key": "/eval/30/mlp/regret_vs_teacher_h/mean",
+   "no_fixpoint": -0.539,
+   "fixpoint": -1.085
+  },
+  {
+   "key": "/eval/30/mlp/urgent_mean_h",
+   "no_fixpoint": 13.929,
+   "fixpoint": 13.847
+  },
+  {
+   "key": "/eval/30/mlp/utilisation",
+   "no_fixpoint": 0.0763,
+   "fixpoint": 0.0757
+  },
+  {
+   "key": "/eval/30/mlp/vs_hand_h/ci95[0]",
+   "no_fixpoint": -1.615,
+   "fixpoint": -1.694
+  },
+  {
+   "key": "/eval/30/mlp/vs_hand_h/ci95[1]",
+   "no_fixpoint": 1.301,
+   "fixpoint": 1.199
+  },
+  {
+   "key": "/eval/30/mlp/vs_hand_h/mean",
+   "no_fixpoint": -0.157,
+   "fixpoint": -0.247
+  },
+  {
+   "key": "/eval/30/mlp/vs_hand_share",
+   "no_fixpoint": -0.0112,
+   "fixpoint": -0.0176
+  },
+  {
+   "key": "/eval/60/O_ORACLE/atc_starved_items",
+   "no_fixpoint": 117.5333,
+   "fixpoint": 114.3333
+  },
+  {
+   "key": "/eval/60/O_ORACLE/atc_urgent_wait_p95_cens_h",
+   "no_fixpoint": 220.0974,
+   "fixpoint": 230.9195
+  },
+  {
+   "key": "/eval/60/O_ORACLE/atc_urgent_within24_share",
+   "no_fixpoint": 0.5683,
+   "fixpoint": 0.5556
+  },
+  {
+   "key": "/eval/60/O_ORACLE/delivered_kg",
+   "no_fixpoint": 3251006.712,
+   "fixpoint": 3248396.2929
+  },
+  {
+   "key": "/eval/60/O_ORACLE/p5_cargo_util",
+   "no_fixpoint": 0.5991,
+   "fixpoint": 0.5975
+  },
+  {
+   "key": "/eval/60/O_ORACLE/urgent_mean_h",
+   "no_fixpoint": 63.915,
+   "fixpoint": 66.319
+  },
+  {
+   "key": "/eval/60/O_ORACLE/utilisation",
+   "no_fixpoint": 0.1561,
+   "fixpoint": 0.1558
+  },
+  {
+   "key": "/eval/60/hand/atc_starved_items",
+   "no_fixpoint": 123.2333,
+   "fixpoint": 155.4667
+  },
+  {
+   "key": "/eval/60/hand/atc_urgent_wait_p95_cens_h",
+   "no_fixpoint": 288.0703,
+   "fixpoint": 279.0393
+  },
+  {
+   "key": "/eval/60/hand/atc_urgent_within24_share",
+   "no_fixpoint": 0.5505,
+   "fixpoint": 0.5463
+  },
+  {
+   "key": "/eval/60/hand/delivered_kg",
+   "no_fixpoint": 3251135.8844,
+   "fixpoint": 3252652.5647
+  },
+  {
+   "key": "/eval/60/hand/p5_cargo_util",
+   "no_fixpoint": 0.6023,
+   "fixpoint": 0.602
+  },
+  {
+   "key": "/eval/60/hand/regret_vs_teacher_h/ci95[0]",
+   "no_fixpoint": 3.006,
+   "fixpoint": 3.932
+  },
+  {
+   "key": "/eval/60/hand/regret_vs_teacher_h/ci95[1]",
+   "no_fixpoint": 19.121,
+   "fixpoint": 16.791
+  },
+  {
+   "key": "/eval/60/hand/regret_vs_teacher_h/mean",
+   "no_fixpoint": 11.063,
+   "fixpoint": 10.361
+  },
+  {
+   "key": "/eval/60/hand/urgent_mean_h",
+   "no_fixpoint": 74.978,
+   "fixpoint": 76.681
+  },
+  {
+   "key": "/eval/60/hand/utilisation",
+   "no_fixpoint": 0.157,
+   "fixpoint": 0.1568
+  },
+  {
+   "key": "/eval/60/linear/atc_starved_items",
+   "no_fixpoint": 142.5667,
+   "fixpoint": 120.6333
+  },
+  {
+   "key": "/eval/60/linear/atc_urgent_wait_p95_cens_h",
+   "no_fixpoint": 203.2763,
+   "fixpoint": 212.3115
+  },
+  {
+   "key": "/eval/60/linear/atc_urgent_within24_share",
+   "no_fixpoint": 0.7273,
+   "fixpoint": 0.7277
+  },
+  {
+   "key": "/eval/60/linear/delivered_kg",
+   "no_fixpoint": 3255518.6163,
+   "fixpoint": 3258810.2883
+  },
+  {
+   "key": "/eval/60/linear/p5_cargo_util",
+   "no_fixpoint": 0.5904,
+   "fixpoint": 0.5908
+  },
+  {
+   "key": "/eval/60/linear/regret_vs_teacher_h/ci95[0]",
+   "no_fixpoint": -26.002,
+   "fixpoint": -25.789
+  },
+  {
+   "key": "/eval/60/linear/regret_vs_teacher_h/ci95[1]",
+   "no_fixpoint": -12.45,
+   "fixpoint": -16.412
+  },
+  {
+   "key": "/eval/60/linear/regret_vs_teacher_h/mean",
+   "no_fixpoint": -19.226,
+   "fixpoint": -21.101
+  },
+  {
+   "key": "/eval/60/linear/urgent_mean_h",
+   "no_fixpoint": 44.689,
+   "fixpoint": 45.219
+  },
+  {
+   "key": "/eval/60/linear/utilisation",
+   "no_fixpoint": 0.1535,
+   "fixpoint": 0.1536
+  },
+  {
+   "key": "/eval/60/linear/vs_hand_h/ci95[0]",
+   "no_fixpoint": -36.048,
+   "fixpoint": -38.357
+  },
+  {
+   "key": "/eval/60/linear/vs_hand_h/ci95[1]",
+   "no_fixpoint": -24.53,
+   "fixpoint": -24.567
+  },
+  {
+   "key": "/eval/60/linear/vs_hand_h/mean",
+   "no_fixpoint": -30.289,
+   "fixpoint": -31.462
+  },
+  {
+   "key": "/eval/60/linear/vs_hand_share",
+   "no_fixpoint": -0.404,
+   "fixpoint": -0.4103
+  },
+  {
+   "key": "/eval/60/mlp/atc_starved_items",
+   "no_fixpoint": 146.4333,
+   "fixpoint": 178.0
+  },
+  {
+   "key": "/eval/60/mlp/atc_urgent_wait_p95_cens_h",
+   "no_fixpoint": 349.3266,
+   "fixpoint": 306.4622
+  },
+  {
+   "key": "/eval/60/mlp/atc_urgent_within24_share",
+   "no_fixpoint": 0.5686,
+   "fixpoint": 0.5668
+  },
+  {
+   "key": "/eval/60/mlp/delivered_kg",
+   "no_fixpoint": 3251067.2458,
+   "fixpoint": 3250332.8727
+  },
+  {
+   "key": "/eval/60/mlp/p5_cargo_util",
+   "no_fixpoint": 0.6055,
+   "fixpoint": 0.6045
+  },
+  {
+   "key": "/eval/60/mlp/regret_vs_teacher_h/ci95[0]",
+   "no_fixpoint": 5.857,
+   "fixpoint": 2.674
+  },
+  {
+   "key": "/eval/60/mlp/regret_vs_teacher_h/ci95[1]",
+   "no_fixpoint": 26.999,
+   "fixpoint": 15.364
+  },
+  {
+   "key": "/eval/60/mlp/regret_vs_teacher_h/mean",
+   "no_fixpoint": 16.428,
+   "fixpoint": 9.019
+  },
+  {
+   "key": "/eval/60/mlp/urgent_mean_h",
+   "no_fixpoint": 80.343,
+   "fixpoint": 75.338
+  },
+  {
+   "key": "/eval/60/mlp/utilisation",
+   "no_fixpoint": 0.1576,
+   "fixpoint": 0.1573
+  },
+  {
+   "key": "/eval/60/mlp/vs_hand_h/ci95[0]",
+   "no_fixpoint": -2.872,
+   "fixpoint": -6.117
+  },
+  {
+   "key": "/eval/60/mlp/vs_hand_h/ci95[1]",
+   "no_fixpoint": 13.602,
+   "fixpoint": 3.432
+  },
+  {
+   "key": "/eval/60/mlp/vs_hand_h/mean",
+   "no_fixpoint": 5.365,
+   "fixpoint": -1.342
+  },
+  {
+   "key": "/eval/60/mlp/vs_hand_share",
+   "no_fixpoint": 0.0716,
+   "fixpoint": -0.0175
+  },
+  {
+   "key": "/guards/30/atc_starved_items/hand",
+   "no_fixpoint": 0.7,
+   "fixpoint": 0.6
+  },
+  {
+   "key": "/guards/30/atc_starved_items/linear",
+   "no_fixpoint": 0.8,
+   "fixpoint": 0.7
+  },
+  {
+   "key": "/guards/30/atc_starved_items/linear_minus_hand/ci95[0]",
+   "no_fixpoint": -0.543,
+   "fixpoint": -0.267
+  },
+  {
+   "key": "/guards/30/atc_starved_items/linear_minus_hand/ci95[1]",
+   "no_fixpoint": 0.743,
+   "fixpoint": 0.467
+  },
+  {
+   "key": "/guards/30/atc_urgent_wait_mean_cens_h/hand",
+   "no_fixpoint": 13.261,
+   "fixpoint": 14.203
+  },
+  {
+   "key": "/guards/30/atc_urgent_wait_mean_cens_h/linear",
+   "no_fixpoint": 12.029,
+   "fixpoint": 11.794
+  },
+  {
+   "key": "/guards/30/atc_urgent_wait_mean_cens_h/linear_minus_hand/ci95[0]",
+   "no_fixpoint": -3.91,
+   "fixpoint": -4.715
+  },
+  {
+   "key": "/guards/30/atc_urgent_wait_mean_cens_h/linear_minus_hand/ci95[1]",
+   "no_fixpoint": 1.445,
+   "fixpoint": -0.102
+  },
+  {
+   "key": "/guards/30/atc_urgent_wait_mean_cens_h/linear_minus_hand/mean",
+   "no_fixpoint": -1.232,
+   "fixpoint": -2.409
+  },
+  {
+   "key": "/guards/30/delay_mean_bulk/hand",
+   "no_fixpoint": 15.394,
+   "fixpoint": 15.617
+  },
+  {
+   "key": "/guards/30/delay_mean_bulk/linear",
+   "no_fixpoint": 15.623,
+   "fixpoint": 15.525
+  },
+  {
+   "key": "/guards/30/delay_mean_bulk/linear_minus_hand/ci95[0]",
+   "no_fixpoint": 0.019,
+   "fixpoint": -0.408
+  },
+  {
+   "key": "/guards/30/delay_mean_bulk/linear_minus_hand/ci95[1]",
+   "no_fixpoint": 0.44,
+   "fixpoint": 0.223
+  },
+  {
+   "key": "/guards/30/delay_mean_bulk/linear_minus_hand/mean",
+   "no_fixpoint": 0.23,
+   "fixpoint": -0.092
+  },
+  {
+   "key": "/guards/30/delay_mean_h/hand",
+   "no_fixpoint": 15.303,
+   "fixpoint": 15.552
+  },
+  {
+   "key": "/guards/30/delay_mean_h/linear",
+   "no_fixpoint": 15.481,
+   "fixpoint": 15.401
+  },
+  {
+   "key": "/guards/30/delay_mean_h/linear_minus_hand/ci95[0]",
+   "no_fixpoint": -0.037,
+   "fixpoint": -0.47
+  },
+  {
+   "key": "/guards/30/delay_mean_h/linear_minus_hand/ci95[1]",
+   "no_fixpoint": 0.393,
+   "fixpoint": 0.168
+  },
+  {
+   "key": "/guards/30/delay_mean_h/linear_minus_hand/mean",
+   "no_fixpoint": 0.178,
+   "fixpoint": -0.151
+  },
+  {
+   "key": "/guards/30/delay_prio2_mean_h/hand",
+   "no_fixpoint": 15.529,
+   "fixpoint": 17.884
+  },
+  {
+   "key": "/guards/30/delay_prio2_mean_h/linear",
+   "no_fixpoint": 15.69,
+   "fixpoint": 16.712
+  },
+  {
+   "key": "/guards/30/delay_prio2_mean_h/linear_minus_hand/ci95[0]",
+   "no_fixpoint": -2.322,
+   "fixpoint": -3.936
+  },
+  {
+   "key": "/guards/30/delay_prio2_mean_h/linear_minus_hand/ci95[1]",
+   "no_fixpoint": 2.644,
+   "fixpoint": 1.593
+  },
+  {
+   "key": "/guards/30/delay_prio2_mean_h/linear_minus_hand/mean",
+   "no_fixpoint": 0.161,
+   "fixpoint": -1.172
+  },
+  {
+   "key": "/guards/30/delivered_kg/hand",
+   "no_fixpoint": 1468777.597,
+   "fixpoint": 1469111.084
+  },
+  {
+   "key": "/guards/30/delivered_kg/linear",
+   "no_fixpoint": 1470736.247,
+   "fixpoint": 1471519.37
+  },
+  {
+   "key": "/guards/30/delivered_kg/linear_minus_hand/ci95[0]",
+   "no_fixpoint": -1907.473,
+   "fixpoint": -1979.312
+  },
+  {
+   "key": "/guards/30/delivered_kg/linear_minus_hand/ci95[1]",
+   "no_fixpoint": 5824.772,
+   "fixpoint": 6795.886
+  },
+  {
+   "key": "/guards/30/delivered_kg/linear_minus_hand/mean",
+   "no_fixpoint": 1958.65,
+   "fixpoint": 2408.287
+  },
+  {
+   "key": "/guards/30/tonne_days_waiting/hand",
+   "no_fixpoint": 829.728,
+   "fixpoint": 843.899
+  },
+  {
+   "key": "/guards/30/tonne_days_waiting/linear",
+   "no_fixpoint": 844.521,
+   "fixpoint": 840.479
+  },
+  {
+   "key": "/guards/30/tonne_days_waiting/linear_minus_hand/ci95[0]",
+   "no_fixpoint": -0.489,
+   "fixpoint": -22.557
+  },
+  {
+   "key": "/guards/30/tonne_days_waiting/linear_minus_hand/ci95[1]",
+   "no_fixpoint": 30.075,
+   "fixpoint": 15.716
+  },
+  {
+   "key": "/guards/30/tonne_days_waiting/linear_minus_hand/mean",
+   "no_fixpoint": 14.793,
+   "fixpoint": -3.421
+  },
+  {
+   "key": "/guards/60/atc_starved_items/hand",
+   "no_fixpoint": 95.7,
+   "fixpoint": 110.5
+  },
+  {
+   "key": "/guards/60/atc_starved_items/linear",
+   "no_fixpoint": 97.1,
+   "fixpoint": 94.8
+  },
+  {
+   "key": "/guards/60/atc_starved_items/linear_minus_hand/ci95[0]",
+   "no_fixpoint": -51.485,
+   "fixpoint": -79.401
+  },
+  {
+   "key": "/guards/60/atc_starved_items/linear_minus_hand/ci95[1]",
+   "no_fixpoint": 54.285,
+   "fixpoint": 48.001
+  },
+  {
+   "key": "/guards/60/atc_starved_items/linear_minus_hand/mean",
+   "no_fixpoint": 1.4,
+   "fixpoint": -15.7
+  },
+  {
+   "key": "/guards/60/atc_urgent_wait_mean_cens_h/hand",
+   "no_fixpoint": 65.093,
+   "fixpoint": 73.752
+  },
+  {
+   "key": "/guards/60/atc_urgent_wait_mean_cens_h/linear",
+   "no_fixpoint": 41.874,
+   "fixpoint": 42.292
+  },
+  {
+   "key": "/guards/60/atc_urgent_wait_mean_cens_h/linear_minus_hand/ci95[0]",
+   "no_fixpoint": -31.762,
+   "fixpoint": -44.577
+  },
+  {
+   "key": "/guards/60/atc_urgent_wait_mean_cens_h/linear_minus_hand/ci95[1]",
+   "no_fixpoint": -14.675,
+   "fixpoint": -18.343
+  },
+  {
+   "key": "/guards/60/atc_urgent_wait_mean_cens_h/linear_minus_hand/mean",
+   "no_fixpoint": -23.219,
+   "fixpoint": -31.46
+  },
+  {
+   "key": "/guards/60/delay_mean_bulk/hand",
+   "no_fixpoint": 46.511,
+   "fixpoint": 47.171
+  },
+  {
+   "key": "/guards/60/delay_mean_bulk/linear",
+   "no_fixpoint": 40.862,
+   "fixpoint": 41.485
+  },
+  {
+   "key": "/guards/60/delay_mean_bulk/linear_minus_hand/ci95[0]",
+   "no_fixpoint": -9.118,
+   "fixpoint": -9.393
+  },
+  {
+   "key": "/guards/60/delay_mean_bulk/linear_minus_hand/ci95[1]",
+   "no_fixpoint": -2.18,
+   "fixpoint": -1.979
+  },
+  {
+   "key": "/guards/60/delay_mean_bulk/linear_minus_hand/mean",
+   "no_fixpoint": -5.649,
+   "fixpoint": -5.686
+  },
+  {
+   "key": "/guards/60/delay_mean_h/hand",
+   "no_fixpoint": 47.263,
+   "fixpoint": 48.113
+  },
+  {
+   "key": "/guards/60/delay_mean_h/linear",
+   "no_fixpoint": 41.037,
+   "fixpoint": 41.673
+  },
+  {
+   "key": "/guards/60/delay_mean_h/linear_minus_hand/ci95[0]",
+   "no_fixpoint": -9.862,
+   "fixpoint": -10.117
+  },
+  {
+   "key": "/guards/60/delay_mean_h/linear_minus_hand/ci95[1]",
+   "no_fixpoint": -2.59,
+   "fixpoint": -2.764
+  },
+  {
+   "key": "/guards/60/delay_mean_h/linear_minus_hand/mean",
+   "no_fixpoint": -6.226,
+   "fixpoint": -6.44
+  },
+  {
+   "key": "/guards/60/delay_prio2_mean_h/hand",
+   "no_fixpoint": 82.504,
+   "fixpoint": 86.813
+  },
+  {
+   "key": "/guards/60/delay_prio2_mean_h/linear",
+   "no_fixpoint": 57.9,
+   "fixpoint": 60.577
+  },
+  {
+   "key": "/guards/60/delay_prio2_mean_h/linear_minus_hand/ci95[0]",
+   "no_fixpoint": -40.551,
+   "fixpoint": -34.656
+  },
+  {
+   "key": "/guards/60/delay_prio2_mean_h/linear_minus_hand/ci95[1]",
+   "no_fixpoint": -8.658,
+   "fixpoint": -17.815
+  },
+  {
+   "key": "/guards/60/delay_prio2_mean_h/linear_minus_hand/mean",
+   "no_fixpoint": -24.605,
+   "fixpoint": -26.236
+  },
+  {
+   "key": "/guards/60/delivered_kg/hand",
+   "no_fixpoint": 3234926.018,
+   "fixpoint": 3239107.262
+  },
+  {
+   "key": "/guards/60/delivered_kg/linear",
+   "no_fixpoint": 3241833.277,
+   "fixpoint": 3247066.612
+  },
+  {
+   "key": "/guards/60/delivered_kg/linear_minus_hand/ci95[0]",
+   "no_fixpoint": -5158.885,
+   "fixpoint": -844.924
+  },
+  {
+   "key": "/guards/60/delivered_kg/linear_minus_hand/ci95[1]",
+   "no_fixpoint": 18973.403,
+   "fixpoint": 16763.625
+  },
+  {
+   "key": "/guards/60/delivered_kg/linear_minus_hand/mean",
+   "no_fixpoint": 6907.259,
+   "fixpoint": 7959.35
+  },
+  {
+   "key": "/guards/60/tonne_days_waiting/hand",
+   "no_fixpoint": 6835.304,
+   "fixpoint": 7018.171
+  },
+  {
+   "key": "/guards/60/tonne_days_waiting/linear",
+   "no_fixpoint": 5791.927,
+   "fixpoint": 5889.084
+  },
+  {
+   "key": "/guards/60/tonne_days_waiting/linear_minus_hand/ci95[0]",
+   "no_fixpoint": -1686.783,
+   "fixpoint": -1692.174
+  },
+  {
+   "key": "/guards/60/tonne_days_waiting/linear_minus_hand/ci95[1]",
+   "no_fixpoint": -399.973,
+   "fixpoint": -566.0
+  },
+  {
+   "key": "/guards/60/tonne_days_waiting/linear_minus_hand/mean",
+   "no_fixpoint": -1043.378,
+   "fixpoint": -1129.087
+  },
+  {
+   "key": "/ood/2eq/hand/starved_items",
+   "no_fixpoint": 1.3,
+   "fixpoint": 1.8
+  },
+  {
+   "key": "/ood/2eq/hand/urgent_mean_h",
+   "no_fixpoint": 16.972,
+   "fixpoint": 16.983
+  },
+  {
+   "key": "/ood/2eq/linear/starved_items",
+   "no_fixpoint": 0.9,
+   "fixpoint": 1.0
+  },
+  {
+   "key": "/ood/2eq/linear/urgent_mean_h",
+   "no_fixpoint": 12.022,
+   "fixpoint": 12.52
+  },
+  {
+   "key": "/ood/2eq/linear/vs_hand_h/ci95[0]",
+   "no_fixpoint": -8.663,
+   "fixpoint": -8.261
+  },
+  {
+   "key": "/ood/2eq/linear/vs_hand_h/ci95[1]",
+   "no_fixpoint": -1.236,
+   "fixpoint": -0.666
+  },
+  {
+   "key": "/ood/2eq/linear/vs_hand_h/mean",
+   "no_fixpoint": -4.95,
+   "fixpoint": -4.463
+  },
+  {
+   "key": "/ood/5eq/hand/urgent_mean_h",
+   "no_fixpoint": 13.954,
+   "fixpoint": 13.751
+  },
+  {
+   "key": "/ood/5eq/linear/starved_items",
+   "no_fixpoint": 0.9,
+   "fixpoint": 1.2
+  },
+  {
+   "key": "/ood/5eq/linear/urgent_mean_h",
+   "no_fixpoint": 12.626,
+   "fixpoint": 12.375
+  },
+  {
+   "key": "/ood/5eq/linear/vs_hand_h/ci95[0]",
+   "no_fixpoint": -3.497,
+   "fixpoint": -3.558
+  },
+  {
+   "key": "/ood/5eq/linear/vs_hand_h/ci95[1]",
+   "no_fixpoint": 0.841,
+   "fixpoint": 0.805
+  },
+  {
+   "key": "/ood/5eq/linear/vs_hand_h/mean",
+   "no_fixpoint": -1.328,
+   "fixpoint": -1.376
+  },
+  {
+   "key": "/ood/load 10 %/hand/urgent_mean_h",
+   "no_fixpoint": 11.518,
+   "fixpoint": 12.494
+  },
+  {
+   "key": "/ood/load 10 %/linear/urgent_mean_h",
+   "no_fixpoint": 10.301,
+   "fixpoint": 10.302
+  },
+  {
+   "key": "/ood/load 10 %/linear/vs_hand_h/ci95[0]",
+   "no_fixpoint": -2.123,
+   "fixpoint": -4.434
+  },
+  {
+   "key": "/ood/load 10 %/linear/vs_hand_h/ci95[1]",
+   "no_fixpoint": -0.31,
+   "fixpoint": 0.05
+  },
+  {
+   "key": "/ood/load 10 %/linear/vs_hand_h/mean",
+   "no_fixpoint": -1.216,
+   "fixpoint": -2.192
+  },
+  {
+   "key": "/ood/loss 0.25/hand/starved_items",
+   "no_fixpoint": 1.0,
+   "fixpoint": 1.1
+  },
+  {
+   "key": "/ood/loss 0.25/hand/urgent_mean_h",
+   "no_fixpoint": 15.638,
+   "fixpoint": 17.197
+  },
+  {
+   "key": "/ood/loss 0.25/linear/starved_items",
+   "no_fixpoint": 1.3,
+   "fixpoint": 1.1
+  },
+  {
+   "key": "/ood/loss 0.25/linear/urgent_mean_h",
+   "no_fixpoint": 13.323,
+   "fixpoint": 13.489
+  },
+  {
+   "key": "/ood/loss 0.25/linear/vs_hand_h/ci95[0]",
+   "no_fixpoint": -4.293,
+   "fixpoint": -6.589
+  },
+  {
+   "key": "/ood/loss 0.25/linear/vs_hand_h/ci95[1]",
+   "no_fixpoint": -0.337,
+   "fixpoint": -0.829
+  },
+  {
+   "key": "/ood/loss 0.25/linear/vs_hand_h/mean",
+   "no_fixpoint": -2.315,
+   "fixpoint": -3.709
+  },
+  {
+   "key": "/ood/loss 0.40/hand/starved_items",
+   "no_fixpoint": 1.7,
+   "fixpoint": 2.5
+  },
+  {
+   "key": "/ood/loss 0.40/hand/urgent_mean_h",
+   "no_fixpoint": 18.0,
+   "fixpoint": 18.983
+  },
+  {
+   "key": "/ood/loss 0.40/linear/urgent_mean_h",
+   "no_fixpoint": 16.383,
+   "fixpoint": 16.122
+  },
+  {
+   "key": "/ood/loss 0.40/linear/vs_hand_h/ci95[0]",
+   "no_fixpoint": -4.909,
+   "fixpoint": -6.144
+  },
+  {
+   "key": "/ood/loss 0.40/linear/vs_hand_h/ci95[1]",
+   "no_fixpoint": 1.675,
+   "fixpoint": 0.422
+  },
+  {
+   "key": "/ood/loss 0.40/linear/vs_hand_h/mean",
+   "no_fixpoint": -1.617,
+   "fixpoint": -2.861
+  },
+  {
+   "key": "/ood/year 2038/hand/starved_items",
+   "no_fixpoint": 0.7,
+   "fixpoint": 0.6
+  },
+  {
+   "key": "/ood/year 2038/hand/urgent_mean_h",
+   "no_fixpoint": 13.261,
+   "fixpoint": 14.203
+  },
+  {
+   "key": "/ood/year 2038/linear/starved_items",
+   "no_fixpoint": 0.8,
+   "fixpoint": 0.7
+  },
+  {
+   "key": "/ood/year 2038/linear/urgent_mean_h",
+   "no_fixpoint": 12.029,
+   "fixpoint": 11.794
+  },
+  {
+   "key": "/ood/year 2038/linear/vs_hand_h/ci95[0]",
+   "no_fixpoint": -3.91,
+   "fixpoint": -4.715
+  },
+  {
+   "key": "/ood/year 2038/linear/vs_hand_h/ci95[1]",
+   "no_fixpoint": 1.445,
+   "fixpoint": -0.102
+  },
+  {
+   "key": "/ood/year 2038/linear/vs_hand_h/mean",
+   "no_fixpoint": -1.232,
+   "fixpoint": -2.409
+  }
+ ],
+ "unchanged_vs_no_fixpoint_rerun": 35
+}

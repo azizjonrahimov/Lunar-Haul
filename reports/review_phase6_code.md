@@ -182,6 +182,16 @@ Added by the second review pass (B-121, 14 Nov 2026), open:
 - nn/train.fit catches only pickle.UnpicklingError for an old checkpoint; other errors from loading it are not
   turned into the named message.
 - Site: null fallbacks remain for the E51 to E55 and B-99 values, so a missing results key does not stop the build.
+- train_bid collect=True perturbs runs on the dispatch fixed point (B-122): hand seed 1 9.78 h collected against 9.06 h
+  (= E40); without the fixed point collecting changed nothing. Cause (code reading, not yet fixed or tested):
+  lunarsim/atc/learned.py oracle_assignment silences sim._push but not sim.wake_pending, so the teacher's marketplace call
+  records lane deadlines in the wake dedupe (lunarsim/dispatch.py, consolidation hold) and the real dispatch then skips
+  its WAKE. Fix (deferred to the later PR, after the remaining B-117 controls, because it moves e50_code): save and restore
+  sim.wake_pending (and wake_skipped) around the teacher call, with a test that a collecting run on the fixed point equals
+  a non-collecting one, the E50 cells re-stamped after a reproduction check, and the fixed-point agreement figures rerun.
+  B-122's outcomes come from runs without collection and are not affected; its held-out agreement figures on the fixed
+  point (hand 0.884, mlp 0.864, linear 0.703) come from collecting runs and carry the lost wake-ups. 51 collect-affected
+  runs were discarded.
 - run_e54 build() alone writes E54_dtn.json without lrip_v02 (v02build adds it back); the pair build + v02build
   reproduces the file byte for byte (checked in B-121).
 

@@ -78,7 +78,9 @@
   "file": "results/ATC_learned_eval.json",
   "file_date": "27 October 2026",
   "rerun_file": "results/ATC_learned_eval_rerun.json",
-  "rerun_task": "B-106"
+  "rerun_task": "B-106",
+  "fixpoint_file": "results/ATC_learned_eval_fixpoint.json",
+  "fixpoint_task": "B-122"
  },
  "lrip_v02": {
   "source": "Task B-100, done 12 Nov 2026: lunarsim/schemas/lrip-v0.2.json, data/atc/lrip/conformance-v0.2.json, data/atc/lrip/v0.2/, results/E53_bitrate.json key lrip_v02, results/E53_table_v02.csv. build_p1.py reads them directly (class P6); this entry is kept as a record and is no longer read.",

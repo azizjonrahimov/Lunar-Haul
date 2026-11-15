@@ -222,3 +222,29 @@ The tally of the 44 findings is unchanged (35 fixed, 6 fixed in part, 3 not done
 - **Builder.** The phrase "the last two were reported as above one second" (5.1) is now chosen from a check on the superseded timing block
   (`superseded_2026-11-13_b118_n12`: above one second at four and eight times the fleet, under it at today's).
 Everything in the paper remains simulation or calculation; nothing is measured on the Moon. Tally unchanged.
+
+## Part 9 (14 Nov): two control runs, B-117 (e1) and (j2) (commit 84babe1)
+
+Both runs were made after the results were known. Neither is pre-registered, and the paper says so wherever it prints them. Both are
+simulation or calculation on the recorded months; nothing is measured on the Moon.
+
+- **S9 (a), S17: E54's retry budget is swept** (`results/E54_retry_budget.json`, `tools/atc/b117de_retry.py`). Twelve budgets of drop-and-retry
+  (1, 3, 5 or 10 tries; 20, 60 or 180 s apart) on E54's 30 seeds at a loss of 0.25. The published budget (5 tries, 180 s) reproduces E54's
+  drop-and-retry cells exactly (the build compares the rows field by field). H14's first clause holds at 10 of the 12 budgets. It fails at
+  10 tries every 20 s and every 60 s: drop-and-retry loses 2 awards in 30 seeds, the lost-link rule none, and the paired interval
+  [-0.17, 0.00] reaches zero. Section 5.12 has a new paragraph with this; the sentences that said "not swept" are replaced in 4.2 (E54 design),
+  5.12 (H14 verdict), 6.6 (the future-work item is removed), Section 7 (E54 paragraph), Table 18 (H14 row and the Assumed row) and the
+  introduction's clause. The paper now says that the clause is a statement about a comparator that gives up early.
+- **S17: E52's change rates are swept** (`results/E52_sweep.json`, `tools/atc/b117j2_e52_sweep.py`). Seventeen settings, one rate at a time,
+  on E52's 30 seeds; the default reproduces E52's H12 result. H12's two statements hold in all 17. The share of a full resend after 24 h is
+  0.26 % to 1.5 % over 10 to 84 changed route tiles a day; hazard, keep-out and road-edge rates move it by under 1 % of its value; the
+  stale-map hits in a one-day outage follow the hazard rate (0.27 at 0.5 a day to 4.33 at 10 a day). Section 5.10 has a new paragraph; the
+  sentences that said "not swept" are replaced in 4.2 (E52 design), 5.10 (H12 verdict: "the result is the assumption" now points to the sweep),
+  6.6 (item removed), Section 7 (map paragraph) and Table 18 (H12 row and the Assumed row). The share of hazards a rover cannot see is still
+  not swept, and the paper says so. The sweep gives the range of a calculation; the rates stay assumed.
+- **Control (d)** (three tries every 20 s: grants lost 6.7 % at loss 0.25, 0.9 % at 0.10, 16.8 % at 0.40). P3 was searched for the arithmetic
+  figure of 1.6 % that this run corrects; P3 never printed it, so nothing is replaced and the run is not printed in P3.
+
+Tally: counts unchanged. S9 stays "fixed in part" but narrower: the retry budget is now swept; what remains is that the lost-link return
+is not driven in the engine. S17: the retry-budget and change-rate items are done; still not run are the lost-link return and caution-speed
+crossing in the engine, the hidden-hazard share, and the other items listed in 6.6.
