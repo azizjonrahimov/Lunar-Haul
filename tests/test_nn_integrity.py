@@ -313,7 +313,7 @@ def test_old_checkpoint_is_refused_with_its_name(small, monkeypatch, tmp_path):
     """B-120 H: a checkpoint written before 13 Nov 2026 (numpy arrays inside) cannot be resumed with
     weights_only=True; fit stops with a message that names the file and says what to do, not an UnpicklingError,
     and does not fall back to loading it unsafely."""
-    import torch
+    torch = pytest.importorskip("torch")       # runs in the CI job with torch; skipped without it, like the other network tests
     from lunarsim.nn import train as T
     monkeypatch.setattr(T, "STATE", str(tmp_path))
     os.makedirs(tmp_path / "old_run")
