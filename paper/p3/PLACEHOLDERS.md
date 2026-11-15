@@ -323,3 +323,13 @@ No new key. P3-E50-RESULTS-ERRORS and P3-E50B-SENTENCE now also read `superseded
 stop time: it prints the count of runs with a violation in each arm from `metrics.violations` (checked to be whole counts over the seeds) and
 words the difference from its interval. P3-H9-VERDICT-SENTENCE and P3-LIMIT-NEAR-SENTENCE print "not computed at eight times the fleet" only
 when `results/E50_near_base.json` lacks that multiple (it now has it).
+
+## Control runs B-117 (e1) and (j2) (14 Nov, commit 84babe1)
+
+| Placeholder | Source | Checks |
+|---|---|---|
+| P3-E54-RETRY-SWEEP-SENTENCE (5.12), P3-E54-RETRY-LIMIT (7) | E54R = `results/E54_retry_budget.json`: `seeds`, `published_budget`, `rows` (`loss`, `published_budget`, `award_n`, `award_lost`, `grant_lost`, `task_state_lost`, `ledger_earth_lost`), `h14_by_budget_loss_0.25.{budget}` (`lost_jobs_drop_retry_per_seed`, `lost_jobs_sf_ll_per_seed`, `difference_sf_ll_minus_drop_retry.ci`, `clause_1_ci_below_0`) | the seeds are E54's; the published budget equals E54's `parameters.max_tries` and `retry_s` and its three rows equal E54's drop-and-retry rows field by field; each flag is recomputed from the interval's upper end; the lost-link rule loses no award at any budget; the failing budgets share one number of tries and one count of lost awards and their interval ends at zero (else the build stops). The counts "10 of 12", "two" and the budgets named are composed, not typed. The same clause is also printed in the abstract-level intro clause (P3-P6-INTRO-CLAUSE, kind "short") and in Table 18's H14 row. Labelled as run after the results were known, not pre-registered. |
+| P3-E52-SWEEP-SENTENCE (5.10), P3-E52-SWEEP-LIMIT (7) | E52S = `results/E52_sweep.json`: `defaults`, `seeds`, `default_reproduces_E52_map_h12`, `h12_supported_in_every_setting`, `sweeps.{rate}.{value}` (`share_of_full_resend_24h`, `h12_supported`, `tiles_changed_24h`, `hits_during_outage."24 h"`) | the default setting of each of the four sweeps equals E52's `h12.share_of_full_resend_24h` on E52's seeds; H12 holds in every setting; the share rises with the tile rate; the other three rates move it by under 1 % of its value; the hits during a one-day outage rise with the hazard rate; "levels off" is printed only when the changed tiles at the top rate equal three times E52's `route_tiles`. Also printed in Table 18's H12 row. Labelled as run after the fact. |
+
+Control (d) of the same file (three tries every 20 s) is not printed: P3 never printed the arithmetic figure it corrects (searched).
+P3-E52-DESIGN-SENTENCE, P3-E54-DESIGN-SENTENCE, P3-H12-VERDICT-SENTENCE and P3-H14-VERDICT-SENTENCE gained a pointer to the sweeps (no new number).

@@ -1223,7 +1223,8 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
                 f"{num(p['loss'], 1)} and synchronises, either hazards first (keep-out zones, hazard tiles on its route, other hazards, roads, "
                 f"traversability, radio coverage, elevation) or oldest change first, over {cnt(r.p6('E52', 'seeds'))} seeds. The outcomes are the bytes sent "
                 f"against a full resend of every raster layer ({num(_fin(r.p6('E52', 'full_resend_bytes')) / 1e6, 1)}&nbsp;MB), the time until the hazard "
-                f"layer is current, and the hazards the rover drives into because its copy is stale, during the outage and after contact.")
+                f"layer is current, and the hazards the rover drives into because its copy is stale, during the outage and after contact. The registered run has one setting "
+                f"of the change rates; Section 5.10 reports a sweep of them, run after the fact.")
     fill("P3-E52-DESIGN-SENTENCE", e52_design, "E52")
 
     def e52_results():
@@ -1279,7 +1280,7 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
                 f"are design calculations on the assumed inputs and could not have failed, and a dated entry of [67] records it. First, that a "
                 f"hazards-first sync of changed tiles needs under 10&#8239;% of the bytes of a full resend: with {cnt(s['n'])} route tiles assumed to change a "
                 f"day in each of three layers of {cnt(s['N'])} tiles, the changed tiles are {cnt(n_day)} of {cnt(n_all)}, {pc(n_day / n_all, 2)} of the map, so a "
-                f"sync of changed tiles is {pc(share, 2)} of a full resend; the result is the assumption. Second, that it brings the hazard layer current "
+                f"sync of changed tiles is {pc(share, 2)} of a full resend; the result follows from the assumed change rate, and the sweep reported below gives its range. Second, that it brings the hazard layer current "
                 f"sooner than oldest-first at every link rate: a subset sent first is always finished first, {'in every seed' if c2 else 'though not in every seed here'}, "
                 f"and the paired means, "
                 + ", ".join(f"{dur(abs(_fin(pr[k]['mean_s'])))} at {cnt(float(k))}{KBPS6}" for k in rates) +
@@ -1674,7 +1675,7 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
                 f"blacked out from day {num(bo[0], 0)} to day {num(bo[1], 0)} on top of the month's own direct-to-Earth gaps. Three protocols carry the traffic: "
                 f"drop-and-retry end to end, a try every {unit(p['retry_s'], 's', 0)} and at most {words(p['max_tries'])} tries, so that it gives up after "
                 f"{unit((int(p['max_tries']) - 1) * _fin(p['retry_s']) / 60.0, 'min', 0)} on an award that lives an hour (the retry budget is our choice; the "
-                f"registration does not fix it, and it was not swept); store-and-forward hop by hop with "
+                f"registration does not fix it; Section 5.12 gives a sweep of it, run after the results were known); store-and-forward hop by hop with "
                 f"custody; and store-and-forward with the lost-link ladder of Section 3.8. The per-hop loss is {', '.join(num(x, 2) for x in losses[:-1])} or "
                 f"{num(losses[-1], 2)}, on {cnt(len(r.p6('E54', 'seeds')))} seeds with {num(aj['jobs_per_seed'], 1)} jobs, {num(aj['awards_per_seed'], 1)} awards (one "
                 f"for each vehicle of a job; {num(aj['team_jobs_per_seed'], 2)} jobs a seed are team jobs of two vehicles) and "
@@ -1808,6 +1809,105 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
     fill("P3-E54-V02-LIMIT", lambda: cap1(e54_v02("clause")) + "; it says nothing about how version 0.2's reports and heartbeats fare on a lossy link.", "E54 lrip_v02 (B-111)")
     fill("P3-LRIP-V02-SENTENCE", lrip_v02_sentence, "E53 lrip_v02 (B-100)")
 
+    P6_FILES["E54R"], P6_TASK["E54R"] = "E54_retry_budget.json", "B-117 (d), (e1)"
+    P6_FILES["E52S"], P6_TASK["E52S"] = "E52_sweep.json", "B-117 (j2)"
+
+    def e54_retry(kind="sentence"):
+        """5.12, 7 (control B-117 e1, results/E54_retry_budget.json): H14's first clause at twelve retry budgets of the comparator. Run after
+        the results were known and not pre-registered; a simulation on the same recorded months."""
+        b = r.p6("E54R", "h14_by_budget_loss_0.25")
+        pb = r.p6("E54R", "published_budget")
+        rows = r.p6("E54R", "rows")
+        check(list(r.p6("E54R", "seeds")) == list(r.p6("E54", "seeds")) and bool(pb["reproduces_E54_drop_retry_cells"]) and
+              int(pb["max_tries"]) == int(r.p6("E54", "parameters", "max_tries")) and abs(_fin(pb["retry_s"]) - _fin(r.p6("E54", "parameters", "retry_s"))) < 1e-9,
+              "the retry sweep runs E54's seeds and its published budget is E54's (5.12)")
+        for x in rows:
+            if x["published_budget"]:
+                y = e54row(_fin(x["loss"]), "drop_retry")
+                check(all(x[f] == y[f] for f in ("award_n", "award_lost", "grant_lost", "task_state_lost", "ledger_earth_lost")),
+                      f"the retry sweep's published budget reproduces E54's drop-and-retry cells at loss {x['loss']} (5.12)")
+        check(sum(1 for x in rows if x["published_budget"]) == 3, "the published budget is in the sweep at the three loss levels (5.12)")
+        ok = [k for k, v in b.items() if _fin(v["difference_sf_ll_minus_drop_retry"]["ci"][1]) < 0]
+        bad = [k for k in b if k not in ok]
+        check(all(bool(b[k]["clause_1_ci_below_0"]) == (k in ok) for k in b), "the sweep's flags follow from the paired intervals (5.12)")
+        check(all(_fin(v["lost_jobs_sf_ll_per_seed"]) == 0 for v in b.values()), "with the lost-link rule no award expires at any budget of the sweep (5.12)")
+        ns = len(r.p6("E54R", "seeds"))
+
+        def parse(k):
+            m_ = re.match(r"(\d+) tries, (\d+) s", k)
+            return int(m_.group(1)), int(m_.group(2))
+        tries = sorted({parse(k)[0] for k in b})
+        gaps = sorted({parse(k)[1] for k in b})
+        lost = lambda k: int(round(_fin(b[k]["lost_jobs_drop_retry_per_seed"]) * ns))
+        if not bad:
+            fail_txt = "The clause holds at every budget"
+        else:
+            bt = sorted({parse(k)[0] for k in bad})
+            bg = sorted(parse(k)[1] for k in bad)
+            check(len(bt) == 1 and len({lost(k) for k in bad}) == 1 and all(_fin(b[k]["difference_sf_ll_minus_drop_retry"]["ci"][1]) == 0 for k in bad),
+                  "the budgets at which H14's first clause fails share one number of tries and one count of lost awards, and their interval ends at zero (5.12)")
+            c0 = b[bad[0]]["difference_sf_ll_minus_drop_retry"]["ci"]
+            fail_txt = (f"The clause holds at {cnt(len(ok))} of the {cnt(len(b))} budgets and fails at {words(len(bad))}, {cnt(bt[0])} tries every "
+                        f"{' or '.join(cnt(g) for g in bg)}&nbsp;s, where drop-and-retry loses {words(lost(bad[0]))} awards in {cnt(ns)} seeds and the rule none, "
+                        f"so the paired interval, {ci(c0[0], c0[1], 2)}, reaches zero")
+        if kind == "short":
+            return (f"a later sweep finds the clause at {cnt(len(ok))} of {cnt(len(b))} budgets" if bad else f"a later sweep finds the clause at all {cnt(len(b))} budgets")
+        if kind == "clause":
+            return (f"a sweep of {cnt(len(b))} retry budgets, run after the results were known and not pre-registered, " +
+                    (f"finds H14's first clause at {cnt(len(ok))} of them and not at {cnt(bt[0])} tries every {' or '.join(cnt(g) for g in bg)}&nbsp;s" if bad else
+                     "finds H14's first clause at every one"))
+        worst = max(b, key=lambda k: _fin(b[k]["lost_jobs_drop_retry_per_seed"]))
+        return (f"How much of this is the comparator's budget was then checked in a sweep, run after the results were known and not pre-registered: "
+                f"drop-and-retry with {', '.join(cnt(t) for t in tries[:-1])} or {cnt(tries[-1])} tries, {', '.join(cnt(g) for g in gaps[:-1])} or "
+                f"{cnt(gaps[-1])}&nbsp;s apart, on the same {cnt(ns)} seeds at a loss of 0.25, each against the unchanged store-and-forward with the "
+                f"lost-link rule. The published budget reproduces E54's drop-and-retry cells exactly. {fail_txt}. Drop-and-retry loses "
+                f"{num(b[worst]['lost_jobs_drop_retry_per_seed'], 1)} jobs a seed with a single try and "
+                f"{num(min(_fin(v['lost_jobs_drop_retry_per_seed']) for v in b.values()), 2)} at its best budget: the clause is a statement about a "
+                f"comparator that gives up early, and a comparator that keeps trying loses almost nothing in this replay.")
+    fill("P3-E54-RETRY-SWEEP-SENTENCE", e54_retry, "E54 retry budgets (B-117 e1)")
+    fill("P3-E54-RETRY-LIMIT", lambda: cap1(e54_retry("clause")) + ".", "E54 retry budgets (B-117 e1)")
+
+    def e52_sweep(kind="sentence"):
+        """5.10, 7 (control B-117 j2, results/E52_sweep.json): E52's assumed change rates swept one at a time. Run after the fact; a
+        calculation on the map's bookkeeping, as E52 is."""
+        sw, df = r.p6("E52S", "sweeps"), r.p6("E52S", "defaults")
+        n = sum(len(v) for v in sw.values())
+        allx = [x for v in sw.values() for x in v.values()]
+        h = r.p6("E52", "h12")
+        dflt = {p: next(x for k, x in sw[p].items() if abs(float(k) - _fin(df[p])) < 1e-9) for p in sw}
+        check(bool(r.p6("E52S", "default_reproduces_E52_map_h12")) and all(abs(_fin(x["share_of_full_resend_24h"]) - _fin(h["share_of_full_resend_24h"])) < 1e-5 for x in dflt.values()) and
+              int(r.p6("E52S", "seeds")) == int(r.p6("E52", "seeds")), "the default setting of the sweep reproduces E52's share after 24 h, on E52's seeds (5.10)")
+        check(bool(r.p6("E52S", "h12_supported_in_every_setting")) and all(bool(x["h12_supported"]) for x in allx), "H12's two statements hold in every setting of the sweep (5.10)")
+        tl = sw["TILES_PER_DAY"]
+        tk = sorted(tl, key=float)
+        sh = [_fin(tl[k]["share_of_full_resend_24h"]) for k in tk]
+        check(all(a < b_ for a, b_ in zip(sh, sh[1:])), "the byte share after 24 h rises with the tile change rate (5.10)")
+        d0 = _fin(h["share_of_full_resend_24h"])
+        others = [_fin(x["share_of_full_resend_24h"]) for p in sw if p != "TILES_PER_DAY" for x in sw[p].values()]
+        check(max(abs(v - d0) for v in others) < 0.01 * d0, "hazard, keep-out and road-edge rates move the byte share by under 1 % of its value (5.10)")
+        hz = sw["HAZARD_PER_DAY"]
+        hk = sorted(hz, key=float)
+        hits = [_fin(hz[k]["hits_during_outage"]["24 h"]) for k in hk]
+        check(all(a < b_ for a, b_ in zip(hits, hits[1:])), "stale-map hits during a one-day outage rise with the hazard rate (5.10)")
+        full = 3 * int(r.p6("E52", "route_tiles"))
+        top = _fin(tl[tk[-1]]["tiles_changed_24h"])
+        check(top <= full + 1e-9, "no more tiles change in a day than the routes have in three layers (5.10)")
+        levels = ("levels off at the highest rate, where every route tile of the three layers has changed" if abs(top - full) < 0.5 else
+                  "has not levelled off inside the swept range")
+        if kind == "clause":
+            return (f"a sweep of {cnt(n)} settings, run after the fact, puts the share after a day at {pc(sh[0], 2)} to {pc(sh[-1], 1)} of a full resend over "
+                    f"{cnt(float(tk[0]))} to {cnt(float(tk[-1]))} changed tiles a day")
+        return (f"The change rates were then swept one at a time, after the fact and outside the registration: {cnt(n)} settings on the same "
+                f"{cnt(r.p6('E52S', 'seeds'))} seeds, of which the default reproduces the result above. The share of a full resend after a day is "
+                f"{', '.join(pc(v, 2) for v in sh[:-1])} and {pc(sh[-1], 2)} at {', '.join(cnt(float(k)) for k in tk[:-1])} and {cnt(float(tk[-1]))} route "
+                f"tiles changed a day; it follows the tile change rate and {levels}. The rates of hazards, "
+                f"keep-out zones and road-edge changes move it by under a hundredth of its value. The stale-map hits during a day out of contact "
+                f"follow the hazard rate: {', '.join(num(v, 2) for v in hits[:-1])} and {num(hits[-1], 2)} at "
+                f"{', '.join(num(float(k), 1 if float(k) % 1 else 0) for k in hk[:-1])} and {num(float(hk[-1]), 0)} new hazards a day. Hazards first is current sooner than "
+                f"oldest first in every setting, as it must be. The sweep gives the range of the calculation; it does not make the rates less assumed.")
+    fill("P3-E52-SWEEP-SENTENCE", e52_sweep, "E52 sweep (B-117 j2)")
+    fill("P3-E52-SWEEP-LIMIT", lambda: cap1(e52_sweep("clause")) + ".", "E52 sweep (B-117 j2)")
+
     def h14_verdict():
         """5.12: H14 clause by clause. The first is tested; the second is not testable as written (decision B1 of the referee round;
         PREREG6 section 6): the zero followed from the rule's definition, and the rule that produced it is withdrawn."""
@@ -1826,7 +1926,7 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
                 f"loses fewer jobs than drop-and-retry is {'supported' if c1 else 'not supported'}: {num(h['lost_jobs_sf_ll_per_seed']['mean'], 2)} against "
                 f"{num(h['lost_jobs_drop_retry_per_seed']['mean'], 2)} {ci(*h['lost_jobs_drop_retry_per_seed']['ci'], 2)} lost jobs a seed, a paired difference "
                 f"of {num(dd['mean'], 2)} {ci(dd['ci'][0], dd['ci'][1], 2)}. The size of that difference is the comparator's: {cnt(d['award_lost'])} awards of "
-                f"{cnt(d['award_n'])} expired under a retry budget we chose, custody alone lost {cnt(s_['award_lost'])} and the ladder "
+                f"{cnt(d['award_n'])} expired under a retry budget we chose (swept below), custody alone lost {cnt(s_['award_lost'])} and the ladder "
                 f"{'none' if int(l['award_lost']) == 0 else cnt(l['award_lost'])}, so the ladder's own contribution is {words(own)} award{'s' if own != 1 else ''} in "
                 f"{cnt(len(r.p6('E54', 'seeds')))} months, with a returning vehicle given a direct link. That the rule leaves no reservation stuck past its "
                 f"timeout is not testable as written, as a dated entry of [67] records: the zero in the run followed from the definition of the rule as "
@@ -2356,14 +2456,14 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
             ["Frequency steering and mixed time scales (the variants of E51)", f"{T}, post hoc", f"E51b: {cnt(len(r.p6('E51b', 'seeds')))} seeds; added after the first results", "Section 5.9"],
             [f"The shared map (H12): after a day out of contact a sync of changed tiles is {pc(h12s, 2)} of a full resend, and hazards first is current sooner than oldest first", C,
              f"{cnt(s['n'])} route tiles assumed to change a day in each of three layers of {cnt(s['N'])}; a subset sent first is always finished first. E52 adds the "
-             f"sizes and the stale-map hits ({n52} seeds); the change rates are not swept", "Section 5.10"],
+             f"sizes and the stale-map hits ({n52} seeds); {e52_sweep('clause')}", "Section 5.10"],
             [f"The protocol's traffic (H13): 20 authenticated rovers load the busiest link with {num(h13['at_1hz_kbps_p95'], 2)}&nbsp;kbit/s at 1&nbsp;Hz and "
              f"{num(h13['at_10hz_kbps_p95'], 1)} at 10&nbsp;Hz", C,
              "The serialised sizes of protocol version 0.1 times the assumed report rates, summed over a fleet in one radio neighbourhood; the same in every draw; the "
              "same comparisons come out alike with version 0.2", "Section 5.11"],
             [f"Store-and-forward with the lost-link rule loses fewer jobs than drop-and-retry (H14, first clause), {sv(c14)}", T,
              f"E54, a message-level simulation on the recorded month, not an engine run: {n54} seeds at today's fleet; {family_sentence('pta14')}. "
-             f"{cnt(d54['award_lost'])} awards of {cnt(d54['award_n'])} under drop-and-retry, at a retry budget we chose. Repeated at the packet sizes of protocol "
+             f"{cnt(d54['award_lost'])} awards of {cnt(d54['award_n'])} under drop-and-retry, at a retry budget we chose; {e54_retry('clause')}. Repeated at the packet sizes of protocol "
              f"version 0.2 and in Proximity-1 frames with no value changed: a property of the replay's message set, not a test of version 0.2", "Section 5.12"],
             ["The lost-link rule leaves no reservation stuck past its timeout (H14, second clause)", "Not testable as written",
              f"The zero followed from the rule as first written, which released a silent holder's reservation; that release is withdrawn. E54 gives "
@@ -2409,9 +2509,9 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
              "One value each, with one variant (the service as of 2030); the ranges of the research note were not run. The referee's rerun varied three of them (Section 5.8)", "Table 4"],
             ["The oscillators: the crystal's spread over vehicles is taken from one crystal's excursion on the lunar surface, the atomic clock's is a data-sheet value; the "
              "transfer residual and the guard", A + "; Spec", "Guard swept; frequency steering as a variant", "Sections 3.6, 5.9"],
-            ["The map's change rates and the share of hazards a rover cannot see", A, "Not swept", "Section 4.2"],
+            ["The map's change rates and the share of hazards a rover cannot see", A, "The four change rates swept one at a time after the fact (Section 5.10); the hidden share not swept", "Section 4.2"],
             ["The base as trust anchor; a site key changed daily; the lost-link ladder's times; the retry budget of drop-and-retry", A,
-             "Not swept; no standard names a trust anchor for a site with several owners", "Sections 3.8, 4.2"],
+             "The retry budget swept after the results were known (Section 5.12); the others not swept; no standard names a trust anchor for a site with several owners", "Sections 3.8, 4.2"],
             ["The value of delivery time by priority, the censoring of undelivered cargo at the year's end, the operator's cost per hour, private costs, the audit multiple", A,
              "One value each; the private-cost spread declared and not swept", "Section 3.9"],
             ["The base computer's failure rate and the re-election delay", A, "The failure rate at three levels", "Section 4.2"],
@@ -2505,7 +2605,7 @@ def values_p6(r: R, V, fill, check, fill_await, landed):
                     f"{num(lrip_v02()['h']['at_1hz_kbps_p95'], 2)}{KBPS6} for the same 20 rovers, and carries no covariance. Store-and-forward with a lost-link rule "
                     f"lost {'no job' if lost_ll == 0 else num(lost_ll, 2) + ' jobs a seed'} where drop-and-retry lost {num(lost_dr, 2)} a seed (H14's first "
                     f"clause, {ok(_fin(h14['difference_sf_ll_minus_drop_retry']['ci'][1]) < 0)}; {cnt(d54['award_lost'])} awards of {cnt(d54['award_n'])}, at a "
-                    f"retry budget we chose); its second clause is not testable as written, and the rule now marks a silent holder's segment unconfirmed "
+                    f"retry budget we chose; {e54_retry('short')}); its second clause is not testable as written, and the rule now marks a silent holder's segment unconfirmed "
                     f"instead of releasing its reservation. {cap1(e54_ledger('clause'))}.")
         if kind == "discussion":
             return (f"Where two or more of the four beacons are in line of sight, ranging holds the 95th percentile of the position error at {m_(near, 2)}, "

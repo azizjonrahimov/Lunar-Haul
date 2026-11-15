@@ -1077,6 +1077,72 @@ def add_e54(c):
             raise KeyError(f"E54 row loss {loss} / {proto}: {len(g)} rows")
         return g[0]
     c.e54f, c.e54row = e54, row
+    GRANT_LIFE_S = 60.0
+    words = c.words
+
+    def retry():
+        """B-117 (d) and (e1), results/E54_retry_budget.json: drop and retry on E54's replay at twelve retry budgets,
+        a control run after the results. (d) is three tries every 20 s, inside a grant's lifetime."""
+        d, b = e54(), _load("E54_retry_budget.json")
+        if b is None:
+            raise Pending("results/E54_retry_budget.json (B-117 d) is missing")
+        p = d["parameters"]
+        check(b["e54_code"] == d["code"] and b["seeds"] == d["seeds"],
+              "the retry-budget control ran on E54's code and E54's seeds")
+        pb = b["published_budget"]
+        check(pb["max_tries"] == p["max_tries"] and pb["retry_s"] == p["retry_s"] and pb["reproduces_E54_drop_retry_cells"] is True,
+              "the retry-budget control names E54's budget as the published one and records that it reproduces E54's cells")
+        rows = {(x["loss"], x["max_tries"], x["retry_s"]): x for x in b["rows"]}
+        losses = sorted({k[0] for k in rows})
+        tries, gaps = sorted({k[1] for k in rows}), sorted({k[2] for k in rows})
+        check(len(rows) == len(b["rows"]) == len(losses) * len(tries) * len(gaps) and losses == [0.1, 0.25, 0.4]
+              and len(tries) * len(gaps) == 12,
+              "the retry-budget control has twelve budgets at each of E54's three loss rates")
+        CK = [f"{k}_{f}" for k in ("award", "grant", "task_state", "ledger_earth") for f in ("n", "lost", "censored", "lost_share")]
+        for ls in losses:
+            pr = rows[(ls, pb["max_tries"], pb["retry_s"])]
+            check(pr["published_budget"] is True and all(pr[f] == row(ls, "drop_retry")[f] for f in CK),
+                  f"at loss {ls} the published budget, run again by the control, gives E54's drop-and-retry counts for every kind of message")
+        check(sum(1 for x in b["rows"] if x["published_budget"]) == len(losses), "one budget is marked as the published one")
+        hb = b["h14_by_budget_loss_0.25"]
+        hp = hb[f"{pb['max_tries']} tries, {num(pb['retry_s'], 0)} s"]
+        check(hp["difference_sf_ll_minus_drop_retry"] == d["h14"]["difference_sf_ll_minus_drop_retry"]
+              and abs(hp["lost_jobs_drop_retry_per_seed"] - d["h14"]["lost_jobs_drop_retry_per_seed"]["mean"]) < 1e-9,
+              "at the published budget the control's H14 difference is E54's")
+        dd = b["d_three_tries_inside_grant_lifetime"]
+        d3 = {x["loss"]: x for x in dd["rows"]}
+        span = (dd["max_tries"] - 1) * dd["retry_s"]
+        check(sorted(d3) == losses and all(d3[ls] == rows[(ls, dd["max_tries"], dd["retry_s"])] for ls in losses),
+              "the three-tries block of the control is its rows at three tries every 20 s")
+        step_s = c.e50f(1)["design"]["dt_s"]
+        dsrc = open(os.path.join(ROOT, "lunarsim", "atc", "dtn.py"), encoding="utf-8").read()
+        check(f'sz["RESERVE_GRANT"], {num(GRANT_LIFE_S, 1)})' in open(os.path.join(ROOT, "tools", "atc", "run_e54.py"), encoding="utf-8").read()
+              and all(x["gives_up_after_s"] == span for x in dd["rows"]) and span < GRANT_LIFE_S and span < step_s
+              and f"{num(step_s, 0)} s steps" in d["link_shares"]["note"]
+              and "h = hops(k, dst_node)[m.at]" in dsrc and 't_try = m.t0 + m.tries * p["retry_s"]' in dsrc,
+              "three tries every 20 s span 40 s, inside a grant's lifetime and shorter than one 60 s step of the contact plan, "
+              "and a try's path is the path of the step it falls in (dtn.py)")
+        g = lambda ls, n, gap=dd["retry_s"]: rows[(ls, n, gap)]["grant_lost_share"]
+        check(all(ls ** dd["max_tries"] < g(ls, dd["max_tries"]) < row(ls, "drop_retry")["grant_lost_share"] for ls in losses)
+              and g(0.1, 3) < g(0.25, 3) < g(0.4, 3),
+              "three tries inside the lifetime lose more grants than independent tries would and fewer than the published budget, at each loss rate")
+        more = [n for n in tries if n > dd["max_tries"]]
+        check(len(more) == 2 and all(abs(g(ls, n) - g(ls, dd["max_tries"])) < 0.005 for ls in losses for n in more),
+              "more tries at the same interval do not lower the grant loss (within half a percentage point)")
+        check(g(0.25, 3) > 50 * row(0.25, "sf")["grant_lost_share"], "custody loses far fewer grants than three tries inside the lifetime")
+        ok = sorted(k for k, v in hb.items() if v["clause_1_ci_below_0"])
+        no = sorted(k for k, v in hb.items() if not v["clause_1_ci_below_0"])
+        check(len(hb) == 12 and all((v["difference_sf_ll_minus_drop_retry"]["ci"][1] < 0) == v["clause_1_ci_below_0"]
+                                    and v["lost_jobs_sf_ll_per_seed"] == 0 for v in hb.values()),
+              "the control's verdict on H14's first clause at each budget follows from its interval; custody with the rule lost no job at any")
+        top = max(tries)
+        check(no == sorted(f"{top} tries, {num(x, 0)} s" for x in gaps[:2]) and len({hb[k]["lost_jobs_drop_retry_per_seed"] for k in no}) == 1
+              and all(hb[k]["difference_sf_ll_minus_drop_retry"]["ci"][1] == 0 for k in no),
+              "H14's first clause fails only with the most tries at the two shorter intervals, where the interval reaches zero")
+        return SimpleNamespace(b=b, d3=d3, dd=dd, span=span, step_s=step_s, g=g, more=more, tries=tries, gaps=gaps, n_ok=len(ok),
+                               no=no, no_lost=hb[no[0]]["lost_jobs_drop_retry_per_seed"], top=top,
+                               sf=row(0.25, "sf")["grant_lost_share"])
+    c.e54retry = retry
 
     def model_sentence():
         p = e54()["parameters"]
@@ -1143,6 +1209,8 @@ def add_e54(c):
             returns=d["lost_link_returns_per_seed"], jobs=d["jobs_per_seed"], linked=ls["linked_share_driving_time"],
             saved_h=d["lost_link_isolation_h_saved_per_seed"], unconf=dr["stuck_reservations"], n_res=n_res,
             unconf_h=dr["stuck_hours"], three=dr["loss"] ** 3, lost=dr["grant_lost_share"])
+        rb = retry()
+        r3 = rb.d3
         check(0.3 < fact.returns / fact.jobs < 0.6 and 0.4 < fact.linked < 0.7,
               "in the replay a vehicle turns back about once for every two or three jobs, and vehicles have a radio path for about half of their driving time")
         o54 = d["superseded_2026-11-13_b118"]
@@ -1207,14 +1275,31 @@ def add_e54(c):
                 f"{pc(d40['grant_lost_share'], 0)}. These shares are the per-hop loss itself and are a calculation "
                 f"on two assumed inputs, not a measurement: the retry interval ({num(d['parameters']['retry_s'], 0)}{NB}s) "
                 f"is longer than a grant's lifetime (60{NB}s), so each grant was sent once, with a mean delay of "
-                f"{num(dr['grant_delay_mean_s'], 2)}{NB}s. Three tries inside the lifetime would by the same "
-                f"arithmetic lose 0.25<sup>3</sup>, {pc(fact.three, 1)}; that baseline was not run, so the replay "
-                f"does not show that custody is needed, only that a grant sent once is lost as often as a hop "
-                f"fails. Lost jobs, awards that expired before they arrived, were "
+                f"{num(dr['grant_delay_mean_s'], 2)}{NB}s. A control run made after these results gave drop and retry "
+                f"{words(rb.dd['max_tries'])} tries every {num(rb.dd['retry_s'], 0)}{NB}s, all inside the lifetime, "
+                f"on the same replay and seeds. It lost {cnt(r3[0.25]['grant_lost'])} grants, "
+                f"{pc(r3[0.25]['grant_lost_share'], 1)}, at a loss of 0.25, and {pc(r3[0.1]['grant_lost_share'], 1)} "
+                f"and {pc(r3[0.4]['grant_lost_share'], 1)} at 0.10 and 0.40. An earlier version of this paper gave "
+                f"{pc(fact.three, 1)} for that budget, 0.25<sup>3</sup>, by arithmetic and without a run. That "
+                f"figure is the loss only if every try has a radio path and the tries fail independently, and it "
+                f"is not the result. The {words(rb.dd['max_tries'])} tries span {num(rb.span, 0)}{NB}s and the "
+                f"contact plan has steps of {num(rb.step_s, 0)}{NB}s, so they mostly meet the same path or the same "
+                f"lack of one; more tries at that interval did not help ("
+                + " and ".join(f"{pc(rb.g(0.25, n), 1)} with {words(n)}" for n in rb.more)
+                + f"). The published budget, run again by the control's program, reproduces E54's drop-and-retry "
+                f"counts for every kind of message at every loss rate. So a retry that fits the lifetime cut the "
+                f"loss of grants from {pc(dr['grant_lost_share'], 0)} to {pc(r3[0.25]['grant_lost_share'], 1)}, and "
+                f"custody cut it to {pc(sf['grant_lost_share'], 2)}. Lost jobs, awards that expired before they arrived, were "
                 f"{num(dj['mean'], 2)} a seed {c.ci(*dj['ci'], 2, unit='')} with drop and retry and "
                 f"{'none' if lj['mean'] == 0 else num(lj['mean'], 2)} with custody and the lost-link rule, a paired difference of "
                 f"{num(df['mean'], 2, sign=True)} {c.ci(*df['ci'], 2, unit='')}. H14 [59] has two clauses. The first, "
-                f"fewer lost jobs by an interval that excludes zero, is {'supported' if first else 'not supported'}. "
+                f"fewer lost jobs by an interval that excludes zero, is {'supported' if first else 'not supported'}"
+                f", at the retry budget we chose. In the same control, over {words(len(rb.tries) * len(rb.gaps))} "
+                f"budgets (" + ", ".join(words(n) for n in rb.tries[:-1]) + f" or {words(rb.tries[-1])} tries every "
+                + ", ".join(num(x, 0) for x in rb.gaps[:-1]) + f" or {num(rb.gaps[-1], 0)}{NB}s), the interval "
+                f"excluded zero at {words(rb.n_ok)}; with {words(rb.top)} tries every {num(rb.gaps[0], 0)} or "
+                f"{num(rb.gaps[1], 0)}{NB}s drop and retry lost {num(rb.no_lost, 2)} jobs a seed and the interval "
+                f"reached zero. The sweep is exploratory. "
                 f"The second, no reservation left stuck past its timeout, is not testable as written and is "
                 f"withdrawn as a result [59]: the zero followed from the rule's definition, and the rule as first "
                 f"written released a silent vehicle's reservation, which is unsafe when the vehicle is silent "
@@ -2795,9 +2880,11 @@ def add_front(c):
         e54 = (f" The lost-link experiment shows two things and prices neither in delay. A lost grant is a "
                f"stopped vehicle, because R3 never assumes an unconfirmed reservation. The {pc(x.lost, 0)} of "
                f"grants that drop and retry lost at a loss of 0.25 per hop is that loss itself: its retry "
-               f"interval is longer than a grant's lifetime, both assumed, so each grant was sent once, and "
-               f"three tries inside the lifetime would by arithmetic lose {pc(x.three, 1)}. Custody removes the "
-               f"loss; the replay does not show that it is needed. And a silent vehicle is the usual case: "
+               f"interval is longer than a grant's lifetime, both assumed, so each grant was sent once. "
+               f"Three tries inside the lifetime, run afterwards as a control, still lost "
+               f"{pc(c.e54retry().d3[0.25]['grant_lost_share'], 1)}, not the {pc(x.three, 1)} that independent tries "
+               f"would give, because a vehicle without a radio path at one try mostly has none at the next. "
+               f"Custody lost {pc(c.e54retry().sf, 2)}. And a silent vehicle is the usual case: "
                f"along the month's contact plan vehicles had a radio path to the base in {pc(x.linked, 0)} of "
                f"their driving time, and {cnt(x.unconf)} of {cnt(x.n_res)} reservations ended with their holder "
                f"unheard. Under the rule as first written the base released those segments, which is unsafe when "
@@ -3213,10 +3300,11 @@ def add_pta(c):
                 "No encounter, model-check or logistics run contains the rule as it now stands; its delay cost is unknown", "3.11, 7")
             x = c.e54facts
             add("Drop and retry loses a quarter of the reservation grants at a loss of 0.25 per hop",
-                "Calculated from assumed inputs",
+                "Calculated from assumed inputs; a shorter budget was run as a control",
                 f"The retry interval (180{NB}s) is longer than a grant's lifetime (60{NB}s), both assumed, so a grant is sent "
-                f"once and the share lost is the per-hop loss ({pc(x.lost, 0)}); three tries would lose {pc(x.three, 1)} by "
-                "the same arithmetic; that baseline was not run", "5.12")
+                f"once and the share lost is the per-hop loss ({pc(x.lost, 0)}). Three tries every 20{NB}s, inside the "
+                f"lifetime, lost {pc(c.e54retry().d3[0.25]['grant_lost_share'], 1)} in a control run (simulation), not the "
+                f"{pc(x.three, 1)} of independent tries: the tries fall within one step of the contact plan", "5.12")
         except Pending:
             add("Custody and the lost-link rule lose fewer jobs than drop and retry (H14)", "Not yet tested", "E54 pending", "5.12")
         try:

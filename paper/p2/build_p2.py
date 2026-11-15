@@ -1848,6 +1848,50 @@ def values(r: R, allow_pending: bool):
         more = mc["hand_conflicts_mean"] > u["road_hand_conflicts"] and items_mars > items_moon
         return more, mc["hand_conflicts_mean"], u["road_hand_conflicts"], items_mars, items_moon
 
+    def conflict_trace():
+        """B-117 (h), results/B117h_conflict_trace.json: an exploratory trace of the conflicts referred to Earth in four
+        uncoordinated cells (Moon 2028 and 2038, Mars with and without the relay), 30 seeds each."""
+        path = os.path.join(RES, "B117h_conflict_trace.json")
+        if not os.path.exists(path):
+            raise Pending("results/B117h_conflict_trace.json (B-117 h) is missing")
+        t = json.load(open(path, encoding="utf-8"))
+        cells, ns = t["cells"], len(t["seeds"])
+        moon, mars = cells["moon 2028"], cells["mars rtt 20 no relay"]
+        check("EXPLORATORY" in t["task"] and len(cells) == 4 and ns == 30
+              and sorted(t["check_counts_equal_stored_rows"]) == sorted(cells) and all(t["check_counts_equal_stored_rows"].values()),
+              "the conflict trace is exploratory, covers four cells of 30 seeds, and its counts equal the stored rows in every cell")
+        _, hc_m, hc_l, _, _ = e47_more_conflicts()
+        check(abs(mars["conflicts_per_year"] - hc_m) < 0.05 and abs(moon["conflicts_per_year"] - hc_l) < 0.05,
+              "the trace's Moon 2028 and Mars no-relay cells have the conflict counts the paper prints")
+        tot = {k: v["conflicts_per_year"] * ns for k, v in cells.items()}
+        check(all(abs(tot[k] - sum(v["conflicts_by_quarter"])) < 1.5 for k, v in cells.items()),
+              "in each traced cell the conflicts by quarter add up to the yearly mean times the seeds, to within one conflict")
+        top = {k: v["segments_top5"][0] for k, v in cells.items()}
+        share = {k: top[k][1] / tot[k] for k in cells}
+        check(len({x[0] for x in top.values()}) == 1 and min(share.values()) > 0.95,
+              "in every traced cell more than 95 % of the conflicts are on the same road segment")
+        lun, mar = [v for k, v in cells.items() if k.startswith("moon")], [v for k, v in cells.items() if k.startswith("mars")]
+        check(len(lun) == 2 and len(mar) == 2 and min(x["stop_h_mean"] for x in lun) > 4 * max(x["stop_h_mean"] for x in mar)
+              and max(x["conflicts_per_year"] for x in lun) < min(x["conflicts_per_year"] for x in mar),
+              "both lunar cells wait several times longer for Earth's answer than both Mars cells and have fewer conflicts")
+        lun.sort(key=lambda x: x["stop_h_mean"]); mar.sort(key=lambda x: x["stop_h_mean"])
+        check(lun[0]["conflicts_per_year"] > lun[1]["conflicts_per_year"] and mar[0]["conflicts_per_year"] < mar[1]["conflicts_per_year"],
+              "between the two lunar cells the longer wait has fewer conflicts; between the two Mars cells it does not")
+        W, RW, RO = "share_of_year_with_a_pair_waiting_for_earth", "conflicts_per_100h_while_a_pair_waits", "conflicts_per_100h_otherwise"
+        check(all(v[RW] < 0.05 * v[RO] for v in cells.values()),
+              "in every traced cell the conflict rate while a pair waits for Earth is under a twentieth of the rate otherwise")
+        gap = mars["conflicts_per_year"] / moon["conflicts_per_year"]
+        f_exp, f_rate = (1 - mars[W]) / (1 - moon[W]), mars[RO] / moon[RO]
+        check(moon[W] > mars[W] and 1 < f_exp < f_rate and abs(f_exp * f_rate / gap - 1) < 0.02,
+              "the ratio of the Mars to the lunar conflict count is the ratio of the time without a waiting pair times the ratio "
+              "of the conflict rates in that time (within 2 %), and the rate is the larger factor")
+        TR = "conflicts_per_1000_traversals"
+        check(abs(mars[TR] - 1000 * mars["conflicts_per_year"] / mars["traversals_per_year"]) < 0.05
+              and abs(moon[TR] - 1000 * moon["conflicts_per_year"] / moon["traversals_per_year"]) < 0.05 and mars[TR] > moon[TR],
+              "the conflicts per 1,000 segment traversals are the counts over the traversals, and higher on Mars")
+        return SimpleNamespace(moon=moon, mars=mars, ns=ns, runs=ns * len(cells), share=share, lun=lun, mar=mar, W=W, RW=RW, RO=RO,
+                               gap=gap, f_exp=f_exp, f_rate=f_rate, TR=TR)
+
     def e47_design_sentence():
         f, b = e47()
         d = r.e47d
@@ -2071,7 +2115,26 @@ def values(r: R, allow_pending: bool):
              f"Mars site whose horizon returns Earth every sol, and would not for one that does not.")
         if hc_m > hc_l:
             s += (f" The Mars fleet referred more conflicts ({cnt(hc_m)} against {cnt(hc_l)}) for the same demand and "
-                  f"almost the same deliveries ({cnt(it_m)} against {cnt(it_l)} items); we have not traced the cause.")
+                  f"almost the same deliveries ({cnt(it_m)} against {cnt(it_l)} items).")
+            q = conflict_trace()
+            s += (f" A trace made afterwards, exploratory and not pre-registered, logged every referred conflict "
+                  f"in four cells of {cnt(q.ns)} seeds: the Moon in 2028 and 2038, and Mars with and without the "
+                  f"relay; its counts equal the stored rows in all {cnt(q.runs)} runs. One road segment held "
+                  f"{pc(q.share['moon 2028'], 0)} of the conflicts on the Moon and "
+                  f"{pc(q.share['mars rtt 20 no relay'], 0)} on Mars. The cells that wait longer for Earth's answer "
+                  f"have fewer conflicts: the two lunar cells, with mean waits of {h_(q.lun[0]['stop_h_mean'], 0)} "
+                  f"and {h_(q.lun[1]['stop_h_mean'], 0)}, had {num(q.lun[0]['conflicts_per_year'], 0)} and "
+                  f"{num(q.lun[1]['conflicts_per_year'], 0)} a year, and the two Mars cells, with "
+                  f"{h_(q.mar[0]['stop_h_mean'], 0)} and {h_(q.mar[1]['stop_h_mean'], 0)}, had "
+                  f"{num(q.mar[0]['conflicts_per_year'], 0)} and {num(q.mar[1]['conflicts_per_year'], 0)}, though "
+                  f"between the two Mars cells the order does not hold. While a pair waited for Earth almost no "
+                  f"new conflict arose, {num(q.moon[q.RW], 3)} per 100{NB}h against {num(q.moon[q.RO], 2)} otherwise "
+                  f"on the Moon, and such a wait was in force for {pc(q.moon[q.W], 0)} of the lunar year against "
+                  f"{pc(q.mars[q.W], 1)} on Mars. The Mars count is {num(q.gap, 2)} times the lunar one; the "
+                  f"longer time without a waiting pair accounts for a factor of {num(q.f_exp, 2)} and a higher "
+                  f"conflict rate in that time for {num(q.f_rate, 2)}. Over the whole year Mars had "
+                  f"{num(q.mars[q.TR], 1)} conflicts per 1,000 segment traversals against {num(q.moon[q.TR], 1)}. "
+                  f"The cause of the higher rate was not traced.")
         s += (f" The one Mars-specific finding is about hardware. The guaranteed braking of Section 3.5 is the smaller "
               f"of the service brake and the friction limit, less the downhill component: on the Moon the friction "
               f"term binds at &mu; = {num(fric_moon[0], 1)} and the {num(bs, 1)}{NB}m/s<sup>2</sup> service brake "

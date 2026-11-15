@@ -20,7 +20,7 @@ and the build stops when the file appears, see `PLACEHOLDERS.md`, "Awaited resul
 | M4 | fixed | Stated as observed (decision B7). Abstract: "A 0.1 s guard left no conflict in 303 reservation pairs with crystal clocks up to 0.84 s off, outside the guarantee." 5.10: no crystal cell meets Proposition 6's premise; worst pair closed 0.123 s of 0.2 s (62 %); 95 % upper bound 1.0 % per pair. The "No guard" column is explained as a count of signs. A.6: the 51 premise cells are 42 atomic and 9 crystal with the 1 s guard. H11 reported as an observation (its second condition could not fail: 1 ns = 0.3 m). | abstract, 1, 5.10, Table 11 note, 6.1, A.6, Table 14 |
 | M5 | fixed | 3.5 defines the hard violation as `encounter.py` counts it, each clause checked against its source line: contact; same-road, same-direction gap below d0 = 5 m; any part of a vehicle in a closed zone; a moving vehicle inside its stopping distance of crew (R_stop less 10 m) or touching crew; opposing vehicles in one segment, a resource without a grant, slots over-full. "Below the required gap" replaced by "inside the 5 m static margin" everywhere. R1 breaches reported apart, but not as the referee states them (see "Referee findings not accepted"). | 3.5, 5.6, 5.8, 6.1, A.4, Tables 6, 7, 14 |
 | M6 | fixed (rule and claims); cost not priced | Rule rewritten as decision B1: a silent holder's reservation is not released; after timeout plus grace the segment is marked unconfirmed and entered only at caution speed (Proposition 3: 6.4 km/h for 10 m of perception, 12.3 km/h for 20 m, class limit from 27 m). "No stuck reservation" withdrawn; H14's second clause "not testable as written". Reported: 2,566 of 2,628 reservations unconfirmed (7,349 h), 82 returns a seed against 199 jobs, radio path in 56.6 % of driving time, 336 h credited. Stated in 3.4, 5.12, 6.1, 6.4, 7 that no logistics run contains the ladder and that its cost is unknown and probably large (strict R7: +49 h). Table 2's R7 says the encounter and discrete models ran the rule as first written. | Table 2, 3.4, 3.11, 5.12, 6.1, 6.3, 7, A.3, A.4, Table 14 |
-| M7 | fixed; the extra baseline not run | Labelled a calculation (decision B8): the lost share equals the per-hop loss (0.095, 0.256, 0.399, checked) because the retry interval (180 s) exceeds a grant's lifetime (60 s), both assumed; three tries would lose 0.25^3 = 1.6 % by arithmetic. "Custody is therefore part of the traffic rules" and "give grants custody" removed; the text says the replay does not show custody to be needed. A drop-and-retry row with a retry inside the lifetime needs a new run: listed in 6.5. | 3.11, 5.12, 6.1, 6.3, 9, Table 14 |
+| M7 | fixed; the extra baseline was run later (part 11), and the 1.6 % below is corrected there | Labelled a calculation (decision B8): the lost share equals the per-hop loss (0.095, 0.256, 0.399, checked) because the retry interval (180 s) exceeds a grant's lifetime (60 s), both assumed; three tries would lose 0.25^3 = 1.6 % by arithmetic. "Custody is therefore part of the traffic rules" and "give grants custody" removed; the text says the replay does not show custody to be needed. A drop-and-retry row with a retry inside the lifetime needs a new run: listed in 6.5. | 3.11, 5.12, 6.1, 6.3, 9, Table 14 |
 | M8 | fixed | Per variant, from `E44_bins.csv` and `results/E44_parts`: R3 as written 13 of 1,892 judged encounters (0.7 %; 0.26 % of 4,982 driven); keep-one-slot-free variant 373 of 1,963 (19.0 %; 7.4 % of 5,018); all-nominal 76 of 939. Mars: 2 of 368 and 68 of 395. The variant is described in 5.6. Abstract: "A one-lane ring deadlocked in 0.7 % of encounters under the rule as written." | abstract, 5.6, 5.8, 6.1, Tables 6, 7, 14 |
 | M9 | part; awaits B-107 | A.4 states that (vii) fails for a conforming leader uphill: full braking exceeds b_max above 10.7 deg (Moon) and 4.6 deg (Mars), 11.5 deg at friction 0.3 on the Moon; on the 17.2 deg route maximum the final gap at 15 km/h is 3.0 m (Moon) and 0.2 m (Mars), all recomputed from `safety.py`. Proposition 4 is headed "for the flat and for downhill grades"; assumption (viii) added (the follower knows gap and speed). 3.5 and 7 say types 2 to 11 are flat and no encounter is uphill. Uphill encounters and the slope term in the rule: awaits `results/E45_uphill.json`. | abstract, 3.5, 5.6 (via 6.1), 6.1, 7, A.4, Table 14 |
 | M10 | fixed | "The base saw 22 landings a year; their closures held a job or sent a vehicle to shelter 29 times". | 5.1 |
@@ -39,7 +39,7 @@ and the build stops when the file appears, see `PLACEHOLDERS.md`, "Awaited resul
 | S5 | part | Intervals for all five detectors on test; the weight of one alarm-minute in the heaviest stratum (0.11 per pair-day; no alarm in 152 h allows 0.33); "113 times" dropped; single test 53 against 84 minutes at 10.83 and 4.8 against 8.6 at 15.14, so the innovations are not Gaussian with the claimed variance; A.5 calls 19.1 against 19.2 one crossing point. Not done: the count of alarm-minutes behind 0.098 and its interval are not in any results file. | 5.11, A.5, Table 14 |
 | S6 | fixed | (i) "every vehicle is in all three". (ii) 3.12 now gives E56's own model (2 % of distance, fix to 1.7 m at stops and every 100 m, no filter, no terrain). (iii) common-found difference -23.2 s [-26.8, -19.9]. (iv) the interval of H15 (b) is stated as 90 %. | 3.12, 5.11, Table 12 note |
 | S7 | fixed | The three qualifications are in 5.11 and under Table 13: settings differ from E56's (window 16 against 5, k 0.5 uncentred against 3 centred); SMAP gain with 18 and 26 false-alarm runs against 2; the z-score and per-step columns are one detector; channels are the first 14 by file listing. "The check supports no choice of detector." | 5.11, Table 13, Table 14 |
-| S8 | part | 5.4 and 6.1: 37.2 h of wait per conflict against 2 h of staff time, t_hand not swept, no local fallback. 5.1 says two vehicles do most of the driving. Not done: the Mars fleet's 94 against 53 conflicts is still untraced (needs engine analysis); the 95 % figure is from `.cache`, not a results file, so no number is printed. | 5.1, 5.4, 6.1, Table 14 |
+| S8 | part | 5.4 and 6.1: 37.2 h of wait per conflict against 2 h of staff time, t_hand not swept, no local fallback. 5.1 says two vehicles do most of the driving. Not done: the Mars fleet's 94 against 53 conflicts is still untraced (needs engine analysis; traced in part, see part 11); the 95 % figure is from `.cache`, not a results file, so no number is printed. | 5.1, 5.4, 6.1, Table 14 |
 | S9 | fixed | 3.4, 6.1, 6.4 and 7 state the oracle dispatcher (checked: every E43 row has `regime` O_ORACLE), windows computed at commit and kept exactly, no travel-time uncertainty, no lost-link procedure, 56.6 % contact; 7 says E50 covers position error and not timing error. | 1, 3.4, 6.1, 6.4, 7 |
 | S10 | fixed | (i) Table 6 and 7 gain "finished" and "incomplete"; 22 %, 36 %, 10 % in the text. (ii) 3.5: the 0.5 m/s2 brake is below g sin 20 deg = 0.55 m/s2. (iii) 58 of 3,316 dead-stop encounters (1.7 %). | 3.5, 5.6, Tables 6, 7 |
 | S11 | fixed, except one reference | P1: "illustrates ... does not test the formula". P2: new paragraph on the constant-speed premise (6.5 s from rest for 4.2 m against a 1.0 s margin; the stop line; v is the leg's mean speed in `roads.py`). P3: "holds its speed through a reaction delay"; R2 against R1; the NASA figure "validates nothing". P4: (iii) and the dead vehicle; uphill (M9). P6: outside the headline case. P7: no-delay assumption added; "18 %" replaced by 10 % (16 % with the mast) for cells where F covers the faulty rovers. Not done: LeBlanc et al. 2013 not read (listed in NOTES.md). | 1, 6.1, A.1 to A.7 |
@@ -236,3 +236,38 @@ value is read from the results files through build checks. Everything is simulat
 
 Not verified by the build: that few vehicles drive more than a few hours (BACKEND's trace). The cause of the uphill
 remainder is unknown.
+
+## Part 11 (14 Nov): two control runs (B-117 d, e1 and h)
+
+HTML only (`build_p2.py --no-pdf`, all checks pass, abstract 300 words, conclusion 250). Everything is simulation.
+Tally unchanged: M7 was already counted fixed and its missing baseline is now run; S8 stays "part" (the hand-resolution
+time is still not swept, and part of the conflict gap is still untraced). Fixed 28, part 7, awaiting 0, not done 2.
+
+- M7, correction (`results/E54_retry_budget.json`, `tools/atc/b117de_retry.py`). The paper printed "three tries inside
+  the lifetime would by arithmetic lose 0.25^3, 1.6 %" (5.12, 6.5, Table 14; 3.11 did not print it). The run gives
+  6.7 % (406 of 6,028 grants) at a loss of 0.25, 0.9 % at 0.10 and 16.8 % at 0.40. Cause of the error: the arithmetic
+  assumed a radio path at every try and independent failures; the three tries span 40 s and the contact plan has 60 s
+  steps, so a vehicle without a path mostly has none at any of them. Five and ten tries every 20 s lose 6.7 % too.
+  The 1.6 % stays only as the independent-tries figure, labelled as not the result, and 5.12 records that an earlier
+  version gave it. "The replay does not show that custody is needed" is removed: retry inside the lifetime 6.7 %,
+  custody 0.03 %. The published budget (5 tries every 180 s) reproduces E54's drop-and-retry cells: the file's flag,
+  and the build compares n, lost, censored and lost share of all four message kinds at the three loss rates, and the
+  H14 difference.
+- H14 (control e1, same file): 5.12 now says the first clause is supported at the retry budget chosen, and that over
+  the twelve budgets the interval excluded zero at ten; with ten tries every 20 or 60 s drop and retry lost 0.07 jobs
+  a seed and the interval reached zero. Labelled exploratory.
+- S8 (`results/B117h_conflict_trace.json`, exploratory, not pre-registered). "We have not traced the cause" is
+  replaced in 6.1 by the trace: 120 runs with counts equal to the stored rows; one segment holds 96 % (Moon) and 97 %
+  (Mars) of the conflicts; lunar cells (waits 37 and 56 h) 53 and 45 conflicts a year, Mars cells (5 and 8 h) 92 and
+  94; 0.009 against 0.77 conflicts per 100 h while a pair waits; a wait in force 22 % of the lunar year against 8.5 %
+  on Mars; the count ratio 1.78 = 1.18 (time without a waiting pair) x 1.51 (rate in that time); 51.5 against 32.1
+  conflicts per 1,000 traversals. The cause of the higher rate is stated as not traced.
+- Limitations and future work: "a drop-and-retry baseline whose retry fits inside a grant's lifetime" removed from the
+  list in 6.5; 6.4's "custody or a retry inside its lifetime" now says custody, since retries inside the lifetime
+  still lost grants.
+- New build checks: `phase6.py` `retry()` (ten checks), `build_p2.py` `conflict_trace()` (nine checks).
+
+Differences from the task as given, from the files: "97 % on one segment" is 96 to 97 % by cell; "conflicts fall as the
+wait grows" does not hold between the two Mars cells (92.1 at 5.4 h, 94.0 at 8.0 h), so the text says so; "about a
+third of the gap" is not a number in the file (the factors give 28 % of the log ratio), so the factors are printed;
+the 1.5 is the rate per 100 h outside waits, and per traversal the ratio is 1.6.

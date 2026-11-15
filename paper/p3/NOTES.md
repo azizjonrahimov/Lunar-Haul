@@ -301,3 +301,7 @@ foundations [29]-[33], [37] are older and reported as such). Entries needing pub
   (composite entries). The arXiv identifier of [103] is as note 03 gives it and was not re-checked on the web.
 - **Not done.** O3 (199 jobs against 200.9 awards a seed, unexplained), O6 (CoreMark on the laptop), the split of the paper (the lead's decision:
   a roadmap paragraph and explicit halves instead).
+- **Control runs B-117 (e1), (j2) (14 Nov).** `results/E54_retry_budget.json` and `results/E52_sweep.json` are read by the build (keys E54R, E52S).
+  5.12 and 5.10 each gained one paragraph, labelled as run after the results were known; every "not swept" sentence about the retry budget
+  and the map's change rates is replaced (4.2, 5.10, 5.12, 6.6, 7, Table 18, introduction). H14's first clause fails at 2 of 12 budgets and the
+  paper says where. Control (d) is not printed (P3 never printed the 1.6 % it corrects).
