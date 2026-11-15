@@ -11973,3 +11973,41 @@ Sentences this would change (no printed value moves):
 - 8x was not run (LATER in the estimate; needs B-116's 8x conditions).
 
 - BACKEND 04:24: B-117 (f) reduced started: E46 runs at 4 value-of-time levels (1,440 runs of ~7 s), one process, under 0.5 GB, gated at 0.8 GB.
+
+## B-117 (f) reduced DONE (BACKEND, 15 Nov): E46's value of time swept, H5 clause 3. NEW results/E46_vot_sweep.json; E46 files untouched
+- Runner: tools/atc/b117f_e46_vot.py, untracked; parts in .cache/atc/e46_vot/x<level>/.
+- Runs: 1,440 physical runs. Value-of-time table scaled x0.2, x0.5, x2, x5. Per split (3eq, 3uneq) and seed 1-30: pooled, the
+  three pairs, alone, oracle. Each is run exactly as run_e46.run_one (fixed point, loss 0, 2028, eps by seed).
+- Memory: the last 200 runs used LEAD's 0.6 GB start / 0.35 GB stop rule (gate600.sh in the scratchpad; gate.sh unchanged).
+- Checks (the table refuses otherwise):
+  - x1 pooled seed 1 repeated equals E46's stored part for both splits (owners, job log, delivered share).
+  - Clause 3 recomputed from E46's parts equals E46_fit.json (min upper and min lower).
+  - The efficiency-loss column reproduces E46_cells.csv at x1 (12.666 % and 35.880 %).
+- H5 clause 3 (every owner in every coalition: Shapley payoff minus value alone) is SUPPORTED AT EVERY LEVEL, both splits. Every
+  lower bound is above 0. Smallest lower / upper bound, M USD a year; the smallest is always owner A in coalition AB:
+
+  | level | 3eq lower / upper | 3uneq lower / upper |
+  |---|---|---|
+  | x0.2 | 2.44 / 13.18 | 6.12 / 16.96 |
+  | x0.5 | 16.40 / 40.32 | 12.79 / 42.69 |
+  | x1 (E46) | 29.72 / 82.00 | 36.43 / 93.88 |
+  | x2 | 72.49 / 176.69 | 78.28 / 198.99 |
+  | x5 | 156.28 / 425.35 | 273.69 / 485.91 |
+
+  The gain from cooperating scales roughly with the value of time. At x0.2 it is small but still positive in every seed-bootstrap
+  bound.
+- Efficiency loss of the pooled market against the marketplace (system cost above O_ORACLE's, %), 3eq / 3uneq:
+
+  | level | 3eq | 3uneq |
+  |---|---|---|
+  | x0.2 | -2.6 | -1.9 |
+  | x0.5 | 11.6 | -2.8 |
+  | x1 | 12.7 | 35.9 |
+  | x2 | 57.2 | 80.2 |
+  | x5 | 100.7 | 222.7 |
+
+  At low value of time the auction is as cheap as the marketplace, or cheaper. At high value of time its loss grows steeply.
+- Sentences this would change: P3 3.9, 5.6, 7, 6.6, "a sweep of the value of time (a limitation and future work)". Now: clause 3
+  holds from x0.2 to x5. The efficiency loss of the auction against the marketplace depends strongly on the value of time (about
+  0 at x0.2, 13-36 % at x1, 100-220 % at x5). No printed value moves. Clauses 1 and 2 (the deviations) were not swept: that is the
+  full design.
